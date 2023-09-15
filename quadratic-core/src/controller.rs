@@ -7,6 +7,8 @@ use self::transactions::Transaction;
 
 pub mod auto_complete;
 pub mod cells;
+pub mod clipboard;
+pub mod formatting;
 pub mod sheets;
 pub mod transactions;
 
@@ -27,5 +29,8 @@ impl GridController {
             undo_stack: vec![],
             redo_stack: vec![],
         }
+    }
+    pub fn grid(&self) -> &Grid {
+        &self.grid
     }
 }

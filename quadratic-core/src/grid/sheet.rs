@@ -1,6 +1,8 @@
 use std::collections::{btree_map, BTreeMap, HashMap, HashSet};
 use std::ops::Range;
+use std::str::FromStr;
 
+use bigdecimal::BigDecimal;
 use itertools::Itertools;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -16,6 +18,7 @@ use super::js_types::{
     JsRenderCodeCellState, JsRenderFill,
 };
 use super::response::{GetIdResponse, SetCellResponse};
+use super::{NumericFormat, NumericFormatKind};
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -73,8 +76,11 @@ impl Sheet {
         for x in region.x_range() {
             let (_, column) = self.get_or_create_column(x);
             for y in region.y_range() {
-                let value = rng.gen_range(-10000..=10000) as f64;
-                column.values.set(y, Some(value.into()));
+                let value = rng.gen_range(-10000..=10000).to_string();
+                column.values.set(
+                    y,
+                    Some(CellValue::Number(BigDecimal::from_str(&value).unwrap())),
+                );
             }
         }
         self.recalculate_bounds();
@@ -134,7 +140,9 @@ impl Sheet {
         let mut old_cell_values_array = Array::new_empty(region.size());
 
         for x in region.x_range() {
-            let Some(column) = self.columns.get_mut(&x) else {continue};
+            let Some(column) = self.columns.get_mut(&x) else {
+                continue;
+            };
             column_ids.push(column.id);
             let removed = column.values.remove_range(region.y_range());
             for block in removed {
@@ -196,6 +204,26 @@ impl Sheet {
         self.code_cells.get(&cell_ref)
     }
 
+    pub fn cell_numeric_format_kind(&self, pos: Pos) -> Option<NumericFormatKind> {
+        let column = self.get_column(pos.x)?;
+        if let Some(format) = column.numeric_format.get(pos.x) {
+            Some(format.kind)
+        } else {
+            None
+        }
+    }
+
+    pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
+        let column = self.get_column(pos.x)?;
+        let block = column.spills.get(pos.y)?;
+        let code_cell_pos = self.cell_ref_to_pos(block)?;
+        let code_cell = self.code_cells.get(&block)?;
+        code_cell.get_output_value(
+            (pos.x - code_cell_pos.x) as u32,
+            (pos.y - code_cell_pos.y) as u32,
+        )
+    }
+
     /// Returns a summary of formatting in a region.
     pub fn get_formatting_summary(&self, region: Rect) -> FormattingSummary {
         let mut bold = BoolSummary::default();
@@ -223,11 +251,43 @@ impl Sheet {
             None => CellFormatSummary {
                 bold: None,
                 italic: None,
+                text_color: None,
+                fill_color: None,
             },
             Some(column) => CellFormatSummary {
                 bold: column.bold.get(pos.y),
                 italic: column.italic.get(pos.y),
+                text_color: column.text_color.get(pos.y),
+                fill_color: column.fill_color.get(pos.y),
             },
+        }
+    }
+
+    // returns CellFormatSummary only if a formatting exists
+    pub fn get_existing_cell_format(&self, pos: Pos) -> Option<CellFormatSummary> {
+        match self.columns.get(&pos.x) {
+            Some(column) => {
+                let bold = column.bold.get(pos.y);
+                let italic = column.italic.get(pos.y);
+                let fill_color = column.fill_color.get(pos.y);
+                let text_color = column.text_color.get(pos.y);
+
+                if bold.is_some()
+                    || italic.is_some()
+                    || fill_color.is_some()
+                    || text_color.is_some()
+                {
+                    Some(CellFormatSummary {
+                        bold,
+                        italic,
+                        fill_color,
+                        text_color,
+                    })
+                } else {
+                    None
+                }
+            }
+            None => None,
         }
     }
 
@@ -473,23 +533,38 @@ impl Sheet {
         });
 
         itertools::chain(ordinary_cells, code_output_cells)
-            .map(|(x, y, column, value, language)| JsRenderCell {
-                x,
-                y,
+            .map(|(x, y, column, value, language)| {
+                let mut numeric_format: Option<NumericFormat> = None;
+                let mut numeric_decimals: Option<i16> = None;
 
-                value,
-                language,
+                // only get numeric_format only if it's a CellValue::Number (although it can exist for other types)
+                if value.type_name() == "number" {
+                    numeric_format = column.numeric_format.get(y);
+                    let is_percentage = if let Some(numeric_format) = numeric_format.clone() {
+                        numeric_format.kind == NumericFormatKind::Percentage
+                    } else {
+                        false
+                    };
+                    numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
+                }
+                JsRenderCell {
+                    x,
+                    y,
 
-                align: column.align.get(y),
-                wrap: column.wrap.get(y),
-                numeric_format: column.numeric_format.get(y),
-                bold: column.bold.get(y),
-                italic: column.italic.get(y),
-                text_color: column.text_color.get(y),
-                fill_color: None,
+                    value: value.to_display(numeric_format, numeric_decimals),
+                    language,
+
+                    align: column.align.get(y),
+                    wrap: column.wrap.get(y),
+                    bold: column.bold.get(y),
+                    italic: column.italic.get(y),
+                    text_color: column.text_color.get(y),
+                    fill_color: None,
+                }
             })
             .collect()
     }
+
     /// Returns all data for rendering cell fill color.
     pub fn get_all_render_fills(&self) -> Vec<JsRenderFill> {
         let mut ret = vec![];
@@ -616,6 +691,31 @@ impl Sheet {
     pub fn id_to_string(&self) -> String {
         self.id.to_string()
     }
+
+    /// get or calculate decimal places for a cell
+    pub fn decimal_places(&self, pos: Pos, is_percentage: bool) -> Option<i16> {
+        // first check if numeric_decimals already exists for this cell
+        if let Some(decimals) = self.get_column(pos.x)?.numeric_decimals.get(pos.y) {
+            return Some(decimals);
+        }
+
+        // otherwise check value to see if it has a decimal and use that length
+        if let Some(value) = self.get_cell_value(pos) {
+            match value {
+                CellValue::Number(n) => {
+                    let (_, exponent) = n.as_bigint_and_exponent();
+                    if is_percentage {
+                        Some(exponent as i16 - 2)
+                    } else {
+                        Some(exponent as i16)
+                    }
+                }
+                _ => None,
+            }
+        } else {
+            None
+        }
+    }
 }
 
 fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {
@@ -630,4 +730,93 @@ fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {
         }
     }
     ret
+}
+
+#[cfg(test)]
+mod test {
+    use std::str::FromStr;
+
+    use bigdecimal::BigDecimal;
+
+    use crate::{
+        grid::{NumericFormat, NumericFormatKind, Sheet, SheetId},
+        CellValue, Pos,
+    };
+
+    #[test]
+    fn test_current_decimal_places_value() {
+        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+
+        // get decimal places after a set_cell_value
+        sheet.set_cell_value(
+            Pos { x: 1, y: 2 },
+            CellValue::Number(BigDecimal::from_str(&"12.23").unwrap()),
+        );
+        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), Some(2));
+
+        sheet.set_cell_value(
+            Pos { x: 2, y: 2 },
+            CellValue::Number(BigDecimal::from_str(&"0.23").unwrap()),
+        );
+        assert_eq!(sheet.decimal_places(Pos { x: 2, y: 2 }, true), Some(0));
+    }
+
+    #[test]
+    fn test_current_decimal_places_numeric_format() {
+        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+
+        let column = sheet.get_or_create_column(3);
+        column.1.numeric_decimals.set(3, Some(3));
+
+        assert_eq!(sheet.decimal_places(Pos { x: 3, y: 3 }, false), Some(3));
+    }
+
+    #[test]
+    fn test_current_decimal_places_text() {
+        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+
+        sheet.set_cell_value(
+            crate::Pos { x: 1, y: 2 },
+            CellValue::Text(String::from("abc")),
+        );
+
+        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), None);
+    }
+
+    #[test]
+    fn test_current_decimal_places_percent() {
+        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+
+        sheet.set_cell_value(
+            crate::Pos { x: 1, y: 2 },
+            CellValue::Number(BigDecimal::from_str(&"0.24").unwrap()),
+        );
+
+        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, true), Some(0));
+
+        sheet.set_cell_value(
+            crate::Pos { x: 1, y: 2 },
+            CellValue::Number(BigDecimal::from_str(&"0.245").unwrap()),
+        );
+
+        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, true), Some(1));
+    }
+
+    #[test]
+    fn test_cell_numeric_format_kind() {
+        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+        let column = sheet.get_or_create_column(0);
+        column.1.numeric_format.set(
+            0,
+            Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            }),
+        );
+
+        assert_eq!(
+            sheet.cell_numeric_format_kind(Pos { x: 0, y: 0 }),
+            Some(NumericFormatKind::Percentage)
+        );
+    }
 }

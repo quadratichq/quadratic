@@ -1,3 +1,6 @@
+use std::str::FromStr;
+
+use bigdecimal::{BigDecimal, FromPrimitive};
 use serde::{Deserialize, Serialize};
 
 use crate::{Array, ArraySize, Error, ErrorMsg, Span};
@@ -77,6 +80,15 @@ pub enum JsArrayOutput {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct JsTextFormat {
+    #[serde(rename = "type")]
+    pub kind: NumericFormatKind,
+    pub symbol: Option<String>,
+    pub decimal_places: Option<i32>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct JsCellFormat {
     pub x: i64,
     pub y: i64,
@@ -91,7 +103,7 @@ pub struct JsCellFormat {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text_color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub text_format: Option<NumericFormat>,
+    pub text_format: Option<JsTextFormat>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wrapping: Option<CellWrap>, // default is overflow
 }
@@ -150,8 +162,14 @@ pub enum Any {
 impl Into<CellValue> for Any {
     fn into(self) -> CellValue {
         match self {
-            Any::Number(n) => CellValue::Number(n),
-            Any::String(s) => CellValue::Text(s),
+            Any::Number(n) => match BigDecimal::from_f64(n) {
+                Some(n) => CellValue::Number(n),
+                None => CellValue::Text(n.to_string()),
+            },
+            Any::String(s) => match BigDecimal::from_str(&s) {
+                Ok(n) => CellValue::Number(n),
+                Err(_) => CellValue::Text(s),
+            },
             Any::Boolean(b) => CellValue::Logical(b),
         }
     }

@@ -3,6 +3,7 @@ use crate::{controller::transactions::TransactionSummary, grid::js_types::*};
 use std::str::FromStr;
 
 pub mod auto_complete;
+pub mod clipboard;
 pub mod formatting;
 pub mod render;
 pub mod sheets;
@@ -100,14 +101,43 @@ impl GridController {
         &mut self,
         sheet_id: String,
         pos: &Pos,
-        cell_value: JsValue,
+        value: String,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let cell_value: CellValue = serde_wasm_bindgen::from_value(cell_value)?;
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_value(sheet_id, *pos, cell_value, cursor),
+            &self.set_cell_value(sheet_id, *pos, value, cursor),
         )?)
+    }
+
+    /// changes the decimal places
+    #[wasm_bindgen(js_name = "setCellNumericDecimals")]
+    pub fn js_set_cell_numeric_decimals(
+        &mut self,
+        sheet_id: String,
+        source: Pos,
+        rect: Rect,
+        delta: isize,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        Ok(serde_wasm_bindgen::to_value(&self.change_decimal_places(
+            sheet_id, source, rect, delta, cursor,
+        ))?)
+    }
+
+    /// gets an editable string for a cell
+    ///
+    /// returns a string
+    #[wasm_bindgen(js_name = "getEditCell")]
+    pub fn js_get_cell_edit(&self, sheet_id: String, pos: Pos) -> String {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        let sheet = self.grid().sheet_from_id(sheet_id);
+        if let Some(value) = sheet.get_cell_value(pos) {
+            value.to_edit()
+        } else {
+            String::from("")
+        }
     }
 
     /// Deletes a region of cells.

@@ -1,4 +1,6 @@
-import { GlobalSnackbar } from '../../../components/GlobalSnackbar';
+import { isEditorOrAbove } from '../../../actions';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
+import { GlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { PNG_MESSAGE } from '../../../constants/appConstants';
 import {
   copySelectionToPNG,
@@ -6,23 +8,18 @@ import {
   cutToClipboard,
   pasteFromClipboard,
 } from '../../../grid/actions/clipboard/clipboard';
-import { sheetController } from '../../../grid/controller/SheetController';
+import { sheets } from '../../../grid/controller/Sheets';
 
 export function keyboardClipboard(props: {
   event: React.KeyboardEvent<HTMLElement>;
+  editorInteractionState: EditorInteractionState;
   addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'];
 }): boolean {
-  const { addGlobalSnackbar, event } = props;
-  const cursor = sheetController.sheet.cursor;
-
-  // Command + V
-  if ((event.metaKey || event.ctrlKey) && event.key === 'v') {
-    pasteFromClipboard({
-      x: cursor.cursorPosition.x,
-      y: cursor.cursorPosition.y,
-    });
-    return true;
-  }
+  const {
+    addGlobalSnackbar,
+    event,
+    editorInteractionState: { permission },
+  } = props;
 
   // Command + Shift + C
   if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'c') {
@@ -33,6 +30,8 @@ export function keyboardClipboard(props: {
     return true;
   }
 
+  const cursor = sheets.sheet.cursor;
+
   const start = cursor.originPosition;
   const end = cursor.terminalPosition;
 
@@ -42,9 +41,20 @@ export function keyboardClipboard(props: {
     return true;
   }
 
+  // Don't allow commands past here without permission
+  if (!isEditorOrAbove(permission)) {
+    return false;
+  }
+
   // Command + X
   if ((event.metaKey || event.ctrlKey) && event.key === 'x') {
     cutToClipboard(start, end);
+    return true;
+  }
+
+  // Command + V
+  if ((event.metaKey || event.ctrlKey) && event.key === 'v') {
+    pasteFromClipboard(cursor.originPosition);
     return true;
   }
 

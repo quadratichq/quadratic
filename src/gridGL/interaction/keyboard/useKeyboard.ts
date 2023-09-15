@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { useGridSettings } from '../../../ui/menus/TopBar/SubMenus/useGridSettings';
-import { pixiApp } from '../../pixiApp/PixiApp';
+import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { Size } from '../../types/size';
 import { keyboardCell } from './keyboardCell';
 import { keyboardClipboard } from './keyboardClipboard';
@@ -25,7 +25,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
 
   useEffect(() => {
     const keyDownWindow = (event: KeyboardEvent): void => {
-      if (pixiApp.settings.input.show) return;
+      if (pixiAppSettings.input.show) return;
 
       if (
         keyboardViewport({
@@ -46,11 +46,12 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   }, [editorInteractionState, presentationMode, setEditorInteractionState, setPresentationMode]);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (pixiApp.settings.input.show) return;
+    if (pixiAppSettings.input.show) return;
 
     if (
       keyboardClipboard({
         event,
+        editorInteractionState,
         addGlobalSnackbar,
       }) ||
       keyboardUndoRedo(event) ||

@@ -2,7 +2,7 @@ import './SheetBar.css';
 
 import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { sheetController } from '../../../grid/controller/SheetController';
+import { sheets } from '../../../grid/controller/Sheets';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { SheetBarTab } from './SheetBarTab';
@@ -14,52 +14,52 @@ const SCROLLING_INTERVAL = 17;
 const ARROW_REPEAT_INTERVAL = 17;
 
 export const SheetBar = (): JSX.Element => {
-  // used to trigger state change (eg, when sheetController.sheets change)
+  // used to trigger state change (eg, when sheets change)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, setTrigger] = useState(0);
 
   // activate sheet
-  const [activeSheet, setActiveSheet] = useState(sheetController.current);
+  const [activeSheet, setActiveSheet] = useState(sheets.current);
 
   useEffect(() => {
     const updateSheet = () => {
       setTrigger((trigger) => trigger + 1);
-      setActiveSheet(sheetController.current);
+      setActiveSheet(sheets.current);
     };
     window.addEventListener('change-sheet', updateSheet);
     return () => window.removeEventListener('change-sheet', updateSheet);
   }, []);
 
   // handle disabling left arrow and right arrow
-  const [sheets, setSheets] = useState<HTMLDivElement | undefined>();
+  const [sheetTabs, setSheetTabs] = useState<HTMLDivElement | undefined>();
   const [leftArrow, setLeftArrow] = useState<HTMLElement | undefined>();
   const [rightArrow, setRightArrow] = useState<HTMLElement | undefined>();
   const leftRef = useCallback(
     (node: HTMLButtonElement) => {
       setLeftArrow(node);
-      if (!sheets || !node) return;
-      const hide = sheets.scrollLeft === 0 || sheets.offsetWidth === sheets.scrollWidth;
+      if (!sheetTabs || !node) return;
+      const hide = sheetTabs.scrollLeft === 0 || sheetTabs.offsetWidth === sheetTabs.scrollWidth;
       node.style.opacity = hide ? '0.25' : '1';
       node.style.cursor = hide ? 'auto' : 'pointer';
     },
-    [sheets]
+    [sheetTabs]
   );
 
   const rightRef = useCallback(
     (node: HTMLButtonElement) => {
       setRightArrow(node);
-      if (!sheets || !node) return;
+      if (!sheetTabs || !node) return;
       const hide =
-        sheets.offsetWidth === sheets.scrollWidth ||
-        Math.round(sheets.scrollLeft) === Math.round(sheets.scrollWidth - sheets.offsetWidth);
+        sheetTabs.offsetWidth === sheetTabs.scrollWidth ||
+        Math.round(sheetTabs.scrollLeft) === Math.round(sheetTabs.scrollWidth - sheetTabs.offsetWidth);
       node.style.opacity = hide ? '0.25' : '1';
       node.style.cursor = hide ? 'auto' : 'pointer';
     },
-    [sheets]
+    [sheetTabs]
   );
   const sheetsRef = useCallback(
     (node: HTMLDivElement) => {
-      setSheets(node);
+      setSheetTabs(node);
       if (!node) return;
       node.addEventListener('scroll', () => {
         if (leftArrow) {
@@ -103,14 +103,14 @@ export const SheetBar = (): JSX.Element => {
 
   // ensure active tab is visible when changed
   useEffect(() => {
-    if (sheets) {
-      const children = [...sheets.children];
+    if (sheetTabs) {
+      const children = [...sheetTabs.children];
       const tab = children.find((child) => child.getAttribute('data-id') === activeSheet);
       if (tab) {
         tab.scrollIntoView();
       }
     }
-  }, [activeSheet, sheets]);
+  }, [activeSheet, sheetTabs]);
 
   // handle drag tabs
   const down = useRef<
@@ -136,7 +136,7 @@ export const SheetBar = (): JSX.Element => {
 
   // finds the index * 2 for a new order string
   const getOrderIndex = useCallback((order: string): number => {
-    const orders = sheetController.sheets.map((sheet) => sheet.order);
+    const orders = sheets.map((sheet) => sheet.order);
     if (orders.length === 0) {
       return 0;
     }
@@ -150,11 +150,11 @@ export const SheetBar = (): JSX.Element => {
 
   const handlePointerDown = useCallback(
     (options: { event: React.PointerEvent<HTMLDivElement>; sheet: Sheet }) => {
-      if (!sheets) return;
+      if (!sheetTabs) return;
       const { event, sheet } = options;
       setActiveSheet((prevState: string) => {
         if (prevState !== sheet.id) {
-          sheetController.current = sheet.id;
+          sheets.current = sheet.id;
           setActiveSheet(sheet.id);
           return sheet.id;
         }
@@ -169,7 +169,7 @@ export const SheetBar = (): JSX.Element => {
           tab,
           offset: event.clientX - rect.left,
           id: sheet.id,
-          scrollWidth: sheets.scrollWidth,
+          scrollWidth: sheetTabs.scrollWidth,
           originalOrder: sheet.order,
           originalOrderIndex,
           actualOrderIndex: originalOrderIndex,
@@ -184,13 +184,13 @@ export const SheetBar = (): JSX.Element => {
       focusGrid();
       event.preventDefault();
     },
-    [getOrderIndex, sheets]
+    [getOrderIndex, sheetTabs]
   );
 
   const handlePointerMove = useCallback(
     (event: PointerEvent) => {
       const tab = down.current?.tab;
-      if (!tab || !sheets) return;
+      if (!tab || !sheetTabs) return;
 
       // clears scrolling interval
       const clearScrollingInterval = () => {
@@ -203,7 +203,7 @@ export const SheetBar = (): JSX.Element => {
       // positions dragging div
       const positionTab = () => {
         if (!down.current) return;
-        const left = event.clientX - tab.offsetLeft + sheets.scrollLeft - down.current.offset;
+        const left = event.clientX - tab.offsetLeft + sheetTabs.scrollLeft - down.current.offset;
         tab.style.transform = `translateX(${left}px)`;
       };
 
@@ -259,20 +259,20 @@ export const SheetBar = (): JSX.Element => {
         checkPosition(event.clientX);
 
         // when dragging, scroll the sheets div if necessary
-        if (sheets.offsetWidth !== down.current.scrollWidth) {
+        if (sheetTabs.offsetWidth !== down.current.scrollWidth) {
           // scroll to the right if necessary
           if (
-            event.clientX > sheets.offsetLeft + sheets.offsetWidth &&
-            sheets.scrollLeft < down.current.scrollWidth - sheets.offsetWidth
+            event.clientX > sheetTabs.offsetLeft + sheetTabs.offsetWidth &&
+            sheetTabs.scrollLeft < down.current.scrollWidth - sheetTabs.offsetWidth
           ) {
             if (scrolling.current) return;
             clearScrollingInterval();
             scrolling.current = window.setInterval(() => {
               if (!down.current) return;
-              if (sheets.scrollLeft < down.current.scrollWidth - sheets.offsetWidth + tab.offsetWidth) {
-                sheets.scrollLeft += HOVER_SCROLL_AMOUNT;
+              if (sheetTabs.scrollLeft < down.current.scrollWidth - sheetTabs.offsetWidth + tab.offsetWidth) {
+                sheetTabs.scrollLeft += HOVER_SCROLL_AMOUNT;
               } else {
-                sheets.scrollLeft = down.current.scrollWidth - sheets.offsetWidth;
+                sheetTabs.scrollLeft = down.current.scrollWidth - sheetTabs.offsetWidth;
                 clearScrollingInterval();
               }
               checkPosition(event.clientX);
@@ -281,14 +281,14 @@ export const SheetBar = (): JSX.Element => {
           }
 
           // scroll to the left
-          else if (event.clientX < sheets.offsetLeft && sheets.scrollLeft !== 0) {
+          else if (event.clientX < sheetTabs.offsetLeft && sheetTabs.scrollLeft !== 0) {
             clearScrollingInterval();
             scrolling.current = window.setInterval(() => {
               if (!down.current) return;
-              if (sheets.scrollLeft !== 0) {
-                sheets.scrollLeft -= HOVER_SCROLL_AMOUNT;
+              if (sheetTabs.scrollLeft !== 0) {
+                sheetTabs.scrollLeft -= HOVER_SCROLL_AMOUNT;
               } else {
-                sheets.scrollLeft = 0;
+                sheetTabs.scrollLeft = 0;
                 clearScrollingInterval();
               }
               checkPosition(event.clientX);
@@ -300,7 +300,7 @@ export const SheetBar = (): JSX.Element => {
         }
       }
     },
-    [getOrderIndex, sheets]
+    [getOrderIndex, sheetTabs]
   );
 
   const scrollInterval = useRef<number | undefined>();
@@ -309,15 +309,15 @@ export const SheetBar = (): JSX.Element => {
       if (scrollInterval.current) {
         window.clearInterval(scrollInterval.current);
       }
-      if (sheets) {
-        sheets.scrollLeft += ARROW_SCROLL_AMOUNT * direction;
+      if (sheetTabs) {
+        sheetTabs.scrollLeft += ARROW_SCROLL_AMOUNT * direction;
         scrollInterval.current = window.setInterval(
-          () => (sheets.scrollLeft += ARROW_SCROLL_AMOUNT * direction),
+          () => (sheetTabs.scrollLeft += ARROW_SCROLL_AMOUNT * direction),
           ARROW_REPEAT_INTERVAL
         );
       }
     },
-    [sheets]
+    [sheetTabs]
   );
   const handleArrowUp = useCallback(() => {
     if (scrollInterval.current) {
@@ -338,7 +338,7 @@ export const SheetBar = (): JSX.Element => {
       tab.style.transform = '';
 
       if (down.current.actualOrderIndex !== down.current.originalOrderIndex) {
-        const sheet = sheetController.sheets.getById(down.current.id);
+        const sheet = sheets.getById(down.current.id);
         if (!sheet) {
           throw new Error('Expect sheet to be defined in SheetBar.pointerUp');
         }
@@ -361,7 +361,7 @@ export const SheetBar = (): JSX.Element => {
             break;
           }
         }
-        sheetController.sheets.moveSheet({ id: down.current.id, toBefore });
+        sheets.moveSheet({ id: down.current.id, toBefore });
       }
       down.current = undefined;
     }
@@ -384,10 +384,10 @@ export const SheetBar = (): JSX.Element => {
 
   const [forceRename, setForceRename] = useState<string | undefined>();
   const handleRename = useCallback(() => {
-    if (!contextMenu || !sheets) return;
+    if (!contextMenu || !sheetTabs) return;
     setForceRename(contextMenu.id);
     setContextMenu(undefined);
-  }, [contextMenu, sheets]);
+  }, [contextMenu, sheetTabs]);
   const clearRename = useCallback(() => setForceRename(undefined), []);
 
   return (
@@ -395,7 +395,7 @@ export const SheetBar = (): JSX.Element => {
       <div className="sheet-bar-add">
         <button
           onClick={() => {
-            sheetController.sheets.createNew();
+            sheets.createNew();
             focusGrid();
           }}
         >
@@ -405,13 +405,13 @@ export const SheetBar = (): JSX.Element => {
           className="sheet-bar-sheets"
           ref={sheetsRef}
           onWheel={(e) => {
-            if (!sheets) return;
+            if (!sheetTabs) return;
             if (e.deltaX) {
-              sheets.scrollLeft += e.deltaX;
+              sheetTabs.scrollLeft += e.deltaX;
             }
           }}
         >
-          {sheetController.sheets.map((sheet) => (
+          {sheets.map((sheet) => (
             <SheetBarTab
               key={sheet.id}
               order={getOrderIndex(sheet.order).toString()}

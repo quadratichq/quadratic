@@ -4,7 +4,6 @@ use super::CellRef;
 use crate::{ArraySize, CellValue, Error, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CodeCellValue {
     pub language: CodeCellLanguage,
     pub code_string: String,
@@ -40,7 +39,7 @@ pub enum CodeCellLanguage {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+// #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CodeCellRunOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub std_out: Option<String>,
@@ -57,7 +56,7 @@ impl CodeCellRunOutput {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+// #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(untagged)]
 pub enum CodeCellRunResult {
     Ok {

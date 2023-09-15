@@ -1,5 +1,6 @@
+import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { sheetController } from '../../../grid/controller/SheetController';
+import { sheets } from '../../../grid/controller/Sheets';
 import { clearFormattingAndBorders, setBold, setItalic } from '../../../ui/menus/TopBar/SubMenus/formatCells';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
 import { pixiApp } from '../../pixiApp/PixiApp';
@@ -22,13 +23,9 @@ export function keyboardViewport(options: {
       showFeedbackMenu: false,
       showCellTypeMenu: false,
       showGoToMenu: false,
+      showShareFileMenu: false,
       showCommandPalette: !editorInteractionState.showCommandPalette,
     });
-    return true;
-  }
-
-  if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
-    clearFormattingAndBorders();
     return true;
   }
 
@@ -43,18 +40,6 @@ export function keyboardViewport(options: {
       return true;
     }
     return pointer.handleEscape();
-  }
-
-  if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
-    const formatPrimaryCell = sheetController.sheet.getFormatPrimaryCell();
-    setBold(!(formatPrimaryCell ? formatPrimaryCell.bold === true : true));
-    return true;
-  }
-
-  if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
-    const formatPrimaryCell = sheetController.sheet.getFormatPrimaryCell();
-    setItalic(!(formatPrimaryCell ? formatPrimaryCell.italic === true : true));
-    return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && (event.key === 'g' || event.key === 'j')) {
@@ -95,6 +80,28 @@ export function keyboardViewport(options: {
 
   if ((event.metaKey || event.ctrlKey) && event.key === 's') {
     // don't do anything on Command+S
+    return true;
+  }
+
+  // All formatting options past here are only available for people with rights
+  if (!isEditorOrAbove(editorInteractionState.permission)) {
+    return false;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
+    clearFormattingAndBorders();
+    return true;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
+    const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
+    setBold(!(formatPrimaryCell ? formatPrimaryCell.bold === true : true));
+    return true;
+  }
+
+  if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
+    const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
+    setItalic(!(formatPrimaryCell ? formatPrimaryCell.italic === true : true));
     return true;
   }
 

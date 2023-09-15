@@ -1,7 +1,9 @@
 import { ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
-import { CodeCellLanguage } from '../../quadratic-core/types';
+// import { CodeCellLanguage } from '../../quadratic-core/types';
 import { colors } from '../../theme/colors';
 import { intersects } from '../helpers/intersects';
+
+// todo: fix types
 
 export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'AIIcon' | 'ErrorIcon';
 
@@ -26,7 +28,7 @@ export class CellsMarkers extends ParticleContainer {
     this.markers.forEach((marker) => (marker.sprite.visible = intersects.rectangleRectangle(bounds, marker.rectangle)));
   }
 
-  add(x: number, y: number, type: CodeCellLanguage, error?: boolean): void {
+  add(x: number, y: number, type: any /*CodeCellLanguage*/, error?: boolean): void {
     const child = this.addChild(new Sprite());
     child.height = 4;
     child.width = 4;

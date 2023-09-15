@@ -1,10 +1,10 @@
-import { sheetController } from '../../grid/controller/SheetController';
+import { sheets } from '../../grid/controller/Sheets';
 import { Cell } from '../../schemas';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 
 export function selectAllCells(column?: number, row?: number): void {
-  const sheet = sheetController.sheet;
+  const sheet = sheets.sheet;
   let bounds: Coordinate[] | undefined;
   if (row !== undefined) {
     bounds = sheet.getGridRowMinMax(row, true);
@@ -28,7 +28,7 @@ export function selectAllCells(column?: number, row?: number): void {
 }
 
 export function selectColumns(options: { start: number; end: number }): void {
-  const { sheet } = sheetController;
+  const { sheet } = sheets;
   let minX = Infinity,
     minY = Infinity,
     maxX = -Infinity,
@@ -54,7 +54,7 @@ export function selectColumns(options: { start: number; end: number }): void {
 }
 
 export async function selectRows(options: { start: number; end: number }): Promise<void> {
-  const { sheet } = sheetController;
+  const { sheet } = sheets;
   let minX = Infinity,
     minY = Infinity,
     maxX = -Infinity,

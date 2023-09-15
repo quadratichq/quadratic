@@ -1,10 +1,10 @@
 import { Viewport } from 'pixi-viewport';
 import { Container, Graphics, Renderer } from 'pixi.js';
+import { isMobile } from 'react-device-detect';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
-import { IS_READONLY_MODE } from '../../constants/appConstants';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { debugAlwaysShowCache, debugShowCacheFlag } from '../../debugFlags';
-import { sheetController } from '../../grid/controller/SheetController';
+import { sheets } from '../../grid/controller/Sheets';
 import { AxesLines } from '../UI/AxesLines';
 import { Cursor } from '../UI/Cursor';
 import { GridLines } from '../UI/GridLines';
@@ -12,9 +12,10 @@ import { BoxCells } from '../UI/boxCells';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { CellsSheets } from '../cells/CellsSheets';
 import { Pointer } from '../interaction/pointer/Pointer';
+import { ensureVisible } from '../interaction/viewportHelper';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
 import { Quadrants } from '../quadrants/Quadrants';
-import { PixiAppSettings } from './PixiAppSettings';
+import { pixiAppSettings } from './PixiAppSettings';
 import { Update } from './Update';
 import './pixiApp.css';
 
@@ -34,7 +35,6 @@ export class PixiApp {
   quadrants!: Quadrants;
   pointer!: Pointer;
   viewportContents!: Container;
-  settings!: PixiAppSettings;
   renderer!: Renderer;
   stage = new Container();
   loading = true;
@@ -69,7 +69,7 @@ export class PixiApp {
       .drag({
         pressDrag: true,
         wheel: false, // handled by Wheel plugin below
-        ...(IS_READONLY_MODE ? {} : { keyToPress: ['Space'] }),
+        ...(isMobile ? {} : { keyToPress: ['Space'] }),
       })
       .decelerate()
       .pinch()
@@ -108,8 +108,6 @@ export class PixiApp {
     this.cursor = this.viewportContents.addChild(new Cursor());
     this.headings = this.viewportContents.addChild(new GridHeadings());
 
-    this.settings = new PixiAppSettings();
-
     this.reset();
 
     this.pointer = new Pointer(this.viewport);
@@ -121,6 +119,10 @@ export class PixiApp {
     this.rebuild();
 
     console.log('[QuadraticGL] environment ready');
+  }
+
+  create() {
+    this.cellsSheets.create();
   }
 
   private setupListeners() {
@@ -166,7 +168,7 @@ export class PixiApp {
     this.headings.dirty = true;
     this.cursor.dirty = true;
     this.cellsSheets?.cull(this.viewport.getVisibleBounds());
-    sheetController.sheet.cursor.viewport = this.viewport.lastViewport!;
+    sheets.sheet.cursor.viewport = this.viewport.lastViewport!;
 
     // if (!debugNeverShowCache && (this.viewport.scale.x < QUADRANT_SCALE || debugAlwaysShowCache)) {
     //   this.showCache();
@@ -237,12 +239,12 @@ export class PixiApp {
 
   reset(): void {
     this.viewport.scale.set(1);
-    if (this.settings.showHeadings) {
+    if (pixiAppSettings.showHeadings) {
       this.viewport.position.set(HEADING_SIZE, HEADING_SIZE);
     } else {
       this.viewport.position.set(0, 0);
     }
-    this.settings.setEditorInteractionState?.(editorInteractionStateDefault);
+    pixiAppSettings.setEditorInteractionState?.(editorInteractionStateDefault);
   }
 
   // Pre-renders quadrants by cycling through one quadrant per frame
@@ -283,6 +285,33 @@ export class PixiApp {
     await this.loadSheets();
     this.paused = false;
     this.reset();
+  }
+
+  loadViewport(): void {
+    const lastViewport = sheets.sheet.cursor.viewport;
+    if (lastViewport) {
+      this.viewport.position.set(lastViewport.x, lastViewport.y);
+      this.viewport.scale.set(lastViewport.scaleX, lastViewport.scaleY);
+      this.viewport.dirty = true;
+    }
+  }
+
+  getStartingViewport(): { x: number; y: number } {
+    if (pixiAppSettings.showHeadings) {
+      return { x: HEADING_SIZE, y: HEADING_SIZE };
+    } else {
+      return { x: 0, y: 0 };
+    }
+  }
+
+  updateCursorPosition(): void {
+    pixiApp.cursor.dirty = true;
+    pixiApp.headings.dirty = true;
+
+    ensureVisible();
+
+    // triggers useGetBorderMenu clearSelection()
+    window.dispatchEvent(new CustomEvent('cursor-position'));
   }
 }
 

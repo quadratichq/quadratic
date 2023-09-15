@@ -1,12 +1,13 @@
 import { HEADING_SIZE } from '../../constants/gridConstants';
-import { sheetController } from '../../grid/controller/SheetController';
+import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../pixiApp/PixiApp';
+import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { Coordinate } from '../types/size';
 
 export function isVisible() {
   // returns true if the cursor is visible in the viewport
   const { viewport, headings } = pixiApp;
-  const sheet = sheetController.sheet;
+  const sheet = sheets.sheet;
   const { gridOffsets, cursor } = sheet;
   const headingSize = headings.headingSize;
 
@@ -51,15 +52,16 @@ export function ensureVisible(): void {
 export function moveViewport(options: { center?: Coordinate; topLeft?: Coordinate }): void {
   const { center, topLeft } = options;
   if (!center && !topLeft) return;
+  const sheet = sheets.sheet;
 
   if (center) {
-    const cell = sheetController.sheet.gridOffsets.getCell(center.x, center.y);
+    const cell = sheet.gridOffsets.getCell(center.x, center.y);
     pixiApp.viewport.moveCenter(cell.x + cell.width / 2, cell.y + cell.height / 2);
   }
 
   if (topLeft) {
-    const adjust = pixiApp.settings.showHeadings ? HEADING_SIZE : 0;
-    const cell = sheetController.sheet.gridOffsets.getCell(topLeft.x + adjust, topLeft.y + adjust);
+    const adjust = pixiAppSettings.showHeadings ? HEADING_SIZE : 0;
+    const cell = sheet.gridOffsets.getCell(topLeft.x + adjust, topLeft.y + adjust);
     pixiApp.viewport.moveCorner(cell.x, cell.y);
   }
 

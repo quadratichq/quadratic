@@ -1,6 +1,6 @@
 import { Container, Rectangle } from 'pixi.js';
 import { debugShowCacheFlag, debugShowCellsForDirtyQuadrants, debugSkipQuadrantRendering } from '../../debugFlags';
-import { sheetController } from '../../grid/controller/SheetController';
+import { sheets } from '../../grid/controller/Sheets';
 import { CellRectangle } from '../../grid/sheet/CellRectangle';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { intersects } from '../helpers/intersects';
@@ -38,7 +38,7 @@ export class Quadrants extends Container {
 
   changeSheet(): void {
     const quadrantsSheets = Array.from(this.quadrants.values());
-    const activeId = sheetController.sheet.id;
+    const activeId = sheets.sheet.id;
     const quadrantsSheet = this.quadrants.get(activeId);
     if (!quadrantsSheet) {
       throw new Error('Expected to find QuadrantsSheet in Quadrants.changeSheet');
@@ -75,7 +75,7 @@ export class Quadrants extends Container {
   build(): void {
     this.removeChildren();
     this.quadrants.clear();
-    sheetController.sheets.forEach((sheet) => {
+    sheets.forEach((sheet) => {
       const quadrantsSheet = this.addChild(new QuadrantsSheet(sheet));
       this.quadrants.set(sheet.id, quadrantsSheet);
     });
@@ -114,7 +114,7 @@ export class Quadrants extends Container {
     if (debugShowCacheFlag) {
       const span = document.querySelector('.debug-show-cache-count') as HTMLSpanElement;
       if (span) {
-        const currentSheet = quadrantsSheets.find((child) => child.sheet === sheetController.sheet);
+        const currentSheet = quadrantsSheets.find((child) => child.sheet === sheets.sheet);
         if (currentSheet) {
           const dirtyCount = currentSheet.children.reduce(
             (count, child) => count + ((child as Quadrant).dirty ? 1 : 0),
@@ -141,7 +141,7 @@ export class Quadrants extends Container {
       const updated = quadrantsSheet.update(timeStart);
       if (updated !== 'not dirty') {
         // debug only if it is the active sheet
-        if (quadrantsSheet.sheet === sheetController.sheet) {
+        if (quadrantsSheet.sheet === sheets.sheet) {
           return updated;
         } else {
           return false;
@@ -164,7 +164,7 @@ export class Quadrants extends Container {
   /** Returns CellRectangles for visible dirty quadrants */
   getCellsForDirtyQuadrants(): CellRectangle[] {
     const { viewport } = pixiApp;
-    const { grid, borders, id } = sheetController.sheet;
+    const { grid, borders, id } = sheets.sheet;
     const quadrantsSheet = this.quadrants.get(id);
     if (!quadrantsSheet) {
       throw new Error('Expected quadrantsSheet to be defined in getCellsForDirtyQuadrants');

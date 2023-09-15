@@ -21,8 +21,8 @@ pub use bounds::GridBounds;
 pub use code::*;
 pub use column::{Column, ColumnData};
 pub use formatting::{
-    Bold, BoolSummary, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericFormat,
-    NumericFormatKind, TextColor,
+    Bold, BoolSummary, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericDecimals,
+    NumericFormat, NumericFormatKind, TextColor,
 };
 pub use ids::*;
 pub use sheet::Sheet;
@@ -133,7 +133,9 @@ impl Grid {
         Some(self.sheets.get(index)?.id)
     }
     pub fn sheet_has_id(&self, sheet_id: Option<SheetId>) -> bool {
-        let Some(sheet_id) = sheet_id else { return false };
+        let Some(sheet_id) = sheet_id else {
+            return false;
+        };
         self.sheets.iter().position(|s| s.id == sheet_id).is_some()
     }
     pub fn sheet_from_id(&self, sheet_id: SheetId) -> &Sheet {

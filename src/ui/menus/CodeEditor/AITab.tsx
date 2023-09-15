@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { apiClient } from '../../../api/apiClient';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { authClient } from '../../../auth';
-import { CodeCellRunOutput } from '../../../quadratic-core/types';
+// import { CodeCellRunOutput } from '../../../quadratic-core/types';
 import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
 import ConditionalWrapper from '../../components/ConditionalWrapper';
@@ -13,9 +13,11 @@ import { AI } from '../../icons';
 import { CodeBlockParser } from './AICodeBlockParser';
 import './AITab.css';
 
+// todo: fix types
+
 interface Props {
   editorMode: EditorInteractionState['mode'];
-  evalResult: CodeCellRunOutput | undefined;
+  evalResult: any | undefined; // CodeCellRunOutput
   editorContent: string | undefined;
   isActive: boolean;
 }

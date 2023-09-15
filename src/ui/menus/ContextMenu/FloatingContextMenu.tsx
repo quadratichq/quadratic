@@ -10,17 +10,22 @@ import {
   FormatColorText,
   FormatItalic,
   MoreHoriz,
+  Numbers,
   Percent,
 } from '@mui/icons-material';
 import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
 import { ControlledMenu, Menu, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef } from 'react';
-import { useGlobalSnackbar } from '../../../components/GlobalSnackbar';
+import { useRecoilValue } from 'recoil';
+import { isEditorOrAbove } from '../../../actions';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { PNG_MESSAGE } from '../../../constants/appConstants';
 import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
-import { sheetController } from '../../../grid/controller/SheetController';
+import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
@@ -30,6 +35,7 @@ import { MenuLineItem } from '../TopBar/MenuLineItem';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import {
   clearFormattingAndBorders,
+  removeCellNumericFormat,
   setAlignment,
   setBold,
   setFillColor,
@@ -49,11 +55,13 @@ interface Props {
 export const FloatingContextMenu = (props: Props) => {
   const { container, showContextMenu } = props;
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const [moreMenuProps, moreMenuToggle] = useMenuState();
   const menuDiv = useRef<HTMLDivElement>(null);
   const moreMenuButtonRef = useRef(null);
   const borders = useGetBorderMenu();
-  const cursor = sheetController.sheet.cursor;
+  const sheet = sheets.sheet;
+  const cursor = sheet.cursor;
   const textColorRef = useRef<MenuInstance>(null);
   const fillColorRef = useRef<MenuInstance>(null);
 
@@ -69,7 +77,7 @@ export const FloatingContextMenu = (props: Props) => {
     const { viewport } = pixiApp;
 
     // Calculate position of input based on cell
-    const cell_offsets = sheetController.sheet.gridOffsets.getCell(
+    const cell_offsets = sheet.gridOffsets.getCell(
       cursor.multiCursor
         ? Math.min(cursor.cursorPosition.x, cursor.multiCursor.originPosition.x, cursor.multiCursor.terminalPosition.x)
         : cursor.cursorPosition.x,
@@ -106,10 +114,13 @@ export const FloatingContextMenu = (props: Props) => {
     if (pixiApp.pointer?.pointerDown?.active) visibility = 'hidden';
 
     // Hide if in presentation mode
-    if (pixiApp.settings.presentationMode) visibility = 'hidden';
+    if (pixiAppSettings.presentationMode) visibility = 'hidden';
+
+    // Hide if you don't have edit access
+    if (!isEditorOrAbove(editorInteractionState.permission)) visibility = 'hidden';
 
     // Hide FloatingFormatMenu if multi cursor is off screen
-    const terminal_pos = sheetController.sheet.gridOffsets.getCell(
+    const terminal_pos = sheet.gridOffsets.getCell(
       cursor.multiCursor ? cursor.multiCursor.terminalPosition.x : cursor.cursorPosition.x,
       cursor.multiCursor ? cursor.multiCursor.terminalPosition.y : cursor.cursorPosition.y
     );
@@ -149,11 +160,13 @@ export const FloatingContextMenu = (props: Props) => {
     return transform;
   }, [
     container,
+    sheet.gridOffsets,
     cursor.multiCursor,
     cursor.cursorPosition.x,
     cursor.cursorPosition.y,
     cursor.boxCells,
     showContextMenu,
+    editorInteractionState.permission,
   ]);
 
   useEffect(() => {
@@ -182,7 +195,7 @@ export const FloatingContextMenu = (props: Props) => {
 
   const iconSize = 'small';
 
-  const formatPrimaryCell = sheetController.sheet.getFormatPrimaryCell();
+  const formatPrimaryCell = sheet.getFormatPrimaryCell();
 
   return (
     <Paper
@@ -315,6 +328,12 @@ export const FloatingContextMenu = (props: Props) => {
         <TooltipHint title="Format as percent">
           <IconButton onClick={() => textFormatSetPercentage()} color="inherit">
             <Percent fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+
+        <TooltipHint title="Format as number">
+          <IconButton onClick={() => removeCellNumericFormat()} color="inherit">
+            <Numbers fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 

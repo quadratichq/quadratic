@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import ai_chat_router from './routes/ai_chat';
 import feedback_router from './routes/feedback';
 import files_router from './routes/files/files';
+import sharing_router from './routes/files/sharing';
 
 export const app = express();
 
@@ -55,6 +56,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/ai', ai_chat_router);
 app.use('/v0/files', files_router);
+app.use('/v0/files', sharing_router);
 app.use('/v0/feedback', feedback_router);
 
 if (SENTRY_DSN) {

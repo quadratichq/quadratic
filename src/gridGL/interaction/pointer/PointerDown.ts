@@ -1,8 +1,8 @@
 import { Point } from 'pixi.js';
-import { IS_READONLY_MODE } from '../../../constants/appConstants';
-import { sheetController } from '../../../grid/controller/SheetController';
+import { isMobile } from 'react-device-detect';
+import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../pixiApp/PixiApp';
-import { PanMode } from '../../pixiApp/PixiAppSettings';
+import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
@@ -21,15 +21,14 @@ export class PointerDown {
   private afterShowInput?: boolean;
 
   pointerDown(world: Point, event: PointerEvent): void {
-    if (IS_READONLY_MODE) return;
-    if (pixiApp.settings.panMode !== PanMode.Disabled) return;
+    if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled) return;
+    const sheet = sheets.sheet;
+    const cursor = sheet.cursor;
 
-    const cursor = sheetController.sheet.cursor;
-
-    // note: directly call pixiApp.settings instead of locally defining it here; otherwise it dereferences this
+    // note: directly call pixiAppSettings instead of locally defining it here; otherwise it dereferences this
 
     // this is a hack to ensure CellInput properly closes and updates before the cursor moves positions
-    if (pixiApp.settings.input.show) {
+    if (pixiAppSettings.input.show) {
       this.afterShowInput = true;
       setTimeout(() => {
         this.pointerDown(world, event);
@@ -38,7 +37,7 @@ export class PointerDown {
       return;
     }
 
-    const { gridOffsets } = sheetController.sheet;
+    const { gridOffsets } = sheet;
 
     this.positionRaw = world;
     const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
@@ -70,8 +69,8 @@ export class PointerDown {
         if (rightClick) {
           return;
         }
-        const code = sheetController.sheet.getCodeValue(column, row);
-        const cell = sheetController.sheet.getRenderCell(column, row);
+        const code = sheet.getCodeValue(column, row);
+        const cell = sheet.getEditCell(column, row);
         doubleClickCell({ column, row, code, cell });
         this.active = false;
         event.preventDefault();
@@ -122,12 +121,13 @@ export class PointerDown {
   }
 
   pointerMove(world: Point): void {
-    if (pixiApp.settings.panMode !== PanMode.Disabled) return;
+    if (pixiAppSettings.panMode !== PanMode.Disabled) return;
 
     if (!this.active) return;
 
     const { viewport } = pixiApp;
-    const { gridOffsets } = sheetController.sheet;
+    const sheet = sheets.sheet;
+    const { gridOffsets } = sheet;
 
     // for determining if double click
     if (!this.pointerMoved && this.doubleClickTimeout && this.positionRaw) {
@@ -151,11 +151,11 @@ export class PointerDown {
     // cursor start and end in the same cell
     if (column === this.position.x && row === this.position.y) {
       // hide multi cursor when only selecting one cell
-      sheetController.sheet.cursor.changePosition({
+      sheet.cursor.changePosition({
         keyboardMovePosition: { x: this.position.x, y: this.position.y },
         cursorPosition: { x: this.position.x, y: this.position.y },
       });
-      pixiApp.settings.changeInput(false);
+      pixiAppSettings.changeInput(false);
     } else {
       // cursor origin and terminal are not in the same cell
 
@@ -177,7 +177,7 @@ export class PointerDown {
       // this reduces the number of hooks fired
       if (hasMoved) {
         // update multiCursor
-        sheetController.sheet.cursor.changePosition({
+        sheet.cursor.changePosition({
           keyboardMovePosition: { x: column, y: row },
           cursorPosition: { x: this.position.x, y: this.position.y },
           multiCursor: {
@@ -185,7 +185,7 @@ export class PointerDown {
             terminalPosition: { x: termX, y: termY },
           },
         });
-        pixiApp.settings.changeInput(false);
+        pixiAppSettings.changeInput(false);
 
         // update previousPosition
         this.previousPosition = {

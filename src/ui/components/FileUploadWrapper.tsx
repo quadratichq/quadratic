@@ -1,8 +1,8 @@
 import debounce from 'lodash.debounce';
 import { DragEvent, PropsWithChildren, useRef, useState } from 'react';
-import { useGlobalSnackbar } from '../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { InsertCSV } from '../../grid/actions/insertData/insertCSV';
-import { sheetController } from '../../grid/controller/SheetController';
+import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 
@@ -18,8 +18,9 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
       e.pageX - (clientBoudingRect?.left || 0),
       e.pageY - (clientBoudingRect?.top || 0)
     );
-    const { column, row } = sheetController.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
-    sheetController.sheet.cursor.changePosition({
+    const sheet = sheets.sheet;
+    const { column, row } = sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
+    sheet.cursor.changePosition({
       cursorPosition: { x: column, y: row },
       keyboardMovePosition: { x: column, y: row },
       multiCursor: {
@@ -56,7 +57,7 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
           e.pageX - (clientBoudingRect?.left || 0),
           e.pageY - (clientBoudingRect?.top || 0)
         );
-        const { column, row } = sheetController.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
+        const { column, row } = sheets.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
 
         InsertCSV({
           file: file,

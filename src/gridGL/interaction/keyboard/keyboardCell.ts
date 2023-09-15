@@ -1,7 +1,8 @@
 import { Rectangle } from 'pixi.js';
+import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { sheetController } from '../../../grid/controller/SheetController';
-import { pixiAppEvents } from '../../pixiApp/PixiAppEvents';
+import { sheets } from '../../../grid/controller/Sheets';
+import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { isAllowedFirstChar } from './keyboardCellChars';
 
 export function keyboardCell(options: {
@@ -11,7 +12,8 @@ export function keyboardCell(options: {
 }): boolean {
   const { event, editorInteractionState, setEditorInteractionState } = options;
 
-  const cursor = sheetController.sheet.cursor;
+  const sheet = sheets.sheet;
+  const cursor = sheet.cursor;
   const cursorPosition = cursor.cursorPosition;
 
   if (event.key === 'Tab') {
@@ -30,9 +32,14 @@ export function keyboardCell(options: {
     event.preventDefault();
   }
 
+  // Don't allow actions beyond here for certain users
+  if (!isEditorOrAbove(editorInteractionState.permission)) {
+    return false;
+  }
+
   if (event.key === 'Backspace' || event.key === 'Delete') {
     // delete a range or a single cell, depending on if MultiCursor is active
-    sheetController.sheet.deleteCells(
+    sheet.deleteCells(
       new Rectangle(
         cursor.originPosition.x,
         cursor.originPosition.y,
@@ -46,7 +53,7 @@ export function keyboardCell(options: {
   if (event.key === 'Enter') {
     const x = cursorPosition.x;
     const y = cursorPosition.y;
-    const cell = sheetController.sheet.getRenderCell(x, y);
+    const cell = sheet.getRenderCell(x, y);
     if (cell) {
       if (cell.language) {
         const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;
@@ -61,10 +68,11 @@ export function keyboardCell(options: {
         });
       } else {
         // open single line
-        pixiAppEvents.changeInput(true, cell.value);
+        const edit = sheet.getEditCell(x, y);
+        pixiAppSettings.changeInput(true, edit);
       }
     } else {
-      pixiAppEvents.changeInput(true);
+      pixiAppSettings.changeInput(true);
     }
     event.preventDefault();
   }
@@ -72,7 +80,7 @@ export function keyboardCell(options: {
   if (event.key === '/' || event.key === '=') {
     const x = cursorPosition.x;
     const y = cursorPosition.y;
-    const cell = sheetController.sheet.getRenderCell(x, y);
+    const cell = sheet.getRenderCell(x, y);
     if (cell) {
       if (cell.language) {
         const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;
@@ -88,7 +96,7 @@ export function keyboardCell(options: {
         });
       } else {
         // Open cell input for editing text
-        pixiAppEvents.changeInput(true, cell.value);
+        pixiAppSettings.changeInput(true, cell.value);
       }
     } else {
       // Open cell type menu, close editor.
@@ -104,7 +112,7 @@ export function keyboardCell(options: {
   }
 
   if (isAllowedFirstChar(event.key)) {
-    pixiAppEvents.changeInput(true, { type: 'text', value: event.key });
+    pixiAppSettings.changeInput(true, event.key);
     event.preventDefault();
   }
 

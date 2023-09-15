@@ -1,11 +1,9 @@
 import { InteractivePointerEvent, Point } from 'pixi.js';
-import { CELL_HEIGHT } from '../../../constants/gridConstants';
-import { sheetController } from '../../../grid/controller/SheetController';
-import { HeadingSize } from '../../../grid/sheet/useHeadings';
+import { sheets } from '../../../grid/controller/Sheets';
 import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
 import { zoomToFit } from '../../helpers/zoom';
 import { pixiApp } from '../../pixiApp/PixiApp';
-import { PanMode } from '../../pixiApp/PixiAppSettings';
+import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
 const MINIMUM_COLUMN_SIZE = 20;
@@ -27,7 +25,7 @@ export class PointerHeading {
   handleEscape(): boolean {
     if (this.active) {
       this.active = false;
-      this.sheet.gridOffsets.headingResizing = undefined;
+      sheets.sheet.gridOffsets.headingResizing = undefined;
       // pixiApp.cells.dirty = true;
       pixiApp.gridLines.dirty = true;
       pixiApp.cursor.dirty = true;
@@ -36,10 +34,6 @@ export class PointerHeading {
       return true;
     }
     return false;
-  }
-
-  get sheet() {
-    return sheetController.sheet;
   }
 
   selectAll() {
@@ -51,7 +45,7 @@ export class PointerHeading {
   pointerDown(world: Point, event: InteractivePointerEvent): boolean {
     clearTimeout(this.fitToColumnTimeout);
     const { headings, viewport } = pixiApp;
-    const { gridOffsets } = this.sheet;
+    const { gridOffsets } = sheets.sheet;
     const intersects = headings.intersectsHeadings(world);
     if (!intersects) return false;
 
@@ -96,7 +90,7 @@ export class PointerHeading {
         }
       }
 
-      const cursor = this.sheet.cursor;
+      const cursor = sheets.sheet.cursor;
 
       if (event.shiftKey) {
         if (intersects.column !== undefined) {
@@ -126,12 +120,12 @@ export class PointerHeading {
 
   pointerMove(world: Point): boolean {
     const { headings, gridLines, cursor } = pixiApp;
-    const { gridOffsets } = this.sheet;
+    const { gridOffsets } = sheets.sheet;
     this.cursor = undefined;
     this.clicked = false;
 
     // Only style the heading resize cursor if panning mode is disabled
-    if (pixiApp.settings.panMode === PanMode.Disabled) {
+    if (pixiAppSettings.panMode === PanMode.Disabled) {
       const headingResize = headings.intersectsHeadingGridLine(world);
       if (headingResize) {
         this.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
@@ -202,36 +196,37 @@ export class PointerHeading {
       this.clicked = false;
     }, DOUBLE_CLICK_TIME);
     if (this.active) {
-      const { gridOffsets } = this.sheet;
-      this.active = false;
-      const { headingResizing } = gridOffsets;
-      if (headingResizing) {
-        let updateHeading: HeadingSize | undefined;
-        if (headingResizing.column !== undefined && headingResizing.width !== undefined) {
-          updateHeading = {
-            column: headingResizing.column,
-            size: headingResizing.width,
-          };
-        } else if (headingResizing.row !== undefined && headingResizing.height !== undefined) {
-          updateHeading = {
-            row: headingResizing.row,
-            size: headingResizing.height,
-          };
-        }
-        if (updateHeading) {
-          sheetController.predefined_transaction([
-            {
-              type: 'SET_HEADING_SIZE',
-              data: {
-                heading_size: updateHeading,
-              },
-            },
-          ]);
-        }
-        gridOffsets.headingResizing = undefined;
-        pixiApp.viewport.plugins.get('decelerate')?.reset();
-      }
-      return true;
+      throw new Error('pointerUp not implemented in PointerHeading');
+      // const { gridOffsets } = this.sheet;
+      // this.active = false;
+      // const { headingResizing } = gridOffsets;
+      // if (headingResizing) {
+      //   let updateHeading: HeadingSize | undefined;
+      //   if (headingResizing.column !== undefined && headingResizing.width !== undefined) {
+      //     updateHeading = {
+      //       column: headingResizing.column,
+      //       size: headingResizing.width,
+      //     };
+      //   } else if (headingResizing.row !== undefined && headingResizing.height !== undefined) {
+      //     updateHeading = {
+      //       row: headingResizing.row,
+      //       size: headingResizing.height,
+      //     };
+      //   }
+      //   if (updateHeading) {
+      //     sheetController.predefined_transaction([
+      //       {
+      //         type: 'SET_HEADING_SIZE',
+      //         data: {
+      //           heading_size: updateHeading,
+      //         },
+      //       },
+      //     ]);
+      //   }
+      //   gridOffsets.headingResizing = undefined;
+      //   pixiApp.viewport.plugins.get('decelerate')?.reset();
+      // }
+      // return true;
     }
     return false;
   }
@@ -264,20 +259,18 @@ export class PointerHeading {
     // const maxWidth = cellsColumnContent.reduce((max, cell) => (cell.textWidth > max ? cell.textWidth : max), 0);
     // const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
     // const size = Math.max(contentSizePlusMargin, MINIMUM_COLUMN_SIZE);
-
-    const size = CELL_HEIGHT;
-
-    pixiApp.quadrants.quadrantChanged({ row });
-    sheetController.predefined_transaction([
-      {
-        type: 'SET_HEADING_SIZE',
-        data: {
-          heading_size: {
-            row,
-            size,
-          },
-        },
-      },
-    ]);
+    // const size = CELL_HEIGHT;
+    // pixiApp.quadrants.quadrantChanged({ row });
+    // sheetController.predefined_transaction([
+    //   {
+    //     type: 'SET_HEADING_SIZE',
+    //     data: {
+    //       heading_size: {
+    //         row,
+    //         size,
+    //       },
+    //     },
+    //   },
+    // ]);
   }
 }

@@ -60,21 +60,60 @@ impl GridController {
         )?)
     }
 
-    /// Sets cell numeric formatting given as an optional [`NumericFormat`].
+    /// Sets cells numeric_format to normal
     ///
     /// Returns a [`TransactionSummary`].
-    #[wasm_bindgen(js_name = "setCellNumericFormat")]
-    pub fn js_set_cell_numeric_format(
+    #[wasm_bindgen(js_name = "removeCellNumericFormat")]
+    pub fn js_remove_numeric_format(
         &mut self,
         sheet_id: String,
         rect: &Rect,
-        numeric_format: JsValue,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let value: Option<NumericFormat> = serde_wasm_bindgen::from_value(numeric_format).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_numeric_format(sheet_id, *rect, value, cursor),
+            &self.set_cell_numeric_format(sheet_id, *rect, None, cursor),
+        )?)
+    }
+
+    /// Sets cells numeric_format to currency
+    ///
+    /// Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "setCellCurrency")]
+    pub fn js_set_cell_currency(
+        &mut self,
+        sheet_id: String,
+        rect: &Rect,
+        symbol: String,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        let currency = NumericFormat {
+            kind: NumericFormatKind::Currency,
+            symbol: Some(symbol),
+        };
+        Ok(serde_wasm_bindgen::to_value(
+            &self.set_cell_numeric_format(sheet_id, *rect, Some(currency), cursor),
+        )?)
+    }
+
+    /// Sets cells numeric_format to percentage
+    ///
+    /// Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "setCellPercentage")]
+    pub fn js_set_cell_percentage(
+        &mut self,
+        sheet_id: String,
+        rect: &Rect,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        let currency = NumericFormat {
+            kind: NumericFormatKind::Percentage,
+            symbol: None,
+        };
+        Ok(serde_wasm_bindgen::to_value(
+            &self.set_cell_numeric_format(sheet_id, *rect, Some(currency), cursor),
         )?)
     }
 
@@ -145,6 +184,38 @@ impl GridController {
         let value: Option<String> = serde_wasm_bindgen::from_value(fill_color).unwrap();
         Ok(serde_wasm_bindgen::to_value(
             &self.set_cell_fill_color(sheet_id, *rect, value, cursor),
+        )?)
+    }
+
+    /// Changes cell numeric decimals.
+    ///
+    /// Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "changeDecimalPlaces")]
+    pub fn js_change_decimal_places(
+        &mut self,
+        sheet_id: String,
+        source: Pos,
+        rect: &Rect,
+        delta: isize,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        Ok(serde_wasm_bindgen::to_value(&self.change_decimal_places(
+            sheet_id, source, *rect, delta, cursor,
+        ))?)
+    }
+
+    /// Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "clearFormatting")]
+    pub fn js_clear_formatting(
+        &mut self,
+        sheet_id: String,
+        rect: Rect,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        Ok(serde_wasm_bindgen::to_value(
+            &self.clear_formatting(sheet_id, rect, cursor),
         )?)
     }
 }

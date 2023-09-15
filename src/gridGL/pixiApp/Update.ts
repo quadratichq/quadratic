@@ -65,6 +65,11 @@ export class Update {
       return;
     }
 
+    if (!pixiApp.cellsSheets.isReady()) {
+      this.raf = requestAnimationFrame(this.update);
+      return;
+    }
+
     this.updateViewport();
 
     const rendererDirty =
