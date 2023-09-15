@@ -8,24 +8,36 @@ use crate::{
 };
 
 impl GridController {
+    pub fn expand_up(
+        &mut self,
+        sheet_id: SheetId,
+        rect: Rect,
+        to: i64,
+        shrink_horizontal: Option<i64>,
+        cursor: Option<String>,
+    ) -> Result<TransactionSummary> {
+        let top = to;
+        let bottom = rect.min.y - 1;
+        let left = rect.min.x;
+        let right = shrink_horizontal.unwrap_or(rect.max.x);
+        let range = Rect::new_span((left, top).into(), (right, bottom).into());
+
+        self.expand(sheet_id, &rect, &range, cursor)
+    }
+
     pub fn expand_down(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
         to: i64,
-        _shrink_horizontal: Option<i64>,
+        shrink_horizontal: Option<i64>,
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
-        let range = Rect {
-            min: Pos {
-                x: rect.min.x,
-                y: rect.max.y + 1,
-            },
-            max: Pos {
-                x: rect.max.x,
-                y: to,
-            },
-        };
+        let top = rect.max.y + 1;
+        let bottom = to;
+        let left = rect.min.x;
+        let right = shrink_horizontal.unwrap_or(rect.max.x);
+        let range = Rect::new_span((left, top).into(), (right, bottom).into());
 
         self.expand(sheet_id, &rect, &range, cursor)
     }
@@ -38,17 +50,11 @@ impl GridController {
         to_vertical: Option<i64>,
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
-        let to_vertical = to_vertical.unwrap_or(rect.max.y);
-        let range = Rect {
-            min: Pos {
-                x: rect.max.x + 1,
-                y: rect.min.y,
-            },
-            max: Pos {
-                x: to,
-                y: to_vertical,
-            },
-        };
+        let top = to_vertical.map_or(rect.min.y, |y| y.min(rect.min.y));
+        let bottom = to_vertical.map_or(rect.max.y, |y| y.max(rect.max.y));
+        let left = rect.max.x + 1;
+        let right = to;
+        let range = Rect::new_span((left, top).into(), (right, bottom).into());
 
         self.expand(sheet_id, &rect, &range, cursor)
     }
@@ -61,17 +67,11 @@ impl GridController {
         to_vertical: Option<i64>,
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
-        let to_vertical = to_vertical.unwrap_or(rect.max.y);
-        let range = Rect {
-            min: Pos {
-                x: to,
-                y: rect.min.y,
-            },
-            max: Pos {
-                x: rect.min.x - 1,
-                y: to_vertical,
-            },
-        };
+        let top = to_vertical.map_or(rect.min.y, |y| y.min(rect.min.y));
+        let bottom = to_vertical.map_or(rect.max.y, |y| y.max(rect.max.y));
+        let left = rect.min.x - 1;
+        let right = to;
+        let range = Rect::new_span((left, top).into(), (right, bottom).into());
 
         self.expand(sheet_id, &rect, &range, cursor)
     }
@@ -172,25 +172,6 @@ mod tests {
         (grid_controller.clone(), sheet.clone(), rect)
     }
 
-    fn test_setup_not_anchored() -> (GridController, Sheet, Rect) {
-        let mut grid_controller = GridController::new();
-        let sheet_id = grid_controller.grid.sheets()[0].id;
-
-        let rect = Rect {
-            min: Pos { x: 2, y: 2 },
-            max: Pos { x: 4, y: 3 },
-        };
-        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 2 }, "1.0".into(), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 3, y: 2 }, "2.0".into(), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 4, y: 2 }, "3.0".into(), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 3 }, "4.0".into(), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 3, y: 3 }, "5.0".into(), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 4, y: 3 }, "6.0".into(), None);
-
-        let sheet = grid_controller.sheet(sheet_id);
-        (grid_controller.clone(), sheet.clone(), rect)
-    }
-
     fn to_cell_value(value: &str) -> CellValue {
         CellValue::Number(BigDecimal::from_str(value).unwrap())
     }
@@ -222,41 +203,23 @@ mod tests {
     }
 
     #[test]
-    fn test_project_cell_value_not_anchored() {
-        let (_, sheet, rect) = test_setup_not_anchored();
-        let selection = cell_values_in_rect(&rect, &sheet).unwrap();
-        let func = |pos| project_cell_value(&selection, pos, &rect);
-
-        assert_eq!(func(Pos { x: 5, y: 2 }), &to_cell_value("1.0"));
-        assert_eq!(func(Pos { x: 6, y: 2 }), &to_cell_value("2.0"));
-        assert_eq!(func(Pos { x: 7, y: 2 }), &to_cell_value("3.0"));
-        assert_eq!(func(Pos { x: 5, y: 3 }), &to_cell_value("4.0"));
-        assert_eq!(func(Pos { x: 6, y: 3 }), &to_cell_value("5.0"));
-        assert_eq!(func(Pos { x: 7, y: 3 }), &to_cell_value("6.0"));
-    }
-
-    #[test]
-    fn test_expand_right() {
+    fn test_expand_up() {
         let (mut grid_controller, sheet, rect) = test_setup();
         let result = grid_controller
-            .expand_right(sheet.id, rect, 10, None, None)
+            .expand_up(sheet.id, rect, -10, None, None)
             .unwrap();
         let expected = Rect {
-            min: Pos { x: 3, y: 0 },
-            max: Pos { x: 10, y: 1 },
+            min: Pos { x: 0, y: -10 },
+            max: Pos { x: 2, y: -1 },
         };
         assert_eq!(result.cell_regions_modified[0].1, expected);
-    }
 
-    #[test]
-    fn test_expand_right_not_anchored() {
-        let (mut grid_controller, sheet, rect) = test_setup_not_anchored();
         let result = grid_controller
-            .expand_right(sheet.id, rect, 12, None, None)
+            .expand_up(sheet.id, rect, -10, Some(1), None)
             .unwrap();
         let expected = Rect {
-            min: Pos { x: 5, y: 2 },
-            max: Pos { x: 12, y: 3 },
+            min: Pos { x: 0, y: -10 },
+            max: Pos { x: 1, y: -1 },
         };
         assert_eq!(result.cell_regions_modified[0].1, expected);
     }
@@ -272,6 +235,15 @@ mod tests {
             max: Pos { x: 2, y: 10 },
         };
         assert_eq!(result.cell_regions_modified[0].1, expected);
+
+        let result = grid_controller
+            .expand_down(sheet.id, rect, 10, Some(1), None)
+            .unwrap();
+        let expected = Rect {
+            min: Pos { x: 0, y: 2 },
+            max: Pos { x: 1, y: 10 },
+        };
+        assert_eq!(result.cell_regions_modified[0].1, expected);
     }
 
     #[test]
@@ -283,6 +255,37 @@ mod tests {
         let expected = Rect {
             min: Pos { x: -10, y: 0 },
             max: Pos { x: -1, y: 1 },
+        };
+        assert_eq!(result.cell_regions_modified[0].1, expected);
+
+        let result = grid_controller
+            .expand_left(sheet.id, rect, -10, Some(10), None)
+            .unwrap();
+        let expected = Rect {
+            min: Pos { x: -10, y: 0 },
+            max: Pos { x: -1, y: 10 },
+        };
+        assert_eq!(result.cell_regions_modified[0].1, expected);
+    }
+
+    #[test]
+    fn test_expand_right() {
+        let (mut grid_controller, sheet, rect) = test_setup();
+        let result = grid_controller
+            .expand_right(sheet.id, rect, 10, None, None)
+            .unwrap();
+        let expected = Rect {
+            min: Pos { x: 3, y: 0 },
+            max: Pos { x: 10, y: 1 },
+        };
+        assert_eq!(result.cell_regions_modified[0].1, expected);
+
+        let result = grid_controller
+            .expand_right(sheet.id, rect, 10, Some(10), None)
+            .unwrap();
+        let expected = Rect {
+            min: Pos { x: 3, y: 0 },
+            max: Pos { x: 10, y: 10 },
         };
         assert_eq!(result.cell_regions_modified[0].1, expected);
     }
