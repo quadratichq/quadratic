@@ -8,6 +8,10 @@ import { sheets } from '../../controller/Sheets';
 
 const clipboardLocalStorageKey = 'quadratic-clipboard';
 
+export const fullClipboardSupport = (): boolean => {
+  return !!navigator.clipboard && !!window.ClipboardItem;
+};
+
 //#region document event handler for copy, paste, and cut
 
 export const copyToClipboardEvent = (e: ClipboardEvent) => {
