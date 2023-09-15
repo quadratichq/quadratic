@@ -88,6 +88,7 @@ export const CommandPalette = (props: Props) => {
           placeholder={searchLabel}
           inputProps={{ 'aria-label': searchLabel }}
           inputRef={focusInput}
+          autoFocus
           value={activeSearchValue}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
             setSelectedListItemIndex(0);
