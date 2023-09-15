@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/browser';
 import localforage from 'localforage';
 import { isEditorOrAbove } from '../../../actions';
 import { debugTimeCheck, debugTimeReset } from '../../../gridGL/helpers/debugPerformance';
@@ -19,6 +20,10 @@ export const copyToClipboardEvent = (e: ClipboardEvent) => {
   const rectangle = sheets.sheet.cursor.getRectangle();
   const { plainText, html } = grid.copyToClipboard(sheets.sheet.id, rectangle);
   if (!e.clipboardData) {
+    Sentry.captureEvent({
+      message: 'ClipboardData not defined',
+      level: Sentry.Severity.Warning,
+    });
     console.warn('clipboardData is not defined');
     return;
   }
@@ -77,7 +82,7 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
   e.preventDefault();
 };
 
-//#regionend
+//#endregion
 
 //#region triggered via menu (limited support on Firefox)
 
