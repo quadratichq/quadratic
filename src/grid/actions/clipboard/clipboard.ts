@@ -89,36 +89,20 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
 // copies plainText and html to the clipboard
 const toClipboard = (plainText: string, html: string) => {
   // https://github.com/tldraw/tldraw/blob/a85e80961dd6f99ccc717749993e10fa5066bc4d/packages/tldraw/src/state/TldrawApp.ts#L2189
-  if (navigator.clipboard) {
-    // browser support clipboard api navigator.clipboard
-    if (window.ClipboardItem) {
-      navigator.clipboard.write([
-        new ClipboardItem({
-          'text/html': new Blob([html], { type: 'text/html' }),
-          'text/plain': new Blob([plainText], { type: 'text/plain' }),
-        }),
-      ]);
-    }
-
-    // fallback support for firefox
-    else {
-      localforage.setItem(clipboardLocalStorageKey, html);
-      navigator.clipboard.writeText(plainText);
-    }
+  // browser support clipboard api navigator.clipboard
+  if (fullClipboardSupport()) {
+    navigator.clipboard.write([
+      new ClipboardItem({
+        'text/html': new Blob([html], { type: 'text/html' }),
+        'text/plain': new Blob([plainText], { type: 'text/plain' }),
+      }),
+    ]);
   }
 
-  // this is probably not needed in modern browsers
+  // fallback support for firefox
   else {
-    // fallback to textarea
-    const textarea = document.createElement('textarea');
-    textarea.value = plainText;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
+    localforage.setItem(clipboardLocalStorageKey, html);
+    navigator.clipboard.writeText(plainText);
   }
 };
 
@@ -143,8 +127,7 @@ export const copySelectionToPNG = async () => {
     throw new Error('Unable to copy as PNG');
   }
 
-  // todo: this does not work in firefox
-  if (navigator.clipboard && window.ClipboardItem) {
+  if (fullClipboardSupport()) {
     navigator.clipboard.write([
       new ClipboardItem({
         //@ts-ignore
