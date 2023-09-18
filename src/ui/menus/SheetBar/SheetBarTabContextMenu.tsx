@@ -1,3 +1,4 @@
+import { Box } from '@mui/material';
 import { ControlledMenu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import { useState } from 'react';
 import { ColorResult } from 'react-color';
@@ -19,23 +20,13 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
   const [lastName, setLastName] = useState<string | undefined>();
 
   return (
-    <>
+    <Box sx={{ fontSize: '.875rem' }}>
       <ControlledMenu
-        className="sheet-bar-context-menu"
+        className="sheet-bar-context-menuz"
         state={!!contextMenu ? 'open' : 'closed'}
         onClose={handleClose}
         anchorPoint={contextMenu ? { x: contextMenu?.x, y: contextMenu?.y } : undefined}
       >
-        <MenuItem onClick={handleRename}>Rename</MenuItem>
-        <MenuItem
-          onClick={handleClose}
-          onClickCapture={() => {
-            sheets.duplicate();
-            focusGrid();
-          }}
-        >
-          Duplicate
-        </MenuItem>
         <MenuItem
           onClick={() => {
             if (!contextMenu) return;
@@ -45,6 +36,15 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
           }}
         >
           Delete
+        </MenuItem>
+        <MenuItem
+          onClick={handleClose}
+          onClickCapture={() => {
+            sheets.duplicate();
+            focusGrid();
+          }}
+        >
+          Duplicate
         </MenuItem>
         <SubMenu label="Change color" className="color-picker-submenu">
           <QColorPicker
@@ -65,6 +65,8 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
             }}
           />
         </SubMenu>
+
+        <MenuItem onClick={handleRename}>Rename</MenuItem>
         <MenuDivider />
         <MenuItem
           disabled={sheets.getFirst().id === contextMenu?.id}
@@ -99,6 +101,6 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
           window.setTimeout(focusGrid, 0);
         }}
       />
-    </>
+    </Box>
   );
 };
