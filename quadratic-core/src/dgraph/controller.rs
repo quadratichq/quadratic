@@ -51,8 +51,8 @@ impl ComputationDependencyController {
         }
     }
 
-    /// Returns cells that _directly_ depend on `cell`.
-    /// Does not traverse the graph.
+    /// Returns cells that _directly_ depend on `area`.
+    /// Does not continue to traverse the graph.
     pub fn get_dependent_cells(&self, area: Rect) -> HashSet<Pos> {
         let mut seen = HashSet::new();
 
