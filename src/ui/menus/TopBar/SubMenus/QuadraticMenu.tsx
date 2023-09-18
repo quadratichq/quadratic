@@ -26,7 +26,6 @@ import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider
 import { ROUTES } from '../../../../constants/routes';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
 import { grid } from '../../../../grid/controller/Grid';
-import { sheets } from '../../../../grid/controller/Sheets';
 import { focusGrid } from '../../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRootRouteLoaderData } from '../../../../router';
@@ -39,7 +38,6 @@ import { useGridSettings } from './useGridSettings';
 export const QuadraticMenu = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
-  const cursor = sheets.sheet.cursor;
 
   const navigate = useNavigate();
   const submit = useSubmit();
@@ -142,27 +140,15 @@ export const QuadraticMenu = () => {
           )}
 
           {cut.isAvailable(permission) && (
-            <MenuItem
-              onClick={() => {
-                cutToClipboard(sheets.sheet.cursor.originPosition, sheets.sheet.cursor.terminalPosition);
-              }}
-            >
+            <MenuItem onClick={cutToClipboard}>
               <MenuLineItem primary={cut.label} secondary={KeyboardSymbols.Command + 'X'} />
             </MenuItem>
           )}
-          <MenuItem
-            onClick={() => {
-              copyToClipboard(cursor.originPosition, cursor.terminalPosition);
-            }}
-          >
+          <MenuItem onClick={copyToClipboard}>
             <MenuLineItem primary={copy.label} secondary={KeyboardSymbols.Command + 'C'} />
           </MenuItem>
           {paste.isAvailable(permission) && (
-            <MenuItem
-              onClick={() => {
-                pasteFromClipboard(cursor.originPosition);
-              }}
-            >
+            <MenuItem onClick={pasteFromClipboard}>
               <MenuLineItem primary={paste.label} secondary={KeyboardSymbols.Command + 'V'} />
             </MenuItem>
           )}

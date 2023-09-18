@@ -22,7 +22,7 @@ import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { PNG_MESSAGE } from '../../../constants/appConstants';
-import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
+import { copySelectionToPNG, fullClipboardSupport } from '../../../grid/actions/clipboard/clipboard';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
@@ -355,12 +355,14 @@ export const FloatingContextMenu = (props: Props) => {
             <FormatClear fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
-        <MenuDivider />
-        <TooltipHint title="More commands…">
-          <IconButton onClick={() => moreMenuToggle()} color="inherit" ref={moreMenuButtonRef}>
-            <MoreHoriz fontSize={iconSize} />
-          </IconButton>
-        </TooltipHint>
+        {fullClipboardSupport() && <MenuDivider />}
+        {fullClipboardSupport() && (
+          <TooltipHint title="More commands…">
+            <IconButton onClick={() => moreMenuToggle()} color="inherit" ref={moreMenuButtonRef}>
+              <MoreHoriz fontSize={iconSize} />
+            </IconButton>
+          </TooltipHint>
+        )}
         <ControlledMenu
           state={moreMenuProps.state}
           menuStyle={{ padding: '2px 0', color: 'inherit' }}
