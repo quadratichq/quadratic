@@ -48,7 +48,6 @@ class Sheets {
     this.sheets.forEach((sheet, index) => {
       if (!sheetIds.includes(sheet.id)) {
         this.sheets.splice(index, 1);
-        sheets.deleteSheet(sheet.id);
       }
     });
     this.sort();

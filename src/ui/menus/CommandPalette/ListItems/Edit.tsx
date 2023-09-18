@@ -6,7 +6,6 @@ import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider
 import { PNG_MESSAGE } from '../../../../constants/appConstants';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
 import { grid } from '../../../../grid/controller/Grid';
-import { sheets } from '../../../../grid/controller/Sheets';
 import { copyAsPNG } from '../../../../gridGL/pixiApp/copyAsPNG';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { isMac } from '../../../../utils/isMac';
@@ -51,10 +50,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          action={() => {
-            const cursor = sheets.sheet.cursor;
-            cutToClipboard(cursor.originPosition, cursor.terminalPosition);
-          }}
+          action={cutToClipboard}
           icon={<ContentCut />}
           shortcut="X"
           shortcutModifiers={[KeyboardSymbols.Command]}
@@ -68,10 +64,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          action={() => {
-            const cursor = sheets.sheet.cursor;
-            copyToClipboard(cursor.originPosition, cursor.terminalPosition);
-          }}
+          action={copyToClipboard}
           icon={<ContentCopy />}
           shortcut="C"
           shortcutModifiers={[KeyboardSymbols.Command]}
@@ -86,9 +79,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          action={() => {
-            pasteFromClipboard(sheets.sheet.cursor.cursorPosition);
-          }}
+          action={pasteFromClipboard}
           icon={<ContentPaste />}
           shortcut="V"
           shortcutModifiers={[KeyboardSymbols.Command]}

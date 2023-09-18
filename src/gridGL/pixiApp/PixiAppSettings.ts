@@ -1,3 +1,4 @@
+import { ApiTypes } from '../../api/types';
 import {
   EditorHighlightedCellsState,
   editorHighlightedCellsStateDefault,
@@ -63,6 +64,10 @@ class PixiAppSettings {
     }
     this.lastSettings = this.settings;
   };
+
+  get permission(): ApiTypes['/v0/files/:uuid.GET.response']['permission'] {
+    return this.editorInteractionState.permission;
+  }
 
   updateEditorInteractionState(
     editorInteractionState: EditorInteractionState,
