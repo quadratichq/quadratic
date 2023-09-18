@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use self::current::ComputationDependencyController;
+
 mod v1_4;
 mod v1_5;
 mod current {
@@ -64,6 +66,7 @@ pub fn import(file_contents: &str) -> Result<current::Grid, String> {
                 sheet
             })
             .collect(),
+        dependencies: ComputationDependencyController::new(), // TODO: Implement this
     })
 }
 

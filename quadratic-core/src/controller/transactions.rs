@@ -72,6 +72,23 @@ impl GridController {
                     });
                 }
 
+                Operation::SetCellDependencies { cell, dependencies } => {
+                    let deps = self.grid.dependencies_mut();
+                    deps.add_dependencies(dependencies, cell);
+                    rev_ops.push(Operation::RemoveCellDependencies { cell })
+                }
+
+                Operation::RemoveCellDependencies { cell } => {
+                    let deps = self.grid.dependencies_mut();
+                    deps.remove_dependencies(cell);
+
+                    // todo: add correct reverse operation
+                    rev_ops.push(Operation::SetCellDependencies {
+                        cell,
+                        dependencies: vec![],
+                    })
+                }
+
                 Operation::SetCellFormats { region, attr } => {
                     match attr {
                         CellFmtArray::FillColor(_) => {
@@ -200,28 +217,31 @@ pub enum Operation {
         region: RegionRef,
         values: Array,
     },
+    SetCellDependencies {
+        cell: Pos,
+        dependencies: Vec<Rect>,
+    },
+    RemoveCellDependencies {
+        cell: Pos,
+    },
     SetCellFormats {
         region: RegionRef,
         attr: CellFmtArray,
     },
-
     AddSheet {
         sheet: Sheet,
     },
     DeleteSheet {
         sheet_id: SheetId,
     },
-
     SetSheetName {
         sheet_id: SheetId,
         name: String,
     },
-
     SetSheetColor {
         sheet_id: SheetId,
         color: Option<String>,
     },
-
     ReorderSheet {
         target: SheetId,
         order: String,
@@ -231,14 +251,13 @@ impl Operation {
     pub fn sheet_with_changed_bounds(&self) -> Option<SheetId> {
         match self {
             Operation::SetCellValues { region, .. } => Some(region.sheet),
+            Operation::SetCellDependencies { .. } => None,
+            Operation::RemoveCellDependencies { .. } => None,
             Operation::SetCellFormats { region, .. } => Some(region.sheet),
-
             Operation::AddSheet { .. } => None,
             Operation::DeleteSheet { .. } => None,
-
             Operation::SetSheetColor { .. } => None,
             Operation::SetSheetName { .. } => None,
-
             Operation::ReorderSheet { .. } => None,
         }
     }
@@ -253,13 +272,10 @@ pub struct TransactionSummary {
     pub fill_sheets_modified: Vec<SheetId>,
     /// Sheets where any borders have been modified.
     pub border_sheets_modified: Vec<SheetId>,
-
     /// Locations of code cells that were modified. They may no longer exist.
     pub code_cells_modified: Vec<(SheetId, Pos)>,
-
     /// Sheet metadata or order was modified.
     pub sheet_list_modified: bool,
-
     /// Cursor location for undo/redo operation
     pub cursor: Option<String>,
 }

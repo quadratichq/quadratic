@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std;
 use std::collections::HashSet;
 use std::fmt;
@@ -16,7 +17,7 @@ impl fmt::Display for DependencyCycleError {
     }
 }
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct ComputationDependency {
     pub area: Rect,
     pub updates: Pos,
@@ -32,7 +33,7 @@ impl fmt::Display for ComputationDependency {
     }
 }
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct ComputationDependencyController {
     graph: Vec<ComputationDependency>,
 }
@@ -57,17 +58,22 @@ impl ComputationDependencyController {
     }
 
     /// Given `area` and `updates` adds a new node to the graph.
-    pub fn add_dependencies(&mut self, area: Rect, updates: Pos) {
-        // don't allow a node to depend on itself
-        if area.contains(updates) {
-            return;
-        }
-
+    pub fn add_dependencies(&mut self, areas: Vec<Rect>, updates: Pos) {
         // remove entry from Vec with the same updates pos
         self.remove_dependencies(updates);
 
-        // add new node
-        self.graph.push(ComputationDependency { area, updates });
+        for area in areas.iter() {
+            // don't allow a node to depend on itself
+            if area.contains(updates) {
+                continue;
+            }
+
+            // add new node
+            self.graph.push(ComputationDependency {
+                area: *area,
+                updates,
+            });
+        }
     }
 
     /// Given `area` and `updates` removes a node from the graph.

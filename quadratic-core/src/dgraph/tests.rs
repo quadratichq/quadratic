@@ -9,10 +9,10 @@ fn test_graph() {
     let mut cdc = ComputationDependencyController::new();
 
     cdc.add_dependencies(
-        Rect {
+        vec![Rect {
             min: Pos { x: 0, y: 0 },
             max: Pos { x: 1, y: 1 },
-        },
+        }],
         Pos { x: 3, y: 3 },
     );
 
@@ -22,10 +22,10 @@ fn test_graph() {
     );
 
     cdc.add_dependencies(
-        Rect {
+        vec![Rect {
             min: Pos { x: 0, y: 0 },
             max: Pos { x: 1, y: 1 },
-        },
+        }],
         Pos { x: 4, y: 4 },
     );
 
@@ -51,7 +51,10 @@ fn test_graph() {
         HashSet::new()
     );
 
-    cdc.add_dependencies(Rect::single_pos(Pos { x: 10, y: 10 }), Pos { x: 11, y: 11 });
+    cdc.add_dependencies(
+        vec![Rect::single_pos(Pos { x: 10, y: 10 })],
+        Pos { x: 11, y: 11 },
+    );
 
     assert_eq!(
         cdc.get_dependent_cells(Rect::single_pos(Pos { x: 10, y: 10 })),
