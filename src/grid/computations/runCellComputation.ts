@@ -1,11 +1,9 @@
-import { debugShowRunComputation } from '../../debugFlags';
 import { Cell } from '../../schemas';
-import { webWorkers } from '../../web-workers/webWorkers';
-import { runAI } from './ai/runAI';
-import { runFormula } from './formulas/runFormula';
 import { CellEvaluationResult } from './types';
 
 export const runCellComputation = async (cell: Cell): Promise<CellEvaluationResult> => {
+  throw new Error('runCellComputation is deprecated');
+  /*
   if (cell.type === 'FORMULA') {
     let result = await runFormula(cell.formula_code || '', { x: cell.x, y: cell.y });
     return {
@@ -51,4 +49,5 @@ export const runCellComputation = async (cell: Cell): Promise<CellEvaluationResu
   } else {
     throw new Error('Unsupported cell type');
   }
+  */
 };

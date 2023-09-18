@@ -1,6 +1,6 @@
 import { PythonReturnType } from '../pythonTypes';
 
-export class PythonWebWorker {
+class PythonWebWorker {
   private output?: Record<string, PythonReturnType>;
 
   changeOutput(output: Record<string, PythonReturnType>) {
@@ -17,3 +17,5 @@ export class PythonWebWorker {
     return this.output[python_code];
   }
 }
+
+export const pythonWebWorker = new PythonWebWorker();
