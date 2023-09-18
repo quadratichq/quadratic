@@ -89,3 +89,9 @@ export const debugShowCellsForDirtyQuadrants = debug && false;
 export const debugShowFileIO = debug && true;
 
 export const debugGridSettings = debug && false;
+
+// --------
+// UI
+// --------
+
+export const debugShowUILogs = debug && false;
