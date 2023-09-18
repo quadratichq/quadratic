@@ -22,7 +22,6 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
   return (
     <Box sx={{ fontSize: '.875rem' }}>
       <ControlledMenu
-        className="sheet-bar-context-menuz"
         state={!!contextMenu ? 'open' : 'closed'}
         onClose={handleClose}
         anchorPoint={contextMenu ? { x: contextMenu?.x, y: contextMenu?.y } : undefined}

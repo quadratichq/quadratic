@@ -40,10 +40,10 @@ export const SheetBarTab = (props: Props): JSX.Element => {
       ref={containerRef}
       sx={{
         order,
+        position: 'relative',
         '&:hover': {
           backgroundColor: theme.palette.action.hover,
         },
-        position: 'relative',
         ...(active
           ? {
               backgroundColor: theme.palette.background.default + ' !important',
@@ -235,7 +235,7 @@ function TabName({
       }}
       onPaste={(event) => {
         event.preventDefault();
-        // Contrain the clipboard paste to allowed input
+        // Constrain the clipboard paste to allowed input only
         event.currentTarget.innerText = event.clipboardData
           .getData('text/plain')
           .trim()
@@ -280,31 +280,27 @@ function TabButton({
 }) {
   const theme = useTheme();
 
-  if (hasPermission) {
-    return (
-      <IconButton
-        size="small"
-        sx={{
-          mr: theme.spacing(-0.5),
-          p: '0',
-          ...(active
-            ? {
-                opacity: 1,
-                visibility: 'visible',
-              }
-            : { opacity: 0, visibility: 'none' }),
-        }}
-        onClick={(e) => {
-          e.stopPropagation();
-          onContextMenu(e, sheet);
-        }}
-      >
-        <ArrowDropDown fontSize="inherit" />
-      </IconButton>
-    );
-  }
-
-  return null;
+  return hasPermission ? (
+    <IconButton
+      size="small"
+      sx={{
+        mr: theme.spacing(-0.5),
+        p: '0',
+        ...(active
+          ? {
+              opacity: 1,
+              visibility: 'visible',
+            }
+          : { opacity: 0, visibility: 'none' }),
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onContextMenu(e, sheet);
+      }}
+    >
+      <ArrowDropDown fontSize="inherit" />
+    </IconButton>
+  ) : null;
 }
 
 function selectElementContents(el: HTMLDivElement | null) {
