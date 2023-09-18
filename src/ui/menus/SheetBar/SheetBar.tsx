@@ -1,6 +1,9 @@
 import { Add, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { Stack, useTheme } from '@mui/material';
 import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { useRecoilValue } from 'recoil';
+import { isEditorOrAbove } from '../../../actions';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -19,6 +22,8 @@ export const SheetBar = (): JSX.Element => {
   const [_, setTrigger] = useState(0);
 
   const theme = useTheme();
+  const { permission } = useRecoilValue(editorInteractionStateAtom);
+  const hasPermission = isEditorOrAbove(permission);
 
   // activate sheet
   const [activeSheet, setActiveSheet] = useState(sheets.current);
@@ -153,6 +158,7 @@ export const SheetBar = (): JSX.Element => {
   const handlePointerDown = useCallback(
     (options: { event: React.PointerEvent<HTMLDivElement>; sheet: Sheet }) => {
       if (!sheetTabs) return;
+
       const { event, sheet } = options;
       setActiveSheet((prevState: string) => {
         if (prevState !== sheet.id) {
@@ -162,6 +168,9 @@ export const SheetBar = (): JSX.Element => {
         }
         return prevState;
       });
+
+      // If they don't have the permission, don't allow past here for drag to reorder
+      if (!hasPermission) return;
 
       const tab = event.currentTarget;
       if (tab) {
@@ -186,7 +195,7 @@ export const SheetBar = (): JSX.Element => {
       focusGrid();
       event.preventDefault();
     },
-    [getOrderIndex, sheetTabs]
+    [getOrderIndex, sheetTabs, hasPermission]
   );
 
   const handlePointerMove = useCallback(
@@ -379,10 +388,15 @@ export const SheetBar = (): JSX.Element => {
   }, [handlePointerMove, handlePointerUp]);
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id: string; name: string } | undefined>();
-  const handleContextEvent = useCallback((event: MouseEvent, sheet: Sheet) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY, name: sheet.name, id: sheet.id });
-  }, []);
+  const handleContextEvent = useCallback(
+    (event: MouseEvent, sheet: Sheet) => {
+      event.preventDefault();
+      if (hasPermission) {
+        setContextMenu({ x: event.clientX, y: event.clientY, name: sheet.name, id: sheet.id });
+      }
+    },
+    [hasPermission]
+  );
 
   const [forceRename, setForceRename] = useState<string | undefined>();
   const handleRename = useCallback(() => {
