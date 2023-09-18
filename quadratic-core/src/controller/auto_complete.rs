@@ -1,11 +1,23 @@
 use anyhow::{anyhow, Result};
 use smallvec::SmallVec;
 
-use super::{transactions::TransactionSummary, GridController};
+use super::{
+    formatting::CellFmtArray,
+    transactions::{Operation, Transaction, TransactionSummary},
+    GridController,
+};
 use crate::{
-    grid::{Sheet, SheetId},
+    grid::{Bold, RegionRef, Sheet, SheetId},
     Array, CellValue, Pos, Rect,
 };
+
+#[derive(Debug, Clone, Copy)]
+pub enum ExpandDirection {
+    Up,
+    Down,
+    Left,
+    Right,
+}
 
 impl GridController {
     pub fn expand_up(
@@ -22,7 +34,7 @@ impl GridController {
         let right = shrink_horizontal.unwrap_or(rect.max.x);
         let range = Rect::new_span((left, top).into(), (right, bottom).into());
 
-        self.expand(sheet_id, &rect, &range, cursor)
+        self.expand(sheet_id, ExpandDirection::Up, &rect, &range, cursor)
     }
 
     pub fn expand_down(
@@ -39,7 +51,7 @@ impl GridController {
         let right = shrink_horizontal.unwrap_or(rect.max.x);
         let range = Rect::new_span((left, top).into(), (right, bottom).into());
 
-        self.expand(sheet_id, &rect, &range, cursor)
+        self.expand(sheet_id, ExpandDirection::Down, &rect, &range, cursor)
     }
 
     pub fn expand_right(
@@ -56,7 +68,7 @@ impl GridController {
         let right = to;
         let range = Rect::new_span((left, top).into(), (right, bottom).into());
 
-        self.expand(sheet_id, &rect, &range, cursor)
+        self.expand(sheet_id, ExpandDirection::Right, &rect, &range, cursor)
     }
 
     pub fn expand_left(
@@ -73,7 +85,7 @@ impl GridController {
         let right = to;
         let range = Rect::new_span((left, top).into(), (right, bottom).into());
 
-        self.expand(sheet_id, &rect, &range, cursor)
+        self.expand(sheet_id, ExpandDirection::Left, &rect, &range, cursor)
     }
 
     /// Expand the source `rect` to the expanded `range`.
@@ -85,19 +97,121 @@ impl GridController {
     pub fn expand(
         &mut self,
         sheet_id: SheetId,
+        direction: ExpandDirection,
         rect: &Rect,
         range: &Rect,
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
         let sheet = self.sheet(sheet_id);
+
         let selection_values = cell_values_in_rect(&rect, &sheet)?;
-        let values = set_cell_projections(&selection_values, &range);
-
-        let array = Array::new_row_major(range.size(), values)
+        let cell_values = set_cell_projections(&selection_values, &range);
+        let values = Array::new_row_major(range.size(), cell_values)
             .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", range.size(), e))?;
+        let transaction_summary = self.set_cells(sheet_id, range.min, values, cursor.clone());
 
-        Ok(self.set_cells(sheet_id, range.min, array, cursor))
+        let mut ops = self.expand_height(sheet_id, direction, rect, range);
+        let mut ops_width = self.expand_width(sheet_id, direction, rect, range);
+        ops.append(&mut ops_width);
+
+        // crate::util::dbgjs(selection_formats);
+
+        self.transact_forward(Transaction { ops, cursor });
+
+        Ok(transaction_summary)
     }
+
+    // Apply the block of formats below the selection in increments of the
+    // selected rectangle (i.e. if the selection is 2 x 2 and the range is
+    // to 10 height, apply 4 blocks of format).
+    pub fn expand_height(
+        &mut self,
+        sheet_id: SheetId,
+        direction: ExpandDirection,
+        rect: &Rect,
+        range: &Rect,
+    ) -> Vec<Operation> {
+        // Get the formats of the selected rectangle
+        let selection_formats = self.get_all_cell_formats(sheet_id, *rect);
+        let rect_height = rect.height() as i64;
+        let range_height = range.height() as i64 + rect_height;
+        let height_steps = ((range_height / rect_height) as f32).ceil() as i64;
+        let max_height = |height| range_height.min(height);
+        let calc_step = |height, step| match direction {
+            ExpandDirection::Down => height + (rect_height * step),
+            _ => height - (rect_height * step) - 1,
+        };
+
+        (1..=height_steps + 1)
+            .map(|step| {
+                let rew_rect = Rect::new_span(
+                    (rect.min.x, calc_step(rect.min.y, step)).into(),
+                    (rect.max.x, max_height(calc_step(rect.max.y, step))).into(),
+                );
+
+                let region = self.region(sheet_id, rew_rect);
+                apply_formats(region, &selection_formats)
+            })
+            .flatten()
+            .collect()
+    }
+
+    // Apply the column of formats to the right of the selection in
+    // increments of the column (i.e. if the selection is 2 x 2 and
+    // the range is to 10 wide, apply 4 columns of format).
+    pub fn expand_width(
+        &mut self,
+        sheet_id: SheetId,
+        direction: ExpandDirection,
+        rect: &Rect,
+        range: &Rect,
+    ) -> Vec<Operation> {
+        // Get the formats of the entire column: min: (rect.min.x, rect.min.y), max: (rect.max.x, range.max.y).
+        let formats = self.get_all_cell_formats(
+            sheet_id,
+            Rect {
+                min: rect.min,
+                max: (rect.max.x, range.max.y).into(),
+            },
+        );
+
+        let rect_width = rect.width() as i64;
+        let range_width = range.width() as i64 + rect_width;
+        let width_steps = ((range_width / rect_width) as f32).ceil() as i64;
+        let max_width = |width| range_width.min(width);
+        let calc_step = |width, step| match direction {
+            ExpandDirection::Left => width - (rect_width * step),
+            _ => width + (rect_width * step),
+        };
+
+        // start with 1 to skip the source rect
+        (1..=width_steps + 1)
+            .map(|step| {
+                let new_rect = Rect::new_span(
+                    (calc_step(rect.min.x, step), rect.min.y).into(),
+                    (max_width(calc_step(rect.max.x, step)), range.max.y).into(),
+                );
+                let region = self.region(sheet_id, new_rect);
+                apply_formats(region, &formats)
+            })
+            .flatten()
+            .collect()
+    }
+}
+
+/// Apply formats to a given region.
+///
+/// TODO(ddimaria): this funcion is sufficiently generic that it could be moved
+/// TODO(ddimaria): we could remove the clones below by modifying the Operation
+/// calls to accept references since they don't mutate the region.
+pub fn apply_formats(region: RegionRef, formats: &Vec<CellFmtArray>) -> Vec<Operation> {
+    formats
+        .iter()
+        .map(|format| Operation::SetCellFormats {
+            region: region.clone(),
+            attr: format.clone(),
+        })
+        .collect()
 }
 
 /// Add the cell values to an Array for the given Rect.
@@ -123,6 +237,24 @@ pub fn cell_values_in_rect(&rect: &Rect, sheet: &Sheet) -> Result<Array> {
         .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", rect.size(), e))
 }
 
+// pub fn cell_formats_in_rect(&rect: &Rect, sheet: &Sheet) -> Result<Array> {
+//     let values = rect
+//         .y_range()
+//         .map(|y| {
+//             rect.x_range()
+//                 .map(|x| {
+//                     sheet
+//                         .get_formatting_value::<Bold>(Pos { x, y })
+//                 })
+//                 .collect::<Vec<CellValue>>()
+//         })
+//         .flatten()
+//         .collect();
+
+//     Array::new_row_major(rect.size(), values)
+//         .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", rect.size(), e))
+// }
+
 /// For a given selection (source data), project the cell value at the given Pos.
 pub fn project_cell_value<'a>(selection: &'a Array, pos: Pos, rect: &'a Rect) -> &'a CellValue {
     let x = (pos.x - rect.min.x) as u32 % selection.width();
@@ -130,6 +262,14 @@ pub fn project_cell_value<'a>(selection: &'a Array, pos: Pos, rect: &'a Rect) ->
 
     selection.get(x, y).unwrap_or_else(|_| &CellValue::Blank)
 }
+
+// /// For a given selection (source data), project the cell value at the given Pos.
+// pub fn project_cell_format<'a>(selection: &'a CellF, pos: Pos, rect: &'a Rect) -> &'a CellValue {
+//     let x = (pos.x - rect.min.x) as u32 % selection.width();
+//     let y = (pos.y - rect.min.y) as u32 % selection.height();
+
+//     selection.get(x, y).unwrap_or_else(|_| &CellValue::Blank)
+// }
 
 /// Set the cell values in the given Rect to the given Array.
 ///
@@ -149,7 +289,7 @@ pub fn set_cell_projections(projection: &Array, rect: &Rect) -> SmallVec<[CellVa
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::array;
+    use crate::{array, grid::Bold};
     use bigdecimal::BigDecimal;
     use std::str::FromStr;
 
@@ -168,7 +308,17 @@ mod tests {
         grid_controller.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, "5.0".into(), None);
         grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 1 }, "6.0".into(), None);
 
+        grid_controller.set_cell_bold(
+            sheet_id,
+            Rect::single_pos(Pos { x: 0, y: 0 }),
+            Some(true),
+            None,
+        );
+
         let sheet = grid_controller.sheet(sheet_id);
+
+        crate::util::dbgjs(sheet.get_formatting_value::<Bold>(Pos { x: 0, y: 0 }));
+
         (grid_controller.clone(), sheet.clone(), rect)
     }
 
