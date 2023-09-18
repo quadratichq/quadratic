@@ -26,9 +26,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
         onClose={handleClose}
         anchorPoint={contextMenu ? { x: contextMenu?.x, y: contextMenu?.y } : undefined}
       >
-        <MenuItem onClick={handleRename}>
-          <b>Rename</b>
-        </MenuItem>
+        <MenuItem onClick={handleRename}>Rename</MenuItem>
         <MenuItem
           onClick={handleClose}
           onClickCapture={() => {
@@ -48,7 +46,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
         >
           Delete
         </MenuItem>
-        <SubMenu label="Change Color">
+        <SubMenu label="Change color">
           <QColorPicker
             onChangeComplete={(change: ColorResult) => {
               const color = convertReactColorToString(change);
@@ -78,7 +76,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
             handleClose();
           }}
         >
-          Move Left
+          Move left
         </MenuItem>
         <MenuItem
           disabled={sheets.getLast().id === contextMenu?.id}
@@ -90,7 +88,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
             handleClose();
           }}
         >
-          Move Right
+          Move right
         </MenuItem>
       </ControlledMenu>
       <ConfirmDeleteSheet
