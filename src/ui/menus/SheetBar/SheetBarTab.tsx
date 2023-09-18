@@ -148,9 +148,9 @@ export const SheetBarTab = (props: Props): JSX.Element => {
               content: '""',
               position: 'absolute',
               bottom: '0',
-              left: '0',
+              left: '1px',
               height: '3px',
-              width: '100%',
+              width: 'calc(100% - 2px)',
               backgroundColor: sheet.color ? sheet.color : 'transparent',
             },
             ...(active
