@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
-use self::current::ComputationDependencyController;
+use serde::{Deserialize, Serialize};
 
 mod v1_4;
 mod v1_5;
@@ -66,7 +66,7 @@ pub fn import(file_contents: &str) -> Result<current::Grid, String> {
                 sheet
             })
             .collect(),
-        dependencies: ComputationDependencyController::new(), // TODO: Implement this
+        dependencies: HashMap::new(), // TODO: Implement this
     })
 }
 

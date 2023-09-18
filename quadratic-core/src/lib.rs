@@ -6,7 +6,6 @@ pub mod util;
 #[macro_use]
 mod error;
 pub mod controller;
-pub mod dgraph;
 pub mod ext;
 pub mod formulas;
 pub mod grid;

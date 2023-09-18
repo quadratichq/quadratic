@@ -73,8 +73,7 @@ impl GridController {
                 }
 
                 Operation::SetCellDependencies { cell, dependencies } => {
-                    let deps = self.grid.dependencies_mut();
-                    let old_deps = deps.set_dependencies(cell, dependencies);
+                    let old_deps = self.grid.set_dependencies(cell, dependencies);
 
                     rev_ops.push(Operation::SetCellDependencies {
                         cell,

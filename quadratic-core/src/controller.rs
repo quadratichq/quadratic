@@ -7,6 +7,7 @@ use self::transactions::Transaction;
 
 pub mod cells;
 pub mod clipboard;
+pub mod dependencies;
 pub mod formatting;
 pub mod sheets;
 pub mod transactions;
