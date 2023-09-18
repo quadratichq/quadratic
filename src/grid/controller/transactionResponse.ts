@@ -4,7 +4,8 @@ import { SheetCursorSave } from '../sheet/SheetCursor';
 import { rectToRectangle } from './Grid';
 import { sheets } from './Sheets';
 
-export const transactionResponse = (summary: TransactionSummary): void => {
+export const transactionResponse = (summary?: TransactionSummary): void => {
+  if (!summary) return;
   if (summary.sheet_list_modified) {
     sheets.repopulate();
   }

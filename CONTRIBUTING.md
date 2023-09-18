@@ -33,7 +33,7 @@ In order to run the front-end and/or the server locally, you must have all the e
 1. `cd quadratic-api`
 2. `npm i`
 3. Install and configure PostgreSQL:
-   1. macOS users: Install [postgress.app](https://postgresapp.com/) (follow instructions on website)
+   1. macOS users: Install [postgress.app](https://postgresapp.com/) (follow instructions on website) or `brew install postgresql` ([instructions](https://wiki.postgresql.org/wiki/Homebrew))
    2. Linux users:
       1. Install [postgres](https://www.prisma.io/dataguide/postgresql/setting-up-a-local-postgresql-database#setting-up-postgresql-on-linux)
       2. Configure your user permissions and create the database in the `psql` prompt:
