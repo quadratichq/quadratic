@@ -1,8 +1,5 @@
-use petgraph::algo::is_cyclic_directed;
-use petgraph::dot::Dot;
-use petgraph::graphmap::DiGraphMap;
-use petgraph::visit::Bfs;
 use std;
+use std::collections::HashSet;
 use std::fmt;
 
 use crate::Pos;
@@ -10,7 +7,7 @@ use crate::Rect;
 
 #[derive(Debug, PartialEq)]
 pub struct DependencyCycleError {
-    pub source: DGraphNode,
+    pub source: Pos,
 }
 
 impl fmt::Display for DependencyCycleError {
@@ -19,98 +16,88 @@ impl fmt::Display for DependencyCycleError {
     }
 }
 
-// Unified node type
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
-pub enum DGraphNode {
-    Position(Pos),
-    Range(Rect),
+#[derive(Default, Clone, Debug)]
+pub struct ComputationDependency {
+    pub area: Rect,
+    pub updates: Pos,
 }
 
-impl fmt::Display for DGraphNode {
+impl fmt::Display for ComputationDependency {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            DGraphNode::Position(pos) => pos.fmt(f),
-            DGraphNode::Range(rect) => rect.fmt(f),
-        }
+        write!(
+            f,
+            "ComputationDependency {{ area: {}, updates: {} }}",
+            self.area, self.updates
+        )
     }
 }
 
 #[derive(Default, Clone, Debug)]
-pub struct DGraphController {
-    // The Quadratic Dependency Graph stores the cells that depend on other cells.
-    // The children of a cell are the cells that depend on it.
-    // All edges have a weight of 1 (weights don't matter for this implementation)
-    graph: DiGraphMap<DGraphNode, usize>,
+pub struct ComputationDependencyController {
+    graph: Vec<ComputationDependency>,
 }
 
-impl fmt::Display for DGraphController {
+impl fmt::Display for ComputationDependencyController {
     /// easy way to visualize the dgraph.
     /// paste into <http://viz-js.com/> to visualize
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", Dot::new(&self.graph))
+        // iterate through vec self.graph and print each node
+
+        for (i, node) in self.graph.iter().enumerate() {
+            write!(f, "node{}[label=\"{}\"]\n", i, node)?;
+        }
+        Ok(())
     }
 }
 
-impl DGraphController {
+impl ComputationDependencyController {
     /// Constructs a new empty dgraph.
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Returns a immutable reference to the underlying graph.
-    pub fn graph(&self) -> &DiGraphMap<DGraphNode, usize> {
-        &self.graph
-    }
-
-    /// Given `cell` adds `dependencies` to the graph.
-    /// Checks for cycles and returns an error if one is found.
-    pub fn add_dependencies(
-        &mut self,
-        cell: DGraphNode,
-        dependencies: &[DGraphNode],
-    ) -> Result<(), DependencyCycleError> {
-        // add new dependencies
-        for &dcell in dependencies {
-            // add_edge automatically adds nodes if they don't exist
-            self.graph.add_edge(dcell, cell, 1);
+    /// Given `area` and `updates` adds a new node to the graph.
+    pub fn add_dependencies(&mut self, area: Rect, updates: Pos) {
+        // don't allow a node to depend on itself
+        if area.contains(updates) {
+            return;
         }
 
-        // check for cycles
-        if is_cyclic_directed(&self.graph) {
-            Err(DependencyCycleError { source: cell })
-        } else {
-            Ok(())
-        }
+        // remove entry from Vec with the same updates pos
+        self.remove_dependencies(updates);
+
+        // add new node
+        self.graph.push(ComputationDependency { area, updates });
     }
 
-    /// Given `cell` removes `dependencies` to the graph.
-    /// Checks for isolated nodes and removes them from the graph.
-    pub fn remove_dependencies(&mut self, cell: DGraphNode, dependencies: &[DGraphNode]) {
-        // remove old dependencies
-        for &dependency in dependencies.iter() {
-            self.graph.remove_edge(dependency, cell);
-
-            // remove nodes that are not connected to any other nodes
-            if self.graph.neighbors(dependency).count() == 0 {
-                self.graph.remove_node(dependency);
+    /// Given `area` and `updates` removes a node from the graph.
+    pub fn remove_dependencies(&mut self, cell: Pos) {
+        // search vec
+        let mut index = None;
+        for (i, node) in self.graph.iter().enumerate() {
+            if node.updates == cell {
+                index = Some(i);
+                break;
             }
         }
 
-        // remove cell node if not connected to any other nodes
-        if self.graph.neighbors(cell).count() == 0 {
-            self.graph.remove_node(cell);
+        // if found, remove it
+        if let Some(i) = index {
+            self.graph.remove(i);
         }
     }
 
-    /// Returns a vector of cells that depend on `cell`.
-    /// Does not return input `cell` as a dependent.
-    pub fn get_dependent_cells(&self, cell: DGraphNode) -> Vec<DGraphNode> {
-        let mut result = Vec::<DGraphNode>::new();
-        let mut bfs = Bfs::new(&self.graph, cell);
-        while let Some(visited) = bfs.next(&self.graph) {
-            result.push(visited);
+    /// Returns a vector of cells that _directly_ depend on `cell`.
+    /// Does not traverse the graph.
+    pub fn get_dependent_cells(&self, area: Rect) -> HashSet<Pos> {
+        let mut seen = HashSet::new();
+
+        for node in self.graph.iter() {
+            if node.area.contains(area.min) {
+                seen.insert(node.updates);
+            }
         }
-        // return result except `cell` in pos 0
-        result[1..].to_vec()
+
+        seen
     }
 }
