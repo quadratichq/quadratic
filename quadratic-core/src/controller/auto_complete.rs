@@ -7,7 +7,7 @@ use super::{
     GridController,
 };
 use crate::{
-    grid::{Bold, RegionRef, Sheet, SheetId},
+    grid::{RegionRef, Sheet, SheetId},
     Array, CellValue, Pos, Rect,
 };
 
@@ -104,12 +104,14 @@ impl GridController {
     ) -> Result<TransactionSummary> {
         let sheet = self.sheet(sheet_id);
 
+        // expand values
         let selection_values = cell_values_in_rect(&rect, &sheet)?;
         let cell_values = set_cell_projections(&selection_values, &range);
         let values = Array::new_row_major(range.size(), cell_values)
             .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", range.size(), e))?;
         let transaction_summary = self.set_cells(sheet_id, range.min, values, cursor.clone());
 
+        // expand formats
         let mut ops = self.expand_height(sheet_id, direction, rect, range);
         let mut ops_width = self.expand_width(sheet_id, direction, rect, range);
         ops.append(&mut ops_width);
@@ -139,7 +141,7 @@ impl GridController {
         let max_height = |height| range_height.min(height);
         let calc_step = |height, step| match direction {
             ExpandDirection::Down => height + (rect_height * step),
-            _ => height - (rect_height * step) - 1,
+            _ => height - (rect_height * step),
         };
 
         (1..=height_steps + 1)
@@ -237,24 +239,6 @@ pub fn cell_values_in_rect(&rect: &Rect, sheet: &Sheet) -> Result<Array> {
         .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", rect.size(), e))
 }
 
-// pub fn cell_formats_in_rect(&rect: &Rect, sheet: &Sheet) -> Result<Array> {
-//     let values = rect
-//         .y_range()
-//         .map(|y| {
-//             rect.x_range()
-//                 .map(|x| {
-//                     sheet
-//                         .get_formatting_value::<Bold>(Pos { x, y })
-//                 })
-//                 .collect::<Vec<CellValue>>()
-//         })
-//         .flatten()
-//         .collect();
-
-//     Array::new_row_major(rect.size(), values)
-//         .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", rect.size(), e))
-// }
-
 /// For a given selection (source data), project the cell value at the given Pos.
 pub fn project_cell_value<'a>(selection: &'a Array, pos: Pos, rect: &'a Rect) -> &'a CellValue {
     let x = (pos.x - rect.min.x) as u32 % selection.width();
@@ -262,14 +246,6 @@ pub fn project_cell_value<'a>(selection: &'a Array, pos: Pos, rect: &'a Rect) ->
 
     selection.get(x, y).unwrap_or_else(|_| &CellValue::Blank)
 }
-
-// /// For a given selection (source data), project the cell value at the given Pos.
-// pub fn project_cell_format<'a>(selection: &'a CellF, pos: Pos, rect: &'a Rect) -> &'a CellValue {
-//     let x = (pos.x - rect.min.x) as u32 % selection.width();
-//     let y = (pos.y - rect.min.y) as u32 % selection.height();
-
-//     selection.get(x, y).unwrap_or_else(|_| &CellValue::Blank)
-// }
 
 /// Set the cell values in the given Rect to the given Array.
 ///
