@@ -119,6 +119,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
               if (!isRenaming) return;
               setIsRenaming((isRenaming) => {
                 if (!isRenaming) return false;
+                if (value.trim() === '') return false; // Don't allow empty names
                 if (value !== sheet.name) {
                   if (!sheets.nameExists(value)) {
                     sheets.sheet.name = value;
