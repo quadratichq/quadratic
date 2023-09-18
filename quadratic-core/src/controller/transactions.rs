@@ -74,19 +74,12 @@ impl GridController {
 
                 Operation::SetCellDependencies { cell, dependencies } => {
                     let deps = self.grid.dependencies_mut();
-                    deps.add_dependencies(dependencies, cell);
-                    rev_ops.push(Operation::RemoveCellDependencies { cell })
-                }
+                    let old_deps = deps.set_dependencies(cell, dependencies);
 
-                Operation::RemoveCellDependencies { cell } => {
-                    let deps = self.grid.dependencies_mut();
-                    deps.remove_dependencies(cell);
-
-                    // todo: add correct reverse operation
                     rev_ops.push(Operation::SetCellDependencies {
                         cell,
-                        dependencies: vec![],
-                    })
+                        dependencies: old_deps,
+                    });
                 }
 
                 Operation::SetCellFormats { region, attr } => {
@@ -219,10 +212,7 @@ pub enum Operation {
     },
     SetCellDependencies {
         cell: Pos,
-        dependencies: Vec<Rect>,
-    },
-    RemoveCellDependencies {
-        cell: Pos,
+        dependencies: Option<Vec<Rect>>,
     },
     SetCellFormats {
         region: RegionRef,
@@ -252,7 +242,6 @@ impl Operation {
         match self {
             Operation::SetCellValues { region, .. } => Some(region.sheet),
             Operation::SetCellDependencies { .. } => None,
-            Operation::RemoveCellDependencies { .. } => None,
             Operation::SetCellFormats { region, .. } => Some(region.sheet),
             Operation::AddSheet { .. } => None,
             Operation::DeleteSheet { .. } => None,

@@ -1,51 +1,24 @@
 use serde::{Deserialize, Serialize};
 use std;
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt;
 
 use crate::Pos;
 use crate::Rect;
 
-#[derive(Debug, PartialEq)]
-pub struct DependencyCycleError {
-    pub source: Pos,
-}
-
-impl fmt::Display for DependencyCycleError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Dependency cycle detected at {:?}", self.source)
-    }
-}
-
-#[derive(Default, Clone, Debug, PartialEq, Deserialize, Serialize)]
-pub struct ComputationDependency {
-    pub area: Rect,
-    pub updates: Pos,
-}
-
-impl fmt::Display for ComputationDependency {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "ComputationDependency {{ area: {}, updates: {} }}",
-            self.area, self.updates
-        )
-    }
-}
-
 #[derive(Default, Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct ComputationDependencyController {
-    graph: Vec<ComputationDependency>,
+    graph: HashMap<Pos, Vec<Rect>>,
 }
 
 impl fmt::Display for ComputationDependencyController {
-    /// easy way to visualize the dgraph.
-    /// paste into <http://viz-js.com/> to visualize
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // iterate through vec self.graph and print each node
-
-        for (i, node) in self.graph.iter().enumerate() {
-            write!(f, "node{}[label=\"{}\"]\n", i, node)?;
+        // print graph
+        for (pos, rects) in self.graph.iter() {
+            for rect in rects.iter() {
+                writeln!(f, "cell: {} dependencies: {}", pos, rect,)?;
+            }
         }
         Ok(())
     }
@@ -57,50 +30,37 @@ impl ComputationDependencyController {
         Self::default()
     }
 
-    /// Given `area` and `updates` adds a new node to the graph.
-    pub fn add_dependencies(&mut self, areas: Vec<Rect>, updates: Pos) {
-        // remove entry from Vec with the same updates pos
-        self.remove_dependencies(updates);
-
-        for area in areas.iter() {
-            // don't allow a node to depend on itself
-            if area.contains(updates) {
-                continue;
-            }
-
-            // add new node
-            self.graph.push(ComputationDependency {
-                area: *area,
-                updates,
-            });
-        }
-    }
-
-    /// Given `area` and `updates` removes a node from the graph.
-    pub fn remove_dependencies(&mut self, cell: Pos) {
-        // search vec
-        let mut index = None;
-        for (i, node) in self.graph.iter().enumerate() {
-            if node.updates == cell {
-                index = Some(i);
-                break;
+    /// Given `cell` and `dependencies` adds a new node to the graph.
+    /// Returns the old dependencies of the node.
+    pub fn set_dependencies(
+        &mut self,
+        cell: Pos,
+        dependencies: Option<Vec<Rect>>,
+    ) -> Option<Vec<Rect>> {
+        // make sure cell is not in dependencies
+        if let Some(dependencies) = &dependencies {
+            if dependencies.iter().any(|rect| rect.contains(cell)) {
+                panic!("cell cannot depend on itself");
             }
         }
 
-        // if found, remove it
-        if let Some(i) = index {
-            self.graph.remove(i);
+        // update graph and return old dependencies
+        match dependencies {
+            Some(areas) => self.graph.insert(cell, areas),
+            None => self.graph.remove(&cell),
         }
     }
 
-    /// Returns a vector of cells that _directly_ depend on `cell`.
+    /// Returns cells that _directly_ depend on `cell`.
     /// Does not traverse the graph.
     pub fn get_dependent_cells(&self, area: Rect) -> HashSet<Pos> {
         let mut seen = HashSet::new();
 
         for node in self.graph.iter() {
-            if node.area.contains(area.min) {
-                seen.insert(node.updates);
+            for rect in node.1.iter() {
+                if rect.intersects(area) {
+                    seen.insert(*node.0);
+                }
             }
         }
 

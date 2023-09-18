@@ -111,6 +111,15 @@ impl Rect {
         self.x_range().contains(&pos.x) && self.y_range().contains(&pos.y)
     }
 
+    /// Returns whether a rectangle intersects with the rectangle.
+    pub fn intersects(self, other: Rect) -> bool {
+        // https://en.wikipedia.org/wiki/Hyperplane_separation_theorem#:~:text=the%20following%20form%3A-,Separating%20axis%20theorem,-%E2%80%94%C2%A0Two%20closed
+        !(other.max.x < self.min.x
+            || other.min.x > self.max.x
+            || other.max.y < self.min.y
+            || other.min.y > self.max.y)
+    }
+
     /// Returns the range of X values in the rectangle.
     pub fn x_range(self) -> Range<i64> {
         self.min.x..self.max.x + 1

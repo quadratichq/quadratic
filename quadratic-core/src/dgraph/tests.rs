@@ -8,12 +8,12 @@ use crate::Rect;
 fn test_graph() {
     let mut cdc = ComputationDependencyController::new();
 
-    cdc.add_dependencies(
-        vec![Rect {
+    cdc.set_dependencies(
+        Pos { x: 3, y: 3 },
+        Some(vec![Rect {
             min: Pos { x: 0, y: 0 },
             max: Pos { x: 1, y: 1 },
-        }],
-        Pos { x: 3, y: 3 },
+        }]),
     );
 
     assert_eq!(
@@ -21,12 +21,12 @@ fn test_graph() {
         std::iter::once(Pos { x: 3, y: 3 }).collect()
     );
 
-    cdc.add_dependencies(
-        vec![Rect {
+    cdc.set_dependencies(
+        Pos { x: 4, y: 4 },
+        Some(vec![Rect {
             min: Pos { x: 0, y: 0 },
             max: Pos { x: 1, y: 1 },
-        }],
-        Pos { x: 4, y: 4 },
+        }]),
     );
 
     assert_eq!(
@@ -37,23 +37,23 @@ fn test_graph() {
             .collect()
     );
 
-    cdc.remove_dependencies(Pos { x: 3, y: 3 });
+    cdc.set_dependencies(Pos { x: 3, y: 3 }, None);
 
     assert_eq!(
         cdc.get_dependent_cells(Rect::single_pos(Pos { x: 0, y: 0 })),
         std::iter::once(Pos { x: 4, y: 4 }).collect()
     );
 
-    cdc.remove_dependencies(Pos { x: 4, y: 4 });
+    cdc.set_dependencies(Pos { x: 4, y: 4 }, None);
 
     assert_eq!(
         cdc.get_dependent_cells(Rect::single_pos(Pos { x: 0, y: 0 })),
         HashSet::new()
     );
 
-    cdc.add_dependencies(
-        vec![Rect::single_pos(Pos { x: 10, y: 10 })],
+    cdc.set_dependencies(
         Pos { x: 11, y: 11 },
+        Some(vec![Rect::single_pos(Pos { x: 10, y: 10 })]),
     );
 
     assert_eq!(
