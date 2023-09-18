@@ -3,7 +3,6 @@ use crate::{controller::transactions::TransactionSummary, grid::js_types::*};
 use std::str::FromStr;
 
 pub mod clipboard;
-pub mod code;
 pub mod formatting;
 pub mod render;
 pub mod sheets;
@@ -158,11 +157,37 @@ impl GridController {
 
     /// Returns a code cell as a [`CodeCellValue`].
     #[wasm_bindgen(js_name = "getCodeCellValue")]
-    pub fn get_code_cell_value(&mut self, sheet_id: String, pos: &Pos) -> Result<JsValue, JsValue> {
+    pub fn js_get_code_cell_value(
+        &mut self,
+        sheet_id: String,
+        pos: &Pos,
+    ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         match self.sheet(sheet_id).get_code_cell(*pos) {
             Some(code_cell) => Ok(serde_wasm_bindgen::to_value(&code_cell)?),
             None => Ok(JsValue::UNDEFINED),
         }
+    }
+
+    /// Sets the code on a cell
+    ///
+    /// Returns [`TransactionSummary`]
+    #[wasm_bindgen(js_name = "setCodeResults")]
+    pub fn js_set_code_cell_value(
+        &mut self,
+        sheet_id: String,
+        pos: Pos,
+        language: CodeCellLanguage,
+        code_string: String,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        Ok(serde_wasm_bindgen::to_value(&self.set_cell_code(
+            sheet_id,
+            pos,
+            language,
+            code_string,
+            cursor,
+        ))?)
     }
 }

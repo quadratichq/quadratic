@@ -1,4 +1,6 @@
 use serde::{Deserialize, Serialize};
+use strum_macros::Display;
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::CellRef;
 use crate::{ArraySize, CellValue, Error, Value};
@@ -29,7 +31,9 @@ impl CodeCellValue {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Display, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[wasm_bindgen]
+#[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum CodeCellLanguage {
     Python,
@@ -39,7 +43,6 @@ pub enum CodeCellLanguage {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-// #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CodeCellRunOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub std_out: Option<String>,
@@ -56,7 +59,6 @@ impl CodeCellRunOutput {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-// #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(untagged)]
 pub enum CodeCellRunResult {
     Ok {

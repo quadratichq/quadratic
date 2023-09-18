@@ -126,6 +126,15 @@ impl GridController {
                     })
                 }
 
+                Operation::SetCellCode {
+                    cell_ref,
+                    language,
+                    code_string,
+                } => {
+                    let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
+                    sheet.set_cell_code(cell_ref, language, code_string);
+                }
+
                 Operation::AddSheet { sheet } => {
                     // todo: need to handle the case where sheet.order overlaps another sheet order
                     // this may happen after (1) delete a sheet; (2) MP update w/an added sheet; and (3) undo the deleted sheet
@@ -202,15 +211,24 @@ pub struct Transaction {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Operation {
+    /// Cell Operations
     SetCellValues {
         region: RegionRef,
         values: Array,
     },
+
     SetCellFormats {
         region: RegionRef,
         attr: CellFmtArray,
     },
 
+    SetCellCode {
+        cell_ref: CellRef,
+        language: CodeCellLanguage,
+        code_string: String,
+    },
+
+    /// Sheet Operations
     AddSheet {
         sheet: Sheet,
     },
@@ -238,6 +256,7 @@ impl Operation {
         match self {
             Operation::SetCellValues { region, .. } => Some(region.sheet),
             Operation::SetCellFormats { region, .. } => Some(region.sheet),
+            Operation::SetCellCode { cell_ref, .. } => Some(cell_ref.sheet),
 
             Operation::AddSheet { .. } => None,
             Operation::DeleteSheet { .. } => None,

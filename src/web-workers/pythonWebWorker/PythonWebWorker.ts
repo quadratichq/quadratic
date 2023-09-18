@@ -1,12 +1,12 @@
 import { GetCellsDB } from '../../grid/sheet/Cells/GetCellsDB';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 
-export class PythonWebWorker {
-  private worker: Worker;
+class PythonWebWorker {
+  private worker?: Worker;
   private callback?: (results: PythonReturnType) => void;
   private loaded = false;
 
-  constructor() {
+  init() {
     this.worker = new Worker(new URL('./python.worker.ts', import.meta.url));
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
@@ -22,7 +22,7 @@ export class PythonWebWorker {
           throw new Error('Expected range to be defined in get-cells');
         }
         const cells = await GetCellsDB(range.x0, range.y0, range.x1, range.y1);
-        this.worker.postMessage({ type: 'get-cells', cells } as PythonMessage);
+        this.worker!.postMessage({ type: 'get-cells', cells } as PythonMessage);
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
         this.loaded = true;
@@ -36,7 +36,7 @@ export class PythonWebWorker {
 
   run(python: string): Promise<PythonReturnType> {
     return new Promise((resolve) => {
-      if (!this.loaded) {
+      if (!this.loaded || !this.worker) {
         resolve({
           cells_accessed: [],
           success: false,
@@ -55,3 +55,5 @@ export class PythonWebWorker {
 
   changeOutput(_: Record<string, PythonReturnType>): void {}
 }
+
+export const pythonWebWorker = new PythonWebWorker();

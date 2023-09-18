@@ -3,7 +3,7 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 
 use crate::{
-    grid::{NumericFormat, NumericFormatKind, RegionRef, SheetId},
+    grid::{CodeCellLanguage, NumericFormat, NumericFormatKind, RegionRef, SheetId},
     Array, CellValue, Pos, Rect, RunLengthEncoding,
 };
 
@@ -117,6 +117,24 @@ impl GridController {
         };
         let region = self.region(sheet_id, rect);
         let ops = vec![Operation::SetCellValues { region, values }];
+        self.transact_forward(Transaction { ops, cursor })
+    }
+
+    pub fn set_cell_code(
+        &mut self,
+        sheet_id: SheetId,
+        pos: Pos,
+        language: CodeCellLanguage,
+        code_string: String,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let sheet = self.grid.sheet_mut_from_id(sheet_id);
+        let cell_ref = sheet.get_or_create_cell_ref(pos);
+        let ops = vec![Operation::SetCellCode {
+            cell_ref,
+            language,
+            code_string,
+        }];
         self.transact_forward(Transaction { ops, cursor })
     }
 
