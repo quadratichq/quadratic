@@ -46,7 +46,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
         >
           Delete
         </MenuItem>
-        <SubMenu label="Change color">
+        <SubMenu label="Change color" className="color-picker-submenu">
           <QColorPicker
             onChangeComplete={(change: ColorResult) => {
               const color = convertReactColorToString(change);
