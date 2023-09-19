@@ -552,13 +552,6 @@ mod tests {
         let expected = Rect::new_span(Pos { x: -1, y: 2 }, Pos { x: 2, y: 10 });
         assert_eq!(result.cell_regions_modified[0].1, expected);
 
-        table_modified(
-            grid_controller.clone(),
-            sheet_id,
-            &result.cell_regions_modified[0].1,
-            &selected,
-        );
-
         assert_cell_value_text(&grid_controller, sheet_id, -1, 2, "a");
         assert_cell_value_text(&grid_controller, sheet_id, -1, 3, "f");
         assert_cell_value_text(&grid_controller, sheet_id, -1, 4, "a");
@@ -605,6 +598,15 @@ mod tests {
         assert_cell_value_text(&grid_controller, sheet_id, -5, 1, "f");
         assert_cell_value_text(&grid_controller, sheet_id, -6, 1, "b");
         assert_cell_value_text(&grid_controller, sheet_id, -7, 1, "r");
+
+        assert_cell_format_bold(&grid_controller, sheet_id, -2, 0);
+        assert_cell_format_bold(&grid_controller, sheet_id, -5, 0);
+        assert_cell_format_bold(&grid_controller, sheet_id, -3, 1);
+        assert_cell_format_bold(&grid_controller, sheet_id, -4, 1);
+        assert_cell_format_bold(&grid_controller, sheet_id, -6, 0);
+        assert_cell_format_bold(&grid_controller, sheet_id, -9, 0);
+        assert_cell_format_bold(&grid_controller, sheet_id, -7, 1);
+        assert_cell_format_bold(&grid_controller, sheet_id, -8, 1);
     }
 
     #[test]
@@ -630,5 +632,20 @@ mod tests {
         assert_cell_value_text(&grid_controller, sheet_id, 6, 1, "b");
         assert_cell_value_text(&grid_controller, sheet_id, 7, 1, "f");
         assert_cell_value_text(&grid_controller, sheet_id, 8, 1, "z");
+
+        table_modified(
+            grid_controller.clone(),
+            sheet_id,
+            &result.cell_regions_modified[0].1,
+            &selected,
+        );
+        assert_cell_format_bold(&grid_controller, sheet_id, 3, 0);
+        assert_cell_format_bold(&grid_controller, sheet_id, 6, 0);
+        assert_cell_format_bold(&grid_controller, sheet_id, 4, 1);
+        assert_cell_format_bold(&grid_controller, sheet_id, 5, 1);
+        assert_cell_format_bold(&grid_controller, sheet_id, 7, 0);
+        assert_cell_format_bold(&grid_controller, sheet_id, 10, 0);
+        assert_cell_format_bold(&grid_controller, sheet_id, 8, 1);
+        assert_cell_format_bold(&grid_controller, sheet_id, 0, 1);
     }
 }
