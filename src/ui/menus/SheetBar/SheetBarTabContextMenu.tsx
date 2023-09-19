@@ -1,11 +1,10 @@
+import { Box } from '@mui/material';
 import { ControlledMenu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
-import { useState } from 'react';
 import { ColorResult } from 'react-color';
 import { sheets } from '../../../grid/controller/Sheets';
 import { convertReactColorToString } from '../../../helpers/convertColor';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { QColorPicker } from '../../components/qColorPicker';
-import { ConfirmDeleteSheet } from './ConfirmDeleteSheet';
 
 interface Props {
   contextMenu?: { x: number; y: number; id: string; name: string };
@@ -15,19 +14,26 @@ interface Props {
 
 export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
   const { contextMenu, handleClose, handleRename } = props;
-  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | undefined>();
-  const [lastName, setLastName] = useState<string | undefined>();
 
   return (
-    <>
+    <Box sx={{ fontSize: '.875rem' }}>
       <ControlledMenu
-        className="sheet-bar-context-menu"
         state={!!contextMenu ? 'open' : 'closed'}
         onClose={handleClose}
         anchorPoint={contextMenu ? { x: contextMenu?.x, y: contextMenu?.y } : undefined}
       >
-        <MenuItem onClick={handleRename}>
-          <b>Rename</b>
+        <MenuItem
+          onClick={() => {
+            if (!contextMenu) return;
+            if (window.confirm(`Are you sure you want to delete ${contextMenu.name}?`)) {
+              sheets.deleteSheet(sheets.sheet.id);
+              handleClose();
+            }
+            handleClose();
+            setTimeout(focusGrid);
+          }}
+        >
+          Delete
         </MenuItem>
         <MenuItem
           onClick={handleClose}
@@ -38,17 +44,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
         >
           Duplicate
         </MenuItem>
-        <MenuItem
-          onClick={() => {
-            if (!contextMenu) return;
-            setConfirmDelete({ ...contextMenu });
-            setLastName(confirmDelete?.name);
-            handleClose();
-          }}
-        >
-          Delete
-        </MenuItem>
-        <SubMenu label="Change Color">
+        <SubMenu label="Change color" className="color-picker-submenu">
           <QColorPicker
             onChangeComplete={(change: ColorResult) => {
               const color = convertReactColorToString(change);
@@ -67,6 +63,8 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
             }}
           />
         </SubMenu>
+
+        <MenuItem onClick={handleRename}>Rename</MenuItem>
         <MenuDivider />
         <MenuItem
           disabled={sheets.getFirst().id === contextMenu?.id}
@@ -78,7 +76,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
             handleClose();
           }}
         >
-          Move Left
+          Move left
         </MenuItem>
         <MenuItem
           disabled={sheets.getLast().id === contextMenu?.id}
@@ -90,17 +88,17 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
             handleClose();
           }}
         >
-          Move Right
+          Move right
         </MenuItem>
       </ControlledMenu>
-      <ConfirmDeleteSheet
+      {/* <ConfirmDeleteSheet
         lastName={lastName}
         confirmDelete={confirmDelete}
         handleClose={() => {
           setConfirmDelete(undefined);
           window.setTimeout(focusGrid, 0);
         }}
-      />
-    </>
+      /> */}
+    </Box>
   );
 };

@@ -4,6 +4,11 @@ import { isMobile } from 'react-device-detect';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { debugAlwaysShowCache, debugShowCacheFlag } from '../../debugFlags';
+import {
+  copyToClipboardEvent,
+  cutToClipboardEvent,
+  pasteFromClipboardEvent,
+} from '../../grid/actions/clipboard/clipboard';
 import { sheets } from '../../grid/controller/Sheets';
 import { AxesLines } from '../UI/AxesLines';
 import { Cursor } from '../UI/Cursor';
@@ -127,11 +132,18 @@ export class PixiApp {
 
   private setupListeners() {
     window.addEventListener('resize', this.resize);
+    document.addEventListener('copy', copyToClipboardEvent);
+    document.addEventListener('paste', pasteFromClipboardEvent);
+    document.addEventListener('cut', cutToClipboardEvent);
   }
 
   private removeListeners() {
     window.removeEventListener('resize', this.resize);
+    document.removeEventListener('copy', copyToClipboardEvent);
+    document.removeEventListener('paste', pasteFromClipboardEvent);
+    document.removeEventListener('cut', cutToClipboardEvent);
   }
+
   private showCache(): void {
     if (debugShowCacheFlag && !this.quadrants.visible) {
       const cacheOn = document.querySelector('.debug-show-cache-on');
