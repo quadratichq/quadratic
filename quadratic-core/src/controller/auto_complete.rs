@@ -268,21 +268,23 @@ mod tests {
     use crate::{array, grid::Bold};
     use bigdecimal::BigDecimal;
     use std::str::FromStr;
+    use tabled::{builder::Builder, settings::Style};
 
-    fn test_setup() -> (GridController, Sheet, Rect) {
+    fn test_setup() -> (GridController, SheetId, Rect) {
         let mut grid_controller = GridController::new();
         let sheet_id = grid_controller.grid.sheets()[0].id;
+        // let sheet = grid_controller.grid().sheet_from_id(sheet_id);
 
         let rect = Rect {
             min: Pos { x: 0, y: 0 },
             max: Pos { x: 2, y: 1 },
         };
-        grid_controller.set_cell_value(sheet_id, Pos { x: 0, y: 0 }, "1.0".into(), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 1, y: 0 }, "2.0".into(), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 0 }, "3.0".into(), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 0, y: 1 }, "4.0".into(), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, "5.0".into(), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 1 }, "6.0".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 0, y: 0 }, "1".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 1, y: 0 }, "2".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 0 }, "3".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 0, y: 1 }, "4".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, "5".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 1 }, "6".into(), None);
 
         grid_controller.set_cell_bold(
             sheet_id,
@@ -291,20 +293,85 @@ mod tests {
             None,
         );
 
-        let sheet = grid_controller.sheet(sheet_id);
+        // crate::util::dbgjs(sheet.get_formatting_value::<Bold>(Pos { x: 0, y: 0 }));
 
-        crate::util::dbgjs(sheet.get_formatting_value::<Bold>(Pos { x: 0, y: 0 }));
-
-        (grid_controller.clone(), sheet.clone(), rect)
+        (grid_controller.clone(), sheet_id, rect)
     }
 
-    fn to_cell_value(value: &str) -> CellValue {
+    fn to_text_cell_value(value: &str) -> CellValue {
+        CellValue::Text(value.into())
+    }
+
+    fn to_number_cell_value(value: &str) -> CellValue {
         CellValue::Number(BigDecimal::from_str(value).unwrap())
+    }
+
+    fn assert_cell_value(
+        grid_controller: &GridController,
+        sheet_id: SheetId,
+        x: i64,
+        y: i64,
+        value: CellValue,
+    ) {
+        let sheet = grid_controller.grid().sheet_from_id(sheet_id);
+        assert_eq!(sheet.get_cell_value(Pos { x, y }), Some(value));
+    }
+
+    fn assert_cell_value_number(
+        grid_controller: &GridController,
+        sheet_id: SheetId,
+        x: i64,
+        y: i64,
+        value: &str,
+    ) {
+        assert_cell_value(grid_controller, sheet_id, x, y, to_number_cell_value(value));
+    }
+
+    fn assert_cell_value_text(
+        grid_controller: &GridController,
+        sheet_id: SheetId,
+        x: i64,
+        y: i64,
+        value: &str,
+    ) {
+        assert_cell_value(grid_controller, sheet_id, x, y, to_text_cell_value(value));
+    }
+
+    fn table(grid_controller: GridController, sheet_id: SheetId, range: Rect) {
+        let sheet = grid_controller.grid().sheet_from_id(sheet_id);
+        let mut vals = vec![];
+        let mut builder = Builder::default();
+        let columns = (range.x_range())
+            .map(|i| i.to_string())
+            .collect::<Vec<String>>();
+        let mut blank = vec!["".to_string()];
+        blank.extend(columns.clone());
+        builder.set_header(blank.into_iter());
+
+        range.y_range().for_each(|y| {
+            vals.push(y.to_string());
+            range.x_range().for_each(|x| {
+                let pos = Pos { x, y };
+                vals.push(
+                    sheet
+                        .get_cell_value(pos)
+                        .unwrap_or(CellValue::Blank)
+                        .to_string(),
+                );
+            });
+            builder.push_record(vals.clone());
+            vals.clear();
+        });
+
+        let mut table = builder.build();
+        table.with(Style::modern());
+        println!("{}", table);
     }
 
     #[test]
     fn test_cell_values_in_rect() {
-        let (_, sheet, rect) = test_setup();
+        let (grid_controller, sheet_id, rect) = test_setup();
+        let sheet = grid_controller.grid().sheet_from_id(sheet_id);
         let result = cell_values_in_rect(&rect, &sheet).unwrap();
         let expected = array![
             1, 2, 3;
@@ -316,23 +383,24 @@ mod tests {
 
     #[test]
     fn test_project_cell_value() {
-        let (_, sheet, rect) = test_setup();
+        let (grid_controller, sheet_id, rect) = test_setup();
+        let sheet = grid_controller.grid().sheet_from_id(sheet_id);
         let selection = cell_values_in_rect(&rect, &sheet).unwrap();
         let func = |pos| project_cell_value(&selection, pos, &rect);
 
-        assert_eq!(func(Pos { x: 3, y: 0 }), &to_cell_value("1.0"));
-        assert_eq!(func(Pos { x: 4, y: 0 }), &to_cell_value("2.0"));
-        assert_eq!(func(Pos { x: 5, y: 0 }), &to_cell_value("3.0"));
-        assert_eq!(func(Pos { x: 3, y: 1 }), &to_cell_value("4.0"));
-        assert_eq!(func(Pos { x: 4, y: 1 }), &to_cell_value("5.0"));
-        assert_eq!(func(Pos { x: 5, y: 1 }), &to_cell_value("6.0"));
+        assert_eq!(func(Pos { x: 3, y: 0 }), &to_text_cell_value("1"));
+        assert_eq!(func(Pos { x: 4, y: 0 }), &to_text_cell_value("2"));
+        assert_eq!(func(Pos { x: 5, y: 0 }), &to_text_cell_value("3"));
+        assert_eq!(func(Pos { x: 3, y: 1 }), &to_text_cell_value("4"));
+        assert_eq!(func(Pos { x: 4, y: 1 }), &to_text_cell_value("5"));
+        assert_eq!(func(Pos { x: 5, y: 1 }), &to_text_cell_value("6"));
     }
 
     #[test]
     fn test_expand_up() {
-        let (mut grid_controller, sheet, rect) = test_setup();
+        let (mut grid_controller, sheet_id, rect) = test_setup();
         let result = grid_controller
-            .expand_up(sheet.id, rect, -10, None, None)
+            .expand_up(sheet_id, rect, -10, None, None)
             .unwrap();
         let expected = Rect {
             min: Pos { x: 0, y: -10 },
@@ -341,7 +409,7 @@ mod tests {
         assert_eq!(result.cell_regions_modified[0].1, expected);
 
         let result = grid_controller
-            .expand_up(sheet.id, rect, -10, Some(1), None)
+            .expand_up(sheet_id, rect, -10, Some(1), None)
             .unwrap();
         let expected = Rect {
             min: Pos { x: 0, y: -10 },
@@ -352,9 +420,9 @@ mod tests {
 
     #[test]
     fn test_expand_down() {
-        let (mut grid_controller, sheet, rect) = test_setup();
+        let (mut grid_controller, sheet_id, rect) = test_setup();
         let result = grid_controller
-            .expand_down(sheet.id, rect, 10, None, None)
+            .expand_down(sheet_id, rect, 10, None, None)
             .unwrap();
         let expected = Rect {
             min: Pos { x: 0, y: 2 },
@@ -363,7 +431,7 @@ mod tests {
         assert_eq!(result.cell_regions_modified[0].1, expected);
 
         let result = grid_controller
-            .expand_down(sheet.id, rect, 10, Some(1), None)
+            .expand_down(sheet_id, rect, 10, Some(1), None)
             .unwrap();
         let expected = Rect {
             min: Pos { x: 0, y: 2 },
@@ -374,18 +442,20 @@ mod tests {
 
     #[test]
     fn test_expand_left() {
-        let (mut grid_controller, sheet, rect) = test_setup();
+        let (mut grid_controller, sheet_id, rect) = test_setup();
         let result = grid_controller
-            .expand_left(sheet.id, rect, -10, None, None)
+            .expand_left(sheet_id, rect, -10, None, None)
             .unwrap();
-        let expected = Rect {
-            min: Pos { x: -10, y: 0 },
-            max: Pos { x: -1, y: 1 },
-        };
+        let expected = Rect::new_span(Pos { x: -10, y: 0 }, Pos { x: -1, y: 1 });
         assert_eq!(result.cell_regions_modified[0].1, expected);
 
+        // let range = Rect::new_span(Pos { x: -10, y: 0 }, Pos { x: 10, y: 1 });
+        // table(grid_controller.clone(), sheet_id, range);
+
+        assert_cell_value_number(&grid_controller, sheet_id, -1, 0, "3");
+
         let result = grid_controller
-            .expand_left(sheet.id, rect, -10, Some(10), None)
+            .expand_left(sheet_id, rect, -10, Some(10), None)
             .unwrap();
         let expected = Rect {
             min: Pos { x: -10, y: 0 },
@@ -396,9 +466,9 @@ mod tests {
 
     #[test]
     fn test_expand_right() {
-        let (mut grid_controller, sheet, rect) = test_setup();
+        let (mut grid_controller, sheet_id, rect) = test_setup();
         let result = grid_controller
-            .expand_right(sheet.id, rect, 10, None, None)
+            .expand_right(sheet_id, rect, 10, None, None)
             .unwrap();
         let expected = Rect {
             min: Pos { x: 3, y: 0 },
@@ -407,7 +477,7 @@ mod tests {
         assert_eq!(result.cell_regions_modified[0].1, expected);
 
         let result = grid_controller
-            .expand_right(sheet.id, rect, 10, Some(10), None)
+            .expand_right(sheet_id, rect, 10, Some(10), None)
             .unwrap();
         let expected = Rect {
             min: Pos { x: 3, y: 0 },
