@@ -112,10 +112,10 @@ impl GridController {
         let mut ops = self.set_cells_operations(sheet_id, range.min, values);
 
         // expand formats
-        let mut ops_height = self.expand_height(sheet_id, direction, rect, range);
         let mut ops_width = self.expand_width(sheet_id, direction, rect, range);
-        ops.append(&mut ops_height);
+        let mut ops_height = self.expand_height(sheet_id, direction, rect, range);
         ops.append(&mut ops_width);
+        ops.append(&mut ops_height);
 
         Ok(self.transact_forward(Transaction { ops, cursor }))
     }
@@ -172,6 +172,7 @@ impl GridController {
             .x_range()
             .map(|x| {
                 let col = Rect::new_span((x, range.min.y).into(), (x, range.max.y).into());
+                crate::util::dbgjs(format!("col: {:?}", col));
                 self.get_all_cell_formats(sheet_id, col)
             })
             .collect::<Vec<Vec<CellFmtArray>>>();
@@ -188,7 +189,7 @@ impl GridController {
             .enumerate()
             .map(|(index, x)| {
                 let col_index = index % selection.len();
-                let col = Rect::new_span((*x, rect.min.y).into(), (*x, rect.max.y).into());
+                let col = Rect::new_span((*x, range.min.y).into(), (*x, range.max.y).into());
                 let region = self.region(sheet_id, col);
                 apply_formats(region, &selection[col_index])
                 // vec![]
@@ -320,8 +321,6 @@ mod tests {
             });
         });
 
-        // crate::util::dbgjs(sheet.get_formatting_value::<Bold>(Pos { x: 0, y: 0 }));
-
         (grid_controller.clone(), sheet_id)
     }
 
@@ -345,8 +344,6 @@ mod tests {
             Some(true),
             None,
         );
-
-        // crate::util::dbgjs(sheet.get_formatting_value::<Bold>(Pos { x: 0, y: 0 }));
 
         (grid_controller.clone(), sheet_id, rect)
     }

@@ -218,11 +218,14 @@ export class PointerAutoComplete {
         // });
       }
     } else if (this.stateVertical === 'expandDown' && this.toVertical !== undefined) {
+      // if (!(this.stateHorizontal === 'expandRight' && this.toHorizontal !== undefined)) {
       await expandDown({
         selection: this.selection,
         to: this.toVertical,
         shrinkHorizontal: this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined,
       });
+      console.log('done');
+      // }
     } else if (this.stateVertical === 'expandUp' && this.toVertical !== undefined) {
       await expandUp({
         selection: this.selection,
