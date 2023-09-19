@@ -292,28 +292,36 @@ mod tests {
     use crate::{array, grid::Bold};
     use bigdecimal::BigDecimal;
     use std::str::FromStr;
-    use tabled::{builder::Builder, settings::Style};
+    use tabled::{
+        builder::Builder,
+        settings::{themes::Colorization, Color},
+        settings::{Modify, Style},
+    };
 
     fn test_setup_rect(rect: &Rect) -> (GridController, SheetId) {
         let mut grid_controller = GridController::new();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let vals = vec!["a", "h", "x", "g", "f", "z", "r", "b"];
+        let bolds = vec![true, false, false, true, false, true, true, false];
         let mut count = 0;
 
         rect.y_range().for_each(|y| {
             rect.x_range().for_each(|x| {
                 let pos = Pos { x, y };
                 grid_controller.set_cell_value(sheet_id, pos, vals[count].into(), None);
+
+                if bolds[count] == true {
+                    grid_controller.set_cell_bold(
+                        sheet_id,
+                        Rect::single_pos(pos),
+                        Some(true),
+                        None,
+                    );
+                }
+
                 count += 1;
             });
         });
-
-        grid_controller.set_cell_bold(
-            sheet_id,
-            Rect::single_pos(Pos { x: 0, y: 0 }),
-            Some(true),
-            None,
-        );
 
         // crate::util::dbgjs(sheet.get_formatting_value::<Bold>(Pos { x: 0, y: 0 }));
 
@@ -395,24 +403,39 @@ mod tests {
         let mut blank = vec!["".to_string()];
         blank.extend(columns.clone());
         builder.set_header(blank.into_iter());
+        let mut bolds = vec![];
+        let mut count_x = 0;
+        let mut count_y = 0;
 
         range.y_range().for_each(|y| {
             vals.push(y.to_string());
             range.x_range().for_each(|x| {
-                let pos = Pos { x, y };
+                let pos: Pos = Pos { x, y };
+
+                if sheet.get_formatting_value::<Bold>(pos).is_some() {
+                    bolds.push((count_y + 1, count_x + 1));
+                }
+
                 vals.push(
                     sheet
                         .get_cell_value(pos)
                         .unwrap_or(CellValue::Blank)
                         .to_string(),
                 );
+                count_x += 1;
             });
             builder.push_record(vals.clone());
             vals.clear();
+            count_x = 0;
+            count_y += 1;
         });
 
         let mut table = builder.build();
         table.with(Style::modern());
+
+        bolds.iter().for_each(|coords| {
+            table.with(Modify::new((coords.0, coords.1)).with(Color::BOLD));
+        });
         println!("\nsheet: {}\n{}", sheet.id, table);
     }
 
