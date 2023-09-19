@@ -125,7 +125,7 @@ impl Grid {
     }
     pub fn remove_sheet(&mut self, sheet_id: SheetId) -> Sheet {
         let i = self.sheet_id_to_index(sheet_id);
-        let i = i.expect("remove_sheet: sheet_id doesn't exist");
+        let i = i.expect("sheet_id doesn't exist");
         self.sheets.remove(i)
     }
     /// Moves a sheet before another sheet
