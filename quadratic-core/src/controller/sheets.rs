@@ -4,7 +4,8 @@ use lexicon_fractional_index::key_between;
 use crate::grid::{Sheet, SheetId};
 
 use super::{
-    transactions::{Operation, Transaction, TransactionSummary},
+    operations::Operation,
+    transactions::{Transaction, TransactionSummary},
     GridController,
 };
 

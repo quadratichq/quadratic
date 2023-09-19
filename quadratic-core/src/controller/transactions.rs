@@ -1,7 +1,7 @@
-use crate::{grid::*, Array, CellValue, Pos, Rect};
+use crate::{grid::*, Pos, Rect};
 use serde::{Deserialize, Serialize};
 
-use super::{formatting::CellFmtArray, GridController};
+use super::{operations::Operation, GridController};
 
 impl GridController {
     pub fn transact_forward(&mut self, transaction: Transaction) -> TransactionSummary {
@@ -35,8 +35,17 @@ impl GridController {
         Some(summary)
     }
 
+    // pub fn start_transaction(&mut self) -> TransactionInProgress {
+    //     TransactionInProgress {
+    //         grid_controller: self,
+    //         summary: TransactionSummary::default(),
+    //         rev_ops: vec![],
+    //         is_committed: false,
+    //     }
+    // }
+
     pub fn transact(&mut self, transaction: Transaction) -> (Transaction, TransactionSummary) {
-        let mut rev_ops = vec![];
+        let mut reverse_operations = vec![];
         let mut sheets_with_changed_bounds = vec![];
         let mut summary = TransactionSummary::default();
         for op in transaction.ops {
@@ -45,151 +54,18 @@ impl GridController {
                     sheets_with_changed_bounds.push(new_dirty_sheet)
                 }
             }
-            match op {
-                Operation::SetCellValues { region, values } => {
-                    summary
-                        .cell_regions_modified
-                        .extend(self.grid.region_rects(&region));
-
-                    let sheet = self.grid.sheet_mut_from_id(region.sheet);
-
-                    let Some(size) = region.size() else { continue };
-                    let old_values = region
-                        .iter()
-                        .zip(values.into_cell_values_vec())
-                        .map(|(cell_ref, value)| {
-                            let pos = sheet.cell_ref_to_pos(cell_ref)?;
-                            let response = sheet.set_cell_value(pos, value)?;
-                            Some(response.old_value)
-                        })
-                        .map(|old_value| old_value.unwrap_or(CellValue::Blank))
-                        .collect();
-                    let old_values = Array::new_row_major(size, old_values)
-                        .expect("error constructing array of old values for SetCells operation");
-                    rev_ops.push(Operation::SetCellValues {
-                        region,
-                        values: old_values,
-                    });
-                }
-
-                Operation::SetCellDependencies { cell, dependencies } => {
-                    let old_deps = self.grid.set_dependencies(cell, dependencies);
-
-                    rev_ops.push(Operation::SetCellDependencies {
-                        cell,
-                        dependencies: old_deps,
-                    });
-                }
-
-                Operation::SetCellFormats { region, attr } => {
-                    match attr {
-                        CellFmtArray::FillColor(_) => {
-                            summary.fill_sheets_modified.push(region.sheet);
-                        }
-                        _ => {
-                            summary
-                                .cell_regions_modified
-                                .extend(self.grid.region_rects(&region));
-                        }
-                    }
-                    let old_attr = match attr {
-                        CellFmtArray::Align(align) => CellFmtArray::Align(
-                            self.set_cell_formats_for_type::<CellAlign>(&region, align),
-                        ),
-                        CellFmtArray::Wrap(wrap) => CellFmtArray::Wrap(
-                            self.set_cell_formats_for_type::<CellWrap>(&region, wrap),
-                        ),
-                        CellFmtArray::NumericFormat(num_fmt) => CellFmtArray::NumericFormat(
-                            self.set_cell_formats_for_type::<NumericFormat>(&region, num_fmt),
-                        ),
-                        CellFmtArray::NumericDecimals(num_decimals) => {
-                            CellFmtArray::NumericDecimals(
-                                self.set_cell_formats_for_type::<NumericDecimals>(
-                                    &region,
-                                    num_decimals,
-                                ),
-                            )
-                        }
-                        CellFmtArray::Bold(bold) => CellFmtArray::Bold(
-                            self.set_cell_formats_for_type::<Bold>(&region, bold),
-                        ),
-                        CellFmtArray::Italic(italic) => CellFmtArray::Italic(
-                            self.set_cell_formats_for_type::<Italic>(&region, italic),
-                        ),
-                        CellFmtArray::TextColor(text_color) => CellFmtArray::TextColor(
-                            self.set_cell_formats_for_type::<TextColor>(&region, text_color),
-                        ),
-                        CellFmtArray::FillColor(fill_color) => CellFmtArray::FillColor(
-                            self.set_cell_formats_for_type::<FillColor>(&region, fill_color),
-                        ),
-                    };
-                    rev_ops.push(Operation::SetCellFormats {
-                        region,
-                        attr: old_attr,
-                    })
-                }
-
-                Operation::AddSheet { sheet } => {
-                    // todo: need to handle the case where sheet.order overlaps another sheet order
-                    // this may happen after (1) delete a sheet; (2) MP update w/an added sheet; and (3) undo the deleted sheet
-
-                    let sheet_id = sheet.id.clone();
-                    self.grid
-                        .add_sheet(Some(sheet))
-                        .expect("duplicate sheet name");
-                    summary.sheet_list_modified = true;
-                    rev_ops.push(Operation::DeleteSheet { sheet_id });
-                }
-                Operation::DeleteSheet { sheet_id } => {
-                    let deleted_sheet = self.grid.remove_sheet(sheet_id);
-                    if let Some(sheet) = deleted_sheet {
-                        summary.sheet_list_modified = true;
-                        rev_ops.push(Operation::AddSheet { sheet });
-                    }
-                }
-
-                Operation::ReorderSheet { target, order } => {
-                    let sheet = self.grid.sheet_from_id(target);
-                    let original_order = sheet.order.clone();
-                    self.grid.move_sheet(target, order);
-                    rev_ops.push(Operation::ReorderSheet {
-                        target,
-                        order: original_order,
-                    });
-                }
-
-                Operation::SetSheetName { sheet_id, name } => {
-                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    let old_name = sheet.name.clone();
-                    sheet.name = name;
-                    rev_ops.push(Operation::SetSheetName {
-                        sheet_id,
-                        name: old_name,
-                    });
-                    summary.sheet_list_modified = true;
-                }
-
-                Operation::SetSheetColor { sheet_id, color } => {
-                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    let old_color = sheet.color.clone();
-                    sheet.color = color;
-                    rev_ops.push(Operation::SetSheetColor {
-                        sheet_id,
-                        color: old_color,
-                    });
-                    summary.sheet_list_modified = true;
-                }
-            }
+            let reverse_operation = self.execute_operation(op, &mut summary);
+            reverse_operations.push(reverse_operation);
         }
         for dirty_sheet in sheets_with_changed_bounds {
             self.grid
                 .sheet_mut_from_id(dirty_sheet)
                 .recalculate_bounds();
         }
-        rev_ops.reverse();
+        reverse_operations.reverse();
 
         let reverse_transaction = Transaction {
-            ops: rev_ops,
+            ops: reverse_operations,
             cursor: transaction.cursor,
         };
 
@@ -201,54 +77,6 @@ impl GridController {
 pub struct Transaction {
     pub ops: Vec<Operation>,
     pub cursor: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum Operation {
-    SetCellValues {
-        region: RegionRef,
-        values: Array,
-    },
-    SetCellDependencies {
-        cell: Pos,
-        dependencies: Option<Vec<Rect>>,
-    },
-    SetCellFormats {
-        region: RegionRef,
-        attr: CellFmtArray,
-    },
-    AddSheet {
-        sheet: Sheet,
-    },
-    DeleteSheet {
-        sheet_id: SheetId,
-    },
-    SetSheetName {
-        sheet_id: SheetId,
-        name: String,
-    },
-    SetSheetColor {
-        sheet_id: SheetId,
-        color: Option<String>,
-    },
-    ReorderSheet {
-        target: SheetId,
-        order: String,
-    },
-}
-impl Operation {
-    pub fn sheet_with_changed_bounds(&self) -> Option<SheetId> {
-        match self {
-            Operation::SetCellValues { region, .. } => Some(region.sheet),
-            Operation::SetCellDependencies { .. } => None,
-            Operation::SetCellFormats { region, .. } => Some(region.sheet),
-            Operation::AddSheet { .. } => None,
-            Operation::DeleteSheet { .. } => None,
-            Operation::SetSheetColor { .. } => None,
-            Operation::SetSheetName { .. } => None,
-            Operation::ReorderSheet { .. } => None,
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
@@ -267,3 +95,38 @@ pub struct TransactionSummary {
     /// Cursor location for undo/redo operation
     pub cursor: Option<String>,
 }
+
+// struct TransactionInProgress<'a> {
+//     grid_controller: &'a mut GridController,
+//     summary: TransactionSummary,
+//     rev_ops: Vec<Operation>,
+//     is_committed: bool,
+// }
+
+// impl Drop for TransactionInProgress<'_> {
+//     fn drop(&mut self) {
+//         if !self.is_committed {
+//             panic!("Transaction was not committed");
+//         }
+//     }
+// }
+
+// impl TransactionInProgress {
+//     pub fn add_operation(&mut self, op: Operation) {
+//         let reverse_traction = self.execute_operation(op);
+//         self.rev_ops.push(op);
+//     }
+
+//     /// Ends transaction and DOES NOT add to undo stack.
+//     pub fn commit(&mut self) -> TransactionSummary {
+//         self.is_committed = true;
+//         self.summary
+//     }
+
+//     /// Ends transaction and adds to undo stack.
+//     pub fn commit_forward(&mut self) -> TransactionSummary {
+//         self.grid_controller.undo_stack.extend(self.rev_ops);
+//         self.grid_controller.redo_stack.clear();
+//         self.commit()
+//     }
+// }

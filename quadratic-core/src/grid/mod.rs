@@ -123,10 +123,10 @@ impl Grid {
         self.sort_sheets();
         Ok(id)
     }
-    pub fn remove_sheet(&mut self, sheet_id: SheetId) -> Option<Sheet> {
-        let i = self.sheet_id_to_index(sheet_id)?;
-        let ret = self.sheets.remove(i);
-        Some(ret)
+    pub fn remove_sheet(&mut self, sheet_id: SheetId) -> Sheet {
+        let i = self.sheet_id_to_index(sheet_id);
+        let i = i.expect("remove_sheet: sheet_id doesn't exist");
+        self.sheets.remove(i)
     }
     /// Moves a sheet before another sheet
     pub fn move_sheet(&mut self, target: SheetId, order: String) {

@@ -9,7 +9,8 @@ use crate::{
 
 use super::{
     formatting::CellFmtArray,
-    transactions::{Operation, Transaction, TransactionSummary},
+    operations::Operation,
+    transactions::{Transaction, TransactionSummary},
     GridController,
 };
 

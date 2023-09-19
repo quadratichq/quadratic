@@ -8,7 +8,8 @@ use crate::{
 use serde::{Deserialize, Serialize};
 
 use super::{
-    transactions::{Operation, Transaction, TransactionSummary},
+    operations::Operation,
+    transactions::{Transaction, TransactionSummary},
     GridController,
 };
 
