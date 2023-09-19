@@ -5,6 +5,7 @@ import { intersects } from '../../../helpers/intersects';
 import { pixiApp } from '../../../pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from '../../../pixiApp/PixiAppSettings';
 import { Coordinate } from '../../../types/size';
+import { expandDown, expandLeft, expandRight, expandUp } from './autoComplete';
 
 export type StateVertical = 'expandDown' | 'expandUp' | 'shrink' | undefined;
 export type StateHorizontal = 'expandRight' | 'expandLeft' | 'shrink' | undefined;
@@ -208,49 +209,49 @@ export class PointerAutoComplete {
     }
     // sheetController.start_transaction();
 
-    // if (this.stateVertical === 'shrink') {
-    //   if (this.endCell) {
-    //     await shrinkVertical({
-    //       app: pixiApp,
-    //       selection: this.selection,
-    //       endCell: this.endCell,
-    //     });
-    //   }
-    // } else if (this.stateVertical === 'expandDown' && this.toVertical !== undefined) {
-    //   await expandDown({
-    //     selection: this.selection,
-    //     to: this.toVertical,
-    //     shrinkHorizontal: this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined,
-    //   });
-    // } else if (this.stateVertical === 'expandUp' && this.toVertical !== undefined) {
-    //   await expandUp({
-    //     selection: this.selection,
-    //     to: this.toVertical,
-    //     shrinkHorizontal: this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined,
-    //   });
-    // }
+    if (this.stateVertical === 'shrink') {
+      if (this.endCell) {
+        // await shrinkVertical({
+        //   app: pixiApp,
+        //   selection: this.selection,
+        //   endCell: this.endCell,
+        // });
+      }
+    } else if (this.stateVertical === 'expandDown' && this.toVertical !== undefined) {
+      await expandDown({
+        selection: this.selection,
+        to: this.toVertical,
+        shrinkHorizontal: this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined,
+      });
+    } else if (this.stateVertical === 'expandUp' && this.toVertical !== undefined) {
+      await expandUp({
+        selection: this.selection,
+        to: this.toVertical,
+        shrinkHorizontal: this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined,
+      });
+    }
 
-    // if (this.stateHorizontal === 'shrink') {
-    //   if (this.endCell) {
-    //     await shrinkHorizontal({
-    //       app: pixiApp,
-    //       selection: this.selection,
-    //       endCell: this.endCell,
-    //     });
-    //   }
-    // } else if (this.stateHorizontal === 'expandLeft' && this.toHorizontal !== undefined) {
-    //   await expandLeft({
-    //     selection: this.selection,
-    //     to: this.toHorizontal,
-    //     toVertical: this.toVertical,
-    //   });
-    // } else if (this.stateHorizontal === 'expandRight' && this.toHorizontal !== undefined) {
-    //   await expandRight({
-    //     selection: this.selection,
-    //     to: this.toHorizontal,
-    //     toVertical: this.toVertical,
-    //   });
-    // }
+    if (this.stateHorizontal === 'shrink') {
+      if (this.endCell) {
+        // await shrinkHorizontal({
+        //   app: pixiApp,
+        //   selection: this.selection,
+        //   endCell: this.endCell,
+        // });
+      }
+    } else if (this.stateHorizontal === 'expandLeft' && this.toHorizontal !== undefined) {
+      await expandLeft({
+        selection: this.selection,
+        to: this.toHorizontal,
+        toVertical: this.toVertical,
+      });
+    } else if (this.stateHorizontal === 'expandRight' && this.toHorizontal !== undefined) {
+      await expandRight({
+        selection: this.selection,
+        to: this.toHorizontal,
+        toVertical: this.toVertical,
+      });
+    }
     // sheetController.end_transaction();
 
     // this.setSelection();

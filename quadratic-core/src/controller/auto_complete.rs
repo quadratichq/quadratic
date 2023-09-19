@@ -11,7 +11,7 @@ use crate::{
     Array, CellValue, Pos, Rect,
 };
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExpandDirection {
     Up,
     Down,
@@ -113,8 +113,8 @@ impl GridController {
 
         // expand formats
         let mut ops = self.expand_height(sheet_id, direction, rect, range);
-        let mut ops_width = self.expand_width(sheet_id, direction, rect, range);
-        ops.append(&mut ops_width);
+        // let mut ops_width = self.expand_width(sheet_id, direction, rect, range);
+        // ops.append(&mut ops_width);
 
         // crate::util::dbgjs(selection_formats);
 
@@ -133,26 +133,43 @@ impl GridController {
         rect: &Rect,
         range: &Rect,
     ) -> Vec<Operation> {
+        crate::util::dbgjs(format!("expand_height"));
         // Get the formats of the selected rectangle
-        let selection_formats = self.get_all_cell_formats(sheet_id, *rect);
+        let mut selection_formats = self.get_all_cell_formats(sheet_id, *rect);
         let rect_height = rect.height() as i64;
-        let range_height = range.height() as i64 + rect_height;
-        let height_steps = ((range_height / rect_height) as f32).ceil() as i64;
-        let max_height = |height| range_height.min(height);
+        let range_height = range.height() as i64;
+        let height_steps = (((range_height + rect_height + 1) / rect_height) as f32).floor() as i64;
+
+        let max_height = |height: i64| match direction {
+            ExpandDirection::Down => height.min(range.max.y),
+            _ => height.max(range.min.y),
+        };
+
         let calc_step = |height, step| match direction {
             ExpandDirection::Down => height + (rect_height * step),
             _ => height - (rect_height * step),
         };
 
-        (1..=height_steps + 1)
+        (1..height_steps)
             .map(|step| {
-                let rew_rect = Rect::new_span(
-                    (rect.min.x, calc_step(rect.min.y, step)).into(),
+                let new_rect = Rect::new_span(
+                    (rect.min.x, max_height(calc_step(rect.min.y, step))).into(),
                     (rect.max.x, max_height(calc_step(rect.max.y, step))).into(),
                 );
 
-                let region = self.region(sheet_id, rew_rect);
-                apply_formats(region, &selection_formats)
+                // hack to get the formats of the last row for an edge case
+                if new_rect.max.y == new_rect.min.y && direction == ExpandDirection::Up {
+                    let rect = Rect::new_span(rect.max, (rect.max.x - 1, rect.max.y - 1).into());
+                    selection_formats = self.get_all_cell_formats(sheet_id, rect);
+                }
+
+                let region = self.region(sheet_id, new_rect);
+                let ops = apply_formats(region, &selection_formats);
+                self.transact_forward(Transaction {
+                    ops: ops.clone(),
+                    cursor: None,
+                });
+                ops
             })
             .flatten()
             .collect()
@@ -294,7 +311,7 @@ mod tests {
     use std::str::FromStr;
     use tabled::{
         builder::Builder,
-        settings::{themes::Colorization, Color},
+        settings::Color,
         settings::{Modify, Style},
     };
 
@@ -413,6 +430,17 @@ mod tests {
         assert!(has_bold, "Cell at ({}, {}) is not bold", x, y);
     }
 
+    fn assert_cell_format_not_bold(
+        grid_controller: &GridController,
+        sheet_id: SheetId,
+        x: i64,
+        y: i64,
+    ) {
+        let sheet = grid_controller.grid().sheet_from_id(sheet_id);
+        let has_bold = sheet.get_formatting_value::<Bold>(Pos { x, y }).is_some();
+        assert!(!has_bold, "Cell at ({}, {}) is bold", x, y);
+    }
+
     fn table(grid_controller: GridController, sheet_id: SheetId, range: &Rect) {
         let sheet = grid_controller.grid().sheet_from_id(sheet_id);
         let mut vals = vec![];
@@ -454,7 +482,11 @@ mod tests {
         table.with(Style::modern());
 
         bolds.iter().for_each(|coords| {
-            table.with(Modify::new((coords.0, coords.1)).with(Color::BOLD));
+            table.with(
+                Modify::new((coords.0, coords.1))
+                    .with(Color::BOLD)
+                    .with(Color::FG_BRIGHT_RED),
+            );
         });
         println!("\nsheet: {}\n{}", sheet.id, table);
     }
@@ -539,6 +571,18 @@ mod tests {
         assert_cell_format_bold(&grid_controller, sheet_id, 1, -3);
         assert_cell_format_bold(&grid_controller, sheet_id, -1, -4);
         assert_cell_format_bold(&grid_controller, sheet_id, 2, -4);
+
+        table_modified(
+            grid_controller.clone(),
+            sheet_id,
+            &result.cell_regions_modified[0].1,
+            &selected,
+        );
+
+        assert_cell_format_not_bold(&grid_controller, sheet_id, -1, -11);
+        assert_cell_format_not_bold(&grid_controller, sheet_id, 0, -11);
+        assert_cell_format_not_bold(&grid_controller, sheet_id, 1, -11);
+        assert_cell_format_not_bold(&grid_controller, sheet_id, 2, -11);
     }
 
     #[test]
@@ -573,6 +617,13 @@ mod tests {
         assert_cell_format_bold(&grid_controller, sheet_id, 2, 4);
         assert_cell_format_bold(&grid_controller, sheet_id, 0, 5);
         assert_cell_format_bold(&grid_controller, sheet_id, 1, 5);
+        assert_cell_format_bold(&grid_controller, sheet_id, -1, 10);
+        assert_cell_format_bold(&grid_controller, sheet_id, 2, 10);
+
+        assert_cell_format_not_bold(&grid_controller, sheet_id, -1, 11);
+        assert_cell_format_not_bold(&grid_controller, sheet_id, 0, 11);
+        assert_cell_format_not_bold(&grid_controller, sheet_id, 1, 11);
+        assert_cell_format_not_bold(&grid_controller, sheet_id, 2, 11);
     }
 
     #[test]
@@ -633,12 +684,6 @@ mod tests {
         assert_cell_value_text(&grid_controller, sheet_id, 7, 1, "f");
         assert_cell_value_text(&grid_controller, sheet_id, 8, 1, "z");
 
-        table_modified(
-            grid_controller.clone(),
-            sheet_id,
-            &result.cell_regions_modified[0].1,
-            &selected,
-        );
         assert_cell_format_bold(&grid_controller, sheet_id, 3, 0);
         assert_cell_format_bold(&grid_controller, sheet_id, 6, 0);
         assert_cell_format_bold(&grid_controller, sheet_id, 4, 1);

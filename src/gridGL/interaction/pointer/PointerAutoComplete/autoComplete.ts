@@ -135,6 +135,10 @@ export const expandUp = async (options: {
   to: number;
   shrinkHorizontal?: number;
 }): Promise<void> => {
+  console.log('expandUp', options);
+  const { selection, to, shrinkHorizontal } = options;
+  const sheet = sheets.sheet;
+  grid.expandUp(sheet.id, selection, to, shrinkHorizontal);
   // const { selection, to, shrinkHorizontal } = options;
   // const sheet = sheetController.sheet;
   // const cells: Cell[] = [];
