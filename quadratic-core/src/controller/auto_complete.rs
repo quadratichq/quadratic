@@ -370,7 +370,16 @@ mod tests {
         value: CellValue,
     ) {
         let sheet = grid_controller.grid().sheet_from_id(sheet_id);
-        assert_eq!(sheet.get_cell_value(Pos { x, y }), Some(value));
+        let cell_value = sheet.get_cell_value(Pos { x, y });
+        assert_eq!(
+            cell_value,
+            Some(value.clone()),
+            "Cell at ({}, {}) does not have the value {:?}, it's actually {:?}",
+            x,
+            y,
+            value,
+            cell_value
+        );
     }
 
     fn assert_cell_value_number(
@@ -391,6 +400,17 @@ mod tests {
         value: &str,
     ) {
         assert_cell_value(grid_controller, sheet_id, x, y, to_text_cell_value(value));
+    }
+
+    fn assert_cell_format_bold(
+        grid_controller: &GridController,
+        sheet_id: SheetId,
+        x: i64,
+        y: i64,
+    ) {
+        let sheet = grid_controller.grid().sheet_from_id(sheet_id);
+        let has_bold = sheet.get_formatting_value::<Bold>(Pos { x, y }).is_some();
+        assert!(has_bold, "Cell at ({}, {}) is not bold", x, y);
     }
 
     fn table(grid_controller: GridController, sheet_id: SheetId, range: &Rect) {
@@ -495,13 +515,6 @@ mod tests {
             .expand_up(sheet_id, selected, -10, None, None)
             .unwrap();
 
-        table_modified(
-            grid_controller.clone(),
-            sheet_id,
-            &result.cell_regions_modified[0].1,
-            &selected,
-        );
-
         let expected = Rect::new_span(Pos { x: -1, y: -10 }, Pos { x: 2, y: -1 });
         assert_eq!(result.cell_regions_modified[0].1, expected);
 
@@ -517,6 +530,15 @@ mod tests {
         assert_cell_value_text(&grid_controller, sheet_id, 1, -2, "x");
         assert_cell_value_text(&grid_controller, sheet_id, 1, -3, "r");
         assert_cell_value_text(&grid_controller, sheet_id, 1, -4, "x");
+
+        assert_cell_format_bold(&grid_controller, sheet_id, 0, -1);
+        assert_cell_format_bold(&grid_controller, sheet_id, 1, -1);
+        assert_cell_format_bold(&grid_controller, sheet_id, -1, -2);
+        assert_cell_format_bold(&grid_controller, sheet_id, 2, -2);
+        assert_cell_format_bold(&grid_controller, sheet_id, 0, -3);
+        assert_cell_format_bold(&grid_controller, sheet_id, 1, -3);
+        assert_cell_format_bold(&grid_controller, sheet_id, -1, -4);
+        assert_cell_format_bold(&grid_controller, sheet_id, 2, -4);
     }
 
     #[test]
@@ -530,6 +552,13 @@ mod tests {
         let expected = Rect::new_span(Pos { x: -1, y: 2 }, Pos { x: 2, y: 10 });
         assert_eq!(result.cell_regions_modified[0].1, expected);
 
+        table_modified(
+            grid_controller.clone(),
+            sheet_id,
+            &result.cell_regions_modified[0].1,
+            &selected,
+        );
+
         assert_cell_value_text(&grid_controller, sheet_id, -1, 2, "a");
         assert_cell_value_text(&grid_controller, sheet_id, -1, 3, "f");
         assert_cell_value_text(&grid_controller, sheet_id, -1, 4, "a");
@@ -542,6 +571,15 @@ mod tests {
         assert_cell_value_text(&grid_controller, sheet_id, 1, 3, "r");
         assert_cell_value_text(&grid_controller, sheet_id, 1, 4, "x");
         assert_cell_value_text(&grid_controller, sheet_id, 1, 5, "r");
+
+        assert_cell_format_bold(&grid_controller, sheet_id, -1, 2);
+        assert_cell_format_bold(&grid_controller, sheet_id, 2, 2);
+        assert_cell_format_bold(&grid_controller, sheet_id, 0, 3);
+        assert_cell_format_bold(&grid_controller, sheet_id, 1, 3);
+        assert_cell_format_bold(&grid_controller, sheet_id, -1, 4);
+        assert_cell_format_bold(&grid_controller, sheet_id, 2, 4);
+        assert_cell_format_bold(&grid_controller, sheet_id, 0, 5);
+        assert_cell_format_bold(&grid_controller, sheet_id, 1, 5);
     }
 
     #[test]
