@@ -157,9 +157,13 @@ export const SheetBar = (): JSX.Element => {
 
   const handlePointerDown = useCallback(
     (options: { event: React.PointerEvent<HTMLDivElement>; sheet: Sheet }) => {
+      const { event, sheet } = options;
+
       if (!sheetTabs) return;
 
-      const { event, sheet } = options;
+      // don't drag on context menu via right click or ctrl+click
+      if (event.button === 2 || (event.ctrlKey === true && event.button === 0)) return;
+
       setActiveSheet((prevState: string) => {
         if (prevState !== sheet.id) {
           sheets.current = sheet.id;
@@ -354,14 +358,13 @@ export const SheetBar = (): JSX.Element => {
           throw new Error('Expect sheet to be defined in SheetBar.pointerUp');
         }
         const tabs: { order: number; id: string }[] = [];
-
         down.current.tab.parentElement?.childNodes.forEach((node) => {
           const element = node as HTMLDivElement;
           if (element !== tab) {
-            let order = parseInt(element.style.order);
-            let id = element.getAttribute('data-id');
+            const order = element.getAttribute('data-actual-order');
+            const id = element.getAttribute('data-id');
             if (!id || !order) throw new Error('Expected id and order to be defined in SheetBar');
-            tabs.push({ order, id });
+            tabs.push({ order: parseInt(order), id });
           }
         });
         tabs.sort((a, b) => (a.order < b.order ? -1 : a.order > b.order ? 1 : 0));
@@ -391,6 +394,7 @@ export const SheetBar = (): JSX.Element => {
   const handleContextEvent = useCallback(
     (event: MouseEvent, sheet: Sheet) => {
       event.preventDefault();
+      event.stopPropagation();
       if (hasPermission) {
         setContextMenu({ x: event.clientX, y: event.clientY, name: sheet.name, id: sheet.id });
       }
@@ -445,8 +449,8 @@ export const SheetBar = (): JSX.Element => {
           <SheetBarTab
             key={sheet.id}
             order={getOrderIndex(sheet.order).toString()}
-            onPointerDown={handlePointerDown}
             onContextMenu={handleContextEvent}
+            onPointerDown={handlePointerDown}
             active={activeSheet === sheet.id}
             sheet={sheet}
             forceRename={forceRename === sheet.id}

@@ -57,6 +57,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
       }}
       data-id={sheet.id}
       data-order={sheet.order}
+      data-actual-order={order}
       onPointerDown={(event) => onPointerDown({ event, sheet })}
       onDoubleClick={() => {
         if (hasPermission) {
