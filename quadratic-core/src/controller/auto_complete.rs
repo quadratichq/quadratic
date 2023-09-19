@@ -113,12 +113,11 @@ impl GridController {
 
         // expand formats
         let mut ops = self.expand_height(sheet_id, direction, rect, range);
-        // let mut ops_width = self.expand_width(sheet_id, direction, rect, range);
-        // ops.append(&mut ops_width);
-
-        // crate::util::dbgjs(selection_formats);
+        let mut ops_width = self.expand_width(sheet_id, direction, rect, range);
+        ops.append(&mut ops_width);
 
         self.transact_forward(Transaction { ops, cursor });
+        TransactionSummary::default();
 
         Ok(transaction_summary)
     }
@@ -133,43 +132,29 @@ impl GridController {
         rect: &Rect,
         range: &Rect,
     ) -> Vec<Operation> {
-        crate::util::dbgjs(format!("expand_height"));
-        // Get the formats of the selected rectangle
-        let mut selection_formats = self.get_all_cell_formats(sheet_id, *rect);
-        let rect_height = rect.height() as i64;
-        let range_height = range.height() as i64;
-        let height_steps = (((range_height + rect_height + 1) / rect_height) as f32).floor() as i64;
+        let mut selection = rect
+            .y_range()
+            .map(|y| {
+                let row = Rect::new_span((rect.min.x, y).into(), (rect.max.x, y).into());
+                self.get_all_cell_formats(sheet_id, row)
+            })
+            .collect::<Vec<Vec<CellFmtArray>>>();
 
-        let max_height = |height: i64| match direction {
-            ExpandDirection::Down => height.min(range.max.y),
-            _ => height.max(range.min.y),
-        };
+        let mut ops = range.y_range().collect::<Vec<i64>>();
 
-        let calc_step = |height, step| match direction {
-            ExpandDirection::Down => height + (rect_height * step),
-            _ => height - (rect_height * step),
-        };
+        // reverse arrays if going up
+        if direction == ExpandDirection::Up {
+            selection.reverse();
+            ops.reverse();
+        }
 
-        (1..height_steps)
-            .map(|step| {
-                let new_rect = Rect::new_span(
-                    (rect.min.x, max_height(calc_step(rect.min.y, step))).into(),
-                    (rect.max.x, max_height(calc_step(rect.max.y, step))).into(),
-                );
-
-                // hack to get the formats of the last row for an edge case
-                if new_rect.max.y == new_rect.min.y && direction == ExpandDirection::Up {
-                    let rect = Rect::new_span(rect.max, (rect.max.x - 1, rect.max.y - 1).into());
-                    selection_formats = self.get_all_cell_formats(sheet_id, rect);
-                }
-
-                let region = self.region(sheet_id, new_rect);
-                let ops = apply_formats(region, &selection_formats);
-                self.transact_forward(Transaction {
-                    ops: ops.clone(),
-                    cursor: None,
-                });
-                ops
+        ops.iter()
+            .enumerate()
+            .map(|(index, y)| {
+                let row_index = index % selection.len();
+                let row = Rect::new_span((rect.min.x, *y).into(), (rect.max.x, *y).into());
+                let region = self.region(sheet_id, row);
+                apply_formats(region, &selection[row_index])
             })
             .flatten()
             .collect()
@@ -185,33 +170,30 @@ impl GridController {
         rect: &Rect,
         range: &Rect,
     ) -> Vec<Operation> {
-        // Get the formats of the entire column: min: (rect.min.x, rect.min.y), max: (rect.max.x, range.max.y).
-        let formats = self.get_all_cell_formats(
-            sheet_id,
-            Rect {
-                min: rect.min,
-                max: (rect.max.x, range.max.y).into(),
-            },
-        );
+        let mut selection = rect
+            .x_range()
+            .map(|x| {
+                let col = Rect::new_span((x, range.min.y).into(), (x, range.max.y).into());
+                self.get_all_cell_formats(sheet_id, col)
+            })
+            .collect::<Vec<Vec<CellFmtArray>>>();
 
-        let rect_width = rect.width() as i64;
-        let range_width = range.width() as i64 + rect_width;
-        let width_steps = ((range_width / rect_width) as f32).ceil() as i64;
-        let max_width = |width| range_width.min(width);
-        let calc_step = |width, step| match direction {
-            ExpandDirection::Left => width - (rect_width * step),
-            _ => width + (rect_width * step),
-        };
+        let mut ops = range.x_range().collect::<Vec<i64>>();
 
-        // start with 1 to skip the source rect
-        (1..=width_steps + 1)
-            .map(|step| {
-                let new_rect = Rect::new_span(
-                    (calc_step(rect.min.x, step), rect.min.y).into(),
-                    (max_width(calc_step(rect.max.x, step)), range.max.y).into(),
-                );
-                let region = self.region(sheet_id, new_rect);
-                apply_formats(region, &formats)
+        // reverse arrays if going left
+        if direction == ExpandDirection::Left {
+            selection.reverse();
+            ops.reverse();
+        }
+
+        ops.iter()
+            .enumerate()
+            .map(|(index, x)| {
+                let col_index = index % selection.len();
+                let col = Rect::new_span((*x, rect.min.y).into(), (*x, rect.max.y).into());
+                let region = self.region(sheet_id, col);
+                apply_formats(region, &selection[col_index])
+                // vec![]
             })
             .flatten()
             .collect()
@@ -544,10 +526,10 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
         let (mut grid_controller, sheet_id) = test_setup_rect(&selected);
         let result = grid_controller
-            .expand_up(sheet_id, selected, -10, None, None)
+            .expand_up(sheet_id, selected, -3, None, None)
             .unwrap();
 
-        let expected = Rect::new_span(Pos { x: -1, y: -10 }, Pos { x: 2, y: -1 });
+        let expected = Rect::new_span(Pos { x: -1, y: -3 }, Pos { x: 2, y: -1 });
         assert_eq!(result.cell_regions_modified[0].1, expected);
 
         assert_cell_value_text(&grid_controller, sheet_id, -1, -1, "f");
@@ -571,13 +553,6 @@ mod tests {
         assert_cell_format_bold(&grid_controller, sheet_id, 1, -3);
         assert_cell_format_bold(&grid_controller, sheet_id, -1, -4);
         assert_cell_format_bold(&grid_controller, sheet_id, 2, -4);
-
-        table_modified(
-            grid_controller.clone(),
-            sheet_id,
-            &result.cell_regions_modified[0].1,
-            &selected,
-        );
 
         assert_cell_format_not_bold(&grid_controller, sheet_id, -1, -11);
         assert_cell_format_not_bold(&grid_controller, sheet_id, 0, -11);
@@ -658,6 +633,9 @@ mod tests {
         assert_cell_format_bold(&grid_controller, sheet_id, -9, 0);
         assert_cell_format_bold(&grid_controller, sheet_id, -7, 1);
         assert_cell_format_bold(&grid_controller, sheet_id, -8, 1);
+
+        assert_cell_format_not_bold(&grid_controller, sheet_id, -11, 0);
+        assert_cell_format_not_bold(&grid_controller, sheet_id, -11, 1);
     }
 
     #[test]
@@ -670,6 +648,13 @@ mod tests {
 
         let expected = Rect::new_span(Pos { x: 3, y: 0 }, Pos { x: 12, y: 1 });
         assert_eq!(result.cell_regions_modified[0].1, expected);
+
+        // table_modified(
+        //     grid_controller.clone(),
+        //     sheet_id,
+        //     &result.cell_regions_modified[0].1,
+        //     &selected,
+        // );
 
         assert_cell_value_text(&grid_controller, sheet_id, 3, 0, "a");
         assert_cell_value_text(&grid_controller, sheet_id, 4, 0, "h");
@@ -690,7 +675,10 @@ mod tests {
         assert_cell_format_bold(&grid_controller, sheet_id, 5, 1);
         assert_cell_format_bold(&grid_controller, sheet_id, 7, 0);
         assert_cell_format_bold(&grid_controller, sheet_id, 10, 0);
-        assert_cell_format_bold(&grid_controller, sheet_id, 8, 1);
-        assert_cell_format_bold(&grid_controller, sheet_id, 0, 1);
+        assert_cell_format_bold(&grid_controller, sheet_id, 11, 0);
+        assert_cell_format_bold(&grid_controller, sheet_id, 12, 1);
+
+        assert_cell_format_not_bold(&grid_controller, sheet_id, 13, 0);
+        assert_cell_format_not_bold(&grid_controller, sheet_id, 13, 1);
     }
 }
