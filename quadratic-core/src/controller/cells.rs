@@ -107,6 +107,15 @@ impl GridController {
         values: Array,
         cursor: Option<String>,
     ) -> TransactionSummary {
+        let ops = self.set_cells_operations(sheet_id, start_pos, values);
+        self.transact_forward(Transaction { ops, cursor })
+    }
+    pub fn set_cells_operations(
+        &mut self,
+        sheet_id: SheetId,
+        start_pos: Pos,
+        values: Array,
+    ) -> Vec<Operation> {
         let end_pos = Pos {
             x: start_pos.x + values.width() as i64 - 1,
             y: start_pos.y + values.height() as i64 - 1,
@@ -116,8 +125,7 @@ impl GridController {
             max: end_pos,
         };
         let region = self.region(sheet_id, rect);
-        let ops = vec![Operation::SetCellValues { region, values }];
-        self.transact_forward(Transaction { ops, cursor })
+        vec![Operation::SetCellValues { region, values }]
     }
 
     pub fn delete_cell_values_operations(

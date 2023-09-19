@@ -109,17 +109,15 @@ impl GridController {
         let cell_values = set_cell_projections(&selection_values, direction, &range);
         let values = Array::new_row_major(range.size(), cell_values)
             .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", range.size(), e))?;
-        let transaction_summary = self.set_cells(sheet_id, range.min, values, cursor.clone());
+        let mut ops = self.set_cells_operations(sheet_id, range.min, values);
 
         // expand formats
-        let mut ops = self.expand_height(sheet_id, direction, rect, range);
+        let mut ops_height = self.expand_height(sheet_id, direction, rect, range);
         let mut ops_width = self.expand_width(sheet_id, direction, rect, range);
+        ops.append(&mut ops_height);
         ops.append(&mut ops_width);
 
-        self.transact_forward(Transaction { ops, cursor });
-        TransactionSummary::default();
-
-        Ok(transaction_summary)
+        Ok(self.transact_forward(Transaction { ops, cursor }))
     }
 
     // Apply the block of formats below the selection in increments of the
