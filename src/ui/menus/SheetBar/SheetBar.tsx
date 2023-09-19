@@ -162,9 +162,6 @@ export const SheetBar = (): JSX.Element => {
 
       if (!sheetTabs) return;
 
-      // don't drag on context menu via right click or ctrl+click
-      if (event.button === 2 || (event.ctrlKey === true && event.button === 0)) return;
-
       setActiveSheet((prevState: string) => {
         if (prevState !== sheet.id) {
           sheets.current = sheet.id;
@@ -173,6 +170,9 @@ export const SheetBar = (): JSX.Element => {
         }
         return prevState;
       });
+
+      // don't drag on context menu via right click or ctrl+click
+      if (event.button === 2 || (event.ctrlKey === true && event.button === 0)) return;
 
       // If they don't have the permission, don't allow past here for drag to reorder
       if (!hasPermission) return;
