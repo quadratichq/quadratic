@@ -420,6 +420,7 @@ export const SheetBar = (): JSX.Element => {
           focusGrid();
         }}
         style={{ borderTop: `1px solid ${theme.palette.divider}` }}
+        tooltip="Add Sheet"
       >
         <Add fontSize="small" color="inherit" />
       </SheetBarButton>

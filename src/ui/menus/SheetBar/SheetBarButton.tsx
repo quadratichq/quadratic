@@ -1,10 +1,11 @@
-import { ButtonBase, ButtonBaseProps, useTheme } from '@mui/material';
+import { ButtonBase, ButtonBaseProps, Tooltip, useTheme } from '@mui/material';
 
 interface Props extends ButtonBaseProps {
   buttonRef?: any;
+  tooltip?: string;
 }
 
-export const SheetBarButton = ({ children, buttonRef, ...rest }: Props) => {
+export const SheetBarButton = ({ children, buttonRef, tooltip, ...rest }: Props) => {
   const theme = useTheme();
 
   const buttonStyles = {
@@ -24,8 +25,10 @@ export const SheetBarButton = ({ children, buttonRef, ...rest }: Props) => {
   };
 
   return (
-    <ButtonBase sx={buttonStyles} {...buttonProps}>
-      {children}
-    </ButtonBase>
+    <Tooltip title={tooltip ?? ''}>
+      <ButtonBase sx={buttonStyles} {...buttonProps}>
+        {children}
+      </ButtonBase>
+    </Tooltip>
   );
 };
