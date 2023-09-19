@@ -1,6 +1,7 @@
 import { ArrowDropDown } from '@mui/icons-material';
 import { Box, Fade, IconButton, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
 import { MouseEvent, PointerEvent, useEffect, useRef, useState } from 'react';
+import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -27,7 +28,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
   const { permission } = useRecoilValue(editorInteractionStateAtom);
-  const hasPermission = isEditorOrAbove(permission);
+  const hasPermission = isEditorOrAbove(permission) && !isMobile;
 
   useEffect(() => {
     if (forceRename) {

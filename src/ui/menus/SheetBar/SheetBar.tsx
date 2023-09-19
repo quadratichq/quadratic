@@ -1,6 +1,7 @@
 import { Add, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { Stack, useTheme } from '@mui/material';
 import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -23,7 +24,7 @@ export const SheetBar = (): JSX.Element => {
 
   const theme = useTheme();
   const { permission } = useRecoilValue(editorInteractionStateAtom);
-  const hasPermission = isEditorOrAbove(permission);
+  const hasPermission = isEditorOrAbove(permission) && !isMobile;
 
   // activate sheet
   const [activeSheet, setActiveSheet] = useState(sheets.current);
