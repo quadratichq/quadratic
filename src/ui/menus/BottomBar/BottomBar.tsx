@@ -57,7 +57,7 @@ export const BottomBar = () => {
       }}
       style={{
         backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        borderTop: `1px solid ${colors.mediumGray}`,
+        borderTop: `1px solid ${theme.palette.divider}`,
         color: colors.darkGray,
         bottom: 0,
         width: '100%',

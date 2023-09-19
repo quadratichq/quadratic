@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
@@ -17,7 +17,6 @@ import CommandPalette from './menus/CommandPalette';
 import FeedbackMenu from './menus/FeedbackMenu';
 import GoTo from './menus/GoTo';
 import SheetBar from './menus/SheetBar';
-import { ConfirmDeleteSheet } from './menus/SheetBar/ConfirmDeleteSheet';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 
 export default function QuadraticUI() {
@@ -30,13 +29,6 @@ export default function QuadraticUI() {
   useEffect(() => {
     pixiApp.resize();
   }, [presentationMode]);
-
-  // used for delete sheet
-  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | undefined>();
-
-  // todo...
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [lastName, setLastName] = useState<string | undefined>();
 
   return (
     <div
@@ -89,13 +81,6 @@ export default function QuadraticUI() {
         />
       )}
       {presentationMode && <PresentationModeHint />}
-
-      <ConfirmDeleteSheet
-        lastName={lastName}
-        confirmDelete={confirmDelete}
-        handleClose={() => setConfirmDelete(undefined)}
-      />
-
       <PermissionOverlay />
     </div>
   );
