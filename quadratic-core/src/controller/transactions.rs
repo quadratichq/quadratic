@@ -1,15 +1,44 @@
 use crate::{grid::*, Pos, Rect};
 use serde::{Deserialize, Serialize};
 
-use super::{operations::Operation, GridController};
+use super::{compute::SheetRect, operations::Operation, GridController};
 
 impl GridController {
-    pub fn transact_forward(&mut self, transaction: Transaction) -> TransactionSummary {
-        let (reverse_transaction, summary) = self.transact(transaction);
+    /// Takes a Vec of initial Operations creates and runs a tractions, returning a transaction summary.
+    /// This is the main entry point actions added to the undo/redo stack.
+    /// Also runs computations for cells that need to be recomputed, and all of their dependencies.
+    pub fn transact_forward(
+        &mut self,
+        operations: Vec<Operation>,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        // make initial changes
+        let mut summary = TransactionSummary::default();
+        let reverse_operations = self.transact(operations, &mut summary);
+
+        // run computations
+        // TODO cell_regions_modified also contains formatting, create new structure for just updated code and values
+        self.compute(
+            summary
+                .cell_regions_modified
+                .iter()
+                .map(|rect| SheetRect {
+                    sheet_id: rect.0,
+                    min: rect.1.min,
+                    max: rect.1.max,
+                })
+                .collect(),
+        );
+
+        // update undo/redo stack
         self.redo_stack.clear();
-        self.undo_stack.push(reverse_transaction);
+        self.undo_stack.push(Transaction {
+            ops: reverse_operations,
+            cursor,
+        });
         summary
     }
+
     pub fn has_undo(&self) -> bool {
         !self.undo_stack.is_empty()
     }
@@ -22,9 +51,12 @@ impl GridController {
         }
         let transaction = self.undo_stack.pop()?;
         let cursor_old = transaction.cursor.clone();
-        let (mut reverse_transaction, mut summary) = self.transact(transaction);
-        reverse_transaction.cursor = cursor;
-        self.redo_stack.push(reverse_transaction);
+        let mut summary = TransactionSummary::default();
+        let reverse_operation = self.transact(transaction.ops, &mut summary);
+        self.redo_stack.push(Transaction {
+            ops: reverse_operation,
+            cursor,
+        });
         summary.cursor = cursor_old;
         Some(summary)
     }
@@ -34,33 +66,34 @@ impl GridController {
         }
         let transaction = self.redo_stack.pop()?;
         let cursor_old = transaction.cursor.clone();
-        let (mut reverse_transaction, mut summary) = self.transact(transaction);
-        reverse_transaction.cursor = cursor;
-        self.undo_stack.push(reverse_transaction);
+        let mut summary = TransactionSummary::default();
+        let reverse_operations = self.transact(transaction.ops, &mut summary);
+        self.undo_stack.push(Transaction {
+            ops: reverse_operations,
+            cursor,
+        });
         summary.cursor = cursor_old;
         Some(summary)
     }
 
-    // pub fn start_transaction(&mut self) -> TransactionInProgress {
-    //     TransactionInProgress {
-    //         grid_controller: self,
-    //         summary: TransactionSummary::default(),
-    //         rev_ops: vec![],
-    //         is_committed: false,
-    //     }
-    // }
-
-    pub fn transact(&mut self, transaction: Transaction) -> (Transaction, TransactionSummary) {
+    /// executes a set of operations and returns the reverse operations
+    /// TODO: move to execute operation?
+    fn transact(
+        &mut self,
+        operations: Vec<Operation>,
+        summary: &mut TransactionSummary,
+    ) -> Vec<Operation> {
         let mut reverse_operations = vec![];
+        // TODO move bounds recalculation to somewhere else?
         let mut sheets_with_changed_bounds = vec![];
-        let mut summary = TransactionSummary::default();
-        for op in transaction.ops {
+
+        for op in operations.iter() {
             if let Some(new_dirty_sheet) = op.sheet_with_changed_bounds() {
                 if !sheets_with_changed_bounds.contains(&new_dirty_sheet) {
                     sheets_with_changed_bounds.push(new_dirty_sheet)
                 }
             }
-            let reverse_operation = self.execute_operation(op, &mut summary);
+            let reverse_operation = self.execute_operation(op.clone(), summary);
             reverse_operations.push(reverse_operation);
         }
         for dirty_sheet in sheets_with_changed_bounds {
@@ -69,13 +102,7 @@ impl GridController {
                 .recalculate_bounds();
         }
         reverse_operations.reverse();
-
-        let reverse_transaction = Transaction {
-            ops: reverse_operations,
-            cursor: transaction.cursor,
-        };
-
-        (reverse_transaction, summary)
+        reverse_operations
     }
 }
 
@@ -102,37 +129,17 @@ pub struct TransactionSummary {
     pub cursor: Option<String>,
 }
 
-// struct TransactionInProgress<'a> {
-//     grid_controller: &'a mut GridController,
-//     summary: TransactionSummary,
-//     rev_ops: Vec<Operation>,
-//     is_committed: bool,
-// }
-
-// impl Drop for TransactionInProgress<'_> {
-//     fn drop(&mut self) {
-//         if !self.is_committed {
-//             panic!("Transaction was not committed");
-//         }
-//     }
-// }
-
-// impl TransactionInProgress {
-//     pub fn add_operation(&mut self, op: Operation) {
-//         let reverse_traction = self.execute_operation(op);
-//         self.rev_ops.push(op);
-//     }
-
-//     /// Ends transaction and DOES NOT add to undo stack.
-//     pub fn commit(&mut self) -> TransactionSummary {
-//         self.is_committed = true;
-//         self.summary
-//     }
-
-//     /// Ends transaction and adds to undo stack.
-//     pub fn commit_forward(&mut self) -> TransactionSummary {
-//         self.grid_controller.undo_stack.extend(self.rev_ops);
-//         self.grid_controller.redo_stack.clear();
-//         self.commit()
-//     }
-// }
+impl Operation {
+    pub fn sheet_with_changed_bounds(&self) -> Option<SheetId> {
+        match self {
+            Operation::SetCellValues { region, .. } => Some(region.sheet),
+            Operation::SetCellDependencies { .. } => None,
+            Operation::SetCellFormats { region, .. } => Some(region.sheet),
+            Operation::AddSheet { .. } => None,
+            Operation::DeleteSheet { .. } => None,
+            Operation::SetSheetColor { .. } => None,
+            Operation::SetSheetName { .. } => None,
+            Operation::ReorderSheet { .. } => None,
+        }
+    }
+}

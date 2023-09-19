@@ -1,7 +1,12 @@
-use crate::{grid::*, Array, CellValue, Pos, Rect};
+use crate::{grid::*, Array, CellValue};
 use serde::{Deserialize, Serialize};
 
-use super::{formatting::CellFmtArray, transactions::TransactionSummary, GridController};
+use super::{
+    compute::{SheetPos, SheetRect},
+    formatting::CellFmtArray,
+    transactions::TransactionSummary,
+    GridController,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Operation {
@@ -10,8 +15,8 @@ pub enum Operation {
         values: Array,
     },
     SetCellDependencies {
-        cell: Pos,
-        dependencies: Option<Vec<Rect>>,
+        cell: SheetPos,
+        dependencies: Option<Vec<SheetRect>>,
     },
     SetCellFormats {
         region: RegionRef,
@@ -182,21 +187,6 @@ impl GridController {
                     color: old_color,
                 }
             }
-        }
-    }
-}
-
-impl Operation {
-    pub fn sheet_with_changed_bounds(&self) -> Option<SheetId> {
-        match self {
-            Operation::SetCellValues { region, .. } => Some(region.sheet),
-            Operation::SetCellDependencies { .. } => None,
-            Operation::SetCellFormats { region, .. } => Some(region.sheet),
-            Operation::AddSheet { .. } => None,
-            Operation::DeleteSheet { .. } => None,
-            Operation::SetSheetColor { .. } => None,
-            Operation::SetSheetName { .. } => None,
-            Operation::ReorderSheet { .. } => None,
         }
     }
 }

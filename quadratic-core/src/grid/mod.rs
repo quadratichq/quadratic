@@ -29,13 +29,16 @@ pub use formatting::{
 pub use ids::*;
 pub use sheet::Sheet;
 
-use crate::{CellValue, Pos, Rect, Value};
+use crate::{
+    controller::compute::{SheetPos, SheetRect},
+    CellValue, Pos, Rect, Value,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Grid {
     sheets: Vec<Sheet>,
-    dependencies: HashMap<Pos, Vec<Rect>>,
+    dependencies: HashMap<SheetPos, Vec<SheetRect>>,
 }
 impl Default for Grid {
     fn default() -> Self {
@@ -54,7 +57,7 @@ impl Grid {
     pub fn sheets(&self) -> &[Sheet] {
         &self.sheets
     }
-    pub fn dependencies_mut(&mut self) -> &mut HashMap<Pos, Vec<Rect>> {
+    pub fn dependencies_mut(&mut self) -> &mut HashMap<SheetPos, Vec<SheetRect>> {
         &mut self.dependencies
     }
     pub fn sheet_ids(&self) -> Vec<SheetId> {

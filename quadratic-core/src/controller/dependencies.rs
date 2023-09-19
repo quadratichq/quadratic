@@ -3,17 +3,17 @@ use std;
 use std::collections::HashSet;
 
 use crate::grid::Grid;
-use crate::Pos;
-use crate::Rect;
+
+use super::compute::{SheetPos, SheetRect};
 
 impl Grid {
     /// Given `cell` and `dependencies` adds a new node to the graph.
     /// Returns the old dependencies of the node.
     pub fn set_dependencies(
         &mut self,
-        cell: Pos,
-        dependencies: Option<Vec<Rect>>,
-    ) -> Option<Vec<Rect>> {
+        cell: SheetPos,
+        dependencies: Option<Vec<SheetRect>>,
+    ) -> Option<Vec<SheetRect>> {
         // make sure cell is not in dependencies
         if let Some(dependencies) = &dependencies {
             if dependencies.iter().any(|rect| rect.contains(cell)) {
@@ -30,7 +30,7 @@ impl Grid {
 
     /// Returns cells that _directly_ depend on `area`.
     /// Does not continue to traverse the graph.
-    pub fn get_dependent_cells(&mut self, area: Rect) -> HashSet<Pos> {
+    pub fn get_dependent_cells(&mut self, area: SheetRect) -> HashSet<SheetPos> {
         let mut seen = HashSet::new();
 
         for node in self.dependencies_mut().iter() {
@@ -45,60 +45,149 @@ impl Grid {
     }
 }
 
-#[test]
-fn test_graph() {
-    let mut cdc = Grid::new();
+#[cfg(test)]
+mod test {
+    use std::collections::HashSet;
 
-    cdc.set_dependencies(
-        Pos { x: 3, y: 3 },
-        Some(vec![Rect {
-            min: Pos { x: 0, y: 0 },
-            max: Pos { x: 1, y: 1 },
-        }]),
-    );
+    use crate::{
+        controller::compute::{SheetPos, SheetRect},
+        grid::Grid,
+        Pos,
+    };
+    #[test]
+    fn test_graph() {
+        let mut cdc = Grid::new();
+        let sheet_id = cdc.sheet_ids()[0];
 
-    assert_eq!(
-        cdc.get_dependent_cells(Rect::single_pos(Pos { x: 0, y: 0 })),
-        std::iter::once(Pos { x: 3, y: 3 }).collect()
-    );
+        cdc.set_dependencies(
+            SheetPos {
+                sheet_id,
+                x: 3,
+                y: 3,
+            },
+            Some(vec![SheetRect {
+                sheet_id,
+                min: Pos { x: 0, y: 0 },
+                max: Pos { x: 1, y: 1 },
+            }]),
+        );
 
-    cdc.set_dependencies(
-        Pos { x: 4, y: 4 },
-        Some(vec![Rect {
-            min: Pos { x: 0, y: 0 },
-            max: Pos { x: 1, y: 1 },
-        }]),
-    );
+        assert_eq!(
+            cdc.get_dependent_cells(SheetRect::single_pos(SheetPos {
+                sheet_id,
+                x: 0,
+                y: 0
+            })),
+            std::iter::once(SheetPos {
+                sheet_id,
+                x: 3,
+                y: 3
+            })
+            .collect()
+        );
 
-    assert_eq!(
-        cdc.get_dependent_cells(Rect::single_pos(Pos { x: 0, y: 0 })),
-        [Pos { x: 3, y: 3 }, Pos { x: 4, y: 4 }]
+        cdc.set_dependencies(
+            SheetPos {
+                sheet_id,
+                x: 4,
+                y: 4,
+            },
+            Some(vec![SheetRect {
+                sheet_id,
+                min: Pos { x: 0, y: 0 },
+                max: Pos { x: 1, y: 1 },
+            }]),
+        );
+
+        assert_eq!(
+            cdc.get_dependent_cells(SheetRect::single_pos(SheetPos {
+                sheet_id,
+                x: 0,
+                y: 0
+            })),
+            [
+                SheetPos {
+                    sheet_id,
+                    x: 3,
+                    y: 3
+                },
+                SheetPos {
+                    sheet_id,
+                    x: 4,
+                    y: 4
+                }
+            ]
             .iter()
             .cloned()
             .collect()
-    );
+        );
 
-    cdc.set_dependencies(Pos { x: 3, y: 3 }, None);
+        cdc.set_dependencies(
+            SheetPos {
+                sheet_id,
+                x: 3,
+                y: 3,
+            },
+            None,
+        );
 
-    assert_eq!(
-        cdc.get_dependent_cells(Rect::single_pos(Pos { x: 0, y: 0 })),
-        std::iter::once(Pos { x: 4, y: 4 }).collect()
-    );
+        assert_eq!(
+            cdc.get_dependent_cells(SheetRect::single_pos(SheetPos {
+                sheet_id,
+                x: 0,
+                y: 0
+            })),
+            std::iter::once(SheetPos {
+                sheet_id,
+                x: 4,
+                y: 4
+            })
+            .collect()
+        );
 
-    cdc.set_dependencies(Pos { x: 4, y: 4 }, None);
+        cdc.set_dependencies(
+            SheetPos {
+                sheet_id,
+                x: 4,
+                y: 4,
+            },
+            None,
+        );
 
-    assert_eq!(
-        cdc.get_dependent_cells(Rect::single_pos(Pos { x: 0, y: 0 })),
-        HashSet::new()
-    );
+        assert_eq!(
+            cdc.get_dependent_cells(SheetRect::single_pos(SheetPos {
+                sheet_id,
+                x: 0,
+                y: 0
+            })),
+            HashSet::new()
+        );
 
-    cdc.set_dependencies(
-        Pos { x: 11, y: 11 },
-        Some(vec![Rect::single_pos(Pos { x: 10, y: 10 })]),
-    );
+        cdc.set_dependencies(
+            SheetPos {
+                sheet_id,
+                x: 11,
+                y: 11,
+            },
+            Some(vec![SheetRect::single_pos(SheetPos {
+                sheet_id,
+                x: 10,
+                y: 10,
+            })]),
+        );
 
-    assert_eq!(
-        cdc.get_dependent_cells(Rect::single_pos(Pos { x: 10, y: 10 })),
-        std::iter::once(Pos { x: 11, y: 11 }).collect()
-    );
+        assert_eq!(
+            cdc.get_dependent_cells(SheetRect::single_pos(SheetPos {
+                sheet_id,
+                x: 10,
+                y: 10
+            })),
+            std::iter::once(SheetPos {
+                sheet_id,
+                x: 11,
+                y: 11
+            })
+            .collect()
+        );
+    }
 }
