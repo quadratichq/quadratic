@@ -205,7 +205,8 @@ function TabName({
           event.key === 'ArrowUp' ||
           event.key === 'ArrowDown' ||
           event.key === 'Backspace' ||
-          event.metaKey
+          event.metaKey ||
+          window.getSelection()?.toString()
         ) {
           // Allow these, otherwise we cap the length of the value
         } else if (value.length > SHEET_NAME_MAX_LENGTH) {
