@@ -106,7 +106,7 @@ impl GridController {
 
         // expand values
         let selection_values = cell_values_in_rect(&rect, &sheet)?;
-        let cell_values = set_cell_projections(&selection_values, &range);
+        let cell_values = set_cell_projections(&selection_values, direction, &range);
         let values = Array::new_row_major(range.size(), cell_values)
             .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", range.size(), e))?;
         let transaction_summary = self.set_cells(sheet_id, range.min, values, cursor.clone());
@@ -240,10 +240,26 @@ pub fn cell_values_in_rect(&rect: &Rect, sheet: &Sheet) -> Result<Array> {
 }
 
 /// For a given selection (source data), project the cell value at the given Pos.
-pub fn project_cell_value<'a>(selection: &'a Array, pos: Pos, rect: &'a Rect) -> &'a CellValue {
-    let x = (pos.x - rect.min.x) as u32 % selection.width();
-    let y = (pos.y - rect.min.y) as u32 % selection.height();
+pub fn project_cell_value<'a>(
+    selection: &'a Array,
+    direction: ExpandDirection,
+    pos: Pos,
+    range: &'a Rect,
+) -> &'a CellValue {
+    let x_diff = match direction {
+        ExpandDirection::Left => {
+            ((pos.x - range.max.x as i64) % selection.width() as i64) + selection.width() as i64 - 1
+        }
+        _ => (pos.x - range.min.x) % selection.width() as i64,
+    };
 
+    let y_diff = match direction {
+        ExpandDirection::Up => pos.y + range.max.y + 1,
+        _ => pos.y - range.min.y,
+    };
+
+    let x = x_diff as u32;
+    let y = y_diff as u32 % selection.height();
     selection.get(x, y).unwrap_or_else(|_| &CellValue::Blank)
 }
 
@@ -251,11 +267,19 @@ pub fn project_cell_value<'a>(selection: &'a Array, pos: Pos, rect: &'a Rect) ->
 ///
 /// TODO(ddimaria): instead of injecting this into an array, would it be better
 /// to just set the values directly in the sheet?
-pub fn set_cell_projections(projection: &Array, rect: &Rect) -> SmallVec<[CellValue; 1]> {
-    rect.y_range()
+pub fn set_cell_projections(
+    projection: &Array,
+    direction: ExpandDirection,
+    range: &Rect,
+) -> SmallVec<[CellValue; 1]> {
+    range
+        .y_range()
         .map(|y| {
-            rect.x_range()
-                .map(|x| project_cell_value(&projection, Pos { x, y }, &rect).to_owned())
+            range
+                .x_range()
+                .map(|x| {
+                    project_cell_value(&projection, direction, Pos { x, y }, &range).to_owned()
+                })
                 .collect::<Vec<CellValue>>()
         })
         .flatten()
@@ -270,21 +294,45 @@ mod tests {
     use std::str::FromStr;
     use tabled::{builder::Builder, settings::Style};
 
+    fn test_setup_rect(rect: &Rect) -> (GridController, SheetId) {
+        let mut grid_controller = GridController::new();
+        let sheet_id = grid_controller.grid.sheets()[0].id;
+        let vals = vec!["a", "h", "x", "g", "f", "z", "r", "b"];
+        let mut count = 0;
+
+        rect.y_range().for_each(|y| {
+            rect.x_range().for_each(|x| {
+                let pos = Pos { x, y };
+                grid_controller.set_cell_value(sheet_id, pos, vals[count].into(), None);
+                count += 1;
+            });
+        });
+
+        grid_controller.set_cell_bold(
+            sheet_id,
+            Rect::single_pos(Pos { x: 0, y: 0 }),
+            Some(true),
+            None,
+        );
+
+        // crate::util::dbgjs(sheet.get_formatting_value::<Bold>(Pos { x: 0, y: 0 }));
+
+        (grid_controller.clone(), sheet_id)
+    }
+
     fn test_setup() -> (GridController, SheetId, Rect) {
         let mut grid_controller = GridController::new();
         let sheet_id = grid_controller.grid.sheets()[0].id;
-        // let sheet = grid_controller.grid().sheet_from_id(sheet_id);
+        let rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
 
-        let rect = Rect {
-            min: Pos { x: 0, y: 0 },
-            max: Pos { x: 2, y: 1 },
-        };
-        grid_controller.set_cell_value(sheet_id, Pos { x: 0, y: 0 }, "1".into(), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 1, y: 0 }, "2".into(), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 0 }, "3".into(), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 0, y: 1 }, "4".into(), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, "5".into(), None);
-        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 1 }, "6".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: -1, y: 0 }, "a".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 0, y: 0 }, "h".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 1, y: 0 }, "x".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 0 }, "g".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: -1, y: 1 }, "f".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 0, y: 1 }, "z".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, "r".into(), None);
+        grid_controller.set_cell_value(sheet_id, Pos { x: 2, y: 1 }, "b".into(), None);
 
         grid_controller.set_cell_bold(
             sheet_id,
@@ -337,7 +385,7 @@ mod tests {
         assert_cell_value(grid_controller, sheet_id, x, y, to_text_cell_value(value));
     }
 
-    fn table(grid_controller: GridController, sheet_id: SheetId, range: Rect) {
+    fn table(grid_controller: GridController, sheet_id: SheetId, range: &Rect) {
         let sheet = grid_controller.grid().sheet_from_id(sheet_id);
         let mut vals = vec![];
         let mut builder = Builder::default();
@@ -365,7 +413,27 @@ mod tests {
 
         let mut table = builder.build();
         table.with(Style::modern());
-        println!("{}", table);
+        println!("\nsheet: {}\n{}", sheet.id, table);
+    }
+
+    pub fn table_modified(
+        grid_controller: GridController,
+        sheet_id: SheetId,
+        modified: &Rect,
+        selected: &Rect,
+    ) {
+        let range = Rect::new_span(
+            Pos {
+                x: modified.min.x - selected.width() as i64,
+                y: modified.min.y - selected.height() as i64,
+            },
+            Pos {
+                x: modified.max.x + selected.width() as i64,
+                y: modified.max.y + selected.height() as i64,
+            },
+        );
+
+        table(grid_controller, sheet_id, &range);
     }
 
     #[test]
@@ -386,7 +454,7 @@ mod tests {
         let (grid_controller, sheet_id, rect) = test_setup();
         let sheet = grid_controller.grid().sheet_from_id(sheet_id);
         let selection = cell_values_in_rect(&rect, &sheet).unwrap();
-        let func = |pos| project_cell_value(&selection, pos, &rect);
+        let func = |pos| project_cell_value(&selection, ExpandDirection::Right, pos, &rect);
 
         assert_eq!(func(Pos { x: 3, y: 0 }), &to_text_cell_value("1"));
         assert_eq!(func(Pos { x: 4, y: 0 }), &to_text_cell_value("2"));
@@ -398,91 +466,108 @@ mod tests {
 
     #[test]
     fn test_expand_up() {
-        let (mut grid_controller, sheet_id, rect) = test_setup();
+        let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
+        let (mut grid_controller, sheet_id) = test_setup_rect(&selected);
         let result = grid_controller
-            .expand_up(sheet_id, rect, -10, None, None)
+            .expand_up(sheet_id, selected, -10, None, None)
             .unwrap();
-        let expected = Rect {
-            min: Pos { x: 0, y: -10 },
-            max: Pos { x: 2, y: -1 },
-        };
+
+        table_modified(
+            grid_controller.clone(),
+            sheet_id,
+            &result.cell_regions_modified[0].1,
+            &selected,
+        );
+
+        let expected = Rect::new_span(Pos { x: -1, y: -10 }, Pos { x: 2, y: -1 });
         assert_eq!(result.cell_regions_modified[0].1, expected);
 
-        let result = grid_controller
-            .expand_up(sheet_id, rect, -10, Some(1), None)
-            .unwrap();
-        let expected = Rect {
-            min: Pos { x: 0, y: -10 },
-            max: Pos { x: 1, y: -1 },
-        };
-        assert_eq!(result.cell_regions_modified[0].1, expected);
+        assert_cell_value_text(&grid_controller, sheet_id, -1, -1, "f");
+        assert_cell_value_text(&grid_controller, sheet_id, -1, -2, "a");
+        assert_cell_value_text(&grid_controller, sheet_id, -1, -3, "f");
+        assert_cell_value_text(&grid_controller, sheet_id, -1, -4, "a");
+        assert_cell_value_text(&grid_controller, sheet_id, 0, -1, "z");
+        assert_cell_value_text(&grid_controller, sheet_id, 0, -2, "h");
+        assert_cell_value_text(&grid_controller, sheet_id, 0, -3, "z");
+        assert_cell_value_text(&grid_controller, sheet_id, 0, -4, "h");
+        assert_cell_value_text(&grid_controller, sheet_id, 1, -1, "r");
+        assert_cell_value_text(&grid_controller, sheet_id, 1, -2, "x");
+        assert_cell_value_text(&grid_controller, sheet_id, 1, -3, "r");
+        assert_cell_value_text(&grid_controller, sheet_id, 1, -4, "x");
     }
 
     #[test]
     fn test_expand_down() {
-        let (mut grid_controller, sheet_id, rect) = test_setup();
+        let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
+        let (mut grid_controller, sheet_id) = test_setup_rect(&selected);
         let result = grid_controller
-            .expand_down(sheet_id, rect, 10, None, None)
+            .expand_down(sheet_id, selected, 10, None, None)
             .unwrap();
-        let expected = Rect {
-            min: Pos { x: 0, y: 2 },
-            max: Pos { x: 2, y: 10 },
-        };
+
+        let expected = Rect::new_span(Pos { x: -1, y: 2 }, Pos { x: 2, y: 10 });
         assert_eq!(result.cell_regions_modified[0].1, expected);
 
-        let result = grid_controller
-            .expand_down(sheet_id, rect, 10, Some(1), None)
-            .unwrap();
-        let expected = Rect {
-            min: Pos { x: 0, y: 2 },
-            max: Pos { x: 1, y: 10 },
-        };
-        assert_eq!(result.cell_regions_modified[0].1, expected);
+        assert_cell_value_text(&grid_controller, sheet_id, -1, 2, "a");
+        assert_cell_value_text(&grid_controller, sheet_id, -1, 3, "f");
+        assert_cell_value_text(&grid_controller, sheet_id, -1, 4, "a");
+        assert_cell_value_text(&grid_controller, sheet_id, -1, 5, "f");
+        assert_cell_value_text(&grid_controller, sheet_id, 0, 2, "h");
+        assert_cell_value_text(&grid_controller, sheet_id, 0, 3, "z");
+        assert_cell_value_text(&grid_controller, sheet_id, 0, 4, "h");
+        assert_cell_value_text(&grid_controller, sheet_id, 0, 5, "z");
+        assert_cell_value_text(&grid_controller, sheet_id, 1, 2, "x");
+        assert_cell_value_text(&grid_controller, sheet_id, 1, 3, "r");
+        assert_cell_value_text(&grid_controller, sheet_id, 1, 4, "x");
+        assert_cell_value_text(&grid_controller, sheet_id, 1, 5, "r");
     }
 
     #[test]
     fn test_expand_left() {
-        let (mut grid_controller, sheet_id, rect) = test_setup();
+        let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
+        let (mut grid_controller, sheet_id) = test_setup_rect(&selected);
         let result = grid_controller
-            .expand_left(sheet_id, rect, -10, None, None)
+            .expand_left(sheet_id, selected, -10, None, None)
             .unwrap();
-        let expected = Rect::new_span(Pos { x: -10, y: 0 }, Pos { x: -1, y: 1 });
+
+        let expected = Rect::new_span(Pos { x: -10, y: 0 }, Pos { x: -2, y: 1 });
         assert_eq!(result.cell_regions_modified[0].1, expected);
 
-        // let range = Rect::new_span(Pos { x: -10, y: 0 }, Pos { x: 10, y: 1 });
-        // table(grid_controller.clone(), sheet_id, range);
-
-        assert_cell_value_number(&grid_controller, sheet_id, -1, 0, "3");
-
-        let result = grid_controller
-            .expand_left(sheet_id, rect, -10, Some(10), None)
-            .unwrap();
-        let expected = Rect {
-            min: Pos { x: -10, y: 0 },
-            max: Pos { x: -1, y: 10 },
-        };
-        assert_eq!(result.cell_regions_modified[0].1, expected);
+        assert_cell_value_text(&grid_controller, sheet_id, -2, 0, "g");
+        assert_cell_value_text(&grid_controller, sheet_id, -3, 0, "x");
+        assert_cell_value_text(&grid_controller, sheet_id, -4, 0, "h");
+        assert_cell_value_text(&grid_controller, sheet_id, -5, 0, "a");
+        assert_cell_value_text(&grid_controller, sheet_id, -6, 0, "g");
+        assert_cell_value_text(&grid_controller, sheet_id, -7, 0, "x");
+        assert_cell_value_text(&grid_controller, sheet_id, -2, 1, "b");
+        assert_cell_value_text(&grid_controller, sheet_id, -3, 1, "r");
+        assert_cell_value_text(&grid_controller, sheet_id, -4, 1, "z");
+        assert_cell_value_text(&grid_controller, sheet_id, -5, 1, "f");
+        assert_cell_value_text(&grid_controller, sheet_id, -6, 1, "b");
+        assert_cell_value_text(&grid_controller, sheet_id, -7, 1, "r");
     }
 
     #[test]
     fn test_expand_right() {
-        let (mut grid_controller, sheet_id, rect) = test_setup();
+        let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
+        let (mut grid_controller, sheet_id) = test_setup_rect(&selected);
         let result = grid_controller
-            .expand_right(sheet_id, rect, 10, None, None)
+            .expand_right(sheet_id, selected, 12, None, None)
             .unwrap();
-        let expected = Rect {
-            min: Pos { x: 3, y: 0 },
-            max: Pos { x: 10, y: 1 },
-        };
+
+        let expected = Rect::new_span(Pos { x: 3, y: 0 }, Pos { x: 12, y: 1 });
         assert_eq!(result.cell_regions_modified[0].1, expected);
 
-        let result = grid_controller
-            .expand_right(sheet_id, rect, 10, Some(10), None)
-            .unwrap();
-        let expected = Rect {
-            min: Pos { x: 3, y: 0 },
-            max: Pos { x: 10, y: 10 },
-        };
-        assert_eq!(result.cell_regions_modified[0].1, expected);
+        assert_cell_value_text(&grid_controller, sheet_id, 3, 0, "a");
+        assert_cell_value_text(&grid_controller, sheet_id, 4, 0, "h");
+        assert_cell_value_text(&grid_controller, sheet_id, 5, 0, "x");
+        assert_cell_value_text(&grid_controller, sheet_id, 6, 0, "g");
+        assert_cell_value_text(&grid_controller, sheet_id, 7, 0, "a");
+        assert_cell_value_text(&grid_controller, sheet_id, 8, 0, "h");
+        assert_cell_value_text(&grid_controller, sheet_id, 3, 1, "f");
+        assert_cell_value_text(&grid_controller, sheet_id, 4, 1, "z");
+        assert_cell_value_text(&grid_controller, sheet_id, 5, 1, "r");
+        assert_cell_value_text(&grid_controller, sheet_id, 6, 1, "b");
+        assert_cell_value_text(&grid_controller, sheet_id, 7, 1, "f");
+        assert_cell_value_text(&grid_controller, sheet_id, 8, 1, "z");
     }
 }
