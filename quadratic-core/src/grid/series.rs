@@ -63,56 +63,52 @@ pub fn find_number_series(options: SeriesOptions) -> Vec<CellValue> {
         })
         .collect::<Vec<&BigDecimal>>();
 
-    (1..numbers.len()).for_each(|number| {
+    (1..numbers.len()).enumerate().for_each(|(index, number)| {
         let difference = numbers[number] - numbers[number - 1];
 
-        // if let Some(add) = addition.to_owned() {
-        if difference == addition.clone().unwrap_or(BigDecimal::zero()) {
-            addition = None;
-        } else {
+        if index == 0 {
             addition = Some(difference.clone());
+        } else if let Some(add) = addition.to_owned() {
+            if difference != add {
+                addition = None;
+            }
         }
-        // }
 
         // no divide by zero
         if numbers[number - 1] == &BigDecimal::zero() {
             multiplication = None;
         } else {
             let quotient = numbers[number] / numbers[number - 1];
-            if let Some(mult) = multiplication.to_owned() {
+
+            if index == 0 {
+                multiplication = Some(quotient);
+            } else if let Some(mult) = multiplication.to_owned() {
                 if quotient != mult {
                     multiplication = None;
-                } else {
-                    multiplication = Some(quotient);
                 }
             }
         }
 
         if let Some(add) = addition.to_owned() {
             if negative {
-                println!("negative: {:?}", negative);
                 let mut current = numbers[0].to_owned();
 
-                results.extend(
-                    (0..spaces)
-                        .map(|_| {
-                            current = current.clone() - add.clone();
-                            CellValue::Number(current.clone())
-                        })
-                        .collect::<Vec<CellValue>>(),
-                );
+                results = (0..spaces)
+                    .map(|_| {
+                        current = current.clone() - add.clone();
+                        CellValue::Number(current.clone())
+                    })
+                    .collect::<Vec<CellValue>>();
                 results.reverse();
             } else {
                 let mut current = numbers[numbers.len() - 1].to_owned();
 
-                results.extend(
-                    (0..spaces)
-                        .map(|_| {
-                            current = current.clone() + add.clone();
-                            CellValue::Number(current.clone())
-                        })
-                        .collect::<Vec<CellValue>>(),
-                );
+                results = (0..spaces)
+                    .map(|_| {
+                        current = current.clone() + add.clone();
+                        CellValue::Number(current.clone())
+                    })
+                    .collect::<Vec<CellValue>>();
             }
         }
 
@@ -120,26 +116,22 @@ pub fn find_number_series(options: SeriesOptions) -> Vec<CellValue> {
             if negative {
                 let mut current = numbers[0].to_owned();
 
-                results.extend(
-                    (0..spaces)
-                        .map(|_| {
-                            current = current.clone() / mult.clone();
-                            CellValue::Number(current.clone())
-                        })
-                        .collect::<Vec<CellValue>>(),
-                );
+                results = (0..spaces)
+                    .map(|_| {
+                        current = current.clone() / mult.clone();
+                        CellValue::Number(current.clone())
+                    })
+                    .collect::<Vec<CellValue>>();
                 results.reverse();
             } else {
                 let mut current = numbers[numbers.len() - 1].to_owned();
 
-                results.extend(
-                    (0..spaces)
-                        .map(|_| {
-                            current = current.clone() / mult.clone();
-                            CellValue::Number(current.clone())
-                        })
-                        .collect::<Vec<CellValue>>(),
-                );
+                results = (0..spaces)
+                    .map(|_| {
+                        current = current.clone() * mult.clone();
+                        CellValue::Number(current.clone())
+                    })
+                    .collect::<Vec<CellValue>>();
             }
         }
     });
@@ -264,6 +256,49 @@ mod tests {
         };
         let results = find_auto_complete(options);
         assert_eq!(results, to_cell_values(vec![14, 12, 10, 8]));
-        println!("results: {:?}", results);
+    }
+
+    #[test]
+    fn find_a_number_series_positive_positive_multiplication() {
+        let options = SeriesOptions {
+            series: to_cell_values(vec![2, 4, 8]),
+            spaces: 4,
+            negative: false,
+        };
+        let results = find_auto_complete(options);
+        assert_eq!(results, to_cell_values(vec![16, 32, 64, 128]));
+    }
+
+    #[test]
+    fn find_a_number_series_positive_descending_multiplication() {
+        let options = SeriesOptions {
+            series: to_cell_values(vec![128, 64, 32]),
+            spaces: 4,
+            negative: false,
+        };
+        let results = find_auto_complete(options);
+        assert_eq!(results, to_cell_values(vec![16, 8, 4, 2]));
+    }
+
+    #[test]
+    fn find_a_number_series_positive_positive_multiplication_negative() {
+        let options = SeriesOptions {
+            series: to_cell_values(vec![16, 32, 64, 128]),
+            spaces: 4,
+            negative: true,
+        };
+        let results = find_auto_complete(options);
+        assert_eq!(results, to_cell_values(vec![1, 2, 4, 8]));
+    }
+
+    #[test]
+    fn find_a_number_series_positive_descending_multiplication_negative() {
+        let options = SeriesOptions {
+            series: to_cell_values(vec![128, 64, 32]),
+            spaces: 4,
+            negative: true,
+        };
+        let results = find_auto_complete(options);
+        assert_eq!(results, to_cell_values(vec![2048, 1024, 512, 256]));
     }
 }

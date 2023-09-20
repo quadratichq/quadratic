@@ -7,7 +7,10 @@ use super::{
     GridController,
 };
 use crate::{
-    grid::{series::SeriesOptions, RegionRef, Sheet, SheetId},
+    grid::{
+        series::{find_auto_complete, SeriesOptions},
+        RegionRef, Sheet, SheetId,
+    },
     Array, CellValue, Pos, Rect,
 };
 
@@ -273,6 +276,12 @@ pub fn set_cell_projections(
     range
         .y_range()
         .map(|y| {
+            // let series = find_auto_complete(SeriesOptions {
+            //     series: range
+            //     .x_range().map(f),
+            //     spaces: (range.width() * range.height()) as i32,
+            //     negative: false,
+            // });
             range
                 .x_range()
                 .map(|x| {
