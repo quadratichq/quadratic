@@ -28,8 +28,8 @@ class Sheets {
       this.sheets.push(sheet);
     });
     this.sort();
-    this.current = this.sheets[0].id;
     pixiApp.create();
+    this.current = this.sheets[0].id;
   }
 
   // ensures there's a Sheet.ts for every Sheet.rs
