@@ -7,7 +7,7 @@ use super::{
     GridController,
 };
 use crate::{
-    grid::{RegionRef, Sheet, SheetId},
+    grid::{series::Series, RegionRef, Sheet, SheetId},
     Array, CellValue, Pos, Rect,
 };
 
