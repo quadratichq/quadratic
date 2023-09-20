@@ -145,3 +145,38 @@ pub fn find_number_series(options: Series) -> Vec<CellValue> {
 
     return results;
 }
+
+pub fn find_auto_complete(options: Series) -> Vec<CellValue> {
+    // if cells are missing, just copy series
+    if !options.series.iter().all(|s| *s == CellValue::Blank) {
+        return copy_series(options);
+    }
+
+    // number series first
+    if !options.series.iter().all(|s| match s {
+        CellValue::Number(_) => true,
+        _ => false,
+    }) {
+        return find_number_series(options);
+    }
+
+    // string series
+    // return findStringSeries(options);
+    vec![]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{array, grid::Bold};
+    use bigdecimal::BigDecimal;
+    use std::str::FromStr;
+    use tabled::{
+        builder::Builder,
+        settings::Color,
+        settings::{Modify, Style},
+    };
+
+    #[test]
+    fn find_a_number_series() {}
+}
