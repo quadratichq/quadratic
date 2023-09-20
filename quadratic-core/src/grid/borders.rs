@@ -5,8 +5,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::color::Rgb;
 use crate::grid::block::SameValue;
-use crate::grid::{ColumnData, ColumnId, IdMap, RegionRef, RowId, Sheet, SheetId};
-use crate::{Pos, Rect};
+use crate::grid::{ColumnData, ColumnId, IdMap, RegionRef, RowId, Sheet};
+use crate::Rect;
+
+#[cfg(feature = "js")]
+use wasm_bindgen::prelude::*;
 
 #[deprecated]
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -154,7 +157,7 @@ impl SheetBorders {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
 #[serde(rename_all = "lowercase")]
 pub enum BorderSelection {
     All,
@@ -166,10 +169,11 @@ pub enum BorderSelection {
     Top,
     Right,
     Bottom,
+    // TODO: I may need Clear for TS
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
 #[serde(rename_all = "lowercase")]
 pub enum CellBorderLine {
     Line1,
@@ -181,10 +185,17 @@ pub enum CellBorderLine {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
 pub struct BorderStyle {
     pub color: Rgb,
     pub line: CellBorderLine,
+}
+#[cfg_attr(feature = "js", wasm_bindgen)]
+impl BorderStyle {
+    #[cfg_attr(feature = "js", wasm_bindgen(constructor))]
+    pub fn new(color: Rgb, line: CellBorderLine) -> Self {
+        Self { color, line }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -281,8 +292,7 @@ pub fn set_region_border_selection(
     region: &RegionRef,
     selections: Vec<BorderSelection>,
     style: Option<BorderStyle>,
-) -> SheetBorders
-{
+) -> SheetBorders {
     let borders = generate_sheet_borders(sheet, region, selections, style);
     set_region_borders(sheet, vec![region.clone()], borders)
 }
@@ -369,6 +379,7 @@ mod compute_indices {
 
     #[cfg(test)]
     mod tests {
+        use crate::Pos;
         use super::*;
 
         #[test]
@@ -677,8 +688,7 @@ mod tests {
         let prev_borders_1 =
             set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style.clone()));
 
-        let prev_borders_2 =
-            set_region_border_selection(&mut sheet, &region_2, selection_2, None);
+        let prev_borders_2 = set_region_border_selection(&mut sheet, &region_2, selection_2, None);
 
         assert_borders!(
             sheet.borders,

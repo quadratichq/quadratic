@@ -23,20 +23,23 @@ import { colors } from '../../../../../theme/colors';
 import { QColorPicker } from '../../../../components/qColorPicker';
 import { ChangeBorder, useBorders } from '../useBorders';
 import './useGetBorderMenu.css';
+import {
+  BorderSelection
+} from "../../../../../quadratic-core";
 
-enum BorderSelection {
-  none = 0,
-  all,
-  inner,
-  outer,
-  horizontal,
-  vertical,
-  left,
-  top,
-  right,
-  bottom,
-  clear,
-}
+// enum BorderSelection {
+//   none = 0,
+//   all,
+//   inner,
+//   outer,
+//   horizontal,
+//   vertical,
+//   left,
+//   top,
+//   right,
+//   bottom,
+//   clear,
+// }
 
 export function useGetBorderMenu(): JSX.Element {
   const sheet = sheets.sheet;
@@ -63,42 +66,9 @@ export function useGetBorderMenu(): JSX.Element {
         clearBorders();
         return;
       }
-      const borders: ChangeBorder = {};
+      const borders: ChangeBorder = {selection: borderSelection};
       if (color !== defaultColor) borders.color = color;
       if (lineStyle) borders.type = lineStyle;
-      switch (borderSelection) {
-        case BorderSelection.all:
-          borders.borderAll = true;
-          break;
-        case BorderSelection.outer:
-          borders.borderLeft = true;
-          borders.borderRight = true;
-          borders.borderTop = true;
-          borders.borderBottom = true;
-          break;
-        case BorderSelection.inner:
-          borders.borderHorizontal = true;
-          borders.borderVertical = true;
-          break;
-        case BorderSelection.horizontal:
-          borders.borderHorizontal = true;
-          break;
-        case BorderSelection.vertical:
-          borders.borderVertical = true;
-          break;
-        case BorderSelection.left:
-          borders.borderLeft = true;
-          break;
-        case BorderSelection.top:
-          borders.borderTop = true;
-          break;
-        case BorderSelection.right:
-          borders.borderRight = true;
-          break;
-        case BorderSelection.bottom:
-          borders.borderBottom = true;
-          break;
-      }
       changeBorders(borders);
     },
     [changeBorders, defaultColor, clearBorders]

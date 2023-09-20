@@ -1,13 +1,28 @@
-import { BorderType } from '../../../../schemas';
+import {
+  BorderType
+} from '../../../../schemas';
+import {
+  sheets
+} from "../../../../grid/controller/Sheets";
+import {
+  grid
+} from "../../../../grid/controller/Grid";
+import {
+  BorderSelection,
+  BorderStyle,
+  CellBorderLine,
+  Rgb
+} from "../../../../quadratic-core";
+import {
+  convertColorStringToTint,
+  convertTintToArray
+} from "../../../../helpers/convertColor";
+import {
+  colors
+} from "../../../../theme/colors";
 
 export interface ChangeBorder {
-  borderAll?: boolean;
-  borderLeft?: boolean;
-  borderTop?: boolean;
-  borderBottom?: boolean;
-  borderRight?: boolean;
-  borderHorizontal?: boolean;
-  borderVertical?: boolean;
+  selection?: BorderSelection;
   color?: string;
   type?: BorderType;
 }
@@ -17,113 +32,37 @@ interface IResults {
   clearBorders: (args?: { create_transaction?: boolean }) => void;
 }
 
-// todo...
-
 export const useBorders = (): IResults => {
-  // const sheet = sheetController.sheet;
-  // const { start, end, multiCursor } = useGetSelection();
+  const sheet = sheets.sheet;
+  const cursor = sheet.cursor;
+  const rectangle = cursor.getRectangle();
 
-  // const changeBorders = (options: ChangeBorder): void => {
-  //   const borderColor = options.color;
-  //   const borderUpdates: Border[] = [];
+  const changeBorders = (options: ChangeBorder): void => {
+    const colorTint = (options.color === undefined)
+      ? colors.defaultBorderColor
+      : convertColorStringToTint(options.color);
+    const colorArray = convertTintToArray(colorTint);
+    // const borderType = (options.type === undefined)
+    //   ? 'line1'
+    //   : options.type;
+    const selection = (options.selection === undefined)
+      ? BorderSelection.All
+      : options.selection
 
-  //   const addBorderLeft = (x: number, y: number): void => {
-  //     // update an existing borderUpdate
-  //     const border = borderUpdates.find((update) => update.x === x && update.y === y);
-  //     if (border) {
-  //       border.vertical = { type: options.type, color: borderColor };
-  //     } else {
-  //       // update an existing border
-  //       const border = sheet.borders.get(x, y);
-  //       if (border) {
-  //         const update: Border = { x, y, vertical: { type: options.type, color: borderColor } };
-  //         if (border.horizontal) {
-  //           update.horizontal = { ...border.horizontal };
-  //         }
-  //         borderUpdates.push(update);
-  //       }
+    const style = new BorderStyle(
+      new Rgb(colorArray[0], colorArray[1], colorArray[2]),
+      // CellBorderLine.Line1
+        new CellBorderLine(0) // TODO: convert from `options`
+    )
+    grid.setRegionBorders(sheet.id, rectangle, selection, style);
+  }
 
-  //       // create a new border
-  //       else {
-  //         borderUpdates.push({ x, y, vertical: { type: options.type, color: borderColor } });
-  //       }
-  //     }
-  //   };
-
-  //   const addBorderTop = (x: number, y: number): void => {
-  //     // update an existing borderUpdate
-  //     const border = borderUpdates.find((update) => update.x === x && update.y === y);
-  //     if (border) {
-  //       border.horizontal = { type: options.type, color: borderColor };
-  //     } else {
-  //       // update an existing border
-  //       const border = sheet.borders.get(x, y);
-  //       if (border) {
-  //         const update: Border = { x, y, horizontal: { type: options.type, color: borderColor } };
-  //         if (border.vertical) {
-  //           update.vertical = { ...border.vertical };
-  //         }
-  //         borderUpdates.push(update);
-  //       }
-
-  //       // create a new border
-  //       else {
-  //         borderUpdates.push({ x, y, horizontal: { type: options.type, color: borderColor } });
-  //       }
-  //     }
-  //   };
-
-  //   for (let y = start.y; y <= end.y; y++) {
-  //     for (let x = start.x; x <= end.x; x++) {
-  //       if (options.borderAll) {
-  //         addBorderLeft(x, y);
-  //         addBorderTop(x, y);
-  //         if (x === end.x) {
-  //           addBorderLeft(x + 1, y);
-  //         }
-  //         if (y === end.y) {
-  //           addBorderTop(x, y + 1);
-  //         }
-  //       } else {
-  //         if (x === start.x && options.borderLeft) {
-  //           addBorderLeft(x, y);
-  //         }
-  //         if (x === end.x && options.borderRight) {
-  //           addBorderLeft(x + 1, y);
-  //         }
-  //         if (y === start.y && options.borderTop) {
-  //           addBorderTop(x, y);
-  //         }
-  //         if (y === end.y && options.borderBottom) {
-  //           addBorderTop(x, y + 1);
-  //         }
-  //         if (multiCursor && y !== start.y && options.borderHorizontal) {
-  //           addBorderTop(x, y);
-  //         }
-  //         if (multiCursor && x !== start.x && options.borderVertical) {
-  //           addBorderLeft(x, y);
-  //         }
-  //       }
-  //     }
-  //   }
-  //   if (borderUpdates.length) {
-  //     // create transaction to update borders
-  //     sheetController.start_transaction();
-  //     sheetController.execute_statement({
-  //       type: 'SET_BORDERS',
-  //       data: borderUpdates,
-  //     });
-  //     sheetController.end_transaction();
-  //     pixiAppEvents.quadrantsChanged({ range: { start, end } });
-  //   }
-  // };
-
-  // const clearBorders = (args?: { create_transaction?: boolean }): void => {
-  //   clearBordersAction({ start, end, create_transaction: args?.create_transaction });
-  // };
+  const clearBorders = (args?: { create_transaction?: boolean }): void => {
+    grid.setRegionBorders(sheet.id, rectangle, BorderSelection.All, undefined);
+  }
 
   return {
-    changeBorders: () => 0,
-    clearBorders: () => 0,
+    changeBorders: changeBorders,
+    clearBorders: clearBorders,
   };
 };
