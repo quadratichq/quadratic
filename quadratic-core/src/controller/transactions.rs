@@ -14,11 +14,11 @@ impl GridController {
     ) -> TransactionSummary {
         // make initial changes
         let mut summary = TransactionSummary::default();
-        let reverse_operations = self.transact(operations, &mut summary);
+        let mut reverse_operations = self.transact(operations, &mut summary);
 
         // run computations
-        // TODO cell_regions_modified also contains formatting, create new structure for just updated code and values
-        self.compute(
+        // TODO cell_regions_modified also contains formatting updates, create new structure for just updated code and values
+        let mut additional_operations = self.compute(
             summary
                 .cell_regions_modified
                 .iter()
@@ -29,6 +29,8 @@ impl GridController {
                 })
                 .collect(),
         );
+
+        reverse_operations.append(&mut additional_operations);
 
         // update undo/redo stack
         self.redo_stack.clear();
@@ -77,7 +79,7 @@ impl GridController {
     }
 
     /// executes a set of operations and returns the reverse operations
-    /// TODO: move to execute operation?
+    /// TODO: remove this function and move code to transact_forward and execute_operation?
     fn transact(
         &mut self,
         operations: Vec<Operation>,

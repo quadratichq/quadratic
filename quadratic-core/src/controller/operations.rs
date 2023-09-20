@@ -44,6 +44,8 @@ pub enum Operation {
 
 impl GridController {
     /// Executes the given operation and returns the reverse operation.
+    /// The only way to modify the internal state of the grid is through this function, with an operation.
+    /// Operations must always return a reverse operation that can be used to undo the operation.
     pub fn execute_operation(
         &mut self,
         op: Operation,
