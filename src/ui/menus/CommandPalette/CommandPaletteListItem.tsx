@@ -43,7 +43,7 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
   return (
     <ListItem disablePadding key={label}>
       <ListItemButton
-        // FYI: this is used to anitmate scroll through list items and trigger click on ENTER
+        // FYI: this is used to animate scroll through list items and trigger click on ENTER
         data-command-bar-list-item-index={listItemIndex}
         disabled={disabled}
         onClick={() => {
