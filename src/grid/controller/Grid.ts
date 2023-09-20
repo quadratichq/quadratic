@@ -5,6 +5,8 @@ import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerfor
 import { Coordinate } from '../../gridGL/types/size';
 import { readFileAsArrayBuffer } from '../../helpers/files';
 import init, {
+  BorderSelection,
+  BorderStyle,
   CodeCellLanguage,
   GridController,
   MinMax,
@@ -334,6 +336,19 @@ export class Grid {
     const summary = await this.gridController.clearFormatting(
       sheetId,
       rectangleToRect(rectangle),
+      sheets.getCursorPosition()
+    );
+    transactionResponse(summary);
+    this.dirty = true;
+  }
+
+  setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle): void {
+    console.log("Setting region borders: ", sheetId, rectangle, selection, style);
+    const summary = this.gridController.setRegionBorders(
+      sheetId,
+      rectangleToRect(rectangle),
+      selection,
+      style,
       sheets.getCursorPosition()
     );
     transactionResponse(summary);

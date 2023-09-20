@@ -2,12 +2,26 @@ use serde::{Serialize, Deserialize};
 use std::num::ParseIntError;
 use std::fmt::Write;
 
-#[cfg_attr(feature="js", derive(ts_rs::TS))]
+#[cfg(feature = "js")]
+use wasm_bindgen::prelude::wasm_bindgen;
+
+#[cfg_attr(feature="js", wasm_bindgen, derive(ts_rs::TS))]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct Rgb {
     pub red: u8,
     pub green: u8,
     pub blue: u8,
+}
+#[cfg_attr(feature="js", wasm_bindgen)]
+impl Rgb {
+    #[cfg_attr(feature = "js", wasm_bindgen(constructor))]
+    pub fn from_js(red: f64, green: f64, blue: f64) -> Self {
+        Self {
+            red: red.clamp(0.0f64, 255.0f64) as u8,
+            green: green.clamp(0.0f64, 255.0f64) as u8,
+            blue: blue.clamp(0.0f64, 255.0f64) as u8,
+        }
+    }
 }
 impl Rgb {
     pub fn from_str(color_str: &str) -> Result<Self, ParseIntError> { // TODO: serde
