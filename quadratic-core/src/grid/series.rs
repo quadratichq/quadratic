@@ -81,7 +81,6 @@ pub struct SeriesOptions {
 }
 
 pub fn copy_series(options: SeriesOptions) -> Vec<CellValue> {
-    let mut results;
     let SeriesOptions {
         series,
         spaces,
@@ -89,62 +88,54 @@ pub fn copy_series(options: SeriesOptions) -> Vec<CellValue> {
     } = options;
 
     if negative {
-        let mut copy = series.len() - 1;
-
-        results = (0..spaces)
-            .map(|_| {
-                let value = series[copy].to_owned();
-                copy = copy.checked_sub(1).unwrap_or(series.len() - 1);
-                value
-            })
-            .collect::<Vec<CellValue>>();
-        results.reverse();
+        series
+            .into_iter()
+            .rev()
+            .cycle()
+            .take(spaces as usize)
+            .collect::<Vec<CellValue>>()
     } else {
-        let mut copy = 0;
-
-        results = (0..spaces)
-            .map(|_| {
-                let value = series[copy].to_owned();
-                copy = (copy + 1) % series.len();
-                value
-            })
-            .collect::<Vec<CellValue>>();
+        series
+            .into_iter()
+            .cycle()
+            .take(spaces as usize)
+            .collect::<Vec<CellValue>>()
     }
-
-    results
 }
 
 pub fn find_number_series(options: SeriesOptions) -> Vec<CellValue> {
-    let mut results: Vec<CellValue> = vec![];
-    let mut addition: Option<BigDecimal> = None;
-    let mut multiplication: Option<BigDecimal> = None;
-
     // if only one number, copy it
     if options.series.len() == 1 {
         return copy_series(options);
     }
 
+    let mut addition: Option<BigDecimal> = None;
+    let mut multiplication: Option<BigDecimal> = None;
     let SeriesOptions {
-        series,
+        ref series,
         spaces,
         negative,
     } = options;
 
+    // convert every cell value to BigDecimal
+    let zero = BigDecimal::zero();
     let numbers = series
         .iter()
         .filter_map(|s| match s {
             CellValue::Number(number) => Some(number),
-            _ => None,
+            _ => Some(&zero),
         })
         .collect::<Vec<&BigDecimal>>();
 
+    // determine if addition or multiplication are possible
+    // if possible, store the difference or quotient
     (1..numbers.len()).enumerate().for_each(|(index, number)| {
         let difference = numbers[number] - numbers[number - 1];
 
         if index == 0 {
-            addition = Some(difference.clone());
-        } else if let Some(add) = addition.to_owned() {
-            if difference != add {
+            addition = Some(difference);
+        } else if let Some(add) = &addition {
+            if &difference != add {
                 addition = None;
             }
         }
@@ -157,61 +148,45 @@ pub fn find_number_series(options: SeriesOptions) -> Vec<CellValue> {
 
             if index == 0 {
                 multiplication = Some(quotient);
-            } else if let Some(mult) = multiplication.to_owned() {
-                if quotient != mult {
+            } else if let Some(mult) = &multiplication {
+                if &quotient != mult {
                     multiplication = None;
                 }
             }
         }
-
-        if let Some(add) = addition.to_owned() {
-            if negative {
-                let mut current = numbers[0].to_owned();
-
-                results = (0..spaces)
-                    .map(|_| {
-                        current = current.clone() - add.clone();
-                        CellValue::Number(current.clone())
-                    })
-                    .collect::<Vec<CellValue>>();
-                results.reverse();
-            } else {
-                let mut current = numbers[numbers.len() - 1].to_owned();
-
-                results = (0..spaces)
-                    .map(|_| {
-                        current = current.clone() + add.clone();
-                        CellValue::Number(current.clone())
-                    })
-                    .collect::<Vec<CellValue>>();
-            }
-        }
-
-        if let Some(mult) = multiplication.to_owned() {
-            if negative {
-                let mut current = numbers[0].to_owned();
-
-                results = (0..spaces)
-                    .map(|_| {
-                        current = current.clone() / mult.clone();
-                        CellValue::Number(current.clone())
-                    })
-                    .collect::<Vec<CellValue>>();
-                results.reverse();
-            } else {
-                let mut current = numbers[numbers.len() - 1].to_owned();
-
-                results = (0..spaces)
-                    .map(|_| {
-                        current = current.clone() * mult.clone();
-                        CellValue::Number(current.clone())
-                    })
-                    .collect::<Vec<CellValue>>();
-            }
-        }
     });
 
-    return results;
+    // if neither addition or multiplication are possible, just copy series
+    if addition.is_none() && multiplication.is_none() {
+        return copy_series(options);
+    }
+
+    let mut current = numbers[numbers.len() - 1].to_owned();
+
+    if negative {
+        current = numbers[0].to_owned();
+    }
+
+    let calc = |val: &BigDecimal| match (&addition, &multiplication, negative) {
+        (Some(add), None, false) => val + add,
+        (Some(add), None, true) => val - add,
+        (None, Some(mult), false) => val * mult,
+        (None, Some(mult), true) => val / mult,
+        (_, _, _) => unreachable!(),
+    };
+
+    let mut results = (0..spaces)
+        .map(|_| {
+            current = calc(&current);
+            CellValue::Number(current.to_owned())
+        })
+        .collect::<Vec<CellValue>>();
+
+    if negative {
+        results.reverse();
+    }
+
+    results
 }
 
 pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
@@ -241,19 +216,14 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
 
     series.iter().for_each(|cell| {
         text_series.iter().enumerate().for_each(|(i, text_series)| {
-            // TODO(ddimaria): change to if let Some
-            let cell_value = match cell {
-                CellValue::Text(s) => s,
-                _ => "",
-            };
+            let cell_value = cell.to_string();
 
-            // if possible_text_series[i].is_some() {
-            if !is_series_key(cell_value, text_series) {
+            if !is_series_key(&cell_value, text_series) {
                 possible_text_series[i] = vec![];
             } else if possible_text_series[i].len() == 0 {
                 possible_text_series[i] = vec![cell.to_owned()];
             } else if is_series_next_key(
-                cell_value,
+                &cell_value,
                 &possible_text_series[i]
                     .iter()
                     .map(|s| match s {
@@ -269,44 +239,32 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
             } else {
                 possible_text_series[i] = vec![];
             }
-            // }
         });
     });
 
     possible_text_series.iter().enumerate().for_each(|(i, s)| {
-        let entry = possible_text_series[i].clone();
+        let entry = &possible_text_series[i];
+
         if entry.len() > 0 {
+            let mut current = entry[entry.len() - 1].to_owned();
+
             if negative {
-                let string_list = entry;
-                let current = string_list[0].clone();
-                let mut cell_value = match current {
-                    CellValue::Text(current) => current,
-                    _ => "".into(),
-                };
+                current = entry[0].to_owned();
+            }
 
-                (0..spaces).for_each(|_| {
-                    let next =
-                        get_series_next_key(&cell_value, text_series[i].clone(), true).unwrap();
-                    results.push(CellValue::Text(next.clone()));
-                    cell_value = next;
-                });
+            let mut cell_value = match current {
+                CellValue::Text(current) => current,
+                _ => "".into(),
+            };
 
+            (0..spaces).for_each(|_| {
+                let next = get_series_next_key(&cell_value, &text_series[i], negative).unwrap();
+                results.push(CellValue::Text(next.to_owned()));
+                cell_value = next;
+            });
+
+            if negative {
                 results.reverse();
-            } else {
-                let string_list = entry;
-                let current = string_list[string_list.len() - 1].clone();
-                let mut cell_value = match current {
-                    CellValue::Text(current) => current,
-                    _ => "".into(),
-                };
-
-                (0..spaces).for_each(|_| {
-                    let next =
-                        get_series_next_key(&cell_value, text_series[i].clone(), false).unwrap();
-
-                    results.push(CellValue::Text(next.clone()));
-                    cell_value = next;
-                });
             }
         }
     });
@@ -326,10 +284,11 @@ pub fn find_auto_complete(options: SeriesOptions) -> Vec<CellValue> {
     }
 
     // number series first
-    if options.series.iter().all(|s| match s {
-        CellValue::Number(_) => true,
-        _ => false,
-    }) {
+    if options
+        .series
+        .iter()
+        .all(|s| matches!(s, CellValue::Number(_)))
+    {
         return find_number_series(options);
     }
 
@@ -364,7 +323,7 @@ pub fn checked_mod(n: isize, m: isize) -> isize {
     ((n % m) + m) % m
 }
 
-pub fn get_series_next_key(last_key: &str, all_keys: Vec<&str>, negative: bool) -> Result<String> {
+pub fn get_series_next_key(last_key: &str, all_keys: &Vec<&str>, negative: bool) -> Result<String> {
     let index = all_keys
         .iter()
         .position(|val| last_key.to_string() == val.to_string())
@@ -400,6 +359,20 @@ mod tests {
             .iter()
             .map(|s| CellValue::Text(s.to_string()))
             .collect::<Vec<CellValue>>()
+    }
+
+    #[test]
+    fn copies_a_series() {
+        let options = SeriesOptions {
+            series: cell_value_number(vec![1, 2, 3]),
+            spaces: 10,
+            negative: false,
+        };
+        let results = copy_series(options);
+        assert_eq!(
+            results,
+            cell_value_number(vec![1, 2, 3, 1, 2, 3, 1, 2, 3, 1])
+        );
     }
 
     #[test]
@@ -619,7 +592,6 @@ mod tests {
             negative: true,
         };
         let results = find_auto_complete(options);
-        println!("{:#?}", results);
         assert_eq!(results, cell_value_text(vec!["DECEMBER", "JANUARY"]));
     }
 }
