@@ -1,7 +1,6 @@
 import { debugShowRunComputation } from '../../debugFlags';
 import { Cell } from '../../schemas';
 import { webWorkers } from '../../web-workers/webWorkers';
-import { runAI } from './ai/runAI';
 import { runFormula } from './formulas/runFormula';
 import { CellEvaluationResult } from './types';
 
@@ -37,14 +36,13 @@ export const runCellComputation = async (cell: Cell): Promise<CellEvaluationResu
       error_span: null,
     };
   } else if (cell.type === 'AI') {
-    let result = await runAI(cell.ai_prompt || '', { x: cell.x, y: cell.y });
     return {
-      success: result.success,
+      success: false,
       std_out: undefined,
-      std_err: result.error_msg,
-      output_value: result.output_value,
+      std_err: 'AI cell type is no longer supported.',
+      output_value: null,
       cells_accessed: [],
-      array_output: result.array_output || [],
+      array_output: [],
       formatted_code: '',
       error_span: null,
     };
