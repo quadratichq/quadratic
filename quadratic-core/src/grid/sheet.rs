@@ -17,6 +17,7 @@ use super::js_types::{
     CellFormatSummary, FormattingSummary, JsRenderBorder, JsRenderCell, JsRenderCodeCell,
     JsRenderCodeCellState, JsRenderFill,
 };
+use super::offsets::Offsets;
 use super::response::{GetIdResponse, SetCellResponse};
 use super::{NumericFormat, NumericFormatKind};
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
@@ -31,10 +32,8 @@ pub struct Sheet {
     pub(super) column_ids: IdMap<ColumnId, i64>,
     pub(super) row_ids: IdMap<RowId, i64>,
 
-    #[serde(with = "crate::util::btreemap_serde")]
-    pub(super) column_widths: BTreeMap<i64, f32>,
-    #[serde(with = "crate::util::btreemap_serde")]
-    pub(super) row_heights: BTreeMap<i64, f32>,
+    pub(super) column_widths: Offsets,
+    pub(super) row_heights: Offsets,
 
     #[serde(with = "crate::util::btreemap_serde")]
     pub(super) columns: BTreeMap<i64, Column>,
@@ -57,8 +56,8 @@ impl Sheet {
             column_ids: IdMap::new(),
             row_ids: IdMap::new(),
 
-            column_widths: BTreeMap::new(),
-            row_heights: BTreeMap::new(),
+            column_widths: Offsets::new(crate::DEFAULT_COLUMN_WIDTH),
+            row_heights: Offsets::new(crate::DEFAULT_ROW_HEIGHT),
 
             columns: BTreeMap::new(),
             borders: SheetBorders::new(),
@@ -301,13 +300,31 @@ impl Sheet {
         A::column_data_mut(column).set(pos.y, value)
     }
 
-    /// Returns the widths of columns.
-    pub fn column_widths(&self) -> &BTreeMap<i64, f32> {
-        &self.column_widths
+    /// Returns the widths of a range of columns.
+    pub fn column_widths(&self, x_range: Range<i64>) -> impl '_ + Iterator<Item = f32> {
+        self.column_widths.iter_offsets(x_range)
     }
-    /// Returns the heights of rows.
-    pub fn row_heights(&self) -> &BTreeMap<i64, f32> {
-        &self.row_heights
+    /// Returns the heights of a range of rows.
+    pub fn row_heights(&self, y_range: Range<i64>) -> impl '_ + Iterator<Item = f32> {
+        self.row_heights.iter_offsets(y_range)
+    }
+
+    /// Sets the width of a column and returns the old width.
+    pub fn set_column_width(&mut self, x: i64, width: f32) -> f32 {
+        self.column_widths.set_size(x, width)
+    }
+    /// Sets the height of a row and returns the old height.
+    pub fn set_row_height(&mut self, y: i64, height: f32) -> f32 {
+        self.row_heights.set_size(y, height)
+    }
+
+    /// Resets the width of a column and returns the old width.
+    pub fn reset_column_width(&mut self, x: i64) -> f32 {
+        self.column_widths.reset(x)
+    }
+    /// Resets the height of a row and returns the old height.
+    pub fn reset_row_height(&mut self, y: i64) -> f32 {
+        self.row_heights.reset(y)
     }
 
     /// Returns all cell borders.

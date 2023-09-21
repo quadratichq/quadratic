@@ -170,6 +170,37 @@ impl GridController {
                     });
                     summary.sheet_list_modified = true;
                 }
+
+                Operation::SetColumnWidth {
+                    sheet_id,
+                    column_id,
+                    width,
+                } => {
+                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                    if let Some(x) = sheet.get_column_index(column_id) {
+                        let old_width = sheet.set_column_width(x, width);
+                        rev_ops.push(Operation::SetColumnWidth {
+                            sheet_id,
+                            column_id,
+                            width: old_width,
+                        })
+                    }
+                }
+                Operation::SetRowHeight {
+                    sheet_id,
+                    row_id,
+                    height,
+                } => {
+                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                    if let Some(y) = sheet.get_row_index(row_id) {
+                        let old_height = sheet.set_row_height(y, height);
+                        rev_ops.push(Operation::SetRowHeight {
+                            sheet_id,
+                            row_id,
+                            height: old_height,
+                        })
+                    }
+                }
             }
         }
         for dirty_sheet in sheets_with_changed_bounds {
@@ -226,6 +257,17 @@ pub enum Operation {
         target: SheetId,
         order: String,
     },
+
+    SetColumnWidth {
+        sheet_id: SheetId,
+        column_id: ColumnId,
+        width: f32,
+    },
+    SetRowHeight {
+        sheet_id: SheetId,
+        row_id: RowId,
+        height: f32,
+    },
 }
 impl Operation {
     pub fn sheet_with_changed_bounds(&self) -> Option<SheetId> {
@@ -240,6 +282,9 @@ impl Operation {
             Operation::SetSheetName { .. } => None,
 
             Operation::ReorderSheet { .. } => None,
+
+            Operation::SetColumnWidth { .. } => None,
+            Operation::SetRowHeight { .. } => None,
         }
     }
 }

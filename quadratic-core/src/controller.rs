@@ -8,6 +8,7 @@ use self::transactions::Transaction;
 pub mod cells;
 pub mod clipboard;
 pub mod formatting;
+pub mod offsets;
 pub mod sheets;
 pub mod transactions;
 
