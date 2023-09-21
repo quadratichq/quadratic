@@ -8,13 +8,13 @@ use itertools::Itertools;
 /// optimized for converting between column/row indices and pixel units.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Offsets {
-    default: f32,
+    default: f64,
     #[serde(with = "crate::util::btreemap_serde")]
-    sizes: BTreeMap<i64, f32>,
+    sizes: BTreeMap<i64, f64>,
 }
 impl Offsets {
     /// Constructs an empty `Offsets` structure.
-    pub fn new(default: f32) -> Self {
+    pub fn new(default: f64) -> Self {
         Offsets {
             default,
             sizes: BTreeMap::new(),
@@ -22,7 +22,7 @@ impl Offsets {
     }
 
     /// Constructs an `Offsets` structure from an iterator over key-values pairs.
-    pub fn from_iter(default: f32, iter: impl IntoIterator<Item = (i64, f32)>) -> Self {
+    pub fn from_iter(default: f64, iter: impl IntoIterator<Item = (i64, f64)>) -> Self {
         Offsets {
             default,
             sizes: iter.into_iter().collect(),
@@ -51,11 +51,11 @@ impl Offsets {
     }
 
     /// Returns the width/height of a column/row.
-    pub fn get_size(&self, index: i64) -> f32 {
+    pub fn get_size(&self, index: i64) -> f64 {
         *self.sizes.get(&index).unwrap_or(&self.default)
     }
     /// Sets the width/height of a column/row.
-    pub fn set_size(&mut self, index: i64, value: f32) -> f32 {
+    pub fn set_size(&mut self, index: i64, value: f64) -> f64 {
         if value == self.default {
             self.sizes.remove(&index)
         } else {
@@ -64,27 +64,27 @@ impl Offsets {
         .unwrap_or(self.default)
     }
     /// Resets the width/height of a column/row to the default value.
-    pub fn reset(&mut self, index: i64) -> f32 {
+    pub fn reset(&mut self, index: i64) -> f64 {
         self.sizes.remove(&index).unwrap_or(self.default)
     }
 
     /// Iterates over the pixel positions of a range of columns/rows.
-    pub fn iter_offsets(&self, index_range: Range<i64>) -> impl '_ + Iterator<Item = f32> {
+    pub fn iter_offsets(&self, index_range: Range<i64>) -> impl '_ + Iterator<Item = f64> {
         let start = index_range.start;
         let mut current_position = if start < 0 {
-            self.default * start as f32
+            self.default * start as f64
                 - self
                     .sizes
                     .range(start..0)
                     .map(|(_k, v)| v - self.default)
-                    .sum::<f32>()
+                    .sum::<f64>()
         } else {
-            self.default * start as f32
+            self.default * start as f64
                 + self
                     .sizes
                     .range(0..start)
                     .map(|(_k, v)| v - self.default)
-                    .sum::<f32>()
+                    .sum::<f64>()
         };
         index_range.map(move |index| {
             let ret = current_position;
@@ -94,7 +94,7 @@ impl Offsets {
     }
 
     /// Iterates over the sizes of all columns/rows.
-    pub fn iter_sizes(&self) -> impl '_ + Iterator<Item = (i64, f32)> {
+    pub fn iter_sizes(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
         self.sizes.iter().map(|(&k, &v)| (k, v))
     }
 }
@@ -148,7 +148,7 @@ mod tests {
     fn test_offsets_move() {
         let mut offsets = Offsets::new(10.0);
         for i in 0..10 {
-            offsets.set_size(i, i as f32);
+            offsets.set_size(i, i as f64);
         }
         offsets.move_elem(3, 6);
         assert_eq!(offsets.get_size(2), 2.0);
@@ -159,7 +159,7 @@ mod tests {
         assert_eq!(offsets.get_size(7), 7.0);
         offsets.move_elem(6, 3);
         for i in 0..10 {
-            assert_eq!(offsets.get_size(i), i as f32);
+            assert_eq!(offsets.get_size(i), i as f64);
         }
     }
 }

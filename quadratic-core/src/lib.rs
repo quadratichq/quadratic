@@ -33,5 +33,5 @@ pub mod limits {
     pub const CELL_RANGE_LIMIT: u32 = 1_000_000;
 }
 
-pub const DEFAULT_COLUMN_WIDTH: f32 = 100.0;
-pub const DEFAULT_ROW_HEIGHT: f32 = 20.0;
+pub const DEFAULT_COLUMN_WIDTH: f64 = 100.0;
+pub const DEFAULT_ROW_HEIGHT: f64 = 20.0;

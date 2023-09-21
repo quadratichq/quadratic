@@ -8,7 +8,6 @@ use self::{resize::TransientResize, transactions::Transaction};
 pub mod cells;
 pub mod clipboard;
 pub mod formatting;
-pub mod offsets;
 pub mod resize;
 pub mod sheets;
 pub mod transactions;
@@ -21,8 +20,7 @@ pub struct GridController {
     undo_stack: Vec<Transaction>,
     redo_stack: Vec<Transaction>,
 
-    transient_column_resize: Option<TransientResize>,
-    transient_row_resize: Option<TransientResize>,
+    transient_resize: Option<TransientResize>,
 }
 impl GridController {
     pub fn new() -> Self {
@@ -35,8 +33,7 @@ impl GridController {
             undo_stack: vec![],
             redo_stack: vec![],
 
-            transient_column_resize: None,
-            transient_row_resize: None,
+            transient_resize: None,
         }
     }
     pub fn grid(&self) -> &Grid {

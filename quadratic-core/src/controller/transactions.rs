@@ -176,24 +176,30 @@ impl GridController {
                     column,
                     new_size,
                 } => {
-                    let old_size = self.resize_column_internal(sheet_id, column, new_size);
-                    rev_ops.push(Operation::ResizeColumn {
-                        sheet_id,
-                        column,
-                        new_size: old_size,
-                    });
+                    let sheet = self.sheet(sheet_id);
+                    if let Some(x) = sheet.get_column_index(column) {
+                        let old_size = self.resize_column_internal(sheet_id, x, new_size);
+                        rev_ops.push(Operation::ResizeColumn {
+                            sheet_id,
+                            column,
+                            new_size: old_size,
+                        });
+                    }
                 }
                 Operation::ResizeRow {
                     sheet_id,
                     row,
                     new_size,
                 } => {
-                    let old_size = self.resize_row_internal(sheet_id, row, new_size);
-                    rev_ops.push(Operation::ResizeRow {
-                        sheet_id,
-                        row,
-                        new_size: old_size,
-                    });
+                    let sheet = self.sheet(sheet_id);
+                    if let Some(y) = sheet.get_row_index(row) {
+                        let old_size = self.resize_row_internal(sheet_id, y, new_size);
+                        rev_ops.push(Operation::ResizeRow {
+                            sheet_id,
+                            row,
+                            new_size: old_size,
+                        });
+                    }
                 }
             }
         }
@@ -252,15 +258,15 @@ pub enum Operation {
         order: String,
     },
 
-    SetColumnWidth {
+    ResizeColumn {
         sheet_id: SheetId,
-        column_id: ColumnId,
-        width: f32,
+        column: ColumnId,
+        new_size: f64,
     },
-    SetRowHeight {
+    ResizeRow {
         sheet_id: SheetId,
-        row_id: RowId,
-        height: f32,
+        row: RowId,
+        new_size: f64,
     },
 }
 impl Operation {
@@ -277,8 +283,8 @@ impl Operation {
 
             Operation::ReorderSheet { .. } => None,
 
-            Operation::SetColumnWidth { .. } => None,
-            Operation::SetRowHeight { .. } => None,
+            Operation::ResizeColumn { .. } => None,
+            Operation::ResizeRow { .. } => None,
         }
     }
 }
