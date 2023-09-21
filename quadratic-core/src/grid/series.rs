@@ -168,11 +168,12 @@ pub fn find_number_series(options: SeriesOptions) -> Vec<CellValue> {
     }
 
     let calc = |val: &BigDecimal| match (&addition, &multiplication, negative) {
-        (Some(add), None, false) => val + add,
-        (Some(add), None, true) => val - add,
-        (None, Some(mult), false) => val * mult,
-        (None, Some(mult), true) => val / mult,
-        (_, _, _) => unreachable!(),
+        (Some(add), _, false) => val + add,
+        (Some(add), _, true) => val - add,
+        (_, Some(mult), false) => val * mult,
+        (_, Some(mult), true) => val / mult,
+        // (_, _, _) => unreachable!(),
+        (_, _, _) => BigDecimal::zero(),
     };
 
     let mut results = (0..spaces)

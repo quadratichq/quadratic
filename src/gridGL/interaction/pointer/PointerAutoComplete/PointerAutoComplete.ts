@@ -257,8 +257,8 @@ export class PointerAutoComplete {
     }
     // sheetController.end_transaction();
 
-    // this.setSelection();
-    // this.reset();
+    this.setSelection();
+    this.reset();
   }
 
   pointerUp(): boolean {

@@ -1,6 +1,7 @@
 import { Graphics, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { colors } from '../../theme/colors';
+import { pixiApp } from '../pixiApp/PixiApp';
 
 const thickness = 3;
 
@@ -34,6 +35,7 @@ export class BoxCells extends Graphics {
     this.horizontalDelete = false;
     this.verticalDelete = false;
     this.deleteRectangles = undefined;
+    pixiApp.setViewportDirty();
   }
 
   private drawRectangle(): void {
