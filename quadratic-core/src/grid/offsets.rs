@@ -1,3 +1,4 @@
+use rand::seq::index;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::ops::Range;
@@ -93,6 +94,44 @@ impl Offsets {
         })
     }
 
+    pub fn find_offset(&self, pixel: f64) -> i64 {
+        if pixel == 0.0 {
+            0
+        } else if pixel > 0.0 {
+            let mut index = 0;
+            let mut position = 0.0;
+            let mut next_width = self.get_size(index);
+            while position + next_width <= pixel {
+                position += next_width;
+                index += 1;
+                next_width = self.get_size(index);
+            }
+            index
+        } else {
+            let mut index = -1;
+            let mut position = -self.get_size(-1);
+            while position > pixel {
+                index -= 1;
+                position -= self.get_size(index);
+            }
+            index
+        }
+    }
+
+    pub fn iter_screen_offsets(&self, pixel_range: Range<f64>) -> impl '_ + Iterator<Item = f64> {
+        let start = self.find_offset(pixel_range.start);
+        let end = self.find_offset(pixel_range.end);
+        self.iter_offsets(Range { start, end })
+    }
+
+    // // Iterates over all columns/rows that are contained between two pixel positions
+    // pub fn from_screen_rect(&self, pixel_range: Range<f64>) -> impl '_ + Iterator<Item = f64> {
+    //     let start =
+    //     if pixel_range.start > 0.0 {
+
+    //     }
+    // }
+
     /// Iterates over the sizes of all columns/rows.
     pub fn iter_sizes(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
         self.sizes.iter().map(|(&k, &v)| (k, v))
@@ -161,5 +200,60 @@ mod tests {
         for i in 0..10 {
             assert_eq!(offsets.get_size(i), i as f64);
         }
+    }
+
+    #[test]
+    fn test_find_offsets_default() {
+        let offsets = Offsets::new(10.0);
+
+        assert_eq!(offsets.find_offset(0.0), 0);
+        assert_eq!(offsets.find_offset(9.0), 0);
+
+        // 0 .. 10 .. 20 .^. 30
+        assert_eq!(offsets.find_offset(25.0), 2);
+
+        assert_eq!(offsets.find_offset(-9.0), -1);
+
+        // -30 .^. -20 .. -10 .. 0
+        assert_eq!(offsets.find_offset(-25.0), -3);
+    }
+
+    #[test]
+    fn test_find_offsets_changed() {
+        let mut offsets = Offsets::new(10.0);
+        offsets.set_size(0, 20.0);
+        offsets.set_size(-1, 20.0);
+
+        assert_eq!(offsets.find_offset(0.0), 0);
+        assert_eq!(offsets.find_offset(10.0), 0);
+        assert_eq!(offsets.find_offset(20.0), 1);
+
+        // 0 .. 20 .. 30 .^. 40
+        assert_eq!(offsets.find_offset(25.0), 1);
+        assert_eq!(offsets.find_offset(35.0), 2);
+
+        assert_eq!(offsets.find_offset(-9.0), -1);
+
+        // -40 .. -30 .. -20 .. 0
+        assert_eq!(offsets.find_offset(-20.0), -1);
+        assert_eq!(offsets.find_offset(-21.0), -2);
+
+        // -40 .^. -30 .. -20 .. 0
+        assert_eq!(offsets.find_offset(-35.0), -3);
+    }
+
+    #[test]
+    fn test_iter_screen_offsets() {
+        let offsets = Offsets::new(10.0);
+
+        // 0 .. 10 .. 20 .^. 30
+        let list: Vec<f64> = offsets
+            .iter_screen_offsets(Range {
+                start: 0.0,
+                end: 21.0,
+            })
+            .collect();
+        assert_eq!(list.first(), 0);
+        assert_eq!(list.last,);
     }
 }
