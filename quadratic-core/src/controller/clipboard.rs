@@ -1,8 +1,7 @@
 use std::str::FromStr;
 
 use super::{
-    formatting::CellFmtArray,
-    transactions::{Operation, Transaction, TransactionSummary},
+    formatting::CellFmtArray, operations::Operation, transactions::TransactionSummary,
     GridController,
 };
 use crate::{
@@ -240,7 +239,7 @@ impl GridController {
             })
         });
 
-        self.transact_forward(Transaction { ops, cursor })
+        self.transact_forward(ops, cursor)
     }
 
     fn paste_plain_text(
@@ -265,7 +264,7 @@ impl GridController {
                     region,
                     values: array,
                 }];
-                self.transact_forward(Transaction { ops, cursor })
+                self.transact_forward(ops, cursor)
             }
             None => TransactionSummary::default(),
         }
