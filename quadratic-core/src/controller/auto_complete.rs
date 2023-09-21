@@ -1,5 +1,4 @@
 use anyhow::{anyhow, Result};
-use smallvec::SmallVec;
 
 use super::{
     formatting::CellFmtArray,
@@ -106,12 +105,13 @@ impl GridController {
         range: &Rect,
     ) -> Result<Vec<Operation>> {
         // get all values in the rect to set all values in the range
-        let mut value_ops = rect
+        let value_ops = rect
             .x_range()
             .flat_map(|x| {
                 let new_rect = Rect::new_span((x, rect.min.y).into(), (x, rect.max.y).into());
                 let row = Rect::new_span((x, range.min.y).into(), (x, range.max.y).into());
-                self.apply_values(sheet_id, direction == ExpandDirection::Up, &new_rect, &row)
+                let negative = direction == ExpandDirection::Up;
+                self.apply_values(sheet_id, negative, &new_rect, &row)
             })
             .flatten()
             .collect::<Vec<_>>();
@@ -160,21 +160,19 @@ impl GridController {
         rect: &Rect,
         range: &Rect,
     ) -> Result<Vec<Operation>> {
-        let mut value_ops = range
+        // get all values in the rect to set all values in the range
+        let value_ops = range
             .y_range()
             .flat_map(|y| {
                 let new_rect = Rect::new_span((rect.min.x, y).into(), (rect.max.x, y).into());
                 let col = Rect::new_span((range.min.x, y).into(), (range.max.x, y).into());
-                self.apply_values(
-                    sheet_id,
-                    direction == ExpandDirection::Left,
-                    &new_rect,
-                    &col,
-                )
+                let negative = direction == ExpandDirection::Left;
+                self.apply_values(sheet_id, negative, &new_rect, &col)
             })
             .flatten()
             .collect::<Vec<_>>();
 
+        // get formats
         let mut selection = rect
             .x_range()
             .map(|x| {
@@ -191,6 +189,7 @@ impl GridController {
             cols.reverse();
         }
 
+        // apply formats
         let mut ops = cols
             .iter()
             .enumerate()
@@ -215,7 +214,7 @@ impl GridController {
         range: &Rect,
     ) -> Result<Vec<Operation>> {
         let sheet = self.sheet(sheet_id);
-        let selection_values = cell_values_in_rect(&rect, &sheet).unwrap();
+        let selection_values = cell_values_in_rect(&rect, &sheet)?;
         let series = find_auto_complete(SeriesOptions {
             series: selection_values
                 .clone()
@@ -269,65 +268,10 @@ pub fn cell_values_in_rect(&rect: &Rect, sheet: &Sheet) -> Result<Array> {
         .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", rect.size(), e))
 }
 
-/// For a given selection (source data), project the cell value at the given Pos.
-pub fn project_cell_value<'a>(
-    selection: &'a Array,
-    direction: ExpandDirection,
-    pos: Pos,
-    range: &'a Rect,
-) -> &'a CellValue {
-    let x_diff = match direction {
-        ExpandDirection::Left => {
-            ((pos.x - range.max.x as i64) % selection.width() as i64) + selection.width() as i64 - 1
-        }
-        _ => (pos.x - range.min.x) % selection.width() as i64,
-    };
-
-    let y_diff = match direction {
-        ExpandDirection::Up => pos.y + range.max.y + 1,
-        _ => pos.y - range.min.y,
-    };
-
-    let x = x_diff as u32;
-    let y = y_diff as u32 % selection.height();
-    selection.get(x, y).unwrap_or_else(|_| &CellValue::Blank)
-}
-
-/// Set the cell values in the given Rect to the given Array.
-///
-/// TODO(ddimaria): instead of injecting this into an array, would it be better
-/// to just set the values directly in the sheet?
-pub fn set_cell_projections(
-    projection: &Array,
-    direction: ExpandDirection,
-    range: &Rect,
-) -> SmallVec<[CellValue; 1]> {
-    range
-        .y_range()
-        .map(|y| {
-            // let series = find_auto_complete(SeriesOptions {
-            //     series: range
-            //     .x_range().map(f),
-            //     spaces: (range.width() * range.height()) as i32,
-            //     negative: false,
-            // });
-            range
-                .x_range()
-                .map(|x| {
-                    project_cell_value(&projection, direction, Pos { x, y }, &range).to_owned()
-                })
-                .collect::<Vec<CellValue>>()
-        })
-        .flatten()
-        .collect()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{array, grid::Bold};
-    use bigdecimal::BigDecimal;
-    use std::str::FromStr;
     use tabled::{
         builder::Builder,
         settings::Color,
@@ -375,9 +319,9 @@ mod tests {
         CellValue::Text(value.into())
     }
 
-    fn to_number_cell_value(value: &str) -> CellValue {
-        CellValue::Number(BigDecimal::from_str(value).unwrap())
-    }
+    // fn to_number_cell_value(value: &str) -> CellValue {
+    //     CellValue::Number(BigDecimal::from_str(value).unwrap())
+    // }
 
     fn assert_cell_value(
         grid_controller: &GridController,
@@ -399,15 +343,15 @@ mod tests {
         );
     }
 
-    fn assert_cell_value_number(
-        grid_controller: &GridController,
-        sheet_id: SheetId,
-        x: i64,
-        y: i64,
-        value: &str,
-    ) {
-        assert_cell_value(grid_controller, sheet_id, x, y, to_number_cell_value(value));
-    }
+    // fn assert_cell_value_number(
+    //     grid_controller: &GridController,
+    //     sheet_id: SheetId,
+    //     x: i64,
+    //     y: i64,
+    //     value: &str,
+    // ) {
+    //     assert_cell_value(grid_controller, sheet_id, x, y, to_number_cell_value(value));
+    // }
 
     fn assert_cell_value_text(
         grid_controller: &GridController,
@@ -523,22 +467,6 @@ mod tests {
         ];
 
         assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn test_project_cell_value() {
-        let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
-        let (grid_controller, sheet_id) = test_setup_rect(&selected);
-        let sheet = grid_controller.grid().sheet_from_id(sheet_id);
-        let selection = cell_values_in_rect(&selected, &sheet).unwrap();
-        let func = |pos| project_cell_value(&selection, ExpandDirection::Right, pos, &selected);
-
-        assert_eq!(func(Pos { x: 3, y: 0 }), &to_text_cell_value("1"));
-        assert_eq!(func(Pos { x: 4, y: 0 }), &to_text_cell_value("2"));
-        assert_eq!(func(Pos { x: 5, y: 0 }), &to_text_cell_value("3"));
-        assert_eq!(func(Pos { x: 3, y: 1 }), &to_text_cell_value("4"));
-        assert_eq!(func(Pos { x: 4, y: 1 }), &to_text_cell_value("5"));
-        assert_eq!(func(Pos { x: 5, y: 1 }), &to_text_cell_value("6"));
     }
 
     #[test]
