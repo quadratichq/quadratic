@@ -17,6 +17,9 @@ impl GridController {
         !self.redo_stack.is_empty()
     }
     pub fn undo(&mut self, cursor: Option<String>) -> Option<TransactionSummary> {
+        if self.undo_stack.is_empty() {
+            return None;
+        }
         let transaction = self.undo_stack.pop()?;
         let cursor_old = transaction.cursor.clone();
         let (mut reverse_transaction, mut summary) = self.transact(transaction);
@@ -26,6 +29,9 @@ impl GridController {
         Some(summary)
     }
     pub fn redo(&mut self, cursor: Option<String>) -> Option<TransactionSummary> {
+        if self.redo_stack.is_empty() {
+            return None;
+        }
         let transaction = self.redo_stack.pop()?;
         let cursor_old = transaction.cursor.clone();
         let (mut reverse_transaction, mut summary) = self.transact(transaction);
