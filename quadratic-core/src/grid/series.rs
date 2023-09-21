@@ -17,6 +17,10 @@ const MONTHS_SHORT: [&'static str; 12] = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
+const MONTHS_SHORT_UPPER: [&'static str; 12] = [
+    "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
+];
+
 const MONTHS_FULL: [&'static str; 12] = [
     "January",
     "February",
@@ -221,6 +225,7 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
         ALPHABET_LOWER.into(),
         ALPHABET_UPPER.into(),
         MONTHS_SHORT.into(),
+        MONTHS_SHORT_UPPER.into(),
         MONTHS_FULL.into(),
         MONTHS_FULL_UPPER.into(),
         DAYS_SHORT.into(),
@@ -274,7 +279,7 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
             if negative {
                 let string_list = entry;
                 let current = string_list[0].clone();
-                let cell_value = match current {
+                let mut cell_value = match current {
                     CellValue::Text(current) => current,
                     _ => "".into(),
                 };
@@ -282,7 +287,8 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
                 (0..spaces).for_each(|_| {
                     let next =
                         get_series_next_key(&cell_value, text_series[i].clone(), true).unwrap();
-                    results.push(CellValue::Text(next));
+                    results.push(CellValue::Text(next.clone()));
+                    cell_value = next;
                 });
 
                 results.reverse();
@@ -295,11 +301,8 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
                 };
 
                 (0..spaces).for_each(|_| {
-                    let next = get_series_next_key(&cell_value, text_series[i].clone(), false)
-                        .unwrap_or_else(|e| {
-                            println!("next: {:?}", e);
-                            "".into()
-                        });
+                    let next =
+                        get_series_next_key(&cell_value, text_series[i].clone(), false).unwrap();
 
                     results.push(CellValue::Text(next.clone()));
                     cell_value = next;
@@ -353,14 +356,11 @@ pub fn is_series_next_key(
         .iter()
         .position(|val| val == &key)
         .ok_or_else(|| anyhow!("Expected to find key in all_keys"))?;
-    dbg!(index);
-    dbg!(all_keys.len());
-    dbg!(index_next_key);
-    dbg!((index + 1) % all_keys.len() == index_next_key);
+
     Ok((index + 1) % all_keys.len() == index_next_key)
 }
 
-pub fn checked_mod(n: usize, m: usize) -> usize {
+pub fn checked_mod(n: isize, m: isize) -> isize {
     ((n % m) + m) % m
 }
 
@@ -368,15 +368,17 @@ pub fn get_series_next_key(last_key: &str, all_keys: Vec<&str>, negative: bool) 
     let index = all_keys
         .iter()
         .position(|val| last_key.to_string() == val.to_string())
-        .ok_or_else(|| anyhow!("Expected to find '{}' in all_keys", last_key))?;
+        .ok_or_else(|| anyhow!("Expected to find '{}' in all_keys", last_key))?
+        as isize;
+    let all_keys_len = all_keys.len() as isize;
 
     let key = match negative {
-        true => checked_mod(index.checked_sub(1).unwrap_or(0), all_keys.len()),
-        false => checked_mod(index + 1, all_keys.len()),
+        true => checked_mod(index - 1, all_keys_len),
+        false => checked_mod(index + 1, all_keys_len),
     };
 
     let next_key = all_keys
-        .get(key)
+        .get(key as usize)
         .ok_or_else(|| anyhow!("Expected to find '{}' in all_keys", key))?;
 
     Ok(next_key.to_string())
@@ -573,7 +575,51 @@ mod tests {
             negative: true,
         };
         let results = find_auto_complete(options);
-        println!("{:#?}", results);
         assert_eq!(results, cell_value_text(vec!["W", "X", "Y", "Z"]));
+    }
+
+    #[test]
+    fn find_a_text_series_short_month() {
+        let options = SeriesOptions {
+            series: cell_value_text(vec!["Jan", "Feb", "Mar"]),
+            spaces: 4,
+            negative: false,
+        };
+        let results = find_auto_complete(options);
+        assert_eq!(results, cell_value_text(vec!["Apr", "May", "Jun", "Jul"]));
+    }
+
+    #[test]
+    fn find_a_text_series_uppercase_short_month_negative() {
+        let options = SeriesOptions {
+            series: cell_value_text(vec!["JAN", "FEB", "MAR"]),
+            spaces: 4,
+            negative: true,
+        };
+        let results = find_auto_complete(options);
+        assert_eq!(results, cell_value_text(vec!["SEP", "OCT", "NOV", "DEC"]));
+    }
+
+    #[test]
+    fn find_a_text_series_full_month() {
+        let options = SeriesOptions {
+            series: cell_value_text(vec!["January", "February"]),
+            spaces: 1,
+            negative: false,
+        };
+        let results = find_auto_complete(options);
+        assert_eq!(results, cell_value_text(vec!["March"]));
+    }
+
+    #[test]
+    fn find_a_text_series_uppercase_full_month_negative_wrap() {
+        let options = SeriesOptions {
+            series: cell_value_text(vec!["FEBRUARY", "MARCH"]),
+            spaces: 2,
+            negative: true,
+        };
+        let results = find_auto_complete(options);
+        println!("{:#?}", results);
+        assert_eq!(results, cell_value_text(vec!["DECEMBER", "JANUARY"]));
     }
 }
