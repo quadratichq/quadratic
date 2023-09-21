@@ -93,6 +93,7 @@ impl Offsets {
         })
     }
 
+    /// returns the entry index for the screen coordinate
     pub fn find_offset(&self, pixel: f64) -> i64 {
         if pixel == 0.0 {
             0
@@ -117,6 +118,8 @@ impl Offsets {
         }
     }
 
+    /// Returns an iterator that includes all offsets for entries between the two screen coordinates
+    /// (including one offset beyond the last entry to ensure we know the size of all entries)
     pub fn iter_screen_offsets(&self, pixel_range: Range<f64>) -> impl '_ + Iterator<Item = f64> {
         let start = self.find_offset(pixel_range.start);
         let end = self.find_offset(pixel_range.end);
@@ -251,5 +254,14 @@ mod tests {
             .collect();
         assert_eq!(list.first(), Some(&0.0));
         assert_eq!(list.last(), Some(&30.0));
+
+        let list: Vec<f64> = offsets
+            .iter_screen_offsets(Range {
+                start: -100.0,
+                end: 100.0,
+            })
+            .collect();
+        assert_eq!(list.first(), Some(&-100.0));
+        assert_eq!(list.last(), Some(&110.0));
     }
 }
