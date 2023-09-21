@@ -213,11 +213,13 @@ export class PointerAutoComplete {
 
     if (this.stateVertical === 'shrink') {
       if (this.endCell) {
-        // await shrinkVertical({
-        //   app: pixiApp,
-        //   selection: this.selection,
-        //   endCell: this.endCell,
-        // });
+        const rect = new Rectangle(
+          this.selection.left,
+          this.endCell.y + 1,
+          this.selection.right,
+          this.selection.bottom
+        );
+        grid.deleteCellValues(sheet.id, rect, false);
       }
     } else if (this.stateVertical === 'expandDown' && this.toVertical !== undefined) {
       // if (!(this.stateHorizontal === 'expandRight' && this.toHorizontal !== undefined)) {
@@ -240,11 +242,8 @@ export class PointerAutoComplete {
 
     if (this.stateHorizontal === 'shrink') {
       if (this.endCell) {
-        // await shrinkHorizontal({
-        //   app: pixiApp,
-        //   selection: this.selection,
-        //   endCell: this.endCell,
-        // });
+        const rect = new Rectangle(this.endCell.x + 1, this.selection.top, this.selection.right, this.selection.bottom);
+        grid.deleteCellValues(sheet.id, rect, false);
       }
     } else if (this.stateHorizontal === 'expandLeft' && this.toHorizontal !== undefined) {
       grid.expandLeft(sheet.id, this.selection, this.toHorizontal, this.toVertical);

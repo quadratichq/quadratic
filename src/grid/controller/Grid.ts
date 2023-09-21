@@ -172,13 +172,15 @@ export class Grid {
     // this.dirty = true;
   }
 
-  deleteCellValues(sheetId: string, rectangle: Rectangle): void {
+  deleteCellValues(sheetId: string, rectangle: Rectangle, createTransaction = true): void {
     const summary = this.gridController.deleteCellValues(
       sheetId,
       rectangleToRect(rectangle),
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
+
+    if (createTransaction) transactionResponse(summary);
+
     this.dirty = true;
   }
 
