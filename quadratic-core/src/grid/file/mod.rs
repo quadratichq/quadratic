@@ -109,6 +109,7 @@ pub fn export(grid: &current::Grid) -> Result<String, String> {
                         .collect(),
                 })
                 .collect(),
+            dependencies: grid.dependencies.clone(),
         },
     })
     .map_err(|e| e.to_string())

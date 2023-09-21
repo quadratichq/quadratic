@@ -7,12 +7,13 @@ pub use super::current::*; // when creating new version, replace `current` with 
 use super::v1_4;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Grid {
+pub(crate) struct Grid {
     pub sheets: Vec<Sheet>,
+    pub dependencies: HashMap<SheetPos, Vec<SheetRect>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Sheet {
+pub(crate) struct Sheet {
     pub id: SheetId,
     pub name: String,
     pub color: Option<String>,
@@ -28,7 +29,7 @@ pub struct Sheet {
 }
 
 impl v1_4::GridFileV1_4 {
-    pub fn into_v1_5(self) -> Result<Grid, &'static str> {
+    pub(crate) fn into_v1_5(self) -> Result<Grid, &'static str> {
         let ret = Grid {
             sheets: self
                 .sheets
@@ -39,6 +40,7 @@ impl v1_4::GridFileV1_4 {
                     //       sheet ID is new so it is definitely unique.
                 })
                 .try_collect()?,
+            dependencies: HashMap::new(), // TODO: import dependencies
         };
 
         Ok(ret)
@@ -72,7 +74,7 @@ impl SheetBuilder {
 }
 
 impl v1_4::JsSheet {
-    pub fn into_v1_5(self) -> Result<Sheet, &'static str> {
+    pub(crate) fn into_v1_5(self) -> Result<Sheet, &'static str> {
         let sheet_id = SheetId::new();
 
         let column_widths = self
