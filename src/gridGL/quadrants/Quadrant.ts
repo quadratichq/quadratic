@@ -2,7 +2,6 @@ import { Container, Graphics, MIPMAP_MODES, Rectangle, RenderTexture, Sprite } f
 import { debugShowCacheInfo, debugShowQuadrantBoxes, debugShowTime } from '../../debugFlags';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { intersects } from '../helpers/intersects';
-import { PixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { QUADRANT_COLUMNS, QUADRANT_ROWS, QUADRANT_SCALE, QUADRANT_TEXTURE_SIZE } from './quadrantConstants';
 
@@ -110,7 +109,7 @@ export class Quadrant extends Container {
     this.subquadrants.forEach((subquadrant) => (subquadrant.visible = false));
   }
 
-  update(app: PixiApp, timeStart?: number, debug?: string): void {
+  update(timeStart?: number, debug?: string): void {
     if (!this.dirty) return;
     this.clear();
     const columnStart = this.location.x * QUADRANT_COLUMNS;

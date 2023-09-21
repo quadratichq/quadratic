@@ -1,9 +1,8 @@
-import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
-import { CommandPaletteListItemCheckbox } from '../CommandPaletteListItemCheckbox';
-import { zoomIn, zoomOut, zoomToFit, zoomTo100, zoomToSelection } from '../../../../gridGL/helpers/zoom';
+import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../../../gridGL/helpers/zoom';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useGridSettings } from '../../TopBar/SubMenus/useGridSettings';
+import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
+import { CommandPaletteListItemCheckbox } from '../CommandPaletteListItemCheckbox';
 
 const ListItems = [
   {
@@ -106,7 +105,7 @@ const ListItems = [
       <CommandPaletteListItem
         {...props}
         action={() => {
-          zoomIn(props.app.viewport);
+          zoomIn();
         }}
         shortcut="+"
         shortcutModifiers={[KeyboardSymbols.Command]}
@@ -119,7 +118,7 @@ const ListItems = [
       <CommandPaletteListItem
         {...props}
         action={() => {
-          zoomOut(props.app.viewport);
+          zoomOut();
         }}
         shortcut="−"
         shortcutModifiers={[KeyboardSymbols.Command]}
@@ -132,7 +131,7 @@ const ListItems = [
       <CommandPaletteListItem
         {...props}
         action={() => {
-          zoomToSelection(props.app.sheet, props.app.viewport);
+          zoomToSelection();
         }}
         shortcut="8"
         shortcutModifiers={[KeyboardSymbols.Command]}
@@ -145,7 +144,7 @@ const ListItems = [
       <CommandPaletteListItem
         {...props}
         action={() => {
-          zoomToFit(props.sheetController.sheet, props.app.viewport);
+          zoomToFit();
         }}
         shortcut="9"
         shortcutModifiers={[KeyboardSymbols.Command]}
@@ -158,7 +157,7 @@ const ListItems = [
       <CommandPaletteListItem
         {...props}
         action={() => {
-          zoomTo100(props.app.viewport);
+          zoomTo100();
         }}
         shortcut="0"
         shortcutModifiers={[KeyboardSymbols.Command]}

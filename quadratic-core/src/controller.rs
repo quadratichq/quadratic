@@ -6,6 +6,9 @@ use crate::grid::Grid;
 use self::{resize::TransientResize, transactions::Transaction};
 
 pub mod cells;
+pub mod clipboard;
+pub mod formatting;
+pub mod offsets;
 pub mod resize;
 pub mod sheets;
 pub mod transactions;
@@ -35,5 +38,8 @@ impl GridController {
             transient_column_resize: None,
             transient_row_resize: None,
         }
+    }
+    pub fn grid(&self) -> &Grid {
+        &self.grid
     }
 }

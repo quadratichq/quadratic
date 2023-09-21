@@ -1,11 +1,12 @@
 use std::{fmt, num::NonZeroU32};
 
+use bigdecimal::BigDecimal;
 use itertools::Itertools;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
-use super::{ArraySize, Axis, CellValue, Span, Spanned, Value};
+use super::{ArraySize, Axis, CellValue, Spanned, Value};
 use crate::{CodeResult, ErrorMsg};
 
 #[macro_export]
@@ -23,7 +24,6 @@ macro_rules! array {
 /// 2D array of values in the formula language. The array may be a single value
 /// (1x1) but must not be degenerate (zero width or zero height).
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct Array {
     /// Width and height.
     size: ArraySize,
@@ -82,10 +82,13 @@ impl Array {
     /// Constructs an array of random float values.
     pub fn from_random_floats(size: ArraySize) -> Self {
         let mut rng = rand::thread_rng();
-        let values =
-            std::iter::from_fn(|| Some(CellValue::Number(rng.gen_range(-100..=100) as f64)))
-                .take(size.len())
-                .collect();
+        let values = std::iter::from_fn(|| {
+            Some(CellValue::Number(BigDecimal::from(
+                &rng.gen_range(-100..=100),
+            )))
+        })
+        .take(size.len())
+        .collect();
         Self::new_row_major(size, values).expect("error constructing random float array")
     }
     /// Constructs an array from a list of values in row-major order.
@@ -203,16 +206,6 @@ impl Array {
             None => "array",
         }
     }
-
-    /// Replaces NaN and Inf with errors; otherwise returns the value
-    /// unchanged.
-    pub fn purify_floats(mut self, span: Span) -> CodeResult<Self> {
-        for v in &mut self.values {
-            *v = std::mem::take(v).purify_float(span)?;
-        }
-        Ok(self)
-    }
-
     /// Returns the unique length that fits all `values` along `axis`. See
     /// `common_array_size()` for more.
     pub fn common_len<'a>(

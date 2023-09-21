@@ -1,9 +1,12 @@
 import { ContentCopy, ContentCut, ContentPaste, East, Redo, Undo } from '@mui/icons-material';
 import { useRecoilState } from 'recoil';
+import { copy, cut, paste, redo, undo } from '../../../../actions';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { useGlobalSnackbar } from '../../../../components/GlobalSnackbar';
+import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { PNG_MESSAGE } from '../../../../constants/appConstants';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
+import { grid } from '../../../../grid/controller/Grid';
+import { sheets } from '../../../../grid/controller/Sheets';
 import { copyAsPNG } from '../../../../gridGL/pixiApp/copyAsPNG';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { isMac } from '../../../../utils/isMac';
@@ -12,15 +15,14 @@ import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../Co
 
 const ListItems = [
   {
-    label: 'Undo',
+    label: undo.label,
+    isAvailable: undo.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       return (
         <CommandPaletteListItem
           {...props}
           icon={<Undo />}
-          action={() => {
-            props.sheetController.undo();
-          }}
+          action={grid.undo}
           shortcut="Z"
           shortcutModifiers={[KeyboardSymbols.Command]}
         />
@@ -28,15 +30,14 @@ const ListItems = [
     },
   },
   {
-    label: 'Redo',
+    label: redo.label,
+    isAvailable: redo.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       return (
         <CommandPaletteListItem
           {...props}
           icon={<Redo />}
-          action={() => {
-            props.sheetController.redo();
-          }}
+          action={grid.redo}
           shortcut={isMac ? 'Z' : 'Y'}
           shortcutModifiers={isMac ? [KeyboardSymbols.Command, KeyboardSymbols.Shift] : [KeyboardSymbols.Command]}
         />
@@ -44,14 +45,15 @@ const ListItems = [
     },
   },
   {
-    label: 'Cut',
+    label: cut.label,
+    isAvailable: cut.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       return (
         <CommandPaletteListItem
           {...props}
           action={() => {
-            const cursor = props.sheetController.sheet.cursor;
-            cutToClipboard(props.sheetController, cursor.originPosition, cursor.terminalPosition);
+            const cursor = sheets.sheet.cursor;
+            cutToClipboard(cursor.originPosition, cursor.terminalPosition);
           }}
           icon={<ContentCut />}
           shortcut="X"
@@ -61,14 +63,14 @@ const ListItems = [
     },
   },
   {
-    label: 'Copy',
+    label: copy.label,
     Component: (props: CommandPaletteListItemSharedProps) => {
       return (
         <CommandPaletteListItem
           {...props}
           action={() => {
-            const cursor = props.sheetController.sheet.cursor;
-            copyToClipboard(props.sheetController, cursor.originPosition, cursor.terminalPosition);
+            const cursor = sheets.sheet.cursor;
+            copyToClipboard(cursor.originPosition, cursor.terminalPosition);
           }}
           icon={<ContentCopy />}
           shortcut="C"
@@ -78,13 +80,14 @@ const ListItems = [
     },
   },
   {
-    label: 'Paste',
+    label: paste.label,
+    isAvailable: paste.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       return (
         <CommandPaletteListItem
           {...props}
           action={() => {
-            pasteFromClipboard(props.sheetController, props.sheetController.sheet.cursor.cursorPosition);
+            pasteFromClipboard(sheets.sheet.cursor.cursorPosition);
           }}
           icon={<ContentPaste />}
           shortcut="V"
@@ -101,7 +104,7 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           action={() => {
-            copyAsPNG(props.app);
+            copyAsPNG();
             addGlobalSnackbar(PNG_MESSAGE);
           }}
           icon={<CopyAsPNG />}

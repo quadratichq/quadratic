@@ -1,5 +1,6 @@
 import { IViewportTransformState } from 'pixi-viewport';
-import { pixiAppEvents } from '../../gridGL/pixiApp/PixiAppEvents';
+import { Rectangle } from 'pixi.js';
+import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { Sheet } from './Sheet';
 
@@ -39,7 +40,7 @@ export class SheetCursor {
   }
   get viewport(): IViewportTransformState {
     if (!this._viewport) {
-      const { x, y } = pixiAppEvents.getStartingViewport();
+      const { x, y } = pixiApp.getStartingViewport();
       return { x, y, scaleX: 1, scaleY: 1 };
     }
     return this._viewport;
@@ -58,7 +59,7 @@ export class SheetCursor {
     this.keyboardMovePosition = value.keyboardMovePosition;
     this.cursorPosition = value.cursorPosition;
     this.multiCursor = value.multiCursor;
-    pixiAppEvents.cursorPosition();
+    pixiApp.updateCursorPosition();
   }
 
   changePosition(options: {
@@ -73,7 +74,7 @@ export class SheetCursor {
     } else if (options.keyboardMovePosition) {
       this.keyboardMovePosition = options.keyboardMovePosition;
     }
-    pixiAppEvents.cursorPosition();
+    pixiApp.updateCursorPosition();
   }
 
   changeBoxCells(boxCells: boolean) {
@@ -85,7 +86,14 @@ export class SheetCursor {
   get originPosition(): Coordinate {
     return this.multiCursor ? this.multiCursor.originPosition : this.cursorPosition;
   }
+
   get terminalPosition(): Coordinate {
     return this.multiCursor ? this.multiCursor.terminalPosition : this.cursorPosition;
+  }
+
+  getRectangle(): Rectangle {
+    const origin = this.originPosition;
+    const terminal = this.terminalPosition;
+    return new Rectangle(origin.x, origin.y, terminal.x - origin.x, terminal.y - origin.y);
   }
 }

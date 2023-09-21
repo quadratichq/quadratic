@@ -1,16 +1,12 @@
 import { GetCellsDB } from '../../grid/sheet/Cells/GetCellsDB';
-import { WebWorkers } from '../webWorkers';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 
 export class PythonWebWorker {
-  private webWorkers: WebWorkers;
   private worker: Worker;
   private callback?: (results: PythonReturnType) => void;
   private loaded = false;
 
-  constructor(webWorkers: WebWorkers) {
-    this.webWorkers = webWorkers;
-
+  constructor() {
     this.worker = new Worker(new URL('./python.worker.ts', import.meta.url));
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
@@ -21,9 +17,6 @@ export class PythonWebWorker {
           this.callback = undefined;
         }
       } else if (event.type === 'get-cells') {
-        if (!this.webWorkers.app) {
-          throw new Error('Expected app to be defined in WebWorkers');
-        }
         const range = event.range;
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');

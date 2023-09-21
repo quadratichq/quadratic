@@ -11,7 +11,7 @@ use super::formatting::*;
 use super::{Block, BlockContent, CellRef, CellValueBlockContent, ColumnId, SameValue};
 use crate::IsBlank;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Column {
     pub id: ColumnId,
 
@@ -21,6 +21,7 @@ pub struct Column {
     pub align: ColumnData<SameValue<CellAlign>>,
     pub wrap: ColumnData<SameValue<CellWrap>>,
     pub numeric_format: ColumnData<SameValue<NumericFormat>>,
+    pub numeric_decimals: ColumnData<SameValue<i16>>,
     pub bold: ColumnData<SameValue<bool>>,
     pub italic: ColumnData<SameValue<bool>>,
     pub text_color: ColumnData<SameValue<String>>,
@@ -40,6 +41,7 @@ impl Column {
             align: ColumnData::default(),
             wrap: ColumnData::default(),
             numeric_format: ColumnData::default(),
+            numeric_decimals: ColumnData::default(),
             bold: ColumnData::default(),
             italic: ColumnData::default(),
             text_color: ColumnData::default(),
@@ -57,6 +59,7 @@ impl Column {
                 self.align.range(),
                 self.wrap.range(),
                 self.numeric_format.range(),
+                self.numeric_decimals.range(),
                 self.bold.range(),
                 self.italic.range(),
                 self.text_color.range(),
@@ -73,6 +76,7 @@ impl Column {
             || self.align.get(y).is_some()
             || self.wrap.get(y).is_some()
             || self.numeric_format.get(y).is_some()
+            || self.numeric_decimals.get(y).is_some()
             || self.bold.get(y).is_some()
             || self.italic.get(y).is_some()
             || self.text_color.get(y).is_some()
@@ -80,8 +84,10 @@ impl Column {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ColumnData<B>(BTreeMap<i64, Block<B>>);
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ColumnData<B: Serialize + for<'d> Deserialize<'d>>(
+    #[serde(with = "crate::util::btreemap_serde")] BTreeMap<i64, Block<B>>,
+);
 impl<B: BlockContent> Default for ColumnData<B> {
     fn default() -> Self {
         Self::new()
@@ -283,7 +289,9 @@ impl<B: BlockContent> ColumnData<B> {
     }
 }
 
-impl<T: fmt::Debug + Clone + PartialEq> ColumnData<SameValue<T>> {
+impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
+    ColumnData<SameValue<T>>
+{
     pub fn set_range(&mut self, y_range: Range<i64>, value: T) -> Vec<Block<SameValue<T>>> {
         let removed = self.remove_range(y_range.clone());
         self.add_block(Block {
@@ -322,4 +330,30 @@ impl ColumnData<SameValue<bool>> {
 
         ret
     }
+}
+
+#[test]
+fn test_column_data_set_range() {
+    let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+
+    // range 0 - 10 (true)
+    cd.set_range(Range { start: -2, end: 10 }, true);
+    assert_eq!(cd.get(-2), Some(true));
+    assert_eq!(cd.get(0), Some(true));
+    assert_eq!(cd.get(10), None);
+    assert_eq!(cd.get(-3), None);
+    assert_eq!(cd.blocks().count(), 1);
+
+    // adding range 11 - 20 (true)
+    cd.set_range(Range { start: 10, end: 20 }, true);
+    assert_eq!(cd.get(11), Some(true));
+    assert_eq!(cd.get(20), None);
+    assert_eq!(cd.blocks().count(), 1);
+
+    // adding range 19 - 30 (false) - creating a second block and overlapping previous one
+    cd.set_range(Range { start: 19, end: 30 }, false);
+    assert_eq!(cd.get(19), Some(false));
+    assert_eq!(cd.get(18), Some(true));
+    assert_eq!(cd.get(30), None);
+    assert_eq!(cd.blocks().count(), 2);
 }

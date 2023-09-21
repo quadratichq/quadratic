@@ -4,7 +4,7 @@ use smallvec::{smallvec, SmallVec};
 use super::BlockContent;
 use crate::grid::CellValue;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum CellValueBlockContent {
     // TODO: add float array, bool array, etc.
     Values(SmallVec<[CellValue; 1]>),

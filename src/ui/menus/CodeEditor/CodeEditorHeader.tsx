@@ -4,13 +4,15 @@ import { useRecoilValue } from 'recoil';
 import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
 import { Coordinate } from '../../../gridGL/types/size';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { CodeCellValue } from '../../../quadratic-core/types';
+// import { CodeCellValue } from '../../../quadratic-core/types';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
 import { Formula, Python } from '../../icons';
 
+// todo: fix types
+
 interface Props {
-  cell: CodeCellValue | undefined;
+  cell: any | undefined; // CodeCellValue
   cellLocation: Coordinate | undefined;
   unsaved: boolean;
   isRunningComputation: boolean;
@@ -21,12 +23,11 @@ interface Props {
 
 export const CodeEditorHeader = (props: Props) => {
   const { cell, cellLocation, unsaved, isRunningComputation, saveAndRunCell, closeEditor } = props;
-  const { pythonLoaded } = useRecoilValue(loadedStateAtom);
+  const { pythonLoadState } = useRecoilValue(loadedStateAtom);
   const theme = useTheme();
 
   if (!cell || !cellLocation) return null;
-
-  const isLoadingPython = !pythonLoaded && cell.language === 'Python';
+  const isLoadingPython = !['loaded', 'initial'].includes(pythonLoadState) && cell.language === 'Python';
 
   return (
     <div

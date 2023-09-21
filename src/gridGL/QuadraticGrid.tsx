@@ -2,54 +2,45 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorHighlightedCellsStateAtom } from '../atoms/editorHighlightedCellsStateAtom';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { SheetController } from '../grid/controller/SheetController';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
 import { CellInput } from './interaction/CellInput';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { ensureVisible } from './interaction/viewportHelper';
-import { PixiApp } from './pixiApp/PixiApp';
-import { PanMode } from './pixiApp/PixiAppSettings';
-
-interface IProps {
-  sheetController: SheetController;
-  app: PixiApp;
-}
+import { pixiApp } from './pixiApp/PixiApp';
+import { PanMode, pixiAppSettings } from './pixiApp/PixiAppSettings';
 
 // Keep track of state of mouse/space for panning mode
 let mouseIsDown = false;
 let spaceIsDown = false;
 
-export default function QuadraticGrid(props: IProps) {
+export default function QuadraticGrid() {
   const [container, setContainer] = useState<HTMLDivElement>();
   const containerRef = useCallback((node: HTMLDivElement | null) => {
     if (node) setContainer(node);
   }, []);
   useEffect(() => {
-    if (props.app && container) props.app.attach(container);
-  }, [props.app, container]);
+    if (container) pixiApp.attach(container);
+  }, [container]);
 
   const [panMode, setPanMode] = useState<PanMode>(PanMode.Disabled);
   useEffect(() => {
     const updatePanMode = (e: any) => {
       setPanMode(e.detail);
-      ensureVisible({
-        sheet: props.sheetController.sheet,
-        app: props.app,
-      });
+      ensureVisible();
     };
     window.addEventListener('pan-mode', updatePanMode);
     return () => window.removeEventListener('pan-mode', updatePanMode);
-  }, [props.app, props.sheetController.sheet]);
+  }, []);
 
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   useEffect(() => {
-    props.app?.settings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
-  }, [props.app?.settings, editorInteractionState, setEditorInteractionState]);
+    pixiAppSettings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
+  }, [editorInteractionState, setEditorInteractionState]);
 
   const [editorHighlightedCellsState, setEditorHighlightedCellsState] = useRecoilState(editorHighlightedCellsStateAtom);
   useEffect(() => {
-    props.app?.settings.updateEditorHighlightedCellsState(editorHighlightedCellsState, setEditorHighlightedCellsState);
-  }, [props.app?.settings, editorHighlightedCellsState, setEditorHighlightedCellsState]);
+    pixiAppSettings.updateEditorHighlightedCellsState(editorHighlightedCellsState, setEditorHighlightedCellsState);
+  }, [editorHighlightedCellsState, setEditorHighlightedCellsState]);
 
   // Right click menu
   const [showContextMenu, setShowContextMenu] = useState(false);
@@ -58,14 +49,14 @@ export default function QuadraticGrid(props: IProps) {
   const onMouseUp = () => {
     mouseIsDown = false;
     if (panMode !== PanMode.Disabled) {
-      props.app.settings.changePanMode(spaceIsDown ? PanMode.Enabled : PanMode.Disabled);
+      pixiAppSettings.changePanMode(spaceIsDown ? PanMode.Enabled : PanMode.Disabled);
     }
     window.removeEventListener('mouseup', onMouseUp);
   };
   const onMouseDown = () => {
     mouseIsDown = true;
     if (panMode === PanMode.Enabled) {
-      props.app.settings.changePanMode(PanMode.Dragging);
+      pixiAppSettings.changePanMode(PanMode.Dragging);
     }
     window.addEventListener('mouseup', onMouseUp);
   };
@@ -73,7 +64,7 @@ export default function QuadraticGrid(props: IProps) {
     if (e.key === ' ') {
       spaceIsDown = true;
       if (panMode === PanMode.Disabled) {
-        props.app.settings.changePanMode(PanMode.Enabled);
+        pixiAppSettings.changePanMode(PanMode.Enabled);
       }
     }
   };
@@ -81,16 +72,14 @@ export default function QuadraticGrid(props: IProps) {
     if (e.key === ' ') {
       spaceIsDown = false;
       if (panMode !== PanMode.Disabled && !mouseIsDown) {
-        props.app.settings.changePanMode(PanMode.Disabled);
+        pixiAppSettings.changePanMode(PanMode.Disabled);
       }
     }
   };
 
   const { onKeyDown: onKeyDownFromUseKeyboard } = useKeyboard({
-    sheetController: props.sheetController,
     editorInteractionState,
     setEditorInteractionState,
-    app: props.app,
   });
 
   return (
@@ -127,13 +116,8 @@ export default function QuadraticGrid(props: IProps) {
       }}
       onKeyUp={onKeyUp}
     >
-      <CellInput container={container} app={props.app} sheetController={props.sheetController} />
-      <FloatingContextMenu
-        container={container}
-        app={props.app}
-        sheetController={props.sheetController}
-        showContextMenu={showContextMenu}
-      />
+      <CellInput container={container} />
+      <FloatingContextMenu container={container} showContextMenu={showContextMenu} />
     </div>
   );
 }

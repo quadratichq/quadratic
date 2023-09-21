@@ -5,7 +5,6 @@ authors = ["Andrew Farkas <andrew.farkas@quadratic.to>"]
 edition = "2021"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
 repository = "https://github.com/quadratichq/quadratic"
-license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -59,6 +58,8 @@ ts-rs = { git = "https://github.com/HactarCE/ts-rs/", rev = "812c1a8", optional 
 wasm-bindgen = { version = "0.2.83", optional = true }
 wasm-bindgen-futures = { version = "0.4.33", optional = true }
 lexicon_fractional_index = "0.0.3"
+htmlescape = "0.3.1"
+bigdecimal = { version = "0.4.1", features = ["serde"] }
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }

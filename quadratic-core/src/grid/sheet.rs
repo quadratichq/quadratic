@@ -1,13 +1,15 @@
 use std::collections::{btree_map, BTreeMap, HashMap, HashSet};
 use std::ops::Range;
+use std::str::FromStr;
 
+use bigdecimal::BigDecimal;
 use itertools::Itertools;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use super::borders::{CellBorder, SheetBorders};
 use super::bounds::GridBounds;
-use super::code::{CodeCellLanguage, CodeCellRunResult, CodeCellValue};
+use super::code::{CodeCellRunResult, CodeCellValue};
 use super::column::Column;
 use super::formatting::{BoolSummary, CellFmtAttr};
 use super::ids::{CellRef, ColumnId, IdMap, RegionRef, RowId, SheetId};
@@ -15,33 +17,32 @@ use super::js_types::{
     CellFormatSummary, FormattingSummary, JsRenderBorder, JsRenderCell, JsRenderCodeCell,
     JsRenderCodeCellState, JsRenderFill,
 };
-use super::legacy;
+use super::offsets::Offsets;
 use super::response::{GetIdResponse, SetCellResponse};
-use crate::{Array, CellValue, IsBlank, Pos, Rect, Value};
+use super::{NumericFormat, NumericFormatKind};
+use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {
     pub id: SheetId,
     pub name: String,
     pub color: Option<String>,
     pub order: String,
 
-    column_ids: IdMap<ColumnId, i64>,
-    row_ids: IdMap<RowId, i64>,
+    pub(super) column_ids: IdMap<ColumnId, i64>,
+    pub(super) row_ids: IdMap<RowId, i64>,
+
+    pub(super) column_widths: Offsets,
+    pub(super) row_heights: Offsets,
 
     #[serde(with = "crate::util::btreemap_serde")]
-    column_widths: BTreeMap<i64, f32>,
-    #[serde(with = "crate::util::btreemap_serde")]
-    row_heights: BTreeMap<i64, f32>,
-
-    #[serde(with = "crate::util::btreemap_serde")]
-    columns: BTreeMap<i64, Column>,
-    borders: SheetBorders,
+    pub(super) columns: BTreeMap<i64, Column>,
+    pub(super) borders: SheetBorders,
     #[serde(with = "crate::util::hashmap_serde")]
-    code_cells: HashMap<CellRef, CodeCellValue>,
+    pub(super) code_cells: HashMap<CellRef, CodeCellValue>,
 
-    data_bounds: GridBounds,
-    format_bounds: GridBounds,
+    pub(super) data_bounds: GridBounds,
+    pub(super) format_bounds: GridBounds,
 }
 impl Sheet {
     /// Constructs a new empty sheet.
@@ -55,8 +56,8 @@ impl Sheet {
             column_ids: IdMap::new(),
             row_ids: IdMap::new(),
 
-            column_widths: BTreeMap::new(),
-            row_heights: BTreeMap::new(),
+            column_widths: Offsets::new(crate::DEFAULT_COLUMN_WIDTH),
+            row_heights: Offsets::new(crate::DEFAULT_ROW_HEIGHT),
 
             columns: BTreeMap::new(),
             borders: SheetBorders::new(),
@@ -74,8 +75,11 @@ impl Sheet {
         for x in region.x_range() {
             let (_, column) = self.get_or_create_column(x);
             for y in region.y_range() {
-                let value = rng.gen_range(-10000..=10000) as f64;
-                column.values.set(y, Some(value.into()));
+                let value = rng.gen_range(-10000..=10000).to_string();
+                column.values.set(
+                    y,
+                    Some(CellValue::Number(BigDecimal::from_str(&value).unwrap())),
+                );
             }
         }
         self.recalculate_bounds();
@@ -135,7 +139,9 @@ impl Sheet {
         let mut old_cell_values_array = Array::new_empty(region.size());
 
         for x in region.x_range() {
-            let Some(column) = self.columns.get_mut(&x) else {continue};
+            let Some(column) = self.columns.get_mut(&x) else {
+                continue;
+            };
             column_ids.push(column.id);
             let removed = column.values.remove_range(region.y_range());
             for block in removed {
@@ -192,6 +198,30 @@ impl Sheet {
     pub fn get_code_cell(&self, pos: Pos) -> Option<&CodeCellValue> {
         self.code_cells.get(&self.try_get_cell_ref(pos)?)
     }
+    /// Returns a code cell value.
+    pub fn get_code_cell_from_ref(&self, cell_ref: CellRef) -> Option<&CodeCellValue> {
+        self.code_cells.get(&cell_ref)
+    }
+
+    pub fn cell_numeric_format_kind(&self, pos: Pos) -> Option<NumericFormatKind> {
+        let column = self.get_column(pos.x)?;
+        if let Some(format) = column.numeric_format.get(pos.x) {
+            Some(format.kind)
+        } else {
+            None
+        }
+    }
+
+    pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
+        let column = self.get_column(pos.x)?;
+        let block = column.spills.get(pos.y)?;
+        let code_cell_pos = self.cell_ref_to_pos(block)?;
+        let code_cell = self.code_cells.get(&block)?;
+        code_cell.get_output_value(
+            (pos.x - code_cell_pos.x) as u32,
+            (pos.y - code_cell_pos.y) as u32,
+        )
+    }
 
     /// Returns a summary of formatting in a region.
     pub fn get_formatting_summary(&self, region: Rect) -> FormattingSummary {
@@ -220,11 +250,43 @@ impl Sheet {
             None => CellFormatSummary {
                 bold: None,
                 italic: None,
+                text_color: None,
+                fill_color: None,
             },
             Some(column) => CellFormatSummary {
                 bold: column.bold.get(pos.y),
                 italic: column.italic.get(pos.y),
+                text_color: column.text_color.get(pos.y),
+                fill_color: column.fill_color.get(pos.y),
             },
+        }
+    }
+
+    // returns CellFormatSummary only if a formatting exists
+    pub fn get_existing_cell_format(&self, pos: Pos) -> Option<CellFormatSummary> {
+        match self.columns.get(&pos.x) {
+            Some(column) => {
+                let bold = column.bold.get(pos.y);
+                let italic = column.italic.get(pos.y);
+                let fill_color = column.fill_color.get(pos.y);
+                let text_color = column.text_color.get(pos.y);
+
+                if bold.is_some()
+                    || italic.is_some()
+                    || fill_color.is_some()
+                    || text_color.is_some()
+                {
+                    Some(CellFormatSummary {
+                        bold,
+                        italic,
+                        fill_color,
+                        text_color,
+                    })
+                } else {
+                    None
+                }
+            }
+            None => None,
         }
     }
 
@@ -238,112 +300,46 @@ impl Sheet {
         A::column_data_mut(column).set(pos.y, value)
     }
 
-    pub fn export_to_legacy_file_format(&self, index: usize) -> legacy::JsSheet {
-        legacy::JsSheet {
-            name: self.name.clone(),
-            color: self.color.clone(),
-            order: format!("{index:0>8}"), // pad with zeros to sort lexicographically
-
-            borders: self.borders.export_to_js_file(),
-            cells: match self.bounds(false) {
-                GridBounds::Empty => vec![],
-                GridBounds::NonEmpty(region) => self
-                    .get_render_cells(region)
-                    .into_iter()
-                    .map(|cell| {
-                        let pos = Pos {
-                            x: cell.x,
-                            y: cell.y,
-                        };
-                        let code_cell = self
-                            .try_get_cell_ref(pos)
-                            .and_then(|cell_ref| self.code_cells.get(&cell_ref));
-                        legacy::JsCell {
-                            x: cell.x,
-                            y: cell.y,
-                            r#type: self.get_legacy_cell_type(pos),
-                            value: cell.value.to_string(),
-                            array_cells: code_cell.and_then(|code_cell| {
-                                let array_output = code_cell.output.as_ref()?.output_value()?;
-                                match array_output {
-                                    Value::Single(_) => None,
-                                    Value::Array(array) => Some(
-                                        array
-                                            .size()
-                                            .iter()
-                                            .map(|(dx, dy)| {
-                                                (cell.x + dx as i64, cell.y + dy as i64)
-                                            })
-                                            .collect(),
-                                    ),
-                                }
-                            }),
-                            dependent_cells: None,
-                            evaluation_result: code_cell
-                                .and_then(|code_cell| code_cell.js_evaluation_result()),
-                            formula_code: code_cell.as_ref().and_then(|code_cell| {
-                                (code_cell.language == CodeCellLanguage::Formula)
-                                    .then(|| code_cell.code_string.clone())
-                            }),
-                            last_modified: None, // TODO: last modified
-                            ai_prompt: None,
-                            python_code: code_cell.as_ref().and_then(|code_cell| {
-                                (code_cell.language == CodeCellLanguage::Python)
-                                    .then(|| code_cell.code_string.clone())
-                            }),
-                        }
-                    })
-                    .collect(),
-            },
-            cell_dependency: "{}".to_string(), // TODO: cell dependencies
-            columns: vec![],                   // TODO: column headers
-            formats: match self.bounds(false) {
-                GridBounds::Empty => vec![],
-                GridBounds::NonEmpty(region) => self
-                    .get_render_cells(region)
-                    .into_iter()
-                    .map(|cell| legacy::JsCellFormat {
-                        x: cell.x,
-                        y: cell.y,
-                        alignment: cell.align,
-                        bold: cell.bold,
-                        fill_color: cell.fill_color,
-                        italic: cell.italic,
-                        text_color: cell.text_color,
-                        text_format: cell.numeric_format,
-                        wrapping: cell.wrap,
-                    })
-                    .collect(),
-            },
-            rows: vec![], // TODO: row headers
-        }
+    /// Returns the widths of a range of columns.
+    pub fn column_widths(&self, x_range: Range<i64>) -> impl '_ + Iterator<Item = f32> {
+        self.column_widths.iter_offsets(x_range)
     }
-    /// Returns the type of a cell, according to the legacy file format.
-    fn get_legacy_cell_type(&self, pos: Pos) -> legacy::JsCellType {
-        if self
-            .get_column(pos.x)
-            .and_then(|column| column.spills.get(pos.y))
-            .is_some()
-        {
-            let code_cell = self
-                .try_get_cell_ref(pos)
-                .and_then(|cell_ref| self.code_cells.get(&cell_ref));
-
-            if let Some(code_cell) = code_cell {
-                match code_cell.language {
-                    CodeCellLanguage::Python => legacy::JsCellType::Python,
-                    CodeCellLanguage::Formula => legacy::JsCellType::Formula,
-                    CodeCellLanguage::JavaScript => legacy::JsCellType::Javascript,
-                    CodeCellLanguage::Sql => legacy::JsCellType::Sql,
-                }
-            } else {
-                legacy::JsCellType::Computed
-            }
-        } else {
-            legacy::JsCellType::Text
-        }
+    /// Returns the heights of a range of rows.
+    pub fn row_heights(&self, y_range: Range<i64>) -> impl '_ + Iterator<Item = f32> {
+        self.row_heights.iter_offsets(y_range)
     }
 
+    /// Sets the width of a column and returns the old width.
+    pub fn set_column_width(&mut self, x: i64, width: f32) -> f32 {
+        self.column_widths.set_size(x, width)
+    }
+    /// Sets the height of a row and returns the old height.
+    pub fn set_row_height(&mut self, y: i64, height: f32) -> f32 {
+        self.row_heights.set_size(y, height)
+    }
+
+    /// Resets the width of a column and returns the old width.
+    pub fn reset_column_width(&mut self, x: i64) -> f32 {
+        self.column_widths.reset(x)
+    }
+    /// Resets the height of a row and returns the old height.
+    pub fn reset_row_height(&mut self, y: i64) -> f32 {
+        self.row_heights.reset(y)
+    }
+
+    /// Returns all cell borders.
+    pub fn borders(&self) -> &SheetBorders {
+        &self.borders
+    }
+
+    /// Returns an iterator over each column and its X coordinate.
+    pub fn iter_columns(&self) -> impl '_ + Iterator<Item = (i64, &Column)> {
+        self.columns.iter().map(|(&x, column)| (x, column))
+    }
+    /// Returns an iterator over each row ID and its Y coordinate.
+    pub fn iter_rows(&self) -> impl '_ + Iterator<Item = (i64, RowId)> {
+        self.row_ids.iter()
+    }
     /// Returns a column of a sheet from the column index.
     pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
         self.columns.get(&index)
@@ -382,6 +378,7 @@ impl Sheet {
             }
         }
     }
+
     /// Returns the position references by a `CellRef`.
     pub(crate) fn cell_ref_to_pos(&self, cell_ref: CellRef) -> Option<Pos> {
         Some(Pos {
@@ -553,23 +550,38 @@ impl Sheet {
         });
 
         itertools::chain(ordinary_cells, code_output_cells)
-            .map(|(x, y, column, value, language)| JsRenderCell {
-                x,
-                y,
+            .map(|(x, y, column, value, language)| {
+                let mut numeric_format: Option<NumericFormat> = None;
+                let mut numeric_decimals: Option<i16> = None;
 
-                value,
-                language,
+                // only get numeric_format only if it's a CellValue::Number (although it can exist for other types)
+                if value.type_name() == "number" {
+                    numeric_format = column.numeric_format.get(y);
+                    let is_percentage = if let Some(numeric_format) = numeric_format.clone() {
+                        numeric_format.kind == NumericFormatKind::Percentage
+                    } else {
+                        false
+                    };
+                    numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
+                }
+                JsRenderCell {
+                    x,
+                    y,
 
-                align: column.align.get(y),
-                wrap: column.wrap.get(y),
-                numeric_format: column.numeric_format.get(y),
-                bold: column.bold.get(y),
-                italic: column.italic.get(y),
-                text_color: column.text_color.get(y),
-                fill_color: None,
+                    value: value.to_display(numeric_format, numeric_decimals),
+                    language,
+
+                    align: column.align.get(y),
+                    wrap: column.wrap.get(y),
+                    bold: column.bold.get(y),
+                    italic: column.italic.get(y),
+                    text_color: column.text_color.get(y),
+                    fill_color: None,
+                }
             })
             .collect()
     }
+
     /// Returns all data for rendering cell fill color.
     pub fn get_all_render_fills(&self) -> Vec<JsRenderFill> {
         let mut ret = vec![];
@@ -665,7 +677,10 @@ impl Sheet {
 
     /// Returns an iterator over all locations containing code cells that may
     /// spill into `region`.
-    fn iter_code_cells_locations_in_region(&self, region: Rect) -> impl Iterator<Item = CellRef> {
+    pub fn iter_code_cells_locations_in_region(
+        &self,
+        region: Rect,
+    ) -> impl Iterator<Item = CellRef> {
         // Scan spilled cells to find code cells. TODO: this won't work for
         // unspilled code cells
         let code_cell_refs: HashSet<CellRef> = self
@@ -682,7 +697,7 @@ impl Sheet {
         code_cell_refs.into_iter()
     }
 
-    fn iter_code_cells_locations(&self) -> impl '_ + Iterator<Item = CellRef> {
+    pub fn iter_code_cells_locations(&self) -> impl '_ + Iterator<Item = CellRef> {
         self.code_cells.keys().copied()
     }
 
@@ -692,6 +707,31 @@ impl Sheet {
 
     pub fn id_to_string(&self) -> String {
         self.id.to_string()
+    }
+
+    /// get or calculate decimal places for a cell
+    pub fn decimal_places(&self, pos: Pos, is_percentage: bool) -> Option<i16> {
+        // first check if numeric_decimals already exists for this cell
+        if let Some(decimals) = self.get_column(pos.x)?.numeric_decimals.get(pos.y) {
+            return Some(decimals);
+        }
+
+        // otherwise check value to see if it has a decimal and use that length
+        if let Some(value) = self.get_cell_value(pos) {
+            match value {
+                CellValue::Number(n) => {
+                    let (_, exponent) = n.as_bigint_and_exponent();
+                    if is_percentage {
+                        Some(exponent as i16 - 2)
+                    } else {
+                        Some(exponent as i16)
+                    }
+                }
+                _ => None,
+            }
+        } else {
+            None
+        }
     }
 }
 
@@ -707,4 +747,93 @@ fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {
         }
     }
     ret
+}
+
+#[cfg(test)]
+mod test {
+    use std::str::FromStr;
+
+    use bigdecimal::BigDecimal;
+
+    use crate::{
+        grid::{NumericFormat, NumericFormatKind, Sheet, SheetId},
+        CellValue, Pos,
+    };
+
+    #[test]
+    fn test_current_decimal_places_value() {
+        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+
+        // get decimal places after a set_cell_value
+        sheet.set_cell_value(
+            Pos { x: 1, y: 2 },
+            CellValue::Number(BigDecimal::from_str(&"12.23").unwrap()),
+        );
+        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), Some(2));
+
+        sheet.set_cell_value(
+            Pos { x: 2, y: 2 },
+            CellValue::Number(BigDecimal::from_str(&"0.23").unwrap()),
+        );
+        assert_eq!(sheet.decimal_places(Pos { x: 2, y: 2 }, true), Some(0));
+    }
+
+    #[test]
+    fn test_current_decimal_places_numeric_format() {
+        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+
+        let column = sheet.get_or_create_column(3);
+        column.1.numeric_decimals.set(3, Some(3));
+
+        assert_eq!(sheet.decimal_places(Pos { x: 3, y: 3 }, false), Some(3));
+    }
+
+    #[test]
+    fn test_current_decimal_places_text() {
+        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+
+        sheet.set_cell_value(
+            crate::Pos { x: 1, y: 2 },
+            CellValue::Text(String::from("abc")),
+        );
+
+        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), None);
+    }
+
+    #[test]
+    fn test_current_decimal_places_percent() {
+        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+
+        sheet.set_cell_value(
+            crate::Pos { x: 1, y: 2 },
+            CellValue::Number(BigDecimal::from_str(&"0.24").unwrap()),
+        );
+
+        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, true), Some(0));
+
+        sheet.set_cell_value(
+            crate::Pos { x: 1, y: 2 },
+            CellValue::Number(BigDecimal::from_str(&"0.245").unwrap()),
+        );
+
+        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, true), Some(1));
+    }
+
+    #[test]
+    fn test_cell_numeric_format_kind() {
+        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+        let column = sheet.get_or_create_column(0);
+        column.1.numeric_format.set(
+            0,
+            Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            }),
+        );
+
+        assert_eq!(
+            sheet.cell_numeric_format_kind(Pos { x: 0, y: 0 }),
+            Some(NumericFormatKind::Percentage)
+        );
+    }
 }

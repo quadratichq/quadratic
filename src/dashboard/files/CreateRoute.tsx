@@ -3,7 +3,7 @@ import mixpanel from 'mixpanel-browser';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from 'react-router-dom';
 import { apiClient } from '../../api/apiClient';
 import { authClient } from '../../auth';
-import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '../../components/GlobalSnackbar';
+import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '../../components/GlobalSnackbarProvider';
 import { EXAMPLE_FILES } from '../../constants/appConstants';
 import { ROUTES } from '../../constants/routes';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';

@@ -1,3 +1,5 @@
+use std::fs::create_dir_all;
+
 use quadratic_core::{controller::transactions, *};
 use ts_rs::TS;
 
@@ -16,35 +18,27 @@ fn main() {
     s += "// Do not modify it manually.\n\n";
 
     s += &generate_type_declarations!(
-        // controller.rs
         transactions::TransactionSummary,
-        // grid/cell_ref.rs
         formulas::RangeRef,
         formulas::CellRef,
         formulas::CellRefCoord,
-        // grid/borders.rs
         grid::CellBorders,
         grid::CellBorderStyle,
         grid::CellBorder,
-        // grid/bounds.rs
         grid::GridBounds,
-        // grid/code.rs
         grid::CodeCellLanguage,
-        grid::CodeCellValue,
-        grid::CodeCellRunOutput,
-        grid::CodeCellRunResult,
-        // grid/formatting.rs
+        // grid::CodeCellValue,
+        // grid::CodeCellRunOutput,
+        // grid::CodeCellRunResult,
         grid::CellAlign,
         grid::CellWrap,
         grid::NumericFormat,
         grid::NumericFormatKind,
         grid::BoolSummary,
-        // grid/ids.rs
         grid::SheetId,
         grid::RowId,
         grid::ColumnId,
         grid::CellRef,
-        // grid/js_types.rs
         grid::js_types::JsRenderCell,
         grid::js_types::JsRenderFill,
         grid::js_types::JsRenderBorder,
@@ -52,27 +46,25 @@ fn main() {
         grid::js_types::CellFormatSummary,
         grid::js_types::JsRenderCodeCell,
         grid::js_types::JsRenderCodeCellState,
+        grid::js_types::JsClipboard,
         // values
         ArraySize,
         Axis,
-        Array,
-        CellValue,
-        Value,
+        // Array,
+        // Value,
         Instant,
         Duration,
-        // wasm_bindings
         wasm_bindings::JsCodeResult,
         wasm_bindings::JsFormulaParseResult,
         wasm_bindings::JsCellRefSpan,
-        // error.rs
         Error,
         ErrorMsg,
-        // position.rs
         Pos,
         Rect,
-        // span.rs
         Span,
     );
 
-    std::fs::write("../src/quadratic-core/types.d.ts", s).expect("failed to write types file");
+    if create_dir_all("../src/quadratic-core").is_ok() {
+        std::fs::write("../src/quadratic-core/types.d.ts", s).expect("failed to write types file");
+    }
 }

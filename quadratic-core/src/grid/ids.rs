@@ -164,4 +164,18 @@ impl<Id: Copy + Hash + Eq, Idx: Copy + Ord> IdMap<Id, Idx> {
     pub fn id_at(&self, idx: Idx) -> Option<Id> {
         self.index_to_id.get(&idx).copied()
     }
+
+    /// Returns an iterator over indexes and corresponding IDs
+    pub fn iter(&self) -> impl '_ + Iterator<Item = (Idx, Id)> {
+        self.index_to_id.iter().map(|(&index, &id)| (index, id))
+    }
+}
+impl<Id: Copy + Hash + Eq, Idx: Copy + Ord> FromIterator<(Idx, Id)> for IdMap<Id, Idx> {
+    fn from_iter<T: IntoIterator<Item = (Idx, Id)>>(iter: T) -> Self {
+        let mut ret = Self::new();
+        for (index, id) in iter {
+            ret.add(id, index);
+        }
+        ret
+    }
 }

@@ -1,4 +1,6 @@
-import { GlobalSnackbar } from '../../../components/GlobalSnackbar';
+import { isEditorOrAbove } from '../../../actions';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
+import { GlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { PNG_MESSAGE } from '../../../constants/appConstants';
 import {
   copySelectionToPNG,
@@ -6,48 +8,53 @@ import {
   cutToClipboard,
   pasteFromClipboard,
 } from '../../../grid/actions/clipboard/clipboard';
-import { SheetController } from '../../../grid/controller/SheetController';
-import { PixiApp } from '../../pixiApp/PixiApp';
+import { sheets } from '../../../grid/controller/Sheets';
 
 export function keyboardClipboard(props: {
   event: React.KeyboardEvent<HTMLElement>;
-  sheet_controller: SheetController;
-  app: PixiApp;
+  editorInteractionState: EditorInteractionState;
   addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'];
 }): boolean {
-  const { addGlobalSnackbar, event, sheet_controller, app } = props;
-  const cursor = sheet_controller.sheet.cursor;
-
-  // Command + V
-  if ((event.metaKey || event.ctrlKey) && event.key === 'v') {
-    pasteFromClipboard(sheet_controller, {
-      x: cursor.cursorPosition.x,
-      y: cursor.cursorPosition.y,
-    });
-    return true;
-  }
+  const {
+    addGlobalSnackbar,
+    event,
+    editorInteractionState: { permission },
+  } = props;
 
   // Command + Shift + C
   if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'c') {
-    copySelectionToPNG(app);
+    copySelectionToPNG();
     addGlobalSnackbar(PNG_MESSAGE);
     event.preventDefault();
     event.stopPropagation();
     return true;
   }
 
+  const cursor = sheets.sheet.cursor;
+
   const start = cursor.originPosition;
   const end = cursor.terminalPosition;
 
   // Command + C
   if ((event.metaKey || event.ctrlKey) && event.key === 'c') {
-    copyToClipboard(sheet_controller, start, end);
+    copyToClipboard(start, end);
     return true;
+  }
+
+  // Don't allow commands past here without permission
+  if (!isEditorOrAbove(permission)) {
+    return false;
   }
 
   // Command + X
   if ((event.metaKey || event.ctrlKey) && event.key === 'x') {
-    cutToClipboard(sheet_controller, start, end);
+    cutToClipboard(start, end);
+    return true;
+  }
+
+  // Command + V
+  if ((event.metaKey || event.ctrlKey) && event.key === 'v') {
+    pasteFromClipboard(cursor.originPosition);
     return true;
   }
 

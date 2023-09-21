@@ -3,9 +3,9 @@ use std::ops::{BitOr, BitOrAssign};
 use serde::{Deserialize, Serialize};
 
 use super::borders::CellBorder;
-use super::formatting::{BoolSummary, CellAlign, CellWrap, NumericFormat};
+use super::formatting::{BoolSummary, CellAlign, CellWrap};
 use super::CodeCellLanguage;
-use crate::CellValue;
+use crate::controller::transactions::TransactionSummary;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -14,7 +14,7 @@ pub struct JsRenderCell {
     pub x: i64,
     pub y: i64,
 
-    pub value: CellValue,
+    pub value: String,
 
     /// Code language, set only for the top left cell of a code output.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -24,9 +24,6 @@ pub struct JsRenderCell {
     pub align: Option<CellAlign>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wrap: Option<CellWrap>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "textFormat")]
-    pub numeric_format: Option<NumericFormat>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bold: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -60,13 +57,17 @@ pub struct JsRenderBorder {
     pub style: CellBorder,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CellFormatSummary {
     pub bold: Option<bool>,
     pub italic: Option<bool>,
+
+    pub text_color: Option<String>,
+    pub fill_color: Option<String>,
 }
-#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct FormattingSummary {
     pub bold: BoolSummary,
@@ -84,7 +85,7 @@ impl BitOr for FormattingSummary {
 }
 impl BitOrAssign for FormattingSummary {
     fn bitor_assign(&mut self, rhs: Self) {
-        *self = *self | rhs;
+        *self = self.clone() | rhs;
     }
 }
 
@@ -107,4 +108,13 @@ pub enum JsRenderCodeCellState {
     RunError,
     SpillError,
     Success,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct JsClipboard {
+    pub summary: Option<TransactionSummary>,
+    pub plain_text: String,
+    pub html: String,
 }

@@ -13,20 +13,16 @@ import {
   LineStyle,
 } from '@mui/icons-material';
 import { Tooltip } from '@mui/material';
-import { ClickEvent, MenuItem, SubMenu, SubMenuProps } from '@szhsin/react-menu';
+import { ClickEvent, MenuItem, SubMenu } from '@szhsin/react-menu';
 import { useCallback, useEffect, useState } from 'react';
 import { ColorResult } from 'react-color';
-import { SheetController } from '../../../../../grid/controller/SheetController';
+import { sheets } from '../../../../../grid/controller/Sheets';
 import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
 import { BorderType, BorderTypeEnum } from '../../../../../schemas';
 import { colors } from '../../../../../theme/colors';
 import { QColorPicker } from '../../../../components/qColorPicker';
 import { ChangeBorder, useBorders } from '../useBorders';
 import './useGetBorderMenu.css';
-
-interface Props extends SubMenuProps {
-  sheetController: SheetController;
-}
 
 enum BorderSelection {
   none = 0,
@@ -42,8 +38,8 @@ enum BorderSelection {
   clear,
 }
 
-export function useGetBorderMenu(props: Props): JSX.Element {
-  const { sheet } = props.sheetController;
+export function useGetBorderMenu(): JSX.Element {
+  const sheet = sheets.sheet;
   const cursor = sheet.cursor;
 
   const [lineStyle, setLineStyle] = useState<BorderType | undefined>();
@@ -51,7 +47,7 @@ export function useGetBorderMenu(props: Props): JSX.Element {
   const defaultColor = convertTintToString(colors.defaultBorderColor);
   const [color, setColor] = useState<string>(defaultColor);
 
-  const { changeBorders, clearBorders } = useBorders(props.sheetController);
+  const { changeBorders, clearBorders } = useBorders();
 
   const clearSelection = useCallback(() => setBorderSelection(0), []);
   // clear border type when changing selection

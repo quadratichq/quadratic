@@ -1,10 +1,10 @@
 import express from 'express';
+import { validateAccessToken } from '../middleware/validateAccessToken';
 import { Request } from '../types/Request';
-import { validateAccessToken } from '../middleware/auth';
 
-import { z } from 'zod';
-import { Configuration, OpenAIApi } from 'openai';
 import rateLimit from 'express-rate-limit';
+import { Configuration, OpenAIApi } from 'openai';
+import { z } from 'zod';
 
 const ai_chat_router = express.Router();
 

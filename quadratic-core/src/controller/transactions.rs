@@ -1,7 +1,7 @@
 use crate::{grid::*, Array, CellValue, Pos, Rect};
 use serde::{Deserialize, Serialize};
 
-use super::{cells::CellFmtArray, GridController};
+use super::{formatting::CellFmtArray, GridController};
 
 impl GridController {
     pub fn transact_forward(&mut self, transaction: Transaction) -> TransactionSummary {
@@ -53,7 +53,7 @@ impl GridController {
 
                     let sheet = self.grid.sheet_mut_from_id(region.sheet);
 
-                    let Some(size) = region.size() else {continue};
+                    let Some(size) = region.size() else { continue };
                     let old_values = region
                         .iter()
                         .zip(values.into_cell_values_vec())
@@ -73,10 +73,16 @@ impl GridController {
                 }
 
                 Operation::SetCellFormats { region, attr } => {
-                    summary
-                        .cell_regions_modified
-                        .extend(self.grid.region_rects(&region));
-
+                    match attr {
+                        CellFmtArray::FillColor(_) => {
+                            summary.fill_sheets_modified.push(region.sheet);
+                        }
+                        _ => {
+                            summary
+                                .cell_regions_modified
+                                .extend(self.grid.region_rects(&region));
+                        }
+                    }
                     let old_attr = match attr {
                         CellFmtArray::Align(align) => CellFmtArray::Align(
                             self.set_cell_formats_for_type::<CellAlign>(&region, align),
@@ -87,6 +93,14 @@ impl GridController {
                         CellFmtArray::NumericFormat(num_fmt) => CellFmtArray::NumericFormat(
                             self.set_cell_formats_for_type::<NumericFormat>(&region, num_fmt),
                         ),
+                        CellFmtArray::NumericDecimals(num_decimals) => {
+                            CellFmtArray::NumericDecimals(
+                                self.set_cell_formats_for_type::<NumericDecimals>(
+                                    &region,
+                                    num_decimals,
+                                ),
+                            )
+                        }
                         CellFmtArray::Bold(bold) => CellFmtArray::Bold(
                             self.set_cell_formats_for_type::<Bold>(&region, bold),
                         ),
@@ -238,15 +252,15 @@ pub enum Operation {
         order: String,
     },
 
-    ResizeColumn {
+    SetColumnWidth {
         sheet_id: SheetId,
-        column: i64,
-        new_size: Option<f64>,
+        column_id: ColumnId,
+        width: f32,
     },
-    ResizeRow {
+    SetRowHeight {
         sheet_id: SheetId,
-        row: i64,
-        new_size: Option<f64>,
+        row_id: RowId,
+        height: f32,
     },
 }
 impl Operation {
@@ -263,8 +277,8 @@ impl Operation {
 
             Operation::ReorderSheet { .. } => None,
 
-            Operation::ResizeColumn { .. } => None,
-            Operation::ResizeRow { .. } => None,
+            Operation::SetColumnWidth { .. } => None,
+            Operation::SetRowHeight { .. } => None,
         }
     }
 }

@@ -1,63 +1,19 @@
-import { File, User } from '@prisma/client';
-import express, { NextFunction, Response } from 'express';
+import express, { Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
 import dbClient from '../../dbClient';
-import { validateAccessToken } from '../../middleware/auth';
-import { userMiddleware } from '../../middleware/user';
+import { userMiddleware, userOptionalMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { Request } from '../../types/Request';
+import { fileMiddleware } from './fileMiddleware';
+import { getFilePermissions } from './getFilePermissions';
 
-const files_router = express.Router();
-
-const validateUUID = () => param('uuid').isUUID(4);
+export const validateUUID = () => param('uuid').isUUID(4);
 const validateFileContents = () => body('contents').isString().not().isEmpty();
 const validateFileName = () => body('name').isString().not().isEmpty();
 const validateFileVersion = () => body('version').isString().not().isEmpty();
-type FILE_PERMISSION = 'OWNER' | 'READONLY' | 'EDIT' | 'NOT_SHARED' | undefined;
 
-const fileMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  if (req.params.uuid === undefined) {
-    return res.status(400).json({ error: { message: 'Invalid file UUID' } });
-  }
-
-  const file = await dbClient.file.findUnique({
-    where: {
-      uuid: req.params.uuid,
-    },
-  });
-
-  if (file === null) {
-    return res.status(404).json({ error: { message: 'File not found' } });
-  }
-
-  if (file.deleted) {
-    return res.status(400).json({ error: { message: 'File has been deleted' } });
-  }
-
-  if (file.ownerUserId !== req?.user?.id) {
-    if (file.public_link_access === 'NOT_SHARED') {
-      return res.status(403).json({ error: { message: 'Permission denied' } });
-    }
-  }
-
-  req.file = file;
-  next();
-};
-
-const getFilePermissions = (user: User, file: File): FILE_PERMISSION => {
-  if (file.ownerUserId === user.id) {
-    return 'OWNER';
-  }
-
-  if (file.public_link_access === 'READONLY') {
-    return 'READONLY';
-  }
-
-  if (file.public_link_access === 'EDIT') {
-    return 'EDIT';
-  }
-
-  return 'NOT_SHARED';
-};
+const files_router = express.Router();
 
 files_router.get('/', validateAccessToken, userMiddleware, async (req: Request, res) => {
   if (!req.user) {
@@ -84,17 +40,17 @@ files_router.get('/', validateAccessToken, userMiddleware, async (req: Request, 
     ],
   });
 
-  res.status(200).json(files);
+  return res.status(200).json(files);
 });
 
 files_router.get(
   '/:uuid',
   validateUUID(),
-  validateAccessToken,
-  userMiddleware,
+  validateOptionalAccessToken,
+  userOptionalMiddleware,
   fileMiddleware,
   async (req: Request, res: Response) => {
-    if (!req.file || !req.user) {
+    if (!req.file) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
 
@@ -139,7 +95,7 @@ files_router.post(
 
     // ensure the user has EDIT access to the file
     const permissions = getFilePermissions(req.user, req.file);
-    if (permissions !== 'EDIT' && permissions !== 'OWNER') {
+    if (permissions !== 'EDITOR' && permissions !== 'OWNER') {
       return res.status(403).json({ error: { message: 'Permission denied' } });
     }
 
@@ -181,7 +137,7 @@ files_router.post(
       });
     }
 
-    res.status(200).json({ message: 'File updated.' });
+    return res.status(200).json({ message: 'File updated.' });
   }
 );
 
@@ -258,7 +214,7 @@ files_router.post(
       },
     });
 
-    res.status(201).json(file); // CREATED
+    return res.status(201).json(file); // CREATED
   }
 );
 

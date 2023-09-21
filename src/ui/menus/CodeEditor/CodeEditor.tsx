@@ -1,25 +1,21 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import mixpanel from 'mixpanel-browser';
-import { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
+import { isEditorOrAbove } from '../../../actions';
 import {
   editorHighlightedCellsStateAtom,
   editorHighlightedCellsStateDefault,
 } from '../../../atoms/editorHighlightedCellsStateAtom';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { SheetController } from '../../../grid/controller/SheetController';
+import { sheets } from '../../../grid/controller/Sheets';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
 import { Console } from './Console';
 import { ResizeControl } from './ResizeControl';
 import { SaveChangesAlert } from './SaveChangesAlert';
 
-interface CodeEditorProps {
-  sheetController: SheetController;
-}
-
-export const CodeEditor = (props: CodeEditorProps) => {
-  const { sheetController } = props;
+export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const setEditorHighlightedCells = useSetRecoilState(editorHighlightedCellsStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
@@ -44,13 +40,13 @@ export const CodeEditor = (props: CodeEditorProps) => {
   const [editorContent, setEditorContent] = useState<string | undefined>();
   const cell = useMemo(() => {
     mixpanel.track('[CodeEditor].opened', { type: editorMode });
-    const cellCodeValue = sheetController.sheet.getCodeValue(
+    const cellCodeValue = sheets.sheet.getCodeValue(
       editorInteractionState.selectedCell.x,
       editorInteractionState.selectedCell.y
     );
     setEditorContent(cellCodeValue?.code_string ?? '');
     return cellCodeValue;
-  }, [editorInteractionState.selectedCell, editorMode, sheetController.sheet]);
+  }, [editorInteractionState.selectedCell, editorMode]);
 
   const closeEditor = useCallback(
     (skipSaveCheck: boolean) => {
@@ -71,29 +67,31 @@ export const CodeEditor = (props: CodeEditorProps) => {
     // sheetController.sheet.set;
   }, []);
 
-  const onKeyDownEditor = useCallback(
-    (event: React.KeyboardEvent<HTMLDivElement>) => {
-      // Command + S
-      if ((event.metaKey || event.ctrlKey) && event.key === 's') {
-        event.preventDefault();
-        saveAndRunCell();
-      }
+  const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    // Esc
+    if (!(event.metaKey || event.ctrlKey) && event.key === 'Escape') {
+      event.preventDefault();
+      closeEditor(true);
+    }
 
-      // Command + Enter
-      if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-        event.preventDefault();
-        event.stopPropagation();
-        saveAndRunCell();
-      }
+    // Don't allow the shortcuts below for certain users
+    if (!isEditorOrAbove(editorInteractionState.permission)) {
+      return;
+    }
 
-      // Esc
-      if (!(event.metaKey || event.ctrlKey) && event.key === 'Escape') {
-        event.preventDefault();
-        closeEditor(false);
-      }
-    },
-    [closeEditor, saveAndRunCell]
-  );
+    // Command + S
+    if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+      event.preventDefault();
+      saveAndRunCell();
+    }
+
+    // Command + Enter
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+      event.preventDefault();
+      event.stopPropagation();
+      saveAndRunCell();
+    }
+  };
 
   if (cell === undefined || !showCodeEditor) {
     return null;

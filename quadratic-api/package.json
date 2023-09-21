@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "dotenv -e .env -- ts-node-dev --watch ./src --project ./tsconfig.json ./src/server.ts ",
+    "start": "dotenv -e .env -- ts-node-dev --respawn --watch src --project ./tsconfig.json ./src/server.ts ",
     "build": "tsc",
     "lint": "eslint src/**/*.ts",
     "format": "eslint src/**/*.ts --fix",
@@ -18,7 +18,6 @@
     "docker:test:ci": "npm run docker:up && dotenv -e .env.docker -- prisma migrate deploy && dotenv -e .env.docker -- jest && npm run docker:down"
   },
   "author": "David Kircos",
-  "license": "MIT",
   "dependencies": {
     "@prisma/client": "^4.12.0",
     "@sentry/node": "^7.50.0",
@@ -27,7 +26,8 @@
     "@types/jest": "^29.5.3",
     "@types/node": "^18.11.9",
     "@types/supertest": "^2.0.12",
-    "axios": "^1.4.0",
+    "auth0": "^3.6.1",
+    "axios": "^1.5.0",
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "express-jwt": "^7.7.7",
@@ -50,6 +50,7 @@
   },
   "devDependencies": {
     "@tsconfig/node20": "^1.0.1",
+    "@types/auth0": "^3.3.4",
     "@types/cors": "^2.8.12",
     "dotenv-cli": "^7.1.0",
     "prisma": "^4.12.0"

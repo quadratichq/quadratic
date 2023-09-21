@@ -1,11 +1,13 @@
 {
   "editor.formatOnSave": true,
   "cSpell.words": [
+    "bigdecimal",
     "dcell",
     "dgraph",
     "endregion",
     "Fuzzysort",
     "hljs",
+    "htmlescape",
     "itertools",
     "msdf",
     "openai",

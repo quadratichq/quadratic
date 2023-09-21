@@ -6,10 +6,8 @@ criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let airports = Grid::from_legacy(
-        &serde_json::from_str(include_str!("../examples/airports.json")).unwrap(),
-    )
-    .unwrap();
+    let airports =
+        quadratic_core::grid::file::import(include_str!("../examples/airports.json")).unwrap();
 
     let inputs = vec![("empty", Grid::new()), ("airports", airports)];
 
