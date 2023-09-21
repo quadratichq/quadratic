@@ -1,4 +1,3 @@
-use rand::seq::index;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::ops::Range;
@@ -121,16 +120,13 @@ impl Offsets {
     pub fn iter_screen_offsets(&self, pixel_range: Range<f64>) -> impl '_ + Iterator<Item = f64> {
         let start = self.find_offset(pixel_range.start);
         let end = self.find_offset(pixel_range.end);
-        self.iter_offsets(Range { start, end })
+        self.iter_offsets(Range {
+            start,
+
+            // +1 to include end, and +1 to include the next entry so we have the width of the final entry
+            end: end + 2,
+        })
     }
-
-    // // Iterates over all columns/rows that are contained between two pixel positions
-    // pub fn from_screen_rect(&self, pixel_range: Range<f64>) -> impl '_ + Iterator<Item = f64> {
-    //     let start =
-    //     if pixel_range.start > 0.0 {
-
-    //     }
-    // }
 
     /// Iterates over the sizes of all columns/rows.
     pub fn iter_sizes(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
@@ -253,7 +249,7 @@ mod tests {
                 end: 21.0,
             })
             .collect();
-        assert_eq!(list.first(), 0);
-        assert_eq!(list.last,);
+        assert_eq!(list.first(), Some(&0.0));
+        assert_eq!(list.last(), Some(&30.0));
     }
 }
