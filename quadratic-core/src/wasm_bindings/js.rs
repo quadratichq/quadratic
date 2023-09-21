@@ -1,3 +1,5 @@
+use js_sys::Array;
+
 use super::*;
 
 #[wasm_bindgen]
@@ -26,21 +28,19 @@ interface JsCodeResult {
 }
 "#;
 
-#[wasm_bindgen]
 struct JsCodeResult {
-    cells_accessed: Vec<Pos>,
-    success: bool,
-    formatted_code: Option<String>,
-    error_span: Option<[u32; 2]>,
-    error_msg: Option<String>,
-    output_value: Option<String>,
-    array_output: Option<Vec<Vec<String>>>,
+    pub language: CodeCellLanguage,
+    pub cells_accessed: Array,
+    pub success: bool,
+    pub formatted_code: Option<String>,
+    pub error_span_start: Option<u32>,
+    pub error_span_end: Option<u32>,
+    pub error_msg: Option<String>,
+    pub output_value: Option<String>,
+    pub array_output: Option<Array>,
 }
 
 #[wasm_bindgen(module = "/../src/web-workers/webWorkers.ts")]
 extern "C" {
-
-    type WebWorkers;
-
-    pub fn runPython(code_string: String) -> JsCodeResult;
+    pub async fn runPython(code_string: String) -> Vec<String>;
 }

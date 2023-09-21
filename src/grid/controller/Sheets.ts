@@ -93,6 +93,15 @@ class Sheets {
     }
   }
 
+  getSheetByName(name: string): Sheet | undefined {
+    this.sheets.forEach((sheet) => {
+      if (sheet.name === name) {
+        return sheet;
+      }
+    });
+    return;
+  }
+
   get size(): number {
     return this.sheets.length;
   }

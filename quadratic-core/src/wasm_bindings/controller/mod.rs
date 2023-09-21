@@ -1,3 +1,5 @@
+use js_sys::Array;
+
 use super::*;
 use crate::{controller::transactions::TransactionSummary, grid::js_types::*};
 use std::str::FromStr;
@@ -167,6 +169,14 @@ impl GridController {
             Some(code_cell) => Ok(serde_wasm_bindgen::to_value(&code_cell)?),
             None => Ok(JsValue::UNDEFINED),
         }
+    }
+
+    /// Returns a code cell as a [`string[]`].
+    #[wasm_bindgen(js_name = "getCellValueStrings")]
+    pub fn js_get_code_cell_value_strings(&self, sheet_id: String, rect: Rect) -> Array {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        let sheet = self.grid().sheet_from_id(sheet_id);
+        Array.sheet.get_cell_value_strings(rect)
     }
 
     /// Sets the code on a cell

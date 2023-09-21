@@ -1,4 +1,4 @@
-import { ArrayOutput, Cell } from '../../schemas';
+import { ArrayOutput } from '../../schemas';
 
 export interface PythonReturnType {
   cells_accessed: [number, number][];
@@ -10,11 +10,17 @@ export interface PythonReturnType {
   formatted_code: string;
 }
 
+export interface CellRef {
+  x: number;
+  y: number;
+  sheetId: string;
+}
+
 export interface PythonMessage {
   type: 'results' | 'execute' | 'not-loaded' | 'get-cells' | 'python-loaded' | 'python-error';
   python?: string;
   results?: PythonReturnType;
   error?: string;
-  range?: { x0: number; y0: number; x1: number; y1: number };
-  cells?: Cell[];
+  range?: { sheet: string; x0: number; y0: number; x1: number; y1: number };
+  cells?: string[];
 }

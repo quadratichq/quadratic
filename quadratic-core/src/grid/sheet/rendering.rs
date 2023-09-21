@@ -145,6 +145,7 @@ impl Sheet {
             })
             .collect()
     }
+
     /// Returns data for all rendering code cells
     pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
         self.iter_code_cells_locations()
@@ -169,10 +170,12 @@ impl Sheet {
             })
             .collect()
     }
+
     /// Returns data for rendering horizontal borders.
     pub fn get_render_horizontal_borders(&self) -> Vec<JsRenderBorder> {
         self.borders.get_render_horizontal_borders()
     }
+
     /// Returns data for rendering vertical borders.
     pub fn get_render_vertical_borders(&self) -> Vec<JsRenderBorder> {
         self.borders.get_render_vertical_borders()

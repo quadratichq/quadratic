@@ -1,4 +1,4 @@
-use std::collections::{btree_map, BTreeMap, HashMap, HashSet};
+use std::collections::{btree_map, BTreeMap, HashMap};
 use std::ops::Range;
 use std::str::FromStr;
 
@@ -15,10 +15,11 @@ use super::formatting::{BoolSummary, CellFmtAttr};
 use super::ids::{CellRef, ColumnId, IdMap, RegionRef, RowId, SheetId};
 use super::js_types::{CellFormatSummary, FormattingSummary};
 use super::response::{GetIdResponse, SetCellResponse};
-use super::{CodeCellLanguage, NumericFormat, NumericFormatKind};
-use crate::wasm_bindings::js::runPython;
+use super::NumericFormatKind;
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
+pub mod bounds;
+pub mod code;
 pub mod rendering;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -127,33 +128,6 @@ impl Sheet {
         })
     }
 
-    /// sets the code cell
-    pub fn set_cell_code(
-        &mut self,
-        cell_ref: CellRef,
-        language: CodeCellLanguage,
-        code_string: String,
-    ) {
-        match language {
-            CodeCellLanguage::Python => {
-                let results = runPython(code_string);
-                self.code_cells.insert(
-                    cell_ref,
-                    CodeCellValue {
-                        language: results.language,
-                        code_string,
-                        formatted_code_string: results.formatted_code_string,
-                        last_modified: ,
-                        output: results.,
-                    },
-                );
-            }
-            _ => {
-                panic!("Language {} is not supported yet", language.to_string())
-            }
-        }
-    }
-
     /// Deletes all cell values in a region. This does not affect:
     ///
     /// - Formatting
@@ -192,16 +166,6 @@ impl Sheet {
 
         (column_ids, row_ids, old_cell_values_array)
     }
-    /// Sets or deletes a code cell value.
-    pub fn set_code_cell_value(&mut self, pos: Pos, code_cell: Option<CodeCellValue>) {
-        let cell_ref = self.get_or_create_cell_ref(pos);
-        // TODO: unspill!
-        self.code_cells.remove(&cell_ref);
-        if let Some(code_cell) = code_cell {
-            self.code_cells.insert(cell_ref, code_cell);
-        }
-        // TODO: spill (or have some other way to handle new code results)
-    }
 
     /// Sets or deletes horizontal borders in a region.
     pub fn set_horizontal_border(&mut self, region: Rect, value: CellBorder) {
@@ -223,14 +187,6 @@ impl Sheet {
         let column = self.get_column(pos.x)?;
         A::column_data_ref(column).get(pos.y)
     }
-    /// Returns a code cell value.
-    pub fn get_code_cell(&self, pos: Pos) -> Option<&CodeCellValue> {
-        self.code_cells.get(&self.try_get_cell_ref(pos)?)
-    }
-    /// Returns a code cell value.
-    pub fn get_code_cell_from_ref(&self, cell_ref: CellRef) -> Option<&CodeCellValue> {
-        self.code_cells.get(&cell_ref)
-    }
 
     pub fn cell_numeric_format_kind(&self, pos: Pos) -> Option<NumericFormatKind> {
         let column = self.get_column(pos.x)?;
@@ -239,17 +195,6 @@ impl Sheet {
         } else {
             None
         }
-    }
-
-    pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
-        let column = self.get_column(pos.x)?;
-        let block = column.spills.get(pos.y)?;
-        let code_cell_pos = self.cell_ref_to_pos(block)?;
-        let code_cell = self.code_cells.get(&block)?;
-        code_cell.get_output_value(
-            (pos.x - code_cell_pos.x) as u32,
-            (pos.y - code_cell_pos.y) as u32,
-        )
     }
 
     /// Returns a summary of formatting in a region.
@@ -448,10 +393,6 @@ impl Sheet {
         itertools::iproduct!(x_ranges, y_ranges).map(|(xs, ys)| Rect::from_ranges(xs, ys))
     }
 
-    /// Returns whether the sheet is completely empty.
-    pub fn is_empty(&self) -> bool {
-        self.data_bounds.is_empty() && self.format_bounds.is_empty()
-    }
     /// Deletes all data and formatting in the sheet, effectively recreating it.
     pub fn clear(&mut self) {
         self.column_ids = IdMap::new();
@@ -460,94 +401,6 @@ impl Sheet {
         self.code_cells.clear();
         self.recalculate_bounds();
     }
-
-    /// Returns the bounds of the sheet.
-    ///
-    /// If `ignore_formatting` is `true`, only data is considered; if it is
-    /// `false`, then data and formatting are both considered.
-    pub fn bounds(&self, ignore_formatting: bool) -> GridBounds {
-        match ignore_formatting {
-            true => self.data_bounds,
-            false => GridBounds::merge(self.data_bounds, self.format_bounds),
-        }
-    }
-    /// Returns the lower and upper bounds of a column, or `None` if the column
-    /// is empty.
-    ///
-    /// If `ignore_formatting` is `true`, only data is considered; if it is
-    /// `false`, then data and formatting are both considered.
-    pub fn column_bounds(&self, x: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
-        let column = self.columns.get(&x)?;
-        let range = column.range(ignore_formatting)?;
-        Some((range.start, range.end - 1))
-    }
-    /// Returns the lower and upper bounds of a row, or `None` if the column is
-    /// empty.
-    ///
-    /// If `ignore_formatting` is `true`, only data is considered; if it
-    /// is `false`, then data and formatting are both considered.
-    pub fn row_bounds(&self, y: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
-        let column_has_row = |(_x, column): &(&i64, &Column)| match ignore_formatting {
-            true => column.has_anything_in_row(y),
-            false => column.has_data_in_row(y),
-        };
-        let left = *self.columns.iter().find(column_has_row)?.0;
-        let right = *self.columns.iter().rfind(column_has_row)?.0;
-        Some((left, right))
-    }
-
-    /// Recalculates all bounds of the sheet.
-    ///
-    /// This should be called whenever data in the sheet is modified.
-    pub fn recalculate_bounds(&mut self) {
-        self.data_bounds.clear();
-        self.format_bounds.clear();
-
-        for (&x, column) in &self.columns {
-            if let Some(data_range) = column.range(true) {
-                let y = data_range.start;
-                self.data_bounds.add(Pos { x, y });
-                let y = data_range.end - 1;
-                self.data_bounds.add(Pos { x, y });
-            }
-            if let Some(format_range) = column.range(false) {
-                let y = format_range.start;
-                self.format_bounds.add(Pos { x, y });
-                let y = format_range.end - 1;
-                self.format_bounds.add(Pos { x, y });
-            }
-        }
-    }
-
-    /// Returns an iterator over all locations containing code cells that may
-    /// spill into `region`.
-    pub fn iter_code_cells_locations_in_region(
-        &self,
-        region: Rect,
-    ) -> impl Iterator<Item = CellRef> {
-        // Scan spilled cells to find code cells. TODO: this won't work for
-        // unspilled code cells
-        let code_cell_refs: HashSet<CellRef> = self
-            .columns
-            .range(region.x_range())
-            .flat_map(|(_x, column)| {
-                column
-                    .spills
-                    .blocks_covering_range(region.y_range())
-                    .map(|block| block.content().value)
-            })
-            .collect();
-
-        code_cell_refs.into_iter()
-    }
-
-    pub fn iter_code_cells_locations(&self) -> impl '_ + Iterator<Item = CellRef> {
-        self.code_cells.keys().copied()
-    }
-
-    // fn unspill(&mut self, source: CellRef) {
-    //     todo!("unspill cells from {source:?}");
-    // }
 
     pub fn id_to_string(&self) -> String {
         self.id.to_string()

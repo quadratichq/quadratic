@@ -21,7 +21,7 @@ class PythonWebWorker {
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');
         }
-        const cells = await GetCellsDB(range.x0, range.y0, range.x1, range.y1);
+        const cells = await GetCellsDB(range.x0, range.y0, range.x1, range.y1, range.sheet);
         this.worker!.postMessage({ type: 'get-cells', cells } as PythonMessage);
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));

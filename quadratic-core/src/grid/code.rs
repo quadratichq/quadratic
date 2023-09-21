@@ -9,6 +9,7 @@ use crate::{ArraySize, CellValue, Error, Value};
 pub struct CodeCellValue {
     pub language: CodeCellLanguage,
     pub code_string: String,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub formatted_code_string: Option<String>,
     pub last_modified: String,
