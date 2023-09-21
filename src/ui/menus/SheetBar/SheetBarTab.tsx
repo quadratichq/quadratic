@@ -178,6 +178,7 @@ function TabName({
         minWidth: '1rem',
         fontWeight: 'bold',
         outline: 0,
+        cursor: 'text',
       }}
       ref={contentEditableRef}
       onKeyDown={(event) => {
