@@ -1,11 +1,11 @@
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
+import { grid } from '../../../../grid/controller/Grid';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { intersects } from '../../../helpers/intersects';
 import { pixiApp } from '../../../pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from '../../../pixiApp/PixiAppSettings';
 import { Coordinate } from '../../../types/size';
-import { expandDown, expandLeft, expandRight, expandUp } from './autoComplete';
 
 export type StateVertical = 'expandDown' | 'expandUp' | 'shrink' | undefined;
 export type StateHorizontal = 'expandRight' | 'expandLeft' | 'shrink' | undefined;
@@ -203,11 +203,13 @@ export class PointerAutoComplete {
 
   private async apply(): Promise<void> {
     if (!this.selection) return;
+
+    const sheet = sheets.sheet;
+
     if (!this.stateHorizontal && !this.stateVertical) {
       this.reset();
       return;
     }
-    // sheetController.start_transaction();
 
     if (this.stateVertical === 'shrink') {
       if (this.endCell) {
@@ -219,19 +221,21 @@ export class PointerAutoComplete {
       }
     } else if (this.stateVertical === 'expandDown' && this.toVertical !== undefined) {
       // if (!(this.stateHorizontal === 'expandRight' && this.toHorizontal !== undefined)) {
-      await expandDown({
-        selection: this.selection,
-        to: this.toVertical,
-        shrinkHorizontal: this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined,
-      });
-      console.log('done');
+      grid.expandDown(
+        sheet.id,
+        this.selection,
+        this.toVertical,
+        this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined
+      );
+
       // }
     } else if (this.stateVertical === 'expandUp' && this.toVertical !== undefined) {
-      await expandUp({
-        selection: this.selection,
-        to: this.toVertical,
-        shrinkHorizontal: this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined,
-      });
+      grid.expandUp(
+        sheet.id,
+        this.selection,
+        this.toVertical,
+        this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined
+      );
     }
 
     if (this.stateHorizontal === 'shrink') {
@@ -243,19 +247,10 @@ export class PointerAutoComplete {
         // });
       }
     } else if (this.stateHorizontal === 'expandLeft' && this.toHorizontal !== undefined) {
-      await expandLeft({
-        selection: this.selection,
-        to: this.toHorizontal,
-        toVertical: this.toVertical,
-      });
+      grid.expandLeft(sheet.id, this.selection, this.toHorizontal, this.toVertical);
     } else if (this.stateHorizontal === 'expandRight' && this.toHorizontal !== undefined) {
-      await expandRight({
-        selection: this.selection,
-        to: this.toHorizontal,
-        toVertical: this.toVertical,
-      });
+      grid.expandRight(sheet.id, this.selection, this.toHorizontal, this.toVertical);
     }
-    // sheetController.end_transaction();
 
     this.setSelection();
     this.reset();
