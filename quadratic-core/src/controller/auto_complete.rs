@@ -36,8 +36,9 @@ impl GridController {
         let left = rect.min.x;
         let right = shrink_horizontal.unwrap_or(rect.max.x);
         let range = Rect::new_span((left, top).into(), (right, bottom).into());
+        let ops = self.expand_height(sheet_id, ExpandDirection::Up, &rect, &range)?;
 
-        self.expand(sheet_id, ExpandDirection::Up, &rect, &range, cursor)
+        Ok(self.transact_forward(Transaction { ops, cursor }))
     }
 
     pub fn expand_down(
@@ -53,8 +54,9 @@ impl GridController {
         let left = rect.min.x;
         let right = shrink_horizontal.unwrap_or(rect.max.x);
         let range = Rect::new_span((left, top).into(), (right, bottom).into());
+        let ops = self.expand_height(sheet_id, ExpandDirection::Down, &rect, &range)?;
 
-        self.expand(sheet_id, ExpandDirection::Down, &rect, &range, cursor)
+        Ok(self.transact_forward(Transaction { ops, cursor }))
     }
 
     pub fn expand_right(
@@ -70,8 +72,9 @@ impl GridController {
         let left = rect.max.x + 1;
         let right = to;
         let range = Rect::new_span((left, top).into(), (right, bottom).into());
+        let ops = self.expand_width(sheet_id, ExpandDirection::Right, &rect, &range)?;
 
-        self.expand(sheet_id, ExpandDirection::Right, &rect, &range, cursor)
+        Ok(self.transact_forward(Transaction { ops, cursor }))
     }
 
     pub fn expand_left(
@@ -87,42 +90,7 @@ impl GridController {
         let left = rect.min.x - 1;
         let right = to;
         let range = Rect::new_span((left, top).into(), (right, bottom).into());
-
-        self.expand(sheet_id, ExpandDirection::Left, &rect, &range, cursor)
-    }
-
-    /// Expand the source `rect` to the expanded `range`.
-    ///
-    /// TODO(ddimaria): `self.set_cells` records a transaction, so this isn't a
-    /// great user experience for combination expansions (e.g. expand right and down).
-    /// In this or subsequent PRs, we should consider a way to batch these transactions
-    /// (e.g. transaction queues).
-    pub fn expand(
-        &mut self,
-        sheet_id: SheetId,
-        direction: ExpandDirection,
-        rect: &Rect,
-        range: &Rect,
-        cursor: Option<String>,
-    ) -> Result<TransactionSummary> {
-        let sheet = self.sheet(sheet_id);
-
-        // expand values
-        // let selection_values = cell_values_in_rect(&rect, &sheet)?;
-
-        // let array = Array::new_row_major(selection_values.size(), series.into())
-        //     .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", rect.size(), e))?;
-        // let cell_values = set_cell_projections(&array, direction, &range);
-        // let values = Array::new_row_major(range.size(), cell_values)
-        //     .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", range.size(), e))?;
-        // let mut ops = self.set_cells_operations(sheet_id, range.min, values);
-
-        // expand formats
-        let mut ops = vec![];
-        let mut ops_height = self.expand_height(sheet_id, direction, rect, range);
-        let mut ops_width = self.expand_width(sheet_id, direction, rect, range);
-        ops.append(&mut ops_height);
-        ops.append(&mut ops_width);
+        let ops = self.expand_width(sheet_id, ExpandDirection::Left, &rect, &range)?;
 
         Ok(self.transact_forward(Transaction { ops, cursor }))
     }
@@ -136,38 +104,19 @@ impl GridController {
         direction: ExpandDirection,
         rect: &Rect,
         range: &Rect,
-    ) -> Vec<Operation> {
-        // if direction == ExpandDirection::Left || direction == ExpandDirection::Right {
-        //     return vec![];
-        // }
+    ) -> Result<Vec<Operation>> {
+        // get all values in the rect to set all values in the range
+        let mut value_ops = rect
+            .x_range()
+            .flat_map(|x| {
+                let new_rect = Rect::new_span((x, rect.min.y).into(), (x, rect.max.y).into());
+                let row = Rect::new_span((x, range.min.y).into(), (x, range.max.y).into());
+                self.apply_values(sheet_id, direction == ExpandDirection::Up, &new_rect, &row)
+            })
+            .flatten()
+            .collect::<Vec<_>>();
 
-        let mut value_ops: Vec<Operation> = vec![];
-        rect.x_range().for_each(|x| {
-            let new_rect = Rect::new_span((x, rect.min.y).into(), (x, rect.max.y).into());
-            let row = Rect::new_span((x, range.min.y).into(), (x, range.max.y).into());
-            let sheet = self.sheet(sheet_id);
-            let selection_values = cell_values_in_rect(&new_rect, &sheet).unwrap();
-            let series = find_auto_complete(SeriesOptions {
-                series: selection_values
-                    .clone()
-                    .into_cell_values_vec()
-                    .into_iter()
-                    .collect::<Vec<CellValue>>(),
-                spaces: (row.width() * row.height()) as i32,
-                negative: direction == ExpandDirection::Up,
-            });
-            let array = Array::new_row_major(row.size(), series.into())
-                .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", rect.size(), e))
-                .unwrap();
-            // crate::util::dbgjs(format!("new_rect: {:?}", new_rect));
-            // crate::util::dbgjs(format!("row: {:?}", row));
-            // crate::util::dbgjs(format!("selection_values: {:?}", selection_values));
-
-            // crate::util::dbgjs(format!("array: {:?}", array));
-            let ops = self.set_cells_operations(sheet_id, row.min, array);
-            value_ops.extend(ops);
-        });
-
+        // get formats
         let mut selection = rect
             .y_range()
             .map(|y| {
@@ -184,6 +133,7 @@ impl GridController {
             rows.reverse();
         }
 
+        // apply formats
         let mut ops = rows
             .iter()
             .enumerate()
@@ -197,7 +147,7 @@ impl GridController {
             .collect::<Vec<Operation>>();
 
         ops.extend(value_ops);
-        ops
+        Ok(ops)
     }
 
     // Apply the column of formats to the right of the selection in
@@ -209,35 +159,21 @@ impl GridController {
         direction: ExpandDirection,
         rect: &Rect,
         range: &Rect,
-    ) -> Vec<Operation> {
-        if direction == ExpandDirection::Up || direction == ExpandDirection::Down {
-            return vec![];
-        }
-        let mut value_ops: Vec<Operation> = vec![];
-
-        range.y_range().for_each(|y| {
-            let new_rect = Rect::new_span((rect.min.x, y).into(), (rect.max.x, y).into());
-            let col = Rect::new_span((range.min.x, y).into(), (range.max.x, y).into());
-            crate::util::dbgjs(format!("col: {:?}", col));
-            let sheet = self.sheet(sheet_id);
-            let selection_values = cell_values_in_rect(&new_rect, &sheet).unwrap();
-            let series = find_auto_complete(SeriesOptions {
-                series: selection_values
-                    .clone()
-                    .into_cell_values_vec()
-                    .into_iter()
-                    .collect::<Vec<CellValue>>(),
-                spaces: (col.width() * col.height()) as i32,
-                negative: direction == ExpandDirection::Left,
-            });
-            crate::util::dbgjs(format!("col: {:?}", col));
-            let array = Array::new_row_major(col.size(), series.into())
-                .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", col.size(), e))
-                .unwrap();
-            crate::util::dbgjs(format!("array: {:?}", array));
-            let ops = self.set_cells_operations(sheet_id, col.min, array);
-            value_ops.extend(ops);
-        });
+    ) -> Result<Vec<Operation>> {
+        let mut value_ops = range
+            .y_range()
+            .flat_map(|y| {
+                let new_rect = Rect::new_span((rect.min.x, y).into(), (rect.max.x, y).into());
+                let col = Rect::new_span((range.min.x, y).into(), (range.max.x, y).into());
+                self.apply_values(
+                    sheet_id,
+                    direction == ExpandDirection::Left,
+                    &new_rect,
+                    &col,
+                )
+            })
+            .flatten()
+            .collect::<Vec<_>>();
 
         let mut selection = rect
             .x_range()
@@ -268,7 +204,30 @@ impl GridController {
             .collect::<Vec<Operation>>();
 
         ops.extend(value_ops);
-        ops
+        Ok(ops)
+    }
+
+    pub fn apply_values(
+        &mut self,
+        sheet_id: SheetId,
+        negative: bool,
+        rect: &Rect,
+        range: &Rect,
+    ) -> Result<Vec<Operation>> {
+        let sheet = self.sheet(sheet_id);
+        let selection_values = cell_values_in_rect(&rect, &sheet).unwrap();
+        let series = find_auto_complete(SeriesOptions {
+            series: selection_values
+                .clone()
+                .into_cell_values_vec()
+                .into_iter()
+                .collect::<Vec<CellValue>>(),
+            spaces: (range.width() * range.height()) as i32,
+            negative,
+        });
+        let array = Array::new_row_major(range.size(), series.into())
+            .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", range.size(), e))?;
+        Ok(self.set_cells_operations(sheet_id, range.min, array))
     }
 }
 
