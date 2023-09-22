@@ -140,8 +140,8 @@ export class GridHeadings extends Container {
 
     const start = grid.getColumnPlacement(sheetId, bounds.left);
     const end = grid.getColumnPlacement(sheetId, bounds.right);
-    const leftOffset = start.getIndex();
-    const rightOffset = end.getIndex();
+    const leftOffset = start.getPosition();
+    const rightOffset = end.getPosition();
 
     // labelWidth uses the constant for number of digits--this ensures the mod factor doesn't change when panning
     const labelWidth = LABEL_DIGITS_TO_CALCULATE_SKIP * this.characterSize.width;

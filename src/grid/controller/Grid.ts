@@ -459,9 +459,12 @@ export class Grid {
     return new Rectangle(topLeft.left, topLeft.top, bottomRight.right, bottomRight.bottom);
   }
 
+  commitHeadingResize(): void {
+    this.gridController.commitResize();
+  }
+
   cancelHeadingResize(): void {
     this.gridController.cancelResize();
-    // todo: need a TransactionSummary
   }
 
   headingResizeColumn(sheetId: string, column: number, size?: number): void {

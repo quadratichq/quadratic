@@ -150,6 +150,7 @@ export class PointerHeading {
     if (!this.active) {
       return false;
     } else if (this.headingResizing) {
+      console.log('dragging...');
       const { headingResizing } = this;
       if (headingResizing.column !== undefined) {
         let size: number;
@@ -210,37 +211,36 @@ export class PointerHeading {
       this.clicked = false;
     }, DOUBLE_CLICK_TIME);
     if (this.active) {
-      throw new Error('pointerUp not implemented in PointerHeading');
-      // const { gridOffsets } = this.sheet;
-      // this.active = false;
-      // const { headingResizing } = gridOffsets;
-      // if (headingResizing) {
-      //   let updateHeading: HeadingSize | undefined;
-      //   if (headingResizing.column !== undefined && headingResizing.width !== undefined) {
-      //     updateHeading = {
-      //       column: headingResizing.column,
-      //       size: headingResizing.width,
-      //     };
-      //   } else if (headingResizing.row !== undefined && headingResizing.height !== undefined) {
-      //     updateHeading = {
-      //       row: headingResizing.row,
-      //       size: headingResizing.height,
-      //     };
-      //   }
-      //   if (updateHeading) {
-      //     sheetController.predefined_transaction([
-      //       {
-      //         type: 'SET_HEADING_SIZE',
-      //         data: {
-      //           heading_size: updateHeading,
-      //         },
-      //       },
-      //     ]);
-      //   }
-      //   gridOffsets.headingResizing = undefined;
-      //   pixiApp.viewport.plugins.get('decelerate')?.reset();
-      // }
-      // return true;
+      this.active = false;
+      const { headingResizing } = this;
+      if (headingResizing) {
+        grid.commitHeadingResize();
+        // let updateHeading: HeadingSize | undefined;
+        // if (headingResizing.column !== undefined && headingResizing.width !== undefined) {
+        //   updateHeading = {
+        //     column: headingResizing.column,
+        //     size: headingResizing.width,
+        //   };
+        // } else if (headingResizing.row !== undefined && headingResizing.height !== undefined) {
+        //   updateHeading = {
+        //     row: headingResizing.row,
+        //     size: headingResizing.height,
+        //   };
+        // }
+        // if (updateHeading) {
+        //   sheetController.predefined_transaction([
+        //     {
+        //       type: 'SET_HEADING_SIZE',
+        //       data: {
+        //         heading_size: updateHeading,
+        //       },
+        //     },
+        //   ]);
+        // }
+        this.headingResizing = undefined;
+        pixiApp.viewport.plugins.get('decelerate')?.reset();
+      }
+      return true;
     }
     return false;
   }
