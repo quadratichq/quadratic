@@ -77,7 +77,7 @@ export const FloatingContextMenu = (props: Props) => {
     const { viewport } = pixiApp;
 
     // Calculate position of input based on cell
-    const cell_offsets = sheet.gridOffsets.getCell(
+    const cell_offsets = gridsheet.gridOffsets.getCell(
       cursor.multiCursor
         ? Math.min(cursor.cursorPosition.x, cursor.multiCursor.originPosition.x, cursor.multiCursor.terminalPosition.x)
         : cursor.cursorPosition.x,

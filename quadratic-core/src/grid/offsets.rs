@@ -93,11 +93,9 @@ impl Offsets {
         })
     }
 
-    /// returns the entry index for the screen coordinate
-    pub fn find_offset(&self, pixel: f64) -> i64 {
-        if pixel == 0.0 {
-            0
-        } else if pixel > 0.0 {
+    /// returns the entry index and screen position for a screen coordinate
+    pub fn find_offset(&self, pixel: f64) -> (i64, f64) {
+        if pixel >= 0.0 {
             let mut index = 0;
             let mut position = 0.0;
             let mut next_width = self.get_size(index);
@@ -106,7 +104,7 @@ impl Offsets {
                 index += 1;
                 next_width = self.get_size(index);
             }
-            index
+            (index, position)
         } else {
             let mut index = -1;
             let mut position = -self.get_size(-1);
@@ -114,15 +112,15 @@ impl Offsets {
                 index -= 1;
                 position -= self.get_size(index);
             }
-            index
+            (index, position)
         }
     }
 
     /// Returns an iterator that includes all offsets for entries between the two screen coordinates
     /// (including one offset beyond the last entry to ensure we know the size of all entries)
     pub fn iter_screen_offsets(&self, pixel_range: Range<f64>) -> impl '_ + Iterator<Item = f64> {
-        let start = self.find_offset(pixel_range.start);
-        let end = self.find_offset(pixel_range.end);
+        let start = self.find_offset(pixel_range.start).0;
+        let end = self.find_offset(pixel_range.end).0;
         self.iter_offsets(Range {
             start,
 
@@ -205,16 +203,16 @@ mod tests {
     fn test_find_offsets_default() {
         let offsets = Offsets::new(10.0);
 
-        assert_eq!(offsets.find_offset(0.0), 0);
-        assert_eq!(offsets.find_offset(9.0), 0);
+        assert_eq!(offsets.find_offset(0.0), (0, 0.0));
+        assert_eq!(offsets.find_offset(9.0), (0, 0.0));
 
         // 0 .. 10 .. 20 .^. 30
-        assert_eq!(offsets.find_offset(25.0), 2);
+        assert_eq!(offsets.find_offset(25.0), (2, 20.0));
 
-        assert_eq!(offsets.find_offset(-9.0), -1);
+        assert_eq!(offsets.find_offset(-9.0), (-1, -10.0));
 
         // -30 .^. -20 .. -10 .. 0
-        assert_eq!(offsets.find_offset(-25.0), -3);
+        assert_eq!(offsets.find_offset(-25.0), (-3, -30.0));
     }
 
     #[test]
@@ -223,22 +221,22 @@ mod tests {
         offsets.set_size(0, 20.0);
         offsets.set_size(-1, 20.0);
 
-        assert_eq!(offsets.find_offset(0.0), 0);
-        assert_eq!(offsets.find_offset(10.0), 0);
-        assert_eq!(offsets.find_offset(20.0), 1);
+        assert_eq!(offsets.find_offset(0.0), (0, 0.0));
+        assert_eq!(offsets.find_offset(10.0), (0, 0.0));
+        assert_eq!(offsets.find_offset(20.0), (1, 20.0));
 
         // 0 .. 20 .. 30 .^. 40
-        assert_eq!(offsets.find_offset(25.0), 1);
-        assert_eq!(offsets.find_offset(35.0), 2);
+        assert_eq!(offsets.find_offset(25.0), (1, 20.0));
+        assert_eq!(offsets.find_offset(35.0), (2, 30.0));
 
-        assert_eq!(offsets.find_offset(-9.0), -1);
+        assert_eq!(offsets.find_offset(-9.0), (-1, -20.0));
 
         // -40 .. -30 .. -20 .. 0
-        assert_eq!(offsets.find_offset(-20.0), -1);
-        assert_eq!(offsets.find_offset(-21.0), -2);
+        assert_eq!(offsets.find_offset(-20.0), (-1, -20.0));
+        assert_eq!(offsets.find_offset(-21.0), (-2, -30.0));
 
         // -40 .^. -30 .. -20 .. 0
-        assert_eq!(offsets.find_offset(-35.0), -3);
+        assert_eq!(offsets.find_offset(-35.0), (-3, -40.0));
     }
 
     #[test]

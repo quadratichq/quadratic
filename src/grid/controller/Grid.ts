@@ -1,6 +1,6 @@
 import { Point, Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
-import { GridController, Pos, Rect as RectInternal } from '../../quadratic-core/quadratic_core';
+import { GridController, Placement, Pos, Rect as RectInternal } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
   CellFormatSummary,
@@ -419,7 +419,28 @@ export class Grid {
 
   //#region column/row sizes
 
-  //#enregion
+  getColumnWidth(sheetId: string, x: number): number {
+    return this.gridController.getColumnWidth(sheetId, x);
+  }
+
+  getRowHeight(sheetId: string, y: number): number {
+    return this.gridController.getRowHeight(sheetId, y);
+  }
+
+  getColumnPlacement(sheetId: string, x: number): Placement {
+    return this.gridController.getColumnPlacement(sheetId, x);
+  }
+
+  getRowPlacement(sheetId: string, y: number): Placement {
+    return this.gridController.getRowPlacement(sheetId, y);
+  }
+
+  getCellOffsets(sheetId: string, x: number, y: number): Rectangle {
+    const screenRect = this.gridController.getCellOffsets(sheetId, x, y);
+    return new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
+  }
+
+  //#endregion
 }
 
 export const grid = new Grid();

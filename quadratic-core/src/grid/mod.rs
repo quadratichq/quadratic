@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use lexicon_fractional_index::key_between;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
@@ -146,6 +148,15 @@ impl Grid {
     pub fn sheet_mut_from_id(&mut self, sheet_id: SheetId) -> &mut Sheet {
         let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");
         &mut self.sheets[sheet_index]
+    }
+
+    pub fn sheet_from_string(&self, sheet_id: String) -> &Sheet {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        self.sheet_from_id(sheet_id)
+    }
+    pub fn sheet_mut_from_string(&mut self, sheet_id: String) -> &Sheet {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        self.sheet_mut_from_id(sheet_id)
     }
 
     /// Returns a list of rectangles that exactly covers a region. Ignores IDs
