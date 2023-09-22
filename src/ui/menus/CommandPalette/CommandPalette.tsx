@@ -86,7 +86,13 @@ export const CommandPalette = (props: Props) => {
         <InputBase
           sx={{ width: '100%', padding: '8px 16px' }}
           placeholder={searchLabel}
-          inputProps={{ 'aria-label': searchLabel }}
+          inputProps={{
+            'aria-label': searchLabel,
+            autocomplete: 'off',
+            autocorrect: 'off',
+            autocapitalize: 'off',
+            spellcheck: 'false',
+          }}
           inputRef={focusInput}
           autoFocus
           value={activeSearchValue}
