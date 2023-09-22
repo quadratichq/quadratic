@@ -3,10 +3,14 @@ import { useRecoilState } from 'recoil';
 import { copy, cut, paste, redo, undo } from '../../../../actions';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
-import { PNG_MESSAGE } from '../../../../constants/appConstants';
-import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
+import {
+  copySelectionToPNG,
+  copyToClipboard,
+  cutToClipboard,
+  fullClipboardSupport,
+  pasteFromClipboard,
+} from '../../../../grid/actions/clipboard/clipboard';
 import { grid } from '../../../../grid/controller/Grid';
-import { copyAsPNG } from '../../../../gridGL/pixiApp/copyAsPNG';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { isMac } from '../../../../utils/isMac';
 import { CopyAsPNG } from '../../../icons';
@@ -89,14 +93,14 @@ const ListItems = [
   },
   {
     label: 'Copy selection as PNG',
+    isAvailable: () => fullClipboardSupport(),
     Component: (props: CommandPaletteListItemSharedProps) => {
       const { addGlobalSnackbar } = useGlobalSnackbar();
       return (
         <CommandPaletteListItem
           {...props}
           action={() => {
-            copyAsPNG();
-            addGlobalSnackbar(PNG_MESSAGE);
+            copySelectionToPNG(addGlobalSnackbar);
           }}
           icon={<CopyAsPNG />}
           shortcut="C"
