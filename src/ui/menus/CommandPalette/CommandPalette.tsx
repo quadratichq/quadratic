@@ -88,10 +88,10 @@ export const CommandPalette = (props: Props) => {
           placeholder={searchLabel}
           inputProps={{
             'aria-label': searchLabel,
-            autocomplete: 'off',
-            autocorrect: 'off',
-            autocapitalize: 'off',
-            spellcheck: 'false',
+            autoComplete: 'off',
+            autoCorrect: 'off',
+            autoCapitalize: 'off',
+            spellCheck: 'false',
           }}
           inputRef={focusInput}
           autoFocus
