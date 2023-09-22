@@ -2,7 +2,6 @@ import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { GlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
-import { PNG_MESSAGE } from '../../../constants/appConstants';
 import {
   copySelectionToPNG,
   copyToClipboard,
@@ -31,8 +30,7 @@ export function keyboardClipboard(props: {
 
   // Command + Shift + C
   if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'c') {
-    copySelectionToPNG(app);
-    addGlobalSnackbar(PNG_MESSAGE);
+    copySelectionToPNG(app, addGlobalSnackbar);
     event.preventDefault();
     event.stopPropagation();
     return true;

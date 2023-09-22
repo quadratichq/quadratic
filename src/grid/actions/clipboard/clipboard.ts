@@ -1,14 +1,16 @@
+import * as Sentry from '@sentry/react';
+import { Rectangle } from 'pixi.js';
+import { GlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
+import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
 import { Coordinate } from '../../../gridGL/types/size';
 import { Border, Cell, CellFormat } from '../../../schemas';
 import { SheetController } from '../../controller/sheetController';
-import { updateCellAndDCells } from '../updateCellAndDCells';
-import { DeleteCells } from '../DeleteCells';
 import { CellAndFormat } from '../../sheet/GridSparse';
-import { Rectangle } from 'pixi.js';
-import { clearFormattingAction } from '../clearFormattingAction';
+import { DeleteCells } from '../DeleteCells';
 import { clearBordersAction } from '../clearBordersAction';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
+import { clearFormattingAction } from '../clearFormattingAction';
+import { updateCellAndDCells } from '../updateCellAndDCells';
 
 const CLIPBOARD_FORMAT_VERSION = 'quadratic/clipboard/json/1.1';
 
@@ -325,18 +327,28 @@ export const copyToClipboard = async (sheet_controller: SheetController, cell0: 
   }
 };
 
-export const copySelectionToPNG = async (app: PixiApp) => {
-  const blob = await copyAsPNG(app);
-  if (!blob) {
-    throw new Error('Unable to copy as PNG');
-  }
-  if (navigator.clipboard && window.ClipboardItem) {
-    navigator.clipboard.write([
+export const copySelectionToPNG = async (app: PixiApp, addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar']) => {
+  try {
+    const blob = await copyAsPNG(app);
+    if (!blob) {
+      throw new Error('The function `copyAsPng` failed to return data');
+    }
+
+    if (!(navigator.clipboard && window.ClipboardItem)) {
+      throw new Error('Browser APIs for copying data to the clipboard are unsupported.');
+    }
+
+    await navigator.clipboard.write([
       new ClipboardItem({
-        //@ts-ignore
         'image/png': blob,
       }),
     ]);
+
+    addGlobalSnackbar('Copied selection as PNG to clipboard');
+  } catch (error) {
+    console.error(error);
+    addGlobalSnackbar('Failed to copy selection as PNG.', { severity: 'error' });
+    Sentry.captureException(error);
   }
 };
 

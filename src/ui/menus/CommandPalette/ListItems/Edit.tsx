@@ -3,9 +3,12 @@ import { useRecoilState } from 'recoil';
 import { copy, cut, paste, redo, undo } from '../../../../actions';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
-import { PNG_MESSAGE } from '../../../../constants/appConstants';
-import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
-import { copyAsPNG } from '../../../../gridGL/pixiApp/copyAsPNG';
+import {
+  copySelectionToPNG,
+  copyToClipboard,
+  cutToClipboard,
+  pasteFromClipboard,
+} from '../../../../grid/actions/clipboard/clipboard';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { isMac } from '../../../../utils/isMac';
 import { CopyAsPNG } from '../../../icons';
@@ -118,8 +121,7 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           action={() => {
-            copyAsPNG(props.app);
-            addGlobalSnackbar(PNG_MESSAGE);
+            copySelectionToPNG(props.app, addGlobalSnackbar);
           }}
           icon={<CopyAsPNG />}
           shortcut="C"

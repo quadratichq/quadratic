@@ -20,7 +20,6 @@ import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
-import { PNG_MESSAGE } from '../../../constants/appConstants';
 import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
 import { SheetController } from '../../../grid/controller/sheetController';
 import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
@@ -188,9 +187,8 @@ export const FloatingContextMenu = (props: Props) => {
   }, [viewport, updateContextMenuCSSTransform]);
 
   const copyAsPNG = useCallback(async () => {
-    await copySelectionToPNG(app);
+    await copySelectionToPNG(app, addGlobalSnackbar);
     moreMenuToggle();
-    addGlobalSnackbar(PNG_MESSAGE);
   }, [app, moreMenuToggle, addGlobalSnackbar]);
 
   // If we don't have a viewport, we can't continue.
