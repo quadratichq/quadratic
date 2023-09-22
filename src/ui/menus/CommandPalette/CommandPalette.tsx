@@ -64,7 +64,7 @@ export const CommandPalette = (props: Props) => {
       <Paper
         component="form"
         elevation={12}
-        onKeyUp={(e: React.KeyboardEvent) => {
+        onKeyDown={(e: React.KeyboardEvent) => {
           if (e.key === 'ArrowDown') {
             e.preventDefault();
             e.stopPropagation();
