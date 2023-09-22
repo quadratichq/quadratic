@@ -53,11 +53,10 @@ const ListItems = () => {
                   <div style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center' }}>
                     <div
                       style={{
-                        // FWIW: these styles match the syltes of the 3rd-party color picker swatches
-                        width: '15px',
-                        height: '15px',
+                        width: '24px',
+                        height: '3px',
                         backgroundColor: sheet.color,
-                        borderRadius: '2px',
+                        borderRadius: '1px',
                       }}
                     />
                   </div>
