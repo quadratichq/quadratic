@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
 
 mod v1_4;
@@ -15,17 +13,17 @@ enum GridFile {
     #[serde(rename = "1.5")]
     V1_5 {
         #[serde(flatten)]
-        grid: v1_5::Grid,
+        grid: v1_5::GridSchema,
     },
 
     #[serde(rename = "1.4")]
     V1_4 {
         #[serde(flatten)]
-        grid: v1_4::GridFileV1_4,
+        grid: v1_4::GridSchemaV1_4,
     },
 }
 impl GridFile {
-    fn into_latest(self) -> Result<v1_5::Grid, &'static str> {
+    fn into_latest(self) -> Result<v1_5::GridSchema, &'static str> {
         match self {
             GridFile::V1_5 { grid } => Ok(grid),
             GridFile::V1_4 { grid } => grid.into_v1_5(),
@@ -66,7 +64,7 @@ pub fn import(file_contents: &str) -> Result<current::Grid, String> {
                 sheet
             })
             .collect(),
-        dependencies: HashMap::new(), // TODO: Implement this
+        dependencies: file.dependencies.into_iter().collect(),
     })
 }
 
@@ -76,11 +74,11 @@ pub fn version() -> String {
 
 pub fn export(grid: &current::Grid) -> Result<String, String> {
     serde_json::to_string(&GridFile::V1_5 {
-        grid: v1_5::Grid {
+        grid: v1_5::GridSchema {
             sheets: grid
                 .sheets
                 .iter()
-                .map(|sheet| v1_5::Sheet {
+                .map(|sheet| v1_5::SheetSchema {
                     id: sheet.id,
                     name: sheet.name.clone(),
                     color: sheet.color.clone(),
@@ -109,7 +107,7 @@ pub fn export(grid: &current::Grid) -> Result<String, String> {
                         .collect(),
                 })
                 .collect(),
-            dependencies: grid.dependencies.clone(),
+            dependencies: grid.dependencies.clone().into_iter().collect(),
         },
     })
     .map_err(|e| e.to_string())

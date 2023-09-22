@@ -19,9 +19,9 @@ const DEFAULT_FILE: GridFile = {
       columns: [],
       rows: [],
       borders: [],
-      cell_dependency: '',
     },
   ],
+  cell_dependency: new Map(),
   version: GridFileSchema.shape.version.value,
 };
 

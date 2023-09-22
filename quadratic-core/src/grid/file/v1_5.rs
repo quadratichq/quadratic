@@ -7,44 +7,81 @@ pub use super::current::*; // when creating new version, replace `current` with 
 use super::v1_4;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub(crate) struct Grid {
-    pub sheets: Vec<Sheet>,
+pub(crate) struct GridSchema {
+    pub sheets: Vec<SheetSchema>,
     pub dependencies: HashMap<SheetPos, Vec<SheetRect>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub(crate) struct Sheet {
+pub(crate) struct SheetSchema {
     pub id: SheetId,
     pub name: String,
     pub color: Option<String>,
     pub order: String,
-
     pub column_widths: Vec<(i64, f32)>,
     pub row_heights: Vec<(i64, f32)>,
-
     pub columns: Vec<(i64, Column)>,
     pub rows: Vec<(i64, RowId)>,
     pub borders: SheetBorders,
     pub code_cells: Vec<(CellRef, CodeCellValue)>,
 }
 
-impl v1_4::GridFileV1_4 {
-    pub(crate) fn into_v1_5(self) -> Result<Grid, &'static str> {
-        let ret = Grid {
-            sheets: self
-                .sheets
-                .into_iter()
-                .map(|sheet| {
-                    sheet.into_v1_5()
-                    // TODO: validate that sheet name is unique.
-                    //       sheet ID is new so it is definitely unique.
-                })
-                .try_collect()?,
-            dependencies: HashMap::new(), // TODO: import dependencies
-        };
+impl v1_4::GridSchemaV1_4 {
+    pub(crate) fn into_v1_5(self) -> Result<GridSchema, &'static str> {
+        let sheets: Vec<SheetSchema> = self
+            .sheets
+            .into_iter()
+            .map(|sheet| {
+                sheet.into_v1_5()
+                // TODO: validate that sheet name is unique.
+                //       sheet ID is new so it is definitely unique.
+            })
+            .try_collect()?;
 
+        let mut dependencies = HashMap::new();
+
+        for dep in self.cell_dependency.into_iter() {
+            let pos = get_value(dep.0).unwrap();
+            let cell = SheetPos {
+                sheet_id: sheets[0].id,
+                x: pos.0,
+                y: pos.1,
+            };
+
+            let mut deps: Vec<SheetRect> = vec![];
+            for position in dep.1.into_iter() {
+                let cell = Pos {
+                    x: position.0,
+                    y: position.1,
+                };
+                deps.push(SheetRect {
+                    sheet_id: sheets[0].id,
+                    min: cell,
+                    max: cell,
+                });
+            }
+
+            dependencies.insert(cell, deps);
+        }
+
+        let ret = GridSchema {
+            sheets,
+            dependencies,
+        };
         Ok(ret)
     }
+}
+
+fn get_value(key: String) -> Option<(i64, i64)> {
+    let parts: Vec<&str> = key.split(',').collect();
+    if parts.len() != 2 {
+        return None;
+    }
+
+    let x = parts[0].parse::<i64>().ok()?;
+    let y = parts[1].parse::<i64>().ok()?;
+
+    Some((x, y))
 }
 
 struct SheetBuilder {
@@ -74,7 +111,7 @@ impl SheetBuilder {
 }
 
 impl v1_4::JsSheet {
-    pub(crate) fn into_v1_5(self) -> Result<Sheet, &'static str> {
+    pub(crate) fn into_v1_5(self) -> Result<SheetSchema, &'static str> {
         let sheet_id = SheetId::new();
 
         let column_widths = self
@@ -168,7 +205,7 @@ impl v1_4::JsSheet {
                 .set(js_format.y, js_format.fill_color.clone());
         }
 
-        Ok(Sheet {
+        Ok(SheetSchema {
             id: sheet_id,
             name: self.name,
             color: self.color,

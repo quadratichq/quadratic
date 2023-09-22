@@ -1,4 +1,5 @@
-use std::str::FromStr;
+use std::collections::HashMap;
+use std::{hash::Hash, str::FromStr};
 
 use bigdecimal::{BigDecimal, FromPrimitive};
 use serde::{Deserialize, Serialize};
@@ -8,8 +9,9 @@ use crate::{Array, ArraySize, Error, ErrorMsg, Span};
 use super::v1_5::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GridFileV1_4 {
+pub struct GridSchemaV1_4 {
     pub sheets: Vec<JsSheet>,
+    pub cell_dependency: HashMap<String, Vec<(i64, i64)>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -141,14 +143,10 @@ pub struct JsSheet {
     pub name: String,
     pub color: Option<String>,
     pub order: String,
-
     pub borders: Vec<JsBorders>,
     pub cells: Vec<JsCell>,
-    pub cell_dependency: String,
     pub columns: Vec<JsHeadingSchema>,
-
     pub formats: Vec<JsCellFormat>,
-
     pub rows: Vec<JsHeadingSchema>,
 }
 
