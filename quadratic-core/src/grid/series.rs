@@ -172,8 +172,7 @@ pub fn find_number_series(options: SeriesOptions) -> Vec<CellValue> {
         (Some(add), _, true) => val - add,
         (_, Some(mult), false) => val * mult,
         (_, Some(mult), true) => val / mult,
-        // (_, _, _) => unreachable!(),
-        (_, _, _) => BigDecimal::zero(),
+        (_, _, _) => unreachable!(),
     };
 
     let mut results = (0..spaces)
@@ -243,7 +242,7 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
         });
     });
 
-    possible_text_series.iter().enumerate().for_each(|(i, s)| {
+    for i in 0..possible_text_series.len() {
         let entry = &possible_text_series[i];
 
         if entry.len() > 0 {
@@ -268,7 +267,7 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
                 results.reverse();
             }
         }
-    });
+    }
 
     if results.len() > 0 {
         return results;

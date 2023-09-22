@@ -206,6 +206,18 @@ export class PointerAutoComplete {
 
     const sheet = sheets.sheet;
 
+    if (this.endCell) {
+      const range = new Rectangle(
+        this.selection.x,
+        this.selection.y,
+        this.endCell.x - this.selection.x,
+        this.endCell.y - this.selection.y
+      );
+      console.log(this.endCell, this.selection, range);
+
+      grid.expand(sheet.id, this.selection, range, this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined);
+    }
+
     if (!this.stateHorizontal && !this.stateVertical) {
       this.reset();
       return;
@@ -223,21 +235,20 @@ export class PointerAutoComplete {
       }
     } else if (this.stateVertical === 'expandDown' && this.toVertical !== undefined) {
       // if (!(this.stateHorizontal === 'expandRight' && this.toHorizontal !== undefined)) {
-      grid.expandDown(
-        sheet.id,
-        this.selection,
-        this.toVertical,
-        this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined
-      );
-
+      // grid.expandDown(
+      //   sheet.id,
+      //   this.selection,
+      //   this.toVertical,
+      //   this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined
+      // );
       // }
     } else if (this.stateVertical === 'expandUp' && this.toVertical !== undefined) {
-      grid.expandUp(
-        sheet.id,
-        this.selection,
-        this.toVertical,
-        this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined
-      );
+      // grid.expandUp(
+      //   sheet.id,
+      //   this.selection,
+      //   this.toVertical,
+      //   this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined
+      // );
     }
 
     if (this.stateHorizontal === 'shrink') {
@@ -246,9 +257,9 @@ export class PointerAutoComplete {
         grid.deleteCellValues(sheet.id, rect, false);
       }
     } else if (this.stateHorizontal === 'expandLeft' && this.toHorizontal !== undefined) {
-      grid.expandLeft(sheet.id, this.selection, this.toHorizontal, this.toVertical);
+      // grid.expandLeft(sheet.id, this.selection, this.toHorizontal, this.toVertical);
     } else if (this.stateHorizontal === 'expandRight' && this.toHorizontal !== undefined) {
-      grid.expandRight(sheet.id, this.selection, this.toHorizontal, this.toVertical);
+      console.log(sheet.id, this.selection, this.toHorizontal, this.toVertical);
     }
 
     this.setSelection();
