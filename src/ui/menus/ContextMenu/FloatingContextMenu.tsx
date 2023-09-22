@@ -21,7 +21,6 @@ import { useRecoilValue } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
-import { PNG_MESSAGE } from '../../../constants/appConstants';
 import { copySelectionToPNG, fullClipboardSupport } from '../../../grid/actions/clipboard/clipboard';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
@@ -178,9 +177,8 @@ export const FloatingContextMenu = (props: Props) => {
   }, [updateContextMenuCSSTransform]);
 
   const copyAsPNG = useCallback(async () => {
-    await copySelectionToPNG();
+    await copySelectionToPNG(addGlobalSnackbar);
     moreMenuToggle();
-    addGlobalSnackbar(PNG_MESSAGE);
   }, [moreMenuToggle, addGlobalSnackbar]);
 
   // set input's initial position correctly
