@@ -60,8 +60,7 @@ export const FloatingContextMenu = (props: Props) => {
   const menuDiv = useRef<HTMLDivElement>(null);
   const moreMenuButtonRef = useRef(null);
   const borders = useGetBorderMenu();
-  const sheet = sheets.sheet;
-  const cursor = sheet.cursor;
+
   const textColorRef = useRef<MenuInstance>(null);
   const fillColorRef = useRef<MenuInstance>(null);
 
@@ -75,6 +74,9 @@ export const FloatingContextMenu = (props: Props) => {
     if (!container || !menuDiv.current) return '';
 
     const { viewport } = pixiApp;
+
+    const sheet = sheets.sheet;
+    const cursor = sheet.cursor;
 
     // Calculate position of input based on cell
     const cell_offsets = sheet.gridOffsets.getCell(
@@ -158,16 +160,7 @@ export const FloatingContextMenu = (props: Props) => {
       setTimeout(updateContextMenuCSSTransform, 100);
     } else menuDiv.current.style.pointerEvents = 'auto';
     return transform;
-  }, [
-    container,
-    sheet.gridOffsets,
-    cursor.multiCursor,
-    cursor.cursorPosition.x,
-    cursor.cursorPosition.y,
-    cursor.boxCells,
-    showContextMenu,
-    editorInteractionState.permission,
-  ]);
+  }, [container, showContextMenu, editorInteractionState.permission]);
 
   useEffect(() => {
     const { viewport } = pixiApp;
@@ -195,7 +188,7 @@ export const FloatingContextMenu = (props: Props) => {
 
   const iconSize = 'small';
 
-  const formatPrimaryCell = sheet.getFormatPrimaryCell();
+  const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
 
   return (
     <Paper
