@@ -45,7 +45,7 @@ impl Ctx<'_> {
     /// or returns an error in the case of a circular reference.
     pub async fn get_cell(
         &mut self,
-        ref_pos: CellRef,
+        ref_pos: &CellRef,
         span: Span,
     ) -> CodeResult<Spanned<CellValue>> {
         let ref_pos = ref_pos.resolve_from(self.pos);

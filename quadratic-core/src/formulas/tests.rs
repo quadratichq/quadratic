@@ -306,7 +306,7 @@ fn test_find_cell_references() {
     // Evaluate at D4.
     let base = pos![D4];
     let refs = find_cell_references("SUM($C$4, $A0 : nQ7, :D$n6, A0:, ZB2)", base);
-    let mut iter = refs.iter().map(|r| r.inner);
+    let mut iter = refs.into_iter().map(|r| r.inner);
 
     // $C$4
     assert_eq!(
@@ -319,10 +319,12 @@ fn test_find_cell_references() {
         iter.next(),
         Some(RangeRef::CellRange {
             start: CellRef {
+                sheet: None,
                 x: Absolute(col![A]),
                 y: Relative(0 - base.y),
             },
             end: CellRef {
+                sheet: None,
                 x: Relative(col![nQ] - base.x),
                 y: Relative(7 - base.y),
             },
@@ -333,6 +335,7 @@ fn test_find_cell_references() {
     assert_eq!(
         iter.next(),
         Some(RangeRef::from(CellRef {
+            sheet: None,
             x: Relative(col![D] - base.x),
             y: Absolute(-6),
         })),
@@ -342,6 +345,7 @@ fn test_find_cell_references() {
     assert_eq!(
         iter.next(),
         Some(RangeRef::from(CellRef {
+            sheet: None,
             x: Relative(col![A] - base.x),
             y: Relative(0 - base.y),
         })),
@@ -351,6 +355,7 @@ fn test_find_cell_references() {
     assert_eq!(
         iter.next(),
         Some(RangeRef::from(CellRef {
+            sheet: None,
             x: Relative(col![ZB] - base.x),
             y: Relative(2 - base.y),
         })),

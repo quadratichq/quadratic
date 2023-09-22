@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::Pos;
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(tag = "type")]
 pub enum RangeRef {
@@ -61,15 +61,19 @@ impl RangeRef {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CellRef {
+    pub sheet: Option<String>,
     pub x: CellRefCoord,
     pub y: CellRefCoord,
 }
 impl fmt::Display for CellRef {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let Self { x, y } = self;
+        let Self { sheet, x, y } = self;
+        if let Some(sheet) = sheet {
+            write!(f, "'{}'!", crate::formulas::escape_string(sheet))?;
+        }
         write!(f, "R{y}C{x}")
     }
 }
@@ -77,6 +81,7 @@ impl CellRef {
     /// Constructs an absolute cell reference.
     pub fn absolute(pos: Pos) -> Self {
         Self {
+            sheet: None,
             x: CellRefCoord::Absolute(pos.x),
             y: CellRefCoord::Absolute(pos.y),
         }
@@ -84,7 +89,7 @@ impl CellRef {
 
     /// Resolves the reference to a absolute coordinates, given the cell
     /// coordinate where evaluation is taking place.
-    pub fn resolve_from(self, base: Pos) -> Pos {
+    pub fn resolve_from(&self, base: Pos) -> Pos {
         Pos {
             x: self.x.resolve_from(base.x),
             y: self.y.resolve_from(base.y),
@@ -92,14 +97,28 @@ impl CellRef {
     }
     /// Returns the human-friendly string representing this cell reference in
     /// A1-style notation.
-    pub fn a1_string(self, base: Pos) -> String {
+    pub fn a1_string(&self, base: Pos) -> String {
+        let sheet_str = match &self.sheet {
+            Some(sheet_name) => format!("{}!", crate::formulas::escape_string(sheet_name)),
+            None => String::new(),
+        };
         let col = self.x.col_string(base.x);
         let row = self.y.col_string(base.y);
-        format!("{col}{row}")
+        format!("{sheet_str}{col}{row}")
     }
 
     /// Parses an A1-style cell reference relative to a given location.
-    pub fn parse_a1(s: &str, base: Pos) -> Option<CellRef> {
+    pub fn parse_a1(mut s: &str, base: Pos) -> Option<CellRef> {
+        let mut sheet = None;
+        if let Some((sheet_name_str, rest)) = s.split_once('!') {
+            s = rest;
+            if sheet_name_str.starts_with(['\'', '"']) {
+                sheet = crate::formulas::parse_string_literal(sheet_name_str);
+            } else {
+                sheet = Some(sheet_name_str.to_string());
+            }
+        }
+
         lazy_static! {
             /// ^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)$
             /// ^                             $     match full string
@@ -138,6 +157,7 @@ impl CellRef {
         };
 
         Some(CellRef {
+            sheet,
             x: col_ref,
             y: row_ref,
         })

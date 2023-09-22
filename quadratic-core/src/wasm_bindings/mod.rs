@@ -130,7 +130,7 @@ pub struct JsFormulaParseResult {
 
     pub cell_refs: Vec<JsCellRefSpan>,
 }
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
 pub struct JsCellRefSpan {
     pub span: Span,
     pub cell_ref: formulas::RangeRef,
@@ -267,6 +267,7 @@ mod tests {
                 JsCellRefSpan {
                     span: Span { start: 1, end: 4 },
                     cell_ref: RangeRef::from(CellRef {
+                        sheet: None,
                         x: CellRefCoord::Relative(0),
                         y: CellRefCoord::Absolute(1),
                     }),
@@ -275,10 +276,12 @@ mod tests {
                     span: Span { start: 15, end: 25 },
                     cell_ref: RangeRef::CellRange {
                         start: CellRef {
+                            sheet: None,
                             x: CellRefCoord::Absolute(0),
                             y: CellRefCoord::Relative(-2),
                         },
                         end: CellRef {
+                            sheet: None,
                             x: CellRefCoord::Absolute(0),
                             y: CellRefCoord::Relative(2),
                         },

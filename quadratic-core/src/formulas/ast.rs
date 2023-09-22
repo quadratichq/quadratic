@@ -85,7 +85,7 @@ impl AstNodeContents {
 impl Spanned<AstNodeContents> {
     pub fn to_cell_ref(&self) -> CodeResult<CellRef> {
         match &self.inner {
-            AstNodeContents::CellRef(cellref) => Ok(*cellref),
+            AstNodeContents::CellRef(cellref) => Ok(cellref.clone()),
             AstNodeContents::Paren(contents) => contents.to_cell_ref(),
             _ => Err(ErrorMsg::Expected {
                 expected: "cell reference".into(),
@@ -156,7 +156,7 @@ impl AstNode {
                 for y in y1..=y2 {
                     for x in x1..=x2 {
                         let cell_ref = CellRef::absolute(Pos { x, y });
-                        flat_array.push(ctx.get_cell(cell_ref, self.span).await?.inner);
+                        flat_array.push(ctx.get_cell(&cell_ref, self.span).await?.inner);
                     }
                 }
 
@@ -207,7 +207,7 @@ impl AstNode {
 
             // Single cell references return 1x1 arrays for Excel compatibility.
             AstNodeContents::CellRef(cell_ref) => {
-                Array::from(ctx.get_cell(*cell_ref, self.span).await?.inner).into()
+                Array::from(ctx.get_cell(cell_ref, self.span).await?.inner).into()
             }
 
             AstNodeContents::String(s) => Value::from(s.to_string()),
