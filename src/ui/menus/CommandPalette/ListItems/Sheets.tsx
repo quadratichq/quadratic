@@ -3,13 +3,14 @@ import { grid } from '../../../../grid/controller/Grid';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { focusGrid } from '../../../../helpers/focusGrid';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
+import { Commands } from '../getCommandPaletteListItems';
 
 const ListItems = () => {
   // used to trigger changes in sheets
   const [trigger, setTrigger] = useState(0);
 
   const items = useMemo(() => {
-    const items = [
+    const items: Commands[] = [
       {
         label: 'Sheet: Create',
         Component: (props: any) => {
@@ -41,9 +42,30 @@ const ListItems = () => {
     ];
     sheets.forEach((sheet) => {
       items.push({
-        label: `Sheet: Switch to ${sheet.name}`,
+        label: `Sheet: Switch to “${sheet.name}”`,
+        isAvailable: () => sheets.current !== sheet.id,
         Component: (props: any) => {
-          return <CommandPaletteListItem {...props} action={() => (sheets.current = sheet.id)} />;
+          return (
+            <CommandPaletteListItem
+              {...props}
+              icon={
+                sheet.color ? (
+                  <div style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center' }}>
+                    <div
+                      style={{
+                        // FWIW: these styles match the syltes of the 3rd-party color picker swatches
+                        width: '15px',
+                        height: '15px',
+                        backgroundColor: sheet.color,
+                        borderRadius: '2px',
+                      }}
+                    />
+                  </div>
+                ) : undefined
+              }
+              action={() => (sheets.current = sheet.id)}
+            />
+          );
         },
       });
     });
