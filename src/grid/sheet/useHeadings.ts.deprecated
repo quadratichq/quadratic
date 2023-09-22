@@ -2,7 +2,6 @@ import { useCallback } from 'react';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../constants/gridConstants';
 import { Coordinate } from '../../gridGL/types/size';
 import { sheets } from '../controller/Sheets';
-import { HeadingResizing } from './GridOffsets';
 
 export interface HeadingSize {
   row?: number;

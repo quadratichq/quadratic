@@ -1,5 +1,6 @@
 import { Container, Rectangle } from 'pixi.js';
 import { debugShowCellsSheetCulling } from '../../debugFlags';
+import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
@@ -171,7 +172,7 @@ export class CellsSheet extends Container {
 
   // used for clipping to find neighboring hash - clipping always works from right to left
   findPreviousHash(column: number, row: number, bounds?: Rectangle): CellsHash | undefined {
-    bounds = bounds ?? this.sheet.grid.getSheetBounds(true);
+    bounds = bounds ?? grid.getGridBounds(this.sheet.id, true);
     if (!bounds) {
       throw new Error('Expected bounds to be defined in findPreviousHash of CellsSheet');
     }

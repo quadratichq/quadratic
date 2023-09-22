@@ -1,5 +1,6 @@
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { debugShowCellsHashBoxes } from '../../debugFlags';
+import { grid } from '../../grid/controller/Grid';
 import { Bounds } from '../../grid/sheet/Bounds';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { Pos, Rect } from '../../quadratic-core/quadratic_core';
@@ -43,7 +44,8 @@ export class CellsHash extends Container {
     this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
 
     if (debugShowCellsHashBoxes) {
-      const screen = this.sheet.gridOffsets.getScreenRectangle(
+      const screen = grid.getScreenRectangle(
+        this.sheet.id,
         this.AABB.left,
         this.AABB.top,
         this.AABB.width,

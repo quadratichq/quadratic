@@ -311,6 +311,12 @@ export class Grid {
     return this.gridController.getEditCell(sheetId, pos);
   }
 
+  cellHasContent(sheetId: string, column: number, row: number): boolean {
+    const data = this.gridController.getRenderCells(sheetId, rectangleToRect(new Rectangle(column, row, 0, 0)));
+    const results = JSON.parse(data);
+    return results.length ? !!results[0].value : false;
+  }
+
   getRenderCells(sheetId: string, rectangle: Rectangle): JsRenderCell[] {
     const data = this.gridController.getRenderCells(sheetId, rectangleToRect(rectangle));
     return JSON.parse(data);
@@ -435,9 +441,35 @@ export class Grid {
     return this.gridController.getRowPlacement(sheetId, y);
   }
 
+  getColumnRow(sheetId: string, x: number, y: number): { column: number; row: number } {
+    return {
+      column: this.getColumnPlacement(sheetId, x).getIndex(),
+      row: this.getRowPlacement(sheetId, y).getIndex(),
+    };
+  }
+
   getCellOffsets(sheetId: string, x: number, y: number): Rectangle {
     const screenRect = this.gridController.getCellOffsets(sheetId, x, y);
     return new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
+  }
+
+  getScreenRectangle(sheetId: string, x: number, y: number, width: number, height: number): Rectangle {
+    const topLeft = this.getCellOffsets(sheetId, x, y);
+    const bottomRight = this.getCellOffsets(sheetId, x + width, y + height);
+    return new Rectangle(topLeft.left, topLeft.top, bottomRight.right, bottomRight.bottom);
+  }
+
+  cancelHeadingResize(): void {
+    this.gridController.cancelResize();
+    // todo: need a TransactionSummary
+  }
+
+  headingResizeColumn(sheetId: string, column: number, size?: number): void {
+    this.gridController.resizeColumnTransiently(sheetId, column, size);
+  }
+
+  headingResizeRow(sheetId: string, row: number, size?: number): void {
+    this.gridController.resizeRowTransiently(sheetId, row, size);
   }
 
   //#endregion

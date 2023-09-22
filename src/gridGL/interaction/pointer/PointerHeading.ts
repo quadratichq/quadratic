@@ -1,4 +1,5 @@
 import { InteractivePointerEvent, Point } from 'pixi.js';
+import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
 import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
 import { zoomToFit } from '../../helpers/zoom';
@@ -15,6 +16,16 @@ export class PointerHeading {
   private clicked = false;
   private fitToColumnTimeout?: number;
 
+  private headingResizing?: {
+    x: number;
+    y: number;
+    start: number;
+    row?: number;
+    column?: number;
+    width?: number;
+    height?: number;
+  };
+
   // tracks changes to viewport caused by resizing negative column/row headings
   private headingResizeViewport = {
     change: 0,
@@ -25,7 +36,7 @@ export class PointerHeading {
   handleEscape(): boolean {
     if (this.active) {
       this.active = false;
-      sheets.sheet.gridOffsets.headingResizing = undefined;
+      grid.cancelHeadingResize();
       // pixiApp.cells.dirty = true;
       pixiApp.gridLines.dirty = true;
       pixiApp.cursor.dirty = true;
@@ -45,7 +56,6 @@ export class PointerHeading {
   pointerDown(world: Point, event: InteractivePointerEvent): boolean {
     clearTimeout(this.fitToColumnTimeout);
     const { headings, viewport } = pixiApp;
-    const { gridOffsets } = sheets.sheet;
     const intersects = headings.intersectsHeadings(world);
     if (!intersects) return false;
 
@@ -64,7 +74,12 @@ export class PointerHeading {
         originalSize: headingResize.width ?? headingResize.height ?? 0,
         viewportStart: headingResize.row === undefined ? viewport.x : viewport.y,
       };
-      gridOffsets.headingResizing = {
+      if (headingResize.column !== undefined) {
+        grid.headingResizeColumn(sheets.sheet.id, headingResize.column, headingResize.width);
+      } else if (headingResize.row !== undefined) {
+        grid.headingResizeRow(sheets.sheet.id, headingResize.row, headingResize.height);
+      }
+      this.headingResizing = {
         x: world.x,
         y: world.y,
         start: headingResize.start,
@@ -120,7 +135,6 @@ export class PointerHeading {
 
   pointerMove(world: Point): boolean {
     const { headings, gridLines, cursor } = pixiApp;
-    const { gridOffsets } = sheets.sheet;
     this.cursor = undefined;
     this.clicked = false;
 
@@ -135,8 +149,8 @@ export class PointerHeading {
     }
     if (!this.active) {
       return false;
-    } else if (gridOffsets.headingResizing) {
-      const { headingResizing } = gridOffsets;
+    } else if (this.headingResizing) {
+      const { headingResizing } = this;
       if (headingResizing.column !== undefined) {
         let size: number;
         if (headingResizing.column >= 0) {

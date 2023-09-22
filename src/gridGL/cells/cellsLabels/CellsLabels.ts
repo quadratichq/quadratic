@@ -1,4 +1,5 @@
 import { Container, Rectangle, Renderer } from 'pixi.js';
+import { grid } from '../../../grid/controller/Grid';
 import { Bounds } from '../../../grid/sheet/Bounds';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { JsRenderCell } from '../../../quadratic-core/types';
@@ -40,12 +41,12 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
     return `${cell.x},${cell.y}`;
   }
 
-  create(cells?: JsRenderCell[]): void {
+  create(): void {
     debugTimeReset();
     this.cellLabels = new Map();
-    cells = cells ?? this.sheet.getRenderCells(this.cellsHash.AABB);
+    const cells = this.sheet.getRenderCells(this.cellsHash.AABB);
     cells.forEach((cell) => {
-      const rectangle = this.sheet.gridOffsets.getCell(Number(cell.x), Number(cell.y));
+      const rectangle = grid.getCellOffsets(this.sheet.id, Number(cell.x), Number(cell.y));
       const cellLabel = new CellLabel(cell, rectangle);
       this.cellLabels.set(this.getKey(cell), cellLabel);
     });

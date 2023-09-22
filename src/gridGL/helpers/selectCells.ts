@@ -1,5 +1,4 @@
 import { sheets } from '../../grid/controller/Sheets';
-import { Cell } from '../../schemas';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 
@@ -77,9 +76,4 @@ export async function selectRows(options: { start: number; end: number }): Promi
     });
     pixiApp.viewport.dirty = true;
   }
-}
-
-export function cellHasContent(cell?: Cell): boolean {
-  if (!cell) return false;
-  return !!cell.value || cell.type !== 'TEXT';
 }

@@ -32,19 +32,19 @@ impl GridController {
     pub fn js_resize_column_transiently(
         &mut self,
         sheet_id: String,
-        column: i64,
+        column: i32,
         size: Option<f64>,
     ) {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        self.resize_column_transiently(sheet_id, column, size);
+        self.resize_column_transiently(sheet_id, column as i64, size);
     }
     /// Resizes a row transiently; the operation must be committed using
     /// `commitResize()` or canceled using `cancelResize()`. If `size` is `null`
     /// then the row height is reset.
     #[wasm_bindgen(js_name = "resizeRowTransiently")]
-    pub fn js_resize_row_transiently(&mut self, sheet_id: String, row: i64, size: Option<f64>) {
+    pub fn js_resize_row_transiently(&mut self, sheet_id: String, row: i32, size: Option<f64>) {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        self.resize_row_transiently(sheet_id, row, size);
+        self.resize_row_transiently(sheet_id, row as i64, size);
     }
     /// Cancels a resize operation.
     #[wasm_bindgen(js_name = "cancelResize")]

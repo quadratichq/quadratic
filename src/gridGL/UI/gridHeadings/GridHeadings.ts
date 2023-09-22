@@ -114,7 +114,7 @@ export class GridHeadings extends Container {
     // calculate selection bounds
     const selectedStart = grid.getColumnPlacement(sheetId, this.selectedColumns[0]);
     const selectedEnd = grid.getColumnPlacement(sheetId, this.selectedColumns[this.selectedColumns.length - 1]);
-    const xSelectedStart = selectedStart.x;
+    const xSelectedStart = selectedStart.getPosition();
     let xSelectedEnd = xSelectedStart + selectedStart.getSize();
     for (let i = 1; i < this.selectedColumns.length; i++) {
       xSelectedEnd += grid.getColumnWidth(sheetId, this.selectedColumns[i]);
