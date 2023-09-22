@@ -147,46 +147,29 @@ impl GridController {
         range: &Rect,
     ) -> Result<Vec<Operation>> {
         // get all values in the rect to set all values in the range
+        let mut format_ops = vec![];
         let mut ops = rect
             .x_range()
             .flat_map(|x| {
                 let new_rect = Rect::new_span((x, rect.min.y).into(), (x, rect.max.y).into());
-                let row = Rect::new_span((x, range.min.y).into(), (x, range.max.y).into());
+                let row = Rect::new_span((x, rect.max.y + 1).into(), (x, range.max.y).into());
                 let negative = direction == ExpandDirection::Up;
+                let formats = self.get_all_cell_formats(sheet_id, new_rect);
+
+                range
+                    .y_range()
+                    .step_by(rect.y_range().count())
+                    .for_each(|y| {
+                        let new_y = y + rect.height() as i64 - 1;
+                        let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
+                        format_ops
+                            .extend(apply_formats(self.region(sheet_id, format_rect), &formats));
+                    });
+
                 self.apply_values(sheet_id, negative, &new_rect, &row)
             })
             .flatten()
             .collect::<Vec<_>>();
-
-        // get formats
-        let mut selection = rect
-            .y_range()
-            .map(|y| {
-                let row = Rect::new_span((rect.min.x, y).into(), (rect.max.x, y).into());
-                self.get_all_cell_formats(sheet_id, row)
-            })
-            .collect::<Vec<Vec<CellFmtArray>>>();
-
-        let mut rows = range.y_range().collect::<Vec<i64>>();
-
-        // reverse arrays if going up
-        if direction == ExpandDirection::Up {
-            selection.reverse();
-            rows.reverse();
-        }
-
-        // apply formats
-        let format_ops = rows
-            .iter()
-            .enumerate()
-            .map(|(index, y)| {
-                let row_index = index % selection.len();
-                let row = Rect::new_span((rect.min.x, *y).into(), (rect.max.x, *y).into());
-                let region = self.region(sheet_id, row);
-                apply_formats(region, &selection[row_index])
-            })
-            .flatten()
-            .collect::<Vec<Operation>>();
 
         ops.extend(format_ops);
         Ok(ops)
@@ -213,42 +196,13 @@ impl GridController {
                 let col = Rect::new_span((rect.max.x + 1, y).into(), (range.max.x, y).into());
                 let negative = direction == ExpandDirection::Left;
 
-                // let formats = self.get_all_cell_formats(sheet_id, col);
-                // format_ops.extend(apply_formats(self.region(sheet_id, new_rect), &formats));
+                let formats = self.get_all_cell_formats(sheet_id, new_rect);
+                format_ops.extend(apply_formats(self.region(sheet_id, col), &formats));
 
                 self.apply_values(sheet_id, negative, &new_rect, &col)
             })
             .flatten()
             .collect::<Vec<_>>();
-
-        // // get formats
-        // let mut selection = rect
-        //     .x_range()
-        //     .map(|x| {
-        //         let col = Rect::new_span((x, range.min.y).into(), (x, range.max.y).into());
-        //         self.get_all_cell_formats(sheet_id, col)
-        //     })
-        //     .collect::<Vec<Vec<CellFmtArray>>>();
-
-        // let mut cols = range.x_range().collect::<Vec<i64>>();
-
-        // // reverse arrays if going left
-        // if direction == ExpandDirection::Left {
-        //     selection.reverse();
-        //     cols.reverse();
-        // }
-
-        // // apply formats
-        // let format_ops = cols
-        //     .iter()
-        //     .enumerate()
-        //     .flat_map(|(index, x)| {
-        //         let col_index = index % selection.len();
-        //         let col = Rect::new_span((*x, range.min.y).into(), (*x, range.max.y).into());
-        //         let region = self.region(sheet_id, col);
-        //         apply_formats(region, &selection[col_index])
-        //     })
-        //     .collect::<Vec<Operation>>();
 
         ops.extend(format_ops);
         Ok(ops)
@@ -263,7 +217,6 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let sheet = self.sheet(sheet_id);
         let selection_values = cell_values_in_rect(&rect, &sheet)?;
-        crate::util::dbgjs(format!("selection_values: {:?}", rect));
         let series = find_auto_complete(SeriesOptions {
             series: selection_values
                 .clone()
@@ -275,6 +228,7 @@ impl GridController {
         });
         let array = Array::new_row_major(range.size(), series.into())
             .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", range.size(), e))?;
+
         Ok(self.set_cells_operations(sheet_id, range.min, array))
     }
 }
