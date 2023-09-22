@@ -56,6 +56,10 @@ const SINGLE_QUOTE_STRING_LITERAL_PATTERN: &str = r#"'([^'\\]|\\[\s\S])*'"#;
 /// Double-quoted string. Note that like Rust strings, this can span multiple
 /// lines.
 const DOUBLE_QUOTE_STRING_LITERAL_PATTERN: &str = r#""([^"\\]|\\[\s\S])*""#;
+/// Unquoted sheet reference, such as `Sheet1!`. A quoted sheet reference such
+/// as `'Sheet1'!` is parsed as a string followed by a sheet reference operator
+/// `!`.
+const UNQUOTED_SHEET_REFERENCE_PATTERN: &str = r#"[A-Za-z_][A-Za-z0-9_\.]*\s*!"#;
 /// Unterminated string literal.
 const UNTERMINATED_STRING_LITERAL_PATTERN: &str = r#"["']"#;
 
@@ -96,6 +100,10 @@ lazy_static! {
     /// Regex that matches a valid function call.
     pub static ref FUNCTION_CALL_REGEX: Regex =
         new_fullmatch_regex(FUNCTION_CALL_PATTERN);
+
+    /// Regex that matches an unquoted sheet reference, such as `Sheet1!`.
+    pub static ref UNQUOTED_SHEET_REFERENCE: Regex =
+        new_fullmatch_regex(UNQUOTED_SHEET_REFERENCE_PATTERN);
 
     /// Regex that matches a valid A1-style cell reference.
     pub static ref A1_CELL_REFERENCE_REGEX: Regex =
@@ -174,6 +182,8 @@ pub enum Token {
     Percent, // %
     #[strum(to_string = "cell range operator")]
     CellRangeOp, // :
+    #[strum(to_string = "sheet reference operator")]
+    SheetRefOp, // !
     #[strum(to_string = "ellipsis")]
     Ellipsis, // ...
 
@@ -192,6 +202,8 @@ pub enum Token {
     // Other special tokens
     #[strum(to_string = "function call")]
     FunctionCall,
+    #[strum(to_string = "unquoted sheet reference")]
+    UnquotedSheetReference,
     #[strum(to_string = "string literal")]
     StringLiteral,
     #[strum(to_string = "unterminated string literal")]
@@ -238,6 +250,7 @@ impl Token {
             ".." => Self::RangeOp,
             "%" => Self::Percent,
             ":" => Self::CellRangeOp,
+            "!" => Self::SheetRefOp,
             "..." => Self::Ellipsis,
             s if s.eq_ignore_ascii_case("false") => Self::False,
             s if s.eq_ignore_ascii_case("true") => Self::True,
@@ -273,6 +286,7 @@ impl Token {
 
             // Match anything else.
             s if FUNCTION_CALL_REGEX.is_match(s) => Self::FunctionCall,
+            s if UNQUOTED_SHEET_REFERENCE.is_match(s) => Self::UnquotedSheetReference,
             s if STRING_LITERAL_REGEX.is_match(s) => Self::StringLiteral,
             s if UNTERMINATED_STRING_LITERAL_REGEX.is_match(s) => Self::UnterminatedStringLiteral,
             s if s.eq_ignore_ascii_case("false") => Self::False,

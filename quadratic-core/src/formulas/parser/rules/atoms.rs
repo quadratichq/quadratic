@@ -5,7 +5,7 @@ use super::*;
 pub struct StringLiteral;
 impl_display!(for StringLiteral, "string literal");
 impl SyntaxRule for StringLiteral {
-    type Output = ast::AstNode;
+    type Output = String;
 
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next() == Some(Token::StringLiteral)
@@ -14,32 +14,8 @@ impl SyntaxRule for StringLiteral {
         if p.next() != Some(Token::StringLiteral) {
             return p.expected(self);
         }
-        // Use IIFE for error handling.
-        || -> Option<Self::Output> {
-            let mut string_contents = String::new();
-            let mut chars = p.token_str().chars().peekable();
-            let quote = chars.next()?;
-            // Read characters.
-            loop {
-                match chars.next()? {
-                    '\\' => string_contents.push(chars.next()?),
-                    c if c == quote => break,
-                    c => string_contents.push(c),
-                }
-            }
-
-            if chars.next().is_none() {
-                // End of token, as expected.
-                Some(Spanned {
-                    span: p.span(),
-                    inner: ast::AstNodeContents::String(string_contents),
-                })
-            } else {
-                // Why is there more after the closing quote?
-                None
-            }
-        }()
-        .ok_or_else(|| internal_error_value!("error in string literal parsing"))
+        crate::formulas::parse_string_literal(p.token_str())
+            .ok_or_else(|| internal_error_value!("error in string literal parsing"))
     }
 }
 
@@ -77,15 +53,36 @@ impl SyntaxRule for CellReference {
     type Output = AstNode;
 
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
-        p.next() == Some(Token::CellRef)
+        matches!(
+            p.next(),
+            Some(Token::CellRef | Token::StringLiteral | Token::UnquotedSheetReference),
+        )
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
+        let start_span = p.peek_next_span();
+
+        let sheet_name = match p.peek_next() {
+            Some(Token::StringLiteral) => {
+                let name = p.parse(StringLiteral)?;
+                p.parse(Token::SheetRefOp)?;
+                Some(name)
+            }
+            Some(Token::UnquotedSheetReference) => {
+                p.next();
+                p.token_str()
+                    .strip_suffix('!')
+                    .map(|s| s.trim().to_string())
+            }
+            _ => None,
+        };
+
         p.next();
-        let Some(cell_ref) = CellRef::parse_a1(p.token_str(), p.pos) else {
+        let Some(mut cell_ref) = CellRef::parse_a1(p.token_str(), p.pos) else {
             return Err(ErrorMsg::BadCellReference.with_span(p.span()));
         };
+        cell_ref.sheet = sheet_name;
         Ok(AstNode {
-            span: p.span(),
+            span: Span::merge(start_span, p.span()),
             inner: ast::AstNodeContents::CellRef(cell_ref),
         })
     }
@@ -110,7 +107,7 @@ impl SyntaxRule for CellRangeReference {
 
         // Check for a range reference.
         if p.try_parse(Token::CellRangeOp).is_some() {
-            let start = pos;
+            let start = pos.clone();
             p.next();
             if let Some(end) = CellRef::parse_a1(p.token_str(), p.pos) {
                 return Ok(Spanned {
