@@ -460,7 +460,9 @@ export class Grid {
   }
 
   commitHeadingResize(): void {
-    this.gridController.commitResize();
+    const summary = this.gridController.commitResize(sheets.getCursorPosition());
+    transactionResponse(summary);
+    this.dirty = true;
   }
 
   cancelHeadingResize(): void {

@@ -116,19 +116,6 @@ impl Offsets {
         }
     }
 
-    /// Returns an iterator that includes all offsets for entries between the two screen coordinates
-    /// (including one offset beyond the last entry to ensure we know the size of all entries)
-    pub fn iter_screen_offsets(&self, pixel_range: Range<f64>) -> impl '_ + Iterator<Item = f64> {
-        let start = self.find_offset(pixel_range.start).0;
-        let end = self.find_offset(pixel_range.end).0;
-        self.iter_offsets(Range {
-            start,
-
-            // +1 to include end, and +1 to include the next entry so we have the width of the final entry
-            end: end + 2,
-        })
-    }
-
     /// Iterates over the sizes of all columns/rows.
     pub fn iter_sizes(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
         self.sizes.iter().map(|(&k, &v)| (k, v))
@@ -237,29 +224,5 @@ mod tests {
 
         // -40 .^. -30 .. -20 .. 0
         assert_eq!(offsets.find_offset(-35.0), (-3, -40.0));
-    }
-
-    #[test]
-    fn test_iter_screen_offsets() {
-        let offsets = Offsets::new(10.0);
-
-        // 0 .. 10 .. 20 .^. 30
-        let list: Vec<f64> = offsets
-            .iter_screen_offsets(Range {
-                start: 0.0,
-                end: 21.0,
-            })
-            .collect();
-        assert_eq!(list.first(), Some(&0.0));
-        assert_eq!(list.last(), Some(&30.0));
-
-        let list: Vec<f64> = offsets
-            .iter_screen_offsets(Range {
-                start: -100.0,
-                end: 100.0,
-            })
-            .collect();
-        assert_eq!(list.first(), Some(&-100.0));
-        assert_eq!(list.last(), Some(&110.0));
     }
 }

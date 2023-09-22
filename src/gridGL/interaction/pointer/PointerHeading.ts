@@ -1,4 +1,5 @@
 import { InteractivePointerEvent, Point } from 'pixi.js';
+import { CELL_HEIGHT } from '../../../constants/gridConstants';
 import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
 import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
@@ -139,25 +140,26 @@ export class PointerHeading {
     this.clicked = false;
 
     // Only style the heading resize cursor if panning mode is disabled
-    if (pixiAppSettings.panMode === PanMode.Disabled) {
-      const headingResize = headings.intersectsHeadingGridLine(world);
-      if (headingResize) {
-        this.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
-      } else {
-        this.cursor = headings.intersectsHeadings(world) ? 'pointer' : undefined;
-      }
-    }
     if (!this.active) {
+      if (pixiAppSettings.panMode === PanMode.Disabled) {
+        const headingResize = headings.intersectsHeadingGridLine(world);
+        if (headingResize) {
+          this.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
+        } else {
+          this.cursor = headings.intersectsHeadings(world) ? 'pointer' : undefined;
+        }
+      }
       return false;
     } else if (this.headingResizing) {
-      console.log('dragging...');
-      const { headingResizing } = this;
-      if (headingResizing.column !== undefined) {
+      if (this.headingResizing.column !== undefined) {
         let size: number;
-        if (headingResizing.column >= 0) {
-          size = Math.max(MINIMUM_COLUMN_SIZE, world.x - headingResizing.start);
+        if (this.headingResizing.column >= 0) {
+          size = Math.max(MINIMUM_COLUMN_SIZE, world.x - this.headingResizing.start);
         } else {
-          size = Math.max(MINIMUM_COLUMN_SIZE, world.x - headingResizing.start + this.headingResizeViewport.change);
+          size = Math.max(
+            MINIMUM_COLUMN_SIZE,
+            world.x - this.headingResizing.start + this.headingResizeViewport.change
+          );
 
           // move viewport by the amount of the resize for negative columns
           const change = size - this.headingResizeViewport.originalSize;
@@ -165,9 +167,13 @@ export class PointerHeading {
           this.headingResizeViewport.change = change;
         }
 
-        if (size !== headingResizing.width) {
-          headingResizing.width = size;
-          // cells.dirty = true;
+        if (size !== this.headingResizing.width) {
+          this.headingResizing.width = size;
+          grid.headingResizeColumn(
+            sheets.sheet.id,
+            this.headingResizing.column,
+            size - this.headingResizeViewport.originalSize
+          );
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
@@ -176,12 +182,15 @@ export class PointerHeading {
           // pixiApp.cellsSheets.changed({ column: headingResizing.column, labels: true, background: true });
           // pixiApp.quadrants.quadrantChanged({ column: headingResizing.column });
         }
-      } else if (headingResizing.row !== undefined) {
+      } else if (this.headingResizing.row !== undefined) {
         let size: number;
-        if (headingResizing.row >= 0) {
-          size = Math.max(MINIMUM_COLUMN_SIZE, world.y - headingResizing.start);
+        if (this.headingResizing.row >= 0) {
+          size = Math.max(MINIMUM_COLUMN_SIZE, world.y - this.headingResizing.start);
         } else {
-          size = Math.max(MINIMUM_COLUMN_SIZE, world.y - headingResizing.start + this.headingResizeViewport.change);
+          size = Math.max(
+            MINIMUM_COLUMN_SIZE,
+            world.y - this.headingResizing.start + this.headingResizeViewport.change
+          );
 
           // move viewport by the amount of the resize for negative columns
           const change = size - this.headingResizeViewport.originalSize;
@@ -189,9 +198,9 @@ export class PointerHeading {
           this.headingResizeViewport.change = change;
         }
 
-        if (size !== headingResizing.height) {
-          headingResizing.height = size;
-          // cells.dirty = true;
+        if (size !== this.headingResizing.height) {
+          this.headingResizing.height = size;
+          grid.headingResizeRow(sheets.sheet.id, this.headingResizing.row, size - CELL_HEIGHT);
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
