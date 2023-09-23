@@ -2,10 +2,10 @@ use std::ops::{BitOr, BitOrAssign};
 
 use serde::{Deserialize, Serialize};
 
-use super::borders::LegacyCellBorder;
 use super::formatting::{BoolSummary, CellAlign, CellWrap};
 use super::CodeCellLanguage;
 use crate::controller::transactions::TransactionSummary;
+use crate::grid::BorderStyle;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -54,7 +54,7 @@ pub struct JsRenderBorder {
     pub w: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub h: Option<usize>,
-    pub style: LegacyCellBorder,
+    pub style: BorderStyle,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]

@@ -20,6 +20,10 @@ export const transactionResponse = (summary?: TransactionSummary): void => {
     pixiApp.cellsSheets.updateFills(summary.fill_sheets_modified);
   }
 
+  if (summary.border_sheets_modified) {
+    console.log("TODO: Update border rendering?");
+  }
+
   const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
   if (cursor) {
     sheets.current = cursor.sheetId;

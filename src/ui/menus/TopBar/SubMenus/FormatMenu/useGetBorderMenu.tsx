@@ -1,7 +1,7 @@
 import {
   BorderAll,
   BorderBottom,
-  BorderClear,
+  // BorderClear,
   BorderColor,
   BorderHorizontal,
   BorderInner,
@@ -46,7 +46,7 @@ export function useGetBorderMenu(): JSX.Element {
   const cursor = sheet.cursor;
 
   const [lineStyle, setLineStyle] = useState<BorderType | undefined>();
-  const [borderSelection, setBorderSelection] = useState<BorderSelection>(BorderSelection.none);
+  const [borderSelection, setBorderSelection] = useState<BorderSelection | undefined>();
   const defaultColor = convertTintToString(colors.defaultBorderColor);
   const [color, setColor] = useState<string>(defaultColor);
 
@@ -60,12 +60,14 @@ export function useGetBorderMenu(): JSX.Element {
   }, [clearSelection]);
 
   const handleChangeBorders = useCallback(
-    (borderSelection: BorderSelection, color: string, lineStyle?: BorderType): void => {
-      if (!borderSelection) return;
-      if (borderSelection === BorderSelection.clear) {
-        clearBorders();
-        return;
-      }
+    (borderSelection: BorderSelection | undefined, color: string, lineStyle?: BorderType): void => {
+      if (borderSelection === undefined) return;
+      console.log("Handling: ", borderSelection);
+      // TODO: Clearing
+      // if (borderSelection === BorderSelection.clear) {
+      //   clearBorders();
+      //   return;
+      // }
       const borders: ChangeBorder = {selection: borderSelection};
       if (color !== defaultColor) borders.color = color;
       if (lineStyle) borders.type = lineStyle;
@@ -123,33 +125,33 @@ export function useGetBorderMenu(): JSX.Element {
     <div className="borderMenu">
       <div className="borderMenuLines">
         <div className="borderMenuLine">
-          <BorderSelectionButton type={BorderSelection.all} title="All borders" label={<BorderAll />} />
+          <BorderSelectionButton type={BorderSelection.All} title="All borders" label={<BorderAll />} />
           <BorderSelectionButton
-            type={BorderSelection.inner}
+            type={BorderSelection.Inner}
             title="Inner borders"
             label={<BorderInner />}
             disabled={!cursor.multiCursor}
           />
-          <BorderSelectionButton type={BorderSelection.outer} title="Outer borders" label={<BorderOuter />} />
+          <BorderSelectionButton type={BorderSelection.Outer} title="Outer borders" label={<BorderOuter />} />
           <BorderSelectionButton
-            type={BorderSelection.horizontal}
+            type={BorderSelection.Horizontal}
             title="Horizontal borders"
             label={<BorderHorizontal />}
             disabled={!cursor.multiCursor}
           />
           <BorderSelectionButton
-            type={BorderSelection.vertical}
+            type={BorderSelection.Vertical}
             title="Vertical borders"
             label={<BorderVertical />}
             disabled={!cursor.multiCursor}
           />
         </div>
         <div className="borderMenuLine">
-          <BorderSelectionButton type={BorderSelection.left} title="Left border" label={<BorderLeft />} />
-          <BorderSelectionButton type={BorderSelection.top} title="Top border" label={<BorderTop />} />
-          <BorderSelectionButton type={BorderSelection.right} title="Right border" label={<BorderRight />} />
-          <BorderSelectionButton type={BorderSelection.bottom} title="Bottom border" label={<BorderBottom />} />
-          <BorderSelectionButton type={BorderSelection.clear} title="Clear borders" label={<BorderClear />} />
+          <BorderSelectionButton type={BorderSelection.Left} title="Left border" label={<BorderLeft />} />
+          <BorderSelectionButton type={BorderSelection.Top} title="Top border" label={<BorderTop />} />
+          <BorderSelectionButton type={BorderSelection.Right} title="Right border" label={<BorderRight />} />
+          <BorderSelectionButton type={BorderSelection.Bottom} title="Bottom border" label={<BorderBottom />} />
+          {/*<BorderSelectionButton type={BorderSelection.Clear} title="Clear borders" label={<BorderClear />} />*/}
         </div>
       </div>
       <div className="borderMenuFormatting">

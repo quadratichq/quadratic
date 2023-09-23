@@ -1,48 +1,81 @@
-use itertools::Itertools;
 use std::collections::HashMap;
 
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::color::Rgb;
 use crate::grid::block::SameValue;
+use crate::grid::borders::cell::{CellBorders, CellSide};
+use crate::grid::borders::compute_indices;
+use crate::grid::borders::style::{BorderSelection, BorderStyle};
 use crate::grid::{ColumnData, ColumnId, IdMap, RegionRef, RowId, Sheet};
-use crate::Rect;
 
-#[cfg(feature = "js")]
-use wasm_bindgen::prelude::*;
+pub fn generate_sheet_borders(
+    sheet: &Sheet,
+    region: &RegionRef,
+    selections: Vec<BorderSelection>,
+    style: Option<BorderStyle>,
+) -> SheetBorders {
+    let mut sheet_borders = sheet.borders.get_region(region, &sheet.row_ids);
 
-#[deprecated]
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct LegacyCellBorders {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub h: Option<LegacyCellBorder>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub v: Option<LegacyCellBorder>,
-}
+    for rect in sheet.region_rects(region) {
+        let horizontal = compute_indices::horizontal(rect, selections.clone());
+        let vertical = compute_indices::vertical(rect, selections.clone());
 
-#[deprecated]
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Default)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct LegacyCellBorder {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub color: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none", rename = "type")]
-    pub style: Option<CellBorderLine>,
-}
-impl LegacyCellBorder {
-    fn from_border_style(style: &BorderStyle) -> Self {
-        return Self {
-            color: Some(style.color.as_string()),
-            style: Some(style.line),
-        };
+        for horizontal_border_index in horizontal {
+            let above_index = horizontal_border_index - 1;
+            let column_ids = rect
+                .x_range()
+                .filter_map(|index| sheet.get_column(index))
+                .map(|column| column.id)
+                .collect_vec();
+
+            sheet_borders.set_horizontal_border(&column_ids, above_index, style.clone());
+        }
+
+        for vertical_border_index in vertical {
+            let column_left_index = vertical_border_index - 1;
+            let column_left_id = sheet.get_column(column_left_index).map(|column| column.id);
+
+            let column_right_index = vertical_border_index;
+            let column_right_id = sheet.get_column(column_right_index).map(|column| column.id);
+
+            let row_indices = rect.y_range().collect_vec();
+            sheet_borders.set_vertical_border(
+                column_left_id,
+                column_right_id,
+                &row_indices,
+                style.clone(),
+            );
+        }
     }
+    sheet_borders
+}
+
+pub fn set_region_borders(
+    sheet: &mut Sheet,
+    regions: Vec<RegionRef>,
+    sheet_borders: SheetBorders,
+) -> SheetBorders {
+    let borders = &mut sheet.borders;
+    borders.set_regions(&sheet.row_ids, regions, sheet_borders)
+}
+
+#[cfg(test)]
+pub fn set_region_border_selection(
+    sheet: &mut Sheet,
+    region: &RegionRef,
+    selections: Vec<BorderSelection>,
+    style: Option<BorderStyle>,
+) -> SheetBorders {
+    let borders = generate_sheet_borders(sheet, region, selections, style);
+    set_region_borders(sheet, vec![region.clone()], borders)
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct SheetBorders {
-    cell_borders: HashMap<ColumnId, ColumnData<SameValue<CellBorders>>>,
+    pub(super) cell_borders: HashMap<ColumnId, ColumnData<SameValue<CellBorders>>>,
 }
+
 impl SheetBorders {
     pub fn new() -> Self {
         Self {
@@ -156,315 +189,14 @@ impl SheetBorders {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
-#[serde(rename_all = "lowercase")]
-pub enum BorderSelection {
-    All,
-    Inner,
-    Outer,
-    Horizontal,
-    Vertical,
-    Left,
-    Top,
-    Right,
-    Bottom,
-    // TODO: I may need Clear for TS
-}
-
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
-#[serde(rename_all = "lowercase")]
-pub enum CellBorderLine {
-    Line1,
-    Line2,
-    Line3,
-    Dotted,
-    Dashed,
-    Double,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
-pub struct BorderStyle {
-    pub color: Rgb,
-    pub line: CellBorderLine,
-}
-#[cfg_attr(feature = "js", wasm_bindgen)]
-impl BorderStyle {
-    #[cfg_attr(feature = "js", wasm_bindgen(constructor))]
-    pub fn new(color: Rgb, line: CellBorderLine) -> Self {
-        Self { color, line }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-#[serde(rename_all = "lowercase")]
-enum CellSide {
-    Left,
-    Top,
-    Right,
-    Bottom,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default)]
-struct CellBorders {
-    borders: HashMap<CellSide, BorderStyle>, // TODO: Smaller data structure?
-}
-impl CellBorders {
-    fn with_side(&self, side: CellSide, style: Option<BorderStyle>) -> Self {
-        let mut cloned = self.clone();
-        if style.is_some() {
-            cloned.borders.insert(side, style.unwrap());
-        } else {
-            cloned.borders.remove(&side);
-        }
-        cloned
-    }
-
-    fn combine(maybe_existing: Option<Self>, side: CellSide, style: Option<BorderStyle>) -> Self {
-        if let Some(existing) = maybe_existing {
-            existing.with_side(side, style)
-        } else {
-            Self::default().with_side(side, style)
-        }
-    }
-
-    fn is_empty(&self) -> bool {
-        return self.borders.is_empty();
-    }
-}
-
-pub fn generate_sheet_borders(
-    sheet: &Sheet,
-    region: &RegionRef,
-    selections: Vec<BorderSelection>,
-    style: Option<BorderStyle>,
-) -> SheetBorders {
-    let mut sheet_borders = sheet.borders.get_region(region, &sheet.row_ids);
-
-    for rect in sheet.region_rects(region) {
-        let horizontal = compute_indices::horizontal(rect, selections.clone());
-        let vertical = compute_indices::vertical(rect, selections.clone());
-
-        for horizontal_border_index in horizontal {
-            let above_index = horizontal_border_index - 1;
-            let column_ids = rect
-                .x_range()
-                .filter_map(|index| sheet.get_column(index))
-                .map(|column| column.id)
-                .collect_vec();
-
-            sheet_borders.set_horizontal_border(&column_ids, above_index, style.clone());
-        }
-
-        for vertical_border_index in vertical {
-            let column_left_index = vertical_border_index - 1;
-            let column_left_id = sheet.get_column(column_left_index).map(|column| column.id);
-
-            let column_right_index = vertical_border_index;
-            let column_right_id = sheet.get_column(column_right_index).map(|column| column.id);
-
-            let row_indices = rect.y_range().collect_vec();
-            sheet_borders.set_vertical_border(
-                column_left_id,
-                column_right_id,
-                &row_indices,
-                style.clone(),
-            );
-        }
-    }
-    sheet_borders
-}
-
-pub fn set_region_borders(
-    sheet: &mut Sheet,
-    regions: Vec<RegionRef>,
-    sheet_borders: SheetBorders,
-) -> SheetBorders {
-    let borders = &mut sheet.borders;
-    borders.set_regions(&sheet.row_ids, regions, sheet_borders)
-}
-
-pub fn set_region_border_selection(
-    sheet: &mut Sheet,
-    region: &RegionRef,
-    selections: Vec<BorderSelection>,
-    style: Option<BorderStyle>,
-) -> SheetBorders {
-    let borders = generate_sheet_borders(sheet, region, selections, style);
-    set_region_borders(sheet, vec![region.clone()], borders)
-}
-//     // TODO: Tests, validate longest possible line is returned
-//     pub fn get_render_horizontal_borders(&self) -> Vec<JsRenderBorder> {
-//         self.horizontal
-//             .iter()
-//             .flat_map(|(&y, row)| {
-//                 row.blocks().map(move |block| JsRenderBorder {
-//                     x: block.start(),
-//                     y,
-//                     w: Some(block.len()),
-//                     h: None,
-//                     style: LegacyCellBorder::from_border_style(&block.content().value),
-//                 })
-//             })
-//             .collect()
-//     }
-//     pub fn get_render_vertical_borders(&self) -> Vec<JsRenderBorder> {
-//         self.vertical
-//             .iter()
-//             .flat_map(|(&x, column)| {
-//                 column.blocks().map(move |block| JsRenderBorder {
-//                     x,
-//                     y: block.start(),
-//                     w: None,
-//                     h: Some(block.len()),
-//                     style: LegacyCellBorder::from_border_style(&block.content().value),
-//                 })
-//             })
-//             .collect()
-//     }
-
-mod compute_indices {
-    use super::*;
-    use itertools::Itertools;
-
-    // TODO: HashSet?
-    pub fn vertical(rect: Rect, selections: Vec<BorderSelection>) -> Vec<i64> {
-        selections
-            .iter()
-            .flat_map(|&selection| vertical_selection(rect, selection))
-            .sorted()
-            .dedup()
-            .collect()
-    }
-
-    fn vertical_selection(rect: Rect, selection: BorderSelection) -> Vec<i64> {
-        let first = rect.min.x;
-        let last = rect.max.x + 1;
-        match selection {
-            BorderSelection::All => (first..=last).collect(),
-            BorderSelection::Inner | BorderSelection::Vertical => (first + 1..=last - 1).collect(),
-            BorderSelection::Outer => vec![first, last],
-            BorderSelection::Left => vec![first],
-            BorderSelection::Right => vec![last],
-            BorderSelection::Horizontal | BorderSelection::Top | BorderSelection::Bottom => vec![],
-        }
-    }
-
-    pub fn horizontal(rect: Rect, selections: Vec<BorderSelection>) -> Vec<i64> {
-        selections
-            .iter()
-            .flat_map(|&selection| horizontal_selection(rect, selection))
-            .sorted()
-            .dedup()
-            .collect()
-    }
-
-    fn horizontal_selection(rect: Rect, selection: BorderSelection) -> Vec<i64> {
-        let first = rect.min.y;
-        let last = rect.max.y + 1;
-        match selection {
-            BorderSelection::All => (first..=last).collect(),
-            BorderSelection::Inner | BorderSelection::Horizontal => {
-                (first + 1..=last - 1).collect()
-            }
-            BorderSelection::Outer => vec![first, last],
-            BorderSelection::Top => vec![first],
-            BorderSelection::Bottom => vec![last],
-            BorderSelection::Vertical | BorderSelection::Left | BorderSelection::Right => vec![],
-        }
-    }
-
-    #[cfg(test)]
-    mod tests {
-        use crate::Pos;
-        use super::*;
-
-        #[test]
-        fn test_horizontal() {
-            let region = Rect::new_span(Pos { x: 10, y: 20 }, Pos { x: 13, y: 23 });
-
-            assert_eq!(
-                horizontal(region, vec![BorderSelection::All]),
-                vec![20, 21, 22, 23, 24]
-            );
-            assert_eq!(
-                horizontal(region, vec![BorderSelection::Inner]),
-                vec![21, 22, 23]
-            );
-            assert_eq!(
-                horizontal(region, vec![BorderSelection::Outer]),
-                vec![20, 24]
-            );
-            assert_eq!(
-                horizontal(region, vec![BorderSelection::Horizontal]),
-                vec![21, 22, 23]
-            );
-            assert!(horizontal(region, vec![BorderSelection::Vertical]).is_empty());
-            assert!(horizontal(region, vec![BorderSelection::Left]).is_empty());
-            assert_eq!(horizontal(region, vec![BorderSelection::Top]), vec![20]);
-            assert!(horizontal(region, vec![BorderSelection::Right]).is_empty());
-            assert_eq!(horizontal(region, vec![BorderSelection::Bottom]), vec![24]);
-
-            assert_eq!(
-                horizontal(region, vec![BorderSelection::Top, BorderSelection::Bottom]),
-                vec![20, 24]
-            );
-            assert_eq!(
-                horizontal(region, vec![BorderSelection::Bottom, BorderSelection::Top]),
-                vec![20, 24]
-            );
-            assert!(
-                horizontal(region, vec![BorderSelection::Left, BorderSelection::Right]).is_empty()
-            );
-        }
-
-        #[test]
-        fn test_vertical() {
-            let region = Rect::new_span(Pos { x: 10, y: 20 }, Pos { x: 13, y: 23 });
-
-            assert_eq!(
-                vertical(region, vec![BorderSelection::All]),
-                vec![10, 11, 12, 13, 14]
-            );
-            assert_eq!(
-                vertical(region, vec![BorderSelection::Inner]),
-                vec![11, 12, 13]
-            );
-            assert_eq!(vertical(region, vec![BorderSelection::Outer]), vec![10, 14]);
-            assert!(vertical(region, vec![BorderSelection::Horizontal]).is_empty());
-            assert_eq!(
-                vertical(region, vec![BorderSelection::Vertical]),
-                vec![11, 12, 13]
-            );
-            assert_eq!(vertical(region, vec![BorderSelection::Left]), vec![10]);
-            assert!(vertical(region, vec![BorderSelection::Top]).is_empty());
-            assert_eq!(vertical(region, vec![BorderSelection::Right]), vec![14]);
-            assert!(vertical(region, vec![BorderSelection::Bottom]).is_empty());
-
-            assert!(
-                vertical(region, vec![BorderSelection::Top, BorderSelection::Bottom]).is_empty()
-            );
-
-            assert_eq!(
-                vertical(region, vec![BorderSelection::Left, BorderSelection::Right]),
-                vec![10, 14]
-            );
-            assert_eq!(
-                vertical(region, vec![BorderSelection::Right, BorderSelection::Left]),
-                vec![10, 14]
-            );
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::color::Rgb;
+    use crate::grid::borders::style::CellBorderLine;
     use crate::grid::SheetId;
-    use crate::Pos;
+    use crate::{Pos, Rect};
+
+    use super::*;
 
     impl SheetBorders {
         fn get_cell_borders(
@@ -491,7 +223,7 @@ mod tests {
         for col in rect.x_range() {
             let pos = Pos { x: col, y: row };
             let borders = sheet_borders.get_cell_borders(pos, column_ids);
-            if borders.is_some_and(|borders| borders.borders.contains_key(&CellSide::Top)) {
+            if borders.is_some_and(|borders| borders.contains(&CellSide::Top)) {
                 print!(" _____ ");
             } else {
                 print!("       ");
@@ -510,14 +242,14 @@ mod tests {
             let borders = sheet_borders.get_cell_borders(pos, column_ids);
             if borders
                 .clone()
-                .is_some_and(|borders| borders.borders.contains_key(&CellSide::Left))
+                .is_some_and(|borders| borders.contains(&CellSide::Left))
             {
                 print!("|");
             } else {
                 print!(" ");
             }
             print!("{col:02?},{row:02?}");
-            if borders.is_some_and(|borders| borders.borders.contains_key(&CellSide::Right)) {
+            if borders.is_some_and(|borders| borders.contains(&CellSide::Right)) {
                 print!("|");
             } else {
                 print!(" ");
@@ -534,7 +266,7 @@ mod tests {
         for col in rect.x_range() {
             let pos = Pos { x: col, y: row };
             let borders = sheet_borders.get_cell_borders(pos, column_ids);
-            if borders.is_some_and(|borders| borders.borders.contains_key(&CellSide::Bottom)) {
+            if borders.is_some_and(|borders| borders.contains(&CellSide::Bottom)) {
                 print!(" ————— ");
             } else {
                 print!("       ");
@@ -562,9 +294,7 @@ mod tests {
         };
         ($sheet_borders: expr, $column_ids: expr, $cell: expr, $borders: tt, $message:literal) => {
             let actual = $sheet_borders.get_cell_borders($cell, &$column_ids);
-            let expected = Some(CellBorders {
-                borders: HashMap::from($borders),
-            });
+            let expected = Some(CellBorders::new(HashMap::from($borders)));
             assert_eq!(actual, expected, $message);
         };
     }
@@ -582,7 +312,7 @@ mod tests {
             line: CellBorderLine::Line1,
         };
 
-        let prev_borders =
+        let _prev_borders =
             set_region_border_selection(&mut sheet, &region, selection, Some(style.clone()));
 
         assert_borders!(
@@ -644,7 +374,7 @@ mod tests {
             line: CellBorderLine::Line1,
         };
 
-        let prev_borders =
+        let _prev_borders =
             set_region_border_selection(&mut sheet, &region, selection, Some(style.clone()));
 
         assert_borders!(
@@ -685,10 +415,10 @@ mod tests {
             line: CellBorderLine::Line1,
         };
 
-        let prev_borders_1 =
+        let _prev_borders_1 =
             set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style.clone()));
 
-        let prev_borders_2 = set_region_border_selection(&mut sheet, &region_2, selection_2, None);
+        let _prev_borders_2 = set_region_border_selection(&mut sheet, &region_2, selection_2, None);
 
         assert_borders!(
             sheet.borders,
@@ -795,9 +525,9 @@ mod tests {
             line: CellBorderLine::Dotted,
         };
 
-        let prev_borders_1 =
+        let _prev_borders_1 =
             set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style_1.clone()));
-        let prev_borders_2 =
+        let _prev_borders_2 =
             set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style_2.clone()));
 
         assert_borders!(

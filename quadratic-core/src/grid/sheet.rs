@@ -7,7 +7,7 @@ use itertools::Itertools;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-use super::borders::{BorderSelection, BorderStyle};
+
 use super::bounds::GridBounds;
 use super::code::{CodeCellRunResult, CodeCellValue};
 use super::column::Column;
@@ -22,6 +22,7 @@ use super::response::{GetIdResponse, SetCellResponse};
 use super::{NumericFormat, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
+use crate::grid::borders::get_render_vertical_borders;
 
 pub mod bounds;
 pub mod offsets;
@@ -625,8 +626,7 @@ impl Sheet {
     }
     /// Returns data for rendering vertical borders.
     pub fn get_render_vertical_borders(&self) -> Vec<JsRenderBorder> {
-        // self.borders.get_render_vertical_borders()
-        vec![]
+        get_render_vertical_borders(self)
     }
 
     /// Returns an iterator over all locations containing code cells that may
