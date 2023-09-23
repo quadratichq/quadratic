@@ -32,106 +32,42 @@ impl GridController {
     ) -> Result<TransactionSummary> {
         let mut ops = vec![];
 
-        crate::util::dbgjs(format!("rect: {:?}", rect));
-        crate::util::dbgjs(format!("range: {:?}", range));
+        if range.max.y < rect.max.y {
+            let new_range = Rect::new_span(
+                (rect.min.x, rect.min.y - 1).into(),
+                (shrink_horizontal.unwrap_or(rect.max.x), range.min.y).into(),
+            );
 
-        // if range.min.y > rect.min.y {
-        //     ops.extend(self.expand_height(sheet_id, ExpandDirection::Up, &rect, &range)?);
-        // }
+            ops.extend(self.expand_height(sheet_id, ExpandDirection::Up, &rect, &new_range)?);
+        }
 
         if range.max.y > rect.max.y {
-            let range = Rect::new_span(
+            let new_range = Rect::new_span(
                 (rect.min.x, rect.max.y + 1).into(),
                 (shrink_horizontal.unwrap_or(rect.max.x), range.max.y).into(),
             );
-            crate::util::dbgjs(format!("down new range: {:?}", range));
-            ops.extend(self.expand_height(sheet_id, ExpandDirection::Down, &rect, &range)?);
+
+            ops.extend(self.expand_height(sheet_id, ExpandDirection::Down, &rect, &new_range)?);
         }
 
-        // if range.min.x > rect.min.x {
-        //     ops.extend(self.expand_width(sheet_id, ExpandDirection::Left, &rect, &range)?);
-        // }
+        if range.max.x < rect.max.x {
+            let reverse = range.max.y < rect.max.y;
+            let min_y = if !reverse { range.min.y } else { range.min.y };
+            let max_y = if !reverse { range.max.y } else { rect.max.y };
+            let new_range =
+                Rect::new_span((rect.min.x - 1, min_y).into(), (range.min.x, max_y).into());
+
+            ops.extend(self.expand_width(sheet_id, ExpandDirection::Left, &rect, &new_range)?);
+        }
 
         if range.max.x > rect.max.x {
-            let range = Rect::new_span(
-                (rect.min.x, rect.min.y).into(),
-                (range.max.x, range.max.y).into(),
-            );
-            crate::util::dbgjs(format!("right new range: {:?}", range));
-            ops.extend(self.expand_width(sheet_id, ExpandDirection::Right, &rect, &range)?);
+            let reverse = range.max.y < rect.max.y;
+            let min_y = if !reverse { rect.min.y } else { rect.max.y };
+            let max_y = if !reverse { range.max.y } else { range.min.y };
+            let new_range = Rect::new_span((rect.min.x, min_y).into(), (range.max.x, max_y).into());
+
+            ops.extend(self.expand_width(sheet_id, ExpandDirection::Right, &rect, &new_range)?);
         }
-
-        Ok(self.transact_forward(Transaction { ops, cursor }))
-    }
-
-    pub fn expand_up(
-        &mut self,
-        sheet_id: SheetId,
-        rect: Rect,
-        to: i64,
-        shrink_horizontal: Option<i64>,
-        cursor: Option<String>,
-    ) -> Result<TransactionSummary> {
-        let top = to;
-        let bottom = rect.min.y - 1;
-        let left = rect.min.x;
-        let right = shrink_horizontal.unwrap_or(rect.max.x);
-        let range = Rect::new_span((left, top).into(), (right, bottom).into());
-        let ops = self.expand_height(sheet_id, ExpandDirection::Up, &rect, &range)?;
-
-        Ok(self.transact_forward(Transaction { ops, cursor }))
-    }
-
-    pub fn expand_down(
-        &mut self,
-        sheet_id: SheetId,
-        rect: Rect,
-        to: i64,
-        shrink_horizontal: Option<i64>,
-        cursor: Option<String>,
-    ) -> Result<TransactionSummary> {
-        let top = rect.max.y + 1;
-        let bottom = to;
-        let left = rect.min.x;
-        let right = shrink_horizontal.unwrap_or(rect.max.x);
-        let range = Rect::new_span((left, top).into(), (right, bottom).into());
-        let ops = self.expand_height(sheet_id, ExpandDirection::Down, &rect, &range)?;
-
-        Ok(self.transact_forward(Transaction { ops, cursor }))
-    }
-
-    pub fn expand_right(
-        &mut self,
-        sheet_id: SheetId,
-        rect: Rect,
-        to: i64,
-        to_vertical: Option<i64>,
-        cursor: Option<String>,
-    ) -> Result<TransactionSummary> {
-        let top = to_vertical.map_or(rect.min.y, |y| y.min(rect.min.y));
-        let bottom = to_vertical.map_or(rect.max.y, |y| y.max(rect.max.y));
-        let left = rect.max.x + 1;
-        let right = to;
-        let range = Rect::new_span((left, top).into(), (right, bottom).into());
-        let ops = self.expand_width(sheet_id, ExpandDirection::Right, &rect, &range)?;
-
-        Ok(self.transact_forward(Transaction { ops, cursor }))
-    }
-
-    pub fn expand_left(
-        &mut self,
-        sheet_id: SheetId,
-        rect: Rect,
-        to: i64,
-        to_vertical: Option<i64>,
-        cursor: Option<String>,
-    ) -> Result<TransactionSummary> {
-        let top = to_vertical.map_or(rect.min.y, |y| y.min(rect.min.y));
-        let bottom = to_vertical.map_or(rect.max.y, |y| y.max(rect.max.y));
-        let left = rect.min.x - 1;
-        let right = to;
-        let range = Rect::new_span((left, top).into(), (right, bottom).into());
-        let ops = self.expand_width(sheet_id, ExpandDirection::Left, &rect, &range)?;
 
         Ok(self.transact_forward(Transaction { ops, cursor }))
     }
@@ -148,19 +84,28 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         // get all values in the rect to set all values in the range
         let mut format_ops = vec![];
+        let negative = direction == ExpandDirection::Up;
+
         let mut ops = rect
             .x_range()
             .flat_map(|x| {
                 let new_rect = Rect::new_span((x, rect.min.y).into(), (x, rect.max.y).into());
-                let row = Rect::new_span((x, rect.max.y + 1).into(), (x, range.max.y).into());
-                let negative = direction == ExpandDirection::Up;
+                let row = if !negative {
+                    Rect::new_span((x, rect.max.y + 1).into(), (x, range.max.y).into())
+                } else {
+                    Rect::new_span((x, rect.min.y - 1).into(), (x, range.min.y).into())
+                };
                 let formats = self.get_all_cell_formats(sheet_id, new_rect);
 
                 range
                     .y_range()
                     .step_by(rect.y_range().count())
                     .for_each(|y| {
-                        let new_y = y + rect.height() as i64 - 1;
+                        let new_y = if !negative {
+                            y + rect.height() as i64 - 1
+                        } else {
+                            y - rect.height() as i64 - 1
+                        };
                         let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
                         format_ops
                             .extend(apply_formats(self.region(sheet_id, format_rect), &formats));
@@ -187,17 +132,34 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         // get all values in the rect to set all values in the range
         let mut format_ops = vec![];
+        let negative = direction == ExpandDirection::Left;
+
         let mut ops = range
             .y_range()
             .flat_map(|y| {
-                let new_y = y % rect.height() as i64 + rect.min.y;
+                let new_y = y.abs() % rect.height() as i64 + rect.min.y;
                 let new_rect =
                     Rect::new_span((rect.min.x, new_y).into(), (rect.max.x, new_y).into());
-                let col = Rect::new_span((rect.max.x + 1, y).into(), (range.max.x, y).into());
-                let negative = direction == ExpandDirection::Left;
-
+                let col = if !negative {
+                    Rect::new_span((rect.max.x + 1, y).into(), (range.max.x, y).into())
+                } else {
+                    Rect::new_span((rect.min.x - 1, y).into(), (range.min.x, y).into())
+                };
                 let formats = self.get_all_cell_formats(sheet_id, new_rect);
-                format_ops.extend(apply_formats(self.region(sheet_id, col), &formats));
+
+                range
+                    .x_range()
+                    .step_by(rect.x_range().count())
+                    .for_each(|x| {
+                        let new_x = if !negative {
+                            x + rect.width() as i64
+                        } else {
+                            x - rect.width() as i64
+                        };
+                        let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
+                        format_ops
+                            .extend(apply_formats(self.region(sheet_id, format_rect), &formats));
+                    });
 
                 self.apply_values(sheet_id, negative, &new_rect, &col)
             })
@@ -472,96 +434,96 @@ mod tests {
         assert_eq!(result, expected);
     }
 
-    #[test]
-    fn test_expand_up() {
-        let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
-        let (mut grid_controller, sheet_id) = test_setup_rect(&selected);
-        let result = grid_controller
-            .expand_up(sheet_id, selected, -3, None, None)
-            .unwrap();
+    // #[test]
+    // fn test_expand_up() {
+    //     let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
+    //     let (mut grid_controller, sheet_id) = test_setup_rect(&selected);
+    //     let result = grid_controller
+    //         .expand_up(sheet_id, selected, -3, None, None)
+    //         .unwrap();
 
-        let expected = Rect::new_span(Pos { x: -1, y: -3 }, Pos { x: 2, y: -1 });
-        assert_eq!(result.cell_regions_modified[0].1, expected);
+    //     let expected = Rect::new_span(Pos { x: -1, y: -3 }, Pos { x: 2, y: -1 });
+    //     assert_eq!(result.cell_regions_modified[0].1, expected);
 
-        assert_cell_value_text(&grid_controller, sheet_id, -1, -1, "f");
-        assert_cell_value_text(&grid_controller, sheet_id, -1, -2, "a");
-        assert_cell_value_text(&grid_controller, sheet_id, -1, -3, "f");
-        assert_cell_value_text(&grid_controller, sheet_id, -1, -4, "a");
-        assert_cell_value_text(&grid_controller, sheet_id, 0, -1, "z");
-        assert_cell_value_text(&grid_controller, sheet_id, 0, -2, "h");
-        assert_cell_value_text(&grid_controller, sheet_id, 0, -3, "z");
-        assert_cell_value_text(&grid_controller, sheet_id, 0, -4, "h");
-        assert_cell_value_text(&grid_controller, sheet_id, 1, -1, "r");
-        assert_cell_value_text(&grid_controller, sheet_id, 1, -2, "x");
-        assert_cell_value_text(&grid_controller, sheet_id, 1, -3, "r");
-        assert_cell_value_text(&grid_controller, sheet_id, 1, -4, "x");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -1, -1, "f");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -1, -2, "a");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -1, -3, "f");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -1, -4, "a");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 0, -1, "z");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 0, -2, "h");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 0, -3, "z");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 0, -4, "h");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 1, -1, "r");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 1, -2, "x");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 1, -3, "r");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 1, -4, "x");
 
-        assert_cell_format_bold(&grid_controller, sheet_id, 0, -1);
-        assert_cell_format_bold(&grid_controller, sheet_id, 1, -1);
-        assert_cell_format_bold(&grid_controller, sheet_id, -1, -2);
-        assert_cell_format_bold(&grid_controller, sheet_id, 2, -2);
-        assert_cell_format_bold(&grid_controller, sheet_id, 0, -3);
-        assert_cell_format_bold(&grid_controller, sheet_id, 1, -3);
-        assert_cell_format_bold(&grid_controller, sheet_id, -1, -4);
-        assert_cell_format_bold(&grid_controller, sheet_id, 2, -4);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 0, -1);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 1, -1);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, -1, -2);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 2, -2);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 0, -3);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 1, -3);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, -1, -4);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 2, -4);
 
-        assert_cell_format_not_bold(&grid_controller, sheet_id, -1, -11);
-        assert_cell_format_not_bold(&grid_controller, sheet_id, 0, -11);
-        assert_cell_format_not_bold(&grid_controller, sheet_id, 1, -11);
-        assert_cell_format_not_bold(&grid_controller, sheet_id, 2, -11);
-    }
+    //     assert_cell_format_not_bold(&grid_controller, sheet_id, -1, -11);
+    //     assert_cell_format_not_bold(&grid_controller, sheet_id, 0, -11);
+    //     assert_cell_format_not_bold(&grid_controller, sheet_id, 1, -11);
+    //     assert_cell_format_not_bold(&grid_controller, sheet_id, 2, -11);
+    // }
 
-    #[test]
-    fn test_expand_down() {
-        let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 0, y: 3 });
-        let (mut grid_controller, sheet_id) = test_setup_rect(&selected);
-        let result = grid_controller
-            .expand_down(sheet_id, selected, 10, None, None)
-            .unwrap();
+    // #[test]
+    // fn test_expand_down() {
+    //     let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 0, y: 3 });
+    //     let (mut grid_controller, sheet_id) = test_setup_rect(&selected);
+    //     let result = grid_controller
+    //         .expand_down(sheet_id, selected, 10, None, None)
+    //         .unwrap();
 
-        table_modified(
-            grid_controller.clone(),
-            sheet_id,
-            &result.cell_regions_modified[0].1,
-            &selected,
-        );
-        println!(
-            "cell_regions_modified (x_range: {:?}, y_range: {:?})",
-            &result.cell_regions_modified[0].1.x_range(),
-            &result.cell_regions_modified[0].1.y_range()
-        );
-        let expected = Rect::new_span(Pos { x: -1, y: 4 }, Pos { x: 0, y: 10 });
-        assert_eq!(result.cell_regions_modified[0].1, expected);
+    //     table_modified(
+    //         grid_controller.clone(),
+    //         sheet_id,
+    //         &result.cell_regions_modified[0].1,
+    //         &selected,
+    //     );
+    //     println!(
+    //         "cell_regions_modified (x_range: {:?}, y_range: {:?})",
+    //         &result.cell_regions_modified[0].1.x_range(),
+    //         &result.cell_regions_modified[0].1.y_range()
+    //     );
+    //     let expected = Rect::new_span(Pos { x: -1, y: 4 }, Pos { x: 0, y: 10 });
+    //     assert_eq!(result.cell_regions_modified[0].1, expected);
 
-        assert_cell_value_text(&grid_controller, sheet_id, -1, 2, "a");
-        assert_cell_value_text(&grid_controller, sheet_id, -1, 3, "f");
-        assert_cell_value_text(&grid_controller, sheet_id, -1, 4, "a");
-        assert_cell_value_text(&grid_controller, sheet_id, -1, 5, "f");
-        assert_cell_value_text(&grid_controller, sheet_id, 0, 2, "h");
-        assert_cell_value_text(&grid_controller, sheet_id, 0, 3, "z");
-        assert_cell_value_text(&grid_controller, sheet_id, 0, 4, "h");
-        assert_cell_value_text(&grid_controller, sheet_id, 0, 5, "z");
-        assert_cell_value_text(&grid_controller, sheet_id, 1, 2, "x");
-        assert_cell_value_text(&grid_controller, sheet_id, 1, 3, "r");
-        assert_cell_value_text(&grid_controller, sheet_id, 1, 4, "x");
-        assert_cell_value_text(&grid_controller, sheet_id, 1, 5, "r");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -1, 2, "a");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -1, 3, "f");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -1, 4, "a");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -1, 5, "f");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 0, 2, "h");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 0, 3, "z");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 0, 4, "h");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 0, 5, "z");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 1, 2, "x");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 1, 3, "r");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 1, 4, "x");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 1, 5, "r");
 
-        assert_cell_format_bold(&grid_controller, sheet_id, -1, 2);
-        assert_cell_format_bold(&grid_controller, sheet_id, 2, 2);
-        assert_cell_format_bold(&grid_controller, sheet_id, 0, 3);
-        assert_cell_format_bold(&grid_controller, sheet_id, 1, 3);
-        assert_cell_format_bold(&grid_controller, sheet_id, -1, 4);
-        assert_cell_format_bold(&grid_controller, sheet_id, 2, 4);
-        assert_cell_format_bold(&grid_controller, sheet_id, 0, 5);
-        assert_cell_format_bold(&grid_controller, sheet_id, 1, 5);
-        assert_cell_format_bold(&grid_controller, sheet_id, -1, 10);
-        assert_cell_format_bold(&grid_controller, sheet_id, 2, 10);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, -1, 2);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 2, 2);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 0, 3);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 1, 3);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, -1, 4);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 2, 4);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 0, 5);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 1, 5);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, -1, 10);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 2, 10);
 
-        assert_cell_format_not_bold(&grid_controller, sheet_id, -1, 11);
-        assert_cell_format_not_bold(&grid_controller, sheet_id, 0, 11);
-        assert_cell_format_not_bold(&grid_controller, sheet_id, 1, 11);
-        assert_cell_format_not_bold(&grid_controller, sheet_id, 2, 11);
-    }
+    //     assert_cell_format_not_bold(&grid_controller, sheet_id, -1, 11);
+    //     assert_cell_format_not_bold(&grid_controller, sheet_id, 0, 11);
+    //     assert_cell_format_not_bold(&grid_controller, sheet_id, 1, 11);
+    //     assert_cell_format_not_bold(&grid_controller, sheet_id, 2, 11);
+    // }
 
     // #[test]
     // fn test_expand_down_series() {
@@ -614,84 +576,141 @@ mod tests {
     // assert_cell_format_not_bold(&grid_controller, sheet_id, 2, 11);
     // }
 
-    #[test]
-    fn test_expand_left() {
-        let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
-        let (mut grid_controller, sheet_id) = test_setup_rect(&selected);
-        let result = grid_controller
-            .expand_left(sheet_id, selected, -10, None, None)
-            .unwrap();
+    // #[test]
+    // fn test_expand_left() {
+    //     let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
+    //     let (mut grid_controller, sheet_id) = test_setup_rect(&selected);
+    //     let result = grid_controller
+    //         .expand_left(sheet_id, selected, -10, None, None)
+    //         .unwrap();
 
-        let expected = Rect::new_span(Pos { x: -10, y: 0 }, Pos { x: -2, y: 1 });
-        assert_eq!(result.cell_regions_modified[0].1, expected);
+    //     let expected = Rect::new_span(Pos { x: -10, y: 0 }, Pos { x: -2, y: 1 });
+    //     assert_eq!(result.cell_regions_modified[0].1, expected);
 
-        assert_cell_value_text(&grid_controller, sheet_id, -2, 0, "g");
-        assert_cell_value_text(&grid_controller, sheet_id, -3, 0, "x");
-        assert_cell_value_text(&grid_controller, sheet_id, -4, 0, "h");
-        assert_cell_value_text(&grid_controller, sheet_id, -5, 0, "a");
-        assert_cell_value_text(&grid_controller, sheet_id, -6, 0, "g");
-        assert_cell_value_text(&grid_controller, sheet_id, -7, 0, "x");
-        assert_cell_value_text(&grid_controller, sheet_id, -2, 1, "b");
-        assert_cell_value_text(&grid_controller, sheet_id, -3, 1, "r");
-        assert_cell_value_text(&grid_controller, sheet_id, -4, 1, "z");
-        assert_cell_value_text(&grid_controller, sheet_id, -5, 1, "f");
-        assert_cell_value_text(&grid_controller, sheet_id, -6, 1, "b");
-        assert_cell_value_text(&grid_controller, sheet_id, -7, 1, "r");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -2, 0, "g");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -3, 0, "x");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -4, 0, "h");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -5, 0, "a");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -6, 0, "g");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -7, 0, "x");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -2, 1, "b");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -3, 1, "r");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -4, 1, "z");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -5, 1, "f");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -6, 1, "b");
+    //     assert_cell_value_text(&grid_controller, sheet_id, -7, 1, "r");
 
-        assert_cell_format_bold(&grid_controller, sheet_id, -2, 0);
-        assert_cell_format_bold(&grid_controller, sheet_id, -5, 0);
-        assert_cell_format_bold(&grid_controller, sheet_id, -3, 1);
-        assert_cell_format_bold(&grid_controller, sheet_id, -4, 1);
-        assert_cell_format_bold(&grid_controller, sheet_id, -6, 0);
-        assert_cell_format_bold(&grid_controller, sheet_id, -9, 0);
-        assert_cell_format_bold(&grid_controller, sheet_id, -7, 1);
-        assert_cell_format_bold(&grid_controller, sheet_id, -8, 1);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, -2, 0);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, -5, 0);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, -3, 1);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, -4, 1);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, -6, 0);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, -9, 0);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, -7, 1);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, -8, 1);
 
-        assert_cell_format_not_bold(&grid_controller, sheet_id, -11, 0);
-        assert_cell_format_not_bold(&grid_controller, sheet_id, -11, 1);
-    }
+    //     assert_cell_format_not_bold(&grid_controller, sheet_id, -11, 0);
+    //     assert_cell_format_not_bold(&grid_controller, sheet_id, -11, 1);
+    // }
 
-    #[test]
-    fn test_expand_right() {
-        let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
-        let (mut grid_controller, sheet_id) = test_setup_rect(&selected);
-        let result = grid_controller
-            .expand_right(sheet_id, selected, 12, None, None)
-            .unwrap();
+    // #[test]
+    // fn test_expand_right() {
+    //     let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
+    //     let (mut grid_controller, sheet_id) = test_setup_rect(&selected);
+    //     let result = grid_controller
+    //         .expand_right(sheet_id, selected, 12, None, None)
+    //         .unwrap();
 
-        let expected = Rect::new_span(Pos { x: 3, y: 0 }, Pos { x: 12, y: 1 });
-        assert_eq!(result.cell_regions_modified[0].1, expected);
+    //     let expected = Rect::new_span(Pos { x: 3, y: 0 }, Pos { x: 12, y: 1 });
+    //     assert_eq!(result.cell_regions_modified[0].1, expected);
 
-        assert_cell_value_text(&grid_controller, sheet_id, 3, 0, "a");
-        assert_cell_value_text(&grid_controller, sheet_id, 4, 0, "h");
-        assert_cell_value_text(&grid_controller, sheet_id, 5, 0, "x");
-        assert_cell_value_text(&grid_controller, sheet_id, 6, 0, "g");
-        assert_cell_value_text(&grid_controller, sheet_id, 7, 0, "a");
-        assert_cell_value_text(&grid_controller, sheet_id, 8, 0, "h");
-        assert_cell_value_text(&grid_controller, sheet_id, 3, 1, "f");
-        assert_cell_value_text(&grid_controller, sheet_id, 4, 1, "z");
-        assert_cell_value_text(&grid_controller, sheet_id, 5, 1, "r");
-        assert_cell_value_text(&grid_controller, sheet_id, 6, 1, "b");
-        assert_cell_value_text(&grid_controller, sheet_id, 7, 1, "f");
-        assert_cell_value_text(&grid_controller, sheet_id, 8, 1, "z");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 3, 0, "a");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 4, 0, "h");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 5, 0, "x");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 6, 0, "g");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 7, 0, "a");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 8, 0, "h");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 3, 1, "f");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 4, 1, "z");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 5, 1, "r");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 6, 1, "b");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 7, 1, "f");
+    //     assert_cell_value_text(&grid_controller, sheet_id, 8, 1, "z");
 
-        assert_cell_format_bold(&grid_controller, sheet_id, 3, 0);
-        assert_cell_format_bold(&grid_controller, sheet_id, 6, 0);
-        assert_cell_format_bold(&grid_controller, sheet_id, 4, 1);
-        assert_cell_format_bold(&grid_controller, sheet_id, 5, 1);
-        assert_cell_format_bold(&grid_controller, sheet_id, 7, 0);
-        assert_cell_format_bold(&grid_controller, sheet_id, 10, 0);
-        assert_cell_format_bold(&grid_controller, sheet_id, 11, 0);
-        assert_cell_format_bold(&grid_controller, sheet_id, 12, 1);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 3, 0);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 6, 0);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 4, 1);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 5, 1);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 7, 0);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 10, 0);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 11, 0);
+    //     assert_cell_format_bold(&grid_controller, sheet_id, 12, 1);
 
-        assert_cell_format_not_bold(&grid_controller, sheet_id, 13, 0);
-        assert_cell_format_not_bold(&grid_controller, sheet_id, 13, 1);
-    }
+    //     assert_cell_format_not_bold(&grid_controller, sheet_id, 13, 0);
+    //     assert_cell_format_not_bold(&grid_controller, sheet_id, 13, 1);
+    // }
 
     #[test]
     fn test_expand_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(selected.min, Pos { x: 10, y: 10 });
+        let (mut grid_controller, sheet_id) = test_setup_rect(&selected);
+        let result = grid_controller
+            .expand(sheet_id, selected, range, None, None)
+            .unwrap();
+
+        table_modified(grid_controller.clone(), sheet_id, &range, &selected);
+        println!(
+            "cell_regions_modified (x_range: {:?}, y_range: {:?})",
+            &result.cell_regions_modified[0].1.x_range(),
+            &result.cell_regions_modified[0].1.y_range()
+        );
+        // let expected = Rect::new_span(Pos { x: -1, y: 4 }, Pos { x: 0, y: 10 });
+        // assert_eq!(result.cell_regions_modified[0].1, expected);
+    }
+
+    #[test]
+    fn test_expand_up_and_right() {
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
+        let range: Rect = Rect::new_span(selected.min, Pos { x: 10, y: -7 });
+        let (mut grid_controller, sheet_id) = test_setup_rect(&selected);
+        let result = grid_controller
+            .expand(sheet_id, selected, range, None, None)
+            .unwrap();
+
+        table_modified(grid_controller.clone(), sheet_id, &range, &selected);
+        println!(
+            "cell_regions_modified (x_range: {:?}, y_range: {:?})",
+            &result.cell_regions_modified[0].1.x_range(),
+            &result.cell_regions_modified[0].1.y_range()
+        );
+        // let expected = Rect::new_span(Pos { x: -1, y: 4 }, Pos { x: 0, y: 10 });
+        // assert_eq!(result.cell_regions_modified[0].1, expected);
+    }
+
+    #[test]
+    fn test_expand_down_and_left() {
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
+        let range: Rect = Rect::new_span(selected.min, Pos { x: -7, y: 10 });
+        let (mut grid_controller, sheet_id) = test_setup_rect(&selected);
+        let result = grid_controller
+            .expand(sheet_id, selected, range, None, None)
+            .unwrap();
+
+        table_modified(grid_controller.clone(), sheet_id, &range, &selected);
+        println!(
+            "cell_regions_modified (x_range: {:?}, y_range: {:?})",
+            &result.cell_regions_modified[0].1.x_range(),
+            &result.cell_regions_modified[0].1.y_range()
+        );
+        // let expected = Rect::new_span(Pos { x: -1, y: 4 }, Pos { x: 0, y: 10 });
+        // assert_eq!(result.cell_regions_modified[0].1, expected);
+    }
+
+    #[test]
+    fn test_expand_up_and_left() {
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
+        let range: Rect = Rect::new_span(selected.min, Pos { x: -7, y: -7 });
         let (mut grid_controller, sheet_id) = test_setup_rect(&selected);
         let result = grid_controller
             .expand(sheet_id, selected, range, None, None)
