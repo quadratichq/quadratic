@@ -114,8 +114,8 @@ export class GridHeadings extends Container {
     // calculate selection bounds
     const selectedStart = grid.getColumnPlacement(sheetId, this.selectedColumns[0]);
     const selectedEnd = grid.getRowPlacement(sheetId, this.selectedColumns[this.selectedColumns.length - 1]);
-    const xSelectedStart = selectedStart.getPosition();
-    let xSelectedEnd = xSelectedStart + selectedStart.getSize();
+    const xSelectedStart = selectedStart.position;
+    let xSelectedEnd = xSelectedStart + selectedStart.size;
     for (let i = 1; i < this.selectedColumns.length; i++) {
       xSelectedEnd += grid.getColumnWidth(sheetId, this.selectedColumns[i]);
     }
@@ -125,12 +125,12 @@ export class GridHeadings extends Container {
       (this.characterSize.width * this.selectedColumns[0].toString().length) / 2 / viewport.scale.x;
     const endHalfWidth = (this.characterSize.width * this.selectedColumns[0].toString().length) / 2 / viewport.scale.x;
     const xSelectedStartLine1D = {
-      start: xSelectedStart + selectedStart.getSize() / 2 - startHalfWidth,
-      end: xSelectedStart + selectedStart.getSize() / 2 + startHalfWidth,
+      start: xSelectedStart + selectedStart.size / 2 - startHalfWidth,
+      end: xSelectedStart + selectedStart.size / 2 + startHalfWidth,
     };
     const xSelectedEndLine1D = {
-      start: xSelectedEnd - selectedEnd.getSize() / 2 - endHalfWidth,
-      end: xSelectedEnd - selectedEnd.getSize() / 2 + endHalfWidth,
+      start: xSelectedEnd - selectedEnd.size / 2 - endHalfWidth,
+      end: xSelectedEnd - selectedEnd.size / 2 + endHalfWidth,
     };
 
     // highlight column headings based on selected cells
@@ -140,8 +140,8 @@ export class GridHeadings extends Container {
 
     const start = grid.getXPlacement(sheetId, bounds.left);
     const end = grid.getXPlacement(sheetId, bounds.right);
-    const leftOffset = start.getPosition();
-    const rightOffset = end.getPosition();
+    const leftOffset = start.position;
+    const rightOffset = end.position;
 
     // labelWidth uses the constant for number of digits--this ensures the mod factor doesn't change when panning
     const labelWidth = LABEL_DIGITS_TO_CALCULATE_SKIP * this.characterSize.width;
@@ -152,7 +152,7 @@ export class GridHeadings extends Container {
     }
 
     const y = bounds.top + cellHeight / 2.25;
-    let column = start.getIndex();
+    let column = start.index;
     let currentWidth = 0;
     this.gridLinesColumns = [];
     for (let x = leftOffset; x <= rightOffset; x += currentWidth) {
@@ -216,8 +216,8 @@ export class GridHeadings extends Container {
     // determine width of row header
     const start = grid.getYPlacement(sheetId, bounds.top);
     const end = grid.getYPlacement(sheetId, bounds.bottom);
-    const topOffset = start.getPosition();
-    const bottomOffset = end.getPosition();
+    const topOffset = start.position;
+    const bottomOffset = end.position;
     const topNumberLength = Math.round(topOffset / CELL_HEIGHT - 1).toString().length;
     const bottomNumberLength = Math.round(bottomOffset / CELL_HEIGHT - 1).toString().length;
 
@@ -239,8 +239,8 @@ export class GridHeadings extends Container {
     // calculated selection bounds
     const selectedStart = grid.getYPlacement(sheetId, this.selectedRows[0]);
     const selectedEnd = grid.getYPlacement(sheetId, this.selectedRows[this.selectedRows.length - 1]);
-    const ySelectedStart = selectedStart.getPosition();
-    let ySelectedEnd = ySelectedStart + selectedStart.getSize();
+    const ySelectedStart = selectedStart.position;
+    let ySelectedEnd = ySelectedStart + selectedStart.size;
     for (let i = 1; i < this.selectedRows.length; i++) {
       ySelectedEnd += grid.getRowHeight(sheetId, this.selectedRows[i]);
     }
@@ -248,12 +248,12 @@ export class GridHeadings extends Container {
 
     // use these bounds for digit overlap comparison
     const ySelectedStartLine1D = {
-      start: ySelectedStart + selectedStart.getSize() / 2 - halfCharacterHeight,
-      end: ySelectedStart + selectedStart.getSize() / 2 + halfCharacterHeight,
+      start: ySelectedStart + selectedStart.size / 2 - halfCharacterHeight,
+      end: ySelectedStart + selectedStart.size / 2 + halfCharacterHeight,
     };
     const ySelectedEndLine1D = {
-      start: ySelectedEnd - selectedEnd.getSize() / 2 - halfCharacterHeight,
-      end: ySelectedEnd - selectedEnd.getSize() / 2 + halfCharacterHeight,
+      start: ySelectedEnd - selectedEnd.size / 2 - halfCharacterHeight,
+      end: ySelectedEnd - selectedEnd.size / 2 + halfCharacterHeight,
     };
 
     // highlight row headings based on selected cells
@@ -268,7 +268,7 @@ export class GridHeadings extends Container {
     }
 
     const x = bounds.left + this.rowWidth / 2;
-    let row = start.getIndex();
+    let row = start.index;
     let currentHeight = 0;
     this.gridLinesRows = [];
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
@@ -386,10 +386,10 @@ export class GridHeadings extends Container {
       return { corner: true };
     }
     if (intersects.rectanglePoint(this.columnRect, world)) {
-      return { column: grid.getXPlacement(sheetId, world.x).getIndex() };
+      return { column: grid.getXPlacement(sheetId, world.x).index };
     }
     if (intersects.rectanglePoint(this.rowRect, world)) {
-      return { row: grid.getYPlacement(sheetId, world.y).getIndex() };
+      return { row: grid.getYPlacement(sheetId, world.y).index };
     }
   }
 
@@ -404,7 +404,7 @@ export class GridHeadings extends Container {
       for (const line of this.gridLinesColumns) {
         if (Math.abs(world.x - line.x) < tolerance) {
           const start = grid.getXPlacement(sheetId, line.column);
-          return { start: start.getPosition(), column: line.column, width: line.width };
+          return { start: start.position, column: line.column, width: line.width };
         }
       }
     }
@@ -412,7 +412,7 @@ export class GridHeadings extends Container {
       for (const line of this.gridLinesRows) {
         if (Math.abs(world.y - line.y) < tolerance) {
           const start = grid.getYPlacement(sheetId, line.row);
-          return { start: start.getPosition(), row: line.row, height: line.height };
+          return { start: start.position, row: line.row, height: line.height };
         }
       }
     }

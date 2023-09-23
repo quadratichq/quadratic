@@ -451,20 +451,22 @@ export class Grid {
 
   getColumnRow(sheetId: string, x: number, y: number): { column: number; row: number } {
     return {
-      column: this.getXPlacement(sheetId, x).getIndex(),
-      row: this.getYPlacement(sheetId, y).getIndex(),
+      column: this.getXPlacement(sheetId, x).index,
+      row: this.getYPlacement(sheetId, y).index,
     };
   }
 
-  getCellOffsets(sheetId: string, x: number, y: number): Rectangle {
-    const screenRect = this.gridController.getCellOffsets(sheetId, x, y);
+  // @returns screen position of a cell
+  getCellOffsets(sheetId: string, column: number, row: number): Rectangle {
+    const screenRect = this.gridController.getCellOffsets(sheetId, column, row);
     return new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
   }
 
-  getScreenRectangle(sheetId: string, x: number, y: number, width: number, height: number): Rectangle {
-    const topLeft = this.getCellOffsets(sheetId, x, y);
-    const bottomRight = this.getCellOffsets(sheetId, x + width, y + height);
-    return new Rectangle(topLeft.left, topLeft.top, bottomRight.right, bottomRight.bottom);
+  // @returns screen rectangle for a column/row rectangle
+  getScreenRectangle(sheetId: string, column: number, row: number, width: number, height: number): Rectangle {
+    const topLeft = this.getCellOffsets(sheetId, column, row);
+    const bottomRight = this.getCellOffsets(sheetId, column + width, row + height);
+    return new Rectangle(topLeft.left, topLeft.top, bottomRight.right - topLeft.left, bottomRight.bottom - topLeft.top);
   }
 
   commitHeadingResize(): void {

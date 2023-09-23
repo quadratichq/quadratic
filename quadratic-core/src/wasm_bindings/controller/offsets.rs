@@ -2,25 +2,9 @@ use super::*;
 
 #[wasm_bindgen]
 pub struct Placement {
-    index: i32,
-    position: f64,
-    size: i32,
-}
-
-#[wasm_bindgen]
-impl Placement {
-    #[wasm_bindgen(js_name = "getIndex")]
-    pub fn index(&self) -> i32 {
-        self.index
-    }
-    #[wasm_bindgen(js_name = "getPosition")]
-    pub fn position(&self) -> f32 {
-        self.position as f32
-    }
-    #[wasm_bindgen(js_name = "getSize")]
-    pub fn get_size(&self) -> i32 {
-        self.size
-    }
+    pub index: i32,
+    pub position: f64,
+    pub size: i32,
 }
 
 #[wasm_bindgen]
