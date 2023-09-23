@@ -433,18 +433,26 @@ export class Grid {
     return this.gridController.getRowHeight(sheetId, y);
   }
 
-  getColumnPlacement(sheetId: string, x: number): Placement {
-    return this.gridController.getColumnPlacement(sheetId, x);
+  getColumnPlacement(sheetId: string, column: number): Placement {
+    return this.gridController.getColumnPlacement(sheetId, column);
   }
 
-  getRowPlacement(sheetId: string, y: number): Placement {
-    return this.gridController.getRowPlacement(sheetId, y);
+  getRowPlacement(sheetId: string, row: number): Placement {
+    return this.gridController.getRowPlacement(sheetId, row);
+  }
+
+  getXPlacement(sheetId: string, x: number): Placement {
+    return this.gridController.getXPlacement(sheetId, x);
+  }
+
+  getYPlacement(sheetId: string, y: number): Placement {
+    return this.gridController.getYPlacement(sheetId, y);
   }
 
   getColumnRow(sheetId: string, x: number, y: number): { column: number; row: number } {
     return {
-      column: this.getColumnPlacement(sheetId, x).getIndex(),
-      row: this.getRowPlacement(sheetId, y).getIndex(),
+      column: this.getXPlacement(sheetId, x).getIndex(),
+      row: this.getYPlacement(sheetId, y).getIndex(),
     };
   }
 

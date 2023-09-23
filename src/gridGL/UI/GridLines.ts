@@ -46,7 +46,7 @@ export class GridLines extends Graphics {
 
   private drawVerticalLines(bounds: Rectangle): void {
     const sheetId = sheets.sheet.id;
-    const columnPlacement = grid.getColumnPlacement(sheetId, bounds.left);
+    const columnPlacement = grid.getXPlacement(sheetId, bounds.left);
     const index = columnPlacement.getIndex();
     const position = columnPlacement.getPosition();
 
@@ -66,7 +66,7 @@ export class GridLines extends Graphics {
 
   private drawHorizontalLines(bounds: Rectangle): void {
     const sheetId = sheets.sheet.id;
-    const rowPlacement = grid.getRowPlacement(sheetId, bounds.top);
+    const rowPlacement = grid.getYPlacement(sheetId, bounds.top);
     const index = rowPlacement.getIndex();
     const position = rowPlacement.getPosition();
 

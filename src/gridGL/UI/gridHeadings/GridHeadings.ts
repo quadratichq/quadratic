@@ -113,7 +113,7 @@ export class GridHeadings extends Container {
 
     // calculate selection bounds
     const selectedStart = grid.getColumnPlacement(sheetId, this.selectedColumns[0]);
-    const selectedEnd = grid.getColumnPlacement(sheetId, this.selectedColumns[this.selectedColumns.length - 1]);
+    const selectedEnd = grid.getRowPlacement(sheetId, this.selectedColumns[this.selectedColumns.length - 1]);
     const xSelectedStart = selectedStart.getPosition();
     let xSelectedEnd = xSelectedStart + selectedStart.getSize();
     for (let i = 1; i < this.selectedColumns.length; i++) {
@@ -138,8 +138,8 @@ export class GridHeadings extends Container {
     this.headingsGraphics.drawRect(xSelectedStart, viewport.top, xSelectedEnd - xSelectedStart, cellHeight);
     this.headingsGraphics.endFill();
 
-    const start = grid.getColumnPlacement(sheetId, bounds.left);
-    const end = grid.getColumnPlacement(sheetId, bounds.right);
+    const start = grid.getXPlacement(sheetId, bounds.left);
+    const end = grid.getXPlacement(sheetId, bounds.right);
     const leftOffset = start.getPosition();
     const rightOffset = end.getPosition();
 
@@ -214,8 +214,8 @@ export class GridHeadings extends Container {
     const sheetId = sheets.sheet.id;
 
     // determine width of row header
-    const start = grid.getRowPlacement(sheetId, bounds.top);
-    const end = grid.getRowPlacement(sheetId, bounds.bottom);
+    const start = grid.getYPlacement(sheetId, bounds.top);
+    const end = grid.getYPlacement(sheetId, bounds.bottom);
     const topOffset = start.getPosition();
     const bottomOffset = end.getPosition();
     const topNumberLength = Math.round(topOffset / CELL_HEIGHT - 1).toString().length;
@@ -237,8 +237,8 @@ export class GridHeadings extends Container {
     this.headingsGraphics.endFill();
 
     // calculated selection bounds
-    const selectedStart = grid.getRowPlacement(sheetId, this.selectedRows[0]);
-    const selectedEnd = grid.getRowPlacement(sheetId, this.selectedRows[this.selectedRows.length - 1]);
+    const selectedStart = grid.getYPlacement(sheetId, this.selectedRows[0]);
+    const selectedEnd = grid.getYPlacement(sheetId, this.selectedRows[this.selectedRows.length - 1]);
     const ySelectedStart = selectedStart.getPosition();
     let ySelectedEnd = ySelectedStart + selectedStart.getSize();
     for (let i = 1; i < this.selectedRows.length; i++) {
@@ -386,10 +386,10 @@ export class GridHeadings extends Container {
       return { corner: true };
     }
     if (intersects.rectanglePoint(this.columnRect, world)) {
-      return { column: grid.getColumnPlacement(sheetId, world.x).getIndex() };
+      return { column: grid.getXPlacement(sheetId, world.x).getIndex() };
     }
     if (intersects.rectanglePoint(this.rowRect, world)) {
-      return { row: grid.getRowPlacement(sheetId, world.y).getIndex() };
+      return { row: grid.getYPlacement(sheetId, world.y).getIndex() };
     }
   }
 
@@ -403,7 +403,7 @@ export class GridHeadings extends Container {
     if (intersects.rectanglePoint(this.columnRect, world)) {
       for (const line of this.gridLinesColumns) {
         if (Math.abs(world.x - line.x) < tolerance) {
-          const start = grid.getColumnPlacement(sheetId, line.column);
+          const start = grid.getXPlacement(sheetId, line.column);
           return { start: start.getPosition(), column: line.column, width: line.width };
         }
       }
@@ -411,7 +411,7 @@ export class GridHeadings extends Container {
     if (intersects.rectanglePoint(this.rowRect, world)) {
       for (const line of this.gridLinesRows) {
         if (Math.abs(world.y - line.y) < tolerance) {
-          const start = grid.getRowPlacement(sheetId, line.row);
+          const start = grid.getYPlacement(sheetId, line.row);
           return { start: start.getPosition(), row: line.row, height: line.height };
         }
       }

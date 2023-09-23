@@ -78,9 +78,32 @@ impl GridController {
         sheet.row_height(y as i64) as f32
     }
 
-    /// gets the screen coordinate and size for a column. Returns a [`Placement`]
+    /// gets the screen coordinate and size for a row. Returns a [`Placement`]
     #[wasm_bindgen(js_name = "getColumnPlacement")]
-    pub fn js_column_placement(&self, sheet_id: String, x: f64) -> Placement {
+    pub fn js_column_placement(&self, sheet_id: String, column: i32) -> Placement {
+        let sheet = self.grid().sheet_from_string(sheet_id);
+        let (position, size) = sheet.column_position_size(column as i64);
+        Placement {
+            index: column,
+            position,
+            size: size as i32,
+        }
+    }
+    /// gets the screen coordinate and size for a pixel y-coordinate. Returns a [`Placement`]
+    #[wasm_bindgen(js_name = "getRowPlacement")]
+    pub fn js_row_placement(&self, sheet_id: String, row: i32) -> Placement {
+        let sheet = self.grid().sheet_from_string(sheet_id);
+        let (position, size) = sheet.row_position_size(row as i64);
+        Placement {
+            index: row,
+            position,
+            size: size as i32,
+        }
+    }
+
+    /// gets the screen coordinate and size for a pixel x-coordinate. Returns a [`Placement`]
+    #[wasm_bindgen(js_name = "getXPlacement")]
+    pub fn js_x_placement(&self, sheet_id: String, x: f64) -> Placement {
         let sheet = self.grid().sheet_from_string(sheet_id);
         let index = sheet.column_from_x(x);
         Placement {
@@ -89,9 +112,9 @@ impl GridController {
             size: sheet.column_width(index.0) as i32,
         }
     }
-    /// gets the screen coordinate and size for a column. Returns a [`Placement`]
-    #[wasm_bindgen(js_name = "getRowPlacement")]
-    pub fn js_row_placement(&self, sheet_id: String, y: f64) -> Placement {
+    /// gets the screen coordinate and size for a pixel y-coordinate. Returns a [`Placement`]
+    #[wasm_bindgen(js_name = "getYPlacement")]
+    pub fn js_y_placement(&self, sheet_id: String, y: f64) -> Placement {
         let sheet = self.grid().sheet_from_string(sheet_id);
         let index = sheet.row_from_y(y);
         Placement {
