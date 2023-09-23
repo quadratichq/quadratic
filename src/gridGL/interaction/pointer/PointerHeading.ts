@@ -1,5 +1,4 @@
 import { InteractivePointerEvent, Point } from 'pixi.js';
-import { CELL_HEIGHT } from '../../../constants/gridConstants';
 import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
 import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
@@ -89,7 +88,7 @@ export class PointerHeading {
         width: headingResize.width,
         height: headingResize.height,
       };
-
+      console.log(this.headingResizing);
       this.active = true;
     } else {
       if (intersects.corner) {
@@ -139,16 +138,17 @@ export class PointerHeading {
     this.cursor = undefined;
     this.clicked = false;
 
+    if (pixiAppSettings.panMode === PanMode.Disabled) {
+      const headingResize = this.active ? this.headingResizing : headings.intersectsHeadingGridLine(world);
+      if (headingResize) {
+        this.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
+      } else {
+        this.cursor = headings.intersectsHeadings(world) ? 'pointer' : undefined;
+      }
+    }
+
     // Only style the heading resize cursor if panning mode is disabled
     if (!this.active) {
-      if (pixiAppSettings.panMode === PanMode.Disabled) {
-        const headingResize = headings.intersectsHeadingGridLine(world);
-        if (headingResize) {
-          this.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
-        } else {
-          this.cursor = headings.intersectsHeadings(world) ? 'pointer' : undefined;
-        }
-      }
       return false;
     } else if (this.headingResizing) {
       if (this.headingResizing.column !== undefined) {
@@ -169,11 +169,7 @@ export class PointerHeading {
 
         if (size !== this.headingResizing.width) {
           this.headingResizing.width = size;
-          grid.headingResizeColumn(
-            sheets.sheet.id,
-            this.headingResizing.column,
-            size - this.headingResizeViewport.originalSize
-          );
+          grid.headingResizeColumn(sheets.sheet.id, this.headingResizing.column, size);
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
@@ -200,7 +196,7 @@ export class PointerHeading {
 
         if (size !== this.headingResizing.height) {
           this.headingResizing.height = size;
-          grid.headingResizeRow(sheets.sheet.id, this.headingResizing.row, size - CELL_HEIGHT);
+          grid.headingResizeRow(sheets.sheet.id, this.headingResizing.row, size);
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;

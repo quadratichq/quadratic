@@ -403,7 +403,7 @@ export class GridHeadings extends Container {
     if (intersects.rectanglePoint(this.columnRect, world)) {
       for (const line of this.gridLinesColumns) {
         if (Math.abs(world.x - line.x) < tolerance) {
-          const start = grid.getXPlacement(sheetId, line.column);
+          const start = grid.getColumnPlacement(sheetId, line.column);
           return { start: start.position, column: line.column, width: line.width };
         }
       }
@@ -411,7 +411,7 @@ export class GridHeadings extends Container {
     if (intersects.rectanglePoint(this.rowRect, world)) {
       for (const line of this.gridLinesRows) {
         if (Math.abs(world.y - line.y) < tolerance) {
-          const start = grid.getYPlacement(sheetId, line.row);
+          const start = grid.getRowPlacement(sheetId, line.row);
           return { start: start.position, row: line.row, height: line.height };
         }
       }
