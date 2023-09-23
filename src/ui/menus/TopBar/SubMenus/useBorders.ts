@@ -51,8 +51,8 @@ export const useBorders = (): IResults => {
 
     const style = new BorderStyle(
       new Rgb(colorArray[0], colorArray[1], colorArray[2]),
-      // CellBorderLine.Line1
-        new CellBorderLine(0) // TODO: convert from `options`
+      CellBorderLine.Line1
+        // new CellBorderLine(0) // TODO: convert from `options`
     )
     grid.setRegionBorders(sheet.id, rectangle, selection, style);
   }

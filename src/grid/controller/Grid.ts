@@ -21,6 +21,7 @@ import {
   CellWrap,
   FormattingSummary,
   JsClipboard,
+  JsRenderBorder,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
@@ -401,6 +402,13 @@ export class Grid {
 
   getFormattingSummary(sheetId: string, rectangle: Rectangle): FormattingSummary {
     return this.gridController.getFormattingSummary(sheetId, rectangleToRect(rectangle) as RectInternal);
+  }
+
+  getRenderVerticalBorders(sheetId: string): JsRenderBorder[] {
+    console.log("Getting vertical render")
+    return JSON.parse(this.gridController.getRenderVerticalBorders(
+        sheetId,
+    ));
   }
 
   //#endregion

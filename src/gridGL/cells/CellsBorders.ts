@@ -2,6 +2,9 @@ import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { CellsSheet } from './CellsSheet';
 import { BorderCull } from './drawBorders';
+import {
+  grid
+} from "../../grid/controller/Grid";
 
 export class CellsBorders extends Container {
   private cellsSheet: CellsSheet;
@@ -34,8 +37,9 @@ export class CellsBorders extends Container {
     //   }
     //   this.sprites.push(drawLine(start.x, start.y));
     // });
-    // const vertical = this.sheet.gridSparse.getVerticalBorders();
-    // console.log(vertical);
+    // const vertical = this.sheet.grid.getRenderVerticalBorders();
+    const vertical = grid.getRenderVerticalBorders(this.sheet.id);
+    console.log(vertical);
   }
 
   private getSprite = (tiling?: boolean): Sprite | TilingSprite => {
