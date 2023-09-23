@@ -27,12 +27,12 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
     const { originPosition, terminalPosition } = cursor.multiCursor;
     column = originPosition.x;
     row = originPosition.y;
-    width = terminalPosition.x - column + 1;
-    height = terminalPosition.y - row + 1;
+    width = terminalPosition.x - column;
+    height = terminalPosition.y - row;
   } else {
     column = cursor.cursorPosition.x;
     row = cursor.cursorPosition.y;
-    width = height = 1;
+    width = height = 0;
   }
   const rectangle = grid.getScreenRectangle(sheets.sheet.id, column, row, width, height);
 
