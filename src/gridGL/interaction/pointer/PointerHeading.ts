@@ -107,23 +107,20 @@ export class PointerHeading {
         if (intersects.column !== undefined) {
           let x1 = cursor.cursorPosition.x;
           let x2 = intersects.column;
-          selectColumns({
-            start: Math.min(x1, x2),
-            end: Math.max(x1, x2),
-          });
+          selectColumns(Math.min(x1, x2), Math.max(x1, x2));
           pixiApp.cursor.dirty = true;
         } else if (intersects.row !== undefined) {
           let y1 = cursor.cursorPosition.y;
           let y2 = intersects.row;
-          selectRows({
-            start: Math.min(y1, y2),
-            end: Math.max(y1, y2),
-          });
+          selectRows(Math.min(y1, y2), Math.max(y1, y2));
           pixiApp.cursor.dirty = true;
         }
       } else {
-        selectAllCells(intersects.column, intersects.row);
-        pixiApp.cursor.dirty = true;
+        if (intersects.column !== undefined) {
+          selectColumns(intersects.column, intersects.column);
+        } else if (intersects.row !== undefined) {
+          selectRows(intersects.row, intersects.row);
+        }
       }
     }
     return true;

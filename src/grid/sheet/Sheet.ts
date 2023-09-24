@@ -113,68 +113,6 @@ export class Sheet {
     ];
   }
 
-  getGridRowMinMax(row: number, onlyData: boolean): Coordinate[] | undefined {
-    throw new Error('getGridRowMinMax not implemented');
-    // const gridRowMinMax = this.grid.getRowMinMax(row, onlyData);
-    // if (onlyData) {
-    //   if (!gridRowMinMax) return;
-    //   return [
-    //     { x: gridRowMinMax.min, y: row },
-    //     { x: gridRowMinMax.max, y: row },
-    //   ];
-    // }
-    // const bordersRowMinMax = this.borders.getRowMinMax(row);
-    // if (!gridRowMinMax && !bordersRowMinMax) return;
-    // if (!gridRowMinMax) {
-    //   return [
-    //     { x: bordersRowMinMax.min, y: row },
-    //     { x: bordersRowMinMax.max, y: row },
-    //   ];
-    // }
-    // if (!bordersRowMinMax) {
-    //   return [
-    //     { x: gridRowMinMax.min, y: row },
-    //     { x: gridRowMinMax.max, y: row },
-    //   ];
-    // }
-    // return [
-    //   { x: Math.min(gridRowMinMax.min, bordersRowMinMax.min), y: row },
-    //   { x: Math.max(gridRowMinMax.max, bordersRowMinMax.max), y: row },
-    // ];
-  }
-
-  getGridColumnMinMax(column: number, onlyData: boolean): Coordinate[] | undefined {
-    throw new Error('getGridColumnMinMax not implemented');
-    // const gridColumnMinMax = this.grid.getColumnMinMax(column, onlyData);
-    // if (onlyData) {
-    //   if (!gridColumnMinMax) return;
-    //   return [
-    //     { x: column, y: gridColumnMinMax.min },
-    //     { x: column, y: gridColumnMinMax.max },
-    //   ];
-    // }
-    // const bordersColumnMinMax = this.borders.getColumnMinMax(column);
-    // if (!gridColumnMinMax && !bordersColumnMinMax) return;
-    // if (!gridColumnMinMax) {
-    //   return [
-    //     { x: column, y: bordersColumnMinMax!.min },
-    //     { x: column, y: bordersColumnMinMax!.max },
-    //   ];
-    // }
-    // if (!bordersColumnMinMax) {
-    //   return [
-    //     { x: column, y: gridColumnMinMax.min },
-    //     { x: column, y: gridColumnMinMax.max },
-    //   ];
-    // }
-    // return [
-    //   { x: column, y: Math.min(gridColumnMinMax.min, bordersColumnMinMax.min) },
-    //   { x: column, y: Math.max(gridColumnMinMax.max, bordersColumnMinMax.max) },
-    // ];
-  }
-
-  //#endregion
-
   //#region set grid information
 
   setCellFillColor(rectangle: Rectangle, fillColor?: string): void {

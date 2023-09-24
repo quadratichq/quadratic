@@ -1,6 +1,6 @@
 import { Point, Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
-import { GridController, Placement, Pos, Rect as RectInternal } from '../../quadratic-core/quadratic_core';
+import { GridController, MinMax, Placement, Pos, Rect as RectInternal } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
   CellFormatSummary,
@@ -332,14 +332,6 @@ export class Grid {
     return JSON.parse(data);
   }
 
-  getGridBounds(sheetId: string, ignoreFormatting: boolean): Rectangle | undefined {
-    const bounds = this.gridController.getGridBounds(sheetId, ignoreFormatting);
-    if (bounds.type === 'empty') {
-      return;
-    }
-    return new Rectangle(bounds.min.x, bounds.min.y, bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y);
-  }
-
   // todo: fix types
   getCodeValue(sheetId: string, x: number, y: number): any | undefined {
     return this.gridController.getCodeCellValue(sheetId, new Pos(x, y));
@@ -356,6 +348,39 @@ export class Grid {
 
   getFormattingSummary(sheetId: string, rectangle: Rectangle): FormattingSummary {
     return this.gridController.getFormattingSummary(sheetId, rectangleToRect(rectangle) as RectInternal);
+  }
+
+  //#endregion
+
+  //#region Bounds
+
+  getGridBounds(sheetId: string, ignoreFormatting: boolean): Rectangle | undefined {
+    const bounds = this.gridController.getGridBounds(sheetId, ignoreFormatting);
+    if (bounds.type === 'empty') {
+      return;
+    }
+    return new Rectangle(bounds.min.x, bounds.min.y, bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y);
+  }
+
+  getColumnBounds(sheetId: string, column: number, ignoreFormatting: boolean): MinMax | undefined {
+    return this.gridController.getColumnBounds(sheetId, column, ignoreFormatting);
+  }
+
+  getColumnsBounds(
+    sheetId: string,
+    column_start: number,
+    column_end: number,
+    ignoreFormatting: boolean
+  ): MinMax | undefined {
+    return this.gridController.getColumnsBounds(sheetId, column_start, column_end, ignoreFormatting);
+  }
+
+  getRowBounds(sheetId: string, row: number, ignoreFormatting: boolean): MinMax | undefined {
+    return this.gridController.getRowBounds(sheetId, row, ignoreFormatting);
+  }
+
+  getRowsBounds(sheetId: string, row_start: number, row_end: number, ignoreFormatting: boolean): MinMax | undefined {
+    return this.gridController.getRowsBounds(sheetId, row_start, row_end, ignoreFormatting);
   }
 
   //#endregion
