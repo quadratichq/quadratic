@@ -9,6 +9,7 @@ import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
 import { CellLabel } from './cellsLabel/CellLabel';
 import { LabelMeshes } from './cellsLabel/LabelMeshes';
 
+// Draw hashed regions of CellsLabels (the text + text formatting)
 export class CellsHash extends Container<LabelMeshes> {
   private cellsSheet: CellsSheet;
 
