@@ -348,5 +348,9 @@ export class CellsSheet extends Container {
 
     hashesToUpdate.forEach((hash) => hash.overflowClip());
     this.cellsTextHash.forEach((hash) => hash.updateBuffers());
+
+    // todo: these can be much more efficient
+    this.cellsFills.create();
+    this.cellsArray.create();
   }
 }

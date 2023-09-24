@@ -25,11 +25,9 @@ export class CellsFills extends ParticleContainer {
     this.removeChildren();
     const fills = this.sheet.getAllRenderFills();
     fills.forEach((fill) => {
-      console.log(fill);
       const sprite = this.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
       sprite.tint = convertColorStringToTint(fill.color);
       const screen = grid.getScreenRectangle(this.sheet.id, Number(fill.x), Number(fill.y), fill.w - 1, fill.h - 1);
-      console.log(screen);
       sprite.position.set(screen.x, screen.y);
       sprite.width = screen.width + 1;
       sprite.height = screen.height + 1;
