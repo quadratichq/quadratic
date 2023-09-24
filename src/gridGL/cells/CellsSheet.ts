@@ -8,13 +8,11 @@ import { Coordinate } from '../types/size';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
 import { CellsFills } from './CellsFills';
-import { CellsHash } from './CellsHash';
 import { CellsMarkers } from './CellsMarker';
+import { CellsTextHash } from './CellsTextHash';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
 
 const MAXIMUM_FRAME_TIME = 1000 / 15;
-
-// todo: geometries should never be clipped except in updateBuffers (which would hide geometries as needed, but never create any)
 
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
@@ -30,10 +28,10 @@ export class CellsSheet extends Container {
   private cellsBorders: CellsBorders;
 
   // (x, y) index into cellsHashContainer
-  cellsHash: Map<string, CellsHash>;
+  cellsHash: Map<string, CellsTextHash>;
 
   // row index into cellsHashContainer (used for clipping)
-  private cellsRows: Map<number, CellsHash[]>;
+  private cellsRows: Map<number, CellsTextHash[]>;
 
   // set of rows that need updating
   private dirtyRows: Set<number>;
@@ -64,7 +62,7 @@ export class CellsSheet extends Container {
     };
   }
 
-  private createHash(hashX: number, hashY: number): CellsHash | undefined {
+  private createHash(hashX: number, hashY: number): CellsTextHash | undefined {
     const rect = new Rectangle(
       hashX * sheetHashWidth,
       hashY * sheetHashHeight,
@@ -74,8 +72,9 @@ export class CellsSheet extends Container {
     const cells = this.sheet.getRenderCells(rect);
     const background = this.sheet.getRenderFills(rect);
     if (cells.length || background.length) {
-      const cellsHash = this.cellsHashContainer.addChild(new CellsHash(this, hashX, hashY));
-      this.cellsHash.set(cellsHash.key, cellsHash);
+      const key = `${hashX},${hashY}`;
+      const cellsHash = this.cellsHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
+      this.cellsHash.set(key, cellsHash);
       const row = this.cellsRows.get(hashY);
       if (row) {
         row.push(cellsHash);
@@ -140,9 +139,13 @@ export class CellsSheet extends Container {
     this.cellsBorders.create();
   }
 
-  getCellsHash(column: number, row: number, createIfNeeded?: boolean): CellsHash | undefined {
+  getHashKey(hashX: number, hashY: number): string {
+    return `${hashX},${hashY}`;
+  }
+
+  getCellsHash(column: number, row: number, createIfNeeded?: boolean): CellsTextHash | undefined {
     const { x, y } = CellsSheet.getHash(column, row);
-    const key = CellsHash.getKey(x, y);
+    const key = this.getHashKey(x, y);
     let hash = this.cellsHash.get(key);
     if (!hash && createIfNeeded) {
       hash = this.createHash(x, y);
@@ -150,9 +153,9 @@ export class CellsSheet extends Container {
     return hash;
   }
 
-  getColumnHashes(column: number): CellsHash[] {
+  getColumnHashes(column: number): CellsTextHash[] {
     const hashX = Math.floor(column / sheetHashWidth);
-    const hashes: CellsHash[] = [];
+    const hashes: CellsTextHash[] = [];
     this.cellsHash.forEach((cellsHash) => {
       if (cellsHash.hashX === hashX) {
         hashes.push(cellsHash);
@@ -161,9 +164,9 @@ export class CellsSheet extends Container {
     return hashes;
   }
 
-  getRowHashes(row: number): CellsHash[] {
+  getRowHashes(row: number): CellsTextHash[] {
     const hashY = Math.floor(row / sheetHashHeight);
-    const hashes: CellsHash[] = [];
+    const hashes: CellsTextHash[] = [];
     this.cellsHash.forEach((cellsHash) => {
       if (cellsHash.hashY === hashY) {
         hashes.push(cellsHash);
@@ -173,7 +176,7 @@ export class CellsSheet extends Container {
   }
 
   // used for clipping to find neighboring hash - clipping always works from right to left
-  findPreviousHash(column: number, row: number, bounds?: Rectangle): CellsHash | undefined {
+  findPreviousHash(column: number, row: number, bounds?: Rectangle): CellsTextHash | undefined {
     bounds = bounds ?? grid.getGridBounds(this.sheet.id, true);
     if (!bounds) {
       throw new Error('Expected bounds to be defined in findPreviousHash of CellsSheet');
@@ -194,7 +197,7 @@ export class CellsSheet extends Container {
     labels?: boolean;
     background?: boolean;
   }) {
-    const hashes = new Set<CellsHash>();
+    const hashes = new Set<CellsTextHash>();
     if (options.cells) {
       options.cells.forEach((cell) => {
         let hash = this.getCellsHash(cell.x, cell.y, true);

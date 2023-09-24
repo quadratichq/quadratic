@@ -9,9 +9,15 @@ import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
 import { CellLabel } from './cellsLabel/CellLabel';
 import { LabelMeshes } from './cellsLabel/LabelMeshes';
 
-// Draw hashed regions of CellsLabels (the text + text formatting)
-export class CellsHash extends Container<LabelMeshes> {
+// Draw hashed regions of cell glyphs (the text + text formatting)
+export class CellsTextHash extends Container<LabelMeshes> {
   private cellsSheet: CellsSheet;
+
+  // holds the glyph meshes for font/style combinations
+  private labelMeshes: LabelMeshes;
+
+  // index into the labels by location key (column,row)
+  private cellLabels: Map<string, CellLabel>;
 
   hashX: number;
   hashY: number;
@@ -19,22 +25,9 @@ export class CellsHash extends Container<LabelMeshes> {
   // column/row bounds (does not include overflow cells)
   AABB: Rectangle;
 
-  key: string;
-
-  // holds the meshes for font/style combinations
-  private labelMeshes: LabelMeshes;
-
-  cellLabels: Map<string, CellLabel>;
-
   viewBounds: Bounds;
 
-  static getKey(x: number, y: number): string {
-    return `${x},${y}`;
-  }
-
   dirty = false;
-
-  static times = { updateText: 0, overflowClip: 0, updateTextAfterClip: 0 };
 
   constructor(cellsSheet: CellsSheet, x: number, y: number) {
     super();
@@ -44,7 +37,6 @@ export class CellsHash extends Container<LabelMeshes> {
     this.viewBounds = new Bounds();
     this.hashX = x;
     this.hashY = y;
-    this.key = CellsHash.getKey(x, y);
     this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
   }
 
@@ -52,11 +44,12 @@ export class CellsHash extends Container<LabelMeshes> {
     return this.cellsSheet.sheet;
   }
 
+  // key used to find individual cell labels
   private getKey(cell: JsRenderCell): string {
     return `${cell.x},${cell.y}`;
   }
 
-  findPreviousHash(column: number, row: number, bounds?: Rectangle): CellsHash | undefined {
+  findPreviousHash(column: number, row: number, bounds?: Rectangle): CellsTextHash | undefined {
     return this.cellsSheet.findPreviousHash(column, row, bounds);
   }
 
@@ -117,7 +110,7 @@ export class CellsHash extends Container<LabelMeshes> {
     // if (label.location.x === 3 && label.location.y === 4) debugger;
     let column = label.location.x - 1;
     const row = label.location.y;
-    let currentHash: CellsHash | undefined = this;
+    let currentHash: CellsTextHash | undefined = this;
     while (column >= bounds.left) {
       if (column < this.AABB.x) {
         // find hash to the left of current hash (skip over empty hashes)
@@ -149,7 +142,5 @@ export class CellsHash extends Container<LabelMeshes> {
     this.labelMeshes.finalize();
   }
 
-  adjustHeadings(options: { column?: number; row?: number }): void {
-    // todo
-  }
+  adjustHeadings(options: { column?: number; row?: number }): void {}
 }
