@@ -257,7 +257,6 @@ export class CellLabel extends Container {
   /** Adds the glyphs to the CellsLabels container */
   updateLabelMesh(labelMeshes: LabelMeshes): Bounds {
     const bounds = new Bounds();
-
     const data = BitmapFont.available[this.fontName];
     const scale = this.fontSize / data.size;
     const color = this.tint ? convertTintToArray(this.tint) : undefined;

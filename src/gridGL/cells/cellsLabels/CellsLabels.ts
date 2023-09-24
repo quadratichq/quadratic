@@ -5,12 +5,11 @@ import { Sheet } from '../../../grid/sheet/Sheet';
 import { JsRenderCell } from '../../../quadratic-core/types';
 import { debugTimeCheck, debugTimeReset } from '../../helpers/debugPerformance';
 import { CellsHash } from '../CellsHash';
-import { CellHash } from '../CellsTypes';
 import { CellLabel } from './CellLabel';
 import { LabelMeshes } from './LabelMeshes';
 
 // holds all CellLabels within a sheet
-export class CellsLabels extends Container<LabelMeshes> implements CellHash {
+export class CellsLabels extends Container<LabelMeshes> {
   private cellsHash: CellsHash;
 
   // holds the meshes for font/style combinations
@@ -18,17 +17,12 @@ export class CellsLabels extends Container<LabelMeshes> implements CellHash {
 
   cellLabels: Map<string, CellLabel>;
 
-  // this is used by CellsHash
-  hashes: Set<CellsHash>;
-  AABB?: Rectangle;
-
   viewBounds: Bounds;
 
   constructor(cellsHash: CellsHash) {
     super();
     this.cellsHash = cellsHash;
     this.cellLabels = new Map();
-    this.hashes = new Set();
     this.labelMeshes = this.addChild(new LabelMeshes());
     this.viewBounds = new Bounds();
   }

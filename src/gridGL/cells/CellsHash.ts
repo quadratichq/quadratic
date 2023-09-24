@@ -3,7 +3,6 @@ import { debugShowCellsHashBoxes } from '../../debugFlags';
 import { grid } from '../../grid/controller/Grid';
 import { Bounds } from '../../grid/sheet/Bounds';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { Pos, Rect } from '../../quadratic-core/quadratic_core';
 import { CellsSheet } from './CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
 import { CellLabel } from './cellsLabels/CellLabel';
@@ -13,7 +12,6 @@ export class CellsHash extends Container {
   cellsSheet: CellsSheet;
 
   private test?: Graphics;
-  // private cellsBackground: CellsFills;
   private cellsLabels: CellsLabels;
 
   hashX: number;
@@ -21,9 +19,6 @@ export class CellsHash extends Container {
 
   // column/row bounds (does not include overflow cells)
   AABB: Rectangle;
-
-  // quadratic-core/rect
-  rect: any;
 
   key: string;
 
@@ -57,7 +52,6 @@ export class CellsHash extends Container {
         .drawShape(screen)
         .endFill();
     }
-    // this.cellsBackground = this.addChild(new CellsFills(this));
     this.cellsLabels = this.addChild(new CellsLabels(this));
   }
 
@@ -95,11 +89,11 @@ export class CellsHash extends Container {
 
   updateBuffers(): void {
     this.cellsLabels.updateBuffers();
-
-    this.rect = new Rect(new Pos(this.AABB.left, this.AABB.top), new Pos(this.AABB.right, this.AABB.bottom));
   }
 
   get viewBounds(): Bounds {
     return this.cellsLabels.viewBounds;
   }
+
+  adjustHeadings(options: { column?: number; row?: number }): void {}
 }

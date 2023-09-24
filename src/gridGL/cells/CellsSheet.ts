@@ -14,6 +14,8 @@ import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
 
 const MAXIMUM_FRAME_TIME = 1000 / 15;
 
+// todo: geometries should never be clipped except in updateBuffers (which would hide geometries as needed, but never create any)
+
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
 
@@ -301,5 +303,27 @@ export class CellsSheet extends Container {
     } else {
       return false;
     }
+  }
+
+  adjustHeadings(options: { column?: number; row?: number }): void {
+    let column: number | undefined, row: number | undefined;
+    if (options.column !== undefined) {
+      column = options.column / sheetHashWidth;
+    } else if (options.row !== undefined) {
+      row = options.row / sheetHashHeight;
+    }
+
+    // todo: make sure this is correct (ie, it's always to the right/bottom for adjustments?)
+    this.cellsHash.forEach((hash) => {
+      if (column !== undefined) {
+        if (hash.hashX >= column) {
+          hash.adjustHeadings({ column: options.column });
+        }
+      } else if (row !== undefined) {
+        if (hash.hashY >= row) {
+          hash.adjustHeadings({ row: options.row });
+        }
+      }
+    });
   }
 }
