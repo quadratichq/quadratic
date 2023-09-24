@@ -51,9 +51,6 @@ export const debugShowWhyRendering = debug && false;
 // shows CellsSheet culling
 export const debugShowCellsSheetCulling = debug && false;
 
-// shows CellsHash boxes
-export const debugShowCellsHashBoxes = debug && false;
-
 // shows CellsHash information
 export const debugShowCellHashesInfo = debug && false;
 
