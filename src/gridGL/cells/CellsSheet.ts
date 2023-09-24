@@ -1,5 +1,5 @@
-import { Container, Rectangle } from 'pixi.js';
-import { debugShowCellsSheetCulling } from '../../debugFlags';
+import { Container, Graphics, Rectangle } from 'pixi.js';
+import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '../../debugFlags';
 import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
@@ -17,8 +17,10 @@ const MAXIMUM_FRAME_TIME = 1000 / 15;
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
 
-  // individual hash containers (eg, CellsBackground, CellsArray)
-  private cellsHashContainer: Container;
+  // used to draw debug boxes for cellsTextHash
+  private cellsTextDebug: Graphics;
+
+  private cellsTextHashContainer: Container;
 
   private cellsArray: CellsArray;
 
@@ -27,10 +29,10 @@ export class CellsSheet extends Container {
 
   private cellsBorders: CellsBorders;
 
-  // (x, y) index into cellsHashContainer
-  cellsHash: Map<string, CellsTextHash>;
+  // (hashX, hashY) index into cellsTextHashContainer
+  cellsTextHash: Map<string, CellsTextHash>;
 
-  // row index into cellsHashContainer (used for clipping)
+  // row index into cellsTextHashContainer (used for clipping)
   private cellsRows: Map<number, CellsTextHash[]>;
 
   // set of rows that need updating
@@ -38,17 +40,17 @@ export class CellsSheet extends Container {
 
   private resolveTick?: () => void;
 
-  // friend of CellsHash and CellsSheets
   sheet: Sheet;
 
   constructor(sheet: Sheet) {
     super();
     this.sheet = sheet;
-    this.cellsHash = new Map();
+    this.cellsTextHash = new Map();
     this.cellsRows = new Map();
     this.dirtyRows = new Set();
     this.cellsFills = this.addChild(new CellsFills(this));
-    this.cellsHashContainer = this.addChild(new Container());
+    this.cellsTextDebug = this.addChild(new Graphics());
+    this.cellsTextHashContainer = this.addChild(new Container());
     this.cellsArray = this.addChild(new CellsArray(this));
     this.cellsBorders = this.addChild(new CellsBorders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
@@ -73,8 +75,8 @@ export class CellsSheet extends Container {
     const background = this.sheet.getRenderFills(rect);
     if (cells.length || background.length) {
       const key = `${hashX},${hashY}`;
-      const cellsHash = this.cellsHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
-      this.cellsHash.set(key, cellsHash);
+      const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
+      this.cellsTextHash.set(key, cellsHash);
       const row = this.cellsRows.get(hashY);
       if (row) {
         row.push(cellsHash);
@@ -106,12 +108,18 @@ export class CellsSheet extends Container {
   show(bounds: Rectangle): void {
     this.visible = true;
     let count = 0;
-    this.cellsHash.forEach((cellsHash) => {
-      if (cellsHash.viewBounds.intersectsRectangle(bounds)) {
-        cellsHash.show();
+    if (debugShowCellsHashBoxes) {
+      this.cellsTextDebug.clear();
+    }
+    this.cellsTextHash.forEach((cellsTextHash) => {
+      if (cellsTextHash.viewBounds.intersectsRectangle(bounds)) {
+        cellsTextHash.show();
+        if (debugShowCellsHashBoxes) {
+          cellsTextHash.drawDebugBox(this.cellsTextDebug);
+        }
         count++;
       } else {
-        cellsHash.hide();
+        cellsTextHash.hide();
       }
     });
     if (pixiAppSettings.showCellTypeOutlines) {
@@ -123,7 +131,7 @@ export class CellsSheet extends Container {
     this.cellsFills.cheapCull(bounds);
     this.cellsMarkers.cheapCull(bounds);
     if (debugShowCellsSheetCulling) {
-      console.log(`[CellsSheet] visible: ${count}/${this.cellsHash.size}`);
+      console.log(`[CellsSheet] visible: ${count}/${this.cellsTextHash.size}`);
     }
   }
 
@@ -146,7 +154,7 @@ export class CellsSheet extends Container {
   getCellsHash(column: number, row: number, createIfNeeded?: boolean): CellsTextHash | undefined {
     const { x, y } = CellsSheet.getHash(column, row);
     const key = this.getHashKey(x, y);
-    let hash = this.cellsHash.get(key);
+    let hash = this.cellsTextHash.get(key);
     if (!hash && createIfNeeded) {
       hash = this.createHash(x, y);
     }
@@ -156,7 +164,7 @@ export class CellsSheet extends Container {
   getColumnHashes(column: number): CellsTextHash[] {
     const hashX = Math.floor(column / sheetHashWidth);
     const hashes: CellsTextHash[] = [];
-    this.cellsHash.forEach((cellsHash) => {
+    this.cellsTextHash.forEach((cellsHash) => {
       if (cellsHash.hashX === hashX) {
         hashes.push(cellsHash);
       }
@@ -167,7 +175,7 @@ export class CellsSheet extends Container {
   getRowHashes(row: number): CellsTextHash[] {
     const hashY = Math.floor(row / sheetHashHeight);
     const hashes: CellsTextHash[] = [];
-    this.cellsHash.forEach((cellsHash) => {
+    this.cellsTextHash.forEach((cellsHash) => {
       if (cellsHash.hashY === hashY) {
         hashes.push(cellsHash);
       }
@@ -308,25 +316,37 @@ export class CellsSheet extends Container {
     }
   }
 
-  adjustHeadings(options: { column?: number; row?: number }): void {
-    let column: number | undefined, row: number | undefined;
-    if (options.column !== undefined) {
-      column = options.column / sheetHashWidth;
-    } else if (options.row !== undefined) {
-      row = options.row / sheetHashHeight;
+  // adjust headings without recalculating the glyph geometries
+  adjustHeadings(options: { delta: number; column?: number; row?: number }): void {
+    const { delta, column, row } = options;
+    let columnHash: number | undefined, rowHash: number | undefined;
+    if (column !== undefined) {
+      columnHash = Math.floor(column / sheetHashWidth);
+    } else if (row !== undefined) {
+      rowHash = Math.floor(row / sheetHashHeight);
     }
 
+    // hashes that need to update their clipping and buffers
+    const hashesToUpdate: CellsTextHash[] = [];
+
     // todo: make sure this is correct (ie, it's always to the right/bottom for adjustments?)
-    this.cellsHash.forEach((hash) => {
-      if (column !== undefined) {
-        if (hash.hashX >= column) {
-          hash.adjustHeadings({ column: options.column });
+    this.cellsTextHash.forEach((hash) => {
+      if (columnHash !== undefined) {
+        if (hash.hashX >= columnHash) {
+          if (hash.adjustHeadings({ delta, column })) {
+            hashesToUpdate.push(hash);
+          }
         }
-      } else if (row !== undefined) {
-        if (hash.hashY >= row) {
-          hash.adjustHeadings({ row: options.row });
+      } else if (rowHash !== undefined) {
+        if (hash.hashY >= rowHash) {
+          if (hash.adjustHeadings({ delta, row })) {
+            hashesToUpdate.push(hash);
+          }
         }
       }
     });
+
+    hashesToUpdate.forEach((hash) => hash.overflowClip());
+    this.cellsTextHash.forEach((hash) => hash.updateBuffers());
   }
 }

@@ -1,4 +1,4 @@
-import { Container, Rectangle, Renderer } from 'pixi.js';
+import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import { grid } from '../../grid/controller/Grid';
 import { Bounds } from '../../grid/sheet/Bounds';
 import { Sheet } from '../../grid/sheet/Sheet';
@@ -28,6 +28,9 @@ export class CellsTextHash extends Container<LabelMeshes> {
   viewBounds: Bounds;
 
   dirty = false;
+
+  // color to use for drawDebugBox
+  debugColor = Math.floor(Math.random() * 0xffffff);
 
   constructor(cellsSheet: CellsSheet, x: number, y: number) {
     super();
@@ -71,10 +74,9 @@ export class CellsTextHash extends Container<LabelMeshes> {
 
   // overrides container's render function
   render(renderer: Renderer) {
-    if (!this.visible || this.worldAlpha <= 0 || !this.renderable) {
-      return;
+    if (this.visible && this.worldAlpha > 0 && this.renderable) {
+      this.labelMeshes.render(renderer);
     }
-    this.labelMeshes.render(renderer);
   }
 
   createLabels(): void {
@@ -98,6 +100,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   overflowClip(): void {
+    // used to ensure we don't check for clipping beyond the end of the sheet's data bounds
     const bounds = this.sheet.getGridBounds(true);
 
     // empty when there are no cells
@@ -107,19 +110,18 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   private checkClip(bounds: Rectangle, label: CellLabel): void {
-    // if (label.location.x === 3 && label.location.y === 4) debugger;
     let column = label.location.x - 1;
     const row = label.location.y;
     let currentHash: CellsTextHash | undefined = this;
     while (column >= bounds.left) {
-      if (column < this.AABB.x) {
+      if (column < currentHash.AABB.x) {
         // find hash to the left of current hash (skip over empty hashes)
         currentHash = this.findPreviousHash(column, row, bounds);
         if (!currentHash) return;
       }
       const neighborLabel = currentHash.getLabel(column, row);
       if (neighborLabel) {
-        neighborLabel.checkRightClip(label.topLeft.x);
+        neighborLabel.checkRightClip(label.AABB.left);
         label.checkLeftClip(neighborLabel.AABB.right);
         return;
       }
@@ -142,5 +144,39 @@ export class CellsTextHash extends Container<LabelMeshes> {
     this.labelMeshes.finalize();
   }
 
-  adjustHeadings(options: { column?: number; row?: number }): void {}
+  adjustHeadings(options: { delta: number; column?: number; row?: number }): boolean {
+    const { delta, column, row } = options;
+    let changed = false;
+    if (column !== undefined) {
+      this.cellLabels.forEach((label) => {
+        if (label.location.x === column) {
+          label.adjustWidth(delta);
+        } else if (label.location.x > column) {
+          label.adjustX(delta);
+          changed = true;
+        }
+      });
+    } else if (row !== undefined) {
+      this.cellLabels.forEach((label) => {
+        if (label.location.y > row) {
+          label.adjustY(delta);
+          changed = true;
+        }
+      });
+    }
+    return changed;
+  }
+
+  drawDebugBox(g: Graphics) {
+    const screen = grid.getScreenRectangle(
+      this.sheet.id,
+      this.AABB.left,
+      this.AABB.top,
+      this.AABB.width,
+      this.AABB.height
+    );
+    g.beginFill(this.debugColor, 0.25);
+    g.drawShape(screen);
+    g.endFill();
+  }
 }

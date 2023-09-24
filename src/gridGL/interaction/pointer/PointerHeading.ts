@@ -16,18 +16,17 @@ export class PointerHeading {
   private clicked = false;
   private fitToColumnTimeout?: number;
 
-  private headingResizing?: {
-    x: number;
-    y: number;
+  private resizing?: {
     start: number;
     row?: number;
     column?: number;
     width?: number;
     height?: number;
+    lastSize: number;
   };
 
   // tracks changes to viewport caused by resizing negative column/row headings
-  private headingResizeViewport = {
+  private viewportChanges = {
     change: 0,
     originalSize: 0,
     viewportStart: 0,
@@ -37,7 +36,6 @@ export class PointerHeading {
     if (this.active) {
       this.active = false;
       grid.cancelHeadingResize();
-      // pixiApp.cells.dirty = true;
       pixiApp.gridLines.dirty = true;
       pixiApp.cursor.dirty = true;
       pixiApp.headings.dirty = true;
@@ -69,7 +67,7 @@ export class PointerHeading {
         this.onDoubleClickRow(headingResize.row);
         return true;
       }
-      this.headingResizeViewport = {
+      this.viewportChanges = {
         change: 0,
         originalSize: headingResize.width ?? headingResize.height ?? 0,
         viewportStart: headingResize.row === undefined ? viewport.x : viewport.y,
@@ -79,16 +77,14 @@ export class PointerHeading {
       } else if (headingResize.row !== undefined) {
         grid.headingResizeRow(sheets.sheet.id, headingResize.row, headingResize.height);
       }
-      this.headingResizing = {
-        x: world.x,
-        y: world.y,
+      this.resizing = {
+        lastSize: this.viewportChanges.originalSize,
         start: headingResize.start,
         row: headingResize.row,
         column: headingResize.column,
         width: headingResize.width,
         height: headingResize.height,
       };
-      console.log(this.headingResizing);
       this.active = true;
     } else {
       if (intersects.corner) {
@@ -139,7 +135,7 @@ export class PointerHeading {
     this.clicked = false;
 
     if (pixiAppSettings.panMode === PanMode.Disabled) {
-      const headingResize = this.active ? this.headingResizing : headings.intersectsHeadingGridLine(world);
+      const headingResize = this.active ? this.resizing : headings.intersectsHeadingGridLine(world);
       if (headingResize) {
         this.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
       } else {
@@ -150,60 +146,60 @@ export class PointerHeading {
     // Only style the heading resize cursor if panning mode is disabled
     if (!this.active) {
       return false;
-    } else if (this.headingResizing) {
-      if (this.headingResizing.column !== undefined) {
+    } else if (this.resizing) {
+      if (this.resizing.column !== undefined) {
         let size: number;
-        if (this.headingResizing.column >= 0) {
-          size = Math.max(MINIMUM_COLUMN_SIZE, world.x - this.headingResizing.start);
+        if (this.resizing.column >= 0) {
+          size = Math.max(MINIMUM_COLUMN_SIZE, world.x - this.resizing.start);
         } else {
-          size = Math.max(
-            MINIMUM_COLUMN_SIZE,
-            world.x - this.headingResizing.start + this.headingResizeViewport.change
-          );
+          size = Math.max(MINIMUM_COLUMN_SIZE, world.x - this.resizing.start + this.viewportChanges.change);
 
           // move viewport by the amount of the resize for negative columns
-          const change = size - this.headingResizeViewport.originalSize;
-          pixiApp.viewport.x = this.headingResizeViewport.viewportStart + change * pixiApp.viewport.scale.x;
-          this.headingResizeViewport.change = change;
+          const change = size - this.viewportChanges.originalSize;
+          pixiApp.viewport.x = this.viewportChanges.viewportStart + change * pixiApp.viewport.scale.x;
+          this.viewportChanges.change = change;
         }
 
-        if (size !== this.headingResizing.width) {
-          this.headingResizing.width = size;
-          grid.headingResizeColumn(sheets.sheet.id, this.headingResizing.column, size);
+        if (size !== this.resizing.width) {
+          this.resizing.width = size;
+          grid.headingResizeColumn(sheets.sheet.id, this.resizing.column, size);
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
 
-          // todo fix this
-          // pixiApp.cellsSheets.changed({ column: headingResizing.column, labels: true, background: true });
-          // pixiApp.quadrants.quadrantChanged({ column: headingResizing.column });
+          pixiApp.cellsSheets.adjustHeadings({
+            sheetId: sheets.sheet.id,
+            column: this.resizing.column,
+            delta: size - this.resizing.lastSize,
+          });
+          this.resizing.lastSize = size;
         }
-      } else if (this.headingResizing.row !== undefined) {
+      } else if (this.resizing.row !== undefined) {
         let size: number;
-        if (this.headingResizing.row >= 0) {
-          size = Math.max(MINIMUM_COLUMN_SIZE, world.y - this.headingResizing.start);
+        if (this.resizing.row >= 0) {
+          size = Math.max(MINIMUM_COLUMN_SIZE, world.y - this.resizing.start);
         } else {
-          size = Math.max(
-            MINIMUM_COLUMN_SIZE,
-            world.y - this.headingResizing.start + this.headingResizeViewport.change
-          );
+          size = Math.max(MINIMUM_COLUMN_SIZE, world.y - this.resizing.start + this.viewportChanges.change);
 
           // move viewport by the amount of the resize for negative columns
-          const change = size - this.headingResizeViewport.originalSize;
-          pixiApp.viewport.y = this.headingResizeViewport.viewportStart + change * pixiApp.viewport.scale.x;
-          this.headingResizeViewport.change = change;
+          const change = size - this.viewportChanges.originalSize;
+          pixiApp.viewport.y = this.viewportChanges.viewportStart + change * pixiApp.viewport.scale.x;
+          this.viewportChanges.change = change;
         }
 
-        if (size !== this.headingResizing.height) {
-          this.headingResizing.height = size;
-          grid.headingResizeRow(sheets.sheet.id, this.headingResizing.row, size);
+        if (size !== this.resizing.height) {
+          this.resizing.height = size;
+          grid.headingResizeRow(sheets.sheet.id, this.resizing.row, size);
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
 
-          // todo fix this
-          // pixiApp.cellsSheets.changed({ row: headingResizing.row, labels: true, background: true });
-          // pixiApp.quadrants.quadrantChanged({ row: headingResizing.row });
+          pixiApp.cellsSheets.adjustHeadings({
+            sheetId: sheets.sheet.id,
+            row: this.resizing.row,
+            delta: size - this.resizing.lastSize,
+          });
+          this.resizing.lastSize = size;
         }
       }
     }
@@ -217,7 +213,7 @@ export class PointerHeading {
     }, DOUBLE_CLICK_TIME);
     if (this.active) {
       this.active = false;
-      const { headingResizing } = this;
+      const { resizing: headingResizing } = this;
       if (headingResizing) {
         grid.commitHeadingResize();
         // let updateHeading: HeadingSize | undefined;
@@ -242,7 +238,7 @@ export class PointerHeading {
         //     },
         //   ]);
         // }
-        this.headingResizing = undefined;
+        this.resizing = undefined;
         pixiApp.viewport.plugins.get('decelerate')?.reset();
       }
       return true;
