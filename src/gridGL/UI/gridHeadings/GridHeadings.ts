@@ -408,6 +408,9 @@ export class GridHeadings extends Container {
         }
       }
     }
+
+    // todo: disabled until we support wrapping
+    /*
     if (intersects.rectanglePoint(this.rowRect, world)) {
       for (const line of this.gridLinesRows) {
         if (Math.abs(world.y - line.y) < tolerance) {
@@ -416,5 +419,6 @@ export class GridHeadings extends Container {
         }
       }
     }
+    */
   }
 }
