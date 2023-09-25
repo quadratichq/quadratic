@@ -1,5 +1,6 @@
 import { Add, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { Stack, useTheme } from '@mui/material';
+import mixpanel from 'mixpanel-browser';
 import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
@@ -422,6 +423,7 @@ export const SheetBar = (): JSX.Element => {
       {hasPermission && (
         <SheetBarButton
           onClick={() => {
+            mixpanel.track('[Sheets].add');
             sheets.createNew();
             focusGrid();
           }}
