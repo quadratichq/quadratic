@@ -42,4 +42,3 @@ export const EXAMPLE_FILES: { [id: string]: { name: string; description: string 
   },
 };
 export const CSV_IMPORT_MESSAGE = 'Drag and drop a CSV file on the grid to import it.';
-export const PNG_MESSAGE = 'Copied selection as PNG to clipboard';
