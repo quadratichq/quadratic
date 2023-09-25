@@ -100,7 +100,7 @@ export class CellLabel extends Container {
     this.overflowRight = 0;
     let alignment = this.alignment ?? 'left';
     if (alignment === 'right') {
-      const actualLeft = this.AABB.x + this.cellWidth - this.textWidth;
+      const actualLeft = this.AABB.x + this.cellWidth - this.textWidth - openSansFix.x * 2;
       if (actualLeft < this.AABB.x) {
         this.overflowLeft = this.AABB.x - actualLeft;
       }
