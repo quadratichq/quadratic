@@ -38,6 +38,10 @@ export class CellsSheet extends Container {
   // set of rows that need updating
   private dirtyRows: Set<number>;
 
+  // keep track of headings that need adjusting during next update tick
+  private dirtyColumnHeadings: Map<number, number>;
+  private dirtyRowHeadings: Map<number, number>;
+
   private resolveTick?: () => void;
 
   sheet: Sheet;
@@ -48,6 +52,8 @@ export class CellsSheet extends Container {
     this.cellsTextHash = new Map();
     this.cellsRows = new Map();
     this.dirtyRows = new Set();
+    this.dirtyColumnHeadings = new Map();
+    this.dirtyRowHeadings = new Map();
     this.cellsFills = this.addChild(new CellsFills(this));
     this.cellsTextDebug = this.addChild(new Graphics());
     this.cellsTextHashContainer = this.addChild(new Container());
@@ -307,7 +313,48 @@ export class CellsSheet extends Container {
     this.cellsFills.create();
   }
 
+  // adjust hashes after a column/row resize
+  // todo: this may need to be scheduled for large data sets
+  private updateHeadings(): void {
+    if (!this.dirtyColumnHeadings.size && !this.dirtyRowHeadings.size) return;
+
+    // hashes that need to update their clipping and buffers
+    const hashesToUpdate: Set<CellsTextHash> = new Set();
+
+    this.dirtyColumnHeadings.forEach((delta, column) => {
+      const columnHash = Math.floor(column / sheetHashWidth);
+      this.cellsTextHash.forEach((hash) => {
+        if (hash.hashX >= columnHash) {
+          if (hash.adjustHeadings({ column, delta })) {
+            hashesToUpdate.add(hash);
+          }
+        }
+      });
+    });
+    this.dirtyColumnHeadings.clear();
+
+    this.dirtyRowHeadings.forEach((delta, row) => {
+      const rowHash = Math.floor(row / sheetHashHeight);
+      this.cellsTextHash.forEach((hash) => {
+        if (hash.hashY >= rowHash) {
+          if (hash.adjustHeadings({ row, delta })) {
+            hashesToUpdate.add(hash);
+          }
+        }
+      });
+    });
+    this.dirtyRowHeadings.clear();
+
+    hashesToUpdate.forEach((hash) => hash.overflowClip());
+    this.cellsTextHash.forEach((hash) => hash.updateBuffers());
+
+    // todo: these can be much more efficient
+    this.cellsFills.create();
+    this.cellsArray.create();
+  }
+
   update(): boolean {
+    this.updateHeadings();
     if (this.dirtyRows.size) {
       this.updateNextDirtyRow();
       return true;
@@ -319,38 +366,20 @@ export class CellsSheet extends Container {
   // adjust headings without recalculating the glyph geometries
   adjustHeadings(options: { delta: number; column?: number; row?: number }): void {
     const { delta, column, row } = options;
-    let columnHash: number | undefined, rowHash: number | undefined;
     if (column !== undefined) {
-      columnHash = Math.floor(column / sheetHashWidth);
-    } else if (row !== undefined) {
-      rowHash = Math.floor(row / sheetHashHeight);
-    }
-
-    // hashes that need to update their clipping and buffers
-    const hashesToUpdate: CellsTextHash[] = [];
-
-    // todo: make sure this is correct (ie, it's always to the right/bottom for adjustments?)
-    this.cellsTextHash.forEach((hash) => {
-      if (columnHash !== undefined) {
-        if (hash.hashX >= columnHash) {
-          if (hash.adjustHeadings({ delta, column })) {
-            hashesToUpdate.push(hash);
-          }
-        }
-      } else if (rowHash !== undefined) {
-        if (hash.hashY >= rowHash) {
-          if (hash.adjustHeadings({ delta, row })) {
-            hashesToUpdate.push(hash);
-          }
-        }
+      const existing = this.dirtyColumnHeadings.get(column);
+      if (existing) {
+        this.dirtyColumnHeadings.set(column, existing + delta);
+      } else {
+        this.dirtyColumnHeadings.set(column, delta);
       }
-    });
-
-    hashesToUpdate.forEach((hash) => hash.overflowClip());
-    this.cellsTextHash.forEach((hash) => hash.updateBuffers());
-
-    // todo: these can be much more efficient
-    this.cellsFills.create();
-    this.cellsArray.create();
+    } else if (row !== undefined) {
+      const existing = this.dirtyRowHeadings.get(row);
+      if (existing) {
+        this.dirtyRowHeadings.set(row, existing + delta);
+      } else {
+        this.dirtyRowHeadings.set(row, delta);
+      }
+    }
   }
 }
