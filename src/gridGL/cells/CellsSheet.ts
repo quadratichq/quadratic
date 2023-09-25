@@ -324,9 +324,17 @@ export class CellsSheet extends Container {
     this.dirtyColumnHeadings.forEach((delta, column) => {
       const columnHash = Math.floor(column / sheetHashWidth);
       this.cellsTextHash.forEach((hash) => {
-        if (hash.hashX >= columnHash) {
-          if (hash.adjustHeadings({ column, delta })) {
-            hashesToUpdate.add(hash);
+        if (columnHash < 0) {
+          if (hash.hashX <= columnHash) {
+            if (hash.adjustHeadings({ column, delta })) {
+              hashesToUpdate.add(hash);
+            }
+          }
+        } else {
+          if (hash.hashX >= columnHash) {
+            if (hash.adjustHeadings({ column, delta })) {
+              hashesToUpdate.add(hash);
+            }
           }
         }
       });
@@ -336,9 +344,17 @@ export class CellsSheet extends Container {
     this.dirtyRowHeadings.forEach((delta, row) => {
       const rowHash = Math.floor(row / sheetHashHeight);
       this.cellsTextHash.forEach((hash) => {
-        if (hash.hashY >= rowHash) {
-          if (hash.adjustHeadings({ row, delta })) {
-            hashesToUpdate.add(hash);
+        if (rowHash < 0) {
+          if (hash.hashY <= rowHash) {
+            if (hash.adjustHeadings({ row, delta })) {
+              hashesToUpdate.add(hash);
+            }
+          }
+        } else {
+          if (hash.hashY >= rowHash) {
+            if (hash.adjustHeadings({ row, delta })) {
+              hashesToUpdate.add(hash);
+            }
           }
         }
       });

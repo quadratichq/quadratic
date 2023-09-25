@@ -327,13 +327,19 @@ export class CellLabel extends Container {
     this.calculatePosition();
   }
 
-  adjustWidth(delta: number): void {
+  adjustWidth(delta: number, adjustX?: boolean): void {
     this.AABB.width += delta;
+    if (adjustX) {
+      this.AABB.x -= delta;
+    }
     this.calculatePosition();
   }
 
-  adjustHeight(delta: number): void {
+  adjustHeight(delta: number, adjustY?: boolean): void {
     this.AABB.height += delta;
+    if (adjustY) {
+      this.AABB.y -= delta;
+    }
     this.calculatePosition();
   }
 }

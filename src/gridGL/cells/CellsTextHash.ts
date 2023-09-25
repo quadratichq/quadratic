@@ -150,17 +150,37 @@ export class CellsTextHash extends Container<LabelMeshes> {
     if (column !== undefined) {
       this.cellLabels.forEach((label) => {
         if (label.location.x === column) {
-          label.adjustWidth(delta);
-        } else if (label.location.x > column) {
-          label.adjustX(delta);
-          changed = true;
+          label.adjustWidth(delta, column < 0);
+        } else {
+          if (column < 0) {
+            if (label.location.x < column) {
+              label.adjustX(-delta);
+              changed = true;
+            }
+          } else {
+            if (label.location.x > column) {
+              label.adjustX(delta);
+              changed = true;
+            }
+          }
         }
       });
     } else if (row !== undefined) {
       this.cellLabels.forEach((label) => {
-        if (label.location.y > row) {
-          label.adjustY(delta);
-          changed = true;
+        if (label.location.y === row) {
+          label.adjustHeight(delta, row < 0);
+        } else {
+          if (row < 0) {
+            if (label.location.y < row) {
+              label.adjustY(-delta);
+              changed = true;
+            }
+          } else {
+            if (label.location.y > row) {
+              label.adjustY(delta);
+              changed = true;
+            }
+          }
         }
       });
     }
