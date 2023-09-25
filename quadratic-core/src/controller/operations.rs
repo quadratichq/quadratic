@@ -10,6 +10,7 @@ use super::{
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Operation {
+    None,
     SetCellValues {
         region: RegionRef,
         values: Array,
@@ -62,6 +63,7 @@ impl GridController {
         summary: &mut TransactionSummary,
     ) -> Operation {
         match op {
+            Operation::None => Operation::None,
             Operation::SetCellValues { region, values } => {
                 summary
                     .cell_regions_modified
@@ -213,6 +215,8 @@ impl GridController {
                         column,
                         new_size: old_size,
                     }
+                } else {
+                    Operation::None
                 }
             }
 
@@ -229,6 +233,8 @@ impl GridController {
                         row,
                         new_size: old_size,
                     }
+                } else {
+                    Operation::None
                 }
             }
         }

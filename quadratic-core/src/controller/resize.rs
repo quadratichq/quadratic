@@ -1,6 +1,6 @@
 use crate::grid::{ColumnId, RowId, SheetId};
 
-use super::{transactions::*, GridController};
+use super::{operations::Operation, transactions::*, GridController};
 
 impl GridController {
     pub fn resize_column_transiently(&mut self, sheet_id: SheetId, column: i64, size: Option<f64>) {
@@ -79,7 +79,7 @@ impl GridController {
         // calling code because we immediately call `transact_forward()`.
         self.cancel_resize();
 
-        self.transact_forward(Transaction { ops, cursor })
+        self.transact_forward(ops, cursor)
     }
 
     /// Resizes a column and returns the old width.
