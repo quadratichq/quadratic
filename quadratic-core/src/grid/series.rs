@@ -79,7 +79,10 @@ pub struct SeriesOptions {
     pub spaces: i32,
     pub negative: bool,
 }
-
+// a s d f
+// f d s a
+// f d s a f d
+// s a f d s a
 pub fn copy_series(options: SeriesOptions) -> Vec<CellValue> {
     let SeriesOptions {
         series,
@@ -88,12 +91,22 @@ pub fn copy_series(options: SeriesOptions) -> Vec<CellValue> {
     } = options;
 
     if negative {
-        series
-            .into_iter()
-            .rev()
-            .cycle()
-            .take(spaces as usize)
-            .collect::<Vec<CellValue>>()
+        let mut count = 0;
+        let mut output = vec![];
+
+        while count < spaces {
+            let max = std::cmp::min(spaces - count, series.len() as i32);
+            let mut temp = series
+                .clone()
+                .into_iter()
+                .take(max as usize)
+                .collect::<Vec<CellValue>>();
+            temp.extend(output);
+            output = temp;
+            count += max;
+        }
+
+        output
     } else {
         series
             .into_iter()
@@ -266,6 +279,8 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
             if negative {
                 results.reverse();
             }
+
+            return results;
         }
     }
 
@@ -372,6 +387,34 @@ mod tests {
         assert_eq!(
             results,
             cell_value_number(vec![1, 2, 3, 1, 2, 3, 1, 2, 3, 1])
+        );
+    }
+
+    #[test]
+    fn copies_a_non_series() {
+        let options = SeriesOptions {
+            series: cell_value_text(vec!["a", "s", "d", "f"]),
+            spaces: 8,
+            negative: false,
+        };
+        let results = copy_series(options);
+        assert_eq!(
+            results,
+            cell_value_text(vec!["a", "s", "d", "f", "a", "s", "d", "f"])
+        );
+    }
+
+    #[test]
+    fn copies_a_non_series_negative() {
+        let options = SeriesOptions {
+            series: cell_value_text(vec!["a", "s", "d", "f"]),
+            spaces: 8,
+            negative: true,
+        };
+        let results = copy_series(options);
+        assert_eq!(
+            results,
+            cell_value_text(vec!["a", "s", "d", "f", "a", "s", "d", "f"])
         );
     }
 
