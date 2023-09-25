@@ -8,8 +8,7 @@ use crate::{
 };
 
 use super::{
-    formatting::CellFmtArray,
-    transactions::{Operation, Transaction, TransactionSummary},
+    formatting::CellFmtArray, operations::Operation, transactions::TransactionSummary,
     GridController,
 };
 
@@ -98,7 +97,7 @@ impl GridController {
             let values = Array::from(CellValue::Text(value));
             ops.push(Operation::SetCellValues { region, values });
         }
-        self.transact_forward(Transaction { ops, cursor })
+        self.transact_forward(ops, cursor)
     }
     pub fn set_cells(
         &mut self,
@@ -108,7 +107,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.set_cells_operations(sheet_id, start_pos, values);
-        self.transact_forward(Transaction { ops, cursor })
+        self.transact_forward(ops, cursor)
     }
     pub fn set_cells_operations(
         &mut self,
@@ -151,7 +150,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.delete_cell_values_operations(sheet_id, rect);
-        self.transact_forward(Transaction { ops, cursor })
+        self.transact_forward(ops, cursor)
     }
 
     pub fn clear_formatting_operations(&mut self, sheet_id: SheetId, rect: Rect) -> Vec<Operation> {
@@ -206,7 +205,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.clear_formatting_operations(sheet_id, rect);
-        self.transact_forward(Transaction { ops, cursor })
+        self.transact_forward(ops, cursor)
     }
 
     pub fn delete_values_and_formatting(
@@ -217,7 +216,7 @@ impl GridController {
     ) -> TransactionSummary {
         let mut ops = self.delete_cell_values_operations(sheet_id, rect);
         ops.extend(self.clear_formatting_operations(sheet_id, rect));
-        self.transact_forward(Transaction { ops, cursor })
+        self.transact_forward(ops, cursor)
     }
 
     /// Returns a region of the spreadsheet, assigning IDs to columns and rows

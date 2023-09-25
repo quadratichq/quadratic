@@ -1,10 +1,15 @@
-import './SheetBar.css';
-
-import { ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { Add, ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { Stack, useTheme } from '@mui/material';
+import mixpanel from 'mixpanel-browser';
 import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { isMobile } from 'react-device-detect';
+import { useRecoilValue } from 'recoil';
+import { isEditorOrAbove } from '../../../actions';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
+import { SheetBarButton } from './SheetBarButton';
 import { SheetBarTab } from './SheetBarTab';
 import { SheetBarTabContextMenu } from './SheetBarTabContextMenu';
 
@@ -17,6 +22,10 @@ export const SheetBar = (): JSX.Element => {
   // used to trigger state change (eg, when sheets change)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, setTrigger] = useState(0);
+
+  const theme = useTheme();
+  const { permission } = useRecoilValue(editorInteractionStateAtom);
+  const hasPermission = isEditorOrAbove(permission) && !isMobile;
 
   // activate sheet
   const [activeSheet, setActiveSheet] = useState(sheets.current);
@@ -150,8 +159,10 @@ export const SheetBar = (): JSX.Element => {
 
   const handlePointerDown = useCallback(
     (options: { event: React.PointerEvent<HTMLDivElement>; sheet: Sheet }) => {
-      if (!sheetTabs) return;
       const { event, sheet } = options;
+
+      if (!sheetTabs) return;
+
       setActiveSheet((prevState: string) => {
         if (prevState !== sheet.id) {
           sheets.current = sheet.id;
@@ -160,6 +171,12 @@ export const SheetBar = (): JSX.Element => {
         }
         return prevState;
       });
+
+      // don't drag on context menu via right click or ctrl+click
+      if (event.button === 2 || (event.ctrlKey === true && event.button === 0)) return;
+
+      // If they don't have the permission, don't allow past here for drag to reorder
+      if (!hasPermission) return;
 
       const tab = event.currentTarget;
       if (tab) {
@@ -176,7 +193,7 @@ export const SheetBar = (): JSX.Element => {
         };
         setTimeout(() => {
           if (down.current) {
-            tab.style.boxShadow = '0.25rem -0.25rem 0.5rem rgba(0,0,0,0.25)';
+            tab.style.boxShadow = '0rem -0.5rem 0.75rem rgba(0,0,0,0.25)';
           }
         }, 500);
         tab.style.zIndex = '2';
@@ -184,7 +201,7 @@ export const SheetBar = (): JSX.Element => {
       focusGrid();
       event.preventDefault();
     },
-    [getOrderIndex, sheetTabs]
+    [getOrderIndex, sheetTabs, hasPermission]
   );
 
   const handlePointerMove = useCallback(
@@ -343,14 +360,13 @@ export const SheetBar = (): JSX.Element => {
           throw new Error('Expect sheet to be defined in SheetBar.pointerUp');
         }
         const tabs: { order: number; id: string }[] = [];
-
         down.current.tab.parentElement?.childNodes.forEach((node) => {
           const element = node as HTMLDivElement;
           if (element !== tab) {
-            let order = parseInt(element.style.order);
-            let id = element.getAttribute('data-id');
+            const order = element.getAttribute('data-actual-order');
+            const id = element.getAttribute('data-id');
             if (!id || !order) throw new Error('Expected id and order to be defined in SheetBar');
-            tabs.push({ order, id });
+            tabs.push({ order: parseInt(order), id });
           }
         });
         tabs.sort((a, b) => (a.order < b.order ? -1 : a.order > b.order ? 1 : 0));
@@ -377,10 +393,16 @@ export const SheetBar = (): JSX.Element => {
   }, [handlePointerMove, handlePointerUp]);
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id: string; name: string } | undefined>();
-  const handleContextEvent = useCallback((event: MouseEvent, sheet: Sheet) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY, name: sheet.name, id: sheet.id });
-  }, []);
+  const handleContextEvent = useCallback(
+    (event: MouseEvent, sheet: Sheet) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (hasPermission) {
+        setContextMenu({ x: event.clientX, y: event.clientY, name: sheet.name, id: sheet.id });
+      }
+    },
+    [hasPermission]
+  );
 
   const [forceRename, setForceRename] = useState<string | undefined>();
   const handleRename = useCallback(() => {
@@ -391,63 +413,73 @@ export const SheetBar = (): JSX.Element => {
   const clearRename = useCallback(() => setForceRename(undefined), []);
 
   return (
-    <div className="sheet-bar">
-      <div className="sheet-bar-add">
-        <button
+    <Stack
+      direction="row"
+      justifyContent="space-between"
+      alignItems="stretch"
+      sx={{ color: theme.palette.text.secondary, height: '2rem', fontSize: '0.7rem' }}
+      className="sheet-bar"
+    >
+      {hasPermission && (
+        <SheetBarButton
           onClick={() => {
+            mixpanel.track('[Sheets].add');
             sheets.createNew();
             focusGrid();
           }}
+          style={{ borderTop: `1px solid ${theme.palette.divider}` }}
+          tooltip="Add Sheet"
         >
-          +
-        </button>
-        <div
-          className="sheet-bar-sheets"
-          ref={sheetsRef}
-          onWheel={(e) => {
-            if (!sheetTabs) return;
-            if (e.deltaX) {
-              sheetTabs.scrollLeft += e.deltaX;
-            }
-          }}
-        >
-          {sheets.map((sheet) => (
-            <SheetBarTab
-              key={sheet.id}
-              order={getOrderIndex(sheet.order).toString()}
-              onPointerDown={handlePointerDown}
-              onContextMenu={handleContextEvent}
-              active={activeSheet === sheet.id}
-              sheet={sheet}
-              forceRename={forceRename === sheet.id}
-              clearRename={clearRename}
-            />
-          ))}
-        </div>
-      </div>
-      <div className="sheet-bar-arrows">
-        <button
-          className="sheet-bar-arrow"
-          ref={leftRef}
-          onPointerDown={() => handleArrowDown(-1)}
-          onPointerUp={handleArrowUp}
-        >
-          <ChevronLeft />
-        </button>
-        <button
-          className="sheet-bar-arrow"
-          ref={rightRef}
-          onPointerDown={() => handleArrowDown(1)}
-          onPointerUp={handleArrowUp}
-        >
-          <ChevronRight />
-        </button>
-      </div>
+          <Add fontSize="small" color="inherit" />
+        </SheetBarButton>
+      )}
+
+      <Stack
+        direction="row"
+        flexShrink="1"
+        ref={sheetsRef}
+        onWheel={(e) => {
+          if (!sheetTabs) return;
+          if (e.deltaX) {
+            sheetTabs.scrollLeft += e.deltaX;
+          }
+        }}
+        sx={{
+          overflow: 'hidden',
+          boxShadow: `inset 0 1px 0 ${theme.palette.divider}`,
+          width: '100%',
+          // Hide left border when user can't see "+" button
+          marginLeft: '-1px',
+        }}
+      >
+        {sheets.map((sheet) => (
+          <SheetBarTab
+            key={sheet.id}
+            order={getOrderIndex(sheet.order).toString()}
+            onContextMenu={handleContextEvent}
+            onPointerDown={handlePointerDown}
+            active={activeSheet === sheet.id}
+            sheet={sheet}
+            forceRename={forceRename === sheet.id}
+            clearRename={clearRename}
+          />
+        ))}
+      </Stack>
+
+      <Stack direction="row" sx={{ borderTop: `1px solid ${theme.palette.divider}` }}>
+        <SheetBarButton buttonRef={leftRef} onPointerDown={() => handleArrowDown(-1)} onPointerUp={handleArrowUp}>
+          <ChevronLeft fontSize="small" color="inherit" />
+        </SheetBarButton>
+
+        <SheetBarButton buttonRef={rightRef} onPointerDown={() => handleArrowDown(1)} onPointerUp={handleArrowUp}>
+          <ChevronRight fontSize="small" color="inherit" />
+        </SheetBarButton>
+      </Stack>
       <SheetBarTabContextMenu
         contextMenu={contextMenu}
         handleClose={() => setContextMenu(undefined)}
         handleRename={handleRename}
       />
-    </div>
+    </Stack>
   );
 };

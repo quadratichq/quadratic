@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use lexicon_fractional_index::key_between;
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
@@ -28,12 +30,16 @@ pub use formatting::{
 pub use ids::*;
 pub use sheet::Sheet;
 
-use crate::{CellValue, Pos, Rect, Value};
+use crate::{
+    controller::compute::{SheetPos, SheetRect},
+    CellValue, Pos, Rect, Value,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Grid {
     sheets: Vec<Sheet>,
+    dependencies: HashMap<SheetPos, Vec<SheetRect>>,
 }
 impl Default for Grid {
     fn default() -> Self {
@@ -42,13 +48,18 @@ impl Default for Grid {
 }
 impl Grid {
     pub fn new() -> Self {
-        let mut ret = Grid { sheets: vec![] };
+        let mut ret = Grid {
+            sheets: vec![],
+            dependencies: HashMap::new(),
+        };
         ret.add_sheet(None).expect("error adding initial sheet");
         ret
     }
-
     pub fn sheets(&self) -> &[Sheet] {
         &self.sheets
+    }
+    pub fn dependencies_mut(&mut self) -> &mut HashMap<SheetPos, Vec<SheetRect>> {
+        &mut self.dependencies
     }
     pub fn sheet_ids(&self) -> Vec<SheetId> {
         self.sheets.iter().map(|sheet| sheet.id).collect()
@@ -116,10 +127,14 @@ impl Grid {
         self.sort_sheets();
         Ok(id)
     }
-    pub fn remove_sheet(&mut self, sheet_id: SheetId) -> Option<Sheet> {
-        let i = self.sheet_id_to_index(sheet_id)?;
-        let ret = self.sheets.remove(i);
-        Some(ret)
+    pub fn remove_sheet(&mut self, sheet_id: SheetId) -> Sheet {
+        let i = self.sheet_id_to_index(sheet_id);
+        match i {
+            Some(i) => self.sheets.remove(i),
+            None => unreachable!(
+                "remove_sheet should never be called with a sheet_id that doesn't exist"
+            ),
+        }
     }
     /// Moves a sheet before another sheet
     pub fn move_sheet(&mut self, target: SheetId, order: String) {

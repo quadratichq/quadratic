@@ -1,8 +1,7 @@
 use anyhow::{anyhow, Result};
 
 use super::{
-    formatting::CellFmtArray,
-    transactions::{Operation, Transaction, TransactionSummary},
+    formatting::CellFmtArray, operations::Operation, transactions::TransactionSummary,
     GridController,
 };
 use crate::{
@@ -69,7 +68,7 @@ impl GridController {
             ops.extend(self.expand_width(sheet_id, ExpandDirection::Right, &rect, &new_range)?);
         }
 
-        Ok(self.transact_forward(Transaction { ops, cursor }))
+        Ok(self.transact_forward(ops, cursor))
     }
 
     // Apply the block of formats below the selection in increments of the
