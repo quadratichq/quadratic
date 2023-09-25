@@ -99,8 +99,10 @@ pub fn copy_series(options: SeriesOptions) -> Vec<CellValue> {
             let mut temp = series
                 .clone()
                 .into_iter()
+                .rev()
                 .take(max as usize)
                 .collect::<Vec<CellValue>>();
+            temp.reverse();
             temp.extend(output);
             output = temp;
             count += max;
@@ -408,13 +410,13 @@ mod tests {
     fn copies_a_non_series_negative() {
         let options = SeriesOptions {
             series: cell_value_text(vec!["a", "s", "d", "f"]),
-            spaces: 8,
+            spaces: 9,
             negative: true,
         };
         let results = copy_series(options);
         assert_eq!(
             results,
-            cell_value_text(vec!["a", "s", "d", "f", "a", "s", "d", "f"])
+            cell_value_text(vec!["f", "a", "s", "d", "f", "a", "s", "d", "f"])
         );
     }
 

@@ -107,7 +107,7 @@ impl GridController {
                         let new_y = if !negative {
                             y + rect.height() as i64 - 1
                         } else {
-                            y - rect.height() as i64 - 1
+                            y - rect.height() as i64 + 1
                         };
                         let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
                         format_ops
@@ -157,7 +157,7 @@ impl GridController {
                         let new_x = if !negative {
                             x + rect.width() as i64
                         } else {
-                            x - rect.width() as i64
+                            x - rect.width() as i64 + 1
                         };
                         let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
                         format_ops
@@ -182,7 +182,7 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let sheet = self.sheet(sheet_id);
         let selection_values = cell_values_in_rect(&rect, &sheet)?;
-        let mut series = find_auto_complete(SeriesOptions {
+        let series = find_auto_complete(SeriesOptions {
             series: selection_values
                 .clone()
                 .into_cell_values_vec()
@@ -191,10 +191,6 @@ impl GridController {
             spaces: (range.width() * range.height()) as i32,
             negative,
         });
-
-        // if negative {
-        //     // series.reverse();
-        // }
 
         let array = Array::new_row_major(range.size(), series.into())
             .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", range.size(), e))?;
@@ -355,26 +351,34 @@ mod tests {
         }
     }
 
+    fn assert_cell_format_bold_row(
+        grid_controller: &GridController,
+        sheet_id: SheetId,
+        x_start: i64,
+        x_end: i64,
+        y: i64,
+        value: Vec<bool>,
+    ) {
+        for (index, x) in (x_start..=x_end).enumerate() {
+            assert_cell_format_bold(grid_controller, sheet_id, x, y, *value.get(index).unwrap());
+        }
+    }
+
     fn assert_cell_format_bold(
         grid_controller: &GridController,
         sheet_id: SheetId,
         x: i64,
         y: i64,
+        expect_bold: bool,
     ) {
         let sheet = grid_controller.grid().sheet_from_id(sheet_id);
         let has_bold = sheet.get_formatting_value::<Bold>(Pos { x, y }).is_some();
-        assert!(has_bold, "Cell at ({}, {}) is not bold", x, y);
-    }
-
-    fn assert_cell_format_not_bold(
-        grid_controller: &GridController,
-        sheet_id: SheetId,
-        x: i64,
-        y: i64,
-    ) {
-        let sheet = grid_controller.grid().sheet_from_id(sheet_id);
-        let has_bold = sheet.get_formatting_value::<Bold>(Pos { x, y }).is_some();
-        assert!(!has_bold, "Cell at ({}, {}) is bold", x, y);
+        assert!(
+            has_bold == expect_bold,
+            "Cell at ({}, {}) is not bold",
+            x,
+            y
+        );
     }
 
     fn table(grid_controller: GridController, sheet_id: SheetId, range: &Rect) {
@@ -427,26 +431,6 @@ mod tests {
         println!("\nsheet: {}\n{}", sheet.id, table);
     }
 
-    pub fn table_modified(
-        grid_controller: GridController,
-        sheet_id: SheetId,
-        modified: &Rect,
-        selected: &Rect,
-    ) {
-        let range = Rect::new_span(
-            Pos {
-                x: modified.min.x - selected.width() as i64,
-                y: modified.min.y - selected.height() as i64,
-            },
-            Pos {
-                x: modified.max.x + selected.width() as i64,
-                y: modified.max.y + selected.height() as i64,
-            },
-        );
-
-        table(grid_controller, sheet_id, &range);
-    }
-
     #[test]
     fn test_cell_values_in_rect() {
         let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
@@ -468,12 +452,15 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        // table_modified(grid.clone(), sheet_id, &range, &selected);
+        // table(grid.clone(), sheet_id, &range);
 
         let expected = vec!["a", "h", "x", "g", "a", "h", "x", "g", "a"];
+        let expected_bold = vec![true, false, false, true, true, false, false, true, true];
 
         assert_cell_value_text_row(&grid, sheet_id, 2, 10, 2, expected.clone());
         assert_cell_value_text_row(&grid, sheet_id, 2, 10, 10, expected);
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 2, expected_bold.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 10, expected_bold);
     }
 
     #[test]
@@ -483,12 +470,15 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        // table_modified(grid.clone(), sheet_id, &range, &selected);
+        table(grid.clone(), sheet_id, &range);
 
-        let expected = vec!["g", "z", "", "b", "f", "z", "r", "b", "f"];
+        let expected = vec!["f", "z", "r", "b", "f", "z", "r", "b", "f"];
+        let expected_bold = vec![false, true, true, false, false, true, true, false, false];
 
         assert_cell_value_text_row(&grid, sheet_id, 2, 10, -7, expected.clone());
         assert_cell_value_text_row(&grid, sheet_id, 2, 10, 3, expected);
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 10, -7, expected_bold.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 3, expected_bold);
     }
 
     #[test]
@@ -498,14 +488,17 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        table_modified(grid.clone(), sheet_id, &range, &selected);
+        // table(grid.clone(), sheet_id, &range);
 
         let expected = vec![
             "g", "a", "h", "x", "g", "a", "h", "x", "g", "a", "h", "x", "g",
         ];
+        let expected_bold = vec![true, false, false, true, true, false, false, true, false];
 
         assert_cell_value_text_row(&grid, sheet_id, -7, 5, 2, expected.clone());
-        assert_cell_value_text_row(&grid, sheet_id, -7, 5, 2, expected);
+        assert_cell_value_text_row(&grid, sheet_id, -7, 5, 10, expected);
+        assert_cell_format_bold_row(&grid, sheet_id, -7, 5, 2, expected_bold.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, -7, 5, 10, expected_bold);
     }
 
     #[test]
@@ -515,13 +508,19 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        table_modified(grid.clone(), sheet_id, &range, &selected);
+        let range: Rect = Rect::new_span(selected.max, range.min);
+        table(grid.clone(), sheet_id, &range);
 
         let expected = vec![
             "b", "f", "z", "r", "b", "f", "z", "r", "b", "f", "z", "r", "b",
         ];
+        let expected_bold = vec![
+            false, true, true, false, false, true, true, false, false, false,
+        ];
 
         assert_cell_value_text_row(&grid, sheet_id, -7, 5, -7, expected.clone());
         assert_cell_value_text_row(&grid, sheet_id, -7, 5, 3, expected);
+        assert_cell_format_bold_row(&grid, sheet_id, -7, 5, -7, expected_bold.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, -7, 5, 3, expected_bold);
     }
 }

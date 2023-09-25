@@ -424,6 +424,12 @@ export class Grid {
 
   expand(sheetId: string, rectangle: Rectangle, range: Rectangle, shrinkHorizontal?: number) {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+    console.log(
+      rectangleToRect(rectangle),
+      rectangleToRect(range),
+      shrinkHorizontal ? BigInt(shrinkHorizontal) : undefined,
+      sheets.getCursorPosition()
+    );
     const summary = this.gridController.expand(
       sheetId,
       rectangleToRect(rectangle),

@@ -213,8 +213,6 @@ export class PointerAutoComplete {
         this.endCell.x - this.selection.x,
         this.endCell.y - this.selection.y
       );
-      console.log(this.endCell, this.selection, range);
-
       grid.expand(sheet.id, this.selection, range, this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined);
     }
 
