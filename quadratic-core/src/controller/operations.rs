@@ -18,6 +18,11 @@ pub enum Operation {
         cell: SheetPos,
         dependencies: Option<Vec<SheetRect>>,
     },
+    SetCellCode {
+        cell_ref: CellRef,
+        language: CodeCellLanguage,
+        code_string: String,
+    },
     SetCellFormats {
         region: RegionRef,
         attr: CellFmtArray,
@@ -87,6 +92,20 @@ impl GridController {
                 Operation::SetCellDependencies {
                     cell,
                     dependencies: old_deps,
+                }
+            }
+            Operation::SetCellCode {
+                cell_ref,
+                language,
+                code_string,
+            } => {
+                let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
+                let old_code = sheet.cell_code(cell_ref);
+                sheet.set_cell_code(cell_ref, language, code_string);
+                Operation::SetCellCode {
+                    cellRef,
+                    language: old_code.language,
+                    code_string: old_code.code_string,
                 }
             }
             Operation::SetCellFormats { region, attr } => {
