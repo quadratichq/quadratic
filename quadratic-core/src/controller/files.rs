@@ -18,12 +18,14 @@ impl GridController {
         file: &str,
         insert_at: Pos,
     ) -> Result<TransactionSummary> {
-        let mut reader = csv::Reader::from_reader(file.as_bytes());
+        let mut reader = csv::ReaderBuilder::new()
+            .has_headers(false)
+            .from_reader(file.as_bytes());
 
-        let mut values = reader
+        let values = reader
             .records()
             .into_iter()
-            .flat_map(|record| {
+            .map(|record| {
                 record
                     .unwrap()
                     .iter()
@@ -36,32 +38,29 @@ impl GridController {
                     })
                     .collect::<Vec<CellValue>>()
             })
-            .collect::<Vec<CellValue>>();
+            .collect::<Vec<Vec<CellValue>>>();
 
-        let mut headers = reader
-            .headers()
-            .unwrap()
-            .iter()
-            .map(|h| CellValue::Text(h.to_string()))
-            .collect::<Vec<CellValue>>();
+        if let Some(headers) = values.get(0) {
+            let width = headers.len() as u32;
+            let height = values.len() as u32 / width;
+            let array: SmallVec<[CellValue; 1]> =
+                SmallVec::from_vec(values.into_iter().flatten().collect());
+            let size = ArraySize::new(width, height).unwrap();
+            let values = Array::new_row_major(size, array).unwrap();
+            let rect = Rect::new_span(
+                insert_at,
+                Pos {
+                    x: insert_at.x + (width as i64) - 1,
+                    y: insert_at.y + (height as i64) - 1,
+                },
+            );
+            let region = self.region(sheet_id, rect);
+            let ops = vec![Operation::SetCellValues { region, values }];
 
-        let array: SmallVec<[CellValue; 1]> = SmallVec::from_vec(values);
-        let width = headers.len() as u32;
-        headers.extend(array);
-        let height = headers.len() as u32 / width;
-        let size = ArraySize::new(width, height).unwrap();
-        let values = Array::new_row_major(size, SmallVec::from_vec(headers)).unwrap();
-        let rect = Rect::new_span(
-            insert_at,
-            Pos {
-                x: insert_at.x + (width as i64) - 1,
-                y: insert_at.y + (height as i64) - 1,
-            },
-        );
-        let region = self.region(sheet_id, rect);
-        let ops = vec![Operation::SetCellValues { region, values }];
+            return Ok(self.transact_forward(ops, None));
+        }
 
-        Ok(self.transact_forward(ops, None))
+        Err(anyhow!("CSV must have at least two columns"))
     }
 }
 
