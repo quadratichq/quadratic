@@ -1,10 +1,12 @@
 use anyhow::{anyhow, Result};
 use bigdecimal::BigDecimal;
 use csv::StringRecord;
+use smallvec::SmallVec;
 use std::str::FromStr;
 
 use crate::{
-    controller::operations::Operation, grid::SheetId, Array, ArraySize, CellValue, Pos, Rect,
+    controller::operations::Operation, grid::SheetId, wasm_bindings::js, Array, ArraySize,
+    CellValue, Pos, Rect,
 };
 
 use super::{transactions::TransactionSummary, GridController};
@@ -17,44 +19,49 @@ impl GridController {
         insert_at: Pos,
     ) -> Result<TransactionSummary> {
         let mut reader = csv::Reader::from_reader(file.as_bytes());
-        let headers = reader.headers()?.clone();
-        let width = headers.len() as u32;
-        let height = reader.records().into_iter().count() as u32;
 
-        if let Some(size) = ArraySize::new(width, height) {
-            let mut values = Array::new_empty(size);
-
-            reader
-                .into_records()
-                .into_iter()
-                .enumerate()
-                .for_each(|(y, record)| {
-                    record.iter().enumerate().for_each(|(x, value)| {
-                        let cell_value = if let Ok(number) = BigDecimal::from_str(value.as_slice())
-                        {
+        let mut values = reader
+            .records()
+            .into_iter()
+            .flat_map(|record| {
+                record
+                    .unwrap()
+                    .iter()
+                    .map(|value| {
+                        if let Ok(number) = BigDecimal::from_str(value) {
                             CellValue::Number(number)
                         } else {
-                            CellValue::Text(value.as_slice().into())
-                        };
+                            CellValue::Text(value.into())
+                        }
+                    })
+                    .collect::<Vec<CellValue>>()
+            })
+            .collect::<Vec<CellValue>>();
 
-                        values.set(x as u32, y as u32, cell_value).unwrap();
-                    });
-                });
+        let mut headers = reader
+            .headers()
+            .unwrap()
+            .iter()
+            .map(|h| CellValue::Text(h.to_string()))
+            .collect::<Vec<CellValue>>();
 
-            let rect = Rect::new_span(
-                insert_at,
-                Pos {
-                    x: insert_at.x + (values.width() as i64) - 1,
-                    y: insert_at.y + (values.height() as i64) - 1,
-                },
-            );
-            let region = self.region(sheet_id, rect);
-            let ops = vec![Operation::SetCellValues { region, values }];
+        let array: SmallVec<[CellValue; 1]> = SmallVec::from_vec(values);
+        let width = headers.len() as u32;
+        headers.extend(array);
+        let height = headers.len() as u32 / width;
+        let size = ArraySize::new(width, height).unwrap();
+        let values = Array::new_row_major(size, SmallVec::from_vec(headers)).unwrap();
+        let rect = Rect::new_span(
+            insert_at,
+            Pos {
+                x: insert_at.x + (width as i64) - 1,
+                y: insert_at.y + (height as i64) - 1,
+            },
+        );
+        let region = self.region(sheet_id, rect);
+        let ops = vec![Operation::SetCellValues { region, values }];
 
-            return Ok(self.transact_forward(ops, None));
-        }
-
-        Err(anyhow!("CSV file is empty"))
+        Ok(self.transact_forward(ops, None))
     }
 }
 
@@ -142,10 +149,10 @@ Concord,NH,United States,42605
             .import_csv(sheet_id, SIMPLE_CSV, pos)
             .unwrap();
 
-        let range = Rect {
-            min: pos,
-            max: Pos { x: 10, y: 10 },
-        };
-        table(grid_controller, sheet_id, &range);
+        table(
+            grid_controller,
+            sheet_id,
+            &result.cell_regions_modified[0].1,
+        );
     }
 }
