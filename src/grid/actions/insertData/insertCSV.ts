@@ -11,9 +11,9 @@ export const InsertCSV = (props: {
 }) => {
   const { file, insertAtCellLocation } = props;
 
+  // console.log(sheets.sheet.id, file, insertAtCellLocation);
   grid.importCsv(sheets.sheet.id, file, insertAtCellLocation);
 
-  console.log(file);
   // sheetController.start_transaction();
 
   // let rowIndex = 0;

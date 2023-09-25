@@ -420,9 +420,11 @@ export class Grid {
 
   //#region Clipboard
 
-  importCsv(sheetId: string, file: any, insertAtCellLocation: Coordinate): JsClipboard {
+  async importCsv(sheetId: string, file: File, insertAtCellLocation: Coordinate) {
     const pos = new Pos(insertAtCellLocation.x, insertAtCellLocation.y);
-    return this.gridController.importCsv(sheetId, file, pos);
+    const text = await file.text();
+    const summary = this.gridController.importCsv(sheetId, text, pos);
+    transactionResponse(summary);
   }
 
   //#endregion
