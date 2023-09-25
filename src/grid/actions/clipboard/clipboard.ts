@@ -1,6 +1,8 @@
 import * as Sentry from '@sentry/browser';
 import localforage from 'localforage';
+import mixpanel from 'mixpanel-browser';
 import { isEditorOrAbove } from '../../../actions';
+import { GlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { debugTimeCheck, debugTimeReset } from '../../../gridGL/helpers/debugPerformance';
 import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
 import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
@@ -121,21 +123,30 @@ export const copyToClipboard = () => {
   debugTimeCheck('copy to clipboard');
 };
 
-export const copySelectionToPNG = async () => {
-  const blob = await copyAsPNG();
-  if (!blob) {
-    throw new Error('Unable to copy as PNG');
-  }
+export const copySelectionToPNG = async (addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar']) => {
+  try {
+    const blob = await copyAsPNG();
+    if (!blob) {
+      throw new Error('The function `copyAsPng` failed to return data');
+    }
 
-  if (fullClipboardSupport()) {
-    navigator.clipboard.write([
+    if (!fullClipboardSupport()) {
+      console.log('copy to PNG is not supported in Firefox (yet)');
+      mixpanel.track('[clipboard].copySelectionToPNG.notSupported');
+      return;
+    }
+
+    await navigator.clipboard.write([
       new ClipboardItem({
-        //@ts-ignore
         'image/png': blob,
       }),
     ]);
-  } else {
-    console.log('copy to PNG is not supported in Firefox (yet)');
+
+    addGlobalSnackbar('Copied selection as PNG to clipboard');
+  } catch (error) {
+    console.error(error);
+    addGlobalSnackbar('Failed to copy selection as PNG.', { severity: 'error' });
+    Sentry.captureException(error);
   }
 };
 

@@ -196,6 +196,7 @@ impl Sheet {
     pub fn get_cell_value(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
         column.values.get(pos.y)
+        // TODO: update to check for code spill cells
     }
     /// Returns a formatting property of a cell.
     pub fn get_formatting_value<A: CellFmtAttr>(&self, pos: Pos) -> Option<A::Value> {

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 use super::offsets::Offsets;
@@ -72,6 +74,7 @@ pub fn import(file_contents: &str) -> Result<current::Grid, String> {
                 sheet
             })
             .collect(),
+        dependencies: HashMap::new(), // TODO: Implement this
     })
 }
 

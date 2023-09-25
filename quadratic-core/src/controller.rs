@@ -7,7 +7,10 @@ use self::{resize::TransientResize, transactions::Transaction};
 
 pub mod cells;
 pub mod clipboard;
+pub mod compute;
+pub mod dependencies;
 pub mod formatting;
+pub mod operations;
 pub mod resize;
 pub mod sheets;
 pub mod transactions;
