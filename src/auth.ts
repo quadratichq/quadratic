@@ -38,19 +38,22 @@ async function getClient() {
 }
 
 interface AuthClient {
-  isAuthenticated(): Promise<boolean>;
+  isLoggedIn(): Promise<boolean>;
   user(): Promise<undefined | User>;
   login(redirectTo: string, isSignupFlow?: boolean): Promise<void>;
   handleSigninRedirect(): Promise<void>;
   logout(): Promise<void>;
-  getToken(): Promise<string | void>;
+  getToken(): Promise<string>;
 }
 
 export const authClient: AuthClient = {
-  async isAuthenticated() {
+  // In Quadratic, logged in means we know who they are AND we know they
+  // have an auth token, e.g. authenticated & authorized
+  async isLoggedIn() {
     const client = await getClient();
     const isAuthenticated = await client.isAuthenticated();
-    return isAuthenticated;
+    const isAuthorized = Boolean(await this.getToken());
+    return isAuthenticated && isAuthorized;
   },
   async user() {
     const client = await getClient();
@@ -93,22 +96,23 @@ export const authClient: AuthClient = {
       const token = await client.getTokenSilently();
       return token;
     } catch (e) {
-      return this.login(new URL(window.location.href).pathname);
+      return '';
     }
   },
 };
 
 /**
  * Utility function for use in route loaders.
- * If the user is not logged in and tries to access a protected route, we redirect
- * them to the login page with a `from` parameter that allows login to redirect back
- * to current page upon successful authentication
+ * If the user is not logged in (or don't have an auth token) and tries to
+ * access a protected route, we redirect them to the login page with a `from`
+ * parameter that allows login to redirect back to current page upon successful
+ * authentication.
  */
 export function protectedRouteLoaderWrapper(loaderFn: LoaderFunction): LoaderFunction {
   return async (loaderFnArgs: LoaderFunctionArgs) => {
     const { request } = loaderFnArgs;
-    let isAuthenticated = await authClient.isAuthenticated();
-    if (!isAuthenticated) {
+    const isLoggedIn = await authClient.isLoggedIn();
+    if (!isLoggedIn) {
       let params = new URLSearchParams();
       params.set('from', new URL(request.url).pathname);
       return redirect(ROUTES.LOGIN + '?' + params.toString());

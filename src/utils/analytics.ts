@@ -1,21 +1,18 @@
 import * as amplitude from '@amplitude/analytics-browser';
-import { User } from '@auth0/auth0-spa-js';
+import { User as Auth0User } from '@auth0/auth0-spa-js';
 import { setUser } from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 
 // Quadratic only shares analytics on the QuadraticHQ.com hosted version where the environment variables are set.
 
-type Options = {
-  isAuthenticated: boolean;
-  user: User | undefined;
-};
+type User = Auth0User | undefined;
 
 // This runs in the root loader, so analytics calls can run inside loaders.
-export function initializeAnalytics({ isAuthenticated, user }: Options) {
+export function initializeAnalytics(user: User) {
   loadGoogleAnalytics();
   initAmplitudeAnalytics(user);
   initMixpanelAnalytics(user);
-  configureSentry({ isAuthenticated, user });
+  configureSentry(user);
 }
 
 function loadGoogleAnalytics() {
@@ -45,7 +42,7 @@ function loadGoogleAnalytics() {
   }
 }
 
-function initAmplitudeAnalytics(user: Options['user']) {
+function initAmplitudeAnalytics(user: User) {
   if (
     !process.env.REACT_APP_AMPLITUDE_ANALYTICS_API_KEY &&
     process.env.REACT_APP_AMPLITUDE_ANALYTICS_API_KEY !== 'none'
@@ -60,7 +57,7 @@ function initAmplitudeAnalytics(user: Options['user']) {
   console.log('[Analytics] Amplitude activated');
 }
 
-export function initMixpanelAnalytics(user: Options['user']) {
+export function initMixpanelAnalytics(user: User) {
   if (!process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY && process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY !== 'none') {
     // Without init Mixpanel, all mixpanel events throw an error and break the app.
     // So we have to init Mixpanel with a fake key, and disable Mixpanel.
@@ -90,8 +87,8 @@ export function initMixpanelAnalytics(user: Options['user']) {
   console.log('[Analytics] Mixpanel activated');
 }
 
-function configureSentry({ isAuthenticated, user }: Options) {
-  if (isAuthenticated && user) {
+function configureSentry(user: User) {
+  if (user) {
     setUser({ email: user.email, id: user.sub });
     console.log('[Analytics] Sentry user set');
   }

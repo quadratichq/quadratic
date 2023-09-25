@@ -29,7 +29,7 @@ import { initializeAnalytics } from './utils/analytics';
 window.lf = localforage;
 
 export type RootLoaderData = {
-  isAuthenticated: boolean;
+  isLoggedIn: boolean;
   user?: User;
 };
 
@@ -42,22 +42,22 @@ export const router = createBrowserRouter(
         path="/"
         loader={async ({ request, params }): Promise<RootLoaderData | Response> => {
           // All other routes get the same data
-          let isAuthenticated = await authClient.isAuthenticated();
-          let user = await authClient.user();
+          const isLoggedIn = await authClient.isLoggedIn();
+          const user = await authClient.user();
 
           // This is where we determine whether we need to run a migration
           // This redirect should trigger for every route _except_ the migration
           // route (this prevents an infinite loop of redirects).
           const url = new URL(request.url);
-          if (isAuthenticated && !url.pathname.startsWith('/cloud-migration')) {
+          if (isLoggedIn && !url.pathname.startsWith('/cloud-migration')) {
             if (await CloudFilesMigration.needsMigration()) {
               return redirect('/cloud-migration');
             }
           }
 
-          initializeAnalytics({ isAuthenticated, user });
+          initializeAnalytics(user);
 
-          return { isAuthenticated, user };
+          return { isLoggedIn, user };
         }}
         element={<Root />}
         errorElement={<RootError />}
@@ -129,14 +129,14 @@ export const router = createBrowserRouter(
       <Route
         path={ROUTES.LOGIN}
         loader={async ({ request }) => {
-          let isAuthenticated = await authClient.isAuthenticated();
+          const isLoggedIn = await authClient.isLoggedIn();
 
-          // If they’re authenticated, redirect home
-          if (isAuthenticated) {
+          // If they’re logged in, redirect home
+          if (isLoggedIn) {
             return redirect('/');
           }
 
-          // If they’re not authenticated, send them to Auth0
+          // If not, send them to Auth0
           // Watch for a `from` query param, as unprotected routes will redirect
           // to here for them to auth first
           // Also watch for the presence of a `signup` query param, which means
@@ -161,8 +161,8 @@ export const router = createBrowserRouter(
           // have no errorElement so we just redirect back to home
           try {
             await authClient.handleSigninRedirect();
-            let isAuthenticated = await authClient.isAuthenticated();
-            if (isAuthenticated) {
+            let isLoggedIn = await authClient.isLoggedIn();
+            if (isLoggedIn) {
               let redirectTo = new URLSearchParams(window.location.search).get('redirectTo') || '/';
               return redirect(redirectTo);
             }
