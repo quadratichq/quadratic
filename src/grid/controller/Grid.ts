@@ -1,5 +1,6 @@
 import { Point, Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
+import { Coordinate } from '../../gridGL/types/size';
 import { GridController, Pos, Rect as RectInternal } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
@@ -413,6 +414,15 @@ export class Grid {
     );
     transactionResponse(summary);
     this.dirty = true;
+  }
+
+  //#endregion
+
+  //#region Clipboard
+
+  importCsv(sheetId: string, file: any, insertAtCellLocation: Coordinate): JsClipboard {
+    const pos = new Pos(insertAtCellLocation.x, insertAtCellLocation.y);
+    return this.gridController.importCsv(sheetId, file, pos);
   }
 
   //#endregion

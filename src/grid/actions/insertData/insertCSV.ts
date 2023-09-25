@@ -1,4 +1,6 @@
 import { Coordinate } from '../../../gridGL/types/size';
+import { grid } from '../../controller/Grid';
+import { sheets } from '../../controller/Sheets';
 // import { Cell } from '../../sheet/gridTypes';
 // import { updateCellAndDCells } from '../updateCellAndDCells';
 
@@ -7,8 +9,11 @@ export const InsertCSV = (props: {
   insertAtCellLocation: Coordinate;
   reportError: (error: string) => void;
 }) => {
-  throw new Error('insertCSV not implemented...');
-  // const { file } = props;
+  const { file, insertAtCellLocation } = props;
+
+  grid.importCsv(sheets.sheet.id, file, insertAtCellLocation);
+
+  console.log(file);
   // sheetController.start_transaction();
 
   // let rowIndex = 0;

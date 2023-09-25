@@ -9,6 +9,7 @@ pub mod cells;
 pub mod clipboard;
 pub mod compute;
 pub mod dependencies;
+pub mod files;
 pub mod formatting;
 pub mod operations;
 pub mod sheets;
