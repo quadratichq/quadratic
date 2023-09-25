@@ -1,4 +1,3 @@
-import debounce from 'lodash.debounce';
 import { DragEvent, PropsWithChildren, useRef, useState } from 'react';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { InsertCSV } from '../../grid/actions/insertData/insertCSV';
@@ -12,7 +11,7 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
   const divRef = useRef<HTMLDivElement>(null);
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
-  const moveCursor = debounce((e: DragEvent<HTMLDivElement>): void => {
+  const moveCursor = (e: DragEvent<HTMLDivElement>): void => {
     const clientBoudingRect = divRef?.current?.getBoundingClientRect();
     const world = pixiApp.viewport.toWorld(
       e.pageX - (clientBoudingRect?.left || 0),
@@ -28,7 +27,7 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
         terminalPosition: { x: column, y: row },
       },
     });
-  }, 100);
+  };
 
   // handle drag events
   const handleDrag = function (e: DragEvent<HTMLDivElement>) {
