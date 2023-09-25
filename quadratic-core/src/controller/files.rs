@@ -18,6 +18,7 @@ impl GridController {
         file: &str,
         insert_at: Pos,
     ) -> Result<TransactionSummary> {
+        let mut width = None;
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .from_reader(file.as_bytes());
@@ -25,9 +26,11 @@ impl GridController {
         let values = reader
             .records()
             .into_iter()
-            .map(|record| {
+            .flat_map(|record| {
+                let record = record.unwrap();
+                width = Some(record.len() as u32);
+
                 record
-                    .unwrap()
                     .iter()
                     .map(|value| {
                         if let Ok(number) = BigDecimal::from_str(value) {
@@ -36,17 +39,16 @@ impl GridController {
                             CellValue::Text(value.into())
                         }
                     })
-                    .collect::<Vec<CellValue>>()
+                    .collect::<SmallVec<[CellValue; 1]>>()
             })
-            .collect::<Vec<Vec<CellValue>>>();
+            .collect::<SmallVec<[CellValue; 1]>>();
 
-        if let Some(headers) = values.get(0) {
-            let width = headers.len() as u32;
+        dbg!(reader.records().count());
+
+        if let Some(width) = width {
             let height = values.len() as u32 / width;
-            let array: SmallVec<[CellValue; 1]> =
-                SmallVec::from_vec(values.into_iter().flatten().collect());
             let size = ArraySize::new(width, height).unwrap();
-            let values = Array::new_row_major(size, array).unwrap();
+            let values = Array::new_row_major(size, values).unwrap();
             let rect = Rect::new_span(
                 insert_at,
                 Pos {
