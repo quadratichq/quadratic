@@ -93,6 +93,7 @@ export class CellsSheets extends Container<CellsSheet> {
     for (const child of this.children) {
       if (this.current !== child) {
         if (child.update()) {
+          pixiApp.setViewportDirty();
           return;
         }
       }
