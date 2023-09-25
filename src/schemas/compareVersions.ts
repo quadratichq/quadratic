@@ -1,3 +1,9 @@
+export enum VersionComparisonResult {
+  GreaterThan = 1,
+  LessThan = -1,
+  Equal = 0,
+}
+
 /**
  * Takes two version strings and compares whether the first one is greater than,
  * less than, or equal to the second one.
@@ -21,11 +27,11 @@ export function compareVersions(version1: string, version2: string) {
     const num2 = parts2[i] || 0;
 
     if (num1 < num2) {
-      return -1; // less than
+      return VersionComparisonResult.LessThan;
     } else if (num1 > num2) {
-      return 1; // greater than
+      return VersionComparisonResult.GreaterThan;
     }
   }
 
-  return 0; // equal
+  return VersionComparisonResult.Equal;
 }
