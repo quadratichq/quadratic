@@ -155,7 +155,7 @@ impl GridController {
                     .step_by(rect.x_range().count())
                     .for_each(|x| {
                         let new_x = if !negative {
-                            x + rect.width() as i64
+                            x + rect.width() as i64 - 1
                         } else {
                             x - rect.width() as i64 + 1
                         };
@@ -488,12 +488,15 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        // table(grid.clone(), sheet_id, &range);
+        let range: Rect = Rect::new_span((-7, 2).into(), (5, 10).into());
+        table(grid.clone(), sheet_id, &range);
 
         let expected = vec![
             "g", "a", "h", "x", "g", "a", "h", "x", "g", "a", "h", "x", "g",
         ];
-        let expected_bold = vec![true, false, false, true, true, false, false, true, false];
+        let expected_bold = vec![
+            true, true, false, false, true, true, false, false, true, true, false, false, true,
+        ];
 
         assert_cell_value_text_row(&grid, sheet_id, -7, 5, 2, expected.clone());
         assert_cell_value_text_row(&grid, sheet_id, -7, 5, 10, expected);
@@ -508,14 +511,14 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        let range: Rect = Rect::new_span(selected.max, range.min);
-        table(grid.clone(), sheet_id, &range);
+        // let range: Rect = Rect::new_span(selected.max, range.min);
+        // table(grid.clone(), sheet_id, &range);
 
         let expected = vec![
             "b", "f", "z", "r", "b", "f", "z", "r", "b", "f", "z", "r", "b",
         ];
         let expected_bold = vec![
-            false, true, true, false, false, true, true, false, false, false,
+            false, false, true, true, false, false, true, true, false, false, true, true, false,
         ];
 
         assert_cell_value_text_row(&grid, sheet_id, -7, 5, -7, expected.clone());
