@@ -382,4 +382,15 @@ export class CellsSheet extends Container {
       }
     }
   }
+
+  getCellsContentMaxWidth(column: number): number {
+    const hashX = Math.floor(column / sheetHashWidth);
+    let max = 0;
+    this.cellsTextHash.forEach((hash) => {
+      if (hash.hashX === hashX) {
+        max = Math.max(max, hash.getCellsContentMaxWidth(column));
+      }
+    });
+    return max;
+  }
 }

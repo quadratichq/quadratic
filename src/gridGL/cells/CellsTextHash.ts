@@ -179,4 +179,14 @@ export class CellsTextHash extends Container<LabelMeshes> {
     g.drawShape(screen);
     g.endFill();
   }
+
+  getCellsContentMaxWidth(column: number): number {
+    let max = 0;
+    this.cellLabels.forEach((label) => {
+      if (label.location.x === column) {
+        max = Math.max(max, label.textWidth);
+      }
+    });
+    return max;
+  }
 }

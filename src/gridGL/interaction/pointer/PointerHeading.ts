@@ -1,4 +1,5 @@
 import { InteractivePointerEvent, Point } from 'pixi.js';
+import { CELL_TEXT_MARGIN_LEFT } from '../../../constants/gridConstants';
 import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
 import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
@@ -62,9 +63,11 @@ export class PointerHeading {
       pixiApp.setViewportDirty();
       if (this.clicked && headingResize.column !== undefined) {
         this.onDoubleClickColumn(headingResize.column);
+        event.preventDefault();
         return true;
       } else if (this.clicked && headingResize.row !== undefined) {
         this.onDoubleClickRow(headingResize.row);
+        event.preventDefault();
         return true;
       }
       this.viewportChanges = {
@@ -164,7 +167,7 @@ export class PointerHeading {
           cursor.dirty = true;
           headings.dirty = true;
 
-          pixiApp.cellsSheets.adjustHeadings({
+          pixiApp.adjustHeadings({
             sheetId: sheets.sheet.id,
             column: this.resizing.column,
             delta: size - this.resizing.lastSize,
@@ -191,7 +194,7 @@ export class PointerHeading {
           cursor.dirty = true;
           headings.dirty = true;
 
-          pixiApp.cellsSheets.adjustHeadings({
+          pixiApp.adjustHeadings({
             sheetId: sheets.sheet.id,
             row: this.resizing.row,
             delta: size - this.resizing.lastSize,
@@ -213,29 +216,9 @@ export class PointerHeading {
       const { resizing: headingResizing } = this;
       if (headingResizing) {
         grid.commitHeadingResize();
-        // let updateHeading: HeadingSize | undefined;
-        // if (headingResizing.column !== undefined && headingResizing.width !== undefined) {
-        //   updateHeading = {
-        //     column: headingResizing.column,
-        //     size: headingResizing.width,
-        //   };
-        // } else if (headingResizing.row !== undefined && headingResizing.height !== undefined) {
-        //   updateHeading = {
-        //     row: headingResizing.row,
-        //     size: headingResizing.height,
-        //   };
-        // }
-        // if (updateHeading) {
-        //   sheetController.predefined_transaction([
-        //     {
-        //       type: 'SET_HEADING_SIZE',
-        //       data: {
-        //         heading_size: updateHeading,
-        //       },
-        //     },
-        //   ]);
-        // }
         this.resizing = undefined;
+
+        // fixes a bug where the viewport may still be decelerating
         pixiApp.viewport.plugins.get('decelerate')?.reset();
       }
       return true;
@@ -244,45 +227,18 @@ export class PointerHeading {
   }
 
   private onDoubleClickColumn(column: number): void {
-    // todo
-    // const cellsColumnContent = pixiApp.cells.getCellsContentWidth().filter((cell) => cell.location.x === column);
-    // if (cellsColumnContent.length === 0) return;
-    // const maxWidth = cellsColumnContent.reduce((max, cell) => (cell.textWidth > max ? cell.textWidth : max), 0);
-    // const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
-    // const size = Math.max(contentSizePlusMargin, MINIMUM_COLUMN_SIZE);
-    // pixiApp.quadrants.quadrantChanged({ column });
-    // pixiApp.sheet_controller.predefined_transaction([
-    //   {
-    //     type: 'SET_HEADING_SIZE',
-    //     data: {
-    //       heading_size: {
-    //         column,
-    //         size,
-    //       },
-    //     },
-    //   },
-    // ]);
+    const maxWidth = pixiApp.cellsSheets.getCellsContentMaxWidth(column);
+    const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
+    const size = Math.max(contentSizePlusMargin, MINIMUM_COLUMN_SIZE);
+    const sheetId = sheets.sheet.id;
+    const originalSize = grid.getCellOffsets(sheetId, column, 0);
+    if (originalSize.width !== size) {
+      grid.headingResizeColumnCommit(sheetId, column, size, true);
+      pixiApp.adjustHeadings({ sheetId, column, delta: size - originalSize.width });
+    }
   }
 
   private onDoubleClickRow(row: number): void {
-    // todo when rows have content...
-    // const cellsColumnContent = pixiApp.cells.getCellsContentWidth().filter((cell) => cell.location.x === column);
-    // if (cellsColumnContent.length === 0) return;
-    // const maxWidth = cellsColumnContent.reduce((max, cell) => (cell.textWidth > max ? cell.textWidth : max), 0);
-    // const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
-    // const size = Math.max(contentSizePlusMargin, MINIMUM_COLUMN_SIZE);
-    // const size = CELL_HEIGHT;
-    // pixiApp.quadrants.quadrantChanged({ row });
-    // sheetController.predefined_transaction([
-    //   {
-    //     type: 'SET_HEADING_SIZE',
-    //     data: {
-    //       heading_size: {
-    //         row,
-    //         size,
-    //       },
-    //     },
-    //   },
-    // ]);
+    // todo when rows have wrapping...
   }
 }

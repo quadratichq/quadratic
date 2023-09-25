@@ -317,13 +317,20 @@ export class PixiApp {
   }
 
   updateCursorPosition(): void {
-    pixiApp.cursor.dirty = true;
-    pixiApp.headings.dirty = true;
+    this.cursor.dirty = true;
+    this.headings.dirty = true;
 
     ensureVisible();
 
     // triggers useGetBorderMenu clearSelection()
     window.dispatchEvent(new CustomEvent('cursor-position'));
+  }
+
+  adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
+    this.cellsSheets.adjustHeadings(options);
+    this.headings.dirty = true;
+    this.gridLines.dirty = true;
+    this.cursor.dirty = true;
   }
 }
 

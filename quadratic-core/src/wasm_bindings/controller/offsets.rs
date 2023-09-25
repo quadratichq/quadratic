@@ -41,6 +41,20 @@ impl GridController {
         Ok(serde_wasm_bindgen::to_value(&self.commit_resize(cursor))?)
     }
 
+    /// Commits a column resize operation w/o transient changes. Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "resizeColumn")]
+    pub fn js_resize_column(
+        &mut self,
+        sheet_id: String,
+        column: i32,
+        size: f64,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        self.resize_column_transiently(sheet_id, column as i64, Some(size));
+        Ok(serde_wasm_bindgen::to_value(&self.commit_resize(cursor))?)
+    }
+
     /// Returns a rectangle with the screen coordinates for a cell
     #[wasm_bindgen(js_name = "getCellOffsets")]
     pub fn js_get_cell_offsets(&self, sheet_id: String, column: i32, row: i32) -> ScreenRect {

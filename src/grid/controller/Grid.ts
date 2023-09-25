@@ -540,6 +540,16 @@ export class Grid {
     this.gridController.resizeColumnTransiently(sheetId, column, size);
   }
 
+  headingResizeColumnCommit(sheetId: string, column: number, size: number, skipUpdate: boolean): void {
+    const summary = this.gridController.resizeColumn(sheetId, column, size);
+
+    // does not work properly
+    if (!skipUpdate) {
+      transactionResponse(summary);
+    }
+    this.dirty = true;
+  }
+
   headingResizeRow(sheetId: string, row: number, size?: number): void {
     this.gridController.resizeRowTransiently(sheetId, row, size);
   }

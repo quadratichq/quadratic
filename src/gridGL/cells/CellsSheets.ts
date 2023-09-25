@@ -127,4 +127,9 @@ export class CellsSheets extends Container<CellsSheet> {
     if (!cellsSheet) throw new Error('Expected to find cellsSheet in adjustHeadings');
     cellsSheet.adjustHeadings({ delta, row, column });
   }
+
+  getCellsContentMaxWidth(column: number): number {
+    if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxWidth');
+    return this.current.getCellsContentMaxWidth(column);
+  }
 }
