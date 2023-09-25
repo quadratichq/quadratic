@@ -1,6 +1,6 @@
 use crate::{
     grid::{Column, GridBounds},
-    Pos,
+    CellValue, Pos,
 };
 
 use super::Sheet;
@@ -120,6 +120,90 @@ impl Sheet {
             Some((min, max))
         } else {
             None
+        }
+    }
+
+    /// finds the nearest column with or without content
+    /// if reverse is true it searches to the left of the start
+    /// if with_content is true it searches for a column with content; otherwise it searches for a column without content
+    ///
+    /// Returns the found column or column_start
+    pub fn find_next_column(
+        &self,
+        column_start: i64,
+        row: i64,
+        reverse: bool,
+        with_content: bool,
+    ) -> i64 {
+        let bounds = self.bounds(true);
+        if bounds.is_empty() {
+            return column_start;
+        }
+        match bounds {
+            GridBounds::Empty => column_start,
+            GridBounds::NonEmpty(rect) => {
+                let mut x = if reverse {
+                    column_start.min(rect.max.x)
+                } else {
+                    column_start.max(rect.min.x)
+                };
+                while x >= rect.min.x && x <= rect.max.x {
+                    let has_content = self.get_cell_value(Pos { x, y: row });
+                    if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
+                        if with_content {
+                            return x;
+                        }
+                    } else {
+                        if !with_content {
+                            return x;
+                        }
+                    }
+                    x += if reverse { -1 } else { 1 };
+                }
+                x
+            }
+        }
+    }
+
+    /// finds the next column with or without content
+    /// if reverse is true it searches to the left of the start
+    /// if with_content is true it searches for a column with content; otherwise it searches for a column without content
+    ///
+    /// Returns the found column or row_start
+    pub fn find_next_row(
+        &self,
+        row_start: i64,
+        column: i64,
+        reverse: bool,
+        with_content: bool,
+    ) -> i64 {
+        let bounds = self.bounds(true);
+        if bounds.is_empty() {
+            return row_start;
+        }
+        match bounds {
+            GridBounds::Empty => row_start,
+            GridBounds::NonEmpty(rect) => {
+                let mut y = if reverse {
+                    row_start.min(rect.max.y)
+                } else {
+                    row_start.max(rect.min.y)
+                };
+                while y >= rect.min.y && y <= rect.max.y {
+                    let has_content = self.get_cell_value(Pos { x: column, y });
+                    if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
+                        if with_content {
+                            return y;
+                        }
+                    } else {
+                        if !with_content {
+                            return y;
+                        }
+                    }
+                    y += if reverse { -1 } else { 1 };
+                }
+                y
+            }
         }
     }
 }
@@ -260,5 +344,35 @@ mod test {
 
         assert_eq!(sheet.rows_bounds(-100, 100, true), Some((-80, 80)));
         assert_eq!(sheet.rows_bounds(-100, 100, false), Some((-200, 200)));
+    }
+
+    #[test]
+    fn test_find_next_column() {
+        let mut sheet = Sheet::test();
+
+        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text(String::from("test")));
+        sheet.recalculate_bounds();
+
+        assert_eq!(sheet.find_next_column(-1, 2, false, true), 1);
+        assert_eq!(sheet.find_next_column(3, 2, true, true), 1);
+        assert_eq!(sheet.find_next_column(2, 2, false, true), 2);
+        assert_eq!(sheet.find_next_column(0, 2, true, true), 0);
+        assert_eq!(sheet.find_next_column(1, 2, false, false), 2);
+        assert_eq!(sheet.find_next_column(1, 2, true, false), 0);
+    }
+
+    #[test]
+    fn test_find_next_row() {
+        let mut sheet = Sheet::test();
+
+        sheet.set_cell_value(Pos { y: 1, x: 2 }, CellValue::Text(String::from("test")));
+        sheet.recalculate_bounds();
+
+        assert_eq!(sheet.find_next_row(-1, 2, false, true), 1);
+        assert_eq!(sheet.find_next_row(3, 2, true, true), 1);
+        assert_eq!(sheet.find_next_row(2, 2, false, true), 2);
+        assert_eq!(sheet.find_next_row(0, 2, true, true), 0);
+        assert_eq!(sheet.find_next_row(1, 2, false, false), 2);
+        assert_eq!(sheet.find_next_row(1, 2, true, false), 0);
     }
 }

@@ -104,4 +104,32 @@ impl GridController {
             Err(JsValue::UNDEFINED)
         }
     }
+
+    /// finds nearest column with or without content
+    #[wasm_bindgen(js_name = "findNextColumn")]
+    pub fn js_find_next_column(
+        &self,
+        sheet_id: String,
+        column_start: i32,
+        row: i32,
+        reverse: bool,
+        with_content: bool,
+    ) -> i32 {
+        let sheet = self.grid().sheet_from_string(sheet_id);
+        sheet.find_next_column(column_start as i64, row as i64, reverse, with_content) as i32
+    }
+
+    /// finds nearest row with or without content
+    #[wasm_bindgen(js_name = "findNextRow")]
+    pub fn js_find_next_row(
+        &self,
+        sheet_id: String,
+        row_start: i32,
+        column: i32,
+        reverse: bool,
+        with_content: bool,
+    ) -> i32 {
+        let sheet = self.grid().sheet_from_string(sheet_id);
+        sheet.find_next_row(row_start as i64, column as i64, reverse, with_content) as i32
+    }
 }

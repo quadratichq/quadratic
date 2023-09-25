@@ -383,6 +383,38 @@ export class Grid {
     return this.gridController.getRowsBounds(sheetId, row_start, row_end, ignoreFormatting);
   }
 
+  findNextColumn(options: {
+    sheetId: string;
+    columnStart: number;
+    row: number;
+    reverse: boolean;
+    withContent: boolean;
+  }): number {
+    return this.gridController.findNextColumn(
+      options.sheetId,
+      options.columnStart,
+      options.row,
+      options.reverse,
+      options.withContent
+    );
+  }
+
+  findNextRow(options: {
+    sheetId: string;
+    rowStart: number;
+    column: number;
+    reverse: boolean;
+    withContent: boolean;
+  }): number {
+    return this.gridController.findNextRow(
+      options.sheetId,
+      options.rowStart,
+      options.column,
+      options.reverse,
+      options.withContent
+    );
+  }
+
   //#endregion
 
   //#region Undo/redo
