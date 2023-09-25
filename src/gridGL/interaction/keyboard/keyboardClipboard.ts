@@ -1,6 +1,5 @@
 import { GlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
-import { PNG_MESSAGE } from '../../../constants/appConstants';
-import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
+import { copySelectionToPNG, fullClipboardSupport } from '../../../grid/actions/clipboard/clipboard';
 
 export function keyboardClipboard(props: {
   event: React.KeyboardEvent<HTMLElement>;
@@ -9,9 +8,8 @@ export function keyboardClipboard(props: {
   const { addGlobalSnackbar, event } = props;
 
   // Command + Shift + C
-  if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'c') {
-    copySelectionToPNG();
-    addGlobalSnackbar(PNG_MESSAGE);
+  if (fullClipboardSupport() && (event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'c') {
+    copySelectionToPNG(addGlobalSnackbar);
     event.preventDefault();
     event.stopPropagation();
     return true;

@@ -1,5 +1,6 @@
 import { Box } from '@mui/material';
 import { ControlledMenu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
+import mixpanel from 'mixpanel-browser';
 import { ColorResult } from 'react-color';
 import { sheets } from '../../../grid/controller/Sheets';
 import { convertReactColorToString } from '../../../helpers/convertColor';
@@ -26,6 +27,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
           onClick={() => {
             if (!contextMenu) return;
             if (window.confirm(`Are you sure you want to delete ${contextMenu.name}?`)) {
+              mixpanel.track('[Sheets].delete');
               sheets.deleteSheet(sheets.sheet.id);
               handleClose();
             }
@@ -38,6 +40,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
         <MenuItem
           onClick={handleClose}
           onClickCapture={() => {
+            mixpanel.track('[Sheets].duplicate');
             sheets.duplicate();
             focusGrid();
           }}

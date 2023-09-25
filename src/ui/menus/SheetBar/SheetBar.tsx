@@ -1,5 +1,6 @@
 import { Add, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { Stack, useTheme } from '@mui/material';
+import mixpanel from 'mixpanel-browser';
 import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
@@ -419,16 +420,19 @@ export const SheetBar = (): JSX.Element => {
       sx={{ color: theme.palette.text.secondary, height: '2rem', fontSize: '0.7rem' }}
       className="sheet-bar"
     >
-      <SheetBarButton
-        onClick={() => {
-          sheets.createNew();
-          focusGrid();
-        }}
-        style={{ borderTop: `1px solid ${theme.palette.divider}` }}
-        tooltip="Add Sheet"
-      >
-        <Add fontSize="small" color="inherit" />
-      </SheetBarButton>
+      {hasPermission && (
+        <SheetBarButton
+          onClick={() => {
+            mixpanel.track('[Sheets].add');
+            sheets.createNew();
+            focusGrid();
+          }}
+          style={{ borderTop: `1px solid ${theme.palette.divider}` }}
+          tooltip="Add Sheet"
+        >
+          <Add fontSize="small" color="inherit" />
+        </SheetBarButton>
+      )}
 
       <Stack
         direction="row"
@@ -444,6 +448,8 @@ export const SheetBar = (): JSX.Element => {
           overflow: 'hidden',
           boxShadow: `inset 0 1px 0 ${theme.palette.divider}`,
           width: '100%',
+          // Hide left border when user can't see "+" button
+          marginLeft: '-1px',
         }}
       >
         {sheets.map((sheet) => (
