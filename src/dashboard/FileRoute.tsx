@@ -17,6 +17,7 @@ import { Empty } from '../components/Empty';
 import { ROUTE_LOADER_IDS } from '../constants/routes';
 import { grid } from '../grid/controller/Grid';
 import init, { hello } from '../quadratic-core/quadratic_core';
+import { compareVersions } from '../schemas/compareVersions';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
 import QuadraticApp from '../ui/QuadraticApp';
 
@@ -60,7 +61,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   // If the file version is newer than what is supported by the current version
   // of the app, do a (hard) reload.
-  if (contents.version > grid.getVersion()) {
+  if (compareVersions(contents.version, grid.getVersion()) === 1) {
     Sentry.captureEvent({
       message: `User opened a file at version ${
         contents.version
