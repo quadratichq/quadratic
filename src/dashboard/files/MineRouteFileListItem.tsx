@@ -12,11 +12,12 @@ import { FileListItemInput } from './MineRouteFileListItemInput';
 
 type Props = {
   file: ListFile;
+  filterValue?: string;
   activeShareMenuFileId: string;
   setActiveShareMenuFileId: Function;
 };
 
-export function FileListItem({ file, activeShareMenuFileId, setActiveShareMenuFileId }: Props) {
+export function FileListItem({ file, filterValue, activeShareMenuFileId, setActiveShareMenuFileId }: Props) {
   const theme = useTheme();
   const fetcherDelete = useFetcher();
   const fetcherDownload = useFetcher();
@@ -125,6 +126,7 @@ export function FileListItem({ file, activeShareMenuFileId, setActiveShareMenuFi
       <DashboardFileLink
         key={uuid}
         to={ROUTES.FILE(uuid)}
+        filterValue={filterValue}
         name={fetcherRename.json ? (fetcherRename.json as Action['request.rename']).name : name}
         description={`Updated ${timeAgo(updated_date)}`}
         descriptionError={failedToDelete || failedToRename ? 'Failed to sync changes' : ''}

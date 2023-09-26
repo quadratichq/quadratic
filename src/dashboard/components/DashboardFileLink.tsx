@@ -1,8 +1,7 @@
-import { InsertDriveFileOutlined } from '@mui/icons-material';
+import { Public } from '@mui/icons-material';
 import { Box, Stack, Typography, useTheme } from '@mui/material';
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ShareFileOutlined } from '../../ui/icons';
 
 type Props = {
   name: string;
@@ -12,6 +11,7 @@ type Props = {
   isShared: boolean;
   actions?: ReactNode;
   descriptionError?: string;
+  filterValue?: string;
 };
 
 DashboardFileLink.defaultProps = {
@@ -19,8 +19,19 @@ DashboardFileLink.defaultProps = {
   isShared: false,
 };
 
-export function DashboardFileLink({ disabled, name, description, descriptionError, actions, to, isShared }: Props) {
+export function DashboardFileLink({
+  disabled,
+  name,
+  description,
+  descriptionError,
+  actions,
+  to,
+  isShared,
+  filterValue,
+}: Props) {
   const theme = useTheme();
+
+  const __html = filterValue ? highlightMatchingString(name, filterValue) : name;
 
   return (
     <Link
@@ -35,12 +46,6 @@ export function DashboardFileLink({ disabled, name, description, descriptionErro
       <Box
         sx={{
           '&:hover': { background: theme.palette.action.hover, cursor: 'pointer' },
-          '.FileListItem-icon svg': {
-            fill: theme.palette.text.secondary,
-          },
-          '&:hover .FileListItem-icon svg': {
-            fill: theme.palette.text.primary,
-          },
         }}
       >
         <Box
@@ -55,20 +60,25 @@ export function DashboardFileLink({ disabled, name, description, descriptionErro
             },
           }}
         >
-          <div className="FileListItem-icon">{isShared ? <ShareFileOutlined /> : <InsertDriveFileOutlined />}</div>
           <div style={{ display: 'flex', flexDirection: 'column', marginRight: 'auto', minWidth: '0' }}>
-            <Typography variant="body1" color="text.primary" noWrap>
-              {name}
-            </Typography>
+            <Typography variant="body1" color="text.primary" noWrap dangerouslySetInnerHTML={{ __html }} />
             <Stack
               direction="row"
               gap={theme.spacing(0.5)}
               sx={{ '& > *:not(:last-child):after': { content: '"·"', marginLeft: theme.spacing(0.5) } }}
             >
               {isShared && (
-                <Typography variant="caption" color="text.secondary">
-                  Public
-                </Typography>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  gap={theme.spacing(0.25)}
+                  color={theme.palette.text.secondary}
+                >
+                  <Public fontSize="inherit" />
+                  <Typography variant="caption" color="inherit">
+                    Public
+                  </Typography>
+                </Stack>
               )}
               <Typography variant="caption" color="text.secondary">
                 {description}
@@ -85,4 +95,12 @@ export function DashboardFileLink({ disabled, name, description, descriptionErro
       </Box>
     </Link>
   );
+}
+
+function highlightMatchingString(inputString: string, searchString: string) {
+  const regex = new RegExp(searchString, 'gi'); // case insensitive matching
+  const highlightedString = inputString.replace(regex, (match: string) => {
+    return `<mark>${match}</mark>`;
+  });
+  return highlightedString;
 }

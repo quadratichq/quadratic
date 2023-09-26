@@ -1,4 +1,4 @@
-import { Close, ExtensionOutlined, FolderOpenOutlined, Menu, PeopleOutline } from '@mui/icons-material';
+import { Close, FileCopyOutlined, InsertDriveFileOutlined, Menu, PeopleOutline } from '@mui/icons-material';
 import { Avatar, Box, CircularProgress, Drawer, IconButton, Typography, useTheme } from '@mui/material';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigation } from 'react-router-dom';
@@ -155,13 +155,13 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
 
         <SidebarLabel>Personal</SidebarLabel>
         <SidebarNavLink to={ROUTES.MY_FILES} style={sidebarLinkStyles}>
-          <FolderOpenOutlined />
+          <InsertDriveFileOutlined />
           <Typography variant="body2" color="text.primary">
             My files
           </Typography>
         </SidebarNavLink>
         <SidebarNavLink to={ROUTES.EXAMPLES} style={sidebarLinkStyles}>
-          <ExtensionOutlined />
+          <FileCopyOutlined />
           <Typography variant="body2" color="text.primary">
             Examples
           </Typography>

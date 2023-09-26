@@ -19,14 +19,14 @@ export function FileListItemInput({ setValue, value }: Props) {
       sx={{
         backgroundColor: theme.palette.background.default,
         position: 'absolute',
-        left: theme.spacing(6.5),
+        left: theme.spacing(1.5),
         right: '0',
         top: '0',
         bottom: '1px',
         display: 'flex',
         alignItems: 'center',
         [theme.breakpoints.down('md')]: {
-          left: theme.spacing(5),
+          left: '0',
         },
       }}
     >

@@ -1,5 +1,28 @@
-import { AddOutlined, ErrorOutline, InsertDriveFileOutlined } from '@mui/icons-material';
-import { Box, Button, useTheme } from '@mui/material';
+import {
+  AddOutlined,
+  ArrowDropDown,
+  Check,
+  ErrorOutline,
+  GridViewOutlined,
+  InsertDriveFileOutlined,
+  MenuOutlined,
+} from '@mui/icons-material';
+import {
+  Box,
+  Button,
+  Divider,
+  ListItemIcon,
+  ListItemText,
+  ListSubheader,
+  Menu,
+  MenuItem,
+  Stack,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  styled,
+  useTheme,
+} from '@mui/material';
 import { useEffect, useState } from 'react';
 import {
   ActionFunctionArgs,
@@ -20,6 +43,7 @@ import { ShareFileMenu } from '../../components/ShareFileMenu';
 import { ROUTES } from '../../constants/routes';
 import { debugShowUILogs } from '../../debugFlags';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
+import CreateButton from '../components/CreateButton';
 import { DashboardHeader } from '../components/DashboardHeader';
 import { FileListItem } from './MineRouteFileListItem';
 
@@ -57,9 +81,27 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   return data;
 };
 
+const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
+  '& .MuiToggleButton-root': {
+    fontSize: '16px',
+  },
+  '& .MuiToggleButtonGroup-grouped': {
+    margin: `0 2px`,
+    border: 0,
+    borderRadius: theme.shape.borderRadius + 'px !important',
+    padding: theme.spacing(0.75),
+  },
+}));
+
+type ViewStyle = 'list' | 'grid';
+type Sort = 'Last updated' | 'Date created' | 'Alphabetical';
+
 export const Component = () => {
   const files = useLoaderData() as LoaderResponse;
   const actionData = useActionData() as Action['response'];
+  const [filterValue, setFilterValue] = useState<string>('');
+  const [viewStyle, setViewStyle] = useState<ViewStyle>('list');
+  const [sort, setSort] = useState<Sort>('Last updated');
   const theme = useTheme();
   const fetchers = useFetchers();
   const submit = useSubmit();
@@ -79,7 +121,10 @@ export const Component = () => {
   const filesBeingDuplicated = fetchers
     .filter((fetcher) => (fetcher.json as Action['request'])?.action === 'duplicate')
     .map((fetcher) => (fetcher.json as Action['request.duplicate'])?.file);
-  const filesToRender = filesBeingDuplicated.concat(files);
+  let filesToRender = filesBeingDuplicated.concat(files);
+  if (filterValue) {
+    filesToRender = filesToRender.filter(({ name }) => name.toLowerCase().includes(filterValue.toLowerCase()));
+  }
 
   const activeShareMenuFileName = files.find((file) => file.uuid === activeShareMenuFileId)?.name || '';
 
@@ -89,6 +134,7 @@ export const Component = () => {
         title="My files"
         actions={
           <div style={{ display: 'flex', gap: theme.spacing(1) }}>
+            <CreateButton />
             <Button
               startIcon={<AddOutlined />}
               variant="contained"
@@ -136,10 +182,48 @@ export const Component = () => {
         }
       />
 
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        sx={{ py: theme.spacing(1), borderBottom: `1px solid ${theme.palette.divider}` }}
+      >
+        <TextField
+          onChange={(e) => setFilterValue(e.target.value)}
+          value={filterValue}
+          size="small"
+          placeholder="Filter by name…"
+        />
+        <Stack direction="row" gap={theme.spacing(1)} alignItems="center">
+          <Box sx={{ color: theme.palette.text.secondary }}>
+            <SortButton sort={sort} setSort={setSort} />
+          </Box>
+
+          <Box>
+            <StyledToggleButtonGroup
+              value={viewStyle}
+              exclusive
+              onChange={(event: React.MouseEvent<HTMLElement>, newValue: ViewStyle) => {
+                // TODO persist to localStorage...
+                setViewStyle(newValue);
+              }}
+            >
+              <ToggleButton value="list">
+                <MenuOutlined fontSize="inherit" />
+              </ToggleButton>
+              <ToggleButton value="module">
+                <GridViewOutlined fontSize="inherit" />
+              </ToggleButton>
+            </StyledToggleButtonGroup>
+          </Box>
+        </Stack>
+      </Stack>
+
       {filesToRender.map((file, i) => (
         <FileListItem
           key={file.uuid}
           file={file}
+          filterValue={filterValue}
           activeShareMenuFileId={activeShareMenuFileId}
           setActiveShareMenuFileId={setActiveShareMenuFileId}
         />
@@ -239,3 +323,75 @@ export const ErrorBoundary = () => {
     </Box>
   );
 };
+
+function SortButton({ sort, setSort }: any) {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  return (
+    <div>
+      <Button
+        id="basic-button"
+        aria-controls={open ? 'basic-menu' : undefined}
+        aria-haspopup="true"
+        aria-expanded={open ? 'true' : undefined}
+        onClick={handleClick}
+        variant="text"
+        color="inherit"
+        endIcon={<ArrowDropDown color="inherit" fontSize="inherit" />}
+      >
+        {/*<span style={{ fontWeight: 'normal', marginRight: '4px' }}>Sort: </span> */}
+        {sort}
+      </Button>
+      <Menu
+        id="basic-menu"
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        MenuListProps={{
+          dense: true,
+          'aria-labelledby': 'basic-button',
+        }}
+      >
+        <ListSubheader sx={{ lineHeight: '2' }}>Sort:</ListSubheader>
+
+        {/* properly style when dense */}
+        <MenuItem onClick={handleClose}>
+          <ListItemText>
+            <ListItemIcon>
+              <Check />
+            </ListItemIcon>
+            Last updated
+          </ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleClose}>
+          <ListItemText inset>Date created</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleClose}>
+          <ListItemText inset>Alphabetical</ListItemText>
+        </MenuItem>
+        <Divider />
+
+        <ListSubheader sx={{ lineHeight: '1.5' }}>Order:</ListSubheader>
+
+        <MenuItem onClick={handleClose}>
+          <ListItemText>
+            <ListItemIcon>
+              <Check />
+            </ListItemIcon>
+            A-Z
+          </ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleClose}>
+          <ListItemText inset>Z-A</ListItemText>
+        </MenuItem>
+      </Menu>
+    </div>
+  );
+}
