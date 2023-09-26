@@ -11,13 +11,14 @@ export class CellsSheets extends Container<CellsSheet> {
   async create(): Promise<void> {
     this.removeChildren();
     if (!sheets.size) return;
-    sheets.forEach(async (sheet) => {
+
+    for (const sheet of sheets.sheets) {
       const child = this.addChild(new CellsSheet(sheet));
       await child.preload();
       if (sheet.id === sheets.sheet.id) {
         this.current = child;
       }
-    });
+    }
   }
 
   isReady(): boolean {
@@ -96,10 +97,7 @@ export class CellsSheets extends Container<CellsSheet> {
     }
     for (const child of this.children) {
       if (this.current !== child) {
-        if (child.update()) {
-          pixiApp.setViewportDirty();
-          return;
-        }
+        if (child.update()) return;
       }
     }
   }
