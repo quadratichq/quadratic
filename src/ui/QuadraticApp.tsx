@@ -4,8 +4,6 @@ import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { isEditorOrAbove } from '../actions';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { loadedStateAtom } from '../atoms/loadedStateAtom';
-import { sheets } from '../grid/controller/Sheets';
-import { loadAssets } from '../gridGL/loadAssets';
 import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import { initializeWebWorkers } from '../web-workers/webWorkers';
 import QuadraticUIContext from './QuadraticUIContext';
@@ -49,16 +47,11 @@ export default function QuadraticApp() {
       initializeWebWorkers();
     }
 
-    loadAssets().then(() => {
-      pixiApp.init();
-      sheets.create();
-      setLoading(false);
-    });
+    pixiApp.init().then(() => setLoading(false));
   }, [permission, setLoadedState]);
 
   if (loading) {
     return <QuadraticLoading />;
   }
-
   return <QuadraticUIContext />;
 }
