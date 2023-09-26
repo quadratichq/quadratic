@@ -237,8 +237,8 @@ export class GridHeadings extends Container {
     this.headingsGraphics.endFill();
 
     // calculated selection bounds
-    const selectedStart = grid.getYPlacement(sheetId, this.selectedRows[0]);
-    const selectedEnd = grid.getYPlacement(sheetId, this.selectedRows[this.selectedRows.length - 1]);
+    const selectedStart = grid.getRowPlacement(sheetId, this.selectedRows[0]);
+    const selectedEnd = grid.getRowPlacement(sheetId, this.selectedRows[this.selectedRows.length - 1]);
     const ySelectedStart = selectedStart.position;
     let ySelectedEnd = ySelectedStart + selectedStart.size;
     for (let i = 1; i < this.selectedRows.length; i++) {
