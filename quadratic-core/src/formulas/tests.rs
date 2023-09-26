@@ -314,7 +314,7 @@ fn test_find_cell_references() {
     // $C$4
     assert_eq!(
         iter.next(),
-        Some(RangeRef::from(CellRef::absolute(pos![C4]))),
+        Some(RangeRef::from(CellRef::absolute(None, pos![C4]))),
     );
 
     // $A0:nQ7

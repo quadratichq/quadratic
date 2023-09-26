@@ -158,6 +158,9 @@ impl Grid {
         let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");
         &mut self.sheets[sheet_index]
     }
+    pub fn sheet_from_name(&self, sheet_name: &str) -> Option<&Sheet> {
+        self.sheets.iter().find(|sheet| sheet.name == sheet_name)
+    }
 
     /// Returns a list of rectangles that exactly covers a region. Ignores IDs
     /// for columns and rows that don't exist.

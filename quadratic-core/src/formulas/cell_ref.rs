@@ -79,7 +79,7 @@ impl fmt::Display for CellRef {
 }
 impl CellRef {
     /// Constructs an absolute cell reference.
-    pub fn absolute(pos: Pos) -> Self {
+    pub fn absolute(sheet: Option<String>, pos: Pos) -> Self {
         Self {
             sheet: None,
             x: CellRefCoord::Absolute(pos.x),

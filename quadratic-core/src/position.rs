@@ -141,6 +141,12 @@ impl fmt::Display for SheetPos {
         write!(f, "{} ({}, {})", self.sheet_id, self.x, self.y)
     }
 }
+impl SheetPos {
+    pub fn without_sheet(self) -> Pos {
+        let SheetPos { x, y, .. } = self;
+        Pos { x, y }
+    }
+}
 
 /// Used for referencing a range during computation.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]

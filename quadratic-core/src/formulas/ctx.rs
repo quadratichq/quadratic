@@ -2,7 +2,9 @@ use futures::future::LocalBoxFuture;
 use smallvec::SmallVec;
 
 use super::*;
-use crate::{Array, CellValue, CodeResult, ErrorMsg, Pos, Span, Spanned, Value};
+use crate::{
+    grid::Grid, Array, CellValue, CodeResult, ErrorMsg, Pos, SheetPos, Span, Spanned, Value,
+};
 
 macro_rules! zip_map_impl {
     ($arrays:ident.zip_map(|$args_buffer:ident| $eval_f:expr)) => {{
@@ -37,8 +39,8 @@ macro_rules! zip_map_impl {
 
 /// Formula execution context.
 pub struct Ctx<'ctx> {
-    pub grid: &'ctx mut dyn GridProxy,
-    pub pos: Pos,
+    pub grid: &'ctx Grid,
+    pub pos: SheetPos,
 }
 impl Ctx<'_> {
     /// Fetches the contents of the cell at `ref_pos` evaluated at `base_pos`,
@@ -48,11 +50,19 @@ impl Ctx<'_> {
         ref_pos: &CellRef,
         span: Span,
     ) -> CodeResult<Spanned<CellValue>> {
-        let ref_pos = ref_pos.resolve_from(self.pos);
-        if ref_pos == self.pos {
+        let sheet = match &ref_pos.sheet {
+            Some(sheet_name) => self
+                .grid
+                .sheet_from_name(sheet_name)
+                .ok_or(ErrorMsg::BadCellReference.with_span(span))?,
+            None => self.grid.sheet_from_id(self.pos.sheet_id),
+        };
+        let this_cell = self.pos.without_sheet();
+        let ref_pos = ref_pos.resolve_from(this_cell);
+        if ref_pos == this_cell {
             return Err(ErrorMsg::CircularReference.with_span(span));
         }
-        let value = self.grid.get(ref_pos).await;
+        let value = sheet.get_cell_value(ref_pos).unwrap_or(CellValue::Blank);
         Ok(Spanned { inner: value, span })
     }
 

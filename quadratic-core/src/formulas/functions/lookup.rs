@@ -20,7 +20,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[examples("INDIRECT(\"Cn7\")", "INDIRECT(\"F\" & B0)")]
             #[async_zip_map]
             fn INDIRECT(ctx: Ctx, [cellref_string]: (Spanned<String>)) {
-                let pos = CellRef::parse_a1(&cellref_string.inner, ctx.pos)
+                let pos = CellRef::parse_a1(&cellref_string.inner, ctx.pos.without_sheet())
                     .ok_or(ErrorMsg::BadCellReference.with_span(cellref_string.span))?;
                 ctx.get_cell(&pos, cellref_string.span).await?.inner
             }
