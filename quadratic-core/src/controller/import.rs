@@ -76,6 +76,8 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
+    use crate::test_util::assert_cell_value_row;
+
     use super::*;
 
     const SIMPLE_CSV: &str = r#"city,region,country,population
@@ -98,7 +100,25 @@ Concord,NH,United States,42605
         let pos = Pos { x: 0, y: 0 };
 
         grid_controller
-            .import_csv(sheet_id, SIMPLE_CSV, "smapppop.csc", pos, None)
+            .import_csv(sheet_id, SIMPLE_CSV, "smallpop.csc", pos, None)
             .unwrap();
+
+        assert_cell_value_row(
+            &grid_controller,
+            sheet_id,
+            0,
+            3,
+            0,
+            vec!["city", "region", "country", "population"],
+        );
+
+        assert_cell_value_row(
+            &grid_controller,
+            sheet_id,
+            0,
+            3,
+            10,
+            vec!["Concord", "NH", "United States", "42605"],
+        );
     }
 }
