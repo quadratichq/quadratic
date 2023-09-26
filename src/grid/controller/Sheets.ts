@@ -6,7 +6,7 @@ import { grid } from './Grid';
 import { mockLargeData } from './mockLargeData';
 
 class Sheets {
-  private sheets: Sheet[];
+  sheets: Sheet[];
   private _current: string;
 
   // set up sheet information
@@ -17,7 +17,7 @@ class Sheets {
     this._current = '';
   }
 
-  create() {
+  async create() {
     if (debugMockLargeData) {
       mockLargeData();
     }
@@ -28,7 +28,6 @@ class Sheets {
       this.sheets.push(sheet);
     });
     this.sort();
-    pixiApp.create();
     this.current = this.sheets[0].id;
   }
 

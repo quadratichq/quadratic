@@ -17,9 +17,13 @@ use super::js_types::{
     CellFormatSummary, FormattingSummary, JsRenderBorder, JsRenderCell, JsRenderCodeCell,
     JsRenderCodeCellState, JsRenderFill,
 };
+use super::offsets::Offsets;
 use super::response::{GetIdResponse, SetCellResponse};
 use super::{NumericFormat, NumericFormatKind};
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
+
+pub mod bounds;
+pub mod offsets;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {
@@ -31,10 +35,8 @@ pub struct Sheet {
     pub(super) column_ids: IdMap<ColumnId, i64>,
     pub(super) row_ids: IdMap<RowId, i64>,
 
-    #[serde(with = "crate::util::btreemap_serde")]
-    pub(super) column_widths: BTreeMap<i64, f32>,
-    #[serde(with = "crate::util::btreemap_serde")]
-    pub(super) row_heights: BTreeMap<i64, f32>,
+    pub(super) column_widths: Offsets,
+    pub(super) row_heights: Offsets,
 
     #[serde(with = "crate::util::btreemap_serde")]
     pub(super) columns: BTreeMap<i64, Column>,
@@ -57,8 +59,8 @@ impl Sheet {
             column_ids: IdMap::new(),
             row_ids: IdMap::new(),
 
-            column_widths: BTreeMap::new(),
-            row_heights: BTreeMap::new(),
+            column_widths: Offsets::new(crate::DEFAULT_COLUMN_WIDTH),
+            row_heights: Offsets::new(crate::DEFAULT_ROW_HEIGHT),
 
             columns: BTreeMap::new(),
             borders: SheetBorders::new(),
@@ -67,6 +69,11 @@ impl Sheet {
             data_bounds: GridBounds::Empty,
             format_bounds: GridBounds::Empty,
         }
+    }
+
+    // creates a Sheet for testing
+    pub fn test() -> Self {
+        Sheet::new(SheetId::new(), String::from("name"), String::from("A0"))
     }
 
     /// Populates the current sheet with random values
@@ -302,15 +309,6 @@ impl Sheet {
         A::column_data_mut(column).set(pos.y, value)
     }
 
-    /// Returns the widths of columns.
-    pub fn column_widths(&self) -> &BTreeMap<i64, f32> {
-        &self.column_widths
-    }
-    /// Returns the heights of rows.
-    pub fn row_heights(&self) -> &BTreeMap<i64, f32> {
-        &self.row_heights
-    }
-
     /// Returns all cell borders.
     pub fn borders(&self) -> &SheetBorders {
         &self.borders
@@ -421,10 +419,6 @@ impl Sheet {
         itertools::iproduct!(x_ranges, y_ranges).map(|(xs, ys)| Rect::from_ranges(xs, ys))
     }
 
-    /// Returns whether the sheet is completely empty.
-    pub fn is_empty(&self) -> bool {
-        self.data_bounds.is_empty() && self.format_bounds.is_empty()
-    }
     /// Deletes all data and formatting in the sheet, effectively recreating it.
     pub fn clear(&mut self) {
         self.column_ids = IdMap::new();
@@ -432,64 +426,6 @@ impl Sheet {
         self.columns.clear();
         self.code_cells.clear();
         self.recalculate_bounds();
-    }
-
-    /// Returns the bounds of the sheet.
-    ///
-    /// If `ignore_formatting` is `true`, only data is considered; if it is
-    /// `false`, then data and formatting are both considered.
-    pub fn bounds(&self, ignore_formatting: bool) -> GridBounds {
-        match ignore_formatting {
-            true => self.data_bounds,
-            false => GridBounds::merge(self.data_bounds, self.format_bounds),
-        }
-    }
-    /// Returns the lower and upper bounds of a column, or `None` if the column
-    /// is empty.
-    ///
-    /// If `ignore_formatting` is `true`, only data is considered; if it is
-    /// `false`, then data and formatting are both considered.
-    pub fn column_bounds(&self, x: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
-        let column = self.columns.get(&x)?;
-        let range = column.range(ignore_formatting)?;
-        Some((range.start, range.end - 1))
-    }
-    /// Returns the lower and upper bounds of a row, or `None` if the column is
-    /// empty.
-    ///
-    /// If `ignore_formatting` is `true`, only data is considered; if it
-    /// is `false`, then data and formatting are both considered.
-    pub fn row_bounds(&self, y: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
-        let column_has_row = |(_x, column): &(&i64, &Column)| match ignore_formatting {
-            true => column.has_anything_in_row(y),
-            false => column.has_data_in_row(y),
-        };
-        let left = *self.columns.iter().find(column_has_row)?.0;
-        let right = *self.columns.iter().rfind(column_has_row)?.0;
-        Some((left, right))
-    }
-
-    /// Recalculates all bounds of the sheet.
-    ///
-    /// This should be called whenever data in the sheet is modified.
-    pub fn recalculate_bounds(&mut self) {
-        self.data_bounds.clear();
-        self.format_bounds.clear();
-
-        for (&x, column) in &self.columns {
-            if let Some(data_range) = column.range(true) {
-                let y = data_range.start;
-                self.data_bounds.add(Pos { x, y });
-                let y = data_range.end - 1;
-                self.data_bounds.add(Pos { x, y });
-            }
-            if let Some(format_range) = column.range(false) {
-                let y = format_range.start;
-                self.format_bounds.add(Pos { x, y });
-                let y = format_range.end - 1;
-                self.format_bounds.add(Pos { x, y });
-            }
-        }
     }
 
     /// Returns cell data in a format useful for rendering. This includes only

@@ -64,7 +64,7 @@ impl GridController {
 
         // expand right
         if range.max.x > rect.max.x {
-            let reverse = range.max.y < rect.max.y;
+            let reverse = range.min.y < rect.min.y;
             let min_y = if !reverse { rect.min.y } else { rect.max.y };
             let max_y = if !reverse { range.max.y } else { range.min.y };
             let new_range =
@@ -73,9 +73,6 @@ impl GridController {
             ops.extend(self.expand_width(sheet_id, ExpandDirection::Right, &rect, &new_range)?);
         }
 
-        crate::util::dbgjs(format!("rect: {:?}", rect));
-        crate::util::dbgjs(format!("range: {:?}", range));
-        // crate::util::dbgjs(format!("{:?}", ops));
         Ok(self.transact_forward(ops, cursor))
     }
 
@@ -109,15 +106,15 @@ impl GridController {
                     range.y_range().step_by(height).for_each(|y| {
                         let new_y = y + height as i64 - 1;
                         let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
-                        // format_ops
-                        //     .extend(apply_formats(self.region(sheet_id, format_rect), &formats));
+                        format_ops
+                            .extend(apply_formats(self.region(sheet_id, format_rect), &formats));
                     });
                 } else {
                     range.y_range().rev().step_by(height).for_each(|y| {
                         let new_y = y - height as i64 + 1;
                         let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
-                        // format_ops
-                        //     .extend(apply_formats(self.region(sheet_id, format_rect), &formats));
+                        format_ops
+                            .extend(apply_formats(self.region(sheet_id, format_rect), &formats));
                     });
                 }
 
@@ -143,19 +140,25 @@ impl GridController {
         // get all values in the rect to set all values in the range
         let mut format_ops = vec![];
         let negative = direction == ExpandDirection::Left;
-        let reverse = range.max.y < rect.max.y;
+        let reverse = range.min.y < rect.min.y;
+        let height = rect.height() as i64;
 
         let mut ops = range
             .y_range()
+            .rev()
             .flat_map(|y| {
                 let new_y = if !reverse {
-                    rect.max.y - (y.abs() % rect.height() as i64)
+                    ((y - range.min.y + height) % height) + rect.min.y
                 } else {
-                    rect.min.y + (y.abs() % rect.height() as i64)
+                    (y - rect.max.y - height) % height + rect.max.y
                 };
 
-                let source_row =
-                    Rect::new_span((rect.min.x, new_y).into(), (rect.max.x, new_y).into());
+                let source_row = if !reverse {
+                    Rect::new_span((rect.min.x, new_y).into(), (rect.max.x, new_y).into())
+                } else {
+                    Rect::new_span((rect.min.x, new_y).into(), (rect.max.x, new_y).into())
+                };
+
                 let target_row = if !negative {
                     Rect::new_span((rect.max.x + 1, y).into(), (range.max.x, y).into())
                 } else {
@@ -169,16 +172,16 @@ impl GridController {
                     range.x_range().step_by(width).for_each(|x| {
                         let new_x = x + width as i64 - 1;
                         let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
-                        // format_ops
-                        //     .extend(apply_formats(self.region(sheet_id, format_rect), &formats));
+                        format_ops
+                            .extend(apply_formats(self.region(sheet_id, format_rect), &formats));
                     });
                 } else {
                     // formats.reverse();
                     range.x_range().rev().step_by(width).for_each(|x| {
                         let new_x = x - width as i64 + 1;
                         let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
-                        // format_ops
-                        //     .extend(apply_formats(self.region(sheet_id, format_rect), &formats));
+                        format_ops
+                            .extend(apply_formats(self.region(sheet_id, format_rect), &formats));
                     });
                 }
 
@@ -258,11 +261,9 @@ pub fn cell_values_in_rect(&rect: &Rect, sheet: &Sheet) -> Result<Array> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{array, grid::Bold};
-    use tabled::{
-        builder::Builder,
-        settings::Color,
-        settings::{Modify, Style},
+    use crate::{
+        array,
+        test_util::{assert_cell_format_bold_row, assert_cell_value_row, table},
     };
 
     fn test_setup_rect(rect: &Rect) -> (GridController, SheetId) {
@@ -272,9 +273,12 @@ mod tests {
         test_setup(rect, &vals, &bolds)
     }
 
-    fn test_setup_rect_pairing(rect: &Rect) -> (GridController, SheetId) {
-        let vals = vec!["q", "d", "g", "t"];
-        let bolds = vec![false, false, false, false];
+    fn test_setup_rect_series(rect: &Rect) -> (GridController, SheetId) {
+        let vals = vec![
+            "8", "9", "10", "11", "10", "9", "8", "7", "Mon", "Tue", "Wed", "Thu", "May", "Jun",
+            "Jul", "Aug", "32", "64", "128", "256",
+        ];
+        let bolds = vec![];
 
         test_setup(rect, &vals, &bolds)
     }
@@ -293,13 +297,15 @@ mod tests {
                 let pos = Pos { x, y };
                 grid_controller.set_cell_value(sheet_id, pos, vals[count].to_string(), None);
 
-                if bolds[count] == true {
-                    grid_controller.set_cell_bold(
-                        sheet_id,
-                        Rect::single_pos(pos),
-                        Some(true),
-                        None,
-                    );
+                if let Some(is_bold) = bolds.get(count) {
+                    if *is_bold {
+                        grid_controller.set_cell_bold(
+                            sheet_id,
+                            Rect::single_pos(pos),
+                            Some(true),
+                            None,
+                        );
+                    }
                 }
 
                 count += 1;
@@ -307,153 +313,6 @@ mod tests {
         });
 
         (grid_controller.clone(), sheet_id)
-    }
-
-    fn to_text_cell_value(value: &str) -> CellValue {
-        CellValue::Text(value.into())
-    }
-
-    // fn to_number_cell_value(value: &str) -> CellValue {
-    //     CellValue::Number(BigDecimal::from_str(value).unwrap())
-    // }
-
-    fn assert_cell_value(
-        grid_controller: &GridController,
-        sheet_id: SheetId,
-        x: i64,
-        y: i64,
-        value: CellValue,
-    ) {
-        let sheet = grid_controller.grid().sheet_from_id(sheet_id);
-        let cell_value = sheet.get_cell_value(Pos { x, y });
-        assert_eq!(
-            cell_value,
-            Some(value.clone()),
-            "Cell at ({}, {}) does not have the value {:?}, it's actually {:?}",
-            x,
-            y,
-            value,
-            cell_value
-        );
-    }
-
-    // fn assert_cell_value_number(
-    //     grid_controller: &GridController,
-    //     sheet_id: SheetId,
-    //     x: i64,
-    //     y: i64,
-    //     value: &str,
-    // ) {
-    //     assert_cell_value(grid_controller, sheet_id, x, y, to_number_cell_value(value));
-    // }
-
-    fn assert_cell_value_text(
-        grid_controller: &GridController,
-        sheet_id: SheetId,
-        x: i64,
-        y: i64,
-        value: &str,
-    ) {
-        assert_cell_value(grid_controller, sheet_id, x, y, to_text_cell_value(value));
-    }
-
-    fn assert_cell_value_text_row(
-        grid_controller: &GridController,
-        sheet_id: SheetId,
-        x_start: i64,
-        x_end: i64,
-        y: i64,
-        value: Vec<&str>,
-    ) {
-        for (index, x) in (x_start..=x_end).enumerate() {
-            assert_cell_value(
-                grid_controller,
-                sheet_id,
-                x,
-                y,
-                to_text_cell_value(value.get(index).unwrap()),
-            );
-        }
-    }
-
-    fn assert_cell_format_bold_row(
-        grid_controller: &GridController,
-        sheet_id: SheetId,
-        x_start: i64,
-        x_end: i64,
-        y: i64,
-        value: Vec<bool>,
-    ) {
-        for (index, x) in (x_start..=x_end).enumerate() {
-            assert_cell_format_bold(grid_controller, sheet_id, x, y, *value.get(index).unwrap());
-        }
-    }
-
-    fn assert_cell_format_bold(
-        grid_controller: &GridController,
-        sheet_id: SheetId,
-        x: i64,
-        y: i64,
-        expect_bold: bool,
-    ) {
-        let sheet = grid_controller.grid().sheet_from_id(sheet_id);
-        let has_bold = sheet.get_formatting_value::<Bold>(Pos { x, y }).is_some();
-        assert!(
-            has_bold == expect_bold,
-            "Cell at ({}, {}) is not bold",
-            x,
-            y
-        );
-    }
-
-    fn table(grid_controller: GridController, sheet_id: SheetId, range: &Rect) {
-        let sheet = grid_controller.grid().sheet_from_id(sheet_id);
-        let mut vals = vec![];
-        let mut builder = Builder::default();
-        let columns = (range.x_range())
-            .map(|i| i.to_string())
-            .collect::<Vec<String>>();
-        let mut blank = vec!["".to_string()];
-        blank.extend(columns.clone());
-        builder.set_header(blank.into_iter());
-        let mut bolds = vec![];
-        let mut count_x = 0;
-        let mut count_y = 0;
-
-        range.y_range().for_each(|y| {
-            vals.push(y.to_string());
-            range.x_range().for_each(|x| {
-                let pos: Pos = Pos { x, y };
-
-                if sheet.get_formatting_value::<Bold>(pos).is_some() {
-                    bolds.push((count_y + 1, count_x + 1));
-                }
-
-                vals.push(
-                    sheet
-                        .get_cell_value(pos)
-                        .unwrap_or(CellValue::Blank)
-                        .to_string(),
-                );
-                count_x += 1;
-            });
-            builder.push_record(vals.clone());
-            vals.clear();
-            count_x = 0;
-            count_y += 1;
-        });
-
-        let mut table = builder.build();
-        table.with(Style::modern());
-
-        bolds.iter().for_each(|coords| {
-            table.with(
-                Modify::new((coords.0, coords.1))
-                    .with(Color::BOLD)
-                    .with(Color::FG_BRIGHT_RED),
-            );
-        });
-        println!("\nsheet: {}\n{}", sheet.id, table);
     }
 
     #[test]
@@ -477,18 +336,17 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        let range: Rect = Rect::new_span((-3, 1).into(), (5, 2).into());
         table(grid.clone(), sheet_id, &range);
 
         let expected = vec!["g", "a", "h", "x", "g", "a", "h", "x", "g"];
         let expected_bold = vec![true, true, false, false, true, true, false, false, true];
-        assert_cell_value_text_row(&grid, sheet_id, -3, 5, 1, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, -3, 5, 1, expected.clone());
         assert_cell_format_bold_row(&grid, sheet_id, -3, 5, 1, expected_bold.clone());
 
         let expected = vec!["b", "f", "z", "r", "b", "f", "z", "r", "b"];
         let expected_bold = vec![false, false, true, true, false, false, true, true, false];
         assert_cell_format_bold_row(&grid, sheet_id, -3, 5, 2, expected_bold);
-        assert_cell_value_text_row(&grid, sheet_id, -3, 5, 2, expected);
+        assert_cell_value_row(&grid, sheet_id, -3, 5, 2, expected);
     }
 
     #[test]
@@ -498,18 +356,17 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        let range: Rect = Rect::new_span((2, 1).into(), (10, 2).into());
         table(grid.clone(), sheet_id, &range);
 
         let expected = vec!["a", "h", "x", "g", "a", "h", "x", "g", "a"];
         let expected_bold = vec![true, false, false, true, true, false, false, true, true];
-        assert_cell_value_text_row(&grid, sheet_id, 2, 10, 1, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 2, 10, 1, expected.clone());
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 1, expected_bold.clone());
 
         let expected = vec!["f", "z", "r", "b", "f", "z", "r", "b", "f"];
         let expected_bold = vec![false, true, true, false, false, true, true, false, false];
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 2, expected_bold);
-        assert_cell_value_text_row(&grid, sheet_id, 2, 10, 2, expected);
+        assert_cell_value_row(&grid, sheet_id, 2, 10, 2, expected);
     }
 
     #[test]
@@ -519,26 +376,25 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        let range: Rect = Rect::new_span((2, -7).into(), (5, 2).into());
         table(grid.clone(), sheet_id, &range);
 
         let expected = vec!["a", "h", "x", "g"];
         let expected_bold = vec![true, false, false, true];
-        assert_cell_value_text_row(&grid, sheet_id, 2, 5, -7, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 2, 5, -7, expected.clone());
         assert_cell_format_bold_row(&grid, sheet_id, 2, 5, -7, expected_bold.clone());
-        assert_cell_value_text_row(&grid, sheet_id, 2, 5, -5, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 2, 5, -5, expected.clone());
         assert_cell_format_bold_row(&grid, sheet_id, 2, 5, -5, expected_bold.clone());
-        assert_cell_value_text_row(&grid, sheet_id, 2, 5, -1, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 2, 5, -1, expected.clone());
         assert_cell_format_bold_row(&grid, sheet_id, 2, 5, -1, expected_bold.clone());
 
         let expected = vec!["f", "z", "r", "b"];
         let expected_bold = vec![false, true, true, false];
         assert_cell_format_bold_row(&grid, sheet_id, 2, 5, -6, expected_bold.clone());
-        assert_cell_value_text_row(&grid, sheet_id, 2, 5, -6, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 2, 5, -6, expected.clone());
         assert_cell_format_bold_row(&grid, sheet_id, 2, 5, -4, expected_bold.clone());
-        assert_cell_value_text_row(&grid, sheet_id, 2, 5, -4, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 2, 5, -4, expected.clone());
         assert_cell_format_bold_row(&grid, sheet_id, 2, 5, 0, expected_bold.clone());
-        assert_cell_value_text_row(&grid, sheet_id, 2, 5, 0, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 2, 5, 0, expected.clone());
     }
 
     #[test]
@@ -553,28 +409,28 @@ mod tests {
         let expected = vec!["a", "h", "x", "g", "a", "h", "x", "g", "a"];
         let expected_bold = vec![true, false, false, true, true, false, false, true, true];
 
-        assert_cell_value_text_row(&grid, sheet_id, 2, 10, 2, expected.clone());
-        assert_cell_value_text_row(&grid, sheet_id, 2, 10, 10, expected);
+        assert_cell_value_row(&grid, sheet_id, 2, 10, 2, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 2, 10, 10, expected);
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 2, expected_bold.clone());
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 10, expected_bold);
     }
 
     #[test]
     fn test_expand_up_and_right() {
-        let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 3, y: 3 });
-        let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 4, y: 3 });
-        let (mut grid, sheet_id) = test_setup_rect_pairing(&selected);
-        let summary = grid.expand(sheet_id, selected, range, None, None).unwrap();
-        let range: Rect = Rect::new_span((2, -7).into(), (10, 3).into());
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
+        let range: Rect = Rect::new_span(selected.min, Pos { x: 10, y: -7 });
+        let (mut grid, sheet_id) = test_setup_rect(&selected);
+        grid.expand(sheet_id, selected, range, None, None).unwrap();
+
         table(grid.clone(), sheet_id, &range);
 
-        // let expected = vec!["f", "z", "r", "b", "f", "z", "r", "b", "f"];
-        // let expected_bold = vec![false, true, true, false, false, true, true, false, false];
+        let expected = vec!["f", "z", "r", "b", "f", "z", "r", "b", "f"];
+        let expected_bold = vec![false, true, true, false, false, true, true, false, false];
 
-        // assert_cell_value_text_row(&grid, sheet_id, 2, 10, -7, expected.clone());
-        // assert_cell_value_text_row(&grid, sheet_id, 2, 10, 3, expected);
-        // assert_cell_format_bold_row(&grid, sheet_id, 2, 10, -7, expected_bold.clone());
-        // assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 3, expected_bold);
+        assert_cell_value_row(&grid, sheet_id, 2, 10, -7, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 2, 10, 3, expected);
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 10, -7, expected_bold.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 3, expected_bold);
     }
 
     #[test]
@@ -584,7 +440,6 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        let range: Rect = Rect::new_span((-7, 2).into(), (5, 10).into());
         table(grid.clone(), sheet_id, &range);
 
         let expected = vec![
@@ -594,8 +449,8 @@ mod tests {
             true, true, false, false, true, true, false, false, true, true, false, false, true,
         ];
 
-        assert_cell_value_text_row(&grid, sheet_id, -7, 5, 2, expected.clone());
-        assert_cell_value_text_row(&grid, sheet_id, -7, 5, 10, expected);
+        assert_cell_value_row(&grid, sheet_id, -7, 5, 2, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, -7, 5, 10, expected);
         assert_cell_format_bold_row(&grid, sheet_id, -7, 5, 2, expected_bold.clone());
         assert_cell_format_bold_row(&grid, sheet_id, -7, 5, 10, expected_bold);
     }
@@ -607,7 +462,6 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        // let range: Rect = Rect::new_span(selected.max, range.min);
         // table(grid.clone(), sheet_id, &range);
 
         let expected = vec![
@@ -617,9 +471,104 @@ mod tests {
             false, false, true, true, false, false, true, true, false, false, true, true, false,
         ];
 
-        assert_cell_value_text_row(&grid, sheet_id, -7, 5, -7, expected.clone());
-        assert_cell_value_text_row(&grid, sheet_id, -7, 5, 3, expected);
+        assert_cell_value_row(&grid, sheet_id, -7, 5, -7, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, -7, 5, 3, expected);
         assert_cell_format_bold_row(&grid, sheet_id, -7, 5, -7, expected_bold.clone());
         assert_cell_format_bold_row(&grid, sheet_id, -7, 5, 3, expected_bold);
+    }
+
+    #[test]
+    fn test_series_down_and_right() {
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
+        let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
+        let (mut grid, sheet_id) = test_setup_rect_series(&selected);
+        grid.expand(sheet_id, selected, range, None, None).unwrap();
+
+        table(grid.clone(), sheet_id, &range);
+
+        let expected = vec!["8", "9", "10", "11", "12", "13", "14", "15"];
+        assert_cell_value_row(&grid, sheet_id, 2, 9, 2, expected);
+
+        let expected = vec!["10", "9", "8", "7", "6", "5", "4", "3"];
+        assert_cell_value_row(&grid, sheet_id, 2, 9, 3, expected);
+
+        let expected = vec!["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon"];
+        assert_cell_value_row(&grid, sheet_id, 2, 9, 4, expected);
+
+        let expected = vec!["May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        assert_cell_value_row(&grid, sheet_id, 2, 9, 5, expected);
+
+        let expected = vec!["32", "64", "128", "256", "512", "1024", "2048", "4096"];
+        assert_cell_value_row(&grid, sheet_id, 2, 9, 6, expected);
+    }
+
+    #[test]
+    fn test_series_up_and_right() {
+        // let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
+        // let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
+        // let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
+        // let range: Rect = Rect::new_span(Pos { x: -8, y: -8 }, Pos { x: 5, y: 6 });
+        let selected: Rect = Rect::new_span(Pos { x: 6, y: 15 }, Pos { x: 9, y: 19 });
+        let range: Rect = Rect::new_span(Pos { x: 6, y: 12 }, Pos { x: 15, y: 19 });
+        let (mut grid, sheet_id) = test_setup_rect_series(&selected);
+        grid.expand(sheet_id, selected, range, None, None).unwrap();
+
+        // let range: Rect = Rect::new_span(selected.max, range.min);
+        table(grid.clone(), sheet_id, &range);
+
+        let expected = vec!["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon"];
+        assert_cell_value_row(&grid, sheet_id, 6, 15, 12, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 6, 15, 17, expected);
+
+        let expected = vec!["May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        assert_cell_value_row(&grid, sheet_id, 6, 15, 13, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 6, 15, 18, expected.clone());
+
+        let expected = vec!["32", "64", "128", "256", "512", "1024", "2048", "4096"];
+        assert_cell_value_row(&grid, sheet_id, 6, 15, 14, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 6, 15, 19, expected.clone());
+
+        let expected = vec!["8", "9", "10", "11", "12", "13", "14", "15"];
+        assert_cell_value_row(&grid, sheet_id, 6, 15, 15, expected.clone());
+
+        let expected = vec!["10", "9", "8", "7", "6", "5", "4", "3"];
+        assert_cell_value_row(&grid, sheet_id, 6, 15, 16, expected.clone());
+    }
+
+    #[test]
+    fn test_series_up_and_left() {
+        // let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
+        // let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
+        let range: Rect = Rect::new_span(Pos { x: -4, y: -8 }, Pos { x: 5, y: 6 });
+        let (mut grid, sheet_id) = test_setup_rect_series(&selected);
+        grid.expand(sheet_id, selected, range, None, None).unwrap();
+
+        // let range: Rect = Rect::new_span(selected.max, range.min);
+        table(grid.clone(), sheet_id, &range);
+
+        let expected = vec!["2", "3", "4", "5", "6", "7", "8", "9", "10", "11"];
+        assert_cell_value_row(&grid, sheet_id, -4, 5, -8, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, -4, 5, -3, expected.clone());
+
+        let expected = vec!["16", "15", "14", "13", "12", "11", "10", "9", "8", "7"];
+        assert_cell_value_row(&grid, sheet_id, -4, 5, -7, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, -4, 5, -2, expected.clone());
+
+        let expected = vec![
+            "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon", "Tue", "Wed", "Thu",
+        ];
+        assert_cell_value_row(&grid, sheet_id, -4, 5, -6, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, -4, 5, -1, expected.clone());
+
+        let expected = vec![
+            "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug",
+        ];
+        assert_cell_value_row(&grid, sheet_id, -4, 5, -5, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, -4, 5, 0, expected.clone());
+
+        let expected = vec!["0.5", "1", "2", "4", "8", "16", "32", "64", "128", "256"];
+        assert_cell_value_row(&grid, sheet_id, -4, 5, -4, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, -4, 5, 1, expected.clone());
     }
 }

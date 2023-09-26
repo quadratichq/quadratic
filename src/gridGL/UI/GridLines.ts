@@ -1,4 +1,5 @@
 import { Graphics, Rectangle } from 'pixi.js';
+import { grid } from '../../grid/controller/Grid';
 import { sheets } from '../../grid/controller/Sheets';
 import { colors } from '../../theme/colors';
 import { pixiApp } from '../pixiApp/PixiApp';
@@ -44,8 +45,11 @@ export class GridLines extends Graphics {
   }
 
   private drawVerticalLines(bounds: Rectangle): void {
-    const { gridOffsets } = sheets.sheet;
-    const { index, position } = gridOffsets.getColumnIndex(bounds.left);
+    const sheetId = sheets.sheet.id;
+    const columnPlacement = grid.getXPlacement(sheetId, bounds.left);
+    const index = columnPlacement.index;
+    const position = columnPlacement.position;
+
     let column = index;
     const offset = bounds.left - position;
     let size = 0;
@@ -55,14 +59,17 @@ export class GridLines extends Graphics {
         this.moveTo(x - offset, bounds.top);
         this.lineTo(x - offset, bounds.bottom);
       }
-      size = gridOffsets.getColumnWidth(column);
+      size = grid.getColumnWidth(sheetId, column);
       column++;
     }
   }
 
   private drawHorizontalLines(bounds: Rectangle): void {
-    const { gridOffsets } = sheets.sheet;
-    const { index, position } = gridOffsets.getRowIndex(bounds.top);
+    const sheetId = sheets.sheet.id;
+    const rowPlacement = grid.getYPlacement(sheetId, bounds.top);
+    const index = rowPlacement.index;
+    const position = rowPlacement.position;
+
     let row = index;
     const offset = bounds.top - position;
     let size = 0;
@@ -72,7 +79,7 @@ export class GridLines extends Graphics {
         this.moveTo(bounds.left, y - offset);
         this.lineTo(bounds.right, y - offset);
       }
-      size = gridOffsets.getRowHeight(row);
+      size = grid.getRowHeight(sheetId, row);
       row++;
     }
   }

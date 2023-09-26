@@ -18,6 +18,7 @@ import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { CellsSheets } from '../cells/CellsSheets';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { ensureVisible } from '../interaction/viewportHelper';
+import { loadAssets } from '../loadAssets';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
 import { Quadrants } from '../quadrants/Quadrants';
 import { pixiAppSettings } from './PixiAppSettings';
@@ -49,7 +50,19 @@ export class PixiApp {
   // for testing purposes
   debug!: Graphics;
 
-  init() {
+  async init() {
+    await loadAssets();
+    this.initCanvas();
+    await this.rebuild();
+
+    // keep a reference of app on window, used for Playwright tests
+    //@ts-expect-error
+    window.pixiapp = this;
+
+    console.log('[QuadraticGL] environment ready');
+  }
+
+  private initCanvas() {
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
     this.canvas.className = 'pixi_canvas';
@@ -62,11 +75,6 @@ export class PixiApp {
       antialias: true,
       backgroundColor: 0xffffff,
     });
-
-    // keep a reference of app on window, used for Playwright tests
-
-    //@ts-expect-error
-    window.pixiapp = this;
 
     this.viewport = new Viewport({ interaction: this.renderer.plugins.interaction });
     this.stage.addChild(this.viewport);
@@ -121,13 +129,6 @@ export class PixiApp {
     if (debugAlwaysShowCache) this.showCache();
 
     this.setupListeners();
-    this.rebuild();
-
-    console.log('[QuadraticGL] environment ready');
-  }
-
-  create() {
-    this.cellsSheets.create();
   }
 
   private setupListeners() {
@@ -275,17 +276,10 @@ export class PixiApp {
     });
   }
 
-  clear(): void {
-    this.renderer.render(new Container());
-  }
-
-  private async loadSheets() {
-    await this.cellsSheets.create();
-    this.viewport.dirty = true;
-  }
-
   async rebuild() {
-    this.clear();
+    sheets.create();
+    await this.cellsSheets.create();
+
     this.paused = true;
     this.viewport.dirty = true;
     this.gridLines.dirty = true;
@@ -294,7 +288,7 @@ export class PixiApp {
     this.cursor.dirty = true;
     this.boxCells.reset();
 
-    await this.loadSheets();
+    this.viewport.dirty = true;
     this.paused = false;
     this.reset();
   }
@@ -317,13 +311,20 @@ export class PixiApp {
   }
 
   updateCursorPosition(): void {
-    pixiApp.cursor.dirty = true;
-    pixiApp.headings.dirty = true;
+    this.cursor.dirty = true;
+    this.headings.dirty = true;
 
     ensureVisible();
 
     // triggers useGetBorderMenu clearSelection()
     window.dispatchEvent(new CustomEvent('cursor-position'));
+  }
+
+  adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
+    this.cellsSheets.adjustHeadings(options);
+    this.headings.dirty = true;
+    this.gridLines.dirty = true;
+    this.cursor.dirty = true;
   }
 }
 

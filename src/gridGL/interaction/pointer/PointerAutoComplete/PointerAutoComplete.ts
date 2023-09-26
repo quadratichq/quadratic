@@ -43,11 +43,12 @@ export class PointerAutoComplete {
       } else {
         this.selection = new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 0, 0);
       }
-      this.screenSelection = sheet.gridOffsets.getScreenRectangle(
+      this.screenSelection = grid.getScreenRectangle(
+        sheet.id,
         this.selection.left,
         this.selection.top,
-        this.selection.width + 1,
-        this.selection.height + 1
+        this.selection.width,
+        this.selection.height
       );
       cursor.changeBoxCells(true);
 
@@ -87,13 +88,13 @@ export class PointerAutoComplete {
       // handle dragging from the corner
       // if (intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {
       if (this.active) {
-        const { column, row } = sheets.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
+        const { column, row } = grid.getColumnRow(sheets.sheet.id, world.x, world.y);
         const { selection, screenSelection } = this;
         if (!selection || !screenSelection) {
           throw new Error('Expected selection and screenSelection to be defined');
         }
         this.endCell = { x: column, y: row };
-        const rectangle = new Rectangle(selection.x, selection.y, selection.width + 1, selection.height + 1);
+        const rectangle = new Rectangle(selection.x, selection.y, selection.width, selection.height);
         const deleteRectangles = [];
         if (row === selection.top && selection.top === selection.bottom) {
           this.toVertical = undefined;
@@ -101,17 +102,17 @@ export class PointerAutoComplete {
         } else if (row >= selection.top && row < selection.bottom) {
           this.stateVertical = 'shrink';
           this.toVertical = row;
-          rectangle.height = row - selection.top + 1;
-          deleteRectangles.push(new Rectangle(selection.x, row + 1, selection.width + 1, selection.bottom - row));
+          rectangle.height = row - selection.top;
+          deleteRectangles.push(new Rectangle(selection.x, row, selection.width, selection.bottom - row));
         } else if (row < selection.top) {
           this.stateVertical = 'expandUp';
           this.toVertical = row;
           rectangle.y = row;
-          rectangle.height = selection.bottom - row + 1;
+          rectangle.height = selection.bottom - row;
         } else if (row > selection.bottom) {
           this.stateVertical = 'expandDown';
           this.toVertical = row;
-          rectangle.height = row - selection.y + 1;
+          rectangle.height = row - selection.y;
         } else {
           this.stateVertical = undefined;
           this.toVertical = undefined;
@@ -123,25 +124,21 @@ export class PointerAutoComplete {
         } else if (column >= selection.left && column < selection.right) {
           this.stateHorizontal = 'shrink';
           this.toHorizontal = column;
-          rectangle.width = column - selection.left + 1;
+          rectangle.width = column - selection.left;
           if (this.stateVertical === 'shrink') {
-            deleteRectangles.push(
-              new Rectangle(column + 1, selection.y, selection.right - column, row - selection.y + 1)
-            );
+            deleteRectangles.push(new Rectangle(column, selection.y, selection.right - column, row - selection.y));
           } else {
-            deleteRectangles.push(
-              new Rectangle(column + 1, selection.y, selection.right - column, selection.height + 1)
-            );
+            deleteRectangles.push(new Rectangle(column, selection.y, selection.right - column, selection.height));
           }
         } else if (column < selection.left) {
           this.stateHorizontal = 'expandLeft';
           this.toHorizontal = column;
           rectangle.x = column;
-          rectangle.width = selection.right - column + 1;
+          rectangle.width = selection.right - column;
         } else if (column > selection.right) {
           this.stateHorizontal = 'expandRight';
           this.toHorizontal = column;
-          rectangle.width = column - selection.x + 1;
+          rectangle.width = column - selection.x;
         } else {
           this.stateHorizontal = undefined;
           this.toHorizontal = undefined;
@@ -231,50 +228,6 @@ export class PointerAutoComplete {
         );
       }
     }
-
-    // if (!this.stateHorizontal && !this.stateVertical) {
-    //   this.reset();
-    //   return;
-    // }
-
-    // if (this.stateVertical === 'shrink') {
-    //   if (this.endCell) {
-    //     const rect = new Rectangle(
-    //       this.selection.left,
-    //       this.endCell.y + 1,
-    //       this.selection.right,
-    //       this.selection.bottom
-    //     );
-    //     grid.deleteCellValues(sheet.id, rect, false);
-    //   }
-    // } else if (this.stateVertical === 'expandDown' && this.toVertical !== undefined) {
-    //   // if (!(this.stateHorizontal === 'expandRight' && this.toHorizontal !== undefined)) {
-    //   // grid.expandDown(
-    //   //   sheet.id,
-    //   //   this.selection,
-    //   //   this.toVertical,
-    //   //   this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined
-    //   // );
-    //   // }
-    // } else if (this.stateVertical === 'expandUp' && this.toVertical !== undefined) {
-    //   // grid.expandUp(
-    //   //   sheet.id,
-    //   //   this.selection,
-    //   //   this.toVertical,
-    //   //   this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined
-    //   // );
-    // }
-
-    // if (this.stateHorizontal === 'shrink') {
-    //   if (this.endCell) {
-    //     const rect = new Rectangle(this.endCell.x + 1, this.selection.top, this.selection.right, this.selection.bottom);
-    //     grid.deleteCellValues(sheet.id, rect, false);
-    //   }
-    // } else if (this.stateHorizontal === 'expandLeft' && this.toHorizontal !== undefined) {
-    //   // grid.expandLeft(sheet.id, this.selection, this.toHorizontal, this.toVertical);
-    // } else if (this.stateHorizontal === 'expandRight' && this.toHorizontal !== undefined) {
-    //   console.log(sheet.id, this.selection, this.toHorizontal, this.toVertical);
-    // }
 
     this.setSelection();
     this.reset();
