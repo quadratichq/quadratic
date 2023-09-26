@@ -64,7 +64,6 @@ csv = "1.2.2"
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }
-tabled = "0.14.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 proptest = "1.2.0"
