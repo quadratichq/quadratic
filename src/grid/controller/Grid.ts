@@ -368,11 +368,11 @@ export class Grid {
 
   getColumnsBounds(
     sheetId: string,
-    column_start: number,
-    column_end: number,
+    columnStart: number,
+    columnEnd: number,
     ignoreFormatting: boolean
   ): MinMax | undefined {
-    return this.gridController.getColumnsBounds(sheetId, column_start, column_end, ignoreFormatting);
+    return this.gridController.getColumnsBounds(sheetId, columnStart, columnEnd, ignoreFormatting);
   }
 
   getRowBounds(sheetId: string, row: number, ignoreFormatting: boolean): MinMax | undefined {

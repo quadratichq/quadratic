@@ -12,6 +12,11 @@ export function selectAllCells(): void {
       },
       cursorPosition: { x: bounds.left, y: bounds.top },
     });
+  } else {
+    sheet.cursor.changePosition({
+      multiCursor: undefined,
+      cursorPosition: { x: 0, y: 0 },
+    });
   }
 }
 
@@ -26,6 +31,11 @@ export function selectColumns(start: number, end: number): void {
         terminalPosition: { x: end, y: bounds.max },
       },
     });
+  } else {
+    sheet.cursor.changePosition({
+      cursorPosition: { x: start, y: 0 },
+      multiCursor: undefined,
+    });
   }
 }
 
@@ -39,6 +49,11 @@ export async function selectRows(start: number, end: number): Promise<void> {
         originPosition: { x: bounds.min, y: start },
         terminalPosition: { x: bounds.max, y: end },
       },
+    });
+  } else {
+    sheet.cursor.changePosition({
+      cursorPosition: { x: 0, y: start },
+      multiCursor: undefined,
     });
   }
 }

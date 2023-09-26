@@ -30,15 +30,15 @@ impl GridController {
         sheet_id: String,
         column: i32,
         ignore_formatting: bool,
-    ) -> Result<MinMax, JsValue> {
+    ) -> Option<MinMax> {
         let sheet = self.grid().sheet_from_string(sheet_id);
         if let Some(bounds) = &sheet.column_bounds(column as i64, ignore_formatting) {
-            Ok(MinMax {
+            Some(MinMax {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
             })
         } else {
-            Err(JsValue::UNDEFINED)
+            None
         }
     }
 
@@ -50,17 +50,17 @@ impl GridController {
         column_start: i32,
         column_end: i32,
         ignore_formatting: bool,
-    ) -> Result<MinMax, JsValue> {
+    ) -> Option<MinMax> {
         let sheet = self.grid().sheet_from_string(sheet_id);
         if let Some(bounds) =
             &sheet.columns_bounds(column_start as i64, column_end as i64, ignore_formatting)
         {
-            Ok(MinMax {
+            Some(MinMax {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
             })
         } else {
-            Err(JsValue::UNDEFINED)
+            None
         }
     }
 
@@ -71,15 +71,15 @@ impl GridController {
         sheet_id: String,
         row: i32,
         ignore_formatting: bool,
-    ) -> Result<MinMax, JsValue> {
+    ) -> Option<MinMax> {
         let sheet = self.grid().sheet_from_string(sheet_id);
         if let Some(bounds) = &sheet.row_bounds(row as i64, ignore_formatting) {
-            Ok(MinMax {
+            Some(MinMax {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
             })
         } else {
-            Err(JsValue::UNDEFINED)
+            None
         }
     }
 
@@ -91,17 +91,17 @@ impl GridController {
         row_start: i32,
         row_end: i32,
         ignore_formatting: bool,
-    ) -> Result<MinMax, JsValue> {
+    ) -> Option<MinMax> {
         let sheet = self.grid().sheet_from_string(sheet_id);
         if let Some(bounds) =
             &sheet.rows_bounds(row_start as i64, row_end as i64, ignore_formatting)
         {
-            Ok(MinMax {
+            Some(MinMax {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
             })
         } else {
-            Err(JsValue::UNDEFINED)
+            None
         }
     }
 

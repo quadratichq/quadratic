@@ -68,13 +68,15 @@ impl Sheet {
     ) -> Option<(i64, i64)> {
         let mut min: i64 = i64::MAX;
         let mut max: i64 = i64::MIN;
+        let mut found = false;
         for x in column_start..=column_end {
             if let Some(bounds) = self.column_bounds(x, ignore_formatting) {
                 min = min.min(bounds.0);
                 max = max.max(bounds.1);
+                found = true;
             }
         }
-        if min != i64::MAX && max != i64::MIN {
+        if found {
             Some((min, max))
         } else {
             None
@@ -110,13 +112,15 @@ impl Sheet {
     ) -> Option<(i64, i64)> {
         let mut min: i64 = i64::MAX;
         let mut max: i64 = i64::MIN;
+        let mut found = false;
         for y in row_start..=row_end {
             if let Some(bounds) = self.row_bounds(y, ignore_formatting) {
                 min = min.min(bounds.0);
                 max = max.max(bounds.1);
+                found = true;
             }
         }
-        if min != i64::MAX && max != i64::MIN {
+        if found {
             Some((min, max))
         } else {
             None
@@ -314,6 +318,12 @@ mod test {
 
         assert_eq!(sheet.columns_bounds(-100, 100, true), Some((-80, 80)));
         assert_eq!(sheet.columns_bounds(-100, 100, false), Some((-200, 200)));
+
+        assert_eq!(sheet.columns_bounds(1000, 2000, true), None);
+        assert_eq!(sheet.columns_bounds(1000, 2000, false), None);
+
+        assert_eq!(sheet.columns_bounds(1000, 1000, true), None);
+        assert_eq!(sheet.columns_bounds(1000, 1000, false), None);
     }
 
     #[test]
@@ -344,6 +354,12 @@ mod test {
 
         assert_eq!(sheet.rows_bounds(-100, 100, true), Some((-80, 80)));
         assert_eq!(sheet.rows_bounds(-100, 100, false), Some((-200, 200)));
+
+        assert_eq!(sheet.rows_bounds(1000, 2000, true), None);
+        assert_eq!(sheet.rows_bounds(1000, 2000, false), None);
+
+        assert_eq!(sheet.rows_bounds(1000, 1000, true), None);
+        assert_eq!(sheet.rows_bounds(1000, 1000, false), None);
     }
 
     #[test]
