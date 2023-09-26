@@ -1,7 +1,7 @@
-use crate::{grid::*, Pos, Rect};
+use crate::{grid::*, Pos, Rect, SheetRect};
 use serde::{Deserialize, Serialize};
 
-use super::{compute::SheetRect, operations::Operation, GridController};
+use super::{operations::Operation, GridController};
 
 impl GridController {
     /// Takes a Vec of initial Operations creates and runs a tractions, returning a transaction summary.

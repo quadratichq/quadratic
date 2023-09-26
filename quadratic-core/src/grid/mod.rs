@@ -29,10 +29,7 @@ pub use formatting::{
 pub use ids::*;
 pub use sheet::Sheet;
 
-use crate::{
-    controller::compute::{SheetPos, SheetRect},
-    CellValue, Pos, Rect, Value,
-};
+use crate::{CellValue, Pos, Rect, SheetPos, SheetRect, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]

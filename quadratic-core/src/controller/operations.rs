@@ -1,12 +1,7 @@
-use crate::{grid::*, Array, CellValue};
+use crate::{grid::*, Array, CellValue, SheetPos, SheetRect};
 use serde::{Deserialize, Serialize};
 
-use super::{
-    compute::{SheetPos, SheetRect},
-    formatting::CellFmtArray,
-    transactions::TransactionSummary,
-    GridController,
-};
+use super::{formatting::CellFmtArray, transactions::TransactionSummary, GridController};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Operation {
