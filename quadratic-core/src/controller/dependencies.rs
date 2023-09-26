@@ -2,9 +2,7 @@ use std;
 
 use std::collections::HashSet;
 
-use crate::grid::Grid;
-
-use super::compute::{SheetPos, SheetRect};
+use crate::{grid::Grid, SheetPos, SheetRect};
 
 impl Grid {
     /// Given `cell` and `dependencies` adds a new node to the graph.
@@ -49,11 +47,7 @@ impl Grid {
 mod test {
     use std::collections::HashSet;
 
-    use crate::{
-        controller::compute::{SheetPos, SheetRect},
-        grid::Grid,
-        Pos,
-    };
+    use crate::{grid::Grid, Pos, SheetPos, SheetRect};
     #[test]
     fn test_graph() {
         let mut cdc = Grid::new();

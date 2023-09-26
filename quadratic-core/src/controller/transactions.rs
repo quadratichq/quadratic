@@ -1,10 +1,6 @@
-use crate::{grid::SheetId, Pos};
+use super::{operations::Operation, transaction_summary::TransactionSummary, GridController};
+use crate::{grid::SheetId, Pos, SheetPos};
 use serde::{Deserialize, Serialize};
-
-use super::{
-    compute::SheetPos, operations::Operation, transaction_summary::TransactionSummary,
-    GridController,
-};
 
 impl GridController {
     /// Takes a Vec of initial Operations creates and runs a tractions, returning a transaction summary.

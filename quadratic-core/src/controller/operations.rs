@@ -4,12 +4,11 @@ use crate::{
         *,
     },
     values::IsBlank,
-    Array, CellValue, Pos, Value,
+    Array, CellValue, Pos, SheetPos, SheetRect, Value,
 };
 use serde::{Deserialize, Serialize};
 
 use super::{
-    compute::{SheetPos, SheetRect},
     formatting::CellFmtArray,
     transaction_summary::{OperationSummary, TransactionSummary},
     GridController,
