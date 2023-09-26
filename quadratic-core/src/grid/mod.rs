@@ -166,6 +166,9 @@ impl Grid {
         let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");
         &mut self.sheets[sheet_index]
     }
+    pub fn sheet_from_name(&self, sheet_name: &str) -> Option<&Sheet> {
+        self.sheets.iter().find(|sheet| sheet.name == sheet_name)
+    }
 
     pub fn sheet_from_string(&self, sheet_id: String) -> &Sheet {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
