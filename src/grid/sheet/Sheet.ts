@@ -11,33 +11,16 @@ import {
   JsRenderFill,
 } from '../../quadratic-core/types';
 import { grid } from '../controller/Grid';
-import { GridBorders } from './GridBorders';
-import { GridOffsets } from './GridOffsets';
-import { GridSparse } from './GridSparse';
 import { SheetCursor } from './SheetCursor';
 
 export class Sheet {
   id: string;
-
-  // @deprecated (soon)
-  gridOffsets: GridOffsets;
-
-  // @deprecated
-  grid: GridSparse;
-
-  borders: GridBorders;
   cursor: SheetCursor;
 
   constructor(index: number) {
-    // deprecated
-    this.grid = new GridSparse(this);
-
     const sheetId = grid.sheetIndexToId(index);
     if (!sheetId) throw new Error('Expected sheetId to be defined in Sheet');
     this.id = sheetId;
-
-    this.gridOffsets = new GridOffsets();
-    this.borders = new GridBorders(this.gridOffsets);
 
     this.cursor = new SheetCursor(this);
   }
@@ -129,66 +112,6 @@ export class Sheet {
       { x: bounds.right, y: bounds.bottom },
     ];
   }
-
-  getGridRowMinMax(row: number, onlyData: boolean): Coordinate[] | undefined {
-    const gridRowMinMax = this.grid.getRowMinMax(row, onlyData);
-    if (onlyData) {
-      if (!gridRowMinMax) return;
-      return [
-        { x: gridRowMinMax.min, y: row },
-        { x: gridRowMinMax.max, y: row },
-      ];
-    }
-    const bordersRowMinMax = this.borders.getRowMinMax(row);
-    if (!gridRowMinMax && !bordersRowMinMax) return;
-    if (!gridRowMinMax) {
-      return [
-        { x: bordersRowMinMax.min, y: row },
-        { x: bordersRowMinMax.max, y: row },
-      ];
-    }
-    if (!bordersRowMinMax) {
-      return [
-        { x: gridRowMinMax.min, y: row },
-        { x: gridRowMinMax.max, y: row },
-      ];
-    }
-    return [
-      { x: Math.min(gridRowMinMax.min, bordersRowMinMax.min), y: row },
-      { x: Math.max(gridRowMinMax.max, bordersRowMinMax.max), y: row },
-    ];
-  }
-
-  getGridColumnMinMax(column: number, onlyData: boolean): Coordinate[] | undefined {
-    const gridColumnMinMax = this.grid.getColumnMinMax(column, onlyData);
-    if (onlyData) {
-      if (!gridColumnMinMax) return;
-      return [
-        { x: column, y: gridColumnMinMax.min },
-        { x: column, y: gridColumnMinMax.max },
-      ];
-    }
-    const bordersColumnMinMax = this.borders.getColumnMinMax(column);
-    if (!gridColumnMinMax && !bordersColumnMinMax) return;
-    if (!gridColumnMinMax) {
-      return [
-        { x: column, y: bordersColumnMinMax!.min },
-        { x: column, y: bordersColumnMinMax!.max },
-      ];
-    }
-    if (!bordersColumnMinMax) {
-      return [
-        { x: column, y: gridColumnMinMax.min },
-        { x: column, y: gridColumnMinMax.max },
-      ];
-    }
-    return [
-      { x: column, y: Math.min(gridColumnMinMax.min, bordersColumnMinMax.min) },
-      { x: column, y: Math.max(gridColumnMinMax.max, bordersColumnMinMax.max) },
-    ];
-  }
-
-  //#endregion
 
   //#region set grid information
 

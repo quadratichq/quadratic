@@ -1,9 +1,7 @@
-import { Container, Rectangle } from 'pixi.js';
-import { debugShowCacheFlag, debugShowCellsForDirtyQuadrants, debugSkipQuadrantRendering } from '../../debugFlags';
+import { Container } from 'pixi.js';
+import { debugShowCacheFlag, debugSkipQuadrantRendering } from '../../debugFlags';
 import { sheets } from '../../grid/controller/Sheets';
-import { CellRectangle } from '../../grid/sheet/CellRectangle';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { intersects } from '../helpers/intersects';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { Quadrant } from './Quadrant';
@@ -162,29 +160,29 @@ export class Quadrants extends Container {
   }
 
   /** Returns CellRectangles for visible dirty quadrants */
-  getCellsForDirtyQuadrants(): CellRectangle[] {
-    const { viewport } = pixiApp;
-    const { grid, borders, id } = sheets.sheet;
-    const quadrantsSheet = this.quadrants.get(id);
-    if (!quadrantsSheet) {
-      throw new Error('Expected quadrantsSheet to be defined in getCellsForDirtyQuadrants');
-    }
-    const screen = viewport.getVisibleBounds();
-    return quadrantsSheet.children.flatMap((child) => {
-      const quadrant = child as Quadrant;
-      if (!quadrant.dirty && !debugShowCellsForDirtyQuadrants) return [];
-      if (intersects.rectangleRectangle(screen, quadrant.visibleRectangle)) {
-        const columnStart = quadrant.location.x * QUADRANT_COLUMNS;
-        const rowStart = quadrant.location.y * QUADRANT_ROWS;
-        const cellRectangle = grid.getCells(
-          new Rectangle(columnStart, rowStart, QUADRANT_COLUMNS - 1, QUADRANT_ROWS - 1)
-        );
-        cellRectangle.addBorders(borders);
-        return [cellRectangle];
-      }
-      return [];
-    });
-  }
+  // getCellsForDirtyQuadrants(): CellRectangle[] {
+  //   const { viewport } = pixiApp;
+  //   const { grid, borders, id } = sheets.sheet;
+  //   const quadrantsSheet = this.quadrants.get(id);
+  //   if (!quadrantsSheet) {
+  //     throw new Error('Expected quadrantsSheet to be defined in getCellsForDirtyQuadrants');
+  //   }
+  //   const screen = viewport.getVisibleBounds();
+  //   return quadrantsSheet.children.flatMap((child) => {
+  //     const quadrant = child as Quadrant;
+  //     if (!quadrant.dirty && !debugShowCellsForDirtyQuadrants) return [];
+  //     if (intersects.rectangleRectangle(screen, quadrant.visibleRectangle)) {
+  //       const columnStart = quadrant.location.x * QUADRANT_COLUMNS;
+  //       const rowStart = quadrant.location.y * QUADRANT_ROWS;
+  //       const cellRectangle = grid.getCells(
+  //         new Rectangle(columnStart, rowStart, QUADRANT_COLUMNS - 1, QUADRANT_ROWS - 1)
+  //       );
+  //       cellRectangle.addBorders(borders);
+  //       return [cellRectangle];
+  //     }
+  //     return [];
+  //   });
+  // }
 
   private debugCacheStats(): void {
     const textures = this.children.reduce((count, child) => count + (child as Quadrant).debugTextureCount(), 0);

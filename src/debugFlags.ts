@@ -52,7 +52,7 @@ export const debugShowWhyRendering = debug && false;
 export const debugShowCellsSheetCulling = debug && false;
 
 // shows CellsHash boxes
-export const debugShowCellsHashBoxes = debug && false;
+export const debugShowCellsHashBoxes = (debug && false) || url.has('cell-boxes');
 
 // shows CellsHash information
 export const debugShowCellHashesInfo = debug && false;
