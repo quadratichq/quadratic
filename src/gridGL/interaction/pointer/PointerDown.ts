@@ -1,5 +1,6 @@
 import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
+import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
@@ -37,10 +38,8 @@ export class PointerDown {
       return;
     }
 
-    const { gridOffsets } = sheet;
-
     this.positionRaw = world;
-    const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
+    const { column, row } = grid.getColumnRow(sheet.id, world.x, world.y);
 
     const rightClick = event.button === 2 || (event.button === 0 && event.ctrlKey);
 
@@ -80,7 +79,7 @@ export class PointerDown {
 
     // select cells between pressed and cursor position
     if (event.shiftKey) {
-      const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
+      const { column, row } = grid.getColumnRow(sheet.id, world.x, world.y);
       const cursorPosition = cursor.cursorPosition;
       if (column !== cursorPosition.x || row !== cursorPosition.y) {
         // make origin top left, and terminal bottom right
@@ -127,7 +126,6 @@ export class PointerDown {
 
     const { viewport } = pixiApp;
     const sheet = sheets.sheet;
-    const { gridOffsets } = sheet;
 
     // for determining if double click
     if (!this.pointerMoved && this.doubleClickTimeout && this.positionRaw) {
@@ -146,7 +144,7 @@ export class PointerDown {
     }
 
     // calculate mouse move position
-    const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
+    const { column, row } = grid.getColumnRow(sheet.id, world.x, world.y);
 
     // cursor start and end in the same cell
     if (column === this.position.x && row === this.position.y) {

@@ -1,4 +1,5 @@
 import { ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
+import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { JsRenderCodeCell } from '../../quadratic-core/types';
 import { colors } from '../../theme/colors';
@@ -36,9 +37,8 @@ export class CellsArray extends ParticleContainer {
   }
 
   private draw(codeCell: JsRenderCodeCell): void {
-    const { gridOffsets } = this.sheet;
-    const start = gridOffsets.getCell(Number(codeCell.x), Number(codeCell.y));
-    const end = gridOffsets.getCell(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
+    const start = grid.getCellOffsets(this.sheet.id, Number(codeCell.x), Number(codeCell.y));
+    const end = grid.getCellOffsets(this.sheet.id, Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
     const type = codeCell.language;
     let tint = colors.independence;
     if (type === 'Python') {

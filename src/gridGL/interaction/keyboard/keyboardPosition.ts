@@ -1,5 +1,5 @@
+import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
-import { cellHasContent } from '../../helpers/selectCells';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 
 export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boolean {
@@ -12,10 +12,12 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
       cursorPosition: newPos,
     });
   };
+
   const moveCursor = (deltaX: number, deltaY: number) => {
     // movePosition is either originPosition or terminalPosition (whichever !== cursorPosition)
     const downPosition = cursor.cursorPosition;
     const movePosition = cursor.keyboardMovePosition;
+    const sheetId = sheets.sheet.id;
 
     // handle cases for meta/ctrl keys with algorithm:
     // - if on an empty cell then select to the first cell with a value
@@ -23,14 +25,7 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
     // - if on a filled cell but the next cell is empty then select to the first cell with a value
     // - if there are no more cells then select the next cell over (excel selects to the end of the sheet; we don’t have an end (yet) so right now I select one cell over)
     //   the above checks are always made relative to the original cursor position (the highlighted cell)
-
     if (event.metaKey || event.ctrlKey) {
-      const bounds = sheet.grid.getSheetBounds(true);
-      if (!bounds) {
-        event.preventDefault();
-        return;
-      }
-
       if (deltaX === 1) {
         const originX = cursor.originPosition.x;
         const termX = cursor.terminalPosition.x;
@@ -40,29 +35,37 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
         let x = keyboardX;
         const leftOfCursor = keyboardX < cursor.cursorPosition.x;
         const y = cursor.keyboardMovePosition.y;
-
         // always use the original cursor position to search
         const yCheck = cursor.cursorPosition.y;
-
         // handle case of cell with content
-        if (cellHasContent(sheet.grid.get(x, yCheck)?.cell)) {
+        if (grid.cellHasContent(sheetId, x, yCheck)) {
           // if next cell is empty, find the next cell with content
-          if (!cellHasContent(sheet.grid.get(x + 1, yCheck)?.cell)) {
-            x = sheet.grid.findNextColumn({ xStart: x + 1, y: yCheck, delta: 1, withContent: true });
+          if (!grid.cellHasContent(sheetId, x + 1, yCheck)) {
+            x = grid.findNextColumn({
+              sheetId,
+              columnStart: x + 1,
+              row: yCheck,
+              reverse: false,
+              withContent: true,
+            });
           }
-
           // if next cell is not empty, find the next empty cell
           else {
-            x = sheet.grid.findNextColumn({ xStart: x + 1, y: yCheck, delta: 1, withContent: false }) - 1;
+            x =
+              grid.findNextColumn({
+                sheetId,
+                columnStart: x + 1,
+                row: yCheck,
+                reverse: false,
+                withContent: false,
+              }) - 1;
           }
         }
-
         // otherwise find the next cell with content
         else {
-          x = sheet.grid.findNextColumn({ xStart: x + 1, y: yCheck, delta: 1, withContent: true });
+          x = grid.findNextColumn({ sheetId, columnStart: x + 1, row: yCheck, reverse: false, withContent: true });
           if (x === keyboardX) x++;
         }
-
         if (event.shiftKey) {
           cursor.changePosition({
             multiCursor: {
@@ -81,28 +84,24 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
         let x = keyboardX;
         const rightOfCursor = keyboardX > cursor.cursorPosition.x;
         const y = cursor.keyboardMovePosition.y;
-
         // always use the original cursor position to search
         const yCheck = cursor.cursorPosition.y;
-
         // handle case of cell with content
-        if (cellHasContent(sheet.grid.get(x, yCheck)?.cell)) {
+        if (grid.cellHasContent(sheetId, x, yCheck)) {
           // if next cell is empty, find the next cell with content
-          if (!cellHasContent(sheet.grid.get(x - 1, yCheck)?.cell)) {
-            x = sheet.grid.findNextColumn({ xStart: x - 1, y: yCheck, delta: -1, withContent: true });
+          if (!grid.cellHasContent(sheetId, x - 1, yCheck)) {
+            x = grid.findNextColumn({ sheetId, columnStart: x - 1, row: yCheck, reverse: true, withContent: true });
           }
-
           // if next cell is not empty, find the next empty cell
           else {
-            x = sheet.grid.findNextColumn({ xStart: x - 1, y: yCheck, delta: -1, withContent: false }) + 1;
+            x =
+              grid.findNextColumn({ sheetId, columnStart: x - 1, row: yCheck, reverse: true, withContent: false }) + 1;
           }
         }
-
         // otherwise find the next cell with content
         else {
-          x = sheet.grid.findNextColumn({ xStart: x - 1, y: yCheck, delta: -1, withContent: true });
+          x = grid.findNextColumn({ sheetId, columnStart: x - 1, row: yCheck, reverse: true, withContent: true });
         }
-
         if (event.shiftKey) {
           const originY = cursor.originPosition.y;
           const termY = cursor.terminalPosition.y;
@@ -123,29 +122,24 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
         let y = keyboardY;
         const topOfCursor = keyboardY < cursor.cursorPosition.y;
         const x = cursor.keyboardMovePosition.x;
-
         // always use the original cursor position to search
         const xCheck = cursor.cursorPosition.x;
-
         // handle case of cell with content
-        if (cellHasContent(sheet.grid.get(xCheck, y)?.cell)) {
+        if (grid.cellHasContent(sheetId, xCheck, y)) {
           // if next cell is empty, find the next cell with content
-          if (!cellHasContent(sheet.grid.get(xCheck, y + 1)?.cell)) {
-            y = sheet.grid.findNextRow({ x: xCheck, yStart: y + 1, delta: 1, withContent: true });
+          if (!grid.cellHasContent(sheetId, xCheck, y + 1)) {
+            y = grid.findNextRow({ sheetId, column: xCheck, rowStart: y + 1, reverse: false, withContent: true });
           }
-
           // if next cell is not empty, find the next empty cell
           else {
-            y = sheet.grid.findNextRow({ x: xCheck, yStart: y + 1, delta: 1, withContent: false }) - 1;
+            y = grid.findNextRow({ sheetId, column: xCheck, rowStart: y + 1, reverse: false, withContent: false }) - 1;
           }
         }
-
         // otherwise find the next cell with content
         else {
-          y = sheet.grid.findNextRow({ x: xCheck, yStart: y + 1, delta: 1, withContent: true });
+          y = grid.findNextRow({ sheetId, column: xCheck, rowStart: y + 1, reverse: false, withContent: true });
           if (y === keyboardY) y++;
         }
-
         if (event.shiftKey) {
           const originX = cursor.originPosition.x;
           const termX = cursor.terminalPosition.x;
@@ -166,28 +160,23 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
         let y = keyboardY;
         const bottomOfCursor = keyboardY > cursor.cursorPosition.y;
         const x = cursor.keyboardMovePosition.x;
-
         // always use the original cursor position to search
         const xCheck = cursor.cursorPosition.x;
-
         // handle case of cell with content
-        if (cellHasContent(sheet.grid.get(xCheck, y)?.cell)) {
+        if (grid.cellHasContent(sheetId, xCheck, y)) {
           // if next cell is empty, find the next cell with content
-          if (!cellHasContent(sheet.grid.get(xCheck, y - 1)?.cell)) {
-            y = sheet.grid.findNextRow({ x: xCheck, yStart: y - 1, delta: -1, withContent: true });
+          if (!grid.cellHasContent(sheetId, xCheck, y - 1)) {
+            y = grid.findNextRow({ sheetId, column: xCheck, rowStart: y - 1, reverse: true, withContent: true });
           }
-
           // if next cell is not empty, find the next empty cell
           else {
-            y = sheet.grid.findNextRow({ x: xCheck, yStart: y - 1, delta: -1, withContent: false }) + 1;
+            y = grid.findNextRow({ sheetId, column: xCheck, rowStart: y - 1, reverse: true, withContent: false }) + 1;
           }
         }
-
         // otherwise find the next cell with content
         else {
-          y = sheet.grid.findNextRow({ x: xCheck, yStart: y - 1, delta: -1, withContent: true });
+          y = grid.findNextRow({ sheetId, column: xCheck, rowStart: y - 1, reverse: true, withContent: true });
         }
-
         if (event.shiftKey) {
           const originX = cursor.multiCursor ? cursor.multiCursor.originPosition.x : cursor.cursorPosition.x;
           const termX = cursor.multiCursor ? cursor.multiCursor.terminalPosition.x : cursor.cursorPosition.x;
@@ -203,7 +192,6 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
         }
       }
     }
-
     // use arrow to select when shift key is pressed
     else if (event.shiftKey) {
       // we are moving an existing multiCursor
@@ -222,7 +210,6 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
         });
         pixiAppSettings.changeInput(false);
       }
-
       // we are creating a new multiCursor
       else {
         const downPosition = cursor.cursorPosition;
@@ -241,7 +228,6 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
         pixiAppSettings.changeInput(false);
       }
     }
-
     // move arrow normally
     else {
       const newPos = { x: cursor.cursorPosition.x + deltaX, y: cursor.cursorPosition.y + deltaY };

@@ -18,8 +18,8 @@ pub(crate) struct SheetSchema {
     pub name: String,
     pub color: Option<String>,
     pub order: String,
-    pub column_widths: Vec<(i64, f32)>,
-    pub row_heights: Vec<(i64, f32)>,
+    pub column_widths: Vec<(i64, f64)>,
+    pub row_heights: Vec<(i64, f64)>,
     pub columns: Vec<(i64, Column)>,
     pub rows: Vec<(i64, RowId)>,
     pub borders: SheetBorders,
@@ -117,12 +117,12 @@ impl v1_4::JsSheet {
         let column_widths = self
             .columns
             .iter()
-            .filter_map(|column| Some((column.id, column.size? as f32)))
+            .filter_map(|column| Some((column.id, column.size? as f64)))
             .collect();
         let row_heights = self
             .rows
             .iter()
-            .filter_map(|row| Some((row.id, row.size? as f32)))
+            .filter_map(|row| Some((row.id, row.size? as f64)))
             .collect();
 
         let mut code_cells = vec![];

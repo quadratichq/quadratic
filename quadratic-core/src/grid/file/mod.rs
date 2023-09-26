@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use super::offsets::Offsets;
+
 mod v1_4;
 mod v1_5;
 mod current {
@@ -52,8 +54,14 @@ pub fn import(file_contents: &str) -> Result<current::Grid, String> {
                         .map(|(x, column)| (*x, column.id))
                         .collect(),
                     row_ids: sheet.rows.iter().copied().collect(),
-                    column_widths: sheet.column_widths.iter().copied().collect(),
-                    row_heights: sheet.row_heights.iter().copied().collect(),
+                    column_widths: Offsets::from_iter(
+                        crate::DEFAULT_COLUMN_WIDTH,
+                        sheet.column_widths.iter().copied(),
+                    ),
+                    row_heights: Offsets::from_iter(
+                        crate::DEFAULT_ROW_HEIGHT,
+                        sheet.row_heights.iter().copied(),
+                    ),
                     columns: sheet.columns.into_iter().collect(),
                     borders: sheet.borders,
                     code_cells: sheet.code_cells.into_iter().collect(),
@@ -83,16 +91,8 @@ pub fn export(grid: &current::Grid) -> Result<String, String> {
                     name: sheet.name.clone(),
                     color: sheet.color.clone(),
                     order: sheet.order.clone(),
-                    column_widths: sheet
-                        .column_widths()
-                        .iter()
-                        .map(|(&x, &width)| (x, width))
-                        .collect(),
-                    row_heights: sheet
-                        .row_heights()
-                        .iter()
-                        .map(|(&y, &height)| (y, height))
-                        .collect(),
+                    column_widths: sheet.column_widths.iter_sizes().collect(),
+                    row_heights: sheet.row_heights.iter_sizes().collect(),
                     columns: sheet
                         .iter_columns()
                         .map(|(x, column)| (x, column.clone()))
