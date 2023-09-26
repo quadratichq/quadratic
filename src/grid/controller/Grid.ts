@@ -418,12 +418,12 @@ export class Grid {
 
   //#endregion
 
-  //#region Clipboard
+  //#region Imports
 
   async importCsv(sheetId: string, file: File, insertAtCellLocation: Coordinate) {
     const pos = new Pos(insertAtCellLocation.x, insertAtCellLocation.y);
     const text = await file.text();
-    const summary = this.gridController.importCsv(sheetId, text, pos);
+    const summary = this.gridController.importCsv(sheetId, text, file.name, pos, sheets.getCursorPosition());
     transactionResponse(summary);
   }
 

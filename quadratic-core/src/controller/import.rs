@@ -1,5 +1,6 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use bigdecimal::BigDecimal;
+use itertools::Itertools;
 use smallvec::SmallVec;
 use std::str::FromStr;
 
@@ -10,10 +11,14 @@ use crate::{
 use super::{transactions::TransactionSummary, GridController};
 
 impl GridController {
+    /// Imports a CSV file into the grid.
+    ///
+    /// Returns a [`TransactionSummary`].
     pub fn import_csv(
         &mut self,
         sheet_id: SheetId,
         file: &str,
+        file_name: &str,
         insert_at: Pos,
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
@@ -21,31 +26,38 @@ impl GridController {
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .from_reader(file.as_bytes());
+        let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
 
         let values = reader
             .records()
             .into_iter()
-            .flat_map(|record| {
-                let record = record.unwrap();
+            .enumerate()
+            .map(|(index, record)| {
+                let record = record.map_err(|e| error(format!("line {}: {}", index + 1, e)))?;
                 width = Some(record.len() as u32);
 
+                // convert the record into a vector of CellValues
                 record
                     .iter()
                     .map(|value| {
-                        if let Ok(number) = BigDecimal::from_str(value) {
+                        Ok(if let Ok(number) = BigDecimal::from_str(value) {
                             CellValue::Number(number)
                         } else {
                             CellValue::Text(value.into())
-                        }
+                        })
                     })
-                    .collect::<SmallVec<[CellValue; 1]>>()
+                    .collect::<Result<Vec<CellValue>>>()
             })
-            .collect::<SmallVec<[CellValue; 1]>>();
+            .collect::<Result<Vec<Vec<CellValue>>>>()?;
 
         if let Some(width) = width {
             let height = values.len() as u32 / width;
-            let size = ArraySize::new(width, height).unwrap();
-            let values = Array::new_row_major(size, values).unwrap();
+            let size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
+            let array = values
+                .into_iter()
+                .flatten()
+                .collect::<SmallVec<[CellValue; 1]>>();
+            let values = Array::new_row_major(size, array).map_err(|e| error(e.to_string()))?;
             let rect = Rect::new_span(
                 insert_at,
                 Pos {
@@ -59,7 +71,7 @@ impl GridController {
             return Ok(self.transact_forward(ops, cursor));
         }
 
-        Err(anyhow!("CSV must have at least two columns"))
+        bail!("CSV must have at least two columns")
     }
 }
 
@@ -144,7 +156,7 @@ Concord,NH,United States,42605
         let pos = Pos { x: 0, y: 0 };
 
         let result = grid_controller
-            .import_csv(sheet_id, SIMPLE_CSV, pos, None)
+            .import_csv(sheet_id, SIMPLE_CSV, "smapppop.csc", pos, None)
             .unwrap();
 
         table(
