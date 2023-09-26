@@ -59,13 +59,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const contents = await res.text();
 
       // Validate and upgrade file
-      const file = validateAndUpgradeGridFile(contents);
+      console.log('validateAndUpgradeGridFile:before');
+      const file = await validateAndUpgradeGridFile(contents);
+      console.log('validateAndUpgradeGridFile', file);
       if (!file) {
         throw new Error(`Failed to create a new file because the example file is corrupt: ${file}`);
       }
 
       // Create a new file from that example file
-      const { uuid } = await apiClient.createFile({ name, contents: JSON.stringify(file), version: file.version });
+      const { uuid } = await apiClient.createFile({ name, contents: file.contents, version: file.version });
 
       // Navigate to it
       return navigate(uuid);

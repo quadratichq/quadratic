@@ -96,7 +96,7 @@ export const GridFileSchemaV1_4 = z.object({
       rows: HeadingSchema.array(),
     })
     .array(),
-  cell_dependency: z.map(z.string(), z.array(z.tuple([z.number(), z.number()]))),
+  cell_dependency: z.string(),
   version: z.literal('1.4'),
 });
 export type GridFileV1_4 = z.infer<typeof GridFileSchemaV1_4>;
@@ -105,50 +105,50 @@ export function upgradeV1_3toV1_4(file: GridFileV1_3): GridFileV1_4 {
   // convert cell dependencies in Rust format
   // in v3 we map trigger_cell: updates_cells[]
   // in v4 we map code_cell: dependencies[]
-  console.log('Upgrading file from v1.3 to v1.4');
-  console.log('File: ', file.cell_dependency);
-  let old_dependencies: Map<string, [number, number][]> = new Map();
-  if (file.cell_dependency !== undefined && file.cell_dependency !== '') {
-    old_dependencies = new Map(
-      JSON.parse(file.cell_dependency).map(({ key, value }: { key: string; value: [number, number][] }) => [key, value])
-    );
-  }
+  // console.log('Upgrading file from v1.3 to v1.4');
+  // console.log('File: ', file.cell_dependency);
+  // let old_dependencies: Map<string, [number, number][]> = new Map();
+  // if (file.cell_dependency !== undefined && file.cell_dependency !== '') {
+  //   old_dependencies = new Map(
+  //     JSON.parse(file.cell_dependency).map(({ key, value }: { key: string; value: [number, number][] }) => [key, value])
+  //   );
+  // }
 
-  function getKey(location: [number, number]): string {
-    return `${location[0]},${location[1]}`;
-  }
+  // function getKey(location: [number, number]): string {
+  //   return `${location[0]},${location[1]}`;
+  // }
 
-  function getValue(key: string): [number, number] {
-    const [x, y] = key.split(',').map((x) => parseInt(x));
-    return [x, y];
-  }
+  // function getValue(key: string): [number, number] {
+  //   const [x, y] = key.split(',').map((x) => parseInt(x));
+  //   return [x, y];
+  // }
 
-  // loop through dependencies and console log them
-  let new_dependencies: Map<string, [number, number][]> = new Map();
-  console.log('Old Dependencies: ');
-  for (const [trigger_cell, updates_cells] of old_dependencies.entries()) {
-    let updates_cells_string_debug = '';
-    for (const update_cell of updates_cells) {
-      // check if key exists in dependencies
-      const existing = new_dependencies.get(getKey(update_cell));
-      if (existing) {
-        new_dependencies.set(getKey(update_cell), [...existing, getValue(trigger_cell)]);
-      } else {
-        new_dependencies.set(getKey(update_cell), [getValue(trigger_cell)]);
-      }
-      updates_cells_string_debug += `${update_cell}, `;
-    }
-    console.log(`${trigger_cell} -> ${updates_cells_string_debug}`);
-  }
+  // // loop through dependencies and console log them
+  // let new_dependencies: Map<string, [number, number][]> = new Map();
+  // console.log('Old Dependencies: ');
+  // for (const [trigger_cell, updates_cells] of old_dependencies.entries()) {
+  //   let updates_cells_string_debug = '';
+  //   for (const update_cell of updates_cells) {
+  //     // check if key exists in dependencies
+  //     const existing = new_dependencies.get(getKey(update_cell));
+  //     if (existing) {
+  //       new_dependencies.set(getKey(update_cell), [...existing, getValue(trigger_cell)]);
+  //     } else {
+  //       new_dependencies.set(getKey(update_cell), [getValue(trigger_cell)]);
+  //     }
+  //     updates_cells_string_debug += `${update_cell}, `;
+  //   }
+  //   console.log(`${trigger_cell} -> ${updates_cells_string_debug}`);
+  // }
 
-  console.log('New Dependencies: ');
-  for (const [key, value] of new_dependencies.entries()) {
-    let dependent_cells_string_debug = '';
-    for (const dcell of value) {
-      dependent_cells_string_debug += `${dcell}, `;
-    }
-    console.log(`${key} <- ${dependent_cells_string_debug}`);
-  }
+  // console.log('New Dependencies: ');
+  // for (const [key, value] of new_dependencies.entries()) {
+  //   let dependent_cells_string_debug = '';
+  //   for (const dcell of value) {
+  //     dependent_cells_string_debug += `${dcell}, `;
+  //   }
+  //   console.log(`${key} <- ${dependent_cells_string_debug}`);
+  // }
 
   // file.render_dependency is removed
   // sheets and id added
@@ -165,7 +165,7 @@ export function upgradeV1_3toV1_4(file: GridFileV1_3): GridFileV1_4 {
         formats: file.formats,
       },
     ],
-    cell_dependency: new_dependencies,
+    cell_dependency: file.cell_dependency,
     version: '1.4',
   } as GridFileV1_4;
 }

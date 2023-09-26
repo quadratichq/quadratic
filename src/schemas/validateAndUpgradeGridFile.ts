@@ -1,4 +1,5 @@
 import { GridFile, GridFiles } from '.';
+import { upgradeFileRust } from '../grid/controller/Grid';
 import { GridFileSchemaV1_0 } from './GridFileV1_0';
 import { GridFileSchemaV1_1, upgradeV1_0toV1_1 } from './GridFileV1_1';
 import { GridFileSchemaV1_2, upgradeV1_1toV1_2 } from './GridFileV1_2';
@@ -21,7 +22,13 @@ const rustFileVersions = ['1.5'];
  * Given arbitrary JSON, validate whether it's a valid file format and return
  * the newest format of the file if it is.
  */
-export function validateAndUpgradeGridFile(input: any, logOutput: boolean = true): GridFile | null {
+export async function validateAndUpgradeGridFile(
+  input: any,
+  logOutput: boolean = true
+): Promise<{
+  contents: string;
+  version: string;
+} | null> {
   // First make sure it's a string
   if (typeof input !== 'string') {
     if (logOutput)
@@ -43,10 +50,6 @@ export function validateAndUpgradeGridFile(input: any, logOutput: boolean = true
         e
       );
     return null;
-  }
-
-  if (rustFileVersions.includes(json.version)) {
-    return json;
   }
 
   // Try to validate the file against the newest version, then step back through
@@ -84,13 +87,22 @@ export function validateAndUpgradeGridFile(input: any, logOutput: boolean = true
     errors.push({ version: schema.shape.version.value, error: result.error });
   }
 
+  console.log('json.version', json.version);
+  if (rustFileVersions.includes(json.version)) {
+    isValid = true;
+  }
+
   // If it never passed, stop
   if (!isValid) {
     if (logOutput) console.log('[validateAndUpgradeGridFile] failed to validate file with zod.', errors);
     return null;
   }
 
-  return gridFile as GridFile;
+  // Upgrade the file to the latest version in Rust
+  if (gridFile !== undefined) {
+    console.log('gridFile', gridFile);
+    return await upgradeFileRust(gridFile as GridFile);
+  } else return null;
 }
 
 /**

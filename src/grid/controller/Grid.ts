@@ -1,6 +1,12 @@
 import { Point, Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
-import { GridController, MinMax, Placement, Pos, Rect as RectInternal } from '../../quadratic-core/quadratic_core';
+import init, {
+  GridController,
+  MinMax,
+  Placement,
+  Pos,
+  Rect as RectInternal,
+} from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
   CellFormatSummary,
@@ -41,6 +47,24 @@ export const rectToPoint = (rect: Rect): Point => {
   return new Point(Number(rect.min.x), Number(rect.min.y));
 };
 
+export const upgradeFileRust = async (
+  grid: GridFile
+): Promise<{
+  contents: string;
+  version: string;
+} | null> => {
+  await init();
+  try {
+    const gc = GridController.newFromFile(JSON.stringify(grid));
+    const contents = gc.exportToFile();
+    console.log('upgradeFileRust:contents', contents);
+    return { contents: contents, version: gc.getVersion() };
+  } catch (e) {
+    console.warn(e);
+    return null;
+  }
+};
+
 // TS wrapper around Grid.rs
 export class Grid {
   private gridController!: GridController;
@@ -60,10 +84,9 @@ export class Grid {
   }
 
   // import/export
-
-  newFromFile(grid: GridFile): boolean {
+  openFromContents(contents: string): boolean {
     try {
-      this.gridController = GridController.newFromFile(JSON.stringify(grid));
+      this.gridController = GridController.newFromFile(contents);
       return true;
     } catch (e) {
       console.warn(e);

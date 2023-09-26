@@ -11,7 +11,7 @@ use super::v1_5::*;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GridSchemaV1_4 {
     pub sheets: Vec<JsSheet>,
-    pub cell_dependency: HashMap<String, Vec<(i64, i64)>>,
+    pub cell_dependency: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]

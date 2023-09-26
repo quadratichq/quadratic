@@ -44,9 +44,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     throw new Response('Failed to retrieve file from server');
   }
 
+  console.log('data.file.contents', data.file.contents);
   // Validate and upgrade file to the latest version in TS (up to 1.4)
-  const contents = validateAndUpgradeGridFile(data.file.contents);
-  if (!contents) {
+  const file = await validateAndUpgradeGridFile(data.file.contents);
+  if (!file) {
     Sentry.captureEvent({
       message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
       level: Sentry.Severity.Critical,
@@ -54,13 +55,15 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     throw new Response('Invalid file that could not be upgraded.');
   }
 
+  console.log('file.contents', file.contents);
   // load WASM
   await init();
   hello();
   grid.init();
+  grid.openFromContents(file.contents);
 
   // If the file is newer than the app, do a (hard) reload.
-  const fileVersion = contents.version;
+  const fileVersion = file.version;
   const gridVersion = grid.getVersion();
   if (compareVersions(fileVersion, gridVersion) === VersionComparisonResult.GreaterThan) {
     Sentry.captureEvent({
@@ -69,15 +72,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     });
     // @ts-expect-error hard reload via `true` only works in some browsers
     window.location.reload(true);
-  }
-
-  // attempt to load the sheet
-  if (!grid.newFromFile(contents)) {
-    Sentry.captureEvent({
-      message: `Failed to validate and upgrade user file from database (to Rust). It will likely have to be fixed manually. File UUID: ${uuid}`,
-      level: Sentry.Severity.Critical,
-    });
-    throw new Response('Invalid file that could not be upgraded by Rust.', { status: 400 });
   }
 
   // Fetch the file's sharing info

@@ -40,29 +40,29 @@ impl v1_4::GridSchemaV1_4 {
 
         let mut dependencies = HashMap::new();
 
-        for dep in self.cell_dependency.into_iter() {
-            let pos = get_value(dep.0).unwrap();
-            let cell = SheetPos {
-                sheet_id: sheets[0].id,
-                x: pos.0,
-                y: pos.1,
-            };
+        // for dep in self.cell_dependency.into_iter() {
+        //     let pos = get_value(dep.0).unwrap();
+        //     let cell = SheetPos {
+        //         sheet_id: sheets[0].id,
+        //         x: pos.0,
+        //         y: pos.1,
+        //     };
 
-            let mut deps: Vec<SheetRect> = vec![];
-            for position in dep.1.into_iter() {
-                let cell = Pos {
-                    x: position.0,
-                    y: position.1,
-                };
-                deps.push(SheetRect {
-                    sheet_id: sheets[0].id,
-                    min: cell,
-                    max: cell,
-                });
-            }
+        //     let mut deps: Vec<SheetRect> = vec![];
+        //     for position in dep.1.into_iter() {
+        //         let cell = Pos {
+        //             x: position.0,
+        //             y: position.1,
+        //         };
+        //         deps.push(SheetRect {
+        //             sheet_id: sheets[0].id,
+        //             min: cell,
+        //             max: cell,
+        //         });
+        //     }
 
-            dependencies.insert(cell, deps);
-        }
+        //     dependencies.insert(cell, deps);
+        // }
 
         let ret = GridSchema {
             sheets,
