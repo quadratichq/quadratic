@@ -1,12 +1,10 @@
 use anyhow::{anyhow, Result};
 use bigdecimal::BigDecimal;
-use csv::StringRecord;
 use smallvec::SmallVec;
 use std::str::FromStr;
 
 use crate::{
-    controller::operations::Operation, grid::SheetId, wasm_bindings::js, Array, ArraySize,
-    CellValue, Pos, Rect,
+    controller::operations::Operation, grid::SheetId, Array, ArraySize, CellValue, Pos, Rect,
 };
 
 use super::{transactions::TransactionSummary, GridController};
@@ -17,6 +15,7 @@ impl GridController {
         sheet_id: SheetId,
         file: &str,
         insert_at: Pos,
+        cursor: Option<String>,
     ) -> Result<TransactionSummary> {
         let mut width = None;
         let mut reader = csv::ReaderBuilder::new()
@@ -43,8 +42,6 @@ impl GridController {
             })
             .collect::<SmallVec<[CellValue; 1]>>();
 
-        dbg!(reader.records().count());
-
         if let Some(width) = width {
             let height = values.len() as u32 / width;
             let size = ArraySize::new(width, height).unwrap();
@@ -59,7 +56,7 @@ impl GridController {
             let region = self.region(sheet_id, rect);
             let ops = vec![Operation::SetCellValues { region, values }];
 
-            return Ok(self.transact_forward(ops, None));
+            return Ok(self.transact_forward(ops, cursor));
         }
 
         Err(anyhow!("CSV must have at least two columns"))
@@ -147,7 +144,7 @@ Concord,NH,United States,42605
         let pos = Pos { x: 0, y: 0 };
 
         let result = grid_controller
-            .import_csv(sheet_id, SIMPLE_CSV, pos)
+            .import_csv(sheet_id, SIMPLE_CSV, pos, None)
             .unwrap();
 
         table(

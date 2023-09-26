@@ -1,50 +1,16 @@
 import { Coordinate } from '../../../gridGL/types/size';
 import { grid } from '../../controller/Grid';
 import { sheets } from '../../controller/Sheets';
-// import { Cell } from '../../sheet/gridTypes';
-// import { updateCellAndDCells } from '../updateCellAndDCells';
+import { transactionResponse } from '../../controller/transactionResponse';
 
-export const InsertCSV = (props: {
+export const InsertCSV = async (props: {
   file: File;
   insertAtCellLocation: Coordinate;
   reportError: (error: string) => void;
 }) => {
   const { file, insertAtCellLocation } = props;
+  const cursor = sheets.sheet.cursor.getRectangle();
 
-  // console.log(sheets.sheet.id, file, insertAtCellLocation);
-  grid.importCsv(sheets.sheet.id, file, insertAtCellLocation);
-
-  // sheetController.start_transaction();
-
-  // let rowIndex = 0;
-  // Papa.parse(file, {
-  //   error: function (error, File) {
-  //     props.reportError(error.name + ': ' + error.message);
-  //     mixpanel.track('[Grid].[Actions].insertCSV', { status: 'error', name: error.name, message: error.message });
-  //   },
-  //   complete: function () {
-  //     sheetController.end_transaction();
-  //     mixpanel.track('[Grid].[Actions].insertCSV', { status: 'complete' });
-  //   },
-  //   step: function (row) {
-  //     const cellsToInsert: Cell[] = [];
-
-  //     //@ts-expect-error
-  //     row.data.forEach((text: string, cellIndex: number) => {
-  //       cellsToInsert.push({
-  //         value: text.trim(),
-  //         type: 'TEXT',
-  //         x: props.insertAtCellLocation.x + cellIndex,
-  //         y: props.insertAtCellLocation.y + rowIndex,
-  //         last_modified: new Date().toISOString(),
-  //       });
-  //     });
-  //     rowIndex++;
-
-  //     updateCellAndDCells({
-  //       starting_cells: cellsToInsert,
-  //       create_transaction: false,
-  //     });
-  //   },
-  // });
+  const summary = await grid.importCsv(sheets.sheet.id, file, insertAtCellLocation, cursor);
+  transactionResponse(summary);
 };
