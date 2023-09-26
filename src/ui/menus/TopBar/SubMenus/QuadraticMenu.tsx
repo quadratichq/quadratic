@@ -44,7 +44,7 @@ export const QuadraticMenu = () => {
   const { uuid } = useParams() as { uuid: string };
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { name } = useFileContext();
-  const { isLoggedIn } = useRootRouteLoaderData();
+  const { isAuthenticated } = useRootRouteLoaderData();
   const { permission } = editorInteractionState;
 
   // For mobile, set Headers to not visible by default
@@ -193,7 +193,7 @@ export const QuadraticMenu = () => {
           )}
         </SubMenu>
 
-        {isLoggedIn && (
+        {isAuthenticated && (
           <>
             <MenuDivider />
             <MenuItem onClick={() => authClient.logout()}>

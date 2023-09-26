@@ -83,10 +83,10 @@ export default function CellTypeMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [value, setValue] = React.useState<string>('');
   const [selectedIndex, setSelectedIndex] = React.useState<number>(0);
-  const { isLoggedIn } = useRootRouteLoaderData();
+  const { isAuthenticated } = useRootRouteLoaderData();
   const searchlabel = 'Choose a cell type…';
 
-  if (!isLoggedIn) {
+  if (!isAuthenticated) {
     // remove the AI option if not authenticated
     CELL_TYPE_OPTIONS = CELL_TYPE_OPTIONS.filter((option) => option.mode !== 'AI');
   }

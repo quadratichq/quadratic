@@ -74,7 +74,7 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
     if (loading) return;
     controller.current = new AbortController();
     setLoading(true);
-    const token = await authClient.getToken();
+    const token = await authClient.getTokenOrRedirect();
     const updatedMessages = [...messages, { role: 'user', content: prompt }] as Message[];
     const request_body = {
       model: 'gpt-4',

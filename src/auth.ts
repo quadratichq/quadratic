@@ -38,22 +38,23 @@ async function getClient() {
 }
 
 interface AuthClient {
-  isLoggedIn(): Promise<boolean>;
+  isAuthenticated(): Promise<boolean>;
   user(): Promise<undefined | User>;
   login(redirectTo: string, isSignupFlow?: boolean): Promise<void>;
   handleSigninRedirect(): Promise<void>;
   logout(): Promise<void>;
-  getToken(): Promise<string>;
+  /**
+   * Tries to get a token for the current user. If the token is expired, it
+   * redirects the user to auth0 to get re-authenticate and get a new token.
+   */
+  getTokenOrRedirect(): Promise<string>;
 }
 
 export const authClient: AuthClient = {
-  // In Quadratic, logged in means we know who they are AND we know they
-  // have an auth token, e.g. authenticated & authorized
-  async isLoggedIn() {
+  async isAuthenticated() {
     const client = await getClient();
     const isAuthenticated = await client.isAuthenticated();
-    const isAuthorized = Boolean(await this.getToken());
-    return isAuthenticated && isAuthorized;
+    return isAuthenticated;
   },
   async user() {
     const client = await getClient();
@@ -72,6 +73,7 @@ export const authClient: AuthClient = {
           new URLSearchParams([['redirectTo', redirectTo]]).toString(),
       },
     });
+    await waitForAuth0ClientToRedirect();
   },
   async handleSigninRedirect() {
     const query = window.location.search;
@@ -83,19 +85,15 @@ export const authClient: AuthClient = {
   async logout() {
     const client = await getClient();
     await client.logout({ logoutParams: { returnTo: window.location.origin } });
-    // Not sure why this is the case, but manually waiting for this is what
-    // makes it work. Auth0 will redirect once it actually does the logout,
-    // otherwise this doesn't wait and it "logs out" too fast and you don't
-    // actually log out
-    await new Promise((resolve) => setTimeout(resolve, 10000));
+    await waitForAuth0ClientToRedirect();
   },
-  async getToken() {
+  async getTokenOrRedirect() {
     const client = await getClient();
-
     try {
       const token = await client.getTokenSilently();
       return token;
     } catch (e) {
+      await this.login(new URL(window.location.href).pathname);
       return '';
     }
   },
@@ -111,12 +109,34 @@ export const authClient: AuthClient = {
 export function protectedRouteLoaderWrapper(loaderFn: LoaderFunction): LoaderFunction {
   return async (loaderFnArgs: LoaderFunctionArgs) => {
     const { request } = loaderFnArgs;
-    const isLoggedIn = await authClient.isLoggedIn();
-    if (!isLoggedIn) {
+    const isAuthenticated = await authClient.isAuthenticated();
+
+    // If the user isn't authenciated, redirect them to login
+    if (!isAuthenticated) {
       let params = new URLSearchParams();
       params.set('from', new URL(request.url).pathname);
       return redirect(ROUTES.LOGIN + '?' + params.toString());
     }
+
+    // If the user is authenticated, make sure we have a valid token
+    // before we load any of the app
+    await authClient.getTokenOrRedirect();
+
     return loaderFn(loaderFnArgs);
   };
+}
+
+/**
+ * In cases where we call the auth0 client and it redirects the user to the
+ * auth0 website on its own (e.g. for `.login` and `.logout`, presumably via
+ * manipulation `window.location`) we have to manually wait for the client
+ * Why? Because even though auth0's client APIs are async, they seem to
+ * complete immediately and our app's code continues before `window.location`
+ * kicks in.
+ *
+ * So, in other words, this ensures our whole app pauses while the auth0 lib
+ * does its thing and kicks the user over to auth0.com
+ */
+export function waitForAuth0ClientToRedirect() {
+  return new Promise((resolve) => setTimeout(resolve, 10000));
 }

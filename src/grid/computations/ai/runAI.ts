@@ -11,7 +11,7 @@ export interface runAIReturnType {
 }
 
 export async function runAI(prompt: string, pos: Coordinate): Promise<runAIReturnType> {
-  const token = await authClient.getToken();
+  const token = await authClient.getTokenOrRedirect();
 
   const top_cells = await GetCellsDB(pos.x - 25, pos.y - 50, pos.x + 25, pos.y - 1);
   const left_cells = await GetCellsDB(pos.x - 25, pos.y - 25, pos.x - 1, pos.y + 50);

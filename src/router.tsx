@@ -25,11 +25,12 @@ import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
 import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
 import * as Create from './dashboard/files/CreateRoute';
 import { initializeAnalytics } from './utils/analytics';
+
 // @ts-expect-error - for testing purposes
 window.lf = localforage;
 
 export type RootLoaderData = {
-  isLoggedIn: boolean;
+  isAuthenticated: boolean;
   user?: User;
 };
 
@@ -42,14 +43,14 @@ export const router = createBrowserRouter(
         path="/"
         loader={async ({ request, params }): Promise<RootLoaderData | Response> => {
           // All other routes get the same data
-          const isLoggedIn = await authClient.isLoggedIn();
+          const isAuthenticated = await authClient.isAuthenticated();
           const user = await authClient.user();
 
           // This is where we determine whether we need to run a migration
           // This redirect should trigger for every route _except_ the migration
           // route (this prevents an infinite loop of redirects).
           const url = new URL(request.url);
-          if (isLoggedIn && !url.pathname.startsWith('/cloud-migration')) {
+          if (isAuthenticated && !url.pathname.startsWith('/cloud-migration')) {
             if (await CloudFilesMigration.needsMigration()) {
               return redirect('/cloud-migration');
             }
@@ -57,7 +58,7 @@ export const router = createBrowserRouter(
 
           initializeAnalytics(user);
 
-          return { isLoggedIn, user };
+          return { isAuthenticated, user };
         }}
         element={<Root />}
         errorElement={<RootError />}
@@ -129,10 +130,10 @@ export const router = createBrowserRouter(
       <Route
         path={ROUTES.LOGIN}
         loader={async ({ request }) => {
-          const isLoggedIn = await authClient.isLoggedIn();
+          const isAuthenticated = await authClient.isAuthenticated();
 
           // If they’re logged in, redirect home
-          if (isLoggedIn) {
+          if (isAuthenticated) {
             return redirect('/');
           }
 
@@ -148,9 +149,6 @@ export const router = createBrowserRouter(
 
           // auth0 will re-route us (above) but telling react-router where we
           // are re-routing to makes sure that this doesn't end up in the history stack
-          // but we have to add an artifical delay that's long enough for
-          // the auth0 navigation to take place
-          await new Promise((resolve) => setTimeout(resolve, 10000));
           return redirect(redirectTo);
         }}
       />
@@ -161,8 +159,8 @@ export const router = createBrowserRouter(
           // have no errorElement so we just redirect back to home
           try {
             await authClient.handleSigninRedirect();
-            let isLoggedIn = await authClient.isLoggedIn();
-            if (isLoggedIn) {
+            let isAuthenticated = await authClient.isAuthenticated();
+            if (isAuthenticated) {
               let redirectTo = new URLSearchParams(window.location.search).get('redirectTo') || '/';
               return redirect(redirectTo);
             }

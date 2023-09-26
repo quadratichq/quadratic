@@ -5,12 +5,14 @@ import { apiClient } from './apiClient';
 
 export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z.Schema<T>): Promise<T> {
   // Set headers
-  const isLoggedIn = await authClient.isLoggedIn();
+  const isAuthenticated = await authClient.isAuthenticated();
+  const token = isAuthenticated ? await authClient.getTokenOrRedirect() : '';
   const sharedInit = {
     headers: {
       'Content-Type': 'application/json',
-      // Only pass the auth if the user is auth'd
-      ...(isLoggedIn ? { Authorization: `Bearer ${await authClient.getToken()}` } : {}),
+      // Some API calls will not require authentication/authorization (e.g.
+      // a shared file public to anyone with the link)
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   };
 
