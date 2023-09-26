@@ -2,6 +2,7 @@ import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { grid } from '../../../../grid/controller/Grid';
 import { sheets } from '../../../../grid/controller/Sheets';
+import { Bounds } from '../../../../grid/sheet/Bounds';
 import { intersects } from '../../../helpers/intersects';
 import { pixiApp } from '../../../pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from '../../../pixiApp/PixiAppSettings';
@@ -203,6 +204,7 @@ export class PointerAutoComplete {
 
   private async apply(): Promise<void> {
     if (!this.selection) return;
+    console.log('this.selection', this.selection);
 
     const sheet = sheets.sheet;
 
@@ -213,52 +215,66 @@ export class PointerAutoComplete {
         this.endCell.x - this.selection.x,
         this.endCell.y - this.selection.y
       );
-      grid.expand(sheet.id, this.selection, range, this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined);
-    }
 
-    if (!this.stateHorizontal && !this.stateVertical) {
-      this.reset();
-      return;
-    }
+      const bounds = new Bounds();
+      bounds.addRectangle(this.selection);
+      bounds.addCoordinate(this.endCell);
+      let fullBounds = bounds.toRectangle();
+      console.log('Pointer.tx', bounds.toRectangle(), this.selection, range, this.endCell);
 
-    if (this.stateVertical === 'shrink') {
-      if (this.endCell) {
-        const rect = new Rectangle(
-          this.selection.left,
-          this.endCell.y + 1,
-          this.selection.right,
-          this.selection.bottom
+      if (fullBounds) {
+        grid.expand(
+          sheet.id,
+          this.selection,
+          fullBounds,
+          this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined
         );
-        grid.deleteCellValues(sheet.id, rect, false);
       }
-    } else if (this.stateVertical === 'expandDown' && this.toVertical !== undefined) {
-      // if (!(this.stateHorizontal === 'expandRight' && this.toHorizontal !== undefined)) {
-      // grid.expandDown(
-      //   sheet.id,
-      //   this.selection,
-      //   this.toVertical,
-      //   this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined
-      // );
-      // }
-    } else if (this.stateVertical === 'expandUp' && this.toVertical !== undefined) {
-      // grid.expandUp(
-      //   sheet.id,
-      //   this.selection,
-      //   this.toVertical,
-      //   this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined
-      // );
     }
 
-    if (this.stateHorizontal === 'shrink') {
-      if (this.endCell) {
-        const rect = new Rectangle(this.endCell.x + 1, this.selection.top, this.selection.right, this.selection.bottom);
-        grid.deleteCellValues(sheet.id, rect, false);
-      }
-    } else if (this.stateHorizontal === 'expandLeft' && this.toHorizontal !== undefined) {
-      // grid.expandLeft(sheet.id, this.selection, this.toHorizontal, this.toVertical);
-    } else if (this.stateHorizontal === 'expandRight' && this.toHorizontal !== undefined) {
-      console.log(sheet.id, this.selection, this.toHorizontal, this.toVertical);
-    }
+    // if (!this.stateHorizontal && !this.stateVertical) {
+    //   this.reset();
+    //   return;
+    // }
+
+    // if (this.stateVertical === 'shrink') {
+    //   if (this.endCell) {
+    //     const rect = new Rectangle(
+    //       this.selection.left,
+    //       this.endCell.y + 1,
+    //       this.selection.right,
+    //       this.selection.bottom
+    //     );
+    //     grid.deleteCellValues(sheet.id, rect, false);
+    //   }
+    // } else if (this.stateVertical === 'expandDown' && this.toVertical !== undefined) {
+    //   // if (!(this.stateHorizontal === 'expandRight' && this.toHorizontal !== undefined)) {
+    //   // grid.expandDown(
+    //   //   sheet.id,
+    //   //   this.selection,
+    //   //   this.toVertical,
+    //   //   this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined
+    //   // );
+    //   // }
+    // } else if (this.stateVertical === 'expandUp' && this.toVertical !== undefined) {
+    //   // grid.expandUp(
+    //   //   sheet.id,
+    //   //   this.selection,
+    //   //   this.toVertical,
+    //   //   this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined
+    //   // );
+    // }
+
+    // if (this.stateHorizontal === 'shrink') {
+    //   if (this.endCell) {
+    //     const rect = new Rectangle(this.endCell.x + 1, this.selection.top, this.selection.right, this.selection.bottom);
+    //     grid.deleteCellValues(sheet.id, rect, false);
+    //   }
+    // } else if (this.stateHorizontal === 'expandLeft' && this.toHorizontal !== undefined) {
+    //   // grid.expandLeft(sheet.id, this.selection, this.toHorizontal, this.toVertical);
+    // } else if (this.stateHorizontal === 'expandRight' && this.toHorizontal !== undefined) {
+    //   console.log(sheet.id, this.selection, this.toHorizontal, this.toVertical);
+    // }
 
     this.setSelection();
     this.reset();
