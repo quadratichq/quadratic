@@ -79,9 +79,9 @@ export class Sheet {
     return grid.getSheetOrder(this.id);
   }
 
-  getCellValueStrings(rectangle: Rectangle): string[] {
-    return grid.getCellValueStrings(this.id, rectangle);
-  }
+  // getCellValueStrings(rectangle: Rectangle): string[] {
+  //   return grid.getCellValueStrings(this.id, rectangle);
+  // }
 
   getRenderCells(rectangle: Rectangle): JsRenderCell[] {
     return grid.getRenderCells(this.id, rectangle);

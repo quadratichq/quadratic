@@ -1,13 +1,15 @@
-import { ArrayOutput } from '../../schemas';
-
 export interface PythonReturnType {
-  cells_accessed: [number, number][];
+  // this should be tracked by calls to rust to get the data
+  // cells_accessed: [number, number][];
+
+  formatted_code: string;
+
   success: boolean;
   input_python_stack_trace: string;
   input_python_std_out: string;
+
   output_value: string | null;
-  array_output: ArrayOutput;
-  formatted_code: string;
+  // array_output: ArrayOutput;
 }
 
 export interface CellRef {

@@ -20,8 +20,7 @@ pub enum Operation {
     },
     SetCellCode {
         cell_ref: CellRef,
-        language: CodeCellLanguage,
-        code_string: String,
+        code_cell_value: Option<CodeCellValue>,
     },
     SetCellFormats {
         region: RegionRef,
@@ -96,16 +95,13 @@ impl GridController {
             }
             Operation::SetCellCode {
                 cell_ref,
-                language,
-                code_string,
+                code_cell_value,
             } => {
                 let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
-                let old_code = sheet.cell_code(cell_ref);
-                sheet.set_cell_code(cell_ref, language, code_string);
+                let old_code_cell_value = sheet.set_code_cell(cell_ref, code_cell_value);
                 Operation::SetCellCode {
-                    cellRef,
-                    language: old_code.language,
-                    code_string: old_code.code_string,
+                    cell_ref,
+                    code_cell_value: old_code_cell_value,
                 }
             }
             Operation::SetCellFormats { region, attr } => {

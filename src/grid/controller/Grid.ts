@@ -311,9 +311,9 @@ export class Grid {
     return this.gridController.getEditCell(sheetId, pos);
   }
 
-  getCellValueStrings(sheetId: string, rectangle: Rectangle): string[] {
-    return this.gridController.getCellValueString(sheetId, rectangleToRect(rectangle));
-  }
+  // getCellValueStrings(sheetId: string, rectangle: Rectangle): string[] {
+  //   return this.gridController.getCellValueString(sheetId, rectangleToRect(rectangle));
+  // }
 
   getRenderCells(sheetId: string, rectangle: Rectangle): JsRenderCell[] {
     const data = this.gridController.getRenderCells(sheetId, rectangleToRect(rectangle));

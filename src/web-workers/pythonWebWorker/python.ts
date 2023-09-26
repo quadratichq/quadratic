@@ -38,12 +38,12 @@ class PythonWebWorker {
     return new Promise((resolve) => {
       if (!this.loaded || !this.worker) {
         resolve({
-          cells_accessed: [],
+          // cells_accessed: [],
           success: false,
           input_python_stack_trace: 'Error: Python not loaded',
           input_python_std_out: '',
           output_value: null,
-          array_output: [],
+          // array_output: [],
           formatted_code: '',
         });
       } else {

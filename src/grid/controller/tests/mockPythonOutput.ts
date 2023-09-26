@@ -1,4 +1,4 @@
-import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/PythonWebWorker';
+import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/python';
 import { PythonReturnType } from '../../../web-workers/pythonWebWorker/pythonTypes';
 
 // mock the python output

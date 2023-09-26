@@ -3,7 +3,7 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 
 use crate::{
-    grid::{CodeCellLanguage, NumericFormat, NumericFormatKind, RegionRef, SheetId},
+    grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind, RegionRef, SheetId},
     Array, CellValue, Pos, Rect, RunLengthEncoding,
 };
 
@@ -131,10 +131,18 @@ impl GridController {
         let cell_ref = sheet.get_or_create_cell_ref(pos);
         let ops = vec![Operation::SetCellCode {
             cell_ref,
-            language,
-            code_string,
+            code_cell_value: Some(CodeCellValue {
+                language,
+                code_string,
+
+                // todo
+                last_modified: String::default(),
+
+                output: None,
+                formatted_code_string: None,
+            }),
         }];
-        self.transact_forward(Transaction { ops, cursor })
+        self.transact_forward(ops, cursor)
     }
 
     pub fn delete_cell_values_operations(
