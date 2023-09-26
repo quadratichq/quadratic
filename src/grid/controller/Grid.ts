@@ -559,14 +559,14 @@ export class Grid {
   //#region AutoComplete
   //-----------------
 
-  expand(sheetId: string, rectangle: Rectangle, range: Rectangle, shrinkHorizontal?: number) {
+  expand(sheetId: string, rectangle: Rectangle, range: Rectangle, shrinkHorizontal?: bigint) {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
     console.log('Grid.ts', rectangleToRect(rectangle), rectangleToRect(range));
     const summary = this.gridController.expand(
       sheetId,
       rectangleToRect(rectangle),
       rectangleToRect(range),
-      undefined,
+      shrinkHorizontal,
       sheets.getCursorPosition()
     );
     transactionResponse(summary);

@@ -201,31 +201,19 @@ export class PointerAutoComplete {
 
   private async apply(): Promise<void> {
     if (!this.selection) return;
-    console.log('this.selection', this.selection);
 
     const sheet = sheets.sheet;
 
     if (this.endCell) {
-      const range = new Rectangle(
-        this.selection.x,
-        this.selection.y,
-        this.endCell.x - this.selection.x,
-        this.endCell.y - this.selection.y
-      );
-
       const bounds = new Bounds();
       bounds.addRectangle(this.selection);
       bounds.addCoordinate(this.endCell);
       let fullBounds = bounds.toRectangle();
-      console.log('Pointer.tx', bounds.toRectangle(), this.selection, range, this.endCell);
+      let shrinkHorizontal =
+        this.stateHorizontal === 'shrink' && this.toHorizontal !== undefined ? BigInt(this.toHorizontal) : undefined;
 
       if (fullBounds) {
-        grid.expand(
-          sheet.id,
-          this.selection,
-          fullBounds,
-          this.stateHorizontal === 'shrink' ? this.toHorizontal : undefined
-        );
+        grid.expand(sheet.id, this.selection, fullBounds, shrinkHorizontal);
       }
     }
 
