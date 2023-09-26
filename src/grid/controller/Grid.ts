@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/browser';
 import { Point, Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
 import { Coordinate } from '../../gridGL/types/size';
@@ -423,11 +424,16 @@ export class Grid {
   async importCsv(sheetId: string, file: File, insertAtCellLocation: Coordinate) {
     const pos = new Pos(insertAtCellLocation.x, insertAtCellLocation.y);
     const text = await file.text();
-    const summary = this.gridController.importCsv(sheetId, text, file.name, pos, sheets.getCursorPosition());
-    transactionResponse(summary);
-  }
 
-  //#endregion
+    try {
+      const summary = this.gridController.importCsv(sheetId, text, file.name, pos, sheets.getCursorPosition());
+      transactionResponse(summary);
+    } catch (error) {
+      Sentry.captureException(error);
+    }
+  }
 }
+
+//#end
 
 export const grid = new Grid();

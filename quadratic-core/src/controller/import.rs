@@ -1,6 +1,5 @@
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, Result};
 use bigdecimal::BigDecimal;
-use itertools::Itertools;
 use smallvec::SmallVec;
 use std::str::FromStr;
 
@@ -51,12 +50,12 @@ impl GridController {
             .collect::<Result<Vec<Vec<CellValue>>>>()?;
 
         if let Some(width) = width {
-            let height = values.len() as u32 / width;
-            let size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
             let array = values
                 .into_iter()
                 .flatten()
                 .collect::<SmallVec<[CellValue; 1]>>();
+            let height = array.len() as u32 / width;
+            let size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
             let values = Array::new_row_major(size, array).map_err(|e| error(e.to_string()))?;
             let rect = Rect::new_span(
                 insert_at,
@@ -71,7 +70,7 @@ impl GridController {
             return Ok(self.transact_forward(ops, cursor));
         }
 
-        bail!("CSV must have at least two columns")
+        Err(error("file must have at least 2 columns".into()))
     }
 }
 
