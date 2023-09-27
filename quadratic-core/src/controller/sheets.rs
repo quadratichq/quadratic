@@ -13,25 +13,27 @@ impl GridController {
         self.grid.sheet_from_id(sheet_id)
     }
 
-    pub fn set_sheet_name(
+    pub async fn set_sheet_name(
         &mut self,
         sheet_id: SheetId,
         name: String,
         cursor: Option<String>,
     ) -> TransactionSummary {
         self.transact_forward(vec![Operation::SetSheetName { sheet_id, name }], cursor)
+            .await
     }
 
-    pub fn set_sheet_color(
+    pub async fn set_sheet_color(
         &mut self,
         sheet_id: SheetId,
         color: Option<String>,
         cursor: Option<String>,
     ) -> TransactionSummary {
         self.transact_forward(vec![Operation::SetSheetColor { sheet_id, color }], cursor)
+            .await
     }
 
-    pub fn add_sheet(&mut self, cursor: Option<String>) -> TransactionSummary {
+    pub async fn add_sheet(&mut self, cursor: Option<String>) -> TransactionSummary {
         let sheet_names = &self
             .grid
             .sheets()
@@ -44,9 +46,9 @@ impl GridController {
         let order = self.grid.end_order();
         let sheet = Sheet::new(id, name, order);
         let ops = vec![Operation::AddSheet { sheet }];
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
-    pub fn delete_sheet(
+    pub async fn delete_sheet(
         &mut self,
         sheet_id: SheetId,
         cursor: Option<String>,
@@ -59,9 +61,9 @@ impl GridController {
             let sheet = Sheet::new(id, name, order);
             ops.push(Operation::AddSheet { sheet });
         }
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
-    pub fn move_sheet(
+    pub async fn move_sheet(
         &mut self,
         sheet_id: SheetId,
         to_before: Option<SheetId>,
@@ -84,9 +86,9 @@ impl GridController {
             target: sheet_id,
             order,
         }];
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
-    pub fn duplicate_sheet(
+    pub async fn duplicate_sheet(
         &mut self,
         sheet_id: SheetId,
         cursor: Option<String>,
@@ -99,7 +101,7 @@ impl GridController {
         let right_order = right.map(|right| right.order.clone());
         new_sheet.order = key_between(&Some(source.order.clone()), &right_order).unwrap();
         let ops = vec![Operation::AddSheet { sheet: new_sheet }];
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
 }
 

@@ -28,7 +28,7 @@ impl GridController {
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setCellAlign")]
-    pub fn js_set_cell_align(
+    pub async fn js_set_cell_align(
         &mut self,
         sheet_id: String,
         rect: &Rect,
@@ -38,7 +38,7 @@ impl GridController {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let value: Option<CellAlign> = serde_wasm_bindgen::from_value(align).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_align(sheet_id, *rect, value, cursor),
+            &self.set_cell_align(sheet_id, *rect, value, cursor).await,
         )?)
     }
 
@@ -46,7 +46,7 @@ impl GridController {
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setCellWrap")]
-    pub fn js_set_cell_wrap(
+    pub async fn js_set_cell_wrap(
         &mut self,
         sheet_id: String,
         rect: &Rect,
@@ -56,7 +56,7 @@ impl GridController {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let value: Option<CellWrap> = serde_wasm_bindgen::from_value(wrap).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_wrap(sheet_id, *rect, value, cursor),
+            &self.set_cell_wrap(sheet_id, *rect, value, cursor).await,
         )?)
     }
 
@@ -64,7 +64,7 @@ impl GridController {
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "removeCellNumericFormat")]
-    pub fn js_remove_numeric_format(
+    pub async fn js_remove_numeric_format(
         &mut self,
         sheet_id: String,
         rect: &Rect,
@@ -72,7 +72,9 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_numeric_format(sheet_id, *rect, None, cursor),
+            &self
+                .set_cell_numeric_format(sheet_id, *rect, None, cursor)
+                .await,
         )?)
     }
 
@@ -80,7 +82,7 @@ impl GridController {
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setCellCurrency")]
-    pub fn js_set_cell_currency(
+    pub async fn js_set_cell_currency(
         &mut self,
         sheet_id: String,
         rect: &Rect,
@@ -93,7 +95,9 @@ impl GridController {
             symbol: Some(symbol),
         };
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_numeric_format(sheet_id, *rect, Some(currency), cursor),
+            &self
+                .set_cell_numeric_format(sheet_id, *rect, Some(currency), cursor)
+                .await,
         )?)
     }
 
@@ -101,7 +105,7 @@ impl GridController {
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setCellPercentage")]
-    pub fn js_set_cell_percentage(
+    pub async fn js_set_cell_percentage(
         &mut self,
         sheet_id: String,
         rect: &Rect,
@@ -113,7 +117,9 @@ impl GridController {
             symbol: None,
         };
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_numeric_format(sheet_id, *rect, Some(currency), cursor),
+            &self
+                .set_cell_numeric_format(sheet_id, *rect, Some(currency), cursor)
+                .await,
         )?)
     }
 
@@ -121,7 +127,7 @@ impl GridController {
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setCellBold")]
-    pub fn js_set_cell_bold(
+    pub async fn js_set_cell_bold(
         &mut self,
         sheet_id: String,
         rect: &Rect,
@@ -131,14 +137,14 @@ impl GridController {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let value: Option<bool> = serde_wasm_bindgen::from_value(bold).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_bold(sheet_id, *rect, value, cursor),
+            &self.set_cell_bold(sheet_id, *rect, value, cursor).await,
         )?)
     }
     /// Sets cell italic formatting given as an optional [`bool`].
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setCellItalic")]
-    pub fn js_set_cell_italic(
+    pub async fn js_set_cell_italic(
         &mut self,
         sheet_id: String,
         rect: &Rect,
@@ -148,7 +154,7 @@ impl GridController {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let value: Option<bool> = serde_wasm_bindgen::from_value(italic).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_italic(sheet_id, *rect, value, cursor),
+            &self.set_cell_italic(sheet_id, *rect, value, cursor).await,
         )?)
     }
 
@@ -156,7 +162,7 @@ impl GridController {
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setCellTextColor")]
-    pub fn js_set_cell_text_color(
+    pub async fn js_set_cell_text_color(
         &mut self,
         sheet_id: String,
         rect: &Rect,
@@ -166,14 +172,16 @@ impl GridController {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let value: Option<String> = serde_wasm_bindgen::from_value(text_color).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_text_color(sheet_id, *rect, value, cursor),
+            &self
+                .set_cell_text_color(sheet_id, *rect, value, cursor)
+                .await,
         )?)
     }
     /// Sets cell fill color given as an optional [`String`].
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setCellFillColor")]
-    pub fn js_set_cell_fill_color(
+    pub async fn js_set_cell_fill_color(
         &mut self,
         sheet_id: String,
         rect: &Rect,
@@ -183,7 +191,9 @@ impl GridController {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let value: Option<String> = serde_wasm_bindgen::from_value(fill_color).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_fill_color(sheet_id, *rect, value, cursor),
+            &self
+                .set_cell_fill_color(sheet_id, *rect, value, cursor)
+                .await,
         )?)
     }
 
@@ -191,7 +201,7 @@ impl GridController {
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "changeDecimalPlaces")]
-    pub fn js_change_decimal_places(
+    pub async fn js_change_decimal_places(
         &mut self,
         sheet_id: String,
         source: Pos,
@@ -200,14 +210,16 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(&self.change_decimal_places(
-            sheet_id, source, *rect, delta, cursor,
-        ))?)
+        Ok(serde_wasm_bindgen::to_value(
+            &self
+                .change_decimal_places(sheet_id, source, *rect, delta, cursor)
+                .await,
+        )?)
     }
 
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "clearFormatting")]
-    pub fn js_clear_formatting(
+    pub async fn js_clear_formatting(
         &mut self,
         sheet_id: String,
         rect: Rect,
@@ -215,7 +227,7 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.clear_formatting(sheet_id, rect, cursor),
+            &self.clear_formatting(sheet_id, rect, cursor).await,
         )?)
     }
 }

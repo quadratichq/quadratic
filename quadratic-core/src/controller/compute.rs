@@ -1,23 +1,47 @@
 use super::{operations::Operation, GridController};
-use crate::{grid::SheetId, Pos};
+use crate::{
+    grid::{CodeCellLanguage, SheetId},
+    wasm_bindings::js::{self, runPython},
+    Pos,
+};
 use serde::{Deserialize, Serialize};
 use std::{fmt, ops::Range};
 
 impl GridController {
     /// Given `cell` and `dependencies` adds a new node to the graph.
     /// Returns the old dependencies of the node.
-    pub fn compute(&mut self, updated_cells: Vec<SheetRect>) -> Vec<Operation> {
+    pub async fn compute(&mut self, updated_cells: Vec<SheetRect>) -> Vec<Operation> {
         let reverse_operations = vec![];
         let mut cells_to_compute = updated_cells.clone(); // start with all updated cells
 
-        while let Some(cell) = cells_to_compute.pop() {
-            print!("Computing cell - {} \n", cell);
+        while let Some(rect) = cells_to_compute.pop() {
+            js::log(&format!("Computing cell - {} \n", rect));
             // find which cells have formulas. Run the formulas and update the cells.
             // add the updated cells to the cells_to_compute
-            // TODO implement this
+            let sheet = self.sheet(rect.sheet_id);
+
+            for y in rect.y_range() {
+                for x in rect.x_range() {
+                    if let Some(code_cell) = sheet.get_code_cell(Pos { x, y }) {
+                        match code_cell.language {
+                            CodeCellLanguage::Python => {
+                                let promise = runPython(code_cell.code_string.clone());
+                                let result = promise.await;
+                                js::log(&format!("{:?}", result));
+                            }
+                            _ => {
+                                js::log(&format!(
+                                    "Compute language {} not supported in compute.rs",
+                                    code_cell.language
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
 
             // add all dependent cells to the cells_to_compute
-            let dependent_cells = self.grid.get_dependent_cells(cell);
+            let dependent_cells = self.grid.get_dependent_cells(rect);
 
             // loop through all dependent cells
             for dependent_cell in dependent_cells {

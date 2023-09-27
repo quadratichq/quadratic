@@ -1,4 +1,4 @@
-import { PythonMessage, PythonReturnType } from './pythonWebWorker/pythonTypes';
+import { PythonMessage, PythonReturnType } from './pythonTypes';
 
 class PythonWebWorker {
   private worker?: Worker;
@@ -6,7 +6,7 @@ class PythonWebWorker {
   private loaded = false;
 
   init() {
-    this.worker = new Worker(new URL('./pythonWebWorker/python.worker.ts', import.meta.url));
+    this.worker = new Worker(new URL('./python.worker.ts', import.meta.url));
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;

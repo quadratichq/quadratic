@@ -130,14 +130,16 @@ impl GridController {
         (plain_text, final_html)
     }
 
-    pub fn cut_to_clipboard(
+    pub async fn cut_to_clipboard(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
         cursor: Option<String>,
     ) -> (TransactionSummary, String, String) {
         let copy = self.copy_to_clipboard(sheet_id, rect);
-        let summary = self.delete_values_and_formatting(sheet_id, rect, cursor);
+        let summary = self
+            .delete_values_and_formatting(sheet_id, rect, cursor)
+            .await;
         (summary, copy.0, copy.1)
     }
 
@@ -206,7 +208,7 @@ impl GridController {
         Some(array)
     }
 
-    fn set_clipboard_cells(
+    async fn set_clipboard_cells(
         &mut self,
         sheet_id: SheetId,
         start_pos: Pos,
@@ -239,10 +241,10 @@ impl GridController {
             })
         });
 
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
 
-    fn paste_plain_text(
+    async fn paste_plain_text(
         &mut self,
         sheet_id: SheetId,
         start_pos: Pos,
@@ -264,14 +266,14 @@ impl GridController {
                     region,
                     values: array,
                 }];
-                self.transact_forward(ops, cursor)
+                self.transact_forward(ops, cursor).await
             }
             None => TransactionSummary::default(),
         }
     }
 
     // todo: parse table structure to provide better pasting experience from other spreadsheets
-    fn paste_html(
+    async fn paste_html(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
@@ -297,10 +299,12 @@ impl GridController {
             return Err(());
         }
         let clipboard = parsed.unwrap();
-        Ok(self.set_clipboard_cells(sheet_id, pos, clipboard, cursor))
+        Ok(self
+            .set_clipboard_cells(sheet_id, pos, clipboard, cursor)
+            .await)
     }
 
-    pub fn paste_from_clipboard(
+    pub async fn paste_from_clipboard(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
@@ -310,7 +314,9 @@ impl GridController {
     ) -> TransactionSummary {
         // first try html
         if html.is_some() {
-            let pasted_html = self.paste_html(sheet_id, pos, html.unwrap(), cursor.clone());
+            let pasted_html = self
+                .paste_html(sheet_id, pos, html.unwrap(), cursor.clone())
+                .await;
             if pasted_html.is_ok() {
                 return pasted_html.unwrap();
             }
@@ -318,7 +324,9 @@ impl GridController {
 
         // if not quadratic html, then use the plain text
         if plain_text.is_some() {
-            return self.paste_plain_text(sheet_id, pos, plain_text.unwrap(), cursor);
+            return self
+                .paste_plain_text(sheet_id, pos, plain_text.unwrap(), cursor)
+                .await;
         }
         TransactionSummary::default()
     }

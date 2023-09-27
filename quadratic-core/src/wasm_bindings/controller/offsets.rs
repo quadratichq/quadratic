@@ -37,13 +37,15 @@ impl GridController {
     }
     /// Commits a resize operation. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "commitResize")]
-    pub fn js_commit_resize(&mut self, cursor: Option<String>) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(&self.commit_resize(cursor))?)
+    pub async fn js_commit_resize(&mut self, cursor: Option<String>) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(
+            &self.commit_resize(cursor).await,
+        )?)
     }
 
     /// Commits a column resize operation w/o transient changes. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "resizeColumn")]
-    pub fn js_resize_column(
+    pub async fn js_resize_column(
         &mut self,
         sheet_id: String,
         column: i32,
@@ -52,7 +54,9 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         self.resize_column_transiently(sheet_id, column as i64, Some(size));
-        Ok(serde_wasm_bindgen::to_value(&self.commit_resize(cursor))?)
+        Ok(serde_wasm_bindgen::to_value(
+            &self.commit_resize(cursor).await,
+        )?)
     }
 
     /// Returns a rectangle with the screen coordinates for a cell

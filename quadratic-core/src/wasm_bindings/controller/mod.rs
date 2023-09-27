@@ -84,7 +84,7 @@ impl GridController {
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setCellValue")]
-    pub fn js_set_cell_value(
+    pub async fn js_set_cell_value(
         &mut self,
         sheet_id: String,
         pos: &Pos,
@@ -93,13 +93,13 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_value(sheet_id, *pos, value, cursor),
+            &self.set_cell_value(sheet_id, *pos, value, cursor).await,
         )?)
     }
 
     /// changes the decimal places
     #[wasm_bindgen(js_name = "setCellNumericDecimals")]
-    pub fn js_set_cell_numeric_decimals(
+    pub async fn js_set_cell_numeric_decimals(
         &mut self,
         sheet_id: String,
         source: Pos,
@@ -108,9 +108,11 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(&self.change_decimal_places(
-            sheet_id, source, rect, delta, cursor,
-        ))?)
+        Ok(serde_wasm_bindgen::to_value(
+            &self
+                .change_decimal_places(sheet_id, source, rect, delta, cursor)
+                .await,
+        )?)
     }
 
     /// gets an editable string for a cell
@@ -131,7 +133,7 @@ impl GridController {
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "deleteCellValues")]
-    pub fn js_delete_cell_values(
+    pub async fn js_delete_cell_values(
         &mut self,
         sheet_id: String,
         region: &Rect,
@@ -139,7 +141,7 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.delete_cell_values(sheet_id, *region, cursor),
+            &self.delete_cell_values(sheet_id, *region, cursor).await,
         )?)
     }
 
@@ -170,7 +172,7 @@ impl GridController {
     ///
     /// Returns [`TransactionSummary`]
     #[wasm_bindgen(js_name = "setCodeResults")]
-    pub fn js_set_code_cell_value(
+    pub async fn js_set_code_cell_value(
         &mut self,
         sheet_id: String,
         pos: Pos,
@@ -179,12 +181,10 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(&self.set_cell_code(
-            sheet_id,
-            pos,
-            language,
-            code_string,
-            cursor,
-        ))?)
+        Ok(serde_wasm_bindgen::to_value(
+            &self
+                .set_cell_code(sheet_id, pos, language, code_string, cursor)
+                .await,
+        )?)
     }
 }

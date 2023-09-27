@@ -37,7 +37,7 @@ impl GridController {
     }
 
     /// sets the value based on a user's input and converts input to proper NumericFormat
-    pub fn set_cell_value(
+    pub async fn set_cell_value(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
@@ -97,9 +97,9 @@ impl GridController {
             let values = Array::from(CellValue::Text(value));
             ops.push(Operation::SetCellValues { region, values });
         }
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
-    pub fn set_cells(
+    pub async fn set_cells(
         &mut self,
         sheet_id: SheetId,
         start_pos: Pos,
@@ -116,10 +116,10 @@ impl GridController {
         };
         let region = self.region(sheet_id, rect);
         let ops = vec![Operation::SetCellValues { region, values }];
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
 
-    pub fn set_cell_code(
+    pub async fn set_cell_code(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
@@ -142,7 +142,7 @@ impl GridController {
                 formatted_code_string: None,
             }),
         }];
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
 
     pub fn delete_cell_values_operations(
@@ -161,14 +161,14 @@ impl GridController {
         ops
     }
 
-    pub fn delete_cell_values(
+    pub async fn delete_cell_values(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.delete_cell_values_operations(sheet_id, rect);
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
 
     pub fn clear_formatting_operations(&mut self, sheet_id: SheetId, rect: Rect) -> Vec<Operation> {
@@ -216,17 +216,17 @@ impl GridController {
         ops
     }
 
-    pub fn clear_formatting(
+    pub async fn clear_formatting(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.clear_formatting_operations(sheet_id, rect);
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
 
-    pub fn delete_values_and_formatting(
+    pub async fn delete_values_and_formatting(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
@@ -234,7 +234,7 @@ impl GridController {
     ) -> TransactionSummary {
         let mut ops = self.delete_cell_values_operations(sheet_id, rect);
         ops.extend(self.clear_formatting_operations(sheet_id, rect));
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
 
     /// Returns a region of the spreadsheet, assigning IDs to columns and rows

@@ -7,7 +7,7 @@ impl GridController {
     /// Takes a Vec of initial Operations creates and runs a tractions, returning a transaction summary.
     /// This is the main entry point actions added to the undo/redo stack.
     /// Also runs computations for cells that need to be recomputed, and all of their dependencies.
-    pub fn transact_forward(
+    pub async fn transact_forward(
         &mut self,
         operations: Vec<Operation>,
         cursor: Option<String>,
@@ -18,17 +18,20 @@ impl GridController {
 
         // run computations
         // TODO cell_regions_modified also contains formatting updates, create new structure for just updated code and values
-        let mut additional_operations = self.compute(
-            summary
-                .cell_regions_modified
-                .iter()
-                .map(|rect| SheetRect {
-                    sheet_id: rect.0,
-                    min: rect.1.min,
-                    max: rect.1.max,
-                })
-                .collect(),
-        );
+
+        let mut additional_operations = self
+            .compute(
+                summary
+                    .cell_regions_modified
+                    .iter()
+                    .map(|rect| SheetRect {
+                        sheet_id: rect.0,
+                        min: rect.1.min,
+                        max: rect.1.max,
+                    })
+                    .collect(),
+            )
+            .await;
 
         reverse_operations.append(&mut additional_operations);
 

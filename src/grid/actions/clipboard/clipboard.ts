@@ -35,11 +35,11 @@ export const copyToClipboardEvent = (e: ClipboardEvent) => {
   debugTimeCheck('copy to clipboard');
 };
 
-export const cutToClipboardEvent = (e: ClipboardEvent) => {
+export const cutToClipboardEvent = async (e: ClipboardEvent) => {
   if (!isEditorOrAbove(pixiAppSettings.permission)) return;
   debugTimeReset();
   const rectangle = sheets.sheet.cursor.getRectangle();
-  const { plainText, html } = grid.cutToClipboard(sheets.sheet.id, rectangle);
+  const { plainText, html } = await grid.cutToClipboard(sheets.sheet.id, rectangle);
   if (!e.clipboardData) {
     console.warn('clipboardData is not defined');
     return;
@@ -111,7 +111,7 @@ const toClipboard = (plainText: string, html: string) => {
 export const cutToClipboard = async () => {
   if (!isEditorOrAbove(pixiAppSettings.permission)) return;
   debugTimeReset();
-  const { plainText, html } = grid.cutToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
+  const { plainText, html } = await grid.cutToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
   toClipboard(plainText, html);
   debugTimeCheck('cut to clipboard (fallback)');
 };

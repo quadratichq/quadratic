@@ -55,7 +55,7 @@ impl GridController {
         }
     }
 
-    pub fn commit_resize(&mut self, cursor: Option<String>) -> TransactionSummary {
+    pub async fn commit_resize(&mut self, cursor: Option<String>) -> TransactionSummary {
         let mut ops = vec![];
 
         if let Some(resize) = self.transient_resize.take() {
@@ -79,7 +79,7 @@ impl GridController {
         // calling code because we immediately call `transact_forward()`.
         self.cancel_resize();
 
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
 
     /// Resizes a column and returns the old width.

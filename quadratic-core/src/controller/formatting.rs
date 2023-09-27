@@ -28,7 +28,7 @@ impl GridController {
     }
 
     // todo: should also check the results of spills
-    pub fn change_decimal_places(
+    pub async fn change_decimal_places(
         &mut self,
         sheet_id: SheetId,
         source: Pos,
@@ -52,7 +52,7 @@ impl GridController {
                 region.len(),
             )),
         }];
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
 
     pub fn get_all_cell_formats(&self, sheet_id: SheetId, rect: Rect) -> Vec<CellFmtArray> {
@@ -105,7 +105,7 @@ impl GridController {
 macro_rules! impl_set_cell_fmt_method {
     ($method_name:ident<$cell_fmt_attr_type:ty>($cell_fmt_array_constructor:expr)) => {
         impl GridController {
-            pub fn $method_name(
+            pub async fn $method_name(
                 &mut self,
                 sheet_id: SheetId,
                 rect: Rect,
@@ -116,7 +116,7 @@ macro_rules! impl_set_cell_fmt_method {
                 let attr =
                     $cell_fmt_array_constructor(RunLengthEncoding::repeat(value, region.len()));
                 let ops = vec![Operation::SetCellFormats { region, attr }];
-                self.transact_forward(ops, cursor)
+                self.transact_forward(ops, cursor).await
             }
         }
     };
@@ -152,8 +152,8 @@ mod test {
         Pos, Rect,
     };
 
-    #[test]
-    fn test_set_cell_text_color_undo_redo() {
+    #[actix_rt::test]
+    async fn test_set_cell_text_color_undo_redo() {
         let mut gc = GridController::new();
         let sheet_id = gc.grid.sheets()[0].id;
         let pos1 = crate::Pos { x: 3, y: 6 };
@@ -177,14 +177,16 @@ mod test {
         assert_eq!(get(&gc, pos2), "");
         assert_eq!(get(&gc, pos3), "");
         assert_eq!(
-            gc.set_cell_text_color(sheet_id, rect1, Some("blue".to_string()), None),
+            gc.set_cell_text_color(sheet_id, rect1, Some("blue".to_string()), None)
+                .await,
             expected_summary(rect1),
         );
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "blue");
         assert_eq!(get(&gc, pos3), "");
         assert_eq!(
-            gc.set_cell_text_color(sheet_id, rect2, Some("red".to_string()), None),
+            gc.set_cell_text_color(sheet_id, rect2, Some("red".to_string()), None)
+                .await,
             expected_summary(rect2),
         );
         assert_eq!(get(&gc, pos1), "blue");

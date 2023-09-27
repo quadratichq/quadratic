@@ -67,6 +67,7 @@ criterion = { version = "0.4", default-features = false }
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 proptest = "1.2.0"
 proptest-derive = "0.3.0"
+actix-rt = "*"
 
 [[bench]]
 name = "grid_benchmark"

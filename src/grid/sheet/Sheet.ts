@@ -119,7 +119,7 @@ export class Sheet {
 
   //#region set grid information
 
-  setCellFillColor(rectangle: Rectangle, fillColor?: string): void {
+  setCellFillColor(rectangle: Rectangle, fillColor?: string) {
     return grid.setCellFillColor(this.id, rectangle, fillColor);
   }
 

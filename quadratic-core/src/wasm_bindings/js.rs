@@ -38,7 +38,7 @@ interface JsCodeResult {
 //     pub array_output: Option<Array>,
 // }
 
-#[wasm_bindgen(module = "/../src/web-workers/webWorkers.ts")]
+#[wasm_bindgen(module = "/../src/web-workers/rustWorker.ts")]
 extern "C" {
     pub async fn runPython(code_string: String) -> JsValue;
 }
