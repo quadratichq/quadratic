@@ -23,6 +23,7 @@ import { SUPPORT_EMAIL } from './constants/appConstants';
 import { ROUTES, ROUTE_LOADER_IDS } from './constants/routes';
 import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
 import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
+import { action as filesAction } from './dashboard/components/FileList';
 import * as Create from './dashboard/files/CreateRoute';
 import { initializeAnalytics } from './utils/analytics';
 // @ts-expect-error - for testing purposes
@@ -103,6 +104,7 @@ export const router = createBrowserRouter(
             loader={CloudFilesMigration.loader}
           />
 
+          <Route path="/api/files/:uuid" action={filesAction} loader={() => null} />
           <Route path="/api/files/:uuid/sharing" action={shareFileMenuAction} loader={shareFileMenuLoader} />
         </Route>
 

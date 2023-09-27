@@ -1,36 +1,9 @@
+import { AddOutlined, ErrorOutline } from '@mui/icons-material';
+import { Box, Button, useTheme } from '@mui/material';
 import {
-  AddOutlined,
-  ArrowDropDown,
-  Check,
-  ErrorOutline,
-  GridViewOutlined,
-  InsertDriveFileOutlined,
-  MenuOutlined,
-} from '@mui/icons-material';
-import {
-  Box,
-  Button,
-  Divider,
-  ListItemIcon,
-  ListItemText,
-  ListSubheader,
-  Menu,
-  MenuItem,
-  Stack,
-  TextField,
-  ToggleButton,
-  ToggleButtonGroup,
-  styled,
-  useTheme,
-} from '@mui/material';
-import { useEffect, useState } from 'react';
-import {
-  ActionFunctionArgs,
   Form,
   Link,
   LoaderFunctionArgs,
-  useActionData,
-  useFetchers,
   useLoaderData,
   useNavigation,
   useRouteError,
@@ -39,94 +12,40 @@ import {
 import { apiClient } from '../../api/apiClient';
 import { Empty } from '../../components/Empty';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
-import { ShareFileMenu } from '../../components/ShareFileMenu';
 import { ROUTES } from '../../constants/routes';
 import { debugShowUILogs } from '../../debugFlags';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
 import CreateButton from '../components/CreateButton';
 import { DashboardHeader } from '../components/DashboardHeader';
-import { FileListItem } from './MineRouteFileListItem';
+import { FileList } from '../components/FileList';
 
 export type ListFile = Awaited<ReturnType<typeof apiClient.getFiles>>[0];
 type LoaderResponse = ListFile[];
-export type Action = {
-  response: { ok: boolean } | null;
-  'request.delete': {
-    action: 'delete';
-    uuid: string;
-  };
-  'request.download': {
-    action: 'download';
-    uuid: string;
-  };
-  'request.duplicate': {
-    action: 'duplicate';
-    uuid: string;
-    file: ListFile;
-  };
-  'request.rename': {
-    action: 'rename';
-    uuid: string;
-    name: string;
-  };
-  request:
-    | Action['request.delete']
-    | Action['request.download']
-    | Action['request.duplicate']
-    | Action['request.rename'];
-};
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   let data: LoaderResponse = await apiClient.getFiles();
   return data;
 };
 
-const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
-  '& .MuiToggleButton-root': {
-    fontSize: '16px',
-  },
-  '& .MuiToggleButtonGroup-grouped': {
-    margin: `0 2px`,
-    border: 0,
-    borderRadius: theme.shape.borderRadius + 'px !important',
-    padding: theme.spacing(0.75),
-  },
-}));
-
-type ViewStyle = 'list' | 'grid';
-type Sort = 'Last updated' | 'Date created' | 'Alphabetical';
-
 export const Component = () => {
   const files = useLoaderData() as LoaderResponse;
-  const actionData = useActionData() as Action['response'];
-  const [filterValue, setFilterValue] = useState<string>('');
-  const [viewStyle, setViewStyle] = useState<ViewStyle>('list');
-  const [sort, setSort] = useState<Sort>('Last updated');
+  // const actionData = useActionData() as Action['response'];
+  // const [filterValue, setFilterValue] = useState<string>('');
+  // const [viewStyle, setViewStyle] = useState<ViewStyle>('list');
+  // const [sort, setSort] = useState<Sort>('Last updated');
   const theme = useTheme();
-  const fetchers = useFetchers();
+  // const fetchers = useFetchers();
   const submit = useSubmit();
   const navigation = useNavigation();
-  const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
+  // const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
   const isDisabled = navigation.state !== 'idle';
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
-  useEffect(() => {
-    if (actionData && !actionData.ok) {
-      addGlobalSnackbar('An error occurred. Try again.', { severity: 'error' });
-    }
-  }, [actionData, addGlobalSnackbar]);
-
-  // Optimistcally render UI
-  const filesBeingDeleted = fetchers.filter((fetcher) => (fetcher.json as Action['request'])?.action === 'delete');
-  const filesBeingDuplicated = fetchers
-    .filter((fetcher) => (fetcher.json as Action['request'])?.action === 'duplicate')
-    .map((fetcher) => (fetcher.json as Action['request.duplicate'])?.file);
-  let filesToRender = filesBeingDuplicated.concat(files);
-  if (filterValue) {
-    filesToRender = filesToRender.filter(({ name }) => name.toLowerCase().includes(filterValue.toLowerCase()));
-  }
-
-  const activeShareMenuFileName = files.find((file) => file.uuid === activeShareMenuFileId)?.name || '';
+  // useEffect(() => {
+  //   if (actionData && !actionData.ok) {
+  //     addGlobalSnackbar('An error occurred. Try again.', { severity: 'error' });
+  //   }
+  // }, [actionData, addGlobalSnackbar]);
 
   return (
     <>
@@ -182,128 +101,9 @@ export const Component = () => {
         }
       />
 
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        sx={{ py: theme.spacing(1), borderBottom: `1px solid ${theme.palette.divider}` }}
-      >
-        <TextField
-          onChange={(e) => setFilterValue(e.target.value)}
-          value={filterValue}
-          size="small"
-          placeholder="Filter by name…"
-        />
-        <Stack direction="row" gap={theme.spacing(1)} alignItems="center">
-          <Box sx={{ color: theme.palette.text.secondary }}>
-            <SortButton sort={sort} setSort={setSort} />
-          </Box>
-
-          <Box>
-            <StyledToggleButtonGroup
-              value={viewStyle}
-              exclusive
-              onChange={(event: React.MouseEvent<HTMLElement>, newValue: ViewStyle) => {
-                // TODO persist to localStorage...
-                setViewStyle(newValue);
-              }}
-            >
-              <ToggleButton value="list">
-                <MenuOutlined fontSize="inherit" />
-              </ToggleButton>
-              <ToggleButton value="module">
-                <GridViewOutlined fontSize="inherit" />
-              </ToggleButton>
-            </StyledToggleButtonGroup>
-          </Box>
-        </Stack>
-      </Stack>
-
-      {filesToRender.map((file, i) => (
-        <FileListItem
-          key={file.uuid}
-          file={file}
-          filterValue={filterValue}
-          activeShareMenuFileId={activeShareMenuFileId}
-          setActiveShareMenuFileId={setActiveShareMenuFileId}
-        />
-      ))}
-
-      {filesBeingDeleted.length === files.length && filesBeingDuplicated.length === 0 && (
-        <Empty
-          title="No files"
-          description={
-            <>
-              You don’t have any files. Using the buttons on this page, create a new one or import a <code>.grid</code>{' '}
-              file from your computer.
-            </>
-          }
-          Icon={InsertDriveFileOutlined}
-        />
-      )}
-
-      {activeShareMenuFileId && (
-        <ShareFileMenu
-          onClose={() => {
-            setActiveShareMenuFileId('');
-          }}
-          permission={'OWNER'}
-          uuid={activeShareMenuFileId}
-          fileName={activeShareMenuFileName}
-        />
-      )}
+      <FileList files={files} />
     </>
   );
-};
-
-export const action = async ({ params, request }: ActionFunctionArgs): Promise<Action['response']> => {
-  const json: Action['request'] = await request.json();
-  const { action, uuid } = json;
-
-  if (action === 'delete') {
-    try {
-      await apiClient.deleteFile(uuid);
-      return { ok: true };
-    } catch (error) {
-      return { ok: false };
-    }
-  }
-
-  if (action === 'download') {
-    try {
-      await apiClient.downloadFile(uuid);
-      return { ok: true };
-    } catch (error) {
-      return { ok: false };
-    }
-  }
-
-  if (action === 'duplicate') {
-    try {
-      const {
-        file: { name },
-      } = json as Action['request.duplicate'];
-      const {
-        file: { contents, version },
-      } = await apiClient.getFile(uuid);
-      await apiClient.createFile({ name, version, contents });
-      return { ok: true };
-    } catch (error) {
-      return { ok: false };
-    }
-  }
-
-  if (action === 'rename') {
-    try {
-      const { name } = json as Action['request.rename'];
-      await apiClient.updateFile(uuid, { name });
-      return { ok: true };
-    } catch (error) {
-      return { ok: false };
-    }
-  }
-
-  return null;
 };
 
 export const ErrorBoundary = () => {
@@ -323,75 +123,3 @@ export const ErrorBoundary = () => {
     </Box>
   );
 };
-
-function SortButton({ sort, setSort }: any) {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  return (
-    <div>
-      <Button
-        id="basic-button"
-        aria-controls={open ? 'basic-menu' : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? 'true' : undefined}
-        onClick={handleClick}
-        variant="text"
-        color="inherit"
-        endIcon={<ArrowDropDown color="inherit" fontSize="inherit" />}
-      >
-        {/*<span style={{ fontWeight: 'normal', marginRight: '4px' }}>Sort: </span> */}
-        {sort}
-      </Button>
-      <Menu
-        id="basic-menu"
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        MenuListProps={{
-          dense: true,
-          'aria-labelledby': 'basic-button',
-        }}
-      >
-        <ListSubheader sx={{ lineHeight: '2' }}>Sort:</ListSubheader>
-
-        {/* properly style when dense */}
-        <MenuItem onClick={handleClose}>
-          <ListItemText>
-            <ListItemIcon>
-              <Check />
-            </ListItemIcon>
-            Last updated
-          </ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleClose}>
-          <ListItemText inset>Date created</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleClose}>
-          <ListItemText inset>Alphabetical</ListItemText>
-        </MenuItem>
-        <Divider />
-
-        <ListSubheader sx={{ lineHeight: '1.5' }}>Order:</ListSubheader>
-
-        <MenuItem onClick={handleClose}>
-          <ListItemText>
-            <ListItemIcon>
-              <Check />
-            </ListItemIcon>
-            A-Z
-          </ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleClose}>
-          <ListItemText inset>Z-A</ListItemText>
-        </MenuItem>
-      </Menu>
-    </div>
-  );
-}

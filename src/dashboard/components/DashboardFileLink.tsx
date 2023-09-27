@@ -53,7 +53,8 @@ export function DashboardFileLink({
             display: 'flex',
             alignItems: 'center',
             gap: theme.spacing(2),
-            p: theme.spacing(1.5),
+            px: theme.spacing(1),
+            py: theme.spacing(1.5),
 
             [theme.breakpoints.down('md')]: {
               px: 0,

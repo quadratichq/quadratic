@@ -6,18 +6,26 @@ import { deleteFile, downloadFile, duplicateFile, renameFile as renameFileAction
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { TooltipHint } from '../../ui/components/TooltipHint';
-import { DashboardFileLink } from '../components/DashboardFileLink';
-import { Action, ListFile } from './MineRoute';
-import { FileListItemInput } from './MineRouteFileListItemInput';
+import { DashboardFileLink } from './DashboardFileLink';
+import { Action, Props as FileListProps } from './FileList';
+import { FileListItemInput } from './FileListItemInput';
+import { Sort, ViewPreferences } from './FileListViewPreferences';
 
 type Props = {
-  file: ListFile;
+  file: FileListProps['files'][0];
   filterValue?: string;
   activeShareMenuFileId: string;
   setActiveShareMenuFileId: Function;
+  viewPreferences: ViewPreferences;
 };
 
-export function FileListItem({ file, filterValue, activeShareMenuFileId, setActiveShareMenuFileId }: Props) {
+export function FileListItem({
+  file,
+  filterValue,
+  activeShareMenuFileId,
+  setActiveShareMenuFileId,
+  viewPreferences,
+}: Props) {
   const theme = useTheme();
   const fetcherDelete = useFetcher();
   const fetcherDownload = useFetcher();
@@ -28,7 +36,7 @@ export function FileListItem({ file, filterValue, activeShareMenuFileId, setActi
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
 
-  const { uuid, name, updated_date, public_link_access } = file;
+  const { uuid, name, created_date, updated_date, public_link_access } = file;
   const open = Boolean(anchorEl);
   const failedToDelete = fetcherDelete.data && !fetcherDelete.data.ok;
   const failedToRename = fetcherRename.data && !fetcherRename.data.ok;
@@ -70,7 +78,7 @@ export function FileListItem({ file, filterValue, activeShareMenuFileId, setActi
 
     // Otherwise update on the server and optimistically in the UI
     const data: Action['request.rename'] = { uuid, action: 'rename', name: value };
-    fetcherRename.submit(data, { method: 'POST', encType: 'application/json' });
+    fetcherRename.submit(data, { action: ROUTES.API_FILE(uuid), method: 'POST', encType: 'application/json' });
   };
 
   const handleDelete = () => {
@@ -128,7 +136,11 @@ export function FileListItem({ file, filterValue, activeShareMenuFileId, setActi
         to={ROUTES.FILE(uuid)}
         filterValue={filterValue}
         name={fetcherRename.json ? (fetcherRename.json as Action['request.rename']).name : name}
-        description={`Updated ${timeAgo(updated_date)}`}
+        description={
+          viewPreferences.sort === Sort.Created
+            ? `Created ${timeAgo(created_date)}`
+            : `Updated ${timeAgo(updated_date)}`
+        }
         descriptionError={failedToDelete || failedToRename ? 'Failed to sync changes' : ''}
         disabled={uuid.startsWith('duplicate-') || isRenaming}
         isShared={public_link_access !== 'NOT_SHARED'}

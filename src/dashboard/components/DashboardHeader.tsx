@@ -21,6 +21,7 @@ export function DashboardHeader({ title, actions }: { title: string; actions?: R
         zIndex: '1',
 
         [theme.breakpoints.up('md')]: {
+          px: theme.spacing(),
           position: 'sticky',
           top: '0',
           flexDirection: 'row',
