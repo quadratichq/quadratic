@@ -57,7 +57,6 @@ export const upgradeFileRust = async (
   try {
     const gc = GridController.newFromFile(JSON.stringify(grid));
     const contents = gc.exportToFile();
-    console.log('upgradeFileRust:contents', contents);
     return { contents: contents, version: gc.getVersion() };
   } catch (e) {
     console.warn(e);

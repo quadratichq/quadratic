@@ -44,7 +44,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     throw new Response('Failed to retrieve file from server');
   }
 
-  console.log('data.file.contents', data.file.contents);
   // Validate and upgrade file to the latest version in TS (up to 1.4)
   const file = await validateAndUpgradeGridFile(data.file.contents);
   if (!file) {
@@ -55,7 +54,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     throw new Response('Invalid file that could not be upgraded.');
   }
 
-  console.log('file.contents', file.contents);
   // load WASM
   await init();
   hello();

@@ -9,7 +9,7 @@ use super::v1_4;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct GridSchema {
     pub sheets: Vec<SheetSchema>,
-    pub dependencies: HashMap<SheetPos, Vec<SheetRect>>,
+    pub dependencies: Vec<(SheetPos, Vec<SheetRect>)>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -26,6 +26,8 @@ pub(crate) struct SheetSchema {
     pub code_cells: Vec<(CellRef, CodeCellValue)>,
 }
 
+type JSDependencySchema = HashMap<String, Vec<(i64, i64)>>;
+
 impl v1_4::GridSchemaV1_4 {
     pub(crate) fn into_v1_5(self) -> Result<GridSchema, &'static str> {
         let sheets: Vec<SheetSchema> = self
@@ -38,35 +40,35 @@ impl v1_4::GridSchemaV1_4 {
             })
             .try_collect()?;
 
-        let mut dependencies = HashMap::new();
-
-        // for dep in self.cell_dependency.into_iter() {
-        //     let pos = get_value(dep.0).unwrap();
-        //     let cell = SheetPos {
-        //         sheet_id: sheets[0].id,
-        //         x: pos.0,
-        //         y: pos.1,
-        //     };
-
-        //     let mut deps: Vec<SheetRect> = vec![];
-        //     for position in dep.1.into_iter() {
-        //         let cell = Pos {
-        //             x: position.0,
-        //             y: position.1,
-        //         };
-        //         deps.push(SheetRect {
-        //             sheet_id: sheets[0].id,
-        //             min: cell,
-        //             max: cell,
-        //         });
-        //     }
-
-        //     dependencies.insert(cell, deps);
-        // }
+        // convert dependencies to Rust format
+        let mut rs_dependencies = HashMap::new();
+        let js_dependencies =
+            serde_json::from_str::<JSDependencySchema>(self.cell_dependency.as_str()).unwrap();
+        for (key, value) in js_dependencies.into_iter() {
+            let pos = get_value(key).unwrap();
+            let cell = SheetPos {
+                sheet_id: sheets[0].id,
+                x: pos.0,
+                y: pos.1,
+            };
+            let mut deps: Vec<SheetRect> = vec![];
+            for position in value.into_iter() {
+                let cell = Pos {
+                    x: position.0,
+                    y: position.1,
+                };
+                deps.push(SheetRect {
+                    sheet_id: sheets[0].id,
+                    min: cell,
+                    max: cell,
+                });
+            }
+            rs_dependencies.insert(cell, deps);
+        }
 
         let ret = GridSchema {
             sheets,
-            dependencies,
+            dependencies: rs_dependencies.into_iter().collect(),
         };
         Ok(ret)
     }
@@ -110,7 +112,7 @@ impl SheetBuilder {
     }
 }
 
-impl v1_4::JsSheet {
+impl v1_4::JsSheetSchema {
     pub(crate) fn into_v1_5(self) -> Result<SheetSchema, &'static str> {
         let sheet_id = SheetId::new();
 

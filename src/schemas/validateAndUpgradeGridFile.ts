@@ -52,6 +52,12 @@ export async function validateAndUpgradeGridFile(
     return null;
   }
 
+  // rust files are validated by rust
+  if (rustFileVersions.includes(json.version)) {
+    return await upgradeFileRust(json);
+  }
+
+  // older files are validated by TS then Rust
   // Try to validate the file against the newest version, then step back through
   // history for each one that doesn’t validate.
   let isValid = false;
@@ -85,11 +91,6 @@ export async function validateAndUpgradeGridFile(
     // Otherwise it did't validate, so add the errors to our stack of errors
     // and continue trying
     errors.push({ version: schema.shape.version.value, error: result.error });
-  }
-
-  console.log('json.version', json.version);
-  if (rustFileVersions.includes(json.version)) {
-    isValid = true;
   }
 
   // If it never passed, stop
