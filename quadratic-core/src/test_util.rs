@@ -60,7 +60,7 @@ pub fn assert_cell_value_row(
 }
 
 #[cfg(test)]
-pub fn assert_cell_format_bold_row(
+pub fn _assert_cell_format_bold_row(
     grid_controller: &GridController,
     sheet_id: SheetId,
     x_start: i64,
@@ -69,12 +69,12 @@ pub fn assert_cell_format_bold_row(
     value: Vec<bool>,
 ) {
     for (index, x) in (x_start..=x_end).enumerate() {
-        assert_cell_format_bold(grid_controller, sheet_id, x, y, *value.get(index).unwrap());
+        _assert_cell_format_bold(grid_controller, sheet_id, x, y, *value.get(index).unwrap());
     }
 }
 
 #[cfg(test)]
-pub fn assert_cell_format_bold(
+pub fn _assert_cell_format_bold(
     grid_controller: &GridController,
     sheet_id: SheetId,
     x: i64,

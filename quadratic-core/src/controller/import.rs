@@ -21,7 +21,10 @@ impl GridController {
         insert_at: Pos,
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
-        let mut width = None;
+        let width = csv::ReaderBuilder::new()
+            .from_reader(file.as_bytes())
+            .headers()?
+            .len() as u32;
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .from_reader(file.as_bytes());
@@ -33,7 +36,6 @@ impl GridController {
             .enumerate()
             .map(|(index, record)| {
                 let record = record.map_err(|e| error(format!("line {}: {}", index + 1, e)))?;
-                width = Some(record.len() as u32);
 
                 // convert the record into a vector of CellValues
                 record
@@ -49,34 +51,31 @@ impl GridController {
             })
             .collect::<Result<Vec<Vec<CellValue>>>>()?;
 
-        if let Some(width) = width {
-            let array = values
-                .into_iter()
-                .flatten()
-                .collect::<SmallVec<[CellValue; 1]>>();
-            let height = array.len() as u32 / width;
-            let size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
-            let values = Array::new_row_major(size, array).map_err(|e| error(e.to_string()))?;
-            let rect = Rect::new_span(
-                insert_at,
-                Pos {
-                    x: insert_at.x + (width as i64) - 1,
-                    y: insert_at.y + (height as i64) - 1,
-                },
-            );
-            let region = self.region(sheet_id, rect);
-            let ops = vec![Operation::SetCellValues { region, values }];
+        let array = values
+            .into_iter()
+            .flatten()
+            .collect::<SmallVec<[CellValue; 1]>>();
+        let height = array.len() as u32 / width;
+        let size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
+        let values = Array::new_row_major(size, array).map_err(|e| error(e.to_string()))?;
+        let rect = Rect::new_span(
+            insert_at,
+            Pos {
+                x: insert_at.x + (width as i64) - 1,
+                y: insert_at.y + (height as i64) - 1,
+            },
+        );
+        let region = self.region(sheet_id, rect);
+        let ops = vec![Operation::SetCellValues { region, values }];
 
-            return Ok(self.transact_forward(ops, cursor));
-        }
-
-        Err(error("file must have at least 2 columns".into()))
+        Ok(self.transact_forward(ops, cursor))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::assert_cell_value_row;
+
+    use crate::test_util::{assert_cell_value_row, table};
 
     use super::*;
 
@@ -102,6 +101,12 @@ Concord,NH,United States,42605
         grid_controller
             .import_csv(sheet_id, SIMPLE_CSV, "smallpop.csc", pos, None)
             .unwrap();
+
+        table(
+            grid_controller.clone(),
+            sheet_id,
+            &Rect::new_span(pos, Pos { x: 3, y: 10 }),
+        );
 
         assert_cell_value_row(
             &grid_controller,
