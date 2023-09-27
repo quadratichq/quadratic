@@ -2,8 +2,10 @@ use super::*;
 use crate::{controller::transactions::TransactionSummary, grid::js_types::*};
 use std::str::FromStr;
 
+pub mod bounds;
 pub mod clipboard;
 pub mod formatting;
+pub mod offsets;
 pub mod render;
 pub mod sheets;
 
@@ -76,20 +78,6 @@ impl GridController {
             sheet_list_modified: false,
             cursor: None,
         })?)
-    }
-
-    /// Returns a sheet's bounds.
-    #[wasm_bindgen(js_name = "getGridBounds")]
-    pub fn get_grid_bounds(
-        &self,
-        sheet_id: String,
-        ignore_formatting: bool,
-    ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-
-        Ok(serde_wasm_bindgen::to_value(
-            &self.sheet(sheet_id).bounds(ignore_formatting),
-        )?)
     }
 
     /// Sets a cell value given as a [`CellValue`].

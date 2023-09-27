@@ -143,6 +143,9 @@ impl Operation {
             Operation::SetSheetColor { .. } => None,
             Operation::SetSheetName { .. } => None,
             Operation::ReorderSheet { .. } => None,
+            Operation::ResizeColumn { .. } => None,
+            Operation::ResizeRow { .. } => None,
+            Operation::None { .. } => None,
         }
     }
 }

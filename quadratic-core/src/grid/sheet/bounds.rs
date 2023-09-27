@@ -16,14 +16,13 @@ impl Sheet {
             false => GridBounds::merge(self.data_bounds, self.format_bounds),
         }
     }
-
     /// Returns the lower and upper bounds of a column, or `None` if the column
     /// is empty.
     ///
     /// If `ignore_formatting` is `true`, only data is considered; if it is
     /// `false`, then data and formatting are both considered.
-    pub fn column_bounds(&self, x: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
-        let column = self.columns.get(&x)?;
+    pub fn column_bounds(&self, column: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
+        let column = self.columns.get(&column)?;
         let range = column.range(ignore_formatting)?;
         Some((range.start, range.end - 1))
     }

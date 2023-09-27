@@ -32,3 +32,6 @@ pub mod limits {
     /// Maximum cell range size allowed. Must be strictly less than `u32::MAX`.
     pub const CELL_RANGE_LIMIT: u32 = 1_000_000;
 }
+
+pub const DEFAULT_COLUMN_WIDTH: f64 = 100.0;
+pub const DEFAULT_ROW_HEIGHT: f64 = 20.0;

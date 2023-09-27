@@ -49,20 +49,11 @@ export class CellLabel extends Container {
   overflowRight?: number;
   overflowLeft?: number;
 
-  // the topLeft position of the cell (ignores changes to position -- eg, align: right does not effect it)
-  topLeft: Point;
-
-  // cell's actual width (different from overflowed textWidth)
-  cellWidth: number;
-
   alignment: CellAlignment;
 
   dirty = true;
 
-  // cache for clip to avoid recalculation of same clip
-  private lastClip: { clipLeft?: number; clipRight?: number } | undefined;
-
-  constructor(cell: JsRenderCell, rectangle: Rectangle) {
+  constructor(cell: JsRenderCell, screenRectangle: Rectangle) {
     super();
 
     const cellText = cell.value ? cell.value.replace(/\n/g, '') : '';
@@ -75,10 +66,8 @@ export class CellLabel extends Container {
     this.tint = cell?.textColor ? convertColorStringToTint(cell.textColor) : 0;
 
     this.location = { x: Number(cell.x), y: Number(cell.y) };
-    this.AABB = rectangle;
-    this.cellWidth = rectangle.width;
-    this.topLeft = new Point(rectangle.x, rectangle.y);
-    this.position.set(rectangle.x, rectangle.y);
+    this.AABB = screenRectangle;
+    this.position.set(screenRectangle.x, screenRectangle.y);
 
     const bold = cell?.bold ? 'Bold' : '';
     const italic = cell?.italic ? 'Italic' : '';
@@ -86,70 +75,60 @@ export class CellLabel extends Container {
     this.alignment = cell.align;
   }
 
-  /**
-   * Changes the clip settings for the text -- only forces a redraw of the text if the clipOptions have changed
-   * @param options
-   * @returns
-   */
-  setClip(options?: { clipLeft?: number; clipRight?: number }): void {
-    if (!options && !this.lastClip) return;
-    if (
-      options &&
-      this.lastClip &&
-      options.clipLeft === this.lastClip.clipLeft &&
-      options.clipRight === this.lastClip.clipRight
-    )
-      return;
-    this.clipLeft = options?.clipLeft;
-    this.clipRight = options?.clipRight;
-    this.lastClip = options;
+  get cellWidth(): number {
+    return this.AABB.width;
   }
 
   checkLeftClip(left: number): void {
-    if (this.AABB.left < left) {
-      this.setClip({ clipLeft: left });
+    if (this.overflowLeft && this.AABB.left - this.overflowLeft < left) {
+      this.clipLeft = left;
+    } else {
+      this.clipLeft = undefined;
     }
   }
 
   checkRightClip(nextLeft: number): void {
     if (this.overflowRight && this.AABB.right + this.overflowRight > nextLeft) {
-      this.setClip({ clipRight: nextLeft });
+      this.clipRight = nextLeft;
+    } else {
+      this.clipRight = undefined;
     }
   }
 
-  private calculatePosition(): Point {
+  private calculatePosition(): void {
     this.overflowLeft = 0;
     this.overflowRight = 0;
     let alignment = this.alignment ?? 'left';
     if (alignment === 'right') {
-      const actualLeft = this.topLeft.x + this.cellWidth - this.textWidth;
-      if (actualLeft < this.topLeft.x) {
-        this.overflowLeft = this.topLeft.x - actualLeft;
+      const actualLeft = this.AABB.x + this.cellWidth - this.textWidth - openSansFix.x * 2;
+      if (actualLeft < this.AABB.x) {
+        this.overflowLeft = this.AABB.x - actualLeft;
       }
-      return new Point(actualLeft, this.topLeft.y);
+      this.position = new Point(actualLeft, this.AABB.y);
     } else if (alignment === 'center') {
-      const actualLeft = this.topLeft.x + this.cellWidth / 2 - this.textWidth / 2;
+      const actualLeft = this.AABB.x + this.cellWidth / 2 - this.textWidth / 2;
       const actualRight = actualLeft + this.textWidth;
-      if (actualLeft < this.topLeft.x) {
-        this.overflowLeft = this.topLeft.x - actualLeft;
+      if (actualLeft < this.AABB.x) {
+        this.overflowLeft = this.AABB.x - actualLeft;
       }
       if (actualRight > this.AABB.right) {
         this.overflowRight = actualRight - this.AABB.right;
+      } else {
       }
-      return new Point(actualLeft, this.topLeft.y);
+      this.position = new Point(actualLeft, this.AABB.y);
+    } else if (alignment === 'left') {
+      const actualRight = this.AABB.x + this.textWidth;
+      if (actualRight > this.AABB.right) {
+        this.overflowRight = actualRight - this.AABB.right;
+      }
+      this.position = new Point(this.AABB.x, this.AABB.y);
     }
-    const actualRight = this.topLeft.x + this.textWidth;
-    if (actualRight > this.AABB.right) {
-      this.overflowRight = actualRight - this.AABB.right;
-    }
-    return this.topLeft;
   }
 
   /** Calculates the text glyphs and positions and tracks whether the text overflows the cell */
   public updateText(labelMeshes: LabelMeshes): void {
     if (!this.dirty) return;
     this.dirty = false;
-
     const data = BitmapFont.available[this.fontName];
     if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateText');
     const pos = new Point();
@@ -251,13 +230,12 @@ export class CellLabel extends Container {
     this.textWidth = maxLineWidth * scale;
     this.textHeight = (pos.y + data.lineHeight) * scale;
 
-    this.position = this.calculatePosition();
+    this.calculatePosition();
   }
 
   /** Adds the glyphs to the CellsLabels container */
   updateLabelMesh(labelMeshes: LabelMeshes): Bounds {
     const bounds = new Bounds();
-
     const data = BitmapFont.available[this.fontName];
     const scale = this.fontSize / data.size;
     const color = this.tint ? convertTintToArray(this.tint) : undefined;
@@ -274,7 +252,6 @@ export class CellLabel extends Container {
       const texture = char.texture;
       const textureFrame = texture.frame;
       const textureUvs = texture._uvs;
-
       // remove letters that are outside the clipping bounds
       if (
         (this.clipRight !== undefined && xPos + textureFrame.width * scale >= this.clipRight) ||
@@ -336,5 +313,33 @@ export class CellLabel extends Container {
       }
     }
     return bounds;
+  }
+
+  // these are used to adjust column/row sizes without regenerating glyphs
+
+  adjustX(delta: number): void {
+    this.AABB.x += delta;
+    this.calculatePosition();
+  }
+
+  adjustY(delta: number): void {
+    this.AABB.y += delta;
+    this.calculatePosition();
+  }
+
+  adjustWidth(delta: number, adjustX?: boolean): void {
+    this.AABB.width += delta;
+    if (adjustX) {
+      this.AABB.x -= delta;
+    }
+    this.calculatePosition();
+  }
+
+  adjustHeight(delta: number, adjustY?: boolean): void {
+    this.AABB.height += delta;
+    if (adjustY) {
+      this.AABB.y -= delta;
+    }
+    this.calculatePosition();
   }
 }

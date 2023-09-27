@@ -3,6 +3,7 @@ import { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
+import { grid } from '../../grid/controller/Grid';
 import { sheets } from '../../grid/controller/Sheets';
 import { focusGrid } from '../../helpers/focusGrid';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
@@ -32,7 +33,7 @@ export const CellInput = (props: CellInputProps) => {
     return () => window.removeEventListener('change-input', changeInput);
   }, []);
 
-  const cell_offsets = sheet.gridOffsets.getCell(cellLocation.x, cellLocation.y);
+  const cellOffsets = grid.getCellOffsets(sheet.id, cellLocation.x, cellLocation.y);
   const cell = sheet.getEditCell(cellLocation.x, cellLocation.y);
   const formatting = sheet.getCellFormatSummary(cellLocation.x, cellLocation.y);
 
@@ -103,7 +104,7 @@ export const CellInput = (props: CellInputProps) => {
     let worldTransform = viewport.worldTransform;
 
     // Calculate position of input based on cell (magic number via experimentation)
-    let cell_offset_scaled = viewport.toScreen(cell_offsets.x + CURSOR_THICKNESS, cell_offsets.y + CURSOR_THICKNESS);
+    let cell_offset_scaled = viewport.toScreen(cellOffsets.x + CURSOR_THICKNESS, cellOffsets.y + CURSOR_THICKNESS);
 
     // Generate transform CSS
     const transform =
@@ -185,12 +186,12 @@ export const CellInput = (props: CellInputProps) => {
         position: 'absolute',
         top: 0,
         left: 0,
-        minWidth: cell_offsets.width - CURSOR_THICKNESS * 2,
+        minWidth: cellOffsets.width - CURSOR_THICKNESS * 2,
         outline: 'none',
         color: formatting?.textColor ?? 'black',
         padding: `0 ${CURSOR_THICKNESS}px 0 0`,
         margin: 0,
-        lineHeight: `${cell_offsets.height - CURSOR_THICKNESS * 2}px`,
+        lineHeight: `${cellOffsets.height - CURSOR_THICKNESS * 2}px`,
         verticalAlign: 'text-top',
         transformOrigin: '0 0',
         transform,

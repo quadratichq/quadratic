@@ -48,6 +48,7 @@ export class LabelMesh extends Mesh {
   }
 
   prepare(): void {
+    this.index = 0;
     const total = this.total;
     this.vertices = new Float32Array(4 * 2 * total);
     this.uvs = new Float32Array(4 * 2 * total);

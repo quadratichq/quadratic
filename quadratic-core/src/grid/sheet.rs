@@ -13,13 +13,18 @@ use super::code::CodeCellValue;
 use super::column::Column;
 use super::formatting::{BoolSummary, CellFmtAttr};
 use super::ids::{CellRef, ColumnId, IdMap, RegionRef, RowId, SheetId};
-use super::js_types::{CellFormatSummary, FormattingSummary};
+use super::js_types::{
+    CellFormatSummary, FormattingSummary, JsRenderBorder, JsRenderCell, JsRenderCodeCell,
+    JsRenderCodeCellState, JsRenderFill,
+};
+use super::offsets::Offsets;
 use super::response::{GetIdResponse, SetCellResponse};
 use super::NumericFormatKind;
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;
 pub mod code;
+pub mod offsets;
 pub mod rendering;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -32,10 +37,8 @@ pub struct Sheet {
     pub(super) column_ids: IdMap<ColumnId, i64>,
     pub(super) row_ids: IdMap<RowId, i64>,
 
-    #[serde(with = "crate::util::btreemap_serde")]
-    pub(super) column_widths: BTreeMap<i64, f32>,
-    #[serde(with = "crate::util::btreemap_serde")]
-    pub(super) row_heights: BTreeMap<i64, f32>,
+    pub(super) column_widths: Offsets,
+    pub(super) row_heights: Offsets,
 
     #[serde(with = "crate::util::btreemap_serde")]
     pub(super) columns: BTreeMap<i64, Column>,
@@ -58,8 +61,8 @@ impl Sheet {
             column_ids: IdMap::new(),
             row_ids: IdMap::new(),
 
-            column_widths: BTreeMap::new(),
-            row_heights: BTreeMap::new(),
+            column_widths: Offsets::new(crate::DEFAULT_COLUMN_WIDTH),
+            row_heights: Offsets::new(crate::DEFAULT_ROW_HEIGHT),
 
             columns: BTreeMap::new(),
             borders: SheetBorders::new(),
@@ -68,6 +71,11 @@ impl Sheet {
             data_bounds: GridBounds::Empty,
             format_bounds: GridBounds::Empty,
         }
+    }
+
+    // creates a Sheet for testing
+    pub fn test() -> Self {
+        Sheet::new(SheetId::new(), String::from("name"), String::from("A0"))
     }
 
     /// Populates the current sheet with random values
@@ -273,15 +281,6 @@ impl Sheet {
     ) -> Option<A::Value> {
         let (_, column) = self.get_or_create_column(pos.x);
         A::column_data_mut(column).set(pos.y, value)
-    }
-
-    /// Returns the widths of columns.
-    pub fn column_widths(&self) -> &BTreeMap<i64, f32> {
-        &self.column_widths
-    }
-    /// Returns the heights of rows.
-    pub fn row_heights(&self) -> &BTreeMap<i64, f32> {
-        &self.row_heights
     }
 
     /// Returns all cell borders.

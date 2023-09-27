@@ -1,21 +1,15 @@
 import { Rectangle } from 'pixi.js';
-import { Coordinate, MinMax } from '../../gridGL/types/size';
-import { GridOffsets } from './GridOffsets';
-import { Border } from '../../schemas';
 import { Quadrants } from '../../gridGL/quadrants/Quadrants';
+import { Coordinate, MinMax } from '../../gridGL/types/size';
+import { Border } from '../../schemas';
 import { Bounds } from './Bounds';
 
 export class GridBorders {
-  private gridOffsets: GridOffsets;
   private bounds = new Bounds();
   borders = new Map<string, Border>();
 
   // tracks which quadrants need to render based on GridBorders data
   quadrants: Set<string> = new Set();
-
-  constructor(gridOffsets: GridOffsets) {
-    this.gridOffsets = gridOffsets;
-  }
 
   empty() {
     this.borders.clear();
