@@ -1,7 +1,9 @@
 import * as Sentry from '@sentry/browser';
 import { Point, Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
+import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
 import { Coordinate } from '../../gridGL/types/size';
+import { readFileAsArrayBuffer } from '../../helpers/files';
 import { GridController, MinMax, Placement, Pos, Rect as RectInternal } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
@@ -485,16 +487,20 @@ export class Grid {
   //#region Imports
 
   async importCsv(sheetId: string, file: File, insertAtCellLocation: Coordinate, reportError: (error: string) => void) {
+    debugTimeReset();
     const pos = new Pos(insertAtCellLocation.x, insertAtCellLocation.y);
-    const text = await file.text();
+    const file_bytes = await readFileAsArrayBuffer(file);
 
     try {
-      const summary = this.gridController.importCsv(sheetId, text, file.name, pos, sheets.getCursorPosition());
+      const summary = this.gridController.importCsv(sheetId, file_bytes, file.name, pos, sheets.getCursorPosition());
       transactionResponse(summary);
     } catch (error) {
+      // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
+      // type in the UI.
       reportError(error as unknown as string);
       Sentry.captureException(error);
     }
+    debugTimeCheck(`uploading and processing csv file ${file.name}`);
   }
 
   //#endregion

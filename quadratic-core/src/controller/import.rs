@@ -16,18 +16,15 @@ impl GridController {
     pub fn import_csv(
         &mut self,
         sheet_id: SheetId,
-        file: &str,
+        file: &[u8],
         file_name: &str,
         insert_at: Pos,
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
-        let width = csv::ReaderBuilder::new()
-            .from_reader(file.as_bytes())
-            .headers()?
-            .len() as u32;
+        let width = csv::ReaderBuilder::new().from_reader(file).headers()?.len() as u32;
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
-            .from_reader(file.as_bytes());
+            .from_reader(file);
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
 
         let values = reader
@@ -42,6 +39,7 @@ impl GridController {
                     .iter()
                     .map(|value| {
                         // TODO(ddimaria): Replace with a standard converter once it's in place
+
                         Ok(if let Ok(number) = BigDecimal::from_str(value) {
                             CellValue::Number(number)
                         } else {
@@ -100,7 +98,7 @@ Concord,NH,United States,42605
         let pos = Pos { x: 0, y: 0 };
 
         grid_controller
-            .import_csv(sheet_id, SIMPLE_CSV, "smallpop.csc", pos, None)
+            .import_csv(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csc", pos, None)
             .unwrap();
 
         table(

@@ -10,7 +10,7 @@ impl GridController {
     pub fn js_inport_csv(
         &mut self,
         sheet_id: &str,
-        file: &str,
+        file: &[u8],
         file_name: &str,
         insert_at: &Pos,
         cursor: Option<String>,
