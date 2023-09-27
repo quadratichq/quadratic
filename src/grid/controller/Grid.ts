@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/browser';
 import { Point, Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
 import { Coordinate } from '../../gridGL/types/size';
-import { GridController, Pos, Rect as RectInternal } from '../../quadratic-core/quadratic_core';
+import { GridController, MinMax, Placement, Pos, Rect as RectInternal } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
   CellFormatSummary,
@@ -313,6 +313,12 @@ export class Grid {
     return this.gridController.getEditCell(sheetId, pos);
   }
 
+  cellHasContent(sheetId: string, column: number, row: number): boolean {
+    const data = this.gridController.getRenderCells(sheetId, rectangleToRect(new Rectangle(column, row, 0, 0)));
+    const results = JSON.parse(data);
+    return results.length ? !!results[0].value : false;
+  }
+
   getRenderCells(sheetId: string, rectangle: Rectangle): JsRenderCell[] {
     const data = this.gridController.getRenderCells(sheetId, rectangleToRect(rectangle));
     return JSON.parse(data);
@@ -326,14 +332,6 @@ export class Grid {
   getAllRenderFills(sheetId: string): JsRenderFill[] {
     const data = this.gridController.getAllRenderFills(sheetId);
     return JSON.parse(data);
-  }
-
-  getGridBounds(sheetId: string, ignoreFormatting: boolean): Rectangle | undefined {
-    const bounds = this.gridController.getGridBounds(sheetId, ignoreFormatting);
-    if (bounds.type === 'empty') {
-      return;
-    }
-    return new Rectangle(bounds.min.x, bounds.min.y, bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y);
   }
 
   // todo: fix types
@@ -352,6 +350,71 @@ export class Grid {
 
   getFormattingSummary(sheetId: string, rectangle: Rectangle): FormattingSummary {
     return this.gridController.getFormattingSummary(sheetId, rectangleToRect(rectangle) as RectInternal);
+  }
+
+  //#endregion
+
+  //#region Bounds
+
+  getGridBounds(sheetId: string, ignoreFormatting: boolean): Rectangle | undefined {
+    const bounds = this.gridController.getGridBounds(sheetId, ignoreFormatting);
+    if (bounds.type === 'empty') {
+      return;
+    }
+    return new Rectangle(bounds.min.x, bounds.min.y, bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y);
+  }
+
+  getColumnBounds(sheetId: string, column: number, ignoreFormatting: boolean): MinMax | undefined {
+    return this.gridController.getColumnBounds(sheetId, column, ignoreFormatting);
+  }
+
+  getColumnsBounds(
+    sheetId: string,
+    columnStart: number,
+    columnEnd: number,
+    ignoreFormatting: boolean
+  ): MinMax | undefined {
+    return this.gridController.getColumnsBounds(sheetId, columnStart, columnEnd, ignoreFormatting);
+  }
+
+  getRowBounds(sheetId: string, row: number, ignoreFormatting: boolean): MinMax | undefined {
+    return this.gridController.getRowBounds(sheetId, row, ignoreFormatting);
+  }
+
+  getRowsBounds(sheetId: string, row_start: number, row_end: number, ignoreFormatting: boolean): MinMax | undefined {
+    return this.gridController.getRowsBounds(sheetId, row_start, row_end, ignoreFormatting);
+  }
+
+  findNextColumn(options: {
+    sheetId: string;
+    columnStart: number;
+    row: number;
+    reverse: boolean;
+    withContent: boolean;
+  }): number {
+    return this.gridController.findNextColumn(
+      options.sheetId,
+      options.columnStart,
+      options.row,
+      options.reverse,
+      options.withContent
+    );
+  }
+
+  findNextRow(options: {
+    sheetId: string;
+    rowStart: number;
+    column: number;
+    reverse: boolean;
+    withContent: boolean;
+  }): number {
+    return this.gridController.findNextRow(
+      options.sheetId,
+      options.rowStart,
+      options.column,
+      options.reverse,
+      options.withContent
+    );
   }
 
   //#endregion
@@ -432,6 +495,84 @@ export class Grid {
       Sentry.captureException(error);
     }
   }
+
+  //#endregion
+
+  //#region column/row sizes
+
+  getColumnWidth(sheetId: string, x: number): number {
+    return this.gridController.getColumnWidth(sheetId, x);
+  }
+
+  getRowHeight(sheetId: string, y: number): number {
+    return this.gridController.getRowHeight(sheetId, y);
+  }
+
+  getColumnPlacement(sheetId: string, column: number): Placement {
+    return this.gridController.getColumnPlacement(sheetId, column);
+  }
+
+  getRowPlacement(sheetId: string, row: number): Placement {
+    return this.gridController.getRowPlacement(sheetId, row);
+  }
+
+  getXPlacement(sheetId: string, x: number): Placement {
+    return this.gridController.getXPlacement(sheetId, x);
+  }
+
+  getYPlacement(sheetId: string, y: number): Placement {
+    return this.gridController.getYPlacement(sheetId, y);
+  }
+
+  getColumnRow(sheetId: string, x: number, y: number): { column: number; row: number } {
+    return {
+      column: this.getXPlacement(sheetId, x).index,
+      row: this.getYPlacement(sheetId, y).index,
+    };
+  }
+
+  // @returns screen position of a cell
+  getCellOffsets(sheetId: string, column: number, row: number): Rectangle {
+    const screenRect = this.gridController.getCellOffsets(sheetId, column, row);
+    return new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
+  }
+
+  // @returns screen rectangle for a column/row rectangle
+  getScreenRectangle(sheetId: string, column: number, row: number, width: number, height: number): Rectangle {
+    const topLeft = this.getCellOffsets(sheetId, column, row);
+    const bottomRight = this.getCellOffsets(sheetId, column + width, row + height);
+    return new Rectangle(topLeft.left, topLeft.top, bottomRight.right - topLeft.left, bottomRight.bottom - topLeft.top);
+  }
+
+  commitHeadingResize(): void {
+    const summary = this.gridController.commitResize(sheets.getCursorPosition());
+    transactionResponse(summary);
+    this.dirty = true;
+  }
+
+  cancelHeadingResize(): void {
+    this.gridController.cancelResize();
+  }
+
+  headingResizeColumn(sheetId: string, column: number, size?: number): void {
+    this.gridController.resizeColumnTransiently(sheetId, column, size);
+  }
+
+  headingResizeColumnCommit(sheetId: string, column: number, size: number, skipUpdate: boolean): void {
+    const summary = this.gridController.resizeColumn(sheetId, column, size);
+
+    // does not work properly
+    if (!skipUpdate) {
+      transactionResponse(summary);
+    }
+    this.dirty = true;
+  }
+
+  headingResizeRow(sheetId: string, row: number, size?: number): void {
+    this.gridController.resizeRowTransiently(sheetId, row, size);
+  }
+
+  //#endregion
 }
 
 //#end

@@ -22,6 +22,7 @@ import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { copySelectionToPNG, fullClipboardSupport } from '../../../grid/actions/clipboard/clipboard';
+import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
@@ -73,12 +74,14 @@ export const FloatingContextMenu = (props: Props) => {
     if (!container || !menuDiv.current) return '';
 
     const { viewport } = pixiApp;
+    const sheetId = sheets.sheet.id;
 
     const sheet = sheets.sheet;
     const cursor = sheet.cursor;
 
     // Calculate position of input based on cell
-    const cell_offsets = sheet.gridOffsets.getCell(
+    const cell_offsets = grid.getCellOffsets(
+      sheetId,
       cursor.multiCursor
         ? Math.min(cursor.cursorPosition.x, cursor.multiCursor.originPosition.x, cursor.multiCursor.terminalPosition.x)
         : cursor.cursorPosition.x,
@@ -121,7 +124,8 @@ export const FloatingContextMenu = (props: Props) => {
     if (!isEditorOrAbove(editorInteractionState.permission)) visibility = 'hidden';
 
     // Hide FloatingFormatMenu if multi cursor is off screen
-    const terminal_pos = sheet.gridOffsets.getCell(
+    const terminal_pos = grid.getCellOffsets(
+      sheetId,
       cursor.multiCursor ? cursor.multiCursor.terminalPosition.x : cursor.cursorPosition.x,
       cursor.multiCursor ? cursor.multiCursor.terminalPosition.y : cursor.cursorPosition.y
     );

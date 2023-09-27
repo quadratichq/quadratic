@@ -11,13 +11,14 @@ export class CellsSheets extends Container<CellsSheet> {
   async create(): Promise<void> {
     this.removeChildren();
     if (!sheets.size) return;
-    sheets.forEach(async (sheet) => {
+
+    for (const sheet of sheets.sheets) {
       const child = this.addChild(new CellsSheet(sheet));
       await child.preload();
       if (sheet.id === sheets.sheet.id) {
         this.current = child;
       }
-    });
+    }
   }
 
   isReady(): boolean {
@@ -62,6 +63,10 @@ export class CellsSheets extends Container<CellsSheet> {
     this.current.show(bounds);
   }
 
+  private getById(id: string): CellsSheet | undefined {
+    return this.children.find((search) => search.sheet.id === id);
+  }
+
   changed(options: {
     sheetId: string;
     column?: number;
@@ -71,7 +76,7 @@ export class CellsSheets extends Container<CellsSheet> {
     labels: boolean;
     background: boolean;
   }): void {
-    const cellsSheet = this.children.find((search) => search.sheet.id === options.sheetId);
+    const cellsSheet = this.getById(options.sheetId);
     if (!cellsSheet) throw new Error('Expected to find cellsSheet in changed');
     cellsSheet.changed({
       cells: options.cells,
@@ -92,10 +97,7 @@ export class CellsSheets extends Container<CellsSheet> {
     }
     for (const child of this.children) {
       if (this.current !== child) {
-        if (child.update()) {
-          pixiApp.setViewportDirty();
-          return;
-        }
+        if (child.update()) return;
       }
     }
   }
@@ -114,5 +116,18 @@ export class CellsSheets extends Container<CellsSheet> {
         cellsSheet.updateFill();
       }
     });
+  }
+
+  // adjust headings without recalculating the glyph geometries
+  adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
+    const { sheetId, delta, row, column } = options;
+    const cellsSheet = this.getById(sheetId);
+    if (!cellsSheet) throw new Error('Expected to find cellsSheet in adjustHeadings');
+    cellsSheet.adjustHeadings({ delta, row, column });
+  }
+
+  getCellsContentMaxWidth(column: number): number {
+    if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxWidth');
+    return this.current.getCellsContentMaxWidth(column);
   }
 }

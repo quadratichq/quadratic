@@ -1,5 +1,6 @@
-import { Container, Rectangle } from 'pixi.js';
-import { debugShowCellsSheetCulling } from '../../debugFlags';
+import { Container, Graphics, Rectangle } from 'pixi.js';
+import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '../../debugFlags';
+import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
@@ -7,8 +8,8 @@ import { Coordinate } from '../types/size';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
 import { CellsFills } from './CellsFills';
-import { CellsHash } from './CellsHash';
 import { CellsMarkers } from './CellsMarker';
+import { CellsTextHash } from './CellsTextHash';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
 
 const MAXIMUM_FRAME_TIME = 1000 / 15;
@@ -16,8 +17,10 @@ const MAXIMUM_FRAME_TIME = 1000 / 15;
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
 
-  // individual hash containers (eg, CellsBackground, CellsArray)
-  private cellsHashContainer: Container;
+  // used to draw debug boxes for cellsTextHash
+  private cellsTextDebug: Graphics;
+
+  private cellsTextHashContainer: Container;
 
   private cellsArray: CellsArray;
 
@@ -26,28 +29,34 @@ export class CellsSheet extends Container {
 
   private cellsBorders: CellsBorders;
 
-  // (x, y) index into cellsHashContainer
-  cellsHash: Map<string, CellsHash>;
+  // (hashX, hashY) index into cellsTextHashContainer
+  cellsTextHash: Map<string, CellsTextHash>;
 
-  // row index into cellsHashContainer (used for clipping)
-  private cellsRows: Map<number, CellsHash[]>;
+  // row index into cellsTextHashContainer (used for clipping)
+  private cellsRows: Map<number, CellsTextHash[]>;
 
   // set of rows that need updating
   private dirtyRows: Set<number>;
 
+  // keep track of headings that need adjusting during next update tick
+  private dirtyColumnHeadings: Map<number, number>;
+  private dirtyRowHeadings: Map<number, number>;
+
   private resolveTick?: () => void;
 
-  // friend of CellsHash and CellsSheets
   sheet: Sheet;
 
   constructor(sheet: Sheet) {
     super();
     this.sheet = sheet;
-    this.cellsHash = new Map();
+    this.cellsTextHash = new Map();
     this.cellsRows = new Map();
     this.dirtyRows = new Set();
+    this.dirtyColumnHeadings = new Map();
+    this.dirtyRowHeadings = new Map();
     this.cellsFills = this.addChild(new CellsFills(this));
-    this.cellsHashContainer = this.addChild(new Container());
+    this.cellsTextDebug = this.addChild(new Graphics());
+    this.cellsTextHashContainer = this.addChild(new Container());
     this.cellsArray = this.addChild(new CellsArray(this));
     this.cellsBorders = this.addChild(new CellsBorders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
@@ -61,7 +70,7 @@ export class CellsSheet extends Container {
     };
   }
 
-  private createHash(hashX: number, hashY: number): CellsHash | undefined {
+  private createHash(hashX: number, hashY: number): CellsTextHash | undefined {
     const rect = new Rectangle(
       hashX * sheetHashWidth,
       hashY * sheetHashHeight,
@@ -71,8 +80,9 @@ export class CellsSheet extends Container {
     const cells = this.sheet.getRenderCells(rect);
     const background = this.sheet.getRenderFills(rect);
     if (cells.length || background.length) {
-      const cellsHash = this.cellsHashContainer.addChild(new CellsHash(this, hashX, hashY));
-      this.cellsHash.set(cellsHash.key, cellsHash);
+      const key = `${hashX},${hashY}`;
+      const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
+      this.cellsTextHash.set(key, cellsHash);
       const row = this.cellsRows.get(hashY);
       if (row) {
         row.push(cellsHash);
@@ -104,12 +114,18 @@ export class CellsSheet extends Container {
   show(bounds: Rectangle): void {
     this.visible = true;
     let count = 0;
-    this.cellsHash.forEach((cellsHash) => {
-      if (cellsHash.viewBounds.intersectsRectangle(bounds)) {
-        cellsHash.show();
+    if (debugShowCellsHashBoxes) {
+      this.cellsTextDebug.clear();
+    }
+    this.cellsTextHash.forEach((cellsTextHash) => {
+      if (cellsTextHash.viewBounds.intersectsRectangle(bounds)) {
+        cellsTextHash.show();
+        if (debugShowCellsHashBoxes) {
+          cellsTextHash.drawDebugBox(this.cellsTextDebug);
+        }
         count++;
       } else {
-        cellsHash.hide();
+        cellsTextHash.hide();
       }
     });
     if (pixiAppSettings.showCellTypeOutlines) {
@@ -121,7 +137,7 @@ export class CellsSheet extends Container {
     this.cellsFills.cheapCull(bounds);
     this.cellsMarkers.cheapCull(bounds);
     if (debugShowCellsSheetCulling) {
-      console.log(`[CellsSheet] visible: ${count}/${this.cellsHash.size}`);
+      console.log(`[CellsSheet] visible: ${count}/${this.cellsTextHash.size}`);
     }
   }
 
@@ -137,20 +153,24 @@ export class CellsSheet extends Container {
     this.cellsBorders.create();
   }
 
-  getCellsHash(column: number, row: number, createIfNeeded?: boolean): CellsHash | undefined {
+  getHashKey(hashX: number, hashY: number): string {
+    return `${hashX},${hashY}`;
+  }
+
+  getCellsHash(column: number, row: number, createIfNeeded?: boolean): CellsTextHash | undefined {
     const { x, y } = CellsSheet.getHash(column, row);
-    const key = CellsHash.getKey(x, y);
-    let hash = this.cellsHash.get(key);
+    const key = this.getHashKey(x, y);
+    let hash = this.cellsTextHash.get(key);
     if (!hash && createIfNeeded) {
       hash = this.createHash(x, y);
     }
     return hash;
   }
 
-  getColumnHashes(column: number): CellsHash[] {
+  getColumnHashes(column: number): CellsTextHash[] {
     const hashX = Math.floor(column / sheetHashWidth);
-    const hashes: CellsHash[] = [];
-    this.cellsHash.forEach((cellsHash) => {
+    const hashes: CellsTextHash[] = [];
+    this.cellsTextHash.forEach((cellsHash) => {
       if (cellsHash.hashX === hashX) {
         hashes.push(cellsHash);
       }
@@ -158,10 +178,10 @@ export class CellsSheet extends Container {
     return hashes;
   }
 
-  getRowHashes(row: number): CellsHash[] {
+  getRowHashes(row: number): CellsTextHash[] {
     const hashY = Math.floor(row / sheetHashHeight);
-    const hashes: CellsHash[] = [];
-    this.cellsHash.forEach((cellsHash) => {
+    const hashes: CellsTextHash[] = [];
+    this.cellsTextHash.forEach((cellsHash) => {
       if (cellsHash.hashY === hashY) {
         hashes.push(cellsHash);
       }
@@ -170,8 +190,8 @@ export class CellsSheet extends Container {
   }
 
   // used for clipping to find neighboring hash - clipping always works from right to left
-  findPreviousHash(column: number, row: number, bounds?: Rectangle): CellsHash | undefined {
-    bounds = bounds ?? this.sheet.grid.getSheetBounds(true);
+  findPreviousHash(column: number, row: number, bounds?: Rectangle): CellsTextHash | undefined {
+    bounds = bounds ?? grid.getGridBounds(this.sheet.id, true);
     if (!bounds) {
       throw new Error('Expected bounds to be defined in findPreviousHash of CellsSheet');
     }
@@ -191,7 +211,7 @@ export class CellsSheet extends Container {
     labels?: boolean;
     background?: boolean;
   }) {
-    const hashes = new Set<CellsHash>();
+    const hashes = new Set<CellsTextHash>();
     if (options.cells) {
       options.cells.forEach((cell) => {
         let hash = this.getCellsHash(cell.x, cell.y, true);
@@ -293,12 +313,100 @@ export class CellsSheet extends Container {
     this.cellsFills.create();
   }
 
+  // adjust hashes after a column/row resize
+  // todo: this may need to be scheduled for large data sets
+  private updateHeadings(): void {
+    if (!this.dirtyColumnHeadings.size && !this.dirtyRowHeadings.size) return;
+
+    // hashes that need to update their clipping and buffers
+    const hashesToUpdate: Set<CellsTextHash> = new Set();
+
+    this.dirtyColumnHeadings.forEach((delta, column) => {
+      const columnHash = Math.floor(column / sheetHashWidth);
+      this.cellsTextHash.forEach((hash) => {
+        if (columnHash < 0) {
+          if (hash.hashX <= columnHash) {
+            if (hash.adjustHeadings({ column, delta })) {
+              hashesToUpdate.add(hash);
+            }
+          }
+        } else {
+          if (hash.hashX >= columnHash) {
+            if (hash.adjustHeadings({ column, delta })) {
+              hashesToUpdate.add(hash);
+            }
+          }
+        }
+      });
+    });
+    this.dirtyColumnHeadings.clear();
+
+    this.dirtyRowHeadings.forEach((delta, row) => {
+      const rowHash = Math.floor(row / sheetHashHeight);
+      this.cellsTextHash.forEach((hash) => {
+        if (rowHash < 0) {
+          if (hash.hashY <= rowHash) {
+            if (hash.adjustHeadings({ row, delta })) {
+              hashesToUpdate.add(hash);
+            }
+          }
+        } else {
+          if (hash.hashY >= rowHash) {
+            if (hash.adjustHeadings({ row, delta })) {
+              hashesToUpdate.add(hash);
+            }
+          }
+        }
+      });
+    });
+    this.dirtyRowHeadings.clear();
+
+    hashesToUpdate.forEach((hash) => hash.overflowClip());
+    this.cellsTextHash.forEach((hash) => hash.updateBuffers());
+
+    // todo: these can be much more efficient
+    this.cellsFills.create();
+    this.cellsArray.create();
+  }
+
   update(): boolean {
+    this.updateHeadings();
     if (this.dirtyRows.size) {
       this.updateNextDirtyRow();
       return true;
     } else {
       return false;
     }
+  }
+
+  // adjust headings without recalculating the glyph geometries
+  adjustHeadings(options: { delta: number; column?: number; row?: number }): void {
+    const { delta, column, row } = options;
+    if (column !== undefined) {
+      const existing = this.dirtyColumnHeadings.get(column);
+      if (existing) {
+        this.dirtyColumnHeadings.set(column, existing + delta);
+      } else {
+        this.dirtyColumnHeadings.set(column, delta);
+      }
+    } else if (row !== undefined) {
+      const existing = this.dirtyRowHeadings.get(row);
+      if (existing) {
+        this.dirtyRowHeadings.set(row, existing + delta);
+      } else {
+        this.dirtyRowHeadings.set(row, delta);
+      }
+    }
+  }
+
+  getCellsContentMaxWidth(column: number): number {
+    const hashX = Math.floor(column / sheetHashWidth);
+    let max = 0;
+    this.cellsTextHash.forEach((hash) => {
+      if (hash.hashX === hashX) {
+        max = Math.max(max, hash.getCellsContentMaxWidth(column));
+      }
+    });
+    return max;
   }
 }
