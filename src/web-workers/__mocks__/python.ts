@@ -1,4 +1,4 @@
-import { PythonReturnType } from '../pythonTypes';
+import { PythonReturnType } from '../pythonWebWorker/pythonTypes';
 
 class PythonWebWorker {
   private output?: Record<string, PythonReturnType>;

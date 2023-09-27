@@ -21,7 +21,7 @@ export interface CellRef {
 export interface PythonMessage {
   type: 'results' | 'execute' | 'not-loaded' | 'get-cells' | 'python-loaded' | 'python-error';
   python?: string;
-  results?: PythonReturnType;
+  results?: any;
   error?: string;
   range?: { sheet: string; x0: number; y0: number; x1: number; y1: number };
   cells?: string[];

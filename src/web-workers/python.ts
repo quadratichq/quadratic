@@ -1,5 +1,4 @@
-import { GetCellsDB } from '../../grid/sheet/Cells/GetCellsDB';
-import { PythonMessage, PythonReturnType } from './pythonTypes';
+import { PythonMessage, PythonReturnType } from './pythonWebWorker/pythonTypes';
 
 class PythonWebWorker {
   private worker?: Worker;
@@ -7,7 +6,7 @@ class PythonWebWorker {
   private loaded = false;
 
   init() {
-    this.worker = new Worker(new URL('./python.worker.ts', import.meta.url));
+    this.worker = new Worker(new URL('./pythonWebWorker/python.worker.ts', import.meta.url));
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
@@ -21,8 +20,9 @@ class PythonWebWorker {
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');
         }
-        const cells = await GetCellsDB(range.x0, range.y0, range.x1, range.y1, range.sheet);
-        this.worker!.postMessage({ type: 'get-cells', cells } as PythonMessage);
+        throw new Error('get cells is not implemented');
+        // const cells = await GetCellsDB(range.x0, range.y0, range.x1, range.y1, range.sheet);
+        // this.worker!.postMessage({ type: 'get-cells', cells } as PythonMessage);
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
         this.loaded = true;
@@ -34,7 +34,7 @@ class PythonWebWorker {
     };
   }
 
-  run(python: string): Promise<PythonReturnType> {
+  run(python: string): Promise<any> {
     return new Promise((resolve) => {
       if (!this.loaded || !this.worker) {
         resolve({
@@ -47,7 +47,7 @@ class PythonWebWorker {
           formatted_code: '',
         });
       } else {
-        this.callback = (results: PythonReturnType) => resolve(results);
+        this.callback = (results: any) => resolve(results);
         this.worker.postMessage({ type: 'execute', python } as PythonMessage);
       }
     });

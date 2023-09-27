@@ -1,4 +1,4 @@
-import { pythonWebWorker } from './pythonWebWorker/python';
+import { pythonWebWorker } from './python';
 
 export const initializeWebWorkers = (): void => {
   pythonWebWorker.init();

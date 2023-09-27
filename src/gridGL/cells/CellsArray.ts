@@ -41,9 +41,9 @@ export class CellsArray extends ParticleContainer {
     const end = gridOffsets.getCell(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
     const type = codeCell.language;
     let tint = colors.independence;
-    if (type === 'python') {
+    if (type === 'Python') {
       tint = colors.cellColorUserPython;
-    } else if (type === 'formula') {
+    } else if (type === 'Formula') {
       tint = colors.cellColorUserFormula;
     }
 
