@@ -492,6 +492,7 @@ export class Grid {
       const summary = this.gridController.importCsv(sheetId, text, file.name, pos, sheets.getCursorPosition());
       transactionResponse(summary);
     } catch (error) {
+      reportError(error as unknown as string);
       Sentry.captureException(error);
     }
   }
