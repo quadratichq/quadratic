@@ -21,11 +21,16 @@ impl GridController {
         insert_at: Pos,
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
+        let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
         let width = csv::ReaderBuilder::new().from_reader(file).headers()?.len() as u32;
+
+        if width == 0 {
+            return Err(error("empty files cannot be processed".into()));
+        }
+
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .from_reader(file);
-        let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
 
         let values = reader
             .records()
@@ -39,7 +44,6 @@ impl GridController {
                     .iter()
                     .map(|value| {
                         // TODO(ddimaria): Replace with a standard converter once it's in place
-
                         Ok(if let Ok(number) = BigDecimal::from_str(value) {
                             CellValue::Number(number)
                         } else {
@@ -97,7 +101,7 @@ Concord,NH,United States,42605
         let pos = Pos { x: 0, y: 0 };
 
         grid_controller
-            .import_csv(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csc", pos, None)
+            .import_csv(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos, None)
             .unwrap();
 
         table(
@@ -123,5 +127,15 @@ Concord,NH,United States,42605
             10,
             vec!["Concord", "NH", "United States", "42605"],
         );
+    }
+
+    #[test]
+    fn errors_on_an_empty_csv() {
+        let mut grid_controller = GridController::new();
+        let sheet_id = grid_controller.grid.sheets()[0].id;
+        let pos = Pos { x: 0, y: 0 };
+
+        let result = grid_controller.import_csv(sheet_id, "".as_bytes(), "smallpop.csv", pos, None);
+        assert!(result.is_err());
     }
 }
