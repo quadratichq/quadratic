@@ -1,4 +1,5 @@
-use anyhow::{anyhow, Error, Result};
+use anyhow::{anyhow, Result};
+use itertools::Itertools;
 
 use super::{
     formatting::CellFmtArray, operations::Operation, transactions::TransactionSummary,
@@ -32,9 +33,13 @@ impl GridController {
         let mut operations = vec![];
         let mut initial_down_range: Option<Rect> = None;
         let mut initial_up_range: Option<Rect> = None;
+        let should_expand_up = range.min.y < rect.min.y;
+        let should_expand_down = range.max.y > rect.max.y;
+        let should_expand_left = range.min.x < rect.min.x;
+        let should_expand_right = range.max.x > rect.max.x;
 
         // expand up
-        if range.min.y < rect.min.y {
+        if should_expand_up {
             let new_range = Rect::new_span(
                 (rect.min.x, rect.min.y - 1).into(),
                 (shrink_horizontal.unwrap_or(rect.max.x), range.min.y).into(),
@@ -45,35 +50,35 @@ impl GridController {
         }
 
         // expand down
-        if range.max.y > rect.max.y {
+        if should_expand_down {
             let new_range = Rect::new_span(
                 (rect.min.x, rect.max.y + 1).into(),
                 (shrink_horizontal.unwrap_or(rect.max.x), range.max.y).into(),
             );
-            let ops = self.expand_down(sheet_id, &rect, &new_range, None)?;
+            let ops = self.expand_down(sheet_id, &rect, &new_range)?;
             operations.extend(ops);
             initial_down_range = Some(range);
         }
         // expand left
-        if range.min.x < rect.min.x {
+        if should_expand_left {
             let new_range = Rect::new_span(
                 (range.min.x, rect.min.y).into(),
                 (rect.min.x - 1, rect.max.y).into(),
             );
 
-            let down_range = if range.max.y > rect.max.y {
+            let down_range = if let Some(initial_down_range) = initial_down_range {
                 Some(Rect::new_span(
-                    (initial_down_range.unwrap().min.x, rect.max.y + 1).into(),
-                    (rect.min.x - 1, initial_down_range.unwrap().max.y).into(),
+                    (initial_down_range.min.x, rect.max.y + 1).into(),
+                    (rect.min.x - 1, initial_down_range.max.y).into(),
                 ))
             } else {
                 None
             };
 
-            let up_range = if range.min.y < rect.min.y {
+            let up_range = if let Some(initial_up_range) = initial_up_range {
                 Some(Rect::new_span(
-                    initial_up_range.unwrap().min,
-                    (rect.min.x - 1, initial_up_range.unwrap().max.y).into(),
+                    initial_up_range.min,
+                    (rect.min.x - 1, initial_up_range.max.y).into(),
                 ))
             } else {
                 None
@@ -84,25 +89,25 @@ impl GridController {
         }
 
         // expand right
-        if range.max.x > rect.max.x {
+        if should_expand_right {
             let new_range = Rect::new_span(
                 (rect.max.x + 1, rect.max.y).into(),
                 (range.max.x, rect.max.y).into(),
             );
 
-            let down_range = if range.max.y > rect.max.y {
+            let down_range = if let Some(initial_down_range) = initial_down_range {
                 Some(Rect::new_span(
                     (rect.max.x + 1, rect.max.y + 1).into(),
-                    initial_down_range.unwrap().max,
+                    initial_down_range.max,
                 ))
             } else {
                 None
             };
 
-            let up_range = if range.min.y < rect.min.y {
+            let up_range = if let Some(initial_up_range) = initial_up_range {
                 Some(Rect::new_span(
-                    (rect.max.x + 1, initial_up_range.unwrap().min.y).into(),
-                    (initial_up_range.unwrap().max.x, rect.min.y - 1).into(),
+                    (rect.max.x + 1, initial_up_range.min.y).into(),
+                    (initial_up_range.max.x, rect.min.y - 1).into(),
                 ))
             } else {
                 None
@@ -128,11 +133,11 @@ impl GridController {
         let mut formats = vec![];
         let mut ops = rect
             .y_range()
-            .flat_map(|y| {
+            .map(|y| {
                 let source_row = Rect::new_span((rect.min.x, y).into(), (rect.max.x, y).into());
                 let target_row = Rect::new_span((range.min.x, y).into(), (range.max.x, y).into());
                 let format = self.get_all_cell_formats(sheet_id, source_row);
-                let width = rect.x_range().count();
+                let width = rect.width() as usize;
 
                 range.x_range().step_by(width).for_each(|x| {
                     let new_x = x + width as i64 - 1;
@@ -141,17 +146,14 @@ impl GridController {
                 });
 
                 formats.push(format);
-                let array = self.apply_auto_complete(sheet_id, false, &source_row, &target_row)?;
-                values.extend(array.clone().into_cell_values_vec());
+                let (operations, cell_values) =
+                    self.apply_auto_complete(sheet_id, false, &source_row, &target_row, None)?;
+                values.extend(cell_values);
 
-                Ok::<Vec<Operation>, Error>(self.set_cells_operations(
-                    sheet_id,
-                    target_row.min,
-                    array,
-                ))
+                Ok(operations)
             })
-            .flatten()
-            .collect::<Vec<_>>();
+            .flatten_ok()
+            .collect::<Result<Vec<Operation>>>()?;
 
         if let Some(down_range) = down_range {
             ops.extend(self.expand_up_or_down_from_right(
@@ -192,11 +194,11 @@ impl GridController {
         let mut formats = vec![];
         let mut ops = rect
             .y_range()
-            .flat_map(|y| {
+            .map(|y| {
                 let source_row = Rect::new_span((rect.min.x, y).into(), (rect.max.x, y).into());
                 let target_row = Rect::new_span((range.min.x, y).into(), (range.max.x, y).into());
                 let format = self.get_all_cell_formats(sheet_id, source_row);
-                let width = rect.x_range().count();
+                let width = rect.width() as usize;
 
                 range.x_range().rev().step_by(width).for_each(|x| {
                     let new_x = x - width as i64 + 1;
@@ -205,17 +207,14 @@ impl GridController {
                 });
 
                 formats.extend(format);
-                let array = self.apply_auto_complete(sheet_id, true, &source_row, &target_row)?;
-                values.extend(array.clone().into_cell_values_vec());
+                let (operations, cell_values) =
+                    self.apply_auto_complete(sheet_id, true, &source_row, &target_row, None)?;
+                values.extend(cell_values);
 
-                Ok::<Vec<Operation>, Error>(self.set_cells_operations(
-                    sheet_id,
-                    target_row.min,
-                    array,
-                ))
+                Ok(operations)
             })
-            .flatten()
-            .collect::<Vec<_>>();
+            .flatten_ok()
+            .collect::<Result<Vec<Operation>>>()?;
 
         if let Some(down_range) = down_range {
             ops.extend(self.expand_up_or_down_from_left(
@@ -248,7 +247,6 @@ impl GridController {
         sheet_id: SheetId,
         rect: &Rect,
         range: &Rect,
-        column_values: Option<&Array>,
     ) -> Result<Vec<Operation>> {
         let mut format_ops = vec![];
         let mut values = vec![];
@@ -256,12 +254,12 @@ impl GridController {
         let mut ops = rect
             .x_range()
             .rev()
-            .flat_map(|x| {
+            .map(|x| {
                 let source_col = Rect::new_span((x, rect.min.y).into(), (x, rect.max.y).into());
                 let target_col =
                     Rect::new_span((x, rect.max.y + 1).into(), (x, range.max.y).into());
                 let format = self.get_all_cell_formats(sheet_id, source_col);
-                let height = rect.y_range().count();
+                let height = rect.height() as usize;
 
                 range.y_range().step_by(height).for_each(|y| {
                     let new_y = y + height as i64 - 1;
@@ -270,24 +268,14 @@ impl GridController {
                 });
 
                 formats.extend(format);
+                let (operations, cell_values) =
+                    self.apply_auto_complete(sheet_id, false, &source_col, &target_col, None)?;
+                values.extend(cell_values);
 
-                let array = if column_values.is_some() {
-                    column_values.unwrap().clone()
-                } else {
-                    self.apply_auto_complete(sheet_id, false, &source_col, &target_col)
-                        .unwrap()
-                };
-
-                values.extend(array.clone().into_cell_values_vec());
-
-                Ok::<Vec<Operation>, Error>(self.set_cells_operations(
-                    sheet_id,
-                    target_col.min,
-                    array,
-                ))
+                Ok(operations)
             })
-            .flatten()
-            .collect::<Vec<_>>();
+            .flatten_ok()
+            .collect::<Result<Vec<Operation>>>()?;
 
         ops.extend(format_ops);
         Ok(ops)
@@ -304,12 +292,12 @@ impl GridController {
         let mut formats = vec![];
         let mut ops = rect
             .x_range()
-            .flat_map(|x| {
+            .map(|x| {
                 let source_col = Rect::new_span((x, rect.min.y).into(), (x, rect.max.y).into());
                 let target_col =
                     Rect::new_span((x, rect.min.y - 1).into(), (x, range.min.y).into());
                 let format = self.get_all_cell_formats(sheet_id, source_col);
-                let height = rect.y_range().count();
+                let height = rect.height() as usize;
 
                 range.y_range().rev().step_by(height).for_each(|y| {
                     let new_y = y - height as i64 + 1;
@@ -318,17 +306,14 @@ impl GridController {
                 });
 
                 formats.extend(format);
-                let array = self.apply_auto_complete(sheet_id, true, &source_col, &target_col)?;
-                values.extend(array.clone().into_cell_values_vec());
+                let (operations, cell_values) =
+                    self.apply_auto_complete(sheet_id, true, &source_col, &target_col, None)?;
+                values.extend(cell_values);
 
-                Ok::<Vec<Operation>, Error>(self.set_cells_operations(
-                    sheet_id,
-                    target_col.min,
-                    array,
-                ))
+                Ok(operations)
             })
-            .flatten()
-            .collect::<Vec<_>>();
+            .flatten_ok()
+            .collect::<Result<Vec<Operation>>>()?;
 
         ops.extend(format_ops);
         Ok(ops)
@@ -349,23 +334,25 @@ impl GridController {
         let mut ops = range
             .x_range()
             .enumerate()
-            .flat_map(|(index, x)| {
+            .map(|(index, x)| {
                 let target_col = Rect::new_span((x, range.min.y).into(), (x, range.max.y).into());
 
                 let vals = (0..height)
                     .map(|i| {
                         let array_index = (index as i64 + (i as i64 * width)) as usize;
-                        values.get(array_index as usize).unwrap().clone()
+                        // TODO(ddimaria): remove this clone
+                        values
+                            .get(array_index as usize)
+                            .unwrap_or(&CellValue::Blank)
+                            .clone()
                     })
                     .collect::<Vec<_>>();
 
                 let format_x = rect.min.x + (x - rect.min.x) % rect.width() as i64;
                 let format_source_rect =
                     Rect::new_span((format_x, rect.min.y).into(), (format_x, rect.max.y).into());
-
                 let format = self.get_all_cell_formats(sheet_id, format_source_rect);
 
-                // println!("format: {:?}", &format);
                 range.y_range().step_by(height as usize).for_each(|y| {
                     let new_y = if direction == ExpandDirection::Down {
                         y + height as i64 - 1
@@ -376,31 +363,25 @@ impl GridController {
                     format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
                 });
 
-                let series = find_auto_complete(SeriesOptions {
-                    series: vals,
-                    spaces: (target_col.width() * target_col.height()) as i32,
-                    negative: direction == ExpandDirection::Up,
-                });
-                let array_values = Array::new_row_major(target_col.size(), series.into())
-                    .map_err(|e| {
-                        anyhow!("Could not create array of size {:?}: {:?}", range.size(), e)
-                    })
-                    .unwrap();
-
-                Ok::<Vec<Operation>, Error>(self.set_cells_operations(
+                let (operations, _) = self.apply_auto_complete(
                     sheet_id,
-                    target_col.min,
-                    array_values,
-                ))
+                    direction == ExpandDirection::Up,
+                    &target_col,
+                    &target_col,
+                    Some(vals),
+                )?;
+
+                Ok(operations)
             })
-            .flatten()
-            .collect::<Vec<_>>();
+            .flatten_ok()
+            .collect::<Result<Vec<Operation>>>()?;
 
         ops.extend(format_ops);
 
         Ok(ops)
     }
 
+    // TODO(ddimaria): this fn is sufficiently similar to have some shared code
     pub fn expand_up_or_down_from_left(
         &mut self,
         sheet_id: SheetId,
@@ -412,20 +393,20 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let mut format_ops = vec![];
         let height = values.len() as i64 / width;
-        println!("values: {:?}", &values);
 
         let mut ops = range
             .x_range()
             // ** CHANGE **
             .rev()
             .enumerate()
-            .flat_map(|(index, x)| {
+            .map(|(index, x)| {
                 let target_col = Rect::new_span((x, range.min.y).into(), (x, range.max.y).into());
 
                 let vals = (0..height)
                     .map(|i| {
                         // ** CHANGE **
                         let array_index = (i as i64 * width) + width - index as i64 - 1;
+                        // TODO(ddimaria): remove this clone
                         values
                             .get(array_index as usize)
                             .unwrap_or(&CellValue::Blank)
@@ -450,25 +431,18 @@ impl GridController {
                     format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
                 });
 
-                let series = find_auto_complete(SeriesOptions {
-                    series: vals,
-                    spaces: (target_col.width() * target_col.height()) as i32,
-                    negative: direction == ExpandDirection::Up,
-                });
-                let array_values = Array::new_row_major(target_col.size(), series.into())
-                    .map_err(|e| {
-                        anyhow!("Could not create array of size {:?}: {:?}", range.size(), e)
-                    })
-                    .unwrap();
-
-                Ok::<Vec<Operation>, Error>(self.set_cells_operations(
+                let (operations, _) = self.apply_auto_complete(
                     sheet_id,
-                    target_col.min,
-                    array_values,
-                ))
+                    direction == ExpandDirection::Up,
+                    &target_col,
+                    &target_col,
+                    Some(vals),
+                )?;
+
+                Ok(operations)
             })
-            .flatten()
-            .collect::<Vec<_>>();
+            .flatten_ok()
+            .collect::<Result<Vec<Operation>>>()?;
 
         ops.extend(format_ops);
 
@@ -481,47 +455,32 @@ impl GridController {
         negative: bool,
         rect: &Rect,
         range: &Rect,
-    ) -> Result<Array> {
+        cell_values: Option<Vec<CellValue>>,
+    ) -> Result<(Vec<Operation>, Vec<CellValue>)> {
         let sheet = self.sheet(sheet_id);
-        let selection_values = cell_values_in_rect(&rect, &sheet)?;
-        let series = find_auto_complete(SeriesOptions {
-            series: selection_values
+        let values = cell_values.unwrap_or_else(|| {
+            cell_values_in_rect(&rect, &sheet)
+                // TODO(ddimaria): remove this unwrap
+                .unwrap()
                 .clone()
                 .into_cell_values_vec()
                 .into_iter()
-                .collect::<Vec<CellValue>>(),
+                .collect::<Vec<CellValue>>()
+        });
+
+        let series = find_auto_complete(SeriesOptions {
+            series: values,
             spaces: (range.width() * range.height()) as i32,
             negative,
         });
 
-        Array::new_row_major(range.size(), series.into())
-            .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", range.size(), e))
-    }
-
-    pub fn apply_values(
-        &mut self,
-        sheet_id: SheetId,
-        negative: bool,
-        rect: &Rect,
-        range: &Rect,
-    ) -> Result<Vec<Operation>> {
-        let sheet = self.sheet(sheet_id);
-        let selection_values = cell_values_in_rect(&rect, &sheet)?;
-
-        let series = find_auto_complete(SeriesOptions {
-            series: selection_values
-                .clone()
-                .into_cell_values_vec()
-                .into_iter()
-                .collect::<Vec<CellValue>>(),
-            spaces: (range.width() * range.height()) as i32,
-            negative,
-        });
-
-        let array = Array::new_row_major(range.size(), series.into())
+        // TODO(ddimaria): remove this clone
+        let array = Array::new_row_major(range.size(), series.clone().into())
             .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", range.size(), e))?;
 
-        Ok(self.set_cells_operations(sheet_id, range.min, array))
+        let ops = self.set_cells_operations(sheet_id, range.min, array);
+
+        Ok((ops, series))
     }
 }
 
