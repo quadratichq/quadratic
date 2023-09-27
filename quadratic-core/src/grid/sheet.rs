@@ -13,10 +13,7 @@ use super::code::CodeCellValue;
 use super::column::Column;
 use super::formatting::{BoolSummary, CellFmtAttr};
 use super::ids::{CellRef, ColumnId, IdMap, RegionRef, RowId, SheetId};
-use super::js_types::{
-    CellFormatSummary, FormattingSummary, JsRenderBorder, JsRenderCell, JsRenderCodeCell,
-    JsRenderCodeCellState, JsRenderFill,
-};
+use super::js_types::{CellFormatSummary, FormattingSummary};
 use super::offsets::Offsets;
 use super::response::{GetIdResponse, SetCellResponse};
 use super::NumericFormatKind;

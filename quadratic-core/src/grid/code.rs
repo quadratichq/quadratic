@@ -34,7 +34,6 @@ impl CodeCellValue {
 
 #[derive(Serialize, Deserialize, Display, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[wasm_bindgen]
-#[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum CodeCellLanguage {
     Python,

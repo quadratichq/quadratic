@@ -11,7 +11,7 @@ impl GridController {
         let mut cells_to_compute = updated_cells.clone(); // start with all updated cells
 
         while let Some(cell) = cells_to_compute.pop() {
-            // print!("Computing cell - {} \n", cell);
+            print!("Computing cell - {} \n", cell);
             // find which cells have formulas. Run the formulas and update the cells.
             // add the updated cells to the cells_to_compute
             // TODO implement this

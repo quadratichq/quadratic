@@ -18,5 +18,11 @@
     "downlevelIteration": true
   },
   "include": ["src"],
-  "exclude": ["node_modules/*", "src/grid/controller/runners/*", "quadratic-core/*", "quadratic-api/*"]
+  "exclude": [
+    "node_modules/*",
+    "src/grid/controller/runners/*",
+    "quadratic-core/*",
+    "quadratic-api/*",
+    "src/quadratic-core/*"
+  ]
 }
