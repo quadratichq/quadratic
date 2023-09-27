@@ -79,10 +79,7 @@ pub struct SeriesOptions {
     pub spaces: i32,
     pub negative: bool,
 }
-// a s d f
-// f d s a
-// f d s a f d
-// s a f d s a
+
 pub fn copy_series(options: SeriesOptions) -> Vec<CellValue> {
     let SeriesOptions {
         series,
@@ -91,6 +88,7 @@ pub fn copy_series(options: SeriesOptions) -> Vec<CellValue> {
     } = options;
 
     if negative {
+        // TODO(ddimaria): improve this
         let mut count = 0;
         let mut output = vec![];
 
@@ -224,65 +222,72 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
         DAYS_FULL_UPPER.into(),
     ];
 
-    let mut possible_text_series = text_series
-        .iter()
-        .map(|_| vec![])
-        .collect::<Vec<Vec<CellValue>>>();
+    let mut possible_text_series = text_series.iter().map(|_| Some(vec![])).collect::<Vec<_>>();
 
     series.iter().for_each(|cell| {
         text_series.iter().enumerate().for_each(|(i, text_series)| {
             let cell_value = cell.to_string();
 
-            if !is_series_key(&cell_value, text_series) {
-                possible_text_series[i] = vec![];
-            } else if possible_text_series[i].len() == 0 {
-                possible_text_series[i] = vec![cell.to_owned()];
-            } else if is_series_next_key(
-                &cell_value,
-                &possible_text_series[i]
-                    .iter()
-                    .map(|s| match s {
-                        CellValue::Text(s) => s,
-                        _ => "",
-                    })
-                    .collect(),
-                text_series,
-            )
-            .unwrap()
-            {
-                possible_text_series[i].push(cell.to_owned());
-            } else {
-                possible_text_series[i] = vec![];
+            if let Some(mut possible) = possible_text_series[i].to_owned() {
+                if !is_series_key(&cell_value, text_series) {
+                    possible_text_series[i] = None;
+                } else if possible.len() == 0 {
+                    possible_text_series[i] = Some(vec![cell.to_owned()]);
+                } else if is_series_next_key(
+                    &cell_value,
+                    &possible
+                        .iter()
+                        .map(|s| match s {
+                            CellValue::Text(s) => s,
+                            _ => "",
+                        })
+                        .collect(),
+                    text_series,
+                )
+                .unwrap()
+                {
+                    possible.push(cell.to_owned());
+                    possible_text_series[i] = Some(possible);
+                } else {
+                    possible_text_series[i] = None;
+                }
             }
         });
     });
 
+    // // we didn't find at least 2 adjacent values in a series
+    // if possible_text_series.len() <= 1 {
+    //     return copy_series(options);
+    // }
+
     for i in 0..possible_text_series.len() {
         let entry = &possible_text_series[i];
 
-        if entry.len() > 0 {
-            let mut current = entry[entry.len() - 1].to_owned();
+        if let Some(entry) = entry {
+            if entry.len() > 0 {
+                let mut current = entry[entry.len() - 1].to_owned();
 
-            if negative {
-                current = entry[0].to_owned();
+                if negative {
+                    current = entry[0].to_owned();
+                }
+
+                let mut cell_value = match current {
+                    CellValue::Text(current) => current,
+                    _ => "".into(),
+                };
+
+                (0..spaces).for_each(|_| {
+                    let next = get_series_next_key(&cell_value, &text_series[i], negative).unwrap();
+                    results.push(CellValue::Text(next.to_owned()));
+                    cell_value = next;
+                });
+
+                if negative {
+                    results.reverse();
+                }
+
+                return results;
             }
-
-            let mut cell_value = match current {
-                CellValue::Text(current) => current,
-                _ => "".into(),
-            };
-
-            (0..spaces).for_each(|_| {
-                let next = get_series_next_key(&cell_value, &text_series[i], negative).unwrap();
-                results.push(CellValue::Text(next.to_owned()));
-                cell_value = next;
-            });
-
-            if negative {
-                results.reverse();
-            }
-
-            return results;
         }
     }
 

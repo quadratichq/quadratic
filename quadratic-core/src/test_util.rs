@@ -88,9 +88,11 @@ pub fn assert_cell_format_bold(
     let has_bold = sheet.get_formatting_value::<Bold>(Pos { x, y }).is_some();
     assert!(
         has_bold == expect_bold,
-        "Cell at ({}, {}) is not bold",
+        "Cell at ({}, {}) should be bold={}, but is actually bold={}",
         x,
-        y
+        y,
+        expect_bold,
+        has_bold
     );
 }
 

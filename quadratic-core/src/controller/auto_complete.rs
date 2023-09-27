@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Error, Result};
 
 use super::{
     formatting::CellFmtArray, operations::Operation, transactions::TransactionSummary,
@@ -12,7 +12,7 @@ use crate::{
     Array, CellValue, Pos, Rect,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(PartialEq)]
 pub enum ExpandDirection {
     Up,
     Down,
@@ -29,7 +29,9 @@ impl GridController {
         shrink_horizontal: Option<i64>,
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
-        let mut ops = vec![];
+        let mut operations = vec![];
+        let mut initial_down_range: Option<Rect> = None;
+        let mut initial_up_range: Option<Rect> = None;
 
         // expand up
         if range.min.y < rect.min.y {
@@ -37,8 +39,9 @@ impl GridController {
                 (rect.min.x, rect.min.y - 1).into(),
                 (shrink_horizontal.unwrap_or(rect.max.x), range.min.y).into(),
             );
-
-            ops.extend(self.expand_height(sheet_id, ExpandDirection::Up, &rect, &new_range)?);
+            let ops = self.expand_up(sheet_id, &rect, &new_range)?;
+            operations.extend(ops);
+            initial_up_range = Some(range);
         }
 
         // expand down
@@ -47,78 +50,282 @@ impl GridController {
                 (rect.min.x, rect.max.y + 1).into(),
                 (shrink_horizontal.unwrap_or(rect.max.x), range.max.y).into(),
             );
-
-            ops.extend(self.expand_height(sheet_id, ExpandDirection::Down, &rect, &new_range)?);
+            let ops = self.expand_down(sheet_id, &rect, &new_range, None)?;
+            operations.extend(ops);
+            initial_down_range = Some(range);
         }
-
         // expand left
         if range.min.x < rect.min.x {
-            let reverse = range.max.y < rect.max.y;
-            let min_y = if !reverse { range.min.y } else { range.min.y };
-            let max_y = if !reverse { range.max.y } else { rect.max.y };
-            let new_range =
-                Rect::new_span((rect.min.x - 1, min_y).into(), (range.min.x, max_y).into());
+            let new_range = Rect::new_span(
+                (range.min.x, rect.min.y).into(),
+                (rect.min.x - 1, rect.max.y).into(),
+            );
 
-            ops.extend(self.expand_width(sheet_id, ExpandDirection::Left, &rect, &new_range)?);
+            let down_range = if range.max.y > rect.max.y {
+                Some(Rect::new_span(
+                    (initial_down_range.unwrap().min.x, rect.max.y + 1).into(),
+                    (rect.min.x - 1, initial_down_range.unwrap().max.y).into(),
+                ))
+            } else {
+                None
+            };
+
+            let up_range = if range.min.y < rect.min.y {
+                Some(Rect::new_span(
+                    initial_up_range.unwrap().min,
+                    (rect.min.x - 1, initial_up_range.unwrap().max.y).into(),
+                ))
+            } else {
+                None
+            };
+
+            let ops = self.expand_left(sheet_id, &rect, &new_range, down_range, up_range)?;
+            operations.extend(ops);
         }
 
         // expand right
         if range.max.x > rect.max.x {
-            let reverse = range.min.y < rect.min.y;
-            let min_y = if !reverse { rect.min.y } else { rect.max.y };
-            let max_y = if !reverse { range.max.y } else { range.min.y };
-            let new_range =
-                Rect::new_span((rect.max.x + 1, min_y).into(), (range.max.x, max_y).into());
+            let new_range = Rect::new_span(
+                (rect.max.x + 1, rect.max.y).into(),
+                (range.max.x, rect.max.y).into(),
+            );
 
-            ops.extend(self.expand_width(sheet_id, ExpandDirection::Right, &rect, &new_range)?);
+            let down_range = if range.max.y > rect.max.y {
+                Some(Rect::new_span(
+                    (rect.max.x + 1, rect.max.y + 1).into(),
+                    initial_down_range.unwrap().max,
+                ))
+            } else {
+                None
+            };
+
+            let up_range = if range.min.y < rect.min.y {
+                Some(Rect::new_span(
+                    (rect.max.x + 1, initial_up_range.unwrap().min.y).into(),
+                    (initial_up_range.unwrap().max.x, rect.min.y - 1).into(),
+                ))
+            } else {
+                None
+            };
+
+            let ops = self.expand_right(sheet_id, &rect, &new_range, down_range, up_range)?;
+            operations.extend(ops);
         }
 
-        Ok(self.transact_forward(ops, cursor))
+        Ok(self.transact_forward(operations, cursor))
     }
 
-    // Apply the block of formats below the selection in increments of the
-    // selected rectangle (i.e. if the selection is 2 x 2 and the range is
-    // to 10 height, apply 4 blocks of format).
-    pub fn expand_height(
+    pub fn expand_right(
         &mut self,
         sheet_id: SheetId,
-        direction: ExpandDirection,
+        rect: &Rect,
+        range: &Rect,
+        down_range: Option<Rect>,
+        up_range: Option<Rect>,
+    ) -> Result<Vec<Operation>> {
+        let mut format_ops = vec![];
+        let mut values = vec![];
+        let mut formats = vec![];
+        let mut ops = rect
+            .y_range()
+            .flat_map(|y| {
+                let source_row = Rect::new_span((rect.min.x, y).into(), (rect.max.x, y).into());
+                let target_row = Rect::new_span((range.min.x, y).into(), (range.max.x, y).into());
+                let format = self.get_all_cell_formats(sheet_id, source_row);
+                let width = rect.x_range().count();
+
+                range.x_range().step_by(width).for_each(|x| {
+                    let new_x = x + width as i64 - 1;
+                    let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
+                    format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
+                });
+
+                formats.push(format);
+                let array = self.apply_auto_complete(sheet_id, false, &source_row, &target_row)?;
+                values.extend(array.clone().into_cell_values_vec());
+
+                Ok::<Vec<Operation>, Error>(self.set_cells_operations(
+                    sheet_id,
+                    target_row.min,
+                    array,
+                ))
+            })
+            .flatten()
+            .collect::<Vec<_>>();
+
+        if let Some(down_range) = down_range {
+            ops.extend(self.expand_up_or_down_from_right(
+                sheet_id,
+                rect,
+                &down_range,
+                &values,
+                range.width() as i64,
+                ExpandDirection::Down,
+            )?);
+        }
+
+        if let Some(up_range) = up_range {
+            ops.extend(self.expand_up_or_down_from_right(
+                sheet_id,
+                rect,
+                &up_range,
+                &values,
+                range.width() as i64,
+                ExpandDirection::Up,
+            )?);
+        }
+
+        ops.extend(format_ops);
+        Ok(ops)
+    }
+
+    pub fn expand_left(
+        &mut self,
+        sheet_id: SheetId,
+        rect: &Rect,
+        range: &Rect,
+        down_range: Option<Rect>,
+        up_range: Option<Rect>,
+    ) -> Result<Vec<Operation>> {
+        let mut format_ops = vec![];
+        let mut values = vec![];
+        let mut formats = vec![];
+        let mut ops = rect
+            .y_range()
+            .flat_map(|y| {
+                let source_row = Rect::new_span((rect.min.x, y).into(), (rect.max.x, y).into());
+                let target_row = Rect::new_span((range.min.x, y).into(), (range.max.x, y).into());
+                let format = self.get_all_cell_formats(sheet_id, source_row);
+                let width = rect.x_range().count();
+
+                range.x_range().rev().step_by(width).for_each(|x| {
+                    let new_x = x - width as i64 + 1;
+                    let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
+                    format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
+                });
+
+                formats.extend(format);
+                let array = self.apply_auto_complete(sheet_id, true, &source_row, &target_row)?;
+                values.extend(array.clone().into_cell_values_vec());
+
+                Ok::<Vec<Operation>, Error>(self.set_cells_operations(
+                    sheet_id,
+                    target_row.min,
+                    array,
+                ))
+            })
+            .flatten()
+            .collect::<Vec<_>>();
+
+        if let Some(down_range) = down_range {
+            ops.extend(self.expand_up_or_down_from_left(
+                sheet_id,
+                rect,
+                &down_range,
+                &values,
+                range.width() as i64,
+                ExpandDirection::Down,
+            )?);
+        }
+
+        if let Some(up_range) = up_range {
+            ops.extend(self.expand_up_or_down_from_left(
+                sheet_id,
+                rect,
+                &up_range,
+                &values,
+                range.width() as i64,
+                ExpandDirection::Up,
+            )?);
+        }
+
+        ops.extend(format_ops);
+        Ok(ops)
+    }
+
+    pub fn expand_down(
+        &mut self,
+        sheet_id: SheetId,
+        rect: &Rect,
+        range: &Rect,
+        column_values: Option<&Array>,
+    ) -> Result<Vec<Operation>> {
+        let mut format_ops = vec![];
+        let mut values = vec![];
+        let mut formats = vec![];
+        let mut ops = rect
+            .x_range()
+            .rev()
+            .flat_map(|x| {
+                let source_col = Rect::new_span((x, rect.min.y).into(), (x, rect.max.y).into());
+                let target_col =
+                    Rect::new_span((x, rect.max.y + 1).into(), (x, range.max.y).into());
+                let format = self.get_all_cell_formats(sheet_id, source_col);
+                let height = rect.y_range().count();
+
+                range.y_range().step_by(height).for_each(|y| {
+                    let new_y = y + height as i64 - 1;
+                    let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
+                    format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
+                });
+
+                formats.extend(format);
+
+                let array = if column_values.is_some() {
+                    column_values.unwrap().clone()
+                } else {
+                    self.apply_auto_complete(sheet_id, false, &source_col, &target_col)
+                        .unwrap()
+                };
+
+                values.extend(array.clone().into_cell_values_vec());
+
+                Ok::<Vec<Operation>, Error>(self.set_cells_operations(
+                    sheet_id,
+                    target_col.min,
+                    array,
+                ))
+            })
+            .flatten()
+            .collect::<Vec<_>>();
+
+        ops.extend(format_ops);
+        Ok(ops)
+    }
+
+    pub fn expand_up(
+        &mut self,
+        sheet_id: SheetId,
         rect: &Rect,
         range: &Rect,
     ) -> Result<Vec<Operation>> {
-        // get all values in the rect to set all values in the range
         let mut format_ops = vec![];
-        let negative = direction == ExpandDirection::Up;
-
+        let mut values = vec![];
+        let mut formats = vec![];
         let mut ops = rect
             .x_range()
             .flat_map(|x| {
                 let source_col = Rect::new_span((x, rect.min.y).into(), (x, rect.max.y).into());
-                let target_col = if !negative {
-                    Rect::new_span((x, rect.max.y + 1).into(), (x, range.max.y).into())
-                } else {
-                    Rect::new_span((x, rect.min.y - 1).into(), (x, range.min.y).into())
-                };
-                let formats = self.get_all_cell_formats(sheet_id, source_col);
+                let target_col =
+                    Rect::new_span((x, rect.min.y - 1).into(), (x, range.min.y).into());
+                let format = self.get_all_cell_formats(sheet_id, source_col);
                 let height = rect.y_range().count();
 
-                if !negative {
-                    range.y_range().step_by(height).for_each(|y| {
-                        let new_y = y + height as i64 - 1;
-                        let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
-                        format_ops
-                            .extend(apply_formats(self.region(sheet_id, format_rect), &formats));
-                    });
-                } else {
-                    range.y_range().rev().step_by(height).for_each(|y| {
-                        let new_y = y - height as i64 + 1;
-                        let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
-                        format_ops
-                            .extend(apply_formats(self.region(sheet_id, format_rect), &formats));
-                    });
-                }
+                range.y_range().rev().step_by(height).for_each(|y| {
+                    let new_y = y - height as i64 + 1;
+                    let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
+                    format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
+                });
 
-                self.apply_values(sheet_id, negative, &source_col, &target_col)
+                formats.extend(format);
+                let array = self.apply_auto_complete(sheet_id, true, &source_col, &target_col)?;
+                values.extend(array.clone().into_cell_values_vec());
+
+                Ok::<Vec<Operation>, Error>(self.set_cells_operations(
+                    sheet_id,
+                    target_col.min,
+                    array,
+                ))
             })
             .flatten()
             .collect::<Vec<_>>();
@@ -127,71 +334,168 @@ impl GridController {
         Ok(ops)
     }
 
-    // Apply the column of formats to the right of the selection in
-    // increments of the column (i.e. if the selection is 2 x 2 and
-    // the range is to 10 wide, apply 4 columns of format).
-    pub fn expand_width(
+    pub fn expand_up_or_down_from_right(
         &mut self,
         sheet_id: SheetId,
-        direction: ExpandDirection,
         rect: &Rect,
         range: &Rect,
+        values: &Vec<CellValue>,
+        width: i64,
+        direction: ExpandDirection,
     ) -> Result<Vec<Operation>> {
-        // get all values in the rect to set all values in the range
         let mut format_ops = vec![];
-        let negative = direction == ExpandDirection::Left;
-        let reverse = range.min.y < rect.min.y;
-        let height = rect.height() as i64;
+        let height = values.len() as i64 / width;
 
         let mut ops = range
-            .y_range()
-            .rev()
-            .flat_map(|y| {
-                let new_y = if !reverse {
-                    ((y - range.min.y + height) % height) + rect.min.y
-                } else {
-                    (y - rect.max.y - height) % height + rect.max.y
-                };
+            .x_range()
+            .enumerate()
+            .flat_map(|(index, x)| {
+                let target_col = Rect::new_span((x, range.min.y).into(), (x, range.max.y).into());
 
-                let source_row = if !reverse {
-                    Rect::new_span((rect.min.x, new_y).into(), (rect.max.x, new_y).into())
-                } else {
-                    Rect::new_span((rect.min.x, new_y).into(), (rect.max.x, new_y).into())
-                };
+                let vals = (0..height)
+                    .map(|i| {
+                        let array_index = (index as i64 + (i as i64 * width)) as usize;
+                        values.get(array_index as usize).unwrap().clone()
+                    })
+                    .collect::<Vec<_>>();
 
-                let target_row = if !negative {
-                    Rect::new_span((rect.max.x + 1, y).into(), (range.max.x, y).into())
-                } else {
-                    Rect::new_span((rect.min.x - 1, y).into(), (range.min.x, y).into())
-                };
+                let format_x = rect.min.x + (x - rect.min.x) % rect.width() as i64;
+                let format_source_rect =
+                    Rect::new_span((format_x, rect.min.y).into(), (format_x, rect.max.y).into());
 
-                let formats = self.get_all_cell_formats(sheet_id, source_row);
-                let width = rect.x_range().count();
+                let format = self.get_all_cell_formats(sheet_id, format_source_rect);
 
-                if !negative {
-                    range.x_range().step_by(width).for_each(|x| {
-                        let new_x = x + width as i64 - 1;
-                        let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
-                        format_ops
-                            .extend(apply_formats(self.region(sheet_id, format_rect), &formats));
-                    });
-                } else {
-                    // formats.reverse();
-                    range.x_range().rev().step_by(width).for_each(|x| {
-                        let new_x = x - width as i64 + 1;
-                        let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
-                        format_ops
-                            .extend(apply_formats(self.region(sheet_id, format_rect), &formats));
-                    });
-                }
+                // println!("format: {:?}", &format);
+                range.y_range().step_by(height as usize).for_each(|y| {
+                    let new_y = if direction == ExpandDirection::Down {
+                        y + height as i64 - 1
+                    } else {
+                        y - height as i64 - 1
+                    };
+                    let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
+                    format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
+                });
 
-                self.apply_values(sheet_id, negative, &source_row, &target_row)
+                let series = find_auto_complete(SeriesOptions {
+                    series: vals,
+                    spaces: (target_col.width() * target_col.height()) as i32,
+                    negative: direction == ExpandDirection::Up,
+                });
+                let array_values = Array::new_row_major(target_col.size(), series.into())
+                    .map_err(|e| {
+                        anyhow!("Could not create array of size {:?}: {:?}", range.size(), e)
+                    })
+                    .unwrap();
+
+                Ok::<Vec<Operation>, Error>(self.set_cells_operations(
+                    sheet_id,
+                    target_col.min,
+                    array_values,
+                ))
             })
             .flatten()
             .collect::<Vec<_>>();
 
         ops.extend(format_ops);
+
         Ok(ops)
+    }
+
+    pub fn expand_up_or_down_from_left(
+        &mut self,
+        sheet_id: SheetId,
+        rect: &Rect,
+        range: &Rect,
+        values: &Vec<CellValue>,
+        width: i64,
+        direction: ExpandDirection,
+    ) -> Result<Vec<Operation>> {
+        let mut format_ops = vec![];
+        let height = values.len() as i64 / width;
+        println!("values: {:?}", &values);
+
+        let mut ops = range
+            .x_range()
+            // ** CHANGE **
+            .rev()
+            .enumerate()
+            .flat_map(|(index, x)| {
+                let target_col = Rect::new_span((x, range.min.y).into(), (x, range.max.y).into());
+
+                let vals = (0..height)
+                    .map(|i| {
+                        // ** CHANGE **
+                        let array_index = (i as i64 * width) + width - index as i64 - 1;
+                        values
+                            .get(array_index as usize)
+                            .unwrap_or(&CellValue::Blank)
+                            .clone()
+                    })
+                    .collect::<Vec<_>>();
+
+                // 2 - (1 - 2) % 4
+                // ** CHANGE **
+                let format_x = rect.max.x - (index as i64 % rect.width() as i64);
+                let format_source_rect =
+                    Rect::new_span((format_x, rect.min.y).into(), (format_x, rect.max.y).into());
+                let format = self.get_all_cell_formats(sheet_id, format_source_rect);
+
+                range.y_range().step_by(height as usize).for_each(|y| {
+                    let new_y = if direction == ExpandDirection::Down {
+                        y + height as i64 - 1
+                    } else {
+                        y - height as i64 - 1
+                    };
+                    let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
+                    format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
+                });
+
+                let series = find_auto_complete(SeriesOptions {
+                    series: vals,
+                    spaces: (target_col.width() * target_col.height()) as i32,
+                    negative: direction == ExpandDirection::Up,
+                });
+                let array_values = Array::new_row_major(target_col.size(), series.into())
+                    .map_err(|e| {
+                        anyhow!("Could not create array of size {:?}: {:?}", range.size(), e)
+                    })
+                    .unwrap();
+
+                Ok::<Vec<Operation>, Error>(self.set_cells_operations(
+                    sheet_id,
+                    target_col.min,
+                    array_values,
+                ))
+            })
+            .flatten()
+            .collect::<Vec<_>>();
+
+        ops.extend(format_ops);
+
+        Ok(ops)
+    }
+
+    pub fn apply_auto_complete(
+        &mut self,
+        sheet_id: SheetId,
+        negative: bool,
+        rect: &Rect,
+        range: &Rect,
+    ) -> Result<Array> {
+        let sheet = self.sheet(sheet_id);
+        let selection_values = cell_values_in_rect(&rect, &sheet)?;
+        let series = find_auto_complete(SeriesOptions {
+            series: selection_values
+                .clone()
+                .into_cell_values_vec()
+                .into_iter()
+                .collect::<Vec<CellValue>>(),
+            spaces: (range.width() * range.height()) as i32,
+            negative,
+        });
+
+        Array::new_row_major(range.size(), series.into())
+            .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", range.size(), e))
     }
 
     pub fn apply_values(
@@ -203,6 +507,7 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let sheet = self.sheet(sheet_id);
         let selection_values = cell_values_in_rect(&rect, &sheet)?;
+
         let series = find_auto_complete(SeriesOptions {
             series: selection_values
                 .clone()
@@ -263,7 +568,7 @@ mod tests {
     use super::*;
     use crate::{
         array,
-        test_util::{assert_cell_format_bold_row, assert_cell_value_row, table},
+        test_util::{assert_cell_format_bold_row, assert_cell_value, assert_cell_value_row, table},
     };
 
     fn test_setup_rect(rect: &Rect) -> (GridController, SheetId) {
@@ -273,11 +578,18 @@ mod tests {
         test_setup(rect, &vals, &bolds)
     }
 
-    fn test_setup_rect_series(rect: &Rect) -> (GridController, SheetId) {
+    fn test_setup_rect_horiz_series(rect: &Rect) -> (GridController, SheetId) {
         let vals = vec![
             "8", "9", "10", "11", "10", "9", "8", "7", "Mon", "Tue", "Wed", "Thu", "May", "Jun",
             "Jul", "Aug", "32", "64", "128", "256",
         ];
+        let bolds = vec![];
+
+        test_setup(rect, &vals, &bolds)
+    }
+
+    fn test_setup_rect_vert_series(rect: &Rect) -> (GridController, SheetId) {
+        let vals = vec!["1", "2", "3"];
         let bolds = vec![];
 
         test_setup(rect, &vals, &bolds)
@@ -336,7 +648,11 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        table(grid.clone(), sheet_id, &range);
+        table(
+            grid.clone(),
+            sheet_id,
+            &Rect::new_span(Pos { x: -3, y: 1 }, Pos { x: 5, y: 2 }),
+        );
 
         let expected = vec!["g", "a", "h", "x", "g", "a", "h", "x", "g"];
         let expected_bold = vec![true, true, false, false, true, true, false, false, true];
@@ -372,7 +688,7 @@ mod tests {
     #[test]
     fn test_expand_up_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
-        let range: Rect = Rect::new_span(Pos { x: 2, y: -7 }, Pos { x: 5, y: -7 });
+        let range: Rect = Rect::new_span(Pos { x: 2, y: -7 }, Pos { x: 5, y: 2 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
@@ -398,13 +714,41 @@ mod tests {
     }
 
     #[test]
-    fn test_expand_down_and_right() {
-        let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
-        let range: Rect = Rect::new_span(selected.min, Pos { x: 10, y: 10 });
+    fn test_expand_down_only() {
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
+        let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 10 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        // table(grid.clone(), sheet_id, &range);
+        table(grid.clone(), sheet_id, &range);
+
+        let expected = vec!["a", "h", "x", "g"];
+        let expected_bold = vec![true, false, false, true];
+        assert_cell_value_row(&grid, sheet_id, 2, 5, 1, expected.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 5, 1, expected_bold.clone());
+        assert_cell_value_row(&grid, sheet_id, 2, 5, 5, expected.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 5, 5, expected_bold.clone());
+        assert_cell_value_row(&grid, sheet_id, 2, 5, 9, expected.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 5, 9, expected_bold.clone());
+
+        let expected = vec!["f", "z", "r", "b"];
+        let expected_bold = vec![false, true, true, false];
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 5, 2, expected_bold.clone());
+        assert_cell_value_row(&grid, sheet_id, 2, 5, 2, expected.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 5, 6, expected_bold.clone());
+        assert_cell_value_row(&grid, sheet_id, 2, 5, 6, expected.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 5, 10, expected_bold.clone());
+        assert_cell_value_row(&grid, sheet_id, 2, 5, 10, expected.clone());
+    }
+
+    #[test]
+    fn test_expand_down_and_right() {
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
+        let range: Rect = Rect::new_span(selected.min, Pos { x: 14, y: 10 });
+        let (mut grid, sheet_id) = test_setup_rect(&selected);
+        grid.expand(sheet_id, selected, range, None, None).unwrap();
+
+        table(grid.clone(), sheet_id, &range);
 
         let expected = vec!["a", "h", "x", "g", "a", "h", "x", "g", "a"];
         let expected_bold = vec![true, false, false, true, true, false, false, true, true];
@@ -422,7 +766,11 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        table(grid.clone(), sheet_id, &range);
+        table(
+            grid.clone(),
+            sheet_id,
+            &Rect::new_span(Pos { x: 2, y: 3 }, Pos { x: 10, y: -7 }),
+        );
 
         let expected = vec!["f", "z", "r", "b", "f", "z", "r", "b", "f"];
         let expected_bold = vec![false, true, true, false, false, true, true, false, false];
@@ -440,7 +788,11 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        table(grid.clone(), sheet_id, &range);
+        table(
+            grid.clone(),
+            sheet_id,
+            &Rect::new_span(Pos { x: -7, y: 2 }, Pos { x: 5, y: 10 }),
+        );
 
         let expected = vec![
             "g", "a", "h", "x", "g", "a", "h", "x", "g", "a", "h", "x", "g",
@@ -458,11 +810,15 @@ mod tests {
     #[test]
     fn test_expand_up_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
-        let range: Rect = Rect::new_span(selected.min, Pos { x: -7, y: -7 });
+        let range: Rect = Rect::new_span(Pos { x: -7, y: -7 }, selected.max);
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        // table(grid.clone(), sheet_id, &range);
+        table(
+            grid.clone(),
+            sheet_id,
+            &Rect::new_span(range.min, selected.max),
+        );
 
         let expected = vec![
             "b", "f", "z", "r", "b", "f", "z", "r", "b", "f", "z", "r", "b",
@@ -478,10 +834,10 @@ mod tests {
     }
 
     #[test]
-    fn test_series_down_and_right() {
+    fn test_expand_horizontal_series_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
-        let (mut grid, sheet_id) = test_setup_rect_series(&selected);
+        let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
         table(grid.clone(), sheet_id, &range);
@@ -503,17 +859,12 @@ mod tests {
     }
 
     #[test]
-    fn test_series_up_and_right() {
-        // let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
-        // let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
-        // let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
-        // let range: Rect = Rect::new_span(Pos { x: -8, y: -8 }, Pos { x: 5, y: 6 });
+    fn test_expand_horizontal_series_up_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 6, y: 15 }, Pos { x: 9, y: 19 });
         let range: Rect = Rect::new_span(Pos { x: 6, y: 12 }, Pos { x: 15, y: 19 });
-        let (mut grid, sheet_id) = test_setup_rect_series(&selected);
+        let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        // let range: Rect = Rect::new_span(selected.max, range.min);
         table(grid.clone(), sheet_id, &range);
 
         let expected = vec!["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon"];
@@ -536,15 +887,12 @@ mod tests {
     }
 
     #[test]
-    fn test_series_up_and_left() {
-        // let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
-        // let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
+    fn test_expand_horizontal_series_up_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: -4, y: -8 }, Pos { x: 5, y: 6 });
-        let (mut grid, sheet_id) = test_setup_rect_series(&selected);
+        let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
-        // let range: Rect = Rect::new_span(selected.max, range.min);
         table(grid.clone(), sheet_id, &range);
 
         let expected = vec!["2", "3", "4", "5", "6", "7", "8", "9", "10", "11"];
@@ -570,5 +918,19 @@ mod tests {
         let expected = vec!["0.5", "1", "2", "4", "8", "16", "32", "64", "128", "256"];
         assert_cell_value_row(&grid, sheet_id, -4, 5, -4, expected.clone());
         assert_cell_value_row(&grid, sheet_id, -4, 5, 1, expected.clone());
+    }
+
+    #[test]
+    fn test_expand_vertical_series_down_and_right() {
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 2, y: 4 });
+        let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
+        let (mut grid, sheet_id) = test_setup_rect_vert_series(&selected);
+        grid.expand(sheet_id, selected, range, None, None).unwrap();
+
+        table(grid.clone(), sheet_id, &range);
+
+        assert_cell_value(&grid, sheet_id, 3, 5, "4");
+        assert_cell_value(&grid, sheet_id, 3, 6, "5");
+        assert_cell_value(&grid, sheet_id, 3, 7, "6");
     }
 }
