@@ -128,6 +128,10 @@ impl Rect {
     pub fn height(&self) -> u32 {
         (self.max.y - self.min.y + 1) as u32
     }
+
+    pub fn len(&self) -> u32 {
+        self.width() * self.height()
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone)]

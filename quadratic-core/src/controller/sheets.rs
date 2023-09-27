@@ -144,39 +144,44 @@ fn test_add_delete_reorder_sheets() {
     test_delete(s3, [s1, s2]);
 }
 
-#[test]
-fn test_duplicate_sheet() {
-    let mut g = GridController::new();
-    let old_sheet_ids = g.sheet_ids();
-    let s1 = old_sheet_ids[0];
+#[cfg(test)]
+mod test {
+    use crate::controller::GridController;
 
-    g.set_sheet_name(s1, String::from("Nice Name"), None);
-    g.duplicate_sheet(s1, None);
-    let sheet_ids = g.sheet_ids();
-    let s2 = sheet_ids[1];
+    #[test]
+    fn test_duplicate_sheet() {
+        let mut g = GridController::new();
+        let old_sheet_ids = g.sheet_ids();
+        let s1 = old_sheet_ids[0];
 
-    let sheet1 = g.sheet(s1);
-    let sheet2 = g.sheet(s2);
+        g.set_sheet_name(s1, String::from("Nice Name"), None);
+        g.duplicate_sheet(s1, None);
+        let sheet_ids = g.sheet_ids();
+        let s2 = sheet_ids[1];
 
-    assert_eq!(sheet2.name, format!("{} Copy", sheet1.name));
-}
+        let sheet1 = g.sheet(s1);
+        let sheet2 = g.sheet(s2);
 
-#[test]
-fn test_delete_last_sheet() {
-    let mut g = GridController::new();
-    let sheet_ids = g.sheet_ids();
-    let first_sheet_id = sheet_ids[0].clone();
+        assert_eq!(sheet2.name, format!("{} Copy", sheet1.name));
+    }
 
-    g.delete_sheet(first_sheet_id, None);
-    let new_sheet_ids = g.sheet_ids();
-    assert_eq!(new_sheet_ids.len(), 1);
-    assert_ne!(new_sheet_ids[0], sheet_ids[0]);
+    #[actix_rt::test]
+    async fn test_delete_last_sheet() {
+        let mut g = GridController::new();
+        let sheet_ids = g.sheet_ids();
+        let first_sheet_id = sheet_ids[0].clone();
 
-    g.undo(None);
-    let new_sheet_ids_2 = g.sheet_ids();
-    assert_eq!(sheet_ids[0], new_sheet_ids_2[0]);
+        g.delete_sheet(first_sheet_id, None).await;
+        let new_sheet_ids = g.sheet_ids();
+        assert_eq!(new_sheet_ids.len(), 1);
+        assert_ne!(new_sheet_ids[0], sheet_ids[0]);
 
-    g.redo(None);
-    let new_sheet_ids_3 = g.sheet_ids();
-    assert_eq!(new_sheet_ids[0], new_sheet_ids_3[0]);
+        g.undo(None);
+        let new_sheet_ids_2 = g.sheet_ids();
+        assert_eq!(sheet_ids[0], new_sheet_ids_2[0]);
+
+        g.redo(None);
+        let new_sheet_ids_3 = g.sheet_ids();
+        assert_eq!(new_sheet_ids[0], new_sheet_ids_3[0]);
+    }
 }

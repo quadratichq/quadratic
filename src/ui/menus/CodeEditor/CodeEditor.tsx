@@ -9,6 +9,7 @@ import {
 } from '../../../atoms/editorHighlightedCellsStateAtom';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
+import { runPython } from '../../../web-workers/rustWorker';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
 import { Console } from './Console';
@@ -65,9 +66,8 @@ export const CodeEditor = () => {
 
   const saveAndRunCell = useCallback(async () => {
     if (editorContent) {
-      // todo...
-      // const results = await webWorkers.runPython(editorContent);
-      // console.log(results);
+      const results = await runPython(editorContent);
+      console.log(results);
     }
     // sheetController.sheet.set;
   }, [editorContent]);

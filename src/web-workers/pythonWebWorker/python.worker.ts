@@ -9,7 +9,7 @@ self.importScripts('/pyodide/pyodide.js');
 
 let getCellsMessages: (cells: string[]) => void | undefined;
 
-const getCellsDB = async (x0: number, y0: number, x1: number, y1: number, sheet: string): Promise<string[]> => {
+const getCellsDB = async (x0: number, y0: number, x1: number, y1: number, sheet?: string): Promise<string[]> => {
   return new Promise((resolve) => {
     getCellsMessages = (cells: string[]) => resolve(cells);
     self.postMessage({ type: 'get-cells', range: { x0, y0, x1, y1, sheet } } as PythonMessage);

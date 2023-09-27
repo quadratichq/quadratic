@@ -156,9 +156,9 @@ mod test {
     async fn test_set_cell_text_color_undo_redo() {
         let mut gc = GridController::new();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos1 = crate::Pos { x: 3, y: 6 };
-        let pos2 = crate::Pos { x: 5, y: 8 };
-        let pos3 = crate::Pos { x: 9, y: 6 };
+        let pos1 = Pos { x: 3, y: 6 };
+        let pos2 = Pos { x: 5, y: 8 };
+        let pos3 = Pos { x: 9, y: 6 };
         let rect1 = Rect::new_span(pos1, pos2);
         let rect2 = Rect::new_span(pos2, pos3);
 
@@ -210,8 +210,8 @@ mod test {
         assert_eq!(get(&gc, pos3), "red");
     }
 
-    #[test]
-    fn test_render_fill() {
+    #[actix_rt::test]
+    async fn test_render_fill() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_fill_color(
@@ -222,7 +222,8 @@ mod test {
             },
             Some("blue".to_string()),
             None,
-        );
+        )
+        .await;
         gc.set_cell_fill_color(
             sheet_id,
             Rect {
@@ -231,7 +232,8 @@ mod test {
             },
             Some("blue".to_string()),
             None,
-        );
+        )
+        .await;
         gc.set_cell_fill_color(
             sheet_id,
             Rect {
@@ -240,7 +242,8 @@ mod test {
             },
             Some("blue".to_string()),
             None,
-        );
+        )
+        .await;
         let render_fills = gc.sheet(sheet_id).get_render_fills(Rect {
             min: crate::Pos { x: -100, y: -100 },
             max: crate::Pos { x: 100, y: 100 },
@@ -248,8 +251,8 @@ mod test {
         assert_eq!(10, render_fills.len())
     }
 
-    #[test]
-    fn test_change_decimal_places() {
+    #[actix_rt::test]
+    async fn test_change_decimal_places() {
         // setup
         let mut gc: GridController = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
@@ -258,14 +261,17 @@ mod test {
             Pos { x: 0, y: 0 },
             String::from("1.12345678"),
             None,
-        );
+        )
+        .await;
         gc.set_cell_value(
             sheet_id,
             Pos { x: 1, y: 0 },
             String::from("0.12345678"),
             None,
-        );
-        gc.set_cell_value(sheet_id, Pos { x: 0, y: 1 }, String::from("abcd"), None);
+        )
+        .await;
+        gc.set_cell_value(sheet_id, Pos { x: 0, y: 1 }, String::from("abcd"), None)
+            .await;
         let cells = gc
             .sheet(sheet_id)
             .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 1, y: 1 }));
@@ -281,7 +287,8 @@ mod test {
             Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 1, y: 1 }),
             -1,
             None,
-        );
+        )
+        .await;
         let cells = gc
             .sheet(sheet_id)
             .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 1, y: 1 }));
@@ -297,7 +304,8 @@ mod test {
             Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 1, y: 1 }),
             1,
             None,
-        );
+        )
+        .await;
         let cells = gc
             .sheet(sheet_id)
             .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 1, y: 1 }));

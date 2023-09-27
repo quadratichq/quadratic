@@ -20,6 +20,7 @@ use super::NumericFormatKind;
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;
+pub mod cells;
 pub mod code;
 pub mod offsets;
 pub mod rendering;

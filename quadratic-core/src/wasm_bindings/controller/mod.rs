@@ -129,6 +129,21 @@ impl GridController {
         }
     }
 
+    /// gets a string version of the CellValue
+    /// this will likely get replace as Python will use CellValue types
+    ///
+    /// Returns JSON Vec<String>
+    #[wasm_bindgen(js_name = "getCellValueStrings")]
+    pub fn js_get_cell_value_strings(
+        &self,
+        sheet_id: String,
+        rect: Rect,
+    ) -> Result<String, JsValue> {
+        let sheet = self.grid().sheet_from_string(sheet_id);
+        let array = sheet.cell_array(rect);
+        Ok(serde_json::to_string::<[String]>(&array).map_err(|e| e.to_string())?)
+    }
+
     /// Deletes a region of cells.
     ///
     /// Returns a [`TransactionSummary`].

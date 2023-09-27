@@ -157,7 +157,12 @@ async def run_python(code):
         x_offset = p0[0]
         y_offset = p0[1]
         for cell in cells:
-            df.at[cell.y - y_offset, cell.x - x_offset] = cell.value
+            df.at[y_offset, x_offset] = cell
+            x_offset = x_offset + 1
+            if x_offset > p1[0]:
+                x_offset = p0[0]
+                y_offset = y_offset + 1
+
 
         # Move the first row to the header
         if first_row_header:
@@ -167,10 +172,10 @@ async def run_python(code):
 
         return df
 
-    async def getCell(p_x, p_y, sheet):
+    async def getCell(p_x, p_y, sheet=None):
         # mark cell this formula accesses
         cells_accessed.append([p_x, p_y, sheet])
-        result = await getCells(p_x, p_y, p_x, p_y, sheet)
+        result = await getCells([p_x, p_y], [p_x, p_y], sheet)
 
         if len(result):
             return Cell(result[0])
@@ -179,7 +184,7 @@ async def run_python(code):
 
     class CellFunc:
         @staticmethod
-        def __call__(p0_x, p0_y, sheet):
+        def __call__(p0_x, p0_y, sheet=None):
             return getCell(p0_x, p0_y, sheet)
 
     class CellsFunc:

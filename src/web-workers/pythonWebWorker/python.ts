@@ -1,3 +1,6 @@
+import { Rectangle } from 'pixi.js';
+import { grid } from '../../grid/controller/Grid';
+import { sheets } from '../../grid/controller/Sheets';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 
 class PythonWebWorker {
@@ -12,6 +15,8 @@ class PythonWebWorker {
       const event = e.data;
       if (event.type === 'results') {
         if (this.callback && event.results) {
+          console.log(event.results);
+          debugger;
           this.callback(event.results);
           this.callback = undefined;
         }
@@ -20,9 +25,13 @@ class PythonWebWorker {
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');
         }
-        throw new Error('get cells is not implemented');
-        // const cells = await GetCellsDB(range.x0, range.y0, range.x1, range.y1, range.sheet);
-        // this.worker!.postMessage({ type: 'get-cells', cells } as PythonMessage);
+        const cells = grid.getCellValueStrings(
+          range.sheet ?? sheets.sheet.id,
+          new Rectangle(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0)
+        );
+        console.log(cells);
+        debugger;
+        this.worker!.postMessage({ type: 'get-cells', cells } as PythonMessage);
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
         this.loaded = true;
@@ -57,3 +66,12 @@ class PythonWebWorker {
 }
 
 export const pythonWebWorker = new PythonWebWorker();
+
+declare global {
+  interface Window {
+    runPython: any;
+  }
+}
+
+// need to bind to window because rustWorker.ts cannot include any TS imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
+window.runPython = pythonWebWorker.run.bind(pythonWebWorker);

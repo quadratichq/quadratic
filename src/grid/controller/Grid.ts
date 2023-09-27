@@ -311,9 +311,10 @@ export class Grid {
     return this.gridController.getEditCell(sheetId, pos);
   }
 
-  // getCellValueStrings(sheetId: string, rectangle: Rectangle): string[] {
-  //   return this.gridController.getCellValueString(sheetId, rectangleToRect(rectangle));
-  // }
+  getCellValueStrings(sheetId: string, rectangle: Rectangle): string[] {
+    const data = this.gridController.getCellValueStrings(sheetId, rectangleToRect(rectangle));
+    return JSON.parse(data) as string[];
+  }
 
   cellHasContent(sheetId: string, column: number, row: number): boolean {
     const data = this.gridController.getRenderCells(sheetId, rectangleToRect(new Rectangle(column, row, 0, 0)));
