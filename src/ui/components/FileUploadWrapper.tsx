@@ -1,6 +1,6 @@
 import { DragEvent, PropsWithChildren, useRef, useState } from 'react';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
-import { InsertCSV } from '../../grid/actions/insertData/insertCSV';
+import { grid } from '../../grid/controller/Grid';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
@@ -57,12 +57,9 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
           e.pageY - (clientBoudingRect?.top || 0)
         );
         const { column, row } = sheets.sheet.gridOffsets.getRowColumnFromWorld(world.x, world.y);
+        const insertAtCellLocation = { x: column, y: row } as Coordinate;
 
-        InsertCSV({
-          file: file,
-          insertAtCellLocation: { x: column, y: row } as Coordinate,
-          reportError: addGlobalSnackbar,
-        });
+        grid.importCsv(sheets.sheet.id, file, insertAtCellLocation, addGlobalSnackbar);
       } else {
         addGlobalSnackbar('File type not supported. Please upload a CSV file.');
       }

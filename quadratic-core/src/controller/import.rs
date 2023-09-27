@@ -41,6 +41,7 @@ impl GridController {
                 record
                     .iter()
                     .map(|value| {
+                        // TODO(ddimaria): Replace with a standard converter once it's in place
                         Ok(if let Ok(number) = BigDecimal::from_str(value) {
                             CellValue::Number(number)
                         } else {

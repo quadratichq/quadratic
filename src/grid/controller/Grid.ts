@@ -421,7 +421,7 @@ export class Grid {
 
   //#region Imports
 
-  async importCsv(sheetId: string, file: File, insertAtCellLocation: Coordinate) {
+  async importCsv(sheetId: string, file: File, insertAtCellLocation: Coordinate, reportError: (error: string) => void) {
     const pos = new Pos(insertAtCellLocation.x, insertAtCellLocation.y);
     const text = await file.text();
 
