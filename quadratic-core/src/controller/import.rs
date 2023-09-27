@@ -46,17 +46,16 @@ impl GridController {
                             CellValue::Text(value.into())
                         })
                     })
-                    .collect::<Result<Vec<CellValue>>>()
+                    .collect::<Result<SmallVec<[CellValue; 1]>>>()
             })
-            .collect::<Result<Vec<Vec<CellValue>>>>()?;
-
-        let array = values
+            .collect::<Result<Vec<SmallVec<[CellValue; 1]>>>>()?
             .into_iter()
             .flatten()
             .collect::<SmallVec<[CellValue; 1]>>();
-        let height = array.len() as u32 / width;
+
+        let height = values.len() as u32 / width;
         let size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
-        let values = Array::new_row_major(size, array).map_err(|e| error(e.to_string()))?;
+        let values = Array::new_row_major(size, values).map_err(|e| error(e.to_string()))?;
         let rect = Rect::new_span(
             insert_at,
             Pos {
