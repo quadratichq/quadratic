@@ -294,7 +294,7 @@ mod tests {
         };
         ($sheet_borders: expr, $column_ids: expr, $cell: expr, $borders: tt, $message:literal) => {
             let actual = $sheet_borders.get_cell_borders($cell, &$column_ids);
-            let expected = Some(CellBorders::new(HashMap::from($borders)));
+            let expected = Some(CellBorders::new(&$borders));
             assert_eq!(actual, expected, $message);
         };
     }

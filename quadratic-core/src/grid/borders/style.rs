@@ -55,7 +55,7 @@ pub enum CellBorderLine {
 //     }
 // }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Copy)]
 #[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
 pub struct BorderStyle {
     pub color: Rgb,

@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
 
 use crate::grid::borders::style::BorderStyle;
@@ -7,27 +5,34 @@ use crate::grid::borders::style::BorderStyle;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "lowercase")]
+#[repr(u8)]
 pub(super) enum CellSide {
-    Left,
-    Top,
-    Right,
-    Bottom,
+    Left = 0,
+    Top = 1,
+    Right = 2,
+    Bottom = 3,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default, Copy)]
 pub(super) struct CellBorders {
-    borders: HashMap<CellSide, BorderStyle>, // TODO: Smaller data structure?
+    borders: [Option<BorderStyle>; 4],
 }
 
 impl CellBorders {
     #[cfg(test)]
-    pub(super) fn new(borders: HashMap<CellSide, BorderStyle>) -> Self {
-        Self { borders }
+    pub(super) fn new(borders: &[(CellSide, BorderStyle)]) -> Self {
+        let mut as_array = [None; 4];
+        for (side, style) in borders {
+            as_array[*side as usize] = Some(style.clone());
+        }
+        Self {
+            borders: as_array
+        }
     }
 
     #[cfg(test)]
     pub(super) fn contains(&self, side: &CellSide) -> bool {
-        self.borders.contains_key(side)
+        self.borders[*side as usize].is_some()
     }
 
     pub(super) fn combine(
@@ -47,16 +52,12 @@ impl CellBorders {
     }
 
     pub(super) fn get(&self, side: &CellSide) -> Option<&BorderStyle> {
-        self.borders.get(side)
+        self.borders[*side as usize].as_ref()
     }
 
     fn with_side(&self, side: CellSide, style: Option<BorderStyle>) -> Self {
         let mut cloned = self.clone();
-        if style.is_some() {
-            cloned.borders.insert(side, style.unwrap());
-        } else {
-            cloned.borders.remove(&side);
-        }
+        cloned.borders[side as usize] = style;
         cloned
     }
 }
