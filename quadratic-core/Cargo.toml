@@ -60,9 +60,11 @@ wasm-bindgen-futures = { version = "0.4.33", optional = true }
 lexicon_fractional_index = "0.0.3"
 htmlescape = "0.3.1"
 bigdecimal = { version = "0.4.1", features = ["serde"] }
+csv = "1.2.2"
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }
+tabled = "0.14.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 proptest = "1.2.0"

@@ -10,6 +10,7 @@ pub mod clipboard;
 pub mod compute;
 pub mod dependencies;
 pub mod formatting;
+pub mod import;
 pub mod operations;
 pub mod resize;
 pub mod sheets;
