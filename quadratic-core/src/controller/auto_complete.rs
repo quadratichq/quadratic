@@ -400,7 +400,8 @@ impl GridController {
             .rev()
             .enumerate()
             .map(|(index, x)| {
-                let target_col = Rect::new_span((x, range.min.y).into(), (x, range.max.y).into());
+                let target_col =
+                    Rect::new_span((x, rect.min.y - 1).into(), (x, range.min.y).into());
 
                 let vals = (0..height)
                     .map(|i| {
@@ -891,5 +892,23 @@ mod tests {
         assert_cell_value(&grid, sheet_id, 3, 5, "4");
         assert_cell_value(&grid, sheet_id, 3, 6, "5");
         assert_cell_value(&grid, sheet_id, 3, 7, "6");
+    }
+
+    #[test]
+    fn test_expand_vertical_series_up_and_left() {
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 2, y: 4 });
+        let range: Rect = Rect::new_span(Pos { x: -8, y: -8 }, Pos { x: 2, y: 4 });
+        let (mut grid, sheet_id) = test_setup_rect_vert_series(&selected);
+        grid.expand(sheet_id, selected, range, None, None).unwrap();
+
+        table(grid.clone(), sheet_id, &range);
+
+        assert_cell_value(&grid, sheet_id, 2, 1, "0");
+        assert_cell_value(&grid, sheet_id, 2, 0, "-1");
+        assert_cell_value(&grid, sheet_id, 2, -8, "-9");
+
+        assert_cell_value(&grid, sheet_id, -8, 1, "0");
+        assert_cell_value(&grid, sheet_id, -8, 0, "-1");
+        assert_cell_value(&grid, sheet_id, -8, -8, "-9");
     }
 }
