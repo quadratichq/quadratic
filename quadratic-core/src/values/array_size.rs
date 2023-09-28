@@ -68,6 +68,10 @@ impl ArraySize {
     pub fn len(self) -> usize {
         self.w.get() as usize * self.h.get() as usize
     }
+    /// Determine if the array is empty.
+    pub fn is_empty(self) -> bool {
+        self.w.get() == 0 && self.h.get() == 0
+    }
     /// Flips the width and height of the array size.
     #[must_use]
     pub fn transpose(self) -> ArraySize {

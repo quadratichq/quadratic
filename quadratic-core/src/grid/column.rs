@@ -84,6 +84,12 @@ impl Column {
     }
 }
 
+impl Default for Column {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ColumnData<B: Serialize + for<'d> Deserialize<'d>>(
     #[serde(with = "crate::util::btreemap_serde")] BTreeMap<i64, Block<B>>,
@@ -238,7 +244,7 @@ impl<B: BlockContent> ColumnData<B> {
                 itertools::Position::First(block) => {
                     let [above, below] = block.split(y_range.start);
                     to_put_back.extend(above);
-                    to_return.extend(below)
+                    to_return.extend(below);
                 }
                 itertools::Position::Middle(block) => to_return.push(block),
                 itertools::Position::Last(block) => {

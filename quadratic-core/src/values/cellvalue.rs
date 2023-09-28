@@ -92,15 +92,10 @@ impl CellValue {
             CellValue::Blank => String::new(),
             CellValue::Text(s) => s.to_string(),
             CellValue::Number(n) => {
-                let result: BigDecimal;
                 let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
                     numeric_format.kind == NumericFormatKind::Percentage
                 });
-                if is_percentage {
-                    result = n * 100;
-                } else {
-                    result = n.clone();
-                };
+                let result: BigDecimal = if is_percentage { n * 100 } else { n.clone() };
                 let mut number = if let Some(decimals) = numeric_decimals {
                     result
                         .with_scale_round(decimals as i64, bigdecimal::RoundingMode::HalfUp)

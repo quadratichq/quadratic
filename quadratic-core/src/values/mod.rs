@@ -146,7 +146,7 @@ impl Spanned<Value> {
                     inner: v,
                     span: self.span,
                 };
-                single_value = Some(v.try_coerce::<T>())
+                single_value = Some(v.try_coerce::<T>());
             }
             Value::Array(a) => array = a.into_cell_values_vec(),
         };
