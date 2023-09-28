@@ -77,7 +77,7 @@ impl GridController {
 #[cfg(test)]
 mod tests {
 
-    use crate::test_util::{assert_cell_value_row, table};
+    use crate::test_util::{assert_cell_value_row, print_table};
 
     use super::*;
 
@@ -98,13 +98,13 @@ Concord,NH,United States,42605
     fn imports_a_simple_csv() {
         let mut grid_controller = GridController::new();
         let sheet_id = grid_controller.grid.sheets()[0].id;
-        let pos = Pos { x: 0, y: 0 };
+        let pos = Pos { x: -100, y: 100 };
 
         grid_controller
             .import_csv(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos, None)
             .unwrap();
 
-        table(
+        print_table(
             grid_controller.clone(),
             sheet_id,
             &Rect::new_span(pos, Pos { x: 3, y: 10 }),
@@ -113,18 +113,18 @@ Concord,NH,United States,42605
         assert_cell_value_row(
             &grid_controller,
             sheet_id,
-            0,
-            3,
-            0,
+            -100,
+            -97,
+            100,
             vec!["city", "region", "country", "population"],
         );
 
         assert_cell_value_row(
             &grid_controller,
             sheet_id,
-            0,
-            3,
-            10,
+            -100,
+            -97,
+            110,
             vec!["Concord", "NH", "United States", "42605"],
         );
     }

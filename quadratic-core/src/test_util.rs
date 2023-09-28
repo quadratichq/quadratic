@@ -1,23 +1,19 @@
-#[cfg(test)]
 use std::str::FromStr;
 
-#[cfg(test)]
 use crate::{
     controller::GridController,
     grid::{Bold, SheetId},
     CellValue, Pos, Rect,
 };
-#[cfg(test)]
 use bigdecimal::BigDecimal;
 
-#[cfg(test)]
 use tabled::{
     builder::Builder,
     settings::Color,
     settings::{Modify, Style},
 };
 
-#[cfg(test)]
+/// Run an assertion that a cell value is equal to the given value
 pub fn assert_cell_value(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -44,7 +40,7 @@ pub fn assert_cell_value(
     );
 }
 
-#[cfg(test)]
+/// Run an assertion that cell values in a given row are equal to the given value
 pub fn assert_cell_value_row(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -59,7 +55,8 @@ pub fn assert_cell_value_row(
     }
 }
 
-#[cfg(test)]
+/// Run an assertion that cell bold formats in a given row are equal to the
+/// given value
 pub fn _assert_cell_format_bold_row(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -73,7 +70,7 @@ pub fn _assert_cell_format_bold_row(
     }
 }
 
-#[cfg(test)]
+/// Run an assertion that a cell value is equal to the given value
 pub fn _assert_cell_format_bold(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -91,8 +88,8 @@ pub fn _assert_cell_format_bold(
     );
 }
 
-#[cfg(test)]
-pub fn table(grid_controller: GridController, sheet_id: SheetId, range: &Rect) {
+/// Util to print a simple grid to assist in TDD
+pub fn print_table(grid_controller: GridController, sheet_id: SheetId, range: &Rect) {
     let sheet = grid_controller.grid().sheet_from_id(sheet_id);
     let mut vals = vec![];
     let mut builder = Builder::default();

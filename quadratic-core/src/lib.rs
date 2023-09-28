@@ -12,6 +12,7 @@ pub mod grid;
 mod position;
 mod rle;
 mod span;
+#[cfg(test)]
 mod test_util;
 mod values;
 #[cfg(feature = "js")]
