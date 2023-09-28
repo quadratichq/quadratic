@@ -157,10 +157,8 @@ impl Sheet {
                         if with_content {
                             return x;
                         }
-                    } else {
-                        if !with_content {
-                            return x;
-                        }
+                    } else if !with_content {
+                        return x;
                     }
                     x += if reverse { -1 } else { 1 };
                 }
@@ -199,10 +197,8 @@ impl Sheet {
                         if with_content {
                             return y;
                         }
-                    } else {
-                        if !with_content {
-                            return y;
-                        }
+                    } else if !with_content {
+                        return y;
                     }
                     y += if reverse { -1 } else { 1 };
                 }

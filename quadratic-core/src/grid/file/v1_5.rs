@@ -78,12 +78,12 @@ impl v1_4::JsSheet {
         let column_widths = self
             .columns
             .iter()
-            .filter_map(|column| Some((column.id, column.size? as f64)))
+            .filter_map(|column| Some((column.id, column.size?)))
             .collect();
         let row_heights = self
             .rows
             .iter()
-            .filter_map(|row| Some((row.id, row.size? as f64)))
+            .filter_map(|row| Some((row.id, row.size?)))
             .collect();
 
         let mut code_cells = vec![];

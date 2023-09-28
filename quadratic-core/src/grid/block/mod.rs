@@ -126,7 +126,7 @@ impl<B: BlockContent> Block<B> {
     }
 
     fn index(&self, y: i64) -> Option<usize> {
-        self.contains(y).then(|| (y - self.y) as usize)
+        self.contains(y).then_some((y - self.y) as usize)
     }
 }
 

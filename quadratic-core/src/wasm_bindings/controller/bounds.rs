@@ -32,14 +32,10 @@ impl GridController {
         ignore_formatting: bool,
     ) -> Option<MinMax> {
         let sheet = self.grid().sheet_from_string(sheet_id);
-        if let Some(bounds) = &sheet.column_bounds(column as i64, ignore_formatting) {
-            Some(MinMax {
+        sheet.column_bounds(column as i64, ignore_formatting).as_ref().map(|bounds| MinMax {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
             })
-        } else {
-            None
-        }
     }
 
     // returns a column's bounds.
@@ -52,16 +48,10 @@ impl GridController {
         ignore_formatting: bool,
     ) -> Option<MinMax> {
         let sheet = self.grid().sheet_from_string(sheet_id);
-        if let Some(bounds) =
-            &sheet.columns_bounds(column_start as i64, column_end as i64, ignore_formatting)
-        {
-            Some(MinMax {
+        sheet.columns_bounds(column_start as i64, column_end as i64, ignore_formatting).as_ref().map(|bounds| MinMax {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
             })
-        } else {
-            None
-        }
     }
 
     // returns a row's bounds.
@@ -73,14 +63,10 @@ impl GridController {
         ignore_formatting: bool,
     ) -> Option<MinMax> {
         let sheet = self.grid().sheet_from_string(sheet_id);
-        if let Some(bounds) = &sheet.row_bounds(row as i64, ignore_formatting) {
-            Some(MinMax {
+        sheet.row_bounds(row as i64, ignore_formatting).as_ref().map(|bounds| MinMax {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
             })
-        } else {
-            None
-        }
     }
 
     // returns a column's bounds.
@@ -93,16 +79,10 @@ impl GridController {
         ignore_formatting: bool,
     ) -> Option<MinMax> {
         let sheet = self.grid().sheet_from_string(sheet_id);
-        if let Some(bounds) =
-            &sheet.rows_bounds(row_start as i64, row_end as i64, ignore_formatting)
-        {
-            Some(MinMax {
+        sheet.rows_bounds(row_start as i64, row_end as i64, ignore_formatting).as_ref().map(|bounds| MinMax {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
             })
-        } else {
-            None
-        }
     }
 
     /// finds nearest column with or without content

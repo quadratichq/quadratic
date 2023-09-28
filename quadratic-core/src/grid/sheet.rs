@@ -662,7 +662,7 @@ fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {
     for i in values.into_iter().sorted() {
         match ret.last_mut() {
             Some(range) if range.end == i => range.end += 1,
-            Some(range) if (&*range).contains(&i) => continue,
+            Some(range) if (*range).contains(&i) => continue,
             _ => ret.push(i..i + 1),
         }
     }

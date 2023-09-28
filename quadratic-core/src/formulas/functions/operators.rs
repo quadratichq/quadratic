@@ -73,7 +73,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let span = Span::merge(start.span, end.span);
                 let a = start.inner;
                 let b = end.inner;
-                let len = (a-b).abs() as u32 + 1;
+                let len = (a - b).unsigned_abs() as u32 + 1;
                 if len as f64 > crate::limits::INTEGER_RANGE_LIMIT {
                     return Err(ErrorMsg::ArrayTooBig.with_span(span));
                 }

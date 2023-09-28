@@ -36,13 +36,13 @@ impl GridController {
         let sheet = self.grid().sheet_from_id(sheet_id);
         for y in rect.y_range() {
             if y != rect.min.y {
-                plain_text.push_str("\n");
+                plain_text.push('\n');
                 html.push_str("</tr>");
             }
             html.push_str("<tr>");
             for x in rect.x_range() {
                 if x != rect.min.x {
-                    plain_text.push_str("\t");
+                    plain_text.push('\t');
                     html.push_str("</td>");
                 }
                 html.push_str("<td>");
@@ -55,17 +55,14 @@ impl GridController {
                     None
                 };
                 let code: Option<CodeCellValue> = if value.is_none() && spill_value.is_none() {
-                    let code_cell_value = sheet.get_code_cell(pos).clone();
-                    match code_cell_value {
-                        Some(code_cell_value) => Some(CodeCellValue {
+                    let code_cell_value = sheet.get_code_cell(pos);
+                    code_cell_value.map(|code_cell_value| CodeCellValue {
                             language: code_cell_value.language,
                             code_string: code_cell_value.code_string.clone(),
                             formatted_code_string: None,
                             last_modified: code_cell_value.last_modified.clone(),
                             output: None,
-                        }),
-                        None => None,
-                    }
+                        })
                 } else {
                     None
                 };
@@ -78,8 +75,8 @@ impl GridController {
 
                 let (bold, italic) = if let Some(format) = sheet.get_existing_cell_format(pos) {
                     (
-                        format.bold.is_some_and(|bold| bold == true),
-                        format.italic.is_some_and(|italic| italic == true),
+                        format.bold.is_some_and(|bold| bold),
+                        format.italic.is_some_and(|italic| italic),
                     )
                 } else {
                     (false, false)
@@ -169,12 +166,12 @@ impl GridController {
     }
 
     fn array_from_plain_cells(clipboard: String) -> Option<Array> {
-        let lines: Vec<&str> = clipboard.split("\n").collect();
+        let lines: Vec<&str> = clipboard.split('\n').collect();
         let rows: Vec<Vec<&str>> = lines
             .iter()
             .map(|line| line.split('\t').collect())
             .collect();
-        if rows.len() == 0 {
+        if rows.is_empty() {
             return None;
         }
         let longest = rows
@@ -191,7 +188,7 @@ impl GridController {
         let mut y = 0;
         rows.iter().for_each(|row| {
             row.iter().for_each(|s| {
-                if s.len() != 0 {
+                if !s.is_empty() {
                     if let Ok(n) = BigDecimal::from_str(s) {
                         let _ = array.set(x, y, CellValue::Number(n));
                     } else {
@@ -286,7 +283,7 @@ impl GridController {
         let result = &data.get(1).map_or("", |m| m.as_str());
 
         // decode html in attribute
-        let unencoded = htmlescape::decode_html(&result);
+        let unencoded = htmlescape::decode_html(result);
         if unencoded.is_err() {
             return Err(());
         }

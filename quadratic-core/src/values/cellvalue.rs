@@ -79,7 +79,7 @@ impl CellValue {
             CellValue::Logical(false) => "FALSE".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
-            CellValue::Error(_) => format!("[error]"),
+            CellValue::Error(_) => "[error]".to_string(),
         }
     }
 
@@ -105,17 +105,15 @@ impl CellValue {
                     result
                         .with_scale_round(decimals as i64, bigdecimal::RoundingMode::HalfUp)
                         .to_string()
-                } else {
-                    if is_percentage {
-                        let s = result.to_string();
-                        if s.contains(".") {
-                            s.trim_end_matches("0").to_string()
-                        } else {
-                            s
-                        }
+                } else if is_percentage {
+                    let s = result.to_string();
+                    if s.contains('.') {
+                        s.trim_end_matches('0').to_string()
                     } else {
-                        result.to_string()
+                        s
                     }
+                } else {
+                    result.to_string()
                 };
                 if let Some(numeric_format) = numeric_format {
                     match numeric_format.kind {
@@ -129,7 +127,7 @@ impl CellValue {
                             currency
                         }
                         NumericFormatKind::Percentage => {
-                            number.push_str(&"%");
+                            number.push('%');
                             number
                         }
                         NumericFormatKind::Number => number.to_string(),
@@ -143,7 +141,7 @@ impl CellValue {
             CellValue::Logical(false) => "false".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
-            CellValue::Error(_) => format!("[error]"),
+            CellValue::Error(_) => "[error]".to_string(),
         }
     }
 
@@ -156,7 +154,7 @@ impl CellValue {
             CellValue::Logical(false) => "false".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
-            CellValue::Error(_) => format!("[error]"),
+            CellValue::Error(_) => "[error]".to_string(),
         }
     }
 
@@ -201,7 +199,7 @@ impl CellValue {
         Ok(Some(match (self, other) {
             (CellValue::Error(e), _) | (_, CellValue::Error(e)) => return Err((**e).clone()),
 
-            (CellValue::Number(a), CellValue::Number(b)) => a.cmp(&b),
+            (CellValue::Number(a), CellValue::Number(b)) => a.cmp(b),
             (CellValue::Text(a), CellValue::Text(b)) => {
                 let a = a.to_ascii_uppercase();
                 let b = b.to_ascii_uppercase();
@@ -254,7 +252,7 @@ impl CellValue {
 
         Ok(lhs
             .partial_cmp(rhs)?
-            .unwrap_or_else(|| type_id(&lhs).cmp(&type_id(&rhs))))
+            .unwrap_or_else(|| type_id(lhs).cmp(&type_id(rhs))))
     }
 
     /// Returns whether `self == other` using `CellValue::cmp()`.

@@ -158,7 +158,7 @@ impl<B: BlockContent> ColumnData<B> {
     }
     pub fn set(&mut self, y: i64, value: Option<B::Item>) -> Option<B::Item> {
         match (self.remove_block_containing(y), value) {
-            (None, None) => return None,
+            (None, None) => None,
             (None, Some(value)) => {
                 if let Some(block_above) = self.remove_block_containing(y - 1) {
                     // Push to bottom of block above.
@@ -202,7 +202,7 @@ impl<B: BlockContent> ColumnData<B> {
     }
 
     pub fn blocks(&self) -> impl Iterator<Item = &Block<B>> {
-        self.0.iter().map(|(_, block)| block)
+        self.0.values()
     }
     pub fn blocks_of_range(&self, y_range: Range<i64>) -> impl Iterator<Item = Cow<'_, Block<B>>> {
         self.blocks_covering_range(y_range.clone())

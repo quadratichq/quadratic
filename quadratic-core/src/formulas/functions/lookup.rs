@@ -58,7 +58,7 @@ fn get_functions() -> Vec<FormulaFunction> {
 
                 let x = output_col
                     .checked_sub(1)
-                    .ok_or_else(|| ErrorMsg::IndexOutOfBounds)?;
+                    .ok_or(ErrorMsg::IndexOutOfBounds)?;
                 let y = lookup(needle, haystack, match_mode, search_mode)?
                     .ok_or_else(|| ErrorMsg::NoMatch.with_span(span))?;
 
@@ -102,7 +102,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                     .ok_or_else(|| ErrorMsg::NoMatch.with_span(span))?;
                 let y = output_row
                     .checked_sub(1)
-                    .ok_or_else(|| ErrorMsg::IndexOutOfBounds)?;
+                    .ok_or(ErrorMsg::IndexOutOfBounds)?;
 
                 search_range.get(x as u32, y)?.clone()
             }

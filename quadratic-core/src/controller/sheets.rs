@@ -40,7 +40,7 @@ impl GridController {
             .collect_vec();
 
         let id = SheetId::new();
-        let name = crate::util::unused_name("Sheet", &sheet_names);
+        let name = crate::util::unused_name("Sheet", sheet_names);
         let order = self.grid.end_order();
         let sheet = Sheet::new(id, name, order);
         let ops = vec![Operation::AddSheet { sheet }];
@@ -70,10 +70,7 @@ impl GridController {
         let order: String;
         // treat to_before as None if to_before's sheet no longer exists
         if to_before.is_none() || !self.grid.sheet_has_id(to_before) {
-            let last_order = match self.grid.sheets().last() {
-                Some(last) => Some(last.order.clone()),
-                None => None,
-            };
+            let last_order = self.grid.sheets().last().map(|last| last.order.clone());
             order = key_between(&last_order, &None).unwrap();
         } else {
             let after_sheet = self.grid.sheet_from_id(to_before.unwrap());

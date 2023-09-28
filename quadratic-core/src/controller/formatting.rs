@@ -44,7 +44,7 @@ impl GridController {
             return TransactionSummary::default();
         }
         let region = self.region(sheet_id, rect);
-        let numeric_decimals = Some((decimals as i16) + delta as i16);
+        let numeric_decimals = Some(decimals + delta as i16);
         let ops = vec![Operation::SetCellFormats {
             region: region.clone(),
             attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(

@@ -185,7 +185,7 @@ pub fn column_from_name(mut s: &str) -> Option<i64> {
     }
 
     fn digit(c: char) -> Option<i64> {
-        ('A'..='Z').contains(&c).then(|| c as i64 - 'A' as i64)
+        c.is_ascii_uppercase().then_some(c as i64 - 'A' as i64)
     }
 
     let mut chars = s.chars();
@@ -234,7 +234,7 @@ macro_rules! impl_display {
 pub fn union_ranges(ranges: impl IntoIterator<Item = Option<Range<i64>>>) -> Option<Range<i64>> {
     ranges
         .into_iter()
-        .filter_map(|x| x)
+        .flatten()
         .reduce(|a, b| std::cmp::min(a.start, b.start)..std::cmp::max(a.end, b.end))
 }
 
@@ -245,7 +245,7 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
         .collect();
 
     // Find the first number that's not already used.
-    let i = (1..).find(|i| !already_used_numbers.contains(&i)).unwrap();
+    let i = (1..).find(|i| !already_used_numbers.contains(i)).unwrap();
     format!("{prefix} {i}")
 }
 
