@@ -105,7 +105,6 @@ export function upgradeV1_3toV1_4(file: GridFileV1_3): GridFileV1_4 {
   // convert cell dependencies in Rust format
   // in v3 we map trigger_cell: updates_cells[]
   // in v4 we map code_cell: dependencies[]
-  // console.log('File: ', file.cell_dependency);
   let old_dependencies: Map<string, [number, number][]> = new Map();
   if (file.cell_dependency !== undefined && file.cell_dependency !== '') {
     old_dependencies = new Map(
@@ -122,7 +121,6 @@ export function upgradeV1_3toV1_4(file: GridFileV1_3): GridFileV1_4 {
     return [x, y];
   }
 
-  // loop through dependencies and console log them
   let new_dependencies: Map<string, [number, number][]> = new Map();
   for (const [trigger_cell, updates_cells] of old_dependencies.entries()) {
     for (const update_cell of updates_cells) {

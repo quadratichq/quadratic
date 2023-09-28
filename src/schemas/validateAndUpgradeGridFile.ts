@@ -101,7 +101,6 @@ export async function validateAndUpgradeGridFile(
 
   // Upgrade the file to the latest version in Rust
   if (gridFile !== undefined) {
-    console.log('gridFile', gridFile);
     return await upgradeFileRust(gridFile as GridFile);
   } else return null;
 }

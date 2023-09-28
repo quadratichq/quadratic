@@ -59,9 +59,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const contents = await res.text();
 
       // Validate and upgrade file
-      console.log('validateAndUpgradeGridFile:before');
       const file = await validateAndUpgradeGridFile(contents);
-      console.log('validateAndUpgradeGridFile', file);
       if (!file) {
         throw new Error(`Failed to create a new file because the example file is corrupt: ${file}`);
       }
