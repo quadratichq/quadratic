@@ -45,7 +45,7 @@ pub struct JsRenderFill {
     pub color: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsRenderBorder {
     pub x: i64,
@@ -55,6 +55,11 @@ pub struct JsRenderBorder {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub h: Option<usize>,
     pub style: BorderStyle,
+}
+impl JsRenderBorder {
+    pub fn new(x: i64, y: i64, w: Option<usize>, h: Option<usize>, style: BorderStyle) -> Self {
+        Self { x, y, w, h, style }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
