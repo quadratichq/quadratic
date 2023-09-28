@@ -44,15 +44,15 @@ impl v1_4::GridSchemaV1_4 {
         let mut rs_dependencies = HashMap::new();
         let js_dependencies =
             serde_json::from_str::<JSDependencySchema>(self.cell_dependency.as_str()).unwrap();
-        for (key, value) in js_dependencies.into_iter() {
-            let pos = get_value(key).unwrap();
+        for (key, value) in js_dependencies {
+            let pos = get_value(key).ok_or("invalid dependency key")?;
             let cell = SheetPos {
                 sheet_id: sheets[0].id,
                 x: pos.0,
                 y: pos.1,
             };
             let mut deps: Vec<SheetRect> = vec![];
-            for position in value.into_iter() {
+            for position in value {
                 let cell = Pos {
                     x: position.0,
                     y: position.1,
@@ -80,8 +80,10 @@ fn get_value(key: String) -> Option<(i64, i64)> {
         return None;
     }
 
-    let x = parts[0].parse::<i64>().ok()?;
-    let y = parts[1].parse::<i64>().ok()?;
+    let (part1, part2) = key.split_once(',')?;
+
+    let x = part1.parse().ok()?;
+    let y = part2.parse().ok()?;
 
     Some((x, y))
 }
