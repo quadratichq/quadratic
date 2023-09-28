@@ -5,8 +5,8 @@ import { ActionFunctionArgs, useFetchers } from 'react-router-dom';
 import { apiClient } from '../../api/apiClient';
 import { Empty } from '../../components/Empty';
 import { ShareFileMenu } from '../../components/ShareFileMenu';
-import { FileListItem } from './FileListItem';
-import { FileListLayoutPreferenceToggle, LayoutPreference } from './FileListLayoutPreferenceToggle';
+import { FileListItem, FilesListItems } from './FileListItem';
+import { FileListLayoutPreferenceToggle } from './FileListLayoutPreferenceToggle';
 import { FileListViewPreferences, Layout, Order, Sort, ViewPreferences } from './FileListViewPreferences';
 
 export type Props = {
@@ -17,20 +17,16 @@ export type Action = {
   response: { ok: boolean } | null;
   'request.delete': {
     action: 'delete';
-    uuid: string;
   };
   'request.download': {
     action: 'download';
-    uuid: string;
   };
   'request.duplicate': {
     action: 'duplicate';
-    uuid: string;
     file: Props['files'][0];
   };
   'request.rename': {
     action: 'rename';
-    uuid: string;
     name: string;
   };
   request:
@@ -43,13 +39,12 @@ export type Action = {
 export function FileList({ files }: Props) {
   // const actionData = useActionData() as Action['response'];
   const [filterValue, setFilterValue] = useState<string>('');
-  const [layoutPreference, setLayoutPreference] = useState<LayoutPreference>('list');
   const [viewPreferences, setViewPreferences] = useState<ViewPreferences>({
     sort: Sort.Updated,
     order: Order.Descending,
-    layout: Layout.List,
+    layout: Layout.Grid,
   });
-  const theme = useTheme();
+  // const theme = useTheme();
   const fetchers = useFetchers();
   // const submit = useSubmit();
   // const navigation = useNavigation();
@@ -102,52 +97,25 @@ export function FileList({ files }: Props) {
         </FileListViewPreferences>
       </FileListViewControls> */}
 
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        gap={theme.spacing(2)}
-        sx={{
-          py: theme.spacing(1),
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          [theme.breakpoints.up('md')]: {
-            px: theme.spacing(),
-          },
-        }}
-      >
-        <Box sx={{ maxWidth: '25rem', flexGrow: 2 }}>
-          <TextField
-            onChange={(e) => setFilterValue(e.target.value)}
-            value={filterValue}
-            size="small"
-            placeholder="Filter by name…"
-            fullWidth
+      <FilesListViewControls
+        filterValue={filterValue}
+        setFilterValue={setFilterValue}
+        viewPreferences={viewPreferences}
+        setViewPreferences={setViewPreferences}
+      />
+
+      <FilesListItems viewPreferences={viewPreferences}>
+        {filesToRender.map((file, i) => (
+          <FileListItem
+            key={file.uuid}
+            file={file}
+            filterValue={filterValue}
+            activeShareMenuFileId={activeShareMenuFileId}
+            setActiveShareMenuFileId={setActiveShareMenuFileId}
+            viewPreferences={viewPreferences}
           />
-        </Box>
-        <Stack direction="row" gap={theme.spacing(2)} alignItems="center">
-          <Box sx={{ color: theme.palette.text.secondary }}>
-            <FileListViewPreferences viewPreferences={viewPreferences} setViewPreferences={setViewPreferences} />
-          </Box>
-
-          <Box>
-            <FileListLayoutPreferenceToggle
-              layoutPreference={layoutPreference}
-              setLayoutPreference={setLayoutPreference}
-            />
-          </Box>
-        </Stack>
-      </Stack>
-
-      {filesToRender.map((file, i) => (
-        <FileListItem
-          key={file.uuid}
-          file={file}
-          filterValue={filterValue}
-          activeShareMenuFileId={activeShareMenuFileId}
-          setActiveShareMenuFileId={setActiveShareMenuFileId}
-          viewPreferences={viewPreferences}
-        />
-      ))}
+        ))}
+      </FilesListItems>
 
       {filterValue && filesToRender.length === 0 && (
         <Empty title="No matches" description={<>No files found with that specified name.</>} Icon={SearchOff} />
@@ -165,6 +133,8 @@ export function FileList({ files }: Props) {
         />
       )}
 
+      {/*activeFileActionsFileId && */ ''}
+
       {activeShareMenuFileId && (
         <ShareFileMenu
           onClose={() => {
@@ -179,10 +149,47 @@ export function FileList({ files }: Props) {
   );
 }
 
+function FilesListViewControls({ filterValue, setFilterValue, viewPreferences, setViewPreferences }: any) {
+  const theme = useTheme();
+  return (
+    <Stack
+      direction="row"
+      justifyContent="space-between"
+      alignItems="center"
+      gap={theme.spacing(2)}
+      sx={{
+        py: theme.spacing(1),
+        [theme.breakpoints.up('md')]: {
+          px: theme.spacing(),
+        },
+      }}
+    >
+      <Box sx={{ maxWidth: '25rem', flexGrow: 2 }}>
+        <TextField
+          onChange={(e) => setFilterValue(e.target.value)}
+          value={filterValue}
+          size="small"
+          placeholder="Filter by name…"
+          fullWidth
+        />
+      </Box>
+      <Stack direction="row" gap={theme.spacing(2)} alignItems="center">
+        <Box sx={{ color: theme.palette.text.secondary }}>
+          <FileListViewPreferences viewPreferences={viewPreferences} setViewPreferences={setViewPreferences} />
+        </Box>
+
+        <Box>
+          <FileListLayoutPreferenceToggle viewPreferences={viewPreferences} setViewPreferences={setViewPreferences} />
+        </Box>
+      </Stack>
+    </Stack>
+  );
+}
+
 export const action = async ({ params, request }: ActionFunctionArgs): Promise<Action['response']> => {
   const json: Action['request'] = await request.json();
-  const { action, uuid } = json;
-  // TODO remove uuid from being passed and pull it from the URL
+  const { uuid } = params as { uuid: string };
+  const { action } = json;
 
   if (action === 'delete') {
     try {

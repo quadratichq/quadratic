@@ -1,100 +1,84 @@
 import { Public } from '@mui/icons-material';
 import { Box, Stack, Typography, useTheme } from '@mui/material';
 import { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { FileListItemInput } from './FileListItemInput';
 
 type Props = {
   name: string;
   description: string;
-  to: string;
-  disabled: boolean;
   isShared: boolean;
   actions?: ReactNode;
-  descriptionError?: string;
+  hasNetworkError?: boolean;
   filterValue?: string;
+  // TODO make required
+  isRenaming?: boolean;
+  renameFile?: Function;
 };
 
 DashboardFileLink.defaultProps = {
-  disabled: false,
   isShared: false,
 };
 
 export function DashboardFileLink({
-  disabled,
   name,
   description,
-  descriptionError,
+  hasNetworkError,
   actions,
-  to,
   isShared,
   filterValue,
+  isRenaming,
+  renameFile,
 }: Props) {
   const theme = useTheme();
 
   const __html = filterValue ? highlightMatchingString(name, filterValue) : name;
 
   return (
-    <Link
-      to={to}
-      reloadDocument
-      style={{
-        textDecoration: 'none',
-        color: 'inherit',
-        ...(disabled ? { pointerEvents: 'none', opacity: 0.5 } : {}),
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: theme.spacing(1),
+        px: theme.spacing(1),
+        py: theme.spacing(1.5),
+
+        [theme.breakpoints.down('md')]: {
+          px: 0,
+        },
       }}
     >
-      <Box
-        sx={{
-          '&:hover': { background: theme.palette.action.hover, cursor: 'pointer' },
-        }}
-      >
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: theme.spacing(2),
-            px: theme.spacing(1),
-            py: theme.spacing(1.5),
+      <Stack sx={{ position: 'relative', mr: 'auto', minWidth: '0' }}>
+        <Typography variant="body1" color="text.primary" noWrap dangerouslySetInnerHTML={{ __html }} />
 
-            [theme.breakpoints.down('md')]: {
-              px: 0,
-            },
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', marginRight: 'auto', minWidth: '0' }}>
-            <Typography variant="body1" color="text.primary" noWrap dangerouslySetInnerHTML={{ __html }} />
-            <Stack
-              direction="row"
-              gap={theme.spacing(0.5)}
-              sx={{ '& > *:not(:last-child):after': { content: '"·"', marginLeft: theme.spacing(0.5) } }}
-            >
-              {isShared && (
-                <Stack
-                  direction="row"
-                  alignItems="center"
-                  gap={theme.spacing(0.25)}
-                  color={theme.palette.text.secondary}
-                >
-                  <Public fontSize="inherit" />
-                  <Typography variant="caption" color="inherit">
-                    Public
-                  </Typography>
-                </Stack>
-              )}
-              <Typography variant="caption" color="text.secondary">
-                {description}
-              </Typography>
-              {descriptionError && (
-                <Typography variant="caption" color="error">
-                  Test {descriptionError}
-                </Typography>
-              )}
-            </Stack>
-          </div>
-          {actions}
-        </Box>
-      </Box>
-    </Link>
+        {hasNetworkError ? (
+          <Typography variant="caption" color="error">
+            Failed to sync changes
+          </Typography>
+        ) : (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            noWrap
+            sx={{
+              '& > *:not(:last-child):after': { content: '"·"', mx: theme.spacing(0.5) },
+            }}
+          >
+            {isShared && (
+              <span>
+                <Public fontSize="inherit" sx={{ position: 'relative', top: '2px' }} /> Public
+              </span>
+            )}
+            <span>{description}</span>
+          </Typography>
+        )}
+
+        {isRenaming && (
+          // @ts-expect-error
+          <FileListItemInput setValue={renameFile} value={name} />
+        )}
+      </Stack>
+      {actions}
+    </Box>
   );
 }
 

@@ -1,23 +1,35 @@
 import { DeleteOutline, IosShare, MoreVert } from '@mui/icons-material';
 import { Box, Divider, IconButton, Menu, MenuItem, Stack, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
-import { useFetcher } from 'react-router-dom';
+import { Link, SubmitOptions, useFetcher } from 'react-router-dom';
 import { deleteFile, downloadFile, duplicateFile, renameFile as renameFileAction } from '../../actions';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { TooltipHint } from '../../ui/components/TooltipHint';
 import { DashboardFileLink } from './DashboardFileLink';
 import { Action, Props as FileListProps } from './FileList';
-import { FileListItemInput } from './FileListItemInput';
-import { Sort, ViewPreferences } from './FileListViewPreferences';
+import { Layout, Sort, ViewPreferences } from './FileListViewPreferences';
 
-type Props = {
-  file: FileListProps['files'][0];
-  filterValue?: string;
-  activeShareMenuFileId: string;
-  setActiveShareMenuFileId: Function;
-  viewPreferences: ViewPreferences;
-};
+export function FilesListItems({ children, viewPreferences }: any) {
+  const theme = useTheme();
+  return (
+    <Box
+      sx={
+        viewPreferences.layout === Layout.Grid
+          ? {
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+              gap: theme.spacing(3),
+              pb: theme.spacing(),
+              px: theme.spacing(),
+            }
+          : {}
+      }
+    >
+      {children}
+    </Box>
+  );
+}
 
 export function FileListItem({
   file,
@@ -25,7 +37,13 @@ export function FileListItem({
   activeShareMenuFileId,
   setActiveShareMenuFileId,
   viewPreferences,
-}: Props) {
+}: {
+  file: FileListProps['files'][0];
+  filterValue?: string;
+  activeShareMenuFileId: string;
+  setActiveShareMenuFileId: Function;
+  viewPreferences: ViewPreferences;
+}) {
   const theme = useTheme();
   const fetcherDelete = useFetcher();
   const fetcherDownload = useFetcher();
@@ -37,6 +55,11 @@ export function FileListItem({
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
 
   const { uuid, name, created_date, updated_date, public_link_access } = file;
+  const fetcherSubmitOpts: SubmitOptions = {
+    method: 'POST',
+    action: ROUTES.API_FILE(uuid),
+    encType: 'application/json',
+  };
   const open = Boolean(anchorEl);
   const failedToDelete = fetcherDelete.data && !fetcherDelete.data.ok;
   const failedToRename = fetcherRename.data && !fetcherRename.data.ok;
@@ -77,17 +100,16 @@ export function FileListItem({
     }
 
     // Otherwise update on the server and optimistically in the UI
-    const data: Action['request.rename'] = { uuid, action: 'rename', name: value };
-    fetcherRename.submit(data, { action: ROUTES.API_FILE(uuid), method: 'POST', encType: 'application/json' });
+    const data: Action['request.rename'] = { action: 'rename', name: value };
+    fetcherRename.submit(data, fetcherSubmitOpts);
   };
 
   const handleDelete = () => {
     if (window.confirm(`Confirm you want to delete the file: “${name}”`)) {
       const data: Action['request.delete'] = {
-        uuid,
         action: 'delete',
       };
-      fetcherDelete.submit(data, { method: 'POST', encType: 'application/json' });
+      fetcherDelete.submit(data, fetcherSubmitOpts);
     }
     handleActionsMenuClose();
   };
@@ -95,9 +117,8 @@ export function FileListItem({
   const handleDownload = () => {
     const data: Action['request.download'] = {
       action: 'download',
-      uuid,
     };
-    fetcherDownload.submit(data, { method: 'POST', encType: 'application/json' });
+    fetcherDownload.submit(data, fetcherSubmitOpts);
     handleActionsMenuClose();
   };
 
@@ -105,7 +126,7 @@ export function FileListItem({
     const date = new Date().toISOString();
     const data: Action['request.duplicate'] = {
       action: 'duplicate',
-      uuid,
+
       // These are the values that will optimistically render in the UI
       file: {
         uuid: 'duplicate-' + date,
@@ -115,7 +136,7 @@ export function FileListItem({
         created_date: date,
       },
     };
-    fetcherDuplicate.submit(data, { method: 'POST', encType: 'application/json' });
+    fetcherDuplicate.submit(data, fetcherSubmitOpts);
     handleActionsMenuClose();
   };
 
@@ -129,95 +150,165 @@ export function FileListItem({
     handleActionsMenuClose();
   };
 
+  const displayName = fetcherRename.json ? (fetcherRename.json as Action['request.rename']).name : name;
+  const displayNameHtml = filterValue ? highlightMatchingString(displayName, filterValue) : displayName;
+  const displayDescription =
+    viewPreferences.sort === Sort.Created ? `Created ${timeAgo(created_date)}` : `Updated ${timeAgo(updated_date)}`;
+  const hasNetworkError = Boolean(failedToDelete || failedToRename);
+  const isDisabled = uuid.startsWith('duplicate-') || isRenaming;
+  const isShared = public_link_access !== 'NOT_SHARED';
+  const to = ROUTES.FILE(uuid);
+
+  const MoreButton = (
+    <TooltipHint title="More…">
+      <IconButton
+        id="file-actions-button"
+        aria-controls={open ? 'files-list-item-actions-menu' : undefined}
+        aria-haspopup="true"
+        aria-expanded={open ? 'true' : undefined}
+        onClick={handleActionsMenuClick}
+      >
+        <MoreVert />
+      </IconButton>
+    </TooltipHint>
+  );
+
+  const sharedProps = {
+    key: uuid,
+    filterValue: filterValue,
+    name: displayNameHtml,
+    description: displayDescription,
+    hasNetworkError: hasNetworkError,
+    isShared: isShared,
+    isRenaming,
+    renameFile,
+  };
+
   return (
-    <Box sx={{ position: 'relative', '&:hover .additional-icons': { display: isDesktop ? 'block' : 'none' } }}>
-      <DashboardFileLink
+    <>
+      <Link
         key={uuid}
-        to={ROUTES.FILE(uuid)}
-        filterValue={filterValue}
-        name={fetcherRename.json ? (fetcherRename.json as Action['request.rename']).name : name}
-        description={
-          viewPreferences.sort === Sort.Created
-            ? `Created ${timeAgo(created_date)}`
-            : `Updated ${timeAgo(updated_date)}`
-        }
-        descriptionError={failedToDelete || failedToRename ? 'Failed to sync changes' : ''}
-        disabled={uuid.startsWith('duplicate-') || isRenaming}
-        isShared={public_link_access !== 'NOT_SHARED'}
-        actions={
-          <Stack gap={theme.spacing(1)} alignItems="center" direction="row">
-            <Box className="additional-icons" sx={{ display: 'none' }}>
-              <TooltipHint title="Share">
-                <IconButton
-                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                    e.preventDefault();
-                    handleShare();
-                  }}
-                >
-                  <IosShare />
-                </IconButton>
-              </TooltipHint>
-              <TooltipHint title="Delete">
-                <IconButton
-                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                    e.preventDefault();
-                    handleDelete();
-                  }}
-                >
-                  <DeleteOutline />
-                </IconButton>
-              </TooltipHint>
+        to={to}
+        reloadDocument
+        style={{
+          textDecoration: 'none',
+          color: 'inherit',
+          ...(isDisabled ? { pointerEvents: 'none', opacity: 0.5 } : {}),
+        }}
+      >
+        {viewPreferences.layout === Layout.Grid ? (
+          <Stack
+            sx={{
+              border: `1px solid ${theme.palette.divider}`,
+              borderRadius: '2px',
+              '&:hover': { borderColor: theme.palette.text.secondary },
+            }}
+          >
+            <Box sx={{ aspectRatio: '16/9' }}>
+              <Box
+                sx={{
+                  backgroundImage: 'url(https://placehold.co/800x450)',
+                  backgroundPosition: '50%',
+                  width: '100%',
+                  height: '100%',
+                  backgroundSize: 'cover',
+                }}
+              />
             </Box>
-
-            <TooltipHint title="More…">
-              <IconButton
-                id="file-actions-button"
-                aria-controls={open ? 'file-actions-menu' : undefined}
-                aria-haspopup="true"
-                aria-expanded={open ? 'true' : undefined}
-                onClick={handleActionsMenuClick}
-              >
-                <MoreVert />
-              </IconButton>
-            </TooltipHint>
-            <Menu
-              id="file-actions-menu"
-              anchorEl={anchorEl}
-              open={open}
-              onClose={handleActionsMenuClose}
-              MenuListProps={{
-                'aria-labelledby': 'file-actions-button',
-              }}
-            >
-              <MenuItem dense onClick={handleShare}>
-                Share
-              </MenuItem>
-
-              <MenuItem dense onClick={handleDuplicate}>
-                {duplicateFile.label}
-              </MenuItem>
-
-              <MenuItem dense onClick={handleRename}>
-                {renameFileAction.label}
-              </MenuItem>
-
-              <MenuItem dense onClick={handleDownload}>
-                {downloadFile.label}
-              </MenuItem>
-
-              <Divider />
-              <MenuItem dense onClick={handleDelete}>
-                {deleteFile.label}
-              </MenuItem>
-            </Menu>
+            <Divider />
+            <DashboardFileLink {...sharedProps} actions={MoreButton} />
           </Stack>
-        }
-      />
-      {isRenaming && <FileListItemInput setValue={renameFile} value={name} />}
-      <Divider />
-    </Box>
+        ) : (
+          <Box
+            sx={{
+              '&:hover': { backgroundColor: theme.palette.action.hover },
+              '&:hover .additional-icons': { display: isDesktop ? 'block' : 'none' },
+            }}
+          >
+            <Divider />
+            <DashboardFileLink
+              {...sharedProps}
+              actions={
+                <Stack gap={theme.spacing(1)} alignItems="center" direction="row">
+                  <Box className="additional-icons" sx={{ display: 'none' }}>
+                    <TooltipHint title="Share">
+                      <IconButton
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                          e.preventDefault();
+                          handleShare();
+                        }}
+                      >
+                        <IosShare />
+                      </IconButton>
+                    </TooltipHint>
+                    <TooltipHint title="Delete">
+                      <IconButton
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                          e.preventDefault();
+                          handleDelete();
+                        }}
+                      >
+                        <DeleteOutline />
+                      </IconButton>
+                    </TooltipHint>
+                  </Box>
+
+                  {MoreButton}
+                </Stack>
+              }
+            />
+          </Box>
+        )}
+      </Link>
+      <Menu
+        id="files-list-item-actions-menu"
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleActionsMenuClose}
+        MenuListProps={{
+          'aria-labelledby': 'file-actions-button',
+        }}
+      >
+        <MenuItem dense onClick={handleShare}>
+          Share
+        </MenuItem>
+
+        <MenuItem dense onClick={handleDuplicate}>
+          {duplicateFile.label}
+        </MenuItem>
+
+        <MenuItem dense onClick={handleRename}>
+          {renameFileAction.label}
+        </MenuItem>
+
+        <MenuItem dense onClick={handleDownload}>
+          {downloadFile.label}
+        </MenuItem>
+
+        <Divider />
+        <MenuItem dense onClick={handleDelete}>
+          {deleteFile.label}
+        </MenuItem>
+      </Menu>
+    </>
   );
 }
+
+// function MoreActionsButton({ open, handleActionsMenuClick }: any) {
+//   return (
+//     <TooltipHint title="More…">
+//       <IconButton
+//         id="file-actions-button"
+//         aria-controls={open ? 'files-list-item-actions-menu' : undefined}
+//         aria-haspopup="true"
+//         aria-expanded={open ? 'true' : undefined}
+//         onClick={handleActionsMenuClick}
+//       >
+//         <MoreVert />
+//       </IconButton>
+//     </TooltipHint>
+//   );
+// }
 
 // Vanilla js time formatter. Adapted from:
 // https://blog.webdevsimplified.com/2020-07/relative-time-format/
@@ -245,4 +336,12 @@ export function timeAgo(dateString: string) {
     }
     duration /= division.amount;
   }
+}
+
+function highlightMatchingString(inputString: string, searchString: string) {
+  const regex = new RegExp(searchString, 'gi'); // case insensitive matching
+  const highlightedString = inputString.replace(regex, (match: string) => {
+    return `<mark>${match}</mark>`;
+  });
+  return highlightedString;
 }

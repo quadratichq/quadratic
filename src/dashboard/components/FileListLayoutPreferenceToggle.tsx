@@ -1,6 +1,6 @@
 import { GridViewOutlined, MenuOutlined } from '@mui/icons-material';
 import { ToggleButton, ToggleButtonGroup, styled } from '@mui/material';
-import { Dispatch, SetStateAction } from 'react';
+import { Layout } from './FileListViewPreferences';
 
 export type LayoutPreference = 'list' | 'grid';
 
@@ -12,32 +12,26 @@ const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
   '& .MuiToggleButtonGroup-grouped': {
     margin: `0 2px`,
     border: 0,
-    borderRadius: theme.shape.borderRadius + 'px !important',
+    borderRadius: theme.shape.borderRadius - 1 + 'px !important',
     padding: theme.spacing(0.75),
   },
 }));
 
-export function FileListLayoutPreferenceToggle({
-  layoutPreference,
-  setLayoutPreference,
-}: {
-  layoutPreference: LayoutPreference;
-  setLayoutPreference: Dispatch<SetStateAction<LayoutPreference>>;
-}) {
+export function FileListLayoutPreferenceToggle({ viewPreferences, setViewPreferences }: any) {
   return (
     <StyledToggleButtonGroup
-      value={layoutPreference}
+      value={viewPreferences.layout}
       exclusive
-      onChange={(event: React.MouseEvent<HTMLElement>, newValue: LayoutPreference) => {
+      onChange={(event: React.MouseEvent<HTMLElement>, newValue: any) => {
         // TODO persist to localStorage...
-        setLayoutPreference(newValue);
+        setViewPreferences((prev: any) => ({ ...prev, layout: newValue }));
       }}
     >
-      <ToggleButton value="list" disabled={layoutPreference === 'list'}>
+      <ToggleButton value={Layout.List} disabled={viewPreferences.layout === Layout.List}>
         <MenuOutlined fontSize="inherit" />
       </ToggleButton>
 
-      <ToggleButton value="module" disabled={layoutPreference === 'grid'}>
+      <ToggleButton value={Layout.Grid} disabled={viewPreferences.layout === Layout.Grid}>
         <GridViewOutlined fontSize="inherit" />
       </ToggleButton>
     </StyledToggleButtonGroup>
