@@ -19,7 +19,7 @@ impl GridController {
                     row: None,
                     old_size,
                     new_size: size,
-                })
+                });
             }
         }
     }

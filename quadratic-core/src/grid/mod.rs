@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -94,13 +94,13 @@ impl Grid {
             }
             if sheet.id == sheet_id {
                 next = true;
-            }
+            };
         }
         None
     }
     /// Adds a sheet to the grid. Returns an error if the sheet name is already
     /// in use.
-    pub fn add_sheet(&mut self, sheet: Option<Sheet>) -> Result<SheetId, ()> {
+    pub fn add_sheet(&mut self, sheet: Option<Sheet>) -> Result<SheetId> {
         // for new sheets, order is after the last one
         let sheet = sheet.unwrap_or_else(|| {
             Sheet::new(
@@ -117,7 +117,7 @@ impl Grid {
             .iter()
             .any(|old_sheet| old_sheet.name == sheet.name)
         {
-            return Err(());
+            return Err(anyhow!("sheet name already in use"));
         }
         self.sheets.push(sheet);
         self.sort_sheets();

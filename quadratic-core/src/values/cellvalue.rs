@@ -216,6 +216,7 @@ impl CellValue {
 
     /// Compares two values using a total ordering that propogates errors and
     /// converts blanks to zeros.
+    #[allow(clippy::should_implement_trait)]
     pub fn cmp(&self, other: &Self) -> CodeResult<std::cmp::Ordering> {
         fn type_id(v: &CellValue) -> u8 {
             // Sort order, based on the results of Excel's `SORT()` function.
