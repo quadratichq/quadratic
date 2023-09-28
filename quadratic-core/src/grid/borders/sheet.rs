@@ -29,7 +29,7 @@ pub fn generate_sheet_borders(
                 .map(|column| column.id)
                 .collect_vec();
 
-            sheet_borders.set_horizontal_border(&column_ids, above_index, style.clone());
+            sheet_borders.set_horizontal_border(&column_ids, above_index, style);
         }
 
         for vertical_border_index in vertical {
@@ -44,7 +44,7 @@ pub fn generate_sheet_borders(
                 column_left_id,
                 column_right_id,
                 &row_indices,
-                style.clone(),
+                style,
             );
         }
     }
@@ -148,8 +148,8 @@ impl SheetBorders {
     ) {
         let row_index_below = row_index_above + 1;
         for &column_id in columns {
-            self.set_cell_border(column_id, row_index_above, CellSide::Bottom, style.clone());
-            self.set_cell_border(column_id, row_index_below, CellSide::Top, style.clone());
+            self.set_cell_border(column_id, row_index_above, CellSide::Bottom, style);
+            self.set_cell_border(column_id, row_index_below, CellSide::Top, style);
         }
     }
 
@@ -162,10 +162,10 @@ impl SheetBorders {
     ) {
         for &row_index in row_indices {
             if let Some(column_left) = column_left {
-                self.set_cell_border(column_left, row_index, CellSide::Right, style.clone());
+                self.set_cell_border(column_left, row_index, CellSide::Right, style);
             }
             if let Some(column_right) = column_right {
-                self.set_cell_border(column_right, row_index, CellSide::Left, style.clone());
+                self.set_cell_border(column_right, row_index, CellSide::Left, style);
             }
         }
     }
@@ -179,7 +179,7 @@ impl SheetBorders {
     ) {
         let column_borders = self.cell_borders.entry(column_id).or_default();
 
-        let new_borders = CellBorders::combine(column_borders.get(row_index), side, style.clone());
+        let new_borders = CellBorders::combine(column_borders.get(row_index), side, style);
 
         if new_borders.is_empty() {
             column_borders.set(row_index, None);
@@ -300,7 +300,7 @@ mod tests {
     }
 
     #[test]
-    fn test_all_borders() {
+    fn all_borders() {
         let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
         let rect = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 6, y: 15 });
         let region = sheet.region(rect);
@@ -313,17 +313,17 @@ mod tests {
         };
 
         let _prev_borders =
-            set_region_border_selection(&mut sheet, &region, selection, Some(style.clone()));
+            set_region_border_selection(&mut sheet, &region, selection, Some(style));
 
         assert_borders!(
             sheet.borders,
             sheet.column_ids,
             Pos { x: 3, y: 10 },
             [
-                (CellSide::Left, style.clone()),
-                (CellSide::Right, style.clone()),
-                (CellSide::Top, style.clone()),
-                (CellSide::Bottom, style.clone()),
+                (CellSide::Left, style),
+                (CellSide::Right, style),
+                (CellSide::Top, style),
+                (CellSide::Bottom, style),
             ],
             "Inside top left should be fully surrounded"
         );
@@ -362,7 +362,7 @@ mod tests {
     }
 
     #[test]
-    fn test_outer_borders() {
+    fn outer_borders() {
         let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
         let rect = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 5, y: 12 });
         let region = sheet.region(rect);
@@ -375,7 +375,7 @@ mod tests {
         };
 
         let _prev_borders =
-            set_region_border_selection(&mut sheet, &region, selection, Some(style.clone()));
+            set_region_border_selection(&mut sheet, &region, selection, Some(style));
 
         assert_borders!(
             sheet.borders,
@@ -390,15 +390,15 @@ mod tests {
             sheet.column_ids,
             Pos { x: 5, y: 12 },
             [
-                (CellSide::Right, style.clone()),
-                (CellSide::Bottom, style.clone())
+                (CellSide::Right, style),
+                (CellSide::Bottom, style)
             ],
             "Bottom right should have bottom and right borders"
         );
     }
 
     #[test]
-    fn test_remove_subset_of_existing_borders() {
+    fn remove_subset_of_existing_borders() {
         let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
 
         let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 5, y: 12 });
@@ -416,19 +416,25 @@ mod tests {
         };
 
         let _prev_borders_1 =
-            set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style.clone()));
+            set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style));
 
         let _prev_borders_2 = set_region_border_selection(&mut sheet, &region_2, selection_2, None);
+
+        print_borders(
+            Rect::new_span(Pos{x:2,y:9}, Pos{x:7,y:14}),
+            &sheet.borders,
+            &sheet.column_ids,
+        );
 
         assert_borders!(
             sheet.borders,
             sheet.column_ids,
             Pos { x: 3, y: 10 },
             [
-                (CellSide::Left, style.clone()),
-                (CellSide::Right, style.clone()),
-                (CellSide::Top, style.clone()),
-                (CellSide::Bottom, style.clone()),
+                (CellSide::Left, style),
+                (CellSide::Right, style),
+                (CellSide::Top, style),
+                (CellSide::Bottom, style),
             ],
             "Top left should have all borders"
         );
@@ -438,10 +444,10 @@ mod tests {
             sheet.column_ids,
             Pos { x: 3, y: 12 },
             [
-                (CellSide::Left, style.clone()),
-                (CellSide::Right, style.clone()),
-                (CellSide::Top, style.clone()),
-                (CellSide::Bottom, style.clone()),
+                (CellSide::Left, style),
+                (CellSide::Right, style),
+                (CellSide::Top, style),
+                (CellSide::Bottom, style),
             ],
             "Bottom left should have all borders"
         );
@@ -456,7 +462,7 @@ mod tests {
     }
 
     // #[test]
-    // fn test_remove_and_validate_previous_borders() {
+    // fn remove_and_validate_previous_borders() {
     //     let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
     //
     //     let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 5, y: 12 });
@@ -474,7 +480,7 @@ mod tests {
     //     };
     //
     //     let prev_borders_1 =
-    //         set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style.clone()));
+    //         set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style));
     //     let prev_borders_2 =
     //         set_region_border_selection(&mut sheet, &region_2, selection_2, None);
     //
@@ -483,7 +489,7 @@ mod tests {
     //     //     replaced_borders,
     //     //     CellBorderStylings {
     //     //         style_map: HashMap::from([(
-    //     //             Some(style.clone()),
+    //     //             Some(style),
     //     //             HashMap::from([
     //     //                 ((4, 10), sides!(Bottom)),
     //     //                 ((5, 10), sides!(Bottom)),
@@ -504,7 +510,7 @@ mod tests {
     // }
 
     #[test]
-    fn test_change_style_for_subset_of_existing_borders() {
+    fn change_style_for_subset_of_existing_borders() {
         let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
 
         let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 5, y: 12 });
@@ -526,19 +532,19 @@ mod tests {
         };
 
         let _prev_borders_1 =
-            set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style_1.clone()));
+            set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style_1));
         let _prev_borders_2 =
-            set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style_2.clone()));
+            set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style_2));
 
         assert_borders!(
             sheet.borders,
             sheet.column_ids,
             Pos { x: 3, y: 10 },
             [
-                (CellSide::Left, style_1.clone()),
-                (CellSide::Right, style_1.clone()),
-                (CellSide::Top, style_1.clone()),
-                (CellSide::Bottom, style_1.clone()),
+                (CellSide::Left, style_1),
+                (CellSide::Right, style_1),
+                (CellSide::Top, style_1),
+                (CellSide::Bottom, style_1),
             ],
             "Top left should have all first style"
         );
@@ -548,10 +554,10 @@ mod tests {
             sheet.column_ids,
             Pos { x: 4, y: 11 },
             [
-                (CellSide::Left, style_1.clone()),
-                (CellSide::Right, style_1.clone()),
-                (CellSide::Top, style_1.clone()),
-                (CellSide::Bottom, style_2.clone()),
+                (CellSide::Left, style_1),
+                (CellSide::Right, style_1),
+                (CellSide::Top, style_1),
+                (CellSide::Bottom, style_2),
             ],
             "Middle should have second style on bottom"
         );
@@ -561,10 +567,10 @@ mod tests {
             sheet.column_ids,
             Pos { x: 5, y: 12 },
             [
-                (CellSide::Left, style_1.clone()),
-                (CellSide::Right, style_1.clone()),
-                (CellSide::Top, style_2.clone()),
-                (CellSide::Bottom, style_2.clone()),
+                (CellSide::Left, style_1),
+                (CellSide::Right, style_1),
+                (CellSide::Top, style_2),
+                (CellSide::Bottom, style_2),
             ],
             "Bottom right should have second style on top and bottom"
         );
@@ -574,15 +580,15 @@ mod tests {
             sheet.column_ids,
             Pos { x: 6, y: 12 },
             [
-                (CellSide::Top, style_2.clone()),
-                (CellSide::Bottom, style_2.clone()),
+                (CellSide::Top, style_2),
+                (CellSide::Bottom, style_2),
             ],
             "Outside right should have nothing on sides"
         );
     }
 
     // #[test]
-    // fn test_change_style_and_validate_previous_borders() {
+    // fn change_style_and_validate_previous_borders() {
     //     let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
     //
     //     let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 5, y: 12 });
@@ -604,9 +610,9 @@ mod tests {
     //     };
     //
     //     let prev_borders_1 =
-    //         set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style_1.clone()));
+    //         set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style_1));
     //     let prev_borders_2 =
-    //         set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style_2.clone()));
+    //         set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style_2));
     //
     //     // TODO: Uncomment
     //     // assert_eq!(
@@ -622,7 +628,7 @@ mod tests {
     //     //                 ])
     //     //             ),
     //     //             (
-    //     //                 Some(style_1.clone()),
+    //     //                 Some(style_1),
     //     //                 HashMap::from([
     //     //                     ((4, 11), sides!(Bottom)),
     //     //                     ((5, 11), sides!(Bottom)),

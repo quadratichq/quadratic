@@ -55,7 +55,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_horizontal() {
+    fn horizontal_indices() {
         let region = Rect::new_span(Pos { x: 10, y: 20 }, Pos { x: 13, y: 23 });
 
         assert_eq!(
@@ -92,7 +92,7 @@ mod tests {
     }
 
     #[test]
-    fn test_vertical() {
+    fn vertical_indices() {
         let region = Rect::new_span(Pos { x: 10, y: 20 }, Pos { x: 13, y: 23 });
 
         assert_eq!(

@@ -23,11 +23,9 @@ impl CellBorders {
     pub(super) fn new(borders: &[(CellSide, BorderStyle)]) -> Self {
         let mut as_array = [None; 4];
         for (side, style) in borders {
-            as_array[*side as usize] = Some(style.clone());
+            as_array[*side as usize] = Some(*style);
         }
-        Self {
-            borders: as_array
-        }
+        Self { borders: as_array }
     }
 
     #[cfg(test)]
@@ -48,7 +46,7 @@ impl CellBorders {
     }
 
     pub(super) fn is_empty(&self) -> bool {
-        self.borders.is_empty()
+        self.borders.iter().all(|style| style.is_none())
     }
 
     pub(super) fn get(&self, side: &CellSide) -> Option<&BorderStyle> {
