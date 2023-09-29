@@ -24,5 +24,5 @@ export interface PythonMessage {
   results?: any;
   error?: string;
   range?: { sheet: string; x0: number; y0: number; x1: number; y1: number };
-  cells?: string[];
+  cells?: { x: number; y: number; value: string }[];
 }

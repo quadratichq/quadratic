@@ -1,12 +1,14 @@
-import { Rectangle } from 'pixi.js';
-import { grid } from '../../grid/controller/Grid';
-import { sheets } from '../../grid/controller/Sheets';
+import { pointsToRect } from '../../grid/controller/Grid';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 
 class PythonWebWorker {
   private worker?: Worker;
   private callback?: (results: PythonReturnType) => void;
   private loaded = false;
+
+  // rust function passed to get cells during computation cycle
+  // @returns JSON {x: number, y: number: value: string}[] (eventually CellValue[] will be returned)
+  private getCells?: (rect: any, sheetId: string | undefined) => string;
 
   init() {
     this.worker = new Worker(new URL('./python.worker.ts', import.meta.url));
@@ -25,12 +27,14 @@ class PythonWebWorker {
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');
         }
-        const cells = grid.getCellValueStrings(
-          range.sheet ?? sheets.sheet.id,
-          new Rectangle(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0)
+        if (!this.getCells) {
+          throw new Error('Expected getCells to be defined in PythonWebWorker');
+        }
+        const data = this.getCells(
+          pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
+          range.sheet
         );
-        console.log(cells);
-        debugger;
+        const cells = JSON.parse(data) as any[];
         this.worker!.postMessage({ type: 'get-cells', cells } as PythonMessage);
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
@@ -43,19 +47,20 @@ class PythonWebWorker {
     };
   }
 
-  run(python: string): Promise<any> {
+  run(python: string, getCells: (sheetId: string | undefined, rect: any) => string): Promise<any> {
     return new Promise((resolve) => {
       if (!this.loaded || !this.worker) {
         resolve({
-          // cells_accessed: [],
+          cells_accessed: [],
           success: false,
           input_python_stack_trace: 'Error: Python not loaded',
           input_python_std_out: '',
           output_value: null,
-          // array_output: [],
+          array_output: [],
           formatted_code: '',
         });
       } else {
+        this.getCells = getCells;
         this.callback = (results: any) => resolve(results);
         this.worker.postMessage({ type: 'execute', python } as PythonMessage);
       }

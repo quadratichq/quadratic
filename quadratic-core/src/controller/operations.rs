@@ -109,6 +109,10 @@ impl GridController {
                 cell_ref,
                 code_cell_value,
             } => {
+                let region = RegionRef::from(cell_ref);
+                summary
+                    .cell_regions_modified
+                    .extend(self.grid.region_rects(&region));
                 let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
                 let old_code_cell_value = sheet.set_code_cell(cell_ref, code_cell_value);
                 Operation::SetCellCode {

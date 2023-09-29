@@ -26,19 +26,21 @@ interface JsCodeResult {
 }
 "#;
 
-// struct JsCodeResult {
-//     pub language: CodeCellLanguage,
-//     pub cells_accessed: Array,
-//     pub success: bool,
-//     pub formatted_code: Option<String>,
-//     pub error_span_start: Option<u32>,
-//     pub error_span_end: Option<u32>,
-//     pub error_msg: Option<String>,
-//     pub output_value: Option<String>,
-//     pub array_output: Option<Array>,
-// }
+struct JsCodeResult {
+    pub language: CodeCellLanguage,
+    pub cells_accessed: Array,
+    pub success: bool,
+    pub formatted_code: Option<String>,
+    pub error_span: Option<Array>,
+    pub error_msg: Option<String>,
+    pub output_value: Option<String>,
+    pub array_output: Option<Array>,
+}
 
 #[wasm_bindgen(module = "/../src/web-workers/rustWorker.ts")]
 extern "C" {
-    pub async fn runPython(code_string: String) -> JsValue;
+    pub async fn runPython(
+        code_string: String,
+        get_cells: &Closure<dyn Fn(Rect, Option<String>) -> Result<String, JsValue>>,
+    ) -> JsValue;
 }

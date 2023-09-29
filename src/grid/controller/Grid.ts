@@ -1,6 +1,13 @@
 import { Point, Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
-import { GridController, MinMax, Placement, Pos, Rect as RectInternal } from '../../quadratic-core/quadratic_core';
+import {
+  CodeCellLanguage,
+  GridController,
+  MinMax,
+  Placement,
+  Pos,
+  Rect as RectInternal,
+} from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
   CellFormatSummary,
@@ -21,7 +28,7 @@ const rectangleToRect = (rectangle: Rectangle): RectInternal => {
   return new RectInternal(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
 };
 
-const pointsToRect = (x: number, y: number, width: number, height: number): RectInternal => {
+export const pointsToRect = (x: number, y: number, width: number, height: number): RectInternal => {
   return new RectInternal(new Pos(x, y), new Pos(x + width, y + height));
 };
 
@@ -165,11 +172,22 @@ export class Grid {
   }
 
   // todo....
-  async setCodeCellValue(options: { sheetId: string; x: number; y: number; codeString: string }) {
-    // const summary = await this.gridController.set;
-    throw new Error('not implemented yet...');
-    // transactionResponse(summary);
-    // this.dirty = true;
+  async setCodeCellValue(options: {
+    sheetId: string;
+    x: number;
+    y: number;
+    language: CodeCellLanguage;
+    codeString: string;
+  }) {
+    const summary = await this.gridController.setCellCode(
+      options.sheetId,
+      new Pos(options.x, options.y),
+      options.language,
+      options.codeString,
+      sheets.getCursorPosition()
+    );
+    transactionResponse(summary);
+    this.dirty = true;
   }
 
   async deleteCellValues(sheetId: string, rectangle: Rectangle) {
@@ -309,11 +327,6 @@ export class Grid {
 
   getEditCell(sheetId: string, pos: Pos): string {
     return this.gridController.getEditCell(sheetId, pos);
-  }
-
-  getCellValueStrings(sheetId: string, rectangle: Rectangle): string[] {
-    const data = this.gridController.getCellValueStrings(sheetId, rectangleToRect(rectangle));
-    return JSON.parse(data) as string[];
   }
 
   cellHasContent(sheetId: string, column: number, row: number): boolean {

@@ -134,12 +134,11 @@ impl GridController {
             code_cell_value: Some(CodeCellValue {
                 language,
                 code_string,
+                formatted_code_string: None,
+                output: None,
 
                 // todo
                 last_modified: String::default(),
-
-                output: None,
-                formatted_code_string: None,
             }),
         }];
         self.transact_forward(ops, cursor).await
@@ -284,8 +283,8 @@ mod test {
         CellValue, Pos, Rect,
     };
 
-    #[test]
-    fn test_set_cell_value_undo_redo() {
+    #[actix_rt::test]
+    async fn test_set_cell_value_undo_redo() {
         let mut g = GridController::new();
         let sheet_id = g.grid.sheets()[0].id;
         let pos = Pos { x: 3, y: 6 };
@@ -297,9 +296,11 @@ mod test {
         });
 
         assert_eq!(get_the_cell(&g), CellValue::Blank);
-        g.set_cell_value(sheet_id, pos, String::from("a"), None);
+        g.set_cell_value(sheet_id, pos, String::from("a"), None)
+            .await;
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
-        g.set_cell_value(sheet_id, pos, String::from("b"), None);
+        g.set_cell_value(sheet_id, pos, String::from("b"), None)
+            .await;
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
         assert!(g.undo(None) == expected_summary);
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));

@@ -121,6 +121,7 @@ class Table:
     def __init__(self, cells):
         self.p0 = None
         self.p1 = None
+        self.sheet = None
         self.has_headers = False
 
     def to_df(self):
@@ -146,6 +147,7 @@ async def run_python(code):
 
         # Get Cells
         cells = await getCellsDB(p0[0], p0[1], p1[0], p1[1], sheet)
+        print(cells[0].x)
 
         # Create empty df of the correct size
         df = pd.DataFrame(
@@ -157,12 +159,7 @@ async def run_python(code):
         x_offset = p0[0]
         y_offset = p0[1]
         for cell in cells:
-            df.at[y_offset, x_offset] = cell
-            x_offset = x_offset + 1
-            if x_offset > p1[0]:
-                x_offset = p0[0]
-                y_offset = y_offset + 1
-
+            df.at[cell.y - y_offset, cell.x - x_offset] = cell.value
 
         # Move the first row to the header
         if first_row_header:
@@ -174,7 +171,6 @@ async def run_python(code):
 
     async def getCell(p_x, p_y, sheet=None):
         # mark cell this formula accesses
-        cells_accessed.append([p_x, p_y, sheet])
         result = await getCells([p_x, p_y], [p_x, p_y], sheet)
 
         if len(result):
@@ -299,7 +295,9 @@ async def run_python(code):
 
             else:
                 # convert nan to None, return PD values list
-                array_output = output_value.where(output_value.notnull(), None).values.tolist()
+                array_output = output_value.where(
+                    output_value.notnull(), None
+                ).values.tolist()
 
         # Convert Pandas.Series to array_output
         if isinstance(output_value, pd.Series):
@@ -321,7 +319,7 @@ async def run_python(code):
             "input_python_std_out": sout.getvalue(),
             "success": True,
             "input_python_stack_trace": None,
-            "formatted_code": formatted_code
+            "formatted_code": formatted_code,
         }
 
     return {

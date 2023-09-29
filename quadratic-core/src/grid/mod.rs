@@ -65,6 +65,9 @@ impl Grid {
     pub fn sheet_ids(&self) -> Vec<SheetId> {
         self.sheets.iter().map(|sheet| sheet.id).collect()
     }
+    pub fn sheet_from_name(&self, name: String) -> Option<&Sheet> {
+        self.sheets.iter().find(|sheet| sheet.name == name)
+    }
     pub fn sheets_mut(&mut self) -> &mut [Sheet] {
         &mut self.sheets
     }

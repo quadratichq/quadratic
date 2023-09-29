@@ -1,11 +1,15 @@
 use super::{operations::Operation, GridController};
 use crate::{
-    grid::{CodeCellLanguage, SheetId},
-    wasm_bindings::js::{self, runPython},
-    Pos,
+    grid::{js_types::CellForArray, CodeCellLanguage, CodeCellValue, Sheet, SheetId},
+    wasm_bindings::{
+        js::{self, runPython},
+        JsCodeResult,
+    },
+    Pos, Rect,
 };
 use serde::{Deserialize, Serialize};
 use std::{fmt, ops::Range};
+use wasm_bindgen::{prelude::Closure, JsValue};
 
 impl GridController {
     /// Given `cell` and `dependencies` adds a new node to the graph.
@@ -22,12 +26,48 @@ impl GridController {
 
             for y in rect.y_range() {
                 for x in rect.x_range() {
-                    if let Some(code_cell) = sheet.get_code_cell(Pos { x, y }) {
+                    let pos = Pos { x, y };
+                    if let Some(code_cell) = sheet.get_code_cell(pos) {
                         match code_cell.language {
                             CodeCellLanguage::Python => {
-                                let promise = runPython(code_cell.code_string.clone());
-                                let result = promise.await;
-                                js::log(&format!("{:?}", result));
+                                // todo: remove this clone and move to a while of awaits to pass control back and forth to TS to avoid mem copies
+                                let gc = self.clone();
+                                let current_sheet_id = sheet.id.to_string();
+
+                                let get_cells =
+                                    Closure::new(move |rect: Rect, sheet_name: Option<String>| {
+                                        // convert sheet_name to id or use current code's sheet
+                                        let sheet = if let Some(sheet_name) = sheet_name {
+                                            if let Some(sheet_from_name) =
+                                                gc.grid.sheet_from_name(sheet_name)
+                                            {
+                                                sheet_from_name
+                                            } else {
+                                                gc.grid.sheet_from_string(current_sheet_id.clone())
+                                            }
+                                        } else {
+                                            gc.grid.sheet_from_string(current_sheet_id.clone())
+                                        };
+
+                                        // todo: convert this function to pure rust instead of js
+                                        let array = sheet.cell_array(rect);
+                                        Ok(serde_json::to_string::<[CellForArray]>(&array)
+                                            .map_err(|e| e.to_string())?)
+                                    });
+
+                                let result =
+                                    runPython(code_cell.code_string.clone(), &get_cells).await;
+                                let code_cell_value =
+                                    serde_wasm_bindgen::from_value::<JsCodeResult>(result);
+                                // sheet.set_code_cell_value(
+                                //     sheet_id,
+                                //     Some(CodeCellValue {
+                                //         language: code_cell.language,
+                                //         code_string: code_cell.code_string,
+                                //         formatted_code_string: result.
+                                //     }),
+                                // );
+                                js::log(&format!("{:?}", code_cell_value));
                             }
                             _ => {
                                 js::log(&format!(
@@ -127,8 +167,8 @@ mod test {
 
     use super::{SheetPos, SheetRect};
 
-    #[test]
-    fn test_graph() {
+    #[actix_rt::test]
+    async fn test_graph() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
 
@@ -199,6 +239,7 @@ mod test {
             sheet_id,
             x: 0,
             y: 0,
-        })]);
+        })])
+        .await;
     }
 }

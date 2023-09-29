@@ -7,11 +7,17 @@ const TRY_AGAIN_TIMEOUT = 500;
 
 self.importScripts('/pyodide/pyodide.js');
 
-let getCellsMessages: (cells: string[]) => void | undefined;
+let getCellsMessages: (cells: { x: number; y: number; value: string }[]) => void | undefined;
 
-const getCellsDB = async (x0: number, y0: number, x1: number, y1: number, sheet?: string): Promise<string[]> => {
+const getCellsDB = async (
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  sheet?: string
+): Promise<{ x: number; y: number; value: string }[]> => {
   return new Promise((resolve) => {
-    getCellsMessages = (cells: string[]) => resolve(cells);
+    getCellsMessages = (cells: { x: number; y: number; value: string }[]) => resolve(cells);
     self.postMessage({ type: 'get-cells', range: { x0, y0, x1, y1, sheet } } as PythonMessage);
   });
 };

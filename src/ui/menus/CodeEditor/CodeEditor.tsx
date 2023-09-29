@@ -8,8 +8,9 @@ import {
   editorHighlightedCellsStateDefault,
 } from '../../../atoms/editorHighlightedCellsStateAtom';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
-import { runPython } from '../../../web-workers/rustWorker';
+import { CodeCellLanguage } from '../../../quadratic-core/quadratic_core';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
 import { Console } from './Console';
@@ -65,12 +66,22 @@ export const CodeEditor = () => {
   );
 
   const saveAndRunCell = useCallback(async () => {
-    if (editorContent) {
-      const results = await runPython(editorContent);
-      console.log(results);
-    }
-    // sheetController.sheet.set;
-  }, [editorContent]);
+    const language =
+      editorInteractionState.mode === 'PYTHON'
+        ? CodeCellLanguage.Python
+        : editorInteractionState.mode === 'FORMULA'
+        ? CodeCellLanguage.Formula
+        : undefined;
+    if (language === undefined)
+      throw new Error(`Language ${editorInteractionState.mode} not supported in CodeEditor#saveAndRunCell`);
+    grid.setCodeCellValue({
+      sheetId: sheets.sheet.id,
+      x: cellLocation.x,
+      y: cellLocation.y,
+      codeString: editorContent ?? '',
+      language,
+    });
+  }, [cellLocation.x, cellLocation.y, editorContent, editorInteractionState.mode]);
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // Esc
@@ -98,7 +109,7 @@ export const CodeEditor = () => {
     }
   };
 
-  if (cell === undefined || !showCodeEditor) {
+  if (!showCodeEditor) {
     return null;
   }
 
@@ -136,14 +147,13 @@ export const CodeEditor = () => {
 
       <ResizeControl setState={setEditorWidth} position="LEFT" />
       <CodeEditorHeader
-        cell={cell}
         cellLocation={cellLocation}
         unsaved={false}
         isRunningComputation={isRunningComputation}
         saveAndRunCell={saveAndRunCell}
         closeEditor={() => closeEditor(false)}
       />
-      <CodeEditorBody cell={cell} editorContent={editorContent} setEditorContent={setEditorContent} />
+      <CodeEditorBody editorContent={editorContent} setEditorContent={setEditorContent} />
       <ResizeControl setState={setConsoleHeight} position="TOP" />
 
       {/* Console Wrapper */}
@@ -158,7 +168,12 @@ export const CodeEditor = () => {
         }}
       >
         {(editorInteractionState.mode === 'PYTHON' || editorInteractionState.mode === 'FORMULA') && (
-          <Console evalResult={cell.output} editorMode={editorMode} editorContent={editorContent} selectedCell={cell} />
+          <Console
+            evalResult={cell?.output}
+            editorMode={editorMode}
+            editorContent={editorContent}
+            selectedCell={cell}
+          />
         )}
       </div>
     </div>
