@@ -4,25 +4,25 @@ use itertools::Itertools;
 
 use crate::CellValue;
 
-const ALPHABET_LOWER: [&'static str; 26] = [
+const ALPHABET_LOWER: [&str; 26] = [
     "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s",
     "t", "u", "v", "w", "x", "y", "z",
 ];
 
-const ALPHABET_UPPER: [&'static str; 26] = [
+const ALPHABET_UPPER: [&str; 26] = [
     "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S",
     "T", "U", "V", "W", "X", "Y", "Z",
 ];
 
-const MONTHS_SHORT: [&'static str; 12] = [
+const MONTHS_SHORT: [&str; 12] = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-const MONTHS_SHORT_UPPER: [&'static str; 12] = [
+const MONTHS_SHORT_UPPER: [&str; 12] = [
     "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
 ];
 
-const MONTHS_FULL: [&'static str; 12] = [
+const MONTHS_FULL: [&str; 12] = [
     "January",
     "February",
     "March",
@@ -37,7 +37,7 @@ const MONTHS_FULL: [&'static str; 12] = [
     "December",
 ];
 
-const MONTHS_FULL_UPPER: [&'static str; 12] = [
+const MONTHS_FULL_UPPER: [&str; 12] = [
     "JANUARY",
     "FEBRUARY",
     "MARCH",
@@ -52,10 +52,10 @@ const MONTHS_FULL_UPPER: [&'static str; 12] = [
     "DECEMBER",
 ];
 
-const DAYS_SHORT: [&'static str; 7] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const DAYS_SHORT_UPPER: [&'static str; 7] = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+const DAYS_SHORT: [&str; 7] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAYS_SHORT_UPPER: [&str; 7] = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
-const DAYS_FULL: [&'static str; 7] = [
+const DAYS_FULL: [&str; 7] = [
     "Monday",
     "Tuesday",
     "Wednesday",
@@ -65,7 +65,7 @@ const DAYS_FULL: [&'static str; 7] = [
     "Sunday",
 ];
 
-const DAYS_FULL_UPPER: [&'static str; 7] = [
+const DAYS_FULL_UPPER: [&str; 7] = [
     "MONDAY",
     "TUESDAY",
     "WEDNESDAY",
@@ -129,9 +129,9 @@ pub fn find_number_series(options: SeriesOptions) -> Vec<CellValue> {
     let zero = BigDecimal::zero();
     let numbers = series
         .iter()
-        .filter_map(|s| match s {
-            CellValue::Number(number) => Some(number),
-            _ => Some(&zero),
+        .map(|s| match s {
+            CellValue::Number(number) => number,
+            _ => &zero,
         })
         .collect::<Vec<&BigDecimal>>();
 
@@ -226,7 +226,7 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
             if let Some(mut possible) = possible_text_series[i].to_owned() {
                 if !is_series_key(&cell_value, text_series) {
                     possible_text_series[i] = None;
-                } else if possible.len() == 0 {
+                } else if possible.is_empty() {
                     possible_text_series[i] = Some(vec![cell.to_owned()]);
                 } else if is_series_next_key(
                     &cell_value,
@@ -252,7 +252,7 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
 
     for i in 0..possible_text_series.len() {
         if let Some(entry) = &possible_text_series[i].clone() {
-            if entry.len() > 0 {
+            if !entry.is_empty() {
                 let current = if !negative {
                     entry[entry.len() - 1].to_owned()
                 } else {
@@ -281,7 +281,7 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
         }
     }
 
-    if results.len() > 0 {
+    if !results.is_empty() {
         return results;
     }
 
@@ -307,7 +307,7 @@ pub fn find_auto_complete(options: SeriesOptions) -> Vec<CellValue> {
     find_string_series(options)
 }
 
-pub fn is_series_key(key: &str, keys: &Vec<&str>) -> bool {
+pub fn is_series_key(key: &str, keys: &[&str]) -> bool {
     keys.contains(&key)
 }
 
@@ -339,7 +339,7 @@ pub fn get_series_next_key(last_key: &str, all_keys: &Vec<&str>, negative: bool)
     let all_keys_len = all_keys.len() as isize;
     let index = all_keys
         .iter()
-        .position(|val| last_key.to_string() == val.to_string())
+        .position(|val| *last_key == val.to_string())
         .ok_or_else(|| anyhow!("Expected to find '{}' in all_keys", last_key))?
         as isize;
 
