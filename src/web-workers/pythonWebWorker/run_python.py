@@ -147,7 +147,6 @@ async def run_python(code):
 
         # Get Cells
         cells = await getCellsDB(p0[0], p0[1], p1[0], p1[1], sheet)
-        print(cells[0].x)
 
         # Create empty df of the correct size
         df = pd.DataFrame(
@@ -171,7 +170,7 @@ async def run_python(code):
 
     async def getCell(p_x, p_y, sheet=None):
         # mark cell this formula accesses
-        result = await getCells([p_x, p_y], [p_x, p_y], sheet)
+        result = await getCellsDB(p_x, p_y, p_x, p_y, sheet)
 
         if len(result):
             return Cell(result[0])
