@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use bigdecimal::{BigDecimal, Zero};
+use itertools::Itertools;
 
 use crate::CellValue;
 
@@ -88,24 +89,18 @@ pub fn copy_series(options: SeriesOptions) -> Vec<CellValue> {
     } = options;
 
     if negative {
-        // TODO(ddimaria): improve this
-        let mut count = 0;
-        let mut output = vec![];
+        let chunk_size = series.len();
 
-        while count < spaces {
-            let max = std::cmp::min(spaces - count, series.len() as i32);
-            let mut temp = series
-                .clone()
-                .into_iter()
-                .rev()
-                .take(max as usize)
-                .collect::<Vec<CellValue>>();
-            temp.reverse();
-            temp.extend(output);
-            output = temp;
-            count += max;
-        }
-
+        let mut output = series
+            .into_iter()
+            .rev()
+            .cycle()
+            .take(spaces as usize)
+            .chunks(chunk_size)
+            .into_iter()
+            .flat_map(|chunks| chunks.collect_vec())
+            .collect::<Vec<_>>();
+        output.reverse();
         output
     } else {
         series
@@ -244,7 +239,7 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
                         .collect(),
                     text_series,
                 )
-                .unwrap()
+                .unwrap_or(false)
                 {
                     possible.push(cell.to_owned());
                     possible_text_series[i] = Some(possible);
@@ -255,31 +250,26 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
         });
     });
 
-    // // we didn't find at least 2 adjacent values in a series
-    // if possible_text_series.len() <= 1 {
-    //     return copy_series(options);
-    // }
-
     for i in 0..possible_text_series.len() {
-        let entry = &possible_text_series[i];
-
-        if let Some(entry) = entry {
+        if let Some(entry) = &possible_text_series[i].clone() {
             if entry.len() > 0 {
-                let mut current = entry[entry.len() - 1].to_owned();
+                let current = if !negative {
+                    entry[entry.len() - 1].to_owned()
+                } else {
+                    entry[0].to_owned()
+                };
 
-                if negative {
-                    current = entry[0].to_owned();
-                }
-
+                // TODO(ddimaria): replace with new to-cell-value code when it's ready
                 let mut cell_value = match current {
                     CellValue::Text(current) => current,
                     _ => "".into(),
                 };
 
                 (0..spaces).for_each(|_| {
-                    let next = get_series_next_key(&cell_value, &text_series[i], negative).unwrap();
-                    results.push(CellValue::Text(next.to_owned()));
-                    cell_value = next;
+                    if let Ok(next) = get_series_next_key(&cell_value, &text_series[i], negative) {
+                        results.push(CellValue::Text(next.to_owned()));
+                        cell_value = next;
+                    }
                 });
 
                 if negative {
@@ -346,12 +336,12 @@ pub fn checked_mod(n: isize, m: isize) -> isize {
 }
 
 pub fn get_series_next_key(last_key: &str, all_keys: &Vec<&str>, negative: bool) -> Result<String> {
+    let all_keys_len = all_keys.len() as isize;
     let index = all_keys
         .iter()
         .position(|val| last_key.to_string() == val.to_string())
         .ok_or_else(|| anyhow!("Expected to find '{}' in all_keys", last_key))?
         as isize;
-    let all_keys_len = all_keys.len() as isize;
 
     let key = match negative {
         true => checked_mod(index - 1, all_keys_len),
