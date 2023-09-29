@@ -6,6 +6,7 @@ pub mod auto_complete;
 pub mod bounds;
 pub mod clipboard;
 pub mod formatting;
+pub mod import;
 pub mod offsets;
 pub mod render;
 pub mod sheets;

@@ -113,7 +113,7 @@ export const Component = () => {
                     const file: File = e.target.files[0];
                     const contents = await file.text().catch((e) => null);
 
-                    const validFile = validateAndUpgradeGridFile(contents);
+                    const validFile = await validateAndUpgradeGridFile(contents);
                     if (!validFile) {
                       addGlobalSnackbar('Import failed: invalid `.grid` file.', { severity: 'error' });
                       return;
@@ -124,7 +124,7 @@ export const Component = () => {
                     let formData = new FormData();
                     formData.append('name', name);
                     formData.append('version', validFile.version);
-                    formData.append('contents', JSON.stringify(validFile));
+                    formData.append('contents', validFile.contents);
                     submit(formData, { method: 'POST', action: ROUTES.CREATE_FILE });
                   }}
                   hidden
