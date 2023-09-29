@@ -87,7 +87,7 @@ export const Component = () => {
           const oldFile = await localforage.getItem(localFile.id);
 
           // Validate and upgrade it to the latest version
-          const newFile = validateAndUpgradeGridFile(JSON.stringify(oldFile));
+          const newFile = await validateAndUpgradeGridFile(JSON.stringify(oldFile));
           if (!newFile) {
             throw new Error('Failed to upgrade file');
           }
@@ -95,7 +95,7 @@ export const Component = () => {
           // Create a new file in the DB
           await apiClient.createFile({
             name: localFile.filename,
-            contents: JSON.stringify(newFile),
+            contents: newFile.contents,
             version: newFile.version,
           });
 
