@@ -209,11 +209,18 @@ export class PointerAutoComplete {
       bounds.addRectangle(this.selection);
       bounds.addCoordinate(this.endCell);
       let fullBounds = bounds.toRectangle();
-      let shrinkHorizontal =
-        this.stateHorizontal === 'shrink' && this.toHorizontal !== undefined ? BigInt(this.toHorizontal) : undefined;
+      console.log('this.selection', this.selection);
+      console.log('this.endCell', this.endCell);
 
       if (fullBounds) {
-        grid.expand(sheet.id, this.selection, fullBounds, shrinkHorizontal);
+        if (this.stateHorizontal === 'shrink') {
+          fullBounds.width = this.endCell.x - this.selection.x;
+        }
+
+        if (this.stateVertical === 'shrink') {
+          fullBounds.height = this.endCell.y - this.selection.y;
+        }
+        grid.expand(sheet.id, this.selection, fullBounds, undefined);
       }
     }
 

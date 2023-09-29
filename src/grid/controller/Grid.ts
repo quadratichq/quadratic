@@ -617,7 +617,7 @@ export class Grid {
       sheets.getCursorPosition()
     );
     transactionResponse(summary);
-    // this.dirty = true;
+    this.dirty = true;
   }
   //#endregion
 }

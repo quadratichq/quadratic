@@ -24,14 +24,16 @@ pub fn assert_cell_value(
     let sheet = grid_controller.grid().sheet_from_id(sheet_id);
     let cell_value = sheet.get_cell_value(Pos { x, y });
     let expected = if let Ok(number) = BigDecimal::from_str(value) {
-        CellValue::Number(number)
+        Some(CellValue::Number(number))
+    } else if value.is_empty() {
+        None
     } else {
-        CellValue::Text(value.to_string())
+        Some(CellValue::Text(value.to_string()))
     };
 
     assert_eq!(
         cell_value,
-        Some(expected.clone()),
+        expected.clone(),
         "Cell at ({}, {}) does not have the value {:?}, it's actually {:?}",
         x,
         y,
