@@ -30,7 +30,7 @@ pub(crate) mod btreemap_serde {
     ) -> Result<BTreeMap<K, V>, D::Error> {
         Ok(HashMap::<String, V>::deserialize(d)?
             .into_iter()
-            .map(|(k, v)| ((serde_json::from_str(&k).unwrap(), v)))
+            .map(|(k, v)| (serde_json::from_str(&k).unwrap(), v))
             .collect())
     }
 }
@@ -62,7 +62,7 @@ pub(crate) mod hashmap_serde {
     ) -> Result<HashMap<K, V>, D::Error> {
         Ok(HashMap::<String, V>::deserialize(d)?
             .into_iter()
-            .map(|(k, v)| ((serde_json::from_str(&k).unwrap(), v)))
+            .map(|(k, v)| (serde_json::from_str(&k).unwrap(), v))
             .collect())
     }
 }

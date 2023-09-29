@@ -298,7 +298,7 @@ mod test {
 
     #[test]
     fn test_cell_value_to_display_currency() {
-        let cv = CellValue::Number(BigDecimal::from_str(&"123.1233").unwrap());
+        let cv = CellValue::Number(BigDecimal::from_str("123.1233").unwrap());
         assert_eq!(
             cv.to_display(
                 Some(NumericFormat {
@@ -310,7 +310,7 @@ mod test {
             String::from("$123.12")
         );
 
-        let cv = CellValue::Number(BigDecimal::from_str(&"123.1255").unwrap());
+        let cv = CellValue::Number(BigDecimal::from_str("123.1255").unwrap());
         assert_eq!(
             cv.to_display(
                 Some(NumericFormat {
@@ -322,7 +322,7 @@ mod test {
             String::from("$123.13")
         );
 
-        let cv = CellValue::Number(BigDecimal::from_str(&"123.0").unwrap());
+        let cv = CellValue::Number(BigDecimal::from_str("123.0").unwrap());
         assert_eq!(
             cv.to_display(
                 Some(NumericFormat {
@@ -337,7 +337,7 @@ mod test {
 
     #[test]
     fn test_cell_value_to_display_percentage() {
-        let cv = CellValue::Number(BigDecimal::from_str(&"0.015").unwrap());
+        let cv = CellValue::Number(BigDecimal::from_str("0.015").unwrap());
         assert_eq!(
             cv.to_display(
                 Some(NumericFormat {
@@ -349,7 +349,7 @@ mod test {
             String::from("1.5%")
         );
 
-        let cv = CellValue::Number(BigDecimal::from_str(&"0.9912239").unwrap());
+        let cv = CellValue::Number(BigDecimal::from_str("0.9912239").unwrap());
         assert_eq!(
             cv.to_display(
                 Some(NumericFormat {
@@ -367,7 +367,7 @@ mod test {
         let value = String::from("1238.12232%");
         assert_eq!(
             CellValue::unpack_percentage(&value),
-            Some(BigDecimal::from_str(&"12.3812232").unwrap()),
+            Some(BigDecimal::from_str("12.3812232").unwrap()),
         );
     }
 }
