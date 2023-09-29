@@ -32,11 +32,11 @@ impl From<String> for CellValue {
         CellValue::Text(value)
     }
 }
-impl From<&str> for CellValue {
-    fn from(value: &str) -> Self {
-        CellValue::Text(value.to_string())
-    }
-}
+// impl From<&str> for CellValue {
+//     fn from(value: &str) -> Self {
+//         CellValue::Text(value.to_string())
+//     }
+// }
 // todo: this might be wrong for formulas
 impl From<f64> for CellValue {
     fn from(value: f64) -> Self {
@@ -116,7 +116,7 @@ impl<'a> TryFrom<&'a CellValue> for f64 {
                     got: Some(value.type_name().into()),
                 })
             }
-            // todo: this may be wrong
+            // remove unwrap!
             CellValue::Number(n) => Ok(n.to_f64().unwrap()),
             CellValue::Logical(true) => Ok(1.0),
             CellValue::Logical(false) => Ok(0.0),

@@ -191,13 +191,9 @@ impl GridController {
         let mut y = 0;
         rows.iter().for_each(|row| {
             row.iter().for_each(|s| {
-                if s.len() != 0 {
-                    if let Ok(n) = BigDecimal::from_str(s) {
-                        let _ = array.set(x, y, CellValue::Number(n));
-                    } else {
-                        let _ = array.set(x, y, CellValue::Text(String::from(*s)));
-                    };
-                }
+                array
+                    .set(x, y, (*s).into())
+                    .expect("failed to set cell value");
                 x += 1;
             });
             y += 1;

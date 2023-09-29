@@ -56,6 +56,43 @@ impl AsRef<CellValue> for CellValue {
     }
 }
 
+impl From<&str> for CellValue {
+    fn from(value: &str) -> Self {
+        // Placeholder functions for parsing Instant and Duration
+        fn parse_instant(s: &str) -> Result<Instant, Error> {
+            // Implement your parsing logic here...
+            unimplemented!()
+        }
+
+        fn parse_duration(s: &str) -> Result<Duration, Error> {
+            // Implement your parsing logic here...
+            unimplemented!()
+        }
+
+        match value {
+            // Empty string is a blank cell.
+            "" => CellValue::Blank,
+
+            // Try to parse as boolean
+            "true" | "True" | "TRUE" => CellValue::Logical(true),
+            "false" | "False" | "FALSE" => CellValue::Logical(false),
+
+            // For any other string, try the other parsing logic
+            _ => {
+                if let Ok(number) = BigDecimal::from_str(value) {
+                    CellValue::Number(number)
+                } else if let Ok(instant) = parse_instant(value) {
+                    CellValue::Instant(instant)
+                } else if let Ok(duration) = parse_duration(value) {
+                    CellValue::Duration(duration)
+                } else {
+                    CellValue::Text(String::from(value))
+                }
+            }
+        }
+    }
+}
+
 impl CellValue {
     /// Returns a human-friendly string describing the type of value.
     pub fn type_name(&self) -> &'static str {
