@@ -7,8 +7,8 @@ import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { TooltipHint } from '../../ui/components/TooltipHint';
 import { DashboardFileLink } from './DashboardFileLink';
-import { Action, Props as FileListProps } from './FileList';
-import { Layout, Sort, ViewPreferences } from './FileListViewPreferences';
+import { Action, Props as FileListProps } from './FilesList';
+import { Layout, Sort, ViewPreferences } from './FilesListViewPreferences';
 
 export function FilesListItems({ children, viewPreferences }: any) {
   const theme = useTheme();
@@ -34,12 +34,14 @@ export function FilesListItems({ children, viewPreferences }: any) {
 export function FileListItem({
   file,
   filterValue,
+
   activeShareMenuFileId,
   setActiveShareMenuFileId,
   viewPreferences,
 }: {
   file: FileListProps['files'][0];
   filterValue?: string;
+
   activeShareMenuFileId: string;
   setActiveShareMenuFileId: Function;
   viewPreferences: ViewPreferences;
@@ -55,6 +57,7 @@ export function FileListItem({
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
 
   const { uuid, name, created_date, updated_date, public_link_access } = file;
+
   const fetcherSubmitOpts: SubmitOptions = {
     method: 'POST',
     action: ROUTES.API_FILE(uuid),
@@ -293,22 +296,6 @@ export function FileListItem({
     </>
   );
 }
-
-// function MoreActionsButton({ open, handleActionsMenuClick }: any) {
-//   return (
-//     <TooltipHint title="More…">
-//       <IconButton
-//         id="file-actions-button"
-//         aria-controls={open ? 'files-list-item-actions-menu' : undefined}
-//         aria-haspopup="true"
-//         aria-expanded={open ? 'true' : undefined}
-//         onClick={handleActionsMenuClick}
-//       >
-//         <MoreVert />
-//       </IconButton>
-//     </TooltipHint>
-//   );
-// }
 
 // Vanilla js time formatter. Adapted from:
 // https://blog.webdevsimplified.com/2020-07/relative-time-format/

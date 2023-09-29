@@ -17,7 +17,7 @@ import { debugShowUILogs } from '../../debugFlags';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
 import CreateButton from '../components/CreateButton';
 import { DashboardHeader } from '../components/DashboardHeader';
-import { FileList } from '../components/FileList';
+import { FilesList } from '../components/FilesList';
 
 export type ListFile = Awaited<ReturnType<typeof apiClient.getFiles>>[0];
 type LoaderResponse = ListFile[];
@@ -101,7 +101,7 @@ export const Component = () => {
         }
       />
 
-      <FileList files={files} />
+      <FilesList files={files} />
     </>
   );
 };

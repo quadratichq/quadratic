@@ -6,7 +6,7 @@ type Props = {
   value: string;
 };
 
-export function FileListItemInput({ setValue, value }: Props) {
+export function FilesListItemInput({ setValue, value }: Props) {
   const theme = useTheme();
   const inputRef = useRef<HTMLInputElement>(null);
 

@@ -1,6 +1,6 @@
 import { GridViewOutlined, MenuOutlined } from '@mui/icons-material';
 import { ToggleButton, ToggleButtonGroup, styled } from '@mui/material';
-import { Layout } from './FileListViewPreferences';
+import { Layout } from './FilesListViewPreferences';
 
 export type LayoutPreference = 'list' | 'grid';
 
@@ -17,7 +17,7 @@ const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
   },
 }));
 
-export function FileListLayoutPreferenceToggle({ viewPreferences, setViewPreferences }: any) {
+export function FilesListLayoutPreferenceToggle({ viewPreferences, setViewPreferences }: any) {
   return (
     <StyledToggleButtonGroup
       value={viewPreferences.layout}

@@ -1,7 +1,7 @@
 import { Public } from '@mui/icons-material';
 import { Box, Stack, Typography, useTheme } from '@mui/material';
 import { ReactNode } from 'react';
-import { FileListItemInput } from './FileListItemInput';
+import { FilesListItemInput } from './FilesListItemInput';
 
 type Props = {
   name: string;
@@ -74,7 +74,7 @@ export function DashboardFileLink({
 
         {isRenaming && (
           // @ts-expect-error
-          <FileListItemInput setValue={renameFile} value={name} />
+          <FilesListItemInput setValue={renameFile} value={name} />
         )}
       </Stack>
       {actions}

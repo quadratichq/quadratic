@@ -1,16 +1,18 @@
 import { InsertDriveFileOutlined, SearchOff } from '@mui/icons-material';
 import { Box, Stack, TextField, useTheme } from '@mui/material';
 import { useState } from 'react';
-import { ActionFunctionArgs, useFetchers } from 'react-router-dom';
+import { ActionFunctionArgs, useFetchers, useLocation } from 'react-router-dom';
 import { apiClient } from '../../api/apiClient';
 import { Empty } from '../../components/Empty';
 import { ShareFileMenu } from '../../components/ShareFileMenu';
-import { FileListItem, FilesListItems } from './FileListItem';
-import { FileListLayoutPreferenceToggle } from './FileListLayoutPreferenceToggle';
-import { FileListViewPreferences, Layout, Order, Sort, ViewPreferences } from './FileListViewPreferences';
+import useLocalStorage from '../../hooks/useLocalStorage';
+import { FileListItem, FilesListItems } from './FilesListItem';
+import { FilesListLayoutPreferenceToggle } from './FilesListLayoutPreferenceToggle';
+import { FileListViewPreferences, Layout, Order, Sort, ViewPreferences } from './FilesListViewPreferences';
 
+type ApiFile = Awaited<ReturnType<typeof apiClient.getFiles>>[0];
 export type Props = {
-  files: Awaited<ReturnType<typeof apiClient.getFiles>>;
+  files: ApiFile[];
 };
 
 export type Action = {
@@ -23,7 +25,7 @@ export type Action = {
   };
   'request.duplicate': {
     action: 'duplicate';
-    file: Props['files'][0];
+    file: ApiFile;
   };
   'request.rename': {
     action: 'rename';
@@ -36,14 +38,21 @@ export type Action = {
     | Action['request.rename'];
 };
 
-export function FileList({ files }: Props) {
+const initialStateViewPreferences = {
+  sort: Sort.Updated,
+  order: Order.Descending,
+  layout: Layout.Grid,
+};
+
+export function FilesList({ files }: Props) {
   // const actionData = useActionData() as Action['response'];
+  const { pathname } = useLocation();
   const [filterValue, setFilterValue] = useState<string>('');
-  const [viewPreferences, setViewPreferences] = useState<ViewPreferences>({
-    sort: Sort.Updated,
-    order: Order.Descending,
-    layout: Layout.Grid,
-  });
+  const [viewPreferences, setViewPreferences] = useLocalStorage<ViewPreferences>(
+    `FilesList-${pathname}`,
+    initialStateViewPreferences
+  );
+
   // const theme = useTheme();
   const fetchers = useFetchers();
   // const submit = useSubmit();
@@ -51,6 +60,8 @@ export function FileList({ files }: Props) {
   const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
   // const isDisabled = navigation.state !== 'idle';
   // const { addGlobalSnackbar } = useGlobalSnackbar();
+
+  // const isExample = files[0]?.description;
 
   // useEffect(() => {
   //   if (actionData && !actionData.ok) {
@@ -158,7 +169,7 @@ function FilesListViewControls({ filterValue, setFilterValue, viewPreferences, s
       alignItems="center"
       gap={theme.spacing(2)}
       sx={{
-        py: theme.spacing(1),
+        py: theme.spacing(1.5),
         [theme.breakpoints.up('md')]: {
           px: theme.spacing(),
         },
@@ -179,7 +190,7 @@ function FilesListViewControls({ filterValue, setFilterValue, viewPreferences, s
         </Box>
 
         <Box>
-          <FileListLayoutPreferenceToggle viewPreferences={viewPreferences} setViewPreferences={setViewPreferences} />
+          <FilesListLayoutPreferenceToggle viewPreferences={viewPreferences} setViewPreferences={setViewPreferences} />
         </Box>
       </Stack>
     </Stack>

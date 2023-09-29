@@ -23,7 +23,7 @@ import { SUPPORT_EMAIL } from './constants/appConstants';
 import { ROUTES, ROUTE_LOADER_IDS } from './constants/routes';
 import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
 import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
-import { action as filesAction } from './dashboard/components/FileList';
+import { action as filesAction } from './dashboard/components/FilesList';
 import * as Create from './dashboard/files/CreateRoute';
 import { initializeAnalytics } from './utils/analytics';
 // @ts-expect-error - for testing purposes
