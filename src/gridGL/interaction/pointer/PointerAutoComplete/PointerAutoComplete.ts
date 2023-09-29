@@ -103,7 +103,7 @@ export class PointerAutoComplete {
           this.stateVertical = 'shrink';
           this.toVertical = row;
           rectangle.height = row - selection.top;
-          deleteRectangles.push(new Rectangle(selection.x, row, selection.width, selection.bottom - row));
+          deleteRectangles.push(new Rectangle(selection.x, row + 1, selection.width, selection.bottom - row - 1));
         } else if (row < selection.top) {
           this.stateVertical = 'expandUp';
           this.toVertical = row;
@@ -126,9 +126,13 @@ export class PointerAutoComplete {
           this.toHorizontal = column;
           rectangle.width = column - selection.left;
           if (this.stateVertical === 'shrink') {
-            deleteRectangles.push(new Rectangle(column, selection.y, selection.right - column, row - selection.y));
+            deleteRectangles.push(
+              new Rectangle(column + 1, selection.y, selection.right - column - 1, row - selection.y)
+            );
           } else {
-            deleteRectangles.push(new Rectangle(column, selection.y, selection.right - column, selection.height));
+            deleteRectangles.push(
+              new Rectangle(column + 1, selection.y, selection.right - column - 1, selection.height)
+            );
           }
         } else if (column < selection.left) {
           this.stateHorizontal = 'expandLeft';
