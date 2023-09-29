@@ -69,6 +69,7 @@ export class PointerDown {
           return;
         }
         const code = sheet.getCodeValue(column, row);
+        console.log(code);
         const cell = sheet.getEditCell(column, row);
         doubleClickCell({ column, row, code, cell });
         this.active = false;

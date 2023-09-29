@@ -1,6 +1,9 @@
 use super::{operations::Operation, GridController};
 use crate::{
-    grid::{js_types::CellForArray, CodeCellLanguage, CodeCellValue, Sheet, SheetId},
+    grid::{
+        js_types::CellForArray, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult,
+        CodeCellValue, SheetId,
+    },
     wasm_bindings::{
         js::{self, runPython},
         JsCodeResult,
@@ -9,7 +12,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use std::{fmt, ops::Range};
-use wasm_bindgen::{prelude::Closure, JsValue};
+use wasm_bindgen::prelude::Closure;
 
 impl GridController {
     /// Given `cell` and `dependencies` adds a new node to the graph.
@@ -22,7 +25,8 @@ impl GridController {
             js::log(&format!("Computing cell - {} \n", rect));
             // find which cells have formulas. Run the formulas and update the cells.
             // add the updated cells to the cells_to_compute
-            let sheet = self.sheet(rect.sheet_id);
+            let grid = self.grid.clone();
+            let sheet = self.grid.sheet_mut_from_id(rect.sheet_id);
 
             for y in rect.y_range() {
                 for x in rect.x_range() {
@@ -31,7 +35,7 @@ impl GridController {
                         match code_cell.language {
                             CodeCellLanguage::Python => {
                                 // todo: remove this clone and move to a while of awaits to pass control back and forth to TS to avoid mem copies
-                                let gc = self.clone();
+                                let grid = grid.clone();
                                 let current_sheet_id = sheet.id.to_string();
 
                                 let get_cells =
@@ -39,17 +43,16 @@ impl GridController {
                                         // convert sheet_name to id or use current code's sheet
                                         let sheet = if let Some(sheet_name) = sheet_name {
                                             if let Some(sheet_from_name) =
-                                                gc.grid.sheet_from_name(sheet_name)
+                                                grid.sheet_from_name(sheet_name)
                                             {
                                                 sheet_from_name
                                             } else {
-                                                gc.grid.sheet_from_string(current_sheet_id.clone())
+                                                grid.sheet_from_string(current_sheet_id.clone())
                                             }
                                         } else {
-                                            gc.grid.sheet_from_string(current_sheet_id.clone())
+                                            grid.sheet_from_string(current_sheet_id.clone())
                                         };
 
-                                        // todo: convert this function to pure rust instead of js
                                         let array = sheet.cell_array(rect);
                                         Ok(serde_json::to_string::<[CellForArray]>(&array)
                                             .map_err(|e| e.to_string())?)
@@ -59,15 +62,33 @@ impl GridController {
                                     runPython(code_cell.code_string.clone(), &get_cells).await;
                                 let code_cell_value =
                                     serde_wasm_bindgen::from_value::<JsCodeResult>(result);
-                                // sheet.set_code_cell_value(
-                                //     sheet_id,
-                                //     Some(CodeCellValue {
-                                //         language: code_cell.language,
-                                //         code_string: code_cell.code_string,
-                                //         formatted_code_string: result.
-                                //     }),
-                                // );
-                                js::log(&format!("{:?}", code_cell_value));
+                                match code_cell_value {
+                                    Ok(code_cell_value) => {
+                                        sheet.set_code_cell_value(
+                                            pos,
+                                            Some(CodeCellValue {
+                                                language: code_cell.language,
+                                                code_string: code_cell.code_string.clone(),
+                                                formatted_code_string: code_cell_value
+                                                    .formatted_code,
+                                                output: Some(CodeCellRunOutput {
+                                                    std_out: code_cell_value.input_python_std_out,
+                                                    std_err: code_cell_value.error_msg,
+                                                    result: CodeCellRunResult::Ok {
+                                                        output_value: code_cell_value
+                                                            .output_value
+                                                            .into(),
+
+                                                        // todo...
+                                                        cells_accessed: vec![],
+                                                    },
+                                                }),
+                                                last_modified: String::new(),
+                                            }),
+                                        );
+                                    }
+                                    Err(_) => js::log("Error in code_cell_value...todo"),
+                                }
                             }
                             _ => {
                                 js::log(&format!(

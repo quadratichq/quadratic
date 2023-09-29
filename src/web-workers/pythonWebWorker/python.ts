@@ -17,8 +17,6 @@ class PythonWebWorker {
       const event = e.data;
       if (event.type === 'results') {
         if (this.callback && event.results) {
-          console.log(event.results);
-          debugger;
           this.callback(event.results);
           this.callback = undefined;
         }
