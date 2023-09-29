@@ -42,6 +42,9 @@ impl GridController {
         let should_shrink_width = range.max.x < rect.max.x;
         let should_shrink_height = range.max.y < rect.max.y;
 
+        println!("rect: {:?}", rect);
+        println!("range: {:?}", range);
+
         if should_shrink_width {
             let delete_range = Rect::new_span(
                 (range.max.x + 1, range.min.y).into(),
@@ -732,7 +735,7 @@ mod tests {
     #[test]
     fn test_expand_up_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
-        let range: Rect = Rect::new_span(selected.min, Pos { x: 10, y: -7 });
+        let range: Rect = Rect::new_span(Pos { x: 2, y: -7 }, Pos { x: 10, y: 3 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
@@ -754,7 +757,7 @@ mod tests {
     #[test]
     fn test_expand_down_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
-        let range: Rect = Rect::new_span(selected.min, Pos { x: -7, y: 10 });
+        let range: Rect = Rect::new_span(Pos { x: -7, y: 20 }, Pos { x: 5, y: 10 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
@@ -921,7 +924,7 @@ mod tests {
         print_table(
             grid.clone(),
             sheet_id,
-            &Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 10 }),
+            &Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 12, y: 12 }),
         );
 
         let expected = vec!["a", "h", "x", "", "", "", "", "", ""];
@@ -951,7 +954,7 @@ mod tests {
         print_table(
             grid.clone(),
             sheet_id,
-            &Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 10 }),
+            &Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 12, y: 12 }),
         );
 
         let expected_full = vec!["a", "h", "x", "g", "a", "h", "x", "g", "a"];
@@ -982,7 +985,7 @@ mod tests {
         print_table(
             grid.clone(),
             sheet_id,
-            &Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 10 }),
+            &Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 12, y: 12 }),
         );
 
         let expected_full = vec!["a", "h", "x", "g", "", "", "", "", ""];
