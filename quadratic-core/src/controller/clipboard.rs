@@ -57,12 +57,12 @@ impl GridController {
                 let code: Option<CodeCellValue> = if value.is_none() && spill_value.is_none() {
                     let code_cell_value = sheet.get_code_cell(pos);
                     code_cell_value.map(|code_cell_value| CodeCellValue {
-                            language: code_cell_value.language,
-                            code_string: code_cell_value.code_string.clone(),
-                            formatted_code_string: None,
-                            last_modified: code_cell_value.last_modified.clone(),
-                            output: None,
-                        })
+                        language: code_cell_value.language,
+                        code_string: code_cell_value.code_string.clone(),
+                        formatted_code_string: None,
+                        last_modified: code_cell_value.last_modified.clone(),
+                        output: None,
+                    })
                 } else {
                     None
                 };
@@ -87,7 +87,7 @@ impl GridController {
                         html.push_str("font-weight:bold;");
                     }
                     if italic {
-                        html.push_str("font-style:italic;")
+                        html.push_str("font-style:italic;");
                     }
                     html.push_str("}>");
                 }
@@ -96,8 +96,8 @@ impl GridController {
                     html.push_str(&value.as_ref().unwrap().to_string());
                 } else if code.is_some() {
                     let output = code.unwrap().get_output_value(0, 0);
-                    if output.is_some() {
-                        plain_text.push_str(&output.unwrap().repr());
+                    if let Some(output) = output {
+                        plain_text.push_str(&output.repr());
                     }
                 } else if spill_value.is_some() {
                     plain_text.push_str(&spill_value.as_ref().unwrap().to_string());
@@ -222,10 +222,10 @@ impl GridController {
         let mut ops = vec![];
         let region = self.region(sheet_id, rect);
         let values = GridController::array_from_clipboard_cells(clipboard);
-        if values.is_some() {
+        if let Some(values) = values {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
-                values: values.unwrap(),
+                values,
             });
         }
 
@@ -233,7 +233,7 @@ impl GridController {
             ops.push(Operation::SetCellFormats {
                 region: region.clone(),
                 attr: format.clone(),
-            })
+            });
         });
 
         self.transact_forward(ops, cursor)
@@ -306,16 +306,16 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         // first try html
-        if html.is_some() {
-            let pasted_html = self.paste_html(sheet_id, pos, html.unwrap(), cursor.clone());
-            if pasted_html.is_ok() {
-                return pasted_html.unwrap();
+        if let Some(html) = html {
+            let pasted_html = self.paste_html(sheet_id, pos, html, cursor.clone());
+            if let Ok(pasted_html) = pasted_html {
+                return pasted_html;
             }
         }
 
         // if not quadratic html, then use the plain text
-        if plain_text.is_some() {
-            return self.paste_plain_text(sheet_id, pos, plain_text.unwrap(), cursor);
+        if let Some(plain_text) = plain_text {
+            return self.paste_plain_text(sheet_id, pos, plain_text, cursor);
         }
         TransactionSummary::default()
     }

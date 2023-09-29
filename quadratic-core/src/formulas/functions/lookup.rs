@@ -376,7 +376,7 @@ fn lookup_linear_search<'a, V: 'a + AsRef<CellValue>>(
     best_match.map(|(index, _value)| index)
 }
 
-fn lookup_binary_search<'a, V: AsRef<CellValue>>(
+fn lookup_binary_search<V: AsRef<CellValue>>(
     needle: &CellValue,
     haystack: &[V],
     preference: std::cmp::Ordering,
