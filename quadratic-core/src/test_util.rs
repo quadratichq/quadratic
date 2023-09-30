@@ -69,7 +69,13 @@ pub fn assert_cell_format_bold_row(
     value: Vec<bool>,
 ) {
     for (index, x) in (x_start..=x_end).enumerate() {
-        assert_cell_format_bold(grid_controller, sheet_id, x, y, *value.get(index).unwrap());
+        assert_cell_format_bold(
+            grid_controller,
+            sheet_id,
+            x,
+            y,
+            *value.get(index).unwrap_or(&false),
+        );
     }
 }
 

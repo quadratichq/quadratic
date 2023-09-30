@@ -53,6 +53,8 @@ impl GridController {
             println!("delete_range: {:?}", delete_range);
             let ops = self.delete_cell_values_operations(sheet_id, delete_range);
             operations.extend(ops);
+            let ops = self.clear_formatting_operations(sheet_id, delete_range);
+            operations.extend(ops);
             rect.max.x = range.max.x;
         }
 
@@ -63,6 +65,8 @@ impl GridController {
             );
             println!("delete_range: {:?}", delete_range);
             let ops = self.delete_cell_values_operations(sheet_id, delete_range);
+            operations.extend(ops);
+            let ops = self.clear_formatting_operations(sheet_id, delete_range);
             operations.extend(ops);
             rect.max.y = range.max.y;
         }
@@ -918,7 +922,7 @@ mod tests {
 
         // then, shrink
         let selected = range;
-        let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 4, y: 10 });
+        let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 4, y: 7 });
         grid.expand(sheet_id, selected, range, None, None).unwrap();
 
         print_table(
@@ -927,14 +931,18 @@ mod tests {
             &Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 12, y: 12 }),
         );
 
-        let expected = vec!["a", "h", "x", "", "", "", "", "", ""];
+        let expected_full = vec!["a", "h", "x", "", "", "", "", "", ""];
+        let expected_empty = vec!["", "", "", "", "", "", "", "", ""];
         let expected_bold_1 = vec![true, false, false, false, false, false, false, false, false];
-        let expected_bold_2 = vec![false, true, true, false, false, false, false, false, false];
+        let expected_bold_2 = vec![
+            false, false, false, false, false, false, false, false, false,
+        ];
 
-        assert_cell_value_row(&grid, sheet_id, 2, 10, 2, expected.clone());
-        assert_cell_value_row(&grid, sheet_id, 2, 10, 10, expected);
-        // assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 2, expected_bold_1);
-        // assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 10, expected_bold_2);
+        assert_cell_value_row(&grid, sheet_id, 2, 10, 2, expected_full);
+        assert_cell_value_row(&grid, sheet_id, 2, 10, 8, expected_empty);
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 2, expected_bold_1.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 6, expected_bold_1);
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 8, expected_bold_2);
     }
 
     #[test]
@@ -964,8 +972,8 @@ mod tests {
 
         assert_cell_value_row(&grid, sheet_id, 2, 10, 2, expected_full);
         assert_cell_value_row(&grid, sheet_id, 2, 10, 6, expected_empty);
-        // assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 2, expected_bold_full);
-        // assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 6, expected_bold_empty);
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 2, expected_bold_full);
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 6, expected_bold_empty);
     }
 
     #[test]
@@ -990,12 +998,12 @@ mod tests {
 
         let expected_full = vec!["a", "h", "x", "g", "", "", "", "", ""];
         let expected_empty = vec!["", "", "", "", "", "", "", "", ""];
-        let expected_bold_full = vec![true, false, false, true, true, false, false, true, true];
+        let expected_bold_full = vec![true, false, false, true, false, false, false, false, false];
         let expected_bold_empty = vec![false, false, false, false, false, false, false, false];
 
         assert_cell_value_row(&grid, sheet_id, 2, 10, 2, expected_full);
         assert_cell_value_row(&grid, sheet_id, 2, 10, 6, expected_empty);
-        // assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 2, expected_bold_full);
-        // assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 6, expected_bold_empty);
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 2, expected_bold_full);
+        assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 6, expected_bold_empty);
     }
 }
