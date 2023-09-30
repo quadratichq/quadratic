@@ -606,19 +606,19 @@ export class Grid {
   //#region AutoComplete
   //-----------------
 
-  expand(sheetId: string, rectangle: Rectangle, range: Rectangle, shrinkHorizontal?: bigint) {
+  expand(sheetId: string, rectangle: Rectangle, range: Rectangle) {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    console.log('Grid.ts', rectangleToRect(rectangle), rectangleToRect(range));
+
     const summary = this.gridController.expand(
       sheetId,
       rectangleToRect(rectangle),
       rectangleToRect(range),
-      shrinkHorizontal,
       sheets.getCursorPosition()
     );
     transactionResponse(summary);
     this.dirty = true;
   }
+
   //#endregion
 }
 

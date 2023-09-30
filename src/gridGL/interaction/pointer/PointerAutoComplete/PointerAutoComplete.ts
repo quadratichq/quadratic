@@ -213,8 +213,6 @@ export class PointerAutoComplete {
       bounds.addRectangle(this.selection);
       bounds.addCoordinate(this.endCell);
       let fullBounds = bounds.toRectangle();
-      console.log('this.selection', this.selection);
-      console.log('this.endCell', this.endCell);
 
       if (fullBounds) {
         if (this.stateHorizontal === 'shrink') {
@@ -224,7 +222,7 @@ export class PointerAutoComplete {
         if (this.stateVertical === 'shrink') {
           fullBounds.height = this.endCell.y - this.selection.y;
         }
-        grid.expand(sheet.id, this.selection, fullBounds, undefined);
+        grid.expand(sheet.id, this.selection, fullBounds);
       }
     }
 

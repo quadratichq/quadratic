@@ -27,7 +27,6 @@ impl GridController {
         sheet_id: SheetId,
         mut rect: Rect,
         range: Rect,
-        shrink_horizontal: Option<i64>,
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
         let mut operations = vec![];
@@ -42,15 +41,11 @@ impl GridController {
         let should_shrink_width = range.max.x < rect.max.x;
         let should_shrink_height = range.max.y < rect.max.y;
 
-        println!("rect: {:?}", rect);
-        println!("range: {:?}", range);
-
         if should_shrink_width {
             let delete_range = Rect::new_span(
                 (range.max.x + 1, range.min.y).into(),
                 (rect.max.x, rect.max.y).into(),
             );
-            println!("delete_range: {:?}", delete_range);
             let ops = self.delete_cell_values_operations(sheet_id, delete_range);
             operations.extend(ops);
             let ops = self.clear_formatting_operations(sheet_id, delete_range);
@@ -63,7 +58,6 @@ impl GridController {
                 (rect.min.x, range.max.y + 1).into(),
                 (range.max.x, rect.max.y).into(),
             );
-            println!("delete_range: {:?}", delete_range);
             let ops = self.delete_cell_values_operations(sheet_id, delete_range);
             operations.extend(ops);
             let ops = self.clear_formatting_operations(sheet_id, delete_range);
@@ -75,7 +69,7 @@ impl GridController {
         if should_expand_up {
             let new_range = Rect::new_span(
                 (rect.min.x, rect.min.y - 1).into(),
-                (shrink_horizontal.unwrap_or(rect.max.x), range.min.y).into(),
+                (rect.max.x, range.min.y).into(),
             );
             let ops = self.expand_up(sheet_id, &rect, &new_range)?;
             operations.extend(ops);
@@ -86,7 +80,7 @@ impl GridController {
         if should_expand_down {
             let new_range = Rect::new_span(
                 (rect.min.x, rect.max.y + 1).into(),
-                (shrink_horizontal.unwrap_or(rect.max.x), range.max.y).into(),
+                (rect.max.x, range.max.y).into(),
             );
             let ops = self.expand_down(sheet_id, &rect, &new_range)?;
             operations.extend(ops);
@@ -623,7 +617,7 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: -3, y: 1 }, Pos { x: 5, y: 2 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(
             grid.clone(),
@@ -647,7 +641,7 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 10, y: 2 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(grid.clone(), sheet_id, &range);
 
@@ -667,7 +661,7 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: -7 }, Pos { x: 5, y: 2 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(grid.clone(), sheet_id, &range);
 
@@ -695,7 +689,7 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 10 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(grid.clone(), sheet_id, &range);
 
@@ -723,7 +717,7 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(selected.min, Pos { x: 14, y: 10 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(grid.clone(), sheet_id, &range);
 
@@ -741,7 +735,7 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: -7 }, Pos { x: 10, y: 3 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(
             grid.clone(),
@@ -763,7 +757,7 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: -7, y: 20 }, Pos { x: 5, y: 10 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(
             grid.clone(),
@@ -789,7 +783,7 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: -7, y: -7 }, selected.max);
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(
             grid.clone(),
@@ -815,7 +809,7 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
         let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(grid.clone(), sheet_id, &range);
 
@@ -840,7 +834,7 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 6, y: 15 }, Pos { x: 9, y: 19 });
         let range: Rect = Rect::new_span(Pos { x: 6, y: 12 }, Pos { x: 15, y: 19 });
         let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(grid.clone(), sheet_id, &range);
 
@@ -868,7 +862,7 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: -4, y: -8 }, Pos { x: 5, y: 6 });
         let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(grid.clone(), sheet_id, &range);
 
@@ -902,7 +896,7 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 2, y: 4 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
         let (mut grid, sheet_id) = test_setup_rect_vert_series(&selected);
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(grid.clone(), sheet_id, &range);
 
@@ -918,12 +912,12 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
 
         // first, fully expand
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         // then, shrink
         let selected = range;
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 4, y: 7 });
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(
             grid.clone(),
@@ -952,12 +946,12 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
 
         // first, fully expand
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         // then, shrink
         let selected = range;
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 5 });
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(
             grid.clone(),
@@ -983,12 +977,12 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
 
         // first, fully expand
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         // then, shrink
         let selected = range;
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 5 });
-        grid.expand(sheet_id, selected, range, None, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(
             grid.clone(),
