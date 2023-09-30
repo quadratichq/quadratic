@@ -41,26 +41,24 @@ impl GridController {
         let should_shrink_width = range.max.x < rect.max.x;
         let should_shrink_height = range.max.y < rect.max.y;
 
+        // shrink width, from right to left
         if should_shrink_width {
             let delete_range = Rect::new_span(
                 (range.max.x + 1, range.min.y).into(),
                 (rect.max.x, rect.max.y).into(),
             );
-            let ops = self.delete_cell_values_operations(sheet_id, delete_range);
-            operations.extend(ops);
-            let ops = self.clear_formatting_operations(sheet_id, delete_range);
+            let ops = self.shrink(sheet_id, delete_range);
             operations.extend(ops);
             rect.max.x = range.max.x;
         }
 
+        // shrink height, from bottom to top
         if should_shrink_height {
             let delete_range = Rect::new_span(
                 (rect.min.x, range.max.y + 1).into(),
                 (range.max.x, rect.max.y).into(),
             );
-            let ops = self.delete_cell_values_operations(sheet_id, delete_range);
-            operations.extend(ops);
-            let ops = self.clear_formatting_operations(sheet_id, delete_range);
+            let ops = self.shrink(sheet_id, delete_range);
             operations.extend(ops);
             rect.max.y = range.max.y;
         }
@@ -139,6 +137,15 @@ impl GridController {
         Ok(self.transact_forward(operations, cursor))
     }
 
+    /// Delete cell values and formats in a given range.
+    pub fn shrink(&mut self, sheet_id: SheetId, delete_range: Rect) -> Vec<Operation> {
+        let mut ops = vec![];
+
+        ops.extend(self.delete_cell_values_operations(sheet_id, delete_range));
+        ops.extend(self.clear_formatting_operations(sheet_id, delete_range));
+        ops
+    }
+
     pub fn expand_right(
         &mut self,
         sheet_id: SheetId,
@@ -158,6 +165,7 @@ impl GridController {
                 let format = self.get_all_cell_formats(sheet_id, source_row);
                 let width = rect.width() as usize;
 
+                // for each column, apply the formats to a block (rect.width, y) of new cells
                 range.x_range().step_by(width).for_each(|x| {
                     let new_x = x + width as i64 - 1;
                     let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
@@ -219,6 +227,7 @@ impl GridController {
                 let format = self.get_all_cell_formats(sheet_id, source_row);
                 let width = rect.width() as usize;
 
+                // for each column, apply the formats to a block (rect.width, y) of new cells
                 range.x_range().rev().step_by(width).for_each(|x| {
                     let new_x = x - width as i64 + 1;
                     let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
@@ -280,6 +289,7 @@ impl GridController {
                 let format = self.get_all_cell_formats(sheet_id, source_col);
                 let height = rect.height() as usize;
 
+                // for each row, apply the formats to a block (x, rect.height) of new cells
                 range.y_range().step_by(height).for_each(|y| {
                     let new_y = y + height as i64 - 1;
                     let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
@@ -318,6 +328,7 @@ impl GridController {
                 let format = self.get_all_cell_formats(sheet_id, source_col);
                 let height = rect.height() as usize;
 
+                // for each row, apply the formats to a block (x, rect.height) of new cells
                 range.y_range().rev().step_by(height).for_each(|y| {
                     let new_y = y - height as i64 + 1;
                     let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
@@ -399,7 +410,6 @@ impl GridController {
         Ok(ops)
     }
 
-    // TODO(ddimaria): this fn is sufficiently similar to have some shared code
     pub fn expand_up_or_down_from_left(
         &mut self,
         sheet_id: SheetId,
@@ -466,6 +476,7 @@ impl GridController {
         Ok(ops)
     }
 
+    /// Gven an array of values, determine if a series exists and if so, apply it.
     pub fn apply_auto_complete(
         &mut self,
         sheet_id: SheetId,
@@ -514,7 +525,7 @@ pub fn apply_formats(region: RegionRef, formats: &[CellFmtArray]) -> Vec<Operati
         .collect()
 }
 
-/// Add the cell values to an Array for the given Rect.
+/// In a given rect, collect all cell values into an array.
 ///
 /// TODO(ddimaria): determine if this should go in the cell.rs file or equiv
 /// TODO(ddimaria): is this necessary as it's more performant to just pluck the data from the sheet direclty
