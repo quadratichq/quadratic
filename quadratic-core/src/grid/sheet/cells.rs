@@ -1,4 +1,4 @@
-use crate::{grid::js_types::CellForArray, Pos, Rect};
+use crate::{grid::js_types::CellForArray, CellValue, Pos, Rect};
 
 use super::Sheet;
 

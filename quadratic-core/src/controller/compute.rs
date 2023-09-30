@@ -60,6 +60,7 @@ impl GridController {
 
                                 let result =
                                     runPython(code_cell.code_string.clone(), &get_cells).await;
+                                js::log(&format!("{:?}", result));
                                 let code_cell_value =
                                     serde_wasm_bindgen::from_value::<JsCodeResult>(result);
                                 match code_cell_value {
@@ -87,7 +88,7 @@ impl GridController {
                                             }),
                                         );
                                     }
-                                    Err(_) => js::log("Error in code_cell_value...todo"),
+                                    Err(e) => js::log(&format!("Error: {:?}", e)),
                                 }
                             }
                             _ => {

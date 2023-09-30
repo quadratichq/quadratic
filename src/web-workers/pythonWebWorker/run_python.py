@@ -53,7 +53,10 @@ class Cell:
     def __init__(self, object):
         self.x = object.x
         self.y = object.y
-        self.value = object.value
+        if object.value == "":
+            self.value = "0"
+        else:
+            self.value = object.value
 
     def __str__(self):
         return str(self.value)

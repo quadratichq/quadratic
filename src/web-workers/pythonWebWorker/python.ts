@@ -33,6 +33,7 @@ class PythonWebWorker {
           range.sheet
         );
         const cells = JSON.parse(data) as any[];
+        console.log(cells);
         this.worker!.postMessage({ type: 'get-cells', cells } as PythonMessage);
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
