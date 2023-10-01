@@ -25,7 +25,7 @@ impl GridController {
     pub fn expand(
         &mut self,
         sheet_id: SheetId,
-        mut rect: Rect,
+        mut selection: Rect,
         range: Rect,
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
@@ -33,43 +33,43 @@ impl GridController {
         let mut initial_down_range: Option<Rect> = None;
         let mut initial_up_range: Option<Rect> = None;
 
-        let should_expand_up = range.min.y < rect.min.y;
-        let should_expand_down = range.max.y > rect.max.y;
-        let should_expand_left = range.min.x < rect.min.x;
-        let should_expand_right = range.max.x > rect.max.x;
+        let should_expand_up = range.min.y < selection.min.y;
+        let should_expand_down = range.max.y > selection.max.y;
+        let should_expand_left = range.min.x < selection.min.x;
+        let should_expand_right = range.max.x > selection.max.x;
 
-        let should_shrink_width = range.max.x < rect.max.x;
-        let should_shrink_height = range.max.y < rect.max.y;
+        let should_shrink_width = range.max.x < selection.max.x;
+        let should_shrink_height = range.max.y < selection.max.y;
 
         // shrink width, from right to left
         if should_shrink_width {
             let delete_range = Rect::new_span(
                 (range.max.x + 1, range.min.y).into(),
-                (rect.max.x, rect.max.y).into(),
+                (selection.max.x, selection.max.y).into(),
             );
             let ops = self.shrink(sheet_id, delete_range);
             operations.extend(ops);
-            rect.max.x = range.max.x;
+            selection.max.x = range.max.x;
         }
 
         // shrink height, from bottom to top
         if should_shrink_height {
             let delete_range = Rect::new_span(
-                (rect.min.x, range.max.y + 1).into(),
-                (range.max.x, rect.max.y).into(),
+                (selection.min.x, range.max.y + 1).into(),
+                (range.max.x, selection.max.y).into(),
             );
             let ops = self.shrink(sheet_id, delete_range);
             operations.extend(ops);
-            rect.max.y = range.max.y;
+            selection.max.y = range.max.y;
         }
 
         // expand up
         if should_expand_up {
             let new_range = Rect::new_span(
-                (rect.min.x, rect.min.y - 1).into(),
-                (rect.max.x, range.min.y).into(),
+                (selection.min.x, selection.min.y - 1).into(),
+                (selection.max.x, range.min.y).into(),
             );
-            let ops = self.expand_up(sheet_id, &rect, &new_range)?;
+            let ops = self.expand_up(sheet_id, &selection, &new_range)?;
             operations.extend(ops);
             initial_up_range = Some(range);
         }
@@ -77,60 +77,60 @@ impl GridController {
         // expand down
         if should_expand_down {
             let new_range = Rect::new_span(
-                (rect.min.x, rect.max.y + 1).into(),
-                (rect.max.x, range.max.y).into(),
+                (selection.min.x, selection.max.y + 1).into(),
+                (selection.max.x, range.max.y).into(),
             );
-            let ops = self.expand_down(sheet_id, &rect, &new_range)?;
+            let ops = self.expand_down(sheet_id, &selection, &new_range)?;
             operations.extend(ops);
             initial_down_range = Some(range);
         }
         // expand left
         if should_expand_left {
             let new_range = Rect::new_span(
-                (range.min.x, rect.min.y).into(),
-                (rect.min.x - 1, rect.max.y).into(),
+                (range.min.x, selection.min.y).into(),
+                (selection.min.x - 1, selection.max.y).into(),
             );
 
             let down_range = initial_down_range.map(|initial_down_range| {
                 Rect::new_span(
-                    (initial_down_range.min.x, rect.max.y + 1).into(),
-                    (rect.min.x - 1, initial_down_range.max.y).into(),
+                    (initial_down_range.min.x, selection.max.y + 1).into(),
+                    (selection.min.x - 1, initial_down_range.max.y).into(),
                 )
             });
 
             let up_range = initial_up_range.map(|initial_up_range| {
                 Rect::new_span(
                     initial_up_range.min,
-                    (rect.min.x - 1, initial_up_range.max.y).into(),
+                    (selection.min.x - 1, initial_up_range.max.y).into(),
                 )
             });
 
-            let ops = self.expand_left(sheet_id, &rect, &new_range, down_range, up_range)?;
+            let ops = self.expand_left(sheet_id, &selection, &new_range, down_range, up_range)?;
             operations.extend(ops);
         }
 
         // expand right
         if should_expand_right {
             let new_range = Rect::new_span(
-                (rect.max.x + 1, rect.max.y).into(),
-                (range.max.x, rect.max.y).into(),
+                (selection.max.x + 1, selection.max.y).into(),
+                (range.max.x, selection.max.y).into(),
             );
 
             let down_range = initial_down_range.map(|initial_down_range| {
                 Rect::new_span(
-                    (rect.max.x + 1, rect.max.y + 1).into(),
+                    (selection.max.x + 1, selection.max.y + 1).into(),
                     initial_down_range.max,
                 )
             });
 
             let up_range = initial_up_range.map(|initial_up_range| {
                 Rect::new_span(
-                    (rect.max.x + 1, initial_up_range.min.y).into(),
-                    (initial_up_range.max.x, rect.min.y - 1).into(),
+                    (selection.max.x + 1, initial_up_range.min.y).into(),
+                    (initial_up_range.max.x, selection.min.y - 1).into(),
                 )
             });
 
-            let ops = self.expand_right(sheet_id, &rect, &new_range, down_range, up_range)?;
+            let ops = self.expand_right(sheet_id, &selection, &new_range, down_range, up_range)?;
             operations.extend(ops);
         }
 
@@ -149,7 +149,7 @@ impl GridController {
     pub fn expand_right(
         &mut self,
         sheet_id: SheetId,
-        rect: &Rect,
+        selection: &Rect,
         range: &Rect,
         down_range: Option<Rect>,
         up_range: Option<Rect>,
@@ -157,15 +157,16 @@ impl GridController {
         let mut format_ops = vec![];
         let mut values = vec![];
         let mut formats = vec![];
-        let mut ops = rect
+        let mut ops = selection
             .y_range()
             .map(|y| {
-                let source_row = Rect::new_span((rect.min.x, y).into(), (rect.max.x, y).into());
+                let source_row =
+                    Rect::new_span((selection.min.x, y).into(), (selection.max.x, y).into());
                 let target_row = Rect::new_span((range.min.x, y).into(), (range.max.x, y).into());
                 let format = self.get_all_cell_formats(sheet_id, source_row);
-                let width = rect.width() as usize;
+                let width = selection.width() as usize;
 
-                // for each column, apply the formats to a block (rect.width, y) of new cells
+                // for each column, apply the formats to a block (selection.width, y) of new cells
                 range.x_range().step_by(width).for_each(|x| {
                     let new_x = x + width as i64 - 1;
                     let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
@@ -185,7 +186,7 @@ impl GridController {
         if let Some(down_range) = down_range {
             ops.extend(self.expand_up_or_down_from_right(
                 sheet_id,
-                rect,
+                selection,
                 &down_range,
                 &values,
                 range.width() as i64,
@@ -196,7 +197,7 @@ impl GridController {
         if let Some(up_range) = up_range {
             ops.extend(self.expand_up_or_down_from_right(
                 sheet_id,
-                rect,
+                selection,
                 &up_range,
                 &values,
                 range.width() as i64,
@@ -211,7 +212,7 @@ impl GridController {
     pub fn expand_left(
         &mut self,
         sheet_id: SheetId,
-        rect: &Rect,
+        selection: &Rect,
         range: &Rect,
         down_range: Option<Rect>,
         up_range: Option<Rect>,
@@ -219,15 +220,16 @@ impl GridController {
         let mut format_ops = vec![];
         let mut values = vec![];
         let mut formats = vec![];
-        let mut ops = rect
+        let mut ops = selection
             .y_range()
             .map(|y| {
-                let source_row = Rect::new_span((rect.min.x, y).into(), (rect.max.x, y).into());
+                let source_row =
+                    Rect::new_span((selection.min.x, y).into(), (selection.max.x, y).into());
                 let target_row = Rect::new_span((range.min.x, y).into(), (range.max.x, y).into());
                 let format = self.get_all_cell_formats(sheet_id, source_row);
-                let width = rect.width() as usize;
+                let width = selection.width() as usize;
 
-                // for each column, apply the formats to a block (rect.width, y) of new cells
+                // for each column, apply the formats to a block (selection.width, y) of new cells
                 range.x_range().rev().step_by(width).for_each(|x| {
                     let new_x = x - width as i64 + 1;
                     let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
@@ -247,7 +249,7 @@ impl GridController {
         if let Some(down_range) = down_range {
             ops.extend(self.expand_up_or_down_from_left(
                 sheet_id,
-                rect,
+                selection,
                 &down_range,
                 &values,
                 range.width() as i64,
@@ -258,7 +260,7 @@ impl GridController {
         if let Some(up_range) = up_range {
             ops.extend(self.expand_up_or_down_from_left(
                 sheet_id,
-                rect,
+                selection,
                 &up_range,
                 &values,
                 range.width() as i64,
@@ -273,23 +275,24 @@ impl GridController {
     pub fn expand_down(
         &mut self,
         sheet_id: SheetId,
-        rect: &Rect,
+        selection: &Rect,
         range: &Rect,
     ) -> Result<Vec<Operation>> {
         let mut format_ops = vec![];
         let mut values = vec![];
         let mut formats = vec![];
-        let mut ops = rect
+        let mut ops = selection
             .x_range()
             .rev()
             .map(|x| {
-                let source_col = Rect::new_span((x, rect.min.y).into(), (x, rect.max.y).into());
+                let source_col =
+                    Rect::new_span((x, selection.min.y).into(), (x, selection.max.y).into());
                 let target_col =
-                    Rect::new_span((x, rect.max.y + 1).into(), (x, range.max.y).into());
+                    Rect::new_span((x, selection.max.y + 1).into(), (x, range.max.y).into());
                 let format = self.get_all_cell_formats(sheet_id, source_col);
-                let height = rect.height() as usize;
+                let height = selection.height() as usize;
 
-                // for each row, apply the formats to a block (x, rect.height) of new cells
+                // for each row, apply the formats to a block (x, selection.height) of new cells
                 range.y_range().step_by(height).for_each(|y| {
                     let new_y = y + height as i64 - 1;
                     let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
@@ -313,22 +316,23 @@ impl GridController {
     pub fn expand_up(
         &mut self,
         sheet_id: SheetId,
-        rect: &Rect,
+        selection: &Rect,
         range: &Rect,
     ) -> Result<Vec<Operation>> {
         let mut format_ops = vec![];
         let mut values = vec![];
         let mut formats = vec![];
-        let mut ops = rect
+        let mut ops = selection
             .x_range()
             .map(|x| {
-                let source_col = Rect::new_span((x, rect.min.y).into(), (x, rect.max.y).into());
+                let source_col =
+                    Rect::new_span((x, selection.min.y).into(), (x, selection.max.y).into());
                 let target_col =
-                    Rect::new_span((x, rect.min.y - 1).into(), (x, range.min.y).into());
+                    Rect::new_span((x, selection.min.y - 1).into(), (x, range.min.y).into());
                 let format = self.get_all_cell_formats(sheet_id, source_col);
-                let height = rect.height() as usize;
+                let height = selection.height() as usize;
 
-                // for each row, apply the formats to a block (x, rect.height) of new cells
+                // for each row, apply the formats to a block (x, selection.height) of new cells
                 range.y_range().rev().step_by(height).for_each(|y| {
                     let new_y = y - height as i64 + 1;
                     let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
@@ -352,7 +356,7 @@ impl GridController {
     pub fn expand_up_or_down_from_right(
         &mut self,
         sheet_id: SheetId,
-        rect: &Rect,
+        selection: &Rect,
         range: &Rect,
         values: &Vec<CellValue>,
         width: i64,
@@ -377,9 +381,11 @@ impl GridController {
                     })
                     .collect::<Vec<_>>();
 
-                let format_x = rect.min.x + (x - rect.min.x) % rect.width() as i64;
-                let format_source_rect =
-                    Rect::new_span((format_x, rect.min.y).into(), (format_x, rect.max.y).into());
+                let format_x = selection.min.x + (x - selection.min.x) % selection.width() as i64;
+                let format_source_rect = Rect::new_span(
+                    (format_x, selection.min.y).into(),
+                    (format_x, selection.max.y).into(),
+                );
                 let format = self.get_all_cell_formats(sheet_id, format_source_rect);
 
                 range.y_range().step_by(height as usize).for_each(|y| {
@@ -413,7 +419,7 @@ impl GridController {
     pub fn expand_up_or_down_from_left(
         &mut self,
         sheet_id: SheetId,
-        rect: &Rect,
+        selection: &Rect,
         range: &Rect,
         values: &Vec<CellValue>,
         width: i64,
@@ -430,7 +436,7 @@ impl GridController {
                 let target_col = if direction == ExpandDirection::Down {
                     Rect::new_span((x, range.min.y).into(), (x, range.max.y).into())
                 } else {
-                    Rect::new_span((x, rect.min.y - 1).into(), (x, range.min.y).into())
+                    Rect::new_span((x, selection.min.y - 1).into(), (x, range.min.y).into())
                 };
 
                 let vals = (0..height)
@@ -443,9 +449,11 @@ impl GridController {
                     })
                     .collect::<Vec<_>>();
 
-                let format_x = rect.max.x - (index as i64 % rect.width() as i64);
-                let format_source_rect =
-                    Rect::new_span((format_x, rect.min.y).into(), (format_x, rect.max.y).into());
+                let format_x = selection.max.x - (index as i64 % selection.width() as i64);
+                let format_source_rect = Rect::new_span(
+                    (format_x, selection.min.y).into(),
+                    (format_x, selection.max.y).into(),
+                );
                 let format = self.get_all_cell_formats(sheet_id, format_source_rect);
 
                 range.y_range().step_by(height as usize).for_each(|y| {
@@ -481,7 +489,7 @@ impl GridController {
         &mut self,
         sheet_id: SheetId,
         negative: bool,
-        rect: &Rect,
+        selection: &Rect,
         range: &Rect,
         cell_values: Option<Vec<CellValue>>,
     ) -> Result<(Vec<Operation>, Vec<CellValue>)> {
@@ -489,7 +497,7 @@ impl GridController {
         let values = if let Some(cell_values) = cell_values {
             cell_values
         } else {
-            cell_values_in_rect(rect, sheet)?
+            cell_values_in_rect(selection, sheet)?
                 .into_cell_values_vec()
                 .into_iter()
                 .collect::<Vec<CellValue>>()
@@ -529,11 +537,12 @@ pub fn apply_formats(region: RegionRef, formats: &[CellFmtArray]) -> Vec<Operati
 ///
 /// TODO(ddimaria): determine if this should go in the cell.rs file or equiv
 /// TODO(ddimaria): is this necessary as it's more performant to just pluck the data from the sheet direclty
-pub fn cell_values_in_rect(&rect: &Rect, sheet: &Sheet) -> Result<Array> {
-    let values = rect
+pub fn cell_values_in_rect(&selection: &Rect, sheet: &Sheet) -> Result<Array> {
+    let values = selection
         .y_range()
         .flat_map(|y| {
-            rect.x_range()
+            selection
+                .x_range()
                 .map(|x| {
                     sheet
                         .get_cell_value(Pos { x, y })
@@ -543,8 +552,13 @@ pub fn cell_values_in_rect(&rect: &Rect, sheet: &Sheet) -> Result<Array> {
         })
         .collect();
 
-    Array::new_row_major(rect.size(), values)
-        .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", rect.size(), e))
+    Array::new_row_major(selection.size(), values).map_err(|e| {
+        anyhow!(
+            "Could not create array of size {:?}: {:?}",
+            selection.size(),
+            e
+        )
+    })
 }
 
 #[cfg(test)]
@@ -557,28 +571,28 @@ mod tests {
         },
     };
 
-    fn test_setup_rect(rect: &Rect) -> (GridController, SheetId) {
+    fn test_setup_rect(selection: &Rect) -> (GridController, SheetId) {
         let vals = vec!["a", "h", "x", "g", "f", "z", "r", "b"];
         let bolds = vec![true, false, false, true, false, true, true, false];
 
-        test_setup(rect, &vals, &bolds)
+        test_setup(selection, &vals, &bolds)
     }
 
-    fn test_setup_rect_horiz_series(rect: &Rect) -> (GridController, SheetId) {
+    fn test_setup_rect_horiz_series(selection: &Rect) -> (GridController, SheetId) {
         let vals = vec![
             "8", "9", "10", "11", "10", "9", "8", "7", "Mon", "Tue", "Wed", "Thu", "May", "Jun",
             "Jul", "Aug", "32", "64", "128", "256",
         ];
         let bolds = vec![];
 
-        test_setup(rect, &vals, &bolds)
+        test_setup(selection, &vals, &bolds)
     }
 
-    fn test_setup_rect_vert_series(rect: &Rect) -> (GridController, SheetId) {
+    fn test_setup_rect_vert_series(selection: &Rect) -> (GridController, SheetId) {
         let vals = vec!["1", "2", "3"];
         let bolds = vec![];
 
-        test_setup(rect, &vals, &bolds)
+        test_setup(selection, &vals, &bolds)
     }
 
     fn test_setup(selection: &Rect, vals: &[&str], bolds: &[bool]) -> (GridController, SheetId) {
