@@ -1,54 +1,42 @@
 import { Public } from '@mui/icons-material';
-import { Box, Stack, Typography, useTheme } from '@mui/material';
+import { Stack, Typography, useTheme } from '@mui/material';
 import { ReactNode } from 'react';
 import { FilesListItemInput } from './FilesListItemInput';
+import { Layout, ViewPreferences } from './FilesListViewControlsDropdown';
 
-type Props = {
-  name: string;
-  description: string;
-  isShared: boolean;
-  actions?: ReactNode;
-  hasNetworkError?: boolean;
-  filterValue?: string;
-  // TODO make required
-  isRenaming?: boolean;
-  renameFile?: Function;
-};
-
-DashboardFileLink.defaultProps = {
-  isShared: false,
-};
-
-export function DashboardFileLink({
+export function FilesListItemCore({
   name,
   description,
-  hasNetworkError,
-  actions,
-  isShared,
   filterValue,
+  hasNetworkError,
   isRenaming,
+  isShared,
   renameFile,
-}: Props) {
+  viewPreferences,
+  actions,
+}: {
+  name: string;
+  description: string;
+  filterValue: string;
+  hasNetworkError: boolean;
+  isRenaming: boolean;
+  isShared: boolean;
+  renameFile: Function;
+  viewPreferences: ViewPreferences;
+  actions?: ReactNode;
+}) {
   const theme = useTheme();
-
   const __html = filterValue ? highlightMatchingString(name, filterValue) : name;
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: theme.spacing(1),
-        px: theme.spacing(1),
-        py: theme.spacing(1.5),
-
-        [theme.breakpoints.down('md')]: {
-          px: 0,
-        },
-      }}
-    >
-      <Stack sx={{ position: 'relative', mr: 'auto', minWidth: '0' }}>
-        <Typography variant="body1" color="text.primary" noWrap dangerouslySetInnerHTML={{ __html }} />
+    <Stack direction="row" alignItems="center" gap={theme.spacing(1)}>
+      <Stack sx={{ position: 'relative', mr: 'auto', minWidth: '0', flexGrow: '2' }}>
+        <Typography
+          variant={viewPreferences.layout === Layout.List ? 'body1' : 'body2'}
+          color="text.primary"
+          noWrap
+          dangerouslySetInnerHTML={{ __html }}
+        />
 
         {hasNetworkError ? (
           <Typography variant="caption" color="error">
@@ -72,13 +60,10 @@ export function DashboardFileLink({
           </Typography>
         )}
 
-        {isRenaming && (
-          // @ts-expect-error
-          <FilesListItemInput setValue={renameFile} value={name} />
-        )}
+        {isRenaming && <FilesListItemInput setValue={renameFile} value={name} />}
       </Stack>
       {actions}
-    </Box>
+    </Stack>
   );
 }
 

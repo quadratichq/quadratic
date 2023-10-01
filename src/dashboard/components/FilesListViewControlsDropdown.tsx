@@ -1,5 +1,5 @@
-import { ArrowDropDown, Check } from '@mui/icons-material';
-import { Button, Divider, ListItemIcon, ListItemText, ListSubheader, Menu, MenuItem } from '@mui/material';
+import { ArrowDropDown, Check, SortOutlined } from '@mui/icons-material';
+import { Button, Divider, IconButton, ListItemIcon, ListItemText, ListSubheader, Menu, MenuItem } from '@mui/material';
 import { Dispatch, SetStateAction, useState } from 'react';
 
 export type ViewPreferences = {
@@ -36,10 +36,12 @@ const layoutOptions = [
   { label: 'Grid', value: Layout.Grid },
 ];
 
-export function FileListViewPreferences({
+export function FileListViewControlsDropdown({
+  showToggle,
   viewPreferences,
   setViewPreferences,
 }: {
+  showToggle: boolean;
   viewPreferences: ViewPreferences;
   setViewPreferences: Dispatch<SetStateAction<ViewPreferences>>;
 }) {
@@ -58,19 +60,31 @@ export function FileListViewPreferences({
 
   return (
     <div>
-      <Button
-        id="basic-button"
-        aria-controls={open ? 'basic-menu' : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? 'true' : undefined}
-        onClick={handleClick}
-        variant="text"
-        color="inherit"
-        endIcon={<ArrowDropDown color="inherit" fontSize="inherit" />}
-      >
-        {/* <span style={{ fontWeight: 'normal', marginRight: '4px' }}>Sort: </span> */}
-        {buttonLabel}
-      </Button>
+      {showToggle ? (
+        <Button
+          aria-controls={open ? 'basic-menu' : undefined}
+          aria-haspopup={true}
+          aria-expanded={open ? 'true' : undefined}
+          id="basic-button"
+          onClick={handleClick}
+          variant="text"
+          color="inherit"
+          endIcon={<ArrowDropDown color="inherit" fontSize="inherit" />}
+        >
+          {/* <span style={{ fontWeight: 'normal', marginRight: '4px' }}>Sort: </span> */}
+          {buttonLabel}
+        </Button>
+      ) : (
+        <IconButton
+          onClick={handleClick}
+          id="basic-button"
+          aria-controls={open ? 'basic-menu' : undefined}
+          aria-haspopup={true}
+          aria-expanded={open ? 'true' : undefined}
+        >
+          <SortOutlined />
+        </IconButton>
+      )}
       <Menu
         transitionDuration={100} // This has to be fast, or react will re-render first
         id="basic-menu"
@@ -84,9 +98,9 @@ export function FileListViewPreferences({
       >
         <ListSubheader sx={{ lineHeight: '2' }}>Sort:</ListSubheader>
 
-        {/* properly style when dense */}
         {sortOptions.map(({ label, value }) => (
           <ListItem
+            key={label}
             label={label}
             isActive={viewPreferences.sort === value}
             handleClose={() => {
@@ -105,6 +119,7 @@ export function FileListViewPreferences({
         <ListSubheader sx={{ lineHeight: '1.5' }}>Order:</ListSubheader>
         {orderOptions.map(({ altLabel, label, value }) => (
           <ListItem
+            key={label}
             label={viewPreferences.sort === Sort.Alphabetical ? altLabel : label}
             isActive={viewPreferences.order === value}
             handleClose={() => {
@@ -113,20 +128,24 @@ export function FileListViewPreferences({
             }}
           />
         ))}
+        {!showToggle && (
+          <>
+            <Divider />
 
-        <Divider />
-
-        <ListSubheader sx={{ lineHeight: '1.5' }}>Layout:</ListSubheader>
-        {layoutOptions.map(({ label, value }) => (
-          <ListItem
-            label={label}
-            isActive={viewPreferences.layout === value}
-            handleClose={() => {
-              setViewPreferences((prev) => ({ ...prev, layout: value }));
-              handleClose();
-            }}
-          />
-        ))}
+            <ListSubheader sx={{ lineHeight: '1.5' }}>Layout:</ListSubheader>
+            {layoutOptions.map(({ label, value }) => (
+              <ListItem
+                key={label}
+                label={label}
+                isActive={viewPreferences.layout === value}
+                handleClose={() => {
+                  setViewPreferences((prev) => ({ ...prev, layout: value }));
+                  handleClose();
+                }}
+              />
+            ))}
+          </>
+        )}
       </Menu>
     </div>
   );

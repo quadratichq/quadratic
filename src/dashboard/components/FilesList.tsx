@@ -1,5 +1,4 @@
 import { InsertDriveFileOutlined, SearchOff } from '@mui/icons-material';
-import { Box, Stack, TextField, useTheme } from '@mui/material';
 import { useState } from 'react';
 import { ActionFunctionArgs, useFetchers, useLocation } from 'react-router-dom';
 import { apiClient } from '../../api/apiClient';
@@ -7,13 +6,10 @@ import { Empty } from '../../components/Empty';
 import { ShareFileMenu } from '../../components/ShareFileMenu';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import { FileListItem, FilesListItems } from './FilesListItem';
-import { FilesListLayoutPreferenceToggle } from './FilesListLayoutPreferenceToggle';
-import { FileListViewPreferences, Layout, Order, Sort, ViewPreferences } from './FilesListViewPreferences';
+import { FilesListViewControls } from './FilesListViewControls';
+import { Layout, Order, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
 
-type ApiFile = Awaited<ReturnType<typeof apiClient.getFiles>>[0];
-export type Props = {
-  files: ApiFile[];
-};
+export type FilesListFile = Awaited<ReturnType<typeof apiClient.getFiles>>[0];
 
 export type Action = {
   response: { ok: boolean } | null;
@@ -25,7 +21,7 @@ export type Action = {
   };
   'request.duplicate': {
     action: 'duplicate';
-    file: ApiFile;
+    file: FilesListFile;
   };
   'request.rename': {
     action: 'rename';
@@ -44,10 +40,11 @@ const initialStateViewPreferences = {
   layout: Layout.Grid,
 };
 
-export function FilesList({ files }: Props) {
+export function FilesList({ files }: { files: FilesListFile[] }) {
   // const actionData = useActionData() as Action['response'];
   const { pathname } = useLocation();
   const [filterValue, setFilterValue] = useState<string>('');
+  // Persist the layout preference across views (by URL)
   const [viewPreferences, setViewPreferences] = useLocalStorage<ViewPreferences>(
     `FilesList-${pathname}`,
     initialStateViewPreferences
@@ -60,8 +57,6 @@ export function FilesList({ files }: Props) {
   const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
   // const isDisabled = navigation.state !== 'idle';
   // const { addGlobalSnackbar } = useGlobalSnackbar();
-
-  // const isExample = files[0]?.description;
 
   // useEffect(() => {
   //   if (actionData && !actionData.ok) {
@@ -100,14 +95,6 @@ export function FilesList({ files }: Props) {
 
   return (
     <>
-      {/* <FileListViewControls>
-        <FileListFilter />
-        <FileListViewPreferences>
-          <FileListViewPreferenceSort />
-          <FileListViewPreferenceLayout />
-        </FileListViewPreferences>
-      </FileListViewControls> */}
-
       <FilesListViewControls
         filterValue={filterValue}
         setFilterValue={setFilterValue}
@@ -144,8 +131,6 @@ export function FilesList({ files }: Props) {
         />
       )}
 
-      {/*activeFileActionsFileId && */ ''}
-
       {activeShareMenuFileId && (
         <ShareFileMenu
           onClose={() => {
@@ -157,43 +142,6 @@ export function FilesList({ files }: Props) {
         />
       )}
     </>
-  );
-}
-
-function FilesListViewControls({ filterValue, setFilterValue, viewPreferences, setViewPreferences }: any) {
-  const theme = useTheme();
-  return (
-    <Stack
-      direction="row"
-      justifyContent="space-between"
-      alignItems="center"
-      gap={theme.spacing(2)}
-      sx={{
-        py: theme.spacing(1.5),
-        [theme.breakpoints.up('md')]: {
-          px: theme.spacing(),
-        },
-      }}
-    >
-      <Box sx={{ maxWidth: '25rem', flexGrow: 2 }}>
-        <TextField
-          onChange={(e) => setFilterValue(e.target.value)}
-          value={filterValue}
-          size="small"
-          placeholder="Filter by name…"
-          fullWidth
-        />
-      </Box>
-      <Stack direction="row" gap={theme.spacing(2)} alignItems="center">
-        <Box sx={{ color: theme.palette.text.secondary }}>
-          <FileListViewPreferences viewPreferences={viewPreferences} setViewPreferences={setViewPreferences} />
-        </Box>
-
-        <Box>
-          <FilesListLayoutPreferenceToggle viewPreferences={viewPreferences} setViewPreferences={setViewPreferences} />
-        </Box>
-      </Stack>
-    </Stack>
   );
 }
 

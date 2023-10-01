@@ -1,6 +1,6 @@
 import { GridViewOutlined, MenuOutlined } from '@mui/icons-material';
 import { ToggleButton, ToggleButtonGroup, styled } from '@mui/material';
-import { Layout } from './FilesListViewPreferences';
+import { Layout } from './FilesListViewControlsDropdown';
 
 export type LayoutPreference = 'list' | 'grid';
 
@@ -17,13 +17,12 @@ const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
   },
 }));
 
-export function FilesListLayoutPreferenceToggle({ viewPreferences, setViewPreferences }: any) {
+export function FilesListViewControlsLayoutToggle({ viewPreferences, setViewPreferences }: any) {
   return (
     <StyledToggleButtonGroup
       value={viewPreferences.layout}
       exclusive
       onChange={(event: React.MouseEvent<HTMLElement>, newValue: any) => {
-        // TODO persist to localStorage...
         setViewPreferences((prev: any) => ({ ...prev, layout: newValue }));
       }}
     >

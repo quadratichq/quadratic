@@ -1,17 +1,18 @@
 import { DeleteOutline, IosShare, MoreVert } from '@mui/icons-material';
 import { Box, Divider, IconButton, Menu, MenuItem, Stack, useMediaQuery, useTheme } from '@mui/material';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, SubmitOptions, useFetcher } from 'react-router-dom';
 import { deleteFile, downloadFile, duplicateFile, renameFile as renameFileAction } from '../../actions';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { TooltipHint } from '../../ui/components/TooltipHint';
-import { DashboardFileLink } from './DashboardFileLink';
-import { Action, Props as FileListProps } from './FilesList';
-import { Layout, Sort, ViewPreferences } from './FilesListViewPreferences';
+import { Action, FilesListFile } from './FilesList';
+import { FilesListItemCore } from './FilesListItemCore';
+import { Layout, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
 
 export function FilesListItems({ children, viewPreferences }: any) {
   const theme = useTheme();
+
   return (
     <Box
       sx={
@@ -21,7 +22,10 @@ export function FilesListItems({ children, viewPreferences }: any) {
               gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
               gap: theme.spacing(3),
               pb: theme.spacing(),
-              px: theme.spacing(),
+
+              [theme.breakpoints.up('md')]: {
+                px: theme.spacing(),
+              },
             }
           : {}
       }
@@ -34,14 +38,12 @@ export function FilesListItems({ children, viewPreferences }: any) {
 export function FileListItem({
   file,
   filterValue,
-
   activeShareMenuFileId,
   setActiveShareMenuFileId,
   viewPreferences,
 }: {
-  file: FileListProps['files'][0];
-  filterValue?: string;
-
+  file: FilesListFile;
+  filterValue: string;
   activeShareMenuFileId: string;
   setActiveShareMenuFileId: Function;
   viewPreferences: ViewPreferences;
@@ -178,17 +180,19 @@ export function FileListItem({
 
   const sharedProps = {
     key: uuid,
-    filterValue: filterValue,
+    filterValue,
     name: displayNameHtml,
     description: displayDescription,
     hasNetworkError: hasNetworkError,
-    isShared: isShared,
+    isShared,
     isRenaming,
     renameFile,
+    viewPreferences,
   };
 
   return (
     <>
+      {viewPreferences.layout === Layout.List && <Divider />}
       <Link
         key={uuid}
         to={to}
@@ -219,17 +223,28 @@ export function FileListItem({
               />
             </Box>
             <Divider />
-            <DashboardFileLink {...sharedProps} actions={MoreButton} />
+            <Box
+              sx={{
+                px: theme.spacing(1),
+                py: theme.spacing(1),
+              }}
+            >
+              <FilesListItemCore {...sharedProps} actions={MoreButton} />
+            </Box>
           </Stack>
         ) : (
           <Box
             sx={{
+              px: theme.spacing(1),
+              py: theme.spacing(1.5),
+              [theme.breakpoints.down('md')]: {
+                px: 0,
+              },
               '&:hover': { backgroundColor: theme.palette.action.hover },
               '&:hover .additional-icons': { display: isDesktop ? 'block' : 'none' },
             }}
           >
-            <Divider />
-            <DashboardFileLink
+            <FilesListItemCore
               {...sharedProps}
               actions={
                 <Stack gap={theme.spacing(1)} alignItems="center" direction="row">
