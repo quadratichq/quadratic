@@ -8,7 +8,7 @@ use crate::{
         js::{self, runPython},
         JsCodeResult,
     },
-    Pos, Rect,
+    Pos, Rect, Value,
 };
 use serde::{Deserialize, Serialize};
 use std::{fmt, ops::Range};
@@ -76,9 +76,13 @@ impl GridController {
                                                     std_out: code_cell_value.input_python_std_out,
                                                     std_err: code_cell_value.error_msg,
                                                     result: CodeCellRunResult::Ok {
-                                                        output_value: code_cell_value
-                                                            .output_value
-                                                            .into(),
+                                                        output_value: if let Some(array_output) =
+                                                            code_cell_value.array_output
+                                                        {
+                                                            Value::Array(array_output.into())
+                                                        } else {
+                                                            code_cell_value.output_value.into()
+                                                        },
 
                                                         // todo...
                                                         cells_accessed: vec![],
@@ -88,7 +92,7 @@ impl GridController {
                                             }),
                                         );
                                     }
-                                    Err(e) => js::log(&format!("Error: {:?}", e)),
+                                    Err(e) => js::log(&format!("{:?}", e)),
                                 }
                             }
                             _ => {

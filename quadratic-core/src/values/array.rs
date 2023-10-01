@@ -73,6 +73,22 @@ impl From<Value> for Array {
     }
 }
 
+impl From<Vec<Vec<String>>> for Array {
+    fn from(v: Vec<Vec<String>>) -> Self {
+        let w = v[0].len();
+        let h = v.len();
+        Array {
+            // todo: this unwrap is dangerous--fix!!!
+            size: ArraySize::new(w as u32, h as u32).unwrap(),
+            values: v
+                .iter()
+                .flatten()
+                .map(|s| CellValue::from(s.as_ref()))
+                .collect(),
+        }
+    }
+}
+
 impl Array {
     /// Constructs an array of blank values.
     pub fn new_empty(size: ArraySize) -> Self {

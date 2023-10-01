@@ -33,7 +33,6 @@ class PythonWebWorker {
           range.sheet
         );
         const cells = JSON.parse(data) as any[];
-        console.log(cells);
         this.worker!.postMessage({ type: 'get-cells', cells } as PythonMessage);
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
@@ -60,7 +59,20 @@ class PythonWebWorker {
         });
       } else {
         this.getCells = getCells;
-        this.callback = (results: any) => resolve(results);
+        this.callback = (results: any) => {
+          // todo: this should be moved to rust by changing the results type.
+          //       this has to happen for Python and Formulas at the same time
+
+          // convert single array to 2d array and convert all numbers to strings
+          if (results.array_output && !Array.isArray(results.array_output[0])) {
+            results.array_output = results.array_output.flatMap((entry: string | number) => [[entry.toString()]]);
+          } else {
+            results.array_output = results.array_output.map((entry: (string | number)[]) =>
+              entry.map((entry: String | number) => entry.toString())
+            );
+          }
+          resolve(results);
+        };
         this.worker.postMessage({ type: 'execute', python } as PythonMessage);
       }
     });

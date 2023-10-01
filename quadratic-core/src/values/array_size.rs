@@ -44,6 +44,7 @@ impl TryFrom<(u32, u32)> for ArraySize {
         Self::new_or_err(w, h)
     }
 }
+
 impl ArraySize {
     #[allow(unconditional_panic)]
     pub const _1X1: Self = match NonZeroU32::new(1) {
