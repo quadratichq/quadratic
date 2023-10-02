@@ -1,6 +1,16 @@
+import * as Sentry from '@sentry/browser';
 import { Point, Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
-import { GridController, MinMax, Placement, Pos, Rect as RectInternal } from '../../quadratic-core/quadratic_core';
+import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
+import { Coordinate } from '../../gridGL/types/size';
+import { readFileAsArrayBuffer } from '../../helpers/files';
+import init, {
+  GridController,
+  MinMax,
+  Placement,
+  Pos,
+  Rect as RectInternal,
+} from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
   CellFormatSummary,
@@ -41,6 +51,23 @@ export const rectToPoint = (rect: Rect): Point => {
   return new Point(Number(rect.min.x), Number(rect.min.y));
 };
 
+export const upgradeFileRust = async (
+  grid: GridFile
+): Promise<{
+  contents: string;
+  version: string;
+} | null> => {
+  await init();
+  try {
+    const gc = GridController.newFromFile(JSON.stringify(grid));
+    const contents = gc.exportToFile();
+    return { contents: contents, version: gc.getVersion() };
+  } catch (e) {
+    console.warn(e);
+    return null;
+  }
+};
+
 // TS wrapper around Grid.rs
 export class Grid {
   private gridController!: GridController;
@@ -60,10 +87,9 @@ export class Grid {
   }
 
   // import/export
-
-  newFromFile(grid: GridFile): boolean {
+  openFromContents(contents: string): boolean {
     try {
-      this.gridController = GridController.newFromFile(JSON.stringify(grid));
+      this.gridController = GridController.newFromFile(contents);
       return true;
     } catch (e) {
       console.warn(e);
@@ -480,6 +506,27 @@ export class Grid {
 
   //#endregion
 
+  //#region Imports
+
+  async importCsv(sheetId: string, file: File, insertAtCellLocation: Coordinate, reportError: (error: string) => void) {
+    debugTimeReset();
+    const pos = new Pos(insertAtCellLocation.x, insertAtCellLocation.y);
+    const file_bytes = await readFileAsArrayBuffer(file);
+
+    try {
+      const summary = this.gridController.importCsv(sheetId, file_bytes, file.name, pos, sheets.getCursorPosition());
+      transactionResponse(summary);
+    } catch (error) {
+      // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
+      // type in the UI.
+      reportError(error as unknown as string);
+      Sentry.captureException(error);
+    }
+    debugTimeCheck(`uploading and processing csv file ${file.name}`);
+  }
+
+  //#endregion
+
   //#region column/row sizes
 
   getColumnWidth(sheetId: string, x: number): number {
@@ -556,5 +603,7 @@ export class Grid {
 
   //#endregion
 }
+
+//#end
 
 export const grid = new Grid();
