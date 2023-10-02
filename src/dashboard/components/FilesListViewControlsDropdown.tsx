@@ -99,11 +99,9 @@ export function FileListViewControlsDropdown({
         <ListSubheader sx={{ lineHeight: '2' }}>Sort:</ListSubheader>
 
         {sortOptions.map(({ label, value }) => (
-          <ListItem
+          <MenuItem
             key={label}
-            label={label}
-            isActive={viewPreferences.sort === value}
-            handleClose={() => {
+            onClick={() => {
               setViewPreferences((prev) => ({
                 ...prev,
                 sort: value,
@@ -111,22 +109,27 @@ export function FileListViewControlsDropdown({
               }));
               handleClose();
             }}
-          />
+          >
+            <MenuItemChild label={label} isActive={viewPreferences.sort === value} />
+          </MenuItem>
         ))}
 
         <Divider />
 
         <ListSubheader sx={{ lineHeight: '1.5' }}>Order:</ListSubheader>
         {orderOptions.map(({ altLabel, label, value }) => (
-          <ListItem
+          <MenuItem
             key={label}
-            label={viewPreferences.sort === Sort.Alphabetical ? altLabel : label}
-            isActive={viewPreferences.order === value}
-            handleClose={() => {
+            onClick={() => {
               setViewPreferences((prev) => ({ ...prev, order: value }));
               handleClose();
             }}
-          />
+          >
+            <MenuItemChild
+              label={viewPreferences.sort === Sort.Alphabetical ? altLabel : label}
+              isActive={viewPreferences.order === value}
+            />
+          </MenuItem>
         ))}
         {!showToggle && (
           <>
@@ -134,15 +137,15 @@ export function FileListViewControlsDropdown({
 
             <ListSubheader sx={{ lineHeight: '1.5' }}>Layout:</ListSubheader>
             {layoutOptions.map(({ label, value }) => (
-              <ListItem
+              <MenuItem
                 key={label}
-                label={label}
-                isActive={viewPreferences.layout === value}
-                handleClose={() => {
+                onClick={() => {
                   setViewPreferences((prev) => ({ ...prev, layout: value }));
                   handleClose();
                 }}
-              />
+              >
+                <MenuItemChild label={label} isActive={viewPreferences.layout === value} />
+              </MenuItem>
             ))}
           </>
         )}
@@ -151,19 +154,15 @@ export function FileListViewControlsDropdown({
   );
 }
 
-function ListItem({ label, isActive, handleClose }: any /* TODO */) {
-  return (
-    <MenuItem onClick={handleClose}>
-      {isActive ? (
-        <>
-          <ListItemIcon>
-            <Check />
-          </ListItemIcon>
-          {label}
-        </>
-      ) : (
-        <ListItemText inset>{label}</ListItemText>
-      )}
-    </MenuItem>
+function MenuItemChild({ label, isActive }: { label: string; isActive: boolean }) {
+  return isActive ? (
+    <>
+      <ListItemIcon>
+        <Check />
+      </ListItemIcon>
+      {label}
+    </>
+  ) : (
+    <ListItemText inset>{label}</ListItemText>
   );
 }
