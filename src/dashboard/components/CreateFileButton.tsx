@@ -8,21 +8,48 @@ import MenuList from '@mui/material/MenuList';
 import Paper from '@mui/material/Paper';
 import Popper from '@mui/material/Popper';
 import * as React from 'react';
-import { Link, useNavigation } from 'react-router-dom';
+import { Link, useNavigation, useSubmit } from 'react-router-dom';
+import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
+import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
+import { CreateActionRequest } from '../files/CreateRoute';
 
-const options = ['Import file'];
-
-export default function CreateButton() {
+// TODO this will need props when it becomes a button that can be used
+// on the team page as well as the user's files page
+export default function CreateFileButton() {
   const [open, setOpen] = React.useState(false);
   const anchorRef = React.useRef<HTMLDivElement>(null);
-  const [selectedIndex, setSelectedIndex] = React.useState(1);
+  const { addGlobalSnackbar } = useGlobalSnackbar();
+  const submit = useSubmit();
   const navigation = useNavigation();
   const isDisabled = navigation.state !== 'idle';
 
-  const handleMenuItemClick = (event: React.MouseEvent<HTMLLIElement, MouseEvent>, index: number) => {
-    setSelectedIndex(index);
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setOpen(false);
+
+    // If nothing was selected, just exit
+    if (!e.target.files) {
+      return;
+    }
+
+    // Get the file and it's contents
+    const file: File = e.target.files[0];
+    const contents = await file.text().catch((e) => null);
+
+    // Ensure it's a valid Quadratic grid file
+    const validFile = validateAndUpgradeGridFile(contents);
+    if (!validFile) {
+      addGlobalSnackbar('Import failed: invalid `.grid` file.', { severity: 'error' });
+      return;
+    }
+
+    // Upload it
+    const data: CreateActionRequest = {
+      name: file.name ? file.name.replace('.grid', '') : 'Untitled',
+      version: validFile.version,
+      contents: JSON.stringify(validFile),
+    };
+    submit(data, { method: 'POST', action: ROUTES.CREATE_FILE, encType: 'application/json' });
   };
 
   const handleToggle = () => {
@@ -33,23 +60,23 @@ export default function CreateButton() {
     if (anchorRef.current && anchorRef.current.contains(event.target as HTMLElement)) {
       return;
     }
-
     setOpen(false);
   };
 
   return (
     <>
       <ButtonGroup disableElevation variant="contained" ref={anchorRef} aria-label="split button">
-        <Button component={Link} to={ROUTES.CREATE_FILE} disabled={isDisabled} sx={{ borderTopRightRadius: 0 }}>
-          Create
+        <Button component={Link} to={ROUTES.CREATE_FILE} disabled={isDisabled}>
+          Create file
         </Button>
         <Button
           size="small"
-          aria-controls={open ? 'split-button-menu' : undefined}
+          aria-controls={open ? 'import-file-button-menu' : undefined}
           aria-expanded={open ? 'true' : undefined}
           aria-label="select merge strategy"
           aria-haspopup="menu"
           onClick={handleToggle}
+          disabled={isDisabled}
         >
           <ArrowDropDownIcon fontSize="small" />
         </Button>
@@ -73,18 +100,11 @@ export default function CreateButton() {
           >
             <Paper>
               <ClickAwayListener onClickAway={handleClose}>
-                <MenuList id="split-button-menu" autoFocusItem>
-                  {options.map((option, index) => (
-                    <MenuItem
-                      dense
-                      key={option}
-                      disabled={index === 2}
-                      selected={index === selectedIndex}
-                      onClick={(event) => handleMenuItemClick(event, index)}
-                    >
-                      {option}
-                    </MenuItem>
-                  ))}
+                <MenuList id="import-file-button-menu" autoFocusItem>
+                  <MenuItem component="label" dense>
+                    Import file
+                    <input type="file" name="content" accept=".grid" onChange={handleImport} hidden />
+                  </MenuItem>
                 </MenuList>
               </ClickAwayListener>
             </Paper>

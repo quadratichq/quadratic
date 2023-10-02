@@ -15,8 +15,7 @@ export const ROUTES = {
 
   // API routes are client-side routes to use react-router's data APIs (e.g. fetchers)
   API_FILE: (uuid: string) => `/api/files/${uuid}`,
-  // TODO rename to /api/files
-  API_FILE_SHARING: (uuid: string) => `/api/file/${uuid}/sharing`,
+  API_FILE_SHARING: (uuid: string) => `/api/files/${uuid}/sharing`,
 };
 
 export const ROUTE_LOADER_IDS = {

@@ -34,44 +34,34 @@ export type Action = {
     | Action['request.rename'];
 };
 
-const initialStateViewPreferences = {
-  sort: Sort.Updated,
-  order: Order.Descending,
-  layout: Layout.Grid,
-};
-
 export function FilesList({ files }: { files: FilesListFile[] }) {
-  // const actionData = useActionData() as Action['response'];
   const { pathname } = useLocation();
   const [filterValue, setFilterValue] = useState<string>('');
-  // Persist the layout preference across views (by URL)
+  const fetchers = useFetchers();
+  const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
   const [viewPreferences, setViewPreferences] = useLocalStorage<ViewPreferences>(
+    // Persist the layout preference across views (by URL)
     `FilesList-${pathname}`,
-    initialStateViewPreferences
+    // Initial state
+    {
+      sort: Sort.Updated,
+      order: Order.Descending,
+      layout: Layout.Grid,
+    }
   );
 
-  // const theme = useTheme();
-  const fetchers = useFetchers();
-  // const submit = useSubmit();
-  // const navigation = useNavigation();
-  const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
-  // const isDisabled = navigation.state !== 'idle';
-  // const { addGlobalSnackbar } = useGlobalSnackbar();
+  // We will optimistcally render the list of files
+  let filesToRender = files;
 
-  // useEffect(() => {
-  //   if (actionData && !actionData.ok) {
-  //     addGlobalSnackbar('An error occurred. Try again.', { severity: 'error' });
-  //   }
-  // }, [actionData, addGlobalSnackbar]);
-
-  // Optimistcally render UI
-  const filesBeingDeleted = fetchers.filter((fetcher) => (fetcher.json as Action['request'])?.action === 'delete');
+  // If there are files being duplicated, render them first
   const filesBeingDuplicated = fetchers
     .filter((fetcher) => (fetcher.json as Action['request'])?.action === 'duplicate')
     .map((fetcher) => (fetcher.json as Action['request.duplicate'])?.file);
-  let filesToRender = filesBeingDuplicated.concat(files);
+  if (filesBeingDuplicated.length > 0) {
+    filesToRender = [...filesBeingDuplicated, ...filesToRender];
+  }
 
-  // Filter out any values if the user has a query
+  // If the user has an active filter query, remove those
   if (filterValue) {
     filesToRender = filesToRender.filter(({ name }) => name.toLowerCase().includes(filterValue.toLowerCase()));
   }
@@ -91,6 +81,7 @@ export function FilesList({ files }: { files: FilesListFile[] }) {
     return viewPreferences.order === Order.Ascending ? comparison : -comparison;
   });
 
+  const filesBeingDeleted = fetchers.filter((fetcher) => (fetcher.json as Action['request'])?.action === 'delete');
   const activeShareMenuFileName = files.find((file) => file.uuid === activeShareMenuFileId)?.name || '';
 
   return (

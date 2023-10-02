@@ -91,11 +91,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
+export type CreateActionRequest = {
+  name: string;
+  contents: string;
+  version: string;
+};
+
 export const action = async ({ params, request }: ActionFunctionArgs) => {
-  const formData = await request.formData();
-  const name = formData.get('name') as string;
-  const contents = formData.get('contents') as string;
-  const version = formData.get('version') as string;
+  const { name, contents, version }: CreateActionRequest = await request.json();
 
   mixpanel.track('[Files].loadFileFromDisk', { fileName: name });
   try {
