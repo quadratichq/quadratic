@@ -165,7 +165,7 @@ fn test_duplicate_sheet() {
 fn test_delete_last_sheet() {
     let mut g = GridController::new();
     let sheet_ids = g.sheet_ids();
-    let first_sheet_id = sheet_ids[0].clone();
+    let first_sheet_id = sheet_ids[0];
 
     g.delete_sheet(first_sheet_id, None);
     let new_sheet_ids = g.sheet_ids();

@@ -32,7 +32,10 @@ impl GridController {
         ignore_formatting: bool,
     ) -> Option<MinMax> {
         let sheet = self.grid().sheet_from_string(sheet_id);
-        sheet.column_bounds(column as i64, ignore_formatting).as_ref().map(|bounds| MinMax {
+        sheet
+            .column_bounds(column as i64, ignore_formatting)
+            .as_ref()
+            .map(|bounds| MinMax {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
             })
@@ -48,7 +51,10 @@ impl GridController {
         ignore_formatting: bool,
     ) -> Option<MinMax> {
         let sheet = self.grid().sheet_from_string(sheet_id);
-        sheet.columns_bounds(column_start as i64, column_end as i64, ignore_formatting).as_ref().map(|bounds| MinMax {
+        sheet
+            .columns_bounds(column_start as i64, column_end as i64, ignore_formatting)
+            .as_ref()
+            .map(|bounds| MinMax {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
             })
@@ -63,7 +69,10 @@ impl GridController {
         ignore_formatting: bool,
     ) -> Option<MinMax> {
         let sheet = self.grid().sheet_from_string(sheet_id);
-        sheet.row_bounds(row as i64, ignore_formatting).as_ref().map(|bounds| MinMax {
+        sheet
+            .row_bounds(row as i64, ignore_formatting)
+            .as_ref()
+            .map(|bounds| MinMax {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
             })
@@ -79,7 +88,10 @@ impl GridController {
         ignore_formatting: bool,
     ) -> Option<MinMax> {
         let sheet = self.grid().sheet_from_string(sheet_id);
-        sheet.rows_bounds(row_start as i64, row_end as i64, ignore_formatting).as_ref().map(|bounds| MinMax {
+        sheet
+            .rows_bounds(row_start as i64, row_end as i64, ignore_formatting)
+            .as_ref()
+            .map(|bounds| MinMax {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
             })
