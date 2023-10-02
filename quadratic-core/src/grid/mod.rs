@@ -17,6 +17,7 @@ mod ids;
 pub mod js_types;
 mod offsets;
 mod response;
+pub mod series;
 mod sheet;
 
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};

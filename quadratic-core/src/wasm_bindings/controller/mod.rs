@@ -2,6 +2,7 @@ use super::*;
 use crate::{controller::transactions::TransactionSummary, grid::js_types::*};
 use std::str::FromStr;
 
+pub mod auto_complete;
 pub mod bounds;
 pub mod clipboard;
 pub mod formatting;
