@@ -68,14 +68,20 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         // treat to_before as None if to_before's sheet no longer exists
-        let order = if to_before.is_none() || !self.grid.sheet_has_id(to_before) {
-            let last_order = self.grid.sheets().last().map(|last| last.order.clone());
-            key_between(&last_order, &None).unwrap()
-        } else {
-            let after_sheet = self.grid.sheet_from_id(to_before.unwrap());
-            let before = self.grid.previous_sheet_order(after_sheet.id);
-            key_between(&before, &Some(after_sheet.order.clone())).unwrap()
+        let sheet_no_longer_exists = !self.grid.sheet_has_id(to_before);
+        let order = match (to_before, sheet_no_longer_exists) {
+            (None, true) => {
+                let last_order = self.grid.sheets().last().map(|last| last.order.clone());
+                key_between(&last_order, &None).unwrap()
+            }
+            (Some(to_before), false) => {
+                let after_sheet = self.grid.sheet_from_id(to_before);
+                let before = self.grid.previous_sheet_order(after_sheet.id);
+                key_between(&before, &Some(after_sheet.order.clone())).unwrap()
+            }
+            _ => unreachable!("to_before should be None or Some"),
         };
+
         let ops = vec![Operation::ReorderSheet {
             target: sheet_id,
             order,
