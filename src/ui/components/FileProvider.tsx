@@ -5,7 +5,6 @@ import { useSetRecoilState } from 'recoil';
 import { isOwner as isOwnerTest } from '../../actions';
 import { apiClient } from '../../api/apiClient';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
-import { useFileRouteLoaderData } from '../../dashboard/FileRoute';
 import { debugShowFileIO } from '../../debugFlags';
 import { grid } from '../../grid/controller/Grid';
 import { useInterval } from '../../hooks/useInterval';
@@ -32,10 +31,10 @@ const FileContext = createContext<FileContextType>({} as FileContextType);
 /**
  * Provider
  */
-export const FileProvider = ({ children }: { children: React.ReactElement }) => {
+export const FileProvider = ({ children, initialFileData }: { children: React.ReactElement; initialFileData: any }) => {
   // We can guarantee this is in the URL when it runs, so cast as string
   const { uuid } = useParams() as { uuid: string };
-  const initialFileData = useFileRouteLoaderData();
+  console.log('----> ', initialFileData);
   const [name, setName] = useState<FileContextType['name']>(initialFileData.name);
   const [publicLinkAccess] = useState(initialFileData.sharing.public_link_access);
   let isFirstUpdate = useRef(true);

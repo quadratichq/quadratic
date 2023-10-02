@@ -108,6 +108,8 @@ export const router = createBrowserRouter(
           <Route path="/api/files/:uuid/sharing" action={shareFileMenuAction} loader={shareFileMenuLoader} />
         </Route>
 
+        <Route path="/playground" lazy={() => import('./dashboard/PlaygroundRoute')} />
+
         <Route
           path="*"
           element={

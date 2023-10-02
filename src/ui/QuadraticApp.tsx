@@ -9,7 +9,7 @@ import { webWorkers } from '../web-workers/webWorkers';
 import QuadraticUIContext from './QuadraticUIContext';
 import { QuadraticLoading } from './loading/QuadraticLoading';
 
-export default function QuadraticApp() {
+export default function QuadraticApp({ initialFileData }: any) {
   const [loading, setLoading] = useState(true);
   const { permission } = useRecoilValue(editorInteractionStateAtom);
   const setLoadedState = useSetRecoilState(loadedStateAtom);
@@ -53,5 +53,5 @@ export default function QuadraticApp() {
   if (loading) {
     return <QuadraticLoading />;
   }
-  return <QuadraticUIContext />;
+  return <QuadraticUIContext initialFileData={initialFileData} />;
 }

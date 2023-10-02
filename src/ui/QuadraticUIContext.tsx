@@ -1,9 +1,9 @@
 import QuadraticUI from './QuadraticUI';
 import { FileProvider } from './components/FileProvider';
 
-export default function QuadraticUIContext() {
+export default function QuadraticUIContext({ initialFileData }: any) {
   return (
-    <FileProvider>
+    <FileProvider initialFileData={initialFileData}>
       <QuadraticUI />
     </FileProvider>
   );

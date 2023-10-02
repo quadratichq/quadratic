@@ -8,7 +8,7 @@ import { generateKeyBetween } from '../utils/fractionalIndexing';
 import { fetchFromApi } from './fetchFromApi';
 import { ApiSchemas, ApiTypes } from './types';
 
-const DEFAULT_FILE: GridFile = {
+export const DEFAULT_FILE: GridFile = {
   sheets: [
     {
       name: 'Sheet 1',
