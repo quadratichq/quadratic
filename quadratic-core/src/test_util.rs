@@ -98,7 +98,7 @@ pub fn print_table(grid_controller: GridController, sheet_id: SheetId, range: &R
         .collect::<Vec<String>>();
     let mut blank = vec!["".to_string()];
     blank.extend(columns.clone());
-    builder.set_header(blank.into_iter());
+    builder.set_header(blank);
     let mut bolds = vec![];
     let mut count_x = 0;
     let mut count_y = 0;

@@ -34,7 +34,6 @@ impl GridController {
 
         let values = reader
             .records()
-            .into_iter()
             .enumerate()
             .map(|(index, record)| {
                 let record = record.map_err(|e| error(format!("line {}: {}", index + 1, e)))?;
