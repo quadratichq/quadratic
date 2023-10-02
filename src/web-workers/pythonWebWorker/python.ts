@@ -64,12 +64,14 @@ class PythonWebWorker {
           //       this has to happen for Python and Formulas at the same time
 
           // convert single array to 2d array and convert all numbers to strings
-          if (results.array_output && !Array.isArray(results.array_output[0])) {
-            results.array_output = results.array_output.flatMap((entry: string | number) => [[entry.toString()]]);
-          } else {
-            results.array_output = results.array_output.map((entry: (string | number)[]) =>
-              entry.map((entry: String | number) => entry.toString())
-            );
+          if (results.array_output) {
+            if (!Array.isArray(results.array_output[0])) {
+              results.array_output = results.array_output.flatMap((entry: string | number) => [[entry.toString()]]);
+            } else {
+              results.array_output = results.array_output.map((entry: (string | number)[]) =>
+                entry.map((entry: String | number) => entry.toString())
+              );
+            }
           }
           resolve(results);
         };
