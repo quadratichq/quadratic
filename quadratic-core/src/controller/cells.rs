@@ -12,28 +12,10 @@ use super::{
     GridController,
 };
 
-// todo: fill this out
-const CURRENCY_SYMBOLS: &str = "$€£¥";
-
 impl GridController {
     pub fn populate_with_random_floats(&mut self, sheet_id: SheetId, region: &Rect) {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
         sheet.with_random_floats(region);
-    }
-
-    /// tests whether a a CellValue::Text is a currency value
-    fn unpack_currency(s: &String) -> Option<(String, BigDecimal)> {
-        if s.is_empty() {
-            return None;
-        }
-        for char in CURRENCY_SYMBOLS.chars() {
-            if let Some(stripped) = s.strip_prefix(char) {
-                if let Ok(bd) = BigDecimal::from_str(stripped) {
-                    return Some((char.to_string(), bd));
-                }
-            }
-        }
-        None
     }
 
     /// sets the value based on a user's input and converts input to proper NumericFormat
@@ -50,7 +32,7 @@ impl GridController {
         let mut ops = vec![];
 
         // check for currency
-        if let Some((currency, number)) = Self::unpack_currency(&value) {
+        if let Some((currency, number)) = CellValue::unpack_currency(&value) {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
                 values: Array::from(CellValue::Number(number)),
@@ -299,23 +281,5 @@ mod test {
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
         assert!(g.redo(None).is_none());
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
-    }
-
-    #[test]
-    fn test_unpack_currency() {
-        let value = String::from("$123.123");
-        assert_eq!(
-            GridController::unpack_currency(&value),
-            Some((String::from("$"), BigDecimal::from_str(&"123.123").unwrap()))
-        );
-
-        let value = String::from("test");
-        assert_eq!(GridController::unpack_currency(&value), None);
-
-        let value = String::from("$123$123");
-        assert_eq!(GridController::unpack_currency(&value), None);
-
-        let value = String::from("$123.123abc");
-        assert_eq!(GridController::unpack_currency(&value), None);
     }
 }
