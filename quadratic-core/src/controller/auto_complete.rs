@@ -620,7 +620,7 @@ mod tests {
             });
         });
 
-        (grid_controller.clone(), sheet_id)
+        (grid_controller, sheet_id)
     }
 
     #[test]
@@ -645,9 +645,9 @@ mod tests {
         grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(
-            grid.clone(),
+            &grid,
             sheet_id,
-            &Rect::new_span(Pos { x: -3, y: 1 }, Pos { x: 5, y: 2 }),
+            Rect::new_span(Pos { x: -3, y: 1 }, Pos { x: 5, y: 2 }),
         );
 
         let expected = vec!["g", "a", "h", "x", "g", "a", "h", "x", "g"];
@@ -668,7 +668,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None).unwrap();
 
-        print_table(grid.clone(), sheet_id, &range);
+        print_table(&grid, sheet_id, range);
 
         let expected = vec!["a", "h", "x", "g", "a", "h", "x", "g", "a"];
         let expected_bold = vec![true, false, false, true, true, false, false, true, true];
@@ -688,7 +688,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None).unwrap();
 
-        print_table(grid.clone(), sheet_id, &range);
+        print_table(&grid, sheet_id, range);
 
         let expected = vec!["a", "h", "x", "g"];
         let expected_bold = vec![true, false, false, true];
@@ -716,7 +716,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None).unwrap();
 
-        print_table(grid.clone(), sheet_id, &range);
+        print_table(&grid, sheet_id, range);
 
         let expected = vec!["a", "h", "x", "g"];
         let expected_bold = vec![true, false, false, true];
@@ -744,7 +744,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None).unwrap();
 
-        print_table(grid.clone(), sheet_id, &range);
+        print_table(&grid, sheet_id, range);
 
         let expected = vec!["a", "h", "x", "g", "a", "h", "x", "g", "a"];
         let expected_bold = vec![true, false, false, true, true, false, false, true, true];
@@ -763,9 +763,9 @@ mod tests {
         grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(
-            grid.clone(),
+            &grid,
             sheet_id,
-            &Rect::new_span(Pos { x: 2, y: 3 }, Pos { x: 10, y: -7 }),
+            Rect::new_span(Pos { x: 2, y: 3 }, Pos { x: 10, y: -7 }),
         );
 
         let expected = vec!["f", "z", "r", "b", "f", "z", "r", "b", "f"];
@@ -785,9 +785,9 @@ mod tests {
         grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(
-            grid.clone(),
+            &grid,
             sheet_id,
-            &Rect::new_span(Pos { x: -7, y: 2 }, Pos { x: 5, y: 10 }),
+            Rect::new_span(Pos { x: -7, y: 2 }, Pos { x: 5, y: 10 }),
         );
 
         let expected = vec![
@@ -810,11 +810,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect(&selected);
         grid.expand(sheet_id, selected, range, None).unwrap();
 
-        print_table(
-            grid.clone(),
-            sheet_id,
-            &Rect::new_span(range.min, selected.max),
-        );
+        print_table(&grid, sheet_id, Rect::new_span(range.min, selected.max));
 
         let expected = vec![
             "b", "f", "z", "r", "b", "f", "z", "r", "b", "f", "z", "r", "b",
@@ -836,7 +832,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
         grid.expand(sheet_id, selected, range, None).unwrap();
 
-        print_table(grid.clone(), sheet_id, &range);
+        print_table(&grid, sheet_id, range);
 
         let expected = vec!["8", "9", "10", "11", "12", "13", "14", "15"];
         assert_cell_value_row(&grid, sheet_id, 2, 9, 2, expected);
@@ -861,7 +857,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
         grid.expand(sheet_id, selected, range, None).unwrap();
 
-        print_table(grid.clone(), sheet_id, &range);
+        print_table(&grid, sheet_id, range);
 
         let expected = vec!["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon"];
         assert_cell_value_row(&grid, sheet_id, 6, 15, 12, expected.clone());
@@ -889,7 +885,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
         grid.expand(sheet_id, selected, range, None).unwrap();
 
-        print_table(grid.clone(), sheet_id, &range);
+        print_table(&grid, sheet_id, range);
 
         let expected = vec!["2", "3", "4", "5", "6", "7", "8", "9", "10", "11"];
         assert_cell_value_row(&grid, sheet_id, -4, 5, -8, expected.clone());
@@ -923,7 +919,7 @@ mod tests {
         let (mut grid, sheet_id) = test_setup_rect_vert_series(&selected);
         grid.expand(sheet_id, selected, range, None).unwrap();
 
-        print_table(grid.clone(), sheet_id, &range);
+        print_table(&grid, sheet_id, range);
 
         assert_cell_value(&grid, sheet_id, 3, 5, "4");
         assert_cell_value(&grid, sheet_id, 3, 6, "5");
@@ -945,9 +941,9 @@ mod tests {
         grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(
-            grid.clone(),
+            &grid,
             sheet_id,
-            &Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 12, y: 12 }),
+            Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 12, y: 12 }),
         );
 
         let expected_full = vec!["a", "h", "x", "", "", "", "", "", ""];
@@ -979,9 +975,9 @@ mod tests {
         grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(
-            grid.clone(),
+            &grid,
             sheet_id,
-            &Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 12, y: 12 }),
+            Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 12, y: 12 }),
         );
 
         let expected_full = vec!["a", "h", "x", "g", "a", "h", "x", "g", "a"];
@@ -1010,9 +1006,9 @@ mod tests {
         grid.expand(sheet_id, selected, range, None).unwrap();
 
         print_table(
-            grid.clone(),
+            &grid,
             sheet_id,
-            &Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 12, y: 12 }),
+            Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 12, y: 12 }),
         );
 
         let expected_full = vec!["a", "h", "x", "g", "", "", "", "", ""];

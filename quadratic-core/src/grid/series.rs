@@ -204,17 +204,17 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
         spaces,
         negative,
     } = options;
-    let text_series: Vec<Vec<&str>> = vec![
-        ALPHABET_LOWER.into(),
-        ALPHABET_UPPER.into(),
-        MONTHS_SHORT.into(),
-        MONTHS_SHORT_UPPER.into(),
-        MONTHS_FULL.into(),
-        MONTHS_FULL_UPPER.into(),
-        DAYS_SHORT.into(),
-        DAYS_SHORT_UPPER.into(),
-        DAYS_FULL.into(),
-        DAYS_FULL_UPPER.into(),
+    let text_series: &[&[&str]] = &[
+        &ALPHABET_LOWER,
+        &ALPHABET_UPPER,
+        &MONTHS_SHORT,
+        &MONTHS_SHORT_UPPER,
+        &MONTHS_FULL,
+        &MONTHS_FULL_UPPER,
+        &DAYS_SHORT,
+        &DAYS_SHORT_UPPER,
+        &DAYS_FULL,
+        &DAYS_FULL_UPPER,
     ];
 
     let mut possible_text_series = text_series.iter().map(|_| Some(vec![])).collect::<Vec<_>>();
@@ -314,7 +314,7 @@ pub fn is_series_key(key: &str, keys: &[&str]) -> bool {
 pub fn is_series_next_key(
     key: &str,
     existing_keys: &Vec<&str>,
-    all_keys: &Vec<&str>,
+    all_keys: &&[&str],
 ) -> Result<bool> {
     let last_key = existing_keys[existing_keys.len() - 1];
     let index = all_keys
@@ -335,7 +335,7 @@ pub fn checked_mod(n: isize, m: isize) -> isize {
     ((n % m) + m) % m
 }
 
-pub fn get_series_next_key(last_key: &str, all_keys: &Vec<&str>, negative: bool) -> Result<String> {
+pub fn get_series_next_key(last_key: &str, all_keys: &&[&str], negative: bool) -> Result<String> {
     let all_keys_len = all_keys.len() as isize;
     let index = all_keys
         .iter()

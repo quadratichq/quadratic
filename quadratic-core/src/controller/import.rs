@@ -34,7 +34,6 @@ impl GridController {
 
         let values = reader
             .records()
-            .into_iter()
             .enumerate()
             .map(|(index, record)| {
                 let record = record.map_err(|e| error(format!("line {}: {}", index + 1, e)))?;
@@ -105,9 +104,9 @@ Concord,NH,United States,42605
             .unwrap();
 
         print_table(
-            grid_controller.clone(),
+            &grid_controller,
             sheet_id,
-            &Rect::new_span(pos, Pos { x: 3, y: 10 }),
+            Rect::new_span(pos, Pos { x: 3, y: 10 }),
         );
 
         assert_cell_value_row(

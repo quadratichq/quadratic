@@ -32,13 +32,9 @@ pub fn assert_cell_value(
     };
 
     assert_eq!(
-        cell_value,
-        expected.clone(),
+        cell_value, expected,
         "Cell at ({}, {}) does not have the value {:?}, it's actually {:?}",
-        x,
-        y,
-        expected,
-        cell_value
+        x, y, expected, cell_value
     );
 }
 
@@ -98,7 +94,7 @@ pub fn assert_cell_format_bold(
     );
 }
 /// Util to print a simple grid to assist in TDD
-pub fn print_table(grid_controller: GridController, sheet_id: SheetId, range: &Rect) {
+pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: Rect) {
     let sheet = grid_controller.grid().sheet_from_id(sheet_id);
     let mut vals = vec![];
     let mut builder = Builder::default();
@@ -107,7 +103,7 @@ pub fn print_table(grid_controller: GridController, sheet_id: SheetId, range: &R
         .collect::<Vec<String>>();
     let mut blank = vec!["".to_string()];
     blank.extend(columns.clone());
-    builder.set_header(blank.into_iter());
+    builder.set_header(blank);
     let mut bolds = vec![];
     let mut count_x = 0;
     let mut count_y = 0;

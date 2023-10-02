@@ -5,20 +5,20 @@ use crate::{controller::GridController, grid::SheetId, Rect};
 
 #[wasm_bindgen]
 impl GridController {
-    /// Expand the contents of the selected rectangle up to the specified row.
+    /// Extend and/or shrink the contents of selection to range by inferring patterns.
     ///
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "expand")]
     pub fn js_expand(
         &mut self,
         sheet_id: String,
-        rect: &Rect,
+        selection: &Rect,
         range: &Rect,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id)?;
         let output = self
-            .expand(sheet_id, *rect, *range, cursor)
+            .expand(sheet_id, *selection, *range, cursor)
             .map_err(|e| e.to_string())?;
         Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
     }
