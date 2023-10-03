@@ -5,7 +5,8 @@
     "<rootDir>/tests-e2e/*",
     "<rootDir>/node_modules/",
     "<rootDir>/quadratic-api/*",
-    "<rootDir>/quadratic-core/*"
+    "<rootDir>/quadratic-core/*",
+    "<rootDir>/src/grid/controller/tests/ignored/*"
   ],
   "modulePathIgnorePatterns": ["quadratic-core/pkg/package.json"],
   "transform": {
