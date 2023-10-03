@@ -226,17 +226,19 @@ impl GridController {
                 column,
                 new_size,
             } => {
-                let sheet = self.sheet(sheet_id);
-                if let Some(x) = sheet.get_column_index(column) {
-                    let old_size = self.resize_column_internal(sheet_id, x, new_size);
-                    Operation::ResizeColumn {
-                        sheet_id,
-                        column,
-                        new_size: old_size,
-                    }
-                } else {
-                    Operation::None
-                }
+                // todo...
+
+                // let sheet = self.sheet(sheet_id);
+                // if let Some(x) = sheet.get_column_index(column) {
+                //     let old_size = self.resize_column_internal(sheet_id, x, new_size);
+                //     Operation::ResizeColumn {
+                //         sheet_id,
+                //         column,
+                //         new_size: old_size,
+                //     }
+                // } else {
+                Operation::None
+                // }
             }
 
             Operation::ResizeRow {
@@ -244,17 +246,19 @@ impl GridController {
                 row,
                 new_size,
             } => {
-                let sheet = self.sheet(sheet_id);
-                if let Some(y) = sheet.get_row_index(row) {
-                    let old_size = self.resize_row_internal(sheet_id, y, new_size);
-                    Operation::ResizeRow {
-                        sheet_id,
-                        row,
-                        new_size: old_size,
-                    }
-                } else {
-                    Operation::None
-                }
+                // todo...
+
+                // let sheet = self.sheet(sheet_id);
+                // if let Some(y) = sheet.get_row_index(row) {
+                //     let old_size = self.resize_row_internal(sheet_id, y, new_size);
+                //     Operation::ResizeRow {
+                //         sheet_id,
+                //         row,
+                //         new_size: old_size,
+                //     }
+                // } else {
+                Operation::None
+                // }
             }
         }
     }

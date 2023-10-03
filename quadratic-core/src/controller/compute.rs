@@ -6,13 +6,12 @@ use crate::{
     },
     wasm_bindings::{
         js::{self, runPython},
-        JsCodeResult,
+        JsComputeResult,
     },
-    Pos, Rect, Value,
+    Pos, Value,
 };
 use serde::{Deserialize, Serialize};
 use std::{fmt, ops::Range};
-use wasm_bindgen::prelude::Closure;
 
 impl GridController {
     /// Given `cell` and `dependencies` adds a new node to the graph.
@@ -25,87 +24,128 @@ impl GridController {
             js::log(&format!("Computing cell - {} \n", rect));
             // find which cells have formulas. Run the formulas and update the cells.
             // add the updated cells to the cells_to_compute
-            let grid = self.grid.clone();
-            let sheet = self.grid.sheet_mut_from_id(rect.sheet_id);
 
+            // iterate through changed range to find any code cells
             for y in rect.y_range() {
                 for x in rect.x_range() {
                     let pos = Pos { x, y };
+                    let sheet = self.grid.sheet_mut_from_id(rect.sheet_id);
                     if let Some(code_cell) = sheet.get_code_cell(pos) {
-                        match code_cell.language {
+                        let code_string = code_cell.code_string.clone();
+                        let language = code_cell.language.clone();
+
+                        let mut code_cell_result = None;
+                        let mut cells_accessed = vec![];
+
+                        match language {
                             CodeCellLanguage::Python => {
-                                // todo: remove this clone and move to a while of awaits to pass control back and forth to TS to avoid mem copies
-                                let grid = grid.clone();
-                                let current_sheet_id = sheet.id.to_string();
+                                let mut cells = None;
+                                let mut complete = false;
 
-                                let get_cells =
-                                    Closure::new(move |rect: Rect, sheet_name: Option<String>| {
-                                        // convert sheet_name to id or use current code's sheet
-                                        let sheet = if let Some(sheet_name) = sheet_name {
-                                            if let Some(sheet_from_name) =
-                                                grid.sheet_from_name(sheet_name)
-                                            {
-                                                sheet_from_name
+                                // loop through runPython handling either get-cells or complete results
+                                while !complete {
+                                    let result =
+                                        runPython(code_string.clone(), cells.clone()).await;
+                                    let compute_result =
+                                        serde_wasm_bindgen::from_value::<JsComputeResult>(result);
+
+                                    match compute_result {
+                                        Ok(compute_result) => {
+                                            if compute_result.complete {
+                                                if let Some(result) = compute_result.result {
+                                                    code_cell_result = Some(result);
+                                                }
+                                                complete = true;
                                             } else {
-                                                grid.sheet_from_string(current_sheet_id.clone())
+                                                // set cells to the requested get-cells for the next while loop
+                                                let sheet_name = compute_result.sheet_id;
+                                                let sheet = if let Some(sheet_name) = sheet_name {
+                                                    if let Some(sheet_from_name) =
+                                                        self.grid.sheet_from_name(sheet_name)
+                                                    {
+                                                        sheet_from_name
+                                                    } else {
+                                                        self.grid.sheet_mut_from_id(rect.sheet_id)
+                                                    }
+                                                } else {
+                                                    self.grid.sheet_mut_from_id(rect.sheet_id)
+                                                };
+                                                if let Some(rect) = compute_result.rect {
+                                                    let array = sheet.cell_array(rect);
+                                                    cells_accessed.push(SheetRect {
+                                                        min: rect.min,
+                                                        max: rect.max,
+                                                        sheet_id: sheet.id,
+                                                    });
+
+                                                    // place results of get-cells into cells for next runPython call
+                                                    let to_string =
+                                                        serde_json::to_string::<[CellForArray]>(
+                                                            &array,
+                                                        );
+                                                    match to_string {
+                                                        Ok(cell_for_array) => {
+                                                            cells = Some(cell_for_array)
+                                                        }
+                                                        Err(_) => cells = None,
+                                                    }
+                                                } else {
+                                                    cells = None;
+                                                }
                                             }
-                                        } else {
-                                            grid.sheet_from_string(current_sheet_id.clone())
-                                        };
-
-                                        let array = sheet.cell_array(rect);
-                                        Ok(serde_json::to_string::<[CellForArray]>(&array)
-                                            .map_err(|e| e.to_string())?)
-                                    });
-
-                                let result =
-                                    runPython(code_cell.code_string.clone(), &get_cells).await;
-                                js::log(&format!("{:?}", result));
-                                let code_cell_value =
-                                    serde_wasm_bindgen::from_value::<JsCodeResult>(result);
-                                match code_cell_value {
-                                    Ok(code_cell_value) => {
-                                        sheet.set_code_cell_value(
-                                            pos,
-                                            Some(CodeCellValue {
-                                                language: code_cell.language,
-                                                code_string: code_cell.code_string.clone(),
-                                                formatted_code_string: code_cell_value
-                                                    .formatted_code,
-                                                output: Some(CodeCellRunOutput {
-                                                    std_out: code_cell_value.input_python_std_out,
-                                                    std_err: code_cell_value.error_msg,
-                                                    result: CodeCellRunResult::Ok {
-                                                        output_value: if let Some(array_output) =
-                                                            code_cell_value.array_output
-                                                        {
-                                                            Value::Array(array_output.into())
-                                                        } else {
-                                                            code_cell_value.output_value.into()
-                                                        },
-
-                                                        // todo...
-                                                        cells_accessed: vec![],
-                                                    },
-                                                }),
-                                                last_modified: String::new(),
-                                            }),
-                                        );
+                                        }
+                                        Err(e) => {
+                                            // todo: better handling of error to ensure grid is not locked
+                                            js::log(&format!("compute_result error, {}", e));
+                                        }
                                     }
-                                    Err(e) => js::log(&format!("{:?}", e)),
                                 }
                             }
                             _ => {
                                 js::log(&format!(
                                     "Compute language {} not supported in compute.rs",
-                                    code_cell.language
+                                    language
                                 ));
                             }
+                        }
+                        if let Some(code_cell_value) = code_cell_result {
+                            let sheet = self.grid.sheet_mut_from_id(rect.sheet_id);
+                            js::log(&format!("cells_accessed {:?}", cells_accessed));
+                            sheet.set_code_cell_value(
+                                pos,
+                                Some(CodeCellValue {
+                                    language,
+                                    code_string,
+                                    formatted_code_string: code_cell_value.formatted_code,
+                                    output: Some(CodeCellRunOutput {
+                                        std_out: code_cell_value.input_python_std_out,
+                                        std_err: code_cell_value.error_msg,
+                                        result: CodeCellRunResult::Ok {
+                                            output_value: if let Some(array_output) =
+                                                code_cell_value.array_output
+                                            {
+                                                Value::Array(array_output.into())
+                                            } else {
+                                                code_cell_value.output_value.into()
+                                            },
+                                            cells_accessed: vec![],
+                                        },
+                                    }),
+                                    last_modified: String::new(),
+                                }),
+                            );
+                            self.grid.set_dependencies(
+                                SheetPos {
+                                    x: pos.x,
+                                    y: pos.y,
+                                    sheet_id: rect.sheet_id,
+                                },
+                                Some(cells_accessed),
+                            );
                         }
                     }
                 }
             }
-
             // add all dependent cells to the cells_to_compute
             let dependent_cells = self.grid.get_dependent_cells(rect);
 
@@ -115,7 +155,7 @@ impl GridController {
                 cells_to_compute.push(SheetRect::single_pos(dependent_cell));
             }
         }
-
+        js::log("compute loop complete");
         reverse_operations
     }
 }

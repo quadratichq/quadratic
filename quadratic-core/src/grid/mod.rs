@@ -17,7 +17,7 @@ mod ids;
 pub mod js_types;
 mod offsets;
 mod response;
-mod sheet;
+pub mod sheet;
 
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
 pub use borders::{CellBorder, CellBorderStyle, CellBorders, SheetBorders};
@@ -64,6 +64,13 @@ impl Grid {
     }
     pub fn sheet_ids(&self) -> Vec<SheetId> {
         self.sheets.iter().map(|sheet| sheet.id).collect()
+    }
+    pub fn sheet_mut_from_name(&mut self, name: String) -> Option<&Sheet> {
+        if let Some(sheet) = self.sheets.iter().find(|sheet| sheet.name == name) {
+            Some(sheet)
+        } else {
+            None
+        }
     }
     pub fn sheet_from_name(&self, name: String) -> Option<&Sheet> {
         self.sheets.iter().find(|sheet| sheet.name == name)

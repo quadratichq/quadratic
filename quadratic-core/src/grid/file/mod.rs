@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use super::offsets::Offsets;
+use super::sheet::sheet_offsets::SheetOffsets;
 
 mod v1_4;
 mod v1_5;
@@ -56,14 +56,7 @@ pub fn import(file_contents: &str) -> Result<current::Grid, String> {
                         .map(|(x, column)| (*x, column.id))
                         .collect(),
                     row_ids: sheet.rows.iter().copied().collect(),
-                    column_widths: Offsets::from_iter(
-                        crate::DEFAULT_COLUMN_WIDTH,
-                        sheet.column_widths.iter().copied(),
-                    ),
-                    row_heights: Offsets::from_iter(
-                        crate::DEFAULT_ROW_HEIGHT,
-                        sheet.row_heights.iter().copied(),
-                    ),
+                    offsets: SheetOffsets::import(sheet.offsets),
                     columns: sheet.columns.into_iter().collect(),
                     borders: sheet.borders,
                     code_cells: sheet.code_cells.into_iter().collect(),
@@ -93,8 +86,9 @@ pub fn export(grid: &current::Grid) -> Result<String, String> {
                     name: sheet.name.clone(),
                     color: sheet.color.clone(),
                     order: sheet.order.clone(),
-                    column_widths: sheet.column_widths.iter_sizes().collect(),
-                    row_heights: sheet.row_heights.iter_sizes().collect(),
+                    offsets: sheet.offsets.export(),
+                    // column_widths: sheet.column_widths.iter_sizes().collect(),
+                    // row_heights: sheet.row_heights.iter_sizes().collect(),
                     columns: sheet
                         .iter_columns()
                         .map(|(x, column)| (x, column.clone()))

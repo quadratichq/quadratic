@@ -15,32 +15,29 @@ extern "C" {
 }
 
 #[wasm_bindgen(typescript_custom_section)]
-const IJS_CODE_RESULT: &'static str = r#"
-interface JsCodeResult {
-    // cellsAccessed: Coordinate[];
-    success: boolean;
-    error_span?: number[];
-    error_msg?: string;
-    output_value?: string;
-    // array_output: Option<Vec<Vec<String>>>;
+const JS_CODE_RESULT: &'static str = r#"
+interface JsComputeResult {
+    complete: boolean;
+    rect?: Rect;
+    sheet_id?: String;
+    result?: JsCodeResult;
 }
 "#;
 
-struct JsCodeResult {
-    pub language: CodeCellLanguage,
-    pub cells_accessed: Array,
-    pub success: bool,
-    pub formatted_code: Option<String>,
-    pub error_span: Option<Array>,
-    pub error_msg: Option<String>,
-    pub output_value: Option<String>,
-    pub array_output: Option<Array>,
+#[wasm_bindgen(typescript_custom_section)]
+const IJS_CODE_RESULT: &'static str = r#"
+interface JsCodeResult {
+    formatted_code?: String;
+    success: boolean;
+    error_span?: number[];
+    error_msg?: string;
+    std_out: string;
+    output_value?: string;
+    array_output?: String[][];
 }
+"#;
 
 #[wasm_bindgen(module = "/../src/web-workers/rustWorker.ts")]
 extern "C" {
-    pub async fn runPython(
-        code_string: String,
-        get_cells: &Closure<dyn Fn(Rect, Option<String>) -> Result<String, JsValue>>,
-    ) -> JsValue;
+    pub async fn runPython(code_string: String, cells: Option<String>) -> JsValue;
 }

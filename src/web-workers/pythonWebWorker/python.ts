@@ -1,9 +1,10 @@
 import { pointsToRect } from '../../grid/controller/Grid';
+import { JsComputeResult } from '../../quadratic-core/quadratic_core';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 
 class PythonWebWorker {
   private worker?: Worker;
-  private callback?: (results: PythonReturnType) => void;
+  private callback?: (results: JsComputeResult) => void;
   private loaded = false;
 
   // rust function passed to get cells during computation cycle
@@ -16,24 +17,36 @@ class PythonWebWorker {
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
       if (event.type === 'results') {
-        if (this.callback && event.results) {
-          this.callback(event.results);
-          this.callback = undefined;
+        const result = event.results;
+        if (!this.callback) throw new Error('Expected callback to be defined in python.ts');
+        if (!result) throw new Error('Expected results to be defined in python.ts');
+        if (result.array_output) {
+          if (!Array.isArray(result.array_output[0])) {
+            result.array_output = result.array_output.flatMap((entry: string | number) => [[entry.toString()]]);
+          } else {
+            result.array_output = result.array_output.map((entry: (string | number)[]) =>
+              entry.map((entry: String | number) => entry.toString())
+            );
+          }
         }
+        this.callback({
+          complete: true,
+          result,
+        });
+        this.callback = undefined;
       } else if (event.type === 'get-cells') {
         const range = event.range;
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');
         }
-        if (!this.getCells) {
-          throw new Error('Expected getCells to be defined in PythonWebWorker');
+        if (!this.callback) {
+          throw new Error('Expected callback to be defined in python');
         }
-        const data = this.getCells(
-          pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
-          range.sheet
-        );
-        const cells = JSON.parse(data) as any[];
-        this.worker!.postMessage({ type: 'get-cells', cells } as PythonMessage);
+        this.callback({
+          complete: false,
+          rect: pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
+          sheet_id: event.range?.sheet,
+        });
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
         this.loaded = true;
@@ -45,37 +58,45 @@ class PythonWebWorker {
     };
   }
 
-  run(python: string, getCells: (sheetId: string | undefined, rect: any) => string): Promise<any> {
+  run(python: string, cells?: string): Promise<JsComputeResult> {
     return new Promise((resolve) => {
       if (!this.loaded || !this.worker) {
         resolve({
-          cells_accessed: [],
-          success: false,
-          input_python_stack_trace: 'Error: Python not loaded',
-          input_python_std_out: '',
-          output_value: null,
-          array_output: [],
-          formatted_code: '',
+          complete: true,
+          result: {
+            success: false,
+            error_msg: 'Error: Python not loaded',
+            std_out: '',
+            output_value: undefined,
+            array_output: undefined,
+            formatted_code: undefined,
+          },
         });
       } else {
-        this.getCells = getCells;
-        this.callback = (results: any) => {
-          // todo: this should be moved to rust by changing the results type.
-          //       this has to happen for Python and Formulas at the same time
+        this.callback = resolve;
+        if (cells) {
+          console.log('get-cells');
+          this.worker.postMessage({ type: 'get-cells', cells: JSON.parse(cells) });
+        } else {
+          console.log('python');
+          this.worker.postMessage({ type: 'execute', python });
+        }
+        // this.callback = (results: any) => {
+        //   // todo: this should be moved to rust by changing the results type.
+        //   //       this has to happen for Python and Formulas at the same time
 
-          // convert single array to 2d array and convert all numbers to strings
-          if (results.array_output) {
-            if (!Array.isArray(results.array_output[0])) {
-              results.array_output = results.array_output.flatMap((entry: string | number) => [[entry.toString()]]);
-            } else {
-              results.array_output = results.array_output.map((entry: (string | number)[]) =>
-                entry.map((entry: String | number) => entry.toString())
-              );
-            }
-          }
-          resolve(results);
-        };
-        this.worker.postMessage({ type: 'execute', python } as PythonMessage);
+        //   // convert single array to 2d array and convert all numbers to strings
+        //   if (results.array_output) {
+        //     if (!Array.isArray(results.array_output[0])) {
+        //       results.array_output = results.array_output.flatMap((entry: string | number) => [[entry.toString()]]);
+        //     } else {
+        //       results.array_output = results.array_output.map((entry: (string | number)[]) =>
+        //         entry.map((entry: String | number) => entry.toString())
+        //       );
+        //     }
+        //   }
+        //   resolve(results);
+        // };
       }
     });
   }

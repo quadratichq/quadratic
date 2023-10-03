@@ -59,7 +59,7 @@ export class GridLines extends Graphics {
         this.moveTo(x - offset, bounds.top);
         this.lineTo(x - offset, bounds.bottom);
       }
-      size = grid.getColumnWidth(sheetId, column);
+      size = sheets.sheet.offsets.(column);
       column++;
     }
   }

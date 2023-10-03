@@ -18,6 +18,7 @@ pub mod wasm_bindings;
 
 pub use error::*;
 pub use ext::*;
+pub use grid::sheet::sheet_offsets;
 pub use position::*;
 pub use rle::RunLengthEncoding;
 pub use span::*;

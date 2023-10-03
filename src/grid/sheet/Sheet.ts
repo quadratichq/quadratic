@@ -1,10 +1,9 @@
 import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
-import { Pos } from '../../quadratic-core/quadratic_core';
+import { Pos, SheetOffsets } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
   CellFormatSummary,
-  // CodeCellValue,
   FormattingSummary,
   JsRenderCell,
   JsRenderCodeCell,
@@ -16,12 +15,13 @@ import { SheetCursor } from './SheetCursor';
 export class Sheet {
   id: string;
   cursor: SheetCursor;
+  offsets: SheetOffsets;
 
   constructor(index: number) {
     const sheetId = grid.sheetIndexToId(index);
     if (!sheetId) throw new Error('Expected sheetId to be defined in Sheet');
     this.id = sheetId;
-
+    this.offsets = grid.getOffsets(this.id);
     this.cursor = new SheetCursor(this);
   }
 
@@ -61,10 +61,6 @@ export class Sheet {
   get order(): string {
     return grid.getSheetOrder(this.id);
   }
-
-  // getCellValueStrings(rectangle: Rectangle): string[] {
-  //   return grid.getCellValueStrings(this.id, rectangle);
-  // }
 
   getRenderCells(rectangle: Rectangle): JsRenderCell[] {
     return grid.getRenderCells(this.id, rectangle);

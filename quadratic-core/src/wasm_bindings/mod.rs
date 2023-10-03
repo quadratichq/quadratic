@@ -52,6 +52,14 @@ pub struct JsCodeResult {
     pub array_output: Option<Vec<Vec<String>>>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+pub struct JsComputeResult {
+    pub complete: bool,
+    pub rect: Option<Rect>,
+    pub sheet_id: Option<String>,
+    pub result: Option<JsCodeResult>,
+}
+
 /// Evaluates a formula and returns a formula result.
 #[wasm_bindgen]
 pub async fn eval_formula(

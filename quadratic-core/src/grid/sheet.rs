@@ -7,6 +7,8 @@ use itertools::Itertools;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
+use self::sheet_offsets::SheetOffsets;
+
 use super::borders::{CellBorder, SheetBorders};
 use super::bounds::GridBounds;
 use super::code::CodeCellValue;
@@ -14,7 +16,6 @@ use super::column::Column;
 use super::formatting::{BoolSummary, CellFmtAttr};
 use super::ids::{CellRef, ColumnId, IdMap, RegionRef, RowId, SheetId};
 use super::js_types::{CellFormatSummary, FormattingSummary};
-use super::offsets::Offsets;
 use super::response::{GetIdResponse, SetCellResponse};
 use super::NumericFormatKind;
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
@@ -22,8 +23,8 @@ use crate::{Array, CellValue, IsBlank, Pos, Rect};
 pub mod bounds;
 pub mod cells;
 pub mod code;
-pub mod offsets;
 pub mod rendering;
+pub mod sheet_offsets;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {
@@ -35,8 +36,7 @@ pub struct Sheet {
     pub(super) column_ids: IdMap<ColumnId, i64>,
     pub(super) row_ids: IdMap<RowId, i64>,
 
-    pub(super) column_widths: Offsets,
-    pub(super) row_heights: Offsets,
+    pub offsets: SheetOffsets,
 
     #[serde(with = "crate::util::btreemap_serde")]
     pub(super) columns: BTreeMap<i64, Column>,
@@ -59,15 +59,14 @@ impl Sheet {
             column_ids: IdMap::new(),
             row_ids: IdMap::new(),
 
-            column_widths: Offsets::new(crate::DEFAULT_COLUMN_WIDTH),
-            row_heights: Offsets::new(crate::DEFAULT_ROW_HEIGHT),
-
             columns: BTreeMap::new(),
             borders: SheetBorders::new(),
             code_cells: HashMap::new(),
 
             data_bounds: GridBounds::Empty,
             format_bounds: GridBounds::Empty,
+
+            offsets: SheetOffsets::default(),
         }
     }
 

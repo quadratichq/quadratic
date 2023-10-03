@@ -7,6 +7,7 @@ import {
   Placement,
   Pos,
   Rect as RectInternal,
+  SheetOffsets,
 } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
@@ -500,10 +501,6 @@ export class Grid {
 
   //#region column/row sizes
 
-  getColumnWidth(sheetId: string, x: number): number {
-    return this.gridController.getColumnWidth(sheetId, x);
-  }
-
   getRowHeight(sheetId: string, y: number): number {
     return this.gridController.getRowHeight(sheetId, y);
   }
@@ -570,6 +567,10 @@ export class Grid {
 
   headingResizeRow(sheetId: string, row: number, size?: number) {
     this.gridController.resizeRowTransiently(sheetId, row, size);
+  }
+
+  getOffsets(sheetId: string): SheetOffsets {
+    return this.gridController.getOffsets(sheetId);
   }
 
   //#endregion
