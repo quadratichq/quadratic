@@ -36,7 +36,7 @@ impl GridController {
 
                         let mut code_cell_result = None;
                         let mut cells_accessed = vec![];
-
+                        let mut cells_accessed_code_cell = vec![];
                         match language {
                             CodeCellLanguage::Python => {
                                 js::log(&format!("running {:?}, {:?}", pos.x, pos.y));
@@ -76,9 +76,18 @@ impl GridController {
                                                     cells_accessed.push(SheetRect {
                                                         min: rect.min,
                                                         max: rect.max,
-                                                        sheet_id: sheet.id,
+                                                        sheet_id: sheet.id.clone(),
                                                     });
-
+                                                    for y in rect.y_range() {
+                                                        for x in rect.x_range() {
+                                                            if let Some(cell_ref) =
+                                                                sheet.try_get_cell_ref(Pos { x, y })
+                                                            {
+                                                                cells_accessed_code_cell
+                                                                    .push(cell_ref);
+                                                            }
+                                                        }
+                                                    }
                                                     // place results of get-cells into cells for next runPython call
                                                     let to_string =
                                                         serde_json::to_string::<[CellForArray]>(
@@ -129,7 +138,7 @@ impl GridController {
                                             } else {
                                                 code_cell_value.output_value.into()
                                             },
-                                            cells_accessed: vec![],
+                                            cells_accessed: cells_accessed_code_cell,
                                         },
                                     }),
                                     last_modified: String::new(),
