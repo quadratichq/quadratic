@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { grid } from '../../grid/controller/Grid';
 import { sheets } from '../../grid/controller/Sheets';
@@ -17,7 +17,7 @@ interface CellInputProps {
 
 export const CellInput = (props: CellInputProps) => {
   const { container } = props;
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
   const viewport = pixiApp.viewport;
 
@@ -238,6 +238,18 @@ export const CellInput = (props: CellInputProps) => {
       onFocus={handleFocus}
       onBlur={() => closeInput()}
       onKeyDown={(event) => {
+        // open cell type menu if the user presses = and the cell is empty
+        if (event.key === '=' && event.currentTarget.innerText === '') {
+          setEditorInteractionState((old) => {
+            return {
+              ...old,
+              showCellTypeMenu: true,
+              showCodeEditor: false,
+              mode: 'PYTHON',
+            };
+          });
+        }
+
         if (event.key === 'Enter') {
           closeInput({ x: 0, y: 1 });
           event.stopPropagation();
