@@ -5,7 +5,6 @@ import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom'
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
 import { CellInput } from './interaction/CellInput';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
-import { ensureVisible } from './interaction/viewportHelper';
 import { pixiApp } from './pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from './pixiApp/PixiAppSettings';
 
@@ -26,7 +25,6 @@ export default function QuadraticGrid() {
   useEffect(() => {
     const updatePanMode = (e: any) => {
       setPanMode(e.detail);
-      ensureVisible();
     };
     window.addEventListener('pan-mode', updatePanMode);
     return () => window.removeEventListener('pan-mode', updatePanMode);
