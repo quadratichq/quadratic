@@ -6,8 +6,10 @@ import { GridFileV1_0 } from './GridFileV1_0';
 import { GridFileV1_1, upgradeV1_0toV1_1 } from './GridFileV1_1';
 import { GridFileV1_2, upgradeV1_1toV1_2 } from './GridFileV1_2';
 import { GridFileV1_3, upgradeV1_2toV1_3 } from './GridFileV1_3';
-import { validateAndUpgradeGridFile } from './validateAndUpgradeGridFile';
-const v = (input: any) => validateAndUpgradeGridFile(input, false);
+import { GridFileV1_4 } from './GridFileV1_4';
+import { validateAndUpgradeLegacyGridFile } from './validateAndUpgradeLegacyGridFile';
+
+const v = (input: any) => validateAndUpgradeLegacyGridFile(input, false);
 const LATEST_VERSION = GridFileSchema.shape.version.value;
 const EXAMPLES_DIR = path.join(__dirname, '../../public/examples/');
 const exampleGridFiles: string[] = fs
@@ -104,6 +106,26 @@ const v1_3File: GridFileV1_3 = {
   borders: [{ x: 0, y: 0, horizontal: { type: 'line1' } }],
   formats: [{ x: 1, y: 1 }],
   cell_dependency: 'foo',
+};
+
+/**
+ * Sample file: 1.4
+ */
+const v1_4File: GridFileV1_4 = {
+  version: '1.4',
+  cell_dependency: 'foo',
+  sheets: [
+    {
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      name: 'foo',
+      order: '1',
+      cells: [],
+      columns: [],
+      rows: [],
+      borders: [{ x: 0, y: 0, horizontal: { type: 'line1' } }],
+      formats: [{ x: 1, y: 1 }],
+    },
+  ],
 };
 
 describe('upgrade files from one specific version to another', () => {
@@ -204,8 +226,14 @@ describe('valid input passes validation and upgrades file to the most recent', (
     expect(result).toHaveProperty('version', LATEST_VERSION);
   });
 
-  test('returns file matching the most recent', () => {
+  test('validates and upgrades a file from v1.3 the most recent', () => {
     const result = v(JSON.stringify(v1_3File));
-    expect(result).toStrictEqual(v1_3File);
+    expect(result).not.toBeNull();
+    expect(result).toHaveProperty('version', LATEST_VERSION);
+  });
+
+  test('returns file matching the most recent', () => {
+    const result = v(JSON.stringify(v1_4File));
+    expect(result).toStrictEqual(v1_4File);
   });
 });

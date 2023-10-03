@@ -93,7 +93,7 @@ export type ArrayOutputBase = z.infer<typeof ArrayOutputBaseSchema>;
 /**
  * Given a v1_2 file, update it to a v1_3 file
  */
-export function upgradeV1_2toV1_3(file: GridFileV1_2): GridFileV1_3 {
+export function upgradeV1_2toV1_3(file: GridFileV1_2, logOutput: boolean = true): GridFileV1_3 {
   // File meta information was removed from the file and added as column
   // information in the database. This includes:
   // `filename` - removed from file, renamed to `name` in db

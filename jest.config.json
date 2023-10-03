@@ -1,5 +1,6 @@
 {
   "verbose": true,
+  "testEnvironment": "jsdom",
   "preset": "ts-jest",
   "testPathIgnorePatterns": [
     "<rootDir>/tests-e2e/*",
@@ -8,10 +9,11 @@
     "<rootDir>/quadratic-core/*",
     "<rootDir>/src/grid/controller/tests/ignored/*"
   ],
-  "modulePathIgnorePatterns": ["quadratic-core/pkg/package.json"],
-  "transform": {
-    "^.+\\.(ts|tsx|js|jsx)?$": "ts-jest",
-    "\\.py$": "<rootDir>/jest-transformer-py"
-  },
+  "modulePathIgnorePatterns": [
+    "<rootDir>/quadratic-core/pkg/package.json",
+    "<rootDir>/src/quadratic-core/package.json",
+    "<rootDir>/src/quadratic-core/__mocks__/package.json"
+  ],
+  "transform": {},
   "testTimeout": 15000
 }

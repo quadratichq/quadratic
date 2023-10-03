@@ -101,7 +101,7 @@ export type ArrayOutputBase = z.infer<typeof ArrayOutputBaseSchema>;
 /**
  * Given a v1_1 file, update it to a v1_2 file
  */
-export function upgradeV1_1toV1_2(file: GridFileV1_1): GridFileV1_2 {
+export function upgradeV1_1toV1_2(file: GridFileV1_1, logOutput: boolean = true): GridFileV1_2 {
   const result = {
     ...file,
     version: '1.2',
