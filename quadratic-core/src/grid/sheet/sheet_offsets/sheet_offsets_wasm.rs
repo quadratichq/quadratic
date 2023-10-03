@@ -10,6 +10,12 @@ pub struct Placement {
 }
 
 #[wasm_bindgen]
+pub struct ColumnRow {
+    pub column: i32,
+    pub row: i32,
+}
+
+#[wasm_bindgen]
 impl SheetOffsets {
     /// Returns a rectangle with the screen coordinates for a cell
     #[wasm_bindgen(js_name = "getCellOffsets")]
@@ -19,7 +25,7 @@ impl SheetOffsets {
 
     /// gets the column width. Returns a f32
     #[wasm_bindgen(js_name = "getColumnWidth")]
-    pub fn js_column_width(&self, sheet_id: String, x: i32) -> f32 {
+    pub fn js_column_width(&self, x: i32) -> f32 {
         self.column_width(x as i64) as f32
     }
 
@@ -68,6 +74,15 @@ impl SheetOffsets {
             index: index.0 as i32,
             position: index.1,
             size: self.row_height(index.0) as i32,
+        }
+    }
+
+    /// gets the column and row based on the pixels' coordinates. Returns a (column, row) index
+    #[wasm_bindgen(js_name = "getColumnRowFromScreen")]
+    pub fn js_get_column_row_from_screen(&self, x: f64, y: f64) -> ColumnRow {
+        ColumnRow {
+            column: self.js_x_placement(x).index,
+            row: self.js_y_placement(y).index,
         }
     }
 

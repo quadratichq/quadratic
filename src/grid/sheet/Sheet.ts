@@ -165,4 +165,21 @@ export class Sheet {
   }
 
   //#endregion
+
+  //#region Offsets
+
+  // @returns screen position of a cell
+  getCellOffsets(column: number, row: number): Rectangle {
+    const screenRect = this.offsets.getCellOffsets(column, row);
+    return new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
+  }
+
+  // @returns screen rectangle for a column/row rectangle
+  getScreenRectangle(column: number, row: number, width: number, height: number): Rectangle {
+    const topLeft = this.getCellOffsets(column, row);
+    const bottomRight = this.getCellOffsets(column + width, row + height);
+    return new Rectangle(topLeft.left, topLeft.top, bottomRight.right - topLeft.left, bottomRight.bottom - topLeft.top);
+  }
+
+  //#endregion
 }

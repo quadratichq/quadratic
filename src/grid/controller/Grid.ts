@@ -4,7 +4,6 @@ import {
   CodeCellLanguage,
   GridController,
   MinMax,
-  Placement,
   Pos,
   Rect as RectInternal,
   SheetOffsets,
@@ -501,72 +500,21 @@ export class Grid {
 
   //#region column/row sizes
 
-  getRowHeight(sheetId: string, y: number): number {
-    return this.gridController.getRowHeight(sheetId, y);
-  }
-
-  getColumnPlacement(sheetId: string, column: number): Placement {
-    return this.gridController.getColumnPlacement(sheetId, column);
-  }
-
-  getRowPlacement(sheetId: string, row: number): Placement {
-    return this.gridController.getRowPlacement(sheetId, row);
-  }
-
-  getXPlacement(sheetId: string, x: number): Placement {
-    return this.gridController.getXPlacement(sheetId, x);
-  }
-
-  getYPlacement(sheetId: string, y: number): Placement {
-    return this.gridController.getYPlacement(sheetId, y);
-  }
-
-  getColumnRow(sheetId: string, x: number, y: number): { column: number; row: number } {
-    return {
-      column: this.getXPlacement(sheetId, x).index,
-      row: this.getYPlacement(sheetId, y).index,
-    };
-  }
-
-  // @returns screen position of a cell
-  getCellOffsets(sheetId: string, column: number, row: number): Rectangle {
-    const screenRect = this.gridController.getCellOffsets(sheetId, column, row);
-    return new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
-  }
-
-  // @returns screen rectangle for a column/row rectangle
-  getScreenRectangle(sheetId: string, column: number, row: number, width: number, height: number): Rectangle {
-    const topLeft = this.getCellOffsets(sheetId, column, row);
-    const bottomRight = this.getCellOffsets(sheetId, column + width, row + height);
-    return new Rectangle(topLeft.left, topLeft.top, bottomRight.right - topLeft.left, bottomRight.bottom - topLeft.top);
-  }
-
   async commitHeadingResize() {
-    const summary = await this.gridController.commitResize(sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
-  }
-
-  cancelHeadingResize() {
-    this.gridController.cancelResize();
-  }
-
-  headingResizeColumn(sheetId: string, column: number, size?: number) {
-    this.gridController.resizeColumnTransiently(sheetId, column, size);
+    // todo...
+    // const summary = await this.gridController.commitResize(sheets.getCursorPosition());
+    // transactionResponse(summary);
+    // this.dirty = true;
   }
 
   async headingResizeColumnCommit(sheetId: string, column: number, size: number, skipUpdate: boolean) {
-    const summary = await this.gridController.resizeColumn(sheetId, column, size);
-
-    // does not work properly
-    if (!skipUpdate) {
-      transactionResponse(summary);
-    }
-    this.dirty = true;
-  }
-
-  headingResizeRow(sheetId: string, row: number, size?: number) {
-    this.gridController.resizeRowTransiently(sheetId, row, size);
+    // todo...
+    // const summary = await this.gridController.resizeColumn(sheetId, column, size);
+    // // does not work properly
+    // if (!skipUpdate) {
+    //   transactionResponse(summary);
+    // }
+    // this.dirty = true;
   }
 
   getOffsets(sheetId: string): SheetOffsets {

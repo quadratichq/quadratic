@@ -1,5 +1,4 @@
 import { Graphics, Rectangle } from 'pixi.js';
-import { grid } from '../../grid/controller/Grid';
 import { sheets } from '../../grid/controller/Sheets';
 import { colors } from '../../theme/colors';
 
@@ -39,8 +38,7 @@ export class BoxCells extends Graphics {
 
   private drawRectangle(): void {
     if (!this.gridRectangle) return;
-    const screenRectangle = grid.getScreenRectangle(
-      sheets.sheet.id,
+    const screenRectangle = sheets.sheet.getScreenRectangle(
       this.gridRectangle.x,
       this.gridRectangle.y,
       this.gridRectangle.width,
@@ -72,8 +70,7 @@ export class BoxCells extends Graphics {
     this.lineStyle(0);
     this.deleteRectangles?.forEach((rectangle) => {
       this.beginFill(colors.boxCellsDeleteColor, colors.boxCellsAlpha);
-      const screenRectangle = grid.getScreenRectangle(
-        sheets.sheet.id,
+      const screenRectangle = sheets.sheet.getScreenRectangle(
         rectangle.x,
         rectangle.y,
         rectangle.width,

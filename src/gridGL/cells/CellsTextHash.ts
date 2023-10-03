@@ -1,5 +1,4 @@
 import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
-import { grid } from '../../grid/controller/Grid';
 import { Bounds } from '../../grid/sheet/Bounds';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { JsRenderCell } from '../../quadratic-core/types';
@@ -84,7 +83,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
     this.cellLabels = new Map();
     const cells = this.sheet.getRenderCells(this.AABB);
     cells.forEach((cell) => {
-      const rectangle = grid.getCellOffsets(this.sheet.id, Number(cell.x), Number(cell.y));
+      const rectangle = this.sheet.getCellOffsets(Number(cell.x), Number(cell.y));
       const cellLabel = new CellLabel(cell, rectangle);
       this.cellLabels.set(this.getKey(cell), cellLabel);
     });
@@ -188,13 +187,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   drawDebugBox(g: Graphics) {
-    const screen = grid.getScreenRectangle(
-      this.sheet.id,
-      this.AABB.left,
-      this.AABB.top,
-      this.AABB.width,
-      this.AABB.height
-    );
+    const screen = this.sheet.getScreenRectangle(this.AABB.left, this.AABB.top, this.AABB.width, this.AABB.height);
     g.beginFill(this.debugColor, 0.25);
     g.drawShape(screen);
     g.endFill();

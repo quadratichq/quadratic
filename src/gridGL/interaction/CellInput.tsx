@@ -3,7 +3,6 @@ import { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
-import { grid } from '../../grid/controller/Grid';
 import { sheets } from '../../grid/controller/Sheets';
 import { focusGrid } from '../../helpers/focusGrid';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
@@ -33,7 +32,7 @@ export const CellInput = (props: CellInputProps) => {
     return () => window.removeEventListener('change-input', changeInput);
   }, []);
 
-  const cellOffsets = grid.getCellOffsets(sheet.id, cellLocation.x, cellLocation.y);
+  const cellOffsets = sheet.getCellOffsets(cellLocation.x, cellLocation.y);
   const cell = sheet.getEditCell(cellLocation.x, cellLocation.y);
   const formatting = sheet.getCellFormatSummary(cellLocation.x, cellLocation.y);
 
