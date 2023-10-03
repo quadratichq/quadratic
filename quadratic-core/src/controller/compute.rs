@@ -39,6 +39,7 @@ impl GridController {
 
                         match language {
                             CodeCellLanguage::Python => {
+                                js::log(&format!("running {:?}, {:?}", pos.x, pos.y));
                                 let mut cells = None;
                                 let mut complete = false;
 
@@ -148,7 +149,10 @@ impl GridController {
             }
             // add all dependent cells to the cells_to_compute
             let dependent_cells = self.grid.get_dependent_cells(rect);
-
+            js::log(&format!(
+                "adding dependent cells {:?}",
+                dependent_cells.clone()
+            ));
             // loop through all dependent cells
             for dependent_cell in dependent_cells {
                 // add to cells_to_compute

@@ -87,8 +87,6 @@ pub fn export(grid: &current::Grid) -> Result<String, String> {
                     color: sheet.color.clone(),
                     order: sheet.order.clone(),
                     offsets: sheet.offsets.export(),
-                    // column_widths: sheet.column_widths.iter_sizes().collect(),
-                    // row_heights: sheet.row_heights.iter_sizes().collect(),
                     columns: sheet
                         .iter_columns()
                         .map(|(x, column)| (x, column.clone()))
