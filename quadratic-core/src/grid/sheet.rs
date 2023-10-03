@@ -1046,4 +1046,28 @@ mod test {
         let new_column = sheet.get_or_create_column(1);
         assert_eq!(new_column.1, &Column::with_id(new_column.0.id));
     }
+
+    #[test]
+    fn test_rows() {
+        let (grid, sheet_id, _) = test_setup_basic();
+        let sheet = grid.grid().sheet_from_id(sheet_id).clone();
+
+        // get all rows
+        let rows = sheet.iter_rows().collect::<Vec<_>>();
+        let row = sheet.get_row(1);
+        assert_eq!(row, Some(rows[0].1));
+
+        let row = sheet.get_row(2);
+        assert_eq!(row, Some(rows[1].1));
+
+        // existing row
+        let mut sheet = sheet.clone();
+        let existing_row = sheet.get_or_create_row(1);
+        assert_eq!(Some(rows[0].1), Some(existing_row.id));
+
+        // new row
+        let mut sheet = sheet.clone();
+        let new_row = sheet.get_or_create_row(3);
+        rows.iter().for_each(|row| assert_ne!(row.1, new_row.id));
+    }
 }
