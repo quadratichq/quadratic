@@ -1,4 +1,4 @@
-import { Close, ExtensionOutlined, FolderOpenOutlined, Menu, PeopleOutline } from '@mui/icons-material';
+import { Add, Close, ExtensionOutlined, FolderOpenOutlined, Menu } from '@mui/icons-material';
 import { Avatar, Box, CircularProgress, Drawer, IconButton, Typography, useTheme } from '@mui/material';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigation } from 'react-router-dom';
@@ -168,10 +168,10 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
         </SidebarNavLink>
 
         <SidebarLabel>Teams</SidebarLabel>
-        <SidebarNavLink to={ROUTES.TEAMS} style={sidebarLinkStyles}>
-          <PeopleOutline />
+        <SidebarNavLink to={ROUTES.CREATE_TEAM} style={sidebarLinkStyles}>
+          <Add />
           <Typography variant="body2" color="text.primary">
-            My team
+            Create
           </Typography>
         </SidebarNavLink>
       </div>

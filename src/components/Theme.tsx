@@ -32,6 +32,9 @@ export function Theme(props: any) {
         palette: {
           mode,
         },
+        shape: {
+          borderRadius: 2,
+        },
         typography: {
           // We set a font family on the body in the main `index.css` file
           // so we just inherit from that.
@@ -47,7 +50,6 @@ export function Theme(props: any) {
             styleOverrides: {
               root: {
                 textTransform: 'none',
-                borderRadius: '2px',
               },
             },
           },

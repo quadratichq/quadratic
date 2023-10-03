@@ -9,7 +9,7 @@ export const ROUTES = {
   MY_FILES: '/files/mine',
   EXAMPLES: '/files/examples',
   CREATE_FILE: '/files/create',
-  TEAMS: '/teams',
+  CREATE_TEAM: '/teams/create',
   ACCOUNT: '/account',
   FILE: (uuid: string) => `/file/${uuid}`,
 };
