@@ -1,6 +1,6 @@
 {
   "verbose": true,
-  "testEnvironment": "jsdom",
+  "testEnvironment": "node",
   "preset": "ts-jest",
   "testPathIgnorePatterns": [
     "<rootDir>/tests-e2e/*",
