@@ -40,15 +40,20 @@ export const CodeEditor = () => {
   );
 
   const [editorContent, setEditorContent] = useState<string | undefined>();
-  const cell = useMemo(() => {
-    mixpanel.track('[CodeEditor].opened', { type: editorMode });
-    const cellCodeValue = sheets.sheet.getCodeValue(
-      editorInteractionState.selectedCell.x,
-      editorInteractionState.selectedCell.y
-    );
-    setEditorContent(cellCodeValue?.code_string ?? '');
-    return cellCodeValue;
-  }, [editorInteractionState.selectedCell, editorMode]);
+  const cell = useMemo(
+    () => {
+      mixpanel.track('[CodeEditor].opened', { type: editorMode });
+      const cellCodeValue = sheets.sheet.getCodeValue(
+        editorInteractionState.selectedCell.x,
+        editorInteractionState.selectedCell.y
+      );
+      setEditorContent(cellCodeValue?.code_string ?? '');
+      return cellCodeValue;
+    },
+    // need isRunningComputation here to update cell after running computation
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [editorInteractionState.selectedCell, editorMode, isRunningComputation]
+  );
 
   const closeEditor = useCallback(
     (skipSaveCheck: boolean) => {
@@ -74,13 +79,15 @@ export const CodeEditor = () => {
         : undefined;
     if (language === undefined)
       throw new Error(`Language ${editorInteractionState.mode} not supported in CodeEditor#saveAndRunCell`);
-    grid.setCodeCellValue({
+    setIsRunningComputation(true);
+    await grid.setCodeCellValue({
       sheetId: sheets.sheet.id,
       x: cellLocation.x,
       y: cellLocation.y,
       codeString: editorContent ?? '',
       language,
     });
+    setIsRunningComputation(false);
   }, [cellLocation.x, cellLocation.y, editorContent, editorInteractionState.mode]);
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {

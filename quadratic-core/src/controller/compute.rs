@@ -107,6 +107,7 @@ impl GridController {
                                         Err(e) => {
                                             // todo: better handling of error to ensure grid is not locked
                                             js::log(&format!("compute_result error, {}", e));
+                                            complete = true;
                                         }
                                     }
                                 }
