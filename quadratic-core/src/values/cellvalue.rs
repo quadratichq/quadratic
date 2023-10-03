@@ -11,6 +11,7 @@ use crate::{
 
 // todo: fill this out
 const CURRENCY_SYMBOLS: &str = "$€£¥";
+const PERCENTAGE_SYMBOL: char = '%';
 
 /// Non-array value in the formula language.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -175,10 +176,15 @@ impl CellValue {
         None
     }
 
+    pub fn strip_percentage(value: &str) -> &str {
+        value.strip_suffix(PERCENTAGE_SYMBOL).unwrap_or(value)
+    }
+
     pub fn unpack_currency(s: &str) -> Option<(String, BigDecimal)> {
         if s.is_empty() {
             return None;
         }
+
         for char in CURRENCY_SYMBOLS.chars() {
             if let Some(stripped) = s.strip_prefix(char) {
                 if let Ok(bd) = BigDecimal::from_str(stripped) {

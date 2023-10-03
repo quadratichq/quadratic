@@ -26,6 +26,15 @@ impl GridController {
         value: String,
         cursor: Option<String>,
     ) -> TransactionSummary {
+        let ops = self.set_cell_value_operations(sheet_id, pos, &value);
+        self.transact_forward(ops, cursor)
+    }
+    pub fn set_cell_value_operations(
+        &mut self,
+        sheet_id: SheetId,
+        pos: Pos,
+        value: &str,
+    ) -> Vec<Operation> {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
         let cell_ref = sheet.get_or_create_cell_ref(pos);
         let region = RegionRef::from(cell_ref);
@@ -76,10 +85,10 @@ impl GridController {
         }
         // todo: include other types here
         else {
-            let values = Array::from(CellValue::Text(value));
+            let values = Array::from(CellValue::Text(value.into()));
             ops.push(Operation::SetCellValues { region, values });
         }
-        self.transact_forward(ops, cursor)
+        ops
     }
     pub fn set_cells(
         &mut self,

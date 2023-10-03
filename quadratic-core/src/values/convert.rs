@@ -32,9 +32,22 @@ impl From<String> for CellValue {
         CellValue::Text(value)
     }
 }
+// TODO(ddimaria): implement Duration and Instant
 impl From<&str> for CellValue {
     fn from(value: &str) -> Self {
-        CellValue::Text(value.to_string())
+        let parsed = Self::strip_percentage(Self::strip_currency(value)).trim();
+        let number = BigDecimal::from_str(parsed);
+        let is_true = parsed.eq_ignore_ascii_case("true");
+        let is_false = parsed.eq_ignore_ascii_case("false");
+        let is_bool = is_true || is_false;
+
+        println!("parsed: {:?}", parsed);
+
+        match (number, is_bool) {
+            (Ok(number), false) => CellValue::Number(number),
+            (_, true) => CellValue::Logical(is_true),
+            _ => CellValue::Text(String::from(value)),
+        }
     }
 }
 // todo: this might be wrong for formulas
@@ -292,5 +305,30 @@ impl CoerceInto for Spanned<Value> {
             Value::Single(CellValue::Error(e)) => Err(*e),
             other => Ok(other),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::str::FromStr;
+
+    use bigdecimal::{BigDecimal, FromPrimitive};
+
+    use crate::{
+        grid::{NumericFormat, NumericFormatKind},
+        CellValue,
+    };
+
+    #[test]
+    fn test_convert_from_str_to_cell_value() {
+        assert_eq!(
+            CellValue::from("$1.22"),
+            CellValue::Number(BigDecimal::from_str("1.22").unwrap())
+        );
+
+        assert_eq!(
+            CellValue::from("10%"),
+            CellValue::Number(BigDecimal::from_str("10").unwrap())
+        );
     }
 }
