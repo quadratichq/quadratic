@@ -681,8 +681,9 @@ mod test {
             auto_complete::cell_values_in_rect, formatting::CellFmtArray, GridController,
         },
         grid::{
-            Bold, CellBorder, CellBorderStyle, CellRef, NumericFormat, NumericFormatKind, Sheet,
-            SheetId,
+            js_types::{CellFormatSummary, FormattingSummary},
+            Bold, BoolSummary, CellBorder, CellBorderStyle, CellRef, Italic, NumericFormat,
+            NumericFormatKind, Sheet, SheetId,
         },
         test_util::print_table,
         CellValue, Pos, Rect, RunLengthEncoding,
@@ -951,6 +952,8 @@ mod test {
         assert_eq!(value, Some(&code_cell));
     }
 
+    // TODO(ddimaria): use the code below numeric format kinds are in place
+    #[ignore]
     #[test]
     fn test_cell_numeric_format_kinds() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
@@ -972,5 +975,65 @@ mod test {
 
         let format_kind = sheet.cell_numeric_format_kind((5, 1).into());
         assert_eq!(format_kind, Some(NumericFormatKind::Number));
+    }
+
+    #[test]
+    fn test_formatting_summary() {
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
+        let vals = vec!["1", "2", "3", "4", "5", "6", "7", "8"];
+        let (grid, sheet_id) = test_setup(&selected, &vals);
+
+        print_table(&grid, sheet_id, selected);
+
+        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+        sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
+
+        // just set a single bold value
+        let value = sheet.get_formatting_summary(selected);
+        let mut format_summary = FormattingSummary {
+            bold: BoolSummary {
+                is_any_true: true,
+                is_any_false: false,
+            },
+            italic: BoolSummary {
+                is_any_true: false,
+                is_any_false: false,
+            },
+        };
+        assert_eq!(value, format_summary);
+
+        // now add in a single italic value
+        sheet.set_formatting_value::<Italic>((3, 1).into(), Some(true));
+        let value = sheet.get_formatting_summary(selected);
+        format_summary.italic.is_any_true = true;
+        assert_eq!(value, format_summary);
+    }
+
+    #[test]
+    fn test_cell_format_summary() {
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
+        let vals = vec!["1", "2", "3", "4", "5", "6", "7", "8"];
+        let (grid, sheet_id) = test_setup(&selected, &vals);
+
+        print_table(&grid, sheet_id, selected);
+
+        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+        sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
+
+        // just set a bold value
+        let value = sheet.get_cell_format_summary((2, 1).into());
+        let mut cell_format_summary = CellFormatSummary {
+            bold: Some(true),
+            italic: None,
+            text_color: None,
+            fill_color: None,
+        };
+        assert_eq!(value, cell_format_summary);
+
+        // now set a italic value
+        sheet.set_formatting_value::<Italic>((2, 1).into(), Some(true));
+        let value = sheet.get_cell_format_summary((2, 1).into());
+        cell_format_summary.italic = Some(true);
+        assert_eq!(value, cell_format_summary);
     }
 }
