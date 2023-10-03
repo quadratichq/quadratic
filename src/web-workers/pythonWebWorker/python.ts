@@ -25,6 +25,9 @@ class PythonWebWorker {
             );
           }
         }
+        if (!result.success) {
+          result.error_msg = result.input_python_stack_trace;
+        }
         this.callback({
           complete: true,
           result,

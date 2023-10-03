@@ -120,7 +120,10 @@ impl GridController {
                         }
                         if let Some(code_cell_value) = code_cell_result {
                             let sheet = self.grid.sheet_mut_from_id(rect.sheet_id);
-                            js::log(&format!("cells_accessed {:?}", cells_accessed));
+                            js::log(&format!(
+                                "cells_accessed {:?} | error: {:?}",
+                                cells_accessed, code_cell_value.error_msg
+                            ));
                             sheet.set_code_cell_value(
                                 pos,
                                 Some(CodeCellValue {
@@ -159,7 +162,7 @@ impl GridController {
             // add all dependent cells to the cells_to_compute
             let dependent_cells = self.grid.get_dependent_cells(rect);
             js::log(&format!(
-                "adding dependent cells {:?}",
+                "adding dependent cells to compute {:?}",
                 dependent_cells.clone()
             ));
             // loop through all dependent cells
