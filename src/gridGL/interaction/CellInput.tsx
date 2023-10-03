@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Rectangle } from 'pixi.js';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../grid/controller/Sheets';
@@ -24,13 +24,6 @@ export const CellInput = (props: CellInputProps) => {
   const cellLocation = sheet.cursor.cursorPosition;
 
   const text = useRef('');
-
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const changeInput = (e: any) => setVisible(e.detail.showInput);
-    window.addEventListener('change-input', changeInput);
-    return () => window.removeEventListener('change-input', changeInput);
-  }, []);
 
   const cellOffsets = sheet.getCellOffsets(cellLocation.x, cellLocation.y);
   const cell = sheet.getEditCell(cellLocation.x, cellLocation.y);
@@ -123,11 +116,6 @@ export const CellInput = (props: CellInputProps) => {
 
     // return transform
     return transform;
-  }
-
-  // If the input is not shown, we can do nothing and return null
-  if (!visible) {
-    return null;
   }
 
   // need this variable to cancel second closeInput call from blur after pressing Escape (this happens before the state can update)
