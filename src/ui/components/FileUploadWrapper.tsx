@@ -1,7 +1,6 @@
-import debounce from 'lodash.debounce';
 import { DragEvent, PropsWithChildren, useRef, useState } from 'react';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
-import { InsertCSV } from '../../grid/actions/insertData/insertCSV';
+import { grid } from '../../grid/controller/Grid';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
@@ -12,7 +11,7 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
   const divRef = useRef<HTMLDivElement>(null);
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
-  const moveCursor = debounce((e: DragEvent<HTMLDivElement>): void => {
+  const moveCursor = (e: DragEvent<HTMLDivElement>): void => {
     const clientBoudingRect = divRef?.current?.getBoundingClientRect();
     const world = pixiApp.viewport.toWorld(
       e.pageX - (clientBoudingRect?.left || 0),
@@ -29,7 +28,7 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
         terminalPosition: { x: column, y: row },
       },
     });
-  }, 100);
+  };
 
   // handle drag events
   const handleDrag = function (e: DragEvent<HTMLDivElement>) {
@@ -59,12 +58,8 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
           e.pageY - (clientBoudingRect?.top || 0)
         );
         const { column, row } = sheets.sheet.offsets.getColumnRowFromScreen(world.x, world.y);
-
-        InsertCSV({
-          file: file,
-          insertAtCellLocation: { x: column, y: row } as Coordinate,
-          reportError: addGlobalSnackbar,
-        });
+        const insertAtCellLocation = { x: column, y: row } as Coordinate;
+        grid.importCsv(sheets.sheet.id, file, insertAtCellLocation, addGlobalSnackbar);
       } else {
         addGlobalSnackbar('File type not supported. Please upload a CSV file.');
       }

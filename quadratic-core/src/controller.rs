@@ -5,11 +5,13 @@ use crate::grid::Grid;
 
 use self::transactions::Transaction;
 
+pub mod auto_complete;
 pub mod cells;
 pub mod clipboard;
 pub mod compute;
 pub mod dependencies;
 pub mod formatting;
+pub mod import;
 pub mod operations;
 
 pub mod sheets;
