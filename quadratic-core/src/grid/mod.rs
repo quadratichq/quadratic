@@ -18,7 +18,7 @@ pub mod js_types;
 mod offsets;
 mod response;
 pub mod series;
-mod sheet;
+pub mod sheet;
 
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
 pub use borders::{CellBorder, CellBorderStyle, CellBorders, SheetBorders};

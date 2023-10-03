@@ -1,5 +1,6 @@
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
+import { grid } from '../../../../grid/controller/Grid';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { Bounds } from '../../../../grid/sheet/Bounds';
 import { intersects } from '../../../helpers/intersects';

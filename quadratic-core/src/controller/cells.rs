@@ -107,7 +107,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.set_cells_operations(sheet_id, start_pos, values);
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
     pub fn set_cells_operations(
         &mut self,

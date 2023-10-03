@@ -22,7 +22,7 @@ pub enum ExpandDirection {
 }
 
 impl GridController {
-    pub fn expand(
+    pub async fn expand(
         &mut self,
         sheet_id: SheetId,
         mut selection: Rect,
@@ -134,7 +134,7 @@ impl GridController {
             operations.extend(ops);
         }
 
-        Ok(self.transact_forward(operations, cursor))
+        Ok(self.transact_forward(operations, cursor).await)
     }
 
     /// Delete cell values and formats in a given range.
@@ -637,12 +637,12 @@ mod tests {
         assert_eq!(result, expected);
     }
 
-    #[test]
-    fn test_expand_left_only() {
+    #[actix_rt::test]
+    async fn test_expand_left_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: -3, y: 1 }, Pos { x: 5, y: 2 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(
             &grid,
@@ -661,12 +661,12 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, -3, 5, 2, expected);
     }
 
-    #[test]
-    fn test_expand_right_only() {
+    #[actix_rt::test]
+    async fn test_expand_right_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 10, y: 2 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(&grid, sheet_id, range);
 
@@ -681,12 +681,12 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, 2, 10, 2, expected);
     }
 
-    #[test]
-    fn test_expand_up_only() {
+    #[actix_rt::test]
+    async fn test_expand_up_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: -7 }, Pos { x: 5, y: 2 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(&grid, sheet_id, range);
 
@@ -709,12 +709,12 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, 2, 5, 0, expected.clone());
     }
 
-    #[test]
-    fn test_expand_down_only() {
+    #[actix_rt::test]
+    async fn test_expand_down_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 10 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(&grid, sheet_id, range);
 
@@ -737,12 +737,12 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, 2, 5, 10, expected.clone());
     }
 
-    #[test]
-    fn test_expand_down_and_right() {
+    #[actix_rt::test]
+    async fn test_expand_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(selected.min, Pos { x: 14, y: 10 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(&grid, sheet_id, range);
 
@@ -755,12 +755,12 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 10, expected_bold);
     }
 
-    #[test]
-    fn test_expand_up_and_right() {
+    #[actix_rt::test]
+    async fn test_expand_up_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: -7 }, Pos { x: 10, y: 3 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(
             &grid,
@@ -777,12 +777,12 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 3, expected_bold);
     }
 
-    #[test]
-    fn test_expand_down_and_left() {
+    #[actix_rt::test]
+    async fn test_expand_down_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: -7, y: 20 }, Pos { x: 5, y: 10 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(
             &grid,
@@ -803,12 +803,12 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, -7, 5, 10, expected_bold);
     }
 
-    #[test]
-    fn test_expand_up_and_left() {
+    #[actix_rt::test]
+    async fn test_expand_up_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: -7, y: -7 }, selected.max);
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(&grid, sheet_id, Rect::new_span(range.min, selected.max));
 
@@ -825,12 +825,12 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, -7, 5, 3, expected_bold);
     }
 
-    #[test]
-    fn test_expand_horizontal_series_down_and_right() {
+    #[actix_rt::test]
+    async fn test_expand_horizontal_series_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
         let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(&grid, sheet_id, range);
 
@@ -850,12 +850,12 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, 2, 9, 6, expected);
     }
 
-    #[test]
-    fn test_expand_horizontal_series_up_and_right() {
+    #[actix_rt::test]
+    async fn test_expand_horizontal_series_up_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 6, y: 15 }, Pos { x: 9, y: 19 });
         let range: Rect = Rect::new_span(Pos { x: 6, y: 12 }, Pos { x: 15, y: 19 });
         let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(&grid, sheet_id, range);
 
@@ -878,12 +878,12 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, 6, 15, 16, expected.clone());
     }
 
-    #[test]
-    fn test_expand_horizontal_series_up_and_left() {
+    #[actix_rt::test]
+    async fn test_expand_horizontal_series_up_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: -4, y: -8 }, Pos { x: 5, y: 6 });
         let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(&grid, sheet_id, range);
 
@@ -912,12 +912,12 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, -4, 5, 1, expected.clone());
     }
 
-    #[test]
-    fn test_expand_vertical_series_down_and_right() {
+    #[actix_rt::test]
+    async fn test_expand_vertical_series_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 2, y: 4 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
         let (mut grid, sheet_id) = test_setup_rect_vert_series(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(&grid, sheet_id, range);
 
@@ -926,19 +926,19 @@ mod tests {
         assert_cell_value(&grid, sheet_id, 3, 7, "6");
     }
 
-    #[test]
-    fn test_shrink_width() {
+    #[actix_rt::test]
+    async fn test_shrink_width() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
 
         // first, fully expand
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         // then, shrink
         let selected = range;
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 4, y: 7 });
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(
             &grid,
@@ -960,19 +960,19 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 8, expected_bold_2);
     }
 
-    #[test]
-    fn test_shrink_height() {
+    #[actix_rt::test]
+    async fn test_shrink_height() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
 
         // first, fully expand
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         // then, shrink
         let selected = range;
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 5 });
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(
             &grid,
@@ -991,19 +991,19 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 6, expected_bold_empty);
     }
 
-    #[test]
-    fn test_shrink_width_and_height() {
+    #[actix_rt::test]
+    async fn test_shrink_width_and_height() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
 
         // first, fully expand
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         // then, shrink
         let selected = range;
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 5 });
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(
             &grid,

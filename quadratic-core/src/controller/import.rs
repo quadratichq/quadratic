@@ -13,7 +13,7 @@ impl GridController {
     /// Imports a CSV file into the grid.
     ///
     /// Returns a [`TransactionSummary`].
-    pub fn import_csv(
+    pub async fn import_csv(
         &mut self,
         sheet_id: SheetId,
         file: &[u8],
@@ -69,7 +69,7 @@ impl GridController {
         let region = self.region(sheet_id, rect);
         let ops = vec![Operation::SetCellValues { region, values }];
 
-        Ok(self.transact_forward(ops, cursor))
+        Ok(self.transact_forward(ops, cursor).await)
     }
 }
 
@@ -128,13 +128,15 @@ Concord,NH,United States,42605
         );
     }
 
-    #[test]
-    fn errors_on_an_empty_csv() {
+    #[actix_rt::test]
+    async fn errors_on_an_empty_csv() {
         let mut grid_controller = GridController::new();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        let result = grid_controller.import_csv(sheet_id, "".as_bytes(), "smallpop.csv", pos, None);
+        let result = grid_controller
+            .import_csv(sheet_id, "".as_bytes(), "smallpop.csv", pos, None)
+            .await;
         assert!(result.is_err());
     }
 }
