@@ -681,7 +681,8 @@ mod test {
             auto_complete::cell_values_in_rect, formatting::CellFmtArray, GridController,
         },
         grid::{
-            Bold, CellBorder, CellBorderStyle, NumericFormat, NumericFormatKind, Sheet, SheetId,
+            Bold, CellBorder, CellBorderStyle, CellRef, NumericFormat, NumericFormatKind, Sheet,
+            SheetId,
         },
         test_util::print_table,
         CellValue, Pos, Rect, RunLengthEncoding,
@@ -845,9 +846,6 @@ mod test {
         grid.delete_cell_values(sheet_id, selected, None);
         let sheet = grid.grid().sheet_from_id(sheet_id);
 
-        // this fn does not exist yet
-        // let sheet = grid.grid().sheet_from_id(sheet_id);
-
         print_table(&grid, sheet_id, view_rect);
 
         let values = cell_values_in_rect(&selected, &sheet).unwrap();
@@ -911,5 +909,68 @@ mod test {
         let value = sheet.get_formatting_value::<Bold>((2, 1).into());
 
         assert_eq!(value, Some(true));
+    }
+
+    #[test]
+    fn test_get_set_code_cell_value() {
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
+        let vals = vec!["1", "2", "3", "4", "5", "6", "7", "8"];
+        let (grid, sheet_id) = test_setup(&selected, &vals);
+
+        print_table(&grid, sheet_id, selected);
+
+        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+        let code_cell = crate::grid::CodeCellValue {
+            language: crate::grid::CodeCellLanguage::Formula,
+            code_string: "=SUM(A1:B2)".into(),
+            formatted_code_string: None,
+            last_modified: "".into(),
+            output: None,
+        };
+        sheet.set_code_cell_value((2, 1).into(), Some(code_cell.clone()));
+        let value = sheet.get_code_cell((2, 1).into());
+
+        assert_eq!(value, Some(&code_cell));
+
+        let cell_ref = CellRef {
+            sheet: sheet_id,
+            column: grid
+                .grid()
+                .sheet_from_id(sheet_id)
+                .column_ids
+                .id_at(2)
+                .unwrap(),
+            row: grid
+                .grid()
+                .sheet_from_id(sheet_id)
+                .row_ids
+                .id_at(1)
+                .unwrap(),
+        };
+        let value = sheet.get_code_cell_from_ref(cell_ref);
+        assert_eq!(value, Some(&code_cell));
+    }
+
+    #[test]
+    fn test_cell_numeric_format_kinds() {
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
+        let vals = vec!["$1.00", "2%", "3^2", "4", "5", "6", "7", "8"];
+        let (grid, sheet_id) = test_setup(&selected, &vals);
+
+        print_table(&grid, sheet_id, selected);
+
+        let sheet = grid.grid().sheet_from_id(sheet_id).clone();
+
+        let format_kind = sheet.cell_numeric_format_kind((2, 1).into());
+        assert_eq!(format_kind, Some(NumericFormatKind::Currency));
+
+        let format_kind = sheet.cell_numeric_format_kind((3, 1).into());
+        assert_eq!(format_kind, Some(NumericFormatKind::Percentage));
+
+        let format_kind = sheet.cell_numeric_format_kind((4, 1).into());
+        assert_eq!(format_kind, Some(NumericFormatKind::Exponential));
+
+        let format_kind = sheet.cell_numeric_format_kind((5, 1).into());
+        assert_eq!(format_kind, Some(NumericFormatKind::Number));
     }
 }
