@@ -677,16 +677,14 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use crate::{
-        controller::{
-            auto_complete::cell_values_in_rect, formatting::CellFmtArray, GridController,
-        },
+        controller::{auto_complete::cell_values_in_rect, GridController},
         grid::{
             js_types::{CellFormatSummary, FormattingSummary},
             Bold, BoolSummary, CellBorder, CellBorderStyle, CellRef, Italic, NumericFormat,
             NumericFormatKind, Sheet, SheetId,
         },
         test_util::print_table,
-        CellValue, Pos, Rect, RunLengthEncoding,
+        CellValue, Pos, Rect,
     };
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
@@ -703,6 +701,16 @@ mod test {
         });
 
         (grid_controller, sheet_id)
+    }
+
+    fn test_setup_basic() -> (GridController, SheetId, Rect) {
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
+        let vals = vec!["1", "2", "3", "4", "5", "6", "7", "8"];
+        let (grid_controller, sheet_id) = test_setup(&selected, &vals);
+
+        print_table(&grid_controller, sheet_id, selected);
+
+        (grid_controller, sheet_id, selected)
     }
 
     #[test]
@@ -806,11 +814,7 @@ mod test {
 
     #[test]
     fn test_delete_cell_values() {
-        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
-        let vals = vec!["1", "2", "3", "4", "5", "6", "7", "8"];
-        let (mut grid, sheet_id) = test_setup(&selected, &vals);
-
-        print_table(&grid, sheet_id, selected);
+        let (mut grid, sheet_id, selected) = test_setup_basic();
 
         grid.delete_cell_values(sheet_id, selected, None);
         let sheet = grid.grid().sheet_from_id(sheet_id);
@@ -828,9 +832,7 @@ mod test {
     #[ignore]
     #[test]
     fn test_delete_cell_values_affects_dependent_cells() {
-        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
-        let vals = vec!["1", "2", "3", "4", "5", "6", "7", "8"];
-        let (mut grid, sheet_id) = test_setup(&selected, &vals);
+        let (mut grid, sheet_id, selected) = test_setup_basic();
 
         let view_rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 4 });
         let _code_cell = crate::grid::CodeCellValue {
@@ -860,17 +862,11 @@ mod test {
     #[ignore]
     #[test]
     fn test_set_border() {
-        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
-        let vals = vec!["1", "2", "3", "4", "5", "6", "7", "8"];
-        let (grid, sheet_id) = test_setup(&selected, &vals);
-
-        print_table(&grid, sheet_id, selected);
-
+        let (grid, sheet_id, selected) = test_setup_basic();
         let cell_border = CellBorder {
             color: Some("red".into()),
             style: Some(CellBorderStyle::Line1),
         };
-
         let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
         sheet.set_horizontal_border(selected, cell_border.clone());
         sheet.set_vertical_border(selected, cell_border);
@@ -885,12 +881,7 @@ mod test {
 
     #[test]
     fn test_get_cell_value() {
-        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
-        let vals = vec!["1", "2", "3", "4", "5", "6", "7", "8"];
-        let (grid, sheet_id) = test_setup(&selected, &vals);
-
-        print_table(&grid, sheet_id, selected);
-
+        let (grid, sheet_id, _) = test_setup_basic();
         let sheet = grid.grid().sheet_from_id(sheet_id);
         let value = sheet.get_cell_value((2, 1).into());
 
@@ -899,12 +890,7 @@ mod test {
 
     #[test]
     fn test_get_set_formatting_value() {
-        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
-        let vals = vec!["1", "2", "3", "4", "5", "6", "7", "8"];
-        let (grid, sheet_id) = test_setup(&selected, &vals);
-
-        print_table(&grid, sheet_id, selected);
-
+        let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
         sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
         let value = sheet.get_formatting_value::<Bold>((2, 1).into());
@@ -914,12 +900,7 @@ mod test {
 
     #[test]
     fn test_get_set_code_cell_value() {
-        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
-        let vals = vec!["1", "2", "3", "4", "5", "6", "7", "8"];
-        let (grid, sheet_id) = test_setup(&selected, &vals);
-
-        print_table(&grid, sheet_id, selected);
-
+        let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
         let code_cell = crate::grid::CodeCellValue {
             language: crate::grid::CodeCellLanguage::Formula,
@@ -956,12 +937,7 @@ mod test {
     #[ignore]
     #[test]
     fn test_cell_numeric_format_kinds() {
-        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
-        let vals = vec!["$1.00", "2%", "3^2", "4", "5", "6", "7", "8"];
-        let (grid, sheet_id) = test_setup(&selected, &vals);
-
-        print_table(&grid, sheet_id, selected);
-
+        let (grid, sheet_id, _) = test_setup_basic();
         let sheet = grid.grid().sheet_from_id(sheet_id).clone();
 
         let format_kind = sheet.cell_numeric_format_kind((2, 1).into());
@@ -979,12 +955,7 @@ mod test {
 
     #[test]
     fn test_formatting_summary() {
-        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
-        let vals = vec!["1", "2", "3", "4", "5", "6", "7", "8"];
-        let (grid, sheet_id) = test_setup(&selected, &vals);
-
-        print_table(&grid, sheet_id, selected);
-
+        let (grid, sheet_id, selected) = test_setup_basic();
         let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
         sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
 
@@ -1011,12 +982,7 @@ mod test {
 
     #[test]
     fn test_cell_format_summary() {
-        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
-        let vals = vec!["1", "2", "3", "4", "5", "6", "7", "8"];
-        let (grid, sheet_id) = test_setup(&selected, &vals);
-
-        print_table(&grid, sheet_id, selected);
-
+        let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
         sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
 
