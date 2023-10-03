@@ -273,7 +273,9 @@ impl Sheet {
     }
 
     // returns CellFormatSummary only if a formatting exists
-    pub fn get_existing_cell_format(&self, pos: Pos) -> Option<CellFormatSummary> {
+    // TODL(ddimaria): this function is nearly a duplicate of get_cell_format_summary, talk
+    // with the team to see if we can consolidate
+    pub fn get_existing_cell_format_summary(&self, pos: Pos) -> Option<CellFormatSummary> {
         match self.columns.get(&pos.x) {
             Some(column) => {
                 let bold = column.bold.get(pos.y);
@@ -676,15 +678,11 @@ mod test {
 
     use bigdecimal::BigDecimal;
 
+    use super::*;
     use crate::{
         controller::{auto_complete::cell_values_in_rect, GridController},
-        grid::{
-            js_types::{CellFormatSummary, FormattingSummary},
-            Bold, BoolSummary, CellBorder, CellBorderStyle, CellRef, Italic, NumericFormat,
-            NumericFormatKind, Sheet, SheetId,
-        },
+        grid::{Bold, CellBorderStyle, Italic},
         test_util::print_table,
-        CellValue, Pos, Rect,
     };
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
@@ -870,6 +868,7 @@ mod test {
         let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
         sheet.set_horizontal_border(selected, cell_border.clone());
         sheet.set_vertical_border(selected, cell_border);
+        let _borders = sheet.borders();
 
         print_table(&grid, sheet_id, selected);
 
@@ -984,9 +983,12 @@ mod test {
     fn test_cell_format_summary() {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
-        sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
+
+        let existing_cell_format_summary = sheet.get_existing_cell_format_summary((2, 1).into());
+        assert_eq!(None, existing_cell_format_summary);
 
         // just set a bold value
+        sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
         let value = sheet.get_cell_format_summary((2, 1).into());
         let mut cell_format_summary = CellFormatSummary {
             bold: Some(true),
@@ -996,10 +998,52 @@ mod test {
         };
         assert_eq!(value, cell_format_summary);
 
+        let existing_cell_format_summary = sheet.get_existing_cell_format_summary((2, 1).into());
+        assert_eq!(
+            Some(cell_format_summary.clone()),
+            existing_cell_format_summary
+        );
+
         // now set a italic value
         sheet.set_formatting_value::<Italic>((2, 1).into(), Some(true));
         let value = sheet.get_cell_format_summary((2, 1).into());
         cell_format_summary.italic = Some(true);
         assert_eq!(value, cell_format_summary);
+
+        let existing_cell_format_summary = sheet.get_existing_cell_format_summary((2, 1).into());
+        assert_eq!(
+            Some(cell_format_summary.clone()),
+            existing_cell_format_summary
+        );
+    }
+
+    #[test]
+    fn test_columns() {
+        let (grid, sheet_id, _) = test_setup_basic();
+        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+
+        // get all columns
+        let columns = sheet.iter_columns().collect::<Vec<_>>();
+        assert_eq!(None, columns[0].1.bold.get(1));
+
+        // set a bold value, validate it's in the vec
+        sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
+        let columns = sheet.iter_columns().collect::<Vec<_>>();
+        assert_eq!(Some(true), columns[0].1.bold.get(1));
+
+        // assert that get_column matches the column in the vec
+        let index = columns[0].0;
+        let column = sheet.get_column(index);
+        assert_eq!(Some(true), column.unwrap().bold.get(1));
+
+        // existing column
+        let mut sheet = sheet.clone();
+        let existing_column = sheet.get_or_create_column(2);
+        assert_eq!(column, Some(existing_column.1).as_deref());
+
+        // new column
+        let mut sheet = sheet.clone();
+        let new_column = sheet.get_or_create_column(1);
+        assert_eq!(new_column.1, &Column::with_id(new_column.0.id));
     }
 }

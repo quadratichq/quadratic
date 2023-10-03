@@ -76,14 +76,15 @@ impl GridController {
                     code: code.clone(),
                 });
 
-                let (bold, italic) = if let Some(format) = sheet.get_existing_cell_format(pos) {
-                    (
-                        format.bold.is_some_and(|bold| bold == true),
-                        format.italic.is_some_and(|italic| italic == true),
-                    )
-                } else {
-                    (false, false)
-                };
+                let (bold, italic) =
+                    if let Some(format) = sheet.get_existing_cell_format_summary(pos) {
+                        (
+                            format.bold.is_some_and(|bold| bold == true),
+                            format.italic.is_some_and(|italic| italic == true),
+                        )
+                    } else {
+                        (false, false)
+                    };
                 if bold || italic {
                     html.push_str("<span style={");
                     if bold {

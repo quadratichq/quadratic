@@ -239,10 +239,6 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use std::str::FromStr;
-
-    use bigdecimal::BigDecimal;
-
     use crate::{
         controller::{transactions::TransactionSummary, GridController},
         CellValue, Pos, Rect,
