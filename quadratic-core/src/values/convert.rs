@@ -310,14 +310,9 @@ impl CoerceInto for Spanned<Value> {
 
 #[cfg(test)]
 mod test {
+    use crate::CellValue;
+    use bigdecimal::BigDecimal;
     use std::str::FromStr;
-
-    use bigdecimal::{BigDecimal, FromPrimitive};
-
-    use crate::{
-        grid::{NumericFormat, NumericFormatKind},
-        CellValue,
-    };
 
     #[test]
     fn test_convert_from_str_to_cell_value() {

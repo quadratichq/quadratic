@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 
 use super::{transactions::TransactionSummary, GridController};
 use crate::{controller::operations::Operation, grid::SheetId, Pos};
@@ -19,7 +19,7 @@ impl GridController {
         let width = csv::ReaderBuilder::new().from_reader(file).headers()?.len() as u32;
 
         if width == 0 {
-            return Err(error("empty files cannot be processed".into()));
+            bail!("empty files cannot be processed");
         }
 
         let mut reader = csv::ReaderBuilder::new()
