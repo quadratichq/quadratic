@@ -45,17 +45,19 @@ async function pythonWebWorker() {
 self.onmessage = async (e: MessageEvent<PythonMessage>) => {
   const event = e.data;
   if (event.type === 'get-cells') {
+    console.log('worker: getCells', event.cells);
     if (event.cells && getCellsMessages) {
       getCellsMessages(event.cells);
     }
   } else if (event.type === 'execute') {
+    console.log('worker: execute');
     // make sure loading is done
     if (!pyodide) {
       self.postMessage({ type: 'not-loaded' } as PythonMessage);
     }
 
     const output = await pyodide.globals.get('run_python')(event.python);
-
+    console.log(output, Object.fromEntries(output.toJs()));
     return self.postMessage({
       type: 'results',
       results: Object.fromEntries(output.toJs()) as PythonReturnType,

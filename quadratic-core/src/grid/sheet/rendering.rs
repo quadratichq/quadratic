@@ -118,11 +118,11 @@ impl Sheet {
         ret
     }
     /// Returns data for rendering code cells.
-    pub fn get_render_code_cells(&self, region: Rect) -> Vec<JsRenderCodeCell> {
-        self.iter_code_cells_locations_in_region(region)
+    pub fn get_render_code_cells(&self, rect: Rect) -> Vec<JsRenderCodeCell> {
+        self.iter_code_cells_locations_in_region(rect)
             .filter_map(|cell_ref| {
                 let pos = self.cell_ref_to_pos(cell_ref)?;
-                if !region.contains(pos) {
+                if !rect.contains(pos) {
                     return None;
                 }
                 let code_cell = self.code_cells.get(&cell_ref)?;
