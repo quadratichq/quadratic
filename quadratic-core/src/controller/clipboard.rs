@@ -190,11 +190,8 @@ impl GridController {
         rows.iter().for_each(|row| {
             row.iter().for_each(|s| {
                 if !s.is_empty() {
-                    if let Ok(n) = BigDecimal::from_str(s) {
-                        let _ = array.set(x, y, CellValue::Number(n));
-                    } else {
-                        let _ = array.set(x, y, CellValue::Text(String::from(*s)));
-                    };
+                    let cell_value = CellValue::from(*s);
+                    let _ = array.set(x, y, cell_value);
                 }
                 x += 1;
             });
