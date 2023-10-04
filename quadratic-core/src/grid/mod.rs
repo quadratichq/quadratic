@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{bail, Result};
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -117,7 +117,7 @@ impl Grid {
             .iter()
             .any(|old_sheet| old_sheet.name == sheet.name)
         {
-            return Err(anyhow!("sheet name already in use"));
+            bail!("sheet name already in use");
         }
         self.sheets.push(sheet);
         self.sort_sheets();
