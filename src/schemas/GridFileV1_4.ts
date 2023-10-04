@@ -107,18 +107,9 @@ export function upgradeV1_3toV1_4(file: GridFileV1_3, logOutput: boolean = true)
   // in v4 we map code_cell: dependencies[]
   let old_dependencies: Map<string, [number, number][]> = new Map();
   if (file.cell_dependency !== undefined && file.cell_dependency !== '') {
-    try {
-      old_dependencies = new Map(
-        JSON.parse(file.cell_dependency).map(({ key, value }: { key: string; value: [number, number][] }) => [
-          key,
-          value,
-        ])
-      );
-    } catch (e) {
-      if (logOutput) {
-        console.info(`[GridFileV1_4] Could not convert cell_dependency to JSON: ${e}`);
-      }
-    }
+    old_dependencies = new Map(
+      JSON.parse(file.cell_dependency).map(({ key, value }: { key: string; value: [number, number][] }) => [key, value])
+    );
   }
 
   function getKey(location: [number, number]): string {
