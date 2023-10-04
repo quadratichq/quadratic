@@ -8,7 +8,6 @@ pub(crate) use crate::values::*;
 pub(crate) use crate::{array, CodeResult, Error, ErrorMsg, Pos};
 
 pub(crate) fn try_eval(grid: &mut dyn GridProxy, s: &str) -> CodeResult<Value> {
-    println!("Evaluating formula {s:?}");
     parse_formula(s, Pos::ORIGIN)?.eval_blocking(grid, Pos::ORIGIN)
 }
 #[track_caller]

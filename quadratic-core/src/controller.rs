@@ -5,6 +5,7 @@ use crate::grid::Grid;
 
 use self::{resize::TransientResize, transactions::Transaction};
 
+pub mod auto_complete;
 pub mod cells;
 pub mod clipboard;
 pub mod compute;

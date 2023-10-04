@@ -24,19 +24,17 @@ pub fn assert_cell_value(
     let sheet = grid_controller.grid().sheet_from_id(sheet_id);
     let cell_value = sheet.get_cell_value(Pos { x, y });
     let expected = if let Ok(number) = BigDecimal::from_str(value) {
-        CellValue::Number(number)
+        Some(CellValue::Number(number))
+    } else if value.is_empty() {
+        None
     } else {
-        CellValue::Text(value.to_string())
+        Some(CellValue::Text(value.to_string()))
     };
 
     assert_eq!(
-        cell_value,
-        Some(expected.clone()),
+        cell_value, expected,
         "Cell at ({}, {}) does not have the value {:?}, it's actually {:?}",
-        x,
-        y,
-        expected,
-        cell_value
+        x, y, expected, cell_value
     );
 }
 
@@ -50,14 +48,15 @@ pub fn assert_cell_value_row(
     value: Vec<&str>,
 ) {
     for (index, x) in (x_start..=x_end).enumerate() {
-        let value = value.get(index).unwrap();
-        assert_cell_value(grid_controller, sheet_id, x, y, value);
+        if let Some(cell_value) = value.get(index) {
+            assert_cell_value(grid_controller, sheet_id, x, y, cell_value);
+        } else {
+            println!("No value at position ({},{})", index, y);
+        }
     }
 }
 
-/// Run an assertion that cell bold formats in a given row are equal to the
-/// given value
-pub fn _assert_cell_format_bold_row(
+pub fn assert_cell_format_bold_row(
     grid_controller: &GridController,
     sheet_id: SheetId,
     x_start: i64,
@@ -66,12 +65,17 @@ pub fn _assert_cell_format_bold_row(
     value: Vec<bool>,
 ) {
     for (index, x) in (x_start..=x_end).enumerate() {
-        _assert_cell_format_bold(grid_controller, sheet_id, x, y, *value.get(index).unwrap());
+        assert_cell_format_bold(
+            grid_controller,
+            sheet_id,
+            x,
+            y,
+            *value.get(index).unwrap_or(&false),
+        );
     }
 }
 
-/// Run an assertion that a cell value is equal to the given value
-pub fn _assert_cell_format_bold(
+pub fn assert_cell_format_bold(
     grid_controller: &GridController,
     sheet_id: SheetId,
     x: i64,
@@ -82,14 +86,15 @@ pub fn _assert_cell_format_bold(
     let has_bold = sheet.get_formatting_value::<Bold>(Pos { x, y }).is_some();
     assert!(
         has_bold == expect_bold,
-        "Cell at ({}, {}) is not bold",
+        "Cell at ({}, {}) should be bold={}, but is actually bold={}",
         x,
-        y
+        y,
+        expect_bold,
+        has_bold
     );
 }
-
 /// Util to print a simple grid to assist in TDD
-pub fn print_table(grid_controller: GridController, sheet_id: SheetId, range: &Rect) {
+pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: Rect) {
     let sheet = grid_controller.grid().sheet_from_id(sheet_id);
     let mut vals = vec![];
     let mut builder = Builder::default();

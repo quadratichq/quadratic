@@ -602,6 +602,24 @@ export class Grid {
   }
 
   //#endregion
+
+  //#region AutoComplete
+  //-----------------
+
+  expand(sheetId: string, rectangle: Rectangle, range: Rectangle) {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+
+    const summary = this.gridController.expand(
+      sheetId,
+      rectangleToRect(rectangle),
+      rectangleToRect(range),
+      sheets.getCursorPosition()
+    );
+    transactionResponse(summary);
+    this.dirty = true;
+  }
+
+  //#endregion
 }
 
 //#end

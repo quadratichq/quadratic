@@ -249,6 +249,15 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
     format!("{prefix} {i}")
 }
 
+/// For debugging both in tests and in the JS console
+pub fn dbgjs(val: impl fmt::Debug) {
+    #[cfg(not(test))]
+    crate::wasm_bindings::js::log(&(format!("{:?}", val)));
+
+    #[cfg(test)]
+    dbg!(val);
+}
+
 #[cfg(test)]
 pub(crate) fn assert_f64_approx_eq(expected: f64, actual: &str) {
     const EPSILON: f64 = 0.0001;
@@ -259,7 +268,6 @@ pub(crate) fn assert_f64_approx_eq(expected: f64, actual: &str) {
         "expected {expected} but got {actual}",
     );
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
