@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use super::{
     formatting::CellFmtArray, operations::Operation, transactions::TransactionSummary,
     GridController,
@@ -8,7 +6,6 @@ use crate::{
     grid::{CodeCellValue, SheetId},
     Array, ArraySize, CellValue, Pos, Rect,
 };
-use bigdecimal::BigDecimal;
 use htmlescape;
 use regex::Regex;
 use serde::{Deserialize, Serialize};

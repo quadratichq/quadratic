@@ -189,12 +189,9 @@ impl CellValue {
     }
 
     pub fn strip_currency(value: &str) -> &str {
-        CURRENCY_SYMBOLS
-            .chars()
-            .into_iter()
-            .fold(value, |acc: &str, char| {
-                acc.strip_prefix(char).unwrap_or(acc)
-            })
+        CURRENCY_SYMBOLS.chars().fold(value, |acc: &str, char| {
+            acc.strip_prefix(char).unwrap_or(acc)
+        })
     }
 
     pub fn is_blank_or_empty_string(&self) -> bool {

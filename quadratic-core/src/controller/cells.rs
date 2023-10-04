@@ -41,7 +41,7 @@ impl GridController {
         let mut ops = vec![];
 
         // check for currency
-        if let Some((currency, number)) = CellValue::unpack_currency(&value) {
+        if let Some((currency, number)) = CellValue::unpack_currency(value) {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
                 values: Array::from(CellValue::Number(number)),
@@ -61,12 +61,12 @@ impl GridController {
                 region,
                 attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
             });
-        } else if let Ok(bd) = BigDecimal::from_str(&value) {
+        } else if let Ok(bd) = BigDecimal::from_str(value) {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
                 values: Array::from(CellValue::Number(bd)),
             });
-        } else if let Some(percent) = CellValue::unpack_percentage(&value) {
+        } else if let Some(percent) = CellValue::unpack_percentage(value) {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
                 values: Array::from(CellValue::Number(percent)),
