@@ -145,9 +145,9 @@ impl SyntaxRule for BoolExpression {
             Some(Token::True) => true,
             _ => p.expected(self)?,
         };
-        return Ok(AstNode {
+        Ok(AstNode {
             span: p.span(),
             inner: ast::AstNodeContents::Bool(b),
-        });
+        })
     }
 }

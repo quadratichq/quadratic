@@ -146,7 +146,7 @@ mod tests {
         }
     }
 
-    use std::f64::consts::PI;
+    use std::f64::consts::{FRAC_1_SQRT_2, PI, SQRT_2};
 
     #[test]
     fn test_formula_radian_degree_conversion() {
@@ -164,13 +164,13 @@ mod tests {
             (-2.0 * PI, 0.0),
             (-1.5 * PI, 1.0),
             (-1.0 * PI, 0.0),
-            (-0.75 * PI, -0.70711),
+            (-0.75 * PI, -FRAC_1_SQRT_2),
             (-0.5 * PI, -1.0),
-            (-0.25 * PI, -0.70711),
+            (-0.25 * PI, -FRAC_1_SQRT_2),
             (0.0 * PI, 0.0),
-            (0.25 * PI, 0.70711),
+            (0.25 * PI, FRAC_1_SQRT_2),
             (0.5 * PI, 1.0),
-            (0.75 * PI, 0.70711),
+            (0.75 * PI, FRAC_1_SQRT_2),
             (1.0 * PI, 0.0),
             (1.5 * PI, -1.0),
             (2.0 * PI, 0.0),
@@ -181,13 +181,13 @@ mod tests {
             (-2.0 * PI, 1.0),
             (-1.5 * PI, 0.0),
             (-1.0 * PI, -1.0),
-            (-0.75 * PI, -0.70711),
+            (-0.75 * PI, -FRAC_1_SQRT_2),
             (-0.5 * PI, 0.0),
-            (-0.25 * PI, 0.70711),
+            (-0.25 * PI, FRAC_1_SQRT_2),
             (0.0 * PI, 1.0),
-            (0.25 * PI, 0.70711),
+            (0.25 * PI, FRAC_1_SQRT_2),
             (0.5 * PI, 0.0),
-            (0.75 * PI, -0.70711),
+            (0.75 * PI, -FRAC_1_SQRT_2),
             (1.0 * PI, -1.0),
             (1.5 * PI, 0.0),
             (2.0 * PI, 1.0),
@@ -209,12 +209,12 @@ mod tests {
 
         let test_cases = &[
             (-1.5 * PI, 1.0),
-            (-0.75 * PI, -1.41421),
+            (-0.75 * PI, -SQRT_2),
             (-0.5 * PI, -1.0),
-            (-0.25 * PI, -1.41421),
-            (0.25 * PI, 1.41421),
+            (-0.25 * PI, -SQRT_2),
+            (0.25 * PI, SQRT_2),
             (0.5 * PI, 1.0),
-            (0.75 * PI, 1.41421),
+            (0.75 * PI, SQRT_2),
             (1.5 * PI, -1.0),
         ];
         test_trig_fn("CSC", test_cases);
@@ -222,11 +222,11 @@ mod tests {
         let test_cases = &[
             (-2.0 * PI, 1.0),
             (-1.0 * PI, -1.0),
-            (-0.75 * PI, -1.41421),
-            (-0.25 * PI, 1.41421),
+            (-0.75 * PI, -SQRT_2),
+            (-0.25 * PI, SQRT_2),
             (0.0 * PI, 1.0),
-            (0.25 * PI, 1.41421),
-            (0.75 * PI, -1.41421),
+            (0.25 * PI, SQRT_2),
+            (0.75 * PI, -SQRT_2),
             (1.0 * PI, -1.0),
             (2.0 * PI, 1.0),
         ];
@@ -353,18 +353,18 @@ mod tests {
     fn test_formula_inverse_trigonometry() {
         let test_cases = &[
             (-1.0, -0.5 * PI),
-            (-0.70711, -0.25 * PI),
+            (-FRAC_1_SQRT_2, -0.25 * PI),
             (0.0, 0.0 * PI),
-            (0.70711, 0.25 * PI),
+            (FRAC_1_SQRT_2, 0.25 * PI),
             (1.0, 0.5 * PI),
         ];
         test_trig_fn("ASIN", test_cases);
 
         let test_cases = &[
             (1.0, 0.0 * PI),
-            (0.70711, 0.25 * PI),
+            (FRAC_1_SQRT_2, 0.25 * PI),
             (0.0, 0.5 * PI),
-            (-0.70711, 0.75 * PI),
+            (-FRAC_1_SQRT_2, 0.75 * PI),
             (-1.0, 1.0 * PI),
         ];
         test_trig_fn("ACOS", test_cases);
@@ -374,16 +374,16 @@ mod tests {
 
         let test_cases = &[
             (-1.0, -0.5 * PI),
-            (-1.41421, -0.25 * PI),
-            (1.41421, 0.25 * PI),
+            (-SQRT_2, -0.25 * PI),
+            (SQRT_2, 0.25 * PI),
             (1.0, 0.5 * PI),
         ];
         test_trig_fn("ACSC", test_cases);
 
         let test_cases = &[
             (1.0, 0.0 * PI),
-            (1.41421, 0.25 * PI),
-            (-1.41421, 0.75 * PI),
+            (SQRT_2, 0.25 * PI),
+            (-SQRT_2, 0.75 * PI),
             (-1.0, 1.0 * PI),
         ];
         test_trig_fn("ASEC", test_cases);

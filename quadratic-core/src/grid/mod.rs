@@ -1,3 +1,4 @@
+use anyhow::{bail, Result};
 use std::collections::HashMap;
 use std::str::FromStr;
 
@@ -73,20 +74,14 @@ impl Grid {
         self.sheets.sort_by(|a, b| a.order.cmp(&b.order));
     }
     pub fn end_order(&self) -> String {
-        let last_order = match self.sheets.last() {
-            Some(last) => Some(last.order.clone()),
-            None => None,
-        };
+        let last_order = self.sheets.last().map(|last| last.order.clone());
         key_between(&last_order, &None).unwrap()
     }
     pub fn previous_sheet_order(&self, sheet_id: SheetId) -> Option<String> {
         let mut previous: Option<&Sheet> = None;
         for sheet in self.sheets.iter() {
             if sheet.id == sheet_id {
-                return match previous {
-                    Some(previous) => Some(previous.order.clone()),
-                    None => None,
-                };
+                return previous.map(|previous| previous.order.clone());
             }
             previous = Some(sheet);
         }
@@ -100,13 +95,13 @@ impl Grid {
             }
             if sheet.id == sheet_id {
                 next = true;
-            }
+            };
         }
         None
     }
     /// Adds a sheet to the grid. Returns an error if the sheet name is already
     /// in use.
-    pub fn add_sheet(&mut self, sheet: Option<Sheet>) -> Result<SheetId, ()> {
+    pub fn add_sheet(&mut self, sheet: Option<Sheet>) -> Result<SheetId> {
         // for new sheets, order is after the last one
         let sheet = sheet.unwrap_or_else(|| {
             Sheet::new(
@@ -123,7 +118,7 @@ impl Grid {
             .iter()
             .any(|old_sheet| old_sheet.name == sheet.name)
         {
-            return Err(());
+            bail!("sheet name already in use");
         }
         self.sheets.push(sheet);
         self.sort_sheets();
@@ -154,7 +149,7 @@ impl Grid {
         let Some(sheet_id) = sheet_id else {
             return false;
         };
-        self.sheets.iter().position(|s| s.id == sheet_id).is_some()
+        self.sheets.iter().any(|s| s.id == sheet_id)
     }
     pub fn sheet_from_id(&self, sheet_id: SheetId) -> &Sheet {
         let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");

@@ -157,10 +157,8 @@ impl Sheet {
                         if with_content {
                             return x;
                         }
-                    } else {
-                        if !with_content {
-                            return x;
-                        }
+                    } else if !with_content {
+                        return x;
                     }
                     x += if reverse { -1 } else { 1 };
                 }
@@ -199,10 +197,8 @@ impl Sheet {
                         if with_content {
                             return y;
                         }
-                    } else {
-                        if !with_content {
-                            return y;
-                        }
+                    } else if !with_content {
+                        return y;
                     }
                     y += if reverse { -1 } else { 1 };
                 }
@@ -222,15 +218,15 @@ mod test {
     #[test]
     fn test_is_empty() {
         let mut sheet = Sheet::test();
-        assert_eq!(sheet.is_empty(), true);
+        assert!(sheet.is_empty());
 
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
         sheet.recalculate_bounds();
-        assert_eq!(sheet.is_empty(), false);
+        assert!(!sheet.is_empty());
 
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Blank);
         sheet.recalculate_bounds();
-        assert_eq!(sheet.is_empty(), true);
+        assert!(sheet.is_empty());
     }
 
     #[test]

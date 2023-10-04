@@ -65,6 +65,7 @@ impl ArraySize {
         Self::new(w, h).ok_or(ErrorMsg::EmptyArray)
     }
     /// Returns the number of elements in the array.
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(self) -> usize {
         self.w.get() as usize * self.h.get() as usize
     }
