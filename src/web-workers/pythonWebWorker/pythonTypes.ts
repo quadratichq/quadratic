@@ -9,6 +9,7 @@ export interface PythonReturnType {
   input_python_std_out: string;
 
   output_value: string | null;
+  output_array: string | null;
   // array_output: ArrayOutput;
 }
 

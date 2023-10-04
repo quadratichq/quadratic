@@ -49,6 +49,7 @@ pub struct JsCodeResult {
     pub error_msg: Option<String>,
     pub input_python_std_out: Option<String>,
     pub output_value: Option<String>,
+    pub output_array: Option<String>, // JSON formatted DataFrame<'split'>
     pub array_output: Option<Vec<Vec<String>>>,
 }
 
@@ -104,6 +105,7 @@ pub async fn eval_formula(
                 error_msg: None,
                 output_value,
                 array_output,
+                output_array: None,
                 formatted_code: None,
                 input_python_std_out: None,
             }
@@ -114,6 +116,7 @@ pub async fn eval_formula(
             error_span: error.span.map(|span| [span.start, span.end]),
             error_msg: Some(error.msg.to_string()),
             output_value: None,
+            output_array: None,
             array_output: None,
             formatted_code: None,
             input_python_std_out: None,

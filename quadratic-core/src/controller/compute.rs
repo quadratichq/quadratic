@@ -40,67 +40,51 @@ impl GridController {
                         match language {
                             CodeCellLanguage::Python => {
                                 let mut cells = None;
-                                let mut complete = false;
 
-                                // loop through runPython handling either get-cells or complete results
-                                while !complete {
-                                    let result =
-                                        runPython(code_string.clone(), cells.clone()).await;
-                                    let compute_result =
-                                        serde_wasm_bindgen::from_value::<JsComputeResult>(result);
+                                let result = runPython(code_string.clone(), cells.clone()).await;
+                                let compute_result =
+                                    serde_wasm_bindgen::from_value::<JsComputeResult>(result)
+                                        .expect("Could not parse JsComputeResult");
 
-                                    match compute_result {
-                                        Ok(compute_result) => {
-                                            if compute_result.complete {
-                                                if let Some(result) = compute_result.result {
-                                                    code_cell_result = Some(result);
-                                                }
-                                                complete = true;
-                                            } else {
-                                                // set cells to the requested get-cells for the next while loop
-                                                let sheet_name = compute_result.sheet_id;
-                                                let sheet = if let Some(sheet_name) = sheet_name {
-                                                    if let Some(sheet_from_name) =
-                                                        self.grid.sheet_from_name(sheet_name)
-                                                    {
-                                                        sheet_from_name
-                                                    } else {
-                                                        self.grid.sheet_mut_from_id(rect.sheet_id)
-                                                    }
-                                                } else {
-                                                    self.grid.sheet_mut_from_id(rect.sheet_id)
-                                                };
-                                                if let Some(rect) = compute_result.rect {
-                                                    let array = sheet.cell_array(rect);
-                                                    cells_accessed.push(SheetRect {
-                                                        min: rect.min,
-                                                        max: rect.max,
-                                                        sheet_id: sheet.id,
-                                                    });
-
-                                                    // place results of get-cells into cells for next runPython call
-                                                    let to_string =
-                                                        serde_json::to_string::<[CellForArray]>(
-                                                            &array,
-                                                        );
-                                                    match to_string {
-                                                        Ok(cell_for_array) => {
-                                                            cells = Some(cell_for_array)
-                                                        }
-                                                        Err(_) => cells = None,
-                                                    }
-                                                } else {
-                                                    cells = None;
-                                                }
-                                            }
+                                if compute_result.complete {
+                                    if let Some(result) = compute_result.result {
+                                        code_cell_result = Some(result);
+                                    }
+                                } else {
+                                    // set cells to the requested get-cells for the next while loop
+                                    let sheet_name = compute_result.sheet_id;
+                                    let sheet = if let Some(sheet_name) = sheet_name {
+                                        if let Some(sheet_from_name) =
+                                            self.grid.sheet_from_name(sheet_name)
+                                        {
+                                            sheet_from_name
+                                        } else {
+                                            self.grid.sheet_mut_from_id(rect.sheet_id)
                                         }
-                                        Err(e) => {
-                                            // todo: better handling of error to ensure grid is not locked
-                                            js::log(&format!("compute_result error, {}", e));
+                                    } else {
+                                        self.grid.sheet_mut_from_id(rect.sheet_id)
+                                    };
+                                    if let Some(rect) = compute_result.rect {
+                                        let array = sheet.cell_array(rect);
+                                        cells_accessed.push(SheetRect {
+                                            min: rect.min,
+                                            max: rect.max,
+                                            sheet_id: sheet.id,
+                                        });
+
+                                        // place results of get-cells into cells for next runPython call
+                                        let to_string =
+                                            serde_json::to_string::<[CellForArray]>(&array);
+                                        match to_string {
+                                            Ok(cell_for_array) => cells = Some(cell_for_array),
+                                            Err(_) => cells = None,
                                         }
+                                    } else {
+                                        cells = None;
                                     }
                                 }
                             }
+
                             _ => {
                                 js::log(&format!(
                                     "Compute language {} not supported in compute.rs",

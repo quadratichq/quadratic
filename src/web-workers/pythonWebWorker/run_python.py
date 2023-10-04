@@ -314,8 +314,14 @@ async def run_python(code):
         except Exception:
             pass
 
+        if not isinstance(output_value, pd.DataFrame):
+            raise("expected dataframe")
+        
+        output_array = output_value.to_json(orient="split")
+
         return {
             "output_value": str(output_value),
+            "output_array": output_array,
             "array_output": array_output,
             "cells_accessed": cells_accessed,
             "input_python_std_out": sout.getvalue(),
@@ -326,6 +332,7 @@ async def run_python(code):
 
     return {
         "output_value": output_value,
+        "output_array": None,
         "array_output": None,
         "cells_accessed": cells_accessed,
         "input_python_std_out": sout.getvalue(),
