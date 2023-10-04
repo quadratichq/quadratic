@@ -23,7 +23,7 @@ impl Param {
     /// Returns a user-friendly string describing the parameter.
     fn usage_string(&self) -> String {
         match self.kind {
-            ParamKind::Required => format!("{}", self.name),
+            ParamKind::Required => self.name.to_string(),
             ParamKind::Optional => format!("[{}]", self.name),
             ParamKind::Repeating => format!("[{}...]", self.name),
         }
@@ -55,14 +55,12 @@ pub(super) fn arg_completion_string(args: &[Param]) -> &'static str {
         i += 1;
         if is_first {
             is_first = false;
+        } else if arg.is_optional() {
+            ret.push_str(&format!("${{{i}:, "));
+            i += 1;
+            depth += 1;
         } else {
-            if arg.is_optional() {
-                ret.push_str(&format!("${{{i}:, "));
-                i += 1;
-                depth += 1;
-            } else {
-                ret.push_str(", ");
-            }
+            ret.push_str(", ");
         }
         ret.push_str(&format!("${{{i}:{}}}", arg.usage_string()));
     }

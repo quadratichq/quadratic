@@ -35,7 +35,6 @@ lazy_static! {
             insert_text_rules: Some(CompletionItemInsertTextRule::INSERT_AS_SNIPPET),
             kind: CompletionItemKind::Function,
             label: f.name.to_string(),
-            ..Default::default()
         })
         .collect();
 }

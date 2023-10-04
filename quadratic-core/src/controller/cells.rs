@@ -124,14 +124,14 @@ impl GridController {
         rect: Rect,
     ) -> Vec<Operation> {
         let region = self.existing_region(sheet_id, rect);
-        let ops = match region.size() {
+
+        match region.size() {
             Some(size) => {
                 let values = Array::new_empty(size);
                 vec![Operation::SetCellValues { region, values }]
             }
             None => vec![], // region is empty; do nothing
-        };
-        ops
+        }
     }
 
     pub fn delete_cell_values(
@@ -146,7 +146,8 @@ impl GridController {
 
     pub fn clear_formatting_operations(&mut self, sheet_id: SheetId, rect: Rect) -> Vec<Operation> {
         let region = self.existing_region(sheet_id, rect);
-        let ops = match region.size() {
+
+        match region.size() {
             Some(_) => {
                 let len = region.size().unwrap().len();
                 vec![
@@ -185,8 +186,7 @@ impl GridController {
                 ]
             }
             None => vec![],
-        };
-        ops
+        }
     }
 
     pub fn clear_formatting(

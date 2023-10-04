@@ -73,6 +73,12 @@ impl SheetBorders {
     }
 }
 
+impl Default for SheetBorders {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CellBorders {
