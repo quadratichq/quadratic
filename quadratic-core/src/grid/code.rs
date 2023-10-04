@@ -16,8 +16,8 @@ pub struct CodeCellValue {
 impl CodeCellValue {
     pub fn get_output_value(&self, x: u32, y: u32) -> Option<CellValue> {
         match &self.output.as_ref()?.output_value()? {
-            Value::Single(v) => Some(v.clone().into()),
-            Value::Array(a) => Some(a.get(x, y).ok()?.clone().into()),
+            Value::Single(v) => Some(v.clone()),
+            Value::Array(a) => Some(a.get(x, y).ok()?.clone()),
         }
     }
 

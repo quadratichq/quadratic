@@ -19,7 +19,7 @@ impl GridController {
                     row: None,
                     old_size,
                     new_size: size,
-                })
+                });
             }
         }
     }
@@ -39,7 +39,7 @@ impl GridController {
                     row: Some(sheet.get_or_create_row(row).id),
                     old_size,
                     new_size: size,
-                })
+                });
             }
         }
     }

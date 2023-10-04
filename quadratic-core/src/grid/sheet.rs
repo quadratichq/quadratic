@@ -662,7 +662,7 @@ fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {
     for i in values.into_iter().sorted() {
         match ret.last_mut() {
             Some(range) if range.end == i => range.end += 1,
-            Some(range) if (&*range).contains(&i) => continue,
+            Some(range) if (*range).contains(&i) => continue,
             _ => ret.push(i..i + 1),
         }
     }
@@ -687,13 +687,13 @@ mod test {
         // get decimal places after a set_cell_value
         sheet.set_cell_value(
             Pos { x: 1, y: 2 },
-            CellValue::Number(BigDecimal::from_str(&"12.23").unwrap()),
+            CellValue::Number(BigDecimal::from_str("12.23").unwrap()),
         );
         assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), Some(2));
 
         sheet.set_cell_value(
             Pos { x: 2, y: 2 },
-            CellValue::Number(BigDecimal::from_str(&"0.23").unwrap()),
+            CellValue::Number(BigDecimal::from_str("0.23").unwrap()),
         );
         assert_eq!(sheet.decimal_places(Pos { x: 2, y: 2 }, true), Some(0));
     }
@@ -726,14 +726,14 @@ mod test {
 
         sheet.set_cell_value(
             crate::Pos { x: 1, y: 2 },
-            CellValue::Number(BigDecimal::from_str(&"0.24").unwrap()),
+            CellValue::Number(BigDecimal::from_str("0.24").unwrap()),
         );
 
         assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, true), Some(0));
 
         sheet.set_cell_value(
             crate::Pos { x: 1, y: 2 },
-            CellValue::Number(BigDecimal::from_str(&"0.245").unwrap()),
+            CellValue::Number(BigDecimal::from_str("0.245").unwrap()),
         );
 
         assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, true), Some(1));

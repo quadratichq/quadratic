@@ -40,7 +40,7 @@ impl GridController {
             .collect_vec();
 
         let id = SheetId::new();
-        let name = crate::util::unused_name("Sheet", &sheet_names);
+        let name = crate::util::unused_name("Sheet", sheet_names);
         let order = self.grid.end_order();
         let sheet = Sheet::new(id, name, order);
         let ops = vec![Operation::AddSheet { sheet }];
@@ -67,19 +67,21 @@ impl GridController {
         to_before: Option<SheetId>,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let order: String;
         // treat to_before as None if to_before's sheet no longer exists
-        if to_before.is_none() || !self.grid.sheet_has_id(to_before) {
-            let last_order = match self.grid.sheets().last() {
-                Some(last) => Some(last.order.clone()),
-                None => None,
-            };
-            order = key_between(&last_order, &None).unwrap();
-        } else {
-            let after_sheet = self.grid.sheet_from_id(to_before.unwrap());
-            let before = self.grid.previous_sheet_order(after_sheet.id);
-            order = key_between(&before, &Some(after_sheet.order.clone())).unwrap();
-        }
+        let sheet_no_longer_exists = !self.grid.sheet_has_id(to_before);
+        let order = match (to_before, sheet_no_longer_exists) {
+            (None, true) => {
+                let last_order = self.grid.sheets().last().map(|last| last.order.clone());
+                key_between(&last_order, &None).unwrap()
+            }
+            (Some(to_before), false) => {
+                let after_sheet = self.grid.sheet_from_id(to_before);
+                let before = self.grid.previous_sheet_order(after_sheet.id);
+                key_between(&before, &Some(after_sheet.order.clone())).unwrap()
+            }
+            _ => unreachable!("to_before should be None or Some"),
+        };
+
         let ops = vec![Operation::ReorderSheet {
             target: sheet_id,
             order,
@@ -163,7 +165,7 @@ fn test_duplicate_sheet() {
 fn test_delete_last_sheet() {
     let mut g = GridController::new();
     let sheet_ids = g.sheet_ids();
-    let first_sheet_id = sheet_ids[0].clone();
+    let first_sheet_id = sheet_ids[0];
 
     g.delete_sheet(first_sheet_id, None);
     let new_sheet_ids = g.sheet_ids();

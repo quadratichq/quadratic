@@ -105,7 +105,7 @@ fn test_read_write() {
 proptest! {
     #[test]
     fn proptest_sheet_writes(writes: Vec<(Pos, CellValue)>) {
-        proptest_sheet_writes_internal(writes)
+        proptest_sheet_writes_internal(writes);
     }
 }
 

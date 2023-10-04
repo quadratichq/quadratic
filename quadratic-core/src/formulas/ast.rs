@@ -172,7 +172,7 @@ impl AstNode {
                 }
 
                 let func_name = &func.inner;
-                match functions::lookup_function(&func_name) {
+                match functions::lookup_function(func_name) {
                     Some(f) => {
                         let args = FormulaFnArgs::new(arg_values, self.span, f.name);
                         (f.eval)(&mut *ctx, args).await?
