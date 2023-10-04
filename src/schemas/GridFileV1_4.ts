@@ -101,7 +101,7 @@ export const GridFileSchemaV1_4 = z.object({
 });
 export type GridFileV1_4 = z.infer<typeof GridFileSchemaV1_4>;
 
-export function upgradeV1_3toV1_4(file: GridFileV1_3, logOutput: boolean = true): GridFileV1_4 {
+export function upgradeV1_3toV1_4(file: GridFileV1_3): GridFileV1_4 {
   // convert cell dependencies in Rust format
   // in v3 we map trigger_cell: updates_cells[]
   // in v4 we map code_cell: dependencies[]
