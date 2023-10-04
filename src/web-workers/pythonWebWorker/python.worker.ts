@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 
-import { PythonMessage, PythonReturnType } from './pythonTypes';
+import { PythonMessage } from './pythonTypes';
 import define_run_python from './run_python.py';
 
 const TRY_AGAIN_TIMEOUT = 500;
@@ -57,11 +57,14 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
     }
 
     const output = await pyodide.globals.get('run_python')(event.python);
-    console.log(output, Object.fromEntries(output.toJs()));
+    const results = Object.fromEntries(output.toJs());
+    if (results.array_output) {
+      results.array_output = results.array_output.map((proxy: any) => proxy.toString());
+    }
     return self.postMessage({
       type: 'results',
-      results: Object.fromEntries(output.toJs()) as PythonReturnType,
-    } as PythonMessage);
+      results,
+    });
   }
 };
 

@@ -174,6 +174,7 @@ async def run_python(code):
     async def getCell(p_x, p_y, sheet=None):
         # mark cell this formula accesses
         result = await getCellsDB(p_x, p_y, p_x, p_y, sheet)
+        cells_accessed.append([p_x, p_y, sheet])
 
         if len(result):
             return Cell(result[0])
@@ -301,9 +302,12 @@ async def run_python(code):
                     output_value.notnull(), None
                 ).values.tolist()
 
+
         # Convert Pandas.Series to array_output
         if isinstance(output_value, pd.Series):
             array_output = output_value.to_numpy().tolist()
+
+        print("array output", array_output)
 
         # Attempt to format code
         formatted_code = code

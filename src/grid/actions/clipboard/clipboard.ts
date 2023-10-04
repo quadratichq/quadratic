@@ -4,6 +4,7 @@ import mixpanel from 'mixpanel-browser';
 import { isEditorOrAbove } from '../../../actions';
 import { GlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { debugTimeCheck, debugTimeReset } from '../../../gridGL/helpers/debugPerformance';
+import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
 import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
 import { grid } from '../../controller/Grid';
@@ -18,6 +19,9 @@ export const fullClipboardSupport = (): boolean => {
 //#region document event handler for copy, paste, and cut
 
 export const copyToClipboardEvent = (e: ClipboardEvent) => {
+  // returns if focus is not on the body or canvas
+  if (e.target !== document.body && e.target !== pixiApp.canvas) return;
+
   debugTimeReset();
   const rectangle = sheets.sheet.cursor.getRectangle();
   const { plainText, html } = grid.copyToClipboard(sheets.sheet.id, rectangle);
@@ -51,6 +55,9 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
 };
 
 export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
+  // returns if focus is not on the body or canvas
+  if (e.target !== document.body && e.target !== pixiApp.canvas) return;
+
   if (!isEditorOrAbove(pixiAppSettings.permission)) return;
 
   if (!e.clipboardData) {
