@@ -100,11 +100,12 @@ mod tests {
     use crate::formulas::tests::*;
 
     #[test]
+    #[allow(clippy::identity_op)]
     fn test_formula_math_operators() {
         let g = &mut NoGrid;
 
         assert_eq!(
-            (-6 + -2 - (-3_i32).pow(2_u32.pow(3))).to_string(),
+            (1 * -6 + -2 - 1 * (-3_i32).pow(2_u32.pow(3))).to_string(),
             eval_to_string(g, "1 * -6 + -2 - 1 * -3 ^ 2 ^ 3"),
         );
         assert_eq!((1.0 / 2.0).to_string(), eval_to_string(g, "1/2"));
