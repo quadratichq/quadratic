@@ -177,16 +177,16 @@ class Sheets {
   // Sheet operations
   // ----------------
 
-  createNew(): void {
-    grid.addSheet();
+  async createNew() {
+    await grid.addSheet();
 
     // sets the current sheet to the new sheet
     this.current = this.sheets[this.sheets.length - 1].id;
   }
 
-  duplicate(): void {
+  async duplicate() {
     const oldSheetId = this.current;
-    grid.duplicateSheet(this.current);
+    await grid.duplicateSheet(this.current);
 
     // sets the current sheet to the duplicated sheet
     const currentIndex = this.sheets.findIndex((sheet) => sheet.id === oldSheetId);
@@ -197,9 +197,9 @@ class Sheets {
     this.sort();
   }
 
-  deleteSheet(id: string): void {
+  async deleteSheet(id: string) {
     const order = this.sheet.order;
-    grid.deleteSheet(id);
+    await grid.deleteSheet(id);
 
     // set current to next sheet (before this.sheets is updated)
     if (this.sheets.length) {

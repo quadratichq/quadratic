@@ -17,10 +17,17 @@ export class Sheet {
   cursor: SheetCursor;
   offsets: SheetOffsets;
 
+  name: string;
+  order: string;
+  color?: string;
+
   constructor(index: number) {
     const sheetId = grid.sheetIndexToId(index);
     if (!sheetId) throw new Error('Expected sheetId to be defined in Sheet');
     this.id = sheetId;
+    this.name = grid.getSheetName(sheetId) ?? '';
+    this.order = grid.getSheetOrder(sheetId);
+    this.color = grid.getSheetColor(sheetId);
     this.offsets = grid.getOffsets(this.id);
     this.cursor = new SheetCursor(this);
   }
@@ -36,31 +43,9 @@ export class Sheet {
     grid.deleteCellValues(this.id, rectangle);
   }
 
-  set name(name: string) {
-    grid.setSheetName(this.id, name);
-  }
-
-  set color(color: string | undefined) {
-    grid.setSheetColor(this.id, color);
-  }
-
   //#endregion
 
   //#region get grid information
-
-  get name(): string {
-    const name = grid.getSheetName(this.id);
-    if (name === undefined) throw new Error('Expected name to be defined in Sheet');
-    return name;
-  }
-
-  get color(): string | undefined {
-    return grid.getSheetColor(this.id);
-  }
-
-  get order(): string {
-    return grid.getSheetOrder(this.id);
-  }
 
   getRenderCells(rectangle: Rectangle): JsRenderCell[] {
     return grid.getRenderCells(this.id, rectangle);
