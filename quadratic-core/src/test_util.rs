@@ -1,11 +1,8 @@
-use std::str::FromStr;
-
 use crate::{
     controller::GridController,
     grid::{Bold, SheetId},
     CellValue, Pos, Rect,
 };
-use bigdecimal::BigDecimal;
 
 use tabled::{
     builder::Builder,
@@ -22,14 +19,8 @@ pub fn assert_cell_value(
     value: &str,
 ) {
     let sheet = grid_controller.grid().sheet_from_id(sheet_id);
-    let cell_value = sheet.get_cell_value(Pos { x, y });
-    let expected = if let Ok(number) = BigDecimal::from_str(value) {
-        Some(CellValue::Number(number))
-    } else if value.is_empty() {
-        None
-    } else {
-        Some(CellValue::Text(value.to_string()))
-    };
+    let cell_value = sheet.get_cell_value(Pos { x, y }).unwrap();
+    let expected = CellValue::from(value);
 
     assert_eq!(
         cell_value, expected,
