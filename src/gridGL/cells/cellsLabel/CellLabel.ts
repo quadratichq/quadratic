@@ -57,7 +57,6 @@ export class CellLabel extends Container {
     super();
 
     const cellText = cell.value ? cell.value.replace(/\n/g, '') : '';
-
     this.text = cellText;
     this.fontSize = fontSize;
     this.roundPixels = true;

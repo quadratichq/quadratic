@@ -22,10 +22,12 @@ def attempt_fix_await(code):
     code = re.sub(r"([^a-zA-Z0-9]|^)cells\(", r"\1await cells(", code)
     code = re.sub(r"([^a-zA-Z0-9]|^)cell\(", r"\1await cell(", code)
     code = re.sub(r"([^a-zA-Z0-9]|^)c\(", r"\1await c(", code)
+    code = re.sub(r"([^a-zA-Z0-9]|^)getCell\(", r"\1await getCell(", code)
     code = re.sub(r"([^a-zA-Z0-9]|^)getCells\(", r"\1await getCells(", code)
     code = re.sub(r"([^a-zA-Z0-9]|^)cells\[", r"\1await cells[", code)
 
     code = code.replace("await await getCell", "await getCell")
+    code = code.replace("await await getCells", "await getCells")
     code = code.replace("await await c(", "await c(")
     code = code.replace("await await cell(", "await cell(")
     code = code.replace("await await cells(", "await cells(")
@@ -51,12 +53,10 @@ def strtobool(val):
 
 class Cell:
     def __init__(self, object):
+        print(object)
         self.x = object.x
         self.y = object.y
-        if object.value == "":
-            self.value = "0"
-        else:
-            self.value = object.value
+        self.value = object.value
 
     def __str__(self):
         return str(self.value)
@@ -172,9 +172,10 @@ async def run_python(code):
         return df
 
     async def getCell(p_x, p_y, sheet=None):
+        print("get cell")
         # mark cell this formula accesses
-        result = await getCellsDB(p_x, p_y, p_x, p_y, sheet)
         cells_accessed.append([p_x, p_y, sheet])
+        result = await getCellsDB(p_x, p_y, p_x, p_y, sheet)
 
         if len(result):
             return Cell(result[0])
@@ -192,7 +193,7 @@ async def run_python(code):
             return getCells(p0, p1, sheet, first_row_header)
 
         @staticmethod
-        def __getitem__(item):
+        async def __getitem__(item):
             if type(item) == tuple and (len(item) == 2 or len(item) == 3):
                 row_idx = item[0]
                 col_idx = item[1]
@@ -306,8 +307,7 @@ async def run_python(code):
         # Convert Pandas.Series to array_output
         if isinstance(output_value, pd.Series):
             array_output = output_value.to_numpy().tolist()
-
-        print("array output", array_output)
+        print(array_output)
 
         # Attempt to format code
         formatted_code = code
