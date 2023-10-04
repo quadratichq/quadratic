@@ -29,7 +29,7 @@ where
 }
 impl From<String> for CellValue {
     fn from(value: String) -> Self {
-        CellValue::Text(value)
+        value.as_str().into()
     }
 }
 // TODO(ddimaria): implement Duration and Instant
@@ -41,8 +41,6 @@ impl From<&str> for CellValue {
         let is_false = parsed.eq_ignore_ascii_case("false");
         let is_bool = is_true || is_false;
 
-        println!("parsed: {:?}", parsed);
-
         match (number, is_bool) {
             (Ok(number), false) => CellValue::Number(number),
             (_, true) => CellValue::Logical(is_true),
@@ -53,7 +51,8 @@ impl From<&str> for CellValue {
 // todo: this might be wrong for formulas
 impl From<f64> for CellValue {
     fn from(value: f64) -> Self {
-        CellValue::Number(BigDecimal::from_str(&value.to_string()).unwrap())
+        BigDecimal::try_from(value)
+            .map_or_else(|_| CellValue::Text(value.to_string()), CellValue::Number)
     }
 }
 impl From<i64> for CellValue {
