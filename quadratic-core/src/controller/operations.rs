@@ -1,4 +1,7 @@
-use crate::{grid::*, Array, CellValue};
+use crate::{
+    grid::{js_types::JsRenderCell, *},
+    Array, CellValue,
+};
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -66,12 +69,11 @@ impl GridController {
         op: Operation,
         summary: &mut TransactionSummary,
     ) -> Operation {
-        match op {
+        let mut cell_regions_modified = vec![];
+        let operation = match op {
             Operation::None => Operation::None,
             Operation::SetCellValues { region, values } => {
-                summary
-                    .cell_regions_modified
-                    .extend(self.grid.region_rects(&region));
+                cell_regions_modified.extend(self.grid.region_rects(&region));
 
                 let sheet = self.grid.sheet_mut_from_id(region.sheet);
 
@@ -89,17 +91,6 @@ impl GridController {
                     .collect();
                 let old_values = Array::new_row_major(size, old_values)
                     .expect("error constructing array of old values for SetCells operation");
-
-                // TODO(ddimaria): is this correct?
-                self.grid
-                    .region_rects(&region)
-                    .into_iter()
-                    .for_each(|rect| {
-                        let sheet = self.grid.sheet_from_id(region.sheet);
-                        summary
-                            .cell_hash_values_modified
-                            .extend(sheet.get_render_cells(rect.1));
-                    });
 
                 // return reverse operation
                 Operation::SetCellValues {
@@ -121,9 +112,7 @@ impl GridController {
                 code_cell_value,
             } => {
                 let region = RegionRef::from(cell_ref);
-                summary
-                    .cell_regions_modified
-                    .extend(self.grid.region_rects(&region));
+                cell_regions_modified.extend(self.grid.region_rects(&region));
                 let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
                 let old_code_cell_value = sheet.set_code_cell(cell_ref, code_cell_value);
                 Operation::SetCellCode {
@@ -137,9 +126,7 @@ impl GridController {
                         summary.fill_sheets_modified.push(region.sheet);
                     }
                     _ => {
-                        summary
-                            .cell_regions_modified
-                            .extend(self.grid.region_rects(&region));
+                        cell_regions_modified.extend(self.grid.region_rects(&region));
                     }
                 }
                 let old_attr = match attr {
@@ -271,27 +258,19 @@ impl GridController {
                 Operation::None
                 // }
             }
-        }
-    }
-}
+        };
 
-#[cfg(test)]
-mod tests {
-    use crate::{Pos, Rect};
+        let js_render_cells = cell_regions_modified
+            .iter()
+            .flat_map(|(sheet_id, rect)| {
+                let sheet = self.grid.sheet_from_id(*sheet_id);
+                sheet.get_render_cells(*rect)
+            })
+            .collect::<Vec<_>>();
+        summary.add_js_render_cells(js_render_cells);
 
-    use super::*;
+        summary.cell_regions_modified.extend(cell_regions_modified);
 
-    #[tokio::test]
-    async fn test_execute_operation_set_cell_values() {
-        let mut grid_controller = GridController::new();
-        let sheet_id = grid_controller.grid.sheets()[0].id;
-        let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
-        let region = grid_controller.region(sheet_id, rect);
-        let values = Array::from(CellValue::Text("here".into()));
-        let operation = vec![Operation::SetCellValues { region, values }];
-        let summary = grid_controller.transact_forward(operation, None).await;
-
-        println!("{:?}", summary.cell_hash_values_modified);
-        // grid_controller.set_cell_value(sheet_id, (0, 0).into(), "here".into(), None);
+        operation
     }
 }

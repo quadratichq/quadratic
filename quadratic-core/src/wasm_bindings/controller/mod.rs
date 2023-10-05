@@ -1,6 +1,6 @@
 use super::*;
 use crate::{controller::transactions::TransactionSummary, grid::js_types::*};
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
 pub mod auto_complete;
 pub mod bounds;
@@ -78,7 +78,7 @@ impl GridController {
             fill_sheets_modified: vec![],
             border_sheets_modified: vec![],
             code_cells_modified: vec![],
-            cell_hash_values_modified: vec![],
+            cell_hash_values_modified: HashMap::new(),
             sheet_list_modified: false,
             cursor: None,
         })?)

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     grid::{js_types::JsRenderCell, *},
     Pos, Rect,
@@ -132,11 +134,28 @@ pub struct TransactionSummary {
     /// Locations of code cells that were modified. They may no longer exist.
     pub code_cells_modified: Vec<(SheetId, Pos)>,
     /// CellHash blocks of affect cell values and formats
-    pub cell_hash_values_modified: Vec<JsRenderCell>,
+    pub cell_hash_values_modified: HashMap<String, Vec<JsRenderCell>>,
     /// Sheet metadata or order was modified.
     pub sheet_list_modified: bool,
     /// Cursor location for undo/redo operation
     pub cursor: Option<String>,
+}
+
+impl TransactionSummary {
+    pub fn add_js_render_cell(&mut self, js_render_cell: JsRenderCell) {
+        let cell_hash = CellHash::from(Pos::from((js_render_cell.x, js_render_cell.y)));
+
+        self.cell_hash_values_modified
+            .entry(cell_hash.0.to_owned())
+            .or_insert(vec![])
+            .push(js_render_cell);
+    }
+
+    pub fn add_js_render_cells(&mut self, js_render_cells: Vec<JsRenderCell>) {
+        js_render_cells
+            .into_iter()
+            .for_each(|js_render_cell| self.add_js_render_cell(js_render_cell));
+    }
 }
 
 impl Operation {
@@ -155,5 +174,68 @@ impl Operation {
             Operation::ResizeRow { .. } => None,
             Operation::None { .. } => None,
         }
+    }
+}
+
+pub struct CellHash(String);
+
+impl From<Pos> for CellHash {
+    fn from(pos: Pos) -> Self {
+        let hash_width = 20 as f64;
+        let hash_height = 40 as f64;
+        let cell_hash_x = (pos.x as f64 % hash_width).floor() as i64;
+        let cell_hash_y = (pos.y as f64 % hash_height).floor() as i64;
+        let cell_hash = format!("{},{}", cell_hash_x, cell_hash_y);
+        CellHash(cell_hash)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Array, CellValue, Pos, Rect};
+
+    use super::*;
+
+    fn add_cell_value(
+        gc: &mut GridController,
+        sheet_id: SheetId,
+        pos: Pos,
+        value: CellValue,
+    ) -> Operation {
+        let rect = Rect::new_span(pos, pos);
+        let region = gc.region(sheet_id, rect);
+
+        Operation::SetCellValues {
+            region,
+            values: Array::from(value),
+        }
+    }
+
+    fn add_cell_text(
+        gc: &mut GridController,
+        sheet_id: SheetId,
+        pos: Pos,
+        value: &str,
+    ) -> Operation {
+        add_cell_value(gc, sheet_id, pos, CellValue::Text(value.into()))
+    }
+
+    #[tokio::test]
+    async fn test_execute_operation_set_cell_values() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let mut operations: Vec<Operation> = vec![];
+
+        operations.push(add_cell_text(&mut gc, sheet_id, (0, 0).into(), "a"));
+        operations.push(add_cell_text(&mut gc, sheet_id, (1, 0).into(), "b"));
+        operations.push(add_cell_text(&mut gc, sheet_id, (21, 0).into(), "c"));
+        operations.push(add_cell_text(&mut gc, sheet_id, (0, 41).into(), "b"));
+
+        let summary = gc.transact_forward(operations, None).await;
+
+        println!(
+            "cell_hash_values_modified: {:?}",
+            summary.cell_hash_values_modified
+        );
     }
 }

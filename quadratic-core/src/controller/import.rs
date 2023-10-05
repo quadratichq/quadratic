@@ -93,7 +93,7 @@ Springfield,OR,United States,56032
 Concord,NH,United States,42605
 "#;
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn imports_a_simple_csv() {
         let mut grid_controller = GridController::new();
         let sheet_id = grid_controller.grid.sheets()[0].id;
