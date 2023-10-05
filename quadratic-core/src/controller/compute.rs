@@ -21,7 +21,6 @@ impl GridController {
         let mut cells_to_compute = updated_cells.clone(); // start with all updated cells
 
         while let Some(rect) = cells_to_compute.pop() {
-            crate::util::dbgjs(&format!("Computing cell - {} \n", rect));
             // find which cells have formulas. Run the formulas and update the cells.
             // add the updated cells to the cells_to_compute
 
@@ -124,10 +123,6 @@ impl GridController {
                         }
                         if let Some(code_cell_value) = code_cell_result {
                             let sheet = self.grid.sheet_mut_from_id(rect.sheet_id);
-                            crate::util::dbgjs(&format!(
-                                "cells_accessed {:?} | error: {:?}",
-                                cells_accessed, code_cell_value.error_msg
-                            ));
                             sheet.set_code_cell_value(
                                 pos,
                                 Some(CodeCellValue {
@@ -165,17 +160,12 @@ impl GridController {
             }
             // add all dependent cells to the cells_to_compute
             let dependent_cells = self.grid.get_dependent_cells(rect);
-            crate::util::dbgjs(&format!(
-                "adding dependent cells to compute {:?}",
-                dependent_cells.clone()
-            ));
             // loop through all dependent cells
             for dependent_cell in dependent_cells {
                 // add to cells_to_compute
                 cells_to_compute.push(SheetRect::single_pos(dependent_cell));
             }
         }
-        crate::util::dbgjs("compute loop complete");
         reverse_operations
     }
 }

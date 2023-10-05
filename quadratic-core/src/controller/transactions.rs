@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::{
     grid::{js_types::JsRenderCell, *},
@@ -134,7 +134,7 @@ pub struct TransactionSummary {
     /// Locations of code cells that were modified. They may no longer exist.
     pub code_cells_modified: Vec<(SheetId, Pos)>,
     /// CellHash blocks of affect cell values and formats
-    pub cell_hash_values_modified: HashMap<String, Vec<JsRenderCell>>,
+    pub cell_hash_values_modified: BTreeMap<String, Vec<JsRenderCell>>,
     /// Sheet metadata or order was modified.
     pub sheet_list_modified: bool,
     /// Cursor location for undo/redo operation
@@ -177,15 +177,17 @@ impl Operation {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct CellHash(String);
 
 impl From<Pos> for CellHash {
     fn from(pos: Pos) -> Self {
         let hash_width = 20 as f64;
         let hash_height = 40 as f64;
-        let cell_hash_x = (pos.x as f64 % hash_width).floor() as i64;
-        let cell_hash_y = (pos.y as f64 % hash_height).floor() as i64;
+        let cell_hash_x = (pos.x as f64 / hash_width).floor() as i64;
+        let cell_hash_y = (pos.y as f64 / hash_height).floor() as i64;
         let cell_hash = format!("{},{}", cell_hash_x, cell_hash_y);
+
         CellHash(cell_hash)
     }
 }
@@ -220,22 +222,72 @@ mod tests {
         add_cell_value(gc, sheet_id, pos, CellValue::Text(value.into()))
     }
 
+    #[test]
+    fn converts_a_pos_into_a_cell_hash() {
+        let assert_cell_hash = |pos: Pos, expected: &str| {
+            assert_eq!(
+                CellHash::from(pos),
+                CellHash(expected.into()),
+                "expected pos {} to convert to '{}'",
+                pos,
+                expected
+            );
+        };
+
+        assert_cell_hash((0, 0).into(), "0,0");
+        assert_cell_hash((1, 0).into(), "0,0");
+        assert_cell_hash((0, 1).into(), "0,0");
+        assert_cell_hash((21, 0).into(), "1,0");
+        assert_cell_hash((41, 0).into(), "2,0");
+        assert_cell_hash((0, 41).into(), "0,1");
+        assert_cell_hash((0, 81).into(), "0,2");
+    }
+
     #[tokio::test]
     async fn test_execute_operation_set_cell_values() {
         let mut gc = GridController::new();
         let sheet_id = gc.grid.sheets()[0].id;
+        let data = vec![(0, 0, "a"), (1, 0, "b"), (21, 0, "c"), (0, 41, "d")];
         let mut operations: Vec<Operation> = vec![];
 
-        operations.push(add_cell_text(&mut gc, sheet_id, (0, 0).into(), "a"));
-        operations.push(add_cell_text(&mut gc, sheet_id, (1, 0).into(), "b"));
-        operations.push(add_cell_text(&mut gc, sheet_id, (21, 0).into(), "c"));
-        operations.push(add_cell_text(&mut gc, sheet_id, (0, 41).into(), "b"));
+        data.clone().into_iter().for_each(|(x, y, value)| {
+            operations.push(add_cell_text(&mut gc, sheet_id, (x, y).into(), value));
+        });
 
         let summary = gc.transact_forward(operations, None).await;
 
-        println!(
-            "cell_hash_values_modified: {:?}",
-            summary.cell_hash_values_modified
-        );
+        let expected = vec![
+            ("0,0", vec![(0, 0, "a"), (1, 0, "b")]),
+            ("0,1", vec![(0, 41, "d")]),
+            ("1,0", vec![(21, 0, "c")]),
+        ];
+
+        let to_js_render_cell = |entry: Vec<(i64, i64, &str)>| {
+            entry
+                .into_iter()
+                .map(|entry| JsRenderCell {
+                    x: entry.0,
+                    y: entry.1,
+                    value: entry.2.into(),
+                    language: None,
+                    align: None,
+                    wrap: None,
+                    bold: None,
+                    italic: None,
+                    text_color: None,
+                    fill_color: None,
+                })
+                .collect::<Vec<_>>()
+        };
+
+        summary
+            .cell_hash_values_modified
+            .into_iter()
+            .enumerate()
+            .for_each(|(index, (key, value))| {
+                let entry = expected.get(index).unwrap();
+                assert_eq!(key, entry.0);
+                assert_eq!(value, to_js_render_cell(entry.1.clone()));
+            });
     }
 }

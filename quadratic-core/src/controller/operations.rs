@@ -1,7 +1,4 @@
-use crate::{
-    grid::{js_types::JsRenderCell, *},
-    Array, CellValue,
-};
+use crate::{grid::*, Array, CellValue};
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -262,10 +259,7 @@ impl GridController {
 
         let js_render_cells = cell_regions_modified
             .iter()
-            .flat_map(|(sheet_id, rect)| {
-                let sheet = self.grid.sheet_from_id(*sheet_id);
-                sheet.get_render_cells(*rect)
-            })
+            .flat_map(|(sheet_id, rect)| self.grid.sheet_from_id(*sheet_id).get_render_cells(*rect))
             .collect::<Vec<_>>();
         summary.add_js_render_cells(js_render_cells);
 
