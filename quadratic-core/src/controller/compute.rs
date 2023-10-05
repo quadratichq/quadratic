@@ -21,7 +21,7 @@ impl GridController {
         let mut cells_to_compute = updated_cells.clone(); // start with all updated cells
 
         while let Some(rect) = cells_to_compute.pop() {
-            js::log(&format!("Computing cell - {} \n", rect));
+            crate::util::dbgjs(&format!("Computing cell - {} \n", rect));
             // find which cells have formulas. Run the formulas and update the cells.
             // add the updated cells to the cells_to_compute
 
@@ -39,7 +39,7 @@ impl GridController {
                         let mut cells_accessed_code_cell = vec![];
                         match language {
                             CodeCellLanguage::Python => {
-                                js::log(&format!("running {:?}, {:?}", pos.x, pos.y));
+                                crate::util::dbgjs(&format!("running {:?}, {:?}", pos.x, pos.y));
                                 let mut cells = None;
                                 let mut complete = false;
 
@@ -106,14 +106,17 @@ impl GridController {
                                         }
                                         Err(e) => {
                                             // todo: better handling of error to ensure grid is not locked
-                                            js::log(&format!("compute_result error, {}", e));
+                                            crate::util::dbgjs(&format!(
+                                                "compute_result error, {}",
+                                                e
+                                            ));
                                             complete = true;
                                         }
                                     }
                                 }
                             }
                             _ => {
-                                js::log(&format!(
+                                crate::util::dbgjs(&format!(
                                     "Compute language {} not supported in compute.rs",
                                     language
                                 ));
@@ -121,7 +124,7 @@ impl GridController {
                         }
                         if let Some(code_cell_value) = code_cell_result {
                             let sheet = self.grid.sheet_mut_from_id(rect.sheet_id);
-                            js::log(&format!(
+                            crate::util::dbgjs(&format!(
                                 "cells_accessed {:?} | error: {:?}",
                                 cells_accessed, code_cell_value.error_msg
                             ));
@@ -162,7 +165,7 @@ impl GridController {
             }
             // add all dependent cells to the cells_to_compute
             let dependent_cells = self.grid.get_dependent_cells(rect);
-            js::log(&format!(
+            crate::util::dbgjs(&format!(
                 "adding dependent cells to compute {:?}",
                 dependent_cells.clone()
             ));
@@ -172,7 +175,7 @@ impl GridController {
                 cells_to_compute.push(SheetRect::single_pos(dependent_cell));
             }
         }
-        js::log("compute loop complete");
+        crate::util::dbgjs("compute loop complete");
         reverse_operations
     }
 }

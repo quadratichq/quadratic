@@ -78,6 +78,7 @@ impl GridController {
             fill_sheets_modified: vec![],
             border_sheets_modified: vec![],
             code_cells_modified: vec![],
+            cell_hash_values_modified: vec![],
             sheet_list_modified: false,
             cursor: None,
         })?)

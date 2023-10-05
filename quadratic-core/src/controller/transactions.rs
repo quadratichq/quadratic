@@ -1,4 +1,7 @@
-use crate::{grid::*, Pos, Rect};
+use crate::{
+    grid::{js_types::JsRenderCell, *},
+    Pos, Rect,
+};
 use serde::{Deserialize, Serialize};
 
 use super::{compute::SheetRect, operations::Operation, GridController};
@@ -128,6 +131,8 @@ pub struct TransactionSummary {
     pub border_sheets_modified: Vec<SheetId>,
     /// Locations of code cells that were modified. They may no longer exist.
     pub code_cells_modified: Vec<(SheetId, Pos)>,
+    /// CellHash blocks of affect cell values and formats
+    pub cell_hash_values_modified: Vec<JsRenderCell>,
     /// Sheet metadata or order was modified.
     pub sheet_list_modified: bool,
     /// Cursor location for undo/redo operation

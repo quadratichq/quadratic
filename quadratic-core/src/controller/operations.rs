@@ -90,6 +90,17 @@ impl GridController {
                 let old_values = Array::new_row_major(size, old_values)
                     .expect("error constructing array of old values for SetCells operation");
 
+                // TODO(ddimaria): is this correct?
+                self.grid
+                    .region_rects(&region)
+                    .into_iter()
+                    .for_each(|rect| {
+                        let sheet = self.grid.sheet_from_id(region.sheet);
+                        summary
+                            .cell_hash_values_modified
+                            .extend(sheet.get_render_cells(rect.1));
+                    });
+
                 // return reverse operation
                 Operation::SetCellValues {
                     region,
@@ -261,5 +272,26 @@ impl GridController {
                 // }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Pos, Rect};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_execute_operation_set_cell_values() {
+        let mut grid_controller = GridController::new();
+        let sheet_id = grid_controller.grid.sheets()[0].id;
+        let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
+        let region = grid_controller.region(sheet_id, rect);
+        let values = Array::from(CellValue::Text("here".into()));
+        let operation = vec![Operation::SetCellValues { region, values }];
+        let summary = grid_controller.transact_forward(operation, None).await;
+
+        println!("{:?}", summary.cell_hash_values_modified);
+        // grid_controller.set_cell_value(sheet_id, (0, 0).into(), "here".into(), None);
     }
 }

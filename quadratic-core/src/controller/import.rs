@@ -93,14 +93,15 @@ Springfield,OR,United States,56032
 Concord,NH,United States,42605
 "#;
 
-    #[test]
-    fn imports_a_simple_csv() {
+    #[actix_rt::test]
+    async fn imports_a_simple_csv() {
         let mut grid_controller = GridController::new();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let pos = Pos { x: -100, y: 100 };
 
         grid_controller
             .import_csv(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos, None)
+            .await
             .unwrap();
 
         print_table(

@@ -8,7 +8,7 @@ use super::CodeCellLanguage;
 use crate::controller::transactions::TransactionSummary;
 use crate::CellValue;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct JsRenderCell {
