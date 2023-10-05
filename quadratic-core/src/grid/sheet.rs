@@ -188,9 +188,9 @@ impl Sheet {
     pub fn set_region_borders(
         &mut self,
         region: &RegionRef,
-        sheet_borders: SheetBorders
+        borders: SheetBorders
     ) -> SheetBorders {
-        borders::set_region_borders(self, vec![region.clone()], sheet_borders)
+        borders::set_region_borders(self, vec![region.clone()], borders)
     }
 
     /// Returns the value of a cell (i.e., what would be returned if code asked
@@ -410,8 +410,7 @@ impl Sheet {
     /// Returns contiguous ranges of Y coordinates from a list of row IDs.
     /// Ignores IDs for rows that don't exist.
     pub(crate) fn row_ranges(&self, row_ids: &[RowId]) -> Vec<Range<i64>> {
-        let ys = row_ids.iter().filter_map(|&id| self.get_row_index(id));
-        contiguous_ranges(ys)
+        row_ranges(row_ids, &self.row_ids)
     }
     /// Returns a list of rectangles that exactly covers a region. Ignores
     /// IDs for columns and rows that don't exist.
@@ -701,6 +700,11 @@ fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {
         }
     }
     ret
+}
+
+pub fn row_ranges(row_ids: &[RowId], id_map: &IdMap<RowId, i64>) -> Vec<Range<i64>> {
+    let ys = row_ids.iter().filter_map(|&id| id_map.index_of(id));
+    contiguous_ranges(ys)
 }
 
 #[cfg(test)]

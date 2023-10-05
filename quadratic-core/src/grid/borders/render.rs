@@ -9,36 +9,10 @@ use crate::grid::{ColumnData, Sheet};
 
 pub fn get_render_vertical_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
     let timer = Instant::now();
-    let borders = &sheet.borders.cell_borders;
-    let mut overlapped_borders: HashMap<i64, ColumnData<SameValue<BorderStyle>>> = HashMap::new();
-
-    let column_ids = &sheet.column_ids;
-    borders.iter().for_each(|(column_id, column)| {
-        let column_index = column_ids
-            .index_of(*column_id)
-            .expect("Column exists but its index is invalid");
-
-        let left_border_render_index = column_index;
-        let right_border_render_index = left_border_render_index + 1;
-
-        // TODO(jrice): Right column overwrites left. Merge them instead somehow
-        column.values().for_each(|(y_index, cell_borders)| {
-            if let Some(left_style) = cell_borders.get(&CellSide::Left) {
-                overlapped_borders
-                    .entry(left_border_render_index)
-                    .or_default()
-                    .set(y_index, Some(left_style.clone()));
-            }
-            if let Some(right_style) = cell_borders.get(&CellSide::Right) {
-                overlapped_borders
-                    .entry(right_border_render_index)
-                    .or_default()
-                    .set(y_index, Some(right_style.clone()));
-            }
-        });
-    });
-
-    let res = overlapped_borders
+    let res = sheet
+        .borders
+        .render_lookup
+        .vertical
         .iter()
         .flat_map(|(&column_index, column)| {
             column.blocks().map(move |block| JsRenderBorder {
@@ -58,35 +32,10 @@ pub fn get_render_vertical_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
 
 pub fn get_render_horizontal_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
     let timer = Instant::now();
-    let borders = &sheet.borders.cell_borders;
-    let mut overlapped_borders: HashMap<i64, ColumnData<SameValue<BorderStyle>>> = HashMap::new();
-
-    let column_ids = &sheet.column_ids;
-    borders.iter().for_each(|(column_id, column)| {
-        let column_index = column_ids
-            .index_of(*column_id)
-            .expect("Column exists but its index is invalid");
-
-        column.values().for_each(|(y_index, cell_borders)| {
-            let top_border_render_index = y_index;
-            let bottom_border_render_index = top_border_render_index + 1;
-
-            if let Some(left_style) = cell_borders.get(&CellSide::Top) {
-                overlapped_borders
-                    .entry(top_border_render_index)
-                    .or_default()
-                    .set(column_index, Some(left_style.clone()));
-            }
-            if let Some(right_style) = cell_borders.get(&CellSide::Bottom) {
-                overlapped_borders
-                    .entry(bottom_border_render_index)
-                    .or_default()
-                    .set(column_index, Some(right_style.clone()));
-            }
-        });
-    });
-
-    let res = overlapped_borders
+    let res = sheet
+        .borders
+        .render_lookup
+        .horizontal
         .iter()
         .flat_map(|(&column_index, column)| {
             column.blocks().map(move |block| JsRenderBorder {
@@ -118,8 +67,9 @@ mod tests {
 
         #[test]
         fn single_block() {
-            for _ in 0..5 {
-                let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
+            for _ in 0..1 {
+                let mut sheet =
+                    Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
                 let rect = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 506, y: 515 });
                 let region = sheet.region(rect);
 
@@ -143,6 +93,8 @@ mod tests {
 
     mod vertical {
         use super::*;
+        use crate::grid::borders::sheet::debug::print_borders;
+        use crate::grid::set_region_borders;
 
         #[test]
         fn single_block() {
@@ -293,9 +245,68 @@ mod tests {
 
             assert_eq!(expected_starts, actual_starts);
         }
+
+        #[test]
+        fn undo_horizontal_adjacent_insertion() {
+            let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
+            let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 4, y: 11 });
+            let rect_2 = Rect::new_span(Pos { x: 5, y: 10 }, Pos { x: 6, y: 11 });
+
+            let region_1 = sheet.region(rect_1);
+            let region_2 = sheet.region(rect_2);
+
+            let selection_1 = vec![BorderSelection::All];
+            let selection_2 = selection_1.clone();
+
+            let style = BorderStyle {
+                color: Rgb::from_str("#000000").unwrap(),
+                line: CellBorderLine::Line1,
+            };
+
+            set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style));
+
+            print_borders(
+                Rect::new_span(Pos { x: 2, y: 9 }, Pos { x: 7, y: 12 }),
+                &sheet.borders,
+                &sheet.column_ids,
+            );
+            let vertical_render_initial = get_render_vertical_borders(&sheet);
+
+            let replaced =
+                set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style));
+            print_borders(
+                Rect::new_span(Pos { x: 2, y: 9 }, Pos { x: 7, y: 12 }),
+                &sheet.borders,
+                &sheet.column_ids,
+            );
+            print_borders(
+                Rect::new_span(Pos { x: 2, y: 9 }, Pos { x: 7, y: 12 }),
+                &replaced,
+                &sheet.column_ids,
+            );
+            set_region_borders(&mut sheet, vec![region_2], replaced); // Undo
+
+            let vertical_render_after_undo = get_render_vertical_borders(&sheet);
+            print_borders(
+                Rect::new_span(Pos { x: 2, y: 9 }, Pos { x: 7, y: 12 }),
+                &sheet.borders,
+                &sheet.column_ids,
+            );
+
+            assert_eq!(
+                vertical_render_initial.len(),
+                vertical_render_after_undo.len()
+            );
+            for initial in &vertical_render_initial {
+                assert!(vertical_render_after_undo.contains(initial));
+            }
+
+            assert!(false, "this test doesn't seem to test what I thought it does");
+        }
     }
 
     mod horizontal {
+        use crate::grid::borders::sheet::debug::print_borders;
         use super::*;
 
         #[test]
@@ -383,17 +394,13 @@ mod tests {
 
             let in_left_block: Vec<_> = horizontal_render
                 .iter()
-                .filter(|render_border| {
-                    render_border.w.is_some_and(|w| w as u32 == rect_1.width())
-                })
+                .filter(|render_border| render_border.w.is_some_and(|w| w as u32 == rect_1.width()))
                 .collect();
             assert_eq!(in_left_block.len() as u32, rect_1.height() + 1);
 
             let in_right_block: Vec<_> = horizontal_render
                 .iter()
-                .filter(|render_border| {
-                    render_border.w.is_some_and(|w| w as u32 == rect_2.width())
-                })
+                .filter(|render_border| render_border.w.is_some_and(|w| w as u32 == rect_2.width()))
                 .collect();
             assert_eq!(in_right_block.len() as u32, rect_2.height() + 1);
 
@@ -424,12 +431,14 @@ mod tests {
                 line: CellBorderLine::Line1,
             };
 
-            set_region_border_selection(&mut sheet, &region_1, selection_2, Some(style_1));
-            set_region_border_selection(&mut sheet, &region_2, selection_1, Some(style_2));
+            set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style_1));
+            set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style_2));
+
+            print_borders(Rect::new_span(Pos{x:1,y:9}, Pos{x:8,y:16}), &sheet.borders, &sheet.column_ids);
 
             let horizontal_render = get_render_horizontal_borders(&sheet);
 
-            let expected_left_block_starts = (11..=15).map(|y| Pos { x: 2 , y });
+            let expected_left_block_starts = (11..=15).map(|y| Pos { x: 2, y });
             let expected_middle_block_starts = (10..=16).map(|y| Pos { x: 3, y });
             let expected_right_block_starts = (11..=15).map(|y| Pos { x: 7, y });
 
@@ -444,6 +453,18 @@ mod tests {
                     y: border.y,
                 })
                 .collect();
+
+            for expected in &expected_starts {
+                if !actual_starts.contains(expected) {
+                    println!("Missing expected: {expected:?}");
+                }
+            }
+
+            for actual in &actual_starts {
+                if !expected_starts.contains(actual) {
+                    println!("Unexpected: {actual:?}");
+                }
+            }
 
             assert_eq!(expected_starts, actual_starts);
         }
