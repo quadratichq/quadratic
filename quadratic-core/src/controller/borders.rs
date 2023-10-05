@@ -1,7 +1,7 @@
 use super::GridController;
 use crate::controller::operations::Operation;
 use crate::controller::transaction_summary::TransactionSummary;
-use crate::grid::generate_sheet_borders;
+use crate::grid::generate_borders;
 use crate::{
     grid::{BorderSelection, BorderStyle, SheetId},
     Rect,
@@ -18,7 +18,7 @@ impl GridController {
     ) -> TransactionSummary {
         let region = self.region(sheet_id, rect);
         let sheet = self.sheet(sheet_id);
-        let borders = generate_sheet_borders(sheet, &region, selections, style);
+        let borders = generate_borders(sheet, &region, selections, style);
         let ops = vec![Operation::SetBorders { region, borders }];
         self.transact_forward(ops, cursor).await
     }
