@@ -18,7 +18,6 @@ use super::ids::{CellRef, ColumnId, IdMap, RegionRef, RowId, SheetId};
 use super::js_types::{CellFormatSummary, FormattingSummary};
 use super::response::{GetIdResponse, SetCellResponse};
 use super::NumericFormatKind;
-use crate::wasm_bindings::js;
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;

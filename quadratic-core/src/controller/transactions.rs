@@ -130,7 +130,9 @@ pub struct TransactionSummary {
     pub code_cells_modified: Vec<(SheetId, Pos)>,
     /// Sheet metadata or order was modified.
     pub sheet_list_modified: bool,
-    /// Cursor location for undo/redo operation
+    /// SheetOffsets that are modified.
+    pub offsets_modified: Vec<SheetId>,
+    /// Cursor location for undo/redo operation.
     pub cursor: Option<String>,
 }
 

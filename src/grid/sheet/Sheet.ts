@@ -166,5 +166,9 @@ export class Sheet {
     return new Rectangle(topLeft.left, topLeft.top, bottomRight.right - topLeft.left, bottomRight.bottom - topLeft.top);
   }
 
+  updateSheetOffsets() {
+    this.offsets = grid.getOffsets(this.id);
+  }
+
   //#endregion
 }

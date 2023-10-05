@@ -8,8 +8,8 @@ pub mod cells;
 pub mod clipboard;
 pub mod formatting;
 pub mod import;
-pub mod offsets;
 pub mod render;
+pub mod sheet_offsets;
 pub mod sheets;
 
 #[wasm_bindgen]
@@ -80,6 +80,7 @@ impl GridController {
             code_cells_modified: vec![],
             sheet_list_modified: false,
             cursor: None,
+            offsets_modified: vec![],
         })?)
     }
 }

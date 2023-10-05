@@ -1,3 +1,5 @@
+use wasm_bindgen::prelude::wasm_bindgen;
+
 use super::SheetOffsets;
 
 impl SheetOffsets {
@@ -48,33 +50,6 @@ impl SheetOffsets {
         }
     }
 
-    // pub async fn commit_resize(&mut self, cursor: Option<String>) -> TransactionSummary {
-    //     let mut ops = vec![];
-
-    //     if let Some(resize) = self.transient_resize.take() {
-    //         if let Some(column) = resize.column {
-    //             ops.push(Operation::ResizeColumn {
-    //                 sheet_id: resize.sheet,
-    //                 column,
-    //                 new_size: resize.new_size,
-    //             });
-    //         } else if let Some(row) = resize.row {
-    //             ops.push(Operation::ResizeRow {
-    //                 sheet_id: resize.sheet,
-    //                 row,
-    //                 new_size: resize.new_size,
-    //             });
-    //         }
-    //     }
-
-    //     // Set row & column back to original size so that `transact_forward()`
-    //     // knows what the old value was. This old value will never be visible to
-    //     // calling code because we immediately call `transact_forward()`.
-    //     self.cancel_resize();
-
-    //     self.transact_forward(ops, cursor).await
-    // }
-
     /// Resizes a column and returns the old width.
     pub(super) fn resize_column_internal(&mut self, column: i64, size: f64) -> f64 {
         self.set_column_width(column, size)
@@ -83,12 +58,38 @@ impl SheetOffsets {
     pub(super) fn resize_row_internal(&mut self, row: i64, size: f64) -> f64 {
         self.set_row_height(row, size)
     }
+
+    /// Removes and returns the transient_resize.
+    pub fn pop_local_transient_resize(&mut self) -> Option<TransientResize> {
+        if let Some(transient_resize) = self.transient_resize {
+            self.transient_resize = None;
+            Some(transient_resize)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
+#[wasm_bindgen]
 pub struct TransientResize {
-    row: Option<i64>,
-    column: Option<i64>,
-    old_size: f64,
-    new_size: f64,
+    pub row: Option<i64>,
+    pub column: Option<i64>,
+    pub old_size: f64,
+    pub new_size: f64,
+}
+
+#[wasm_bindgen]
+impl TransientResize {
+    /// Creates a new TransientResize for use by TS.
+    /// note: old_size is not interesting for this immediate commit use
+    #[wasm_bindgen]
+    pub fn new(column: Option<i32>, row: Option<i32>, new_size: f64) -> TransientResize {
+        Self {
+            column: column.map(Into::into),
+            row: row.map(Into::into),
+            old_size: 0.0,
+            new_size,
+        }
+    }
 }

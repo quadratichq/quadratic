@@ -6,7 +6,6 @@ use super::borders::CellBorder;
 use super::formatting::{BoolSummary, CellAlign, CellWrap};
 use super::CodeCellLanguage;
 use crate::controller::transactions::TransactionSummary;
-use crate::CellValue;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]

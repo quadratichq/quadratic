@@ -4,7 +4,7 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::{
     controller::GridController,
-    grid::{js_types::CellForArray, CodeCellLanguage, SheetId},
+    grid::{CodeCellLanguage, SheetId},
     Pos, Rect,
 };
 

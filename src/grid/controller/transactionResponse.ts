@@ -20,6 +20,10 @@ export const transactionResponse = (summary?: TransactionSummary): void => {
     pixiApp.cellsSheets.updateFills(summary.fill_sheets_modified);
   }
 
+  if (summary.offsets_modified.length) {
+    sheets.updateOffsets(summary.offsets_modified);
+  }
+
   const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
   if (cursor) {
     sheets.current = cursor.sheetId;

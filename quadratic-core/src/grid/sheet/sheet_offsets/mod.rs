@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 use std::ops::Range;
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use self::resize::TransientResize;
+use self::resize_transient::TransientResize;
 
-pub mod resize;
+pub mod resize_transient;
 pub mod sheet_offsets_wasm;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

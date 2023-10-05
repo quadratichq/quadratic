@@ -1,4 +1,4 @@
-use super::SheetOffsets;
+use super::{resize_transient::TransientResize, SheetOffsets};
 use crate::ScreenRect;
 use wasm_bindgen::prelude::wasm_bindgen;
 
@@ -105,5 +105,14 @@ impl SheetOffsets {
     #[wasm_bindgen(js_name = "cancelResize")]
     pub fn js_cancel_resize(&mut self) {
         self.cancel_resize();
+    }
+
+    /// Returns and removes the transient resize for the current offset.
+    /// Use this on the local SheetOffsets to get the resize to apply to the Grid's SheetOffsets.
+    ///
+    /// Returns a [`TransientResize` || undefined]
+    #[wasm_bindgen(js_name = "getResizeToApply")]
+    pub fn js_get_resize_to_apply(&mut self) -> Option<TransientResize> {
+        self.pop_local_transient_resize()
     }
 }

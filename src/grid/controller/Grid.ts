@@ -11,6 +11,7 @@ import init, {
   Pos,
   Rect as RectInternal,
   SheetOffsets,
+  TransientResize,
 } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
@@ -546,21 +547,10 @@ export class Grid {
 
   //#region column/row sizes
 
-  async commitHeadingResize() {
-    // todo...
-    // const summary = await this.gridController.commitResize(sheets.getCursorPosition());
-    // transactionResponse(summary);
-    // this.dirty = true;
-  }
-
-  async headingResizeColumnCommit(sheetId: string, column: number, size: number, skipUpdate: boolean) {
-    // todo...
-    // const summary = await this.gridController.resizeColumn(sheetId, column, size);
-    // // does not work properly
-    // if (!skipUpdate) {
-    //   transactionResponse(summary);
-    // }
-    // this.dirty = true;
+  async commitTransientResize(sheetId: string, transientResize: TransientResize) {
+    const summary = await this.gridController.commitOffsetsResize(sheetId, transientResize, sheets.getCursorPosition());
+    transactionResponse(summary);
+    this.dirty = true;
   }
 
   getOffsets(sheetId: string): SheetOffsets {
