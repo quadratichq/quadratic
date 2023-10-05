@@ -1,4 +1,4 @@
-import { Box, Typography, useTheme } from '@mui/material';
+import { Box, Stack, Typography, useTheme } from '@mui/material';
 import { ReactNode, useEffect } from 'react';
 
 export function DashboardHeader({ title, actions }: { title: string; actions?: ReactNode }) {
@@ -32,7 +32,9 @@ export function DashboardHeader({ title, actions }: { title: string; actions?: R
         {title}
       </Typography>
       {actions && (
-        <Box
+        <Stack
+          direction="row"
+          gap={theme.spacing()}
           sx={{
             [theme.breakpoints.down('md')]: {
               display: 'none',
@@ -41,7 +43,7 @@ export function DashboardHeader({ title, actions }: { title: string; actions?: R
           }}
         >
           {actions}
-        </Box>
+        </Stack>
       )}
     </Box>
   );

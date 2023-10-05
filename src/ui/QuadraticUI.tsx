@@ -67,6 +67,7 @@ export default function QuadraticUI() {
       {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
       {editorInteractionState.showShareFileMenu && (
         <ShareFileMenu
+          fetcherUrl={`/api/files/${uuid}/sharing`}
           onClose={() => {
             setEditorInteractionState((prevState) => ({
               ...prevState,

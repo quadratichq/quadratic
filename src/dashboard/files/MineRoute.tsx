@@ -160,6 +160,7 @@ export const Component = () => {
 
       {activeShareMenuFileId && (
         <ShareFileMenu
+          fetcherUrl={`/api/files/${activeShareMenuFileId}/sharing`}
           onClose={() => {
             setActiveShareMenuFileId('');
           }}

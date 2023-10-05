@@ -1,7 +1,9 @@
 import { Avatar, Box, Button, Stack, TextField, Typography, useTheme } from '@mui/material';
 import { useState } from 'react';
-import { Permission } from '../api/types';
-import { UserRoleMenu } from '../components/UserRoleMenu';
+import { Permission, PermissionSchema } from '../api/types';
+import { AvatarWithLetters } from '../components/AvatarWithLetters';
+import { ShareMenu, ShareMenuInviteCallback } from '../components/ShareMenu';
+import { useRootRouteLoaderData } from '../router';
 import { DashboardHeader } from './components/DashboardHeader';
 
 export const Component = () => {
@@ -30,13 +32,18 @@ type User = {
 function EditTeam() {
   const theme = useTheme();
   const [name, setName] = useState<string>('');
+  const { user } = useRootRouteLoaderData();
   // TODO currently logged in user as default
-  const [users, setUsers] = useState<User[]>([{ email: 'jim.bob@gmail.com', permission: 'OWNER' }]);
+  const [users, setUsers] = useState<User[]>([
+    // @ts-expect-error
+    { email: user?.email, permission: PermissionSchema.enum.OWNER },
+  ]);
 
   return (
     <Stack maxWidth={'52rem'} gap={theme.spacing(4)}>
       <EditTeamRow label="Details">
         <TextField
+          inputProps={{ autoComplete: 'off' }}
           label="Name"
           variant="outlined"
           autoFocus
@@ -46,7 +53,9 @@ function EditTeam() {
         />
 
         <Stack direction="row" gap={theme.spacing()}>
-          <Avatar sx={{ width: 32, height: 32 }}>{name.length ? name[0] : '?'}</Avatar>
+          <AvatarWithLetters sx={{ width: 32, height: 32, fontSize: '1rem' }}>
+            {name.length ? name : '?'}
+          </AvatarWithLetters>
           <Button variant="outlined" component="label">
             Upload icon
             <input type="file" hidden />
@@ -54,13 +63,36 @@ function EditTeam() {
         </Stack>
       </EditTeamRow>
       <EditTeamRow label="Members">
-        <InviteUserInput
-          onInvite={({ email, permission }: { email: string; permission: Permission }) => {
-            console.log('TODO invite user', email, permission);
-            setUsers((prev) => [...prev, { email, permission }]);
-          }}
-        />
-        <Users data={users} isEditable />
+        <ShareMenu.Wrapper>
+          <ShareMenu.Invite
+            onInvite={({ email, permission }: ShareMenuInviteCallback) => {
+              setUsers((prev) => [...prev, { email, permission }]);
+            }}
+            userEmails={users.map(({ email }: any) => email)}
+          />
+          {users.map((usr: any) => (
+            <ShareMenu.ListItem
+              key={usr.email}
+              avatar={<Avatar sx={{ width: 24, height: 24 }} />}
+              primary={usr.email}
+              action={
+                <ShareMenu.ListItemUserActions
+                  value={usr.permission}
+                  setValue={(newValue: any) => {
+                    setUsers((prev) =>
+                      prev.map((prevUsr) => {
+                        if (prevUsr.email === usr.email) {
+                          return { ...prevUsr, permission: newValue };
+                        }
+                        return prevUsr;
+                      })
+                    );
+                  }}
+                />
+              }
+            />
+          ))}
+        </ShareMenu.Wrapper>
       </EditTeamRow>
       <EditTeamRow label="Billing">Beta</EditTeamRow>
     </Stack>
@@ -79,69 +111,4 @@ function EditTeamRow({ label, children }: any /* TODO */) {
       </Stack>
     </Stack>
   );
-}
-
-function InviteUserInput({ onInvite }: any /* TODO */) {
-  const [email, setEmail] = useState<string>('');
-  const theme = useTheme();
-
-  // TODO comma separate list someday
-
-  return (
-    <Stack
-      component="form"
-      direction="row"
-      gap={theme.spacing()}
-      onSubmit={(e) => {
-        e.preventDefault();
-        onInvite({ email, permission: 'OWNER' });
-        setEmail('');
-      }}
-    >
-      <Box sx={{ position: 'relative', flexGrow: 2 }}>
-        <TextField
-          aria-label="Email"
-          placeholder="Email"
-          variant="outlined"
-          size="small"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          fullWidth
-        />
-        <Box sx={{ position: 'absolute', right: theme.spacing(0.625), top: theme.spacing(0.625) }}>
-          <UserRoleMenu />
-        </Box>
-      </Box>
-      <Button type="submit" variant="contained" disableElevation disabled={!isValidEmail(email)}>
-        Invite
-      </Button>
-    </Stack>
-  );
-}
-
-function Users({ data, isEditable }: any) {
-  const theme = useTheme();
-
-  return data.map((user: User) => (
-    <Stack direction="row" alignItems="center" gap={theme.spacing(1.5)}>
-      <Avatar sx={{ width: 24, height: 24 }} />
-      <Stack>
-        <Typography variant="body2" color="text.primary">
-          {user.email} (You TODO)
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {user.email}
-        </Typography>
-      </Stack>
-      <Box sx={{ ml: 'auto' }}>
-        <UserRoleMenu />
-      </Box>
-    </Stack>
-  ));
-}
-
-// https://stackoverflow.com/a/9204568
-function isValidEmail(email: string) {
-  var re = /\S+@\S+\.\S+/;
-  return re.test(email);
 }

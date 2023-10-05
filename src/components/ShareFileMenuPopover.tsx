@@ -18,7 +18,7 @@ export function ShareFileMenuPopover({
   disabled,
 }: {
   options: Option[];
-  setValue: Function;
+  setValue: (newValue: any) => void;
   value: string;
   disabled?: boolean;
 }) {
@@ -43,7 +43,9 @@ export function ShareFileMenuPopover({
         onClick={handleOpen}
         color="inherit"
         disabled={disabled}
+        size="small"
         endIcon={disabled ? undefined : <ArrowDropDown />}
+        // sx={{ '&:hover': { backgroundColor: 'transparent' } }}
       >
         {activeOption.label}
       </Button>
@@ -61,7 +63,6 @@ export function ShareFileMenuPopover({
           vertical: 'top',
           horizontal: 'left',
         }}
-        sx={{ fontSize: '.875rem' }}
       >
         {options.map((option) => {
           const selected = option.value === value;

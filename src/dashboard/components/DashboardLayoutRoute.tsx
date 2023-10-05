@@ -1,7 +1,8 @@
 import { Add, Close, ExtensionOutlined, FolderOpenOutlined, Menu } from '@mui/icons-material';
 import { Avatar, Box, CircularProgress, Drawer, IconButton, Typography, useTheme } from '@mui/material';
 import { ReactNode, useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation, useNavigation } from 'react-router-dom';
+import { NavLink, Outlet, useLoaderData, useLocation, useNavigation } from 'react-router-dom';
+import { AvatarWithLetters } from '../../components/AvatarWithLetters';
 import { ROUTES } from '../../constants/routes';
 import { useRootRouteLoaderData } from '../../router';
 import { colors } from '../../theme/colors';
@@ -10,7 +11,18 @@ import { ReactComponent as QuadraticLogotype } from './quadratic-logotype.svg';
 
 const drawerWidth = 264;
 
+type LoaderData = {
+  teams: { id: string; name: string }[];
+};
+
+export const loader = () => {
+  return {
+    teams: [{ id: '1', name: 'Team 1' }],
+  };
+};
+
 export const Component = () => {
+  const loaderData = useLoaderData() as LoaderData;
   const theme = useTheme();
   const navigation = useNavigation();
   const location = useLocation();
@@ -21,7 +33,7 @@ export const Component = () => {
     setIsOpen((prev) => !prev);
   };
 
-  const navbar = <Navbar handleDrawerToggle={handleDrawerToggle} />;
+  const navbar = <Navbar handleDrawerToggle={handleDrawerToggle} loaderData={loaderData} />;
 
   // When the location changes, close the menu (if it's already open)
   useEffect(() => {
@@ -99,7 +111,7 @@ export const Component = () => {
   );
 };
 
-function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
+function Navbar({ handleDrawerToggle, loaderData }: { handleDrawerToggle: Function; loaderData: LoaderData }) {
   const { user } = useRootRouteLoaderData();
 
   const theme = useTheme();
@@ -168,6 +180,14 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
         </SidebarNavLink>
 
         <SidebarLabel>Teams</SidebarLabel>
+        {loaderData.teams.map((team) => (
+          <SidebarNavLink key={team.id} to={`/teams/${team.id}`} style={sidebarLinkStyles}>
+            <AvatarWithLetters sx={{ width: 24, height: 24, fontSize: '.875rem' }}>{team.name}</AvatarWithLetters>
+            <Typography variant="body2" color="text.primary">
+              {team.name}
+            </Typography>
+          </SidebarNavLink>
+        ))}
         <SidebarNavLink to={ROUTES.CREATE_TEAM} style={sidebarLinkStyles}>
           <Add />
           <Typography variant="body2" color="text.primary">
