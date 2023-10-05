@@ -3,7 +3,6 @@ use itertools::Itertools;
 use crate::grid::borders::style::BorderSelection;
 use crate::Rect;
 
-// TODO: HashSet?
 pub(super) fn vertical(rect: Rect, selections: Vec<BorderSelection>) -> Vec<i64> {
     selections
         .iter()

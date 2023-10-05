@@ -19,7 +19,7 @@ pub fn get_render_vertical_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
         let left_border_render_index = column_index;
         let right_border_render_index = left_border_render_index + 1;
 
-        // TODO: Right column overwrites left. Merge them instead somehow
+        // TODO(jrice): Right column overwrites left. Merge them instead somehow
         column.values().for_each(|(y_index, cell_borders)| {
             if let Some(left_style) = cell_borders.get(&CellSide::Left) {
                 overlapped_borders

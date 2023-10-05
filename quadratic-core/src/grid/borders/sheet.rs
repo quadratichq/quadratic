@@ -40,12 +40,7 @@ pub fn generate_sheet_borders(
             let column_right_id = sheet.get_column(column_right_index).map(|column| column.id);
 
             let row_indices = rect.y_range().collect_vec();
-            sheet_borders.set_vertical_border(
-                column_left_id,
-                column_right_id,
-                &row_indices,
-                style,
-            );
+            sheet_borders.set_vertical_border(column_left_id, column_right_id, &row_indices, style);
         }
     }
     sheet_borders
@@ -287,15 +282,27 @@ mod tests {
 
     /// Convenience for asserting expected borders more tersely
     macro_rules! assert_borders {
-        ($sheet_borders: expr, $column_ids: expr, $cell: expr, None, $message:literal) => {
+        ($sheet_borders: expr, $column_ids: expr, $cell: expr, None, $message: literal) => {
             let actual = $sheet_borders.get_cell_borders($cell, &$column_ids);
             let expected = None;
             assert_eq!(actual, expected, $message);
         };
-        ($sheet_borders: expr, $column_ids: expr, $cell: expr, $borders: tt, $message:literal) => {
+        ($sheet_borders: expr, $column_ids: expr, $cell: expr, $borders: tt, $message: literal) => {
             let actual = $sheet_borders.get_cell_borders($cell, &$column_ids);
             let expected = Some(CellBorders::new(&$borders));
             assert_eq!(actual, expected, $message);
+        };
+    }
+
+    /// Convenience for asserting exact borders; no other borders should exist
+    macro_rules! assert_borders_eq {
+        ($sheet_borders: expr, $column_ids: expr, $cell_borders: tt, $message: literal) => {
+            for (cell, expected_borders) in &$cell_borders {
+                let actual = $sheet_borders.get_cell_borders(*cell, &$column_ids);
+                let expected = Some(CellBorders::new(&(*expected_borders)));
+                assert_eq!(actual, expected, $message);
+            }
+            // TODO: Assert everywhere else is empty somehow
         };
     }
 
@@ -389,10 +396,7 @@ mod tests {
             sheet.borders,
             sheet.column_ids,
             Pos { x: 5, y: 12 },
-            [
-                (CellSide::Right, style),
-                (CellSide::Bottom, style)
-            ],
+            [(CellSide::Right, style), (CellSide::Bottom, style)],
             "Bottom right should have bottom and right borders"
         );
     }
@@ -419,12 +423,6 @@ mod tests {
             set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style));
 
         let _prev_borders_2 = set_region_border_selection(&mut sheet, &region_2, selection_2, None);
-
-        print_borders(
-            Rect::new_span(Pos{x:2,y:9}, Pos{x:7,y:14}),
-            &sheet.borders,
-            &sheet.column_ids,
-        );
 
         assert_borders!(
             sheet.borders,
@@ -461,53 +459,47 @@ mod tests {
         );
     }
 
-    // #[test]
-    // fn remove_and_validate_previous_borders() {
-    //     let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
-    //
-    //     let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 5, y: 12 });
-    //     let rect_2 = Rect::new_span(Pos { x: 4, y: 11 }, Pos { x: 6, y: 13 });
-    //
-    //     let region_1 = sheet.region(rect_1);
-    //     let region_2 = sheet.region(rect_2);
-    //
-    //     let selection_1 = vec![BorderSelection::All];
-    //     let selection_2 = vec![BorderSelection::All];
-    //
-    //     let style = BorderStyle {
-    //         color: Rgb::from_str("#000000").unwrap(),
-    //         line: CellBorderLine::Line1,
-    //     };
-    //
-    //     let prev_borders_1 =
-    //         set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style));
-    //     let prev_borders_2 =
-    //         set_region_border_selection(&mut sheet, &region_2, selection_2, None);
-    //
-    //     // TODO: Uncomment
-    //     // assert_eq!(
-    //     //     replaced_borders,
-    //     //     CellBorderStylings {
-    //     //         style_map: HashMap::from([(
-    //     //             Some(style),
-    //     //             HashMap::from([
-    //     //                 ((4, 10), sides!(Bottom)),
-    //     //                 ((5, 10), sides!(Bottom)),
-    //     //                 ((3, 11), sides!(Right)),
-    //     //                 ((4, 11), sides!(Left, Top, Right, Bottom)),
-    //     //                 ((5, 11), sides!(Left, Top, Right, Bottom)),
-    //     //                 ((6, 11), sides!(Left)),
-    //     //                 ((3, 12), sides!(Right)),
-    //     //                 ((4, 12), sides!(Left, Top, Right, Bottom)),
-    //     //                 ((5, 12), sides!(Left, Top, Right, Bottom)),
-    //     //                 ((6, 12), sides!(Left)),
-    //     //                 ((4, 13), sides!(Top)),
-    //     //                 ((5, 13), sides!(Top)),
-    //     //             ])
-    //     //         ),])
-    //     //     },
-    //     // );
-    // }
+    #[test]
+    fn remove_and_validate_previous_borders() {
+        let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
+
+        let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 5, y: 12 });
+        let rect_2 = Rect::new_span(Pos { x: 4, y: 11 }, Pos { x: 6, y: 13 });
+
+        let region_1 = sheet.region(rect_1);
+        let region_2 = sheet.region(rect_2);
+
+        let selection_1 = vec![BorderSelection::All];
+        let selection_2 = vec![BorderSelection::All];
+
+        let style = BorderStyle {
+            color: Rgb::from_str("#000000").unwrap(),
+            line: CellBorderLine::Line1,
+        };
+
+        let prev_borders_1 =
+            set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style));
+        let prev_borders_2 = set_region_border_selection(&mut sheet, &region_2, selection_2, None);
+
+        let expected_cell_borders = [
+            (CellSide::Left, style),
+            (CellSide::Right, style),
+            (CellSide::Top, style),
+            (CellSide::Bottom, style),
+        ];
+
+        assert_borders_eq!(
+            prev_borders_2,
+            sheet.column_ids,
+            [
+                (Pos { x: 4, y: 11 }, expected_cell_borders),
+                (Pos { x: 5, y: 11 }, expected_cell_borders),
+                (Pos { x: 4, y: 12 }, expected_cell_borders),
+                (Pos { x: 5, y: 12 }, expected_cell_borders),
+            ],
+            "Removed section should have all borders"
+        )
+    }
 
     #[test]
     fn change_style_for_subset_of_existing_borders() {
@@ -579,67 +571,55 @@ mod tests {
             sheet.borders,
             sheet.column_ids,
             Pos { x: 6, y: 12 },
-            [
-                (CellSide::Top, style_2),
-                (CellSide::Bottom, style_2),
-            ],
+            [(CellSide::Top, style_2), (CellSide::Bottom, style_2),],
             "Outside right should have nothing on sides"
         );
     }
 
-    // #[test]
-    // fn change_style_and_validate_previous_borders() {
-    //     let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
-    //
-    //     let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 5, y: 12 });
-    //     let rect_2 = Rect::new_span(Pos { x: 4, y: 11 }, Pos { x: 6, y: 13 });
-    //
-    //     let region_1 = sheet.region(rect_1);
-    //     let region_2 = sheet.region(rect_2);
-    //
-    //     let selection_1 = vec![BorderSelection::All];
-    //     let selection_2 = vec![BorderSelection::Horizontal];
-    //
-    //     let style_1 = BorderStyle {
-    //         color: Rgb::from_str("#000000").unwrap(),
-    //         line: CellBorderLine::Line1,
-    //     };
-    //     let style_2 = BorderStyle {
-    //         color: Rgb::from_str("#FFFFFF").unwrap(),
-    //         line: CellBorderLine::Dotted,
-    //     };
-    //
-    //     let prev_borders_1 =
-    //         set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style_1));
-    //     let prev_borders_2 =
-    //         set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style_2));
-    //
-    //     // TODO: Uncomment
-    //     // assert_eq!(
-    //     //     replaced_borders,
-    //     //     CellBorderStylings {
-    //     //         style_map: HashMap::from([
-    //     //             (
-    //     //                 None,
-    //     //                 HashMap::from([
-    //     //                     ((6, 11), sides!(Bottom)),
-    //     //                     ((6, 12), sides!(Top, Bottom)),
-    //     //                     ((6, 13), sides!(Top)),
-    //     //                 ])
-    //     //             ),
-    //     //             (
-    //     //                 Some(style_1),
-    //     //                 HashMap::from([
-    //     //                     ((4, 11), sides!(Bottom)),
-    //     //                     ((5, 11), sides!(Bottom)),
-    //     //                     ((4, 12), sides!(Top, Bottom)),
-    //     //                     ((5, 12), sides!(Top, Bottom)),
-    //     //                     ((4, 13), sides!(Top)),
-    //     //                     ((5, 13), sides!(Top)),
-    //     //                 ])
-    //     //             ),
-    //     //         ])
-    //     //     },
-    //     // );
-    // }
+    #[test]
+    fn change_style_and_validate_previous_borders() {
+        let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
+
+        let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 5, y: 12 });
+        let rect_2 = Rect::new_span(Pos { x: 4, y: 11 }, Pos { x: 6, y: 13 });
+
+        let region_1 = sheet.region(rect_1);
+        let region_2 = sheet.region(rect_2);
+
+        let selection_1 = vec![BorderSelection::All];
+        let selection_2 = vec![BorderSelection::Horizontal];
+
+        let style_1 = BorderStyle {
+            color: Rgb::from_str("#000000").unwrap(),
+            line: CellBorderLine::Line1,
+        };
+        let style_2 = BorderStyle {
+            color: Rgb::from_str("#FFFFFF").unwrap(),
+            line: CellBorderLine::Dotted,
+        };
+
+        let prev_borders_1 =
+            set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style_1));
+        let prev_borders_2 =
+            set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style_2));
+
+        let expected_cell_borders = [
+            (CellSide::Left, style_1),
+            (CellSide::Right, style_1),
+            (CellSide::Top, style_1),
+            (CellSide::Bottom, style_1),
+        ];
+
+        assert_borders_eq!(
+            prev_borders_2,
+            sheet.column_ids,
+            [
+                (Pos { x: 4, y: 11 }, expected_cell_borders),
+                (Pos { x: 5, y: 11 }, expected_cell_borders),
+                (Pos { x: 4, y: 12 }, expected_cell_borders),
+                (Pos { x: 5, y: 12 }, expected_cell_borders),
+            ],
+            "Removed section should have all borders"
+        )
+    }
 }
