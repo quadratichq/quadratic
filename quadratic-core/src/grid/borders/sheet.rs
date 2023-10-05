@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Instant;
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -15,6 +16,7 @@ pub fn generate_sheet_borders(
     selections: Vec<BorderSelection>,
     style: Option<BorderStyle>,
 ) -> SheetBorders {
+    let timer = Instant::now();
     let mut sheet_borders = sheet.borders.get_region(region, &sheet.row_ids);
 
     for rect in sheet.region_rects(region) {
@@ -43,7 +45,10 @@ pub fn generate_sheet_borders(
             sheet_borders.set_vertical_border(column_left_id, column_right_id, &row_indices, style);
         }
     }
-    sheet_borders
+    let res = sheet_borders;
+    let elapsed = timer.elapsed();
+    println!("generate: {elapsed:?}");
+    res
 }
 
 pub fn set_region_borders(
@@ -69,13 +74,13 @@ pub fn set_region_border_selection(
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct SheetBorders {
     pub(super) cell_borders: HashMap<ColumnId, ColumnData<SameValue<CellBorders>>>,
+    // pub(super) vertical_render_borders: HashMap<ColumnId, ColumnData<SameValue<BorderStyle>>>,
+    // pub(super) horizontal_render_borders: HashMap<ColumnId, ColumnData<SameValue<BorderStyle>>>,
 }
 
 impl SheetBorders {
     pub fn new() -> Self {
-        Self {
-            cell_borders: Default::default(),
-        }
+        Self::default()
     }
 
     fn get_region(&self, region: &RegionRef, row_ids: &IdMap<RowId, i64>) -> SheetBorders {
@@ -103,6 +108,7 @@ impl SheetBorders {
     ) -> SheetBorders {
         let mut previous_borders = SheetBorders::new();
 
+        let timer = Instant::now();
         for region in regions {
             for &column_id in &region.columns {
                 let new_col_borders = borders.cell_borders.get(&column_id);
@@ -131,6 +137,8 @@ impl SheetBorders {
                     .insert(column_id, replaced_column);
             }
         }
+        let elapsed = timer.elapsed();
+        println!("set_regions: {elapsed:?}");
 
         previous_borders
     }
@@ -141,11 +149,14 @@ impl SheetBorders {
         row_index_above: i64,
         style: Option<BorderStyle>,
     ) {
+        // let timer = Instant::now();
         let row_index_below = row_index_above + 1;
         for &column_id in columns {
             self.set_cell_border(column_id, row_index_above, CellSide::Bottom, style);
             self.set_cell_border(column_id, row_index_below, CellSide::Top, style);
         }
+        // let elapsed = timer.elapsed();
+        // println!("  set_horizontal: {elapsed:?}");
     }
 
     fn set_vertical_border(
@@ -155,6 +166,7 @@ impl SheetBorders {
         row_indices: &[i64],
         style: Option<BorderStyle>,
     ) {
+        // let timer = Instant::now();
         for &row_index in row_indices {
             if let Some(column_left) = column_left {
                 self.set_cell_border(column_left, row_index, CellSide::Right, style);
@@ -163,6 +175,8 @@ impl SheetBorders {
                 self.set_cell_border(column_right, row_index, CellSide::Left, style);
             }
         }
+        // let elapsed = timer.elapsed();
+        // println!("  set_vertical: {elapsed:?}");
     }
 
     fn set_cell_border(

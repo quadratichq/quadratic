@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Instant;
 
 use crate::grid::block::SameValue;
 use crate::grid::borders::cell::CellSide;
@@ -7,6 +8,7 @@ use crate::grid::js_types::JsRenderBorder;
 use crate::grid::{ColumnData, Sheet};
 
 pub fn get_render_vertical_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
+    let timer = Instant::now();
     let borders = &sheet.borders.cell_borders;
     let mut overlapped_borders: HashMap<i64, ColumnData<SameValue<BorderStyle>>> = HashMap::new();
 
@@ -36,7 +38,7 @@ pub fn get_render_vertical_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
         });
     });
 
-    overlapped_borders
+    let res = overlapped_borders
         .iter()
         .flat_map(|(&column_index, column)| {
             column.blocks().map(move |block| JsRenderBorder {
@@ -47,10 +49,15 @@ pub fn get_render_vertical_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
                 style: block.content().value.clone(),
             })
         })
-        .collect()
+        .collect();
+
+    let elapsed = timer.elapsed();
+    println!("get_render_vertical: {elapsed:?}");
+    res
 }
 
 pub fn get_render_horizontal_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
+    let timer = Instant::now();
     let borders = &sheet.borders.cell_borders;
     let mut overlapped_borders: HashMap<i64, ColumnData<SameValue<BorderStyle>>> = HashMap::new();
 
@@ -60,13 +67,9 @@ pub fn get_render_horizontal_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
             .index_of(*column_id)
             .expect("Column exists but its index is invalid");
 
-        println!("Column Index: {column_index}");
-
         column.values().for_each(|(y_index, cell_borders)| {
             let top_border_render_index = y_index;
             let bottom_border_render_index = top_border_render_index + 1;
-
-            println!("  Render: top={top_border_render_index}, bottom={bottom_border_render_index}");
 
             if let Some(left_style) = cell_borders.get(&CellSide::Top) {
                 overlapped_borders
@@ -83,7 +86,7 @@ pub fn get_render_horizontal_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
         });
     });
 
-    overlapped_borders
+    let res = overlapped_borders
         .iter()
         .flat_map(|(&column_index, column)| {
             column.blocks().map(move |block| JsRenderBorder {
@@ -94,7 +97,11 @@ pub fn get_render_horizontal_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
                 style: block.content().value.clone(),
             })
         })
-        .collect()
+        .collect();
+
+    let elapsed = timer.elapsed();
+    println!("get_render_horizontal: {elapsed:?}");
+    res
 }
 
 #[cfg(test)]
@@ -105,6 +112,34 @@ mod tests {
     use crate::grid::{BorderSelection, CellBorderLine, SheetId};
     use crate::{Pos, Rect};
     use std::collections::HashSet;
+
+    mod timing {
+        use super::*;
+
+        #[test]
+        fn single_block() {
+            for _ in 0..5 {
+                let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
+                let rect = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 506, y: 515 });
+                let region = sheet.region(rect);
+
+                let selection = vec![BorderSelection::All];
+
+                let style = BorderStyle {
+                    color: Rgb::from_str("#000000").unwrap(),
+                    line: CellBorderLine::Line1,
+                };
+
+                let timer = Instant::now();
+                set_region_border_selection(&mut sheet, &region, selection, Some(style));
+
+                let vertical_render = get_render_vertical_borders(&sheet);
+                let horizontal_render = get_render_horizontal_borders(&sheet);
+                let elapsed = timer.elapsed();
+                println!("Total: {elapsed:?}");
+            }
+        }
+    }
 
     mod vertical {
         use super::*;
