@@ -251,14 +251,14 @@ class Sheets {
     return JSON.stringify(this.sheet.cursor.save());
   }
 
-  // handle changes to sheet offsets
-  // note: this currently does not handle redrawing impacted cells as that's handled by the UI
+  // handle changes to sheet offsets by only updating columns/rows impacted by resize
   updateOffsets(sheetIds: SheetId[]) {
     sheetIds.forEach((sheetId) => {
       const sheet = this.getById(sheetId.id);
       if (!sheet) throw new Error('Expected sheet to be defined in updateOffsets');
       sheet.updateSheetOffsets();
     });
+    pixiApp.gridLines.dirty = true;
   }
 }
 

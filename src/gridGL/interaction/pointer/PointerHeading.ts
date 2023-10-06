@@ -2,7 +2,6 @@ import { InteractivePointerEvent, Point } from 'pixi.js';
 import { CELL_TEXT_MARGIN_LEFT } from '../../../constants/gridConstants';
 import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
-import { TransientResize } from '../../../quadratic-core/quadratic_core';
 import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
 import { zoomToFit } from '../../helpers/zoom';
 import { pixiApp } from '../../pixiApp/PixiApp';
@@ -239,9 +238,7 @@ export class PointerHeading {
     const sheetId = sheets.sheet.id;
     const originalSize = sheets.sheet.getCellOffsets(column, 0);
     if (originalSize.width !== size) {
-      const transientResize = TransientResize.new(column, undefined, size);
-      grid.commitTransientResize(sheetId, transientResize);
-      pixiApp.adjustHeadings({ sheetId, column, delta: size - originalSize.width });
+      grid.commitSingleResize(sheetId, column, undefined, size);
     }
   }
 

@@ -23,7 +23,32 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.commit_resize(sheet_id, transient_resize, cursor).await,
+            &self
+                .commit_offsets_resize(sheet_id, transient_resize, cursor)
+                .await,
+        )?)
+    }
+
+    /// Commits a single resize operation. Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "commitSingleResize")]
+    pub async fn js_commit_single_resize(
+        &mut self,
+        sheet_id: String,
+        column: Option<i32>,
+        row: Option<i32>,
+        size: f64,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        let transient_resize = match (column, row) {
+            (Some(column), None) => Some(TransientResize::column(column as i64, size)),
+            (None, Some(row)) => Some(TransientResize::row(row as i64, size)),
+            _ => None,
+        };
+        Ok(serde_wasm_bindgen::to_value(
+            &self
+                .commit_offsets_resize(sheet_id, transient_resize, cursor)
+                .await,
         )?)
     }
 }

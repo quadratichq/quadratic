@@ -553,6 +553,18 @@ export class Grid {
     this.dirty = true;
   }
 
+  async commitSingleResize(sheetId: string, column: number | undefined, row: number | undefined, size: number) {
+    const summary = await this.gridController.commitSingleResize(
+      sheetId,
+      column,
+      row,
+      size,
+      sheets.getCursorPosition()
+    );
+    transactionResponse(summary);
+    this.dirty = true;
+  }
+
   getOffsets(sheetId: string): SheetOffsets {
     return this.gridController.getOffsets(sheetId);
   }

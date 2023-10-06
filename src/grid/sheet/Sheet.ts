@@ -1,6 +1,7 @@
 import { Rectangle } from 'pixi.js';
+import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
-import { Pos, SheetOffsets } from '../../quadratic-core/quadratic_core';
+import { OffsetsSizeChanges, Pos, SheetOffsets } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
   CellFormatSummary,
@@ -167,7 +168,15 @@ export class Sheet {
   }
 
   updateSheetOffsets() {
-    this.offsets = grid.getOffsets(this.id);
+    const newOffsets = grid.getOffsets(this.id);
+    const offsetSizeChanges: OffsetsSizeChanges = this.offsets.findResizeChanges(newOffsets);
+    const columns = offsetSizeChanges.getChanges(true);
+    for (let i = 0; i < columns.length; i += 2) {
+      const index = columns[i];
+      const delta = columns[i + 1];
+      pixiApp.cellsSheets.adjustHeadings({ sheetId: this.id, column: index, delta });
+    }
+    this.offsets = newOffsets;
   }
 
   //#endregion

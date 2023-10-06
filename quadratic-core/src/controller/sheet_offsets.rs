@@ -7,7 +7,7 @@ impl GridController {
     /// see js_get_resize_to_apply
     ///
     /// Returns a [`TransactionSummary`].
-    pub async fn commit_resize(
+    pub async fn commit_offsets_resize(
         &mut self,
         sheet_id: SheetId,
         transient_resize: Option<TransientResize>,

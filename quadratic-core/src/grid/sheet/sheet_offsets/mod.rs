@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::ops::Range;
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use self::resize_transient::TransientResize;
+use self::{resize_transient::TransientResize, sheet_offsets_wasm::OffsetsSizeChanges};
 
 pub mod resize_transient;
 pub mod sheet_offsets_wasm;
@@ -137,5 +137,12 @@ impl SheetOffsets {
         let (x, w) = self.column_position_size(column);
         let (y, h) = self.row_position_size(row);
         ScreenRect { x, y, w, h }
+    }
+
+    pub fn changes(&self, sheet_offsets: &SheetOffsets) -> OffsetsSizeChanges {
+        OffsetsSizeChanges::new(
+            self.column_widths.changes(&sheet_offsets.column_widths),
+            self.row_heights.changes(&sheet_offsets.row_heights),
+        )
     }
 }

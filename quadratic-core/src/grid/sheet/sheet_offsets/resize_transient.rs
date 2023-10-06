@@ -79,15 +79,20 @@ pub struct TransientResize {
     pub new_size: f64,
 }
 
-#[wasm_bindgen]
 impl TransientResize {
-    /// Creates a new TransientResize for use by TS.
-    /// note: old_size is not interesting for this immediate commit use
-    #[wasm_bindgen]
-    pub fn new(column: Option<i32>, row: Option<i32>, new_size: f64) -> TransientResize {
-        Self {
-            column: column.map(Into::into),
-            row: row.map(Into::into),
+    pub fn column(column: i64, new_size: f64) -> Self {
+        TransientResize {
+            row: None,
+            column: Some(column),
+            old_size: 0.0,
+            new_size,
+        }
+    }
+
+    pub fn row(row: i64, new_size: f64) -> Self {
+        TransientResize {
+            row: Some(row),
+            column: None,
             old_size: 0.0,
             new_size,
         }
