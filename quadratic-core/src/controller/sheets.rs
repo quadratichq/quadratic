@@ -134,15 +134,15 @@ mod test {
             assert_eq!(*old_sheet_ids, g.sheet_ids());
         }
 
-        test_reorder(&mut g, s1, Some(s2), [s1, s2, s3], &old_sheet_ids);
-        test_reorder(&mut g, s1, Some(s3), [s2, s1, s3], &old_sheet_ids);
-        test_reorder(&mut g, s1, None, [s2, s3, s1], &old_sheet_ids);
-        test_reorder(&mut g, s2, Some(s1), [s2, s1, s3], &old_sheet_ids);
-        test_reorder(&mut g, s2, Some(s3), [s1, s2, s3], &old_sheet_ids);
-        test_reorder(&mut g, s2, None, [s1, s3, s2], &old_sheet_ids);
-        test_reorder(&mut g, s3, Some(s1), [s3, s1, s2], &old_sheet_ids);
-        test_reorder(&mut g, s3, Some(s2), [s1, s3, s2], &old_sheet_ids);
-        test_reorder(&mut g, s3, None, [s1, s2, s3], &old_sheet_ids);
+        test_reorder(&mut g, s1, Some(s2), [s1, s2, s3], &old_sheet_ids).await;
+        test_reorder(&mut g, s1, Some(s3), [s2, s1, s3], &old_sheet_ids).await;
+        test_reorder(&mut g, s1, None, [s2, s3, s1], &old_sheet_ids).await;
+        test_reorder(&mut g, s2, Some(s1), [s2, s1, s3], &old_sheet_ids).await;
+        test_reorder(&mut g, s2, Some(s3), [s1, s2, s3], &old_sheet_ids).await;
+        test_reorder(&mut g, s2, None, [s1, s3, s2], &old_sheet_ids).await;
+        test_reorder(&mut g, s3, Some(s1), [s3, s1, s2], &old_sheet_ids).await;
+        test_reorder(&mut g, s3, Some(s2), [s1, s3, s2], &old_sheet_ids).await;
+        test_reorder(&mut g, s3, None, [s1, s2, s3], &old_sheet_ids).await;
 
         async fn test_delete(
             g: &mut GridController,
@@ -156,19 +156,19 @@ mod test {
             assert_eq!(*old_sheet_ids, g.sheet_ids());
         }
 
-        test_delete(&mut g, s1, [s2, s3], &old_sheet_ids);
-        test_delete(&mut g, s2, [s1, s3], &old_sheet_ids);
-        test_delete(&mut g, s3, [s1, s2], &old_sheet_ids);
+        test_delete(&mut g, s1, [s2, s3], &old_sheet_ids).await;
+        test_delete(&mut g, s2, [s1, s3], &old_sheet_ids).await;
+        test_delete(&mut g, s3, [s1, s2], &old_sheet_ids).await;
     }
 
-    #[test]
-    fn test_duplicate_sheet() {
+    #[tokio::test]
+    async fn test_duplicate_sheet() {
         let mut g = GridController::new();
         let old_sheet_ids = g.sheet_ids();
         let s1 = old_sheet_ids[0];
 
-        g.set_sheet_name(s1, String::from("Nice Name"), None);
-        g.duplicate_sheet(s1, None);
+        g.set_sheet_name(s1, String::from("Nice Name"), None).await;
+        g.duplicate_sheet(s1, None).await;
         let sheet_ids = g.sheet_ids();
         let s2 = sheet_ids[1];
 
@@ -178,30 +178,23 @@ mod test {
         assert_eq!(sheet2.name, format!("{} Copy", sheet1.name));
     }
 
-    #[test]
-    fn test_delete_last_sheet() {
+    #[tokio::test]
+    async fn test_delete_last_sheet() {
         let mut g = GridController::new();
         let sheet_ids = g.sheet_ids();
-        let first_sheet_id = sheet_ids[0];
+        let first_sheet_id = sheet_ids[0].clone();
 
-        #[tokio::test]
-        async fn test_delete_last_sheet() {
-            let mut g = GridController::new();
-            let sheet_ids = g.sheet_ids();
-            let first_sheet_id = sheet_ids[0].clone();
+        g.delete_sheet(first_sheet_id, None).await;
+        let new_sheet_ids = g.sheet_ids();
+        assert_eq!(new_sheet_ids.len(), 1);
+        assert_ne!(new_sheet_ids[0], sheet_ids[0]);
 
-            g.delete_sheet(first_sheet_id, None).await;
-            let new_sheet_ids = g.sheet_ids();
-            assert_eq!(new_sheet_ids.len(), 1);
-            assert_ne!(new_sheet_ids[0], sheet_ids[0]);
+        g.undo(None);
+        let new_sheet_ids_2 = g.sheet_ids();
+        assert_eq!(sheet_ids[0], new_sheet_ids_2[0]);
 
-            g.undo(None);
-            let new_sheet_ids_2 = g.sheet_ids();
-            assert_eq!(sheet_ids[0], new_sheet_ids_2[0]);
-
-            g.redo(None);
-            let new_sheet_ids_3 = g.sheet_ids();
-            assert_eq!(new_sheet_ids[0], new_sheet_ids_3[0]);
-        }
+        g.redo(None);
+        let new_sheet_ids_3 = g.sheet_ids();
+        assert_eq!(new_sheet_ids[0], new_sheet_ids_3[0]);
     }
 }
