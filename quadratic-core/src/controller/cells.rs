@@ -273,7 +273,7 @@ mod test {
         CellValue, Pos, Rect,
     };
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_set_cell_value_undo_redo() {
         let mut g = GridController::new();
         let sheet_id = g.grid.sheets()[0].id;

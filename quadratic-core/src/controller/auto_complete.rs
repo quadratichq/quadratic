@@ -637,7 +637,7 @@ mod tests {
         assert_eq!(result, expected);
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_expand_left_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: -3, y: 1 }, Pos { x: 5, y: 2 });
@@ -661,7 +661,7 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, -3, 5, 2, expected);
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_expand_right_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 10, y: 2 });
@@ -681,7 +681,7 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, 2, 10, 2, expected);
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_expand_up_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: -7 }, Pos { x: 5, y: 2 });
@@ -709,7 +709,7 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, 2, 5, 0, expected.clone());
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_expand_down_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 10 });
@@ -737,7 +737,7 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, 2, 5, 10, expected.clone());
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_expand_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(selected.min, Pos { x: 14, y: 10 });
@@ -755,7 +755,7 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 10, expected_bold);
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_expand_up_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: -7 }, Pos { x: 10, y: 3 });
@@ -777,7 +777,7 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 3, expected_bold);
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_expand_down_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: -7, y: 20 }, Pos { x: 5, y: 10 });
@@ -803,7 +803,7 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, -7, 5, 10, expected_bold);
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_expand_up_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: -7, y: -7 }, selected.max);
@@ -825,7 +825,7 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, -7, 5, 3, expected_bold);
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_expand_horizontal_series_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
@@ -850,7 +850,7 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, 2, 9, 6, expected);
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_expand_horizontal_series_up_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 6, y: 15 }, Pos { x: 9, y: 19 });
         let range: Rect = Rect::new_span(Pos { x: 6, y: 12 }, Pos { x: 15, y: 19 });
@@ -878,7 +878,7 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, 6, 15, 16, expected.clone());
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_expand_horizontal_series_up_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: -4, y: -8 }, Pos { x: 5, y: 6 });
@@ -912,7 +912,7 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, -4, 5, 1, expected.clone());
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_expand_vertical_series_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 2, y: 4 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
@@ -926,7 +926,7 @@ mod tests {
         assert_cell_value(&grid, sheet_id, 3, 7, "6");
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_shrink_width() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
@@ -960,7 +960,7 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 8, expected_bold_2);
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_shrink_height() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
@@ -991,7 +991,7 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 6, expected_bold_empty);
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_shrink_width_and_height() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });

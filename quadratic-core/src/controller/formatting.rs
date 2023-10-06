@@ -152,7 +152,7 @@ mod test {
         Pos, Rect,
     };
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_set_cell_text_color_undo_redo() {
         let mut gc = GridController::new();
         let sheet_id = gc.grid.sheets()[0].id;
@@ -210,7 +210,7 @@ mod test {
         assert_eq!(get(&gc, pos3), "red");
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_render_fill() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
@@ -251,7 +251,7 @@ mod test {
         assert_eq!(10, render_fills.len());
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_change_decimal_places() {
         // setup
         let mut gc: GridController = GridController::new();

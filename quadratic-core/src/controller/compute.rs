@@ -4,10 +4,7 @@ use crate::{
         js_types::CellForArray, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult,
         CodeCellValue, SheetId,
     },
-    wasm_bindings::{
-        js::{self, runPython},
-        JsComputeResult,
-    },
+    wasm_bindings::{js::runPython, JsComputeResult},
     Pos, Value,
 };
 use serde::{Deserialize, Serialize};
@@ -243,7 +240,7 @@ mod test {
 
     use super::{SheetPos, SheetRect};
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_graph() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
