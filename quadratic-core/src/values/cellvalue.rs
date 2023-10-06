@@ -9,6 +9,9 @@ use crate::{
     CodeResult, Error,
 };
 
+// todo: fill this out
+const CURRENCY_SYMBOLS: &str = "$€£¥";
+
 /// Non-array value in the formula language.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
@@ -79,7 +82,7 @@ impl CellValue {
             CellValue::Logical(false) => "FALSE".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
-            CellValue::Error(_) => format!("[error]"),
+            CellValue::Error(_) => "[error]".to_string(),
         }
     }
 
@@ -92,30 +95,23 @@ impl CellValue {
             CellValue::Blank => String::new(),
             CellValue::Text(s) => s.to_string(),
             CellValue::Number(n) => {
-                let result: BigDecimal;
                 let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
                     numeric_format.kind == NumericFormatKind::Percentage
                 });
-                if is_percentage {
-                    result = n * 100;
-                } else {
-                    result = n.clone();
-                };
+                let result: BigDecimal = if is_percentage { n * 100 } else { n.clone() };
                 let mut number = if let Some(decimals) = numeric_decimals {
                     result
                         .with_scale_round(decimals as i64, bigdecimal::RoundingMode::HalfUp)
                         .to_string()
-                } else {
-                    if is_percentage {
-                        let s = result.to_string();
-                        if s.contains(".") {
-                            s.trim_end_matches("0").to_string()
-                        } else {
-                            s
-                        }
+                } else if is_percentage {
+                    let s = result.to_string();
+                    if s.contains('.') {
+                        s.trim_end_matches('0').to_string()
                     } else {
-                        result.to_string()
+                        s
                     }
+                } else {
+                    result.to_string()
                 };
                 if let Some(numeric_format) = numeric_format {
                     match numeric_format.kind {
@@ -129,7 +125,7 @@ impl CellValue {
                             currency
                         }
                         NumericFormatKind::Percentage => {
-                            number.push_str(&"%");
+                            number.push('%');
                             number
                         }
                         NumericFormatKind::Number => number.to_string(),
@@ -143,7 +139,7 @@ impl CellValue {
             CellValue::Logical(false) => "false".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
-            CellValue::Error(_) => format!("[error]"),
+            CellValue::Error(_) => "[error]".to_string(),
         }
     }
 
@@ -156,11 +152,11 @@ impl CellValue {
             CellValue::Logical(false) => "false".to_string(),
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
-            CellValue::Error(_) => format!("[error]"),
+            CellValue::Error(_) => "[error]".to_string(),
         }
     }
 
-    pub fn unpack_percentage(s: &String) -> Option<BigDecimal> {
+    pub fn unpack_percentage(s: &str) -> Option<BigDecimal> {
         if s.is_empty() {
             return None;
         }
@@ -170,6 +166,26 @@ impl CellValue {
             }
         }
         None
+    }
+
+    pub fn unpack_currency(s: &str) -> Option<(String, BigDecimal)> {
+        if s.is_empty() {
+            return None;
+        }
+        for char in CURRENCY_SYMBOLS.chars() {
+            if let Some(stripped) = s.strip_prefix(char) {
+                if let Ok(bd) = BigDecimal::from_str(stripped) {
+                    return Some((char.to_string(), bd));
+                }
+            }
+        }
+        None
+    }
+
+    pub fn strip_currency(value: &str) -> &str {
+        CURRENCY_SYMBOLS.chars().fold(value, |acc: &str, char| {
+            acc.strip_prefix(char).unwrap_or(acc)
+        })
     }
 
     pub fn is_blank_or_empty_string(&self) -> bool {
@@ -201,7 +217,7 @@ impl CellValue {
         Ok(Some(match (self, other) {
             (CellValue::Error(e), _) | (_, CellValue::Error(e)) => return Err((**e).clone()),
 
-            (CellValue::Number(a), CellValue::Number(b)) => a.cmp(&b),
+            (CellValue::Number(a), CellValue::Number(b)) => a.cmp(b),
             (CellValue::Text(a), CellValue::Text(b)) => {
                 let a = a.to_ascii_uppercase();
                 let b = b.to_ascii_uppercase();
@@ -223,6 +239,7 @@ impl CellValue {
 
     /// Compares two values using a total ordering that propogates errors and
     /// converts blanks to zeros.
+    #[allow(clippy::should_implement_trait)]
     pub fn cmp(&self, other: &Self) -> CodeResult<std::cmp::Ordering> {
         fn type_id(v: &CellValue) -> u8 {
             // Sort order, based on the results of Excel's `SORT()` function.
@@ -254,7 +271,7 @@ impl CellValue {
 
         Ok(lhs
             .partial_cmp(rhs)?
-            .unwrap_or_else(|| type_id(&lhs).cmp(&type_id(&rhs))))
+            .unwrap_or_else(|| type_id(lhs).cmp(&type_id(rhs))))
     }
 
     /// Returns whether `self == other` using `CellValue::cmp()`.
@@ -304,7 +321,7 @@ mod test {
 
     #[test]
     fn test_cell_value_to_display_currency() {
-        let cv = CellValue::Number(BigDecimal::from_str(&"123.1233").unwrap());
+        let cv = CellValue::Number(BigDecimal::from_str("123.1233").unwrap());
         assert_eq!(
             cv.to_display(
                 Some(NumericFormat {
@@ -316,7 +333,7 @@ mod test {
             String::from("$123.12")
         );
 
-        let cv = CellValue::Number(BigDecimal::from_str(&"123.1255").unwrap());
+        let cv = CellValue::Number(BigDecimal::from_str("123.1255").unwrap());
         assert_eq!(
             cv.to_display(
                 Some(NumericFormat {
@@ -328,7 +345,7 @@ mod test {
             String::from("$123.13")
         );
 
-        let cv = CellValue::Number(BigDecimal::from_str(&"123.0").unwrap());
+        let cv = CellValue::Number(BigDecimal::from_str("123.0").unwrap());
         assert_eq!(
             cv.to_display(
                 Some(NumericFormat {
@@ -343,7 +360,7 @@ mod test {
 
     #[test]
     fn test_cell_value_to_display_percentage() {
-        let cv = CellValue::Number(BigDecimal::from_str(&"0.015").unwrap());
+        let cv = CellValue::Number(BigDecimal::from_str("0.015").unwrap());
         assert_eq!(
             cv.to_display(
                 Some(NumericFormat {
@@ -355,7 +372,7 @@ mod test {
             String::from("1.5%")
         );
 
-        let cv = CellValue::Number(BigDecimal::from_str(&"0.9912239").unwrap());
+        let cv = CellValue::Number(BigDecimal::from_str("0.9912239").unwrap());
         assert_eq!(
             cv.to_display(
                 Some(NumericFormat {
@@ -373,7 +390,25 @@ mod test {
         let value = String::from("1238.12232%");
         assert_eq!(
             CellValue::unpack_percentage(&value),
-            Some(BigDecimal::from_str(&"12.3812232").unwrap()),
+            Some(BigDecimal::from_str("12.3812232").unwrap()),
         );
+    }
+
+    #[test]
+    fn test_unpack_currency() {
+        let value = String::from("$123.123");
+        assert_eq!(
+            CellValue::unpack_currency(&value),
+            Some((String::from("$"), BigDecimal::from_str(&"123.123").unwrap()))
+        );
+
+        let value = String::from("test");
+        assert_eq!(CellValue::unpack_currency(&value), None);
+
+        let value = String::from("$123$123");
+        assert_eq!(CellValue::unpack_currency(&value), None);
+
+        let value = String::from("$123.123abc");
+        assert_eq!(CellValue::unpack_currency(&value), None);
     }
 }

@@ -4,6 +4,7 @@ import React, { SyntheticEvent } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
+import { moveViewport } from '../../../gridGL/interaction/viewportHelper';
 import { Coordinate } from '../../../gridGL/types/size';
 import { focusGrid } from '../../../helpers/focusGrid';
 import focusInput from '../../../utils/focusInput';
@@ -52,6 +53,7 @@ export const GoTo = () => {
       cursorPosition,
       multiCursor,
     });
+    moveViewport({ center: cursorPosition });
     closeMenu();
     focusGrid();
   };

@@ -100,7 +100,7 @@ impl GridController {
         for op in operations.iter() {
             if let Some(new_dirty_sheet) = op.sheet_with_changed_bounds() {
                 if !sheets_with_changed_bounds.contains(&new_dirty_sheet) {
-                    sheets_with_changed_bounds.push(new_dirty_sheet)
+                    sheets_with_changed_bounds.push(new_dirty_sheet);
                 }
             }
             let reverse_operation = self.execute_operation(op.clone(), summary);
@@ -137,7 +137,9 @@ pub struct TransactionSummary {
     pub cell_hash_values_modified: BTreeMap<String, Vec<JsRenderCell>>,
     /// Sheet metadata or order was modified.
     pub sheet_list_modified: bool,
-    /// Cursor location for undo/redo operation
+    /// SheetOffsets that are modified.
+    pub offsets_modified: Vec<SheetId>,
+    /// Cursor location for undo/redo operation.
     pub cursor: Option<String>,
 }
 

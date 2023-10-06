@@ -1,5 +1,6 @@
-use super::SheetOffsets;
+use super::{resize_transient::TransientResize, SheetOffsets};
 use crate::ScreenRect;
+use js_sys::Int32Array;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 #[wasm_bindgen]
@@ -13,6 +14,65 @@ pub struct Placement {
 pub struct ColumnRow {
     pub column: i32,
     pub row: i32,
+}
+
+struct OffsetSizeChange {
+    index: i64,
+    delta: i64,
+    column: bool,
+}
+
+#[wasm_bindgen]
+pub struct OffsetsSizeChanges {
+    changes: Vec<OffsetSizeChange>,
+}
+
+#[wasm_bindgen]
+impl OffsetsSizeChanges {
+    #[wasm_bindgen(js_name = "getChanges")]
+    pub fn get_changes(&self, columns: bool) -> Int32Array {
+        let mut ret = vec![];
+        for change in &self.changes {
+            if change.column && columns {
+                ret.push(change.index as i32);
+                ret.push(change.delta as i32);
+            } else if !change.column && !columns {
+                ret.push(change.index as i32);
+                ret.push(change.delta as i32);
+            }
+        }
+        Int32Array::from(&ret[..])
+    }
+}
+
+impl OffsetsSizeChanges {
+    pub fn new(
+        columns_width_changes: Vec<(i64, f64)>,
+        row_height_changes: Vec<(i64, f64)>,
+    ) -> Self {
+        let mut change = OffsetsSizeChanges { changes: vec![] };
+        change
+            .changes
+            .extend(
+                columns_width_changes
+                    .iter()
+                    .map(|(index, delta)| OffsetSizeChange {
+                        index: *index,
+                        delta: delta.round() as i64,
+                        column: true,
+                    }),
+            );
+        change.changes.extend(
+            row_height_changes
+                .iter()
+                .map(|(index, delta)| OffsetSizeChange {
+                    index: *index,
+                    delta: delta.round() as i64,
+                    column: false,
+                }),
+        );
+        change
+    }
 }
 
 #[wasm_bindgen]
@@ -105,5 +165,22 @@ impl SheetOffsets {
     #[wasm_bindgen(js_name = "cancelResize")]
     pub fn js_cancel_resize(&mut self) {
         self.cancel_resize();
+    }
+
+    /// Returns and removes the transient resize for the current offset.
+    /// Use this on the local SheetOffsets to get the resize to apply to the Grid's SheetOffsets.
+    ///
+    /// Returns a [`TransientResize` || undefined]
+    #[wasm_bindgen(js_name = "getResizeToApply")]
+    pub fn js_get_resize_to_apply(&mut self) -> Option<TransientResize> {
+        self.pop_local_transient_resize()
+    }
+
+    /// returns changes between SheetOffsets and the local version of SheetOffsets
+    /// Returns Float32Array structured as [index, size, index, size, ...]
+    #[wasm_bindgen(js_name = "findResizeChanges")]
+    pub fn js_find_resize_changes(&self, old_sheet_offsets: &SheetOffsets) -> OffsetsSizeChanges {
+        let changes = self.changes(old_sheet_offsets);
+        OffsetsSizeChanges::from(changes)
     }
 }

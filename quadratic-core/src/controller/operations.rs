@@ -169,7 +169,7 @@ impl GridController {
             Operation::AddSheet { sheet } => {
                 // todo: need to handle the case where sheet.order overlaps another sheet order
                 // this may happen after (1) delete a sheet; (2) MP update w/an added sheet; and (3) undo the deleted sheet
-                let sheet_id = sheet.id.clone();
+                let sheet_id = sheet.id;
                 self.grid
                     .add_sheet(Some(sheet))
                     .expect("duplicate sheet name");
@@ -228,19 +228,18 @@ impl GridController {
                 column,
                 new_size,
             } => {
-                // todo...
-
-                // let sheet = self.sheet(sheet_id);
-                // if let Some(x) = sheet.get_column_index(column) {
-                //     let old_size = self.resize_column_internal(sheet_id, x, new_size);
-                //     Operation::ResizeColumn {
-                //         sheet_id,
-                //         column,
-                //         new_size: old_size,
-                //     }
-                // } else {
-                Operation::None
-                // }
+                let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                if let Some(x) = sheet.get_column_index(column) {
+                    summary.offsets_modified.push(sheet.id);
+                    let old_size = sheet.offsets.set_column_width(x, new_size);
+                    Operation::ResizeColumn {
+                        sheet_id,
+                        column,
+                        new_size: old_size,
+                    }
+                } else {
+                    Operation::None
+                }
             }
 
             Operation::ResizeRow {
@@ -248,19 +247,18 @@ impl GridController {
                 row,
                 new_size,
             } => {
-                // todo...
-
-                // let sheet = self.sheet(sheet_id);
-                // if let Some(y) = sheet.get_row_index(row) {
-                //     let old_size = self.resize_row_internal(sheet_id, y, new_size);
-                //     Operation::ResizeRow {
-                //         sheet_id,
-                //         row,
-                //         new_size: old_size,
-                //     }
-                // } else {
-                Operation::None
-                // }
+                let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                if let Some(y) = sheet.get_row_index(row) {
+                    let old_size = sheet.offsets.set_row_height(y, new_size);
+                    summary.offsets_modified.push(sheet.id);
+                    Operation::ResizeRow {
+                        sheet_id,
+                        row,
+                        new_size: old_size,
+                    }
+                } else {
+                    Operation::None
+                }
             }
         };
 

@@ -44,7 +44,7 @@ impl GridController {
             return TransactionSummary::default();
         }
         let region = self.region(sheet_id, rect);
-        let numeric_decimals = Some((decimals as i16) + delta as i16);
+        let numeric_decimals = Some(decimals + delta as i16);
         let ops = vec![Operation::SetCellFormats {
             region: region.clone(),
             attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
@@ -72,28 +72,28 @@ impl GridController {
                 let pos = Pos { x, y };
                 cell_formats.iter_mut().for_each(|array| match array {
                     CellFmtArray::Align(array) => {
-                        array.push(sheet.get_formatting_value::<CellAlign>(pos))
+                        array.push(sheet.get_formatting_value::<CellAlign>(pos));
                     }
                     CellFmtArray::Wrap(array) => {
-                        array.push(sheet.get_formatting_value::<CellWrap>(pos))
+                        array.push(sheet.get_formatting_value::<CellWrap>(pos));
                     }
                     CellFmtArray::NumericFormat(array) => {
-                        array.push(sheet.get_formatting_value::<NumericFormat>(pos))
+                        array.push(sheet.get_formatting_value::<NumericFormat>(pos));
                     }
                     CellFmtArray::NumericDecimals(array) => {
-                        array.push(sheet.get_formatting_value::<NumericDecimals>(pos))
+                        array.push(sheet.get_formatting_value::<NumericDecimals>(pos));
                     }
                     CellFmtArray::Bold(array) => {
-                        array.push(sheet.get_formatting_value::<Bold>(pos))
+                        array.push(sheet.get_formatting_value::<Bold>(pos));
                     }
                     CellFmtArray::Italic(array) => {
-                        array.push(sheet.get_formatting_value::<Italic>(pos))
+                        array.push(sheet.get_formatting_value::<Italic>(pos));
                     }
                     CellFmtArray::TextColor(array) => {
-                        array.push(sheet.get_formatting_value::<TextColor>(pos))
+                        array.push(sheet.get_formatting_value::<TextColor>(pos));
                     }
                     CellFmtArray::FillColor(array) => {
-                        array.push(sheet.get_formatting_value::<FillColor>(pos))
+                        array.push(sheet.get_formatting_value::<FillColor>(pos));
                     }
                 });
             }
@@ -152,7 +152,7 @@ mod test {
         Pos, Rect,
     };
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_set_cell_text_color_undo_redo() {
         let mut gc = GridController::new();
         let sheet_id = gc.grid.sheets()[0].id;
@@ -210,7 +210,7 @@ mod test {
         assert_eq!(get(&gc, pos3), "red");
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_render_fill() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
@@ -248,10 +248,10 @@ mod test {
             min: crate::Pos { x: -100, y: -100 },
             max: crate::Pos { x: 100, y: 100 },
         });
-        assert_eq!(10, render_fills.len())
+        assert_eq!(10, render_fills.len());
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_change_decimal_places() {
         // setup
         let mut gc: GridController = GridController::new();
