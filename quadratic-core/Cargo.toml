@@ -64,12 +64,13 @@ csv = "1.2.2"
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }
-tabled = { version ="0.14.0", features = ["color"] }
-actix-rt = "*"
+tabled = { version ="0.14.0", features = ["color"] } 
+tokio = { version = "1.32.0", features = ["macros", "rt"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 proptest = "1.2.0"
-proptest-derive = "0.4.0"
+proptest-derive = "0.3.0"
+actix-rt = "*"
 
 [[bench]]
 name = "grid_benchmark"

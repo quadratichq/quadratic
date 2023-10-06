@@ -4,10 +4,7 @@ use crate::{
         js_types::CellForArray, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult,
         CodeCellValue, SheetId,
     },
-    wasm_bindings::{
-        js::{self, runPython},
-        JsComputeResult,
-    },
+    wasm_bindings::{js::runPython, JsComputeResult},
     Pos, Value,
 };
 use serde::{Deserialize, Serialize};
@@ -21,7 +18,6 @@ impl GridController {
         let mut cells_to_compute = updated_cells.clone(); // start with all updated cells
 
         while let Some(rect) = cells_to_compute.pop() {
-            js::log(&format!("Computing cell - {} \n", rect));
             // find which cells have formulas. Run the formulas and update the cells.
             // add the updated cells to the cells_to_compute
 
@@ -39,7 +35,7 @@ impl GridController {
                         let mut cells_accessed_code_cell = vec![];
                         match language {
                             CodeCellLanguage::Python => {
-                                js::log(&format!("running {:?}, {:?}", pos.x, pos.y));
+                                crate::util::dbgjs(&format!("running {:?}, {:?}", pos.x, pos.y));
                                 let mut cells = None;
                                 let mut complete = false;
 
@@ -106,14 +102,17 @@ impl GridController {
                                         }
                                         Err(e) => {
                                             // todo: better handling of error to ensure grid is not locked
-                                            js::log(&format!("compute_result error, {}", e));
+                                            crate::util::dbgjs(&format!(
+                                                "compute_result error, {}",
+                                                e
+                                            ));
                                             complete = true;
                                         }
                                     }
                                 }
                             }
                             _ => {
-                                js::log(&format!(
+                                crate::util::dbgjs(&format!(
                                     "Compute language {} not supported in compute.rs",
                                     language
                                 ));
@@ -121,10 +120,6 @@ impl GridController {
                         }
                         if let Some(code_cell_value) = code_cell_result {
                             let sheet = self.grid.sheet_mut_from_id(rect.sheet_id);
-                            js::log(&format!(
-                                "cells_accessed {:?} | error: {:?}",
-                                cells_accessed, code_cell_value.error_msg
-                            ));
                             sheet.set_code_cell_value(
                                 pos,
                                 Some(CodeCellValue {
@@ -162,17 +157,12 @@ impl GridController {
             }
             // add all dependent cells to the cells_to_compute
             let dependent_cells = self.grid.get_dependent_cells(rect);
-            js::log(&format!(
-                "adding dependent cells to compute {:?}",
-                dependent_cells.clone()
-            ));
             // loop through all dependent cells
             for dependent_cell in dependent_cells {
                 // add to cells_to_compute
                 cells_to_compute.push(SheetRect::single_pos(dependent_cell));
             }
         }
-        js::log("compute loop complete");
         reverse_operations
     }
 }
@@ -250,7 +240,7 @@ mod test {
 
     use super::{SheetPos, SheetRect};
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_graph() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];

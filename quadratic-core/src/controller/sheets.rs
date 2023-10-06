@@ -107,57 +107,68 @@ impl GridController {
     }
 }
 
-#[test]
-fn test_add_delete_reorder_sheets() {
-    let mut g = GridController::new();
-    g.add_sheet(None);
-    g.add_sheet(None);
-    let old_sheet_ids = g.sheet_ids();
-    let s1 = old_sheet_ids[0];
-    let s2 = old_sheet_ids[1];
-    let s3 = old_sheet_ids[2];
-
-    let mut test_reorder = |a, b, expected: [SheetId; 3]| {
-        g.move_sheet(a, b, None);
-        assert_eq!(expected.to_vec(), g.sheet_ids());
-        g.undo(None);
-        assert_eq!(old_sheet_ids, g.sheet_ids());
-    };
-
-    test_reorder(s1, Some(s2), [s1, s2, s3]);
-    test_reorder(s1, Some(s3), [s2, s1, s3]);
-    test_reorder(s1, None, [s2, s3, s1]);
-    test_reorder(s2, Some(s1), [s2, s1, s3]);
-    test_reorder(s2, Some(s3), [s1, s2, s3]);
-    test_reorder(s2, None, [s1, s3, s2]);
-    test_reorder(s3, Some(s1), [s3, s1, s2]);
-    test_reorder(s3, Some(s2), [s1, s3, s2]);
-    test_reorder(s3, None, [s1, s2, s3]);
-
-    let mut test_delete = |a, expected: [SheetId; 2]| {
-        g.delete_sheet(a, None);
-        assert_eq!(expected.to_vec(), g.sheet_ids());
-        g.undo(None);
-        assert_eq!(old_sheet_ids, g.sheet_ids());
-    };
-
-    test_delete(s1, [s2, s3]);
-    test_delete(s2, [s1, s3]);
-    test_delete(s3, [s1, s2]);
-}
-
 #[cfg(test)]
 mod test {
-    use crate::controller::GridController;
+    use crate::{controller::GridController, grid::SheetId};
 
-    #[test]
-    fn test_duplicate_sheet() {
+    #[tokio::test]
+    async fn test_add_delete_reorder_sheets() {
+        let mut g = GridController::new();
+        g.add_sheet(None).await;
+        g.add_sheet(None).await;
+        let old_sheet_ids = g.sheet_ids();
+        let s1 = old_sheet_ids[0];
+        let s2 = old_sheet_ids[1];
+        let s3 = old_sheet_ids[2];
+
+        async fn test_reorder(
+            g: &mut GridController,
+            a: SheetId,
+            b: Option<SheetId>,
+            expected: [SheetId; 3],
+            old_sheet_ids: &Vec<SheetId>,
+        ) {
+            g.move_sheet(a, b, None).await;
+            assert_eq!(expected.to_vec(), g.sheet_ids());
+            g.undo(None);
+            assert_eq!(*old_sheet_ids, g.sheet_ids());
+        }
+
+        test_reorder(&mut g, s1, Some(s2), [s1, s2, s3], &old_sheet_ids).await;
+        test_reorder(&mut g, s1, Some(s3), [s2, s1, s3], &old_sheet_ids).await;
+        test_reorder(&mut g, s1, None, [s2, s3, s1], &old_sheet_ids).await;
+        test_reorder(&mut g, s2, Some(s1), [s2, s1, s3], &old_sheet_ids).await;
+        test_reorder(&mut g, s2, Some(s3), [s1, s2, s3], &old_sheet_ids).await;
+        test_reorder(&mut g, s2, None, [s1, s3, s2], &old_sheet_ids).await;
+        test_reorder(&mut g, s3, Some(s1), [s3, s1, s2], &old_sheet_ids).await;
+        test_reorder(&mut g, s3, Some(s2), [s1, s3, s2], &old_sheet_ids).await;
+        test_reorder(&mut g, s3, None, [s1, s2, s3], &old_sheet_ids).await;
+
+        async fn test_delete(
+            g: &mut GridController,
+            a: SheetId,
+            expected: [SheetId; 2],
+            old_sheet_ids: &Vec<SheetId>,
+        ) {
+            g.delete_sheet(a, None).await;
+            assert_eq!(expected.to_vec(), g.sheet_ids());
+            g.undo(None);
+            assert_eq!(*old_sheet_ids, g.sheet_ids());
+        }
+
+        test_delete(&mut g, s1, [s2, s3], &old_sheet_ids).await;
+        test_delete(&mut g, s2, [s1, s3], &old_sheet_ids).await;
+        test_delete(&mut g, s3, [s1, s2], &old_sheet_ids).await;
+    }
+
+    #[tokio::test]
+    async fn test_duplicate_sheet() {
         let mut g = GridController::new();
         let old_sheet_ids = g.sheet_ids();
         let s1 = old_sheet_ids[0];
 
-        g.set_sheet_name(s1, String::from("Nice Name"), None);
-        g.duplicate_sheet(s1, None);
+        g.set_sheet_name(s1, String::from("Nice Name"), None).await;
+        g.duplicate_sheet(s1, None).await;
         let sheet_ids = g.sheet_ids();
         let s2 = sheet_ids[1];
 
@@ -167,30 +178,23 @@ mod test {
         assert_eq!(sheet2.name, format!("{} Copy", sheet1.name));
     }
 
-    #[test]
-    fn test_delete_last_sheet() {
+    #[tokio::test]
+    async fn test_delete_last_sheet() {
         let mut g = GridController::new();
         let sheet_ids = g.sheet_ids();
-        let first_sheet_id = sheet_ids[0];
+        let first_sheet_id = sheet_ids[0].clone();
 
-        #[actix_rt::test]
-        async fn test_delete_last_sheet() {
-            let mut g = GridController::new();
-            let sheet_ids = g.sheet_ids();
-            let first_sheet_id = sheet_ids[0].clone();
+        g.delete_sheet(first_sheet_id, None).await;
+        let new_sheet_ids = g.sheet_ids();
+        assert_eq!(new_sheet_ids.len(), 1);
+        assert_ne!(new_sheet_ids[0], sheet_ids[0]);
 
-            g.delete_sheet(first_sheet_id, None).await;
-            let new_sheet_ids = g.sheet_ids();
-            assert_eq!(new_sheet_ids.len(), 1);
-            assert_ne!(new_sheet_ids[0], sheet_ids[0]);
+        g.undo(None);
+        let new_sheet_ids_2 = g.sheet_ids();
+        assert_eq!(sheet_ids[0], new_sheet_ids_2[0]);
 
-            g.undo(None);
-            let new_sheet_ids_2 = g.sheet_ids();
-            assert_eq!(sheet_ids[0], new_sheet_ids_2[0]);
-
-            g.redo(None);
-            let new_sheet_ids_3 = g.sheet_ids();
-            assert_eq!(new_sheet_ids[0], new_sheet_ids_3[0]);
-        }
+        g.redo(None);
+        let new_sheet_ids_3 = g.sheet_ids();
+        assert_eq!(new_sheet_ids[0], new_sheet_ids_3[0]);
     }
 }

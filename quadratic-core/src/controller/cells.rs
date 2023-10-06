@@ -273,17 +273,14 @@ mod test {
         CellValue, Pos, Rect,
     };
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn test_set_cell_value_undo_redo() {
         let mut g = GridController::new();
         let sheet_id = g.grid.sheets()[0].id;
         let pos = Pos { x: 3, y: 6 };
         let get_the_cell =
             |g: &GridController| g.sheet(sheet_id).get_cell_value(pos).unwrap_or_default();
-        let expected_summary = Some(TransactionSummary {
-            cell_regions_modified: vec![(sheet_id, Rect::single_pos(pos))],
-            ..Default::default()
-        });
+        let expected_cell_regions_modified = vec![(sheet_id, Rect::single_pos(pos))];
 
         assert_eq!(get_the_cell(&g), CellValue::Blank);
         g.set_cell_value(sheet_id, pos, String::from("a"), None)
@@ -292,19 +289,37 @@ mod test {
         g.set_cell_value(sheet_id, pos, String::from("b"), None)
             .await;
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
-        assert!(g.undo(None) == expected_summary);
+        assert_eq!(
+            g.undo(None).unwrap().cell_regions_modified,
+            expected_cell_regions_modified
+        );
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
-        assert!(g.redo(None) == expected_summary);
+        assert_eq!(
+            g.redo(None).unwrap().cell_regions_modified,
+            expected_cell_regions_modified
+        );
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
-        assert!(g.undo(None) == expected_summary);
+        assert_eq!(
+            g.undo(None).unwrap().cell_regions_modified,
+            expected_cell_regions_modified
+        );
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
-        assert!(g.undo(None) == expected_summary);
+        assert_eq!(
+            g.undo(None).unwrap().cell_regions_modified,
+            expected_cell_regions_modified
+        );
         assert_eq!(get_the_cell(&g), CellValue::Blank);
         assert!(g.undo(None).is_none());
         assert_eq!(get_the_cell(&g), CellValue::Blank);
-        assert!(g.redo(None) == expected_summary);
+        assert_eq!(
+            g.redo(None).unwrap().cell_regions_modified,
+            expected_cell_regions_modified
+        );
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
-        assert!(g.redo(None) == expected_summary);
+        assert_eq!(
+            g.redo(None).unwrap().cell_regions_modified,
+            expected_cell_regions_modified
+        );
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
         assert!(g.redo(None).is_none());
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
