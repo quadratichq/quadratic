@@ -26,7 +26,7 @@ fn new_fullmatch_regex(s: &str) -> Regex {
 
 /// Function call consisting of a letter or underscore followed by any letters,
 /// digits, and/or underscores terminated with a `(`.
-const FUNCTION_CALL_PATTERN: &str = r#"[A-Za-z_][A-Za-z_\d]*\("#;
+const FUNCTION_CALL_PATTERN: &str = r"[A-Za-z_][A-Za-z_\d]*\(";
 
 /// A1-style cell reference.
 ///
@@ -35,7 +35,7 @@ const FUNCTION_CALL_PATTERN: &str = r#"[A-Za-z_][A-Za-z_\d]*\("#;
 ///    n?         n?          optional `n`s
 ///      [A-Z]+               letters
 ///                 \d+       digits
-const A1_CELL_REFERENCE_PATTERN: &str = r#"\$?n?[A-Z]+\$?n?\d+"#;
+const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?[A-Z]+\$?n?\d+";
 
 /// Floating-point or integer number, without leading sign.
 ///
@@ -48,11 +48,11 @@ const A1_CELL_REFERENCE_PATTERN: &str = r#"\$?n?[A-Z]+\$?n?\d+"#;
 ///                    ([eE]        )?    optional exponent
 ///                         [+-]?           with an optional sign
 ///                              \d+        followed by some digits
-const NUMERIC_LITERAL_PATTERN: &str = r#"(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?"#;
+const NUMERIC_LITERAL_PATTERN: &str = r"(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?";
 
 /// Single-quoted string. Note that like Rust strings, this can span multiple
 /// lines.
-const SINGLE_QUOTE_STRING_LITERAL_PATTERN: &str = r#"'([^'\\]|\\[\s\S])*'"#;
+const SINGLE_QUOTE_STRING_LITERAL_PATTERN: &str = r"'([^'\\]|\\[\s\S])*'";
 /// Double-quoted string. Note that like Rust strings, this can span multiple
 /// lines.
 const DOUBLE_QUOTE_STRING_LITERAL_PATTERN: &str = r#""([^"\\]|\\[\s\S])*""#;
@@ -64,11 +64,11 @@ const TOKEN_PATTERNS: &[&str] = &[
     // Comparison operators `==`, `!=`, `<=`, and `>=`.
     r#"[=!<>]="#,
     // Double and triple dot.
-    r#"\.\.\.?"#,
+    r"\.\.\.?",
     // Line comment.
-    r#"//[^\n]*"#,
+    r"//[^\n]*",
     // Start of a block comment (block comment has special handling).
-    r#"/\*"#,
+    r"/\*",
     // String literal.
     SINGLE_QUOTE_STRING_LITERAL_PATTERN,
     DOUBLE_QUOTE_STRING_LITERAL_PATTERN,
@@ -82,9 +82,9 @@ const TOKEN_PATTERNS: &[&str] = &[
     // Reference to a cell.
     A1_CELL_REFERENCE_PATTERN,
     // Whitespace.
-    r#"\s+"#,
+    r"\s+",
     // Any other single Unicode character.
-    r#"[\s\S]"#,
+    r"[\s\S]",
 ];
 
 lazy_static! {

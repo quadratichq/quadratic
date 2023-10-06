@@ -217,7 +217,10 @@ export class PointerHeading {
       this.active = false;
       const { resizing: headingResizing } = this;
       if (headingResizing) {
-        grid.commitHeadingResize();
+        const transientResize = sheets.sheet.offsets.getResizeToApply();
+        if (transientResize) {
+          grid.commitTransientResize(sheets.sheet.id, transientResize);
+        }
         this.resizing = undefined;
 
         // fixes a bug where the viewport may still be decelerating
@@ -235,9 +238,7 @@ export class PointerHeading {
     const sheetId = sheets.sheet.id;
     const originalSize = sheets.sheet.getCellOffsets(column, 0);
     if (originalSize.width !== size) {
-      // todo...
-      grid.headingResizeColumnCommit(sheetId, column, size, true);
-      pixiApp.adjustHeadings({ sheetId, column, delta: size - originalSize.width });
+      grid.commitSingleResize(sheetId, column, undefined, size);
     }
   }
 

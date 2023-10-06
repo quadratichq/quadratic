@@ -167,7 +167,7 @@ mod tests {
 
         // Blank values are treated as zeros when summing, but *not* when
         // evaluating conditions.
-        let g = &mut FnGrid(|pos| (pos.y >= 0).then(|| pos.y));
+        let g = &mut FnGrid(|pos| (pos.y >= 0).then_some(pos.y));
         assert_eq!("2.5", eval_to_string(g, "AVERAGEIF(Bn5:B10, \"<=5\")"));
         let g = &mut BlankGrid;
         assert_eq!(
@@ -240,8 +240,8 @@ mod tests {
         assert_eq!("6", eval_to_string(g, "COUNTIF(0..10, \"<=5\")"));
 
         // Test that blank cells are ignored
-        let g = &mut FnGrid(|pos| (pos.y >= 0).then(|| pos.y));
-        assert_eq!("6", eval_to_string(g, "COUNTIF(Bn5:B10, \"<=5\")"))
+        let g = &mut FnGrid(|pos| (pos.y >= 0).then_some(pos.y));
+        assert_eq!("6", eval_to_string(g, "COUNTIF(Bn5:B10, \"<=5\")"));
     }
 
     #[test]

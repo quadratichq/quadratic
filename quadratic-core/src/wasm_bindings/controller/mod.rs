@@ -8,8 +8,8 @@ pub mod cells;
 pub mod clipboard;
 pub mod formatting;
 pub mod import;
-pub mod offsets;
 pub mod render;
+pub mod sheet_offsets;
 pub mod sheets;
 
 #[wasm_bindgen]
@@ -23,7 +23,7 @@ impl GridController {
     /// Exports a [`GridController`] to a file. Returns a `String`.
     #[wasm_bindgen(js_name = "exportToFile")]
     pub fn js_export_to_file(&self) -> Result<String, JsValue> {
-        Ok(file::export(&self.grid())?)
+        Ok(file::export(self.grid())?)
     }
 
     /// Exports a [`string`]
@@ -81,6 +81,7 @@ impl GridController {
             cell_hash_values_modified: BTreeMap::new(),
             sheet_list_modified: false,
             cursor: None,
+            offsets_modified: vec![],
         })?)
     }
 }

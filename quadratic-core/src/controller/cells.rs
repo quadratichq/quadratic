@@ -12,28 +12,10 @@ use super::{
     GridController,
 };
 
-// todo: fill this out
-const CURRENCY_SYMBOLS: &str = "$€£¥";
-
 impl GridController {
     pub fn populate_with_random_floats(&mut self, sheet_id: SheetId, region: &Rect) {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
         sheet.with_random_floats(region);
-    }
-
-    /// tests whether a a CellValue::Text is a currency value
-    fn unpack_currency(s: &String) -> Option<(String, BigDecimal)> {
-        if s.is_empty() {
-            return None;
-        }
-        for char in CURRENCY_SYMBOLS.chars() {
-            if let Some(stripped) = s.strip_prefix(char) {
-                if let Ok(bd) = BigDecimal::from_str(stripped) {
-                    return Some((char.to_string(), bd));
-                }
-            }
-        }
-        None
     }
 
     /// sets the value based on a user's input and converts input to proper NumericFormat
@@ -50,7 +32,7 @@ impl GridController {
         let mut ops = vec![];
 
         // check for currency
-        if let Some((currency, number)) = Self::unpack_currency(&value) {
+        if let Some((currency, number)) = CellValue::unpack_currency(&value) {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
                 values: Array::from(CellValue::Number(number)),
@@ -158,14 +140,14 @@ impl GridController {
         rect: Rect,
     ) -> Vec<Operation> {
         let region = self.existing_region(sheet_id, rect);
-        let ops = match region.size() {
+
+        match region.size() {
             Some(size) => {
                 let values = Array::new_empty(size);
                 vec![Operation::SetCellValues { region, values }]
             }
             None => vec![], // region is empty; do nothing
-        };
-        ops
+        }
     }
 
     pub async fn delete_cell_values(
@@ -180,7 +162,8 @@ impl GridController {
 
     pub fn clear_formatting_operations(&mut self, sheet_id: SheetId, rect: Rect) -> Vec<Operation> {
         let region = self.existing_region(sheet_id, rect);
-        let ops = match region.size() {
+
+        match region.size() {
             Some(_) => {
                 let len = region.size().unwrap().len();
                 vec![
@@ -219,8 +202,7 @@ impl GridController {
                 ]
             }
             None => vec![],
-        };
-        ops
+        }
     }
 
     pub async fn clear_formatting(
@@ -332,17 +314,17 @@ mod test {
     fn test_unpack_currency() {
         let value = String::from("$123.123");
         assert_eq!(
-            GridController::unpack_currency(&value),
-            Some((String::from("$"), BigDecimal::from_str(&"123.123").unwrap()))
+            CellValue::unpack_currency(&value),
+            Some((String::from("$"), BigDecimal::from_str("123.123").unwrap()))
         );
 
         let value = String::from("test");
-        assert_eq!(GridController::unpack_currency(&value), None);
+        assert_eq!(CellValue::unpack_currency(&value), None);
 
         let value = String::from("$123$123");
-        assert_eq!(GridController::unpack_currency(&value), None);
+        assert_eq!(CellValue::unpack_currency(&value), None);
 
         let value = String::from("$123.123abc");
-        assert_eq!(GridController::unpack_currency(&value), None);
+        assert_eq!(CellValue::unpack_currency(&value), None);
     }
 }

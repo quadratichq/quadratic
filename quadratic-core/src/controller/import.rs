@@ -129,7 +129,7 @@ Concord,NH,United States,42605
         );
     }
 
-    #[actix_rt::test]
+    #[tokio::test]
     async fn errors_on_an_empty_csv() {
         let mut grid_controller = GridController::new();
         let sheet_id = grid_controller.grid.sheets()[0].id;

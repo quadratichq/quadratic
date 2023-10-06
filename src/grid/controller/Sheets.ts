@@ -1,6 +1,7 @@
 import { debugMockLargeData } from '../../debugFlags';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
+import { SheetId } from '../../quadratic-core/types';
 import { Sheet } from '../sheet/Sheet';
 import { grid } from './Grid';
 import { mockLargeData } from './mockLargeData';
@@ -248,6 +249,16 @@ class Sheets {
 
   getCursorPosition(): string {
     return JSON.stringify(this.sheet.cursor.save());
+  }
+
+  // handle changes to sheet offsets by only updating columns/rows impacted by resize
+  updateOffsets(sheetIds: SheetId[]) {
+    sheetIds.forEach((sheetId) => {
+      const sheet = this.getById(sheetId.id);
+      if (!sheet) throw new Error('Expected sheet to be defined in updateOffsets');
+      sheet.updateSheetOffsets();
+    });
+    pixiApp.gridLines.dirty = true;
   }
 }
 
