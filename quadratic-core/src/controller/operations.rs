@@ -1,4 +1,4 @@
-use crate::{grid::*, Array, CellValue};
+use crate::{grid::*, values::IsBlank, Array, CellValue};
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -67,6 +67,8 @@ impl GridController {
         summary: &mut TransactionSummary,
     ) -> Operation {
         let mut cell_regions_modified = vec![];
+        let mut cells_deleted = vec![];
+
         let operation = match op {
             Operation::None => Operation::None,
             Operation::SetCellValues { region, values } => {
@@ -81,6 +83,11 @@ impl GridController {
                     .zip(values.into_cell_values_vec())
                     .map(|(cell_ref, value)| {
                         let pos = sheet.cell_ref_to_pos(cell_ref)?;
+
+                        if value.is_blank() {
+                            cells_deleted.push(pos);
+                        }
+
                         let response = sheet.set_cell_value(pos, value)?;
                         Some(response.old_value)
                     })
@@ -257,10 +264,14 @@ impl GridController {
             }
         };
 
-        let js_render_cells = cell_regions_modified
-            .iter()
-            .flat_map(|(sheet_id, rect)| self.grid.sheet_from_id(*sheet_id).get_render_cells(*rect))
+        let js_render_cells = cell_regions_modified.iter().flat_map(|(sheet_id, rect)| {
+            self.grid.sheet_from_id(*sheet_id).get_render_cells(*rect)
+        });
+        let js_render_cells_blank = cells_deleted.into_iter().map(|pos| pos.into());
+        let js_render_cells = js_render_cells
+            .chain(js_render_cells_blank)
             .collect::<Vec<_>>();
+
         summary.add_js_render_cells(js_render_cells);
 
         summary.cell_regions_modified.extend(cell_regions_modified);

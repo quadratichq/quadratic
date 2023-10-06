@@ -285,9 +285,22 @@ mod tests {
             .into_iter()
             .enumerate()
             .for_each(|(index, (key, value))| {
-                let entry = expected.get(index).unwrap();
-                assert_eq!(key, entry.0);
-                assert_eq!(value, to_js_render_cell(entry.1.clone()));
+                assert_eq!(key, expected[index].0);
+                assert_eq!(value, to_js_render_cell(expected[index].1.clone()));
             });
+
+        // now make one of tne non-blank cells blank
+        let operations = vec![add_cell_value(
+            &mut gc,
+            sheet_id,
+            (0, 0).into(),
+            CellValue::Blank,
+        )];
+
+        let summary = gc.transact_forward(operations, None).await;
+        assert_eq!(
+            summary.cell_hash_values_modified.get("0,0".into()).unwrap(),
+            &to_js_render_cell(vec![(0, 0, "")])
+        );
     }
 }
