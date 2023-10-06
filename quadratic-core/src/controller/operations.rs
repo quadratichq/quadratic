@@ -73,6 +73,9 @@ impl GridController {
             Operation::None => Operation::None,
             Operation::SetCellValues { region, values } => {
                 cell_regions_modified.extend(self.grid.region_rects(&region));
+                summary
+                    .cell_value_regions_modified
+                    .extend(self.grid.region_rects(&region));
 
                 let sheet = self.grid.sheet_mut_from_id(region.sheet);
 
@@ -262,10 +265,15 @@ impl GridController {
             }
         };
 
+        // get the cells that were modified but not modified to blank
         let js_render_cells = cell_regions_modified.iter().flat_map(|(sheet_id, rect)| {
             self.grid.sheet_from_id(*sheet_id).get_render_cells(*rect)
         });
+
+        // get the cells that were modified to blank
         let js_render_cells_blank = cells_deleted.into_iter().map(|pos| pos.into());
+
+        // combine the two
         let js_render_cells = js_render_cells
             .chain(js_render_cells_blank)
             .collect::<Vec<_>>();

@@ -125,6 +125,8 @@ pub struct Transaction {
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct TransactionSummary {
+    /// Cell value regions modified.
+    pub cell_value_regions_modified: Vec<(SheetId, Rect)>,
     /// Cell and text formatting regions modified.
     pub cell_regions_modified: Vec<(SheetId, Rect)>,
     /// Sheets where any fills have been modified.
@@ -133,7 +135,7 @@ pub struct TransactionSummary {
     pub border_sheets_modified: Vec<SheetId>,
     /// Locations of code cells that were modified. They may no longer exist.
     pub code_cells_modified: Vec<(SheetId, Pos)>,
-    /// CellHash blocks of affect cell values and formats
+    /// CellHash blocks of affected cell values and formats
     pub cell_hash_values_modified: BTreeMap<String, Vec<JsRenderCell>>,
     /// Sheet metadata or order was modified.
     pub sheet_list_modified: bool,
