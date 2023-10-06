@@ -95,7 +95,7 @@ impl GridController {
         for op in operations.iter() {
             if let Some(new_dirty_sheet) = op.sheet_with_changed_bounds() {
                 if !sheets_with_changed_bounds.contains(&new_dirty_sheet) {
-                    sheets_with_changed_bounds.push(new_dirty_sheet)
+                    sheets_with_changed_bounds.push(new_dirty_sheet);
                 }
             }
             let reverse_operation = self.execute_operation(op.clone(), summary);

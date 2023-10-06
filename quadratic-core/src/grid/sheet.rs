@@ -71,6 +71,7 @@ impl Sheet {
     }
 
     // creates a Sheet for testing
+    #[cfg(test)]
     pub fn test() -> Self {
         Sheet::new(SheetId::new(), String::from("name"), String::from("A0"))
     }
@@ -247,7 +248,9 @@ impl Sheet {
     }
 
     // returns CellFormatSummary only if a formatting exists
-    pub fn get_existing_cell_format(&self, pos: Pos) -> Option<CellFormatSummary> {
+    // TODL(ddimaria): this function is nearly a duplicate of get_cell_format_summary, talk
+    // with the team to see if we can consolidate
+    pub fn get_existing_cell_format_summary(&self, pos: Pos) -> Option<CellFormatSummary> {
         match self.columns.get(&pos.x) {
             Some(column) => {
                 let bold = column.bold.get(pos.y);
@@ -440,7 +443,7 @@ fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {
     for i in values.into_iter().sorted() {
         match ret.last_mut() {
             Some(range) if range.end == i => range.end += 1,
-            Some(range) if (&*range).contains(&i) => continue,
+            Some(range) if (*range).contains(&i) => continue,
             _ => ret.push(i..i + 1),
         }
     }
@@ -453,10 +456,38 @@ mod test {
 
     use bigdecimal::BigDecimal;
 
+    use super::*;
     use crate::{
-        grid::{NumericFormat, NumericFormatKind, Sheet, SheetId},
-        CellValue, Pos,
+        controller::{auto_complete::cell_values_in_rect, GridController},
+        grid::{Bold, CellBorderStyle, Italic},
+        test_util::print_table,
     };
+
+    fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
+        let mut grid_controller = GridController::new();
+        let sheet_id = grid_controller.grid().sheets()[0].id;
+        let mut count = 0;
+
+        selection.y_range().for_each(|y| {
+            selection.x_range().for_each(|x| {
+                let pos = Pos { x, y };
+                grid_controller.set_cell_value(sheet_id, pos, vals[count].to_string(), None);
+                count += 1;
+            });
+        });
+
+        (grid_controller, sheet_id)
+    }
+
+    fn test_setup_basic() -> (GridController, SheetId, Rect) {
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
+        let vals = vec!["1", "2", "3", "4", "5", "6", "7", "8"];
+        let (grid_controller, sheet_id) = test_setup(&selected, &vals);
+
+        print_table(&grid_controller, sheet_id, selected);
+
+        (grid_controller, sheet_id, selected)
+    }
 
     #[test]
     fn test_current_decimal_places_value() {
@@ -465,13 +496,13 @@ mod test {
         // get decimal places after a set_cell_value
         sheet.set_cell_value(
             Pos { x: 1, y: 2 },
-            CellValue::Number(BigDecimal::from_str(&"12.23").unwrap()),
+            CellValue::Number(BigDecimal::from_str("12.23").unwrap()),
         );
         assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), Some(2));
 
         sheet.set_cell_value(
             Pos { x: 2, y: 2 },
-            CellValue::Number(BigDecimal::from_str(&"0.23").unwrap()),
+            CellValue::Number(BigDecimal::from_str("0.23").unwrap()),
         );
         assert_eq!(sheet.decimal_places(Pos { x: 2, y: 2 }, true), Some(0));
     }
@@ -504,14 +535,14 @@ mod test {
 
         sheet.set_cell_value(
             crate::Pos { x: 1, y: 2 },
-            CellValue::Number(BigDecimal::from_str(&"0.24").unwrap()),
+            CellValue::Number(BigDecimal::from_str("0.24").unwrap()),
         );
 
         assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, true), Some(0));
 
         sheet.set_cell_value(
             crate::Pos { x: 1, y: 2 },
-            CellValue::Number(BigDecimal::from_str(&"0.245").unwrap()),
+            CellValue::Number(BigDecimal::from_str("0.245").unwrap()),
         );
 
         assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, true), Some(1));
@@ -533,5 +564,288 @@ mod test {
             sheet.cell_numeric_format_kind(Pos { x: 0, y: 0 }),
             Some(NumericFormatKind::Percentage)
         );
+    }
+
+    #[test]
+    fn test_set_cell_values() {
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 4, y: 1 });
+        let vals = vec!["a", "1", "$1.11"];
+        let expected = vec![
+            CellValue::Text("a".into()),
+            CellValue::Number(BigDecimal::from_str("1").unwrap()),
+            CellValue::Number(BigDecimal::from_str("1.11").unwrap()),
+        ];
+        let (grid, sheet_id) = test_setup(&selected, &vals);
+
+        print_table(&grid, sheet_id, selected);
+
+        let sheet = grid.grid().sheet_from_id(sheet_id);
+        let values = cell_values_in_rect(&selected, &sheet).unwrap();
+        values
+            .into_cell_values_vec()
+            .into_iter()
+            .enumerate()
+            .for_each(|(index, val)| assert_eq!(val, *expected.get(index).unwrap()));
+    }
+
+    #[test]
+    fn test_delete_cell_values() {
+        let (mut grid, sheet_id, selected) = test_setup_basic();
+
+        grid.delete_cell_values(sheet_id, selected, None);
+        let sheet = grid.grid().sheet_from_id(sheet_id);
+
+        print_table(&grid, sheet_id, selected);
+
+        let values = cell_values_in_rect(&selected, &sheet).unwrap();
+        values
+            .into_cell_values_vec()
+            .into_iter()
+            .for_each(|v| assert_eq!(v, CellValue::Blank));
+    }
+
+    // TODO(ddimaria): use the code below as a template once formula cells are in place
+    #[ignore]
+    #[test]
+    fn test_delete_cell_values_affects_dependent_cells() {
+        let (mut grid, sheet_id, selected) = test_setup_basic();
+
+        let view_rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 4 });
+        let _code_cell = crate::grid::CodeCellValue {
+            language: crate::grid::CodeCellLanguage::Formula,
+            code_string: "=SUM(A1:B2)".into(),
+            formatted_code_string: None,
+            last_modified: "".into(),
+            output: None,
+        };
+
+        // grid.set_code_cell_value((5, 2).into(), Some(code_cell));
+        print_table(&grid, sheet_id, view_rect);
+
+        grid.delete_cell_values(sheet_id, selected, None);
+        let sheet = grid.grid().sheet_from_id(sheet_id);
+
+        print_table(&grid, sheet_id, view_rect);
+
+        let values = cell_values_in_rect(&selected, &sheet).unwrap();
+        values
+            .into_cell_values_vec()
+            .into_iter()
+            .for_each(|v| assert_eq!(v, CellValue::Blank));
+    }
+
+    // TODO(ddimaria): use the code below as a template once cell borders are in place
+    #[ignore]
+    #[test]
+    fn test_set_border() {
+        let (grid, sheet_id, selected) = test_setup_basic();
+        let cell_border = CellBorder {
+            color: Some("red".into()),
+            style: Some(CellBorderStyle::Line1),
+        };
+        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+        sheet.set_horizontal_border(selected, cell_border.clone());
+        sheet.set_vertical_border(selected, cell_border);
+        let _borders = sheet.borders();
+
+        print_table(&grid, sheet_id, selected);
+
+        // let formats = grid.get_all_cell_formats(sheet_id, selected);
+        // formats
+        //     .into_iter()
+        //     .for_each(|format| assert_eq!(format, SOMETHING_HERE));
+    }
+
+    #[test]
+    fn test_get_cell_value() {
+        let (grid, sheet_id, _) = test_setup_basic();
+        let sheet = grid.grid().sheet_from_id(sheet_id);
+        let value = sheet.get_cell_value((2, 1).into());
+
+        assert_eq!(value, Some(CellValue::Number(BigDecimal::from(1))));
+    }
+
+    #[test]
+    fn test_get_set_formatting_value() {
+        let (grid, sheet_id, _) = test_setup_basic();
+        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+        sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
+        let value = sheet.get_formatting_value::<Bold>((2, 1).into());
+
+        assert_eq!(value, Some(true));
+    }
+
+    #[test]
+    fn test_get_set_code_cell_value() {
+        let (grid, sheet_id, _) = test_setup_basic();
+        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+        let code_cell = crate::grid::CodeCellValue {
+            language: crate::grid::CodeCellLanguage::Formula,
+            code_string: "=SUM(A1:B2)".into(),
+            formatted_code_string: None,
+            last_modified: "".into(),
+            output: None,
+        };
+        sheet.set_code_cell_value((2, 1).into(), Some(code_cell.clone()));
+        let value = sheet.get_code_cell((2, 1).into());
+
+        assert_eq!(value, Some(&code_cell));
+
+        let cell_ref = CellRef {
+            sheet: sheet_id,
+            column: grid
+                .grid()
+                .sheet_from_id(sheet_id)
+                .column_ids
+                .id_at(2)
+                .unwrap(),
+            row: grid
+                .grid()
+                .sheet_from_id(sheet_id)
+                .row_ids
+                .id_at(1)
+                .unwrap(),
+        };
+        let value = sheet.get_code_cell_from_ref(cell_ref);
+        assert_eq!(value, Some(&code_cell));
+    }
+
+    // TODO(ddimaria): use the code below numeric format kinds are in place
+    #[ignore]
+    #[test]
+    fn test_cell_numeric_format_kinds() {
+        let (grid, sheet_id, _) = test_setup_basic();
+        let sheet = grid.grid().sheet_from_id(sheet_id).clone();
+
+        let format_kind = sheet.cell_numeric_format_kind((2, 1).into());
+        assert_eq!(format_kind, Some(NumericFormatKind::Currency));
+
+        let format_kind = sheet.cell_numeric_format_kind((3, 1).into());
+        assert_eq!(format_kind, Some(NumericFormatKind::Percentage));
+
+        let format_kind = sheet.cell_numeric_format_kind((4, 1).into());
+        assert_eq!(format_kind, Some(NumericFormatKind::Exponential));
+
+        let format_kind = sheet.cell_numeric_format_kind((5, 1).into());
+        assert_eq!(format_kind, Some(NumericFormatKind::Number));
+    }
+
+    #[test]
+    fn test_formatting_summary() {
+        let (grid, sheet_id, selected) = test_setup_basic();
+        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+        sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
+
+        // just set a single bold value
+        let value = sheet.get_formatting_summary(selected);
+        let mut format_summary = FormattingSummary {
+            bold: BoolSummary {
+                is_any_true: true,
+                is_any_false: false,
+            },
+            italic: BoolSummary {
+                is_any_true: false,
+                is_any_false: false,
+            },
+        };
+        assert_eq!(value, format_summary);
+
+        // now add in a single italic value
+        sheet.set_formatting_value::<Italic>((3, 1).into(), Some(true));
+        let value = sheet.get_formatting_summary(selected);
+        format_summary.italic.is_any_true = true;
+        assert_eq!(value, format_summary);
+    }
+
+    #[test]
+    fn test_cell_format_summary() {
+        let (grid, sheet_id, _) = test_setup_basic();
+        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+
+        let existing_cell_format_summary = sheet.get_existing_cell_format_summary((2, 1).into());
+        assert_eq!(None, existing_cell_format_summary);
+
+        // just set a bold value
+        sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
+        let value = sheet.get_cell_format_summary((2, 1).into());
+        let mut cell_format_summary = CellFormatSummary {
+            bold: Some(true),
+            italic: None,
+            text_color: None,
+            fill_color: None,
+        };
+        assert_eq!(value, cell_format_summary);
+
+        let existing_cell_format_summary = sheet.get_existing_cell_format_summary((2, 1).into());
+        assert_eq!(
+            Some(cell_format_summary.clone()),
+            existing_cell_format_summary
+        );
+
+        // now set a italic value
+        sheet.set_formatting_value::<Italic>((2, 1).into(), Some(true));
+        let value = sheet.get_cell_format_summary((2, 1).into());
+        cell_format_summary.italic = Some(true);
+        assert_eq!(value, cell_format_summary);
+
+        let existing_cell_format_summary = sheet.get_existing_cell_format_summary((2, 1).into());
+        assert_eq!(
+            Some(cell_format_summary.clone()),
+            existing_cell_format_summary
+        );
+    }
+
+    #[test]
+    fn test_columns() {
+        let (grid, sheet_id, _) = test_setup_basic();
+        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+
+        // get all columns
+        let columns = sheet.iter_columns().collect::<Vec<_>>();
+        assert_eq!(None, columns[0].1.bold.get(1));
+
+        // set a bold value, validate it's in the vec
+        sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
+        let columns = sheet.iter_columns().collect::<Vec<_>>();
+        assert_eq!(Some(true), columns[0].1.bold.get(1));
+
+        // assert that get_column matches the column in the vec
+        let index = columns[0].0;
+        let column = sheet.get_column(index);
+        assert_eq!(Some(true), column.unwrap().bold.get(1));
+
+        // existing column
+        let mut sheet = sheet.clone();
+        let existing_column = sheet.get_or_create_column(2);
+        assert_eq!(column, Some(existing_column.1).as_deref());
+
+        // new column
+        let mut sheet = sheet.clone();
+        let new_column = sheet.get_or_create_column(1);
+        assert_eq!(new_column.1, &Column::with_id(new_column.0.id));
+    }
+
+    #[test]
+    fn test_rows() {
+        let (grid, sheet_id, _) = test_setup_basic();
+        let sheet = grid.grid().sheet_from_id(sheet_id).clone();
+
+        // get all rows
+        let rows = sheet.iter_rows().collect::<Vec<_>>();
+        let row = sheet.get_row(1);
+        assert_eq!(row, Some(rows[0].1));
+
+        let row = sheet.get_row(2);
+        assert_eq!(row, Some(rows[1].1));
+
+        // existing row
+        let mut sheet = sheet.clone();
+        let existing_row = sheet.get_or_create_row(1);
+        assert_eq!(Some(rows[0].1), Some(existing_row.id));
+
+        // new row
+        let mut sheet = sheet.clone();
+        let new_row = sheet.get_or_create_row(3);
+        rows.iter().for_each(|row| assert_ne!(row.1, new_row.id));
     }
 }

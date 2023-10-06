@@ -145,8 +145,7 @@ impl Array {
         Self::new_row_major(
             self.size(),
             self.rows()
-                .map(|row| row.iter().rev().cloned())
-                .flatten()
+                .flat_map(|row| row.iter().rev().cloned())
                 .collect(),
         )
         .unwrap()

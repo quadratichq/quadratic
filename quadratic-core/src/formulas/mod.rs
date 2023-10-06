@@ -6,6 +6,7 @@ mod ast;
 mod cell_ref;
 mod criteria;
 mod ctx;
+#[allow(clippy::vec_init_then_push)]
 pub mod functions;
 mod grid_proxy;
 mod lexer;

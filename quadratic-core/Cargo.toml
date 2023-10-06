@@ -69,7 +69,7 @@ actix-rt = "*"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 proptest = "1.2.0"
-proptest-derive = "0.3.0"
+proptest-derive = "0.4.0"
 
 [[bench]]
 name = "grid_benchmark"

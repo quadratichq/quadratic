@@ -134,15 +134,13 @@ fn test_formula_circular_array_ref() {
     let mut g = FnGrid(|pos| {
         if pos == pos![B2] {
             panic!("cell {pos} shouldn't be accessed")
-        } else {
-            ()
         }
     });
 
     assert_eq!(
         ErrorMsg::CircularReference,
         form.eval_blocking(&mut g, pos![B2]).unwrap_err().msg,
-    )
+    );
 }
 
 #[test]

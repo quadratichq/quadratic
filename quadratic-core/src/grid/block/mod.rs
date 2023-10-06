@@ -94,7 +94,7 @@ impl<B: BlockContent> Block<B> {
                     resulting_blocks.push(Block {
                         y: y + 1,
                         content: right,
-                    })
+                    });
                 }
                 Ok((resulting_blocks, value_removed))
             }
@@ -126,7 +126,7 @@ impl<B: BlockContent> Block<B> {
     }
 
     fn index(&self, y: i64) -> Option<usize> {
-        self.contains(y).then(|| (y - self.y) as usize)
+        self.contains(y).then_some((y - self.y) as usize)
     }
 }
 

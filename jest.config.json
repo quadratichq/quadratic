@@ -1,13 +1,19 @@
 {
   "verbose": true,
+  "testEnvironment": "node",
   "preset": "ts-jest",
   "testPathIgnorePatterns": [
     "<rootDir>/tests-e2e/*",
     "<rootDir>/node_modules/",
     "<rootDir>/quadratic-api/*",
-    "<rootDir>/quadratic-core/*"
+    "<rootDir>/quadratic-core/*",
+    ".ignore.*"
   ],
-  "modulePathIgnorePatterns": ["quadratic-core/pkg/package.json"],
+  "modulePathIgnorePatterns": [
+    "<rootDir>/quadratic-core/pkg/package.json",
+    "<rootDir>/src/quadratic-core/package.json",
+    "<rootDir>/src/quadratic-core/__mocks__/package.json"
+  ],
   "transform": {
     "^.+\\.(ts|tsx|js|jsx)?$": "ts-jest",
     "\\.py$": "<rootDir>/jest-transformer-py"
