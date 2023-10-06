@@ -30,6 +30,8 @@ impl Default for SheetOffsets {
     }
 }
 
+pub type OffsetWidthHeight = (Vec<(i64, f64)>, Vec<(i64, f64)>);
+
 impl SheetOffsets {
     pub fn new(column_widths: Offsets, row_heights: Offsets) -> Self {
         SheetOffsets {
@@ -40,7 +42,7 @@ impl SheetOffsets {
     }
 
     /// exports offsets to a GridFile
-    pub fn export(&self) -> (Vec<(i64, f64)>, Vec<(i64, f64)>) {
+    pub fn export(&self) -> OffsetWidthHeight {
         (
             self.column_widths.iter_sizes().collect(),
             self.row_heights.iter_sizes().collect(),
@@ -48,7 +50,7 @@ impl SheetOffsets {
     }
 
     /// import offsets from a GridFile
-    pub fn import(offsets: (Vec<(i64, f64)>, Vec<(i64, f64)>)) -> Self {
+    pub fn import(offsets: OffsetWidthHeight) -> Self {
         SheetOffsets {
             column_widths: Offsets::from_iter(
                 crate::DEFAULT_COLUMN_WIDTH,

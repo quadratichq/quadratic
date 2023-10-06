@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use itertools::Itertools;
 
+use crate::sheet_offsets::OffsetWidthHeight;
+
 pub use super::current::*; // when creating new version, replace `current` with new module
 
 use super::v1_4;
@@ -18,7 +20,7 @@ pub(crate) struct SheetSchema {
     pub name: String,
     pub color: Option<String>,
     pub order: String,
-    pub offsets: (Vec<(i64, f64)>, Vec<(i64, f64)>),
+    pub offsets: OffsetWidthHeight,
     pub columns: Vec<(i64, Column)>,
     pub rows: Vec<(i64, RowId)>,
     pub borders: SheetBorders,

@@ -268,10 +268,7 @@ mod test {
 
     use bigdecimal::BigDecimal;
 
-    use crate::{
-        controller::{GridController},
-        CellValue, Pos, Rect,
-    };
+    use crate::{controller::GridController, CellValue, Pos, Rect};
 
     #[tokio::test]
     async fn test_set_cell_value_undo_redo() {

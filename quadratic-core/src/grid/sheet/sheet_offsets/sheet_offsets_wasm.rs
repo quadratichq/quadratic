@@ -33,10 +33,7 @@ impl OffsetsSizeChanges {
     pub fn get_changes(&self, columns: bool) -> Int32Array {
         let mut ret = vec![];
         for change in &self.changes {
-            if change.column && columns {
-                ret.push(change.index as i32);
-                ret.push(change.delta as i32);
-            } else if !change.column && !columns {
+            if (change.column && columns) || (!change.column && !columns) {
                 ret.push(change.index as i32);
                 ret.push(change.delta as i32);
             }
@@ -180,7 +177,6 @@ impl SheetOffsets {
     /// Returns Float32Array structured as [index, size, index, size, ...]
     #[wasm_bindgen(js_name = "findResizeChanges")]
     pub fn js_find_resize_changes(&self, old_sheet_offsets: &SheetOffsets) -> OffsetsSizeChanges {
-        
         self.changes(old_sheet_offsets)
     }
 }

@@ -17,7 +17,7 @@ impl SheetOffsets {
                     row: None,
                     old_size,
                     new_size: size,
-                })
+                });
             }
         }
     }
@@ -35,7 +35,7 @@ impl SheetOffsets {
                     row: Some(row),
                     old_size,
                     new_size: size,
-                })
+                });
             }
         }
     }

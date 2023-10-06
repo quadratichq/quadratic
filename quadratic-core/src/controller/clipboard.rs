@@ -311,19 +311,18 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         // first try html
-        if html.is_some() {
-            let pasted_html = self
-                .paste_html(sheet_id, pos, html.unwrap(), cursor.clone())
-                .await;
-            if pasted_html.is_ok() {
-                return pasted_html.unwrap();
+        if let Some(html) = html {
+            let pasted_html = self.paste_html(sheet_id, pos, html, cursor.clone()).await;
+            if let Ok(pasted_html) = pasted_html {
+                return pasted_html;
             }
         }
 
         // if not quadratic html, then use the plain text
-        if plain_text.is_some() {
+        // first try html
+        if let Some(plain_text) = plain_text {
             return self
-                .paste_plain_text(sheet_id, pos, plain_text.unwrap(), cursor)
+                .paste_plain_text(sheet_id, pos, plain_text, cursor)
                 .await;
         }
         TransactionSummary::default()

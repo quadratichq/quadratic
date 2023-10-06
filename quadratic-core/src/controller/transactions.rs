@@ -149,7 +149,7 @@ impl TransactionSummary {
 
         self.cell_hash_values_modified
             .entry(cell_hash.0.to_owned())
-            .or_insert(vec![])
+            .or_default()
             .push(js_render_cell);
     }
 

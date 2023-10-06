@@ -91,7 +91,7 @@ impl GridController {
                                                         );
                                                     match to_string {
                                                         Ok(cell_for_array) => {
-                                                            cells = Some(cell_for_array)
+                                                            cells = Some(cell_for_array);
                                                         }
                                                         Err(_) => cells = None,
                                                     }
