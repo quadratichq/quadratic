@@ -28,7 +28,7 @@ impl GridController {
                     let sheet = self.grid.sheet_mut_from_id(rect.sheet_id);
                     if let Some(code_cell) = sheet.get_code_cell(pos) {
                         let code_string = code_cell.code_string.clone();
-                        let language = code_cell.language.clone();
+                        let language = code_cell.language;
 
                         let mut code_cell_result = None;
                         let mut cells_accessed = vec![];
@@ -72,7 +72,7 @@ impl GridController {
                                                     cells_accessed.push(SheetRect {
                                                         min: rect.min,
                                                         max: rect.max,
-                                                        sheet_id: sheet.id.clone(),
+                                                        sheet_id: sheet.id,
                                                     });
                                                     for y in rect.y_range() {
                                                         for x in rect.x_range() {

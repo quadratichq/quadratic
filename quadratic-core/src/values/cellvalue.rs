@@ -399,7 +399,7 @@ mod test {
         let value = String::from("$123.123");
         assert_eq!(
             CellValue::unpack_currency(&value),
-            Some((String::from("$"), BigDecimal::from_str(&"123.123").unwrap()))
+            Some((String::from("$"), BigDecimal::from_str("123.123").unwrap()))
         );
 
         let value = String::from("test");

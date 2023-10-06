@@ -182,7 +182,7 @@ mod test {
     async fn test_delete_last_sheet() {
         let mut g = GridController::new();
         let sheet_ids = g.sheet_ids();
-        let first_sheet_id = sheet_ids[0].clone();
+        let first_sheet_id = sheet_ids[0];
 
         g.delete_sheet(first_sheet_id, None).await;
         let new_sheet_ids = g.sheet_ids();

@@ -184,8 +184,8 @@ pub struct CellHash(String);
 
 impl From<Pos> for CellHash {
     fn from(pos: Pos) -> Self {
-        let hash_width = 20 as f64;
-        let hash_height = 40 as f64;
+        let hash_width = 20_f64;
+        let hash_height = 40_f64;
         let cell_hash_x = (pos.x as f64 / hash_width).floor() as i64;
         let cell_hash_y = (pos.y as f64 / hash_height).floor() as i64;
         let cell_hash = format!("{},{}", cell_hash_x, cell_hash_y);
@@ -301,7 +301,7 @@ mod tests {
 
         let summary = gc.transact_forward(operations, None).await;
         assert_eq!(
-            summary.cell_hash_values_modified.get("0,0".into()).unwrap(),
+            summary.cell_hash_values_modified.get("0,0").unwrap(),
             &to_js_render_cell(vec![(0, 0, "")])
         );
     }

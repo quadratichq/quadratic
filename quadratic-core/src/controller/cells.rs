@@ -269,7 +269,7 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use crate::{
-        controller::{transactions::TransactionSummary, GridController},
+        controller::{GridController},
         CellValue, Pos, Rect,
     };
 

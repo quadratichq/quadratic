@@ -180,7 +180,7 @@ impl SheetOffsets {
     /// Returns Float32Array structured as [index, size, index, size, ...]
     #[wasm_bindgen(js_name = "findResizeChanges")]
     pub fn js_find_resize_changes(&self, old_sheet_offsets: &SheetOffsets) -> OffsetsSizeChanges {
-        let changes = self.changes(old_sheet_offsets);
-        OffsetsSizeChanges::from(changes)
+        
+        self.changes(old_sheet_offsets)
     }
 }
