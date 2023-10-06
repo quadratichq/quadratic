@@ -463,26 +463,28 @@ mod test {
         test_util::print_table,
     };
 
-    fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
+    async fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
         let mut grid_controller = GridController::new();
         let sheet_id = grid_controller.grid().sheets()[0].id;
         let mut count = 0;
 
-        selection.y_range().for_each(|y| {
-            selection.x_range().for_each(|x| {
+        for y in selection.y_range() {
+            for x in selection.x_range() {
                 let pos = Pos { x, y };
-                grid_controller.set_cell_value(sheet_id, pos, vals[count].to_string(), None);
+                grid_controller
+                    .set_cell_value(sheet_id, pos, vals[count].to_string(), None)
+                    .await;
                 count += 1;
-            });
-        });
+            }
+        }
 
         (grid_controller, sheet_id)
     }
 
-    fn test_setup_basic() -> (GridController, SheetId, Rect) {
+    async fn test_setup_basic() -> (GridController, SheetId, Rect) {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let vals = vec!["1", "2", "3", "4", "5", "6", "7", "8"];
-        let (grid_controller, sheet_id) = test_setup(&selected, &vals);
+        let (grid_controller, sheet_id) = test_setup(&selected, &vals).await;
 
         print_table(&grid_controller, sheet_id, selected);
 
@@ -566,8 +568,8 @@ mod test {
         );
     }
 
-    #[test]
-    fn test_set_cell_values() {
+    #[tokio::test]
+    async fn test_set_cell_values() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 4, y: 1 });
         let vals = vec!["a", "1", "$1.11"];
         let expected = vec![
@@ -575,7 +577,7 @@ mod test {
             CellValue::Number(BigDecimal::from_str("1").unwrap()),
             CellValue::Number(BigDecimal::from_str("1.11").unwrap()),
         ];
-        let (grid, sheet_id) = test_setup(&selected, &vals);
+        let (grid, sheet_id) = test_setup(&selected, &vals).await;
 
         print_table(&grid, sheet_id, selected);
 
@@ -588,11 +590,11 @@ mod test {
             .for_each(|(index, val)| assert_eq!(val, *expected.get(index).unwrap()));
     }
 
-    #[test]
-    fn test_delete_cell_values() {
-        let (mut grid, sheet_id, selected) = test_setup_basic();
+    #[tokio::test]
+    async fn test_delete_cell_values() {
+        let (mut grid, sheet_id, selected) = test_setup_basic().await;
 
-        grid.delete_cell_values(sheet_id, selected, None);
+        grid.delete_cell_values(sheet_id, selected, None).await;
         let sheet = grid.grid().sheet_from_id(sheet_id);
 
         print_table(&grid, sheet_id, selected);
@@ -606,9 +608,9 @@ mod test {
 
     // TODO(ddimaria): use the code below as a template once formula cells are in place
     #[ignore]
-    #[test]
-    fn test_delete_cell_values_affects_dependent_cells() {
-        let (mut grid, sheet_id, selected) = test_setup_basic();
+    #[tokio::test]
+    async fn test_delete_cell_values_affects_dependent_cells() {
+        let (mut grid, sheet_id, selected) = test_setup_basic().await;
 
         let view_rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 4 });
         let _code_cell = crate::grid::CodeCellValue {
@@ -622,7 +624,7 @@ mod test {
         // grid.set_code_cell_value((5, 2).into(), Some(code_cell));
         print_table(&grid, sheet_id, view_rect);
 
-        grid.delete_cell_values(sheet_id, selected, None);
+        grid.delete_cell_values(sheet_id, selected, None).await;
         let sheet = grid.grid().sheet_from_id(sheet_id);
 
         print_table(&grid, sheet_id, view_rect);
@@ -636,9 +638,9 @@ mod test {
 
     // TODO(ddimaria): use the code below as a template once cell borders are in place
     #[ignore]
-    #[test]
-    fn test_set_border() {
-        let (grid, sheet_id, selected) = test_setup_basic();
+    #[tokio::test]
+    async fn test_set_border() {
+        let (grid, sheet_id, selected) = test_setup_basic().await;
         let cell_border = CellBorder {
             color: Some("red".into()),
             style: Some(CellBorderStyle::Line1),
@@ -656,18 +658,18 @@ mod test {
         //     .for_each(|format| assert_eq!(format, SOMETHING_HERE));
     }
 
-    #[test]
-    fn test_get_cell_value() {
-        let (grid, sheet_id, _) = test_setup_basic();
+    #[tokio::test]
+    async fn test_get_cell_value() {
+        let (grid, sheet_id, _) = test_setup_basic().await;
         let sheet = grid.grid().sheet_from_id(sheet_id);
         let value = sheet.get_cell_value((2, 1).into());
 
         assert_eq!(value, Some(CellValue::Number(BigDecimal::from(1))));
     }
 
-    #[test]
-    fn test_get_set_formatting_value() {
-        let (grid, sheet_id, _) = test_setup_basic();
+    #[tokio::test]
+    async fn test_get_set_formatting_value() {
+        let (grid, sheet_id, _) = test_setup_basic().await;
         let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
         sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
         let value = sheet.get_formatting_value::<Bold>((2, 1).into());
@@ -675,9 +677,9 @@ mod test {
         assert_eq!(value, Some(true));
     }
 
-    #[test]
-    fn test_get_set_code_cell_value() {
-        let (grid, sheet_id, _) = test_setup_basic();
+    #[tokio::test]
+    async fn test_get_set_code_cell_value() {
+        let (grid, sheet_id, _) = test_setup_basic().await;
         let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
         let code_cell = crate::grid::CodeCellValue {
             language: crate::grid::CodeCellLanguage::Formula,
@@ -712,9 +714,9 @@ mod test {
 
     // TODO(ddimaria): use the code below numeric format kinds are in place
     #[ignore]
-    #[test]
-    fn test_cell_numeric_format_kinds() {
-        let (grid, sheet_id, _) = test_setup_basic();
+    #[tokio::test]
+    async fn test_cell_numeric_format_kinds() {
+        let (grid, sheet_id, _) = test_setup_basic().await;
         let sheet = grid.grid().sheet_from_id(sheet_id).clone();
 
         let format_kind = sheet.cell_numeric_format_kind((2, 1).into());
@@ -730,9 +732,9 @@ mod test {
         assert_eq!(format_kind, Some(NumericFormatKind::Number));
     }
 
-    #[test]
-    fn test_formatting_summary() {
-        let (grid, sheet_id, selected) = test_setup_basic();
+    #[tokio::test]
+    async fn test_formatting_summary() {
+        let (grid, sheet_id, selected) = test_setup_basic().await;
         let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
         sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
 
@@ -757,9 +759,9 @@ mod test {
         assert_eq!(value, format_summary);
     }
 
-    #[test]
-    fn test_cell_format_summary() {
-        let (grid, sheet_id, _) = test_setup_basic();
+    #[tokio::test]
+    async fn test_cell_format_summary() {
+        let (grid, sheet_id, _) = test_setup_basic().await;
         let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
 
         let existing_cell_format_summary = sheet.get_existing_cell_format_summary((2, 1).into());
@@ -795,9 +797,9 @@ mod test {
         );
     }
 
-    #[test]
-    fn test_columns() {
-        let (grid, sheet_id, _) = test_setup_basic();
+    #[tokio::test]
+    async fn test_columns() {
+        let (grid, sheet_id, _) = test_setup_basic().await;
         let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
 
         // get all columns
@@ -825,9 +827,9 @@ mod test {
         assert_eq!(new_column.1, &Column::with_id(new_column.0.id));
     }
 
-    #[test]
-    fn test_rows() {
-        let (grid, sheet_id, _) = test_setup_basic();
+    #[tokio::test]
+    async fn test_rows() {
+        let (grid, sheet_id, _) = test_setup_basic().await;
         let sheet = grid.grid().sheet_from_id(sheet_id).clone();
 
         // get all rows
