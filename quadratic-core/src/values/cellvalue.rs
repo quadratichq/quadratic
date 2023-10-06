@@ -9,6 +9,9 @@ use crate::{
     CodeResult, Error,
 };
 
+// todo: fill this out
+const CURRENCY_SYMBOLS: &str = "$€£¥";
+
 /// Non-array value in the formula language.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
@@ -153,7 +156,7 @@ impl CellValue {
         }
     }
 
-    pub fn unpack_percentage(s: &String) -> Option<BigDecimal> {
+    pub fn unpack_percentage(s: &str) -> Option<BigDecimal> {
         if s.is_empty() {
             return None;
         }
@@ -163,6 +166,26 @@ impl CellValue {
             }
         }
         None
+    }
+
+    pub fn unpack_currency(s: &str) -> Option<(String, BigDecimal)> {
+        if s.is_empty() {
+            return None;
+        }
+        for char in CURRENCY_SYMBOLS.chars() {
+            if let Some(stripped) = s.strip_prefix(char) {
+                if let Ok(bd) = BigDecimal::from_str(stripped) {
+                    return Some((char.to_string(), bd));
+                }
+            }
+        }
+        None
+    }
+
+    pub fn strip_currency(value: &str) -> &str {
+        CURRENCY_SYMBOLS.chars().fold(value, |acc: &str, char| {
+            acc.strip_prefix(char).unwrap_or(acc)
+        })
     }
 
     pub fn is_blank_or_empty_string(&self) -> bool {
@@ -369,5 +392,23 @@ mod test {
             CellValue::unpack_percentage(&value),
             Some(BigDecimal::from_str("12.3812232").unwrap()),
         );
+    }
+
+    #[test]
+    fn test_unpack_currency() {
+        let value = String::from("$123.123");
+        assert_eq!(
+            CellValue::unpack_currency(&value),
+            Some((String::from("$"), BigDecimal::from_str(&"123.123").unwrap()))
+        );
+
+        let value = String::from("test");
+        assert_eq!(CellValue::unpack_currency(&value), None);
+
+        let value = String::from("$123$123");
+        assert_eq!(CellValue::unpack_currency(&value), None);
+
+        let value = String::from("$123.123abc");
+        assert_eq!(CellValue::unpack_currency(&value), None);
     }
 }
