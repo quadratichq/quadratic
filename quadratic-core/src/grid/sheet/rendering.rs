@@ -1,9 +1,10 @@
 use crate::{
     grid::{
+        self,
         js_types::{
             JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill,
         },
-        CodeCellRunResult, NumericFormat, NumericFormatKind,
+        CodeCellRunResult, Grid, NumericFormat, NumericFormatKind, SheetBorders,
     },
     Pos, Rect,
 };
@@ -171,17 +172,13 @@ impl Sheet {
             .collect()
     }
 
-    // todo ???
-
     /// Returns data for rendering horizontal borders.
     pub fn get_render_horizontal_borders(&self) -> Vec<JsRenderBorder> {
-        // self.borders.get_render_horizontal_borders()
-        vec![]
+        grid::borders::get_render_horizontal_borders(self)
     }
 
     /// Returns data for rendering vertical borders.
     pub fn get_render_vertical_borders(&self) -> Vec<JsRenderBorder> {
-        // self.borders.get_render_vertical_borders()
-        vec![]
+        grid::borders::get_render_vertical_borders(self)
     }
 }

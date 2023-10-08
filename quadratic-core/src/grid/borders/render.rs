@@ -1,10 +1,11 @@
-use std::time::Instant;
+// use std::time::Instant;
 
 use crate::grid::js_types::JsRenderBorder;
 use crate::grid::Sheet;
+use crate::wasm_bindings::js;
 
 pub fn get_render_vertical_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
-    let timer = Instant::now();
+    // let timer = Instant::now();
     let res = sheet
         .borders
         .render_lookup
@@ -21,13 +22,14 @@ pub fn get_render_vertical_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
         })
         .collect();
 
-    let elapsed = timer.elapsed();
-    println!("get_render_vertical: {elapsed:?}");
+    // let elapsed = timer.elapsed();
+    // println!("get_render_vertical: {elapsed:?}");
+    js::log(&format!("get_render_vertical: {:?}", res));
     res
 }
 
 pub fn get_render_horizontal_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
-    let timer = Instant::now();
+    // let timer = Instant::now();
     let res = sheet
         .borders
         .render_lookup
@@ -44,8 +46,9 @@ pub fn get_render_horizontal_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
         })
         .collect();
 
-    let elapsed = timer.elapsed();
-    println!("get_render_horizontal: {elapsed:?}");
+    // let elapsed = timer.elapsed();
+    // println!("get_render_horizontal: {elapsed:?}");
+    js::log(&format!("get_horizontal_vertical: {:?}", res));
     res
 }
 

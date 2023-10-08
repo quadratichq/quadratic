@@ -130,4 +130,12 @@ export class CellsSheets extends Container<CellsSheet> {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxWidth');
     return this.current.getCellsContentMaxWidth(column);
   }
+
+  updateBorders(sheetIds: SheetId[]): void {
+    this.children.forEach((cellsSheet) => {
+      if (sheetIds.find((id) => id.id === cellsSheet.sheet.id)) {
+        cellsSheet.updateBorders();
+      }
+    });
+  }
 }

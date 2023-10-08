@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::ops::Range;
-use std::time::Instant;
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -18,25 +17,23 @@ pub fn generate_borders(
     selections: Vec<BorderSelection>,
     style: Option<BorderStyle>,
 ) -> SheetBorders {
-    let timer = Instant::now();
+    // timers do not work in wasm async???
+    // let timer = Instant::now();
     let mut id_space_borders = sheet.borders.per_cell.clone_region(&sheet.row_ids, region);
     let mut render_borders = sheet
         .borders
         .render_lookup
         .clone_rects(&sheet.region_rects(region).collect_vec());
-
-    let elapsed = timer.elapsed();
-    println!("clone: {elapsed:?}");
-
-    let timer = Instant::now();
+    // let elapsed = timer.elapsed();
+    // println!("clone: {elapsed:?}");
+    // let timer = Instant::now();
     for rect in sheet.region_rects(region) {
-        let timer_2 = Instant::now();
+        // let timer_2 = Instant::now();
         let horizontal = compute_indices::horizontal(rect, selections.clone());
         let vertical = compute_indices::vertical(rect, selections.clone());
-        let elapsed = timer_2.elapsed();
-        println!("  indices: {elapsed:?}");
-
-        let timer_2 = Instant::now();
+        // let elapsed = timer_2.elapsed();
+        // println!("  indices: {elapsed:?}");
+        // let timer_2 = Instant::now();
         for &horizontal_border_index in &horizontal {
             let above_index = horizontal_border_index - 1;
             let column_ids = rect
@@ -48,11 +45,11 @@ pub fn generate_borders(
             id_space_borders.set_horizontal_border(&column_ids, above_index, style);
             render_borders.set_horizontal_border(horizontal_border_index, rect.x_range(), style);
         }
-        let elapsed = timer_2.elapsed();
-        let num_calls = horizontal.len();
-        println!("  horizontal ({num_calls}): {elapsed:?}");
+        // let elapsed = timer_2.elapsed();
+        // let num_calls = horizontal.len();
+        // println!("  horizontal ({num_calls}): {elapsed:?}");
 
-        let timer_2 = Instant::now();
+        // let timer_2 = Instant::now();
         for &vertical_border_index in &vertical {
             let column_left_index = vertical_border_index - 1;
             let column_left_id = sheet.get_column(column_left_index).map(|column| column.id);
@@ -69,12 +66,12 @@ pub fn generate_borders(
             );
             render_borders.set_vertical_border(vertical_border_index, rect.y_range(), style);
         }
-        let elapsed = timer_2.elapsed();
-        let num_calls = vertical.len();
-        println!("  vertical ({num_calls}): {elapsed:?}");
+        // let elapsed = timer_2.elapsed();
+        // let num_calls = vertical.len();
+        // println!("  vertical ({num_calls}): {elapsed:?}");
     }
-    let elapsed = timer.elapsed();
-    println!("generate: {elapsed:?}");
+    // let elapsed = timer.elapsed();
+    // println!("generate: {elapsed:?}");
     SheetBorders {
         per_cell: id_space_borders,
         render_lookup: render_borders,
@@ -125,7 +122,7 @@ impl SheetBorders {
     ) -> SheetBorders {
         let mut previous_borders = SheetBorders::default();
 
-        let timer = Instant::now();
+        // let timer = Instant::now();
         for region in regions {
             let replaced_id_space =
                 self.per_cell
@@ -142,8 +139,8 @@ impl SheetBorders {
             .render_lookup
             .replace_rects(&replaced_grid_space, &rects);
 
-        let elapsed = timer.elapsed();
-        println!("set_regions: {elapsed:?}");
+        // let elapsed = timer.elapsed();
+        // println!("set_regions: {elapsed:?}");
 
         previous_borders
     }

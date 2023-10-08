@@ -343,7 +343,8 @@ export class Grid {
     this.dirty = true;
   }
 
-  async setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
+  async setRegionBorders(sheetId: string, selection: BorderSelection, style?: BorderStyle) {
+    const rectangle = sheets.sheet.cursor.getRectangle();
     console.log('Setting region borders: ', sheetId, rectangle, selection, style);
     const summary = await this.gridController.setRegionBorders(
       sheetId,

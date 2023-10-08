@@ -409,4 +409,8 @@ export class CellsSheet extends Container {
     });
     return max;
   }
+
+  updateBorders() {
+    this.cellsBorders.create();
+  }
 }

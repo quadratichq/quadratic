@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 mod block;
-mod borders;
+pub mod borders;
 mod bounds;
 mod code;
 mod column;

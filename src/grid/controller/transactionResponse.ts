@@ -21,7 +21,7 @@ export const transactionResponse = (summary?: TransactionSummary): void => {
   }
 
   if (summary.border_sheets_modified) {
-    console.log('TODO: Update border rendering?');
+    pixiApp.cellsSheets.updateBorders(summary.border_sheets_modified);
   }
 
   if (summary.offsets_modified.length) {

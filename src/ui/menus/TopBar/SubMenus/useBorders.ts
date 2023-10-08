@@ -18,8 +18,6 @@ interface IResults {
 
 export const useBorders = (): IResults => {
   const sheet = sheets.sheet;
-  const cursor = sheet.cursor;
-  const rectangle = cursor.getRectangle();
 
   const changeBorders = (options: ChangeBorder): void => {
     const colorTint = options.color === undefined ? colors.defaultBorderColor : convertColorStringToTint(options.color);
@@ -34,11 +32,11 @@ export const useBorders = (): IResults => {
       CellBorderLine.Line1
       // new CellBorderLine(0) // TODO: convert from `options`
     );
-    grid.setRegionBorders(sheet.id, rectangle, selection, style);
+    grid.setRegionBorders(sheet.id, selection, style);
   };
 
   const clearBorders = (args?: { create_transaction?: boolean }): void => {
-    grid.setRegionBorders(sheet.id, rectangle, BorderSelection.All, undefined);
+    grid.setRegionBorders(sheet.id, BorderSelection.All, undefined);
   };
 
   return {

@@ -18,14 +18,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { ColorResult } from 'react-color';
 import { sheets } from '../../../../../grid/controller/Sheets';
 import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
+import { BorderSelection } from '../../../../../quadratic-core/quadratic_core';
 import { BorderType, BorderTypeEnum } from '../../../../../schemas';
 import { colors } from '../../../../../theme/colors';
 import { QColorPicker } from '../../../../components/qColorPicker';
 import { ChangeBorder, useBorders } from '../useBorders';
 import './useGetBorderMenu.css';
-import {
-  BorderSelection
-} from "../../../../../quadratic-core";
 
 // enum BorderSelection {
 //   none = 0,
@@ -50,7 +48,7 @@ export function useGetBorderMenu(): JSX.Element {
   const defaultColor = convertTintToString(colors.defaultBorderColor);
   const [color, setColor] = useState<string>(defaultColor);
 
-  const { changeBorders, clearBorders } = useBorders();
+  const { changeBorders } = useBorders();
 
   const clearSelection = useCallback(() => setBorderSelection(0), []);
   // clear border type when changing selection
@@ -62,18 +60,18 @@ export function useGetBorderMenu(): JSX.Element {
   const handleChangeBorders = useCallback(
     (borderSelection: BorderSelection | undefined, color: string, lineStyle?: BorderType): void => {
       if (borderSelection === undefined) return;
-      console.log("Handling: ", borderSelection);
+      console.log('Handling: ', borderSelection);
       // TODO: Clearing
       // if (borderSelection === BorderSelection.clear) {
       //   clearBorders();
       //   return;
       // }
-      const borders: ChangeBorder = {selection: borderSelection};
+      const borders: ChangeBorder = { selection: borderSelection };
       if (color !== defaultColor) borders.color = color;
       if (lineStyle) borders.type = lineStyle;
       changeBorders(borders);
     },
-    [changeBorders, defaultColor, clearBorders]
+    [changeBorders, defaultColor]
   );
 
   const handleChangeBorderColor = useCallback(
