@@ -137,7 +137,7 @@ pub struct TransactionSummary {
     pub code_cells_modified: Vec<(SheetId, Pos)>,
     /// CellHash blocks of affected cell values and formats
     pub cell_hash_values_modified: BTreeMap<String, Vec<JsRenderCell>>,
-    /// Sheet metadata or order was modified.
+    /// Sheet metadata or order was modified.c
     pub sheet_list_modified: bool,
     /// SheetOffsets that are modified.
     pub offsets_modified: Vec<SheetId>,
