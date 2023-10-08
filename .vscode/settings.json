@@ -1,6 +1,7 @@
 {
   "editor.formatOnSave": true,
   "cSpell.words": [
+    "actix",
     "bigdecimal",
     "dcell",
     "dgraph",
@@ -27,5 +28,6 @@
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer"
   },
-  "rust-analyzer.linkedProjects": ["./quadratic-core/Cargo.toml"]
+  "rust-analyzer.linkedProjects": ["./quadratic-core/Cargo.toml"],
+  "rust-analyzer.checkOnSave": true
 }

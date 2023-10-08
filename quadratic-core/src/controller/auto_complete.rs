@@ -22,7 +22,7 @@ pub enum ExpandDirection {
 }
 
 impl GridController {
-    pub fn expand(
+    pub async fn expand(
         &mut self,
         sheet_id: SheetId,
         mut selection: Rect,
@@ -134,7 +134,7 @@ impl GridController {
             operations.extend(ops);
         }
 
-        Ok(self.transact_forward(operations, cursor))
+        Ok(self.transact_forward(operations, cursor).await)
     }
 
     /// Delete cell values and formats in a given range.
@@ -571,62 +571,65 @@ mod tests {
         },
     };
 
-    fn test_setup_rect(selection: &Rect) -> (GridController, SheetId) {
+    async fn test_setup_rect(selection: &Rect) -> (GridController, SheetId) {
         let vals = vec!["a", "h", "x", "g", "f", "z", "r", "b"];
         let bolds = vec![true, false, false, true, false, true, true, false];
 
-        test_setup(selection, &vals, &bolds)
+        test_setup(selection, &vals, &bolds).await
     }
 
-    fn test_setup_rect_horiz_series(selection: &Rect) -> (GridController, SheetId) {
+    async fn test_setup_rect_horiz_series(selection: &Rect) -> (GridController, SheetId) {
         let vals = vec![
             "8", "9", "10", "11", "10", "9", "8", "7", "Mon", "Tue", "Wed", "Thu", "May", "Jun",
             "Jul", "Aug", "32", "64", "128", "256",
         ];
         let bolds = vec![];
 
-        test_setup(selection, &vals, &bolds)
+        test_setup(selection, &vals, &bolds).await
     }
 
-    fn test_setup_rect_vert_series(selection: &Rect) -> (GridController, SheetId) {
+    async fn test_setup_rect_vert_series(selection: &Rect) -> (GridController, SheetId) {
         let vals = vec!["1", "2", "3"];
         let bolds = vec![];
 
-        test_setup(selection, &vals, &bolds)
+        test_setup(selection, &vals, &bolds).await
     }
 
-    fn test_setup(selection: &Rect, vals: &[&str], bolds: &[bool]) -> (GridController, SheetId) {
+    async fn test_setup(
+        selection: &Rect,
+        vals: &[&str],
+        bolds: &[bool],
+    ) -> (GridController, SheetId) {
         let mut grid_controller = GridController::new();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let mut count = 0;
 
-        selection.y_range().for_each(|y| {
-            selection.x_range().for_each(|x| {
+        for y in selection.y_range() {
+            for x in selection.x_range() {
                 let pos = Pos { x, y };
-                grid_controller.set_cell_value(sheet_id, pos, vals[count].to_string(), None);
+                grid_controller
+                    .set_cell_value(sheet_id, pos, vals[count].to_string(), None)
+                    .await;
 
                 if let Some(is_bold) = bolds.get(count) {
                     if *is_bold {
-                        grid_controller.set_cell_bold(
-                            sheet_id,
-                            Rect::single_pos(pos),
-                            Some(true),
-                            None,
-                        );
+                        grid_controller
+                            .set_cell_bold(sheet_id, Rect::single_pos(pos), Some(true), None)
+                            .await;
                     }
                 }
 
                 count += 1;
-            });
-        });
+            }
+        }
 
         (grid_controller, sheet_id)
     }
 
-    #[test]
-    fn test_cell_values_in_rect() {
+    #[tokio::test]
+    async fn test_cell_values_in_rect() {
         let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
-        let (grid_controller, sheet_id) = test_setup_rect(&selected);
+        let (grid_controller, sheet_id) = test_setup_rect(&selected).await;
         let sheet = grid_controller.grid().sheet_from_id(sheet_id);
         let result = cell_values_in_rect(&selected, sheet).unwrap();
         let expected = array![
@@ -637,12 +640,12 @@ mod tests {
         assert_eq!(result, expected);
     }
 
-    #[test]
-    fn test_expand_left_only() {
+    #[tokio::test]
+    async fn test_expand_left_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: -3, y: 1 }, Pos { x: 5, y: 2 });
-        let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        let (mut grid, sheet_id) = test_setup_rect(&selected).await;
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(
             &grid,
@@ -661,12 +664,13 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, -3, 5, 2, expected);
     }
 
-    #[test]
-    fn test_expand_right_only() {
+    #[tokio::test]
+    async fn test_expand_right_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 10, y: 2 });
-        let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        let (mut grid, sheet_id) = test_setup_rect(&selected).await;
+        let summary = grid.expand(sheet_id, selected, range, None).await.unwrap();
+        println!("{:?}", summary);
 
         print_table(&grid, sheet_id, range);
 
@@ -681,12 +685,12 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, 2, 10, 2, expected);
     }
 
-    #[test]
-    fn test_expand_up_only() {
+    #[tokio::test]
+    async fn test_expand_up_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: -7 }, Pos { x: 5, y: 2 });
-        let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        let (mut grid, sheet_id) = test_setup_rect(&selected).await;
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(&grid, sheet_id, range);
 
@@ -709,12 +713,12 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, 2, 5, 0, expected.clone());
     }
 
-    #[test]
-    fn test_expand_down_only() {
+    #[tokio::test]
+    async fn test_expand_down_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 10 });
-        let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        let (mut grid, sheet_id) = test_setup_rect(&selected).await;
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(&grid, sheet_id, range);
 
@@ -737,12 +741,12 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, 2, 5, 10, expected.clone());
     }
 
-    #[test]
-    fn test_expand_down_and_right() {
+    #[tokio::test]
+    async fn test_expand_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(selected.min, Pos { x: 14, y: 10 });
-        let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        let (mut grid, sheet_id) = test_setup_rect(&selected).await;
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(&grid, sheet_id, range);
 
@@ -755,12 +759,12 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 10, expected_bold);
     }
 
-    #[test]
-    fn test_expand_up_and_right() {
+    #[tokio::test]
+    async fn test_expand_up_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: -7 }, Pos { x: 10, y: 3 });
-        let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        let (mut grid, sheet_id) = test_setup_rect(&selected).await;
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(
             &grid,
@@ -777,12 +781,12 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 3, expected_bold);
     }
 
-    #[test]
-    fn test_expand_down_and_left() {
+    #[tokio::test]
+    async fn test_expand_down_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: -7, y: 20 }, Pos { x: 5, y: 10 });
-        let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        let (mut grid, sheet_id) = test_setup_rect(&selected).await;
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(
             &grid,
@@ -803,12 +807,12 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, -7, 5, 10, expected_bold);
     }
 
-    #[test]
-    fn test_expand_up_and_left() {
+    #[tokio::test]
+    async fn test_expand_up_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: -7, y: -7 }, selected.max);
-        let (mut grid, sheet_id) = test_setup_rect(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        let (mut grid, sheet_id) = test_setup_rect(&selected).await;
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(&grid, sheet_id, Rect::new_span(range.min, selected.max));
 
@@ -825,12 +829,12 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, -7, 5, 3, expected_bold);
     }
 
-    #[test]
-    fn test_expand_horizontal_series_down_and_right() {
+    #[tokio::test]
+    async fn test_expand_horizontal_series_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
-        let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected).await;
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(&grid, sheet_id, range);
 
@@ -850,12 +854,12 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, 2, 9, 6, expected);
     }
 
-    #[test]
-    fn test_expand_horizontal_series_up_and_right() {
+    #[tokio::test]
+    async fn test_expand_horizontal_series_up_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 6, y: 15 }, Pos { x: 9, y: 19 });
         let range: Rect = Rect::new_span(Pos { x: 6, y: 12 }, Pos { x: 15, y: 19 });
-        let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected).await;
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(&grid, sheet_id, range);
 
@@ -878,12 +882,12 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, 6, 15, 16, expected.clone());
     }
 
-    #[test]
-    fn test_expand_horizontal_series_up_and_left() {
+    #[tokio::test]
+    async fn test_expand_horizontal_series_up_and_left() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 6 });
         let range: Rect = Rect::new_span(Pos { x: -4, y: -8 }, Pos { x: 5, y: 6 });
-        let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        let (mut grid, sheet_id) = test_setup_rect_horiz_series(&selected).await;
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(&grid, sheet_id, range);
 
@@ -912,12 +916,12 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, -4, 5, 1, expected.clone());
     }
 
-    #[test]
-    fn test_expand_vertical_series_down_and_right() {
+    #[tokio::test]
+    async fn test_expand_vertical_series_down_and_right() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 2, y: 4 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 9, y: 10 });
-        let (mut grid, sheet_id) = test_setup_rect_vert_series(&selected);
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        let (mut grid, sheet_id) = test_setup_rect_vert_series(&selected).await;
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(&grid, sheet_id, range);
 
@@ -926,19 +930,19 @@ mod tests {
         assert_cell_value(&grid, sheet_id, 3, 7, "6");
     }
 
-    #[test]
-    fn test_shrink_width() {
+    #[tokio::test]
+    async fn test_shrink_width() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
-        let (mut grid, sheet_id) = test_setup_rect(&selected);
+        let (mut grid, sheet_id) = test_setup_rect(&selected).await;
 
         // first, fully expand
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         // then, shrink
         let selected = range;
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 4, y: 7 });
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(
             &grid,
@@ -960,19 +964,19 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 8, expected_bold_2);
     }
 
-    #[test]
-    fn test_shrink_height() {
+    #[tokio::test]
+    async fn test_shrink_height() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
-        let (mut grid, sheet_id) = test_setup_rect(&selected);
+        let (mut grid, sheet_id) = test_setup_rect(&selected).await;
 
         // first, fully expand
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         // then, shrink
         let selected = range;
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 5 });
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(
             &grid,
@@ -991,19 +995,19 @@ mod tests {
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 6, expected_bold_empty);
     }
 
-    #[test]
-    fn test_shrink_width_and_height() {
+    #[tokio::test]
+    async fn test_shrink_width_and_height() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
-        let (mut grid, sheet_id) = test_setup_rect(&selected);
+        let (mut grid, sheet_id) = test_setup_rect(&selected).await;
 
         // first, fully expand
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         // then, shrink
         let selected = range;
         let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 5 });
-        grid.expand(sheet_id, selected, range, None).unwrap();
+        grid.expand(sheet_id, selected, range, None).await.unwrap();
 
         print_table(
             &grid,

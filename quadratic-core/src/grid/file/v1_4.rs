@@ -156,9 +156,9 @@ pub enum Any {
     String(String),
     Boolean(bool),
 }
-impl Into<CellValue> for Any {
-    fn into(self) -> CellValue {
-        match self {
+impl From<Any> for CellValue {
+    fn from(val: Any) -> Self {
+        match val {
             Any::Number(n) => match BigDecimal::from_f64(n) {
                 Some(n) => CellValue::Number(n),
                 None => CellValue::Text(n.to_string()),

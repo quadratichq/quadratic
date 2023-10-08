@@ -133,6 +133,14 @@ impl Rect {
     pub fn height(&self) -> u32 {
         (self.max.y - self.min.y + 1) as u32
     }
+
+    pub fn len(&self) -> u32 {
+        self.width() * self.height()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.width() == 0 && self.height() == 0
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone)]

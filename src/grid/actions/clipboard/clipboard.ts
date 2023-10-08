@@ -4,6 +4,7 @@ import mixpanel from 'mixpanel-browser';
 import { isEditorOrAbove } from '../../../actions';
 import { GlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { debugTimeCheck, debugTimeReset } from '../../../gridGL/helpers/debugPerformance';
+import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
 import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
 import { grid } from '../../controller/Grid';
@@ -18,6 +19,9 @@ export const fullClipboardSupport = (): boolean => {
 //#region document event handler for copy, paste, and cut
 
 export const copyToClipboardEvent = (e: ClipboardEvent) => {
+  // returns if focus is not on the body or canvas
+  if (e.target !== document.body && e.target !== pixiApp.canvas) return;
+
   debugTimeReset();
   const rectangle = sheets.sheet.cursor.getRectangle();
   const { plainText, html } = grid.copyToClipboard(sheets.sheet.id, rectangle);
@@ -35,11 +39,11 @@ export const copyToClipboardEvent = (e: ClipboardEvent) => {
   debugTimeCheck('copy to clipboard');
 };
 
-export const cutToClipboardEvent = (e: ClipboardEvent) => {
+export const cutToClipboardEvent = async (e: ClipboardEvent) => {
   if (!isEditorOrAbove(pixiAppSettings.permission)) return;
   debugTimeReset();
   const rectangle = sheets.sheet.cursor.getRectangle();
-  const { plainText, html } = grid.cutToClipboard(sheets.sheet.id, rectangle);
+  const { plainText, html } = await grid.cutToClipboard(sheets.sheet.id, rectangle);
   if (!e.clipboardData) {
     console.warn('clipboardData is not defined');
     return;
@@ -51,6 +55,9 @@ export const cutToClipboardEvent = (e: ClipboardEvent) => {
 };
 
 export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
+  // returns if focus is not on the body or canvas
+  if (e.target !== document.body && e.target !== pixiApp.canvas) return;
+
   if (!isEditorOrAbove(pixiAppSettings.permission)) return;
 
   if (!e.clipboardData) {
@@ -111,7 +118,7 @@ const toClipboard = (plainText: string, html: string) => {
 export const cutToClipboard = async () => {
   if (!isEditorOrAbove(pixiAppSettings.permission)) return;
   debugTimeReset();
-  const { plainText, html } = grid.cutToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
+  const { plainText, html } = await grid.cutToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
   toClipboard(plainText, html);
   debugTimeCheck('cut to clipboard (fallback)');
 };

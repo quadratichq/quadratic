@@ -24,14 +24,14 @@ impl GridController {
 
     /// Returns the clipboard [`JsClipboard`]
     #[wasm_bindgen(js_name = "cutToClipboard")]
-    pub fn js_cut_to_clipboard(
+    pub async fn js_cut_to_clipboard(
         &mut self,
         sheet_id: String,
         rect: &Rect,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let (summary, plain_text, html) = self.cut_to_clipboard(sheet_id, *rect, cursor);
+        let (summary, plain_text, html) = self.cut_to_clipboard(sheet_id, *rect, cursor).await;
         let output = JsClipboard {
             plain_text,
             html,
@@ -42,7 +42,7 @@ impl GridController {
 
     /// Returns [`TransactionSummary`]
     #[wasm_bindgen(js_name = "pasteFromClipboard")]
-    pub fn js_paste_from_clipboard(
+    pub async fn js_paste_from_clipboard(
         &mut self,
         sheet_id: String,
         pos: Pos,
@@ -51,7 +51,9 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let output = self.paste_from_clipboard(sheet_id, pos, plain_text, html, cursor);
+        let output = self
+            .paste_from_clipboard(sheet_id, pos, plain_text, html, cursor)
+            .await;
         Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
     }
 }

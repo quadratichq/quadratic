@@ -1,4 +1,6 @@
 use serde::{Deserialize, Serialize};
+use strum_macros::Display;
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::CellRef;
 use crate::{ArraySize, CellValue, Error, Value};
@@ -16,8 +18,8 @@ pub struct CodeCellValue {
 impl CodeCellValue {
     pub fn get_output_value(&self, x: u32, y: u32) -> Option<CellValue> {
         match &self.output.as_ref()?.output_value()? {
-            Value::Single(v) => Some(v.clone().into()),
-            Value::Array(a) => Some(a.get(x, y).ok()?.clone().into()),
+            Value::Single(v) => Some(v.clone()),
+            Value::Array(a) => Some(a.get(x, y).ok()?.clone()),
         }
     }
 
@@ -29,7 +31,8 @@ impl CodeCellValue {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Display, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[wasm_bindgen]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum CodeCellLanguage {
     Python,
@@ -39,7 +42,6 @@ pub enum CodeCellLanguage {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-// #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CodeCellRunOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub std_out: Option<String>,
@@ -56,7 +58,6 @@ impl CodeCellRunOutput {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-// #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(untagged)]
 pub enum CodeCellRunResult {
     Ok {

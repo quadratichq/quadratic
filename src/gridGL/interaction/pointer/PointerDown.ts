@@ -1,6 +1,5 @@
 import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
-import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
@@ -24,6 +23,7 @@ export class PointerDown {
   pointerDown(world: Point, event: PointerEvent): void {
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled) return;
     const sheet = sheets.sheet;
+    const offsets = sheet.offsets;
     const cursor = sheet.cursor;
 
     // note: directly call pixiAppSettings instead of locally defining it here; otherwise it dereferences this
@@ -39,7 +39,7 @@ export class PointerDown {
     }
 
     this.positionRaw = world;
-    const { column, row } = grid.getColumnRow(sheet.id, world.x, world.y);
+    const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
 
     const rightClick = event.button === 2 || (event.button === 0 && event.ctrlKey);
 
@@ -79,7 +79,7 @@ export class PointerDown {
 
     // select cells between pressed and cursor position
     if (event.shiftKey) {
-      const { column, row } = grid.getColumnRow(sheet.id, world.x, world.y);
+      const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
       const cursorPosition = cursor.cursorPosition;
       if (column !== cursorPosition.x || row !== cursorPosition.y) {
         // make origin top left, and terminal bottom right
@@ -126,6 +126,7 @@ export class PointerDown {
 
     const { viewport } = pixiApp;
     const sheet = sheets.sheet;
+    const offsets = sheet.offsets;
 
     // for determining if double click
     if (!this.pointerMoved && this.doubleClickTimeout && this.positionRaw) {
@@ -144,7 +145,7 @@ export class PointerDown {
     }
 
     // calculate mouse move position
-    const { column, row } = grid.getColumnRow(sheet.id, world.x, world.y);
+    const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
 
     // cursor start and end in the same cell
     if (column === this.position.x && row === this.position.y) {

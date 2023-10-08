@@ -1,9 +1,66 @@
+use crate::grid::offsets::Offsets;
 use crate::ScreenRect;
-
-use super::Sheet;
+use serde::{Deserialize, Serialize};
 use std::ops::Range;
+use wasm_bindgen::prelude::wasm_bindgen;
 
-impl Sheet {
+use self::{resize_transient::TransientResize, sheet_offsets_wasm::OffsetsSizeChanges};
+
+pub mod resize_transient;
+pub mod sheet_offsets_wasm;
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", wasm_bindgen)]
+pub struct SheetOffsets {
+    column_widths: Offsets,
+    row_heights: Offsets,
+
+    #[serde(skip_serializing, skip_deserializing)]
+    transient_resize: Option<TransientResize>,
+}
+
+impl Default for SheetOffsets {
+    fn default() -> Self {
+        SheetOffsets {
+            column_widths: Offsets::new(crate::DEFAULT_COLUMN_WIDTH),
+            row_heights: Offsets::new(crate::DEFAULT_ROW_HEIGHT),
+
+            transient_resize: None,
+        }
+    }
+}
+
+pub type OffsetWidthHeight = (Vec<(i64, f64)>, Vec<(i64, f64)>);
+
+impl SheetOffsets {
+    pub fn new(column_widths: Offsets, row_heights: Offsets) -> Self {
+        SheetOffsets {
+            column_widths,
+            row_heights,
+            transient_resize: None,
+        }
+    }
+
+    /// exports offsets to a GridFile
+    pub fn export(&self) -> OffsetWidthHeight {
+        (
+            self.column_widths.iter_sizes().collect(),
+            self.row_heights.iter_sizes().collect(),
+        )
+    }
+
+    /// import offsets from a GridFile
+    pub fn import(offsets: OffsetWidthHeight) -> Self {
+        SheetOffsets {
+            column_widths: Offsets::from_iter(
+                crate::DEFAULT_COLUMN_WIDTH,
+                offsets.0.iter().copied(),
+            ),
+            row_heights: Offsets::from_iter(crate::DEFAULT_ROW_HEIGHT, offsets.1.iter().copied()),
+            transient_resize: None,
+        }
+    }
+
     /// Returns the widths of a range of columns.
     pub fn column_widths(&self, x_range: Range<i64>) -> impl '_ + Iterator<Item = f64> {
         self.column_widths.iter_offsets(x_range)
@@ -26,6 +83,7 @@ impl Sheet {
     pub fn reset_column_width(&mut self, x: i64) -> f64 {
         self.column_widths.reset(x)
     }
+
     /// Resets the height of a row and returns the old height.
     pub fn reset_row_height(&mut self, y: i64) -> f64 {
         self.row_heights.reset(y)
@@ -81,5 +139,12 @@ impl Sheet {
         let (x, w) = self.column_position_size(column);
         let (y, h) = self.row_position_size(row);
         ScreenRect { x, y, w, h }
+    }
+
+    pub fn changes(&self, sheet_offsets: &SheetOffsets) -> OffsetsSizeChanges {
+        OffsetsSizeChanges::new(
+            self.column_widths.changes(&sheet_offsets.column_widths),
+            self.row_heights.changes(&sheet_offsets.row_heights),
+        )
     }
 }

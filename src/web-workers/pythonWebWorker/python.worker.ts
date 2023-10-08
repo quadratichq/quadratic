@@ -1,21 +1,25 @@
 /* eslint-disable no-restricted-globals */
-/* eslint-disable no-undef */
 
-import { Cell } from '../../schemas';
-import { PythonMessage, PythonReturnType } from './pythonTypes';
+import { PythonMessage } from './pythonTypes';
 import define_run_python from './run_python.py';
 
 const TRY_AGAIN_TIMEOUT = 500;
 
 self.importScripts('/pyodide/pyodide.js');
 
-let getCellsMessages: (cells: Cell[]) => void | undefined;
+let getCellsMessages: (cells: { x: number; y: number; value: string }[]) => void | undefined;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const getCellsDB = async (x0: number, y0: number, x1: number, y1: number): Promise<Cell[]> => {
+const getCellsDB = async (
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  sheet?: string
+): Promise<{ x: number; y: number; value: string }[]> => {
   return new Promise((resolve) => {
-    getCellsMessages = (cells: Cell[]) => resolve(cells);
-    self.postMessage({ type: 'get-cells', range: { x0, y0, x1, y1 } } as PythonMessage);
+    getCellsMessages = (cells: { x: number; y: number; value: string }[]) => resolve(cells);
+    console.log({ x0, y0, x1, y1, sheet });
+    self.postMessage({ type: 'get-cells', range: { x0, y0, x1, y1, sheet } } as PythonMessage);
   });
 };
 
@@ -24,7 +28,7 @@ let pyodide: any | undefined;
 async function pythonWebWorker() {
   try {
     pyodide = await (self as any).loadPyodide();
-    await pyodide.registerJsModule('GetCellsDB', getCellsDB);
+    await pyodide.registerJsModule('getCellsDB', getCellsDB);
     await pyodide.loadPackage(['numpy', 'pandas', 'micropip']);
     const python_code = await (await fetch(define_run_python)).text();
     await pyodide.runPython(python_code);
@@ -43,6 +47,7 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
   const event = e.data;
   if (event.type === 'get-cells') {
     if (event.cells && getCellsMessages) {
+      console.log(event.cells);
       getCellsMessages(event.cells);
     }
   } else if (event.type === 'execute') {
@@ -52,11 +57,12 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
     }
 
     const output = await pyodide.globals.get('run_python')(event.python);
-
+    const results = Object.fromEntries(output.toJs());
+    console.log(results);
     return self.postMessage({
       type: 'results',
-      results: Object.fromEntries(output.toJs()) as PythonReturnType,
-    } as PythonMessage);
+      results,
+    });
   }
 };
 

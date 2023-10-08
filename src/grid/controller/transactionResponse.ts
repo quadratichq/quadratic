@@ -21,7 +21,11 @@ export const transactionResponse = (summary?: TransactionSummary): void => {
   }
 
   if (summary.border_sheets_modified) {
-    console.log("TODO: Update border rendering?");
+    console.log('TODO: Update border rendering?');
+  }
+
+  if (summary.offsets_modified.length) {
+    sheets.updateOffsets(summary.offsets_modified);
   }
 
   const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;

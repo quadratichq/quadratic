@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use itertools::Itertools;
 
+use crate::sheet_offsets::OffsetWidthHeight;
+
 pub use super::current::*; // when creating new version, replace `current` with new module
 
 use super::v1_4;
@@ -18,8 +20,7 @@ pub(crate) struct SheetSchema {
     pub name: String,
     pub color: Option<String>,
     pub order: String,
-    pub column_widths: Vec<(i64, f64)>,
-    pub row_heights: Vec<(i64, f64)>,
+    pub offsets: OffsetWidthHeight,
     pub columns: Vec<(i64, Column)>,
     pub rows: Vec<(i64, RowId)>,
     pub borders: SheetBorders,
@@ -121,12 +122,12 @@ impl v1_4::JsSheetSchema {
         let column_widths = self
             .columns
             .iter()
-            .filter_map(|column| Some((column.id, column.size? as f64)))
+            .filter_map(|column| Some((column.id, column.size?)))
             .collect();
         let row_heights = self
             .rows
             .iter()
-            .filter_map(|row| Some((row.id, row.size? as f64)))
+            .filter_map(|row| Some((row.id, row.size?)))
             .collect();
 
         let mut code_cells = vec![];
@@ -214,8 +215,7 @@ impl v1_4::JsSheetSchema {
             name: self.name,
             color: self.color,
             order: self.order,
-            column_widths,
-            row_heights,
+            offsets: (column_widths, row_heights),
             columns: sheet.columns.into_iter().collect(),
             rows: sheet.row_ids.into_iter().collect(),
             borders: SheetBorders::new(), // TODO: import borders

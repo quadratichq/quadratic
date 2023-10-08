@@ -15,13 +15,12 @@ import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 // todo: fix types
 
 interface Props {
-  cell: any | undefined; //CodeCellValue
   editorContent: string | undefined;
   setEditorContent: (value: string | undefined) => void;
 }
 
 export const CodeEditorBody = (props: Props) => {
-  const { cell, editorContent, setEditorContent } = props;
+  const { editorContent, setEditorContent } = props;
 
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const readOnly = !isEditorOrAbove(editorInteractionState.permission);
@@ -33,6 +32,8 @@ export const CodeEditorBody = (props: Props) => {
 
   useEditorCellHighlights(isValidRef, editorRef, monacoRef);
   useEditorOnSelectionChange(isValidRef, editorRef);
+
+  const language = editorInteractionState.mode;
 
   useEffect(() => {
     if (editorInteractionState.showCodeEditor) {
@@ -67,8 +68,6 @@ export const CodeEditorBody = (props: Props) => {
     [didMount]
   );
 
-  if (!cell) return null;
-
   return (
     <div
       style={{
@@ -80,7 +79,7 @@ export const CodeEditorBody = (props: Props) => {
       <Editor
         height="100%"
         width="100%"
-        language={cell.language === 'Python' ? 'python' : cell.language === 'Formula' ? 'Formula' : 'plaintext'}
+        language={language === 'PYTHON' ? 'python' : language === 'FORMULA' ? 'Formula' : 'plaintext'}
         value={editorContent}
         onChange={setEditorContent}
         onMount={onMount}
@@ -96,7 +95,7 @@ export const CodeEditorBody = (props: Props) => {
           wordWrap: 'on',
         }}
       />
-      {cell.language === 'Python' && (
+      {language === 'PYTHON' && (
         <CodeEditorPlaceholder
           editorContent={editorContent}
           setEditorContent={setEditorContent}

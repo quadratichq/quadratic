@@ -28,7 +28,7 @@ impl GridController {
     }
 
     // todo: should also check the results of spills
-    pub fn change_decimal_places(
+    pub async fn change_decimal_places(
         &mut self,
         sheet_id: SheetId,
         source: Pos,
@@ -44,7 +44,7 @@ impl GridController {
             return TransactionSummary::default();
         }
         let region = self.region(sheet_id, rect);
-        let numeric_decimals = Some((decimals as i16) + delta as i16);
+        let numeric_decimals = Some(decimals + delta as i16);
         let ops = vec![Operation::SetCellFormats {
             region: region.clone(),
             attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
@@ -52,7 +52,7 @@ impl GridController {
                 region.len(),
             )),
         }];
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
 
     pub fn get_all_cell_formats(&self, sheet_id: SheetId, rect: Rect) -> Vec<CellFmtArray> {
@@ -72,28 +72,28 @@ impl GridController {
                 let pos = Pos { x, y };
                 cell_formats.iter_mut().for_each(|array| match array {
                     CellFmtArray::Align(array) => {
-                        array.push(sheet.get_formatting_value::<CellAlign>(pos))
+                        array.push(sheet.get_formatting_value::<CellAlign>(pos));
                     }
                     CellFmtArray::Wrap(array) => {
-                        array.push(sheet.get_formatting_value::<CellWrap>(pos))
+                        array.push(sheet.get_formatting_value::<CellWrap>(pos));
                     }
                     CellFmtArray::NumericFormat(array) => {
-                        array.push(sheet.get_formatting_value::<NumericFormat>(pos))
+                        array.push(sheet.get_formatting_value::<NumericFormat>(pos));
                     }
                     CellFmtArray::NumericDecimals(array) => {
-                        array.push(sheet.get_formatting_value::<NumericDecimals>(pos))
+                        array.push(sheet.get_formatting_value::<NumericDecimals>(pos));
                     }
                     CellFmtArray::Bold(array) => {
-                        array.push(sheet.get_formatting_value::<Bold>(pos))
+                        array.push(sheet.get_formatting_value::<Bold>(pos));
                     }
                     CellFmtArray::Italic(array) => {
-                        array.push(sheet.get_formatting_value::<Italic>(pos))
+                        array.push(sheet.get_formatting_value::<Italic>(pos));
                     }
                     CellFmtArray::TextColor(array) => {
-                        array.push(sheet.get_formatting_value::<TextColor>(pos))
+                        array.push(sheet.get_formatting_value::<TextColor>(pos));
                     }
                     CellFmtArray::FillColor(array) => {
-                        array.push(sheet.get_formatting_value::<FillColor>(pos))
+                        array.push(sheet.get_formatting_value::<FillColor>(pos));
                     }
                 });
             }
@@ -105,7 +105,7 @@ impl GridController {
 macro_rules! impl_set_cell_fmt_method {
     ($method_name:ident<$cell_fmt_attr_type:ty>($cell_fmt_array_constructor:expr)) => {
         impl GridController {
-            pub fn $method_name(
+            pub async fn $method_name(
                 &mut self,
                 sheet_id: SheetId,
                 rect: Rect,
@@ -116,7 +116,7 @@ macro_rules! impl_set_cell_fmt_method {
                 let attr =
                     $cell_fmt_array_constructor(RunLengthEncoding::repeat(value, region.len()));
                 let ops = vec![Operation::SetCellFormats { region, attr }];
-                self.transact_forward(ops, cursor)
+                self.transact_forward(ops, cursor).await
             }
         }
     };
@@ -152,13 +152,13 @@ mod test {
         Pos, Rect,
     };
 
-    #[test]
-    fn test_set_cell_text_color_undo_redo() {
+    #[tokio::test]
+    async fn test_set_cell_text_color_undo_redo() {
         let mut gc = GridController::new();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos1 = crate::Pos { x: 3, y: 6 };
-        let pos2 = crate::Pos { x: 5, y: 8 };
-        let pos3 = crate::Pos { x: 9, y: 6 };
+        let pos1 = Pos { x: 3, y: 6 };
+        let pos2 = Pos { x: 5, y: 8 };
+        let pos3 = Pos { x: 9, y: 6 };
         let rect1 = Rect::new_span(pos1, pos2);
         let rect2 = Rect::new_span(pos2, pos3);
 
@@ -177,14 +177,16 @@ mod test {
         assert_eq!(get(&gc, pos2), "");
         assert_eq!(get(&gc, pos3), "");
         assert_eq!(
-            gc.set_cell_text_color(sheet_id, rect1, Some("blue".to_string()), None),
+            gc.set_cell_text_color(sheet_id, rect1, Some("blue".to_string()), None)
+                .await,
             expected_summary(rect1),
         );
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "blue");
         assert_eq!(get(&gc, pos3), "");
         assert_eq!(
-            gc.set_cell_text_color(sheet_id, rect2, Some("red".to_string()), None),
+            gc.set_cell_text_color(sheet_id, rect2, Some("red".to_string()), None)
+                .await,
             expected_summary(rect2),
         );
         assert_eq!(get(&gc, pos1), "blue");
@@ -208,8 +210,8 @@ mod test {
         assert_eq!(get(&gc, pos3), "red");
     }
 
-    #[test]
-    fn test_render_fill() {
+    #[tokio::test]
+    async fn test_render_fill() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_fill_color(
@@ -220,7 +222,8 @@ mod test {
             },
             Some("blue".to_string()),
             None,
-        );
+        )
+        .await;
         gc.set_cell_fill_color(
             sheet_id,
             Rect {
@@ -229,7 +232,8 @@ mod test {
             },
             Some("blue".to_string()),
             None,
-        );
+        )
+        .await;
         gc.set_cell_fill_color(
             sheet_id,
             Rect {
@@ -238,16 +242,17 @@ mod test {
             },
             Some("blue".to_string()),
             None,
-        );
+        )
+        .await;
         let render_fills = gc.sheet(sheet_id).get_render_fills(Rect {
             min: crate::Pos { x: -100, y: -100 },
             max: crate::Pos { x: 100, y: 100 },
         });
-        assert_eq!(10, render_fills.len())
+        assert_eq!(10, render_fills.len());
     }
 
-    #[test]
-    fn test_change_decimal_places() {
+    #[tokio::test]
+    async fn test_change_decimal_places() {
         // setup
         let mut gc: GridController = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
@@ -256,14 +261,17 @@ mod test {
             Pos { x: 0, y: 0 },
             String::from("1.12345678"),
             None,
-        );
+        )
+        .await;
         gc.set_cell_value(
             sheet_id,
             Pos { x: 1, y: 0 },
             String::from("0.12345678"),
             None,
-        );
-        gc.set_cell_value(sheet_id, Pos { x: 0, y: 1 }, String::from("abcd"), None);
+        )
+        .await;
+        gc.set_cell_value(sheet_id, Pos { x: 0, y: 1 }, String::from("abcd"), None)
+            .await;
         let cells = gc
             .sheet(sheet_id)
             .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 1, y: 1 }));
@@ -279,7 +287,8 @@ mod test {
             Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 1, y: 1 }),
             -1,
             None,
-        );
+        )
+        .await;
         let cells = gc
             .sheet(sheet_id)
             .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 1, y: 1 }));
@@ -295,7 +304,8 @@ mod test {
             Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 1, y: 1 }),
             1,
             None,
-        );
+        )
+        .await;
         let cells = gc
             .sheet(sheet_id)
             .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 1, y: 1 }));

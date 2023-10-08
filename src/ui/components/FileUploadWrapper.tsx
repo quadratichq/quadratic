@@ -18,7 +18,8 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
       e.pageY - (clientBoudingRect?.top || 0)
     );
     const sheet = sheets.sheet;
-    const { column, row } = grid.getColumnRow(sheet.id, world.x, world.y);
+    const offsets = sheet.offsets;
+    const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
     sheet.cursor.changePosition({
       cursorPosition: { x: column, y: row },
       keyboardMovePosition: { x: column, y: row },
@@ -56,9 +57,8 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
           e.pageX - (clientBoudingRect?.left || 0),
           e.pageY - (clientBoudingRect?.top || 0)
         );
-        const { column, row } = grid.getColumnRow(sheets.sheet.id, world.x, world.y);
+        const { column, row } = sheets.sheet.offsets.getColumnRowFromScreen(world.x, world.y);
         const insertAtCellLocation = { x: column, y: row } as Coordinate;
-
         grid.importCsv(sheets.sheet.id, file, insertAtCellLocation, addGlobalSnackbar);
       } else {
         addGlobalSnackbar('File type not supported. Please upload a CSV file.');

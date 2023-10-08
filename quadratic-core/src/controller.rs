@@ -3,7 +3,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::grid::Grid;
 
-use self::{resize::TransientResize, transactions::Transaction};
+use self::transactions::Transaction;
 
 pub mod auto_complete;
 pub mod borders;
@@ -14,7 +14,7 @@ pub mod dependencies;
 pub mod formatting;
 pub mod import;
 pub mod operations;
-pub mod resize;
+pub mod sheet_offsets;
 pub mod sheets;
 pub mod transactions;
 
@@ -25,8 +25,6 @@ pub struct GridController {
 
     undo_stack: Vec<Transaction>,
     redo_stack: Vec<Transaction>,
-
-    transient_resize: Option<TransientResize>,
 }
 impl GridController {
     pub fn new() -> Self {
@@ -38,8 +36,6 @@ impl GridController {
 
             undo_stack: vec![],
             redo_stack: vec![],
-
-            transient_resize: None,
         }
     }
     pub fn grid(&self) -> &Grid {

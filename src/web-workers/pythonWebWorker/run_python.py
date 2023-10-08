@@ -7,7 +7,7 @@ from contextlib import redirect_stdout
 from decimal import Decimal, DecimalException
 from io import StringIO
 
-import GetCellsDB
+import getCellsDB
 import micropip
 import numpy as np
 import pandas as pd
@@ -22,10 +22,12 @@ def attempt_fix_await(code):
     code = re.sub(r"([^a-zA-Z0-9]|^)cells\(", r"\1await cells(", code)
     code = re.sub(r"([^a-zA-Z0-9]|^)cell\(", r"\1await cell(", code)
     code = re.sub(r"([^a-zA-Z0-9]|^)c\(", r"\1await c(", code)
+    code = re.sub(r"([^a-zA-Z0-9]|^)getCell\(", r"\1await getCell(", code)
     code = re.sub(r"([^a-zA-Z0-9]|^)getCells\(", r"\1await getCells(", code)
     code = re.sub(r"([^a-zA-Z0-9]|^)cells\[", r"\1await cells[", code)
 
     code = code.replace("await await getCell", "await getCell")
+    code = code.replace("await await getCells", "await getCells")
     code = code.replace("await await c(", "await c(")
     code = code.replace("await await cell(", "await cell(")
     code = code.replace("await await cells(", "await cells(")
@@ -51,6 +53,7 @@ def strtobool(val):
 
 class Cell:
     def __init__(self, object):
+        print(object)
         self.x = object.x
         self.y = object.y
         self.value = object.value
@@ -121,6 +124,7 @@ class Table:
     def __init__(self, cells):
         self.p0 = None
         self.p1 = None
+        self.sheet = None
         self.has_headers = False
 
     def to_df(self):
@@ -138,14 +142,14 @@ class Table:
 async def run_python(code):
     cells_accessed = []
 
-    async def getCells(p0, p1, first_row_header=False):
+    async def getCells(p0, p1, sheet=None, first_row_header=False):
         # mark cells as accessed by this cell
         for x in range(p0[0], p1[0] + 1):
             for y in range(p0[1], p1[1] + 1):
-                cells_accessed.append([x, y])
+                cells_accessed.append([x, y, sheet])
 
         # Get Cells
-        cells = await GetCellsDB(p0[0], p0[1], p1[0], p1[1])
+        cells = await getCellsDB(p0[0], p0[1], p1[0], p1[1], sheet)
 
         # Create empty df of the correct size
         df = pd.DataFrame(
@@ -167,10 +171,11 @@ async def run_python(code):
 
         return df
 
-    async def getCell(p_x, p_y):
+    async def getCell(p_x, p_y, sheet=None):
+        print("get cell")
         # mark cell this formula accesses
-        cells_accessed.append([p_x, p_y])
-        result = await GetCellsDB(p_x, p_y, p_x, p_y)
+        cells_accessed.append([p_x, p_y, sheet])
+        result = await getCellsDB(p_x, p_y, p_x, p_y, sheet)
 
         if len(result):
             return Cell(result[0])
@@ -179,22 +184,23 @@ async def run_python(code):
 
     class CellFunc:
         @staticmethod
-        def __call__(p0_x, p0_y):
-            return getCell(p0_x, p0_y)
+        def __call__(p0_x, p0_y, sheet=None):
+            return getCell(p0_x, p0_y, sheet)
 
     class CellsFunc:
         @staticmethod
-        def __call__(p0, p1, first_row_header=False):
-            return getCells(p0, p1, first_row_header)
+        def __call__(p0, p1, sheet=None, first_row_header=False):
+            return getCells(p0, p1, sheet, first_row_header)
 
         @staticmethod
-        def __getitem__(item):
-            if type(item) == tuple and len(item) == 2:
+        async def __getitem__(item):
+            if type(item) == tuple and (len(item) == 2 or len(item) == 3):
                 row_idx = item[0]
                 col_idx = item[1]
+                sheet = item[2]
 
                 if type(row_idx) == type(col_idx) == int:
-                    return getCell(row_idx, col_idx)
+                    return getCell(row_idx, col_idx, sheet)
 
                 elif type(row_idx) in (int, slice) and type(col_idx) in (int, slice):
                     if type(row_idx) == slice:
@@ -221,6 +227,7 @@ async def run_python(code):
                     return getCells(
                         (col_start, row_start),
                         (col_stop - 1, row_stop - 1),
+                        sheet,
                         first_row_header=False,
                     )
 
@@ -229,10 +236,10 @@ async def run_python(code):
             else:
                 raise IndexError(
                     """Expected usage:
-                        1. cells[row                        , col                        ]
-                        2. cells[row_slice_min:row_slice_max, col                        ]
-                        3. cells[row                        , col_slice_min:col_slice_max]
-                        4. cells[row_slice_min:row_slice_max, col_slice_min:col_slice_max]
+                        1. cells[row                        , col                        , sheet?]
+                        2. cells[row_slice_min:row_slice_max, col                        , sheet?]
+                        3. cells[row                        , col_slice_min:col_slice_max, sheet?]
+                        4. cells[row_slice_min:row_slice_max, col_slice_min:col_slice_max, sheet?]
                         """
                 )
 
@@ -292,14 +299,18 @@ async def run_python(code):
 
             else:
                 # convert nan to None, return PD values list
-                array_output = output_value.where(output_value.notnull(), None).values.tolist()
+                array_output = output_value.where(
+                    output_value.notnull(), None
+                ).values.tolist()
+
 
         # Convert Pandas.Series to array_output
         if isinstance(output_value, pd.Series):
             array_output = output_value.to_numpy().tolist()
+        print(array_output)
 
         # Attempt to format code
-        formatted_code = code 
+        formatted_code = code
         try:
             formatted_code = autopep8.fix_code(
                 code, options={"ignore": ["E402"]}
@@ -314,7 +325,7 @@ async def run_python(code):
             "input_python_std_out": sout.getvalue(),
             "success": True,
             "input_python_stack_trace": None,
-            "formatted_code": formatted_code
+            "formatted_code": formatted_code,
         }
 
     return {
@@ -330,4 +341,4 @@ async def run_python(code):
     }
 
 
-print("environment ready")
+print("[Python WebWorker] initialized")

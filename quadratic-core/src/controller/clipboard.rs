@@ -36,13 +36,13 @@ impl GridController {
         let sheet = self.grid().sheet_from_id(sheet_id);
         for y in rect.y_range() {
             if y != rect.min.y {
-                plain_text.push_str("\n");
+                plain_text.push('\n');
                 html.push_str("</tr>");
             }
             html.push_str("<tr>");
             for x in rect.x_range() {
                 if x != rect.min.x {
-                    plain_text.push_str("\t");
+                    plain_text.push('\t');
                     html.push_str("</td>");
                 }
                 html.push_str("<td>");
@@ -55,17 +55,14 @@ impl GridController {
                     None
                 };
                 let code: Option<CodeCellValue> = if value.is_none() && spill_value.is_none() {
-                    let code_cell_value = sheet.get_code_cell(pos).clone();
-                    match code_cell_value {
-                        Some(code_cell_value) => Some(CodeCellValue {
-                            language: code_cell_value.language,
-                            code_string: code_cell_value.code_string.clone(),
-                            formatted_code_string: None,
-                            last_modified: code_cell_value.last_modified.clone(),
-                            output: None,
-                        }),
-                        None => None,
-                    }
+                    let code_cell_value = sheet.get_code_cell(pos);
+                    code_cell_value.map(|code_cell_value| CodeCellValue {
+                        language: code_cell_value.language,
+                        code_string: code_cell_value.code_string.clone(),
+                        formatted_code_string: None,
+                        last_modified: code_cell_value.last_modified.clone(),
+                        output: None,
+                    })
                 } else {
                     None
                 };
@@ -76,21 +73,22 @@ impl GridController {
                     code: code.clone(),
                 });
 
-                let (bold, italic) = if let Some(format) = sheet.get_existing_cell_format(pos) {
-                    (
-                        format.bold.is_some_and(|bold| bold == true),
-                        format.italic.is_some_and(|italic| italic == true),
-                    )
-                } else {
-                    (false, false)
-                };
+                let (bold, italic) =
+                    if let Some(format) = sheet.get_existing_cell_format_summary(pos) {
+                        (
+                            format.bold.is_some_and(|bold| bold),
+                            format.italic.is_some_and(|italic| italic),
+                        )
+                    } else {
+                        (false, false)
+                    };
                 if bold || italic {
                     html.push_str("<span style={");
                     if bold {
                         html.push_str("font-weight:bold;");
                     }
                     if italic {
-                        html.push_str("font-style:italic;")
+                        html.push_str("font-style:italic;");
                     }
                     html.push_str("}>");
                 }
@@ -99,8 +97,8 @@ impl GridController {
                     html.push_str(&value.as_ref().unwrap().to_string());
                 } else if code.is_some() {
                     let output = code.unwrap().get_output_value(0, 0);
-                    if output.is_some() {
-                        plain_text.push_str(&output.unwrap().repr());
+                    if let Some(output) = output {
+                        plain_text.push_str(&output.repr());
                     }
                 } else if spill_value.is_some() {
                     plain_text.push_str(&spill_value.as_ref().unwrap().to_string());
@@ -130,14 +128,16 @@ impl GridController {
         (plain_text, final_html)
     }
 
-    pub fn cut_to_clipboard(
+    pub async fn cut_to_clipboard(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
         cursor: Option<String>,
     ) -> (TransactionSummary, String, String) {
         let copy = self.copy_to_clipboard(sheet_id, rect);
-        let summary = self.delete_values_and_formatting(sheet_id, rect, cursor);
+        let summary = self
+            .delete_values_and_formatting(sheet_id, rect, cursor)
+            .await;
         (summary, copy.0, copy.1)
     }
 
@@ -169,12 +169,12 @@ impl GridController {
     }
 
     fn array_from_plain_cells(clipboard: String) -> Option<Array> {
-        let lines: Vec<&str> = clipboard.split("\n").collect();
+        let lines: Vec<&str> = clipboard.split('\n').collect();
         let rows: Vec<Vec<&str>> = lines
             .iter()
             .map(|line| line.split('\t').collect())
             .collect();
-        if rows.len() == 0 {
+        if rows.is_empty() {
             return None;
         }
         let longest = rows
@@ -191,7 +191,7 @@ impl GridController {
         let mut y = 0;
         rows.iter().for_each(|row| {
             row.iter().for_each(|s| {
-                if s.len() != 0 {
+                if !s.is_empty() {
                     if let Ok(n) = BigDecimal::from_str(s) {
                         let _ = array.set(x, y, CellValue::Number(n));
                     } else {
@@ -206,7 +206,7 @@ impl GridController {
         Some(array)
     }
 
-    fn set_clipboard_cells(
+    async fn set_clipboard_cells(
         &mut self,
         sheet_id: SheetId,
         start_pos: Pos,
@@ -225,10 +225,10 @@ impl GridController {
         let mut ops = vec![];
         let region = self.region(sheet_id, rect);
         let values = GridController::array_from_clipboard_cells(clipboard);
-        if values.is_some() {
+        if let Some(values) = values {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
-                values: values.unwrap(),
+                values,
             });
         }
 
@@ -236,13 +236,13 @@ impl GridController {
             ops.push(Operation::SetCellFormats {
                 region: region.clone(),
                 attr: format.clone(),
-            })
+            });
         });
 
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
 
-    fn paste_plain_text(
+    async fn paste_plain_text(
         &mut self,
         sheet_id: SheetId,
         start_pos: Pos,
@@ -264,14 +264,14 @@ impl GridController {
                     region,
                     values: array,
                 }];
-                self.transact_forward(ops, cursor)
+                self.transact_forward(ops, cursor).await
             }
             None => TransactionSummary::default(),
         }
     }
 
     // todo: parse table structure to provide better pasting experience from other spreadsheets
-    fn paste_html(
+    async fn paste_html(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
@@ -286,7 +286,7 @@ impl GridController {
         let result = &data.get(1).map_or("", |m| m.as_str());
 
         // decode html in attribute
-        let unencoded = htmlescape::decode_html(&result);
+        let unencoded = htmlescape::decode_html(result);
         if unencoded.is_err() {
             return Err(());
         }
@@ -297,10 +297,12 @@ impl GridController {
             return Err(());
         }
         let clipboard = parsed.unwrap();
-        Ok(self.set_clipboard_cells(sheet_id, pos, clipboard, cursor))
+        Ok(self
+            .set_clipboard_cells(sheet_id, pos, clipboard, cursor)
+            .await)
     }
 
-    pub fn paste_from_clipboard(
+    pub async fn paste_from_clipboard(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
@@ -309,16 +311,19 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         // first try html
-        if html.is_some() {
-            let pasted_html = self.paste_html(sheet_id, pos, html.unwrap(), cursor.clone());
-            if pasted_html.is_ok() {
-                return pasted_html.unwrap();
+        if let Some(html) = html {
+            let pasted_html = self.paste_html(sheet_id, pos, html, cursor.clone()).await;
+            if let Ok(pasted_html) = pasted_html {
+                return pasted_html;
             }
         }
 
         // if not quadratic html, then use the plain text
-        if plain_text.is_some() {
-            return self.paste_plain_text(sheet_id, pos, plain_text.unwrap(), cursor);
+        // first try html
+        if let Some(plain_text) = plain_text {
+            return self
+                .paste_plain_text(sheet_id, pos, plain_text, cursor)
+                .await;
         }
         TransactionSummary::default()
     }
@@ -336,12 +341,13 @@ mod test {
         String::from("<table data-quadratic=\"&#x7B;&quot;w&quot;&#x3A;4&#x2C;&quot;h&quot;&#x3A;4&#x2C;&quot;cells&quot;&#x3A;&#x5B;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;text&quot;&#x2C;&quot;value&quot;&#x3A;&quot;1&#x2C;&#x20;1&quot;&#x7D;&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;number&quot;&#x2C;&quot;value&quot;&#x3A;&quot;12&quot;&#x7D;&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x5D;&#x2C;&quot;formats&quot;&#x3A;&#x5B;&#x7B;&quot;Align&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Wrap&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericFormat&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericDecimals&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Bold&quot;&#x3A;&#x5B;&#x5B;null&#x2C;5&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;10&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Italic&quot;&#x3A;&#x5B;&#x5B;null&#x2C;11&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;4&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;TextColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;FillColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x5D;&#x7D;\"><tbody><tr><td></td><td></td><td></td><td></tr><tr><td></td><td><span style={font-weight:bold;}>1, 1</span></td><td></td><td></tr><tr><td></td><td></td><td></td><td><span style={font-style:italic;}>12</span></tr><tr><td></td><td></td><td></td><td></tr></tbody></table>")
     }
 
-    #[test]
-    fn test_copy_to_clipboard() {
+    #[tokio::test]
+    async fn test_copy_to_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, String::from("1, 1"), None);
+        gc.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, String::from("1, 1"), None)
+            .await;
         gc.set_cell_bold(
             sheet_id,
             Rect {
@@ -350,8 +356,10 @@ mod test {
             },
             Some(true),
             None,
-        );
-        gc.set_cell_value(sheet_id, Pos { x: 3, y: 2 }, String::from("12"), None);
+        )
+        .await;
+        gc.set_cell_value(sheet_id, Pos { x: 3, y: 2 }, String::from("12"), None)
+            .await;
         gc.set_cell_italic(
             sheet_id,
             Rect {
@@ -360,7 +368,8 @@ mod test {
             },
             Some(true),
             None,
-        );
+        )
+        .await;
 
         let rect = Rect {
             min: Pos { x: 1, y: 1 },
@@ -376,7 +385,8 @@ mod test {
         // paste using plain_text
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        gc.paste_from_clipboard(sheet_id, Pos { x: 0, y: 0 }, Some(clipboard.0), None, None);
+        gc.paste_from_clipboard(sheet_id, Pos { x: 0, y: 0 }, Some(clipboard.0), None, None)
+            .await;
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.get_cell_value(Pos { x: 1, y: 1 }),
@@ -396,7 +406,8 @@ mod test {
             Some(String::from("")),
             Some(clipboard.1),
             None,
-        );
+        )
+        .await;
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.get_cell_value(Pos { x: 1, y: 1 }),
@@ -426,8 +437,8 @@ mod test {
         );
     }
 
-    #[test]
-    fn test_paste_from_quadratic_clipboard() {
+    #[tokio::test]
+    async fn test_paste_from_quadratic_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
         gc.paste_from_clipboard(
@@ -436,7 +447,8 @@ mod test {
             None,
             Some(test_pasted_output()),
             None,
-        );
+        )
+        .await;
 
         let sheet = gc.sheet(sheet_id);
         let cell11 = sheet.get_cell_value(Pos { x: 2, y: 3 });
