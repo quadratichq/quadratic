@@ -7,7 +7,7 @@ use crate::{
 };
 
 impl GridController {
-    pub fn set_borders(
+    pub async fn set_borders(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
@@ -19,6 +19,6 @@ impl GridController {
         let sheet = self.sheet(sheet_id);
         let borders = generate_borders(sheet, &region, selections, style);
         let ops = vec![Operation::SetBorders { region, borders }];
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
 }

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use self::sheet_offsets::SheetOffsets;
 
-use super::borders::{CellBorder, SheetBorders};
+use super::borders::SheetBorders;
 use super::bounds::GridBounds;
 use super::code::CodeCellValue;
 use super::column::Column;
@@ -18,9 +18,7 @@ use super::ids::{CellRef, ColumnId, IdMap, RegionRef, RowId, SheetId};
 use super::js_types::{CellFormatSummary, FormattingSummary};
 use super::response::{GetIdResponse, SetCellResponse};
 use super::NumericFormatKind;
-use super::{NumericFormat, NumericFormatKind};
-use crate::grid::borders::get_render_vertical_borders;
-use crate::grid::{borders, SheetBorders};
+use crate::grid::borders;
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;
@@ -497,7 +495,7 @@ mod test {
     use super::*;
     use crate::{
         controller::{auto_complete::cell_values_in_rect, GridController},
-        grid::{Bold, CellBorderStyle, Italic, NumericFormat},
+        grid::{Bold, Italic, NumericFormat},
         test_util::print_table,
     };
 
@@ -675,26 +673,26 @@ mod test {
     }
 
     // TODO(ddimaria): use the code below as a template once cell borders are in place
-    #[ignore]
-    #[tokio::test]
-    async fn test_set_border() {
-        let (grid, sheet_id, selected) = test_setup_basic().await;
-        let cell_border = CellBorder {
-            color: Some("red".into()),
-            style: Some(CellBorderStyle::Line1),
-        };
-        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
-        sheet.set_horizontal_border(selected, cell_border.clone());
-        sheet.set_vertical_border(selected, cell_border);
-        let _borders = sheet.borders();
+    // #[ignore]
+    // #[tokio::test]
+    // async fn test_set_border() {
+    //     let (grid, sheet_id, selected) = test_setup_basic().await;
+    //     let cell_border = CellBorder {
+    //         color: Some("red".into()),
+    //         style: Some(CellBorderStyle::Line1),
+    //     };
+    //     let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+    //     sheet.set_horizontal_border(selected, cell_border.clone());
+    //     sheet.set_vertical_border(selected, cell_border);
+    //     let _borders = sheet.borders();
 
-        print_table(&grid, sheet_id, selected);
+    //     print_table(&grid, sheet_id, selected);
 
-        // let formats = grid.get_all_cell_formats(sheet_id, selected);
-        // formats
-        //     .into_iter()
-        //     .for_each(|format| assert_eq!(format, SOMETHING_HERE));
-    }
+    //     // let formats = grid.get_all_cell_formats(sheet_id, selected);
+    //     // formats
+    //     //     .into_iter()
+    //     //     .for_each(|format| assert_eq!(format, SOMETHING_HERE));
+    // }
 
     #[tokio::test]
     async fn test_get_cell_value() {

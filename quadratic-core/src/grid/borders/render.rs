@@ -1,11 +1,7 @@
-use std::collections::HashMap;
 use std::time::Instant;
 
-use crate::grid::block::SameValue;
-use crate::grid::borders::cell::CellSide;
-use crate::grid::borders::style::BorderStyle;
 use crate::grid::js_types::JsRenderBorder;
-use crate::grid::{ColumnData, Sheet};
+use crate::grid::Sheet;
 
 pub fn get_render_vertical_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
     let timer = Instant::now();
@@ -63,6 +59,8 @@ mod tests {
     use std::collections::HashSet;
 
     mod timing {
+        use crate::grid::BorderStyle;
+
         use super::*;
 
         #[test]
@@ -94,7 +92,7 @@ mod tests {
     mod vertical {
         use super::*;
         use crate::grid::borders::sheet::debug::print_borders;
-        use crate::grid::set_region_borders;
+        use crate::grid::{set_region_borders, BorderStyle};
 
         #[test]
         fn single_block() {
@@ -301,13 +299,16 @@ mod tests {
                 assert!(vertical_render_after_undo.contains(initial));
             }
 
-            assert!(false, "this test doesn't seem to test what I thought it does");
+            assert!(
+                false,
+                "this test doesn't seem to test what I thought it does"
+            );
         }
     }
 
     mod horizontal {
-        use crate::grid::borders::sheet::debug::print_borders;
         use super::*;
+        use crate::grid::{borders::sheet::debug::print_borders, BorderStyle};
 
         #[test]
         fn single_block() {
@@ -434,7 +435,11 @@ mod tests {
             set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style_1));
             set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style_2));
 
-            print_borders(Rect::new_span(Pos{x:1,y:9}, Pos{x:8,y:16}), &sheet.borders, &sheet.column_ids);
+            print_borders(
+                Rect::new_span(Pos { x: 1, y: 9 }, Pos { x: 8, y: 16 }),
+                &sheet.borders,
+                &sheet.column_ids,
+            );
 
             let horizontal_render = get_render_horizontal_borders(&sheet);
 

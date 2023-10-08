@@ -3,7 +3,7 @@ use std::{hash::Hash, str::FromStr};
 use bigdecimal::{BigDecimal, FromPrimitive};
 use serde::{Deserialize, Serialize};
 
-use crate::{Array, ArraySize, Error, ErrorMsg, Span};
+use crate::{grid::borders::LegacyCellBorder, Array, ArraySize, Error, ErrorMsg, Span};
 
 use super::v1_5::*;
 
