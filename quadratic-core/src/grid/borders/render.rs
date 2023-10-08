@@ -1,5 +1,3 @@
-// use std::time::Instant;
-
 use crate::grid::js_types::JsRenderBorder;
 use crate::grid::Sheet;
 use crate::wasm_bindings::js;
@@ -62,6 +60,8 @@ mod tests {
     use std::collections::HashSet;
 
     mod timing {
+        use std::time::Instant;
+
         use crate::grid::BorderStyle;
 
         use super::*;
@@ -84,8 +84,8 @@ mod tests {
                 let timer = Instant::now();
                 set_region_border_selection(&mut sheet, &region, selection, Some(style));
 
-                let vertical_render = get_render_vertical_borders(&sheet);
-                let horizontal_render = get_render_horizontal_borders(&sheet);
+                let _vertical_render = get_render_vertical_borders(&sheet);
+                let _horizontal_render = get_render_horizontal_borders(&sheet);
                 let elapsed = timer.elapsed();
                 println!("Total: {elapsed:?}");
             }
