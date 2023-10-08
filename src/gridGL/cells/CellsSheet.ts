@@ -2,6 +2,7 @@ import { Container, Graphics, Rectangle } from 'pixi.js';
 import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '../../debugFlags';
 import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
+import { JsRenderCell } from '../../quadratic-core/types';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { Coordinate } from '../types/size';
@@ -20,7 +21,7 @@ export class CellsSheet extends Container {
   // used to draw debug boxes for cellsTextHash
   private cellsTextDebug: Graphics;
 
-  private cellsTextHashContainer: Container;
+  private cellsTextHashContainer: Container<CellsTextHash>;
 
   private cellsArray: CellsArray;
 
@@ -56,7 +57,7 @@ export class CellsSheet extends Container {
     this.dirtyRowHeadings = new Map();
     this.cellsFills = this.addChild(new CellsFills(this));
     this.cellsTextDebug = this.addChild(new Graphics());
-    this.cellsTextHashContainer = this.addChild(new Container());
+    this.cellsTextHashContainer = this.addChild(new Container<CellsTextHash>());
     this.cellsArray = this.addChild(new CellsArray(this));
     this.cellsBorders = this.addChild(new CellsBorders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
@@ -371,6 +372,11 @@ export class CellsSheet extends Container {
 
   update(): boolean {
     this.updateHeadings();
+    let changed = false;
+    this.cellsTextHashContainer.children.forEach((cellTextHash) => {
+      const updated = cellTextHash.updateDirtyLabels();
+      if (updated) changed = true;
+    });
     if (this.dirtyRows.size) {
       this.updateNextDirtyRow();
       return true;
@@ -408,5 +414,16 @@ export class CellsSheet extends Container {
       }
     });
     return max;
+  }
+
+  // update individual cells within a hash
+  cellsHashModified(cells: JsRenderCell[]) {
+    cells.forEach((cell) => {
+      // only create hash when it doesn't exist and cell.value is not empty
+      const hash = this.getCellsHash(Number(cell.x), Number(cell.y), !!cell.value);
+      if (hash) {
+        hash.cellsHashModified(cell);
+      }
+    });
   }
 }

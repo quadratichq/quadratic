@@ -26,7 +26,11 @@ export class CellsTextHash extends Container<LabelMeshes> {
 
   viewBounds: Bounds;
 
+  // flag to recreate label
   dirty = false;
+
+  // flag to only
+  dirtyLabels: CellLabel[] = [];
 
   // color to use for drawDebugBox
   debugColor = Math.floor(Math.random() * 0xffffff);
@@ -78,17 +82,29 @@ export class CellsTextHash extends Container<LabelMeshes> {
     }
   }
 
+  private createLabel(cell: JsRenderCell): CellLabel {
+    const rectangle = this.sheet.getCellOffsets(Number(cell.x), Number(cell.y));
+    const cellLabel = new CellLabel(cell, rectangle);
+    this.cellLabels.set(this.getKey(cell), cellLabel);
+    return cellLabel;
+  }
+
   createLabels(): void {
     debugTimeReset();
     this.cellLabels = new Map();
     const cells = this.sheet.getRenderCells(this.AABB);
-    cells.forEach((cell) => {
-      const rectangle = this.sheet.getCellOffsets(Number(cell.x), Number(cell.y));
-      const cellLabel = new CellLabel(cell, rectangle);
-      this.cellLabels.set(this.getKey(cell), cellLabel);
-    });
+    cells.forEach((cell) => this.createLabel(cell));
     this.updateText();
     debugTimeCheck('cellsLabels');
+  }
+
+  updateDirtyLabels(): boolean {
+    let changed = !!this.dirtyLabels.length;
+    while (this.dirtyLabels.length) {
+      const label = this.dirtyLabels.pop();
+      if (label) label.updateText(this.labelMeshes);
+    }
+    return changed;
   }
 
   private updateText() {
@@ -201,5 +217,12 @@ export class CellsTextHash extends Container<LabelMeshes> {
       }
     });
     return max;
+  }
+
+  cellsHashModified(cell: JsRenderCell) {
+    if (cell.value) {
+      const label = this.cellLabels.get(this.getKey(cell)) ?? this.createLabel(cell);
+      this.dirtyLabels.push(label);
+    }
   }
 }

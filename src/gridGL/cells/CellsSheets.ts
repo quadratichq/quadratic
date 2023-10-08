@@ -1,6 +1,6 @@
 import { Container, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
-import { SheetId } from '../../quadratic-core/types';
+import { JsRenderCell, SheetId } from '../../quadratic-core/types';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { CellsSheet } from './CellsSheet';
@@ -129,5 +129,13 @@ export class CellsSheets extends Container<CellsSheet> {
   getCellsContentMaxWidth(column: number): number {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxWidth');
     return this.current.getCellsContentMaxWidth(column);
+  }
+
+  cellsHashModified(regions: Record<string, JsRenderCell[]>): void {
+    for (const [sheetId, cells] of Object.entries(regions)) {
+      const cellsSheet = this.getById(sheetId);
+      if (!cellsSheet) throw new Error('Expected to find cellsSheet in cellsHashModified');
+      cellsSheet.cellsHashModified(cells);
+    }
   }
 }
