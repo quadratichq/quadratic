@@ -17,7 +17,7 @@ use super::formatting::{BoolSummary, CellFmtAttr};
 use super::ids::{CellRef, ColumnId, IdMap, RegionRef, RowId, SheetId};
 use super::js_types::{CellFormatSummary, FormattingSummary};
 use super::response::{GetIdResponse, SetCellResponse};
-use super::NumericFormatKind;
+use super::{NumericFormat, NumericFormatKind};
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;
@@ -197,6 +197,16 @@ impl Sheet {
     pub fn get_formatting_value<A: CellFmtAttr>(&self, pos: Pos) -> Option<A::Value> {
         let column = self.get_column(pos.x)?;
         A::column_data_ref(column).get(pos.y)
+    }
+
+    pub fn cell_numeric_info(&self, pos: Pos) -> (Option<NumericFormat>, Option<i16>) {
+        if let Some(column) = self.get_column(pos.x) {
+            let format = column.numeric_format.get(pos.y);
+            let decimals = column.numeric_decimals.get(pos.y);
+            (format, decimals)
+        } else {
+            (None, None)
+        }
     }
 
     pub fn cell_numeric_format_kind(&self, pos: Pos) -> Option<NumericFormatKind> {

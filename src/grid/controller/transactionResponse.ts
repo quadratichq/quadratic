@@ -9,7 +9,6 @@ export const transactionResponse = (summary?: TransactionSummary): void => {
     sheets.repopulate();
   }
 
-  console.log(summary.operations);
   if (summary.operations.length) {
     pixiApp.cellsSheets.operations(summary.operations);
   }

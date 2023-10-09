@@ -190,24 +190,37 @@ impl GridController {
                                                     sheet_id: sheet.id,
                                                 });
                                                 if let Ok(value) = array.get(x, y) {
+                                                    let entry_pos = Pos {
+                                                        x: pos.x + x as i64,
+                                                        y: pos.y + y as i64,
+                                                    };
+                                                    let (numeric_format, numeric_decimals) =
+                                                        sheet.cell_numeric_info(entry_pos);
                                                     summary_set.push(JsRenderCellUpdate {
                                                         x: pos.x + x as i64,
                                                         y: pos.y + y as i64,
                                                         update: JsRenderCellUpdateEnum::Value(
-                                                            Some(value.to_display(None, None)),
+                                                            Some(value.to_display(
+                                                                numeric_format,
+                                                                numeric_decimals,
+                                                            )),
                                                         ),
                                                     })
                                                 }
                                             }
                                         }
                                     }
-                                    Value::Single(value) => summary_set.push(JsRenderCellUpdate {
-                                        x: pos.x,
-                                        y: pos.y,
-                                        update: JsRenderCellUpdateEnum::Value(Some(
-                                            value.to_display(None, None),
-                                        )),
-                                    }),
+                                    Value::Single(value) => {
+                                        let (numeric_format, numeric_decimals) =
+                                            sheet.cell_numeric_info(pos.into());
+                                        summary_set.push(JsRenderCellUpdate {
+                                            x: pos.x,
+                                            y: pos.y,
+                                            update: JsRenderCellUpdateEnum::Value(Some(
+                                                value.to_display(numeric_format, numeric_decimals),
+                                            )),
+                                        });
+                                    }
                                 };
                             }
                         }
