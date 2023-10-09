@@ -11,7 +11,6 @@ export const transactionResponse = (summary?: TransactionSummary): void => {
 
   if (summary.operations.length) {
     pixiApp.cellsSheets.operations(summary.operations);
-    console.log(summary.operations);
   }
 
   if (summary.fill_sheets_modified.length) {

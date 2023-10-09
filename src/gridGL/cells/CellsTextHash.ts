@@ -251,8 +251,10 @@ export class CellsTextHash extends Container<LabelMeshes> {
       if (label) {
         if (update.bold !== undefined) {
           label.changeBold(update.bold);
+          this.dirtyLabels.push(label);
         } else if (update.italic !== undefined) {
           label.changeItalic(update.italic);
+          this.dirtyLabels.push(label);
         } else if (update.align !== undefined) {
           label.changeAlign(update.align);
           this.dirtyLabels.push(label);
