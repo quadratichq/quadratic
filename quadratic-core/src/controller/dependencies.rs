@@ -30,12 +30,12 @@ impl Grid {
 
     /// Returns cells that _directly_ depend on `area`.
     /// Does not continue to traverse the graph.
-    pub fn get_dependent_cells(&mut self, area: SheetRect) -> HashSet<SheetPos> {
+    pub fn get_dependent_cells(&mut self, cell: SheetPos) -> HashSet<SheetPos> {
         let mut seen = HashSet::new();
 
         for node in self.dependencies_mut().iter() {
             for rect in node.1.iter() {
-                if rect.intersects(area) {
+                if rect.contains(cell) {
                     seen.insert(*node.0);
                 }
             }
@@ -73,11 +73,11 @@ mod test {
         );
 
         assert_eq!(
-            cdc.get_dependent_cells(SheetRect::single_pos(SheetPos {
+            cdc.get_dependent_cells(SheetPos {
                 sheet_id,
                 x: 0,
                 y: 0
-            })),
+            }),
             std::iter::once(SheetPos {
                 sheet_id,
                 x: 3,
@@ -100,11 +100,11 @@ mod test {
         );
 
         assert_eq!(
-            cdc.get_dependent_cells(SheetRect::single_pos(SheetPos {
+            cdc.get_dependent_cells(SheetPos {
                 sheet_id,
                 x: 0,
                 y: 0
-            })),
+            }),
             [
                 SheetPos {
                     sheet_id,
@@ -132,11 +132,11 @@ mod test {
         );
 
         assert_eq!(
-            cdc.get_dependent_cells(SheetRect::single_pos(SheetPos {
+            cdc.get_dependent_cells(SheetPos {
                 sheet_id,
                 x: 0,
                 y: 0
-            })),
+            }),
             std::iter::once(SheetPos {
                 sheet_id,
                 x: 4,
@@ -155,11 +155,11 @@ mod test {
         );
 
         assert_eq!(
-            cdc.get_dependent_cells(SheetRect::single_pos(SheetPos {
+            cdc.get_dependent_cells(SheetPos {
                 sheet_id,
                 x: 0,
                 y: 0
-            })),
+            }),
             HashSet::new()
         );
 
@@ -177,11 +177,11 @@ mod test {
         );
 
         assert_eq!(
-            cdc.get_dependent_cells(SheetRect::single_pos(SheetPos {
+            cdc.get_dependent_cells(SheetPos {
                 sheet_id,
                 x: 10,
                 y: 10
-            })),
+            }),
             std::iter::once(SheetPos {
                 sheet_id,
                 x: 11,

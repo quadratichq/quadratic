@@ -71,6 +71,7 @@ impl GridController {
     pub fn execute_operation(
         &mut self,
         op: Operation,
+        cell_values_modified: &mut Vec<SheetPos>,
         summary: &mut TransactionSummary,
     ) -> Operation {
         let mut cell_regions_modified = vec![];
@@ -121,6 +122,11 @@ impl GridController {
                                     value.to_display(numeric_format, numeric_decimals),
                                 )),
                             });
+                            cell_values_modified.push(SheetPos {
+                                x: pos.x,
+                                y: pos.y,
+                                sheet_id: sheet.id,
+                            });
                         }
 
                         let response = sheet.set_cell_value(pos, value)?;
@@ -159,6 +165,13 @@ impl GridController {
                 cell_regions_modified.extend(self.grid.region_rects(&region));
                 let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
                 let old_code_cell_value = sheet.set_code_cell(cell_ref, code_cell_value);
+                if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
+                    cell_values_modified.push(SheetPos {
+                        x: pos.x,
+                        y: pos.y,
+                        sheet_id: sheet.id,
+                    });
+                }
                 Operation::SetCellCode {
                     cell_ref,
                     code_cell_value: old_code_cell_value,

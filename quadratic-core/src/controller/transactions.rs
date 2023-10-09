@@ -2,7 +2,7 @@ use crate::{grid::SheetId, Pos};
 use serde::{Deserialize, Serialize};
 
 use super::{
-    compute::SheetRect, operations::Operation, transaction_summary::TransactionSummary,
+    compute::SheetPos, operations::Operation, transaction_summary::TransactionSummary,
     GridController,
 };
 
@@ -17,24 +17,14 @@ impl GridController {
     ) -> TransactionSummary {
         // make initial changes
         let mut summary = TransactionSummary::default();
-        let mut reverse_operations = self.transact(operations, &mut summary);
+        let mut cell_values_modified: Vec<SheetPos> = vec![];
+        let mut reverse_operations =
+            self.transact(operations, &mut cell_values_modified, &mut summary);
 
         // run computations
         // TODO cell_regions_modified also contains formatting updates, create new structure for just updated code and values
 
-        let mut additional_operations = self
-            .compute(
-                summary
-                    .cell_regions_modified
-                    .iter()
-                    .map(|rect| SheetRect {
-                        sheet_id: rect.0,
-                        min: rect.1.min,
-                        max: rect.1.max,
-                    })
-                    .collect(),
-            )
-            .await;
+        let mut additional_operations = self.compute(cell_values_modified).await;
 
         reverse_operations.append(&mut additional_operations);
 
@@ -60,7 +50,12 @@ impl GridController {
         let transaction = self.undo_stack.pop()?;
         let cursor_old = transaction.cursor.clone();
         let mut summary = TransactionSummary::default();
-        let reverse_operation = self.transact(transaction.ops, &mut summary);
+
+        // these are irrelevant when undoing b/c we do not rerun computations
+        let mut cell_values_modified = vec![];
+
+        let reverse_operation =
+            self.transact(transaction.ops, &mut cell_values_modified, &mut summary);
         self.redo_stack.push(Transaction {
             ops: reverse_operation,
             cursor,
@@ -75,7 +70,12 @@ impl GridController {
         let transaction = self.redo_stack.pop()?;
         let cursor_old = transaction.cursor.clone();
         let mut summary = TransactionSummary::default();
-        let reverse_operations = self.transact(transaction.ops, &mut summary);
+
+        // these are irrelevant when redoing b/c we do not rerun computations
+        let mut cell_values_modified = vec![];
+
+        let reverse_operations =
+            self.transact(transaction.ops, &mut cell_values_modified, &mut summary);
         self.undo_stack.push(Transaction {
             ops: reverse_operations,
             cursor,
@@ -89,6 +89,7 @@ impl GridController {
     fn transact(
         &mut self,
         operations: Vec<Operation>,
+        cell_values_modified: &mut Vec<SheetPos>,
         summary: &mut TransactionSummary,
     ) -> Vec<Operation> {
         let mut reverse_operations = vec![];
@@ -101,7 +102,8 @@ impl GridController {
                     sheets_with_changed_bounds.push(new_dirty_sheet);
                 }
             }
-            let reverse_operation = self.execute_operation(op.clone(), summary);
+            let reverse_operation =
+                self.execute_operation(op.clone(), cell_values_modified, summary);
             reverse_operations.push(reverse_operation);
         }
         for dirty_sheet in sheets_with_changed_bounds {
