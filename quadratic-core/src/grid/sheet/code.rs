@@ -21,9 +21,13 @@ impl Sheet {
     }
 
     /// Sets or deletes a code cell value and populates spills.
-    pub fn set_code_cell_value(&mut self, pos: Pos, code_cell: Option<CodeCellValue>) {
+    pub fn set_code_cell_value(
+        &mut self,
+        pos: Pos,
+        code_cell: Option<CodeCellValue>,
+    ) -> Option<CodeCellValue> {
         let cell_ref = self.get_or_create_cell_ref(pos);
-        self.code_cells.remove(&cell_ref);
+        let old = self.code_cells.remove(&cell_ref);
 
         if let Some(code_cell) = code_cell {
             if let Some(output) = code_cell.output.clone() {
@@ -50,6 +54,7 @@ impl Sheet {
             }
             self.code_cells.insert(cell_ref, code_cell);
         }
+        old
     }
 
     /// Returns a code cell value.

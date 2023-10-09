@@ -18,7 +18,6 @@ const getCellsDB = async (
 ): Promise<{ x: number; y: number; value: string }[]> => {
   return new Promise((resolve) => {
     getCellsMessages = (cells: { x: number; y: number; value: string }[]) => resolve(cells);
-    console.log({ x0, y0, x1, y1, sheet });
     self.postMessage({ type: 'get-cells', range: { x0, y0, x1, y1, sheet } } as PythonMessage);
   });
 };
@@ -39,7 +38,6 @@ async function pythonWebWorker() {
     return;
   }
 
-  console.log('[Python WebWorker] Initiated');
   self.postMessage({ type: 'python-loaded' } as PythonMessage);
 }
 
@@ -47,7 +45,6 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
   const event = e.data;
   if (event.type === 'get-cells') {
     if (event.cells && getCellsMessages) {
-      console.log(event.cells);
       getCellsMessages(event.cells);
     }
   } else if (event.type === 'execute') {
@@ -58,7 +55,6 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
 
     const output = await pyodide.globals.get('run_python')(event.python);
     const results = Object.fromEntries(output.toJs());
-    console.log(results);
     return self.postMessage({
       type: 'results',
       results,

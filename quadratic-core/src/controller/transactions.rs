@@ -22,9 +22,7 @@ impl GridController {
             self.transact(operations, &mut cell_values_modified, &mut summary);
 
         // run computations
-        // TODO cell_regions_modified also contains formatting updates, create new structure for just updated code and values
-
-        let mut additional_operations = self.compute(cell_values_modified).await;
+        let mut additional_operations = self.compute(cell_values_modified, &mut summary).await;
 
         reverse_operations.append(&mut additional_operations);
 

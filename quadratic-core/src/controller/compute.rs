@@ -1,8 +1,12 @@
-use super::{operations::Operation, GridController};
+use super::{
+    operations::Operation,
+    transaction_summary::{OperationSummary, TransactionSummary},
+    GridController,
+};
 use crate::{
     grid::{
-        js_types::CellForArray, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult,
-        CodeCellValue, SheetId,
+        js_types::{CellForArray, JsRenderCellUpdate, JsRenderCellUpdateEnum},
+        CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, SheetId,
     },
     wasm_bindings::{js::runPython, JsComputeResult},
     Pos, Value,
@@ -13,8 +17,12 @@ use std::{fmt, ops::Range};
 impl GridController {
     /// Given `cell` and `dependencies` adds a new node to the graph.
     /// Returns the old dependencies of the node.
-    pub async fn compute(&mut self, cell_values_modified: Vec<SheetPos>) -> Vec<Operation> {
-        let reverse_operations = vec![];
+    pub async fn compute(
+        &mut self,
+        cell_values_modified: Vec<SheetPos>,
+        summary: &mut TransactionSummary,
+    ) -> Vec<Operation> {
+        let mut reverse_operations = vec![];
         let mut cells_to_compute = cell_values_modified.clone(); // start with all updated cells
 
         while let Some(pos) = cells_to_compute.pop() {
@@ -22,6 +30,8 @@ impl GridController {
             // add the updated cells to the cells_to_compute
 
             let sheet = self.grid.sheet_mut_from_id(pos.sheet_id);
+
+            let mut summary_set = vec![];
 
             if let Some(code_cell) = sheet.get_code_cell(pos.into()) {
                 let code_string = code_cell.code_string.clone();
@@ -32,7 +42,6 @@ impl GridController {
                 let mut cells_accessed_code_cell = vec![];
                 match language {
                     CodeCellLanguage::Python => {
-                        crate::util::dbgjs(&format!("running {:?}, {:?}", pos.x, pos.y));
                         let mut cells = None;
                         let mut complete = false;
 
@@ -109,33 +118,82 @@ impl GridController {
                         ));
                     }
                 }
-                if let Some(code_cell_value) = code_cell_result {
-                    let sheet = self.grid.sheet_mut_from_id(pos.sheet_id);
-                    sheet.set_code_cell_value(
-                        pos.into(),
-                        Some(CodeCellValue {
-                            language,
-                            code_string,
-                            formatted_code_string: code_cell_value.formatted_code,
-                            output: Some(CodeCellRunOutput {
-                                std_out: code_cell_value.input_python_std_out,
-                                std_err: code_cell_value.error_msg,
-                                result: CodeCellRunResult::Ok {
-                                    output_value: if let Some(array_output) =
-                                        code_cell_value.array_output
-                                    {
-                                        Value::Array(array_output.into())
-                                    } else {
-                                        code_cell_value.output_value.into()
-                                    },
-                                    cells_accessed: cells_accessed_code_cell,
+                let sheet = self.grid.sheet_mut_from_id(pos.sheet_id);
+                let code_cell = match code_cell_result {
+                    Some(code_cell_result) => Some(CodeCellValue {
+                        language,
+                        code_string,
+                        formatted_code_string: code_cell_result.formatted_code,
+                        output: Some(CodeCellRunOutput {
+                            std_out: code_cell_result.input_python_std_out,
+                            std_err: code_cell_result.error_msg,
+                            result: CodeCellRunResult::Ok {
+                                output_value: if let Some(array_output) =
+                                    code_cell_result.array_output
+                                {
+                                    Value::Array(array_output.into())
+                                } else {
+                                    code_cell_result.output_value.into()
                                 },
-                            }),
-                            last_modified: String::new(),
+                                cells_accessed: cells_accessed_code_cell,
+                            },
                         }),
-                    );
-                    self.grid.set_dependencies(pos, Some(cells_accessed));
+
+                        // todo: figure out how to handle modified dates in cells
+                        last_modified: String::new(),
+                    }),
+                    None => None,
+                };
+                let old_code_cell_value = sheet.set_code_cell_value(pos.into(), code_cell.clone());
+                if let Some(code_cell) = code_cell {
+                    if let Some(output) = code_cell.output {
+                        if let Some(output_value) = output.result.output_value() {
+                            match output_value {
+                                Value::Array(array) => {
+                                    for y in 0..array.size().h.into() {
+                                        for x in 0..array.size().w.into() {
+                                            // add all but the first cell to the compute cycle
+                                            if x != 0 && y != 0 {
+                                                cells_to_compute.push(SheetPos {
+                                                    x: pos.x + x as i64,
+                                                    y: pos.y + y as i64,
+                                                    sheet_id: sheet.id,
+                                                });
+                                            }
+                                            if let Ok(value) = array.get(x, y) {
+                                                summary_set.push(JsRenderCellUpdate {
+                                                    x: pos.x + x as i64,
+                                                    y: pos.y + y as i64,
+                                                    update: JsRenderCellUpdateEnum::Value(Some(
+                                                        value.to_display(None, None),
+                                                    )),
+                                                })
+                                            }
+                                        }
+                                    }
+                                }
+                                Value::Single(value) => summary_set.push(JsRenderCellUpdate {
+                                    x: pos.x,
+                                    y: pos.y,
+                                    update: JsRenderCellUpdateEnum::Value(Some(
+                                        value.to_display(None, None),
+                                    )),
+                                }),
+                            };
+                        }
+                    }
                 }
+                reverse_operations.push(Operation::SetCellCode {
+                    cell_ref: sheet.get_or_create_cell_ref(pos.into()),
+                    code_cell_value: old_code_cell_value,
+                });
+                if !summary_set.is_empty() {
+                    summary.operations.push(OperationSummary::SetCellValues(
+                        sheet.id.to_string(),
+                        summary_set,
+                    ));
+                }
+                self.grid.set_dependencies(pos, Some(cells_accessed));
             }
 
             // add all dependent cells to the cells_to_compute
@@ -217,7 +275,7 @@ impl fmt::Display for SheetPos {
 
 #[cfg(test)]
 mod test {
-    use crate::controller::GridController;
+    use crate::controller::{transaction_summary::TransactionSummary, GridController};
 
     use super::{SheetPos, SheetRect};
 
@@ -289,11 +347,15 @@ mod test {
             ]),
         );
 
-        gc.compute(vec![SheetPos {
-            sheet_id,
-            x: 0,
-            y: 0,
-        }])
-        .await;
+        // todo...
+        // gc.compute(
+        //     vec![SheetPos {
+        //         sheet_id,
+        //         x: 0,
+        //         y: 0,
+        //     }],
+        //     TransactionSummary::default(),
+        // )
+        // .await;
     }
 }

@@ -4,7 +4,7 @@ use crate::{
         *,
     },
     values::IsBlank,
-    Array, CellValue, Pos,
+    Array, CellValue, Pos, Value,
 };
 use serde::{Deserialize, Serialize};
 
@@ -164,13 +164,60 @@ impl GridController {
                 let region = RegionRef::from(cell_ref);
                 cell_regions_modified.extend(self.grid.region_rects(&region));
                 let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
-                let old_code_cell_value = sheet.set_code_cell(cell_ref, code_cell_value);
+                let old_code_cell_value = sheet.set_code_cell(cell_ref, code_cell_value.clone());
+
+                let mut summary_set = vec![];
+
+                // add cell value to compute queue
                 if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
                     cell_values_modified.push(SheetPos {
                         x: pos.x,
                         y: pos.y,
                         sheet_id: sheet.id,
                     });
+
+                    // add code_cell_value outputs to compute queue and summary
+                    if let Some(code_cell_value) = code_cell_value {
+                        if let Some(output) = code_cell_value.output {
+                            if let Some(output_value) = output.result.output_value() {
+                                match output_value {
+                                    Value::Array(array) => {
+                                        for y in 0..=array.size().h.into() {
+                                            for x in 0..=array.size().w.into() {
+                                                cell_values_modified.push(SheetPos {
+                                                    x: pos.x + x as i64,
+                                                    y: pos.y + y as i64,
+                                                    sheet_id: sheet.id,
+                                                });
+                                                if let Ok(value) = array.get(x, y) {
+                                                    summary_set.push(JsRenderCellUpdate {
+                                                        x: pos.x + x as i64,
+                                                        y: pos.y + y as i64,
+                                                        update: JsRenderCellUpdateEnum::Value(
+                                                            Some(value.to_display(None, None)),
+                                                        ),
+                                                    })
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Value::Single(value) => summary_set.push(JsRenderCellUpdate {
+                                        x: pos.x,
+                                        y: pos.y,
+                                        update: JsRenderCellUpdateEnum::Value(Some(
+                                            value.to_display(None, None),
+                                        )),
+                                    }),
+                                };
+                            }
+                        }
+                    }
+                    if !summary_set.is_empty() {
+                        summary.operations.push(OperationSummary::SetCellValues(
+                            sheet.id.to_string(),
+                            summary_set,
+                        ));
+                    }
                 }
                 Operation::SetCellCode {
                     cell_ref,
