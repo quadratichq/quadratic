@@ -1,10 +1,17 @@
-use crate::{grid::*, values::IsBlank, Array, CellValue};
+use crate::{
+    grid::{
+        js_types::{JsRenderCellUpdate, JsRenderCellUpdateEnum},
+        *,
+    },
+    values::IsBlank,
+    Array, CellValue,
+};
 use serde::{Deserialize, Serialize};
 
 use super::{
     compute::{SheetPos, SheetRect},
     formatting::CellFmtArray,
-    transactions::TransactionSummary,
+    transaction_summary::TransactionSummary,
     GridController,
 };
 
@@ -89,6 +96,36 @@ impl GridController {
 
                         if value.is_blank() {
                             cells_deleted.push(pos);
+                            summary.add_js_render_cell_update(
+                                sheet.id,
+                                JsRenderCellUpdate {
+                                    x: pos.x,
+                                    y: pos.y,
+                                    update: JsRenderCellUpdateEnum::Value(None),
+                                },
+                            );
+                        } else {
+                            // need to get numeric formatting to create display value if its type is a number
+                            let (numeric_format, numeric_decimals) = match value.clone() {
+                                CellValue::Number(_n) => {
+                                    let numeric_format =
+                                        sheet.get_formatting_value::<NumericFormat>(pos);
+                                    let numeric_decimals =
+                                        sheet.get_formatting_value::<NumericDecimals>(pos);
+                                    (numeric_format, numeric_decimals)
+                                }
+                                _ => (None, None),
+                            };
+                            summary.add_js_render_cell_update(
+                                sheet.id,
+                                JsRenderCellUpdate {
+                                    x: pos.x,
+                                    y: pos.y,
+                                    update: JsRenderCellUpdateEnum::Value(Some(
+                                        value.to_display(numeric_format, numeric_decimals),
+                                    )),
+                                },
+                            )
                         }
 
                         let response = sheet.set_cell_value(pos, value)?;
@@ -265,22 +302,22 @@ impl GridController {
             }
         };
 
-        // get the cells that were modified but not modified to blank
-        let js_render_cells = cell_regions_modified.iter().flat_map(|(sheet_id, rect)| {
-            self.grid.sheet_from_id(*sheet_id).get_render_cells(*rect)
-        });
+        // // get the cells that were modified but not modified to blank
+        // let js_render_cells = cell_regions_modified.iter().flat_map(|(sheet_id, rect)| {
+        //     self.grid.sheet_from_id(*sheet_id).get_render_cells(*rect)
+        // });
 
-        // get the cells that were modified to blank
-        let js_render_cells_blank = cells_deleted.into_iter().map(|pos| pos.into());
+        // // get the cells that were modified to blank
+        // let js_render_cells_blank = cells_deleted.into_iter().map(|pos| pos.into());
 
-        // combine the two
-        let js_render_cells = js_render_cells
-            .chain(js_render_cells_blank)
-            .collect::<Vec<_>>();
+        // // combine the two
+        // let js_render_cells = js_render_cells
+        //     .chain(js_render_cells_blank)
+        //     .collect::<Vec<_>>();
 
-        summary.add_js_render_cells(js_render_cells);
+        // summary.add_js_render_cells(js_render_cells);
 
-        summary.cell_regions_modified.extend(cell_regions_modified);
+        // summary.cell_regions_modified.extend(cell_regions_modified);
 
         operation
     }

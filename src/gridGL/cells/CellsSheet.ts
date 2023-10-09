@@ -2,7 +2,7 @@ import { Container, Graphics, Rectangle } from 'pixi.js';
 import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '../../debugFlags';
 import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { JsRenderCell } from '../../quadratic-core/types';
+import { JsRenderCellUpdate } from '../../quadratic-core/types';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { Coordinate } from '../types/size';
@@ -168,6 +168,21 @@ export class CellsSheet extends Container {
     return hash;
   }
 
+  // gets or creates a hash from a hashKey (received from Rust)
+  // note: this does not populate or render the hash
+  private getCellsHashFromKey(key: string): CellsTextHash {
+    const hash = this.cellsTextHash.get(key);
+    if (hash) {
+      return hash;
+    }
+    const split = key.split(',');
+    const hashX = parseInt(split[0]);
+    const hashY = parseInt(split[1]);
+    const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
+    this.cellsTextHash.set(key, cellsHash);
+    return cellsHash;
+  }
+
   getColumnHashes(column: number): CellsTextHash[] {
     const hashX = Math.floor(column / sheetHashWidth);
     const hashes: CellsTextHash[] = [];
@@ -316,8 +331,8 @@ export class CellsSheet extends Container {
 
   // adjust hashes after a column/row resize
   // todo: this may need to be scheduled for large data sets
-  private updateHeadings(): void {
-    if (!this.dirtyColumnHeadings.size && !this.dirtyRowHeadings.size) return;
+  private updateHeadings(): boolean {
+    if (!this.dirtyColumnHeadings.size && !this.dirtyRowHeadings.size) return false;
 
     // hashes that need to update their clipping and buffers
     const hashesToUpdate: Set<CellsTextHash> = new Set();
@@ -368,14 +383,15 @@ export class CellsSheet extends Container {
     // todo: these can be much more efficient
     this.cellsFills.create();
     this.cellsArray.create();
+    return true;
   }
 
   update(): boolean {
-    this.updateHeadings();
-    let changed = false;
+    if (this.updateHeadings()) return true;
     this.cellsTextHashContainer.children.forEach((cellTextHash) => {
-      const updated = cellTextHash.updateDirtyLabels();
-      if (updated) changed = true;
+      if (cellTextHash.updateDirtyLabels()) {
+        return true;
+      }
     });
     if (this.dirtyRows.size) {
       this.updateNextDirtyRow();
@@ -417,13 +433,10 @@ export class CellsSheet extends Container {
   }
 
   // update individual cells within a hash
-  cellsHashModified(cells: JsRenderCell[]) {
-    cells.forEach((cell) => {
-      // only create hash when it doesn't exist and cell.value is not empty
-      const hash = this.getCellsHash(Number(cell.x), Number(cell.y), !!cell.value);
-      if (hash) {
-        hash.cellsHashModified(cell);
-      }
+  cellsHashModified(regions: Map<string, JsRenderCellUpdate[]>) {
+    regions.forEach((value, hashKey) => {
+      const hash = this.getCellsHashFromKey(hashKey);
+      hash.cellsHashModified(value);
     });
   }
 }

@@ -1,7 +1,7 @@
 import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import { Bounds } from '../../grid/sheet/Bounds';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { JsRenderCell } from '../../quadratic-core/types';
+import { JsRenderCell, JsRenderCellUpdate } from '../../quadratic-core/types';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { CellsSheet } from './CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
@@ -51,7 +51,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   // key used to find individual cell labels
-  private getKey(cell: JsRenderCell): string {
+  private getKey(cell: JsRenderCell | JsRenderCellUpdate): string {
     return `${cell.x},${cell.y}`;
   }
 
@@ -102,7 +102,14 @@ export class CellsTextHash extends Container<LabelMeshes> {
     let changed = !!this.dirtyLabels.length;
     while (this.dirtyLabels.length) {
       const label = this.dirtyLabels.pop();
-      if (label) label.updateText(this.labelMeshes);
+      if (label) {
+        label.updateText(this.labelMeshes);
+        changed = true;
+      }
+    }
+    if (changed) {
+      this.overflowClip();
+      this.updateBuffers();
     }
     return changed;
   }
@@ -219,10 +226,23 @@ export class CellsTextHash extends Container<LabelMeshes> {
     return max;
   }
 
-  cellsHashModified(cell: JsRenderCell) {
-    if (cell.value) {
-      const label = this.cellLabels.get(this.getKey(cell)) ?? this.createLabel(cell);
-      this.dirtyLabels.push(label);
-    }
+  cellsHashModified(update: JsRenderCellUpdate[]) {
+    update.forEach((cell) => {
+      // need to break up the enums (best way to do this for now...)
+      const update = cell.update as any;
+
+      if (update.value !== undefined) {
+        const key = this.getKey(cell);
+        if (update.value === null) {
+          this.cellLabels.delete(key);
+        } else {
+          const label = this.cellLabels.get(key) ?? this.createLabel({ x: cell.x, y: cell.y, ...update });
+          label.text = update.value;
+          this.dirtyLabels.push(label);
+        }
+      }
+
+      // todo: other update here
+    });
   }
 }

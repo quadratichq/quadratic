@@ -7,7 +7,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::{operations::Operation, transactions::TransactionSummary, GridController};
+use super::{operations::Operation, transaction_summary::TransactionSummary, GridController};
 
 impl GridController {
     pub fn set_cell_formats_for_type<A: CellFmtAttr>(
@@ -147,7 +147,7 @@ pub enum CellFmtArray {
 #[cfg(test)]
 mod test {
     use crate::{
-        controller::{transactions::TransactionSummary, GridController},
+        controller::{transaction_summary::TransactionSummary, GridController},
         grid::TextColor,
         Pos, Rect,
     };

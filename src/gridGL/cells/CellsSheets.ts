@@ -1,6 +1,6 @@
 import { Container, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
-import { JsRenderCell, SheetId } from '../../quadratic-core/types';
+import { JsRenderCellUpdate, SheetId } from '../../quadratic-core/types';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { CellsSheet } from './CellsSheet';
@@ -131,11 +131,13 @@ export class CellsSheets extends Container<CellsSheet> {
     return this.current.getCellsContentMaxWidth(column);
   }
 
-  cellsHashModified(regions: Record<string, JsRenderCell[]>): void {
-    for (const [sheetId, cells] of Object.entries(regions)) {
+  cellsHashModified(modified: Record<string, Record<string, JsRenderCellUpdate[]>>): void {
+    // modified is actually a map, not a record...need to fix the rust conversion utility
+    const map = modified as any as Map<string, Map<string, JsRenderCellUpdate[]>>;
+    map.forEach((value, sheetId) => {
       const cellsSheet = this.getById(sheetId);
       if (!cellsSheet) throw new Error('Expected to find cellsSheet in cellsHashModified');
-      cellsSheet.cellsHashModified(cells);
-    }
+      cellsSheet.cellsHashModified(value);
+    });
   }
 }

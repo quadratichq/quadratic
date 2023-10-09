@@ -79,7 +79,6 @@ impl Sheet {
                     bold: column.bold.get(y),
                     italic: column.italic.get(y),
                     text_color: column.text_color.get(y),
-                    fill_color: None,
                 }
             })
             .collect()

@@ -15,6 +15,7 @@ pub mod import;
 pub mod operations;
 pub mod sheet_offsets;
 pub mod sheets;
+pub mod transaction_summary;
 pub mod transactions;
 
 #[derive(Debug, Default, Clone)]

@@ -1,5 +1,5 @@
 use super::*;
-use crate::{controller::transactions::TransactionSummary, grid::js_types::*};
+use crate::{controller::transaction_summary::TransactionSummary, grid::js_types::*};
 use std::{collections::BTreeMap, str::FromStr};
 
 pub mod auto_complete;

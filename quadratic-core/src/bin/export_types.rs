@@ -1,6 +1,10 @@
 use std::fs::create_dir_all;
 
-use quadratic_core::{controller::transactions, *};
+use quadratic_core::{
+    controller::transaction_summary::TransactionSummary,
+    grid::js_types::{JsRenderCellUpdate, JsRenderCellUpdateEnum},
+    *,
+};
 use ts_rs::TS;
 
 macro_rules! generate_type_declarations {
@@ -18,7 +22,9 @@ fn main() {
     s += "// Do not modify it manually.\n\n";
 
     s += &generate_type_declarations!(
-        transactions::TransactionSummary,
+        TransactionSummary,
+        JsRenderCellUpdate,
+        JsRenderCellUpdateEnum,
         formulas::RangeRef,
         formulas::CellRef,
         formulas::CellRefCoord,

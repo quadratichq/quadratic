@@ -3,7 +3,7 @@ use lexicon_fractional_index::key_between;
 
 use crate::grid::{Sheet, SheetId};
 
-use super::{operations::Operation, transactions::TransactionSummary, GridController};
+use super::{operations::Operation, transaction_summary::TransactionSummary, GridController};
 
 impl GridController {
     pub fn sheet_ids(&self) -> Vec<SheetId> {

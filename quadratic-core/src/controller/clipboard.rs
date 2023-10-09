@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use super::{
-    formatting::CellFmtArray, operations::Operation, transactions::TransactionSummary,
+    formatting::CellFmtArray, operations::Operation, transaction_summary::TransactionSummary,
     GridController,
 };
 use crate::{

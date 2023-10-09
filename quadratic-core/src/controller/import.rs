@@ -7,7 +7,7 @@ use crate::{
     controller::operations::Operation, grid::SheetId, Array, ArraySize, CellValue, Pos, Rect,
 };
 
-use super::{transactions::TransactionSummary, GridController};
+use super::{transaction_summary::TransactionSummary, GridController};
 
 impl GridController {
     /// Imports a CSV file into the grid.

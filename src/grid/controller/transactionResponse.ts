@@ -9,7 +9,7 @@ export const transactionResponse = (summary?: TransactionSummary): void => {
     sheets.repopulate();
   }
 
-  if (summary.cell_hash_values_modified.length) {
+  if (summary.cell_hash_values_modified.size) {
     pixiApp.cellsSheets.cellsHashModified(summary.cell_hash_values_modified);
   }
 
