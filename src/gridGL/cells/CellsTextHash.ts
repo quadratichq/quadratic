@@ -236,6 +236,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
       if (update.value) {
         const label = this.cellLabels.get(key) ?? this.createLabel({ x: cell.x, y: cell.y, value: update.value });
         label.text = update.value;
+        label.dirty = true;
         this.dirtyLabels.push(label);
       } else {
         this.cellLabels.delete(key);

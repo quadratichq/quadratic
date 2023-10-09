@@ -182,12 +182,11 @@ impl GridController {
                     ),
                     CellFmtArray::NumericFormat(num_fmt) => {
                         // only add a summary for changes that impact value.to_string based on this formatting change
-                        // todo: this doesn't look safe
-                        let single = num_fmt.iter_values().next().unwrap().clone();
                         let sheet = self.grid.sheet_from_id(region.sheet);
                         let cells = region
                             .iter()
-                            .filter_map(|cell_ref| {
+                            .enumerate()
+                            .filter_map(|(index, cell_ref)| {
                                 let x = sheet.get_column_index(cell_ref.column);
                                 let y = sheet.get_row_index(cell_ref.row);
                                 if let (Some(x), Some(y)) = (x, y) {
@@ -206,7 +205,10 @@ impl GridController {
                                             x,
                                             y,
                                             update: JsRenderCellUpdateEnum::Value(Some(
-                                                value.to_display(single.clone(), numeric_decimal),
+                                                value.to_display(
+                                                    num_fmt.get_at(index),
+                                                    numeric_decimal,
+                                                ),
                                             )),
                                         })
                                     } else {
