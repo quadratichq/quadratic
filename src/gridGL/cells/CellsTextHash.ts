@@ -51,7 +51,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   // key used to find individual cell labels
-  private getKey(cell: JsRenderCell | JsRenderCellUpdate): string {
+  private getKey(cell: { x: bigint | number; y: bigint | number }): string {
     return `${cell.x},${cell.y}`;
   }
 
@@ -226,23 +226,33 @@ export class CellsTextHash extends Container<LabelMeshes> {
     return max;
   }
 
-  cellsHashModified(update: JsRenderCellUpdate[]) {
-    update.forEach((cell) => {
-      // need to break up the enums (best way to do this for now...)
-      const update = cell.update as any;
+  updateCells(cell: JsRenderCellUpdate) {
+    const key = this.getKey(cell);
+    // need to get the value from the update and cast it to any b/c of the conversion of enums to TS
+    const update = cell.update as any;
 
-      if (update.value !== undefined) {
-        const key = this.getKey(cell);
-        if (update.value === null) {
-          this.cellLabels.delete(key);
-        } else {
-          const label = this.cellLabels.get(key) ?? this.createLabel({ x: cell.x, y: cell.y, ...update });
-          label.text = update.value;
-          this.dirtyLabels.push(label);
-        }
+    // special case for value where we may have to delete the CellLabel
+    if (update.value !== undefined) {
+      if (update.value) {
+        const label = this.cellLabels.get(key) ?? this.createLabel({ x: cell.x, y: cell.y, value: update.value });
+        label.text = update.value;
+        this.dirtyLabels.push(label);
+      } else {
+        this.cellLabels.delete(key);
       }
+    }
 
-      // todo: other update here
-    });
+    // otherwise only update the formatting if the CellLabel already exists (otherwise there's nothing to display)
+    else {
+      const label = this.cellLabels.get(key);
+      if (label) {
+        if (update.bold !== undefined) {
+          label.changeBold(update.bold);
+        } else if (update.italic !== undefined) {
+          label.changeItalic(update.italic);
+        }
+        this.dirtyLabels.push(label);
+      }
+    }
   }
 }

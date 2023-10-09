@@ -1,7 +1,7 @@
 use std::fs::create_dir_all;
 
 use quadratic_core::{
-    controller::transaction_summary::TransactionSummary,
+    controller::transaction_summary::{OperationSummary, TransactionSummary},
     grid::js_types::{JsRenderCellUpdate, JsRenderCellUpdateEnum},
     *,
 };
@@ -23,6 +23,7 @@ fn main() {
 
     s += &generate_type_declarations!(
         TransactionSummary,
+        OperationSummary,
         JsRenderCellUpdate,
         JsRenderCellUpdateEnum,
         formulas::RangeRef,

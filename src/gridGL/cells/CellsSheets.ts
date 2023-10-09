@@ -1,6 +1,6 @@
 import { Container, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
-import { JsRenderCellUpdate, SheetId } from '../../quadratic-core/types';
+import { OperationSummary, SheetId } from '../../quadratic-core/types';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { CellsSheet } from './CellsSheet';
@@ -131,13 +131,20 @@ export class CellsSheets extends Container<CellsSheet> {
     return this.current.getCellsContentMaxWidth(column);
   }
 
-  cellsHashModified(modified: Record<string, Record<string, JsRenderCellUpdate[]>>): void {
-    // modified is actually a map, not a record...need to fix the rust conversion utility
-    const map = modified as any as Map<string, Map<string, JsRenderCellUpdate[]>>;
-    map.forEach((value, sheetId) => {
-      const cellsSheet = this.getById(sheetId);
-      if (!cellsSheet) throw new Error('Expected to find cellsSheet in cellsHashModified');
-      cellsSheet.cellsHashModified(value);
+  operations(operations: OperationSummary[]): void {
+    operations.forEach((op) => {
+      // need to convert to any to work through the operation type (not ideal)
+      const operation = op as any;
+      if (operation.setCellValues) {
+        const cellsSheet = this.getById(operation.setCellValues[0]);
+        if (!cellsSheet) throw new Error('Expected to find cellsSheet in cellsSheets.operations');
+        cellsSheet.updateCells(operation.setCellValues[1]);
+      } else if (operation.setCellFormats) {
+        const cellsSheet = this.getById(operation.setCellFormats[0]);
+        if (!cellsSheet) throw new Error('Expected to find cellsSheet in cellsSheets.operations');
+        cellsSheet.updateCells(operation.setCellFormats[1]);
+        console.log(operation.setCellFormats[1]);
+      }
     });
   }
 }

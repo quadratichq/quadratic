@@ -4,14 +4,14 @@ use crate::{
         *,
     },
     values::IsBlank,
-    Array, CellValue,
+    Array, CellValue, Pos,
 };
 use serde::{Deserialize, Serialize};
 
 use super::{
     compute::{SheetPos, SheetRect},
     formatting::CellFmtArray,
-    transaction_summary::TransactionSummary,
+    transaction_summary::{OperationSummary, TransactionSummary},
     GridController,
 };
 
@@ -84,10 +84,11 @@ impl GridController {
                     .cell_value_regions_modified
                     .extend(self.grid.region_rects(&region));
 
+                let mut summary_set = vec![];
+
                 let sheet = self.grid.sheet_mut_from_id(region.sheet);
 
                 let size = region.size().expect("msg: error getting size of region");
-
                 let old_values = region
                     .iter()
                     .zip(values.into_cell_values_vec())
@@ -96,14 +97,11 @@ impl GridController {
 
                         if value.is_blank() {
                             cells_deleted.push(pos);
-                            summary.add_js_render_cell_update(
-                                sheet.id,
-                                JsRenderCellUpdate {
-                                    x: pos.x,
-                                    y: pos.y,
-                                    update: JsRenderCellUpdateEnum::Value(None),
-                                },
-                            );
+                            summary_set.push(JsRenderCellUpdate {
+                                x: pos.x,
+                                y: pos.y,
+                                update: JsRenderCellUpdateEnum::Value(None),
+                            });
                         } else {
                             // need to get numeric formatting to create display value if its type is a number
                             let (numeric_format, numeric_decimals) = match value.clone() {
@@ -116,16 +114,13 @@ impl GridController {
                                 }
                                 _ => (None, None),
                             };
-                            summary.add_js_render_cell_update(
-                                sheet.id,
-                                JsRenderCellUpdate {
-                                    x: pos.x,
-                                    y: pos.y,
-                                    update: JsRenderCellUpdateEnum::Value(Some(
-                                        value.to_display(numeric_format, numeric_decimals),
-                                    )),
-                                },
-                            )
+                            summary_set.push(JsRenderCellUpdate {
+                                x: pos.x,
+                                y: pos.y,
+                                update: JsRenderCellUpdateEnum::Value(Some(
+                                    value.to_display(numeric_format, numeric_decimals),
+                                )),
+                            });
                         }
 
                         let response = sheet.set_cell_value(pos, value)?;
@@ -133,9 +128,14 @@ impl GridController {
                     })
                     .map(|old_value| old_value.unwrap_or(CellValue::Blank))
                     .collect();
+
+                summary.operations.push(OperationSummary::SetCellValues(
+                    sheet.id.to_string(),
+                    summary_set,
+                ));
+
                 let old_values = Array::new_row_major(size, old_values)
                     .expect("error constructing array of old values for SetCells operation");
-
                 // return reverse operation
                 Operation::SetCellValues {
                     region,
@@ -180,18 +180,154 @@ impl GridController {
                     CellFmtArray::Wrap(wrap) => CellFmtArray::Wrap(
                         self.set_cell_formats_for_type::<CellWrap>(&region, wrap),
                     ),
-                    CellFmtArray::NumericFormat(num_fmt) => CellFmtArray::NumericFormat(
-                        self.set_cell_formats_for_type::<NumericFormat>(&region, num_fmt),
-                    ),
-                    CellFmtArray::NumericDecimals(num_decimals) => CellFmtArray::NumericDecimals(
-                        self.set_cell_formats_for_type::<NumericDecimals>(&region, num_decimals),
-                    ),
+                    CellFmtArray::NumericFormat(num_fmt) => {
+                        // only add a summary for changes that impact value.to_string based on this formatting change
+                        // todo: this doesn't look safe
+                        let single = num_fmt.iter_values().next().unwrap().clone();
+                        let sheet = self.grid.sheet_from_id(region.sheet);
+                        let cells = region
+                            .iter()
+                            .filter_map(|cell_ref| {
+                                let x = sheet.get_column_index(cell_ref.column);
+                                let y = sheet.get_row_index(cell_ref.row);
+                                if let (Some(x), Some(y)) = (x, y) {
+                                    if let Some(value) = sheet.get_cell_value(Pos { x, y }) {
+                                        let numeric_decimal = match value {
+                                            CellValue::Number(_) => {
+                                                if let Some(column) = sheet.get_column(x) {
+                                                    column.numeric_decimals.get(y)
+                                                } else {
+                                                    None
+                                                }
+                                            }
+                                            _ => None,
+                                        };
+                                        Some(JsRenderCellUpdate {
+                                            x,
+                                            y,
+                                            update: JsRenderCellUpdateEnum::Value(Some(
+                                                value.to_display(single.clone(), numeric_decimal),
+                                            )),
+                                        })
+                                    } else {
+                                        None
+                                    }
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+                        summary.operations.push(OperationSummary::SetCellFormats(
+                            region.sheet.to_string(),
+                            cells,
+                        ));
+                        CellFmtArray::NumericFormat(
+                            self.set_cell_formats_for_type::<NumericFormat>(&region, num_fmt),
+                        )
+                    }
+                    CellFmtArray::NumericDecimals(num_decimals) => {
+                        // only add a summary for changes that impact value.to_string based on this formatting change
+                        // todo: this doesn't look safe
+                        let single = num_decimals.iter_values().next().unwrap();
+                        let sheet = self.grid.sheet_from_id(region.sheet);
+                        let cells = region
+                            .iter()
+                            .filter_map(|cell_ref| {
+                                let x = sheet.get_column_index(cell_ref.column);
+                                let y = sheet.get_row_index(cell_ref.row);
+                                if let (Some(x), Some(y)) = (x, y) {
+                                    if let Some(value) = sheet.get_cell_value(Pos { x, y }) {
+                                        let numeric_format = match value {
+                                            CellValue::Number(_) => {
+                                                if let Some(column) = sheet.get_column(x) {
+                                                    column.numeric_format.get(y)
+                                                } else {
+                                                    None
+                                                }
+                                            }
+                                            _ => None,
+                                        };
+                                        Some(JsRenderCellUpdate {
+                                            x,
+                                            y,
+                                            update: JsRenderCellUpdateEnum::Value(Some(
+                                                value.to_display(numeric_format, *single),
+                                            )),
+                                        })
+                                    } else {
+                                        None
+                                    }
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+                        summary.operations.push(OperationSummary::SetCellFormats(
+                            region.sheet.to_string(),
+                            cells,
+                        ));
+                        CellFmtArray::NumericDecimals(
+                            self.set_cell_formats_for_type::<NumericDecimals>(
+                                &region,
+                                num_decimals,
+                            ),
+                        )
+                    }
                     CellFmtArray::Bold(bold) => {
+                        // todo: this doesn't look safe
+                        let single = bold.iter_values().next().unwrap();
+                        let sheet = self.grid.sheet_from_id(region.sheet);
+                        let cells = region
+                            .iter()
+                            .filter_map(|cell_ref| {
+                                let x = sheet.get_column_index(cell_ref.column);
+                                let y = sheet.get_row_index(cell_ref.row);
+                                if let (Some(x), Some(y)) = (x, y) {
+                                    Some(JsRenderCellUpdate {
+                                        x,
+                                        y,
+                                        update: JsRenderCellUpdateEnum::Bold(*single),
+                                    })
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+                        summary.operations.push(OperationSummary::SetCellFormats(
+                            region.sheet.to_string(),
+                            cells,
+                        ));
                         CellFmtArray::Bold(self.set_cell_formats_for_type::<Bold>(&region, bold))
                     }
-                    CellFmtArray::Italic(italic) => CellFmtArray::Italic(
-                        self.set_cell_formats_for_type::<Italic>(&region, italic),
-                    ),
+                    CellFmtArray::Italic(italic) => {
+                        // todo: this doesn't look safe
+                        let single = italic.iter_values().next().unwrap();
+                        let sheet = self.grid.sheet_from_id(region.sheet);
+                        let cells = region
+                            .iter()
+                            .filter_map(|cell_ref| {
+                                let x = sheet.get_column_index(cell_ref.column);
+                                let y = sheet.get_row_index(cell_ref.row);
+                                if let (Some(x), Some(y)) = (x, y) {
+                                    Some(JsRenderCellUpdate {
+                                        x,
+                                        y,
+                                        update: JsRenderCellUpdateEnum::Italic(*single),
+                                    })
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+                        summary.operations.push(OperationSummary::SetCellFormats(
+                            region.sheet.to_string(),
+                            cells,
+                        ));
+
+                        CellFmtArray::Italic(
+                            self.set_cell_formats_for_type::<Italic>(&region, italic),
+                        )
+                    }
                     CellFmtArray::TextColor(text_color) => CellFmtArray::TextColor(
                         self.set_cell_formats_for_type::<TextColor>(&region, text_color),
                     ),
@@ -301,24 +437,6 @@ impl GridController {
                 }
             }
         };
-
-        // // get the cells that were modified but not modified to blank
-        // let js_render_cells = cell_regions_modified.iter().flat_map(|(sheet_id, rect)| {
-        //     self.grid.sheet_from_id(*sheet_id).get_render_cells(*rect)
-        // });
-
-        // // get the cells that were modified to blank
-        // let js_render_cells_blank = cells_deleted.into_iter().map(|pos| pos.into());
-
-        // // combine the two
-        // let js_render_cells = js_render_cells
-        //     .chain(js_render_cells_blank)
-        //     .collect::<Vec<_>>();
-
-        // summary.add_js_render_cells(js_render_cells);
-
-        // summary.cell_regions_modified.extend(cell_regions_modified);
-
         operation
     }
 }

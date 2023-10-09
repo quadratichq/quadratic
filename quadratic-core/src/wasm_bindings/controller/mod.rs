@@ -1,6 +1,6 @@
 use super::*;
 use crate::{controller::transaction_summary::TransactionSummary, grid::js_types::*};
-use std::{collections::BTreeMap, str::FromStr};
+use std::str::FromStr;
 
 pub mod auto_complete;
 pub mod bounds;
@@ -79,7 +79,7 @@ impl GridController {
             fill_sheets_modified: vec![],
             border_sheets_modified: vec![],
             code_cells_modified: vec![],
-            cell_hash_values_modified: BTreeMap::new(),
+            operations: vec![],
             sheet_list_modified: false,
             cursor: None,
             offsets_modified: vec![],

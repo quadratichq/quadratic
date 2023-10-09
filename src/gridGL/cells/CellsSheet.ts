@@ -432,11 +432,16 @@ export class CellsSheet extends Container {
     return max;
   }
 
-  // update individual cells within a hash
-  cellsHashModified(regions: Map<string, JsRenderCellUpdate[]>) {
-    regions.forEach((value, hashKey) => {
-      const hash = this.getCellsHashFromKey(hashKey);
-      hash.cellsHashModified(value);
-    });
+  // update values for cells
+  updateCells(updates: JsRenderCellUpdate[]): void {
+    for (const update of updates) {
+      // need to convert to any b/c of the way Rust enums are converted to TS
+      const cellUpdate = update as any;
+      // only create a hash if the cell has a value
+      const cellsHash = this.getCellsHash(Number(update.x), Number(update.y), !!cellUpdate.value);
+      if (cellsHash) {
+        cellsHash.updateCells(update);
+      }
+    }
   }
 }
