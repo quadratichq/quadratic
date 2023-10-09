@@ -174,9 +174,33 @@ impl GridController {
                     }
                 }
                 let old_attr = match attr {
-                    CellFmtArray::Align(align) => CellFmtArray::Align(
-                        self.set_cell_formats_for_type::<CellAlign>(&region, align),
-                    ),
+                    CellFmtArray::Align(align) => {
+                        let sheet = self.grid.sheet_from_id(region.sheet);
+                        let cells = region
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(i, cell_ref)| {
+                                let x = sheet.get_column_index(cell_ref.column);
+                                let y = sheet.get_row_index(cell_ref.row);
+                                if let (Some(x), Some(y)) = (x, y) {
+                                    Some(JsRenderCellUpdate {
+                                        x,
+                                        y,
+                                        update: JsRenderCellUpdateEnum::Align(align.get_at(i)),
+                                    })
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+                        summary.operations.push(OperationSummary::SetCellFormats(
+                            region.sheet.to_string(),
+                            cells,
+                        ));
+                        CellFmtArray::Align(
+                            self.set_cell_formats_for_type::<CellAlign>(&region, align),
+                        )
+                    }
                     CellFmtArray::Wrap(wrap) => CellFmtArray::Wrap(
                         self.set_cell_formats_for_type::<CellWrap>(&region, wrap),
                     ),
@@ -186,7 +210,7 @@ impl GridController {
                         let cells = region
                             .iter()
                             .enumerate()
-                            .filter_map(|(index, cell_ref)| {
+                            .filter_map(|(i, cell_ref)| {
                                 let x = sheet.get_column_index(cell_ref.column);
                                 let y = sheet.get_row_index(cell_ref.row);
                                 if let (Some(x), Some(y)) = (x, y) {
@@ -205,10 +229,8 @@ impl GridController {
                                             x,
                                             y,
                                             update: JsRenderCellUpdateEnum::Value(Some(
-                                                value.to_display(
-                                                    num_fmt.get_at(index),
-                                                    numeric_decimal,
-                                                ),
+                                                value
+                                                    .to_display(num_fmt.get_at(i), numeric_decimal),
                                             )),
                                         })
                                     } else {
@@ -229,12 +251,11 @@ impl GridController {
                     }
                     CellFmtArray::NumericDecimals(num_decimals) => {
                         // only add a summary for changes that impact value.to_string based on this formatting change
-                        // todo: this doesn't look safe
-                        let single = num_decimals.iter_values().next().unwrap();
                         let sheet = self.grid.sheet_from_id(region.sheet);
                         let cells = region
                             .iter()
-                            .filter_map(|cell_ref| {
+                            .enumerate()
+                            .filter_map(|(i, cell_ref)| {
                                 let x = sheet.get_column_index(cell_ref.column);
                                 let y = sheet.get_row_index(cell_ref.row);
                                 if let (Some(x), Some(y)) = (x, y) {
@@ -253,7 +274,10 @@ impl GridController {
                                             x,
                                             y,
                                             update: JsRenderCellUpdateEnum::Value(Some(
-                                                value.to_display(numeric_format, *single),
+                                                value.to_display(
+                                                    numeric_format,
+                                                    num_decimals.get_at(i),
+                                                ),
                                             )),
                                         })
                                     } else {
@@ -276,19 +300,18 @@ impl GridController {
                         )
                     }
                     CellFmtArray::Bold(bold) => {
-                        // todo: this doesn't look safe
-                        let single = bold.iter_values().next().unwrap();
                         let sheet = self.grid.sheet_from_id(region.sheet);
                         let cells = region
                             .iter()
-                            .filter_map(|cell_ref| {
+                            .enumerate()
+                            .filter_map(|(i, cell_ref)| {
                                 let x = sheet.get_column_index(cell_ref.column);
                                 let y = sheet.get_row_index(cell_ref.row);
                                 if let (Some(x), Some(y)) = (x, y) {
                                     Some(JsRenderCellUpdate {
                                         x,
                                         y,
-                                        update: JsRenderCellUpdateEnum::Bold(*single),
+                                        update: JsRenderCellUpdateEnum::Bold(bold.get_at(i)),
                                     })
                                 } else {
                                     None
@@ -302,19 +325,18 @@ impl GridController {
                         CellFmtArray::Bold(self.set_cell_formats_for_type::<Bold>(&region, bold))
                     }
                     CellFmtArray::Italic(italic) => {
-                        // todo: this doesn't look safe
-                        let single = italic.iter_values().next().unwrap();
                         let sheet = self.grid.sheet_from_id(region.sheet);
                         let cells = region
                             .iter()
-                            .filter_map(|cell_ref| {
+                            .enumerate()
+                            .filter_map(|(i, cell_ref)| {
                                 let x = sheet.get_column_index(cell_ref.column);
                                 let y = sheet.get_row_index(cell_ref.row);
                                 if let (Some(x), Some(y)) = (x, y) {
                                     Some(JsRenderCellUpdate {
                                         x,
                                         y,
-                                        update: JsRenderCellUpdateEnum::Italic(*single),
+                                        update: JsRenderCellUpdateEnum::Italic(italic.get_at(i)),
                                     })
                                 } else {
                                     None
@@ -325,17 +347,45 @@ impl GridController {
                             region.sheet.to_string(),
                             cells,
                         ));
-
                         CellFmtArray::Italic(
                             self.set_cell_formats_for_type::<Italic>(&region, italic),
                         )
                     }
-                    CellFmtArray::TextColor(text_color) => CellFmtArray::TextColor(
-                        self.set_cell_formats_for_type::<TextColor>(&region, text_color),
-                    ),
-                    CellFmtArray::FillColor(fill_color) => CellFmtArray::FillColor(
-                        self.set_cell_formats_for_type::<FillColor>(&region, fill_color),
-                    ),
+                    CellFmtArray::TextColor(text_color) => {
+                        let sheet = self.grid.sheet_from_id(region.sheet);
+                        let cells = region
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(i, cell_ref)| {
+                                let x = sheet.get_column_index(cell_ref.column);
+                                let y = sheet.get_row_index(cell_ref.row);
+                                if let (Some(x), Some(y)) = (x, y) {
+                                    Some(JsRenderCellUpdate {
+                                        x,
+                                        y,
+                                        update: JsRenderCellUpdateEnum::TextColor(
+                                            text_color.get_at(i),
+                                        ),
+                                    })
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+                        summary.operations.push(OperationSummary::SetCellFormats(
+                            region.sheet.to_string(),
+                            cells,
+                        ));
+                        CellFmtArray::TextColor(
+                            self.set_cell_formats_for_type::<TextColor>(&region, text_color),
+                        )
+                    }
+                    CellFmtArray::FillColor(fill_color) => {
+                        summary.fill_sheets_modified.push(region.sheet);
+                        CellFmtArray::FillColor(
+                            self.set_cell_formats_for_type::<FillColor>(&region, fill_color),
+                        )
+                    }
                 };
 
                 // return reverse operation

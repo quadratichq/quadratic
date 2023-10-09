@@ -2,7 +2,7 @@ import { removeItems } from '@pixi/utils';
 import { BitmapFont, Container, Point, Rectangle, Texture } from 'pixi.js';
 import { Bounds } from '../../../grid/sheet/Bounds';
 import { convertColorStringToTint, convertTintToArray } from '../../../helpers/convertColor';
-import { JsRenderCell } from '../../../quadratic-core/types';
+import { CellAlign, JsRenderCell } from '../../../quadratic-core/types';
 import { CellAlignment } from '../../../schemas';
 import { Coordinate } from '../../types/size';
 import { LabelMeshes } from './LabelMeshes';
@@ -95,6 +95,15 @@ export class CellLabel extends Container {
     this.italic = !!italic;
     this.updateFontName();
     this.dirty = true;
+  }
+
+  changeAlign(align?: CellAlign) {
+    this.alignment = align ?? 'left';
+    this.calculatePosition();
+  }
+
+  changeTextColor(color?: string) {
+    this.tint = color ? convertColorStringToTint(color) : undefined;
   }
 
   get cellWidth(): number {
