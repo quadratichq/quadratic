@@ -29,8 +29,8 @@ export class CellsTextHash extends Container<LabelMeshes> {
   // flag to recreate label
   dirty = false;
 
-  // flag to only
-  dirtyLabels: CellLabel[] = [];
+  // flag to update a label. Use true for a deleted cell to ensure labels' buffers update
+  dirtyLabels: (CellLabel | true)[] = [];
 
   // color to use for drawDebugBox
   debugColor = Math.floor(Math.random() * 0xffffff);
@@ -103,7 +103,9 @@ export class CellsTextHash extends Container<LabelMeshes> {
     while (this.dirtyLabels.length) {
       const label = this.dirtyLabels.pop();
       if (label) {
-        label.updateText(this.labelMeshes);
+        if (label !== true) {
+          label.updateText(this.labelMeshes);
+        }
         changed = true;
       }
     }
@@ -230,9 +232,8 @@ export class CellsTextHash extends Container<LabelMeshes> {
     const key = this.getKey(cell);
     // need to get the value from the update and cast it to any b/c of the conversion of enums to TS
     const update = cell.update as any;
-
     // special case for value where we may have to delete the CellLabel
-    if (update.value !== undefined) {
+    if ('value' in update) {
       if (update.value) {
         const label = this.cellLabels.get(key) ?? this.createLabel({ x: cell.x, y: cell.y, value: update.value });
         label.text = update.value;
@@ -240,6 +241,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
         this.dirtyLabels.push(label);
       } else {
         this.cellLabels.delete(key);
+        this.dirtyLabels.push(true);
       }
     }
 

@@ -436,7 +436,7 @@ export class CellsSheet extends Container {
   updateCells(updates: JsRenderCellUpdate[]): void {
     for (const update of updates) {
       // need to convert to any b/c of the way Rust enums are converted to TS
-      const cellUpdate = update as any;
+      const cellUpdate = update.update as any;
       // only create a hash if the cell has a value
       const cellsHash = this.getCellsHash(Number(update.x), Number(update.y), !!cellUpdate.value);
       if (cellsHash) {

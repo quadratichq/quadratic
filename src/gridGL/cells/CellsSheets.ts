@@ -143,7 +143,6 @@ export class CellsSheets extends Container<CellsSheet> {
         const cellsSheet = this.getById(operation.setCellFormats[0]);
         if (!cellsSheet) throw new Error('Expected to find cellsSheet in cellsSheets.operations');
         cellsSheet.updateCells(operation.setCellFormats[1]);
-        console.log(operation.setCellFormats[1]);
       }
     });
   }
