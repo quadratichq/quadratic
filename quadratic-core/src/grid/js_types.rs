@@ -114,7 +114,7 @@ impl BitOrAssign for FormattingSummary {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsRenderCodeCell {
     pub x: i64,

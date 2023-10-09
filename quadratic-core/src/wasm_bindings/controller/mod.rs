@@ -80,6 +80,7 @@ impl GridController {
             border_sheets_modified: vec![],
             code_cells_modified: vec![],
             cell_hash_values_modified: BTreeMap::new(),
+            cell_hash_code_modified: BTreeMap::new(),
             sheet_list_modified: false,
             cursor: None,
             offsets_modified: vec![],

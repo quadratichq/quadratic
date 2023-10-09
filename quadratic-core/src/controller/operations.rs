@@ -1,4 +1,8 @@
-use crate::{grid::*, values::IsBlank, Array, CellValue};
+use crate::{
+    grid::{js_types::JsRenderCodeCell, *},
+    values::IsBlank,
+    Array, CellValue,
+};
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -120,6 +124,18 @@ impl GridController {
             } => {
                 let region = RegionRef::from(cell_ref);
                 cell_regions_modified.extend(self.grid.region_rects(&region));
+
+                self.grid
+                    .region_rects(&region)
+                    .into_iter()
+                    .for_each(|(sheet_id, rect)| {
+                        summary.add_js_render_code_cells(
+                            self.grid
+                                .sheet_from_id(sheet_id)
+                                .get_render_code_cells(rect),
+                        )
+                    });
+
                 let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
                 let old_code_cell_value = sheet.set_code_cell(cell_ref, code_cell_value);
                 Operation::SetCellCode {

@@ -1,7 +1,10 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    grid::{js_types::JsRenderCell, *},
+    grid::{
+        js_types::{JsRenderCell, JsRenderCodeCell},
+        *,
+    },
     Pos, Rect,
 };
 use serde::{Deserialize, Serialize};
@@ -137,6 +140,8 @@ pub struct TransactionSummary {
     pub code_cells_modified: Vec<(SheetId, Pos)>,
     /// CellHash blocks of affected cell values and formats
     pub cell_hash_values_modified: BTreeMap<String, Vec<JsRenderCell>>,
+    /// CellHash blocks of affected cell values and formats
+    pub cell_hash_code_modified: BTreeMap<String, Vec<JsRenderCodeCell>>,
     /// Sheet metadata or order was modified.
     pub sheet_list_modified: bool,
     /// SheetOffsets that are modified.
@@ -159,6 +164,21 @@ impl TransactionSummary {
         js_render_cells
             .into_iter()
             .for_each(|js_render_cell| self.add_js_render_cell(js_render_cell));
+    }
+
+    pub fn add_js_render_code_cell(&mut self, js_render_code_cell: JsRenderCodeCell) {
+        let cell_hash = CellHash::from(Pos::from((js_render_code_cell.x, js_render_code_cell.y)));
+
+        self.cell_hash_code_modified
+            .entry(cell_hash.0.to_owned())
+            .or_default()
+            .push(js_render_code_cell);
+    }
+
+    pub fn add_js_render_code_cells(&mut self, js_render_code_cells: Vec<JsRenderCodeCell>) {
+        js_render_code_cells
+            .into_iter()
+            .for_each(|js_render_code_cell| self.add_js_render_code_cell(js_render_code_cell));
     }
 }
 
