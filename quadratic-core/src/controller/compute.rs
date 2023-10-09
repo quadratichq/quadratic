@@ -21,8 +21,6 @@ impl GridController {
             // find which cells have formulas. Run the formulas and update the cells.
             // add the updated cells to the cells_to_compute
 
-            // iterate through changed range to find any code cells
-
             let sheet = self.grid.sheet_mut_from_id(pos.sheet_id);
 
             if let Some(code_cell) = sheet.get_code_cell(pos.into()) {
