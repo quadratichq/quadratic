@@ -166,13 +166,11 @@ impl From<Pos> for CellHash {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::btree_map::Entry;
-
-    use crate::{grid::js_types::JsRenderCell, Array, CellValue, Pos, Rect};
+    use crate::{Array, CellValue, Pos, Rect};
 
     use super::*;
 
-    fn add_cell_value(
+    fn _add_cell_value(
         gc: &mut GridController,
         sheet_id: SheetId,
         pos: Pos,
@@ -187,13 +185,13 @@ mod tests {
         }
     }
 
-    fn add_cell_text(
+    fn _add_cell_text(
         gc: &mut GridController,
         sheet_id: SheetId,
         pos: Pos,
         value: &str,
     ) -> Operation {
-        add_cell_value(gc, sheet_id, pos, CellValue::Text(value.into()))
+        _add_cell_value(gc, sheet_id, pos, CellValue::Text(value.into()))
     }
 
     #[test]

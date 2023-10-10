@@ -146,21 +146,17 @@ pub enum CellFmtArray {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        controller::{transaction_summary::TransactionSummary, GridController},
-        grid::TextColor,
-        Pos, Rect,
-    };
+    use crate::{controller::GridController, grid::TextColor, Pos, Rect};
 
     #[tokio::test]
     async fn test_set_cell_text_color_undo_redo() {
-        let mut gc = GridController::new();
+        let gc = GridController::new();
         let sheet_id = gc.grid.sheets()[0].id;
         let pos1 = Pos { x: 3, y: 6 };
         let pos2 = Pos { x: 5, y: 8 };
         let pos3 = Pos { x: 9, y: 6 };
-        let rect1 = Rect::new_span(pos1, pos2);
-        let rect2 = Rect::new_span(pos2, pos3);
+        // let rect1 = Rect::new_span(pos1, pos2);
+        // let rect2 = Rect::new_span(pos2, pos3);
 
         let get = |g: &GridController, pos: crate::Pos| {
             g.sheet(sheet_id)

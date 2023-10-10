@@ -1,5 +1,6 @@
-use std::hash::Hash;
+use std::{hash::Hash, str::FromStr};
 
+use bigdecimal::{BigDecimal, FromPrimitive};
 use serde::{Deserialize, Serialize};
 
 use crate::{Array, ArraySize, Error, ErrorMsg, Span};
@@ -158,9 +159,15 @@ pub enum Any {
 impl From<Any> for CellValue {
     fn from(val: Any) -> Self {
         match val {
-            Any::Number(n) => n.into(),
-            Any::String(s) => s.into(),
-            Any::Boolean(b) => b.into(),
+            Any::Number(n) => match BigDecimal::from_f64(n) {
+                Some(n) => CellValue::Number(n),
+                None => CellValue::Text(n.to_string()),
+            },
+            Any::String(s) => match BigDecimal::from_str(&s) {
+                Ok(n) => CellValue::Number(n),
+                Err(_) => CellValue::Text(s),
+            },
+            Any::Boolean(b) => CellValue::Logical(b),
         }
     }
 }
@@ -263,7 +270,6 @@ mod tests {
 
     #[test]
     fn test_converts_any_into_cellvalue() {
-        println!("{:?}", Any::Number(1.22_f64));
         let big_number = BigDecimal::from_f64(1.22).unwrap();
         let big_number_f64 = big_number.to_f64().unwrap();
 

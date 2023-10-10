@@ -273,10 +273,7 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        controller::{transaction_summary::TransactionSummary, GridController},
-        CellValue, Pos, Rect,
-    };
+    use crate::{controller::GridController, CellValue, Pos};
     use std::str::FromStr;
 
     use bigdecimal::BigDecimal;
@@ -288,7 +285,7 @@ mod test {
         let pos = Pos { x: 3, y: 6 };
         let get_the_cell =
             |g: &GridController| g.sheet(sheet_id).get_cell_value(pos).unwrap_or_default();
-        let expected_cell_regions_modified = vec![(sheet_id, Rect::single_pos(pos))];
+        // let expected_cell_regions_modified = vec![(sheet_id, Rect::single_pos(pos))];
 
         assert_eq!(get_the_cell(&g), CellValue::Blank);
         g.set_cell_value(sheet_id, pos, String::from("a"), None)
