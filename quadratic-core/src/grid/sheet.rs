@@ -101,8 +101,9 @@ impl Sheet {
     pub fn set_cell_value(
         &mut self,
         pos: Pos,
-        value: CellValue,
+        value: impl Into<CellValue>,
     ) -> Option<SetCellResponse<CellValue>> {
+        let value = value.into();
         let is_blank = value.is_blank();
         let value: Option<CellValue> = if is_blank { None } else { Some(value) };
         if value.is_none() && !self.columns.contains_key(&pos.x) {

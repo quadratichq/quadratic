@@ -6,10 +6,7 @@ use serde::{Deserialize, Serialize};
 use smallvec::smallvec;
 
 use super::*;
-use crate::{
-    grid::Grid, Array, ArraySize, CellValue, CodeResult, CoerceInto, ErrorMsg, Pos, SheetPos,
-    Spanned, Value,
-};
+use crate::{Array, ArraySize, CellValue, CodeResult, CoerceInto, ErrorMsg, Pos, Spanned, Value};
 
 /// Abstract syntax tree of a formula expression.
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -100,19 +97,9 @@ impl Spanned<AstNodeContents> {
 }
 
 impl Formula {
-    /// Evaluates a formula, blocking on async calls.
-    ///
-    /// Use this when the grid proxy isn't actually doing anything async.
-    pub fn eval_blocking(&self, grid: &Grid, pos: SheetPos) -> CodeResult<Value> {
-        pollster::block_on(self.eval(grid, pos))
-    }
-
     /// Evaluates a formula.
-    pub async fn eval(&self, grid: &Grid, pos: SheetPos) -> CodeResult<Value> {
-        self.ast
-            .eval(&mut Ctx { grid, pos })
-            .await?
-            .into_non_error_value()
+    pub fn eval(&self, ctx: &mut Ctx<'_>) -> CodeResult<Value> {
+        pollster::block_on(self.ast.eval(ctx))?.into_non_error_value()
     }
 }
 
@@ -133,7 +120,7 @@ impl AstNode {
                     internal_error!("invalid arguments to cell range operator");
                 }
                 let ref1 = args[0].to_cell_ref()?;
-                let ref2 = args[0].to_cell_ref()?;
+                let ref2 = args[1].to_cell_ref()?;
                 let sheet_name = ref1.sheet.clone();
                 let corner1 = ref1.resolve_from(ctx.pos.without_sheet());
                 let corner2 = ref2.resolve_from(ctx.pos.without_sheet());
@@ -161,7 +148,7 @@ impl AstNode {
                 let mut flat_array = smallvec![];
                 // Reuse the same `CellRef` object so that we don't have to
                 // clone `sheet_name.`
-                let mut cell_ref = CellRef::absolute(sheet_name, Pos::ORIGIN); // We'll overwriet the position.
+                let mut cell_ref = CellRef::absolute(sheet_name, Pos::ORIGIN); // We'll overwrite the position.
                 for y in y1..=y2 {
                     cell_ref.y = CellRefCoord::Absolute(y);
                     for x in x1..=x2 {

@@ -8,7 +8,6 @@ mod criteria;
 mod ctx;
 #[allow(clippy::vec_init_then_push)]
 pub mod functions;
-mod grid_proxy;
 mod lexer;
 pub mod lsp;
 mod params;
@@ -21,7 +20,6 @@ pub use cell_ref::*;
 pub use criteria::Criterion;
 pub use ctx::Ctx;
 use functions::FormulaFnArgs;
-pub use grid_proxy::GridProxy;
 use params::{Param, ParamKind};
 pub use parser::{find_cell_references, parse_formula};
 use wildcards::wildcard_pattern_to_regex;

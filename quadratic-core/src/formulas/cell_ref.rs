@@ -81,7 +81,7 @@ impl CellRef {
     /// Constructs an absolute cell reference.
     pub fn absolute(sheet: Option<String>, pos: Pos) -> Self {
         Self {
-            sheet: None,
+            sheet,
             x: CellRefCoord::Absolute(pos.x),
             y: CellRefCoord::Absolute(pos.y),
         }
@@ -233,5 +233,23 @@ impl CellRefCoord {
     fn row_string(self, base: i64) -> String {
         let row = self.resolve_from(base);
         format!("{}{row}", self.prefix())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_a1_parsing() {
+        for col in ["A", "B", "C", "AE", "QR", "nA", "nB", "nQR"] {
+            for row in ["n99", "n42", "n2", "n1", "0", "1", "2", "42", "99"] {
+                let s = format!("{col}{row}");
+                let pos = CellRef::parse_a1(&s, crate::Pos::ORIGIN)
+                    .expect("invalid cell reference")
+                    .resolve_from(crate::Pos::ORIGIN);
+                assert_eq!(s, pos.a1_string());
+            }
+        }
     }
 }

@@ -33,7 +33,7 @@ pub use formatting::{
 pub use ids::*;
 pub use sheet::Sheet;
 
-use crate::{CellValue, Pos, Rect, SheetPos, SheetRect, Value};
+use crate::{Array, CellValue, Pos, Rect, SheetPos, SheetRect, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
@@ -53,6 +53,16 @@ impl Grid {
             dependencies: HashMap::new(),
         };
         ret.add_sheet(None).expect("error adding initial sheet");
+        ret
+    }
+    pub fn from_array(base_pos: Pos, array: &Array) -> Self {
+        let mut ret = Grid::new();
+        let sheet = &mut ret.sheets_mut()[0];
+        for ((x, y), value) in array.size().iter().zip(array.cell_values_slice()) {
+            let x = base_pos.x + x as i64;
+            let y = base_pos.y + y as i64;
+            sheet.set_cell_value(Pos { x, y }, value.clone());
+        }
         ret
     }
     pub fn sheets(&self) -> &[Sheet] {
@@ -165,9 +175,6 @@ impl Grid {
     pub fn sheet_mut_from_id(&mut self, sheet_id: SheetId) -> &mut Sheet {
         let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");
         &mut self.sheets[sheet_index]
-    }
-    pub fn sheet_from_name(&self, sheet_name: &str) -> Option<&Sheet> {
-        self.sheets.iter().find(|sheet| sheet.name == sheet_name)
     }
 
     pub fn sheet_from_string(&self, sheet_id: String) -> &Sheet {

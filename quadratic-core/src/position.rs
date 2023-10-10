@@ -39,7 +39,18 @@ impl Pos {
 
     /// Returns an A1-style reference to the cell position.
     pub fn a1_string(self) -> String {
-        crate::util::column_name(self.x) + &self.y.to_string()
+        let col = crate::util::column_name(self.x);
+        if self.y < 0 {
+            format!("{col}n{}", -self.y)
+        } else {
+            format!("{col}{}", self.y.to_string())
+        }
+    }
+
+    /// Adds information about which sheet the position is in.
+    pub fn with_sheet(self, sheet_id: SheetId) -> SheetPos {
+        let Pos { x, y } = self;
+        SheetPos { x, y, sheet_id }
     }
 }
 impl From<(i64, i64)> for Pos {
