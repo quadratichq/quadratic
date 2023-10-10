@@ -1,16 +1,15 @@
 use std::collections::HashMap;
 use std::ops::Range;
-use std::time::Instant;
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::grid::block::{Block, BlockContent, SameValue};
+use crate::{grid, Rect};
+use crate::grid::{ColumnData, ColumnId, IdMap, RegionRef, RowId, Sheet};
+use crate::grid::block::SameValue;
 use crate::grid::borders::cell::{CellBorders, CellSide};
 use crate::grid::borders::compute_indices;
 use crate::grid::borders::style::{BorderSelection, BorderStyle};
-use crate::grid::{ColumnData, ColumnId, IdMap, RegionRef, RowId, Sheet};
-use crate::{grid, Rect};
 
 pub fn generate_borders(
     sheet: &Sheet,
@@ -18,25 +17,16 @@ pub fn generate_borders(
     selections: Vec<BorderSelection>,
     style: Option<BorderStyle>,
 ) -> SheetBorders {
-    let timer = Instant::now();
     let mut id_space_borders = sheet.borders.per_cell.clone_region(&sheet.row_ids, region);
     let mut render_borders = sheet
         .borders
         .render_lookup
         .clone_rects(&sheet.region_rects(region).collect_vec());
 
-    let elapsed = timer.elapsed();
-    println!("clone: {elapsed:?}");
-
-    let timer = Instant::now();
     for rect in sheet.region_rects(region) {
-        let timer_2 = Instant::now();
         let horizontal = compute_indices::horizontal(rect, selections.clone());
         let vertical = compute_indices::vertical(rect, selections.clone());
-        let elapsed = timer_2.elapsed();
-        println!("  indices: {elapsed:?}");
 
-        let timer_2 = Instant::now();
         for &horizontal_border_index in &horizontal {
             let above_index = horizontal_border_index - 1;
             let column_ids = rect
@@ -48,11 +38,7 @@ pub fn generate_borders(
             id_space_borders.set_horizontal_border(&column_ids, above_index, style);
             render_borders.set_horizontal_border(horizontal_border_index, rect.x_range(), style);
         }
-        let elapsed = timer_2.elapsed();
-        let num_calls = horizontal.len();
-        println!("  horizontal ({num_calls}): {elapsed:?}");
 
-        let timer_2 = Instant::now();
         for &vertical_border_index in &vertical {
             let column_left_index = vertical_border_index - 1;
             let column_left_id = sheet.get_column(column_left_index).map(|column| column.id);
@@ -69,12 +55,7 @@ pub fn generate_borders(
             );
             render_borders.set_vertical_border(vertical_border_index, rect.y_range(), style);
         }
-        let elapsed = timer_2.elapsed();
-        let num_calls = vertical.len();
-        println!("  vertical ({num_calls}): {elapsed:?}");
     }
-    let elapsed = timer.elapsed();
-    println!("generate: {elapsed:?}");
     SheetBorders {
         per_cell: id_space_borders,
         render_lookup: render_borders,
@@ -125,7 +106,6 @@ impl SheetBorders {
     ) -> SheetBorders {
         let mut previous_borders = SheetBorders::default();
 
-        let timer = Instant::now();
         for region in regions {
             let replaced_id_space =
                 self.per_cell
@@ -142,9 +122,6 @@ impl SheetBorders {
             .render_lookup
             .replace_rects(&replaced_grid_space, &rects);
 
-        let elapsed = timer.elapsed();
-        println!("set_regions: {elapsed:?}");
-
         previous_borders
     }
 }
@@ -153,6 +130,7 @@ impl SheetBorders {
 struct IdSpaceBorders {
     borders: HashMap<ColumnId, ColumnData<SameValue<CellBorders>>>,
 }
+
 impl IdSpaceBorders {
     fn clone_region(&self, row_ids: &IdMap<RowId, i64>, region: &RegionRef) -> Self {
         let mut cloned = Self::default();
@@ -171,11 +149,8 @@ impl IdSpaceBorders {
             let row_ranges = grid::sheet::row_ranges(&region.rows, row_ids);
             let replacement = source.clone_blocks(*column_id, row_ranges.clone());
 
-            let mut dest_column = self.borders.entry(*column_id).or_default();
-            let mut previous_column = previous.borders.entry(*column_id).or_default();
-
-            // TODO(jrice): We need to improve ColumnData algorithms to make this simpler
-            // TODO(jrice): Iterative `set` is broken. Need to use `set_range`
+            let dest_column = self.borders.entry(*column_id).or_default();
+            let previous_column = previous.borders.entry(*column_id).or_default();
 
             for range in row_ranges {
                 let replaced = dest_column.clone_range(&replacement, range);
@@ -195,7 +170,6 @@ impl IdSpaceBorders {
         let mut column = ColumnData::new();
         if let Some(source_column) = self.borders.get(&column_id) {
             for range in row_ranges {
-                // TODO(jrice): Iterative `set` is broken. Need to use `set_range`
                 column.clone_range(&source_column, range);
             }
         }
@@ -208,7 +182,6 @@ impl IdSpaceBorders {
         row_index_above: i64,
         style: Option<BorderStyle>,
     ) {
-        // let timer = Instant::now();
         let row_index_below = row_index_above + 1;
         for &column_id in columns {
             self.set_cell_border(column_id, row_index_above, CellSide::Bottom, style);
@@ -258,6 +231,7 @@ pub struct GridSpaceBorders {
     pub(super) vertical: HashMap<i64, ColumnData<SameValue<BorderStyle>>>,
     pub(super) horizontal: HashMap<i64, ColumnData<SameValue<BorderStyle>>>,
 }
+
 impl GridSpaceBorders {
     fn clone_rects(&self, rects: &[Rect]) -> GridSpaceBorders {
         let mut cloned = Self::default();
@@ -268,7 +242,6 @@ impl GridSpaceBorders {
     fn replace_rects(&mut self, source: &Self, rects: &[Rect]) -> Self {
         let mut previous = Self::default();
 
-        // TODO(jrice): Iterative `set` is broken. Need to use `set_range`
         for rect in rects {
             // Vertical borders
             for x in rect.x_range().chain([rect.x_range().end]) {
@@ -300,7 +273,7 @@ impl GridSpaceBorders {
     }
 
     fn set_vertical_border(&mut self, index: i64, y_range: Range<i64>, style: Option<BorderStyle>) {
-        let mut column = self.vertical.entry(index).or_default();
+        let column = self.vertical.entry(index).or_default();
         match style {
             Some(style) => column.set_range(y_range, style),
             None => column.remove_range(y_range),
@@ -313,7 +286,7 @@ impl GridSpaceBorders {
         x_range: Range<i64>,
         style: Option<BorderStyle>,
     ) {
-        let mut row = self.horizontal.entry(index).or_default();
+        let row = self.horizontal.entry(index).or_default();
         match style {
             Some(style) => row.set_range(x_range, style),
             None => row.remove_range(x_range),
@@ -323,8 +296,11 @@ impl GridSpaceBorders {
 
 #[cfg(test)]
 pub mod debug {
-    use super::*;
+    #![allow(dead_code)]
+
     use crate::{Pos, Rect};
+
+    use super::*;
 
     pub(in super::super) trait GetCellBorders {
         fn get_cell_borders(
@@ -438,11 +414,12 @@ pub mod debug {
 
 #[cfg(test)]
 mod tests {
+    use debug::GetCellBorders;
+
+    use crate::{Pos, Rect};
     use crate::color::Rgb;
     use crate::grid::borders::style::CellBorderLine;
     use crate::grid::SheetId;
-    use crate::{Pos, Rect};
-    use debug::{print_borders, GetCellBorders};
 
     use super::*;
 
@@ -643,7 +620,7 @@ mod tests {
             line: CellBorderLine::Line1,
         };
 
-        let prev_borders_1 =
+        let _prev_borders_1 =
             set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style));
         let prev_borders_2 = set_region_border_selection(&mut sheet, &region_2, selection_2, None);
 
@@ -765,7 +742,7 @@ mod tests {
             line: CellBorderLine::Dotted,
         };
 
-        let prev_borders_1 =
+        let _prev_borders_1 =
             set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style_1));
         let prev_borders_2 =
             set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style_2));

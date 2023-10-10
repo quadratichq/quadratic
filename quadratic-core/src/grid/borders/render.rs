@@ -1,15 +1,8 @@
-use std::collections::HashMap;
-use std::time::Instant;
-
-use crate::grid::block::SameValue;
-use crate::grid::borders::cell::CellSide;
-use crate::grid::borders::style::BorderStyle;
 use crate::grid::js_types::JsRenderBorder;
-use crate::grid::{ColumnData, Sheet};
+use crate::grid::Sheet;
 
 pub fn get_render_vertical_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
-    let timer = Instant::now();
-    let res = sheet
+    sheet
         .borders
         .render_lookup
         .vertical
@@ -23,16 +16,11 @@ pub fn get_render_vertical_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
                 style: block.content().value.clone(),
             })
         })
-        .collect();
-
-    let elapsed = timer.elapsed();
-    println!("get_render_vertical: {elapsed:?}");
-    res
+        .collect()
 }
 
 pub fn get_render_horizontal_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
-    let timer = Instant::now();
-    let res = sheet
+    sheet
         .borders
         .render_lookup
         .horizontal
@@ -46,23 +34,21 @@ pub fn get_render_horizontal_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
                 style: block.content().value.clone(),
             })
         })
-        .collect();
-
-    let elapsed = timer.elapsed();
-    println!("get_render_horizontal: {elapsed:?}");
-    res
+        .collect()
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::color::Rgb;
-    use crate::grid::borders::sheet::set_region_border_selection;
-    use crate::grid::{BorderSelection, CellBorderLine, SheetId};
-    use crate::{Pos, Rect};
     use std::collections::HashSet;
 
-    // mod timing {
+    use crate::{Pos, Rect};
+    use crate::color::Rgb;
+    use crate::grid::{BorderSelection, BorderStyle, CellBorderLine, SheetId};
+    use crate::grid::borders::sheet::set_region_border_selection;
+
+    use super::*;
+
+// mod timing {
     //     use super::*;
     //
     //     #[test]
@@ -92,9 +78,9 @@ mod tests {
     // }
 
     mod vertical {
-        use super::*;
-        use crate::grid::borders::sheet::debug::print_borders;
         use crate::grid::set_region_borders;
+
+        use super::*;
 
         #[test]
         fn single_block() {
@@ -322,8 +308,9 @@ mod tests {
     }
 
     mod horizontal {
-        use super::*;
         use crate::grid::set_region_borders;
+
+        use super::*;
 
         #[test]
         fn single_block() {

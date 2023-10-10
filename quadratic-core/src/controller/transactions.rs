@@ -163,9 +163,9 @@ impl From<Pos> for CellHash {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::btree_map::Entry;
+    
 
-    use crate::{grid::js_types::JsRenderCell, Array, CellValue, Pos, Rect};
+    use crate::{Array, CellValue, Pos, Rect};
 
     use super::*;
 

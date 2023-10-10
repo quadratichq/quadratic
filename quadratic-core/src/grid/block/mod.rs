@@ -231,7 +231,7 @@ pub fn contiguous_optional_blocks<B: BlockContent>(
     blocks: Vec<Block<B>>,
     expected_range: Range<i64>,
 ) -> Vec<OptionBlock<B>> {
-    let mut block_ranges = blocks.iter().map(|block| block.range()).collect_vec();
+    let block_ranges = blocks.iter().map(|block| block.range()).collect_vec();
     let mut block_iter = blocks.into_iter();
 
     // TODO(jrice): This could be simplified to just a blocks iter (no block_ranges vec) if we tag range equality somehow

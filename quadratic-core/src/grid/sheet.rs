@@ -7,7 +7,7 @@ use itertools::Itertools;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-use super::borders::{BorderSelection, BorderStyle};
+
 use self::sheet_offsets::SheetOffsets;
 
 use super::bounds::GridBounds;
@@ -20,7 +20,7 @@ use super::response::{GetIdResponse, SetCellResponse};
 use super::{NumericFormat, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
-use crate::grid::borders::get_render_vertical_borders;
+
 
 pub mod bounds;
 pub mod cells;

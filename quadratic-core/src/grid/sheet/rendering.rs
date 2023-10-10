@@ -1,3 +1,4 @@
+use crate::grid::borders::{get_render_horizontal_borders, get_render_vertical_borders};
 use crate::{
     grid::{
         js_types::{
@@ -172,13 +173,11 @@ impl Sheet {
 
     /// Returns data for rendering horizontal borders.
     pub fn get_render_horizontal_borders(&self) -> Vec<JsRenderBorder> {
-        // self.borders.get_render_horizontal_borders()
-        vec![]
+        get_render_horizontal_borders(self)
     }
 
     /// Returns data for rendering vertical borders.
     pub fn get_render_vertical_borders(&self) -> Vec<JsRenderBorder> {
-        // self.borders.get_render_vertical_borders()
-        vec![]
+        get_render_vertical_borders(self)
     }
 }

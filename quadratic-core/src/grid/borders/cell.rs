@@ -49,10 +49,6 @@ impl CellBorders {
         self.borders.iter().all(|style| style.is_none())
     }
 
-    pub(super) fn get(&self, side: &CellSide) -> Option<&BorderStyle> {
-        self.borders[*side as usize].as_ref()
-    }
-
     fn with_side(&self, side: CellSide, style: Option<BorderStyle>) -> Self {
         let mut cloned = self.clone();
         cloned.borders[side as usize] = style;

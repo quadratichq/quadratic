@@ -288,7 +288,7 @@ impl fmt::Display for SheetPos {
 
 #[cfg(test)]
 mod test {
-    use crate::controller::{transaction_summary::TransactionSummary, GridController};
+    use crate::controller::{GridController};
 
     use super::{SheetPos, SheetRect};
 
