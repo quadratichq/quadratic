@@ -1,14 +1,31 @@
+use std::str::FromStr;
+
 use crate::{
     controller::GridController,
     grid::{Bold, SheetId},
     CellValue, Pos, Rect,
 };
 
+use bigdecimal::BigDecimal;
 use tabled::{
     builder::Builder,
     settings::Color,
     settings::{Modify, Style},
 };
+
+fn to_cell_value(value: &str) -> CellValue {
+    let parsed = CellValue::strip_percentage(CellValue::strip_currency(value)).trim();
+    let number = BigDecimal::from_str(parsed);
+    let is_true = parsed.eq_ignore_ascii_case("true");
+    let is_false = parsed.eq_ignore_ascii_case("false");
+    let is_bool = is_true || is_false;
+
+    match (number, is_bool) {
+        (Ok(number), false) => CellValue::Number(number),
+        (_, true) => CellValue::Logical(is_true),
+        _ => CellValue::Text(String::from(value)),
+    }
+}
 
 /// Run an assertion that a cell value is equal to the given value
 pub fn assert_cell_value(
@@ -20,7 +37,7 @@ pub fn assert_cell_value(
 ) {
     let sheet = grid_controller.grid().sheet_from_id(sheet_id);
     let cell_value = sheet.get_cell_value(Pos { x, y }).unwrap();
-    let expected = CellValue::from(value);
+    let expected = to_cell_value(value);
 
     assert_eq!(
         cell_value, expected,

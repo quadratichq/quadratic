@@ -1,6 +1,7 @@
 use std::collections::{btree_map, BTreeMap, HashMap};
 use std::str::FromStr;
 
+use bigdecimal::BigDecimal;
 use itertools::Itertools;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -82,7 +83,10 @@ impl Sheet {
             let (_, column) = self.get_or_create_column(x);
             for y in region.y_range() {
                 let value = rng.gen_range(-10000..=10000).to_string();
-                column.values.set(y, Some(CellValue::from(value)));
+                column.values.set(
+                    y,
+                    Some(CellValue::Number(BigDecimal::from_str(&value).unwrap())),
+                );
             }
         }
         self.recalculate_bounds();

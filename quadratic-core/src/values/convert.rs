@@ -35,17 +35,7 @@ impl From<String> for CellValue {
 // TODO(ddimaria): implement Duration and Instant
 impl From<&str> for CellValue {
     fn from(value: &str) -> Self {
-        let parsed = Self::strip_percentage(Self::strip_currency(value)).trim();
-        let number = BigDecimal::from_str(parsed);
-        let is_true = parsed.eq_ignore_ascii_case("true");
-        let is_false = parsed.eq_ignore_ascii_case("false");
-        let is_bool = is_true || is_false;
-
-        match (number, is_bool) {
-            (Ok(number), false) => CellValue::Number(number),
-            (_, true) => CellValue::Logical(is_true),
-            _ => CellValue::Text(String::from(value)),
-        }
+        CellValue::Text(value.to_string())
     }
 }
 // todo: this might be wrong for formulas
