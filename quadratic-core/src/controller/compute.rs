@@ -10,7 +10,7 @@ use crate::{
         CodeCellValue, SheetId,
     },
     wasm_bindings::{js::runPython, JsComputeResult},
-    Pos, Value,
+    Error, ErrorMsg, Pos, Span, Value,
 };
 
 use serde::{Deserialize, Serialize};
@@ -122,28 +122,51 @@ impl GridController {
                 }
                 let sheet = self.grid.sheet_mut_from_id(pos.sheet_id);
                 let code_cell = match code_cell_result {
-                    Some(code_cell_result) => Some(CodeCellValue {
-                        language,
-                        code_string,
-                        formatted_code_string: code_cell_result.formatted_code,
-                        output: Some(CodeCellRunOutput {
-                            std_out: code_cell_result.input_python_std_out,
-                            std_err: code_cell_result.error_msg,
-                            result: CodeCellRunResult::Ok {
+                    Some(code_cell_result) => {
+                        let result = if code_cell_result.success {
+                            CodeCellRunResult::Ok {
                                 output_value: if let Some(array_output) =
-                                    code_cell_result.array_output
+                                    code_cell_result.array_output.clone()
                                 {
                                     Value::Array(array_output.into())
                                 } else {
-                                    code_cell_result.output_value.into()
+                                    code_cell_result.output_value.clone().into()
                                 },
-                                cells_accessed: cells_accessed_code_cell,
-                            },
-                        }),
+                                cells_accessed: cells_accessed_code_cell.clone(),
+                            }
+                        } else {
+                            let span = if let Some(span) = code_cell_result.error_span.clone() {
+                                Some(Span {
+                                    start: span[0],
+                                    end: span[1],
+                                })
+                            } else {
+                                None
+                            };
+                            let msg = if let Some(msg) = code_cell_result.error_msg.clone() {
+                                ErrorMsg::PythonError(msg.into())
+                            } else {
+                                ErrorMsg::PythonError("Unknown Python Error".into())
+                            };
+                            CodeCellRunResult::Err {
+                                error: Error { span, msg },
+                            }
+                        };
 
-                        // todo: figure out how to handle modified dates in cells
-                        last_modified: String::new(),
-                    }),
+                        Some(CodeCellValue {
+                            language,
+                            code_string,
+                            formatted_code_string: code_cell_result.formatted_code,
+                            output: Some(CodeCellRunOutput {
+                                std_out: code_cell_result.input_python_std_out,
+                                std_err: code_cell_result.error_msg,
+                                result,
+                            }),
+
+                            // todo: figure out how to handle modified dates in cells
+                            last_modified: String::new(),
+                        })
+                    }
                     None => None,
                 };
                 let old_code_cell_value = update_code_cell_value(
@@ -165,7 +188,7 @@ impl GridController {
                 }
                 summary.code_cells_modified.insert(sheet.id);
                 self.grid.set_dependencies(pos, Some(cells_accessed));
-            }
+            };
 
             // add all dependent cells to the cells_to_compute
             let dependent_cells = self.grid.get_dependent_cells(pos);

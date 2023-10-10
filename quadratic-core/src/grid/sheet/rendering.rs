@@ -3,7 +3,7 @@ use crate::{
         js_types::{
             JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill,
         },
-        CellAlign, CellWrap, CodeCellRunResult, NumericFormat, NumericFormatKind,
+        CodeCellRunResult, NumericFormat, NumericFormatKind,
     },
     CellValue, Pos, Rect,
 };
