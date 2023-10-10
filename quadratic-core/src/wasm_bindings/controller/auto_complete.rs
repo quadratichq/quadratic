@@ -16,7 +16,6 @@ impl GridController {
         range: &Rect,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
-        crate::util::dbgjs("js_expand 20");
         let sheet_id = SheetId::from_str(&sheet_id)?;
         let output = self
             .expand(sheet_id, *selection, *range, cursor)
