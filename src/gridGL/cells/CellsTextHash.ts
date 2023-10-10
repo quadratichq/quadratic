@@ -1,8 +1,7 @@
 import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
-import { grid } from '../../grid/controller/Grid';
 import { Bounds } from '../../grid/sheet/Bounds';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { JsRenderCell } from '../../quadratic-core/types';
+import { JsRenderCell, JsRenderCellUpdate } from '../../quadratic-core/types';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { CellsSheet } from './CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
@@ -27,7 +26,11 @@ export class CellsTextHash extends Container<LabelMeshes> {
 
   viewBounds: Bounds;
 
+  // flag to recreate label
   dirty = false;
+
+  // flag to update a label. Use true for a deleted cell to ensure labels' buffers update
+  dirtyLabels: (CellLabel | true)[] = [];
 
   // color to use for drawDebugBox
   debugColor = Math.floor(Math.random() * 0xffffff);
@@ -48,7 +51,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   // key used to find individual cell labels
-  private getKey(cell: JsRenderCell): string {
+  private getKey(cell: { x: bigint | number; y: bigint | number }): string {
     return `${cell.x},${cell.y}`;
   }
 
@@ -79,17 +82,38 @@ export class CellsTextHash extends Container<LabelMeshes> {
     }
   }
 
+  private createLabel(cell: JsRenderCell): CellLabel {
+    const rectangle = this.sheet.getCellOffsets(Number(cell.x), Number(cell.y));
+    const cellLabel = new CellLabel(cell, rectangle);
+    this.cellLabels.set(this.getKey(cell), cellLabel);
+    return cellLabel;
+  }
+
   createLabels(): void {
     debugTimeReset();
     this.cellLabels = new Map();
     const cells = this.sheet.getRenderCells(this.AABB);
-    cells.forEach((cell) => {
-      const rectangle = grid.getCellOffsets(this.sheet.id, Number(cell.x), Number(cell.y));
-      const cellLabel = new CellLabel(cell, rectangle);
-      this.cellLabels.set(this.getKey(cell), cellLabel);
-    });
+    cells.forEach((cell) => this.createLabel(cell));
     this.updateText();
     debugTimeCheck('cellsLabels');
+  }
+
+  updateDirtyLabels(): boolean {
+    let changed = !!this.dirtyLabels.length;
+    while (this.dirtyLabels.length) {
+      const label = this.dirtyLabels.pop();
+      if (label) {
+        if (label !== true) {
+          label.updateText(this.labelMeshes);
+        }
+        changed = true;
+      }
+    }
+    if (changed) {
+      this.overflowClip();
+      this.updateBuffers();
+    }
+    return changed;
   }
 
   private updateText() {
@@ -188,13 +212,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   drawDebugBox(g: Graphics) {
-    const screen = grid.getScreenRectangle(
-      this.sheet.id,
-      this.AABB.left,
-      this.AABB.top,
-      this.AABB.width,
-      this.AABB.height
-    );
+    const screen = this.sheet.getScreenRectangle(this.AABB.left, this.AABB.top, this.AABB.width, this.AABB.height);
     g.beginFill(this.debugColor, 0.25);
     g.drawShape(screen);
     g.endFill();
@@ -208,5 +226,45 @@ export class CellsTextHash extends Container<LabelMeshes> {
       }
     });
     return max;
+  }
+
+  updateCells(cell: JsRenderCellUpdate) {
+    const key = this.getKey(cell);
+    // need to get the value from the update and cast it to any b/c of the conversion of enums to TS
+    const update = cell.update as any;
+    // special case for value where we may have to delete the CellLabel
+    if ('value' in update) {
+      if (update.value) {
+        const label = this.cellLabels.get(key) ?? this.createLabel({ x: cell.x, y: cell.y, value: update.value });
+        label.text = update.value;
+        label.dirty = true;
+        this.dirtyLabels.push(label);
+      } else {
+        this.cellLabels.delete(key);
+        this.dirtyLabels.push(true);
+      }
+    }
+
+    // otherwise only update the formatting if the CellLabel already exists (otherwise there's nothing to display)
+    else {
+      const label = this.cellLabels.get(key);
+      if (label) {
+        if (update.bold !== undefined) {
+          label.changeBold(update.bold);
+          this.dirtyLabels.push(label);
+        } else if (update.italic !== undefined) {
+          label.changeItalic(update.italic);
+          this.dirtyLabels.push(label);
+        } else if (update.align !== undefined) {
+          label.changeAlign(update.align);
+          this.dirtyLabels.push(label);
+        } else if (update.wrap !== undefined) {
+          console.log('todo...');
+        } else if (update.textColor !== undefined) {
+          label.changeTextColor(update.textColor);
+          this.dirtyLabels.push(label);
+        }
+      }
+    }
   }
 }

@@ -74,7 +74,7 @@ export function validateAndUpgradeLegacyGridFile(input: any, logOutput: boolean 
             FILES[upgradeIndex - 1].schema.shape.version.value
           );
         // @ts-expect-error we know the top one doesn't have an updater function
-        gridFile = FILES[upgradeIndex].updateFn(gridFile, logOutput);
+        gridFile = FILES[upgradeIndex].updateFn(gridFile);
         upgradeIndex--;
       }
       isValid = true;

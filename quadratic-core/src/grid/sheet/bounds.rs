@@ -104,6 +104,7 @@ impl Sheet {
     /// If `ignore_formatting` is `true`, only data is considered; if it
     /// is `false`, then data and formatting are both considered.
     ///
+
     pub fn rows_bounds(
         &self,
         row_start: i64,

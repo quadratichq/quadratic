@@ -5,7 +5,7 @@ import { isEditorOrAbove } from '../actions';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { loadedStateAtom } from '../atoms/loadedStateAtom';
 import { pixiApp } from '../gridGL/pixiApp/PixiApp';
-import { webWorkers } from '../web-workers/webWorkers';
+import { initializeWebWorkers } from '../web-workers/webWorkers';
 import QuadraticUIContext from './QuadraticUIContext';
 import { QuadraticLoading } from './loading/QuadraticLoading';
 
@@ -44,7 +44,7 @@ export default function QuadraticApp() {
     // Load python and populate web workers (if supported)
     if (!isMobile && isEditorOrAbove(permission)) {
       setLoadedState((prevState) => ({ ...prevState, pythonLoadState: 'loading' }));
-      webWorkers.init();
+      initializeWebWorkers();
     }
 
     pixiApp.init().then(() => setLoading(false));

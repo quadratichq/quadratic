@@ -1,6 +1,5 @@
 import { BitmapText, Container, Graphics, Point, Rectangle } from 'pixi.js';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../../constants/gridConstants';
-import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
 import { colors } from '../../../theme/colors';
 import { intersects } from '../../helpers/intersects';
@@ -102,7 +101,7 @@ export class GridHeadings extends Container {
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const gridAlpha = calculateAlphaForGridLines(viewport);
     const bounds = viewport.getVisibleBounds();
-    const sheetId = sheets.sheet.id;
+    const offsets = sheets.sheet.offsets;
 
     // draw horizontal bar
     this.headingsGraphics.lineStyle(0);
@@ -112,12 +111,12 @@ export class GridHeadings extends Container {
     this.headingsGraphics.endFill();
 
     // calculate selection bounds
-    const selectedStart = grid.getColumnPlacement(sheetId, this.selectedColumns[0]);
-    const selectedEnd = grid.getRowPlacement(sheetId, this.selectedColumns[this.selectedColumns.length - 1]);
+    const selectedStart = offsets.getColumnPlacement(this.selectedColumns[0]);
+    const selectedEnd = offsets.getRowPlacement(this.selectedColumns[this.selectedColumns.length - 1]);
     const xSelectedStart = selectedStart.position;
     let xSelectedEnd = xSelectedStart + selectedStart.size;
     for (let i = 1; i < this.selectedColumns.length; i++) {
-      xSelectedEnd += grid.getColumnWidth(sheetId, this.selectedColumns[i]);
+      xSelectedEnd += offsets.getColumnWidth(this.selectedColumns[i]);
     }
 
     // use these bounds for digit overlap comparison
@@ -138,8 +137,8 @@ export class GridHeadings extends Container {
     this.headingsGraphics.drawRect(xSelectedStart, viewport.top, xSelectedEnd - xSelectedStart, cellHeight);
     this.headingsGraphics.endFill();
 
-    const start = grid.getXPlacement(sheetId, bounds.left);
-    const end = grid.getXPlacement(sheetId, bounds.right);
+    const start = offsets.getXPlacement(bounds.left);
+    const end = offsets.getXPlacement(bounds.right);
     const leftOffset = start.position;
     const rightOffset = end.position + end.size;
 
@@ -156,12 +155,12 @@ export class GridHeadings extends Container {
     let currentWidth = 0;
     this.gridLinesColumns = [];
     for (let x = leftOffset; x <= rightOffset; x += currentWidth) {
-      currentWidth = grid.getColumnWidth(sheetId, column);
+      currentWidth = offsets.getColumnWidth(column);
       if (gridAlpha !== 0) {
         this.headingsGraphics.lineStyle(1, colors.gridHeadingBorder, 0.5 * gridAlpha, 0.5, true);
         this.headingsGraphics.moveTo(x, bounds.top);
         this.headingsGraphics.lineTo(x, bounds.top + cellHeight);
-        this.gridLinesColumns.push({ column: column - 1, x, width: grid.getColumnWidth(sheetId, column - 1) });
+        this.gridLinesColumns.push({ column: column - 1, x, width: offsets.getColumnWidth(column - 1) });
       }
 
       // show first and last selected numbers unless last selected number overlaps first selected number
@@ -211,11 +210,11 @@ export class GridHeadings extends Container {
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const gridAlpha = calculateAlphaForGridLines(viewport);
     const bounds = viewport.getVisibleBounds();
-    const sheetId = sheets.sheet.id;
+    const offsets = sheets.sheet.offsets;
 
     // determine width of row header
-    const start = grid.getYPlacement(sheetId, bounds.top);
-    const end = grid.getYPlacement(sheetId, bounds.bottom);
+    const start = offsets.getYPlacement(bounds.top);
+    const end = offsets.getYPlacement(bounds.bottom);
     const topOffset = start.position;
     const bottomOffset = end.position + end.size;
     const topNumberLength = Math.round(topOffset / CELL_HEIGHT - 1).toString().length;
@@ -237,12 +236,12 @@ export class GridHeadings extends Container {
     this.headingsGraphics.endFill();
 
     // calculated selection bounds
-    const selectedStart = grid.getRowPlacement(sheetId, this.selectedRows[0]);
-    const selectedEnd = grid.getRowPlacement(sheetId, this.selectedRows[this.selectedRows.length - 1]);
+    const selectedStart = offsets.getRowPlacement(this.selectedRows[0]);
+    const selectedEnd = offsets.getRowPlacement(this.selectedRows[this.selectedRows.length - 1]);
     const ySelectedStart = selectedStart.position;
     let ySelectedEnd = ySelectedStart + selectedStart.size;
     for (let i = 1; i < this.selectedRows.length; i++) {
-      ySelectedEnd += grid.getRowHeight(sheetId, this.selectedRows[i]);
+      ySelectedEnd += offsets.getRowHeight(this.selectedRows[i]);
     }
     const halfCharacterHeight = this.characterSize.height / 2 / viewport.scale.x;
 
@@ -272,12 +271,12 @@ export class GridHeadings extends Container {
     let currentHeight = 0;
     this.gridLinesRows = [];
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
-      currentHeight = grid.getRowHeight(sheetId, row);
+      currentHeight = offsets.getRowHeight(row);
       if (gridAlpha !== 0) {
         this.headingsGraphics.lineStyle(1, colors.gridHeadingBorder, 0.5 * gridAlpha, 0.5, true);
         this.headingsGraphics.moveTo(bounds.left, y);
         this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
-        this.gridLinesRows.push({ row: row - 1, y, height: grid.getRowHeight(sheetId, row - 1) });
+        this.gridLinesRows.push({ row: row - 1, y, height: offsets.getRowHeight(row - 1) });
       }
 
       // show first and last selected numbers unless last selected number overlaps first selected number
@@ -380,16 +379,16 @@ export class GridHeadings extends Container {
   // whether the point is in the heading
   intersectsHeadings(world: Point): { column?: number; row?: number; corner?: true } | undefined {
     if (!this.columnRect || !this.rowRect || !this.cornerRect) return;
-    const sheetId = sheets.sheet.id;
+    const offsets = sheets.sheet.offsets;
 
     if (intersects.rectanglePoint(this.cornerRect, world)) {
       return { corner: true };
     }
     if (intersects.rectanglePoint(this.columnRect, world)) {
-      return { column: grid.getXPlacement(sheetId, world.x).index };
+      return { column: offsets.getXPlacement(world.x).index };
     }
     if (intersects.rectanglePoint(this.rowRect, world)) {
-      return { row: grid.getYPlacement(sheetId, world.y).index };
+      return { row: offsets.getYPlacement(world.y).index };
     }
   }
 
@@ -397,13 +396,13 @@ export class GridHeadings extends Container {
   intersectsHeadingGridLine(
     world: Point
   ): { start: number; column?: number; row?: number; width?: number; height?: number } | undefined {
+    const offsets = sheets.sheet.offsets;
     const tolerance = GRID_HEADING_RESIZE_TOLERANCE / pixiApp.viewport.scale.x;
     if (!this.columnRect || !this.rowRect) return;
-    const sheetId = sheets.sheet.id;
     if (intersects.rectanglePoint(this.columnRect, world)) {
       for (const line of this.gridLinesColumns) {
         if (Math.abs(world.x - line.x) < tolerance) {
-          const start = grid.getColumnPlacement(sheetId, line.column);
+          const start = offsets.getColumnPlacement(line.column);
           return { start: start.position, column: line.column, width: line.width };
         }
       }
@@ -414,7 +413,7 @@ export class GridHeadings extends Container {
     if (intersects.rectanglePoint(this.rowRect, world)) {
       for (const line of this.gridLinesRows) {
         if (Math.abs(world.y - line.y) < tolerance) {
-          const start = grid.getRowPlacement(sheetId, line.row);
+          const start = offsets.getRowPlacement(sheetId, line.row);
           return { start: start.position, row: line.row, height: line.height };
         }
       }

@@ -3,12 +3,12 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 
 use crate::{
-    grid::{NumericFormat, NumericFormatKind, RegionRef, SheetId},
+    grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind, RegionRef, SheetId},
     Array, CellValue, Pos, Rect, RunLengthEncoding,
 };
 
 use super::{
-    formatting::CellFmtArray, operations::Operation, transactions::TransactionSummary,
+    formatting::CellFmtArray, operations::Operation, transaction_summary::TransactionSummary,
     GridController,
 };
 
@@ -19,7 +19,7 @@ impl GridController {
     }
 
     /// sets the value based on a user's input and converts input to proper NumericFormat
-    pub fn set_cell_value(
+    pub async fn set_cell_value(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
@@ -27,7 +27,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.set_cell_value_operations(sheet_id, pos, &value);
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
     pub fn set_cell_value_operations(
         &mut self,
@@ -41,7 +41,7 @@ impl GridController {
         let mut ops = vec![];
 
         // check for currency
-        if let Some((currency, number)) = CellValue::unpack_currency(value) {
+        if let Some((currency, number)) = CellValue::unpack_currency(&value) {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
                 values: Array::from(CellValue::Number(number)),
@@ -90,7 +90,7 @@ impl GridController {
         }
         ops
     }
-    pub fn set_cells(
+    pub async fn set_cells(
         &mut self,
         sheet_id: SheetId,
         start_pos: Pos,
@@ -98,7 +98,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.set_cells_operations(sheet_id, start_pos, values);
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
     pub fn set_cells_operations(
         &mut self,
@@ -118,6 +118,31 @@ impl GridController {
         vec![Operation::SetCellValues { region, values }]
     }
 
+    pub async fn set_cell_code(
+        &mut self,
+        sheet_id: SheetId,
+        pos: Pos,
+        language: CodeCellLanguage,
+        code_string: String,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let sheet = self.grid.sheet_mut_from_id(sheet_id);
+        let cell_ref = sheet.get_or_create_cell_ref(pos);
+        let ops = vec![Operation::SetCellCode {
+            cell_ref,
+            code_cell_value: Some(CodeCellValue {
+                language,
+                code_string,
+                formatted_code_string: None,
+                output: None,
+
+                // todo
+                last_modified: String::default(),
+            }),
+        }];
+        self.transact_forward(ops, cursor).await
+    }
+
     pub fn delete_cell_values_operations(
         &mut self,
         sheet_id: SheetId,
@@ -134,14 +159,14 @@ impl GridController {
         }
     }
 
-    pub fn delete_cell_values(
+    pub async fn delete_cell_values(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.delete_cell_values_operations(sheet_id, rect);
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
 
     pub fn clear_formatting_operations(&mut self, sheet_id: SheetId, rect: Rect) -> Vec<Operation> {
@@ -189,17 +214,17 @@ impl GridController {
         }
     }
 
-    pub fn clear_formatting(
+    pub async fn clear_formatting(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.clear_formatting_operations(sheet_id, rect);
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
 
-    pub fn delete_values_and_formatting(
+    pub async fn delete_values_and_formatting(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
@@ -207,7 +232,7 @@ impl GridController {
     ) -> TransactionSummary {
         let mut ops = self.delete_cell_values_operations(sheet_id, rect);
         ops.extend(self.clear_formatting_operations(sheet_id, rect));
-        self.transact_forward(ops, cursor)
+        self.transact_forward(ops, cursor).await
     }
 
     /// Returns a region of the spreadsheet, assigning IDs to columns and rows
@@ -249,42 +274,80 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        controller::{transactions::TransactionSummary, GridController},
+        controller::{transaction_summary::TransactionSummary, GridController},
         CellValue, Pos, Rect,
     };
+    use std::str::FromStr;
 
-    #[test]
-    fn test_set_cell_value_undo_redo() {
+    use bigdecimal::BigDecimal;
+
+    #[tokio::test]
+    async fn test_set_cell_value_undo_redo() {
         let mut g = GridController::new();
         let sheet_id = g.grid.sheets()[0].id;
         let pos = Pos { x: 3, y: 6 };
         let get_the_cell =
             |g: &GridController| g.sheet(sheet_id).get_cell_value(pos).unwrap_or_default();
-        let expected_summary = Some(TransactionSummary {
-            cell_regions_modified: vec![(sheet_id, Rect::single_pos(pos))],
-            ..Default::default()
-        });
+        let expected_cell_regions_modified = vec![(sheet_id, Rect::single_pos(pos))];
 
         assert_eq!(get_the_cell(&g), CellValue::Blank);
-        g.set_cell_value(sheet_id, pos, String::from("a"), None);
+        g.set_cell_value(sheet_id, pos, String::from("a"), None)
+            .await;
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
-        g.set_cell_value(sheet_id, pos, String::from("b"), None);
+        g.set_cell_value(sheet_id, pos, String::from("b"), None)
+            .await;
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
-        assert!(g.undo(None) == expected_summary);
+        assert_eq!(
+            g.undo(None).unwrap().cell_regions_modified,
+            expected_cell_regions_modified
+        );
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
-        assert!(g.redo(None) == expected_summary);
+        assert_eq!(
+            g.redo(None).unwrap().cell_regions_modified,
+            expected_cell_regions_modified
+        );
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
-        assert!(g.undo(None) == expected_summary);
+        assert_eq!(
+            g.undo(None).unwrap().cell_regions_modified,
+            expected_cell_regions_modified
+        );
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
-        assert!(g.undo(None) == expected_summary);
+        assert_eq!(
+            g.undo(None).unwrap().cell_regions_modified,
+            expected_cell_regions_modified
+        );
         assert_eq!(get_the_cell(&g), CellValue::Blank);
         assert!(g.undo(None).is_none());
         assert_eq!(get_the_cell(&g), CellValue::Blank);
-        assert!(g.redo(None) == expected_summary);
+        assert_eq!(
+            g.redo(None).unwrap().cell_regions_modified,
+            expected_cell_regions_modified
+        );
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
-        assert!(g.redo(None) == expected_summary);
+        assert_eq!(
+            g.redo(None).unwrap().cell_regions_modified,
+            expected_cell_regions_modified
+        );
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
         assert!(g.redo(None).is_none());
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
+    }
+
+    #[test]
+    fn test_unpack_currency() {
+        let value = String::from("$123.123");
+        assert_eq!(
+            CellValue::unpack_currency(&value),
+            Some((String::from("$"), BigDecimal::from_str("123.123").unwrap()))
+        );
+
+        let value = String::from("test");
+        assert_eq!(CellValue::unpack_currency(&value), None);
+
+        let value = String::from("$123$123");
+        assert_eq!(CellValue::unpack_currency(&value), None);
+
+        let value = String::from("$123.123abc");
+        assert_eq!(CellValue::unpack_currency(&value), None);
     }
 }

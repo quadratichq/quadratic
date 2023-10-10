@@ -2,7 +2,7 @@ import { removeItems } from '@pixi/utils';
 import { BitmapFont, Container, Point, Rectangle, Texture } from 'pixi.js';
 import { Bounds } from '../../../grid/sheet/Bounds';
 import { convertColorStringToTint, convertTintToArray } from '../../../helpers/convertColor';
-import { JsRenderCell } from '../../../quadratic-core/types';
+import { CellAlign, JsRenderCell } from '../../../quadratic-core/types';
 import { CellAlignment } from '../../../schemas';
 import { Coordinate } from '../../types/size';
 import { LabelMeshes } from './LabelMeshes';
@@ -26,7 +26,10 @@ const fontSize = 14;
 
 export class CellLabel extends Container {
   text: string;
-  fontName: string;
+
+  // created in updateFontName()
+  fontName!: string;
+
   fontSize: number;
   tint?: number;
   maxWidth: number;
@@ -42,6 +45,8 @@ export class CellLabel extends Container {
   lineAlignOffsets: number[] = [];
   align?: 'left' | 'right' | 'justify' | 'center';
   letterSpacing: number;
+  bold: boolean;
+  italic: boolean;
 
   textWidth = 0;
   textHeight = 0;
@@ -57,7 +62,6 @@ export class CellLabel extends Container {
     super();
 
     const cellText = cell.value ? cell.value.replace(/\n/g, '') : '';
-
     this.text = cellText;
     this.fontSize = fontSize;
     this.roundPixels = true;
@@ -69,10 +73,37 @@ export class CellLabel extends Container {
     this.AABB = screenRectangle;
     this.position.set(screenRectangle.x, screenRectangle.y);
 
-    const bold = cell?.bold ? 'Bold' : '';
-    const italic = cell?.italic ? 'Italic' : '';
-    this.fontName = `OpenSans${bold || italic ? '-' : ''}${bold}${italic}`;
+    this.bold = !!cell?.bold;
+    this.italic = !!cell?.italic;
+    this.updateFontName();
     this.alignment = cell.align;
+  }
+
+  updateFontName() {
+    const bold = this.bold ? 'Bold' : '';
+    const italic = this.italic ? 'Italic' : '';
+    this.fontName = `OpenSans${bold || italic ? '-' : ''}${bold}${italic}`;
+  }
+
+  changeBold(bold?: boolean) {
+    this.bold = !!bold;
+    this.updateFontName();
+    this.dirty = true;
+  }
+
+  changeItalic(italic?: boolean) {
+    this.italic = !!italic;
+    this.updateFontName();
+    this.dirty = true;
+  }
+
+  changeAlign(align?: CellAlign) {
+    this.alignment = align ?? 'left';
+    this.calculatePosition();
+  }
+
+  changeTextColor(color?: string) {
+    this.tint = color ? convertColorStringToTint(color) : undefined;
   }
 
   get cellWidth(): number {

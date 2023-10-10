@@ -1,34 +1,28 @@
-use crate::{grid::*, Pos, Rect};
+use crate::{grid::SheetId, Pos};
 use serde::{Deserialize, Serialize};
 
-use super::{compute::SheetRect, operations::Operation, GridController};
+use super::{
+    compute::SheetPos, operations::Operation, transaction_summary::TransactionSummary,
+    GridController,
+};
 
 impl GridController {
     /// Takes a Vec of initial Operations creates and runs a tractions, returning a transaction summary.
     /// This is the main entry point actions added to the undo/redo stack.
     /// Also runs computations for cells that need to be recomputed, and all of their dependencies.
-    pub fn transact_forward(
+    pub async fn transact_forward(
         &mut self,
         operations: Vec<Operation>,
         cursor: Option<String>,
     ) -> TransactionSummary {
         // make initial changes
         let mut summary = TransactionSummary::default();
-        let mut reverse_operations = self.transact(operations, &mut summary);
+        let mut cell_values_modified: Vec<SheetPos> = vec![];
+        let mut reverse_operations =
+            self.transact(operations, &mut cell_values_modified, &mut summary);
 
         // run computations
-        // TODO cell_regions_modified also contains formatting updates, create new structure for just updated code and values
-        let mut additional_operations = self.compute(
-            summary
-                .cell_regions_modified
-                .iter()
-                .map(|rect| SheetRect {
-                    sheet_id: rect.0,
-                    min: rect.1.min,
-                    max: rect.1.max,
-                })
-                .collect(),
-        );
+        let mut additional_operations = self.compute(cell_values_modified, &mut summary).await;
 
         reverse_operations.append(&mut additional_operations);
 
@@ -54,7 +48,12 @@ impl GridController {
         let transaction = self.undo_stack.pop()?;
         let cursor_old = transaction.cursor.clone();
         let mut summary = TransactionSummary::default();
-        let reverse_operation = self.transact(transaction.ops, &mut summary);
+
+        // these are irrelevant when undoing b/c we do not rerun computations
+        let mut cell_values_modified = vec![];
+
+        let reverse_operation =
+            self.transact(transaction.ops, &mut cell_values_modified, &mut summary);
         self.redo_stack.push(Transaction {
             ops: reverse_operation,
             cursor,
@@ -69,7 +68,12 @@ impl GridController {
         let transaction = self.redo_stack.pop()?;
         let cursor_old = transaction.cursor.clone();
         let mut summary = TransactionSummary::default();
-        let reverse_operations = self.transact(transaction.ops, &mut summary);
+
+        // these are irrelevant when redoing b/c we do not rerun computations
+        let mut cell_values_modified = vec![];
+
+        let reverse_operations =
+            self.transact(transaction.ops, &mut cell_values_modified, &mut summary);
         self.undo_stack.push(Transaction {
             ops: reverse_operations,
             cursor,
@@ -83,6 +87,7 @@ impl GridController {
     fn transact(
         &mut self,
         operations: Vec<Operation>,
+        cell_values_modified: &mut Vec<SheetPos>,
         summary: &mut TransactionSummary,
     ) -> Vec<Operation> {
         let mut reverse_operations = vec![];
@@ -95,7 +100,8 @@ impl GridController {
                     sheets_with_changed_bounds.push(new_dirty_sheet);
                 }
             }
-            let reverse_operation = self.execute_operation(op.clone(), summary);
+            let reverse_operation =
+                self.execute_operation(op.clone(), cell_values_modified, summary);
             reverse_operations.push(reverse_operation);
         }
         for dirty_sheet in sheets_with_changed_bounds {
@@ -114,28 +120,12 @@ pub struct Transaction {
     pub cursor: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct TransactionSummary {
-    /// Cell and text formatting regions modified.
-    pub cell_regions_modified: Vec<(SheetId, Rect)>,
-    /// Sheets where any fills have been modified.
-    pub fill_sheets_modified: Vec<SheetId>,
-    /// Sheets where any borders have been modified.
-    pub border_sheets_modified: Vec<SheetId>,
-    /// Locations of code cells that were modified. They may no longer exist.
-    pub code_cells_modified: Vec<(SheetId, Pos)>,
-    /// Sheet metadata or order was modified.
-    pub sheet_list_modified: bool,
-    /// Cursor location for undo/redo operation
-    pub cursor: Option<String>,
-}
-
 impl Operation {
     pub fn sheet_with_changed_bounds(&self) -> Option<SheetId> {
         match self {
             Operation::SetCellValues { region, .. } => Some(region.sheet),
             Operation::SetCellDependencies { .. } => None,
+            Operation::SetCellCode { cell_ref, .. } => Some(cell_ref.sheet),
             Operation::SetCellFormats { region, .. } => Some(region.sheet),
             Operation::AddSheet { .. } => None,
             Operation::DeleteSheet { .. } => None,
@@ -147,4 +137,153 @@ impl Operation {
             Operation::None { .. } => None,
         }
     }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct CellHash(String);
+
+impl CellHash {
+    pub fn get(&self) -> String {
+        self.0.clone()
+    }
+}
+
+impl From<Pos> for CellHash {
+    fn from(pos: Pos) -> Self {
+        let hash_width = 20_f64;
+        let hash_height = 40_f64;
+        let cell_hash_x = (pos.x as f64 / hash_width).floor() as i64;
+        let cell_hash_y = (pos.y as f64 / hash_height).floor() as i64;
+        let cell_hash = format!("{},{}", cell_hash_x, cell_hash_y);
+
+        CellHash(cell_hash)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::btree_map::Entry;
+
+    use crate::{grid::js_types::JsRenderCell, Array, CellValue, Pos, Rect};
+
+    use super::*;
+
+    fn add_cell_value(
+        gc: &mut GridController,
+        sheet_id: SheetId,
+        pos: Pos,
+        value: CellValue,
+    ) -> Operation {
+        let rect = Rect::new_span(pos, pos);
+        let region = gc.region(sheet_id, rect);
+
+        Operation::SetCellValues {
+            region,
+            values: Array::from(value),
+        }
+    }
+
+    fn add_cell_text(
+        gc: &mut GridController,
+        sheet_id: SheetId,
+        pos: Pos,
+        value: &str,
+    ) -> Operation {
+        add_cell_value(gc, sheet_id, pos, CellValue::Text(value.into()))
+    }
+
+    #[test]
+    fn converts_a_pos_into_a_cell_hash() {
+        let assert_cell_hash = |pos: Pos, expected: &str| {
+            assert_eq!(
+                CellHash::from(pos),
+                CellHash(expected.into()),
+                "expected pos {} to convert to '{}'",
+                pos,
+                expected
+            );
+        };
+
+        assert_cell_hash((0, 0).into(), "0,0");
+        assert_cell_hash((1, 0).into(), "0,0");
+        assert_cell_hash((0, 1).into(), "0,0");
+        assert_cell_hash((21, 0).into(), "1,0");
+        assert_cell_hash((41, 0).into(), "2,0");
+        assert_cell_hash((0, 41).into(), "0,1");
+        assert_cell_hash((0, 81).into(), "0,2");
+    }
+    /*
+    #[tokio::test]
+    async fn test_execute_operation_set_cell_values() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let data = vec![(0, 0, "a"), (1, 0, "b"), (21, 0, "c"), (0, 41, "d")];
+        let mut operations: Vec<Operation> = vec![];
+
+        data.clone().into_iter().for_each(|(x, y, value)| {
+            operations.push(add_cell_text(&mut gc, sheet_id, (x, y).into(), value));
+        });
+
+        let summary = gc.transact_forward(operations, None).await;
+
+        let expected = vec![
+            ("0,0", vec![(0, 0, "a"), (1, 0, "b")]),
+            ("0,1", vec![(0, 41, "d")]),
+            ("1,0", vec![(21, 0, "c")]),
+        ];
+
+        let to_js_render_cell = |entry: Vec<(i64, i64, &str)>| {
+            entry
+                .into_iter()
+                .map(|entry| JsRenderCell {
+                    x: entry.0,
+                    y: entry.1,
+                    value: entry.2.into(),
+                    language: None,
+                    align: None,
+                    wrap: None,
+                    bold: None,
+                    italic: None,
+                    text_color: None,
+                })
+                .collect::<Vec<_>>()
+        };
+
+        let map = summary
+            .cell_hash_values_modified
+            .entry(sheet_id.to_string());
+
+        match map {
+            Entry::Occupied(entry) => {
+                entry
+                    .get()
+                    .into_iter()
+                    .enumerate()
+                    .for_each(|(index, (key, value))| {
+                        assert_eq!(key, expected[index].0);
+                        assert_eq!(*value, to_js_render_cell(expected[index].1.clone()));
+                    });
+            }
+            _ => panic!("expected cell_hash_values_modified to be occupied"),
+        }
+
+        // now make one of tne non-blank cells blank
+        let operations = vec![add_cell_value(
+            &mut gc,
+            sheet_id,
+            (0, 0).into(),
+            CellValue::Blank,
+        )];
+
+        let summary = gc.transact_forward(operations, None).await;
+        assert_eq!(
+            summary
+                .cell_hash_values_modified
+                .get(&sheet_id.to_string())
+                .unwrap()
+                .get("0,0")
+                .unwrap(),
+            &to_js_render_cell(vec![(0, 0, "")])
+        );
+    }*/
 }

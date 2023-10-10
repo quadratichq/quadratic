@@ -2,6 +2,7 @@ import { Container, Graphics, Rectangle } from 'pixi.js';
 import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '../../debugFlags';
 import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
+import { JsRenderCellUpdate } from '../../quadratic-core/types';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { Coordinate } from '../types/size';
@@ -20,7 +21,7 @@ export class CellsSheet extends Container {
   // used to draw debug boxes for cellsTextHash
   private cellsTextDebug: Graphics;
 
-  private cellsTextHashContainer: Container;
+  private cellsTextHashContainer: Container<CellsTextHash>;
 
   private cellsArray: CellsArray;
 
@@ -56,7 +57,7 @@ export class CellsSheet extends Container {
     this.dirtyRowHeadings = new Map();
     this.cellsFills = this.addChild(new CellsFills(this));
     this.cellsTextDebug = this.addChild(new Graphics());
-    this.cellsTextHashContainer = this.addChild(new Container());
+    this.cellsTextHashContainer = this.addChild(new Container<CellsTextHash>());
     this.cellsArray = this.addChild(new CellsArray(this));
     this.cellsBorders = this.addChild(new CellsBorders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
@@ -165,6 +166,21 @@ export class CellsSheet extends Container {
       hash = this.createHash(x, y);
     }
     return hash;
+  }
+
+  // gets or creates a hash from a hashKey (received from Rust)
+  // note: this does not populate or render the hash
+  private getCellsHashFromKey(key: string): CellsTextHash {
+    const hash = this.cellsTextHash.get(key);
+    if (hash) {
+      return hash;
+    }
+    const split = key.split(',');
+    const hashX = parseInt(split[0]);
+    const hashY = parseInt(split[1]);
+    const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
+    this.cellsTextHash.set(key, cellsHash);
+    return cellsHash;
   }
 
   getColumnHashes(column: number): CellsTextHash[] {
@@ -315,8 +331,8 @@ export class CellsSheet extends Container {
 
   // adjust hashes after a column/row resize
   // todo: this may need to be scheduled for large data sets
-  private updateHeadings(): void {
-    if (!this.dirtyColumnHeadings.size && !this.dirtyRowHeadings.size) return;
+  private updateHeadings(): boolean {
+    if (!this.dirtyColumnHeadings.size && !this.dirtyRowHeadings.size) return false;
 
     // hashes that need to update their clipping and buffers
     const hashesToUpdate: Set<CellsTextHash> = new Set();
@@ -367,10 +383,16 @@ export class CellsSheet extends Container {
     // todo: these can be much more efficient
     this.cellsFills.create();
     this.cellsArray.create();
+    return true;
   }
 
   update(): boolean {
-    this.updateHeadings();
+    if (this.updateHeadings()) return true;
+    this.cellsTextHashContainer.children.forEach((cellTextHash) => {
+      if (cellTextHash.updateDirtyLabels()) {
+        return true;
+      }
+    });
     if (this.dirtyRows.size) {
       this.updateNextDirtyRow();
       return true;
@@ -408,5 +430,18 @@ export class CellsSheet extends Container {
       }
     });
     return max;
+  }
+
+  // update values for cells
+  updateCells(updates: JsRenderCellUpdate[]): void {
+    for (const update of updates) {
+      // need to convert to any b/c of the way Rust enums are converted to TS
+      const cellUpdate = update.update as any;
+      // only create a hash if the cell has a value
+      const cellsHash = this.getCellsHash(Number(update.x), Number(update.y), !!cellUpdate.value);
+      if (cellsHash) {
+        cellsHash.updateCells(update);
+      }
+    }
   }
 }

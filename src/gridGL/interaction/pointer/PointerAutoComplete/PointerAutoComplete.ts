@@ -43,8 +43,7 @@ export class PointerAutoComplete {
       } else {
         this.selection = new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 0, 0);
       }
-      this.screenSelection = grid.getScreenRectangle(
-        sheet.id,
+      this.screenSelection = sheet.getScreenRectangle(
         this.selection.left,
         this.selection.top,
         this.selection.width,
@@ -88,7 +87,7 @@ export class PointerAutoComplete {
       // handle dragging from the corner
       // if (intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {
       if (this.active) {
-        const { column, row } = grid.getColumnRow(sheets.sheet.id, world.x, world.y);
+        const { column, row } = sheets.sheet.offsets.getColumnRowFromScreen(world.x, world.y);
         const { selection, screenSelection } = this;
         if (!selection || !screenSelection) {
           throw new Error('Expected selection and screenSelection to be defined');

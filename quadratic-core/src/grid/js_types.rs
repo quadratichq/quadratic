@@ -5,9 +5,10 @@ use serde::{Deserialize, Serialize};
 use super::borders::CellBorder;
 use super::formatting::{BoolSummary, CellAlign, CellWrap};
 use super::CodeCellLanguage;
-use crate::controller::transactions::TransactionSummary;
+use crate::controller::transaction_summary::TransactionSummary;
+use crate::Pos;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct JsRenderCell {
@@ -30,8 +31,45 @@ pub struct JsRenderCell {
     pub italic: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text_color: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub fill_color: Option<String>, // TODO: remove (needed for exporting to old file format)
+}
+
+impl From<Pos> for JsRenderCell {
+    fn from(pos: Pos) -> Self {
+        Self {
+            x: pos.x,
+            y: pos.y,
+            value: "".to_string(),
+            language: None,
+            align: None,
+            wrap: None,
+            bold: None,
+            italic: None,
+            text_color: None,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub enum JsRenderCellUpdateEnum {
+    Value(Option<String>),
+    Language(Option<CodeCellLanguage>),
+    Align(Option<CellAlign>),
+    Wrap(Option<CellWrap>),
+    Bold(Option<bool>),
+    Italic(Option<bool>),
+    TextColor(Option<String>),
+    FillColor(Option<String>),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct JsRenderCellUpdate {
+    pub x: i64,
+    pub y: i64,
+    pub update: JsRenderCellUpdateEnum,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -55,6 +93,13 @@ pub struct JsRenderBorder {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub h: Option<usize>,
     pub style: CellBorder,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CellForArray {
+    pub x: i64,
+    pub y: i64,
+    pub value: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]

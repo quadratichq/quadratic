@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
-use crate::ArraySize;
+use crate::{controller::compute::SheetPos, ArraySize};
 
 /// Cell position {x, y}.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -46,6 +46,11 @@ impl Pos {
 impl From<(i64, i64)> for Pos {
     fn from(pos: (i64, i64)) -> Self {
         Pos { x: pos.0, y: pos.1 }
+    }
+}
+impl From<SheetPos> for Pos {
+    fn from(pos: SheetPos) -> Self {
+        Pos { x: pos.x, y: pos.y }
     }
 }
 impl fmt::Display for Pos {
@@ -132,6 +137,14 @@ impl Rect {
     /// Returns the height of the region.
     pub fn height(&self) -> u32 {
         (self.max.y - self.min.y + 1) as u32
+    }
+
+    pub fn len(&self) -> u32 {
+        self.width() * self.height()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.width() == 0 && self.height() == 0
     }
 }
 

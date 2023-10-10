@@ -7,7 +7,7 @@
     "<rootDir>/node_modules/",
     "<rootDir>/quadratic-api/*",
     "<rootDir>/quadratic-core/*",
-    "<rootDir>/src/grid/controller/tests/ignored/*"
+    ".ignore.*"
   ],
   "modulePathIgnorePatterns": [
     "<rootDir>/quadratic-core/pkg/package.json",

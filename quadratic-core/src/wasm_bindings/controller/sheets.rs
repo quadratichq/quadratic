@@ -4,8 +4,8 @@ use super::*;
 impl GridController {
     /// Adds an empty sheet to the grid. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "addSheet")]
-    pub fn js_add_sheet(&mut self, cursor: Option<String>) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(&self.add_sheet(cursor))?)
+    pub async fn js_add_sheet(&mut self, cursor: Option<String>) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(&self.add_sheet(cursor).await)?)
     }
     /// Gets a list of ordered sheet ids
     #[wasm_bindgen(js_name = "getSheetIds")]
@@ -15,20 +15,20 @@ impl GridController {
     }
     /// Deletes a sheet from the the grid. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "deleteSheet")]
-    pub fn js_delete_sheet(
+    pub async fn js_delete_sheet(
         &mut self,
         sheet_id: String,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id);
         Ok(serde_wasm_bindgen::to_value(
-            &self.delete_sheet(sheet_id.unwrap(), cursor),
+            &self.delete_sheet(sheet_id.unwrap(), cursor).await,
         )?)
     }
     /// Moves a sheet to before another sheet, or to the end of the list.
     /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "moveSheet")]
-    pub fn js_move_sheet(
+    pub async fn js_move_sheet(
         &mut self,
         sheet_id: String,
         to_before: Option<String>,
@@ -37,19 +37,19 @@ impl GridController {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let to_before = to_before.map(|to_before| SheetId::from_str(&to_before).unwrap());
         Ok(serde_wasm_bindgen::to_value(
-            &self.move_sheet(sheet_id, to_before, cursor),
+            &self.move_sheet(sheet_id, to_before, cursor).await,
         )?)
     }
     /// Makes a copy of a sheet. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "duplicateSheet")]
-    pub fn js_duplicate_sheet(
+    pub async fn js_duplicate_sheet(
         &mut self,
         sheet_id: String,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.duplicate_sheet(sheet_id, cursor),
+            &self.duplicate_sheet(sheet_id, cursor).await,
         )?)
     }
 
@@ -92,7 +92,7 @@ impl GridController {
 
     /// Returns a code cell as a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setSheetName")]
-    pub fn js_set_sheet_name(
+    pub async fn js_set_sheet_name(
         &mut self,
         sheet_id: String,
         name: String,
@@ -100,13 +100,13 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_sheet_name(sheet_id, name, cursor),
+            &self.set_sheet_name(sheet_id, name, cursor).await,
         )?)
     }
 
     /// Returns a code cell as a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setSheetColor")]
-    pub fn js_set_sheet_color(
+    pub async fn js_set_sheet_color(
         &mut self,
         sheet_id: String,
         color: Option<String>,
@@ -114,7 +114,7 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_sheet_color(sheet_id, color, cursor),
+            &self.set_sheet_color(sheet_id, color, cursor).await,
         )?)
     }
 }

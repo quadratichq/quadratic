@@ -35,7 +35,7 @@ const v1_0File: GridFileV1_0 = {
     { x: 6, y: 6, horizontal: {} },
     { x: 7, y: 7 },
   ],
-  cell_dependency: 'foo',
+  cell_dependency: '[]',
   formats: [{ x: 1, y: 1 }],
   render_dependency: [],
 };
@@ -69,7 +69,7 @@ const v1_1File: GridFileV1_1 = {
   columns: [],
   rows: [],
   borders: [],
-  cell_dependency: 'foo',
+  cell_dependency: '[]',
   formats: [],
   render_dependency: [],
   id: randomUUID(),
@@ -88,7 +88,7 @@ const v1_2File: GridFileV1_2 = {
   rows: [],
   borders: [{ x: 0, y: 0, horizontal: { type: 'line1' } }],
   formats: [{ x: 1, y: 1 }],
-  cell_dependency: 'foo',
+  cell_dependency: '[]',
   modified: 123,
   created: 123,
   id: '123e4567-e89b-12d3-a456-426614174000',
@@ -105,7 +105,7 @@ const v1_3File: GridFileV1_3 = {
   rows: [],
   borders: [{ x: 0, y: 0, horizontal: { type: 'line1' } }],
   formats: [{ x: 1, y: 1 }],
-  cell_dependency: 'foo',
+  cell_dependency: '[]',
 };
 
 /**

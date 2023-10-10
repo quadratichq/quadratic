@@ -42,11 +42,21 @@ pub fn column_from_name(s: &str) -> Option<f64> {
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]
 pub struct JsCodeResult {
     pub cells_accessed: Vec<[i64; 2]>,
+    pub formatted_code: Option<String>,
     pub success: bool,
     pub error_span: Option<[u32; 2]>,
     pub error_msg: Option<String>,
+    pub input_python_std_out: Option<String>,
     pub output_value: Option<String>,
     pub array_output: Option<Vec<Vec<String>>>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+pub struct JsComputeResult {
+    pub complete: bool,
+    pub rect: Option<Rect>,
+    pub sheet_id: Option<String>,
+    pub result: Option<JsCodeResult>,
 }
 
 /// Evaluates a formula and returns a formula result.
@@ -93,6 +103,8 @@ pub async fn eval_formula(
                 error_msg: None,
                 output_value,
                 array_output,
+                formatted_code: None,
+                input_python_std_out: None,
             }
         }
         Err(error) => JsCodeResult {
@@ -102,6 +114,8 @@ pub async fn eval_formula(
             error_msg: Some(error.msg.to_string()),
             output_value: None,
             array_output: None,
+            formatted_code: None,
+            input_python_std_out: None,
         },
     };
 

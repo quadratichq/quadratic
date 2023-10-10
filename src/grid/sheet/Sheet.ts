@@ -1,10 +1,10 @@
 import { Rectangle } from 'pixi.js';
+import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
-import { Pos } from '../../quadratic-core/quadratic_core';
+import { OffsetsSizeChanges, Pos, SheetOffsets } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
   CellFormatSummary,
-  // CodeCellValue,
   FormattingSummary,
   JsRenderCell,
   JsRenderCodeCell,
@@ -16,12 +16,20 @@ import { SheetCursor } from './SheetCursor';
 export class Sheet {
   id: string;
   cursor: SheetCursor;
+  offsets: SheetOffsets;
+
+  name: string;
+  order: string;
+  color?: string;
 
   constructor(index: number) {
     const sheetId = grid.sheetIndexToId(index);
     if (!sheetId) throw new Error('Expected sheetId to be defined in Sheet');
     this.id = sheetId;
-
+    this.name = grid.getSheetName(sheetId) ?? '';
+    this.order = grid.getSheetOrder(sheetId);
+    this.color = grid.getSheetColor(sheetId);
+    this.offsets = grid.getOffsets(this.id);
     this.cursor = new SheetCursor(this);
   }
 
@@ -36,31 +44,9 @@ export class Sheet {
     grid.deleteCellValues(this.id, rectangle);
   }
 
-  set name(name: string) {
-    grid.setSheetName(this.id, name);
-  }
-
-  set color(color: string | undefined) {
-    grid.setSheetColor(this.id, color);
-  }
-
   //#endregion
 
   //#region get grid information
-
-  get name(): string {
-    const name = grid.getSheetName(this.id);
-    if (name === undefined) throw new Error('Expected name to be defined in Sheet');
-    return name;
-  }
-
-  get color(): string | undefined {
-    return grid.getSheetColor(this.id);
-  }
-
-  get order(): string {
-    return grid.getSheetOrder(this.id);
-  }
 
   getRenderCells(rectangle: Rectangle): JsRenderCell[] {
     return grid.getRenderCells(this.id, rectangle);
@@ -115,7 +101,7 @@ export class Sheet {
 
   //#region set grid information
 
-  setCellFillColor(rectangle: Rectangle, fillColor?: string): void {
+  setCellFillColor(rectangle: Rectangle, fillColor?: string) {
     return grid.setCellFillColor(this.id, rectangle, fillColor);
   }
 
@@ -162,6 +148,35 @@ export class Sheet {
 
   getFormatPrimaryCell(): CellFormatSummary {
     return grid.getCellFormatSummary(this.id, this.cursor.originPosition.x, this.cursor.originPosition.y);
+  }
+
+  //#endregion
+
+  //#region Offsets
+
+  // @returns screen position of a cell
+  getCellOffsets(column: number, row: number): Rectangle {
+    const screenRect = this.offsets.getCellOffsets(column, row);
+    return new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
+  }
+
+  // @returns screen rectangle for a column/row rectangle
+  getScreenRectangle(column: number, row: number, width: number, height: number): Rectangle {
+    const topLeft = this.getCellOffsets(column, row);
+    const bottomRight = this.getCellOffsets(column + width, row + height);
+    return new Rectangle(topLeft.left, topLeft.top, bottomRight.right - topLeft.left, bottomRight.bottom - topLeft.top);
+  }
+
+  updateSheetOffsets() {
+    const newOffsets = grid.getOffsets(this.id);
+    const offsetSizeChanges: OffsetsSizeChanges = this.offsets.findResizeChanges(newOffsets);
+    const columns = offsetSizeChanges.getChanges(true);
+    for (let i = 0; i < columns.length; i += 2) {
+      const index = columns[i];
+      const delta = columns[i + 1];
+      pixiApp.cellsSheets.adjustHeadings({ sheetId: this.id, column: index, delta });
+    }
+    this.offsets = newOffsets;
   }
 
   //#endregion

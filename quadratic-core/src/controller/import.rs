@@ -1,13 +1,13 @@
 use anyhow::{anyhow, bail, Result};
 
-use super::{transactions::TransactionSummary, GridController};
+use super::{transaction_summary::TransactionSummary, GridController};
 use crate::{controller::operations::Operation, grid::SheetId, Pos};
 
 impl GridController {
     /// Imports a CSV file into the grid.
     ///
     /// Returns a [`TransactionSummary`].
-    pub fn import_csv(
+    pub async fn import_csv(
         &mut self,
         sheet_id: SheetId,
         file: &[u8],
@@ -50,7 +50,7 @@ impl GridController {
             .flatten()
             .collect::<Vec<Operation>>();
 
-        Ok(self.transact_forward(ops, cursor))
+        Ok(self.transact_forward(ops, cursor).await)
     }
 }
 
@@ -77,14 +77,15 @@ Springfield,OR,United States,56032
 Concord,NH,United States,42605
 "#;
 
-    #[test]
-    fn imports_a_simple_csv() {
+    #[tokio::test]
+    async fn imports_a_simple_csv() {
         let mut grid_controller = GridController::new();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
         grid_controller
             .import_csv(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos, None)
+            .await
             .unwrap();
 
         print_table(
@@ -112,13 +113,15 @@ Concord,NH,United States,42605
         );
     }
 
-    #[test]
-    fn errors_on_an_empty_csv() {
+    #[tokio::test]
+    async fn errors_on_an_empty_csv() {
         let mut grid_controller = GridController::new();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        let result = grid_controller.import_csv(sheet_id, "".as_bytes(), "smallpop.csv", pos, None);
+        let result = grid_controller
+            .import_csv(sheet_id, "".as_bytes(), "smallpop.csv", pos, None)
+            .await;
         assert!(result.is_err());
     }
 }
