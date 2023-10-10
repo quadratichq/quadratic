@@ -36,7 +36,9 @@ pub fn assert_cell_value(
     value: &str,
 ) {
     let sheet = grid_controller.grid().sheet_from_id(sheet_id);
-    let cell_value = sheet.get_cell_value(Pos { x, y }).unwrap();
+    let cell_value = sheet
+        .get_cell_value(Pos { x, y })
+        .unwrap_or(CellValue::Blank);
     let expected = to_cell_value(value);
 
     assert_eq!(

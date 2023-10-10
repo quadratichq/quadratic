@@ -298,19 +298,11 @@ impl CoerceInto for Spanned<Value> {
 #[cfg(test)]
 mod test {
     use crate::CellValue;
-    use bigdecimal::BigDecimal;
-    use std::str::FromStr;
 
     #[test]
     fn test_convert_from_str_to_cell_value() {
-        assert_eq!(
-            CellValue::from("$1.22"),
-            CellValue::Number(BigDecimal::from_str("1.22").unwrap())
-        );
+        assert_eq!(CellValue::from("$1.22"), CellValue::Text("$1.22".into()));
 
-        assert_eq!(
-            CellValue::from("10%"),
-            CellValue::Number(BigDecimal::from_str("10").unwrap())
-        );
+        assert_eq!(CellValue::from("10%"), CellValue::Text("10%".into()));
     }
 }

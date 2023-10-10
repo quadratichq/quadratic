@@ -150,13 +150,13 @@ mod test {
 
     #[tokio::test]
     async fn test_set_cell_text_color_undo_redo() {
-        let gc = GridController::new();
+        let mut gc = GridController::new();
         let sheet_id = gc.grid.sheets()[0].id;
         let pos1 = Pos { x: 3, y: 6 };
         let pos2 = Pos { x: 5, y: 8 };
         let pos3 = Pos { x: 9, y: 6 };
-        // let rect1 = Rect::new_span(pos1, pos2);
-        // let rect2 = Rect::new_span(pos2, pos3);
+        let rect1 = Rect::new_span(pos1, pos2);
+        let rect2 = Rect::new_span(pos2, pos3);
 
         let get = |g: &GridController, pos: crate::Pos| {
             g.sheet(sheet_id)
@@ -164,43 +164,38 @@ mod test {
                 .unwrap_or_default()
         };
 
-        // let expected_summary = |rect| TransactionSummary {
-        //     cell_regions_modified: vec![(sheet_id, rect)],
-        //     ..Default::default()
-        // };
-
         assert_eq!(get(&gc, pos1), "");
         assert_eq!(get(&gc, pos2), "");
         assert_eq!(get(&gc, pos3), "");
-        // assert_eq!(
-        //     gc.set_cell_text_color(sheet_id, rect1, Some("blue".to_string()), None)
-        //         .await,
-        //     expected_summary(rect1),
-        // );
+
+        gc.set_cell_text_color(sheet_id, rect1, Some("blue".to_string()), None)
+            .await;
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "blue");
         assert_eq!(get(&gc, pos3), "");
-        // assert_eq!(
-        //     gc.set_cell_text_color(sheet_id, rect2, Some("red".to_string()), None)
-        //         .await,
-        //     expected_summary(rect2),
-        // );
+
+        gc.set_cell_text_color(sheet_id, rect2, Some("red".to_string()), None)
+            .await;
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "red");
         assert_eq!(get(&gc, pos3), "red");
-        // assert_eq!(gc.undo(None), Some(expected_summary(rect2)));
+
+        gc.undo(None);
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "blue");
         assert_eq!(get(&gc, pos3), "");
-        // assert_eq!(gc.undo(None), Some(expected_summary(rect1)));
+
+        gc.undo(None);
         assert_eq!(get(&gc, pos1), "");
         assert_eq!(get(&gc, pos2), "");
         assert_eq!(get(&gc, pos3), "");
-        // assert_eq!(gc.redo(None), Some(expected_summary(rect1)));
+
+        gc.redo(None);
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "blue");
         assert_eq!(get(&gc, pos3), "");
-        // assert_eq!(gc.redo(None), Some(expected_summary(rect2)));
+
+        gc.redo(None);
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "red");
         assert_eq!(get(&gc, pos3), "red");
