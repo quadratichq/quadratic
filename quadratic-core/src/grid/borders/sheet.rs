@@ -5,7 +5,7 @@ use std::time::Instant;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::grid::block::SameValue;
+use crate::grid::block::{Block, BlockContent, SameValue};
 use crate::grid::borders::cell::{CellBorders, CellSide};
 use crate::grid::borders::compute_indices;
 use crate::grid::borders::style::{BorderSelection, BorderStyle};
@@ -175,11 +175,12 @@ impl IdSpaceBorders {
             let mut previous_column = previous.borders.entry(*column_id).or_default();
 
             // TODO(jrice): We need to improve ColumnData algorithms to make this simpler
+            // TODO(jrice): Iterative `set` is broken. Need to use `set_range`
 
             for range in row_ranges {
-                for y in range {
-                    let replaced = dest_column.set(y, replacement.get(y));
-                    previous_column.set(y, replaced);
+                let replaced = dest_column.clone_range(&replacement, range);
+                for old_block in replaced {
+                    previous_column.set_range(old_block.range(), old_block.content.value);
                 }
             }
         }
@@ -193,10 +194,9 @@ impl IdSpaceBorders {
     ) -> ColumnData<SameValue<CellBorders>> {
         let mut column = ColumnData::new();
         if let Some(source_column) = self.borders.get(&column_id) {
-            for block in row_ranges {
-                for y in block {
-                    column.set(y, source_column.get(y));
-                }
+            for range in row_ranges {
+                // TODO(jrice): Iterative `set` is broken. Need to use `set_range`
+                column.clone_range(&source_column, range);
             }
         }
         column
@@ -240,6 +240,7 @@ impl IdSpaceBorders {
         side: CellSide,
         style: Option<BorderStyle>,
     ) {
+        // TODO(jrice): Iterative `set` is broken. Need to use `set_range`
         let column_borders = self.borders.entry(column_id).or_default();
 
         let new_borders = CellBorders::combine(column_borders.get(row_index), side, style);
@@ -266,22 +267,32 @@ impl GridSpaceBorders {
 
     fn replace_rects(&mut self, source: &Self, rects: &[Rect]) -> Self {
         let mut previous = Self::default();
+
+        // TODO(jrice): Iterative `set` is broken. Need to use `set_range`
         for rect in rects {
             // Vertical borders
             for x in rect.x_range().chain([rect.x_range().end]) {
-                for y in rect.y_range() {
-                    let source_style = source.vertical.get(&x).map(|col| col.get(y)).flatten();
-                    let prev_style = self.vertical.entry(x).or_default().set(y, source_style);
-                    previous.vertical.entry(x).or_default().set(y, prev_style);
+                if let Some(source_column) = source.vertical.get(&x) {
+                    let current_column = self.vertical.entry(x).or_default();
+                    let previous_column = previous.vertical.entry(x).or_default();
+
+                    let replaced_styles = current_column.clone_range(source_column, rect.y_range());
+                    for old_style in replaced_styles {
+                        previous_column.set_range(old_style.range(), old_style.content.value);
+                    }
                 }
             }
 
             // Horizontal
             for y in rect.y_range().chain([rect.y_range().end]) {
-                for x in rect.x_range() {
-                    let source_style = source.horizontal.get(&y).map(|col| col.get(x)).flatten();
-                    let prev_style = self.horizontal.entry(y).or_default().set(x, source_style);
-                    previous.horizontal.entry(y).or_default().set(x, prev_style);
+                if let Some(source_column) = source.horizontal.get(&y) {
+                    let current_column = self.horizontal.entry(y).or_default();
+                    let previous_column = previous.horizontal.entry(y).or_default();
+
+                    let replaced_styles = current_column.clone_range(source_column, rect.x_range());
+                    for old_style in replaced_styles {
+                        previous_column.set_range(old_style.range(), old_style.content.value);
+                    }
                 }
             }
         }
@@ -289,10 +300,11 @@ impl GridSpaceBorders {
     }
 
     fn set_vertical_border(&mut self, index: i64, y_range: Range<i64>, style: Option<BorderStyle>) {
-        // TODO(jrice): Again, need a block set algorithm for ColumnData
-        y_range.for_each(|y| {
-            self.vertical.entry(index).or_default().set(y, style);
-        });
+        let mut column = self.vertical.entry(index).or_default();
+        match style {
+            Some(style) => column.set_range(y_range, style),
+            None => column.remove_range(y_range),
+        };
     }
 
     fn set_horizontal_border(
@@ -301,9 +313,11 @@ impl GridSpaceBorders {
         x_range: Range<i64>,
         style: Option<BorderStyle>,
     ) {
-        x_range.for_each(|x| {
-            self.horizontal.entry(index).or_default().set(x, style);
-        });
+        let mut row = self.horizontal.entry(index).or_default();
+        match style {
+            Some(style) => row.set_range(x_range, style),
+            None => row.remove_range(x_range),
+        };
     }
 }
 
@@ -576,24 +590,6 @@ mod tests {
 
         let _prev_borders_2 = set_region_border_selection(&mut sheet, &region_2, selection_2, None);
 
-        print_borders(
-            Rect::new_span(Pos { x: 2, y: 9 }, Pos { x: 7, y: 14 }),
-            &_prev_borders_1,
-            &sheet.column_ids,
-        );
-        println!();
-        print_borders(
-            Rect::new_span(Pos { x: 2, y: 9 }, Pos { x: 7, y: 14 }),
-            &sheet.borders,
-            &sheet.column_ids,
-        );
-        println!();
-        print_borders(
-            Rect::new_span(Pos { x: 2, y: 9 }, Pos { x: 7, y: 14 }),
-            &_prev_borders_2,
-            &sheet.column_ids,
-        );
-
         assert_borders!(
             sheet.borders,
             sheet.column_ids,
@@ -651,24 +647,6 @@ mod tests {
             set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style));
         let prev_borders_2 = set_region_border_selection(&mut sheet, &region_2, selection_2, None);
 
-        print_borders(
-            Rect::new_span(Pos { x: 2, y: 9 }, Pos { x: 7, y: 14 }),
-            &prev_borders_1,
-            &sheet.column_ids,
-        );
-        println!();
-        print_borders(
-            Rect::new_span(Pos { x: 2, y: 9 }, Pos { x: 7, y: 14 }),
-            &sheet.borders,
-            &sheet.column_ids,
-        );
-        println!();
-        print_borders(
-            Rect::new_span(Pos { x: 2, y: 9 }, Pos { x: 7, y: 14 }),
-            &prev_borders_2,
-            &sheet.column_ids,
-        );
-
         let expected_cell_borders = [
             (CellSide::Left, style),
             (CellSide::Right, style),
@@ -713,6 +691,7 @@ mod tests {
 
         let _prev_borders_1 =
             set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style_1));
+
         let _prev_borders_2 =
             set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style_2));
 

@@ -6,6 +6,7 @@ use std::ops::Range;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
+use crate::grid::block::{contiguous_optional_blocks, OptionBlock};
 
 use super::formatting::*;
 use super::{
@@ -312,6 +313,26 @@ impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
         self.try_merge_at(y_range.start);
         self.try_merge_at(y_range.end);
         removed
+    }
+    pub fn clone_range(&mut self, source: &Self, y_range: Range<i64>) -> Vec<Block<SameValue<T>>> {
+        let mut replaced = vec![];
+
+        let value_blocks = source
+            .blocks_of_range(y_range.clone())
+            .map(|cow_block| cow_block.into_owned())
+            .collect_vec();
+        for new_block in contiguous_optional_blocks(value_blocks, y_range) {
+            let replaced_blocks = match new_block {
+                OptionBlock::None(empty) => {
+                    self.remove_range(empty.range())
+                },
+                OptionBlock::Some(block) => {
+                    self.set_range(block.range(), block.content.value)
+                }
+            };
+            replaced.extend(replaced_blocks.into_iter());
+        }
+        replaced
     }
 }
 

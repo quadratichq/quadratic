@@ -62,34 +62,34 @@ mod tests {
     use crate::{Pos, Rect};
     use std::collections::HashSet;
 
-    mod timing {
-        use super::*;
-
-        #[test]
-        fn single_block() {
-            for _ in 0..1 {
-                let mut sheet =
-                    Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
-                let rect = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 506, y: 515 });
-                let region = sheet.region(rect);
-
-                let selection = vec![BorderSelection::All];
-
-                let style = BorderStyle {
-                    color: Rgb::from_str("#000000").unwrap(),
-                    line: CellBorderLine::Line1,
-                };
-
-                let timer = Instant::now();
-                set_region_border_selection(&mut sheet, &region, selection, Some(style));
-
-                let vertical_render = get_render_vertical_borders(&sheet);
-                let horizontal_render = get_render_horizontal_borders(&sheet);
-                let elapsed = timer.elapsed();
-                println!("Total: {elapsed:?}");
-            }
-        }
-    }
+    // mod timing {
+    //     use super::*;
+    //
+    //     #[test]
+    //     fn single_block() {
+    //         for _ in 0..5 {
+    //             let mut sheet =
+    //                 Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
+    //             let rect = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 506, y: 515 });
+    //             let region = sheet.region(rect);
+    //
+    //             let selection = vec![BorderSelection::All];
+    //
+    //             let style = BorderStyle {
+    //                 color: Rgb::from_str("#000000").unwrap(),
+    //                 line: CellBorderLine::Line1,
+    //             };
+    //
+    //             let timer = Instant::now();
+    //             set_region_border_selection(&mut sheet, &region, selection, Some(style));
+    //
+    //             let vertical_render = get_render_vertical_borders(&sheet);
+    //             let horizontal_render = get_render_horizontal_borders(&sheet);
+    //             let elapsed = timer.elapsed();
+    //             println!("Total: {elapsed:?}");
+    //         }
+    //     }
+    // }
 
     mod vertical {
         use super::*;
@@ -264,34 +264,13 @@ mod tests {
             };
 
             set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style));
-
-            print_borders(
-                Rect::new_span(Pos { x: 2, y: 9 }, Pos { x: 7, y: 12 }),
-                &sheet.borders,
-                &sheet.column_ids,
-            );
             let vertical_render_initial = get_render_vertical_borders(&sheet);
 
             let replaced =
                 set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style));
-            print_borders(
-                Rect::new_span(Pos { x: 2, y: 9 }, Pos { x: 7, y: 12 }),
-                &sheet.borders,
-                &sheet.column_ids,
-            );
-            print_borders(
-                Rect::new_span(Pos { x: 2, y: 9 }, Pos { x: 7, y: 12 }),
-                &replaced,
-                &sheet.column_ids,
-            );
-            set_region_borders(&mut sheet, vec![region_2], replaced); // Undo
 
+            set_region_borders(&mut sheet, vec![region_2], replaced); // Undo
             let vertical_render_after_undo = get_render_vertical_borders(&sheet);
-            print_borders(
-                Rect::new_span(Pos { x: 2, y: 9 }, Pos { x: 7, y: 12 }),
-                &sheet.borders,
-                &sheet.column_ids,
-            );
 
             assert_eq!(
                 vertical_render_initial.len(),
@@ -300,14 +279,51 @@ mod tests {
             for initial in &vertical_render_initial {
                 assert!(vertical_render_after_undo.contains(initial));
             }
+        }
 
-            assert!(false, "this test doesn't seem to test what I thought it does");
+        #[test]
+        fn undo_insert_different_color_border_across_block() {
+            let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
+            let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 6, y: 15 });
+            let rect_2 = Rect::new_span(Pos { x: 2, y: 11 }, Pos { x: 7, y: 14 });
+
+            let region_1 = sheet.region(rect_1);
+            let region_2 = sheet.region(rect_2);
+
+            let selection_1 = vec![BorderSelection::All];
+            let selection_2 = selection_1.clone();
+
+            let style_1 = BorderStyle {
+                color: Rgb::from_str("#000000").unwrap(),
+                line: CellBorderLine::Line1,
+            };
+            let style_2 = BorderStyle {
+                color: Rgb::from_str("#FFFFFF").unwrap(),
+                line: CellBorderLine::Line1,
+            };
+
+            set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style_1));
+            let vertical_render_initial = get_render_vertical_borders(&sheet);
+
+            let replaced =
+                set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style_2));
+
+            set_region_borders(&mut sheet, vec![region_2], replaced); // Undo
+            let vertical_render_after_undo = get_render_vertical_borders(&sheet);
+
+            assert_eq!(
+                vertical_render_initial.len(),
+                vertical_render_after_undo.len()
+            );
+            for initial in &vertical_render_initial {
+                assert!(vertical_render_after_undo.contains(initial));
+            }
         }
     }
 
     mod horizontal {
-        use crate::grid::borders::sheet::debug::print_borders;
         use super::*;
+        use crate::grid::set_region_borders;
 
         #[test]
         fn single_block() {
@@ -434,8 +450,6 @@ mod tests {
             set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style_1));
             set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style_2));
 
-            print_borders(Rect::new_span(Pos{x:1,y:9}, Pos{x:8,y:16}), &sheet.borders, &sheet.column_ids);
-
             let horizontal_render = get_render_horizontal_borders(&sheet);
 
             let expected_left_block_starts = (11..=15).map(|y| Pos { x: 2, y });
@@ -454,19 +468,46 @@ mod tests {
                 })
                 .collect();
 
-            for expected in &expected_starts {
-                if !actual_starts.contains(expected) {
-                    println!("Missing expected: {expected:?}");
-                }
-            }
-
-            for actual in &actual_starts {
-                if !expected_starts.contains(actual) {
-                    println!("Unexpected: {actual:?}");
-                }
-            }
-
             assert_eq!(expected_starts, actual_starts);
+        }
+
+        #[test]
+        fn undo_insert_different_color_border_across_block() {
+            let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
+            let rect_1 = Rect::new_span(Pos { x: 2, y: 11 }, Pos { x: 7, y: 14 });
+            let rect_2 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 6, y: 15 });
+
+            let region_1 = sheet.region(rect_1);
+            let region_2 = sheet.region(rect_2);
+
+            let selection_1 = vec![BorderSelection::All];
+            let selection_2 = selection_1.clone();
+
+            let style_1 = BorderStyle {
+                color: Rgb::from_str("#FFFFFF").unwrap(),
+                line: CellBorderLine::Line1,
+            };
+            let style_2 = BorderStyle {
+                color: Rgb::from_str("#000000").unwrap(),
+                line: CellBorderLine::Line1,
+            };
+
+            set_region_border_selection(&mut sheet, &region_1, selection_1, Some(style_1));
+            let horizontal_render_initial = get_render_horizontal_borders(&sheet);
+
+            let replaced =
+                set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style_2));
+
+            set_region_borders(&mut sheet, vec![region_2], replaced); // Undo
+            let horizontal_render_after_undo = get_render_horizontal_borders(&sheet);
+
+            assert_eq!(
+                horizontal_render_initial.len(),
+                horizontal_render_after_undo.len()
+            );
+            for initial in &horizontal_render_initial {
+                assert!(horizontal_render_after_undo.contains(initial));
+            }
         }
     }
 }

@@ -24,7 +24,7 @@ impl Rgb {
     }
 }
 impl Rgb {
-    pub fn from_str(color_str: &str) -> Result<Self, ParseIntError> { // TODO: serde
+    pub fn from_str(color_str: &str) -> Result<Self, ParseIntError> { // TODO(jrice): serde
         assert_eq!(&color_str[0..=0], "#");
         Ok(Self {
             red: u8::from_str_radix(&color_str[1..=2], 16)?,
