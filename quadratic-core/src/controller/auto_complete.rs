@@ -816,17 +816,17 @@ mod tests {
 
         print_table(&grid, sheet_id, Rect::new_span(range.min, selected.max));
 
-        // let expected = vec![
-        //     "b", "f", "z", "r", "b", "f", "z", "r", "b", "f", "z", "r", "b",
-        // ];
-        // let expected_bold = vec![
-        //     false, false, true, true, false, false, true, true, false, false, true, true, false,
-        // ];
+        let expected = vec![
+            "b", "f", "z", "r", "b", "f", "z", "r", "b", "f", "z", "r", "b",
+        ];
+        let expected_bold = vec![
+            false, false, true, true, false, false, true, true, false, false, true, true, false,
+        ];
 
-        // assert_cell_value_row(&grid, sheet_id, -7, 5, -7, expected.clone());
-        // assert_cell_value_row(&grid, sheet_id, -7, 5, 3, expected);
-        // assert_cell_format_bold_row(&grid, sheet_id, -7, 5, -7, expected_bold.clone());
-        // assert_cell_format_bold_row(&grid, sheet_id, -7, 5, 3, expected_bold);
+        assert_cell_value_row(&grid, sheet_id, -7, 5, -7, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, -7, 5, 3, expected);
+        assert_cell_format_bold_row(&grid, sheet_id, -7, 5, -7, expected_bold.clone());
+        assert_cell_format_bold_row(&grid, sheet_id, -7, 5, 3, expected_bold);
     }
 
     #[tokio::test]

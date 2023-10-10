@@ -27,13 +27,12 @@ where
 }
 impl From<String> for CellValue {
     fn from(value: String) -> Self {
-        value.as_str().into()
+        CellValue::Text(value)
     }
 }
-// TODO(ddimaria): implement Duration and Instant
 impl From<&str> for CellValue {
     fn from(value: &str) -> Self {
-        CellValue::Text(value.to_string())
+        value.into()
     }
 }
 // todo: this might be wrong for formulas
