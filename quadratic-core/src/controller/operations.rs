@@ -239,19 +239,19 @@ impl GridController {
                                 let y = sheet.get_row_index(cell_ref.row);
                                 if let (Some(x), Some(y), Some(format)) = (x, y, num_fmt.get_at(i))
                                 {
-                                    sheet.get_cell_value(Pos { x, y }).and_then(|value| {
+                                    sheet.get_cell_value(Pos { x, y }).map(|value| {
                                         let numeric_decimal = sheet
                                             .get_column(x)
                                             .and_then(|column| column.numeric_decimals.get(y));
 
-                                        Some(JsRenderCellUpdate {
+                                        JsRenderCellUpdate {
                                             x,
                                             y,
                                             update: JsRenderCellUpdateEnum::Value(Some(
                                                 value
                                                     .to_display(format.to_owned(), numeric_decimal),
                                             )),
-                                        })
+                                        }
                                     })
                                 } else {
                                     None
@@ -278,18 +278,18 @@ impl GridController {
                                 if let (Some(x), Some(y), Some(format)) =
                                     (x, y, num_decimals.get_at(i))
                                 {
-                                    sheet.get_cell_value(Pos { x, y }).and_then(|value| {
+                                    sheet.get_cell_value(Pos { x, y }).map(|value| {
                                         let numeric_format = sheet
                                             .get_column(x)
                                             .and_then(|column| column.numeric_format.get(y));
 
-                                        Some(JsRenderCellUpdate {
+                                        JsRenderCellUpdate {
                                             x,
                                             y,
                                             update: JsRenderCellUpdateEnum::Value(Some(
                                                 value.to_display(numeric_format, format.to_owned()),
                                             )),
-                                        })
+                                        }
                                     })
                                 } else {
                                     None
