@@ -39,7 +39,11 @@ pub fn assert_cell_value(
     let cell_value = sheet
         .get_cell_value(Pos { x, y })
         .unwrap_or(CellValue::Blank);
-    let expected = to_cell_value(value);
+    let expected = if value == "" {
+        CellValue::Blank
+    } else {
+        to_cell_value(value)
+    };
 
     assert_eq!(
         cell_value, expected,
