@@ -3,7 +3,7 @@ use strum_macros::Display;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::CellRef;
-use crate::{ArraySize, CellValue, Error, Value};
+use crate::{error, ArraySize, CellValue, Error, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CodeCellValue {
@@ -27,6 +27,15 @@ impl CodeCellValue {
         match self.output.as_ref().and_then(|out| out.output_value()) {
             Some(Value::Array(a)) => a.size(),
             Some(Value::Single(_)) | None => ArraySize::_1X1,
+        }
+    }
+
+    pub fn get_error(&self) -> Option<Error> {
+        let error = &self.output.as_ref()?.result;
+        if let CodeCellRunResult::Err { error } = error {
+            Some(error.clone())
+        } else {
+            None
         }
     }
 }

@@ -3,9 +3,9 @@ use crate::{
         js_types::{
             JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill,
         },
-        CodeCellRunResult, NumericFormat, NumericFormatKind,
+        CellAlign, CellWrap, CodeCellRunResult, NumericFormat, NumericFormatKind,
     },
-    Pos, Rect,
+    CellValue, Pos, Rect,
 };
 
 use super::Sheet;
@@ -34,6 +34,19 @@ impl Sheet {
                 .filter_map(move |block| {
                     let code_cell_pos = self.cell_ref_to_pos(block.content.value)?;
                     let code_cell = self.code_cells.get(&block.content.value)?;
+
+                    // if let Some(error) = code_cell.get_error() {
+                    //     Some((0..1).filter_map(|_| {
+                    //         Some(
+                    //             x,
+                    //             block.y,
+                    //             column,
+                    //             CellValue::Text(String::from("test") /*Box::new(error)*/),
+                    //             None,
+                    //         )
+                    //     }))
+                    // }
+
                     let dx = (x - code_cell_pos.x) as u32;
                     let dy = (block.y - code_cell_pos.y) as u32;
 
@@ -67,18 +80,35 @@ impl Sheet {
                     };
                     numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
                 }
-                JsRenderCell {
-                    x,
-                    y,
 
-                    value: value.to_display(numeric_format, numeric_decimals),
-                    language,
+                if value.type_name() == "error" {
+                    JsRenderCell {
+                        x,
+                        y,
 
-                    align: column.align.get(y),
-                    wrap: column.wrap.get(y),
-                    bold: column.bold.get(y),
-                    italic: column.italic.get(y),
-                    text_color: column.text_color.get(y),
+                        value: String::from("Error!"),
+                        language,
+
+                        align: None,
+                        wrap: None,
+                        bold: Some(true),
+                        italic: None,
+                        text_color: Some(String::from("red")),
+                    }
+                } else {
+                    JsRenderCell {
+                        x,
+                        y,
+
+                        value: value.to_display(numeric_format, numeric_decimals),
+                        language,
+
+                        align: column.align.get(y),
+                        wrap: column.wrap.get(y),
+                        bold: column.bold.get(y),
+                        italic: column.italic.get(y),
+                        text_color: column.text_color.get(y),
+                    }
                 }
             })
             .collect()
