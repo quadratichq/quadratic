@@ -74,11 +74,9 @@ impl GridController {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         self.populate_with_random_floats(sheet_id, region);
         Ok(serde_wasm_bindgen::to_value(&TransactionSummary {
-            cell_value_regions_modified: vec![(sheet_id, *region)],
-            cell_regions_modified: vec![(sheet_id, *region)],
             fill_sheets_modified: vec![],
             border_sheets_modified: vec![],
-            code_cells_modified: vec![],
+            code_cells_modified: HashSet::new(),
             operations: vec![],
             sheet_list_modified: false,
             cursor: None,
