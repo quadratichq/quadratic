@@ -34,11 +34,16 @@ fn fetch_code_cell_difference(
                     x: sheet_pos.x + x as i64,
                     y: sheet_pos.y + y as i64,
                 };
-                // let (numeric_format, numeric_decimals) = sheet.cell_numeric_info(pos);
+                let (numeric_format, numeric_decimals) = sheet.cell_numeric_info(pos);
+                let value = if let Some(value) = sheet.get_cell_value(pos) {
+                    Some(value.to_display(numeric_format, numeric_decimals))
+                } else {
+                    None
+                };
                 summary_set.push(JsRenderCellUpdate {
                     x: pos.x,
                     y: pos.y,
-                    update: JsRenderCellUpdateEnum::Value(None),
+                    update: JsRenderCellUpdateEnum::Value(value),
                 });
                 cells_to_compute.push(SheetPos {
                     x: pos.x,
@@ -56,10 +61,16 @@ fn fetch_code_cell_difference(
                     y: sheet_pos.y + y as i64,
                 };
                 // let (numeric_format, numeric_decimals) = sheet.cell_numeric_info(pos);
+                let (numeric_format, numeric_decimals) = sheet.cell_numeric_info(pos);
+                let value = if let Some(value) = sheet.get_cell_value(pos) {
+                    Some(value.to_display(numeric_format, numeric_decimals))
+                } else {
+                    None
+                };
                 summary_set.push(JsRenderCellUpdate {
                     x: pos.x,
                     y: pos.y,
-                    update: JsRenderCellUpdateEnum::Value(None),
+                    update: JsRenderCellUpdateEnum::Value(value),
                 });
                 cells_to_compute.push(SheetPos {
                     x: pos.x,
