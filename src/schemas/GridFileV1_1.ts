@@ -113,7 +113,7 @@ export type GridFileV1_1 = z.infer<typeof GridFileSchemaV1_1>;
 /**
  * Given a v1 file, update it to a v1_1 file
  */
-export function upgradeV1_0toV1_1(file: GridFileV1_0, logOutput: boolean = true): GridFileV1_1 {
+export function upgradeV1_0toV1_1(file: GridFileV1_0): GridFileV1_1 {
   const date = Date.now();
 
   // The previous enums for borders were integers but now we use strings
