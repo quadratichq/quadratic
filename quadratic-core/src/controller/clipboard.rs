@@ -213,16 +213,6 @@ impl GridController {
             .iter()
             .map(|line| line.split('\t').collect())
             .collect();
-        let longest = rows
-            .iter()
-            .map(|line| line.clone().len())
-            .max()
-            .unwrap_or(0);
-
-        if rows.is_empty() || longest == 0 {
-            return TransactionSummary::default();
-        }
-
         let mut operations = vec![];
 
         for (y, row) in rows.iter().enumerate() {

@@ -17,21 +17,25 @@ impl GridController {
     ) -> TransactionSummary {
         // make initial changes
         let mut summary = TransactionSummary::default();
-        let mut cell_values_modified: Vec<SheetPos> = vec![];
-        let mut reverse_operations =
-            self.transact(operations, &mut cell_values_modified, &mut summary);
 
-        // run computations
-        let mut additional_operations = self.compute(cell_values_modified, &mut summary).await;
+        if !operations.is_empty() {
+            let mut cell_values_modified: Vec<SheetPos> = vec![];
+            let mut reverse_operations =
+                self.transact(operations, &mut cell_values_modified, &mut summary);
 
-        reverse_operations.append(&mut additional_operations);
+            // run computations
+            let mut additional_operations = self.compute(cell_values_modified, &mut summary).await;
 
-        // update undo/redo stack
-        self.redo_stack.clear();
-        self.undo_stack.push(Transaction {
-            ops: reverse_operations,
-            cursor,
-        });
+            reverse_operations.append(&mut additional_operations);
+
+            // update undo/redo stack
+            self.redo_stack.clear();
+            self.undo_stack.push(Transaction {
+                ops: reverse_operations,
+                cursor,
+            });
+        }
+
         summary
     }
 
