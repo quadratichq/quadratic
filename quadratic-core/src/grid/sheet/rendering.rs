@@ -35,29 +35,25 @@ impl Sheet {
                     let code_cell_pos = self.cell_ref_to_pos(block.content.value)?;
                     let code_cell = self.code_cells.get(&block.content.value)?;
 
-                    // if let Some(error) = code_cell.get_error() {
-                    //     Some((0..1).filter_map(|_| {
-                    //         Some(
-                    //             x,
-                    //             block.y,
-                    //             column,
-                    //             CellValue::Text(String::from("test") /*Box::new(error)*/),
-                    //             None,
-                    //         )
-                    //     }))
-                    // }
+                    let (block_len, cell_error) = if let Some(error) = code_cell.get_error() {
+                        (1, Some(CellValue::Error(Box::new(error))))
+                    } else {
+                        (block.len(), None)
+                    };
 
                     let dx = (x - code_cell_pos.x) as u32;
                     let dy = (block.y - code_cell_pos.y) as u32;
 
-                    Some((0..block.len()).filter_map(move |y_within_block| {
+                    Some((0..block_len).filter_map(move |y_within_block| {
                         let y = block.y + y_within_block as i64;
                         let dy = dy + y_within_block as u32;
                         Some((
                             x,
                             y,
                             column,
-                            code_cell.get_output_value(dx, dy)?,
+                            cell_error
+                                .clone()
+                                .or_else(|| code_cell.get_output_value(dx, dy))?,
                             ((dx, dy) == (0, 0)).then_some(code_cell.language),
                         ))
                     }))
