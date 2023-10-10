@@ -11,6 +11,7 @@ use super::compute::SheetPos;
 /// Fetches the difference between the old and new code cell values and updates the UI
 fn fetch_code_cell_difference(
     sheet: &mut Sheet,
+    sheet_pos: SheetPos,
     old_code_cell_value: Option<CodeCellValue>,
     new_code_cell_value: Option<CodeCellValue>,
     summary_set: &mut Vec<JsRenderCellUpdate>,
@@ -30,8 +31,8 @@ fn fetch_code_cell_difference(
         for x in new_size.w.get()..old_size.w.get() {
             for y in 0..new_size.h.get() {
                 let pos = Pos {
-                    x: x as i64,
-                    y: y as i64,
+                    x: sheet_pos.x + x as i64,
+                    y: sheet_pos.y + y as i64,
                 };
                 // let (numeric_format, numeric_decimals) = sheet.cell_numeric_info(pos);
                 summary_set.push(JsRenderCellUpdate {
@@ -51,8 +52,8 @@ fn fetch_code_cell_difference(
         for y in new_size.h.get()..old_size.h.get() {
             for x in 0..old_size.w.get() {
                 let pos = Pos {
-                    x: x as i64,
-                    y: y as i64,
+                    x: sheet_pos.x + x as i64,
+                    y: sheet_pos.y + y as i64,
                 };
                 // let (numeric_format, numeric_decimals) = sheet.cell_numeric_info(pos);
                 summary_set.push(JsRenderCellUpdate {
@@ -129,6 +130,7 @@ pub fn update_code_cell_value(
     }
     fetch_code_cell_difference(
         sheet,
+        pos,
         old_code_cell_value.clone(),
         code_cell,
         summary_set,
@@ -140,6 +142,7 @@ pub fn update_code_cell_value(
 #[cfg(test)]
 mod test {
     use crate::{
+        controller::compute::SheetPos,
         grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellValue, Sheet},
         Array, ArraySize, Value,
     };
@@ -183,8 +186,15 @@ mod test {
             }),
         });
 
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id: sheet.id,
+        };
+
         super::fetch_code_cell_difference(
             &mut sheet,
+            sheet_pos.clone(),
             old.clone(),
             new_smaller,
             &mut summary_set,
@@ -213,6 +223,7 @@ mod test {
 
         super::fetch_code_cell_difference(
             &mut sheet,
+            sheet_pos,
             old,
             new_larger,
             &mut summary_set,
