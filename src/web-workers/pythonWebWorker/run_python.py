@@ -53,7 +53,6 @@ def strtobool(val):
 
 class Cell:
     def __init__(self, object):
-        print(object)
         self.x = object.x
         self.y = object.y
         self.value = object.value
@@ -172,7 +171,6 @@ async def run_python(code):
         return df
 
     async def getCell(p_x, p_y, sheet=None):
-        print("get cell")
         # mark cell this formula accesses
         cells_accessed.append([p_x, p_y, sheet])
         result = await getCellsDB(p_x, p_y, p_x, p_y, sheet)
@@ -307,7 +305,6 @@ async def run_python(code):
         # Convert Pandas.Series to array_output
         if isinstance(output_value, pd.Series):
             array_output = output_value.to_numpy().tolist()
-        print(array_output)
 
         # Attempt to format code
         formatted_code = code

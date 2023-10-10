@@ -1,5 +1,5 @@
 use std::collections::{btree_map, BTreeMap, HashMap};
-use std::ops::Range;
+use std::str::FromStr;
 
 use itertools::Itertools;
 use rand::Rng;
@@ -12,7 +12,7 @@ use super::bounds::GridBounds;
 use super::code::CodeCellValue;
 use super::column::Column;
 use super::formatting::{BoolSummary, CellFmtAttr};
-use super::ids::{CellRef, ColumnId, IdMap, RegionRef, RowId, SheetId};
+use super::ids::{CellRef, ColumnId, IdMap, RowId, SheetId};
 use super::js_types::{CellFormatSummary, FormattingSummary};
 use super::response::{GetIdResponse, SetCellResponse};
 use super::{NumericFormat, NumericFormatKind};
@@ -380,27 +380,27 @@ impl Sheet {
         self.row_ids.index_of(row_id)
     }
 
-    /// Returns contiguous ranges of X coordinates from a list of column IDs.
-    /// Ignores IDs for columns that don't exist.
-    pub(crate) fn column_ranges(&self, column_ids: &[ColumnId]) -> Vec<Range<i64>> {
-        let xs = column_ids
-            .iter()
-            .filter_map(|&id| self.get_column_index(id));
-        contiguous_ranges(xs)
-    }
-    /// Returns contiguous ranges of Y coordinates from a list of row IDs.
-    /// Ignores IDs for rows that don't exist.
-    pub(crate) fn row_ranges(&self, row_ids: &[RowId]) -> Vec<Range<i64>> {
-        let ys = row_ids.iter().filter_map(|&id| self.get_row_index(id));
-        contiguous_ranges(ys)
-    }
-    /// Returns a list of rectangles that exactly covers a region. Ignores
-    /// IDs for columns and rows that don't exist.
-    pub(crate) fn region_rects(&self, region: &RegionRef) -> impl Iterator<Item = Rect> {
-        let x_ranges = self.column_ranges(&region.columns);
-        let y_ranges = self.row_ranges(&region.rows);
-        itertools::iproduct!(x_ranges, y_ranges).map(|(xs, ys)| Rect::from_ranges(xs, ys))
-    }
+    // /// Returns contiguous ranges of X coordinates from a list of column IDs.
+    // /// Ignores IDs for columns that don't exist.
+    // pub(crate) fn column_ranges(&self, column_ids: &[ColumnId]) -> Vec<Range<i64>> {
+    //     let xs = column_ids
+    //         .iter()
+    //         .filter_map(|&id| self.get_column_index(id));
+    //     contiguous_ranges(xs)
+    // }
+    // /// Returns contiguous ranges of Y coordinates from a list of row IDs.
+    // /// Ignores IDs for rows that don't exist.
+    // pub(crate) fn row_ranges(&self, row_ids: &[RowId]) -> Vec<Range<i64>> {
+    //     let ys = row_ids.iter().filter_map(|&id| self.get_row_index(id));
+    //     contiguous_ranges(ys)
+    // }
+    // /// Returns a list of rectangles that exactly covers a region. Ignores
+    // /// IDs for columns and rows that don't exist.
+    // pub(crate) fn region_rects(&self, region: &RegionRef) -> impl Iterator<Item = Rect> {
+    //     let x_ranges = self.column_ranges(&region.columns);
+    //     let y_ranges = self.row_ranges(&region.rows);
+    //     itertools::iproduct!(x_ranges, y_ranges).map(|(xs, ys)| Rect::from_ranges(xs, ys))
+    // }
 
     /// Deletes all data and formatting in the sheet, effectively recreating it.
     pub fn clear(&mut self) {
@@ -441,19 +441,19 @@ impl Sheet {
     }
 }
 
-fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {
-    // Usually `values` is already sorted or nearly sorted, in which case this
-    // is `O(n)`. At worst, it's `O(n log n)`.
-    let mut ret: Vec<Range<i64>> = vec![];
-    for i in values.into_iter().sorted() {
-        match ret.last_mut() {
-            Some(range) if range.end == i => range.end += 1,
-            Some(range) if (*range).contains(&i) => continue,
-            _ => ret.push(i..i + 1),
-        }
-    }
-    ret
-}
+// fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {
+//     // Usually `values` is already sorted or nearly sorted, in which case this
+//     // is `O(n)`. At worst, it's `O(n log n)`.
+//     let mut ret: Vec<Range<i64>> = vec![];
+//     for i in values.into_iter().sorted() {
+//         match ret.last_mut() {
+//             Some(range) if range.end == i => range.end += 1,
+//             Some(range) if (*range).contains(&i) => continue,
+//             _ => ret.push(i..i + 1),
+//         }
+//     }
+//     ret
+// }
 
 #[cfg(test)]
 mod test {
