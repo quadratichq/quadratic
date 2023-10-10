@@ -33,6 +33,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<T
         picture: 'https://avatars.githubusercontent.com/u/1051508?v=4',
       },
       {
+        email: 'david.figatner@quadratichq.com',
+        permission: PermissionSchema.enum.EDITOR,
+        name: 'David Figatner',
+        picture: 'https://avatars.githubusercontent.com/u/1051500?v=4',
+      },
+      {
         email: 'peter.mills@quadartichq.com',
         permission: PermissionSchema.enum.VIEWER,
       },

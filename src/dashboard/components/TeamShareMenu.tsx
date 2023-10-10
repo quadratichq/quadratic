@@ -1,11 +1,10 @@
-import { EmailOutlined } from '@mui/icons-material';
-import { Avatar, ButtonBase, Stack, useTheme } from '@mui/material';
-import { AvatarWithLetters } from '../../components/AvatarWithLetters';
 import { QDialog } from '../../components/QDialog';
 import { ShareMenu } from '../../components/ShareMenu';
 
 export function TeamShareMenu({ onClose, team }: { onClose: () => void; team: any }) {
-  const theme = useTheme();
+  // const theme = useTheme();
+  // const rootLoaderData = useRootRouteLoaderData();
+  // const currentUser = rootLoaderData.user;
 
   return (
     <QDialog onClose={onClose}>
@@ -15,35 +14,52 @@ export function TeamShareMenu({ onClose, team }: { onClose: () => void; team: an
         <ShareMenu.Wrapper>
           <ShareMenu.Invite onInvite={() => {}} userEmails={team.users.map(({ email }: any) => email)} />
           {team.users.map((user: any) => (
-            <ShareMenu.ListItem
+            <ShareMenu.User
               key={user.email}
-              avatar={
-                user.isPending ? (
-                  <Avatar sx={{ width: 24, height: 24, fontSize: '16px' }}>
-                    <EmailOutlined fontSize="inherit" />
-                  </Avatar>
-                ) : (
-                  <AvatarWithLetters sx={{ width: 24, height: 24, fontSize: '.875rem' }}>
-                    {user.name ? user.name : user.email}
-                  </AvatarWithLetters>
-                )
+              user={user}
+              onUpdateUser={() => {}}
+              onDeleteUser={() => {}}
+              // Current user and their relationship to the current team
+              currentUser={
+                // TODO this needs to come from the app, probably rename to "loggedInUser"
+                // Test owner
+                // { email: 'jim.nielsen@quadratichq.com', permission: 'OWNER' }
+                // Test editor
+                // { email: 'david.kircos@quadratichq.com', permission: 'EDITOR' }
+                // Test viewer
+                { email: 'peter.mills@quadartichq.com', permission: 'VIEWER' }
               }
-              primary={user.isPending ? user.email : user.name ? user.name : user.email}
-              secondary={
-                user.isPending ? (
-                  <Stack direction="row" gap={theme.spacing(0.5)}>
-                    Invite sent.{' '}
-                    <ButtonBase sx={{ textDecoration: 'underline', fontSize: 'inherit', fontFamily: 'inherit' }}>
-                      Resend
-                    </ButtonBase>
-                  </Stack>
-                ) : user.name ? (
-                  user.email
-                ) : (
-                  ''
-                )
-              }
-              action={<ShareMenu.ListItemUserActions value={user.permission} setValue={() => {}} />}
+
+              // avatar={
+              //   user.isPending ? (
+              //     <Avatar sx={{ width: 24, height: 24, fontSize: '16px' }}>
+              //       <EmailOutlined fontSize="inherit" />
+              //     </Avatar>
+              //   ) : (
+              //     <AvatarWithLetters
+              //       src={user.picture ? user.picture : null}
+              //       sx={{ width: 24, height: 24, fontSize: '.875rem' }}
+              //     >
+              //       {user.name ? user.name : user.email}
+              //     </AvatarWithLetters>
+              //   )
+              // }
+              // primary={user.isPending ? user.email : user.name ? user.name : user.email}
+              // secondary={
+              //   user.isPending ? (
+              //     <Stack direction="row" gap={theme.spacing(0.5)}>
+              //       Invite sent.{' '}
+              //       <ButtonBase sx={{ textDecoration: 'underline', fontSize: 'inherit', fontFamily: 'inherit' }}>
+              //         Resend
+              //       </ButtonBase>
+              //     </Stack>
+              //   ) : user.name ? (
+              //     user.email
+              //   ) : (
+              //     ''
+              //   )
+              // }
+              // action={<ShareMenu.ListItemUserActions value={user.permission} setValue={() => {}} />}
             />
           ))}
         </ShareMenu.Wrapper>

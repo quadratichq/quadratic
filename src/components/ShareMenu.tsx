@@ -1,9 +1,15 @@
-import { Public, PublicOff } from '@mui/icons-material';
+import { ArrowDropDown, Check, EmailOutlined, Public, PublicOff } from '@mui/icons-material';
 import {
   Alert,
   Avatar,
   Box,
   Button,
+  ButtonBase,
+  Divider,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
   Skeleton,
   SkeletonProps,
   Stack,
@@ -13,8 +19,9 @@ import {
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router-dom';
-import { isOwner as isOwnerTest } from '../actions';
+import { isEditorOrAbove, isOwner as isOwnerTest } from '../actions';
 import { Permission, PermissionSchema, PublicLinkAccess } from '../api/types';
+import { AvatarWithLetters } from './AvatarWithLetters';
 import { ShareFileMenuPopover } from './ShareFileMenuPopover';
 
 /**
@@ -29,6 +36,7 @@ ShareMenu.Wrapper = Wrapper;
 ShareMenu.Invite = Invite;
 ShareMenu.ListItem = ListItem;
 ShareMenu.ListItemUserActions = UserActions;
+ShareMenu.User = UserListItem;
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
@@ -56,7 +64,7 @@ export function ShareTeam(props: any) {
     <ShareMenu.Wrapper>
       <ShareMenu.Invite onInvite={onAddUser} userEmails={users.map(({ email }: any) => email)} />
       {users.map((user: any) => (
-        <UserListItem key={user.email} user={user} isOwner={isOwnerTest(user.permission)} />
+        <UserListItem key={user.email} user={user} currentUserPermission={'VIEWER' /* TODO */} />
       ))}
     </ShareMenu.Wrapper>
   );
@@ -67,7 +75,7 @@ function ShareMenu({ fetcherUrl, permission, uuid }: any /* TODO */) {
   const fetcher = useFetcher();
   const isLoading = Boolean(!fetcher.data?.ok);
   const animation = fetcher.state !== 'idle' ? 'pulse' : false;
-  const owner = fetcher.data?.data?.owner;
+  // const owner = fetcher.data?.data?.owner;
   const publicLinkAccess = fetcher.data?.data?.public_link_access;
   // const isShared = publicLinkAccess && publicLinkAccess !== 'NOT_SHARED';
   const isOwner = isOwnerTest(permission);
@@ -135,7 +143,7 @@ function ShareMenu({ fetcherUrl, permission, uuid }: any /* TODO */) {
               {/* TODO <Row>Team</Row> */}
             </>
           )}
-          <UserListItem user={owner} isOwner={isOwner} />
+          {/* <UserListItem user={owner} isOwner={isOwner} /> */}
         </>
       )}
     </ShareMenu.Wrapper>
@@ -161,23 +169,46 @@ function ListItem({ avatar, primary, secondary, action, error }: any) {
   );
 }
 
-function UserListItem({ user, isOwner }: any /* TODO */) {
-  // TODO figure out primary vs. secondary display
+function UserListItem({ user, onInviteUser, onUpdateUser, onDeleteUser, currentUser }: any /* TODO */) {
+  // TODO figure out primary vs. secondary display & "resend"
   const primary = user.name ? user.name : user.email;
+  const theme = useTheme();
+
+  let secondary;
+  if (true /* isTeamView */) {
+    secondary = user.isPending ? (
+      <Stack direction="row" gap={theme.spacing(0.5)}>
+        Invite sent.{' '}
+        <ButtonBase sx={{ textDecoration: 'underline', fontSize: 'inherit', fontFamily: 'inherit' }}>Resend</ButtonBase>
+      </Stack>
+    ) : (
+      user.email
+    );
+  }
 
   return (
     <Row>
-      <Avatar sx={{ width: 24, height: 24 }} />
+      {user.isPending ? (
+        <Avatar sx={{ width: 24, height: 24, fontSize: '16px' }}>
+          <EmailOutlined fontSize="inherit" />
+        </Avatar>
+      ) : (
+        <AvatarWithLetters src={user.picture} sx={{ width: 24, height: 24 }}>
+          {user.name ? user.name : user.email}
+        </AvatarWithLetters>
+      )}
       <Stack>
         <Typography variant="body2" color="text.primary">
-          {primary} {isOwner && ' (You)'}
+          {primary} {currentUser.email === user.email && ' (You)'}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {user.email}
-        </Typography>
+        {secondary && (
+          <Typography variant="caption" color="text.secondary">
+            {secondary}
+          </Typography>
+        )}
       </Stack>
       <Box sx={{ ml: 'auto' }}>
-        <ShareFileMenuPopover value={'1'} disabled options={[{ label: 'Owner', value: '1' }]} setValue={() => {}} />
+        <ModifyUserMenu user={user} onUpdateUser={onUpdateUser} onDeleteUser={onDeleteUser} currentUser={currentUser} />
       </Box>
     </Row>
   );
@@ -190,6 +221,211 @@ const userMenuOptions = [
   // { isDivider: true },
   { label: 'Remove', value: '4' },
 ];
+
+// function AddUserMenu({ currentUser }: any /* TODO */) {
+//   let options: Option[] = [];
+//   if ()
+//   return <UserPopoverMenu label={label} options={options} />;
+// }
+
+function ModifyUserMenu({ user, onUpdateUser, onDeleteUser, currentUser }: any /* TODO */) {
+  let options: Option[] = [];
+
+  let canOwn = {
+    label: 'Owner',
+    onClick: ({ email, permission }: any) => onUpdateUser({ email, permission: PermissionSchema.enum.OWNER }),
+  };
+  let canEdit = {
+    label: 'Can edit',
+    onClick: ({ email, permission }: any) => onUpdateUser({ email, permission: PermissionSchema.enum.EDITOR }),
+  };
+  let canView = {
+    label: 'Can view',
+    onClick: ({ email, permission }: any) => onUpdateUser({ email, permission: PermissionSchema.enum.VIEWER }),
+  };
+  // TODO if they're the currently logged in user AND there are other owners, they
+  // can remove themselves. Otherwise, they shouldn't be able to remove themselves
+  let canRemove = [
+    { divider: true },
+    {
+      label: currentUser.email === user.email ? 'Leave' : 'Remove',
+      onClick: ({ email }: any) => onDeleteUser({ email }),
+    },
+  ];
+
+  const userIsOwner = isOwnerTest(user.permission);
+  const userIsEditorOrAbove = isEditorOrAbove(user.permission);
+
+  // User being displayed is the logged in user
+  if (currentUser.email === user.email) {
+    if (userIsOwner) {
+      // TODO Should be able to "downgrade" yourself IF there are others?
+      options.push(canOwn, ...canRemove);
+    } else if (userIsEditorOrAbove) {
+      options.push(canEdit, ...canRemove);
+    } else {
+      options.push(canView, ...canRemove);
+    }
+    // User being displayed is some other user in the system
+  } else {
+    if (isOwnerTest(currentUser.permission)) {
+      options.push(canOwn, canEdit, canView, ...canRemove);
+    } else if (isEditorOrAbove(currentUser.permission)) {
+      if (userIsOwner) {
+        options.push({ ...canOwn, disabled: true });
+      } else {
+        options.push(canEdit, canView, ...canRemove);
+      }
+    } else {
+      options.push(canView);
+    }
+  }
+
+  const label = userIsOwner ? 'Owner' : userIsEditorOrAbove ? 'Can edit' : 'Can view';
+
+  return <UserPopoverMenu label={label} options={options} />;
+}
+
+/* =============================================================================
+   UserPopoverMenu
+   ========================================================================== */
+
+type OptionItem = {
+  label: string;
+  onClick: Function;
+  disabled?: boolean;
+};
+type OptionDivider = {
+  divider: boolean;
+};
+type Option = OptionItem | OptionDivider;
+function isDividerOption(option: Option): option is OptionDivider {
+  return 'divider' in option;
+}
+export function UserPopoverMenu({ options, label }: { options: Option[]; label: string }) {
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
+  const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  // If there's only one option, don't make it a clickable menu
+  if (options.length < 2) {
+    return (
+      <Typography
+        variant="button"
+        sx={{
+          // Hack to get these to look like "small" button
+          fontSize: '0.8125rem',
+          textTransform: 'inherit',
+        }}
+      >
+        {label}
+      </Typography>
+    );
+  }
+
+  return (
+    <div>
+      <Button
+        id="user-options-button"
+        aria-controls={open ? 'user-options-menu' : undefined}
+        aria-haspopup="true"
+        aria-expanded={open ? 'true' : undefined}
+        onClick={handleOpen}
+        color="inherit"
+        // disabled={disabled}
+        size="small"
+        endIcon={<ArrowDropDown />}
+        // sx={{ '&:hover': { backgroundColor: 'transparent' } }}
+      >
+        {label}
+      </Button>
+      <Menu
+        id="user-options-menu"
+        aria-labelledby="user-options-button"
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+      >
+        {options.map((option, key) => {
+          if (isDividerOption(option)) {
+            return <Divider key={key} />;
+          }
+
+          const selected = option.label === label;
+          return (
+            <MenuItem
+              key={key}
+              onClick={() => {
+                handleClose();
+                if (option.onClick) option.onClick(); // TODO get the types better here
+              }}
+              dense
+              disabled={option.disabled}
+              selected={selected}
+            >
+              {selected && (
+                <ListItemIcon>
+                  <Check />
+                </ListItemIcon>
+              )}
+              <ListItemText inset={!selected} disableTypography>
+                <Typography variant="body2">{option.label}</Typography>
+              </ListItemText>
+            </MenuItem>
+          );
+        })}
+      </Menu>
+    </div>
+  );
+}
+
+/*
+function InviteOptions({ includeOwner, includeEditor, includeViewer, includeRemove, value, setValue }: { includeOwner:boolean, includeEditor: boolean, includeViewer: boolean; includeRemove: boolean; }) {
+  let options = [];
+  if (includeOwner) {
+    options.push({ label: 'Owner', value: PermissionSchema.enum.OWNER });
+  }
+  if (includeEditor) {}
+  return <ShareFileMenuPopover></ShareFileMenuPopover>
+}
+
+
+AddUserOptions: file & team
+  userPermission: isOwner -  Can edit, Can view
+  userPermission: isEditor - Can edit, Can view
+  userPermission: isViewer - Can view
+
+UpdateUserOptions: file & team
+  userPermission: isOwner - Owner??, Can edit, Can view, Remove, Resend
+  userPermission: isEditor - Can edit, Can view, Remove, Resend
+  userPermission: isViewer - Can view
+
+<ShareItem.Wrapper>
+  <ShareItem.AddUser>
+  <ShareItem.FilePublicLink>
+  <ShareItem.Team>
+  <ShareItem.User user={User}>
+
+<ShareMenu.Invite>
+  <ShareMenu.InviteOptionEditor onClick={}>
+  <ShareMenu.InviteOptionEditor>
+*/
+
 export type ShareMenuInviteCallback = { email: string; permission: Permission };
 function Invite({
   onInvite,
@@ -238,6 +474,7 @@ function Invite({
           placeholder="Email"
           variant="outlined"
           size="small"
+          inputProps={{ sx: { fontSize: '.875rem' } }}
           value={email}
           onChange={(e) => {
             const newEmail = e.target.value;
@@ -250,7 +487,7 @@ function Invite({
           }}
           fullWidth
         />
-        <Box sx={{ position: 'absolute', right: theme.spacing(0.625), top: theme.spacing(0.625) }}>
+        <Box sx={{ position: 'absolute', right: theme.spacing(0.425), top: theme.spacing(0.425) }}>
           <ShareFileMenuPopover value={permission} options={userMenuOptions} setValue={setPermission} />
         </Box>
       </Box>
@@ -304,7 +541,8 @@ function PublicLink({
   // If we're updating, optimistically show the next value
   if (fetcher.json) {
     // @ts-expect-error
-    public_link_access = fetcher.json /*TODO as Action['request.update-public-link-access'] */.public_link_access;
+    public_link_access = fetcher.json.public_link_access;
+    // public_link_access = fetcher.json /*TODO as Action['request.update-public-link-access'] */.public_link_access;
   }
 
   const setPublicLinkAccess = async (newValue: PublicLinkAccess) => {
