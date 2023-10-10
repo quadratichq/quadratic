@@ -41,7 +41,7 @@ impl GridController {
         let mut ops = vec![];
 
         // check for currency
-        if let Some((currency, number)) = CellValue::unpack_currency(&value) {
+        if let Some((currency, number)) = CellValue::unpack_currency(value) {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
                 values: Array::from(CellValue::Number(number)),

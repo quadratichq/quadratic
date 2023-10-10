@@ -176,7 +176,7 @@ impl GridController {
                                                             numeric_decimals,
                                                         ),
                                                     )),
-                                                })
+                                                });
                                             }
                                         }
                                     }

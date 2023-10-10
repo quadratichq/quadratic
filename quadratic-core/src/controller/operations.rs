@@ -205,14 +205,14 @@ impl GridController {
                                                                 numeric_decimals,
                                                             )),
                                                         ),
-                                                    })
+                                                    });
                                                 }
                                             }
                                         }
                                     }
                                     Value::Single(value) => {
                                         let (numeric_format, numeric_decimals) =
-                                            sheet.cell_numeric_info(pos.into());
+                                            sheet.cell_numeric_info(pos);
                                         summary_set.push(JsRenderCellUpdate {
                                             x: pos.x,
                                             y: pos.y,
