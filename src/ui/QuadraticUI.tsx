@@ -77,7 +77,6 @@ export default function QuadraticUI() {
               focusGrid();
             }, 200);
           }}
-          permission={editorInteractionState.permission}
           uuid={uuid}
         />
       )}

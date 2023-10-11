@@ -2,7 +2,7 @@ import { Button, Typography, useTheme } from '@mui/material';
 import * as Sentry from '@sentry/react';
 import { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router-dom';
 import { apiClient } from '../api/apiClient';
-import { ApiTypes, Permission, PublicLinkAccess } from '../api/types';
+import { ApiTypes, PublicLinkAccess } from '../api/types';
 import { ROUTES } from '../constants/routes';
 import { useGlobalSnackbar } from './GlobalSnackbarProvider';
 import { QDialog } from './QDialog';
@@ -55,12 +55,10 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
 export function ShareFileMenu({
   onClose,
   uuid,
-  permission,
   fileName,
   fetcherUrl,
 }: {
   onClose: () => void;
-  permission: Permission;
   uuid: string;
   fileName?: string;
   fetcherUrl: string;
@@ -95,7 +93,7 @@ export function ShareFileMenu({
     <QDialog onClose={onClose}>
       <QDialog.Title>Share{fileName && ` “${fileName}”`}</QDialog.Title>
       <QDialog.Content>
-        <ShareMenu fetcherUrl={fetcherUrl} permission={permission} uuid={uuid} />
+        <ShareMenu fetcherUrl={fetcherUrl} uuid={uuid} />
       </QDialog.Content>
       <QDialog.Actions>
         <Typography variant="caption" color="text.secondary" sx={{ mr: 'auto' }}>

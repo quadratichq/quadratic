@@ -1,6 +1,26 @@
 import z from 'zod';
+import { PermissionsSchema } from '../permissions';
 
 // TODO share these with the API
+
+const UserShareSchema = z.object({
+  email: z.string().email(),
+  permissions: PermissionsSchema,
+
+  // Do we need like `status` to indicate whether user has an account?
+  // Or can we rely on the presence of name/picture to mean they have one, e.g.
+  name: z.string().optional(),
+  picture: z.string().url().optional(),
+});
+export type UserShare = z.infer<typeof UserShareSchema>;
+// const TeamUserSchema = UserSchema.extend({
+//   access: TeamAccessSchema,
+// });
+// const FileUserSchema = UserSchema.extend({
+//   access: FileAccessSchema,
+// });
+// export type TeamUser = z.infer<typeof TeamUserSchema>;
+// export type FileUser = z.infer<typeof FileUserSchema>;
 
 // Shared types
 const PublicLinkAccessSchema = z.enum(['EDIT', 'READONLY', 'NOT_SHARED']);

@@ -1,87 +1,237 @@
-import { PermissionSchema } from '../api/types';
+import { AccessSchema, FileAccessSchema, RoleSchema } from '../permissions';
 import { getUserShareOptions } from './ShareMenu.utils';
-const { OWNER, EDITOR, VIEWER } = PermissionSchema.enum;
+const { OWNER, EDITOR, VIEWER } = RoleSchema.enum;
 
-const USERS = {
-  OWNER: { email: 'jim.nielsen@example.com', permission: OWNER },
-  EDITOR: { email: 'david.kircos@example.com', permission: EDITOR },
-  VIEWER: { email: 'peter.mills@example.com', permission: VIEWER },
+// A set of example users and would be returned by the API
+const TEAM_USERS_BY_ROLE = {
+  OWNER: {
+    email: 'jim.nielsen@example.com',
+    role: OWNER,
+    access: [AccessSchema.enum.TEAM_EDIT, AccessSchema.enum.TEAM_DELETE, AccessSchema.enum.BILLING_EDIT],
+  },
+  EDITOR: { email: 'david.kircos@example.com', role: EDITOR, access: [AccessSchema.enum.TEAM_EDIT] },
+  VIEWER: { email: 'peter.mills@example.com', role: VIEWER, access: [AccessSchema.enum.TEAM_VIEW] },
 
-  OWNER2: { email: 'michael.jordan@example.com', permission: OWNER },
-  EDITOR2: { email: 'tiger.woods@example.com', permission: EDITOR },
-  VIEWER2: { email: 'joe.montana@example.com', permission: VIEWER },
+  OWNER_ALT: {
+    email: 'michael.jordan@example.com',
+    role: OWNER,
+    access: [AccessSchema.enum.TEAM_EDIT, AccessSchema.enum.TEAM_DELETE, AccessSchema.enum.BILLING_EDIT],
+  },
+  EDITOR_ALT: { email: 'tiger.woods@example.com', role: EDITOR, access: [AccessSchema.enum.TEAM_EDIT] },
+  VIEWER_ALT: { email: 'joe.montana@example.com', role: VIEWER, access: [AccessSchema.enum.TEAM_VIEW] },
 };
-const users = [USERS.OWNER, USERS.EDITOR, USERS.VIEWER];
+const baseTeamUsers = [TEAM_USERS_BY_ROLE.OWNER, TEAM_USERS_BY_ROLE.EDITOR, TEAM_USERS_BY_ROLE.VIEWER];
 
-describe('share team for an OWNER', () => {
-  it('themselves (only one owner)', async () => {
+describe('Share menu for the team OWNER', () => {
+  it('Has only one option for themselves as team owner (if they’re the only team owner)', async () => {
     const result = getUserShareOptions({
-      users,
-      loggedInUser: USERS.OWNER,
-      user: USERS.OWNER,
+      users: baseTeamUsers,
+      loggedInUser: TEAM_USERS_BY_ROLE.OWNER,
+      user: TEAM_USERS_BY_ROLE.OWNER,
     });
     expect(result).toStrictEqual(['Owner']);
   });
-  it('themselves (multiple owners)', async () => {
+  it('Has multiple options for themselves as team owner (if there’s one or more other owners on the team)', async () => {
     const result = getUserShareOptions({
-      users: [...users, USERS.OWNER2],
-      loggedInUser: USERS.OWNER,
-      user: USERS.OWNER,
+      users: [...baseTeamUsers, TEAM_USERS_BY_ROLE.OWNER_ALT],
+      loggedInUser: TEAM_USERS_BY_ROLE.OWNER,
+      user: TEAM_USERS_BY_ROLE.OWNER,
     });
     expect(result).toStrictEqual(['Owner', 'Can edit', 'Can view', 'Leave']);
   });
-  it('another owner', async () => {
-    const result = getUserShareOptions({
-      users: [...users, USERS.OWNER2],
-      loggedInUser: USERS.OWNER,
-      user: USERS.OWNER2,
+  it('Has the same options for other team owners, for editors, and for viewers', async () => {
+    const resultOtherOwner = getUserShareOptions({
+      users: [...baseTeamUsers, TEAM_USERS_BY_ROLE.OWNER_ALT],
+      loggedInUser: TEAM_USERS_BY_ROLE.OWNER,
+      user: TEAM_USERS_BY_ROLE.OWNER_ALT,
     });
-    expect(result).toStrictEqual(['Owner', 'Can edit', 'Can view', 'Remove']);
-  });
-  it('editor', async () => {
-    const result = getUserShareOptions({ users, loggedInUser: USERS.OWNER, user: USERS.EDITOR });
-    expect(result).toStrictEqual(['Owner', 'Can edit', 'Can view', 'Remove']);
-  });
-  it('viewer', async () => {
-    const result = getUserShareOptions({ users, loggedInUser: USERS.OWNER, user: USERS.VIEWER });
-    expect(result).toStrictEqual(['Owner', 'Can edit', 'Can view', 'Remove']);
+    const resultEditor = getUserShareOptions({
+      users: baseTeamUsers,
+      loggedInUser: TEAM_USERS_BY_ROLE.OWNER,
+      user: TEAM_USERS_BY_ROLE.EDITOR,
+    });
+    const resultViewer = getUserShareOptions({
+      users: baseTeamUsers,
+      loggedInUser: TEAM_USERS_BY_ROLE.OWNER,
+      user: TEAM_USERS_BY_ROLE.VIEWER,
+    });
+    expect(resultOtherOwner).toStrictEqual(['Owner', 'Can edit', 'Can view', 'Remove']);
+    expect(resultOtherOwner).toStrictEqual(resultEditor);
+    expect(resultOtherOwner).toStrictEqual(resultViewer);
   });
 });
 
-describe('share team for an EDITOR', () => {
-  it('owner', async () => {
-    const result = getUserShareOptions({ users, loggedInUser: USERS.EDITOR, user: USERS.OWNER });
+describe('Share menu for a team EDITOR', () => {
+  it('Has only one option for owners', async () => {
+    const result = getUserShareOptions({
+      users: baseTeamUsers,
+      loggedInUser: TEAM_USERS_BY_ROLE.EDITOR,
+      user: TEAM_USERS_BY_ROLE.OWNER,
+    });
     expect(result).toStrictEqual(['Owner']);
   });
-  it('themselves', async () => {
-    const result = getUserShareOptions({ users, loggedInUser: USERS.EDITOR, user: USERS.EDITOR });
+  it('Has multiple options for themselves as an editor', async () => {
+    const result = getUserShareOptions({
+      users: baseTeamUsers,
+      loggedInUser: TEAM_USERS_BY_ROLE.EDITOR,
+      user: TEAM_USERS_BY_ROLE.EDITOR,
+    });
     expect(result).toStrictEqual(['Can edit', 'Can view', 'Leave']);
   });
-  it('another editor', async () => {
-    const result = getUserShareOptions({ users, loggedInUser: USERS.EDITOR, user: USERS.EDITOR2 });
-    expect(result).toStrictEqual(['Can edit', 'Can view', 'Remove']);
-  });
-  it('viewer', async () => {
-    const result = getUserShareOptions({ users, loggedInUser: USERS.EDITOR, user: USERS.VIEWER });
-    expect(result).toStrictEqual(['Can edit', 'Can view', 'Remove']);
+  it('Has the same options for other editors and viewers', async () => {
+    const resultEditor = getUserShareOptions({
+      users: baseTeamUsers,
+      loggedInUser: TEAM_USERS_BY_ROLE.EDITOR,
+      user: TEAM_USERS_BY_ROLE.EDITOR_ALT,
+    });
+    const resultViewer = getUserShareOptions({
+      users: baseTeamUsers,
+      loggedInUser: TEAM_USERS_BY_ROLE.EDITOR,
+      user: TEAM_USERS_BY_ROLE.VIEWER,
+    });
+    expect(resultEditor).toStrictEqual(['Can edit', 'Can view', 'Remove']);
+    expect(resultEditor).toStrictEqual(resultViewer);
   });
 });
 
-describe('share team for an VIEWER', () => {
-  it('owner', async () => {
-    const result = getUserShareOptions({ users, loggedInUser: USERS.VIEWER, user: USERS.OWNER });
+describe('Share menu for a team VIEWER', () => {
+  it('Has only one option for owners', async () => {
+    const result = getUserShareOptions({
+      users: baseTeamUsers,
+      loggedInUser: TEAM_USERS_BY_ROLE.VIEWER,
+      user: TEAM_USERS_BY_ROLE.OWNER,
+    });
     expect(result).toStrictEqual(['Owner']);
   });
-  it('editor', async () => {
-    const result = getUserShareOptions({ users, loggedInUser: USERS.VIEWER, user: USERS.EDITOR });
+  it('Has only one option for editors', async () => {
+    const result = getUserShareOptions({
+      users: baseTeamUsers,
+      loggedInUser: TEAM_USERS_BY_ROLE.VIEWER,
+      user: TEAM_USERS_BY_ROLE.EDITOR,
+    });
     expect(result).toStrictEqual(['Can edit']);
   });
-  it('themselves', async () => {
-    const result = getUserShareOptions({ users, loggedInUser: USERS.VIEWER, user: USERS.VIEWER });
+  it('Has multiple options for themselves as a viewer', async () => {
+    const result = getUserShareOptions({
+      users: baseTeamUsers,
+      loggedInUser: TEAM_USERS_BY_ROLE.VIEWER,
+      user: TEAM_USERS_BY_ROLE.VIEWER,
+    });
     expect(result).toStrictEqual(['Can view', 'Leave']);
   });
-  it('another viewer', async () => {
-    const result = getUserShareOptions({ users, loggedInUser: USERS.VIEWER, user: USERS.VIEWER2 });
+  it('Has only one option for other viewers', async () => {
+    const result = getUserShareOptions({
+      users: baseTeamUsers,
+      loggedInUser: TEAM_USERS_BY_ROLE.VIEWER,
+      user: TEAM_USERS_BY_ROLE.VIEWER_ALT,
+    });
+    expect(result).toStrictEqual(['Can view']);
+  });
+});
+
+const FILE_USERS_BY_ROLE = {
+  OWNER: {
+    email: 'jim.nielsen@example.com',
+    role: OWNER,
+    access: [FileAccessSchema.enum.EDIT, FileAccessSchema.enum.DELETE],
+  },
+  EDITOR: { email: 'david.kircos@example.com', role: EDITOR, access: [FileAccessSchema.enum.EDIT] },
+  VIEWER: { email: 'peter.mills@example.com', role: VIEWER, access: [FileAccessSchema.enum.VIEW] },
+
+  EDITOR_ALT: { email: 'tiger.woods@example.com', role: EDITOR, access: [FileAccessSchema.enum.EDIT] },
+  VIEWER_ALT: { email: 'joe.montana@example.com', role: VIEWER, access: [FileAccessSchema.enum.VIEW] },
+};
+const baseFileUsers = [FILE_USERS_BY_ROLE.OWNER, FILE_USERS_BY_ROLE.EDITOR, FILE_USERS_BY_ROLE.VIEWER];
+
+describe('Share menu for a file OWNER', () => {
+  it('Has only one option for themselves as file owner', async () => {
+    const result = getUserShareOptions({
+      users: baseFileUsers,
+      loggedInUser: FILE_USERS_BY_ROLE.OWNER,
+      user: FILE_USERS_BY_ROLE.OWNER,
+    });
+    expect(result).toStrictEqual(['Owner']);
+  });
+  it('Has the same options for editors and viewers', async () => {
+    const resultEditor = getUserShareOptions({
+      users: baseFileUsers,
+      loggedInUser: FILE_USERS_BY_ROLE.OWNER,
+      user: FILE_USERS_BY_ROLE.EDITOR,
+    });
+    const resultViewer = getUserShareOptions({
+      users: baseFileUsers,
+      loggedInUser: FILE_USERS_BY_ROLE.OWNER,
+      user: FILE_USERS_BY_ROLE.VIEWER,
+    });
+    expect(resultEditor).toStrictEqual(['Owner', 'Can edit', 'Can view', 'Remove']);
+    expect(resultEditor).toStrictEqual(resultViewer);
+  });
+});
+
+describe('Share menu for a file EDITOR', () => {
+  it('Has only one option for owners', async () => {
+    const result = getUserShareOptions({
+      users: baseFileUsers,
+      loggedInUser: FILE_USERS_BY_ROLE.EDITOR,
+      user: FILE_USERS_BY_ROLE.OWNER,
+    });
+    expect(result).toStrictEqual(['Owner']);
+  });
+  it('Has multiple options for themselves as an editor', async () => {
+    const result = getUserShareOptions({
+      users: baseFileUsers,
+      loggedInUser: FILE_USERS_BY_ROLE.EDITOR,
+      user: FILE_USERS_BY_ROLE.EDITOR,
+    });
+    expect(result).toStrictEqual(['Can edit', 'Can view', 'Leave']);
+  });
+  it('Has the same options for other editors and viewers', async () => {
+    const resultEditor = getUserShareOptions({
+      users: baseFileUsers,
+      loggedInUser: FILE_USERS_BY_ROLE.EDITOR,
+      user: FILE_USERS_BY_ROLE.EDITOR_ALT,
+    });
+    const resultViewer = getUserShareOptions({
+      users: baseFileUsers,
+      loggedInUser: FILE_USERS_BY_ROLE.EDITOR,
+      user: FILE_USERS_BY_ROLE.VIEWER,
+    });
+    expect(resultEditor).toStrictEqual(['Can edit', 'Can view', 'Remove']);
+    expect(resultEditor).toStrictEqual(resultViewer);
+  });
+});
+
+describe('Share menu for a file VIEWER', () => {
+  it('Has only one option for owners', async () => {
+    const result = getUserShareOptions({
+      users: baseFileUsers,
+      loggedInUser: FILE_USERS_BY_ROLE.VIEWER,
+      user: FILE_USERS_BY_ROLE.OWNER,
+    });
+    expect(result).toStrictEqual(['Owner']);
+  });
+  it('Has only one option for editors', async () => {
+    const result = getUserShareOptions({
+      users: baseFileUsers,
+      loggedInUser: FILE_USERS_BY_ROLE.VIEWER,
+      user: FILE_USERS_BY_ROLE.EDITOR,
+    });
+    expect(result).toStrictEqual(['Can edit']);
+  });
+  it('Has multiple options for themselves as a viewer', async () => {
+    const result = getUserShareOptions({
+      users: baseFileUsers,
+      loggedInUser: FILE_USERS_BY_ROLE.VIEWER,
+      user: FILE_USERS_BY_ROLE.VIEWER,
+    });
+    expect(result).toStrictEqual(['Can view', 'Leave']);
+  });
+  it('Has only one option for other viewers', async () => {
+    const result = getUserShareOptions({
+      users: baseFileUsers,
+      loggedInUser: FILE_USERS_BY_ROLE.VIEWER,
+      user: FILE_USERS_BY_ROLE.VIEWER_ALT,
+    });
     expect(result).toStrictEqual(['Can view']);
   });
 });

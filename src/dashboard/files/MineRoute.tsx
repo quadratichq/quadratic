@@ -164,7 +164,6 @@ export const Component = () => {
           onClose={() => {
             setActiveShareMenuFileId('');
           }}
-          permission={'OWNER'}
           uuid={activeShareMenuFileId}
           fileName={activeShareMenuFileName}
         />

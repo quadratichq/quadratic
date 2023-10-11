@@ -1,8 +1,10 @@
-import { Avatar, Box, Button, Stack, TextField, Typography, useTheme } from '@mui/material';
+// @ts-nocheck
+import { Box, Button, Stack, TextField, Typography, useTheme } from '@mui/material';
 import { useState } from 'react';
-import { Permission, PermissionSchema } from '../api/types';
+import { UserShare } from '../api/types';
 import { AvatarWithLetters } from '../components/AvatarWithLetters';
 import { ShareMenu, ShareMenuInviteCallback } from '../components/ShareMenu';
+import { AccessSchema, RoleSchema } from '../permissions';
 import { useRootRouteLoaderData } from '../router';
 import { DashboardHeader } from './components/DashboardHeader';
 
@@ -24,20 +26,23 @@ export const Component = () => {
   );
 };
 
-type User = {
-  email: string;
-  permission: Permission;
-};
-
 function EditTeam() {
   const theme = useTheme();
   const [name, setName] = useState<string>('');
   const { user } = useRootRouteLoaderData();
+
+  const loggedInUser: UserShare = {
+    email: user?.email,
+    permissions: {
+      role: RoleSchema.enum.OWNER,
+      access: [AccessSchema.enum.TEAM_EDIT, AccessSchema.enum.TEAM_DELETE, AccessSchema.enum.BILLING_EDIT],
+    },
+    name: user?.name,
+    picture: user?.picture,
+  };
+
   // TODO currently logged in user as default
-  const [users, setUsers] = useState<User[]>([
-    // @ts-expect-error
-    { email: user?.email, permission: PermissionSchema.enum.OWNER },
-  ]);
+  const [users, setUsers] = useState<UserShare[]>([loggedInUser]);
 
   return (
     <Stack maxWidth={'52rem'} gap={theme.spacing(4)}>
@@ -65,33 +70,19 @@ function EditTeam() {
       <EditTeamRow label="Members">
         <ShareMenu.Wrapper>
           <ShareMenu.Invite
-            onInvite={({ email, permission }: ShareMenuInviteCallback) => {
-              setUsers((prev) => [...prev, { email, permission }]);
+            onInvite={({ email, role }: ShareMenuInviteCallback) => {
+              setUsers((prev) => [...prev, { email, permissions: { role, status: 'INVITED', access: [] } }]);
             }}
             userEmails={users.map(({ email }: any) => email)}
           />
-          {users.map((usr: any) => (
-            <ShareMenu.ListItem
-              key={usr.email}
-              avatar={<Avatar sx={{ width: 24, height: 24 }} />}
-              primary={usr.email}
-              action={
-                <ShareMenu.ListItemUserActions
-                  value={usr.permission}
-                  setValue={(newValue: any) => {
-                    setUsers((prev) =>
-                      prev.map((prevUsr) => {
-                        if (prevUsr.email === usr.email) {
-                          return { ...prevUsr, permission: newValue };
-                        }
-                        return prevUsr;
-                      })
-                    );
-                  }}
-                />
-              }
-            />
-          ))}
+          <ShareMenu.Users
+            users={users}
+            usersIndexForLoggedInUser={0}
+            onDeleteUser={(user: UserShare) => {
+              setUsers((prevUsers) => prevUsers.filter((prevUser) => prevUser.email !== user.email));
+            }}
+            onUpdateUser={() => {}}
+          />
         </ShareMenu.Wrapper>
       </EditTeamRow>
       <EditTeamRow label="Billing">Beta</EditTeamRow>

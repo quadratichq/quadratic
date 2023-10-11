@@ -11,7 +11,6 @@ import {
   Menu,
   MenuItem,
   Skeleton,
-  SkeletonProps,
   Stack,
   TextField,
   Typography,
@@ -19,10 +18,12 @@ import {
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router-dom';
-import { isEditorOrAbove, isOwner as isOwnerTest } from '../actions';
-import { Permission, PermissionSchema, PublicLinkAccess } from '../api/types';
+import { z } from 'zod';
+import { PermissionSchema, PublicLinkAccess, UserShare } from '../api/types';
+import { RoleSchema } from '../permissions';
 import { AvatarWithLetters } from './AvatarWithLetters';
 import { ShareFileMenuPopover } from './ShareFileMenuPopover';
+import { getUserShareOptions } from './ShareMenu.utils';
 
 /**
  * <ShareMenu> usage:
@@ -37,6 +38,7 @@ ShareMenu.Invite = Invite;
 ShareMenu.ListItem = ListItem;
 ShareMenu.ListItemUserActions = UserActions;
 ShareMenu.User = UserListItem;
+ShareMenu.Users = Users;
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
@@ -57,31 +59,18 @@ function Loading() {
   );
 }
 
-export function ShareTeam(props: any) {
-  const { users, onAddUser /*, onRemoveUser, onUpdateUser*/ } = props;
-
-  return (
-    <ShareMenu.Wrapper>
-      <ShareMenu.Invite onInvite={onAddUser} userEmails={users.map(({ email }: any) => email)} />
-      {users.map((user: any) => (
-        <UserListItem key={user.email} user={user} currentUserPermission={'VIEWER' /* TODO */} />
-      ))}
-    </ShareMenu.Wrapper>
-  );
-}
-
-function ShareMenu({ fetcherUrl, permission, uuid }: any /* TODO */) {
+function ShareMenu({ fetcherUrl, uuid }: { fetcherUrl: string; uuid: string }) {
   const theme = useTheme();
   const fetcher = useFetcher();
+  const [users, setUsers] = useState<UserShare[]>([]);
   const isLoading = Boolean(!fetcher.data?.ok);
-  const animation = fetcher.state !== 'idle' ? 'pulse' : false;
   // const owner = fetcher.data?.data?.owner;
   const publicLinkAccess = fetcher.data?.data?.public_link_access;
   // const isShared = publicLinkAccess && publicLinkAccess !== 'NOT_SHARED';
-  const isOwner = isOwnerTest(permission);
   // const isDisabledCopyShareLink = showSkeletons ? true : !isShared;
   const showLoadingError = fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok;
-  const isFile = fetcherUrl.includes('/files/');
+  // const isFile = fetcherUrl.includes('/files/');
+  const canEdit = true; // TODO fetcher.data.permission.access.includes('FILE_EDIT');;
 
   // On the initial mount, load the data (if it's not there already)
   useEffect(() => {
@@ -116,7 +105,14 @@ function ShareMenu({ fetcherUrl, permission, uuid }: any /* TODO */) {
         </Alert>
       )}
 
-      <ShareMenu.Invite onInvite={() => {}} userEmails={[]} />
+      {canEdit && (
+        <ShareMenu.Invite
+          onInvite={({ email, role }) => {
+            setUsers((prev: any) => [...prev, { email, role }]);
+          }}
+          userEmails={users.map(({ email }) => email)}
+        />
+      )}
 
       {isLoading ? (
         <>
@@ -129,21 +125,15 @@ function ShareMenu({ fetcherUrl, permission, uuid }: any /* TODO */) {
         </>
       ) : (
         <>
-          {isFile && (
+          {canEdit && (
             <>
               <Row>
-                <PublicLink
-                  fetcherUrl={fetcherUrl}
-                  animation={animation}
-                  publicLinkAccess={publicLinkAccess}
-                  isOwner={isOwner}
-                  uuid={uuid}
-                />
+                <PublicLink fetcherUrl={fetcherUrl} publicLinkAccess={publicLinkAccess} uuid={uuid} />
               </Row>
               {/* TODO <Row>Team</Row> */}
             </>
           )}
-          {/* <UserListItem user={owner} isOwner={isOwner} /> */}
+          {/* <UserListItem users={users} user={owner} isOwner={isOwner} /> */}
         </>
       )}
     </ShareMenu.Wrapper>
@@ -169,26 +159,119 @@ function ListItem({ avatar, primary, secondary, action, error }: any) {
   );
 }
 
-function UserListItem({ user, onInviteUser, onUpdateUser, onDeleteUser, currentUser }: any /* TODO */) {
+function Users({
+  users,
+  usersIndexForLoggedInUser,
+  onUpdateUser,
+  onDeleteUser,
+}: {
+  users: UserShare[];
+  usersIndexForLoggedInUser: number;
+  onUpdateUser: (user: UserShare) => void;
+  onDeleteUser: (user: UserShare) => void;
+}) {
+  // const { user } = useRootRouteLoaderData();
+
+  // TODO if this isn't found (should be an error)
+
+  return (
+    <>
+      {users.map((user, i) => (
+        <UserListItem
+          key={user.email}
+          users={users}
+          usersIndexForLoggedInUser={usersIndexForLoggedInUser}
+          usersIndexForRenderedUser={i}
+          onUpdateUser={onUpdateUser}
+          onDeleteUser={onDeleteUser}
+        />
+      ))}
+    </>
+  );
+}
+
+function UserListItem({
+  users,
+  usersIndexForLoggedInUser,
+  usersIndexForRenderedUser,
+  onUpdateUser,
+  onDeleteUser,
+}: {
+  users: UserShare[];
+  usersIndexForLoggedInUser: number;
+  usersIndexForRenderedUser: number;
+  onUpdateUser: (user: UserShare) => void;
+  onDeleteUser: (user: UserShare) => void;
+}) {
+  const user = users[usersIndexForRenderedUser];
+  const loggedInUser = users[usersIndexForLoggedInUser];
+
   // TODO figure out primary vs. secondary display & "resend"
   const primary = user.name ? user.name : user.email;
   const theme = useTheme();
 
+  const isPending = user.permissions.status === 'INVITE_SENT';
+
   let secondary;
-  if (true /* isTeamView */) {
-    secondary = user.isPending ? (
-      <Stack direction="row" gap={theme.spacing(0.5)}>
-        Invite sent.{' '}
-        <ButtonBase sx={{ textDecoration: 'underline', fontSize: 'inherit', fontFamily: 'inherit' }}>Resend</ButtonBase>
-      </Stack>
-    ) : (
-      user.email
-    );
+  if (user.permissions.status !== 'INVITE_PENDING') {
+    secondary =
+      user.permissions.status === 'INVITE_SENT' ? (
+        <Stack direction="row" gap={theme.spacing(0.5)}>
+          Invite sent.{' '}
+          <ButtonBase sx={{ textDecoration: 'underline', fontSize: 'inherit', fontFamily: 'inherit' }}>
+            Resend
+          </ButtonBase>
+        </Stack>
+      ) : (
+        user.email
+      );
   }
+
+  let labels = getUserShareOptions({
+    user,
+    loggedInUser,
+    users,
+  });
+  let options: Option[] = [];
+  labels.forEach((label) => {
+    if (label === 'Owner') {
+      options.push({
+        label,
+        onClick: () => onUpdateUser({ ...user, permissions: { ...user.permissions, role: RoleSchema.enum.OWNER } }),
+      });
+    }
+    if (label === 'Can edit') {
+      options.push({
+        label,
+        onClick: () => onUpdateUser({ ...user, permissions: { ...user.permissions, role: RoleSchema.enum.EDITOR } }),
+      });
+    }
+    if (label === 'Can view') {
+      options.push({
+        label,
+        onClick: () => onUpdateUser({ ...user, permissions: { ...user.permissions, role: RoleSchema.enum.VIEWER } }),
+      });
+    }
+    if (label === 'Leave' || label === 'Remove') {
+      options.push(
+        { divider: true },
+        {
+          label,
+          onClick: () => {
+            onDeleteUser(user);
+            // TODO if 'leave' then redirect user to dashboard
+          },
+        }
+      );
+    }
+  });
+
+  const label =
+    user.permissions.role === 'OWNER' ? 'Owner' : user.permissions.role === 'EDITOR' ? 'Can edit' : 'Can view';
 
   return (
     <Row>
-      {user.isPending ? (
+      {isPending ? (
         <Avatar sx={{ width: 24, height: 24, fontSize: '16px' }}>
           <EmailOutlined fontSize="inherit" />
         </Avatar>
@@ -199,7 +282,7 @@ function UserListItem({ user, onInviteUser, onUpdateUser, onDeleteUser, currentU
       )}
       <Stack>
         <Typography variant="body2" color="text.primary">
-          {primary} {currentUser.email === user.email && ' (You)'}
+          {primary} {loggedInUser.email === user.email && ' (You)'}
         </Typography>
         {secondary && (
           <Typography variant="caption" color="text.secondary">
@@ -208,7 +291,7 @@ function UserListItem({ user, onInviteUser, onUpdateUser, onDeleteUser, currentU
         )}
       </Stack>
       <Box sx={{ ml: 'auto' }}>
-        <ModifyUserMenu user={user} onUpdateUser={onUpdateUser} onDeleteUser={onDeleteUser} currentUser={currentUser} />
+        <UserPopoverMenu label={label} options={options} />
       </Box>
     </Row>
   );
@@ -221,70 +304,6 @@ const userMenuOptions = [
   // { isDivider: true },
   { label: 'Remove', value: '4' },
 ];
-
-// function AddUserMenu({ currentUser }: any /* TODO */) {
-//   let options: Option[] = [];
-//   if ()
-//   return <UserPopoverMenu label={label} options={options} />;
-// }
-
-function ModifyUserMenu({ user, onUpdateUser, onDeleteUser, currentUser }: any /* TODO */) {
-  let options: Option[] = [];
-
-  let canOwn = {
-    label: 'Owner',
-    onClick: ({ email, permission }: any) => onUpdateUser({ email, permission: PermissionSchema.enum.OWNER }),
-  };
-  let canEdit = {
-    label: 'Can edit',
-    onClick: ({ email, permission }: any) => onUpdateUser({ email, permission: PermissionSchema.enum.EDITOR }),
-  };
-  let canView = {
-    label: 'Can view',
-    onClick: ({ email, permission }: any) => onUpdateUser({ email, permission: PermissionSchema.enum.VIEWER }),
-  };
-  // TODO if they're the currently logged in user AND there are other owners, they
-  // can remove themselves. Otherwise, they shouldn't be able to remove themselves
-  let canRemove = [
-    { divider: true },
-    {
-      label: currentUser.email === user.email ? 'Leave' : 'Remove',
-      onClick: ({ email }: any) => onDeleteUser({ email }),
-    },
-  ];
-
-  const userIsOwner = isOwnerTest(user.permission);
-  const userIsEditorOrAbove = isEditorOrAbove(user.permission);
-
-  // User being displayed is the logged in user
-  if (currentUser.email === user.email) {
-    if (userIsOwner) {
-      // TODO Should be able to "downgrade" yourself IF there are others?
-      options.push(canOwn, ...canRemove);
-    } else if (userIsEditorOrAbove) {
-      options.push(canEdit, ...canRemove);
-    } else {
-      options.push(canView, ...canRemove);
-    }
-    // User being displayed is some other user in the system
-  } else {
-    if (isOwnerTest(currentUser.permission)) {
-      options.push(canOwn, canEdit, canView, ...canRemove);
-    } else if (isEditorOrAbove(currentUser.permission)) {
-      if (userIsOwner) {
-        options.push({ ...canOwn, disabled: true });
-      } else {
-        options.push(canEdit, canView, ...canRemove);
-      }
-    } else {
-      options.push(canView);
-    }
-  }
-
-  const label = userIsOwner ? 'Owner' : userIsEditorOrAbove ? 'Can edit' : 'Can view';
-
-  return <UserPopoverMenu label={label} options={options} />;
-}
 
 /* =============================================================================
    UserPopoverMenu
@@ -360,6 +379,7 @@ export function UserPopoverMenu({ options, label }: { options: Option[]; label: 
           vertical: 'top',
           horizontal: 'left',
         }}
+        transitionDuration={100}
       >
         {options.map((option, key) => {
           if (isDividerOption(option)) {
@@ -426,19 +446,19 @@ UpdateUserOptions: file & team
   <ShareMenu.InviteOptionEditor>
 */
 
-export type ShareMenuInviteCallback = { email: string; permission: Permission };
+export type ShareMenuInviteCallback = { email: string; role: string /* TODO */ };
 function Invite({
   onInvite,
   disabled,
   userEmails,
 }: {
-  onInvite: ({ email, permission }: ShareMenuInviteCallback) => void;
+  onInvite: ({ email, role }: ShareMenuInviteCallback) => void;
   disabled?: boolean;
   userEmails: string[];
 }) {
   const [error, setError] = useState<string>('');
   const [email, setEmail] = useState<string>('');
-  const [permission, setPermission] = useState<Permission>(PermissionSchema.enum.EDITOR);
+  const [role, setRole] = useState<z.infer<typeof RoleSchema>>(RoleSchema.enum.EDITOR);
   const theme = useTheme();
 
   // TODO comma separate list someday
@@ -451,6 +471,12 @@ function Invite({
     disabled = true;
   }
 
+  const optionsByRole = {
+    [RoleSchema.enum.EDITOR]: { label: 'Can edit', onClick: () => setRole(RoleSchema.enum.EDITOR) },
+    [RoleSchema.enum.VIEWER]: { label: 'Can view', onClick: () => setRole(RoleSchema.enum.VIEWER) },
+  };
+  const options = Object.values(optionsByRole);
+
   return (
     <Stack
       component="form"
@@ -461,7 +487,7 @@ function Invite({
         e.preventDefault();
         if (disabled) return;
 
-        onInvite({ email, permission });
+        onInvite({ email, role });
         setEmail('');
       }}
     >
@@ -488,7 +514,13 @@ function Invite({
           fullWidth
         />
         <Box sx={{ position: 'absolute', right: theme.spacing(0.425), top: theme.spacing(0.425) }}>
-          <ShareFileMenuPopover value={permission} options={userMenuOptions} setValue={setPermission} />
+          <UserPopoverMenu
+            label={
+              // @ts-expect-error TODO
+              optionsByRole[role].label
+            }
+            options={options}
+          />
         </Box>
       </Box>
 
@@ -510,26 +542,12 @@ function UserActions({ value, setValue }: any) {
   );
 }
 
-const shareOptions: Array<{
-  label: string;
-  value: PublicLinkAccess;
-  disabled?: boolean;
-}> = [
-  { label: 'Cannot view', value: 'NOT_SHARED' },
-  { label: 'Can view', value: 'READONLY' },
-  { label: 'Can edit (coming soon)', value: 'EDIT', disabled: true },
-];
-
 function PublicLink({
-  animation,
   publicLinkAccess,
-  isOwner,
   uuid,
   fetcherUrl,
 }: {
-  animation: SkeletonProps['animation'];
   publicLinkAccess: PublicLinkAccess | undefined;
-  isOwner: boolean;
   uuid: string;
   fetcherUrl: string;
 }) {
@@ -558,6 +576,15 @@ function PublicLink({
     });
   };
 
+  const options: Option[] = [
+    { label: 'Cannot view', onClick: () => setPublicLinkAccess('NOT_SHARED') },
+    { label: 'Can view', onClick: () => setPublicLinkAccess('READONLY') },
+    { label: 'Can edit (coming soon)', onClick: () => setPublicLinkAccess('EDIT'), disabled: true },
+  ];
+
+  const label =
+    public_link_access === 'NOT_SHARED' ? 'Cannot view' : public_link_access === 'READONLY' ? 'Can view' : 'Can edit';
+
   return (
     <>
       {public_link_access === 'NOT_SHARED' ? <PublicOff /> : <Public />}
@@ -570,12 +597,7 @@ function PublicLink({
         )}
       </Stack>
 
-      <ShareFileMenuPopover
-        value={public_link_access}
-        disabled={!isOwner}
-        options={shareOptions}
-        setValue={setPublicLinkAccess}
-      />
+      <UserPopoverMenu label={label} options={options} />
     </>
   );
 }

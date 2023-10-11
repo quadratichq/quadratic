@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { UserShare } from '../../api/types';
 import { QDialog } from '../../components/QDialog';
 import { ShareMenu } from '../../components/ShareMenu';
 
@@ -6,29 +8,58 @@ export function TeamShareMenu({ onClose, team }: { onClose: () => void; team: an
   // const rootLoaderData = useRootRouteLoaderData();
   // const currentUser = rootLoaderData.user;
 
+  const [users, setUsers] = useState(team.users);
+
   return (
     <QDialog onClose={onClose}>
       <QDialog.Title>Share team “{team.name}”</QDialog.Title>
       <QDialog.Content>
         {/* <ShareMenu fetcherUrl={'test'} permission={'OWNER'} uuid={'1'} /> */}
         <ShareMenu.Wrapper>
-          <ShareMenu.Invite onInvite={() => {}} userEmails={team.users.map(({ email }: any) => email)} />
-          {team.users.map((user: any) => (
-            <ShareMenu.User
-              key={user.email}
-              user={user}
-              onUpdateUser={() => {}}
-              onDeleteUser={() => {}}
-              // Current user and their relationship to the current team
-              currentUser={
-                // TODO this needs to come from the app, probably rename to "loggedInUser"
-                // Test owner
-                // { email: 'jim.nielsen@quadratichq.com', permission: 'OWNER' }
-                // Test editor
-                // { email: 'david.kircos@quadratichq.com', permission: 'EDITOR' }
-                // Test viewer
-                { email: 'peter.mills@quadartichq.com', permission: 'VIEWER' }
-              }
+          <ShareMenu.Invite
+            onInvite={({ email, role }) => {
+              setUsers((prev: any) => [
+                ...prev,
+                {
+                  email,
+                  permissions: {
+                    role,
+                    access: [
+                      /* access controls come from the server */
+                    ],
+                  },
+                },
+              ]);
+            }}
+            userEmails={users.map(({ email }: any) => email)}
+          />
+          <ShareMenu.Users
+            users={users}
+            // usersIndexForLoggedInUser={users.findIndex((user: UserShare) => user.email === '')}
+            onUpdateUser={(user: UserShare) => {
+              setUsers((prevUsers: UserShare[]) =>
+                prevUsers.map((prevUser) => {
+                  if (prevUser.email === user.email) {
+                    return { ...prevUser, ...user };
+                  } else {
+                    return prevUser;
+                  }
+                })
+              );
+            }}
+            onDeleteUser={(user: UserShare) => {
+              console.log(user);
+              setUsers((prevUsers: UserShare[]) => prevUsers.filter((prevUser) => prevUser.email !== user.email));
+            }}
+            // Current user and their relationship to the current team
+            usersIndexForLoggedInUser={
+              // TODO this needs to come from the app
+              0
+              // Test owner
+            }
+          />
+
+          {/* 
 
               // avatar={
               //   user.isPending ? (
@@ -60,8 +91,7 @@ export function TeamShareMenu({ onClose, team }: { onClose: () => void; team: an
               //   )
               // }
               // action={<ShareMenu.ListItemUserActions value={user.permission} setValue={() => {}} />}
-            />
-          ))}
+        */}
         </ShareMenu.Wrapper>
       </QDialog.Content>
     </QDialog>
