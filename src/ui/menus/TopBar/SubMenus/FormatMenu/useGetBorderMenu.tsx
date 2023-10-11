@@ -18,32 +18,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { ColorResult } from 'react-color';
 import { sheets } from '../../../../../grid/controller/Sheets';
 import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
-import { BorderSelection } from '../../../../../quadratic-core/quadratic_core';
-import { BorderType, BorderTypeEnum } from '../../../../../schemas';
+import { BorderSelection, CellBorderLine } from '../../../../../quadratic-core/quadratic_core';
 import { colors } from '../../../../../theme/colors';
 import { QColorPicker } from '../../../../components/qColorPicker';
 import { ChangeBorder, useBorders } from '../useBorders';
 import './useGetBorderMenu.css';
 
-// enum BorderSelection {
-//   none = 0,
-//   all,
-//   inner,
-//   outer,
-//   horizontal,
-//   vertical,
-//   left,
-//   top,
-//   right,
-//   bottom,
-//   clear,
-// }
-
 export function useGetBorderMenu(): JSX.Element {
   const sheet = sheets.sheet;
   const cursor = sheet.cursor;
 
-  const [lineStyle, setLineStyle] = useState<BorderType | undefined>();
+  const [lineStyle, setLineStyle] = useState<CellBorderLine | undefined>();
   const [borderSelection, setBorderSelection] = useState<BorderSelection | undefined>();
   const defaultColor = convertTintToString(colors.defaultBorderColor);
   const [color, setColor] = useState<string>(defaultColor);
@@ -58,17 +43,10 @@ export function useGetBorderMenu(): JSX.Element {
   }, [clearSelection]);
 
   const handleChangeBorders = useCallback(
-    (borderSelection: BorderSelection | undefined, color: string, lineStyle?: BorderType): void => {
+    (borderSelection: BorderSelection | undefined, color: string, lineStyle?: CellBorderLine): void => {
       if (borderSelection === undefined) return;
-      console.log('Handling: ', borderSelection);
-      // TODO: Clearing
-      // if (borderSelection === BorderSelection.clear) {
-      //   clearBorders();
-      //   return;
-      // }
-      const borders: ChangeBorder = { selection: borderSelection };
+      const borders: ChangeBorder = { selection: borderSelection, type: lineStyle };
       if (color !== defaultColor) borders.color = color;
-      if (lineStyle) borders.type = lineStyle;
       changeBorders(borders);
     },
     [changeBorders, defaultColor]
@@ -86,7 +64,7 @@ export function useGetBorderMenu(): JSX.Element {
   );
 
   const handleChangeBorderType = useCallback(
-    (e: ClickEvent, change?: BorderType): void => {
+    (e: ClickEvent, change?: CellBorderLine): void => {
       e.keepOpen = true;
       if (change !== lineStyle) {
         setLineStyle(change);
@@ -171,19 +149,19 @@ export function useGetBorderMenu(): JSX.Element {
           <MenuItem onClick={(e) => handleChangeBorderType(e)}>
             <div className="lineStyleBorder normalBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderTypeEnum.line2)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, CellBorderLine.Line2)}>
             <div className="lineStyleBorder doubleBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderTypeEnum.line3)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, CellBorderLine.Line3)}>
             <div className="lineStyleBorder tripleBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderTypeEnum.dashed)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, CellBorderLine.Dashed)}>
             <div className="lineStyleBorder dashedBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderTypeEnum.dotted)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, CellBorderLine.Dotted)}>
             <div className="lineStyleBorder dottedBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderTypeEnum.double)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, CellBorderLine.Double)}>
             <div className="lineStyleBorder twoLineBorder"></div>
           </MenuItem>
         </SubMenu>

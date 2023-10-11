@@ -2,13 +2,12 @@ import { grid } from '../../../../grid/controller/Grid';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { convertColorStringToTint, convertTintToArray } from '../../../../helpers/convertColor';
 import { BorderSelection, BorderStyle, CellBorderLine, Rgba } from '../../../../quadratic-core/quadratic_core';
-import { BorderType } from '../../../../schemas';
 import { colors } from '../../../../theme/colors';
 
 export interface ChangeBorder {
   selection?: BorderSelection;
   color?: string;
-  type?: BorderType;
+  type?: CellBorderLine;
 }
 
 interface IResults {
@@ -22,15 +21,11 @@ export const useBorders = (): IResults => {
     const rectangle = sheets.sheet.cursor.getRectangle();
     const colorTint = options.color === undefined ? colors.defaultBorderColor : convertColorStringToTint(options.color);
     const colorArray = convertTintToArray(colorTint);
-    // const borderType = (options.type === undefined)
-    //   ? 'line1'
-    //   : options.type;
     const selection = options.selection === undefined ? BorderSelection.All : options.selection;
     console.log(colorArray);
     const style = new BorderStyle(
       new Rgba(Math.floor(colorArray[0] * 255), Math.floor(colorArray[1] * 255), Math.floor(colorArray[2] * 255), 0xff),
-      CellBorderLine.Line1
-      // new CellBorderLine(0) // TODO: convert from `options`
+      options.type ?? 0
     );
     grid.setRegionBorders(sheet.id, rectangle, selection, style);
   };

@@ -21,7 +21,7 @@ pub enum BorderSelection {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
+#[wasm_bindgen]
 #[serde(rename_all = "lowercase")]
 pub enum CellBorderLine {
     Line1,
