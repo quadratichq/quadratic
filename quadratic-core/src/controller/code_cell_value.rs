@@ -27,6 +27,7 @@ fn fetch_code_cell_difference(
     } else {
         ArraySize::_1X1
     };
+
     if old_size.w > new_size.w {
         for x in new_size.w.get()..old_size.w.get() {
             for y in 0..new_size.h.get() {
@@ -148,6 +149,11 @@ pub fn update_code_cell_value(
                         x: pos.x,
                         y: pos.y,
                         update: JsRenderCellUpdateEnum::TextColor(Some("red".into())),
+                    });
+                    summary_set.push(JsRenderCellUpdate {
+                        x: pos.x,
+                        y: pos.y,
+                        update: JsRenderCellUpdateEnum::Bold(Some(true)),
                     });
                 }
             };

@@ -10,7 +10,7 @@ use crate::{
         CodeCellValue, SheetId,
     },
     wasm_bindings::{js::runPython, JsComputeResult},
-    Error, ErrorMsg, Pos, Span, Value,
+    CellValue, Error, ErrorMsg, Pos, Span, Value,
 };
 
 use serde::{Deserialize, Serialize};
@@ -165,6 +165,7 @@ impl GridController {
                     }
                     None => None,
                 };
+
                 let old_code_cell_value = update_code_cell_value(
                     sheet,
                     pos,
