@@ -26,9 +26,9 @@ export const useBorders = (): IResults => {
     //   ? 'line1'
     //   : options.type;
     const selection = options.selection === undefined ? BorderSelection.All : options.selection;
-
+    console.log(colorArray);
     const style = new BorderStyle(
-      new Rgba(colorArray[0], colorArray[1], colorArray[2], 1),
+      new Rgba(colorArray[0], colorArray[1], colorArray[2], 0xff),
       CellBorderLine.Line1
       // new CellBorderLine(0) // TODO: convert from `options`
     );

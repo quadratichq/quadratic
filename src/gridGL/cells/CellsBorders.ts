@@ -1,6 +1,7 @@
 import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
+import { JsRenderBorder, JsRenderBorders } from '../../quadratic-core/quadratic_core';
 import { CellsSheet } from './CellsSheet';
 import { BorderCull, drawLine } from './drawBorders';
 
@@ -22,9 +23,9 @@ export class CellsBorders extends Container {
     this.removeChildren();
   }
 
-  drawHorizontal() {
-    const horizontal = grid.getRenderHorizontalBorders(this.sheet.id);
-    horizontal.forEach((border) => {
+  drawHorizontal(borders: JsRenderBorders) {
+    let border: JsRenderBorder | undefined;
+    while ((border = borders.horizontal_next())) {
       if (border.w === undefined) throw new Error('Expected border.w to be defined in CellsBorders.drawHorizontal');
       const start = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y));
       const end = this.sheet.offsets.getCellOffsets(Number(border.x) + border.w, Number(border.y));
@@ -40,12 +41,12 @@ export class CellsBorders extends Container {
           getSprite: this.getSprite,
         })
       );
-    });
+    }
   }
 
-  drawVertical() {
-    const vertical = grid.getRenderVerticalBorders(this.sheet.id);
-    vertical.forEach((border) => {
+  drawVertical(borders: JsRenderBorders) {
+    let border: JsRenderBorder | undefined;
+    while ((border = borders.vertical_next())) {
       if (border.h === undefined) throw new Error('Expected border.h to be defined in CellsBorders.drawVertical');
       const start = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y));
       const end = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y) + border.h!);
@@ -61,13 +62,14 @@ export class CellsBorders extends Container {
           getSprite: this.getSprite,
         })
       );
-    });
+    }
   }
 
   create(): void {
     this.clear();
-    this.drawHorizontal();
-    this.drawVertical();
+    const borders = grid.getRenderBorders(this.sheet.id);
+    this.drawHorizontal(borders);
+    this.drawVertical(borders);
   }
 
   private getSprite = (tiling?: boolean): Sprite | TilingSprite => {

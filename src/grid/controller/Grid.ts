@@ -9,7 +9,7 @@ import init, {
   BorderStyle,
   CodeCellLanguage,
   GridController,
-  JsRenderBorder,
+  JsRenderBorders,
   MinMax,
   Pos,
   Rect as RectInternal,
@@ -344,7 +344,6 @@ export class Grid {
   }
 
   async setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
-    console.log('Setting region borders: ', sheetId, rectangle, selection, style);
     const summary = await this.gridController.setRegionBorders(
       sheetId,
       rectangleToRect(rectangle),
@@ -404,12 +403,8 @@ export class Grid {
     return this.gridController.getFormattingSummary(sheetId, rectangleToRect(rectangle) as RectInternal);
   }
 
-  getRenderHorizontalBorders(sheetId: string): JsRenderBorder[] {
-    return JSON.parse(this.gridController.getRenderHorizontalBorders(sheetId));
-  }
-
-  getRenderVerticalBorders(sheetId: string): JsRenderBorder[] {
-    return JSON.parse(this.gridController.getRenderVerticalBorders(sheetId));
+  getRenderBorders(sheetId: string): JsRenderBorders {
+    return this.gridController.getRenderBorders(sheetId);
   }
 
   //#endregion

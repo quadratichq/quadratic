@@ -84,6 +84,45 @@ pub struct JsRenderFill {
     pub color: String,
 }
 
+#[wasm_bindgen]
+pub struct JsRenderBorders {
+    horizontal: Vec<JsRenderBorder>,
+    vertical: Vec<JsRenderBorder>,
+    index_horizontal: u32,
+    index_vertical: u32,
+}
+
+impl JsRenderBorders {
+    pub fn new(horizontal: Vec<JsRenderBorder>, vertical: Vec<JsRenderBorder>) -> Self {
+        JsRenderBorders {
+            horizontal,
+            vertical,
+            index_horizontal: 0,
+            index_vertical: 0,
+        }
+    }
+}
+#[wasm_bindgen]
+impl JsRenderBorders {
+    #[wasm_bindgen]
+    pub fn horizontal_next(&mut self) -> Option<JsRenderBorder> {
+        let ret = self.horizontal.get(self.index_horizontal as usize).cloned();
+        self.index_horizontal += 1;
+        ret
+    }
+    #[wasm_bindgen]
+    pub fn vertical_next(&mut self) -> Option<JsRenderBorder> {
+        let ret = self.vertical.get(self.index_vertical as usize).cloned();
+        self.index_vertical += 1;
+        ret
+    }
+    #[wasm_bindgen]
+    pub fn reset(&mut self) {
+        self.index_horizontal = 0;
+        self.index_vertical = 0;
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash)]
 #[wasm_bindgen]
 pub struct JsRenderBorder {
