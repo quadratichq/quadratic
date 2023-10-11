@@ -43,6 +43,7 @@ async function pythonWebWorker() {
 
 self.onmessage = async (e: MessageEvent<PythonMessage>) => {
   const event = e.data;
+
   if (event.type === 'get-cells') {
     if (event.cells && getCellsMessages) {
       getCellsMessages(event.cells);

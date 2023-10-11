@@ -148,6 +148,7 @@ impl GridController {
                             } else {
                                 ErrorMsg::PythonError("Unknown Python Error".into())
                             };
+
                             CodeCellRunResult::Err {
                                 error: Error { span, msg },
                             }
