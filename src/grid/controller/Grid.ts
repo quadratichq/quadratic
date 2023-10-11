@@ -343,9 +343,9 @@ export class Grid {
     this.dirty = true;
   }
 
-  setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle): void {
-    console.log("Setting region borders: ", sheetId, rectangle, selection, style);
-    const summary = this.gridController.setRegionBorders(
+  async setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
+    console.log('Setting region borders: ', sheetId, rectangle, selection, style);
+    const summary = await this.gridController.setRegionBorders(
       sheetId,
       rectangleToRect(rectangle),
       selection,
@@ -404,11 +404,12 @@ export class Grid {
     return this.gridController.getFormattingSummary(sheetId, rectangleToRect(rectangle) as RectInternal);
   }
 
+  getRenderHorizontalBorders(sheetId: string): JsRenderBorder[] {
+    return JSON.parse(this.gridController.getRenderHorizontalBorders(sheetId));
+  }
+
   getRenderVerticalBorders(sheetId: string): JsRenderBorder[] {
-    console.log("Getting vertical render")
-    return JSON.parse(this.gridController.getRenderVerticalBorders(
-        sheetId,
-    ));
+    return JSON.parse(this.gridController.getRenderVerticalBorders(sheetId));
   }
 
   //#endregion

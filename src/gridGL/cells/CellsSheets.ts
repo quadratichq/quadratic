@@ -154,4 +154,12 @@ export class CellsSheets extends Container<CellsSheet> {
       }
     });
   }
+
+  updateBorders(borderSheets: SheetId[]): void {
+    this.children.forEach((cellsSheet) => {
+      if (borderSheets.find((id) => id.id === cellsSheet.sheet.id)) {
+        cellsSheet.createBorders();
+      }
+    });
+  }
 }

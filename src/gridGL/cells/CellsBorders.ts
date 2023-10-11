@@ -1,10 +1,8 @@
 import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
+import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { CellsSheet } from './CellsSheet';
-import { BorderCull } from './drawBorders';
-import {
-  grid
-} from "../../grid/controller/Grid";
+import { BorderCull, drawLine } from './drawBorders';
 
 export class CellsBorders extends Container {
   private cellsSheet: CellsSheet;
@@ -24,22 +22,51 @@ export class CellsBorders extends Container {
     this.removeChildren();
   }
 
-  create(): void {
-    // const horizontal = this.sheet.gridSparse.getHorizontalBorders();
-    // console.log(horizontal);
-    // horizontal.forEach((border) => {
-    //   const start = this.sheet.gridOffsets.getCell(Number(border.x), Number(border.y));
-    //   let end: Rectangle;
-    //   if (border.w && border.h) {
-    //     end = this.sheet.gridOffsets.getCell(Number(border.x) + border.w, Number(border.y) + border.h);
-    //   } else {
-    //     end = start;
-    //   }
-    //   this.sprites.push(drawLine(start.x, start.y));
-    // });
-    // const vertical = this.sheet.grid.getRenderVerticalBorders();
+  drawHorizontal() {
+    const horizontal = grid.getRenderHorizontalBorders(this.sheet.id);
+    horizontal.forEach((border) => {
+      if (border.w === undefined) throw new Error('Expected border.w to be defined in CellsBorders.drawHorizontal');
+      const start = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y));
+      const end = this.sheet.offsets.getCellOffsets(Number(border.x) + border.w, Number(border.y));
+      this.sprites.push(
+        drawLine({
+          x: start.x,
+          y: start.y,
+          width: end.x - start.x,
+          height: 1,
+          tint: 0xff0000,
+          alpha: 1,
+          getSprite: this.getSprite,
+        })
+      );
+    });
+  }
+
+  drawVertical() {
     const vertical = grid.getRenderVerticalBorders(this.sheet.id);
-    console.log(vertical);
+    vertical.forEach((border) => {
+      if (border.h === undefined) throw new Error('Expected border.h to be defined in CellsBorders.drawVertical');
+      const start = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y));
+      const end = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y) + border.h!);
+      const tint = border.style.color;
+      this.sprites.push(
+        drawLine({
+          x: start.x,
+          y: start.y,
+          width: 1,
+          height: end.y - start.y,
+          tint: 0xff0000,
+          alpha: 1,
+          getSprite: this.getSprite,
+        })
+      );
+    });
+  }
+
+  create(): void {
+    this.clear();
+    this.drawHorizontal();
+    this.drawVertical();
   }
 
   private getSprite = (tiling?: boolean): Sprite | TilingSprite => {

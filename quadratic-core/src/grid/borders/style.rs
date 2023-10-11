@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
-use crate::color::Rgb;
+use crate::color::Rgba;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
@@ -56,16 +56,16 @@ pub enum CellBorderLine {
 // }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
+#[wasm_bindgen]
 pub struct BorderStyle {
-    pub color: Rgb,
+    pub color: Rgba,
     pub line: CellBorderLine,
 }
 
 #[cfg_attr(feature = "js", wasm_bindgen)]
 impl BorderStyle {
     #[cfg_attr(feature = "js", wasm_bindgen(constructor))]
-    pub fn new(color: Rgb, line: CellBorderLine) -> Self {
+    pub fn new(color: Rgba, line: CellBorderLine) -> Self {
         Self { color, line }
     }
 }

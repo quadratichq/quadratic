@@ -48,7 +48,6 @@ fn main() {
         grid::CellRef,
         grid::js_types::JsRenderCell,
         grid::js_types::JsRenderFill,
-        grid::js_types::JsRenderBorder,
         grid::js_types::FormattingSummary,
         grid::js_types::CellFormatSummary,
         grid::js_types::JsRenderCodeCell,

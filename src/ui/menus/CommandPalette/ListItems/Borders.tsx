@@ -10,31 +10,10 @@ import {
   BorderTop,
   BorderVertical,
 } from '@mui/icons-material';
-import {
-  isEditorOrAbove
-} from '../../../../actions';
-import {
-  ChangeBorder,
-  useBorders
-} from '../../TopBar/SubMenus/useBorders';
-import {
-  CommandPaletteListItem,
-  CommandPaletteListItemSharedProps
-} from '../CommandPaletteListItem';
-import {
-  BorderSelection
-} from "../../../../quadratic-core";
-// import {
-//   BorderDashed,
-//   BorderDotted,
-//   BorderMedium,
-//   BorderThick
-// } from "../../../icons";
-// import {
-//   BorderType
-// } from '../../../../schemas';
-// import { BorderType } from '../../../../core/gridDB/gridTypes';
-// import { BorderDashed, BorderDouble, BorderDotted, BorderThin, BorderThick, BorderMedium } from '../../../icons';
+import { isEditorOrAbove } from '../../../../actions';
+import { BorderSelection } from '../../../../quadratic-core/quadratic_core';
+import { ChangeBorder, useBorders } from '../../TopBar/SubMenus/useBorders';
+import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
 const ListItems = [
   // Convenience to generate all the border component variations

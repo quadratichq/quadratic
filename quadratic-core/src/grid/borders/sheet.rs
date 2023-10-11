@@ -4,12 +4,12 @@ use std::ops::Range;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{grid, Rect};
-use crate::grid::{ColumnData, ColumnId, IdMap, RegionRef, RowId, Sheet};
 use crate::grid::block::SameValue;
 use crate::grid::borders::cell::{CellBorders, CellSide};
 use crate::grid::borders::compute_indices;
 use crate::grid::borders::style::{BorderSelection, BorderStyle};
+use crate::grid::{ColumnData, ColumnId, IdMap, RegionRef, RowId, Sheet};
+use crate::{grid, Rect};
 
 pub fn generate_borders(
     sheet: &Sheet,
@@ -416,10 +416,10 @@ pub mod debug {
 mod tests {
     use debug::GetCellBorders;
 
-    use crate::{Pos, Rect};
-    use crate::color::Rgb;
+    use crate::color::Rgba;
     use crate::grid::borders::style::CellBorderLine;
     use crate::grid::SheetId;
+    use crate::{Pos, Rect};
 
     use super::*;
 
@@ -458,7 +458,7 @@ mod tests {
         let selection = vec![BorderSelection::All];
 
         let style = BorderStyle {
-            color: Rgb::from_str("#000000").unwrap(),
+            color: Rgba::from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
 
@@ -520,7 +520,7 @@ mod tests {
         let selection = vec![BorderSelection::Outer];
 
         let style = BorderStyle {
-            color: Rgb::from_str("#000000").unwrap(),
+            color: Rgba::from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
 
@@ -558,7 +558,7 @@ mod tests {
         let selection_2 = vec![BorderSelection::All];
 
         let style = BorderStyle {
-            color: Rgb::from_str("#000000").unwrap(),
+            color: Rgba::from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
 
@@ -616,7 +616,7 @@ mod tests {
         let selection_2 = vec![BorderSelection::All];
 
         let style = BorderStyle {
-            color: Rgb::from_str("#000000").unwrap(),
+            color: Rgba::from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
 
@@ -658,11 +658,11 @@ mod tests {
         let selection_2 = vec![BorderSelection::Horizontal];
 
         let style_1 = BorderStyle {
-            color: Rgb::from_str("#000000").unwrap(),
+            color: Rgba::from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
         let style_2 = BorderStyle {
-            color: Rgb::from_str("#FFFFFF").unwrap(),
+            color: Rgba::from_str("#FFFFFF").unwrap(),
             line: CellBorderLine::Dotted,
         };
 
@@ -734,11 +734,11 @@ mod tests {
         let selection_2 = vec![BorderSelection::Horizontal];
 
         let style_1 = BorderStyle {
-            color: Rgb::from_str("#000000").unwrap(),
+            color: Rgba::from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
         let style_2 = BorderStyle {
-            color: Rgb::from_str("#FFFFFF").unwrap(),
+            color: Rgba::from_str("#FFFFFF").unwrap(),
             line: CellBorderLine::Dotted,
         };
 

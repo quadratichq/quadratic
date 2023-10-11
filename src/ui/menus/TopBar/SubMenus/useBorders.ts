@@ -1,25 +1,9 @@
-import {
-  BorderType
-} from '../../../../schemas';
-import {
-  sheets
-} from "../../../../grid/controller/Sheets";
-import {
-  grid
-} from "../../../../grid/controller/Grid";
-import {
-  BorderSelection,
-  BorderStyle,
-  CellBorderLine,
-  Rgb
-} from "../../../../quadratic-core";
-import {
-  convertColorStringToTint,
-  convertTintToArray
-} from "../../../../helpers/convertColor";
-import {
-  colors
-} from "../../../../theme/colors";
+import { grid } from '../../../../grid/controller/Grid';
+import { sheets } from '../../../../grid/controller/Sheets';
+import { convertColorStringToTint, convertTintToArray } from '../../../../helpers/convertColor';
+import { BorderSelection, BorderStyle, CellBorderLine, Rgba } from '../../../../quadratic-core/quadratic_core';
+import { BorderType } from '../../../../schemas';
+import { colors } from '../../../../theme/colors';
 
 export interface ChangeBorder {
   selection?: BorderSelection;
@@ -33,33 +17,29 @@ interface IResults {
 }
 
 export const useBorders = (): IResults => {
-  const sheet = sheets.sheet;
-  const cursor = sheet.cursor;
-  const rectangle = cursor.getRectangle();
-
   const changeBorders = (options: ChangeBorder): void => {
-    const colorTint = (options.color === undefined)
-      ? colors.defaultBorderColor
-      : convertColorStringToTint(options.color);
+    const sheet = sheets.sheet;
+    const rectangle = sheets.sheet.cursor.getRectangle();
+    const colorTint = options.color === undefined ? colors.defaultBorderColor : convertColorStringToTint(options.color);
     const colorArray = convertTintToArray(colorTint);
     // const borderType = (options.type === undefined)
     //   ? 'line1'
     //   : options.type;
-    const selection = (options.selection === undefined)
-      ? BorderSelection.All
-      : options.selection
+    const selection = options.selection === undefined ? BorderSelection.All : options.selection;
 
     const style = new BorderStyle(
-      new Rgb(colorArray[0], colorArray[1], colorArray[2]),
+      new Rgba(colorArray[0], colorArray[1], colorArray[2], 1),
       CellBorderLine.Line1
-        // new CellBorderLine(0) // TODO: convert from `options`
-    )
+      // new CellBorderLine(0) // TODO: convert from `options`
+    );
     grid.setRegionBorders(sheet.id, rectangle, selection, style);
-  }
+  };
 
-  const clearBorders = (args?: { create_transaction?: boolean }): void => {
+  const clearBorders = (): void => {
+    const sheet = sheets.sheet;
+    const rectangle = sheets.sheet.cursor.getRectangle();
     grid.setRegionBorders(sheet.id, rectangle, BorderSelection.All, undefined);
-  }
+  };
 
   return {
     changeBorders: changeBorders,

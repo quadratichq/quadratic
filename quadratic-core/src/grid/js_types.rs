@@ -1,11 +1,12 @@
 use std::ops::{BitOr, BitOrAssign};
 
 use serde::{Deserialize, Serialize};
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::formatting::{BoolSummary, CellAlign, CellWrap};
 use super::CodeCellLanguage;
-use crate::grid::BorderStyle;
 use crate::controller::transaction_summary::TransactionSummary;
+use crate::grid::BorderStyle;
 use crate::Pos;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -84,7 +85,7 @@ pub struct JsRenderFill {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[wasm_bindgen]
 pub struct JsRenderBorder {
     pub x: i64,
     pub y: i64,
@@ -94,6 +95,7 @@ pub struct JsRenderBorder {
     pub h: Option<usize>,
     pub style: BorderStyle,
 }
+
 impl JsRenderBorder {
     pub fn new(x: i64, y: i64, w: Option<usize>, h: Option<usize>, style: BorderStyle) -> Self {
         Self { x, y, w, h, style }
