@@ -1,5 +1,6 @@
 import { ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 // import { CodeCellLanguage } from '../../quadratic-core/types';
+import { CodeCellLanguage, JsRenderCodeCellState } from '../../quadratic-core/quadratic_core';
 import { colors } from '../../theme/colors';
 import { intersects } from '../helpers/intersects';
 
@@ -28,15 +29,15 @@ export class CellsMarkers extends ParticleContainer {
     this.markers.forEach((marker) => (marker.sprite.visible = intersects.rectangleRectangle(bounds, marker.rectangle)));
   }
 
-  add(x: number, y: number, type: any /*CodeCellLanguage*/, error?: boolean): void {
+  add(x: number, y: number, type: CodeCellLanguage, state?: JsRenderCodeCellState): void {
     const child = this.addChild(new Sprite());
     child.height = 4;
     child.width = 4;
     child.position.set(x + 1.25, y + 1.25);
-    if (type === 'Python') {
+    if (type === CodeCellLanguage.Python) {
       child.texture = Texture.from('/images/python-icon.png');
       child.tint = colors.cellColorUserPython;
-    } else if (type === 'Formula') {
+    } else if (type === CodeCellLanguage.Formula) {
       child.texture = Texture.from('/images/formula-fx-icon.png');
       child.tint = colors.cellColorUserFormula;
     }
@@ -46,15 +47,12 @@ export class CellsMarkers extends ParticleContainer {
       rectangle: new Rectangle(child.x, child.y, 4, 4),
     });
 
-    // todo
-    // } else if (type === 'ErrorIcon') {
-    //   child.position.set(x, y);
-    //   child.texture = Texture.from('images/error-icon.png');
-    //   child.tint = colors.cellColorError;
-    //   child.width = child.height = 12;
-    // }
-
-    // if (error) child.tint = 0xffffff;
+    if (state === JsRenderCodeCellState.RunError) {
+      child.position.set(x, y);
+      child.texture = Texture.from('images/error-icon.png');
+      child.tint = colors.cellColorError;
+      child.width = child.height = 12;
+    }
   }
 
   debugShowCachedCounts(): void {
