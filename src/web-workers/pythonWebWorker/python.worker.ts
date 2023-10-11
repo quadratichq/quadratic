@@ -9,7 +9,7 @@ self.importScripts('/pyodide/pyodide.js');
 
 let getCellsMessages: (cells: { x: number; y: number; value: string }[]) => void | undefined;
 
-const getCellsDB = async (
+export const getCellsDB = async (
   x0: number,
   y0: number,
   x1: number,

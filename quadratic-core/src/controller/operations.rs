@@ -176,6 +176,7 @@ impl GridController {
                         &mut summary_set,
                         cells_to_compute,
                     );
+
                     if !summary_set.is_empty() {
                         summary.operations.push(OperationSummary::SetCellValues(
                             sheet.id.to_string(),

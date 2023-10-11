@@ -135,23 +135,18 @@ impl GridController {
                                 cells_accessed: cells_accessed_code_cell.clone(),
                             }
                         } else {
-                            let span = if let Some(span) = code_cell_result.error_span.clone() {
-                                Some(Span {
-                                    start: span[0],
-                                    end: span[1],
-                                })
-                            } else {
-                                None
-                            };
-                            let msg = if let Some(msg) = code_cell_result.error_msg.clone() {
-                                ErrorMsg::PythonError(msg.into())
-                            } else {
-                                ErrorMsg::PythonError("Unknown Python Error".into())
-                            };
+                            let span = code_cell_result
+                                .error_span
+                                .to_owned()
+                                .and_then(|span| Some(Span::from(span)));
+                            let error_msg = code_cell_result
+                                .error_msg
+                                .to_owned()
+                                .unwrap_or_else(|| "Unknown Python Error".into());
+                            let msg = ErrorMsg::PythonError(error_msg.into());
+                            let error = Error { span, msg };
 
-                            CodeCellRunResult::Err {
-                                error: Error { span, msg },
-                            }
+                            CodeCellRunResult::Err { error }
                         };
 
                         Some(CodeCellValue {
