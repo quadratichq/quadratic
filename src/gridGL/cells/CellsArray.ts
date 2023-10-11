@@ -37,11 +37,11 @@ export class CellsArray extends ParticleContainer {
   private draw(codeCell: JsRenderCodeCell): void {
     const start = this.sheet.getCellOffsets(Number(codeCell.x), Number(codeCell.y));
     const end = this.sheet.getCellOffsets(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
-    const type = codeCell.language;
+    const type = codeCell.language as CodeCellLanguage | string;
     let tint = colors.independence;
-    if (type === CodeCellLanguage.Python) {
+    if (type === CodeCellLanguage.Python || type === 'Python') {
       tint = colors.cellColorUserPython;
-    } else if (type === CodeCellLanguage.Formula) {
+    } else if (type === CodeCellLanguage.Formula || type === 'Formula') {
       tint = colors.cellColorUserFormula;
     }
 
