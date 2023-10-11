@@ -28,14 +28,15 @@ export class CellsBorders extends Container {
       if (border.w === undefined) throw new Error('Expected border.w to be defined in CellsBorders.drawHorizontal');
       const start = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y));
       const end = this.sheet.offsets.getCellOffsets(Number(border.x) + border.w, Number(border.y));
+      const color = border.style.color;
       this.sprites.push(
         drawLine({
           x: start.x,
           y: start.y,
           width: end.x - start.x,
           height: 1,
-          tint: 0xff0000,
-          alpha: 1,
+          tint: color.tint(),
+          alpha: color.alpha(),
           getSprite: this.getSprite,
         })
       );
@@ -48,15 +49,15 @@ export class CellsBorders extends Container {
       if (border.h === undefined) throw new Error('Expected border.h to be defined in CellsBorders.drawVertical');
       const start = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y));
       const end = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y) + border.h!);
-      const tint = border.style.color;
+      const color = border.style.color;
       this.sprites.push(
         drawLine({
           x: start.x,
           y: start.y,
           width: 1,
           height: end.y - start.y,
-          tint: 0xff0000,
-          alpha: 1,
+          tint: color.tint(),
+          alpha: color.alpha(),
           getSprite: this.getSprite,
         })
       );
