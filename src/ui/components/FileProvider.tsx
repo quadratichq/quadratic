@@ -35,6 +35,8 @@ const FileContext = createContext<FileContextType>({} as FileContextType);
 export const FileProvider = ({ children }: { children: React.ReactElement }) => {
   // We can guarantee this is in the URL when it runs, so cast as string
   const { uuid } = useParams() as { uuid: string };
+  //@ts-expect-error
+  window.file_uuid = uuid; // TODO: remove this
   const initialFileData = useFileRouteLoaderData();
   const [name, setName] = useState<FileContextType['name']>(initialFileData.name);
   const [publicLinkAccess] = useState(initialFileData.sharing.public_link_access);

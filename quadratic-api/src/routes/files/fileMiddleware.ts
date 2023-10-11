@@ -27,6 +27,6 @@ export const fileMiddleware = async (req: Request, res: Response, next: NextFunc
     }
   }
 
-  req.file = file;
+  req.document = file;
   next();
 };

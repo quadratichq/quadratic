@@ -23,7 +23,7 @@ sharing_router.get(
   userOptionalMiddleware,
   fileMiddleware,
   async (req: Request, res: Response) => {
-    if (!req.file) {
+    if (!req.document) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
 
@@ -34,14 +34,14 @@ sharing_router.get(
     }
 
     // Only authenticated users can view the email addresses of other users
-    let owner = await getUserProfile(req.file.ownerUserId);
+    let owner = await getUserProfile(req.document.ownerUserId);
     if (!req.user) {
       owner.email = null;
     }
 
     return res.status(200).json({
       owner: owner,
-      public_link_access: req.file.public_link_access,
+      public_link_access: req.document.public_link_access,
       // users: [],
       // teams: [],
     });
@@ -56,7 +56,7 @@ sharing_router.post(
   fileMiddleware,
   validateFileSharingPermission().optional(),
   async (req: Request, res: Response) => {
-    if (!req.file || !req.user) {
+    if (!req.document || !req.user) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
 
@@ -68,7 +68,7 @@ sharing_router.post(
     // update the link sharing permissions
     if (req.body.public_link_access !== undefined) {
       // only the OWNER of the file can modify the link sharing permissions
-      const permissions = getFilePermissions(req.user, req.file);
+      const permissions = getFilePermissions(req.user, req.document);
       if (permissions !== 'OWNER') {
         return res.status(403).json({ error: { message: 'Permission denied' } });
       }

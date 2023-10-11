@@ -2,6 +2,7 @@ import { v4 as uuid } from 'uuid';
 
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
+import { authClient } from '../auth';
 import { downloadFileInBrowser } from '../helpers/downloadFileInBrowser';
 import { GridFile, GridFileSchema } from '../schemas';
 import { generateKeyBetween } from '../utils/fractionalIndexing';
@@ -79,6 +80,32 @@ export const apiClient = {
       },
       ApiSchemas['/v0/files/:uuid.POST.response']
     );
+  },
+
+  async updateFilePreview(uuid: string, preview: Blob) {
+    const formData = new FormData();
+    formData.append('preview', preview, 'preview.png');
+
+    // Set headers
+    const isAuthenticated = await authClient.isAuthenticated();
+    const sharedInit = {
+      headers: {
+        // Only pass the auth if the user is auth'd
+        ...(isAuthenticated ? { Authorization: `Bearer ${await authClient.getToken()}` } : {}),
+      },
+    };
+
+    // Make API call
+    const response = await fetch(process.env.REACT_APP_QUADRATIC_API_URL + `/v0/files/${uuid}/preview`, {
+      ...sharedInit,
+      ...{
+        method: 'POST',
+        // TODO: had to move to new fetch call so application/json is not passed as a header
+        body: formData,
+      },
+    });
+
+    return response;
   },
 
   async getFileSharing(uuid: string) {

@@ -22,6 +22,7 @@ export const ApiSchemas = {
   '/v0/files.GET.response': z.array(
     z.object({
       ...fileMeta,
+      preview: z.string().url().nullable(),
       public_link_access: PublicLinkAccessSchema,
     })
   ),
@@ -58,6 +59,9 @@ export const ApiSchemas = {
     name: z.string().optional(),
   }),
   '/v0/files/:uuid.POST.response': z.object({
+    message: z.string(),
+  }),
+  '/v0/files/:uuid/preview.POST.response': z.object({
     message: z.string(),
   }),
 
@@ -98,6 +102,7 @@ export type ApiTypes = {
   '/v0/files/:uuid.DELETE.response': z.infer<(typeof ApiSchemas)['/v0/files/:uuid.DELETE.response']>;
   '/v0/files/:uuid.POST.request': z.infer<(typeof ApiSchemas)['/v0/files/:uuid.POST.request']>;
   '/v0/files/:uuid.POST.response': z.infer<(typeof ApiSchemas)['/v0/files/:uuid.POST.response']>;
+  '/v0/files/:uuid/preview.POST.response': z.infer<(typeof ApiSchemas)['/v0/files/:uuid/preview.POST.response']>;
 
   '/v0/files/:uuid/sharing.GET.response': z.infer<(typeof ApiSchemas)['/v0/files/:uuid/sharing.GET.response']>;
   '/v0/files/:uuid/sharing.POST.request': z.infer<(typeof ApiSchemas)['/v0/files/:uuid/sharing.POST.request']>;

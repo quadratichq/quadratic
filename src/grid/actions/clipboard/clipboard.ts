@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/browser';
 import localforage from 'localforage';
 import mixpanel from 'mixpanel-browser';
 import { isEditorOrAbove } from '../../../actions';
+import { apiClient } from '../../../api/apiClient';
 import { GlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { debugTimeCheck, debugTimeReset } from '../../../gridGL/helpers/debugPerformance';
 import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
@@ -135,6 +136,13 @@ export const copySelectionToPNG = async (addGlobalSnackbar: GlobalSnackbar['addG
       mixpanel.track('[clipboard].copySelectionToPNG.notSupported');
       return;
     }
+
+    // TODO: remove this, it's just to test functionality
+    apiClient.updateFilePreview(
+      //@ts-expect-error
+      window.file_uuid,
+      blob
+    );
 
     await navigator.clipboard.write([
       new ClipboardItem({

@@ -24,6 +24,7 @@ model File {
     id                 Int            @id @default(autoincrement())
     uuid               String         @unique @default(uuid())
     name               String
+    preview            String? // S3FileKey
     created_date       DateTime       @default(now())
     updated_date       DateTime       @default(now())
     deleted            Boolean        @default(false)

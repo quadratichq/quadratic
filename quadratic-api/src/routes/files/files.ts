@@ -7,6 +7,7 @@ import { validateOptionalAccessToken } from '../../middleware/validateOptionalAc
 import { Request } from '../../types/Request';
 import { fileMiddleware } from './fileMiddleware';
 import { getFilePermissions } from './getFilePermissions';
+import { generatePresignedUrl, uploadPreviewToS3 } from './preview';
 
 export const validateUUID = () => param('uuid').isUUID(4);
 const validateFileContents = () => body('contents').isString().not().isEmpty();
@@ -29,6 +30,7 @@ files_router.get('/', validateAccessToken, userMiddleware, async (req: Request, 
     select: {
       uuid: true,
       name: true,
+      preview: true,
       created_date: true,
       updated_date: true,
       public_link_access: true,
@@ -40,6 +42,15 @@ files_router.get('/', validateAccessToken, userMiddleware, async (req: Request, 
     ],
   });
 
+  // get signed images for each file preview using S3Client
+  await Promise.all(
+    files.map(async (file) => {
+      if (file.preview) {
+        file.preview = await generatePresignedUrl(file.preview);
+      }
+    })
+  );
+
   return res.status(200).json(files);
 });
 
@@ -50,7 +61,7 @@ files_router.get(
   userOptionalMiddleware,
   fileMiddleware,
   async (req: Request, res: Response) => {
-    if (!req.file) {
+    if (!req.document) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
 
@@ -62,14 +73,14 @@ files_router.get(
 
     return res.status(200).json({
       file: {
-        uuid: req.file.uuid,
-        name: req.file.name,
-        created_date: req.file.created_date,
-        updated_date: req.file.updated_date,
-        version: req.file.version,
-        contents: req.file.contents.toString('utf8'),
+        uuid: req.document.uuid,
+        name: req.document.name,
+        created_date: req.document.created_date,
+        updated_date: req.document.updated_date,
+        version: req.document.version,
+        contents: req.document.contents.toString('utf8'),
       },
-      permission: getFilePermissions(req.user, req.file),
+      permission: getFilePermissions(req.user, req.document),
     });
   }
 );
@@ -84,7 +95,7 @@ files_router.post(
   validateFileVersion().optional(),
   validateFileName().optional(),
   async (req: Request, res: Response) => {
-    if (!req.file || !req.user) {
+    if (!req.document || !req.user) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
 
@@ -94,7 +105,7 @@ files_router.post(
     }
 
     // ensure the user has EDIT access to the file
-    const permissions = getFilePermissions(req.user, req.file);
+    const permissions = getFilePermissions(req.user, req.document);
     if (permissions !== 'EDITOR' && permissions !== 'OWNER') {
       return res.status(403).json({ error: { message: 'Permission denied' } });
     }
@@ -137,6 +148,42 @@ files_router.post(
   }
 );
 
+files_router.post(
+  '/:uuid/preview',
+  validateUUID(),
+  validateAccessToken,
+  userMiddleware,
+  fileMiddleware,
+  uploadPreviewToS3.single('preview'),
+  async (req: Request, res: Response) => {
+    // update file object with S3 preview URL
+    if (!req.document || !req.user) {
+      return res.status(500).json({ error: { message: 'Internal server error' } });
+    }
+
+    const permissions = getFilePermissions(req.user, req.document);
+
+    if (permissions !== 'OWNER') {
+      return res.status(403).json({ error: { message: 'Permission denied' } });
+    }
+
+    console.log('updated preview');
+    console.log(req.file);
+
+    // update the file object with the preview URL
+    await dbClient.file.update({
+      where: {
+        uuid: req.params.uuid,
+      },
+      data: {
+        preview: req.file.key,
+      },
+    });
+
+    return res.status(200).json({ message: 'Preview updated' });
+  }
+);
+
 files_router.delete(
   '/:uuid',
   validateUUID(),
@@ -150,11 +197,11 @@ files_router.delete(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    if (!req.file || !req.user) {
+    if (!req.document || !req.user) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
 
-    const permissions = getFilePermissions(req.user, req.file);
+    const permissions = getFilePermissions(req.user, req.document);
     if (permissions !== 'OWNER') {
       return res.status(403).json({ error: { message: 'Permission denied' } });
     }

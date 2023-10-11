@@ -58,7 +58,7 @@ export function FileListItem({
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
 
-  const { uuid, name, created_date, updated_date, public_link_access } = file;
+  const { uuid, name, created_date, updated_date, public_link_access, preview } = file;
 
   const fetcherSubmitOpts: SubmitOptions = {
     method: 'POST',
@@ -137,6 +137,7 @@ export function FileListItem({
         uuid: 'duplicate-' + date,
         public_link_access: 'NOT_SHARED',
         name: name + ' (Copy)',
+        preview: null, // TODO: duplicate preview
         updated_date: date,
         created_date: date,
       },
@@ -214,7 +215,7 @@ export function FileListItem({
             <Box sx={{ aspectRatio: '16/9' }}>
               <Box
                 sx={{
-                  backgroundImage: 'url(https://placehold.co/800x450)',
+                  backgroundImage: `url(${preview})`,
                   backgroundPosition: '50%',
                   width: '100%',
                   height: '100%',
