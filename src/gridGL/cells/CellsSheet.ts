@@ -325,6 +325,10 @@ export class CellsSheet extends Container {
     });
   }
 
+  updateCellsArray() {
+    this.cellsArray.create();
+  }
+
   updateFill(): void {
     this.cellsFills.create();
   }

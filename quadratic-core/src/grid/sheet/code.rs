@@ -7,19 +7,6 @@ use crate::{
 };
 
 impl Sheet {
-    pub fn set_code_cell(
-        &mut self,
-        cell_ref: CellRef,
-        code_cell: Option<CodeCellValue>,
-    ) -> Option<CodeCellValue> {
-        let old = self.code_cells.remove(&cell_ref);
-        if let Some(code_cell) = code_cell {
-            self.code_cells.insert(cell_ref, code_cell);
-        }
-        // todo: spill
-        old
-    }
-
     /// Sets or deletes a code cell value and populates spills.
     pub fn set_code_cell_value(
         &mut self,

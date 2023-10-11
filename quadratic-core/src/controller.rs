@@ -9,6 +9,7 @@ pub mod auto_complete;
 pub mod borders;
 pub mod cells;
 pub mod clipboard;
+pub mod code_cell_value;
 pub mod compute;
 pub mod dependencies;
 pub mod formatting;

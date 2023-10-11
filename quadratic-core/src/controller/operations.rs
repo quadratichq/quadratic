@@ -4,11 +4,12 @@ use crate::{
         *,
     },
     values::IsBlank,
-    Array, CellValue, Pos, Value,
+    Array, CellValue, Pos,
 };
 use serde::{Deserialize, Serialize};
 
 use super::{
+    code_cell_value::update_code_cell_value,
     compute::{SheetPos, SheetRect},
     formatting::CellFmtArray,
     transaction_summary::{OperationSummary, TransactionSummary},
@@ -75,20 +76,14 @@ impl GridController {
     pub fn execute_operation(
         &mut self,
         op: Operation,
-        cell_values_modified: &mut Vec<SheetPos>,
+        cells_to_compute: &mut Vec<SheetPos>,
         summary: &mut TransactionSummary,
     ) -> Operation {
-        let mut cell_regions_modified = vec![];
         let mut cells_deleted = vec![];
 
         let operation = match op {
             Operation::None => Operation::None,
             Operation::SetCellValues { region, values } => {
-                cell_regions_modified.extend(self.grid.region_rects(&region));
-                summary
-                    .cell_value_regions_modified
-                    .extend(self.grid.region_rects(&region));
-
                 let mut summary_set = vec![];
 
                 let sheet = self.grid.sheet_mut_from_id(region.sheet);
@@ -126,7 +121,7 @@ impl GridController {
                                     value.to_display(numeric_format, numeric_decimals),
                                 )),
                             });
-                            cell_values_modified.push(SheetPos {
+                            cells_to_compute.push(SheetPos {
                                 x: pos.x,
                                 y: pos.y,
                                 sheet_id: sheet.id,
@@ -165,80 +160,40 @@ impl GridController {
                 cell_ref,
                 code_cell_value,
             } => {
-                let region = RegionRef::from(cell_ref);
-                cell_regions_modified.extend(self.grid.region_rects(&region));
                 let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
-                let old_code_cell_value = sheet.set_code_cell(cell_ref, code_cell_value.clone());
 
                 let mut summary_set = vec![];
 
-                // add cell value to compute queue
                 if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                    cell_values_modified.push(SheetPos {
+                    let sheet_pos = SheetPos {
                         x: pos.x,
                         y: pos.y,
                         sheet_id: sheet.id,
-                    });
+                    };
+                    // add cell value to compute queue
+                    cells_to_compute.push(sheet_pos);
 
-                    // add code_cell_value outputs to compute queue and summary
-                    if let Some(code_cell_value) = code_cell_value {
-                        if let Some(output) = code_cell_value.output {
-                            if let Some(output_value) = output.result.output_value() {
-                                match output_value {
-                                    Value::Array(array) => {
-                                        for y in 0..=array.size().h.into() {
-                                            for x in 0..=array.size().w.into() {
-                                                cell_values_modified.push(SheetPos {
-                                                    x: pos.x + x as i64,
-                                                    y: pos.y + y as i64,
-                                                    sheet_id: sheet.id,
-                                                });
-                                                if let Ok(value) = array.get(x, y) {
-                                                    let entry_pos = Pos {
-                                                        x: pos.x + x as i64,
-                                                        y: pos.y + y as i64,
-                                                    };
-                                                    let (numeric_format, numeric_decimals) =
-                                                        sheet.cell_numeric_info(entry_pos);
-                                                    summary_set.push(JsRenderCellUpdate {
-                                                        x: pos.x + x as i64,
-                                                        y: pos.y + y as i64,
-                                                        update: JsRenderCellUpdateEnum::Value(
-                                                            Some(value.to_display(
-                                                                numeric_format,
-                                                                numeric_decimals,
-                                                            )),
-                                                        ),
-                                                    })
-                                                }
-                                            }
-                                        }
-                                    }
-                                    Value::Single(value) => {
-                                        let (numeric_format, numeric_decimals) =
-                                            sheet.cell_numeric_info(pos.into());
-                                        summary_set.push(JsRenderCellUpdate {
-                                            x: pos.x,
-                                            y: pos.y,
-                                            update: JsRenderCellUpdateEnum::Value(Some(
-                                                value.to_display(numeric_format, numeric_decimals),
-                                            )),
-                                        });
-                                    }
-                                };
-                            }
-                        }
-                    }
+                    let old_code_cell_value = update_code_cell_value(
+                        sheet,
+                        sheet_pos,
+                        code_cell_value,
+                        &mut summary_set,
+                        cells_to_compute,
+                    );
                     if !summary_set.is_empty() {
                         summary.operations.push(OperationSummary::SetCellValues(
                             sheet.id.to_string(),
                             summary_set,
                         ));
                     }
-                }
-                Operation::SetCellCode {
-                    cell_ref,
-                    code_cell_value: old_code_cell_value,
+                    summary.code_cells_modified.insert(sheet.id);
+                    Operation::SetCellCode {
+                        cell_ref,
+                        code_cell_value: old_code_cell_value,
+                    }
+                } else {
+                    // handles case where the CellRef no longer exists
+                    Operation::None
                 }
             }
             Operation::SetCellFormats { region, attr } => {
@@ -246,9 +201,7 @@ impl GridController {
                     CellFmtArray::FillColor(_) => {
                         summary.fill_sheets_modified.push(region.sheet);
                     }
-                    _ => {
-                        cell_regions_modified.extend(self.grid.region_rects(&region));
-                    }
+                    _ => (),
                 }
                 let old_attr = match attr {
                     CellFmtArray::Align(align) => {

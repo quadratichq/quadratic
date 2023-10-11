@@ -38,7 +38,7 @@ pub use sheet::Sheet;
 
 use crate::{
     controller::compute::{SheetPos, SheetRect},
-    CellValue, Pos, Rect, Value,
+    CellValue, Pos, Value,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -180,14 +180,6 @@ impl Grid {
     pub fn sheet_mut_from_string(&mut self, sheet_id: String) -> &Sheet {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         self.sheet_mut_from_id(sheet_id)
-    }
-
-    /// Returns a list of rectangles that exactly covers a region. Ignores IDs
-    /// for columns and rows that don't exist.
-    pub(crate) fn region_rects(&self, region: &RegionRef) -> impl Iterator<Item = (SheetId, Rect)> {
-        let sheet_id = region.sheet;
-        let sheet = self.sheet_from_id(sheet_id);
-        sheet.region_rects(region).map(move |rect| (sheet_id, rect))
     }
 }
 

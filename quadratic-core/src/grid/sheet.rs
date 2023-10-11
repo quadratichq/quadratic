@@ -7,20 +7,18 @@ use itertools::Itertools;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-
 use self::sheet_offsets::SheetOffsets;
 
 use super::bounds::GridBounds;
 use super::code::CodeCellValue;
 use super::column::Column;
 use super::formatting::{BoolSummary, CellFmtAttr};
-use super::ids::{CellRef, ColumnId, IdMap, RegionRef, RowId, SheetId};
+use super::ids::{CellRef, ColumnId, IdMap, RowId, SheetId};
 use super::js_types::{CellFormatSummary, FormattingSummary};
 use super::response::{GetIdResponse, SetCellResponse};
-use super::{NumericFormat, NumericFormatKind};
+use super::{NumericFormat, NumericFormatKind, RegionRef};
 use crate::grid::{borders, SheetBorders};
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
-
 
 pub mod bounds;
 pub mod cells;
@@ -179,7 +177,7 @@ impl Sheet {
     pub fn set_region_borders(
         &mut self,
         region: &RegionRef,
-        borders: SheetBorders
+        borders: SheetBorders,
     ) -> SheetBorders {
         borders::set_region_borders(self, vec![region.clone()], borders)
     }
