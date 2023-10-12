@@ -21,6 +21,10 @@ impl GridController {
         let mut reverse_operations =
             self.transact(operations, &mut cell_values_modified, &mut summary);
 
+        crate::util::dbgjs(format!(
+            "cell_values_modified: {:?}",
+            cell_values_modified.clone()
+        ));
         // run computations
         let mut additional_operations = self.compute(cell_values_modified, &mut summary).await;
 

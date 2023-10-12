@@ -1,13 +1,12 @@
 import { Rectangle } from 'pixi.js';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
-import { OffsetsSizeChanges, Pos, SheetOffsets } from '../../quadratic-core/quadratic_core';
+import { JsRenderCodeCell, OffsetsSizeChanges, Pos, SheetOffsets } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
   CellFormatSummary,
   FormattingSummary,
   JsRenderCell,
-  JsRenderCodeCell,
   JsRenderFill,
 } from '../../quadratic-core/types';
 import { grid } from '../controller/Grid';

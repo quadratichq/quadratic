@@ -41,7 +41,6 @@ impl Error {
 /// Information about the type of error that occurred.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
-#[serde(tag = "type")]
 pub enum ErrorMsg {
     PythonError(Cow<'static, str>),
 

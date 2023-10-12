@@ -20,6 +20,7 @@ interface JsComputeResult {
     complete: boolean;
     rect?: Rect;
     sheet_id?: String;
+    line_number?: i64;
     result?: JsCodeResult;
 }
 "#;

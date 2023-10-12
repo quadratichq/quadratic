@@ -7,6 +7,7 @@ import { readFileAsArrayBuffer } from '../../helpers/files';
 import init, {
   CodeCellLanguage,
   GridController,
+  JsRenderCodeCell,
   MinMax,
   Pos,
   Rect as RectInternal,
@@ -20,7 +21,6 @@ import {
   FormattingSummary,
   JsClipboard,
   JsRenderCell,
-  JsRenderCodeCell,
   JsRenderFill,
   Rect,
 } from '../../quadratic-core/types';
