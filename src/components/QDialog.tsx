@@ -1,5 +1,15 @@
 import { Close } from '@mui/icons-material';
-import { Box, Dialog, DialogActions, DialogContent, IconButton, Paper, Typography, useTheme } from '@mui/material';
+import {
+  Box,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogProps,
+  IconButton,
+  Paper,
+  Typography,
+  useTheme,
+} from '@mui/material';
 import * as React from 'react';
 
 /**
@@ -21,32 +31,32 @@ import * as React from 'react';
  * </QDialog>
  */
 
-interface DialogProps {
+interface QDialogProps extends Omit<DialogProps, 'open'> {
   children: React.ReactNode;
   onClose: () => void;
 }
 
-interface DialogTitleProps {
+interface QDialogTitleProps {
   children: React.ReactNode;
 }
 
-interface DialogContentProps {
+interface QDialogContentProps {
   children: React.ReactNode;
 }
 
-interface DialogActionsProps {
+interface QDialogActionsProps {
   children: React.ReactNode;
 }
 
-const QDialog: React.FC<DialogProps> & {
-  Title: React.FC<DialogTitleProps>;
-  Content: React.FC<DialogContentProps>;
-  Actions: React.FC<DialogActionsProps>;
-} = ({ children, onClose }) => {
+const QDialog: React.FC<QDialogProps> & {
+  Title: React.FC<QDialogTitleProps>;
+  Content: React.FC<QDialogContentProps>;
+  Actions: React.FC<QDialogActionsProps>;
+} = ({ children, onClose, ...rest }) => {
   const theme = useTheme();
 
   return (
-    <Dialog open={true} onClose={onClose} fullWidth maxWidth={'sm'}>
+    <Dialog onClose={onClose} fullWidth maxWidth={'sm'} {...rest} open={true}>
       <Paper elevation={12}>
         {children}
         <IconButton onClick={onClose} sx={{ position: 'absolute', top: theme.spacing(1), right: theme.spacing(3) }}>
@@ -57,7 +67,7 @@ const QDialog: React.FC<DialogProps> & {
   );
 };
 
-const Title: React.FC<DialogTitleProps> = ({ children }) => {
+const Title: React.FC<QDialogTitleProps> = ({ children }) => {
   const theme = useTheme();
 
   return (
@@ -79,11 +89,11 @@ const Title: React.FC<DialogTitleProps> = ({ children }) => {
   );
 };
 
-const Content: React.FC<DialogContentProps> = ({ children }) => {
+const Content: React.FC<QDialogContentProps> = ({ children }) => {
   return <DialogContent dividers>{children}</DialogContent>;
 };
 
-const Actions: React.FC<DialogActionsProps> = ({ children }) => {
+const Actions: React.FC<QDialogActionsProps> = ({ children }) => {
   const theme = useTheme();
   return (
     <DialogActions sx={{ alignItems: 'center', px: theme.spacing(3), py: theme.spacing(1.5) }}>

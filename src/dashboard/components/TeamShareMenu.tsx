@@ -14,7 +14,19 @@ export function TeamShareMenu({ onClose, team }: { onClose: () => void; team: an
     <QDialog onClose={onClose}>
       <QDialog.Title>Share team “{team.name}”</QDialog.Title>
       <QDialog.Content>
-        {/* <ShareMenu fetcherUrl={'test'} permission={'OWNER'} uuid={'1'} /> */}
+        {/* 
+          <Share
+            users={users}
+            usersIndexForLoggedInUser={}
+            isLoading={}
+            error={}
+            onAddUser={}
+            onModifyUser={}
+            onDeleteUser={}
+            onResendUserInvite={}
+          />
+        */}
+
         <ShareMenu.Wrapper>
           <ShareMenu.Invite
             onInvite={({ email, role }) => {

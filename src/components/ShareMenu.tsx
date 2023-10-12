@@ -19,10 +19,9 @@ import {
 import React, { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router-dom';
 import { z } from 'zod';
-import { PermissionSchema, PublicLinkAccess, UserShare } from '../api/types';
+import { PublicLinkAccess, UserShare } from '../api/types';
 import { RoleSchema } from '../permissions';
 import { AvatarWithLetters } from './AvatarWithLetters';
-import { ShareFileMenuPopover } from './ShareFileMenuPopover';
 import { getUserShareOptions } from './ShareMenu.utils';
 
 /**
@@ -30,14 +29,10 @@ import { getUserShareOptions } from './ShareMenu.utils';
  *
  * <ShareMenu.Wrapper>
  *   <ShareMenu.Invite>
- *   <ShareMenu.ListItem>
- *   <ShareMenu.ListItem>
+ *   <ShareMenu.Users>
  */
 ShareMenu.Wrapper = Wrapper;
 ShareMenu.Invite = Invite;
-ShareMenu.ListItem = ListItem;
-ShareMenu.ListItemUserActions = UserActions;
-ShareMenu.User = UserListItem;
 ShareMenu.Users = Users;
 
 function Wrapper({ children }: { children: React.ReactNode }) {
@@ -137,25 +132,6 @@ function ShareMenu({ fetcherUrl, uuid }: { fetcherUrl: string; uuid: string }) {
         </>
       )}
     </ShareMenu.Wrapper>
-  );
-}
-
-function ListItem({ avatar, primary, secondary, action, error }: any) {
-  return (
-    <Row>
-      {avatar}
-      <Stack>
-        <Typography variant="body2" color="text.primary">
-          {primary}
-        </Typography>
-        {secondary && (
-          <Typography variant="caption" color={error ? 'error' : 'text.secondary'}>
-            {error ? error : secondary}
-          </Typography>
-        )}
-      </Stack>
-      <Box>{action}</Box>
-    </Row>
   );
 }
 
@@ -296,14 +272,6 @@ function UserListItem({
     </Row>
   );
 }
-
-const userMenuOptions = [
-  { label: 'Owner', value: PermissionSchema.enum.OWNER },
-  { label: 'Can edit', value: PermissionSchema.enum.EDITOR },
-  { label: 'Can view', value: PermissionSchema.enum.VIEWER },
-  // { isDivider: true },
-  { label: 'Remove', value: '4' },
-];
 
 /* =============================================================================
    UserPopoverMenu
@@ -528,17 +496,6 @@ function Invite({
         Invite
       </Button>
     </Stack>
-  );
-}
-
-function UserActions({ value, setValue }: any) {
-  return (
-    <ShareFileMenuPopover
-      value={value}
-      disabled={value === PermissionSchema.enum.OWNER}
-      options={userMenuOptions}
-      setValue={setValue}
-    />
   );
 }
 
