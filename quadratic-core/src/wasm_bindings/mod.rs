@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use async_trait::async_trait;
+use bigdecimal::{BigDecimal, Num};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -230,9 +231,23 @@ impl JsGridProxy {
 #[async_trait(?Send)]
 impl GridProxy for JsGridProxy {
     async fn get(&mut self, pos: Pos) -> CellValue {
-        self.get_cell_jsvalue(pos)
-            .await
-            .map_or_else(|_| CellValue::Blank, |val| val.as_string().into())
+        let jsvalue = match self.get_cell_jsvalue(pos).await {
+            Ok(v) => v,
+            Err(_) => return CellValue::Blank,
+        };
+
+        let string = match jsvalue.as_string() {
+            Some(s) => s,
+            None => return CellValue::Blank,
+        };
+
+        if let Ok(n) = BigDecimal::from_str_radix(&string, 10) {
+            CellValue::Number(n)
+        } else if string.is_empty() {
+            CellValue::Blank
+        } else {
+            CellValue::Text(string)
+        }
     }
 }
 

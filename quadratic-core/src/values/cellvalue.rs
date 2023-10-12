@@ -306,6 +306,23 @@ impl CellValue {
             std::cmp::Ordering::Greater | std::cmp::Ordering::Equal,
         ))
     }
+
+    /// Generic conversion from &str to CellValue
+    /// This would normally be an implementation of FromStr, but we are holding
+    /// off as we want formatting to happen with conversions in most places
+    pub fn to_cell_value(value: &str) -> CellValue {
+        let parsed = CellValue::strip_percentage(CellValue::strip_currency(value)).trim();
+        let number = BigDecimal::from_str(parsed);
+        let is_true = parsed.eq_ignore_ascii_case("true");
+        let is_false = parsed.eq_ignore_ascii_case("false");
+        let is_bool = is_true || is_false;
+
+        match (number, is_bool) {
+            (Ok(number), false) => CellValue::Number(number),
+            (_, true) => CellValue::Logical(is_true),
+            _ => CellValue::Text(String::from(value)),
+        }
+    }
 }
 
 #[cfg(test)]
