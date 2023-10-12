@@ -196,12 +196,10 @@ impl GridController {
                 }
             }
             Operation::SetCellFormats { region, attr } => {
-                match attr {
-                    CellFmtArray::FillColor(_) => {
-                        summary.fill_sheets_modified.push(region.sheet);
-                    }
-                    _ => (),
+                if let CellFmtArray::FillColor(_) = attr {
+                    summary.fill_sheets_modified.push(region.sheet);
                 }
+
                 let old_attr = match attr {
                     CellFmtArray::Align(align) => {
                         let sheet = self.grid.sheet_from_id(region.sheet);
