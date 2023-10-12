@@ -1,6 +1,7 @@
 import {
   BorderAll,
   BorderBottom,
+  BorderClear,
   // BorderClear,
   BorderColor,
   BorderHorizontal,
@@ -127,7 +128,7 @@ export function useGetBorderMenu(): JSX.Element {
           <BorderSelectionButton type={BorderSelection.Top} title="Top border" label={<BorderTop />} />
           <BorderSelectionButton type={BorderSelection.Right} title="Right border" label={<BorderRight />} />
           <BorderSelectionButton type={BorderSelection.Bottom} title="Bottom border" label={<BorderBottom />} />
-          {/*<BorderSelectionButton type={BorderSelection.Clear} title="Clear borders" label={<BorderClear />} />*/}
+          <BorderSelectionButton type={BorderSelection.Clear} title="Clear borders" label={<BorderClear />} />
         </div>
       </div>
       <div className="borderMenuFormatting">

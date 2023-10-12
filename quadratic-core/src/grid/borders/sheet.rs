@@ -23,6 +23,13 @@ pub fn generate_borders(
         .render_lookup
         .clone_rects(&sheet.region_rects(region).collect_vec());
 
+    // if Clear then set style to None
+    let style = if selections.len() == 1 && selections[0] == BorderSelection::Clear {
+        None
+    } else {
+        style
+    };
+
     for rect in sheet.region_rects(region) {
         let horizontal = compute_indices::horizontal(rect, selections.clone());
         let vertical = compute_indices::vertical(rect, selections.clone());
