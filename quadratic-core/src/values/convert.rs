@@ -32,7 +32,7 @@ impl From<String> for CellValue {
 }
 impl From<&str> for CellValue {
     fn from(value: &str) -> Self {
-        value.into()
+        CellValue::Text(value.to_string())
     }
 }
 // todo: this might be wrong for formulas
