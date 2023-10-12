@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import mixpanel from 'mixpanel-browser';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
 import {
@@ -21,8 +21,11 @@ export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const setEditorHighlightedCells = useSetRecoilState(editorHighlightedCellsStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
+  const isRunningComputation = useRef(false);
 
-  const [isRunningComputation, setIsRunningComputation] = useState(false);
+  const [cell, setCell] = useState<any>(
+    sheets.sheet.getCodeValue(editorInteractionState.selectedCell.x, editorInteractionState.selectedCell.y)
+  );
 
   const [editorWidth, setEditorWidth] = useState<number>(
     window.innerWidth * 0.35 // default to 35% of the window width
@@ -39,25 +42,14 @@ export const CodeEditor = () => {
     [editorInteractionState.selectedCell.x, editorInteractionState.selectedCell.y]
   );
 
-  const [editorContent, setEditorContent] = useState<string | undefined>();
-  const cell = useMemo(
-    () => {
-      mixpanel.track('[CodeEditor].opened', { type: editorMode });
-      const cellCodeValue = sheets.sheet.getCodeValue(
-        editorInteractionState.selectedCell.x,
-        editorInteractionState.selectedCell.y
-      );
-      setEditorContent(cellCodeValue?.code_string ?? '');
-      return cellCodeValue;
-    },
-    // need isRunningComputation here to update cell after running computation
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [editorInteractionState.selectedCell, editorMode, isRunningComputation]
-  );
+  const [editorContent, setEditorContent] = useState<string | undefined>(cell.code_string);
+  useEffect(() => {
+    mixpanel.track('[CodeEditor].opened', { type: editorMode });
+  }, [editorMode]);
 
   const closeEditor = useCallback(
     (skipSaveCheck: boolean) => {
-      if (!skipSaveCheck && editorContent !== cell?.code_string) {
+      if (!skipSaveCheck && editorContent !== cell.code_string) {
         setShowSaveChangesAlert(true);
       } else {
         setEditorInteractionState((oldState) => ({
@@ -70,7 +62,9 @@ export const CodeEditor = () => {
     [cell?.code_string, editorContent, setEditorHighlightedCells, setEditorInteractionState]
   );
 
-  const saveAndRunCell = useCallback(async () => {
+  const saveAndRunCell = async () => {
+    if (isRunningComputation.current) return;
+    isRunningComputation.current = true;
     const language =
       editorInteractionState.mode === 'PYTHON'
         ? CodeCellLanguage.Python
@@ -79,7 +73,6 @@ export const CodeEditor = () => {
         : undefined;
     if (language === undefined)
       throw new Error(`Language ${editorInteractionState.mode} not supported in CodeEditor#saveAndRunCell`);
-    setIsRunningComputation(true);
     await grid.setCodeCellValue({
       sheetId: sheets.sheet.id,
       x: cellLocation.x,
@@ -87,8 +80,13 @@ export const CodeEditor = () => {
       codeString: editorContent ?? '',
       language,
     });
-    setIsRunningComputation(false);
-  }, [cellLocation.x, cellLocation.y, editorContent, editorInteractionState.mode]);
+    const refresh = sheets.sheet.getCodeValue(
+      editorInteractionState.selectedCell.x,
+      editorInteractionState.selectedCell.y
+    );
+    setCell(refresh);
+    isRunningComputation.current = false;
+  };
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // Esc
@@ -156,7 +154,7 @@ export const CodeEditor = () => {
       <CodeEditorHeader
         cellLocation={cellLocation}
         unsaved={false}
-        isRunningComputation={isRunningComputation}
+        isRunningComputation={isRunningComputation.current}
         saveAndRunCell={saveAndRunCell}
         closeEditor={() => closeEditor(false)}
       />

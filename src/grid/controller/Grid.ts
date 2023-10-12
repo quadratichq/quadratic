@@ -191,7 +191,6 @@ export class Grid {
     this.dirty = true;
   }
 
-  // todo....
   async setCodeCellValue(options: {
     sheetId: string;
     x: number;
