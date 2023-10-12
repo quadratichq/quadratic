@@ -8,7 +8,7 @@ export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z
   const isAuthenticated = await authClient.isAuthenticated();
   const sharedInit = {
     headers: {
-      'Content-Type': 'application/json',
+      // 'Content-Type': content_type, TODO: verify this doesn't break anything, browser seems to figure it out
       // Only pass the auth if the user is auth'd
       ...(isAuthenticated ? { Authorization: `Bearer ${await authClient.getToken()}` } : {}),
     },
