@@ -143,7 +143,7 @@ pub fn update_code_cell_value(
                     summary_set.push(JsRenderCellUpdate {
                         x: pos.x,
                         y: pos.y,
-                        update: JsRenderCellUpdateEnum::Value(Some("Error!".into())),
+                        update: JsRenderCellUpdateEnum::Value(Some(" ERROR".into())),
                     });
                     summary_set.push(JsRenderCellUpdate {
                         x: pos.x,
@@ -153,7 +153,7 @@ pub fn update_code_cell_value(
                     summary_set.push(JsRenderCellUpdate {
                         x: pos.x,
                         y: pos.y,
-                        update: JsRenderCellUpdateEnum::Bold(Some(true)),
+                        update: JsRenderCellUpdateEnum::Italic(Some(true)),
                     });
                 }
             };

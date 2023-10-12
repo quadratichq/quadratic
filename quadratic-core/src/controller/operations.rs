@@ -160,6 +160,8 @@ impl GridController {
 
                 let mut summary_set = vec![];
 
+                crate::util::dbgjs(format!("code_cell_value: {:?}", &code_cell_value));
+
                 if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
                     let sheet_pos = SheetPos {
                         x: pos.x,

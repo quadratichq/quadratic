@@ -3,7 +3,7 @@ use crate::{
         js_types::{
             JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill,
         },
-        CodeCellRunResult, Column, NumericFormat, NumericFormatKind,
+        CodeCellRunResult, NumericFormat, NumericFormatKind,
     },
     CellValue, Pos, Rect,
 };
@@ -82,13 +82,13 @@ impl Sheet {
                         x,
                         y,
 
-                        value: String::from("Error!"),
+                        value: String::from(" ERROR"),
                         language,
 
                         align: None,
                         wrap: None,
-                        bold: Some(true),
-                        italic: None,
+                        bold: None,
+                        italic: Some(true),
                         text_color: Some(String::from("red")),
                     }
                 } else {
