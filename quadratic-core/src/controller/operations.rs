@@ -160,6 +160,8 @@ impl GridController {
 
                 let mut summary_set = vec![];
 
+                crate::util::dbgjs(format!("code_cell_value: {:?}", &code_cell_value));
+
                 if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
                     let sheet_pos = SheetPos {
                         x: pos.x,
@@ -176,6 +178,7 @@ impl GridController {
                         &mut summary_set,
                         cells_to_compute,
                     );
+
                     if !summary_set.is_empty() {
                         summary.operations.push(OperationSummary::SetCellValues(
                             sheet.id.to_string(),
@@ -193,12 +196,10 @@ impl GridController {
                 }
             }
             Operation::SetCellFormats { region, attr } => {
-                match attr {
-                    CellFmtArray::FillColor(_) => {
-                        summary.fill_sheets_modified.push(region.sheet);
-                    }
-                    _ => (),
+                if let CellFmtArray::FillColor(_) = attr {
+                    summary.fill_sheets_modified.push(region.sheet);
                 }
+
                 let old_attr = match attr {
                     CellFmtArray::Align(align) => {
                         let sheet = self.grid.sheet_from_id(region.sheet);

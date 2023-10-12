@@ -12,7 +12,8 @@
   "modulePathIgnorePatterns": [
     "<rootDir>/quadratic-core/pkg/package.json",
     "<rootDir>/src/quadratic-core/package.json",
-    "<rootDir>/src/quadratic-core/__mocks__/package.json"
+    "<rootDir>/src/quadratic-core/__mocks__/package.json",
+    "<rootDir>/build/pyodide/package.json"
   ],
   "transform": {
     "^.+\\.(ts|tsx|js|jsx)?$": "ts-jest",

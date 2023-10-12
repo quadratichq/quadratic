@@ -51,6 +51,14 @@ impl From<&Span> for Span {
         *span
     }
 }
+impl From<[u32; 2]> for Span {
+    fn from(span: [u32; 2]) -> Self {
+        Self {
+            start: span[0],
+            end: span[1],
+        }
+    }
+}
 
 /// Any data with an associated span.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]

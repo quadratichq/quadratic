@@ -29,6 +29,15 @@ impl CodeCellValue {
             Some(Value::Single(_)) | None => ArraySize::_1X1,
         }
     }
+
+    pub fn get_error(&self) -> Option<Error> {
+        let error = &self.output.as_ref()?.result;
+        if let CodeCellRunResult::Err { error } = error {
+            Some(error.clone())
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Display, Debug, Copy, Clone, PartialEq, Eq, Hash)]
