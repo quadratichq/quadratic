@@ -17,7 +17,7 @@ pub enum BorderSelection {
     Top,
     Right,
     Bottom,
-    // TODO: I may need Clear for TS
+    Clear,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]

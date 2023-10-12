@@ -193,9 +193,9 @@ export function drawCellBorder(options: {
   horizontal?: { type: CellBorderLine; color?: Rgba };
   vertical?: { type: CellBorderLine; color?: Rgba };
   getSprite: (tiling?: boolean) => Sprite;
-}): void {
+}): BorderCull[] {
   const { position, getSprite, horizontal, vertical } = options;
-
+  const borderCull: BorderCull[] = [];
   if (horizontal) {
     const borderType = horizontal.type;
     const lineWidth = borderType === CellBorderLine.Line2 ? 2 : borderType === CellBorderLine.Line3 ? 3 : 1;
@@ -210,7 +210,10 @@ export function drawCellBorder(options: {
     top.width = position.width + lineWidth;
     top.height = lineWidth;
     top.position.set(position.x - lineWidth / 2, position.y - lineWidth / 2);
-
+    borderCull.push({
+      sprite: top,
+      rectangle: new Rectangle(top.x, top.y, top.width, top.height),
+    });
     if (doubleDistance) {
       const top = getSprite(tiling);
       setTexture(top, true, borderType);
@@ -221,6 +224,10 @@ export function drawCellBorder(options: {
         position.x - lineWidth / 2, // todo + (options.left ? doubleDistance : 0),
         position.y + doubleDistance - lineWidth / 2
       );
+      borderCull.push({
+        sprite: top,
+        rectangle: new Rectangle(top.x, top.y, top.width, top.height),
+      });
     }
   }
 
@@ -238,6 +245,10 @@ export function drawCellBorder(options: {
     left.width = lineWidth;
     left.height = position.height + lineWidth;
     left.position.set(position.x - lineWidth / 2, position.y - lineWidth / 2);
+    borderCull.push({
+      sprite: left,
+      rectangle: new Rectangle(left.x, left.y, left.width, left.height),
+    });
 
     if (doubleDistance) {
       const left = options.getSprite(tiling);
@@ -249,6 +260,11 @@ export function drawCellBorder(options: {
         position.x - lineWidth / 2 + doubleDistance,
         position.y - lineWidth / 2 // todo + (options.top ? doubleDistance : 0)
       );
+      borderCull.push({
+        sprite: left,
+        rectangle: new Rectangle(left.x, left.y, left.width, left.height),
+      });
     }
   }
+  return borderCull;
 }

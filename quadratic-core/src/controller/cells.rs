@@ -3,7 +3,10 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 
 use crate::{
-    grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind, RegionRef, SheetId},
+    grid::{
+        generate_borders, BorderSelection, CodeCellLanguage, CodeCellValue, NumericFormat,
+        NumericFormatKind, RegionRef, SheetId,
+    },
     Array, CellValue, Pos, Rect, RunLengthEncoding,
 };
 
@@ -162,11 +165,10 @@ impl GridController {
 
     pub fn clear_formatting_operations(&mut self, sheet_id: SheetId, rect: Rect) -> Vec<Operation> {
         let region = self.existing_region(sheet_id, rect);
-
         match region.size() {
             Some(_) => {
                 let len = region.size().unwrap().len();
-                vec![
+                let mut ops = vec![
                     Operation::SetCellFormats {
                         region: region.clone(),
                         attr: CellFmtArray::Align(RunLengthEncoding::repeat(None, len)),
@@ -199,7 +201,16 @@ impl GridController {
                         region: region.clone(),
                         attr: CellFmtArray::FillColor(RunLengthEncoding::repeat(None, len)),
                     },
-                ]
+                ];
+
+                // clear borders
+                let sheet = self.grid.sheet_from_id(sheet_id);
+                let borders = generate_borders(sheet, &region, vec![BorderSelection::Clear], None);
+                ops.push(Operation::SetBorders {
+                    region: region.clone(),
+                    borders,
+                });
+                ops
             }
             None => vec![],
         }

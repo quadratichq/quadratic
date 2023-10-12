@@ -22,6 +22,7 @@ fn vertical_selection(rect: Rect, selection: BorderSelection) -> Vec<i64> {
         BorderSelection::Left => vec![first],
         BorderSelection::Right => vec![last],
         BorderSelection::Horizontal | BorderSelection::Top | BorderSelection::Bottom => vec![],
+        BorderSelection::Clear => (first..=last).collect(),
     }
 }
 
@@ -44,6 +45,7 @@ fn horizontal_selection(rect: Rect, selection: BorderSelection) -> Vec<i64> {
         BorderSelection::Top => vec![first],
         BorderSelection::Bottom => vec![last],
         BorderSelection::Vertical | BorderSelection::Left | BorderSelection::Right => vec![],
+        BorderSelection::Clear => (first..=last).collect(),
     }
 }
 

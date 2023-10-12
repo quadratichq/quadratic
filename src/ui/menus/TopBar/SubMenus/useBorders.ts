@@ -22,7 +22,6 @@ export const useBorders = (): IResults => {
     const colorTint = options.color === undefined ? colors.defaultBorderColor : convertColorStringToTint(options.color);
     const colorArray = convertTintToArray(colorTint);
     const selection = options.selection === undefined ? BorderSelection.All : options.selection;
-    console.log(colorArray);
     const style = new BorderStyle(
       new Rgba(Math.floor(colorArray[0] * 255), Math.floor(colorArray[1] * 255), Math.floor(colorArray[2] * 255), 0xff),
       options.type ?? 0

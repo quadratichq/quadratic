@@ -1,9 +1,9 @@
-import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
+import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { JsRenderBorder, JsRenderBorders } from '../../quadratic-core/quadratic_core';
 import { CellsSheet } from './CellsSheet';
-import { BorderCull, drawLine } from './drawBorders';
+import { BorderCull, drawCellBorder } from './drawBorders';
 
 export class CellsBorders extends Container {
   private cellsSheet: CellsSheet;
@@ -31,13 +31,9 @@ export class CellsBorders extends Container {
       const end = this.sheet.offsets.getCellOffsets(Number(border.x) + border.w, Number(border.y));
       const color = border.style.color;
       this.sprites.push(
-        drawLine({
-          x: start.x,
-          y: start.y,
-          width: end.x - start.x,
-          height: 1,
-          tint: color.tint(),
-          alpha: color.alpha(),
+        ...drawCellBorder({
+          position: new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y),
+          horizontal: { type: border.style.line, color },
           getSprite: this.getSprite,
         })
       );
@@ -52,13 +48,9 @@ export class CellsBorders extends Container {
       const end = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y) + border.h!);
       const color = border.style.color;
       this.sprites.push(
-        drawLine({
-          x: start.x,
-          y: start.y,
-          width: 1,
-          height: end.y - start.y,
-          tint: color.tint(),
-          alpha: color.alpha(),
+        ...drawCellBorder({
+          position: new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y),
+          vertical: { type: border.style.line, color },
           getSprite: this.getSprite,
         })
       );
@@ -70,6 +62,7 @@ export class CellsBorders extends Container {
     const borders = grid.getRenderBorders(this.sheet.id);
     this.drawHorizontal(borders);
     this.drawVertical(borders);
+    borders.free();
   }
 
   private getSprite = (tiling?: boolean): Sprite | TilingSprite => {
