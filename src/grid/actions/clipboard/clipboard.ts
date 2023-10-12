@@ -18,23 +18,19 @@ export const fullClipboardSupport = (): boolean => {
 
 //#region document event handler for copy, paste, and cut
 
-export const copyToClipboardEvent = (e: ClipboardEvent) => {
-  // returns if focus is not on the body or canvas
-  if (e.target !== document.body && e.target !== pixiApp.canvas) return;
+// returns if focus is not on the body or canvas or parent of canvas
+const canvasIsTarget = (e: ClipboardEvent) => {
+  return (
+    e.target === document.body || e.target === pixiApp.canvas || (e.target as HTMLElement)?.contains(pixiApp.canvas)
+  );
+};
 
+export const copyToClipboardEvent = (e: ClipboardEvent) => {
+  if (!canvasIsTarget(e)) return;
   debugTimeReset();
   const rectangle = sheets.sheet.cursor.getRectangle();
   const { plainText, html } = grid.copyToClipboard(sheets.sheet.id, rectangle);
-  if (!e.clipboardData) {
-    Sentry.captureEvent({
-      message: 'ClipboardData not defined',
-      level: Sentry.Severity.Warning,
-    });
-    console.warn('clipboardData is not defined');
-    return;
-  }
-  e.clipboardData.setData('text/html', html);
-  e.clipboardData.setData('text', plainText);
+  toClipboard(plainText, html);
   e.preventDefault();
   debugTimeCheck('copy to clipboard');
 };
@@ -55,9 +51,7 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
 };
 
 export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
-  // returns if focus is not on the body or canvas
-  if (e.target !== document.body && e.target !== pixiApp.canvas) return;
-
+  if (!canvasIsTarget(e)) return;
   if (!isEditorOrAbove(pixiAppSettings.permission)) return;
 
   if (!e.clipboardData) {
@@ -110,8 +104,8 @@ const toClipboard = (plainText: string, html: string) => {
 
   // fallback support for firefox
   else {
-    localforage.setItem(clipboardLocalStorageKey, html);
     navigator.clipboard.writeText(plainText);
+    localforage.setItem(clipboardLocalStorageKey, html);
   }
 };
 
@@ -161,8 +155,7 @@ export const pasteFromClipboard = async () => {
   if (!isEditorOrAbove(pixiAppSettings.permission)) return;
   const target = sheets.sheet.cursor.originPosition;
 
-  // handles non-Firefox browsers
-  if (navigator.clipboard?.read) {
+  if (fullClipboardSupport()) {
     const clipboardData = await navigator.clipboard.read();
 
     // get text/plain if available
