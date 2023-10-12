@@ -154,8 +154,7 @@ impl GridController {
                         } else {
                             let span = code_cell_result
                                 .error_span
-                                .to_owned()
-                                .and_then(|span| Some(Span::from(span)));
+                                .to_owned().map(|span| Span::from(span));
                             let error_msg = code_cell_result
                                 .error_msg
                                 .to_owned()
