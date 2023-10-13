@@ -57,30 +57,30 @@ class PythonWebWorker {
     };
   }
 
-  run(python: string, cells?: string): Promise<JsComputeResult> {
-    return new Promise((resolve) => {
-      if (!this.loaded || !this.worker) {
-        resolve({
-          complete: true,
-          result: {
-            success: false,
-            error_msg: 'Error: Python not loaded',
-            std_out: '',
-            output_value: undefined,
-            array_output: undefined,
-            formatted_code: undefined,
-          },
-        });
-      } else {
-        this.callback = resolve;
-        if (cells) {
-          this.worker.postMessage({ type: 'get-cells', cells: JSON.parse(cells) });
-        } else {
-          this.worker.postMessage({ type: 'execute', python });
-        }
-      }
-    });
+  start(python: string): JsComputeResult | undefined {
+    if (!this.loaded || !this.worker) {
+      return {
+        complete: true,
+        result: {
+          success: false,
+          error_msg: 'Error: Python not loaded',
+          std_out: '',
+          output_value: undefined,
+          array_output: undefined,
+          formatted_code: undefined,
+        },
+      };
+    } else {
+      this.worker.postMessage({ type: 'execute', python });
+    }
   }
+
+  getCells(cells: string) {
+    if (!this.worker) throw new Error('Expected worker to be defined in python.ts');
+    this.worker.postMessage({ type: 'get-cells', cells: JSON.parse(cells) });
+  }
+
+  complete(): JsComputeResult {}
 
   changeOutput(_: Record<string, PythonReturnType>): void {}
 }
@@ -89,9 +89,11 @@ export const pythonWebWorker = new PythonWebWorker();
 
 declare global {
   interface Window {
-    runPython: any;
+    startPython: any;
+    getCellsPython: any;
   }
 }
 
 // need to bind to window because rustWorker.ts cannot include any TS imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
-window.runPython = pythonWebWorker.run.bind(pythonWebWorker);
+window.startPython = pythonWebWorker.start.bind(pythonWebWorker);
+window.getCellsPython = pythonWebWorker.getCells.bind(pythonWebWorker);

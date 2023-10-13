@@ -39,5 +39,10 @@ interface JsCodeResult {
 
 #[wasm_bindgen(module = "/../src/web-workers/rustWorker.ts")]
 extern "C" {
-    pub async fn runPython(code_string: String, cells: Option<String>) -> JsValue;
+    pub fn runPython(code_string: String) -> JsValue;
+}
+
+#[wasm_bindgen(module = "/../src/web-workers/rustWorker.ts")]
+extern "C" {
+    pub fn getCellsPython(code_string: String) -> JsValue;
 }

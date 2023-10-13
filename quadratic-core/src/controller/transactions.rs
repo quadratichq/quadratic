@@ -22,7 +22,7 @@ impl GridController {
             self.transact(operations, &mut cell_values_modified, &mut summary);
 
         // run computations
-        let mut additional_operations = self.compute(cell_values_modified, &mut summary).await;
+        let mut additional_operations = self.compute(cell_values_modified, &mut summary);
 
         reverse_operations.append(&mut additional_operations);
 
@@ -80,37 +80,6 @@ impl GridController {
         });
         summary.cursor = cursor_old;
         Some(summary)
-    }
-
-    /// executes a set of operations and returns the reverse operations
-    /// TODO: remove this function and move code to transact_forward and execute_operation?
-    fn transact(
-        &mut self,
-        operations: Vec<Operation>,
-        cell_values_modified: &mut Vec<SheetPos>,
-        summary: &mut TransactionSummary,
-    ) -> Vec<Operation> {
-        let mut reverse_operations = vec![];
-        // TODO move bounds recalculation to somewhere else?
-        let mut sheets_with_changed_bounds = vec![];
-
-        for op in operations.iter() {
-            if let Some(new_dirty_sheet) = op.sheet_with_changed_bounds() {
-                if !sheets_with_changed_bounds.contains(&new_dirty_sheet) {
-                    sheets_with_changed_bounds.push(new_dirty_sheet);
-                }
-            }
-            let reverse_operation =
-                self.execute_operation(op.clone(), cell_values_modified, summary);
-            reverse_operations.push(reverse_operation);
-        }
-        for dirty_sheet in sheets_with_changed_bounds {
-            self.grid
-                .sheet_mut_from_id(dirty_sheet)
-                .recalculate_bounds();
-        }
-        reverse_operations.reverse();
-        reverse_operations
     }
 }
 

@@ -21,10 +21,11 @@ impl GridController {
     /// Returns the old dependencies of the node.
     pub async fn compute(
         &mut self,
-        cells_to_compute: &mut Vec<SheetPos>,
+        cell_values_modified: Vec<SheetPos>,
         summary: &mut TransactionSummary,
     ) -> Vec<Operation> {
         let mut reverse_operations = vec![];
+        let mut cells_to_compute = cell_values_modified.clone(); // start with all updated cells
 
         while let Some(pos) = cells_to_compute.pop() {
             // find which cells have formulas. Run the formulas and update the cells.
@@ -43,7 +44,12 @@ impl GridController {
                 let mut cells_accessed_code_cell = vec![];
                 match language {
                     CodeCellLanguage::Python => {
-                        let result = runPython(code_string.clone(), cells.clone()).await;
+                        let mut cells = None;
+                        let mut complete = false;
+
+                        // loop through runPython handling either get-cells or complete results
+                        while !complete {
+                            let result = runPython(code_string.clone(), cells.clone()).await;
                             let compute_result =
                                 serde_wasm_bindgen::from_value::<JsComputeResult>(result);
 
@@ -55,8 +61,7 @@ impl GridController {
                                         }
                                         complete = true;
                                     } else {
-                                        // get-cells isfor the next while loop
-                                        let mut cells = None;
+                                        // set cells to the requested get-cells for the next while loop
                                         let sheet_name = compute_result.sheet_id;
                                         let sheet = if let Some(sheet_name) = sheet_name {
                                             if let Some(sheet_from_name) =

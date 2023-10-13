@@ -16,6 +16,7 @@ pub mod import;
 pub mod operations;
 pub mod sheet_offsets;
 pub mod sheets;
+pub mod transaction;
 pub mod transaction_summary;
 pub mod transactions;
 
