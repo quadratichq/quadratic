@@ -12,10 +12,13 @@ class PythonWebWorker {
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
+
       if (event.type === 'results') {
         const result = event.results;
+
         if (!this.callback) throw new Error('Expected callback to be defined in python.ts');
         if (!result) throw new Error('Expected results to be defined in python.ts');
+
         if (result.array_output) {
           if (!Array.isArray(result.array_output[0])) {
             result.array_output = result.array_output.flatMap((entry: string | number) => [[entry.toString()]]);
@@ -25,9 +28,11 @@ class PythonWebWorker {
             );
           }
         }
+
         if (!result.success) {
           result.error_msg = result.input_python_stack_trace;
         }
+
         this.callback({
           complete: true,
           result,
@@ -45,6 +50,7 @@ class PythonWebWorker {
           complete: false,
           rect: pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
           sheet_id: event.range?.sheet,
+          line_number: event.range?.lineNumber,
         });
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));

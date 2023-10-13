@@ -468,7 +468,7 @@ mod test {
     use super::*;
     use crate::{
         controller::{auto_complete::cell_values_in_rect, GridController},
-        grid::{Bold, CellBorderStyle, Italic, NumericFormat},
+        grid::{Bold, CellBorderStyle, Italic},
         test_util::print_table,
     };
 

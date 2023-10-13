@@ -99,21 +99,32 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   updateDirtyLabels(): boolean {
-    let changed = !!this.dirtyLabels.length;
-    while (this.dirtyLabels.length) {
-      const label = this.dirtyLabels.pop();
-      if (label) {
-        if (label !== true) {
-          label.updateText(this.labelMeshes);
-        }
-        changed = true;
-      }
-    }
-    if (changed) {
+    if (this.dirty) {
+      this.updateText();
       this.overflowClip();
       this.updateBuffers();
+      this.dirty = false;
+      return true;
     }
-    return changed;
+    return false;
+
+    // todo: this should be put back in by taking into account mesh counts
+
+    // let changed = !!this.dirtyLabels.length;
+    // while (this.dirtyLabels.length) {
+    //   const label = this.dirtyLabels.pop();
+    //   if (label) {
+    //     if (label !== true) {
+    //       label.updateText(this.labelMeshes);
+    //     }
+    //     changed = true;
+    //   }
+    // }
+    // if (changed) {
+    //   this.overflowClip();
+    //   this.updateBuffers();
+    // }
+    // return changed;
   }
 
   private updateText() {
@@ -237,11 +248,13 @@ export class CellsTextHash extends Container<LabelMeshes> {
       if (update.value) {
         const label = this.cellLabels.get(key) ?? this.createLabel({ x: cell.x, y: cell.y, value: update.value });
         label.text = update.value;
-        label.dirty = true;
-        this.dirtyLabels.push(label);
+        this.dirty = true;
+        // label.dirty = true;
+        // this.dirtyLabels.push(label);
       } else {
         this.cellLabels.delete(key);
-        this.dirtyLabels.push(true);
+        // this.dirtyLabels.push(true);
+        this.dirty = true;
       }
     }
 
@@ -251,18 +264,18 @@ export class CellsTextHash extends Container<LabelMeshes> {
       if (label) {
         if (update.bold !== undefined) {
           label.changeBold(update.bold);
-          this.dirtyLabels.push(label);
+          this.dirty = true;
         } else if (update.italic !== undefined) {
           label.changeItalic(update.italic);
-          this.dirtyLabels.push(label);
+          this.dirty = true;
         } else if (update.align !== undefined) {
           label.changeAlign(update.align);
-          this.dirtyLabels.push(label);
+          this.dirty = true;
         } else if (update.wrap !== undefined) {
           console.log('todo...');
         } else if (update.textColor !== undefined) {
           label.changeTextColor(update.textColor);
-          this.dirtyLabels.push(label);
+          this.dirty = true;
         }
       }
     }

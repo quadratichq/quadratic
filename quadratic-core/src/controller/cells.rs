@@ -26,13 +26,22 @@ impl GridController {
         value: String,
         cursor: Option<String>,
     ) -> TransactionSummary {
+        let ops = self.set_cell_value_operations(sheet_id, pos, &value);
+        self.transact_forward(ops, cursor).await
+    }
+    pub fn set_cell_value_operations(
+        &mut self,
+        sheet_id: SheetId,
+        pos: Pos,
+        value: &str,
+    ) -> Vec<Operation> {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
         let cell_ref = sheet.get_or_create_cell_ref(pos);
         let region = RegionRef::from(cell_ref);
         let mut ops = vec![];
 
         // check for currency
-        if let Some((currency, number)) = CellValue::unpack_currency(&value) {
+        if let Some((currency, number)) = CellValue::unpack_currency(value) {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
                 values: Array::from(CellValue::Number(number)),
@@ -52,12 +61,12 @@ impl GridController {
                 region,
                 attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
             });
-        } else if let Ok(bd) = BigDecimal::from_str(&value) {
+        } else if let Ok(bd) = BigDecimal::from_str(value) {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
                 values: Array::from(CellValue::Number(bd)),
             });
-        } else if let Some(percent) = CellValue::unpack_percentage(&value) {
+        } else if let Some(percent) = CellValue::unpack_percentage(value) {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
                 values: Array::from(CellValue::Number(percent)),
@@ -76,10 +85,10 @@ impl GridController {
         }
         // todo: include other types here
         else {
-            let values = Array::from(CellValue::Text(value));
+            let values = Array::from(CellValue::Text(value.into()));
             ops.push(Operation::SetCellValues { region, values });
         }
-        self.transact_forward(ops, cursor).await
+        ops
     }
     pub async fn set_cells(
         &mut self,
@@ -264,11 +273,10 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
+    use crate::{controller::GridController, CellValue, Pos};
     use std::str::FromStr;
 
     use bigdecimal::BigDecimal;
-
-    use crate::{controller::GridController, CellValue, Pos, Rect};
 
     #[tokio::test]
     async fn test_set_cell_value_undo_redo() {
@@ -277,7 +285,7 @@ mod test {
         let pos = Pos { x: 3, y: 6 };
         let get_the_cell =
             |g: &GridController| g.sheet(sheet_id).get_cell_value(pos).unwrap_or_default();
-        let expected_cell_regions_modified = vec![(sheet_id, Rect::single_pos(pos))];
+        // let expected_cell_regions_modified = vec![(sheet_id, Rect::single_pos(pos))];
 
         assert_eq!(get_the_cell(&g), CellValue::Blank);
         g.set_cell_value(sheet_id, pos, String::from("a"), None)

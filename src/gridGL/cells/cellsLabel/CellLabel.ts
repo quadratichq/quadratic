@@ -104,6 +104,7 @@ export class CellLabel extends Container {
 
   changeTextColor(color?: string) {
     this.tint = color ? convertColorStringToTint(color) : undefined;
+    this.dirty = true;
   }
 
   get cellWidth(): number {
@@ -158,8 +159,8 @@ export class CellLabel extends Container {
 
   /** Calculates the text glyphs and positions and tracks whether the text overflows the cell */
   public updateText(labelMeshes: LabelMeshes): void {
-    if (!this.dirty) return;
-    this.dirty = false;
+    // if (!this.dirty && !force) return;
+    // this.dirty = false;
     const data = BitmapFont.available[this.fontName];
     if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateText');
     const pos = new Point();

@@ -11,6 +11,7 @@ use crate::{
 
 // todo: fill this out
 const CURRENCY_SYMBOLS: &str = "$€£¥";
+const PERCENTAGE_SYMBOL: char = '%';
 
 /// Non-array value in the formula language.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -168,10 +169,15 @@ impl CellValue {
         None
     }
 
+    pub fn strip_percentage(value: &str) -> &str {
+        value.strip_suffix(PERCENTAGE_SYMBOL).unwrap_or(value)
+    }
+
     pub fn unpack_currency(s: &str) -> Option<(String, BigDecimal)> {
         if s.is_empty() {
             return None;
         }
+
         for char in CURRENCY_SYMBOLS.chars() {
             if let Some(stripped) = s.strip_prefix(char) {
                 if let Ok(bd) = BigDecimal::from_str(stripped) {
@@ -299,6 +305,23 @@ impl CellValue {
             self.cmp(other)?,
             std::cmp::Ordering::Greater | std::cmp::Ordering::Equal,
         ))
+    }
+
+    /// Generic conversion from &str to CellValue
+    /// This would normally be an implementation of FromStr, but we are holding
+    /// off as we want formatting to happen with conversions in most places
+    pub fn to_cell_value(value: &str) -> CellValue {
+        let parsed = CellValue::strip_percentage(CellValue::strip_currency(value)).trim();
+        let number = BigDecimal::from_str(parsed);
+        let is_true = parsed.eq_ignore_ascii_case("true");
+        let is_false = parsed.eq_ignore_ascii_case("false");
+        let is_bool = is_true || is_false;
+
+        match (number, is_bool) {
+            (Ok(number), false) => CellValue::Number(number),
+            (_, true) => CellValue::Logical(is_true),
+            _ => CellValue::Text(String::from(value)),
+        }
     }
 }
 
