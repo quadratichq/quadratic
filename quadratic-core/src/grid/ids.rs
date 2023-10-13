@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::str::FromStr;
 
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 #[cfg(feature = "js")]
@@ -99,46 +100,54 @@ impl RegionRef {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct IdMap<Id: Hash + Eq, Idx: Ord> {
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct IdMap<
+    Id: Hash + Eq + Serialize + DeserializeOwned,
+    Idx: Ord + Serialize + DeserializeOwned,
+> {
+    #[serde(with = "crate::util::hashmap_serde")]
     id_to_index: HashMap<Id, Idx>,
+
+    #[serde(with = "crate::util::btreemap_serde")]
     index_to_id: BTreeMap<Idx, Id>,
 }
-impl<Id: Hash + Eq, Idx: Ord> Serialize for IdMap<Id, Idx>
-where
-    Id: Copy + Serialize,
-    Idx: Copy + Serialize,
+// impl<Id: Hash + Eq, Idx: Ord> Serialize for IdMap<Id, Idx>
+// where
+//     Id: Copy + Serialize,
+//     Idx: Copy + Serialize,
+// {
+//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: serde::Serializer,
+//     {
+//         let map: HashMap<String, Idx> = self
+//             .id_to_index
+//             .iter()
+//             .map(|(id, idx)| (serde_json::to_string(id).unwrap(), *idx))
+//             .collect();
+//         map.serialize(serializer)
+//     }
+// }
+// impl<'de, Id: Hash + Eq, Idx: Ord> Deserialize<'de> for IdMap<Id, Idx>
+// where
+//     Id: Copy + for<'a> Deserialize<'a>,
+//     Idx: Copy + for<'a> Deserialize<'a>,
+// {
+//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+//     where
+//         D: serde::Deserializer<'de>,
+//     {
+//         let map = HashMap::<&'de str, Idx>::deserialize(deserializer)?;
+//         let mut ret = Self::new();
+//         for (k, v) in map {
+//             ret.add(serde_json::from_str(k).unwrap(), v);
+//         }
+//         Ok(ret)
+//     }
+// }
+impl<Id: Hash + Eq + Serialize + DeserializeOwned, Idx: Ord + Serialize + DeserializeOwned> Default
+    for IdMap<Id, Idx>
 {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let map: HashMap<String, Idx> = self
-            .id_to_index
-            .iter()
-            .map(|(id, idx)| (serde_json::to_string(id).unwrap(), *idx))
-            .collect();
-        map.serialize(serializer)
-    }
-}
-impl<'de, Id: Hash + Eq, Idx: Ord> Deserialize<'de> for IdMap<Id, Idx>
-where
-    Id: Copy + for<'a> Deserialize<'a>,
-    Idx: Copy + for<'a> Deserialize<'a>,
-{
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let map = HashMap::<&'de str, Idx>::deserialize(deserializer)?;
-        let mut ret = Self::new();
-        for (k, v) in map {
-            ret.add(serde_json::from_str(k).unwrap(), v);
-        }
-        Ok(ret)
-    }
-}
-impl<Id: Hash + Eq, Idx: Ord> Default for IdMap<Id, Idx> {
     fn default() -> Self {
         Self {
             id_to_index: HashMap::default(),
@@ -146,7 +155,11 @@ impl<Id: Hash + Eq, Idx: Ord> Default for IdMap<Id, Idx> {
         }
     }
 }
-impl<Id: Copy + Hash + Eq, Idx: Copy + Ord> IdMap<Id, Idx> {
+impl<
+        Id: Copy + Hash + Eq + Serialize + DeserializeOwned,
+        Idx: Copy + Ord + Serialize + DeserializeOwned,
+    > IdMap<Id, Idx>
+{
     pub fn new() -> Self {
         Self {
             id_to_index: HashMap::new(),
@@ -178,7 +191,11 @@ impl<Id: Copy + Hash + Eq, Idx: Copy + Ord> IdMap<Id, Idx> {
         self.index_to_id.iter().map(|(&index, &id)| (index, id))
     }
 }
-impl<Id: Copy + Hash + Eq, Idx: Copy + Ord> FromIterator<(Idx, Id)> for IdMap<Id, Idx> {
+impl<
+        Id: Copy + Hash + Eq + Serialize + DeserializeOwned,
+        Idx: Copy + Ord + Serialize + DeserializeOwned,
+    > FromIterator<(Idx, Id)> for IdMap<Id, Idx>
+{
     fn from_iter<T: IntoIterator<Item = (Idx, Id)>>(iter: T) -> Self {
         let mut ret = Self::new();
         for (index, id) in iter {

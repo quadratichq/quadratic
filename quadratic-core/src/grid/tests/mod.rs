@@ -70,14 +70,14 @@ fn test_startup_portfolio() {
 
 #[test]
 fn test_import_export() {
-    let airports = file::import(AIRPORTS_FILE).unwrap();
-    let airports_exported = file::export(&airports).unwrap();
+    let mut airports = file::import(AIRPORTS_FILE).unwrap();
+    let airports_exported = file::export(&mut airports).unwrap();
     std::fs::write("tmp.txt", &airports_exported).unwrap();
     let airports_reimported = file::import(&airports_exported).unwrap();
     assert_eq!(airports, airports_reimported);
 
-    let portfolio = file::import(STARTUP_PORTFOLIO_FILE).unwrap();
-    let portfolio_exported = file::export(&portfolio).unwrap();
+    let mut portfolio = file::import(STARTUP_PORTFOLIO_FILE).unwrap();
+    let portfolio_exported = file::export(&mut portfolio).unwrap();
     std::fs::write("tmp.txt", &portfolio_exported).unwrap();
     let portfolio_reimported = file::import(&portfolio_exported).unwrap();
     assert_eq!(portfolio, portfolio_reimported);

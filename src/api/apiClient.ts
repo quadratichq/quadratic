@@ -3,26 +3,32 @@ import { v4 as uuid } from 'uuid';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { downloadFileInBrowser } from '../helpers/downloadFileInBrowser';
-import { GridFile, GridFileSchema } from '../schemas';
 import { generateKeyBetween } from '../utils/fractionalIndexing';
 import { fetchFromApi } from './fetchFromApi';
 import { ApiSchemas, ApiTypes } from './types';
 
-const DEFAULT_FILE: GridFile = {
+const DEFAULT_FILE: any = {
+  version: '1.6',
   sheets: [
     {
+      id: { id: uuid() },
       name: 'Sheet 1',
-      id: uuid(),
+      color: null,
       order: generateKeyBetween(null, null),
-      cells: [],
-      formats: [],
-      columns: [],
-      rows: [],
-      borders: [],
+      column_ids: { id_to_index: {}, index_to_id: {} },
+      row_ids: { id_to_index: {}, index_to_id: {} },
+      offsets: {
+        column_widths: { default: 100.0, sizes: {} },
+        row_heights: { default: 20.0, sizes: {} },
+      },
+      columns: {},
+      borders: { horizontal: {}, vertical: {} },
+      code_cells: {},
+      data_bounds: { type: 'empty' },
+      format_bounds: { type: 'empty' },
     },
   ],
-  cell_dependency: '{}',
-  version: GridFileSchema.shape.version.value,
+  dependencies: {},
 };
 
 export const apiClient = {

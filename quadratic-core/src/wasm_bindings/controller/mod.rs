@@ -17,13 +17,17 @@ impl GridController {
     /// Imports a [`GridController`] from a JSON string.
     #[wasm_bindgen(js_name = "newFromFile")]
     pub fn js_new_from_file(file: &str) -> Result<GridController, JsValue> {
-        Ok(GridController::from_grid(file::import(file)?))
+        let result = file::import(file);
+        crate::util::dbgjs(&result);
+        Ok(GridController::from_grid(
+            result.map_err(|e| e.to_string())?,
+        ))
     }
 
     /// Exports a [`GridController`] to a file. Returns a `String`.
     #[wasm_bindgen(js_name = "exportToFile")]
     pub fn js_export_to_file(&self) -> Result<String, JsValue> {
-        Ok(file::export(self.grid())?)
+        Ok(file::export(self.grid()).map_err(|e| e.to_string())?)
     }
 
     /// Exports a [`string`]
