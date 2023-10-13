@@ -58,6 +58,7 @@ impl GridController {
 
         let reverse_operation =
             self.transact(transaction.ops, &mut cell_values_modified, &mut summary);
+
         self.redo_stack.push(Transaction {
             ops: reverse_operation,
             cursor,

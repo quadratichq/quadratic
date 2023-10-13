@@ -262,18 +262,18 @@ export class CellsTextHash extends Container<LabelMeshes> {
     else {
       const label = this.cellLabels.get(key);
       if (label) {
-        if (update.bold !== undefined) {
+        if ('bold' in update) {
           label.changeBold(update.bold);
           this.dirty = true;
-        } else if (update.italic !== undefined) {
+        } else if ('italic' in update) {
           label.changeItalic(update.italic);
           this.dirty = true;
-        } else if (update.align !== undefined) {
+        } else if ('align' in update) {
           label.changeAlign(update.align);
           this.dirty = true;
-        } else if (update.wrap !== undefined) {
+        } else if ('wrap' in update) {
           console.log('todo...');
-        } else if (update.textColor !== undefined) {
+        } else if ('textColor' in update) {
           label.changeTextColor(update.textColor);
           this.dirty = true;
         }

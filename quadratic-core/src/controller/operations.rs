@@ -157,10 +157,7 @@ impl GridController {
                 code_cell_value,
             } => {
                 let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
-
                 let mut summary_set = vec![];
-
-                crate::util::dbgjs(format!("code_cell_value: {:?}", &code_cell_value));
 
                 if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
                     let sheet_pos = SheetPos {
@@ -329,6 +326,7 @@ impl GridController {
                                 }
                             })
                             .collect();
+
                         summary.operations.push(OperationSummary::SetCellFormats(
                             region.sheet.to_string(),
                             cells,
