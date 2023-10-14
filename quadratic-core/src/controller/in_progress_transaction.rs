@@ -4,11 +4,11 @@ use crate::{
         CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue,
     },
     wasm_bindings::js::runPython,
-    Error, ErrorMsg, Pos, SheetPos, Span, Value,
+    Error, ErrorMsg, Pos, SheetPos, SheetRect, Span, Value,
 };
 
 use super::{
-    fetch_code_cell_difference::fetch_code_cell_difference,
+    code_cell_update::{fetch_code_cell_difference, update_code_cell_value},
     operations::Operation,
     transaction_summary::{OperationSummary, TransactionSummary},
     transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
@@ -58,22 +58,26 @@ impl InProgressTransaction {
             current_sheet_pos: None,
             waiting_for_async: None,
 
-            complete: compute == false,
+            complete: false,
         };
 
         // run computations
         transaction.transact(grid_controller, operations);
 
         if compute {
-            // loop compute cycle until complete or an async call is made
-            loop {
-                if transaction.compute(grid_controller) {
-                    break;
-                }
-            }
+            transaction.loop_compute(grid_controller)
         }
 
         transaction
+    }
+
+    // loop compute cycle until complete or an async call is made
+    fn loop_compute(&mut self, grid_controller: &mut GridController) {
+        loop {
+            if self.compute(grid_controller) {
+                break;
+            }
+        }
     }
 
     /// returns the TransactionSummary and clears it for future updates
@@ -287,7 +291,7 @@ impl InProgressTransaction {
             old_code_cell_value.clone(),
             Some(updated_code_cell_value.clone()),
             summary_set,
-            &mut self.cells_to_compute,
+            Some(&mut self.cells_to_compute),
         );
         self.reverse_operations.push(Operation::SetCellCode {
             cell_ref: sheet.get_or_create_cell_ref(current_sheet_pos.into()),
@@ -309,11 +313,11 @@ impl InProgressTransaction {
                     .iter()
                     .filter_map(|cell_ref| {
                         if let Some(pos) = sheet.cell_ref_to_pos(*cell_ref) {
-                            Some(SheetPos {
+                            Some(SheetRect::single_pos(SheetPos {
                                 x: pos.x,
                                 y: pos.y,
                                 sheet_id: sheet.id,
-                            })
+                            }))
                         } else {
                             None
                         }
@@ -328,8 +332,11 @@ impl InProgressTransaction {
         if self.complete {
             panic!("Transaction is already complete");
         }
-        let old_code_cell_value = if let Some(old_code_cell_value) = self.current_code_cell {
-            old_code_cell_value
+        let (language, code_string) = if let Some(old_code_cell_value) = self.current_code_cell {
+            (
+                old_code_cell_value.language,
+                old_code_cell_value.code_string,
+            )
         } else {
             panic!("Expected current_code_cell to be defined in transaction::complete");
         };
@@ -339,8 +346,8 @@ impl InProgressTransaction {
             match waiting_for_async {
               CodeCellLanguage::Python => {
                     let updated_code_cell_value = CodeCellValue {
-                        language: old_code_cell_value.language,
-                        code_string: old_code_cell_value.code_string,
+                        language,
+                        code_string,
                         formatted_code_string: result.formatted_code(),
                         output: Some(CodeCellRunOutput {
                             std_out: result.input_python_std_out().clone(),
@@ -360,7 +367,15 @@ impl InProgressTransaction {
                         // todo: figure out how to handle modified dates in cells
                         last_modified: String::new(),
                     };
-                    self.update_code_cell_value(grid_controller, updated_code_cell_value, Some(old_code_cell_value));
+                    let sheet_pos = if let Some(sheet_pos) = self.current_sheet_pos {
+                        sheet_pos
+                    } else {
+                        panic!("Expected current_sheet_pos to be defined in transaction::complete");
+                    };
+                    update_code_cell_value(grid_controller, sheet_pos, Some(updated_code_cell_value), Some(&mut self.cells_to_compute), &mut self.reverse_operations, &mut self.summary);
+
+                    // continue the compute loop after a successful async call
+                    self.loop_compute(grid_controller);
                 }
                 _ => panic!("Transaction.complete called for an unhandled language"),
             }
@@ -421,7 +436,6 @@ impl Into<Transaction> for InProgressTransaction {
 impl From<Transaction> for InProgressTransaction {
     fn from(value: Transaction) -> Self {
         Self {
-            reverse_operations: value.ops,
             cursor: value.cursor,
             ..Default::default()
         }

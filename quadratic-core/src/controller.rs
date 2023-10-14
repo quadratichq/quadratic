@@ -8,8 +8,8 @@ use self::{in_progress_transaction::InProgressTransaction, transactions::Transac
 pub mod auto_complete;
 pub mod cells;
 pub mod clipboard;
+pub mod code_cell_update;
 pub mod dependencies;
-pub mod fetch_code_cell_difference;
 pub mod formatting;
 pub mod import;
 pub mod in_progress_transaction;

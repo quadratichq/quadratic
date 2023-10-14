@@ -19,7 +19,7 @@ impl GridController {
     }
 
     /// sets the value based on a user's input and converts input to proper NumericFormat
-    pub async fn set_cell_value(
+    pub fn set_cell_value(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
@@ -27,7 +27,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.set_cell_value_operations(sheet_id, pos, &value);
-        self.transact_forward(ops, cursor).await
+        self.set_in_progress_transaction(ops, cursor, true)
     }
     pub fn set_cell_value_operations(
         &mut self,
@@ -90,7 +90,7 @@ impl GridController {
         }
         ops
     }
-    pub async fn set_cells(
+    pub fn set_cells(
         &mut self,
         sheet_id: SheetId,
         start_pos: Pos,
@@ -98,7 +98,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.set_cells_operations(sheet_id, start_pos, values);
-        self.transact_forward(ops, cursor).await
+        self.set_in_progress_transaction(ops, cursor, true)
     }
     pub fn set_cells_operations(
         &mut self,
@@ -118,7 +118,7 @@ impl GridController {
         vec![Operation::SetCellValues { region, values }]
     }
 
-    pub async fn set_cell_code(
+    pub fn set_cell_code(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
@@ -140,7 +140,7 @@ impl GridController {
                 last_modified: String::default(),
             }),
         }];
-        self.transact_forward(ops, cursor).await
+        self.set_in_progress_transaction(ops, cursor, true)
     }
 
     pub fn delete_cell_values_operations(
@@ -159,14 +159,14 @@ impl GridController {
         }
     }
 
-    pub async fn delete_cell_values(
+    pub fn delete_cell_values(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.delete_cell_values_operations(sheet_id, rect);
-        self.transact_forward(ops, cursor).await
+        self.set_in_progress_transaction(ops, cursor, true)
     }
 
     pub fn clear_formatting_operations(&mut self, sheet_id: SheetId, rect: Rect) -> Vec<Operation> {
@@ -214,17 +214,17 @@ impl GridController {
         }
     }
 
-    pub async fn clear_formatting(
+    pub fn clear_formatting(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.clear_formatting_operations(sheet_id, rect);
-        self.transact_forward(ops, cursor).await
+        self.set_in_progress_transaction(ops, cursor, false)
     }
 
-    pub async fn delete_values_and_formatting(
+    pub fn delete_values_and_formatting(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
@@ -232,7 +232,7 @@ impl GridController {
     ) -> TransactionSummary {
         let mut ops = self.delete_cell_values_operations(sheet_id, rect);
         ops.extend(self.clear_formatting_operations(sheet_id, rect));
-        self.transact_forward(ops, cursor).await
+        self.set_in_progress_transaction(ops, cursor, true)
     }
 
     /// Returns a region of the spreadsheet, assigning IDs to columns and rows
@@ -278,8 +278,8 @@ mod test {
 
     use bigdecimal::BigDecimal;
 
-    #[tokio::test]
-    async fn test_set_cell_value_undo_redo() {
+    #[test]
+    fn test_set_cell_value_undo_redo() {
         let mut g = GridController::new();
         let sheet_id = g.grid.sheets()[0].id;
         let pos = Pos { x: 3, y: 6 };
@@ -288,11 +288,9 @@ mod test {
         // let expected_cell_regions_modified = vec![(sheet_id, Rect::single_pos(pos))];
 
         assert_eq!(get_the_cell(&g), CellValue::Blank);
-        g.set_cell_value(sheet_id, pos, String::from("a"), None)
-            .await;
+        g.set_cell_value(sheet_id, pos, String::from("a"), None);
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
-        g.set_cell_value(sheet_id, pos, String::from("b"), None)
-            .await;
+        g.set_cell_value(sheet_id, pos, String::from("b"), None);
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
         // assert_eq!(
         //     g.undo(None).unwrap().cell_regions_modified,

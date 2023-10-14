@@ -4,11 +4,12 @@ use crate::{
         *,
     },
     values::IsBlank,
-    Array, CellValue, Pos,
+    Array, CellValue, Pos, SheetPos, SheetRect,
 };
 use serde::{Deserialize, Serialize};
 
 use super::{
+    code_cell_update::update_code_cell_value,
     formatting::CellFmtArray,
     transaction_summary::{OperationSummary, TransactionSummary},
     GridController,
@@ -155,39 +156,22 @@ impl GridController {
                 code_cell_value,
             } => {
                 let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
-
-                let mut summary_set = vec![];
-
-                crate::util::dbgjs(format!("code_cell_value: {:?}", &code_cell_value));
-
                 if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
                     let sheet_pos = SheetPos {
                         x: pos.x,
                         y: pos.y,
                         sheet_id: sheet.id,
                     };
-                    // add cell value to compute queue
-                    cells_to_compute.push(sheet_pos);
-
-                    let old_code_cell_value = update_code_cell_value(
-                        sheet,
+                    let mut reverse_operations = vec![];
+                    update_code_cell_value(
+                        self,
                         sheet_pos,
                         code_cell_value,
-                        &mut summary_set,
-                        cells_to_compute,
+                        None,
+                        &mut reverse_operations,
+                        summary,
                     );
-
-                    if !summary_set.is_empty() {
-                        summary.operations.push(OperationSummary::SetCellValues(
-                            sheet.id.to_string(),
-                            summary_set,
-                        ));
-                    }
-                    summary.code_cells_modified.insert(sheet.id);
-                    Operation::SetCellCode {
-                        cell_ref,
-                        code_cell_value: old_code_cell_value,
-                    }
+                    reverse_operations[0]
                 } else {
                     // handles case where the CellRef no longer exists
                     Operation::None
