@@ -96,13 +96,6 @@ pub struct JsRenderBorder {
     pub style: CellBorder,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct CellForArray {
-    pub x: i64,
-    pub y: i64,
-    pub value: String,
-}
-
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]

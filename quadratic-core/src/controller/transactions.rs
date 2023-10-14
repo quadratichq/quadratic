@@ -2,50 +2,69 @@ use crate::{grid::SheetId, Pos};
 use serde::{Deserialize, Serialize};
 
 use super::{
-    compute::SheetPos, operations::Operation, transaction_summary::TransactionSummary,
-    GridController,
+    in_progress_transaction::InProgressTransaction, operations::Operation,
+    transaction_summary::TransactionSummary, GridController,
 };
 
 impl GridController {
     /// Takes a Vec of initial Operations creates and runs a tractions, returning a transaction summary.
     /// This is the main entry point actions added to the undo/redo stack.
     /// Also runs computations for cells that need to be recomputed, and all of their dependencies.
-    pub async fn transact_forward(
+    // pub async fn transact_forward(
+    //     &mut self,
+    //     operations: Vec<Operation>,
+    //     cursor: Option<String>,
+    // ) -> TransactionSummary {
+    //     // make initial changes
+    //     let mut summary = TransactionSummary::default();
+
+    //     // run computations
+    //     let mut additional_operations = self.compute(cell_values_modified, &mut summary);
+
+    //     // filter out None operations
+    //     operations.retain(|op| match op {
+    //         Operation::None { .. } => false,
+    //         _ => true,
+    //     });
+
+    //     if !operations.is_empty() {
+    //         let mut cell_values_modified: Vec<SheetPos> = vec![];
+    //         let mut reverse_operations =
+    //             self.transact(operations, &mut cell_values_modified, &mut summary);
+
+    //         // run computations
+    //         let mut additional_operations = self.compute(cell_values_modified, &mut summary).await;
+
+    //         reverse_operations.append(&mut additional_operations);
+
+    //         // update undo/redo stack
+    //         self.redo_stack.clear();
+    //         self.undo_stack.push(Transaction {
+    //             ops: reverse_operations,
+    //             cursor,
+    //         });
+    //     }
+
+    //     summary
+    // }
+
+    pub fn transact(
         &mut self,
         operations: Vec<Operation>,
         cursor: Option<String>,
+        compute: bool,
     ) -> TransactionSummary {
-        // make initial changes
-        let mut summary = TransactionSummary::default();
-
-        // run computations
-        let mut additional_operations = self.compute(cell_values_modified, &mut summary);
-
-        // filter out None operations
-        operations.retain(|op| match op {
-            Operation::None { .. } => false,
-            _ => true,
-        });
-
-        if !operations.is_empty() {
-            let mut cell_values_modified: Vec<SheetPos> = vec![];
-            let mut reverse_operations =
-                self.transact(operations, &mut cell_values_modified, &mut summary);
-
-            // run computations
-            let mut additional_operations = self.compute(cell_values_modified, &mut summary).await;
-
-            reverse_operations.append(&mut additional_operations);
-
-            // update undo/redo stack
-            self.redo_stack.clear();
-            self.undo_stack.push(Transaction {
-                ops: reverse_operations,
-                cursor,
-            });
+        if self.in_progress_transaction.is_some() {
+            panic!("Cannot start a transaction while a transaction is in progress");
         }
-
-        summary
+        let mut in_progress_transaction =
+            InProgressTransaction::new(self, operations, cursor, compute);
+        if in_progress_transaction.complete {
+            self.redo_stack.push(in_progress_transaction.into());
+        } else {
+            self.in_progress_transaction = Some(in_progress_transaction);
+        }
+        in_progress_transaction.transaction_summary()
     }
 
     pub fn has_undo(&self) -> bool {
@@ -67,7 +86,7 @@ impl GridController {
 
         let reverse_operation =
             self.transact(transaction.ops, &mut cell_values_modified, &mut summary);
-        self.redo_stack.push(Transaction {
+        self.redo_stack.push(InProgressTransaction {
             ops: reverse_operation,
             cursor,
         });
@@ -87,7 +106,7 @@ impl GridController {
 
         let reverse_operations =
             self.transact(transaction.ops, &mut cell_values_modified, &mut summary);
-        self.undo_stack.push(Transaction {
+        self.undo_stack.push(InProgressTransaction {
             ops: reverse_operations,
             cursor,
         });

@@ -3,13 +3,11 @@ use crate::{
         js_types::{JsRenderCellUpdate, JsRenderCellUpdateEnum},
         CodeCellValue, Sheet,
     },
-    ArraySize, Pos, Value,
+    ArraySize, Pos, SheetPos,
 };
 
-use super::compute::SheetPos;
-
 /// Fetches the difference between the old and new code cell values and updates the UI
-fn fetch_code_cell_difference(
+pub fn fetch_code_cell_difference(
     sheet: &mut Sheet,
     sheet_pos: SheetPos,
     old_code_cell_value: Option<CodeCellValue>,
@@ -79,99 +77,11 @@ fn fetch_code_cell_difference(
     }
 }
 
-/// Sets the value of a code cell and returns the undo value, updates to the UI, and additions to the compute cycle
-pub fn update_code_cell_value(
-    sheet: &mut Sheet,
-    pos: SheetPos,
-    code_cell: Option<CodeCellValue>,
-    summary_set: &mut Vec<JsRenderCellUpdate>,
-    cells_to_compute: &mut Vec<SheetPos>,
-) -> Option<CodeCellValue> {
-    let old_code_cell_value = sheet.set_code_cell_value(pos.into(), code_cell.clone());
-    if let Some(code_cell) = code_cell.clone() {
-        if let Some(output) = code_cell.output {
-            match output.result.output_value() {
-                Some(output_value) => {
-                    match output_value {
-                        Value::Array(array) => {
-                            for y in 0..array.size().h.into() {
-                                for x in 0..array.size().w.into() {
-                                    // add all but the first cell to the compute cycle
-                                    if x != 0 && y != 0 {
-                                        cells_to_compute.push(SheetPos {
-                                            x: pos.x + x as i64,
-                                            y: pos.y + y as i64,
-                                            sheet_id: sheet.id,
-                                        });
-                                    }
-                                    if let Ok(value) = array.get(x, y) {
-                                        let entry_pos = Pos {
-                                            x: pos.x + x as i64,
-                                            y: pos.y + y as i64,
-                                        };
-                                        let (numeric_format, numeric_decimals) =
-                                            sheet.cell_numeric_info(entry_pos);
-                                        summary_set.push(JsRenderCellUpdate {
-                                            x: pos.x + x as i64,
-                                            y: pos.y + y as i64,
-                                            update: JsRenderCellUpdateEnum::Value(Some(
-                                                value.to_display(numeric_format, numeric_decimals),
-                                            )),
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                        Value::Single(value) => {
-                            let (numeric_format, numeric_decimals) =
-                                sheet.cell_numeric_info(pos.into());
-                            summary_set.push(JsRenderCellUpdate {
-                                x: pos.x,
-                                y: pos.y,
-                                update: JsRenderCellUpdateEnum::Value(Some(
-                                    value.to_display(numeric_format, numeric_decimals),
-                                )),
-                            });
-                        }
-                    };
-                }
-                None => {
-                    summary_set.push(JsRenderCellUpdate {
-                        x: pos.x,
-                        y: pos.y,
-                        update: JsRenderCellUpdateEnum::Value(Some(" ERROR".into())),
-                    });
-                    summary_set.push(JsRenderCellUpdate {
-                        x: pos.x,
-                        y: pos.y,
-                        update: JsRenderCellUpdateEnum::TextColor(Some("red".into())),
-                    });
-                    summary_set.push(JsRenderCellUpdate {
-                        x: pos.x,
-                        y: pos.y,
-                        update: JsRenderCellUpdateEnum::Italic(Some(true)),
-                    });
-                }
-            };
-        }
-    }
-    fetch_code_cell_difference(
-        sheet,
-        pos,
-        old_code_cell_value.clone(),
-        code_cell,
-        summary_set,
-        cells_to_compute,
-    );
-    old_code_cell_value
-}
-
 #[cfg(test)]
 mod test {
     use crate::{
-        controller::compute::SheetPos,
         grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellValue, Sheet},
-        Array, ArraySize, Value,
+        Array, ArraySize, SheetPos, Value,
     };
 
     #[test]

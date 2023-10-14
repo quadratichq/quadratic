@@ -40,89 +40,123 @@ pub fn column_from_name(s: &str) -> Option<f64> {
     Some(util::column_from_name(s)? as f64)
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone, TS)]
-pub struct JsCodeResult {
-    pub cells_accessed: Vec<[i64; 2]>,
-    pub formatted_code: Option<String>,
-    pub success: bool,
-    pub error_span: Option<[u32; 2]>,
-    pub error_msg: Option<String>,
-    pub input_python_std_out: Option<String>,
-    pub output_value: Option<String>,
-    pub array_output: Option<Vec<Vec<String>>>,
-}
+// #[wasm_bindgen]
+// pub struct JsCodeResult {
+//     formatted_code: Option<String>,
+//     success: bool,
+//     error_span: Option<[u32; 2]>,
+//     error_msg: Option<String>,
+//     std_out: Option<String>,
+//     output_value: Option<String>,
+//     array_output: Option<Vec<Vec<String>>>,
+// }
 
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
-pub struct JsComputeResult {
-    pub complete: bool,
-    pub rect: Option<Rect>,
-    pub sheet_id: Option<String>,
-    pub line_number: Option<i64>,
-    pub result: Option<JsCodeResult>,
-}
+// #[wasm_bindgen]
+// impl JsCodeResult {
+//     #[wasm_bindgen]
+//     pub fn new(
+//         formatted_code: Option<String>,
+//         success: bool,
+//         error_span_start: Option<u32>,
+//         error_span_end: Option<u32>,
+//         error_msg: Option<String>,
+//         std_out: Option<String>,
+//         output_value: Option<String>,
+//         array_output: Option<String>,
+//     ) -> Self {
+//         let error_span = if let (Some(error_span_start), Some(error_span_end)) =
+//             (error_span_start, error_span_end)
+//         {
+//             Some([error_span_start, error_span_end])
+//         } else {
+//             None
+//         };
+//         let array_output = if let Some(array_output) = array_output {
+//             let array_output: Result<Vec<Vec<String>>, serde_json::Error> =
+//                 serde_json::from_str(&array_output);
+//             match array_output {
+//                 Ok(array_output) => Some(array_output),
+//                 Err(_) => {
+//                     panic!("Could not parse array_output in JsCodeResult::new");
+//                 }
+//             }
+//         } else {
+//             None
+//         };
+//         Self {
+//             formatted_code,
+//             success,
+//             error_span,
+//             error_msg,
+//             std_out,
+//             output_value,
+//             array_output,
+//         }
+//     }
+// }
 
 /// Evaluates a formula and returns a formula result.
-#[wasm_bindgen]
-pub async fn eval_formula(
-    formula_string: &str,
-    x: f64,
-    y: f64,
-    grid_accessor_fn: js_sys::Function,
-) -> JsValue {
-    let mut grid_proxy = JsGridProxy::new(grid_accessor_fn);
-    let x = x as i64;
-    let y = y as i64;
-    let pos = Pos { x, y };
+// #[wasm_bindgen]
+// pub async fn eval_formula(
+//     formula_string: &str,
+//     x: f64,
+//     y: f64,
+//     grid_accessor_fn: js_sys::Function,
+// ) -> JsValue {
+// let mut grid_proxy = JsGridProxy::new(grid_accessor_fn);
+// let x = x as i64;
+// let y = y as i64;
+// let pos = Pos { x, y };
 
-    let formula_result = match formulas::parse_formula(formula_string, pos) {
-        Ok(formula) => formula.eval(&mut grid_proxy, pos).await,
-        Err(e) => Err(e),
-    };
-    let cells_accessed = grid_proxy
-        .cells_accessed
-        .into_iter()
-        .map(|pos| [pos.x, pos.y])
-        .collect_vec();
+// let formula_result = match formulas::parse_formula(formula_string, pos) {
+//     Ok(formula) => formula.eval(&mut grid_proxy, pos).await,
+//     Err(e) => Err(e),
+// };
+// let cells_accessed = grid_proxy
+//     .cells_accessed
+//     .into_iter()
+//     .map(|pos| [pos.x, pos.y])
+//     .collect_vec();
 
-    let result = match formula_result {
-        Ok(formula_output) => {
-            let mut output_value = None;
-            let mut array_output = None;
-            match formula_output {
-                Value::Array(a) => {
-                    array_output = Some(
-                        a.rows()
-                            .map(|row| row.iter().map(|cell| cell.to_string()).collect())
-                            .collect(),
-                    );
-                }
-                Value::Single(non_array_value) => output_value = Some(non_array_value.to_string()),
-            };
-            JsCodeResult {
-                cells_accessed,
-                success: true,
-                error_span: None,
-                error_msg: None,
-                output_value,
-                array_output,
-                formatted_code: None,
-                input_python_std_out: None,
-            }
-        }
-        Err(error) => JsCodeResult {
-            cells_accessed,
-            success: false,
-            error_span: error.span.map(|span| [span.start, span.end]),
-            error_msg: Some(error.msg.to_string()),
-            output_value: None,
-            array_output: None,
-            formatted_code: None,
-            input_python_std_out: None,
-        },
-    };
+// let result = match formula_result {
+//     Ok(formula_output) => {
+//         let mut output_value = None;
+//         let mut array_output = None;
+//         match formula_output {
+//             Value::Array(a) => {
+//                 array_output = Some(
+//                     a.rows()
+//                         .map(|row| row.iter().map(|cell| cell.to_string()).collect())
+//                         .collect(),
+//                 );
+//             }
+//             Value::Single(non_array_value) => output_value = Some(non_array_value.to_string()),
+//         };
+//         JsCodeResult {
+//             cells_accessed,
+//             success: true,
+//             error_span: None,
+//             error_msg: None,
+//             output_value,
+//             array_output,
+//             formatted_code: None,
+//             input_python_std_out: None,
+//         }
+//     }
+//     Err(error) => JsCodeResult {
+//         cells_accessed,
+//         success: false,
+//         error_span: error.span.map(|span| [span.start, span.end]),
+//         error_msg: Some(error.msg.to_string()),
+//         output_value: None,
+//         array_output: None,
+//         formatted_code: None,
+//         input_python_std_out: None,
+//     },
+// };
 
-    serde_wasm_bindgen::to_value(&result).unwrap()
-}
+// serde_wasm_bindgen::to_value(&result).unwrap()
+// }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, TS)]
 pub struct JsFormulaParseResult {

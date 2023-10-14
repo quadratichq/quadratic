@@ -35,3 +35,15 @@ pub struct TransactionSummary {
     /// Cursor location for undo/redo operation.
     pub cursor: Option<String>,
 }
+
+impl TransactionSummary {
+    pub fn clear(&mut self) {
+        self.fill_sheets_modified.clear();
+        self.border_sheets_modified.clear();
+        self.code_cells_modified.clear();
+        self.sheet_list_modified = false;
+        self.operations.clear();
+        self.offsets_modified.clear();
+        self.cursor = None;
+    }
+}

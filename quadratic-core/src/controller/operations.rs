@@ -9,8 +9,6 @@ use crate::{
 use serde::{Deserialize, Serialize};
 
 use super::{
-    code_cell_value::update_code_cell_value,
-    compute::{SheetPos, SheetRect},
     formatting::CellFmtArray,
     transaction_summary::{OperationSummary, TransactionSummary},
     GridController,

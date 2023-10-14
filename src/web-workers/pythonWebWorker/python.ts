@@ -15,8 +15,6 @@ class PythonWebWorker {
 
       if (event.type === 'results') {
         const result = event.results;
-
-        if (!this.callback) throw new Error('Expected callback to be defined in python.ts');
         if (!result) throw new Error('Expected results to be defined in python.ts');
 
         if (result.array_output) {
@@ -63,7 +61,7 @@ class PythonWebWorker {
     };
   }
 
-  start(python: string): JsComputeResult | undefined {
+  start(python: string) {
     if (!this.loaded || !this.worker) {
       return {
         complete: true,
@@ -85,8 +83,6 @@ class PythonWebWorker {
     if (!this.worker) throw new Error('Expected worker to be defined in python.ts');
     this.worker.postMessage({ type: 'get-cells', cells: JSON.parse(cells) });
   }
-
-  complete(): JsComputeResult {}
 
   changeOutput(_: Record<string, PythonReturnType>): void {}
 }
