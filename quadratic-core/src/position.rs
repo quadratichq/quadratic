@@ -219,6 +219,27 @@ pub struct SheetPos {
     pub y: i64,
     pub sheet_id: SheetId,
 }
+
+impl SheetPos {
+    pub fn new(sheet_id: SheetId, x: i64, y: i64) -> Self {
+        Self { sheet_id, x, y }
+    }
+}
+impl From<SheetRect> for Vec<SheetPos> {
+    fn from(rect: SheetRect) -> Vec<SheetPos> {
+        let mut sheet_pos = vec![];
+        for x in rect.min.x..=rect.max.x {
+            for y in rect.min.y..=rect.max.y {
+                sheet_pos.push(SheetPos {
+                    sheet_id: rect.sheet_id,
+                    x,
+                    y,
+                });
+            }
+        }
+        sheet_pos
+    }
+}
 impl fmt::Display for SheetPos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} ({}, {})", self.sheet_id, self.x, self.y)

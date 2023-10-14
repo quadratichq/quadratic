@@ -3,8 +3,9 @@ use std;
 use std::collections::HashSet;
 
 use crate::grid::Grid;
+use crate::SheetPos;
 
-use super::compute::{SheetPos, SheetRect};
+// todo: this probably should be CellRef instead of SheetPos (formally SheetRect)
 
 impl Grid {
     /// Given `cell` and `dependencies` adds a new node to the graph.
@@ -12,11 +13,11 @@ impl Grid {
     pub fn set_dependencies(
         &mut self,
         cell: SheetPos,
-        dependencies: Option<Vec<SheetRect>>,
-    ) -> Option<Vec<SheetRect>> {
+        dependencies: Option<Vec<SheetPos>>,
+    ) -> Option<Vec<SheetPos>> {
         // make sure cell is not in dependencies
         if let Some(dependencies) = &dependencies {
-            if dependencies.iter().any(|rect| rect.contains(cell)) {
+            if dependencies.iter().any(|sheet_pos| *sheet_pos == cell) {
                 panic!("cell cannot depend on itself");
             }
         }
@@ -34,8 +35,8 @@ impl Grid {
         let mut seen = HashSet::new();
 
         for node in self.dependencies_mut().iter() {
-            for rect in node.1.iter() {
-                if rect.contains(cell) {
+            for pos in node.1.iter() {
+                if *pos == cell {
                     seen.insert(*node.0);
                 }
             }
@@ -49,11 +50,7 @@ impl Grid {
 mod test {
     use std::collections::HashSet;
 
-    use crate::{
-        controller::compute::{SheetPos, SheetRect},
-        grid::Grid,
-        Pos,
-    };
+    use crate::{grid::Grid, Pos, SheetPos, SheetRect};
     #[test]
     fn test_graph() {
         let mut cdc = Grid::new();
@@ -65,11 +62,14 @@ mod test {
                 x: 3,
                 y: 3,
             },
-            Some(vec![SheetRect {
-                sheet_id,
-                min: Pos { x: 0, y: 0 },
-                max: Pos { x: 1, y: 1 },
-            }]),
+            Some(
+                SheetRect {
+                    sheet_id,
+                    min: Pos { x: 0, y: 0 },
+                    max: Pos { x: 1, y: 1 },
+                }
+                .into(),
+            ),
         );
 
         assert_eq!(
@@ -92,11 +92,14 @@ mod test {
                 x: 4,
                 y: 4,
             },
-            Some(vec![SheetRect {
-                sheet_id,
-                min: Pos { x: 0, y: 0 },
-                max: Pos { x: 1, y: 1 },
-            }]),
+            Some(
+                SheetRect {
+                    sheet_id,
+                    min: Pos { x: 0, y: 0 },
+                    max: Pos { x: 1, y: 1 },
+                }
+                .into(),
+            ),
         );
 
         assert_eq!(
@@ -169,11 +172,11 @@ mod test {
                 x: 11,
                 y: 11,
             },
-            Some(vec![SheetRect::single_pos(SheetPos {
+            Some(vec![SheetPos {
                 sheet_id,
                 x: 10,
                 y: 10,
-            })]),
+            }]),
         );
 
         assert_eq!(

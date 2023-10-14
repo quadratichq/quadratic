@@ -39,7 +39,7 @@ use crate::{CellValue, Pos, SheetPos, SheetRect, Value};
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Grid {
     sheets: Vec<Sheet>,
-    dependencies: HashMap<SheetPos, Vec<SheetRect>>,
+    dependencies: HashMap<SheetPos, Vec<SheetPos>>,
 }
 impl Default for Grid {
     fn default() -> Self {
@@ -58,7 +58,7 @@ impl Grid {
     pub fn sheets(&self) -> &[Sheet] {
         &self.sheets
     }
-    pub fn dependencies_mut(&mut self) -> &mut HashMap<SheetPos, Vec<SheetRect>> {
+    pub fn dependencies_mut(&mut self) -> &mut HashMap<SheetPos, Vec<SheetPos>> {
         &mut self.dependencies
     }
     pub fn sheet_ids(&self) -> Vec<SheetId> {

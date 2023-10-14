@@ -22,7 +22,7 @@ use super::{
 pub struct InProgressTransaction {
     reverse_operations: Vec<Operation>,
     cells_to_compute: Vec<SheetPos>,
-    cursor: Option<String>,
+    pub cursor: Option<String>,
     cells_accessed: Vec<CellRef>,
     summary: TransactionSummary,
 
@@ -302,9 +302,25 @@ impl InProgressTransaction {
                 ));
         }
         self.summary.code_cells_modified.insert(sheet.id);
-        grid_controller
-            .grid
-            .set_dependencies(current_sheet_pos, Some(self.cells_accessed));
+        grid_controller.grid.set_dependencies(
+            current_sheet_pos,
+            Some(
+                self.cells_accessed
+                    .iter()
+                    .filter_map(|cell_ref| {
+                        if let Some(pos) = sheet.cell_ref_to_pos(*cell_ref) {
+                            Some(SheetPos {
+                                x: pos.x,
+                                y: pos.y,
+                                sheet_id: sheet.id,
+                            })
+                        } else {
+                            None
+                        }
+                    })
+                    .collect(),
+            ),
+        );
     }
 
     /// finalizes the compute cycle after an async call
@@ -360,8 +376,6 @@ impl InProgressTransaction {
             // add the updated cells to the cells_to_compute
             let sheet = grid_controller.grid.sheet_mut_from_id(sheet_pos.sheet_id);
 
-            let mut summary_set = vec![];
-
             if let Some(code_cell) = sheet.get_code_cell(sheet_pos.into()) {
                 let code_string = code_cell.code_string.clone();
                 let language = code_cell.language;
@@ -400,6 +414,16 @@ impl Into<Transaction> for InProgressTransaction {
         Transaction {
             ops: self.reverse_operations,
             cursor: self.cursor,
+        }
+    }
+}
+
+impl From<Transaction> for InProgressTransaction {
+    fn from(value: Transaction) -> Self {
+        Self {
+            reverse_operations: value.ops,
+            cursor: value.cursor,
+            ..Default::default()
         }
     }
 }

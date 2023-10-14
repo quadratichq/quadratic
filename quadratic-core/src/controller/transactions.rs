@@ -77,16 +77,13 @@ impl GridController {
         if self.undo_stack.is_empty() {
             return None;
         }
-        let transaction = self.undo_stack.pop()?;
-        let cursor_old = transaction.cursor.clone();
-        let mut summary = TransactionSummary::default();
+        let transaction: InProgressTransaction = self.undo_stack.pop()?.into();
 
-        // these are irrelevant when undoing b/c we do not rerun computations
-        let mut cell_values_modified = vec![];
+        let cursor_old = transaction.cursor.clone();
 
         let reverse_operation =
             self.transact(transaction.ops, &mut cell_values_modified, &mut summary);
-        self.redo_stack.push(InProgressTransaction {
+        self.redo_stack.push(Transaction {
             ops: reverse_operation,
             cursor,
         });
