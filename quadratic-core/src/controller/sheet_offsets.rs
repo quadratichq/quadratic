@@ -7,7 +7,7 @@ impl GridController {
     /// see js_get_resize_to_apply
     ///
     /// Returns a [`TransactionSummary`].
-    pub async fn commit_offsets_resize(
+    pub fn commit_offsets_resize(
         &mut self,
         sheet_id: SheetId,
         transient_resize: Option<TransientResize>,
@@ -31,7 +31,7 @@ impl GridController {
                     new_size: transient_resize.new_size,
                 });
             }
-            self.transact_forward(ops, cursor).await
+            self.set_in_progress_transaction(ops, cursor, false)
         } else {
             TransactionSummary::default()
         }

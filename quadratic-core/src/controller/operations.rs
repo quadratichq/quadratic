@@ -167,11 +167,11 @@ impl GridController {
                         self,
                         sheet_pos,
                         code_cell_value,
-                        None,
+                        &mut None,
                         &mut reverse_operations,
                         summary,
                     );
-                    reverse_operations[0]
+                    reverse_operations[0].clone()
                 } else {
                     // handles case where the CellRef no longer exists
                     Operation::None

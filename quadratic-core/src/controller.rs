@@ -14,6 +14,7 @@ pub mod formatting;
 pub mod import;
 pub mod in_progress_transaction;
 pub mod operations;
+pub mod sheet_offsets;
 pub mod sheets;
 pub mod transaction_summary;
 pub mod transaction_types;

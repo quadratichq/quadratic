@@ -28,7 +28,7 @@ impl CellForArray {
 impl CellForArray {
     #[wasm_bindgen(js_name = "getValue")]
     pub fn get_value(&self) -> String {
-        self.value
+        self.value.clone()
     }
 }
 
@@ -74,26 +74,26 @@ impl JsCodeResult {
     pub fn success(&self) -> bool {
         self.success
     }
-    pub fn cells_accessed(&self) -> Vec<[i64; 2]> {
-        self.cells_accessed
+    pub fn cells_accessed(&self) -> &Vec<[i64; 2]> {
+        self.cells_accessed.as_ref()
     }
     pub fn formatted_code(&self) -> Option<String> {
-        self.formatted_code
+        self.formatted_code.clone()
     }
     pub fn error_span(&self) -> Option<[u32; 2]> {
         self.error_span
     }
     pub fn error_msg(&self) -> Option<String> {
-        self.error_msg
+        self.error_msg.clone()
     }
     pub fn input_python_std_out(&self) -> Option<String> {
-        self.input_python_std_out
+        self.input_python_std_out.clone()
     }
     pub fn output_value(&self) -> Option<String> {
-        self.output_value
+        self.output_value.clone()
     }
     pub fn array_output(&self) -> Option<Vec<Vec<String>>> {
-        self.array_output
+        self.array_output.clone()
     }
 }
 
@@ -159,7 +159,7 @@ impl JsComputeGetCells {
 
 impl JsComputeGetCells {
     pub fn sheet_name(&self) -> Option<String> {
-        self.sheet_name
+        self.sheet_name.clone()
     }
     pub fn rect(&self) -> Rect {
         self.rect

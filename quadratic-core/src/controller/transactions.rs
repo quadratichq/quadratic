@@ -15,10 +15,12 @@ impl GridController {
         cursor: Option<String>,
         compute: bool,
     ) -> TransactionSummary {
-        if let Some(in_progress_transaction) = self.in_progress_transaction {
-            if !in_progress_transaction.complete {
-                panic!("Cannot start a transaction while a transaction is in progress");
-            }
+        if self
+            .in_progress_transaction
+            .as_ref()
+            .is_some_and(|in_progress_transaction| !in_progress_transaction.complete)
+        {
+            panic!("Cannot start a transaction while a transaction is in progress");
         }
         let mut transaction = InProgressTransaction::new(self, operations, cursor, compute);
         let summary = transaction.transaction_summary();

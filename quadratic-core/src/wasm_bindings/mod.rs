@@ -2,7 +2,6 @@ use std::collections::HashSet;
 
 use async_trait::async_trait;
 use bigdecimal::{BigDecimal, Num};
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;

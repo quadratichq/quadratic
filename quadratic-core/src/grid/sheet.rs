@@ -355,14 +355,6 @@ impl Sheet {
             y: self.row_ids.index_of(cell_ref.row)?,
         })
     }
-    /// Returns the position references by a `CellRef`.
-    pub(crate) fn cell_ref_to_sheet_pos(&self, cell_ref: CellRef) -> Option<SheetPos> {
-        Some(SheetPos {
-            x: self.column_ids.index_of(cell_ref.column)?,
-            y: self.row_ids.index_of(cell_ref.row)?,
-            sheet_id: self.id,
-        })
-    }
     /// Creates a `CellRef` if the column and row already exist.
     pub(crate) fn try_get_cell_ref(&self, pos: Pos) -> Option<CellRef> {
         Some(CellRef {

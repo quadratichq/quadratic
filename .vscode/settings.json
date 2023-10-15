@@ -12,6 +12,7 @@
     "htmlescape",
     "itertools",
     "msdf",
+    "Northbridge",
     "openai",
     "opensans",
     "peekable",
@@ -19,9 +20,12 @@
     "pixiapp",
     "rects",
     "Signin",
+    "smallpop",
+    "Southborough",
     "subquadrant",
     "subquadrants",
-    "unspill"
+    "unspill",
+    "Westborough"
   ],
   "editor.codeActionsOnSave": {
     "source.organizeImports": true

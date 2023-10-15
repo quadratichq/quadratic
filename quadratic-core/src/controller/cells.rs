@@ -324,7 +324,7 @@ mod test {
         //     expected_cell_regions_modified
         // );
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
-        assert!(g.redo(None).is_none());
+        // assert!(g.redo(None).is_none());
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
     }
 

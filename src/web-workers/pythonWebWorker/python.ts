@@ -1,10 +1,7 @@
-import { pointsToRect } from '../../grid/controller/Grid';
-import { JsComputeResult } from '../../quadratic-core/quadratic_core';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 
 class PythonWebWorker {
   private worker?: Worker;
-  private callback?: (results: JsComputeResult) => void;
   private loaded = false;
 
   init() {
@@ -31,25 +28,24 @@ class PythonWebWorker {
           result.error_msg = result.input_python_stack_trace;
         }
 
-        this.callback({
-          complete: true,
-          result,
-        });
-        this.callback = undefined;
+        // todo: this needs to call grid.ts
+        // this.callback({
+        //   complete: true,
+        //   result,
+        // });
+        // this.callback = undefined;
       } else if (event.type === 'get-cells') {
         const range = event.range;
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');
         }
-        if (!this.callback) {
-          throw new Error('Expected callback to be defined in python');
-        }
-        this.callback({
-          complete: false,
-          rect: pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
-          sheet_id: event.range?.sheet,
-          line_number: event.range?.lineNumber,
-        });
+        // todo: this needs to call grid.ts
+        // this.callback({
+        //   complete: false,
+        //   rect: pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
+        //   sheet_id: event.range?.sheet,
+        //   line_number: event.range?.lineNumber,
+        // });
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
         this.loaded = true;

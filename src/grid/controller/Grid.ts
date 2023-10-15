@@ -139,38 +139,38 @@ export class Grid {
     return JSON.parse(data);
   }
 
-  async addSheet() {
-    const summary = await this.gridController.addSheet(sheets.getCursorPosition());
+  addSheet() {
+    const summary = this.gridController.addSheet(sheets.getCursorPosition());
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  async deleteSheet(sheetId: string) {
-    const summary = await this.gridController.deleteSheet(sheetId, sheets.getCursorPosition());
+  deleteSheet(sheetId: string) {
+    const summary = this.gridController.deleteSheet(sheetId, sheets.getCursorPosition());
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  async setSheetName(sheetId: string, name: string) {
-    const summary = await this.gridController.setSheetName(sheetId, name, sheets.getCursorPosition());
+  setSheetName(sheetId: string, name: string) {
+    const summary = this.gridController.setSheetName(sheetId, name, sheets.getCursorPosition());
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  async setSheetColor(sheetId: string, color: string | undefined) {
-    const summary = await this.gridController.setSheetColor(sheetId, color, sheets.getCursorPosition());
+  setSheetColor(sheetId: string, color: string | undefined) {
+    const summary = this.gridController.setSheetColor(sheetId, color, sheets.getCursorPosition());
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  async duplicateSheet(sheetId: string) {
-    const summary = await this.gridController.duplicateSheet(sheetId, sheets.getCursorPosition());
+  duplicateSheet(sheetId: string) {
+    const summary = this.gridController.duplicateSheet(sheetId, sheets.getCursorPosition());
     transactionResponse(summary);
     this.dirty = true;
   }
 
-  async moveSheet(sheetId: string, leftSheetId: string | undefined) {
-    const summary = await this.gridController.moveSheet(sheetId, leftSheetId, sheets.getCursorPosition());
+  moveSheet(sheetId: string, leftSheetId: string | undefined) {
+    const summary = this.gridController.moveSheet(sheetId, leftSheetId, sheets.getCursorPosition());
     transactionResponse(summary);
     this.dirty = true;
   }

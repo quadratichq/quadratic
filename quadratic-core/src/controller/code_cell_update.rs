@@ -16,15 +16,16 @@ pub fn update_code_cell_value(
     grid_controller: &mut GridController,
     sheet_pos: SheetPos,
     updated_code_cell_value: Option<CodeCellValue>,
-    cells_to_compute: Option<&mut Vec<SheetPos>>,
+    cells_to_compute: &mut Option<&mut Vec<SheetPos>>,
     reverse_operations: &mut Vec<Operation>,
     summary: &mut TransactionSummary,
 ) {
     let sheet = grid_controller.grid.sheet_mut_from_id(sheet_pos.sheet_id);
     let old_code_cell_value =
         sheet.set_code_cell_value(sheet_pos.into(), updated_code_cell_value.clone());
-    let mut summary_set = &mut vec![];
-    if let Some(updated_code_cell_value) = updated_code_cell_value {
+    let mut summary_set = vec![];
+    let mut dependencies: Option<Vec<SheetRect>> = None;
+    if let Some(updated_code_cell_value) = updated_code_cell_value.clone() {
         if let Some(output) = updated_code_cell_value.output {
             match output.result.output_value() {
                 Some(output_value) => {
@@ -92,44 +93,38 @@ pub fn update_code_cell_value(
                 }
             };
             match output.result {
-                CodeCellRunResult::Ok {
-                    output_value,
-                    cells_accessed,
-                } => {
-                    grid_controller.grid.set_dependencies(
-                        sheet_pos,
-                        Some(
-                            cells_accessed
-                                .iter()
-                                .filter_map(|cell_ref| {
-                                    if let Some(pos) = sheet.cell_ref_to_pos(*cell_ref) {
-                                        Some(SheetRect::single_pos(SheetPos {
-                                            x: pos.x,
-                                            y: pos.y,
-                                            sheet_id: sheet.id,
-                                        }))
-                                    } else {
-                                        None
-                                    }
-                                })
-                                .collect(),
-                        ),
+                CodeCellRunResult::Ok { cells_accessed, .. } => {
+                    dependencies = Some(
+                        cells_accessed
+                            .iter()
+                            .filter_map(|cell_ref| {
+                                if let Some(pos) = sheet.cell_ref_to_pos(*cell_ref) {
+                                    Some(SheetRect::single_pos(SheetPos {
+                                        x: pos.x,
+                                        y: pos.y,
+                                        sheet_id: sheet.id,
+                                    }))
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect(),
                     );
                 }
-                CodeCellRunResult::Err { error } => {
-                    grid_controller.grid.set_dependencies(sheet_pos, None);
+                CodeCellRunResult::Err { .. } => {
+                    dependencies = None;
                 }
             }
         }
     } else {
-        grid_controller.grid.set_dependencies(sheet_pos, None);
+        dependencies = None;
     }
     fetch_code_cell_difference(
         sheet,
         sheet_pos,
         old_code_cell_value.clone(),
         updated_code_cell_value.clone(),
-        summary_set,
+        &mut summary_set,
         cells_to_compute,
     );
     reverse_operations.push(Operation::SetCellCode {
@@ -143,6 +138,9 @@ pub fn update_code_cell_value(
         ));
     }
     summary.code_cells_modified.insert(sheet.id);
+    grid_controller
+        .grid
+        .set_dependencies(sheet_pos, dependencies);
 }
 
 /// Fetches the difference between the old and new code cell values and updates the UI
@@ -152,7 +150,7 @@ pub fn fetch_code_cell_difference(
     old_code_cell_value: Option<CodeCellValue>,
     new_code_cell_value: Option<CodeCellValue>,
     summary_set: &mut Vec<JsRenderCellUpdate>,
-    cells_to_compute: Option<&mut Vec<SheetPos>>,
+    cells_to_compute: &mut Option<&mut Vec<SheetPos>>,
 ) {
     let old_size = if let Some(old_code_cell_value) = old_code_cell_value {
         old_code_cell_value.output_size()
@@ -223,6 +221,7 @@ pub fn fetch_code_cell_difference(
 #[cfg(test)]
 mod test {
     use crate::{
+        controller::code_cell_update::fetch_code_cell_difference,
         grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellValue, Sheet},
         Array, ArraySize, SheetPos, Value,
     };
@@ -271,13 +270,13 @@ mod test {
             sheet_id: sheet.id,
         };
 
-        super::fetch_code_cell_difference(
+        fetch_code_cell_difference(
             &mut sheet,
             sheet_pos.clone(),
             old.clone(),
             new_smaller,
             &mut summary_set,
-            None,
+            &mut None,
         );
         assert_eq!(summary_set.len(), 4);
 
@@ -306,7 +305,7 @@ mod test {
             old,
             new_larger,
             &mut summary_set,
-            None,
+            &mut None,
         );
         assert_eq!(summary_set.len(), 0);
     }
