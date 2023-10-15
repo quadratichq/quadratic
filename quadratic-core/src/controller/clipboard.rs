@@ -382,8 +382,8 @@ mod test {
         );
     }
 
-    #[tokio::test]
-    async fn test_paste_from_quadratic_clipboard() {
+    #[test]
+    fn test_paste_from_quadratic_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
         gc.paste_from_clipboard(

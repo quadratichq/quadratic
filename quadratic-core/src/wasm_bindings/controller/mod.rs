@@ -1,5 +1,8 @@
 use super::*;
-use crate::{controller::transaction_summary::TransactionSummary, grid::js_types::*};
+use crate::{
+    controller::{transaction_summary::TransactionSummary, transaction_types::JsCodeResult},
+    grid::js_types::*,
+};
 use std::str::FromStr;
 
 pub mod auto_complete;
@@ -62,6 +65,13 @@ impl GridController {
         Ok(serde_wasm_bindgen::to_value(&self.redo(cursor))?)
     }
 
+    #[wasm_bindgen(js_name = "completeTransaction")]
+    pub fn js_complete_transaction(&mut self, result: JsCodeResult) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(
+            &self.complete_transaction(result),
+        )?)
+    }
+
     /// Populates a portion of a sheet with random float values.
     ///
     /// Returns a [`TransactionSummary`].
@@ -81,6 +91,7 @@ impl GridController {
             sheet_list_modified: false,
             cursor: None,
             offsets_modified: vec![],
+            save: false,
         })?)
     }
 }

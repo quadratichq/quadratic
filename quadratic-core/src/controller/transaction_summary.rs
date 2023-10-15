@@ -34,6 +34,9 @@ pub struct TransactionSummary {
 
     /// Cursor location for undo/redo operation.
     pub cursor: Option<String>,
+
+    // should the grid trigger a save
+    pub save: bool,
 }
 
 impl TransactionSummary {
@@ -45,5 +48,6 @@ impl TransactionSummary {
         self.operations.clear();
         self.offsets_modified.clear();
         self.cursor = None;
+        self.save = true;
     }
 }

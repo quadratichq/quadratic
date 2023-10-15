@@ -2,12 +2,14 @@ import * as Sentry from '@sentry/browser';
 import { Point, Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
+import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { readFileAsArrayBuffer } from '../../helpers/files';
 import init, {
   CodeCell,
   CodeCellLanguage,
   GridController,
+  JsCodeResult,
   JsRenderCodeCell,
   MinMax,
   Pos,
@@ -24,10 +26,11 @@ import {
   JsRenderCell,
   JsRenderFill,
   Rect,
+  TransactionSummary,
 } from '../../quadratic-core/types';
 import { GridFile } from '../../schemas';
+import { SheetCursorSave } from '../sheet/SheetCursor';
 import { sheets } from './Sheets';
-import { transactionResponse } from './transactionResponse';
 
 const rectangleToRect = (rectangle: Rectangle): RectInternal => {
   return new RectInternal(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
@@ -74,6 +77,39 @@ export const upgradeFileRust = async (
 export class Grid {
   private gridController!: GridController;
   private _dirty = false;
+
+  private transactionResponse(summary: TransactionSummary) {
+    if (!summary) return;
+    if (summary.sheet_list_modified) {
+      sheets.repopulate();
+    }
+
+    if (summary.operations.length) {
+      pixiApp.cellsSheets.operations(summary.operations);
+    }
+
+    if (summary.fill_sheets_modified.length) {
+      pixiApp.cellsSheets.updateFills(summary.fill_sheets_modified);
+    }
+
+    if (summary.offsets_modified.length) {
+      sheets.updateOffsets(summary.offsets_modified);
+    }
+
+    if (summary.code_cells_modified.length) {
+      pixiApp.cellsSheets.updateCodeCells(summary.code_cells_modified);
+    }
+
+    const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
+    if (cursor) {
+      sheets.current = cursor.sheetId;
+      sheets.sheet.cursor.load(cursor);
+    }
+    if (summary.save) {
+      this.dirty = true;
+    }
+    pixiApp.setViewportDirty();
+  }
 
   get dirty(): boolean {
     // the sheet is never dirty when mocking large data (to stop it from saving over an actual file)
@@ -142,38 +178,32 @@ export class Grid {
 
   addSheet() {
     const summary = this.gridController.addSheet(sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   deleteSheet(sheetId: string) {
     const summary = this.gridController.deleteSheet(sheetId, sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   setSheetName(sheetId: string, name: string) {
     const summary = this.gridController.setSheetName(sheetId, name, sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   setSheetColor(sheetId: string, color: string | undefined) {
     const summary = this.gridController.setSheetColor(sheetId, color, sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   duplicateSheet(sheetId: string) {
     const summary = this.gridController.duplicateSheet(sheetId, sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   moveSheet(sheetId: string, leftSheetId: string | undefined) {
     const summary = this.gridController.moveSheet(sheetId, leftSheetId, sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   //#endregion
@@ -188,8 +218,7 @@ export class Grid {
       options.value,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   setCodeCellValue(options: { sheetId: string; x: number; y: number; language: CodeCellLanguage; codeString: string }) {
@@ -200,8 +229,7 @@ export class Grid {
       options.codeString,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   deleteCellValues(sheetId: string, rectangle: Rectangle) {
@@ -210,8 +238,7 @@ export class Grid {
       rectangleToRect(rectangle),
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   setCellAlign(sheetId: string, rectangle: Rectangle, align: CellAlign | undefined) {
@@ -221,8 +248,7 @@ export class Grid {
       align,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   setCellWrap(sheetId: string, rectangle: Rectangle, wrap: CellWrap) {
@@ -232,8 +258,7 @@ export class Grid {
       wrap,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   setCellCurrency(sheetId: string, rectangle: Rectangle, symbol: string) {
@@ -243,8 +268,7 @@ export class Grid {
       symbol,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   setCellPercentage(sheetId: string, rectangle: Rectangle) {
@@ -253,8 +277,7 @@ export class Grid {
       rectangleToRect(rectangle),
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   removeCellNumericFormat(sheetId: string, rectangle: Rectangle) {
@@ -263,8 +286,7 @@ export class Grid {
       rectangleToRect(rectangle),
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   setCellBold(sheetId: string, rectangle: Rectangle, bold: boolean) {
@@ -274,8 +296,7 @@ export class Grid {
       bold,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   setCellItalic(sheetId: string, rectangle: Rectangle, italic: boolean) {
@@ -285,8 +306,7 @@ export class Grid {
       italic,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   setCellTextColor(sheetId: string, rectangle: Rectangle, textColor: string | undefined) {
@@ -296,8 +316,7 @@ export class Grid {
       textColor,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   setCellFillColor(sheetId: string, rectangle: Rectangle, fillColor: string | undefined) {
@@ -307,8 +326,7 @@ export class Grid {
       fillColor,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   changeDecimalPlaces(sheetId: string, source: Pos, rectangle: Rectangle, delta: number) {
@@ -320,8 +338,7 @@ export class Grid {
       delta,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   clearFormatting(sheetId: string, rectangle: Rectangle) {
@@ -330,8 +347,7 @@ export class Grid {
       rectangleToRect(rectangle),
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   //#endregion
@@ -461,14 +477,12 @@ export class Grid {
 
   undo() {
     const summary = this.gridController.undo(sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   redo() {
     const summary = this.gridController.redo(sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   //#endregion
@@ -485,8 +499,8 @@ export class Grid {
       rectangleToRect(rectangle),
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
+
     return { html, plainText };
   }
 
@@ -505,8 +519,7 @@ export class Grid {
       html,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   //#endregion
@@ -520,7 +533,7 @@ export class Grid {
 
     try {
       const summary = this.gridController.importCsv(sheetId, file_bytes, file.name, pos, sheets.getCursorPosition());
-      transactionResponse(summary);
+      this.transactionResponse(summary);
     } catch (error) {
       // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
       // type in the UI.
@@ -536,14 +549,12 @@ export class Grid {
 
   commitTransientResize(sheetId: string, transientResize: TransientResize) {
     const summary = this.gridController.commitOffsetsResize(sheetId, transientResize, sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   commitSingleResize(sheetId: string, column: number | undefined, row: number | undefined, size: number) {
     const summary = this.gridController.commitSingleResize(sheetId, column, row, size, sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   getOffsets(sheetId: string): SheetOffsets {
@@ -564,13 +575,17 @@ export class Grid {
       rectangleToRect(range),
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   //#endregion
 
   //#region Compute
+
+  completeTransaction(result: JsCodeResult) {
+    const summary = this.gridController.completeTransaction(result);
+    this.transactionResponse(summary);
+  }
 
   //#endregion
 }

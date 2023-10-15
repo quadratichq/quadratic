@@ -1,5 +1,6 @@
 use crate::{
     grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
+    util::dbgjs,
     wasm_bindings::js::runPython,
     Error, ErrorMsg, Pos, SheetPos, Span, Value,
 };
@@ -111,10 +112,6 @@ impl InProgressTransaction {
                 .sheet_mut_from_id(dirty_sheet)
                 .recalculate_bounds();
         }
-
-        // todo... return reverse operations?
-        // self.reverse_operations.reverse();
-        // self.reverse_operations
     }
 
     pub fn get_cells(
@@ -240,6 +237,9 @@ impl InProgressTransaction {
                     // continue the compute loop after a successful async call
                     self.loop_compute(grid_controller);
                 }
+                CodeCellLanguage::AsyncTest => {
+                    // todo: for testing...
+                }
                 _ => panic!("Transaction.complete called for an unhandled language"),
             }
           }
@@ -257,11 +257,15 @@ impl InProgressTransaction {
             if let Some(code_cell) = sheet.get_code_cell(sheet_pos.into()) {
                 let code_string = code_cell.code_string.clone();
                 let language = code_cell.language;
-
+                dbgjs(language);
                 match language {
                     CodeCellLanguage::Python => {
                         // python is run async so we exit the compute cycle and wait for TS to restart the transaction
                         runPython(code_string);
+                        self.waiting_for_async = Some(language);
+                        return true;
+                    }
+                    CodeCellLanguage::AsyncTest => {
                         self.waiting_for_async = Some(language);
                         return true;
                     }
@@ -275,14 +279,18 @@ impl InProgressTransaction {
                 // add all dependent cells to the cells_to_compute
                 let dependent_cells = grid_controller.grid.get_dependent_cells(sheet_pos);
 
+                // todo: these exit condition should be simplified
+
                 // add to cells_to_compute
                 self.cells_to_compute.extend(dependent_cells);
                 if self.cells_to_compute.is_empty() {
                     self.complete = true;
+                    self.summary.save = true;
                     true
                 } else {
                     if self.cells_to_compute.is_empty() {
                         self.complete = true;
+                        self.summary.save = true;
                         true
                     } else {
                         false
@@ -291,6 +299,7 @@ impl InProgressTransaction {
             } else {
                 if self.cells_to_compute.is_empty() {
                     self.complete = true;
+                    self.summary.save = true;
                     true
                 } else {
                     false
@@ -298,6 +307,7 @@ impl InProgressTransaction {
             }
         } else {
             self.complete = true;
+            self.summary.save = true;
             true
         }
     }
@@ -312,11 +322,67 @@ impl Into<Transaction> for InProgressTransaction {
     }
 }
 
+impl Into<Transaction> for &mut InProgressTransaction {
+    fn into(self) -> Transaction {
+        Transaction {
+            ops: self.reverse_operations.clone().into_iter().rev().collect(),
+            cursor: self.cursor.clone(),
+        }
+    }
+}
+
 impl From<Transaction> for InProgressTransaction {
     fn from(value: Transaction) -> Self {
         Self {
             cursor: value.cursor,
             ..Default::default()
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{
+        controller::{operations::Operation, transaction_types::JsCodeResult, GridController},
+        grid::{CodeCellLanguage, CodeCellValue},
+        wasm_bindings::controller::cells::CodeCell,
+        Pos,
+    };
+
+    #[test]
+    fn test_execute_operation_set_cell_values() {
+        let mut gc = GridController::new();
+        let sheet_ids = gc.sheet_ids();
+        let sheet = gc.grid.sheet_mut_from_id(sheet_ids[0]);
+        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
+        gc.set_in_progress_transaction(
+            vec![Operation::SetCellCode {
+                cell_ref,
+                code_cell_value: Some(CodeCellValue {
+                    language: CodeCellLanguage::AsyncTest,
+                    code_string: "1 + 1".to_string(),
+                    formatted_code_string: None,
+                    output: None,
+                    last_modified: String::new(),
+                }),
+            }],
+            None,
+            true,
+            crate::controller::transactions::TransactionType::Normal,
+        );
+        assert_eq!(
+            gc.js_get_code_string(sheet_ids[0].to_string(), &Pos { x: 0, y: 0 }),
+            Some(CodeCell::new(
+                "1 + 1".to_string(),
+                CodeCellLanguage::AsyncTest
+            ))
+        );
+        assert_eq!(gc.in_progress_transaction.is_some(), true);
+        if let Some(transaction) = gc.in_progress_transaction.clone() {
+            assert_eq!(transaction.complete, false);
+            assert_eq!(transaction.cells_to_compute.len(), 0);
+        }
+        let result = JsCodeResult::new(true, 0, 10, None, None, None, None, None, None, None);
+        gc.complete_transaction(result);
     }
 }

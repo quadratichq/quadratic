@@ -171,6 +171,7 @@ impl GridController {
                         &mut reverse_operations,
                         summary,
                     );
+                    cells_to_compute.push(sheet_pos);
                     reverse_operations[0].clone()
                 } else {
                     // handles case where the CellRef no longer exists

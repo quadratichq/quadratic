@@ -1,3 +1,4 @@
+import { grid } from '../../grid/controller/Grid';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 
 class PythonWebWorker {
@@ -9,7 +10,7 @@ class PythonWebWorker {
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
-
+      console.log(event);
       if (event.type === 'results') {
         const result = event.results;
         if (!result) throw new Error('Expected results to be defined in python.ts');
@@ -27,13 +28,8 @@ class PythonWebWorker {
         if (!result.success) {
           result.error_msg = result.input_python_stack_trace;
         }
-
-        // todo: this needs to call grid.ts
-        // this.callback({
-        //   complete: true,
-        //   result,
-        // });
-        // this.callback = undefined;
+        grid.completeTransaction(result);
+        debugger;
       } else if (event.type === 'get-cells') {
         const range = event.range;
         if (!range) {
@@ -71,6 +67,7 @@ class PythonWebWorker {
         },
       };
     } else {
+      console.log('execute');
       this.worker.postMessage({ type: 'execute', python });
     }
   }

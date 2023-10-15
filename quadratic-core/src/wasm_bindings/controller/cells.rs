@@ -8,12 +8,25 @@ use crate::{
     Pos, Rect,
 };
 
+#[derive(PartialEq, Debug)]
 #[wasm_bindgen]
 pub struct CodeCell {
     code_string: String,
     language: CodeCellLanguage,
     std_out: Option<String>,
     std_err: Option<String>,
+}
+
+#[cfg(test)]
+impl CodeCell {
+    pub fn new(code_string: String, language: CodeCellLanguage) -> Self {
+        Self {
+            code_string,
+            language,
+            std_out: None,
+            std_err: None,
+        }
+    }
 }
 
 #[wasm_bindgen]

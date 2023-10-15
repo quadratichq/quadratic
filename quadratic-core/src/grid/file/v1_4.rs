@@ -200,7 +200,9 @@ impl JsCellSchema {
             code_string: match language {
                 CodeCellLanguage::Python => self.python_code.clone().unwrap_or_default(),
                 CodeCellLanguage::Formula => self.formula_code.clone().unwrap_or_default(),
-                CodeCellLanguage::JavaScript | CodeCellLanguage::Sql => String::new(),
+                CodeCellLanguage::JavaScript
+                | CodeCellLanguage::Sql
+                | CodeCellLanguage::AsyncTest => String::new(),
             },
             formatted_code_string: self
                 .evaluation_result

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     in_progress_transaction::InProgressTransaction, operations::Operation,
-    transaction_summary::TransactionSummary, GridController,
+    transaction_summary::TransactionSummary, transaction_types::JsCodeResult, GridController,
 };
 
 pub enum TransactionType {
@@ -31,7 +31,7 @@ impl GridController {
             panic!("Cannot start a transaction while a transaction is in progress");
         }
         let mut transaction = InProgressTransaction::new(self, operations, cursor, compute);
-        let summary = transaction.transaction_summary();
+        let mut summary = transaction.transaction_summary();
         if transaction.complete {
             match undo {
                 TransactionType::Normal => {
@@ -45,6 +45,7 @@ impl GridController {
                     self.undo_stack.push(transaction.into());
                 }
             }
+            summary.save = true;
         } else {
             self.in_progress_transaction = Some(transaction);
         }
@@ -69,6 +70,18 @@ impl GridController {
             self.set_in_progress_transaction(transaction.ops, cursor, false, TransactionType::Redo)
         } else {
             TransactionSummary::default()
+        }
+    }
+    pub fn complete_transaction(&mut self, result: JsCodeResult) -> TransactionSummary {
+        if let Some(transaction) = &mut self.in_progress_transaction.clone() {
+            transaction.complete(self, result);
+            let summary = transaction.transaction_summary();
+            self.undo_stack.push(transaction.into());
+            self.redo_stack.clear();
+            self.in_progress_transaction = None;
+            summary
+        } else {
+            panic!("Expected an in progress transaction");
         }
     }
 }
@@ -148,99 +161,4 @@ mod tests {
     ) -> Operation {
         _add_cell_value(gc, sheet_id, pos, CellValue::Text(value.into()))
     }
-
-    #[test]
-    fn converts_a_pos_into_a_cell_hash() {
-        let assert_cell_hash = |pos: Pos, expected: &str| {
-            assert_eq!(
-                CellHash::from(pos),
-                CellHash(expected.into()),
-                "expected pos {} to convert to '{}'",
-                pos,
-                expected
-            );
-        };
-
-        assert_cell_hash((0, 0).into(), "0,0");
-        assert_cell_hash((1, 0).into(), "0,0");
-        assert_cell_hash((0, 1).into(), "0,0");
-        assert_cell_hash((21, 0).into(), "1,0");
-        assert_cell_hash((41, 0).into(), "2,0");
-        assert_cell_hash((0, 41).into(), "0,1");
-        assert_cell_hash((0, 81).into(), "0,2");
-    }
-    /*
-    #[tokio::test]
-    async fn test_execute_operation_set_cell_values() {
-        let mut gc = GridController::new();
-        let sheet_id = gc.grid.sheets()[0].id;
-        let data = vec![(0, 0, "a"), (1, 0, "b"), (21, 0, "c"), (0, 41, "d")];
-        let mut operations: Vec<Operation> = vec![];
-
-        data.clone().into_iter().for_each(|(x, y, value)| {
-            operations.push(add_cell_text(&mut gc, sheet_id, (x, y).into(), value));
-        });
-
-        let summary = gc.transact_forward(operations, None).await;
-
-        let expected = vec![
-            ("0,0", vec![(0, 0, "a"), (1, 0, "b")]),
-            ("0,1", vec![(0, 41, "d")]),
-            ("1,0", vec![(21, 0, "c")]),
-        ];
-
-        let to_js_render_cell = |entry: Vec<(i64, i64, &str)>| {
-            entry
-                .into_iter()
-                .map(|entry| JsRenderCell {
-                    x: entry.0,
-                    y: entry.1,
-                    value: entry.2.into(),
-                    language: None,
-                    align: None,
-                    wrap: None,
-                    bold: None,
-                    italic: None,
-                    text_color: None,
-                })
-                .collect::<Vec<_>>()
-        };
-
-        let map = summary
-            .cell_hash_values_modified
-            .entry(sheet_id.to_string());
-
-        match map {
-            Entry::Occupied(entry) => {
-                entry
-                    .get()
-                    .into_iter()
-                    .enumerate()
-                    .for_each(|(index, (key, value))| {
-                        assert_eq!(key, expected[index].0);
-                        assert_eq!(*value, to_js_render_cell(expected[index].1.clone()));
-                    });
-            }
-            _ => panic!("expected cell_hash_values_modified to be occupied"),
-        }
-
-        // now make one of tne non-blank cells blank
-        let operations = vec![add_cell_value(
-            &mut gc,
-            sheet_id,
-            (0, 0).into(),
-            CellValue::Blank,
-        )];
-
-        let summary = gc.transact_forward(operations, None).await;
-        assert_eq!(
-            summary
-                .cell_hash_values_modified
-                .get(&sheet_id.to_string())
-                .unwrap()
-                .get("0,0")
-                .unwrap(),
-            &to_js_render_cell(vec![(0, 0, "")])
-        );
-    }*/
 }
