@@ -7,7 +7,10 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::{operations::Operation, transaction_summary::TransactionSummary, GridController};
+use super::{
+    operations::Operation, transaction_summary::TransactionSummary, transactions::TransactionType,
+    GridController,
+};
 
 impl GridController {
     pub fn set_cell_formats_for_type<A: CellFmtAttr>(
@@ -52,7 +55,7 @@ impl GridController {
                 region.len(),
             )),
         }];
-        self.set_in_progress_transaction(ops, cursor, false)
+        self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
 
     pub fn get_all_cell_formats(&self, sheet_id: SheetId, rect: Rect) -> Vec<CellFmtArray> {
@@ -116,7 +119,7 @@ macro_rules! impl_set_cell_fmt_method {
                 let attr =
                     $cell_fmt_array_constructor(RunLengthEncoding::repeat(value, region.len()));
                 let ops = vec![Operation::SetCellFormats { region, attr }];
-                self.set_in_progress_transaction(ops, cursor, false)
+                self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
             }
         }
     };

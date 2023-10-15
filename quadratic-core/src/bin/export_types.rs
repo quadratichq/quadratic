@@ -58,7 +58,6 @@ fn main() {
         // Value,
         Instant,
         Duration,
-        wasm_bindings::JsCodeResult,
         wasm_bindings::JsFormulaParseResult,
         wasm_bindings::JsCellRefSpan,
         Error,

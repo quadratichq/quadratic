@@ -17,7 +17,7 @@ use super::ids::{CellRef, ColumnId, IdMap, RowId, SheetId};
 use super::js_types::{CellFormatSummary, FormattingSummary};
 use super::response::{GetIdResponse, SetCellResponse};
 use super::{NumericFormat, NumericFormatKind};
-use crate::{Array, CellValue, IsBlank, Pos, Rect, SheetPos};
+use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;
 pub mod cells;

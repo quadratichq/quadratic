@@ -1,6 +1,8 @@
 use anyhow::{anyhow, bail, Result};
 
-use super::{transaction_summary::TransactionSummary, GridController};
+use super::{
+    transaction_summary::TransactionSummary, transactions::TransactionType, GridController,
+};
 use crate::{controller::operations::Operation, grid::SheetId, Pos};
 
 impl GridController {
@@ -50,7 +52,7 @@ impl GridController {
             .flatten()
             .collect::<Vec<Operation>>();
 
-        Ok(self.set_in_progress_transaction(ops, cursor, true))
+        Ok(self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal))
     }
 }
 
@@ -83,7 +85,8 @@ Concord,NH,United States,42605
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        grid_controller.import_csv(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos, None);
+        let _ =
+            grid_controller.import_csv(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos, None);
 
         print_table(
             &grid_controller,

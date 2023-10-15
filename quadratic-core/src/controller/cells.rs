@@ -9,7 +9,7 @@ use crate::{
 
 use super::{
     formatting::CellFmtArray, operations::Operation, transaction_summary::TransactionSummary,
-    GridController,
+    transactions::TransactionType, GridController,
 };
 
 impl GridController {
@@ -27,7 +27,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.set_cell_value_operations(sheet_id, pos, &value);
-        self.set_in_progress_transaction(ops, cursor, true)
+        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
     pub fn set_cell_value_operations(
         &mut self,
@@ -98,7 +98,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.set_cells_operations(sheet_id, start_pos, values);
-        self.set_in_progress_transaction(ops, cursor, true)
+        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
     pub fn set_cells_operations(
         &mut self,
@@ -140,7 +140,7 @@ impl GridController {
                 last_modified: String::default(),
             }),
         }];
-        self.set_in_progress_transaction(ops, cursor, true)
+        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
 
     pub fn delete_cell_values_operations(
@@ -166,7 +166,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.delete_cell_values_operations(sheet_id, rect);
-        self.set_in_progress_transaction(ops, cursor, true)
+        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
 
     pub fn clear_formatting_operations(&mut self, sheet_id: SheetId, rect: Rect) -> Vec<Operation> {
@@ -221,7 +221,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.clear_formatting_operations(sheet_id, rect);
-        self.set_in_progress_transaction(ops, cursor, false)
+        self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
 
     pub fn delete_values_and_formatting(
@@ -232,7 +232,7 @@ impl GridController {
     ) -> TransactionSummary {
         let mut ops = self.delete_cell_values_operations(sheet_id, rect);
         ops.extend(self.clear_formatting_operations(sheet_id, rect));
-        self.set_in_progress_transaction(ops, cursor, true)
+        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
 
     /// Returns a region of the spreadsheet, assigning IDs to columns and rows

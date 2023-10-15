@@ -3,7 +3,7 @@ use itertools::Itertools;
 
 use super::{
     formatting::CellFmtArray, operations::Operation, transaction_summary::TransactionSummary,
-    GridController,
+    transactions::TransactionType, GridController,
 };
 use crate::{
     grid::{
@@ -134,7 +134,7 @@ impl GridController {
             operations.extend(ops);
         }
 
-        Ok(self.set_in_progress_transaction(operations, cursor, true))
+        Ok(self.set_in_progress_transaction(operations, cursor, true, TransactionType::Normal))
     }
 
     /// Delete cell values and formats in a given range.

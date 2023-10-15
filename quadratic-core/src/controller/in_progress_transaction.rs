@@ -63,6 +63,8 @@ impl InProgressTransaction {
 
         if compute {
             transaction.loop_compute(grid_controller)
+        } else {
+            transaction.complete = true
         }
 
         transaction
@@ -270,17 +272,33 @@ impl InProgressTransaction {
                         ));
                     }
                 }
+                // add all dependent cells to the cells_to_compute
+                let dependent_cells = grid_controller.grid.get_dependent_cells(sheet_pos);
+
+                // add to cells_to_compute
+                self.cells_to_compute.extend(dependent_cells);
+                if self.cells_to_compute.is_empty() {
+                    self.complete = true;
+                    true
+                } else {
+                    if self.cells_to_compute.is_empty() {
+                        self.complete = true;
+                        true
+                    } else {
+                        false
+                    }
+                }
+            } else {
+                if self.cells_to_compute.is_empty() {
+                    self.complete = true;
+                    true
+                } else {
+                    false
+                }
             }
-
-            // add all dependent cells to the cells_to_compute
-            let dependent_cells = grid_controller.grid.get_dependent_cells(sheet_pos);
-
-            // add to cells_to_compute
-            self.cells_to_compute.extend(dependent_cells);
-            true
         } else {
             self.complete = true;
-            false
+            true
         }
     }
 }
@@ -288,7 +306,7 @@ impl InProgressTransaction {
 impl Into<Transaction> for InProgressTransaction {
     fn into(self) -> Transaction {
         Transaction {
-            ops: self.reverse_operations,
+            ops: self.reverse_operations.into_iter().rev().collect(),
             cursor: self.cursor,
         }
     }

@@ -1,6 +1,6 @@
 use super::{
     formatting::CellFmtArray, operations::Operation, transaction_summary::TransactionSummary,
-    GridController,
+    transactions::TransactionType, GridController,
 };
 use crate::{
     grid::{CodeCellValue, SheetId},
@@ -195,7 +195,7 @@ impl GridController {
                 attr: format.clone(),
             });
         });
-        self.set_in_progress_transaction(ops, cursor, true)
+        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
 
     fn paste_plain_text(
@@ -221,7 +221,7 @@ impl GridController {
                 ));
             }
         }
-        self.set_in_progress_transaction(operations, cursor, true)
+        self.set_in_progress_transaction(operations, cursor, true, TransactionType::Normal)
     }
 
     // todo: parse table structure to provide better pasting experience from other spreadsheets

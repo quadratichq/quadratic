@@ -3,7 +3,10 @@ use lexicon_fractional_index::key_between;
 
 use crate::grid::{Sheet, SheetId};
 
-use super::{operations::Operation, transaction_summary::TransactionSummary, GridController};
+use super::{
+    operations::Operation, transaction_summary::TransactionSummary, transactions::TransactionType,
+    GridController,
+};
 
 impl GridController {
     pub fn sheet_ids(&self) -> Vec<SheetId> {
@@ -20,7 +23,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let operations = vec![Operation::SetSheetName { sheet_id, name }];
-        self.set_in_progress_transaction(operations, cursor, false)
+        self.set_in_progress_transaction(operations, cursor, false, TransactionType::Normal)
     }
 
     pub fn set_sheet_color(
@@ -30,7 +33,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let operations = vec![Operation::SetSheetColor { sheet_id, color }];
-        self.set_in_progress_transaction(operations, cursor, false)
+        self.set_in_progress_transaction(operations, cursor, false, TransactionType::Normal)
     }
 
     pub fn add_sheet(&mut self, cursor: Option<String>) -> TransactionSummary {
@@ -46,7 +49,7 @@ impl GridController {
         let order = self.grid.end_order();
         let sheet = Sheet::new(id, name, order);
         let operations = vec![Operation::AddSheet { sheet }];
-        self.set_in_progress_transaction(operations, cursor, false)
+        self.set_in_progress_transaction(operations, cursor, false, TransactionType::Normal)
     }
     pub fn delete_sheet(
         &mut self,
@@ -61,7 +64,7 @@ impl GridController {
             let sheet = Sheet::new(id, name, order);
             operations.push(Operation::AddSheet { sheet });
         }
-        self.set_in_progress_transaction(operations, cursor, false)
+        self.set_in_progress_transaction(operations, cursor, false, TransactionType::Normal)
     }
     pub fn move_sheet(
         &mut self,
@@ -88,7 +91,7 @@ impl GridController {
             target: sheet_id,
             order,
         }];
-        self.set_in_progress_transaction(operations, cursor, false)
+        self.set_in_progress_transaction(operations, cursor, false, TransactionType::Normal)
     }
     pub fn duplicate_sheet(
         &mut self,
@@ -103,7 +106,7 @@ impl GridController {
         let right_order = right.map(|right| right.order.clone());
         new_sheet.order = key_between(&Some(source.order.clone()), &right_order).unwrap();
         let operations = vec![Operation::AddSheet { sheet: new_sheet }];
-        self.set_in_progress_transaction(operations, cursor, false)
+        self.set_in_progress_transaction(operations, cursor, false, TransactionType::Normal)
     }
 }
 

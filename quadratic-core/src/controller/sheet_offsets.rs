@@ -1,6 +1,9 @@
 use crate::{grid::SheetId, sheet_offsets::resize_transient::TransientResize};
 
-use super::{operations::Operation, transaction_summary::TransactionSummary, GridController};
+use super::{
+    operations::Operation, transaction_summary::TransactionSummary, transactions::TransactionType,
+    GridController,
+};
 
 impl GridController {
     /// Commits a transient resize from a local version of SheetOffsets.
@@ -31,7 +34,7 @@ impl GridController {
                     new_size: transient_resize.new_size,
                 });
             }
-            self.set_in_progress_transaction(ops, cursor, false)
+            self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
         } else {
             TransactionSummary::default()
         }

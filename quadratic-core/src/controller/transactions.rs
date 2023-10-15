@@ -8,44 +8,48 @@ use super::{
     transaction_summary::TransactionSummary, GridController,
 };
 
+pub enum TransactionType {
+    Normal,
+    Undo,
+    Redo,
+}
+
 impl GridController {
     pub fn set_in_progress_transaction(
         &mut self,
         operations: Vec<Operation>,
         cursor: Option<String>,
         compute: bool,
+        undo: TransactionType,
     ) -> TransactionSummary {
         if self
             .in_progress_transaction
             .as_ref()
             .is_some_and(|in_progress_transaction| !in_progress_transaction.complete)
         {
+            // todo: this should be handled more gracefully. Perhaps as a queue of operations?
             panic!("Cannot start a transaction while a transaction is in progress");
         }
         let mut transaction = InProgressTransaction::new(self, operations, cursor, compute);
         let summary = transaction.transaction_summary();
-        self.in_progress_transaction = Some(transaction);
+        if transaction.complete {
+            match undo {
+                TransactionType::Normal => {
+                    self.undo_stack.push(transaction.into());
+                    self.redo_stack.clear();
+                }
+                TransactionType::Undo => {
+                    self.redo_stack.push(transaction.into());
+                }
+                TransactionType::Redo => {
+                    self.undo_stack.push(transaction.into());
+                }
+            }
+        } else {
+            self.in_progress_transaction = Some(transaction);
+        }
         summary
     }
-
-    // pub fn transact(
-    //     &mut self,
-    //     operations: Vec<Operation>,
-    //     cursor: Option<String>,
-    //     compute: bool,
-    // ) -> TransactionSummary {
-    //     if self.in_progress_transaction.is_some() {
-    //         panic!("Cannot start a transaction while a transaction is in progress");
-    //     }
-    //     let mut in_progress_transaction = InProgressTransaction::new(cursor);
-    //     in_progress_transaction.start(self, operations, compute);
-    //     if in_progress_transaction.complete {
-    //         self.redo_stack.push(in_progress_transaction.into());
-    //     } else {
-    //         self.in_progress_transaction = Some(in_progress_transaction);
-    //     }
-    //     in_progress_transaction.transaction_summary()
-    // }
 
     pub fn has_undo(&self) -> bool {
         !self.undo_stack.is_empty()
@@ -55,16 +59,16 @@ impl GridController {
     }
     pub fn undo(&mut self, cursor: Option<String>) -> TransactionSummary {
         if let Some(transaction) = self.undo_stack.pop() {
-            self.set_in_progress_transaction(transaction.ops, cursor, false)
+            self.set_in_progress_transaction(transaction.ops, cursor, false, TransactionType::Undo)
         } else {
-            panic!("No undo stack");
+            TransactionSummary::default()
         }
     }
     pub fn redo(&mut self, cursor: Option<String>) -> TransactionSummary {
         if let Some(transaction) = self.redo_stack.pop() {
-            self.set_in_progress_transaction(transaction.ops, cursor, false)
+            self.set_in_progress_transaction(transaction.ops, cursor, false, TransactionType::Redo)
         } else {
-            panic!("No redo stack");
+            TransactionSummary::default()
         }
     }
 }

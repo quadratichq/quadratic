@@ -243,12 +243,12 @@ struct JsGridProxy {
     cells_accessed: HashSet<Pos>,
 }
 impl JsGridProxy {
-    fn new(grid_accessor_fn: js_sys::Function) -> Self {
-        Self {
-            grid_accessor_fn,
-            cells_accessed: HashSet::new(),
-        }
-    }
+    // fn new(grid_accessor_fn: js_sys::Function) -> Self {
+    //     Self {
+    //         grid_accessor_fn,
+    //         cells_accessed: HashSet::new(),
+    //     }
+    // }
 
     async fn get_cell_jsvalue(&mut self, pos: Pos) -> Result<JsValue, JsValue> {
         // Record that we accessed this cell.
