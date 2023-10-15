@@ -48,7 +48,6 @@ pub enum CodeCellLanguage {
     Formula,
     JavaScript,
     Sql,
-    AsyncTest,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

@@ -1,4 +1,5 @@
-import { grid } from '../../grid/controller/Grid';
+import { grid, pointsToRect } from '../../grid/controller/Grid';
+import { JsCodeResult } from '../../quadratic-core/quadratic_core';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 
 class PythonWebWorker {
@@ -12,36 +13,45 @@ class PythonWebWorker {
       const event = e.data;
       console.log(event);
       if (event.type === 'results') {
-        const result = event.results;
-        if (!result) throw new Error('Expected results to be defined in python.ts');
+        const pythonResult = event.results;
+        if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
 
-        if (result.array_output) {
-          if (!Array.isArray(result.array_output[0])) {
-            result.array_output = result.array_output.flatMap((entry: string | number) => [[entry.toString()]]);
+        if (pythonResult.array_output) {
+          if (!Array.isArray(pythonResult.array_output[0])) {
+            pythonResult.array_output = pythonResult.array_output.flatMap((entry: string | number) => [
+              [entry.toString()],
+            ]);
           } else {
-            result.array_output = result.array_output.map((entry: (string | number)[]) =>
+            pythonResult.array_output = pythonResult.array_output.map((entry: (string | number)[]) =>
               entry.map((entry: String | number) => entry.toString())
             );
           }
         }
-
-        if (!result.success) {
-          result.error_msg = result.input_python_stack_trace;
+        if (!pythonResult.success) {
+          pythonResult.error_msg = pythonResult.input_python_stack_trace;
         }
+        const result = new JsCodeResult(
+          pythonResult.success,
+          pythonResult.formatted_code,
+          pythonResult.error_msg,
+          pythonResult.std_out,
+          pythonResult.output_value,
+          pythonResult.array_output
+        );
         grid.completeTransaction(result);
-        debugger;
       } else if (event.type === 'get-cells') {
         const range = event.range;
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');
         }
-        // todo: this needs to call grid.ts
-        // this.callback({
-        //   complete: false,
-        //   rect: pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
-        //   sheet_id: event.range?.sheet,
-        //   line_number: event.range?.lineNumber,
-        // });
+        const cells = grid.computeGetCells({
+          rect: pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
+          line_number: event.range?.lineNumber,
+        });
+        // cells will be undefined if the sheet_id (currently name) is invalid
+        if (cells && this.worker) {
+          this.worker.postMessage({ type: 'get-cells', cells });
+        }
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
         this.loaded = true;

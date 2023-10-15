@@ -61,9 +61,7 @@ impl CellsForArray {
 #[wasm_bindgen]
 pub struct JsCodeResult {
     success: bool,
-    cells_accessed: Vec<[i64; 2]>,
     formatted_code: Option<String>,
-    error_span: Option<[u32; 2]>,
     error_msg: Option<String>,
     input_python_std_out: Option<String>,
     output_value: Option<String>,
@@ -74,14 +72,8 @@ impl JsCodeResult {
     pub fn success(&self) -> bool {
         self.success
     }
-    pub fn cells_accessed(&self) -> &Vec<[i64; 2]> {
-        self.cells_accessed.as_ref()
-    }
     pub fn formatted_code(&self) -> Option<String> {
         self.formatted_code.clone()
-    }
-    pub fn error_span(&self) -> Option<[u32; 2]> {
-        self.error_span
     }
     pub fn error_msg(&self) -> Option<String> {
         self.error_msg.clone()
@@ -102,11 +94,7 @@ impl JsCodeResult {
     #[wasm_bindgen(constructor)]
     pub fn new(
         success: bool,
-        cells_accessed_start: i64,
-        cells_accessed_end: i64,
         formatted_code: Option<String>,
-        error_span_start: Option<u32>,
-        error_span_end: Option<u32>,
         error_msg: Option<String>,
         input_python_std_out: Option<String>,
         output_value: Option<String>,
@@ -124,12 +112,7 @@ impl JsCodeResult {
         };
         JsCodeResult {
             success,
-            cells_accessed: vec![[cells_accessed_start, cells_accessed_end]],
             formatted_code,
-            error_span: match (error_span_start, error_span_end) {
-                (Some(start), Some(end)) => Some([start, end]),
-                _ => None,
-            },
             error_msg,
             input_python_std_out,
             output_value,

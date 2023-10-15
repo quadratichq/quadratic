@@ -72,6 +72,20 @@ impl GridController {
         )?)
     }
 
+    #[wasm_bindgen(js_name = "getCellsTransaction")]
+    pub fn js_get_cells_transaction(
+        &self,
+        sheet_id: Option<String>,
+        rect: Rect,
+        line_number: u32,
+    ) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(&self.get_cells_transaction(
+            sheet_id,
+            rect,
+            line_number,
+        ))?)
+    }
+
     /// Populates a portion of a sheet with random float values.
     ///
     /// Returns a [`TransactionSummary`].

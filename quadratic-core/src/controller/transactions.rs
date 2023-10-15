@@ -1,6 +1,6 @@
 use core::panic;
 
-use crate::{grid::SheetId, Pos};
+use crate::{grid::SheetId, Pos, Rect};
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -83,6 +83,34 @@ impl GridController {
         } else {
             panic!("Expected an in progress transaction");
         }
+    }
+
+    pub fn get_cells_transaction(
+        &self,
+        sheet_id: Option<String>,
+        rect: Rect,
+        line_number: u32,
+    ) -> Vec<Option<String>> {
+        if let Some(transaction) = self.in_progress_transaction.clone() {
+            let sheet =
+            if let Some(sheet_pos) = transaction.current_sheet_pos {
+                let sheet = self.sheet(sheet_pos.sheet_id);
+                let mut cells = vec![];
+
+                for y in rect.y_range() {
+                    for x in rect.x_range() {
+                        let value = if let Some(value) = sheet.get_cell_value(Pos { x, y }) {
+                            Some(value.to_edit())
+                        } else {
+                            None
+                        };
+                        cells.push(value);
+                    }
+                }
+                return cells;
+            }
+        }
+        panic!("Expected an in progress transaction");
     }
 }
 
