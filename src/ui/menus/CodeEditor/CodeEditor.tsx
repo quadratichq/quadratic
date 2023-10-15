@@ -23,9 +23,35 @@ export const CodeEditor = () => {
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
   const isRunningComputation = useRef(false);
 
-  const [cell, setCell] = useState<any>(
-    sheets.sheet.getCodeValue(editorInteractionState.selectedCell.x, editorInteractionState.selectedCell.y)
+  const cellLocation = useMemo(
+    () => ({ x: editorInteractionState.selectedCell.x, y: editorInteractionState.selectedCell.y }),
+    [editorInteractionState.selectedCell.x, editorInteractionState.selectedCell.y]
   );
+
+  // update code cell
+  const [codeString, setCodeString] = useState('');
+  const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
+  const updateCodeCell = useCallback(() => {
+    const codeCell = grid.getCodeCell(
+      sheets.sheet.id,
+      editorInteractionState.selectedCell.x,
+      editorInteractionState.selectedCell.y
+    );
+    if (codeCell) {
+      const codeString = codeCell.getCodeString();
+      setCodeString(codeString);
+      setOut({ stdOut: codeCell.getStdOut(), stdErr: codeCell.getStdErr() });
+      setEditorContent(codeString);
+      codeCell.free();
+    } else {
+      setCodeString('');
+      setEditorContent('');
+      setOut(undefined);
+    }
+  }, [editorInteractionState.selectedCell.x, editorInteractionState.selectedCell.y]);
+  useEffect(() => {
+    updateCodeCell();
+  }, [updateCodeCell]);
 
   const [editorWidth, setEditorWidth] = useState<number>(
     window.innerWidth * 0.35 // default to 35% of the window width
@@ -37,19 +63,14 @@ export const CodeEditor = () => {
   // Save changes alert state
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
 
-  const cellLocation = useMemo(
-    () => ({ x: editorInteractionState.selectedCell.x, y: editorInteractionState.selectedCell.y }),
-    [editorInteractionState.selectedCell.x, editorInteractionState.selectedCell.y]
-  );
-
-  const [editorContent, setEditorContent] = useState<string | undefined>(cell.code_string);
+  const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
   useEffect(() => {
     mixpanel.track('[CodeEditor].opened', { type: editorMode });
   }, [editorMode]);
 
   const closeEditor = useCallback(
     (skipSaveCheck: boolean) => {
-      if (!skipSaveCheck && editorContent !== cell.code_string) {
+      if (!skipSaveCheck && editorContent !== codeString) {
         setShowSaveChangesAlert(true);
       } else {
         setEditorInteractionState((oldState) => ({
@@ -59,7 +80,7 @@ export const CodeEditor = () => {
         setEditorHighlightedCells(editorHighlightedCellsStateDefault);
       }
     },
-    [cell?.code_string, editorContent, setEditorHighlightedCells, setEditorInteractionState]
+    [codeString, editorContent, setEditorHighlightedCells, setEditorInteractionState]
   );
 
   const saveAndRunCell = async () => {
@@ -73,18 +94,14 @@ export const CodeEditor = () => {
         : undefined;
     if (language === undefined)
       throw new Error(`Language ${editorInteractionState.mode} not supported in CodeEditor#saveAndRunCell`);
-    await grid.setCodeCellValue({
+    grid.setCodeCellValue({
       sheetId: sheets.sheet.id,
       x: cellLocation.x,
       y: cellLocation.y,
       codeString: editorContent ?? '',
       language,
     });
-    const refresh = sheets.sheet.getCodeValue(
-      editorInteractionState.selectedCell.x,
-      editorInteractionState.selectedCell.y
-    );
-    setCell(refresh);
+    updateCodeCell();
     isRunningComputation.current = false;
   };
 
@@ -173,12 +190,7 @@ export const CodeEditor = () => {
         }}
       >
         {(editorInteractionState.mode === 'PYTHON' || editorInteractionState.mode === 'FORMULA') && (
-          <Console
-            evalResult={cell?.output}
-            editorMode={editorMode}
-            editorContent={editorContent}
-            selectedCell={cell}
-          />
+          <Console console={out} editorMode={editorMode} editorContent={editorContent} />
         )}
       </div>
     </div>

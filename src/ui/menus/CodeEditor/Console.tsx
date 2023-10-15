@@ -1,7 +1,7 @@
 import { Box, Chip, Tab, Tabs } from '@mui/material';
 import { useTheme } from '@mui/system';
 import { stripIndent } from 'common-tags';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { isViewerOrAbove } from '../../../actions';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -17,22 +17,20 @@ import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
 interface ConsoleProps {
   editorMode: EditorInteractionState['mode'];
-  evalResult: any; //CodeCellRunOutput | undefined;
+  console?: { stdOut?: string; stdErr?: string };
   editorContent: string | undefined;
-  selectedCell: any; //CodeCellValue;
 }
 
-export function Console({ evalResult, editorMode, editorContent, selectedCell }: ConsoleProps) {
+export function Console({ console, editorMode, editorContent }: ConsoleProps) {
   const { permission } = useRecoilValue(editorInteractionStateAtom);
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const theme = useTheme();
-  const { std_err = '', std_out = '' } = evalResult || {};
-  let hasOutput = Boolean(std_err.length || std_out.length);
+  let hasOutput = Boolean(console?.stdErr?.length || console?.stdOut?.length);
 
   // Whenever we change to a different cell, reset the active tab to the 1st
-  useEffect(() => {
-    setActiveTabIndex(0);
-  }, [selectedCell]);
+  // useEffect(() => {
+  //   setActiveTabIndex(0);
+  // }, [selectedCell]);
 
   return (
     <>
@@ -93,12 +91,12 @@ export function Console({ evalResult, editorMode, editorContent, selectedCell }:
           >
             {hasOutput ? (
               <>
-                {std_err && (
+                {console?.stdErr && (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.error }}>
-                    ERROR: {std_err}
+                    ERROR: {console?.stdErr}
                   </span>
                 )}
-                {std_out}
+                {console?.stdOut}
               </>
             ) : (
               <div style={{ ...codeEditorCommentStyles, marginTop: theme.spacing(0.5) }}>
@@ -271,7 +269,8 @@ export function Console({ evalResult, editorMode, editorContent, selectedCell }:
         </TabPanel>
         <TabPanel value={activeTabIndex} index={2}>
           <AITab
-            evalResult={evalResult}
+            // todo: fix this
+            evalResult={undefined} //evalResult}
             editorMode={editorMode}
             editorContent={editorContent}
             isActive={activeTabIndex === 2}

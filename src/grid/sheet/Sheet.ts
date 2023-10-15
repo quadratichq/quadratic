@@ -1,7 +1,7 @@
 import { Rectangle } from 'pixi.js';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
-import { JsRenderCodeCell, OffsetsSizeChanges, Pos, SheetOffsets } from '../../quadratic-core/quadratic_core';
+import { CodeCell, JsRenderCodeCell, OffsetsSizeChanges, Pos, SheetOffsets } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
   CellFormatSummary,
@@ -55,6 +55,10 @@ export class Sheet {
     return grid.getRenderCells(this.id, new Rectangle(x, y, 0, 0))?.[0];
   }
 
+  getCodeCell(x: number, y: number): CodeCell | undefined {
+    return grid.getCodeCell(this.id, x, y);
+  }
+
   getEditCell(x: number, y: number): string {
     return grid.getEditCell(this.id, new Pos(x, y));
   }
@@ -69,12 +73,6 @@ export class Sheet {
 
   getRenderCodeCells(): JsRenderCodeCell[] {
     return grid.getRenderCodeCells(this.id);
-  }
-
-  // todo: fix types
-
-  getCodeValue(x: number, y: number): any /*CodeCellValue*/ | undefined {
-    return grid.getCodeValue(this.id, x, y);
   }
 
   getFormattingSummary(rectangle: Rectangle): FormattingSummary {
