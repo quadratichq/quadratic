@@ -1,7 +1,17 @@
 import { Box, Stack, Typography, useTheme } from '@mui/material';
 import { ReactNode, useEffect } from 'react';
 
-export function DashboardHeader({ title, actions }: { title: string; actions?: ReactNode }) {
+export function DashboardHeader({
+  title,
+  actions,
+  titleStart,
+  titleEnd,
+}: {
+  title: string;
+  actions?: ReactNode;
+  titleStart?: ReactNode;
+  titleEnd?: ReactNode;
+}) {
   const theme = useTheme();
 
   useEffect(() => {
@@ -28,9 +38,13 @@ export function DashboardHeader({ title, actions }: { title: string; actions?: R
         },
       }}
     >
-      <Typography variant="h6" sx={{ py: theme.spacing(2) }} color="text.primary">
-        {title}
-      </Typography>
+      <Stack direction="row" alignItems={'center'} gap={theme.spacing()}>
+        {titleStart}
+        <Typography variant="h6" sx={{ py: theme.spacing(2) }} color="text.primary">
+          {title}
+        </Typography>
+        {titleEnd}
+      </Stack>
       {actions && (
         <Stack
           direction="row"

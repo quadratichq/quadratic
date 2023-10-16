@@ -106,6 +106,18 @@ export const ApiSchemas = {
   '/v0/feedback.POST.response': z.object({
     message: z.string(),
   }),
+
+  // Teams
+  '/v0/teams/:uuid.GET.response': z.object({
+    team: z.object({
+      uuid: z.string(),
+      name: z.string(),
+      picture: z.string().url().optional(),
+      users: z.array(UserShareSchema),
+      files: z.any(), // TODO
+    }),
+    permissions: z.any(), // TODO
+  }),
 };
 
 // Types for API endpoitns
@@ -125,4 +137,6 @@ export type ApiTypes = {
 
   '/v0/feedback.POST.request': z.infer<(typeof ApiSchemas)['/v0/feedback.POST.request']>;
   '/v0/feedback.POST.response': z.infer<(typeof ApiSchemas)['/v0/feedback.POST.response']>;
+
+  '/v0/teams/:uuid.GET.response': z.infer<(typeof ApiSchemas)['/v0/teams/:uuid.GET.response']>;
 };

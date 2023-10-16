@@ -248,11 +248,11 @@ function UserListItem({
   return (
     <Row>
       {isPending ? (
-        <Avatar sx={{ width: 24, height: 24, fontSize: '16px' }}>
+        <Avatar sx={{ width: 24, height: 24, fontSize: '1rem' }}>
           <EmailOutlined fontSize="inherit" />
         </Avatar>
       ) : (
-        <AvatarWithLetters src={user.picture} sx={{ width: 24, height: 24 }}>
+        <AvatarWithLetters src={user.picture} size="small">
           {user.name ? user.name : user.email}
         </AvatarWithLetters>
       )}

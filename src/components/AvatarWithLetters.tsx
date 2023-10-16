@@ -34,19 +34,24 @@ function getLettersFromString(str: string) {
 
 type Props = AvatarProps & {
   children: string;
+  size?: 'small' | 'medium' | 'large';
 };
 
 export function AvatarWithLetters(props: Props) {
-  const { sx, children, ...rest } = props;
+  const { sx, children, size, ...rest } = props;
 
   const modifiedProps = {
     sx: {
       ...(sx ? sx : {}),
 
       bgcolor: stringToColor(children),
+      ...(size === 'small' ? { width: 24, height: 24, fontSize: '.875rem' } : {}),
+      ...(size === 'medium' ? { width: 32, height: 32, fontSize: '1rem' } : {}),
+      ...(size === 'large' ? { width: 40, height: 40, fontSize: '1.125rem' } : {}),
     },
     children: getLettersFromString(children),
     ...rest,
   };
+
   return <Avatar {...modifiedProps} />;
 }

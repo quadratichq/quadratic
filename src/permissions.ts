@@ -8,7 +8,7 @@ export const AccessSchema = z.enum([
   'TEAM_EDIT',
   'TEAM_DELETE',
   'TEAM_VIEW',
-  'BILLING_EDIT',
+  'TEAM_BILLING_EDIT',
 ]);
 export const PermissionsSchema = z.object({
   role: RoleSchema,

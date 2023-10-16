@@ -1,88 +1,36 @@
-import { ErrorOutline, PeopleAltOutlined } from '@mui/icons-material';
-import { Box, Button, useTheme } from '@mui/material';
-import { Link, LoaderFunctionArgs, useLoaderData } from 'react-router-dom';
+import { ErrorOutline, KeyboardArrowDown, PeopleAltOutlined } from '@mui/icons-material';
+import { Box, Button, IconButton, Menu, MenuItem, useTheme } from '@mui/material';
+import { Link, LoaderFunctionArgs, useLoaderData, useParams } from 'react-router-dom';
 import { Empty } from '../components/Empty';
 
 import { useState } from 'react';
-import { UserShare } from '../api/types';
-import { AccessSchema, RoleSchema } from '../permissions';
+import { ApiTypes } from '../api/types';
+import { AvatarWithLetters } from '../components/AvatarWithLetters';
+import { ROUTES } from '../constants/routes';
+import { AccessSchema } from '../permissions';
 import { DashboardHeader } from './components/DashboardHeader';
 import { TeamShareMenu } from './components/TeamShareMenu';
+import { data } from './team-1-mock-data';
 
-export type TeamData = {
-  uuid: string;
-  name: string;
-  users: UserShare[];
-  files: any;
-};
-
-export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<TeamData> => {
-  return {
-    uuid: '1',
-    name: 'Costco',
-    users: [
-      {
-        email: 'jim.nielsen@quadratichq.com',
-        permissions: {
-          role: RoleSchema.enum.OWNER,
-          access: [AccessSchema.enum.TEAM_EDIT, AccessSchema.enum.TEAM_DELETE, AccessSchema.enum.BILLING_EDIT],
-        },
-        name: 'Jim Nielsen',
-        picture: 'https://avatars.githubusercontent.com/u/1051509?v=4',
-      },
-      {
-        email: 'david.dimaria@quadratichq.com',
-        permissions: {
-          role: RoleSchema.enum.OWNER,
-          access: [AccessSchema.enum.TEAM_EDIT, AccessSchema.enum.TEAM_DELETE, AccessSchema.enum.BILLING_EDIT],
-        },
-        name: 'David DiMaria',
-        picture: 'https://avatars.githubusercontent.com/u/1051510?v=4',
-      },
-      {
-        email: 'david.kircos@quadratichq.com',
-        permissions: { role: RoleSchema.enum.EDITOR, access: [AccessSchema.enum.TEAM_EDIT] },
-        name: 'David Kircos',
-        picture: 'https://avatars.githubusercontent.com/u/1051508?v=4',
-      },
-      {
-        email: 'david.figatner@quadratichq.com',
-        permissions: { role: RoleSchema.enum.EDITOR, access: [AccessSchema.enum.TEAM_EDIT] },
-        name: 'David Figatner',
-        picture: 'https://avatars.githubusercontent.com/u/1051500?v=4',
-      },
-      {
-        email: 'peter.mills@quadartichq.com',
-        permissions: { role: RoleSchema.enum.VIEWER, access: [AccessSchema.enum.TEAM_VIEW] },
-        name: '',
-        picture: 'https://avatars.githubusercontent.com/u/1051500?v=4',
-      },
-      {
-        email: 'john.doe@example.com',
-        permissions: { role: RoleSchema.enum.EDITOR, access: [AccessSchema.enum.TEAM_VIEW] },
-      },
-    ],
-    files: [
-      {
-        uuid: '1234',
-        name: 'My file name',
-        public_link_access: 'EDIT',
-        created_date: '2023-10-05T23:06:31.789Z',
-        updated_date: '2023-10-05T23:06:31.789Z',
-      },
-    ],
-  };
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+  return data;
 };
 
 export const Component = () => {
   const theme = useTheme();
-  const team = useLoaderData() as TeamData;
+  const { team } = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
   const [showMembers, setShowMembers] = useState<boolean>(false);
 
   return (
     <>
       <DashboardHeader
         title={team.name}
+        titleStart={
+          <AvatarWithLetters size="large" src={team.picture}>
+            {team.name}
+          </AvatarWithLetters>
+        }
+        titleEnd={<EditDropdownMenu />}
         actions={
           <>
             <Button startIcon={<PeopleAltOutlined />} variant="outlined" onClick={() => setShowMembers(true)}>
@@ -101,6 +49,59 @@ export const Component = () => {
     </>
   );
 };
+
+function EditDropdownMenu() {
+  const { uuid } = useParams() as { uuid: string };
+  const { permissions } = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  if (!permissions.access.includes(AccessSchema.enum.TEAM_EDIT)) {
+    return null;
+  }
+
+  return (
+    <>
+      <IconButton
+        aria-label="more"
+        id="long-button"
+        size="small"
+        aria-controls={open ? 'long-menu' : undefined}
+        aria-expanded={open ? 'true' : undefined}
+        aria-haspopup="true"
+        onClick={handleClick}
+      >
+        <KeyboardArrowDown fontSize="small" />
+      </IconButton>
+
+      <Menu
+        id="long-menu"
+        MenuListProps={{
+          'aria-labelledby': 'long-button',
+          dense: true,
+        }}
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+      >
+        <MenuItem component={Link} to={ROUTES.EDIT_TEAM(uuid)}>
+          Edit
+        </MenuItem>
+        {permissions.access.includes(AccessSchema.enum.TEAM_DELETE) && (
+          <MenuItem key={2} onClick={handleClose}>
+            Delete
+          </MenuItem>
+        )}
+      </Menu>
+    </>
+  );
+}
 
 export const ErrorBoundary = () => {
   // const error = useRouteError();
