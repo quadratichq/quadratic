@@ -149,18 +149,18 @@ export function TeamEdit({ data }: { data?: ApiTypes['/v0/teams/:uuid.GET.respon
 
           <FormControlLabel
             value="2"
-            control={<Radio />}
+            control={<Radio disabled />}
             disableTypography
-            label={<PriceLabel primary="Monthly" secondary="$--/usr/month" />}
+            label={<PriceLabel disabled primary="Monthly" secondary="$--/usr/month" />}
           />
 
           <Divider />
 
           <FormControlLabel
             value="3"
-            control={<Radio />}
+            control={<Radio disabled />}
             disableTypography
-            label={<PriceLabel primary="Yearly" secondary="$--/usr/year" />}
+            label={<PriceLabel disabled primary="Yearly" secondary="$--/usr/year" />}
           />
         </RadioGroup>
       </EditTeamRow>
@@ -168,11 +168,13 @@ export function TeamEdit({ data }: { data?: ApiTypes['/v0/teams/:uuid.GET.respon
   );
 }
 
-function PriceLabel({ primary, secondary }: any) {
+function PriceLabel({ primary, secondary, disabled }: any) {
   return (
     <Stack direction="row" justifyContent="space-between" flexGrow={1}>
-      <Typography variant="body2">{primary}</Typography>
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" color={disabled ? 'text.disabled' : 'text.primary'}>
+        {primary}
+      </Typography>
+      <Typography variant="body2" color={disabled ? 'text.disabled' : 'text.secondary'}>
         {secondary}
       </Typography>
     </Stack>
