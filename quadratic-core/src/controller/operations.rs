@@ -4,65 +4,16 @@ use crate::{
         *,
     },
     values::IsBlank,
-    Array, CellValue, Pos, SheetPos, SheetRect,
+    Array, CellValue, Pos, SheetPos,
 };
-use serde::{Deserialize, Serialize};
 
 use super::{
     code_cell_update::update_code_cell_value,
     formatting::CellFmtArray,
+    operation::Operation,
     transaction_summary::{OperationSummary, TransactionSummary},
     GridController,
 };
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum Operation {
-    None,
-    SetCellValues {
-        region: RegionRef,
-        values: Array,
-    },
-    SetCellDependencies {
-        cell: SheetPos,
-        dependencies: Option<Vec<SheetRect>>,
-    },
-    SetCellCode {
-        cell_ref: CellRef,
-        code_cell_value: Option<CodeCellValue>,
-    },
-    SetCellFormats {
-        region: RegionRef,
-        attr: CellFmtArray,
-    },
-    AddSheet {
-        sheet: Sheet,
-    },
-    DeleteSheet {
-        sheet_id: SheetId,
-    },
-    SetSheetName {
-        sheet_id: SheetId,
-        name: String,
-    },
-    SetSheetColor {
-        sheet_id: SheetId,
-        color: Option<String>,
-    },
-    ReorderSheet {
-        target: SheetId,
-        order: String,
-    },
-    ResizeColumn {
-        sheet_id: SheetId,
-        column: ColumnId,
-        new_size: f64,
-    },
-    ResizeRow {
-        sheet_id: SheetId,
-        row: RowId,
-        new_size: f64,
-    },
-}
 
 impl GridController {
     /// Executes the given operation and returns the reverse operation.

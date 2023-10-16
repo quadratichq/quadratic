@@ -7,7 +7,7 @@ use crate::{
 };
 
 use super::{
-    operations::Operation,
+    operation::Operation,
     transaction_summary::{OperationSummary, TransactionSummary},
     GridController,
 };

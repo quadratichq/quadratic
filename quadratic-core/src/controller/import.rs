@@ -3,7 +3,7 @@ use anyhow::{anyhow, bail, Result};
 use super::{
     transaction_summary::TransactionSummary, transactions::TransactionType, GridController,
 };
-use crate::{controller::operations::Operation, grid::SheetId, Pos};
+use crate::{controller::operation::Operation, grid::SheetId, Pos};
 
 impl GridController {
     /// Imports a CSV file into the grid.

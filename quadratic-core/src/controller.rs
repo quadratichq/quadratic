@@ -13,6 +13,7 @@ pub mod dependencies;
 pub mod formatting;
 pub mod import;
 pub mod in_progress_transaction;
+pub mod operation;
 pub mod operations;
 pub mod sheet_offsets;
 pub mod sheets;

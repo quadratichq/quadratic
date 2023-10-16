@@ -6,7 +6,7 @@ use crate::{
 
 use super::{
     code_cell_update::update_code_cell_value,
-    operations::Operation,
+    operation::Operation,
     transaction_summary::TransactionSummary,
     transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
     transactions::Transaction,
@@ -92,6 +92,10 @@ impl InProgressTransaction {
         let mut sheets_with_changed_bounds = vec![];
 
         for op in operations.iter() {
+            if cfg!(feature = "show-calculations") {
+                crate::util::dbgjs(&format!("[Operation] {:?}", op.to_string()));
+            }
+
             if let Some(new_dirty_sheet) = op.sheet_with_changed_bounds() {
                 if !sheets_with_changed_bounds.contains(&new_dirty_sheet) {
                     sheets_with_changed_bounds.push(new_dirty_sheet);
@@ -190,6 +194,7 @@ impl InProgressTransaction {
         if self.complete {
             panic!("Transaction is already complete");
         }
+        crate::util::dbgjs(self.cells_accessed.clone());
         let (language, code_string) =
             if let Some(old_code_cell_value) = self.current_code_cell.clone() {
                 (
@@ -225,6 +230,10 @@ impl InProgressTransaction {
     /// returns true if an async call is made or the compute cycle is completed
     fn compute(&mut self, grid_controller: &mut GridController) -> bool {
         if let Some(sheet_pos) = self.cells_to_compute.pop() {
+            if cfg!(feature = "show-calculations") {
+                crate::util::dbgjs(&format!("[Compute] {:?}", sheet_pos.to_string()));
+            }
+
             // find which cells have formulas. Run the formulas and update the cells.
             // add the updated cells to the cells_to_compute
             let sheet = grid_controller.grid.sheet_mut_from_id(sheet_pos.sheet_id);
@@ -319,7 +328,7 @@ mod test {
     use std::collections::HashSet;
 
     use crate::{
-        controller::{operations::Operation, transaction_types::JsCodeResult, GridController},
+        controller::{operation::Operation, transaction_types::JsCodeResult, GridController},
         grid::{CodeCellLanguage, CodeCellValue},
         wasm_bindings::controller::cells::CodeCell,
         Pos,

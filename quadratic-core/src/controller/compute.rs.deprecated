@@ -1,6 +1,6 @@
 use super::{
     code_cell_value::update_code_cell_value,
-    operations::Operation,
+    operation::Operation,
     transaction_summary::{OperationSummary, TransactionSummary},
     GridController,
 };

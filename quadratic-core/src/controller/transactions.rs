@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     in_progress_transaction::InProgressTransaction,
-    operations::Operation,
+    operation::Operation,
     transaction_summary::TransactionSummary,
     transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
     GridController,

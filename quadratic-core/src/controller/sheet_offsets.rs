@@ -1,7 +1,7 @@
 use crate::{grid::SheetId, sheet_offsets::resize_transient::TransientResize};
 
 use super::{
-    operations::Operation, transaction_summary::TransactionSummary, transactions::TransactionType,
+    operation::Operation, transaction_summary::TransactionSummary, transactions::TransactionType,
     GridController,
 };
 

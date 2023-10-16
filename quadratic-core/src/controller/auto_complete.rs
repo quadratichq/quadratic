@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use itertools::Itertools;
 
 use super::{
-    formatting::CellFmtArray, operations::Operation, transaction_summary::TransactionSummary,
+    formatting::CellFmtArray, operation::Operation, transaction_summary::TransactionSummary,
     transactions::TransactionType, GridController,
 };
 use crate::{
