@@ -1,4 +1,4 @@
-use crate::{grid::js_types::CellForArray, Pos, Rect};
+use crate::{grid::js_types::CellForArray, CellValue, Pos, Rect};
 
 use super::Sheet;
 
@@ -19,6 +19,18 @@ impl Sheet {
                         y,
                         value: String::new(),
                     });
+                }
+            }
+        }
+        array
+    }
+
+    pub fn cell_values_in_rect(&self, rect: Rect) -> Vec<CellValue> {
+        let mut array = vec![];
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                if let Some(cell) = self.get_cell_value(Pos { x, y }) {
+                    array.push(cell);
                 }
             }
         }

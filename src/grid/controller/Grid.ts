@@ -587,6 +587,15 @@ export class Grid {
   }
 
   //#endregion
+
+  //#region Summarize
+  //-----------------
+
+  summarizeSelection() {
+    return this.gridController.summarizeSelection(sheets.sheet.id, rectangleToRect(sheets.sheet.cursor.getRectangle()));
+  }
+
+  //#endregion
 }
 
 //#end

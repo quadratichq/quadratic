@@ -537,6 +537,7 @@ pub fn apply_formats(region: RegionRef, formats: &[CellFmtArray]) -> Vec<Operati
 ///
 /// TODO(ddimaria): determine if this should go in the cell.rs file or equiv
 /// TODO(ddimaria): is this necessary as it's more performant to just pluck the data from the sheet direclty
+/// TODO (davidk): I added a function directly to sheet called cell_values_in_rect which you could use?
 pub fn cell_values_in_rect(&selection: &Rect, sheet: &Sheet) -> Result<Array> {
     let values = selection
         .y_range()
