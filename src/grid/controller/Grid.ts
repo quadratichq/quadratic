@@ -604,6 +604,7 @@ export class Grid {
         results.push({ x: Number(pos.x), y: Number(pos.y), value: value });
         cell = array.next();
       }
+      array.free();
       return results;
     }
   }
