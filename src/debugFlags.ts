@@ -26,10 +26,7 @@ export const debugMockLargeData = (debug && false) || url.has('mock-large-data')
 // Transactions
 // ------------
 
-// show number of transactions
-export const debugShowTransactions = debug && false;
-
-// show results of runComputation() in console
+// show results of runComputation() in console (for TS related computations)
 export const debugShowRunComputation = debug && false;
 
 // ----------

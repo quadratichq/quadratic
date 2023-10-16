@@ -335,6 +335,7 @@ async def run_python(code):
         "input_python_stack_trace": "{} on line {}: {}".format(
             error_class, line_number, detail
         ),
+        "line_number": line_number,
         "formatted_code": code,
     }
 

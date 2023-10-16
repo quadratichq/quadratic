@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::{Pos, Rect};
+use crate::{
+    grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
+    Error, ErrorMsg, Pos, Rect, Span, Value,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[wasm_bindgen]
@@ -73,26 +76,56 @@ pub struct JsCodeResult {
     input_python_std_out: Option<String>,
     output_value: Option<String>,
     array_output: Option<Vec<Vec<String>>>,
+    line_number: Option<u32>,
 }
 
 impl JsCodeResult {
-    pub fn success(&self) -> bool {
-        self.success
-    }
-    pub fn formatted_code(&self) -> Option<String> {
-        self.formatted_code.clone()
-    }
-    pub fn error_msg(&self) -> Option<String> {
-        self.error_msg.clone()
-    }
-    pub fn input_python_std_out(&self) -> Option<String> {
-        self.input_python_std_out.clone()
-    }
-    pub fn output_value(&self) -> Option<String> {
-        self.output_value.clone()
-    }
-    pub fn array_output(&self) -> Option<Vec<Vec<String>>> {
-        self.array_output.clone()
+    pub fn into_code_cell_value(
+        &self,
+        language: CodeCellLanguage,
+        code_string: String,
+        cells_accessed: &Vec<CellRef>,
+    ) -> CodeCellValue {
+        let result = if self.success {
+            CodeCellRunResult::Ok {
+                output_value: if let Some(array_output) = self.array_output.to_owned() {
+                    Value::Array(array_output.into())
+                } else {
+                    self.output_value.to_owned().into()
+                },
+                cells_accessed: cells_accessed.to_owned(),
+            }
+        } else {
+            let error_msg = self
+                .error_msg
+                .to_owned()
+                .unwrap_or_else(|| "Unknown Python Error".into());
+            let msg = ErrorMsg::PythonError(error_msg.into());
+            let span = if let Some(line_number) = self.line_number {
+                Some(Span {
+                    start: line_number,
+                    end: line_number,
+                })
+            } else {
+                None
+            };
+            CodeCellRunResult::Err {
+                error: Error { span, msg },
+            }
+        };
+        CodeCellValue {
+            language,
+            code_string,
+            formatted_code_string: self.formatted_code.clone(),
+            output: Some(CodeCellRunOutput {
+                std_out: self.input_python_std_out.clone(),
+                std_err: self.error_msg.clone(),
+                result,
+            }),
+
+            // todo: figure out how to handle modified dates in cells
+            last_modified: String::new(),
+        }
     }
 }
 
@@ -106,6 +139,7 @@ impl JsCodeResult {
         input_python_std_out: Option<String>,
         output_value: Option<String>,
         array_output: Option<String>,
+        line_number: Option<u32>,
     ) -> Self {
         let array_output: Option<Vec<Vec<String>>> = if let Some(output_value) = array_output {
             match serde_json::from_str(&output_value) {
@@ -124,6 +158,7 @@ impl JsCodeResult {
             input_python_std_out,
             output_value,
             array_output,
+            line_number,
         }
     }
 }

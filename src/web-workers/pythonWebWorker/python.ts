@@ -36,7 +36,8 @@ class PythonWebWorker {
           pythonResult.error_msg,
           pythonResult.std_out,
           pythonResult.output_value,
-          pythonResult.array_output
+          pythonResult.array_output,
+          pythonResult.line_number
         );
         grid.completeTransaction(result);
       } else if (event.type === 'get-cells') {

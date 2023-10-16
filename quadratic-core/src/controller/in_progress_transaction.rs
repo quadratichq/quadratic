@@ -205,28 +205,7 @@ impl InProgressTransaction {
           Some(waiting_for_async) => {
             match waiting_for_async {
               CodeCellLanguage::Python => {
-                    let updated_code_cell_value = CodeCellValue {
-                        language,
-                        code_string,
-                        formatted_code_string: result.formatted_code(),
-                        output: Some(CodeCellRunOutput {
-                            std_out: result.input_python_std_out(),
-                            std_err: result.error_msg(),
-                            result: CodeCellRunResult::Ok {
-                                output_value: if let Some(array_output) =
-                                    result.array_output()
-                                {
-                                    Value::Array(array_output.into())
-                                } else {
-                                    result.output_value().into()
-                                },
-                                cells_accessed: self.cells_accessed.clone(),
-                            },
-                        }),
-
-                        // todo: figure out how to handle modified dates in cells
-                        last_modified: String::new(),
-                    };
+                    let updated_code_cell_value = result.into_code_cell_value(language, code_string, &self.cells_accessed);
                     let sheet_pos = if let Some(sheet_pos) = self.current_sheet_pos {
                         sheet_pos
                     } else {

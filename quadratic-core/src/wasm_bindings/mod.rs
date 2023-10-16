@@ -39,61 +39,6 @@ pub fn column_from_name(s: &str) -> Option<f64> {
     Some(util::column_from_name(s)? as f64)
 }
 
-// #[wasm_bindgen]
-// pub struct JsCodeResult {
-//     formatted_code: Option<String>,
-//     success: bool,
-//     error_span: Option<[u32; 2]>,
-//     error_msg: Option<String>,
-//     std_out: Option<String>,
-//     output_value: Option<String>,
-//     array_output: Option<Vec<Vec<String>>>,
-// }
-
-// #[wasm_bindgen]
-// impl JsCodeResult {
-//     #[wasm_bindgen]
-//     pub fn new(
-//         formatted_code: Option<String>,
-//         success: bool,
-//         error_span_start: Option<u32>,
-//         error_span_end: Option<u32>,
-//         error_msg: Option<String>,
-//         std_out: Option<String>,
-//         output_value: Option<String>,
-//         array_output: Option<String>,
-//     ) -> Self {
-//         let error_span = if let (Some(error_span_start), Some(error_span_end)) =
-//             (error_span_start, error_span_end)
-//         {
-//             Some([error_span_start, error_span_end])
-//         } else {
-//             None
-//         };
-//         let array_output = if let Some(array_output) = array_output {
-//             let array_output: Result<Vec<Vec<String>>, serde_json::Error> =
-//                 serde_json::from_str(&array_output);
-//             match array_output {
-//                 Ok(array_output) => Some(array_output),
-//                 Err(_) => {
-//                     panic!("Could not parse array_output in JsCodeResult::new");
-//                 }
-//             }
-//         } else {
-//             None
-//         };
-//         Self {
-//             formatted_code,
-//             success,
-//             error_span,
-//             error_msg,
-//             std_out,
-//             output_value,
-//             array_output,
-//         }
-//     }
-// }
-
 /// Evaluates a formula and returns a formula result.
 // #[wasm_bindgen]
 // pub async fn eval_formula(
