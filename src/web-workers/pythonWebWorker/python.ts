@@ -39,6 +39,8 @@ class PythonWebWorker {
           pythonResult.line_number
         );
         grid.completeTransaction(result);
+
+        // triggers any CodeEditor updates (if necessary)
         window.dispatchEvent(new CustomEvent('computation-complete'));
       } else if (event.type === 'get-cells') {
         const range = event.range;
