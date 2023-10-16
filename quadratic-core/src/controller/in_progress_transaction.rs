@@ -1,8 +1,7 @@
 use crate::{
     grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
-    util::dbgjs,
     wasm_bindings::js::runPython,
-    Error, ErrorMsg, Pos, SheetPos, Span, Value,
+    Error, ErrorMsg, Pos, SheetPos, Span,
 };
 
 use super::{
@@ -235,12 +234,12 @@ impl InProgressTransaction {
                 self.current_code_cell = Some(code_cell.clone());
                 let code_string = code_cell.code_string.clone();
                 let language = code_cell.language;
-                dbgjs(language);
                 match language {
                     CodeCellLanguage::Python => {
-                        dbgjs("in python!");
                         // python is run async so we exit the compute cycle and wait for TS to restart the transaction
-                        runPython(code_string);
+                        if !cfg!(test) {
+                            runPython(code_string);
+                        }
                         self.waiting_for_async = Some(language);
                         return true;
                     }
@@ -315,55 +314,51 @@ impl From<Transaction> for InProgressTransaction {
     }
 }
 
-// todo: we may want a mock Language type that allows us to test the transaction cycle without running python
-// #[cfg(test)]
-// mod test {
-//     use std::collections::HashSet;
+#[cfg(test)]
+mod test {
+    use std::collections::HashSet;
 
-//     use crate::{
-//         controller::{operations::Operation, transaction_types::JsCodeResult, GridController},
-//         grid::{CodeCellLanguage, CodeCellValue},
-//         wasm_bindings::controller::cells::CodeCell,
-//         Pos,
-//     };
+    use crate::{
+        controller::{operations::Operation, transaction_types::JsCodeResult, GridController},
+        grid::{CodeCellLanguage, CodeCellValue},
+        wasm_bindings::controller::cells::CodeCell,
+        Pos,
+    };
 
-//     #[test]
-//     fn test_execute_operation_set_cell_values() {
-//         let mut gc = GridController::new();
-//         let sheet_ids = gc.sheet_ids();
-//         let sheet = gc.grid.sheet_mut_from_id(sheet_ids[0]);
-//         let sheet_id = sheet.id.clone();
-//         let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
-//         gc.set_in_progress_transaction(
-//             vec![Operation::SetCellCode {
-//                 cell_ref,
-//                 code_cell_value: Some(CodeCellValue {
-//                     language: CodeCellLanguage::,
-//                     code_string: "1 + 1".to_string(),
-//                     formatted_code_string: None,
-//                     output: None,
-//                     last_modified: String::new(),
-//                 }),
-//             }],
-//             None,
-//             true,
-//             crate::controller::transactions::TransactionType::Normal,
-//         );
-//         assert_eq!(
-//             gc.js_get_code_string(sheet_ids[0].to_string(), &Pos { x: 0, y: 0 }),
-//             Some(CodeCell::new(
-//                 "1 + 1".to_string(),
-//                 CodeCellLanguage::AsyncTest
-//             ))
-//         );
-//         assert_eq!(gc.in_progress_transaction.is_some(), true);
-//         if let Some(transaction) = gc.in_progress_transaction.clone() {
-//             assert_eq!(transaction.complete, false);
-//             assert_eq!(transaction.cells_to_compute.len(), 0);
-//         }
-//         let result = JsCodeResult::new(true, 0, 10, None, None, None, None, None, None, None);
-//         let summary = gc.complete_transaction(result);
-//         assert_eq!(summary.save, true);
-//         assert_eq!(summary.code_cells_modified, HashSet::from([sheet_id]));
-//     }
-// }
+    #[test]
+    fn test_execute_operation_set_cell_values() {
+        let mut gc = GridController::new();
+        let sheet_ids = gc.sheet_ids();
+        let sheet = gc.grid.sheet_mut_from_id(sheet_ids[0]);
+        let sheet_id = sheet.id.clone();
+        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
+        gc.set_in_progress_transaction(
+            vec![Operation::SetCellCode {
+                cell_ref,
+                code_cell_value: Some(CodeCellValue {
+                    language: CodeCellLanguage::Python,
+                    code_string: "1 + 1".to_string(),
+                    formatted_code_string: None,
+                    output: None,
+                    last_modified: String::new(),
+                }),
+            }],
+            None,
+            true,
+            crate::controller::transactions::TransactionType::Normal,
+        );
+        assert_eq!(
+            gc.js_get_code_string(sheet_ids[0].to_string(), &Pos { x: 0, y: 0 }),
+            Some(CodeCell::new("1 + 1".to_string(), CodeCellLanguage::Python))
+        );
+        assert_eq!(gc.in_progress_transaction.is_some(), true);
+        if let Some(transaction) = gc.in_progress_transaction.clone() {
+            assert_eq!(transaction.complete, false);
+            assert_eq!(transaction.cells_to_compute.len(), 0);
+        }
+        let result = JsCodeResult::new(true, None, None, None, None, None, None);
+        let summary = gc.complete_transaction(result);
+        assert_eq!(summary.save, true);
+        assert_eq!(summary.code_cells_modified, HashSet::from([sheet_id]));
+    }
+}

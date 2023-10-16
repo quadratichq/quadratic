@@ -28,6 +28,12 @@ export const CodeEditor = () => {
     [editorInteractionState.selectedCell.x, editorInteractionState.selectedCell.y]
   );
 
+  // ensures that the console is updated after the code cell is run (for async calculations, like Python)
+  useEffect(() => {
+    window.addEventListener('computation-complete', updateCodeCell);
+    return () => window.removeEventListener('computation-complete', updateCodeCell);
+  });
+
   // update code cell
   const [codeString, setCodeString] = useState('');
   const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
@@ -101,6 +107,7 @@ export const CodeEditor = () => {
       codeString: editorContent ?? '',
       language,
     });
+    // todo: it's not done yet!!! ugh...
     updateCodeCell();
     isRunningComputation.current = false;
   };

@@ -11,7 +11,6 @@ class PythonWebWorker {
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
-      console.log(event);
       if (event.type === 'results') {
         const pythonResult = event.results;
         if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
@@ -40,6 +39,7 @@ class PythonWebWorker {
           pythonResult.line_number
         );
         grid.completeTransaction(result);
+        window.dispatchEvent(new CustomEvent('computation-complete'));
       } else if (event.type === 'get-cells') {
         const range = event.range;
         if (!range) {
@@ -79,7 +79,6 @@ class PythonWebWorker {
         },
       };
     } else {
-      console.log('execute');
       this.worker.postMessage({ type: 'execute', python });
     }
   }
