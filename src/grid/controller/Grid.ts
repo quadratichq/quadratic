@@ -10,6 +10,7 @@ import init, {
   CodeCellLanguage,
   GridController,
   JsCodeResult,
+  JsComputeGetCells,
   JsRenderCodeCell,
   MinMax,
   Pos,
@@ -585,6 +586,26 @@ export class Grid {
   completeTransaction(result: JsCodeResult) {
     const summary = this.gridController.completeTransaction(result);
     this.transactionResponse(summary);
+  }
+
+  computeGetCells(
+    rect: RectInternal,
+    sheetName: string | undefined,
+    lineNumber: number | undefined
+  ): { x: number; y: number; value: string }[] | undefined {
+    const getCells = new JsComputeGetCells(rect, sheetName, lineNumber === undefined ? undefined : BigInt(lineNumber));
+    const array = this.gridController.getCellsTransaction(getCells);
+    if (array) {
+      let cell = array.next();
+      const results: { x: number; y: number; value: string }[] = [];
+      while (cell) {
+        const pos = cell.getPos();
+        const value = cell.getValue();
+        results.push({ x: Number(pos.x), y: Number(pos.y), value: value });
+        cell = array.next();
+      }
+      return results;
+    }
   }
 
   //#endregion

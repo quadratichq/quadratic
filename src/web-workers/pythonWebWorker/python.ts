@@ -44,10 +44,11 @@ class PythonWebWorker {
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');
         }
-        const cells = grid.computeGetCells({
-          rect: pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
-          line_number: event.range?.lineNumber,
-        });
+        const cells = grid.computeGetCells(
+          pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
+          range.sheet,
+          event.range?.lineNumber
+        );
         // cells will be undefined if the sheet_id (currently name) is invalid
         if (cells && this.worker) {
           this.worker.postMessage({ type: 'get-cells', cells });

@@ -1,11 +1,14 @@
 use core::panic;
 
-use crate::{grid::SheetId, Pos, Rect};
+use crate::{grid::SheetId, Pos};
 use serde::{Deserialize, Serialize};
 
 use super::{
-    in_progress_transaction::InProgressTransaction, operations::Operation,
-    transaction_summary::TransactionSummary, transaction_types::JsCodeResult, GridController,
+    in_progress_transaction::InProgressTransaction,
+    operations::Operation,
+    transaction_summary::TransactionSummary,
+    transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
+    GridController,
 };
 
 pub enum TransactionType {
@@ -85,32 +88,15 @@ impl GridController {
         }
     }
 
-    pub fn get_cells_transaction(
-        &self,
-        sheet_id: Option<String>,
-        rect: Rect,
-        line_number: u32,
-    ) -> Vec<Option<String>> {
-        if let Some(transaction) = self.in_progress_transaction.clone() {
-            let sheet =
-            if let Some(sheet_pos) = transaction.current_sheet_pos {
-                let sheet = self.sheet(sheet_pos.sheet_id);
-                let mut cells = vec![];
-
-                for y in rect.y_range() {
-                    for x in rect.x_range() {
-                        let value = if let Some(value) = sheet.get_cell_value(Pos { x, y }) {
-                            Some(value.to_edit())
-                        } else {
-                            None
-                        };
-                        cells.push(value);
-                    }
-                }
-                return cells;
-            }
+    pub fn get_cells_transaction(&mut self, get_cells: JsComputeGetCells) -> Option<CellsForArray> {
+        // todo: there's probably a better way to do this
+        if let Some(transaction) = &mut self.in_progress_transaction.clone() {
+            let result = transaction.get_cells(self, get_cells);
+            self.in_progress_transaction = Some(transaction.clone());
+            result
+        } else {
+            None
         }
-        panic!("Expected an in progress transaction");
     }
 }
 

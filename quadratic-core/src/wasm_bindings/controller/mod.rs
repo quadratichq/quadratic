@@ -1,6 +1,9 @@
 use super::*;
 use crate::{
-    controller::{transaction_summary::TransactionSummary, transaction_types::JsCodeResult},
+    controller::{
+        transaction_summary::TransactionSummary,
+        transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
+    },
     grid::js_types::*,
 };
 use std::str::FromStr;
@@ -74,16 +77,10 @@ impl GridController {
 
     #[wasm_bindgen(js_name = "getCellsTransaction")]
     pub fn js_get_cells_transaction(
-        &self,
-        sheet_id: Option<String>,
-        rect: Rect,
-        line_number: u32,
-    ) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(&self.get_cells_transaction(
-            sheet_id,
-            rect,
-            line_number,
-        ))?)
+        &mut self,
+        get_cells: JsComputeGetCells,
+    ) -> Option<CellsForArray> {
+        self.get_cells_transaction(get_cells)
     }
 
     /// Populates a portion of a sheet with random float values.

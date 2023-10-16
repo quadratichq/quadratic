@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::Rect;
+use crate::{Pos, Rect};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[wasm_bindgen]
@@ -29,6 +29,13 @@ impl CellForArray {
     #[wasm_bindgen(js_name = "getValue")]
     pub fn get_value(&self) -> String {
         self.value.clone()
+    }
+    #[wasm_bindgen(js_name = "getPos")]
+    pub fn get_pos(&self) -> Pos {
+        Pos {
+            x: self.x,
+            y: self.y,
+        }
     }
 }
 
@@ -130,7 +137,7 @@ pub struct JsComputeGetCells {
 
 #[wasm_bindgen]
 impl JsComputeGetCells {
-    #[wasm_bindgen]
+    #[wasm_bindgen(constructor)]
     pub fn new(rect: Rect, sheet_name: Option<String>, line_number: Option<i64>) -> Self {
         Self {
             rect,
