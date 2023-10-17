@@ -14,7 +14,7 @@ export const SelectionSummary = () => {
   const [avg, setAvg] = useState<string | undefined>('');
 
   const runCalculationOnActiveSelection = async () => {
-    let result = await grid.summarizeSelection();
+    let result = grid.summarizeSelection();
 
     if (result) {
       setCount(result.count.toString());
