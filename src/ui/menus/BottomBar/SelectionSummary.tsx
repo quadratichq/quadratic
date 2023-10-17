@@ -13,7 +13,7 @@ export const SelectionSummary = () => {
   const [sum, setSum] = useState<string | undefined>('');
   const [avg, setAvg] = useState<string | undefined>('');
 
-  const runCalculationOnActiveSelection = async () => {
+  const runCalculationOnActiveSelection = () => {
     let result = grid.summarizeSelection();
 
     if (result) {
