@@ -1,30 +1,97 @@
-use std;
+use std::{self};
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
-use crate::grid::{CellRef, CodeCellRunResult, Grid};
+use crate::grid::{CellRef, Grid, Sheet};
 
-impl Grid {
-    /// Returns cells that _directly_ depend on `area`.
-    /// Does not continue to traverse the graph.
-    pub fn get_dependent_cells(&self, cell: CellRef) -> HashSet<CellRef> {
-        let mut seen = HashSet::new();
+use super::GridController;
 
-        self.sheets().iter().for_each(|sheet| {
-            for (cell_ref, code_cell_value) in sheet.code_cells.iter() {
-                if let Some(output) = code_cell_value.output.clone() {
-                    match output.result {
-                        CodeCellRunResult::Ok { cells_accessed, .. } => {
-                            if cells_accessed.contains(&cell) {
-                                seen.insert(*cell_ref);
-                            }
-                        }
-                        _ => (),
+/// track code dependencies per cell -- this is built on load and does not need to be serialized
+#[derive(Debug, Clone, Default)]
+pub struct Dependencies {
+    dependencies: HashMap<CellRef, HashSet<CellRef>>,
+}
+
+impl Dependencies {
+    pub fn new(grid: &Grid) -> Self {
+        if cfg!(feature = "show-operations") {
+            crate::util::dbgjs("[Dependent Cells] building...");
+        }
+        let mut deps = Dependencies {
+            dependencies: HashMap::new(),
+        };
+        grid.sheets().iter().for_each(|sheet| {
+            sheet.code_cells.iter().for_each(|(cell_ref, code_cell)| {
+                if let Some(output) = code_cell.output.as_ref() {
+                    if let Some(cells_accessed) = output.cells_accessed() {
+                        cells_accessed.iter().for_each(|cell_accessed| {
+                            deps.dependencies
+                                .entry(*cell_accessed)
+                                .or_insert_with(HashSet::new)
+                                .insert(*cell_ref);
+                        });
                     }
                 }
-            }
+            })
         });
-        seen
+        deps
+    }
+
+    pub fn get(&self, cell: CellRef) -> Option<&HashSet<CellRef>> {
+        self.dependencies.get(&cell)
+    }
+
+    pub fn add(&mut self, cell: CellRef, dep: CellRef) {
+        self.dependencies
+            .entry(cell)
+            .or_insert_with(HashSet::new)
+            .insert(dep);
+    }
+
+    pub fn remove(&mut self, cell: CellRef, dep: CellRef) {
+        if let Some(deps) = self.dependencies.get_mut(&cell) {
+            deps.retain(|&x| x != dep);
+        }
+    }
+
+    pub fn to_debug(cell_ref: CellRef, dependencies: &HashSet<CellRef>, sheet: &Sheet) -> String {
+        let pos = sheet.cell_ref_to_pos(cell_ref);
+        let mut s = format!("[Dependent Cells] for {}: ", pos.unwrap());
+        for dep in dependencies {
+            s.push_str(&format!("{}, ", sheet.cell_ref_to_pos(*dep).unwrap()));
+        }
+        s
+    }
+}
+
+impl GridController {
+    pub fn get_dependent_cells(&self, cell: CellRef) -> Option<&HashSet<CellRef>> {
+        self.dependencies.get(cell)
+    }
+
+    pub fn update_dependent_cells(
+        &mut self,
+        cell: CellRef,
+        deps: Option<Vec<CellRef>>,
+        old_deps: Option<Vec<CellRef>>,
+    ) {
+        if cfg!(feature = "show-operations") {
+            crate::util::dbgjs(&format!("[Dependent Cells] {:?} {:?}", old_deps, deps));
+        }
+
+        if let Some(old_deps) = old_deps {
+            for old_dep in old_deps {
+                self.dependencies.remove(old_dep, cell);
+            }
+        }
+        if let Some(deps) = deps {
+            for dep in deps {
+                // ensure we don't add a dependency on ourselves
+                if dep != cell {
+                    self.dependencies.add(dep, cell);
+                }
+            }
+        }
     }
 }
 

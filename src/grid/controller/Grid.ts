@@ -583,18 +583,18 @@ export class Grid {
 
   //#region Compute
 
-  completeTransaction(result: JsCodeResult) {
-    const summary = this.gridController.completeTransaction(result);
+  calculationComplete(result: JsCodeResult) {
+    const summary = this.gridController.calculationComplete(result);
     this.transactionResponse(summary);
   }
 
-  computeGetCells(
+  calculationGetCells(
     rect: RectInternal,
     sheetName: string | undefined,
     lineNumber: number | undefined
   ): { x: number; y: number; value: string }[] | undefined {
     const getCells = new JsComputeGetCells(rect, sheetName, lineNumber === undefined ? undefined : BigInt(lineNumber));
-    const array = this.gridController.getCellsTransaction(getCells);
+    const array = this.gridController.calculationGetCells(getCells);
     if (array) {
       let cell = array.next();
       const results: { x: number; y: number; value: string }[] = [];

@@ -75,27 +75,29 @@ impl GridController {
             TransactionSummary::default()
         }
     }
-    pub fn complete_transaction(&mut self, result: JsCodeResult) -> TransactionSummary {
+    pub fn calculation_complete(&mut self, result: JsCodeResult) -> TransactionSummary {
         if let Some(transaction) = &mut self.in_progress_transaction.clone() {
-            transaction.complete(self, result);
+            transaction.calculation_complete(self, result);
             let summary = transaction.transaction_summary();
-            self.undo_stack.push(transaction.into());
-            self.redo_stack.clear();
-            self.in_progress_transaction = None;
+            if transaction.complete {
+                self.undo_stack.push(transaction.into());
+                self.redo_stack.clear();
+                self.in_progress_transaction = None;
+            }
             summary
         } else {
             panic!("Expected an in progress transaction");
         }
     }
 
-    pub fn get_cells_transaction(&mut self, get_cells: JsComputeGetCells) -> Option<CellsForArray> {
+    pub fn calculation_get_cells(&mut self, get_cells: JsComputeGetCells) -> Option<CellsForArray> {
         // todo: there's probably a better way to do this
         if let Some(transaction) = &mut self.in_progress_transaction.clone() {
             let result = transaction.get_cells(self, get_cells);
             self.in_progress_transaction = Some(transaction.clone());
             result
         } else {
-            None
+            panic!("Expected a transaction to still be running");
         }
     }
 }

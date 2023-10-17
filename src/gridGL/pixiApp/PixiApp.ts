@@ -136,7 +136,6 @@ export class PixiApp {
     document.addEventListener('copy', copyToClipboardEvent);
     document.addEventListener('paste', pasteFromClipboardEvent);
     document.addEventListener('cut', cutToClipboardEvent);
-    console.log('listeners are ready');
   }
 
   private removeListeners() {
@@ -144,7 +143,6 @@ export class PixiApp {
     document.removeEventListener('copy', copyToClipboardEvent);
     document.removeEventListener('paste', pasteFromClipboardEvent);
     document.removeEventListener('cut', cutToClipboardEvent);
-    console.log('listeners are removed');
   }
 
   private showCache(): void {

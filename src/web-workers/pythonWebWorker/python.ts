@@ -11,6 +11,7 @@ class PythonWebWorker {
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
+      console.log(event.type);
       if (event.type === 'results') {
         const pythonResult = event.results;
         if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
@@ -38,7 +39,7 @@ class PythonWebWorker {
           JSON.stringify(pythonResult.array_output),
           pythonResult.line_number
         );
-        grid.completeTransaction(result);
+        grid.calculationComplete(result);
 
         // triggers any CodeEditor updates (if necessary)
         window.dispatchEvent(new CustomEvent('computation-complete'));
@@ -47,7 +48,8 @@ class PythonWebWorker {
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');
         }
-        const cells = grid.computeGetCells(
+        console.log({ range });
+        const cells = grid.calculationGetCells(
           pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
           range.sheet,
           event.range?.lineNumber
@@ -81,6 +83,7 @@ class PythonWebWorker {
         },
       };
     } else {
+      console.log('execute');
       this.worker.postMessage({ type: 'execute', python });
     }
   }

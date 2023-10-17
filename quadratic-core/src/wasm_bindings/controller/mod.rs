@@ -68,19 +68,19 @@ impl GridController {
         Ok(serde_wasm_bindgen::to_value(&self.redo(cursor))?)
     }
 
-    #[wasm_bindgen(js_name = "completeTransaction")]
-    pub fn js_complete_transaction(&mut self, result: JsCodeResult) -> Result<JsValue, JsValue> {
+    #[wasm_bindgen(js_name = "calculationComplete")]
+    pub fn js_calculation_complete(&mut self, result: JsCodeResult) -> Result<JsValue, JsValue> {
         Ok(serde_wasm_bindgen::to_value(
-            &self.complete_transaction(result),
+            &self.calculation_complete(result),
         )?)
     }
 
-    #[wasm_bindgen(js_name = "getCellsTransaction")]
-    pub fn js_get_cells_transaction(
+    #[wasm_bindgen(js_name = "calculationGetCells")]
+    pub fn js_calculation_get_cells(
         &mut self,
         get_cells: JsComputeGetCells,
     ) -> Option<CellsForArray> {
-        self.get_cells_transaction(get_cells)
+        self.calculation_get_cells(get_cells)
     }
 
     /// Populates a portion of a sheet with random float values.

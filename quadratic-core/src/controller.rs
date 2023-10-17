@@ -3,7 +3,10 @@ use wasm_bindgen::prelude::*;
 
 use crate::grid::Grid;
 
-use self::{in_progress_transaction::InProgressTransaction, transactions::Transaction};
+use self::{
+    dependencies::Dependencies, in_progress_transaction::InProgressTransaction,
+    transactions::Transaction,
+};
 
 pub mod auto_complete;
 pub mod cells;
@@ -26,6 +29,7 @@ pub mod transactions;
 pub struct GridController {
     grid: Grid,
 
+    dependencies: Dependencies,
     in_progress_transaction: Option<InProgressTransaction>,
 
     undo_stack: Vec<Transaction>,
@@ -36,8 +40,10 @@ impl GridController {
         Self::from_grid(Grid::new())
     }
     pub fn from_grid(grid: Grid) -> Self {
+        let dependencies = Dependencies::new(&grid);
         GridController {
             grid,
+            dependencies,
             in_progress_transaction: None,
             undo_stack: vec![],
             redo_stack: vec![],
