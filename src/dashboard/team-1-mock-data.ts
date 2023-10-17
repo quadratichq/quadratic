@@ -4,7 +4,7 @@ export const data = {
   team: {
     uuid: '1',
     name: 'Costco',
-    // avatarUrl: 'https://avatars.githubusercontent.com/u/1051500?v=4',
+    // picture: 'https://avatars.githubusercontent.com/u/1051500?v=4',
     users: [
       {
         email: 'jim.nielsen@quadratichq.com',

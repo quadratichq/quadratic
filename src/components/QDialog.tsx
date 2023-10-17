@@ -1,6 +1,7 @@
 import { Close } from '@mui/icons-material';
 import {
   Box,
+  Button,
   Dialog,
   DialogActions,
   DialogContent,
@@ -88,10 +89,12 @@ const Title: React.FC<QDialogTitleProps> = ({ children }) => {
     </Box>
   );
 };
+QDialog.Title = Title;
 
 const Content: React.FC<QDialogContentProps> = ({ children }) => {
   return <DialogContent dividers>{children}</DialogContent>;
 };
+QDialog.Content = Content;
 
 const Actions: React.FC<QDialogActionsProps> = ({ children }) => {
   const theme = useTheme();
@@ -101,9 +104,55 @@ const Actions: React.FC<QDialogActionsProps> = ({ children }) => {
     </DialogActions>
   );
 };
-
-QDialog.Title = Title;
-QDialog.Content = Content;
 QDialog.Actions = Actions;
 
-export { QDialog };
+/**
+ * A reusable dialog component for confirming the deletion of an object in the system.
+ * TODO swap out for all `window.confirm` actions
+ * @param {Object} props - The component's props.
+ * @param {() => void} props.onClose - A function to close the dialog without any other side effects.
+ * @param {string} props.entityNoun - A (lowercased) noun representing the entity that will be deleted (e.g., "team" or "file").
+ * @param {string} props.entityName - The name of the entity to be deleted (e.g. "Jim’s Amazing Team")
+ * @param {React.ReactNode?} props.children - Additional content to display in the body of the dialog (will appear as a child of the `<Typography>` component).
+ * @param {() => void} props.onDelete - A function to perform the deletion action.
+ */
+const QDialogConfirmDelete = ({
+  children,
+  entityName,
+  entityNoun,
+  onClose,
+  onDelete,
+}: {
+  children?: React.ReactNode;
+  entityNoun: string;
+  entityName: string;
+  onClose: () => void;
+  onDelete: () => void;
+}) => {
+  return (
+    <QDialog onClose={onClose} maxWidth="xs">
+      <QDialog.Title>Confirm delete</QDialog.Title>
+      <QDialog.Content>
+        <Typography variant="body2">
+          Please confirm you want to delete the {entityNoun}: <b>“{entityName}”</b>.
+        </Typography>
+        {children && (
+          <>
+            <br />
+            <Typography variant="body2">{children}</Typography>
+          </>
+        )}
+      </QDialog.Content>
+      <QDialog.Actions>
+        <Button variant="outlined" autoFocus onClick={onClose} size="small">
+          Cancel
+        </Button>
+        <Button variant="contained" color="error" disableElevation onClick={onDelete} size="small">
+          Delete
+        </Button>
+      </QDialog.Actions>
+    </QDialog>
+  );
+};
+
+export { QDialog, QDialogConfirmDelete };
