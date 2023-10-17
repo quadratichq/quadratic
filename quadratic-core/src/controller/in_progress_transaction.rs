@@ -1,7 +1,7 @@
 use crate::{
     grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
     wasm_bindings::js::runPython,
-    Error, ErrorMsg, Pos, SheetPos, Span,
+    Error, ErrorMsg, Pos, Span,
 };
 
 use super::{
@@ -18,14 +18,14 @@ use super::{
 #[derive(Debug, Default, Clone)]
 pub struct InProgressTransaction {
     reverse_operations: Vec<Operation>,
-    cells_to_compute: Vec<SheetPos>,
+    cells_to_compute: Vec<CellRef>,
     pub cursor: Option<String>,
     cells_accessed: Vec<CellRef>,
     summary: TransactionSummary,
 
     // save code_cell info for async calls
     current_code_cell: Option<CodeCellValue>,
-    pub current_sheet_pos: Option<SheetPos>,
+    pub current_cell_ref: Option<CellRef>,
     waiting_for_async: Option<CodeCellLanguage>,
 
     // true when transaction completes
@@ -52,7 +52,7 @@ impl InProgressTransaction {
             cells_accessed: vec![],
 
             current_code_cell: None,
-            current_sheet_pos: None,
+            current_cell_ref: None,
             waiting_for_async: None,
 
             complete: false,
@@ -92,7 +92,7 @@ impl InProgressTransaction {
         let mut sheets_with_changed_bounds = vec![];
 
         for op in operations.iter() {
-            if cfg!(feature = "show-calculations") {
+            if cfg!(feature = "show-operations") {
                 crate::util::dbgjs(&format!("[Operation] {:?}", op.to_string()));
             }
 
@@ -127,13 +127,13 @@ impl InProgressTransaction {
         // if sheet_name is None, use the sheet_id from the pos
         let sheet = sheet_name.clone().map_or_else(
             || {
-                if self.current_sheet_pos.is_none() {
+                if self.current_cell_ref.is_none() {
                     panic!("Expected current_sheet_pos to be defined in transaction::get_cells");
                 }
                 Some(
                     grid_controller
                         .grid
-                        .sheet_from_id(self.current_sheet_pos.unwrap().sheet_id),
+                        .sheet_from_id(self.current_cell_ref.unwrap().sheet),
                 )
             },
             |sheet_name| grid_controller.grid.sheet_from_name(sheet_name),
@@ -210,7 +210,7 @@ impl InProgressTransaction {
             match waiting_for_async {
               CodeCellLanguage::Python => {
                     let updated_code_cell_value = result.into_code_cell_value(language, code_string, &self.cells_accessed);
-                    let sheet_pos = if let Some(sheet_pos) = self.current_sheet_pos {
+                    let sheet_pos = if let Some(sheet_pos) = self.current_cell_ref {
                         sheet_pos
                     } else {
                         panic!("Expected current_sheet_pos to be defined in transaction::complete");
@@ -229,42 +229,45 @@ impl InProgressTransaction {
     /// checks the next cell in the cells_to_compute and computes it
     /// returns true if an async call is made or the compute cycle is completed
     fn compute(&mut self, grid_controller: &mut GridController) -> bool {
-        if let Some(sheet_pos) = self.cells_to_compute.pop() {
-            if cfg!(feature = "show-calculations") {
-                crate::util::dbgjs(&format!("[Compute] {:?}", sheet_pos.to_string()));
-            }
+        if let Some(cell_ref) = self.cells_to_compute.pop() {
+            let sheet = grid_controller.grid.sheet_mut_from_id(cell_ref.sheet);
+            if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
+                if cfg!(feature = "show-operations") {
+                    crate::util::dbgjs(&format!("[Compute] {:?}", pos));
+                }
 
-            // find which cells have formulas. Run the formulas and update the cells.
-            // add the updated cells to the cells_to_compute
-            let sheet = grid_controller.grid.sheet_mut_from_id(sheet_pos.sheet_id);
+                // find which cells have formulas. Run the formulas and update the cells.
+                // add the updated cells to the cells_to_compute
 
-            if let Some(code_cell) = sheet.get_code_cell(sheet_pos.into()) {
-                self.current_sheet_pos = Some(sheet_pos);
-                self.current_code_cell = Some(code_cell.clone());
-                let code_string = code_cell.code_string.clone();
-                let language = code_cell.language;
-                match language {
-                    CodeCellLanguage::Python => {
-                        // python is run async so we exit the compute cycle and wait for TS to restart the transaction
-                        if !cfg!(test) {
-                            runPython(code_string);
+                if let Some(code_cell) = sheet.get_code_cell(pos) {
+                    self.current_cell_ref = Some(cell_ref);
+                    self.current_code_cell = Some(code_cell.clone());
+                    let code_string = code_cell.code_string.clone();
+                    let language = code_cell.language;
+                    match language {
+                        CodeCellLanguage::Python => {
+                            // python is run async so we exit the compute cycle and wait for TS to restart the transaction
+                            if !cfg!(test) {
+                                runPython(code_string);
+                            }
+                            if cfg!(feature = "show-operations") {
+                                crate::util::dbgjs("[Compute] Python code running")
+                            }
+                            self.waiting_for_async = Some(language);
+                            return true;
                         }
-                        self.waiting_for_async = Some(language);
-                        return true;
-                    }
-                    _ => {
-                        crate::util::dbgjs(&format!(
-                            "Compute language {} not supported in compute.rs",
-                            language
-                        ));
+                        _ => {
+                            crate::util::dbgjs(&format!(
+                                "Compute language {} not supported in compute.rs",
+                                language
+                            ));
+                        }
                     }
                 }
+
                 // add all dependent cells to the cells_to_compute
-                let dependent_cells = grid_controller.grid.get_dependent_cells(sheet_pos);
-
-                // todo: these exit condition should be simplified
-
-                // add to cells_to_compute
+                let dependent_cells = grid_controller.grid.get_dependent_cells(cell_ref);
+                crate::util::dbgjs(&format!("[Compute] Dependent cells: {:?}", dependent_cells));
                 self.cells_to_compute.extend(dependent_cells);
                 if self.cells_to_compute.is_empty() {
                     self.complete = true;

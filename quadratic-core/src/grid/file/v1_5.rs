@@ -11,7 +11,7 @@ use super::v1_4;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct GridSchema {
     pub sheets: Vec<SheetSchema>,
-    pub dependencies: Vec<(SheetPos, Vec<SheetRect>)>,
+    // pub dependencies: Vec<(SheetPos, Vec<SheetRect>)>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -69,7 +69,7 @@ impl v1_4::GridSchemaV1_4 {
 
         let ret = GridSchema {
             sheets,
-            dependencies: rs_dependencies.into_iter().collect(),
+            // dependencies: rs_dependencies.into_iter().collect(),
         };
         Ok(ret)
     }

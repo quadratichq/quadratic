@@ -1,5 +1,4 @@
 use anyhow::{bail, Result};
-use std::collections::HashMap;
 use std::str::FromStr;
 
 use lexicon_fractional_index::key_between;
@@ -39,7 +38,7 @@ use crate::{CellValue, Pos, SheetPos, SheetRect, Value};
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Grid {
     sheets: Vec<Sheet>,
-    dependencies: HashMap<SheetPos, Vec<SheetRect>>,
+    // dependencies: HashMap<SheetPos, Vec<SheetRect>>,
 }
 impl Default for Grid {
     fn default() -> Self {
@@ -50,7 +49,7 @@ impl Grid {
     pub fn new() -> Self {
         let mut ret = Grid {
             sheets: vec![],
-            dependencies: HashMap::new(),
+            // dependencies: HashMap::new(),
         };
         ret.add_sheet(None).expect("error adding initial sheet");
         ret
@@ -58,9 +57,9 @@ impl Grid {
     pub fn sheets(&self) -> &[Sheet] {
         &self.sheets
     }
-    pub fn dependencies_mut(&mut self) -> &mut HashMap<SheetPos, Vec<SheetRect>> {
-        &mut self.dependencies
-    }
+    // pub fn dependencies_mut(&mut self) -> &mut HashMap<SheetPos, Vec<SheetRect>> {
+    //     &mut self.dependencies
+    // }
     pub fn sheet_ids(&self) -> Vec<SheetId> {
         self.sheets.iter().map(|sheet| sheet.id).collect()
     }

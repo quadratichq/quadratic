@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     grid::{CellRef, CodeCellValue, ColumnId, RegionRef, RowId, Sheet, SheetId},
-    Array, SheetPos, SheetRect,
+    Array,
 };
 
 use super::formatting::CellFmtArray;
@@ -14,10 +14,6 @@ pub enum Operation {
     SetCellValues {
         region: RegionRef,
         values: Array,
-    },
-    SetCellDependencies {
-        cell: SheetPos,
-        dependencies: Option<Vec<SheetRect>>,
     },
     SetCellCode {
         cell_ref: CellRef,
@@ -63,14 +59,6 @@ impl fmt::Display for Operation {
             Operation::None => write!(fmt, "None"),
             Operation::SetCellValues { values, .. } => {
                 write!(fmt, "SetCellValues {{ value count: {} }}", values.size())
-            }
-            Operation::SetCellDependencies { dependencies, .. } => {
-                let len = if let Some(dependencies) = dependencies {
-                    dependencies.len()
-                } else {
-                    0
-                };
-                write!(fmt, "SetCellDependencies {{ count: {:?} }}", len)
             }
             Operation::SetCellCode {
                 code_cell_value, ..

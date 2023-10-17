@@ -22,7 +22,7 @@ impl GridController {
     pub fn execute_operation(
         &mut self,
         op: Operation,
-        cells_to_compute: &mut Vec<SheetPos>,
+        cells_to_compute: &mut Vec<CellRef>,
         summary: &mut TransactionSummary,
     ) -> Operation {
         let mut cells_deleted = vec![];
@@ -67,11 +67,7 @@ impl GridController {
                                     value.to_display(numeric_format, numeric_decimals),
                                 )),
                             });
-                            cells_to_compute.push(SheetPos {
-                                x: pos.x,
-                                y: pos.y,
-                                sheet_id: sheet.id,
-                            });
+                            cells_to_compute.push(cell_ref);
                         }
 
                         let response = sheet.set_cell_value(pos, value)?;
@@ -93,41 +89,21 @@ impl GridController {
                     values: old_values,
                 }
             }
-            Operation::SetCellDependencies { cell, dependencies } => {
-                let old_deps = self.grid.set_dependencies(cell, dependencies);
-
-                // return reverse operation
-                Operation::SetCellDependencies {
-                    cell,
-                    dependencies: old_deps,
-                }
-            }
             Operation::SetCellCode {
                 cell_ref,
                 code_cell_value,
             } => {
-                let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
-                if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                    let sheet_pos = SheetPos {
-                        x: pos.x,
-                        y: pos.y,
-                        sheet_id: sheet.id,
-                    };
-                    let mut reverse_operations = vec![];
-                    update_code_cell_value(
-                        self,
-                        sheet_pos,
-                        code_cell_value,
-                        &mut None,
-                        &mut reverse_operations,
-                        summary,
-                    );
-                    cells_to_compute.push(sheet_pos);
-                    reverse_operations[0].clone()
-                } else {
-                    // handles case where the CellRef no longer exists
-                    Operation::None
-                }
+                let mut reverse_operations = vec![];
+                update_code_cell_value(
+                    self,
+                    cell_ref,
+                    code_cell_value,
+                    &mut None,
+                    &mut reverse_operations,
+                    summary,
+                );
+                cells_to_compute.push(cell_ref);
+                reverse_operations[0].clone()
             }
             Operation::SetCellFormats { region, attr } => {
                 if let CellFmtArray::FillColor(_) = attr {

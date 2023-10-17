@@ -41,7 +41,7 @@ pub struct Sheet {
     pub(super) columns: BTreeMap<i64, Column>,
     pub(super) borders: SheetBorders,
     #[serde(with = "crate::util::hashmap_serde")]
-    pub(super) code_cells: HashMap<CellRef, CodeCellValue>,
+    pub code_cells: HashMap<CellRef, CodeCellValue>,
 
     pub(super) data_bounds: GridBounds,
     pub(super) format_bounds: GridBounds,

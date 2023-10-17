@@ -65,7 +65,7 @@ pub fn import(file_contents: &str) -> Result<current::Grid, String> {
                 sheet
             })
             .collect(),
-        dependencies: file.dependencies.into_iter().collect(),
+        // dependencies: file.dependencies.into_iter().collect(),
     })
 }
 
@@ -99,7 +99,6 @@ pub fn export(grid: &current::Grid) -> Result<String, String> {
                         .collect(),
                 })
                 .collect(),
-            dependencies: grid.dependencies.clone().into_iter().collect(),
         },
     })
     .map_err(|e| e.to_string())

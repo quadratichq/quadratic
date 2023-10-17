@@ -110,7 +110,7 @@ impl Operation {
     pub fn sheet_with_changed_bounds(&self) -> Option<SheetId> {
         match self {
             Operation::SetCellValues { region, .. } => Some(region.sheet),
-            Operation::SetCellDependencies { .. } => None,
+            // Operation::SetCellDependencies { .. } => None,
             Operation::SetCellCode { cell_ref, .. } => Some(cell_ref.sheet),
             Operation::SetCellFormats { region, .. } => Some(region.sheet),
             Operation::AddSheet { .. } => None,
