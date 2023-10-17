@@ -4,7 +4,7 @@ use crate::{
         *,
     },
     values::IsBlank,
-    Array, CellValue, Pos, SheetPos,
+    Array, CellValue, Pos,
 };
 
 use super::{

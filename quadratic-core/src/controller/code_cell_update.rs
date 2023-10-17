@@ -3,7 +3,7 @@ use crate::{
         js_types::{JsRenderCellUpdate, JsRenderCellUpdateEnum},
         CellRef, CodeCellValue, Sheet,
     },
-    ArraySize, Pos, SheetPos, Value,
+    ArraySize, Pos, Value,
 };
 
 use super::{
