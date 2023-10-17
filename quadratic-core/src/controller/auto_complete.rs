@@ -595,7 +595,7 @@ mod tests {
         test_setup(selection, &vals, &bolds).await
     }
 
-    pub async fn test_setup(
+    async fn test_setup(
         selection: &Rect,
         vals: &[&str],
         bolds: &[bool],

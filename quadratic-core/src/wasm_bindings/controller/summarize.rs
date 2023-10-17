@@ -94,5 +94,18 @@ mod tests {
         assert_eq!(result.count, 3);
         assert_eq!(result.sum, Some(12325.12));
         assert_eq!(result.average, Some(4108.373333333333));
+
+        let rect = Rect::new_span(Pos { x: 100, y: 100 }, Pos { x: 1000, y: 105 });
+        let result = gc
+            .js_summarize_selection(sheet_id.to_string(), &rect)
+            .unwrap();
+
+        assert_eq!(result.count, 0);
+        assert_eq!(result.sum, Some(0.0));
+        assert_eq!(result.average, Some(0.0));
+
+        let rect = Rect::new_span(Pos { x: 100, y: 100 }, Pos { x: 10000, y: 10000 });
+        let result = gc.js_summarize_selection(sheet_id.to_string(), &rect);
+        assert!(result.is_none());
     }
 }
