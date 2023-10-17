@@ -4,30 +4,7 @@ use std::collections::HashSet;
 
 use crate::grid::{CellRef, CodeCellRunResult, Grid};
 
-// todo: this probably should be CellRegion (or CellRef) instead of SheetRect
-
 impl Grid {
-    // /// Given `cell` and `dependencies` adds a new node to the graph.
-    // /// Returns the old dependencies of the node.
-    // pub fn set_dependencies(
-    //     &mut self,
-    //     cell: SheetPos,
-    //     dependencies: Option<Vec<SheetRect>>,
-    // ) -> Option<Vec<SheetRect>> {
-    //     // make sure cell is not in dependencies
-    //     if let Some(dependencies) = &dependencies {
-    //         if dependencies.iter().any(|rect| rect.contains(cell)) {
-    //             panic!("cell cannot depend on itself");
-    //         }
-    //     }
-
-    //     // update graph and return old dependencies
-    //     match dependencies {
-    //         Some(areas) => self.dependencies_mut().insert(cell, areas),
-    //         None => self.dependencies_mut().remove(&cell),
-    //     }
-    // }
-
     /// Returns cells that _directly_ depend on `area`.
     /// Does not continue to traverse the graph.
     pub fn get_dependent_cells(&self, cell: CellRef) -> HashSet<CellRef> {

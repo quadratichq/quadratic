@@ -267,7 +267,12 @@ impl InProgressTransaction {
 
                 // add all dependent cells to the cells_to_compute
                 let dependent_cells = grid_controller.grid.get_dependent_cells(cell_ref);
-                crate::util::dbgjs(&format!("[Compute] Dependent cells: {:?}", dependent_cells));
+                if cfg!(feature = "show-operations") {
+                    crate::util::dbgjs(&format!(
+                        "[Compute] Dependent cells (count): {:?}",
+                        dependent_cells.len()
+                    ));
+                }
                 self.cells_to_compute.extend(dependent_cells);
                 if self.cells_to_compute.is_empty() {
                     self.complete = true;
