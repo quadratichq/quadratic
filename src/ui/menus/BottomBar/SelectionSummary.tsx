@@ -9,22 +9,26 @@ export const SelectionSummary = () => {
   const cursor = sheets.sheet.cursor;
 
   const isBigEnoughForActiveSelectionStats = useMediaQuery('(min-width:1000px)');
-  const [count, setCount] = useState<string>('');
-  const [sum, setSum] = useState<string>('');
-  const [avg, setAvg] = useState<string>('');
+  const [count, setCount] = useState<string | undefined>('');
+  const [sum, setSum] = useState<string | undefined>('');
+  const [avg, setAvg] = useState<string | undefined>('');
+
+  const runCalculationOnActiveSelection = async () => {
+    let result = await grid.summarizeSelection();
+
+    if (result) {
+      setCount(result.count.toString());
+      setSum(result.sum !== undefined ? result.sum.toString() : undefined);
+      setAvg(result.average !== undefined ? result.average.toString() : undefined);
+    } else {
+      setCount(undefined);
+      setSum(undefined);
+      setAvg(undefined);
+    }
+  };
 
   // Run async calculations to get the count/avg/sum meta info
   useEffect(() => {
-    const runCalculationOnActiveSelection = async () => {
-      // grid.explain region
-      let result = await grid.summarizeSelection();
-
-      if (result) {
-        setCount(result.count.toString());
-        setSum(result.sum.toString());
-        setAvg(result.average.toString());
-      }
-    };
     if (cursor.multiCursor) {
       runCalculationOnActiveSelection();
     }
