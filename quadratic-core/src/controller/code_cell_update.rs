@@ -9,6 +9,8 @@ use super::{
     GridController,
 };
 
+/// updates code cell value
+/// returns true if the code cell was successful
 pub fn update_code_cell_value(
     grid_controller: &mut GridController,
     cell_ref: CellRef,
@@ -16,7 +18,8 @@ pub fn update_code_cell_value(
     cells_to_compute: &mut Option<&mut Vec<CellRef>>,
     reverse_operations: &mut Vec<Operation>,
     summary: &mut TransactionSummary,
-) {
+) -> bool {
+    let mut success = false;
     let sheet = grid_controller.grid.sheet_mut_from_id(cell_ref.sheet);
     if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
         let old_code_cell_value = sheet.set_code_cell_value(pos, updated_code_cell_value.clone());
@@ -24,6 +27,7 @@ pub fn update_code_cell_value(
             if let Some(output) = updated_code_cell_value.output {
                 match output.result.output_value() {
                     Some(output_value) => {
+                        success = true;
                         match output_value {
                             Value::Array(array) => {
                                 for x in 0..array.size().w.into() {
@@ -72,6 +76,7 @@ pub fn update_code_cell_value(
         });
         summary.code_cells_modified.insert(sheet.id);
     }
+    success
 }
 
 /// Fetches the difference between the old and new code cell values and updates the UI

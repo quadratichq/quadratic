@@ -79,7 +79,7 @@ impl InProgressTransaction {
                 break;
             }
             if self.cells_to_compute.is_empty() {
-                self.finalize(grid_controller);
+                self.finalize();
                 break;
             }
         }
@@ -219,29 +219,28 @@ impl InProgressTransaction {
     }
 
     /// finalize the compute cycle
-    pub fn finalize(&mut self, grid_controller: &mut GridController) {
+    fn finalize(&mut self) {
         if self.cells_to_compute.is_empty() {
             self.complete = true;
             self.summary.save = true;
-            let old_deps = if let Some(current_code_cell) = self.current_code_cell.as_ref() {
-                current_code_cell.cells_accessed_copy()
-            } else {
-                None
-            };
-            let deps = if self.cells_accessed.len() > 0 {
-                Some(self.cells_accessed.clone())
-            } else {
-                None
-            };
-            if deps != old_deps {
-                grid_controller.update_dependent_cells(
-                    self.current_cell_ref.unwrap(),
-                    deps,
-                    old_deps,
-                );
-            } else if cfg!(feature = "show-operations") {
-                crate::util::dbgjs("[Dependent Cells] unchanged");
-            }
+        }
+    }
+
+    fn update_deps(&mut self, grid_controller: &mut GridController) {
+        let old_deps = if let Some(current_code_cell) = self.current_code_cell.as_ref() {
+            current_code_cell.cells_accessed_copy()
+        } else {
+            None
+        };
+        let deps = if self.cells_accessed.len() > 0 {
+            Some(self.cells_accessed.clone())
+        } else {
+            None
+        };
+        if deps != old_deps {
+            grid_controller.update_dependent_cells(self.current_cell_ref.unwrap(), deps, old_deps);
+        } else if cfg!(feature = "show-operations") {
+            crate::util::dbgjs("[Dependent Cells] unchanged");
         }
     }
 
@@ -289,7 +288,10 @@ impl InProgressTransaction {
                     } else {
                         panic!("Expected current_sheet_pos to be defined in transaction::complete");
                     };
-                    update_code_cell_value(grid_controller, cell_ref, Some(updated_code_cell_value), &mut Some(&mut self.cells_to_compute), &mut self.reverse_operations, &mut self.summary);
+                    if update_code_cell_value(grid_controller, cell_ref, Some(updated_code_cell_value), &mut Some(&mut self.cells_to_compute), &mut self.reverse_operations, &mut self.summary) {
+                        // updates the dependencies only if the calculation was successful
+                        self.update_deps(grid_controller);
+                    }
                     self.waiting_for_async = None;
                 }
                 _ => panic!("Transaction.complete called for an unhandled language"),
