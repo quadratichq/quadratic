@@ -1,24 +1,22 @@
-import { AccessSchema, FileAccessSchema, RoleSchema } from '../permissions';
 import { getUserShareOptions } from './ShareMenu.utils';
-const { OWNER, EDITOR, VIEWER } = RoleSchema.enum;
 
 // A set of example users and would be returned by the API
 const TEAM_USERS_BY_ROLE = {
   OWNER: {
     email: 'jim.nielsen@example.com',
-    role: OWNER,
-    access: [AccessSchema.enum.TEAM_EDIT, AccessSchema.enum.TEAM_DELETE, AccessSchema.enum.BILLING_EDIT],
+    role: 'OWNER',
+    access: ['TEAM_EDIT', 'TEAM_DELETE', 'BILLING_EDIT'],
   },
-  EDITOR: { email: 'david.kircos@example.com', role: EDITOR, access: [AccessSchema.enum.TEAM_EDIT] },
-  VIEWER: { email: 'peter.mills@example.com', role: VIEWER, access: [AccessSchema.enum.TEAM_VIEW] },
+  EDITOR: { email: 'david.kircos@example.com', role: 'EDITOR', access: ['TEAM_EDIT'] },
+  VIEWER: { email: 'peter.mills@example.com', role: 'VIEWER', access: ['TEAM_VIEW'] },
 
   OWNER_ALT: {
     email: 'michael.jordan@example.com',
-    role: OWNER,
-    access: [AccessSchema.enum.TEAM_EDIT, AccessSchema.enum.TEAM_DELETE, AccessSchema.enum.BILLING_EDIT],
+    role: 'OWNER',
+    access: ['TEAM_EDIT', 'TEAM_DELETE', 'BILLING_EDIT'],
   },
-  EDITOR_ALT: { email: 'tiger.woods@example.com', role: EDITOR, access: [AccessSchema.enum.TEAM_EDIT] },
-  VIEWER_ALT: { email: 'joe.montana@example.com', role: VIEWER, access: [AccessSchema.enum.TEAM_VIEW] },
+  EDITOR_ALT: { email: 'tiger.woods@example.com', role: 'EDITOR', access: ['TEAM_EDIT'] },
+  VIEWER_ALT: { email: 'joe.montana@example.com', role: 'VIEWER', access: ['TEAM_VIEW'] },
 };
 const baseTeamUsers = [TEAM_USERS_BY_ROLE.OWNER, TEAM_USERS_BY_ROLE.EDITOR, TEAM_USERS_BY_ROLE.VIEWER];
 
@@ -132,14 +130,14 @@ describe('Share menu for a team VIEWER', () => {
 const FILE_USERS_BY_ROLE = {
   OWNER: {
     email: 'jim.nielsen@example.com',
-    role: OWNER,
-    access: [FileAccessSchema.enum.EDIT, FileAccessSchema.enum.DELETE],
+    role: 'OWNER',
+    access: ['FILE_EDIT', 'FILE_DELETE'],
   },
-  EDITOR: { email: 'david.kircos@example.com', role: EDITOR, access: [FileAccessSchema.enum.EDIT] },
-  VIEWER: { email: 'peter.mills@example.com', role: VIEWER, access: [FileAccessSchema.enum.VIEW] },
+  EDITOR: { email: 'david.kircos@example.com', role: 'EDITOR', access: ['FILE_EDIT'] },
+  VIEWER: { email: 'peter.mills@example.com', role: 'VIEWER', access: ['FILE_VIEW'] },
 
-  EDITOR_ALT: { email: 'tiger.woods@example.com', role: EDITOR, access: [FileAccessSchema.enum.EDIT] },
-  VIEWER_ALT: { email: 'joe.montana@example.com', role: VIEWER, access: [FileAccessSchema.enum.VIEW] },
+  EDITOR_ALT: { email: 'tiger.woods@example.com', role: 'EDITOR', access: ['FILE_EDIT'] },
+  VIEWER_ALT: { email: 'joe.montana@example.com', role: 'VIEWER', access: ['FILE_VIEW'] },
 };
 const baseFileUsers = [FILE_USERS_BY_ROLE.OWNER, FILE_USERS_BY_ROLE.EDITOR, FILE_USERS_BY_ROLE.VIEWER];
 

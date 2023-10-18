@@ -7,7 +7,7 @@ import { AvatarWithLetters } from '../../components/AvatarWithLetters';
 import { ROUTES } from '../../constants/routes';
 import { useRootRouteLoaderData } from '../../router';
 import { colors } from '../../theme/colors';
-import { data } from '../team-1-mock-data';
+import { data, data2 } from '../team-1-mock-data';
 import { ReactComponent as QuadraticLogo } from './quadratic-logo.svg';
 import { ReactComponent as QuadraticLogotype } from './quadratic-logotype.svg';
 
@@ -19,7 +19,7 @@ type LoaderData = {
 
 export const loader = () => {
   return {
-    teams: [data],
+    teams: [data, data2],
   };
 };
 

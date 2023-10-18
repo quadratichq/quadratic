@@ -1,9 +1,11 @@
-import { DeleteOutline, EditOutlined } from '@mui/icons-material';
 import {
+  Box,
   Button,
   Divider,
+  FormControl,
   FormControlLabel,
-  IconButton,
+  FormHelperText,
+  FormLabel,
   Radio,
   RadioGroup,
   Stack,
@@ -13,14 +15,10 @@ import {
 } from '@mui/material';
 import { useRef, useState } from 'react';
 import AvatarEditor from 'react-avatar-editor';
-import { ApiTypes, UserShare } from '../../api/types';
+import { ApiTypes } from '../../api/types';
 import { AvatarWithLetters } from '../../components/AvatarWithLetters';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { QDialog } from '../../components/QDialog';
-import { ShareMenu, ShareMenuInviteCallback } from '../../components/ShareMenu';
-import { AccessSchema, RoleSchema } from '../../permissions';
-import { useRootRouteLoaderData } from '../../router';
-import { TooltipHint } from '../../ui/components/TooltipHint';
 
 export function TeamEdit({ data }: { data?: ApiTypes['/v0/teams/:uuid.GET.response'] | undefined }) {
   const theme = useTheme();
@@ -30,20 +28,20 @@ export function TeamEdit({ data }: { data?: ApiTypes['/v0/teams/:uuid.GET.respon
   // TODO window.URL.revokeObjectURL(avatarUrl) on unmount
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
-  const { user } = useRootRouteLoaderData();
+  // const { user } = useRootRouteLoaderData();
   const toggleIconEditor = () => setAvatarInput(undefined);
 
-  const loggedInUser: UserShare = {
-    email: user?.email as string,
-    permissions: {
-      role: RoleSchema.enum.OWNER,
-      access: [AccessSchema.enum.TEAM_EDIT, AccessSchema.enum.TEAM_DELETE, AccessSchema.enum.TEAM_BILLING_EDIT],
-    },
-    name: user?.name,
-    picture: user?.picture,
-  };
+  // const loggedInUser: UserShare & { access: Access[] } = {
+  //   id: 1,
+  //   email: user?.email as string,
+  //   role: RoleSchema.enum.OWNER,
+  //   access: ['TEAM_EDIT', 'TEAM_DELETE', 'TEAM_BILLING_EDIT'],
+  //   name: user?.name,
+  //   picture: user?.picture,
+  //   hasAccount: true,
+  // };
 
-  const hangleAvatarInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files ? e.target.files[0] : undefined;
     if (!file) {
       return;
@@ -62,22 +60,44 @@ export function TeamEdit({ data }: { data?: ApiTypes['/v0/teams/:uuid.GET.respon
   };
 
   // TODO currently logged in user as default
-  const [users, setUsers] = useState<UserShare[]>(data ? data.team.users : [loggedInUser]);
+  // const [users, setUsers] = useState<UserShare[]>(data ? data.team.users : [loggedInUser]);
 
   return (
-    <Stack maxWidth={'52rem'} gap={theme.spacing(4)}>
-      <EditTeamRow label="Details">
-        <TextField
-          inputProps={{ autoComplete: 'off', sx: { fontSize: '.875rem' } }}
-          label="Name"
-          InputLabelProps={{ sx: { fontSize: '.875rem' } }}
-          variant="outlined"
-          autoFocus
-          size="small"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+    <Stack maxWidth={'30rem'} gap={theme.spacing(4)}>
+      <Typography variant="body2" color="text.secondary">
+        Teams are for collaborating on files with other people. Once you create a team, you can invite people to it.
+      </Typography>
 
+      {/* <EditTeamRow label="Details"> */}
+      <Stack direction="row" gap={theme.spacing()} alignItems="center">
+        <AvatarWithLetters size="large" src={avatarUrl ? avatarUrl : undefined}>
+          {name}
+        </AvatarWithLetters>
+        <Box sx={{ color: 'text.secondary' }}>
+          {avatarUrl ? (
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => {
+                setAvatarUrl(undefined);
+                setAvatarInput(undefined);
+              }}
+              // startIcon={<DeleteOutline fontSize="small" color="inherit" />}
+            >
+              Remove logo
+            </Button>
+          ) : (
+            <Button
+              size="small"
+              component="label"
+              color="inherit"
+              // startIcon={<Add fontSize="small" color="inherit" />}
+            >
+              Add logo
+              <input type="file" hidden accept="image/png, image/jpeg" onChange={handleAvatarInput} />
+            </Button>
+          )}
+        </Box>
         {avatarInput && (
           <IconEditor
             onClose={toggleIconEditor}
@@ -89,35 +109,20 @@ export function TeamEdit({ data }: { data?: ApiTypes['/v0/teams/:uuid.GET.respon
             }}
           />
         )}
+      </Stack>
+      <TextField
+        inputProps={{ autoComplete: 'off' }}
+        label="Name"
+        // InputLabelProps={{ sx: { fontSize: '.875rem' } }}
+        variant="outlined"
+        autoFocus
+        size="small"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
 
-        <Stack direction="row" gap={theme.spacing()} alignItems="center">
-          <AvatarWithLetters size="large" src={avatarUrl ? avatarUrl : undefined}>
-            {name}
-          </AvatarWithLetters>
-
-          <Divider orientation="vertical" flexItem sx={{ mx: theme.spacing() }} />
-
-          <TooltipHint title="Change team avatar">
-            <IconButton size="small" component="label">
-              <EditOutlined fontSize="small" />
-              <input type="file" hidden accept="image/png, image/jpeg" onChange={hangleAvatarInput} />
-            </IconButton>
-          </TooltipHint>
-
-          <TooltipHint title="Delete team avatar">
-            <IconButton
-              size="small"
-              onClick={() => {
-                setAvatarUrl(undefined);
-                setAvatarInput(undefined);
-              }}
-            >
-              <DeleteOutline fontSize="small" />
-            </IconButton>
-          </TooltipHint>
-        </Stack>
-      </EditTeamRow>
-      <EditTeamRow label="Members">
+      {/* </EditTeamRow> */}
+      {/*<EditTeamRow label="Members">
         <ShareMenu.Wrapper>
           <ShareMenu.Invite
             onInvite={({ email, role }: ShareMenuInviteCallback) => {
@@ -128,21 +133,49 @@ export function TeamEdit({ data }: { data?: ApiTypes['/v0/teams/:uuid.GET.respon
           />
           <ShareMenu.Users
             users={users}
-            usersIndexForLoggedInUser={0}
+            loggedInUser={loggedInUser}
             onDeleteUser={(user: UserShare) => {
               setUsers((prevUsers) => prevUsers.filter((prevUser) => prevUser.email !== user.email));
             }}
             onUpdateUser={() => {}}
           />
         </ShareMenu.Wrapper>
-      </EditTeamRow>
-      <EditTeamRow label="Billing">
-        <RadioGroup name="pricing" defaultValue="1">
+          </EditTeamRow>*/}
+      {/* <EditTeamRow label="Billing"> */}
+      <FormControl>
+        <FormLabel
+          id="pricing"
+          sx={{
+            fontSize: '.8125rem',
+            textIndent: theme.spacing(1),
+            mb: theme.spacing(-1),
+            '&.Mui-focused + div': {
+              borderColor: 'transparent',
+              // borderWidth: '2px',
+              boxShadow: `0 0 0 2px ${theme.palette.primary.main}`,
+            },
+          }}
+        >
+          <span style={{ background: '#fff', padding: `0 ${theme.spacing(0.5)}` }}>Billing</span>
+        </FormLabel>
+        <RadioGroup
+          name="pricing"
+          defaultValue="1"
+          aria-labelledby="pricing"
+          sx={{
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: theme.shape.borderRadius,
+            '&:hover': {
+              borderColor: theme.palette.action.active,
+            },
+          }}
+        >
           <FormControlLabel
             value="1"
             control={<Radio />}
             disableTypography
             label={<PriceLabel primary="Beta trial" secondary="Free" />}
+            sx={{ px: theme.spacing(1.5), py: theme.spacing(0), mr: 0 }}
           />
 
           <Divider />
@@ -152,6 +185,7 @@ export function TeamEdit({ data }: { data?: ApiTypes['/v0/teams/:uuid.GET.respon
             control={<Radio disabled />}
             disableTypography
             label={<PriceLabel disabled primary="Monthly" secondary="$--/usr/month" />}
+            sx={{ px: theme.spacing(1.5), py: theme.spacing(0), mr: 0 }}
           />
 
           <Divider />
@@ -161,9 +195,13 @@ export function TeamEdit({ data }: { data?: ApiTypes['/v0/teams/:uuid.GET.respon
             control={<Radio disabled />}
             disableTypography
             label={<PriceLabel disabled primary="Yearly" secondary="$--/usr/year" />}
+            sx={{ px: theme.spacing(1.5), py: theme.spacing(0), mr: 0 }}
           />
         </RadioGroup>
-      </EditTeamRow>
+        <FormHelperText>[Note here about billing, beta plan termination date, free tier limits, etc.]</FormHelperText>
+      </FormControl>
+
+      {/* </EditTeamRow> */}
     </Stack>
   );
 }
@@ -181,19 +219,19 @@ function PriceLabel({ primary, secondary, disabled }: any) {
   );
 }
 
-function EditTeamRow({ label, children }: any /* TODO */) {
-  const theme = useTheme();
-  return (
-    <Stack direction="row" alignItems={'flex-start'}>
-      <Typography variant="body2" fontWeight={'600'} flexBasis={'16rem'} pt={theme.spacing(1.25)}>
-        {label}
-      </Typography>
-      <Stack gap={theme.spacing(1)} flexGrow={1}>
-        {children}
-      </Stack>
-    </Stack>
-  );
-}
+// function EditTeamRow({ label, children }: any /* TODO */) {
+//   const theme = useTheme();
+//   return (
+//     <Stack direction="row" alignItems={'flex-start'}>
+//       {/* <Typography variant="body2" fontWeight={'600'} flexBasis={'16rem'} pt={theme.spacing(1.25)}>
+//         {label}
+//       </Typography> */}
+//       <Stack gap={theme.spacing(1)} flexGrow={1}>
+//         {children}
+//       </Stack>
+//     </Stack>
+//   );
+// }
 
 function IconEditor({
   onClose,

@@ -1,6 +1,8 @@
 import z from 'zod';
 
 export const RoleSchema = z.enum(['OWNER', 'EDITOR', 'VIEWER']);
+export type Role = z.infer<typeof RoleSchema>;
+
 export const AccessSchema = z.enum([
   'FILE_EDIT',
   'FILE_DELETE',
@@ -10,13 +12,9 @@ export const AccessSchema = z.enum([
   'TEAM_VIEW',
   'TEAM_BILLING_EDIT',
 ]);
-export const PermissionsSchema = z.object({
-  role: RoleSchema,
-  access: AccessSchema.array(),
-  status: z.enum(['INVITE_PENDING', 'INVITE_SENT', 'JOINED']).optional(),
-});
+export type Access = z.infer<typeof AccessSchema>;
 
-export type Permissions = z.infer<typeof PermissionsSchema>;
+export const hasAccess = (userAccess: Access[], accessType: Access) => userAccess.includes(accessType);
 
 // export const hasFileEditAccess(access: z.infer<typeof FileAccessSchema>[]): boolean {
 //   return access.includes(FileAccessSchema.enum.EDIT);

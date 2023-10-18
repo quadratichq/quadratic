@@ -64,11 +64,12 @@ export function TeamShareMenu({ onClose, team }: { onClose: () => void; team: an
               setUsers((prevUsers: UserShare[]) => prevUsers.filter((prevUser) => prevUser.email !== user.email));
             }}
             // Current user and their relationship to the current team
-            usersIndexForLoggedInUser={
+            loggedInUser={{
               // TODO this needs to come from the app
-              0
-              // Test owner
-            }
+              id: 1,
+              role: 'OWNER',
+              access: ['TEAM_EDIT', 'TEAM_BILLING_EDIT', 'TEAM_DELETE'],
+            }}
           />
 
           {/* 

@@ -20,7 +20,7 @@ import React, { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router-dom';
 import { z } from 'zod';
 import { PublicLinkAccess, UserShare } from '../api/types';
-import { RoleSchema } from '../permissions';
+import { Access, Role, RoleSchema } from '../permissions';
 import { AvatarWithLetters } from './AvatarWithLetters';
 import { getUserShareOptions } from './ShareMenu.utils';
 
@@ -137,12 +137,12 @@ function ShareMenu({ fetcherUrl, uuid }: { fetcherUrl: string; uuid: string }) {
 
 function Users({
   users,
-  usersIndexForLoggedInUser,
+  loggedInUser,
   onUpdateUser,
   onDeleteUser,
 }: {
   users: UserShare[];
-  usersIndexForLoggedInUser: number;
+  loggedInUser: { id: number; role: Role; access: Access[] };
   onUpdateUser: (user: UserShare) => void;
   onDeleteUser: (user: UserShare) => void;
 }) {
@@ -156,7 +156,7 @@ function Users({
         <UserListItem
           key={user.email}
           users={users}
-          usersIndexForLoggedInUser={usersIndexForLoggedInUser}
+          loggedInUser={loggedInUser}
           usersIndexForRenderedUser={i}
           onUpdateUser={onUpdateUser}
           onDeleteUser={onDeleteUser}
@@ -168,64 +168,58 @@ function Users({
 
 function UserListItem({
   users,
-  usersIndexForLoggedInUser,
+  loggedInUser,
   usersIndexForRenderedUser,
   onUpdateUser,
   onDeleteUser,
 }: {
   users: UserShare[];
-  usersIndexForLoggedInUser: number;
+  loggedInUser: { id: number; role: Role; access: Access[] };
   usersIndexForRenderedUser: number;
   onUpdateUser: (user: UserShare) => void;
   onDeleteUser: (user: UserShare) => void;
 }) {
   const user = users[usersIndexForRenderedUser];
-  const loggedInUser = users[usersIndexForLoggedInUser];
 
   // TODO figure out primary vs. secondary display & "resend"
   const primary = user.name ? user.name : user.email;
   const theme = useTheme();
 
-  const isPending = user.permissions.status === 'INVITE_SENT';
+  const isPending = false; // TODO user.permissions.status === 'INVITE_SENT';
 
-  let secondary;
-  if (user.permissions.status !== 'INVITE_PENDING') {
-    secondary =
-      user.permissions.status === 'INVITE_SENT' ? (
-        <Stack direction="row" gap={theme.spacing(0.5)}>
-          Invite sent.{' '}
-          <ButtonBase sx={{ textDecoration: 'underline', fontSize: 'inherit', fontFamily: 'inherit' }}>
-            Resend
-          </ButtonBase>
-        </Stack>
-      ) : (
-        user.email
-      );
-  }
+  let secondary = user.hasAccount ? (
+    user.email
+  ) : (
+    <Stack direction="row" gap={theme.spacing(0.5)}>
+      Invite sent.{' '}
+      <ButtonBase sx={{ textDecoration: 'underline', fontSize: 'inherit', fontFamily: 'inherit' }}>Resend</ButtonBase>
+    </Stack>
+  );
 
   let labels = getUserShareOptions({
     user,
     loggedInUser,
     users,
+    canHaveMoreThanOneOwner: true, // TODO teams? yes. files? no.
   });
   let options: Option[] = [];
   labels.forEach((label) => {
     if (label === 'Owner') {
       options.push({
         label,
-        onClick: () => onUpdateUser({ ...user, permissions: { ...user.permissions, role: RoleSchema.enum.OWNER } }),
+        onClick: () => onUpdateUser({ ...user, role: RoleSchema.enum.OWNER }),
       });
     }
     if (label === 'Can edit') {
       options.push({
         label,
-        onClick: () => onUpdateUser({ ...user, permissions: { ...user.permissions, role: RoleSchema.enum.EDITOR } }),
+        onClick: () => onUpdateUser({ ...user, role: RoleSchema.enum.EDITOR }),
       });
     }
     if (label === 'Can view') {
       options.push({
         label,
-        onClick: () => onUpdateUser({ ...user, permissions: { ...user.permissions, role: RoleSchema.enum.VIEWER } }),
+        onClick: () => onUpdateUser({ ...user, role: RoleSchema.enum.VIEWER }),
       });
     }
     if (label === 'Leave' || label === 'Remove') {
@@ -242,8 +236,7 @@ function UserListItem({
     }
   });
 
-  const label =
-    user.permissions.role === 'OWNER' ? 'Owner' : user.permissions.role === 'EDITOR' ? 'Can edit' : 'Can view';
+  const label = user.role === 'OWNER' ? 'Owner' : user.role === 'EDITOR' ? 'Can edit' : 'Can view';
 
   return (
     <Row>
@@ -258,7 +251,7 @@ function UserListItem({
       )}
       <Stack>
         <Typography variant="body2" color="text.primary">
-          {primary} {loggedInUser.email === user.email && ' (You)'}
+          {primary} {loggedInUser.id === user.id && ' (You)'}
         </Typography>
         {secondary && (
           <Typography variant="caption" color="text.secondary">

@@ -1,6 +1,6 @@
 import { ErrorOutline, KeyboardArrowDown, PeopleAltOutlined } from '@mui/icons-material';
 import { Box, Button, Divider, IconButton, Menu, MenuItem, useTheme } from '@mui/material';
-import { Link, LoaderFunctionArgs, useLoaderData, useParams } from 'react-router-dom';
+import { Link, LoaderFunctionArgs, useLoaderData, useParams, useSearchParams } from 'react-router-dom';
 import { Empty } from '../components/Empty';
 
 import { useState } from 'react';
@@ -8,20 +8,24 @@ import { ApiTypes } from '../api/types';
 import { AvatarWithLetters } from '../components/AvatarWithLetters';
 import { QDialogConfirmDelete } from '../components/QDialog';
 import { ROUTES } from '../constants/routes';
-import { AccessSchema } from '../permissions';
+import { hasAccess } from '../permissions';
 import { DashboardHeader } from './components/DashboardHeader';
 import { TeamShareMenu } from './components/TeamShareMenu';
-import { data } from './team-1-mock-data';
+import { data, data2 } from './team-1-mock-data';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  return data;
+  const { uuid } = params;
+  return uuid === '2' ? data2 : data;
 };
 
 export const Component = () => {
   const theme = useTheme();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const { team } = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
-  const [showMembers, setShowMembers] = useState<boolean>(false);
+
+  const dialog = searchParams.get('dialog');
+  const showShareDialog = dialog === 'share';
 
   return (
     <>
@@ -35,7 +39,16 @@ export const Component = () => {
         titleEnd={<EditDropdownMenu setShowDeleteDialog={setShowDeleteDialog} />}
         actions={
           <>
-            <Button startIcon={<PeopleAltOutlined />} variant="outlined" onClick={() => setShowMembers(true)}>
+            <Button
+              startIcon={<PeopleAltOutlined />}
+              variant="outlined"
+              onClick={() =>
+                setSearchParams((prev) => {
+                  prev.set('dialog', 'share');
+                  return prev;
+                })
+              }
+            >
               {team.users.length}
             </Button>
             <Button variant="contained" disableElevation>
@@ -47,7 +60,18 @@ export const Component = () => {
 
       <Box sx={{ p: theme.spacing(2), textAlign: 'center' }}>Team files</Box>
 
-      {showMembers && <TeamShareMenu onClose={() => setShowMembers(false)} team={team} />}
+      {showShareDialog && (
+        <TeamShareMenu
+          onClose={() =>
+            setSearchParams((prev) => {
+              console.log(prev);
+              prev.delete('dialog');
+              return prev;
+            })
+          }
+          team={team}
+        />
+      )}
       {showDeleteDialog && (
         <QDialogConfirmDelete
           entityName={team.name}
@@ -68,7 +92,7 @@ export const Component = () => {
 
 function EditDropdownMenu({ setShowDeleteDialog }: any) {
   const { uuid } = useParams() as { uuid: string };
-  const { permissions } = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
+  const { access } = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -78,7 +102,7 @@ function EditDropdownMenu({ setShowDeleteDialog }: any) {
     setAnchorEl(null);
   };
 
-  if (!permissions.access.includes(AccessSchema.enum.TEAM_EDIT)) {
+  if (hasAccess(access, 'TEAM_EDIT')) {
     return null;
   }
 
@@ -117,12 +141,12 @@ function EditDropdownMenu({ setShowDeleteDialog }: any) {
           Rename
         </MenuItem>
         <MenuItem onClick={() => {}}>Change avatar</MenuItem>
-        {permissions.access.includes(AccessSchema.enum.TEAM_BILLING_EDIT) && (
+        {hasAccess(access, 'TEAM_BILLING_EDIT') && (
           <MenuItem key={2} onClick={handleClose}>
             Edit billing
           </MenuItem>
         )}
-        {permissions.access.includes(AccessSchema.enum.TEAM_DELETE) && [
+        {hasAccess(access, 'TEAM_DELETE') && [
           <Divider key={1} />,
           <MenuItem
             key={2}
