@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use crate::{
     grid::{CellRef, CodeCellValue, Sheet},
     ArraySize, Pos, Value,
@@ -102,7 +104,14 @@ pub fn fetch_code_cell_difference(
 
     if old_size.w > new_size.w {
         for x in new_size.w.get()..old_size.w.get() {
-            let column_id = sheet.get_or_create_column(pos.x + x as i64).0.id;
+            let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
+            let column_id = column.id;
+
+            // todo: temporary way of cleaning up deleted spills. There needs to be a spill checker here....
+            column.spills.remove_range(Range {
+                start: pos.y,
+                end: pos.y + new_size.h.get() as i64 + 1,
+            });
             for y in 0..new_size.h.get() {
                 let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
                 let pos = Pos {
@@ -124,7 +133,14 @@ pub fn fetch_code_cell_difference(
     }
     if old_size.h > new_size.h {
         for x in 0..old_size.w.get() {
-            let column_id = sheet.get_or_create_column(pos.x + x as i64).0.id;
+            let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
+            let column_id = column.id;
+
+            // todo: temporary way of cleaning up deleted spills. There needs to be a spill checker here....
+            column.spills.remove_range(Range {
+                start: pos.y + new_size.h.get() as i64,
+                end: pos.y + old_size.h.get() as i64 + 1,
+            });
             for y in new_size.h.get()..old_size.h.get() {
                 let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
                 let pos = Pos {
