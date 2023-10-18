@@ -23,3 +23,10 @@ extern "C" {
 extern "C" {
     pub fn getCellsPython(code_string: String) -> JsValue;
 }
+
+// todo: how do i send this???
+
+// #[wasm_bindgen(module = "/../src/web-workers/rustWorker.ts")]
+// extern "C" {
+//     pub fn transactionResponse(transactionResponse: TransactionSummary) -> JsValue;
+// }

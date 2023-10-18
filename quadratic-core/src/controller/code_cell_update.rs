@@ -20,6 +20,7 @@ pub fn update_code_cell_value(
     summary: &mut TransactionSummary,
 ) -> bool {
     let mut success = false;
+    summary.save = true;
     let sheet = grid_controller.grid.sheet_mut_from_id(cell_ref.sheet);
     if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
         let old_code_cell_value = sheet.set_code_cell_value(pos, updated_code_cell_value.clone());

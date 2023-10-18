@@ -51,7 +51,7 @@ class PythonWebWorker {
         console.log({ range });
         const cells = grid.calculationGetCells(
           pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
-          range.sheet,
+          range.sheet.toString(),
           event.range?.lineNumber
         );
         // cells will be undefined if the sheet_id (currently name) is invalid

@@ -79,8 +79,8 @@ export class Grid {
   private gridController!: GridController;
   private _dirty = false;
 
-  private transactionResponse(summary: TransactionSummary) {
-    if (!summary) return;
+  transactionResponse(summary: TransactionSummary) {
+    console.log(summary);
     if (summary.sheet_list_modified) {
       sheets.repopulate();
     }
@@ -615,3 +615,12 @@ export class Grid {
 //#end
 
 export const grid = new Grid();
+
+// workaround so Rust can import TS functions
+declare global {
+  interface Window {
+    transactionSummary: any;
+  }
+}
+
+window.transactionSummary = grid.transactionResponse.bind(grid);

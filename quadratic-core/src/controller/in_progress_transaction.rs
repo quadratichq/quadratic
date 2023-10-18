@@ -166,13 +166,13 @@ impl InProgressTransaction {
             } else {
                 "Sheet not found".to_string()
             };
-            self.code_cell_error(grid_controller, msg, get_cells.line_number());
+            self.code_cell_sheet_error(grid_controller, msg, get_cells.line_number());
             None
         }
     }
 
     // todo: this should propagate, actually save the error to the cell, and continue the compute loop
-    fn code_cell_error(
+    fn code_cell_sheet_error(
         &mut self,
         grid_controller: &mut GridController,
         error_msg: String,
@@ -200,13 +200,11 @@ impl InProgressTransaction {
         };
         let error = Error { span, msg };
         let result = CodeCellRunResult::Err { error };
-
         updated_code_cell_value.output = Some(CodeCellRunOutput {
             std_out: None,
             std_err: Some(error_msg.into()),
             result,
         });
-        crate::util::dbgjs(updated_code_cell_value.clone());
         update_code_cell_value(
             grid_controller,
             cell_ref,
@@ -215,6 +213,7 @@ impl InProgressTransaction {
             &mut self.reverse_operations,
             &mut self.summary,
         );
+        self.waiting_for_async = None;
         self.loop_compute(grid_controller);
     }
 
