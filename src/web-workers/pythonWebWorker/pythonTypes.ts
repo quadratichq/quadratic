@@ -23,6 +23,6 @@ export interface PythonMessage {
   python?: string;
   results?: any;
   error?: string;
-  range?: { sheet: string; x0: number; y0: number; x1: number; y1: number };
+  range?: { sheet: string; x0: number; y0: number; x1: number; y1: number; lineNumber: number };
   cells?: { x: number; y: number; value: string }[];
 }

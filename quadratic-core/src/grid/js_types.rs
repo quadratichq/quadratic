@@ -1,6 +1,7 @@
 use std::ops::{BitOr, BitOrAssign};
 
 use serde::{Deserialize, Serialize};
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::borders::CellBorder;
 use super::formatting::{BoolSummary, CellAlign, CellWrap};
@@ -135,7 +136,7 @@ impl BitOrAssign for FormattingSummary {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[wasm_bindgen]
 pub struct JsRenderCodeCell {
     pub x: i64,
     pub y: i64,
@@ -145,10 +146,9 @@ pub struct JsRenderCodeCell {
     pub state: JsRenderCodeCellState,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[wasm_bindgen]
 pub enum JsRenderCodeCellState {
-    #[default]
     NotYetRun,
     RunError,
     SpillError,

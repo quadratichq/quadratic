@@ -1,4 +1,4 @@
-jest.mock('../../../web-workers/pythonWebWorker/PythonWebWorker');
+// jest.mock('../../../web-workers/pythonWebWorker/python');
 
 export {};
 

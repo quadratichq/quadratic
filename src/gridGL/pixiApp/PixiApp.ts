@@ -3,7 +3,7 @@ import { Container, Graphics, Renderer } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { HEADING_SIZE } from '../../constants/gridConstants';
-import { debugAlwaysShowCache, debugShowCacheFlag } from '../../debugFlags';
+import { debugShowCacheFlag } from '../../debugFlags';
 import {
   copyToClipboardEvent,
   cutToClipboardEvent,
@@ -126,8 +126,8 @@ export class PixiApp {
     this.pointer = new Pointer(this.viewport);
     this.update = new Update();
 
-    if (debugAlwaysShowCache) this.showCache();
-
+    // if (debugAlwaysShowCache) this.showCache();
+    // console.log('listeners...');
     this.setupListeners();
   }
 
@@ -136,6 +136,7 @@ export class PixiApp {
     document.addEventListener('copy', copyToClipboardEvent);
     document.addEventListener('paste', pasteFromClipboardEvent);
     document.addEventListener('cut', cutToClipboardEvent);
+    console.log('listeners are ready');
   }
 
   private removeListeners() {
@@ -143,6 +144,7 @@ export class PixiApp {
     document.removeEventListener('copy', copyToClipboardEvent);
     document.removeEventListener('paste', pasteFromClipboardEvent);
     document.removeEventListener('cut', cutToClipboardEvent);
+    console.log('listeners are removed');
   }
 
   private showCache(): void {

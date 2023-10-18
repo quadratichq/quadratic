@@ -13,21 +13,25 @@ impl GridController {
     ) -> TransactionSummary {
         // make initial changes
         let mut summary = TransactionSummary::default();
-        let mut cell_values_modified: Vec<SheetPos> = vec![];
-        let mut reverse_operations =
-            self.transact(operations, &mut cell_values_modified, &mut summary);
 
-        // run computations
-        let mut additional_operations = self.compute(cell_values_modified, &mut summary).await;
+        if !operations.is_empty() {
+            let mut cell_values_modified: Vec<SheetPos> = vec![];
+            let mut reverse_operations =
+                self.transact(operations, &mut cell_values_modified, &mut summary);
 
-        reverse_operations.append(&mut additional_operations);
+            // run computations
+            let mut additional_operations = self.compute(cell_values_modified, &mut summary).await;
 
-        // update undo/redo stack
-        self.redo_stack.clear();
-        self.undo_stack.push(Transaction {
-            ops: reverse_operations,
-            cursor,
-        });
+            reverse_operations.append(&mut additional_operations);
+
+            // update undo/redo stack
+            self.redo_stack.clear();
+            self.undo_stack.push(Transaction {
+                ops: reverse_operations,
+                cursor,
+            });
+        }
+
         summary
     }
 
@@ -50,6 +54,7 @@ impl GridController {
 
         let reverse_operation =
             self.transact(transaction.ops, &mut cell_values_modified, &mut summary);
+
         self.redo_stack.push(Transaction {
             ops: reverse_operation,
             cursor,
@@ -158,13 +163,11 @@ impl From<Pos> for CellHash {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::btree_map::Entry;
-
-    use crate::{grid::js_types::JsRenderCell, Array, CellValue, Pos, Rect};
+    use crate::{Array, CellValue, Pos, Rect};
 
     use super::*;
 
-    fn add_cell_value(
+    fn _add_cell_value(
         gc: &mut GridController,
         sheet_id: SheetId,
         pos: Pos,
@@ -179,13 +182,13 @@ mod tests {
         }
     }
 
-    fn add_cell_text(
+    fn _add_cell_text(
         gc: &mut GridController,
         sheet_id: SheetId,
         pos: Pos,
         value: &str,
     ) -> Operation {
-        add_cell_value(gc, sheet_id, pos, CellValue::Text(value.into()))
+        _add_cell_value(gc, sheet_id, pos, CellValue::Text(value.into()))
     }
 
     #[test]

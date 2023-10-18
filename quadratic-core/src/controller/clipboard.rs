@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use super::{
     formatting::CellFmtArray, operations::Operation, transaction_summary::TransactionSummary,
     GridController,
@@ -8,7 +6,6 @@ use crate::{
     grid::{CodeCellValue, SheetId},
     Array, ArraySize, CellValue, Pos, Rect,
 };
-use bigdecimal::BigDecimal;
 use htmlescape;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -168,44 +165,6 @@ impl GridController {
         Some(array)
     }
 
-    fn array_from_plain_cells(clipboard: String) -> Option<Array> {
-        let lines: Vec<&str> = clipboard.split('\n').collect();
-        let rows: Vec<Vec<&str>> = lines
-            .iter()
-            .map(|line| line.split('\t').collect())
-            .collect();
-        if rows.is_empty() {
-            return None;
-        }
-        let longest = rows
-            .iter()
-            .map(|line| line.clone().len())
-            .max()
-            .unwrap_or(0);
-        if longest == 0 {
-            return None;
-        }
-        let mut array =
-            Array::new_empty(ArraySize::new(longest as u32, rows.len() as u32).unwrap());
-        let mut x = 0;
-        let mut y = 0;
-        rows.iter().for_each(|row| {
-            row.iter().for_each(|s| {
-                if !s.is_empty() {
-                    if let Ok(n) = BigDecimal::from_str(s) {
-                        let _ = array.set(x, y, CellValue::Number(n));
-                    } else {
-                        let _ = array.set(x, y, CellValue::Text(String::from(*s)));
-                    };
-                }
-                x += 1;
-            });
-            y += 1;
-            x = 0;
-        });
-        Some(array)
-    }
-
     async fn set_clipboard_cells(
         &mut self,
         sheet_id: SheetId,
@@ -249,25 +208,24 @@ impl GridController {
         clipboard: String,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let array = Self::array_from_plain_cells(clipboard);
-        match array {
-            Some(array) => {
-                let rect = Rect {
-                    min: start_pos,
-                    max: Pos {
-                        x: start_pos.x + (array.width() as i64) - 1,
-                        y: start_pos.y + (array.height() as i64) - 1,
-                    },
-                };
-                let region = self.region(sheet_id, rect);
-                let ops: Vec<Operation> = vec![Operation::SetCellValues {
-                    region,
-                    values: array,
-                }];
-                self.transact_forward(ops, cursor).await
+        let lines: Vec<&str> = clipboard.split('\n').collect();
+        let rows: Vec<Vec<&str>> = lines
+            .iter()
+            .map(|line| line.split('\t').collect())
+            .collect();
+        let mut operations = vec![];
+
+        for (y, row) in rows.iter().enumerate() {
+            for (x, value) in row.iter().enumerate() {
+                operations.extend(self.set_cell_value_operations(
+                    sheet_id,
+                    (start_pos.x + x as i64, start_pos.y + y as i64).into(),
+                    value,
+                ));
             }
-            None => TransactionSummary::default(),
         }
+
+        self.transact_forward(operations, cursor).await
     }
 
     // todo: parse table structure to provide better pasting experience from other spreadsheets

@@ -101,15 +101,24 @@ export const GridFileSchemaV1_4 = z.object({
 });
 export type GridFileV1_4 = z.infer<typeof GridFileSchemaV1_4>;
 
-export function upgradeV1_3toV1_4(file: GridFileV1_3): GridFileV1_4 {
+export function upgradeV1_3toV1_4(file: GridFileV1_3, logOutput: boolean = true): GridFileV1_4 {
   // convert cell dependencies in Rust format
   // in v3 we map trigger_cell: updates_cells[]
   // in v4 we map code_cell: dependencies[]
   let old_dependencies: Map<string, [number, number][]> = new Map();
   if (file.cell_dependency !== undefined && file.cell_dependency !== '') {
-    old_dependencies = new Map(
-      JSON.parse(file.cell_dependency).map(({ key, value }: { key: string; value: [number, number][] }) => [key, value])
-    );
+    try {
+      old_dependencies = new Map(
+        JSON.parse(file.cell_dependency).map(({ key, value }: { key: string; value: [number, number][] }) => [
+          key,
+          value,
+        ])
+      );
+    } catch (e) {
+      if (logOutput) {
+        console.info(`[GridFileV1_4] Could not convert cell_dependency to JSON: ${e}`);
+      }
+    }
   }
 
   function getKey(location: [number, number]): string {

@@ -1,4 +1,5 @@
 use super::{
+    code_cell_value::update_code_cell_value,
     operations::Operation,
     transaction_summary::{OperationSummary, TransactionSummary},
     GridController,
@@ -8,8 +9,8 @@ use crate::{
         js_types::{CellForArray, JsRenderCellUpdate, JsRenderCellUpdateEnum},
         CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue,
     },
-    wasm_bindings::{js::runPython, JsComputeResult},
-    Pos, SheetPos, SheetRect, Value,
+    wasm_bindings::{js::runPython, JsCodeResult, JsComputeResult},
+    Error, ErrorMsg, Pos, SheetPos, SheetRect, Span, Value,
 };
 
 impl GridController {
@@ -21,8 +22,9 @@ impl GridController {
         summary: &mut TransactionSummary,
     ) -> Vec<Operation> {
         let mut reverse_operations = vec![];
-        let mut cells_to_compute = cell_values_modified.clone(); // start with all updated cells
+        let mut cells_to_compute = cell_values_modified.clone();
 
+        // start with all updated cells
         while let Some(pos) = cells_to_compute.pop() {
             // find which cells have formulas. Run the formulas and update the cells.
             // add the updated cells to the cells_to_compute
@@ -38,6 +40,14 @@ impl GridController {
                 let mut code_cell_result = None;
                 let mut cells_accessed = vec![];
                 let mut cells_accessed_code_cell = vec![];
+
+                let to_error = |error_msg: &str| {
+                    Some(JsCodeResult {
+                        error_msg: Some(error_msg.into()),
+                        ..Default::default()
+                    })
+                };
+
                 match language {
                     CodeCellLanguage::Python => {
                         let mut cells = None;
@@ -59,153 +69,137 @@ impl GridController {
                                     } else {
                                         // set cells to the requested get-cells for the next while loop
                                         let sheet_name = compute_result.sheet_id;
-                                        let sheet = if let Some(sheet_name) = sheet_name {
-                                            if let Some(sheet_from_name) =
-                                                self.grid.sheet_from_name(sheet_name)
+
+                                        // if sheet_name is None, use the sheet_id from the pos
+                                        let sheet = sheet_name.clone().map_or_else(
+                                            || Some(self.grid.sheet_from_id(pos.sheet_id)),
+                                            |sheet_name| self.grid.sheet_from_name(sheet_name),
+                                        );
+
+                                        // unable to find sheet by name, generate error
+                                        if sheet.is_none() {
+                                            let msg = if let (Some(sheet_name), Some(line_number)) =
+                                                (sheet_name, compute_result.line_number)
                                             {
-                                                sheet_from_name
+                                                format!(
+                                                    "Sheet '{}' not found at line {}",
+                                                    sheet_name, line_number
+                                                )
                                             } else {
-                                                // TODO: handle if sheet doesn't exist
-                                                self.grid.sheet_mut_from_id(pos.sheet_id)
-                                            }
-                                        } else {
-                                            self.grid.sheet_mut_from_id(pos.sheet_id)
-                                        };
-                                        if let Some(rect) = compute_result.rect {
-                                            let array = sheet.cell_array(rect);
-                                            cells_accessed.push(SheetRect {
-                                                min: rect.min,
-                                                max: rect.max,
-                                                sheet_id: sheet.id,
-                                            });
-                                            for y in rect.y_range() {
-                                                for x in rect.x_range() {
-                                                    if let Some(cell_ref) =
-                                                        sheet.try_get_cell_ref(Pos { x, y })
-                                                    {
-                                                        cells_accessed_code_cell.push(cell_ref);
+                                                "Sheet not found".to_string()
+                                            };
+                                            code_cell_result = to_error(&msg);
+                                            complete = true;
+                                        }
+
+                                        if let Some(sheet) = sheet {
+                                            if let Some(rect) = compute_result.rect {
+                                                let array = sheet.cell_array(rect);
+                                                cells_accessed.push(SheetRect {
+                                                    min: rect.min,
+                                                    max: rect.max,
+                                                    sheet_id: sheet.id,
+                                                });
+                                                for y in rect.y_range() {
+                                                    for x in rect.x_range() {
+                                                        if let Some(cell_ref) =
+                                                            sheet.try_get_cell_ref(Pos { x, y })
+                                                        {
+                                                            cells_accessed_code_cell.push(cell_ref);
+                                                        }
                                                     }
                                                 }
+                                                // place results of get-cells into cells for next runPython call
+                                                let to_string =
+                                                    serde_json::to_string::<[CellForArray]>(&array);
+
+                                                cells = to_string.ok();
+                                            } else {
+                                                cells = None;
                                             }
-                                            // place results of get-cells into cells for next runPython call
-                                            let to_string =
-                                                serde_json::to_string::<[CellForArray]>(&array);
-                                            match to_string {
-                                                Ok(cell_for_array) => {
-                                                    cells = Some(cell_for_array);
-                                                }
-                                                Err(_) => cells = None,
-                                            }
-                                        } else {
-                                            cells = None;
                                         }
                                     }
                                 }
                                 Err(e) => {
-                                    // todo: better handling of error to ensure grid is not locked
-                                    crate::util::dbgjs(&format!("compute_result error, {}", e));
+                                    code_cell_result =
+                                        to_error(&format!("compute_result error, {}", e));
                                     complete = true;
                                 }
                             }
                         }
                     }
                     _ => {
-                        crate::util::dbgjs(&format!(
-                            "Compute language {} not supported in compute.rs",
-                            language
-                        ));
+                        code_cell_result =
+                            to_error(&format!("Compute language {} not supported", language));
                     }
                 }
+
                 let sheet = self.grid.sheet_mut_from_id(pos.sheet_id);
                 let code_cell = match code_cell_result {
-                    Some(code_cell_result) => Some(CodeCellValue {
-                        language,
-                        code_string,
-                        formatted_code_string: code_cell_result.formatted_code,
-                        output: Some(CodeCellRunOutput {
-                            std_out: code_cell_result.input_python_std_out,
-                            std_err: code_cell_result.error_msg,
-                            result: CodeCellRunResult::Ok {
+                    Some(code_cell_result) => {
+                        let result = if code_cell_result.success {
+                            CodeCellRunResult::Ok {
                                 output_value: if let Some(array_output) =
-                                    code_cell_result.array_output
+                                    code_cell_result.array_output.clone()
                                 {
                                     Value::Array(array_output.into())
                                 } else {
-                                    code_cell_result.output_value.into()
+                                    code_cell_result.output_value.clone().into()
                                 },
-                                cells_accessed: cells_accessed_code_cell,
-                            },
-                        }),
+                                cells_accessed: cells_accessed_code_cell.clone(),
+                            }
+                        } else {
+                            let span = code_cell_result.error_span.to_owned().map(Span::from);
+                            let error_msg = code_cell_result
+                                .error_msg
+                                .to_owned()
+                                .unwrap_or_else(|| "Unknown Python Error".into());
+                            let msg = ErrorMsg::PythonError(error_msg.into());
+                            let error = Error { span, msg };
 
-                        // todo: figure out how to handle modified dates in cells
-                        last_modified: String::new(),
-                    }),
+                            CodeCellRunResult::Err { error }
+                        };
+
+                        Some(CodeCellValue {
+                            language,
+                            code_string,
+                            formatted_code_string: code_cell_result.formatted_code,
+                            output: Some(CodeCellRunOutput {
+                                std_out: code_cell_result.input_python_std_out,
+                                std_err: code_cell_result.error_msg,
+                                result,
+                            }),
+
+                            // todo: figure out how to handle modified dates in cells
+                            last_modified: String::new(),
+                        })
+                    }
                     None => None,
                 };
-                let old_code_cell_value = sheet.set_code_cell_value(pos.into(), code_cell.clone());
-                if let Some(code_cell) = code_cell {
-                    if let Some(output) = code_cell.output {
-                        if let Some(output_value) = output.result.output_value() {
-                            match output_value {
-                                Value::Array(array) => {
-                                    for y in 0..array.size().h.into() {
-                                        for x in 0..array.size().w.into() {
-                                            // add all but the first cell to the compute cycle
-                                            if x != 0 && y != 0 {
-                                                cells_to_compute.push(SheetPos {
-                                                    x: pos.x + x as i64,
-                                                    y: pos.y + y as i64,
-                                                    sheet_id: sheet.id,
-                                                });
-                                            }
-                                            if let Ok(value) = array.get(x, y) {
-                                                let entry_pos = Pos {
-                                                    x: pos.x + x as i64,
-                                                    y: pos.y + y as i64,
-                                                };
-                                                let (numeric_format, numeric_decimals) =
-                                                    sheet.cell_numeric_info(entry_pos);
-                                                summary_set.push(JsRenderCellUpdate {
-                                                    x: pos.x + x as i64,
-                                                    y: pos.y + y as i64,
-                                                    update: JsRenderCellUpdateEnum::Value(Some(
-                                                        value.to_display(
-                                                            numeric_format,
-                                                            numeric_decimals,
-                                                        ),
-                                                    )),
-                                                })
-                                            }
-                                        }
-                                    }
-                                }
-                                Value::Single(value) => {
-                                    let (numeric_format, numeric_decimals) =
-                                        sheet.cell_numeric_info(pos.into());
-                                    summary_set.push(JsRenderCellUpdate {
-                                        x: pos.x,
-                                        y: pos.y,
-                                        update: JsRenderCellUpdateEnum::Value(Some(
-                                            value.to_display(numeric_format, numeric_decimals),
-                                        )),
-                                    });
-                                }
-                            };
-                        }
-                    }
-                }
+
+                let old_code_cell_value = update_code_cell_value(
+                    sheet,
+                    pos,
+                    code_cell,
+                    &mut summary_set,
+                    &mut cells_to_compute,
+                );
+
                 reverse_operations.push(Operation::SetCellCode {
                     cell_ref: sheet.get_or_create_cell_ref(pos.into()),
                     code_cell_value: old_code_cell_value,
                 });
+
                 if !summary_set.is_empty() {
                     summary.operations.push(OperationSummary::SetCellValues(
                         sheet.id.to_string(),
                         summary_set,
                     ));
                 }
+
+                summary.code_cells_modified.insert(sheet.id);
                 self.grid.set_dependencies(pos, Some(cells_accessed));
-            }
+            };
 
             // add all dependent cells to the cells_to_compute
             let dependent_cells = self.grid.get_dependent_cells(pos);

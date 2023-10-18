@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use proptest::prelude::*;
 
 use super::*;
-use crate::IsBlank;
+use crate::{IsBlank, Rect};
 
 pub mod order;
 

@@ -113,7 +113,7 @@ const v1_3File: GridFileV1_3 = {
  */
 const v1_4File: GridFileV1_4 = {
   version: '1.4',
-  cell_dependency: '[]',
+  cell_dependency: 'foo',
   sheets: [
     {
       id: '123e4567-e89b-12d3-a456-426614174000',

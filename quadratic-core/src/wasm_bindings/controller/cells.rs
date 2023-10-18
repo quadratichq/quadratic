@@ -84,7 +84,7 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         match self.sheet(sheet_id).get_code_cell(*pos) {
-            Some(code_cell) => Ok(serde_wasm_bindgen::to_value(&code_cell)?),
+            Some(code_cell) => Ok(serde_wasm_bindgen::to_value(&code_cell.clone())?),
             None => Ok(JsValue::UNDEFINED),
         }
     }
