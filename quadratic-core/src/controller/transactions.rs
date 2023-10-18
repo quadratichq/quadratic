@@ -4,8 +4,8 @@ use crate::{grid::SheetId, Pos};
 use serde::{Deserialize, Serialize};
 
 use super::{
-    in_progress_transaction::InProgressTransaction,
     operation::Operation,
+    transaction_in_progress::TransactionInProgress,
     transaction_summary::TransactionSummary,
     transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
     GridController,
@@ -26,14 +26,14 @@ impl GridController {
         undo: TransactionType,
     ) -> TransactionSummary {
         if self
-            .in_progress_transaction
+            .transaction_in_progress
             .as_ref()
             .is_some_and(|in_progress_transaction| !in_progress_transaction.complete)
         {
             // todo: this should be handled more gracefully. Perhaps as a queue of operations?
             panic!("Cannot start a transaction while a transaction is in progress");
         }
-        let mut transaction = InProgressTransaction::new(self, operations, cursor, compute);
+        let mut transaction = TransactionInProgress::new(self, operations, cursor, compute);
         let mut summary = transaction.transaction_summary();
         if transaction.complete {
             match undo {
@@ -50,7 +50,7 @@ impl GridController {
             }
             summary.save = true;
         } else {
-            self.in_progress_transaction = Some(transaction);
+            self.transaction_in_progress = Some(transaction);
         }
         summary
     }
@@ -77,9 +77,9 @@ impl GridController {
     }
     pub fn calculation_complete(&mut self, result: JsCodeResult) -> TransactionSummary {
         // todo: there's probably a better way to do this
-        if let Some(transaction) = &mut self.in_progress_transaction.clone() {
+        if let Some(transaction) = &mut self.transaction_in_progress.clone() {
             transaction.calculation_complete(self, result);
-            self.in_progress_transaction = Some(transaction.to_owned());
+            self.transaction_in_progress = Some(transaction.to_owned());
             transaction.transaction_summary()
         } else {
             panic!("Expected an in progress transaction");
@@ -89,9 +89,9 @@ impl GridController {
     /// This is used to get cells during a TS-controlled async calculation
     pub fn calculation_get_cells(&mut self, get_cells: JsComputeGetCells) -> Option<CellsForArray> {
         // todo: there's probably a better way to do this - the clone is necessary b/c get_cells needs a mutable grid as well
-        if let Some(transaction) = &mut self.in_progress_transaction.clone() {
+        if let Some(transaction) = &mut self.transaction_in_progress.clone() {
             let result = transaction.get_cells(self, get_cells);
-            self.in_progress_transaction = Some(transaction.to_owned());
+            self.transaction_in_progress = Some(transaction.to_owned());
             result
         } else {
             panic!("Expected a transaction to still be running");

@@ -17,7 +17,7 @@ use super::{
 // only one InProgressTransaction can exist at a time (or no Transaction)
 
 #[derive(Debug, Default, Clone)]
-pub struct InProgressTransaction {
+pub struct TransactionInProgress {
     reverse_operations: Vec<Operation>,
     cells_to_compute: Vec<CellRef>,
     pub cursor: Option<String>,
@@ -33,7 +33,7 @@ pub struct InProgressTransaction {
     pub complete: bool,
 }
 
-impl InProgressTransaction {
+impl TransactionInProgress {
     /// Creates and runs a new Transaction
     ///
     /// Description
@@ -369,7 +369,7 @@ impl InProgressTransaction {
     }
 }
 
-impl Into<Transaction> for InProgressTransaction {
+impl Into<Transaction> for TransactionInProgress {
     fn into(self) -> Transaction {
         Transaction {
             ops: self.reverse_operations.into_iter().rev().collect(),
@@ -378,7 +378,7 @@ impl Into<Transaction> for InProgressTransaction {
     }
 }
 
-impl Into<Transaction> for &mut InProgressTransaction {
+impl Into<Transaction> for &mut TransactionInProgress {
     fn into(self) -> Transaction {
         Transaction {
             ops: self.reverse_operations.clone().into_iter().rev().collect(),
@@ -387,7 +387,7 @@ impl Into<Transaction> for &mut InProgressTransaction {
     }
 }
 
-impl From<Transaction> for InProgressTransaction {
+impl From<Transaction> for TransactionInProgress {
     fn from(value: Transaction) -> Self {
         Self {
             cursor: value.cursor,
@@ -444,8 +444,8 @@ mod test {
                 CodeCellLanguage::Python
             ))
         );
-        assert_eq!(gc.in_progress_transaction.is_some(), true);
-        if let Some(transaction) = gc.in_progress_transaction.clone() {
+        assert_eq!(gc.transaction_in_progress.is_some(), true);
+        if let Some(transaction) = gc.transaction_in_progress.clone() {
             assert_eq!(transaction.complete, false);
             assert_eq!(transaction.cells_to_compute.len(), 0);
         }
