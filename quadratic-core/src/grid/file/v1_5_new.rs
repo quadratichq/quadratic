@@ -1,9 +1,27 @@
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+pub(crate) fn import(file_contents: &str) -> Result<GridSchema> {
+    Ok(serde_json::from_str::<GridSchema>(&file_contents)
+        .map_err(|e| anyhow!("Could not import file: {:?}", e))?)
+}
+
+pub(crate) fn export(grid_schema: &GridSchema) -> Result<String> {
+    Ok(
+        serde_json::to_string(grid_schema)
+            .map_err(|e| anyhow!("Could not export file: {:?}", e))?,
+    )
+}
+
+// noop as this is the current version
+pub(crate) fn upgrade(schema: &GridSchema) -> Result<&GridSchema> {
+    Ok(schema)
+}
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GridSchemaV1_5 {
+pub struct GridSchema {
     pub version: String,
     pub sheets: Vec<Sheet>,
     // TODO(ddimaria): this is more complex than a string
@@ -17,7 +35,7 @@ pub struct Sheet {
     pub name: String,
     pub color: Option<String>,
     pub order: String,
-    pub offsets: Vec<Vec<Vec<f64>>>,
+    pub offsets: (Vec<(i64, f64)>, Vec<(i64, f64)>),
     pub columns: Vec<(i64, Column)>,
     pub rows: Vec<(i64, Id)>,
     pub borders: Borders,
@@ -53,7 +71,47 @@ pub struct CodeCellValue {
     pub code_string: String,
     pub formatted_code_string: Option<String>,
     pub last_modified: String,
-    pub output: Option<String>,
+    pub output: Option<CodeCellRunOutput>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CodeCellRunOutput {
+    pub std_out: Option<String>,
+    pub std_err: Option<String>,
+    pub result: CodeCellRunResult,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum CodeCellRunResult {
+    Ok {
+        output_value: OutputValue,
+        cells_accessed: Vec<CellRef>,
+    },
+    Err {
+        error: Error,
+    },
+}
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OutputValue {
+    #[serde(rename = "type")]
+    pub type_field: String,
+    pub value: String,
+}
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Error {
+    pub span: Option<Span>,
+    pub msg: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Span {
+    pub start: u32,
+    pub end: u32,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -103,26 +161,16 @@ pub struct ColumnValue {
     pub type_field: String,
     pub value: String,
 }
-// impl From<(i64, ColumnValue)> for ColumnValues {
-//     fn from((y, values): (i64, ColumnValue)) -> Self {
-//         Self {
-//             y,
-//             content: ColumnContent { values },
-//         }
-//     }
-// }
-// impl From<Vec<ColumnValue>> for ColumnValue {
-//     fn from(values: Vec<ColumnValue>) -> Self {
-//         values.map(|value| match value.type_field.to_lowercase() {
-//             "text" => ColumnValue::from(value.value),
-
-//         });
-//         ColumnValue {
-//             y: 0,
-//             content: ColumnContent { values },
-//         }
-//     }
-// }
+impl From<(i64, ColumnValue)> for ColumnValues {
+    fn from((y, values): (i64, ColumnValue)) -> Self {
+        Self {
+            y,
+            content: ColumnContent {
+                values: vec![values],
+            },
+        }
+    }
+}
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

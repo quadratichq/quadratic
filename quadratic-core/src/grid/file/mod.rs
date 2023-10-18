@@ -1,6 +1,12 @@
-use serde::{Deserialize, Serialize};
+use crate::{CellValue, Error, ErrorMsg, Span, Value};
 
-use super::sheet::sheet_offsets::SheetOffsets;
+use super::{
+    sheet::sheet_offsets::SheetOffsets, CellRef, CodeCellLanguage, CodeCellRunOutput,
+    CodeCellRunResult, CodeCellValue, Column, ColumnId, IdMap, RowId, SheetBorders, SheetId,
+};
+use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, str::FromStr};
 
 mod V1_3;
 mod v1_3;
@@ -19,35 +25,36 @@ mod current {
 #[serde(tag = "version")]
 enum GridFile {
     #[serde(rename = "1.5")]
-    V1_5 {
+    v1_5_new {
         #[serde(flatten)]
-        grid: v1_5::GridSchema,
+        grid: v1_5_new::GridSchema,
     },
 
-    #[serde(rename = "1.4")]
-    V1_4 {
-        #[serde(flatten)]
-        grid: v1_4::GridSchemaV1_4,
-    },
-    // #[serde(rename = "1.3")]
-    // V1_3 {
+    // #[serde(rename = "1.4")]
+    // V1_4 {
     //     #[serde(flatten)]
-    //     grid: v1_3::GridSchemaV1_3,
+    //     grid: v1_4::GridSchemaV1_4,
     // },
+    #[serde(rename = "1.3")]
+    v1_3 {
+        #[serde(flatten)]
+        grid: v1_3_schema::GridSchema,
+    },
 }
 impl GridFile {
-    fn into_latest(self) -> Result<v1_5::GridSchema, &'static str> {
+    fn into_latest(self) -> Result<v1_5_new::GridSchema> {
         match self {
-            GridFile::V1_5 { grid } => Ok(grid),
-            GridFile::V1_4 { grid } => grid.into_v1_5(),
-            // GridFile::V1_3 { grid } => GridSchemaV1_3::import(&grid.version).unwrap().into_v1_5(),
+            GridFile::v1_5_new { grid } => Ok(grid),
+            // GridFile::V1_5 { grid } => Ok(grid),
+            // GridFile::V1_4 { grid } => grid.into_v1_5(),
+            GridFile::v1_3 { grid } => v1_3::upgrade(v1_3::import(&grid.version).unwrap()),
         }
     }
 }
 
-pub fn import(file_contents: &str) -> Result<current::Grid, String> {
+pub fn import(file_contents: &str) -> Result<current::Grid> {
     let file = serde_json::from_str::<GridFile>(file_contents)
-        .map_err(|e| e.to_string())?
+        .map_err(|e| anyhow!(e))?
         .into_latest()?;
 
     Ok(current::Grid {
@@ -56,20 +63,110 @@ pub fn import(file_contents: &str) -> Result<current::Grid, String> {
             .into_iter()
             .map(|sheet| {
                 let mut sheet = current::Sheet {
-                    id: sheet.id,
+                    id: SheetId::from_str(&sheet.id.id).unwrap(),
                     name: sheet.name,
                     color: sheet.color,
                     order: sheet.order,
                     column_ids: sheet
                         .columns
-                        .iter()
-                        .map(|(x, column)| (*x, column.id))
+                        .clone()
+                        .into_iter()
+                        .map(|(x, column)| (x, ColumnId::from_str(&column.id.id).unwrap()))
                         .collect(),
-                    row_ids: sheet.rows.iter().copied().collect(),
+                    row_ids: sheet
+                        .rows
+                        .into_iter()
+                        .map(|(x, row)| (x, RowId::from_str(&row.id).unwrap()))
+                        .collect(),
                     offsets: SheetOffsets::import(sheet.offsets),
-                    columns: sheet.columns.into_iter().collect(),
-                    borders: sheet.borders,
-                    code_cells: sheet.code_cells.into_iter().collect(),
+                    columns: sheet
+                        .columns
+                        .into_iter()
+                        .map(|(x, column)| {
+                            (
+                                x,
+                                Column {
+                                    id: ColumnId::from_str(&column.id.id).unwrap(),
+                                    // values: column.values.into(),
+                                    ..Default::default()
+                                },
+                            )
+                        })
+                        .collect(),
+                    // borders: sheet.borders,
+                    borders: SheetBorders::new(),
+                    code_cells: sheet
+                        .code_cells
+                        .into_iter()
+                        .map(|(cell_ref, code_cell_value)| {
+                            (
+                                CellRef {
+                                    sheet: SheetId::from_str(&cell_ref.sheet).unwrap(),
+                                    column: ColumnId::from_str(&cell_ref.column).unwrap(),
+                                    row: RowId::from_str(&cell_ref.row).unwrap(),
+                                },
+                                CodeCellValue {
+                                    language: CodeCellLanguage::from_str(&code_cell_value.language)
+                                        .unwrap(),
+                                    code_string: code_cell_value.code_string,
+                                    formatted_code_string: code_cell_value.formatted_code_string,
+                                    last_modified: code_cell_value.last_modified,
+                                    output: code_cell_value.output.and_then(|output| {
+                                        Some(CodeCellRunOutput {
+                                            std_out: output.std_out,
+                                            std_err: output.std_err,
+                                            result: match output.result {
+                                                v1_5_new::CodeCellRunResult::Ok {
+                                                    output_value,
+                                                    cells_accessed,
+                                                } => CodeCellRunResult::Ok {
+                                                    // TODO(ddimaria): implement Value::Array()
+                                                    output_value: Value::Single(match output_value
+                                                        .type_field
+                                                        .to_lowercase()
+                                                        .as_str()
+                                                    {
+                                                        // TODO(ddimaria): implent for the rest of the types
+                                                        "text" => {
+                                                            CellValue::Text(output_value.value)
+                                                        }
+                                                        _ => unimplemented!(),
+                                                    }),
+                                                    cells_accessed: cells_accessed
+                                                        .into_iter()
+                                                        .map(|cell| CellRef {
+                                                            sheet: SheetId::from_str(&cell.sheet)
+                                                                .unwrap(),
+                                                            column: ColumnId::from_str(
+                                                                &cell.column,
+                                                            )
+                                                            .unwrap(),
+                                                            row: RowId::from_str(&cell.row)
+                                                                .unwrap(),
+                                                        })
+                                                        .collect(),
+                                                },
+                                                v1_5_new::CodeCellRunResult::Err { error } => {
+                                                    CodeCellRunResult::Err {
+                                                        error: Error {
+                                                            span: error.span.and_then(|span| {
+                                                                Some(Span {
+                                                                    start: span.start,
+                                                                    end: span.end,
+                                                                })
+                                                            }),
+                                                            // TODO(ddimaria): implement ErrorMsg
+                                                            msg: ErrorMsg::UnknownError,
+                                                        },
+                                                    }
+                                                }
+                                            },
+                                        })
+                                    }),
+                                },
+                            )
+                        })
+                        .collect(),
                     data_bounds: current::GridBounds::Empty,
                     format_bounds: current::GridBounds::Empty,
                 };
@@ -77,7 +174,8 @@ pub fn import(file_contents: &str) -> Result<current::Grid, String> {
                 sheet
             })
             .collect(),
-        dependencies: file.dependencies.into_iter().collect(),
+        // dependencies: file.dependencies.into_iter().collect(),
+        dependencies: HashMap::new(),
     })
 }
 
@@ -86,35 +184,39 @@ pub fn version() -> String {
 }
 
 pub fn export(grid: &current::Grid) -> Result<String, String> {
-    serde_json::to_string(&GridFile::V1_5 {
-        grid: v1_5::GridSchema {
-            sheets: grid
-                .sheets()
-                .into_iter()
-                .map(|sheet| v1_5::SheetSchema {
-                    id: sheet.id,
-                    name: sheet.name.clone(),
-                    color: sheet.color.clone(),
-                    order: sheet.order.clone(),
-                    offsets: sheet.offsets.export(),
-                    columns: sheet
-                        .iter_columns()
-                        .map(|(x, column)| (x, column.clone()))
-                        .collect(),
-                    rows: sheet.iter_rows().collect(),
-                    borders: sheet.borders().clone(), // TODO: serialize borders
-                    code_cells: sheet
-                        .iter_code_cells_locations()
-                        .filter_map(|cell_ref| {
-                            Some((cell_ref, sheet.get_code_cell_from_ref(cell_ref)?.clone()))
-                        })
-                        .collect(),
-                })
-                .collect(),
-            dependencies: grid.dependencies.clone().into_iter().collect(),
-        },
-    })
-    .map_err(|e| e.to_string())
+    Ok("".into())
+    // serde_json::to_string(&GridFile::v1_5_new {
+    //     grid: v1_5_new::GridSchema {
+    //         version: version(),
+    //         sheets: grid
+    //             .sheets()
+    //             .into_iter()
+    //             .map(|sheet| v1_5_new::Sheet {
+    //                 id: v1_5_new::Id {
+    //                     id: sheet.id.to_string(),
+    //                 },
+    //                 name: sheet.name.clone(),
+    //                 color: sheet.color.clone(),
+    //                 order: sheet.order.clone(),
+    //                 offsets: sheet.offsets.export(),
+    //                 columns: sheet
+    //                     .iter_columns()
+    //                     .map(|(x, column)| (x, column.clone()))
+    //                     .collect(),
+    //                 rows: sheet.iter_rows().collect(),
+    //                 borders: sheet.borders().clone(), // TODO: serialize borders
+    //                 code_cells: sheet
+    //                     .iter_code_cells_locations()
+    //                     .filter_map(|cell_ref| {
+    //                         Some((cell_ref, sheet.get_code_cell_from_ref(cell_ref)?.clone()))
+    //                     })
+    //                     .collect(),
+    //             })
+    //             .collect(),
+    //         dependencies: grid.dependencies.clone().into_iter().collect(),
+    //     },
+    // })
+    // .map_err(|e| e.to_string())
 }
 
 #[cfg(test)]

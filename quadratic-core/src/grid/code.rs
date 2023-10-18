@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use strum_macros::Display;
+use strum_macros::{Display, EnumString};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::CellRef;
@@ -40,7 +40,7 @@ impl CodeCellValue {
     }
 }
 
-#[derive(Serialize, Deserialize, Display, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Display, Debug, Copy, Clone, PartialEq, Eq, Hash, EnumString)]
 #[wasm_bindgen]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum CodeCellLanguage {

@@ -1,21 +1,25 @@
+use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 
-use crate::grid::file::v1_3_schema::GridSchemaV1_3;
+use crate::grid::file::v1_3_schema::GridSchema;
 use crate::grid::file::v1_5_new::{
-    Borders as BordersV1_5, CellRef as CellRefV1_5, Column as ColumnV1_5, GridSchemaV1_5,
-    Id as IdV1_5, Sheet as SheetV1_5,
+    import as import_v1_5, Borders as BordersV1_5, CellRef as CellRefV1_5, Column as ColumnV1_5,
+    ColumnValue as ColumnValueV1_5, GridSchema as GridSchemaV1_5, Id as IdV1_5, Sheet as SheetV1_5,
 };
-// use crate::grid::ids::{ColumnId, RowId, SheetId};
-// use crate::grid::{CellRef, Column};
-// use crate::Pos;
-use anyhow::{anyhow, Result};
 
-pub(crate) fn import(file_contents: &str) -> Result<GridSchemaV1_3> {
-    Ok(serde_json::from_str::<GridSchemaV1_3>(&file_contents)
+pub(crate) fn import(file_contents: &str) -> Result<GridSchema> {
+    Ok(serde_json::from_str::<GridSchema>(&file_contents)
         .map_err(|e| anyhow!("Could not import file: {:?}", e))?)
 }
 
-pub(crate) fn upgrade(schema: GridSchemaV1_3) -> Result<GridSchemaV1_5> {
+pub(crate) fn export(grid_schema: &GridSchema) -> Result<String> {
+    Ok(
+        serde_json::to_string(grid_schema)
+            .map_err(|e| anyhow!("Could not export file: {:?}", e))?,
+    )
+}
+
+pub(crate) fn upgrade(schema: GridSchema) -> Result<GridSchemaV1_5> {
     let sheet = to_v1_5_sheet(schema).unwrap();
 
     let converted = GridSchemaV1_5 {
@@ -25,7 +29,7 @@ pub(crate) fn upgrade(schema: GridSchemaV1_3) -> Result<GridSchemaV1_5> {
         // dependencies: v.sheets.into_iter().map(|s| s.cell_dependency).collect(),
     };
 
-    println!("{:?}", converted);
+    // println!("{:?}", converted);
     Ok(converted)
 }
 
@@ -57,18 +61,14 @@ impl SheetBuilder {
     }
 }
 
-pub(crate) fn to_v1_5_sheet(v: GridSchemaV1_3) -> Result<SheetV1_5> {
+pub(crate) fn to_v1_5_sheet(v: GridSchema) -> Result<SheetV1_5> {
     let sheet_id = IdV1_5::new();
     let column_widths = v
         .columns
         .iter()
-        .map(|column| vec![column.id as f64, column.size])
+        .map(|column| (column.id, column.size))
         .collect();
-    let row_heights = v
-        .rows
-        .iter()
-        .map(|row| vec![row.id as f64, row.size])
-        .collect();
+    let row_heights = v.rows.iter().map(|row| (row.id, row.size)).collect();
 
     let mut code_cells = vec![];
     // let mut column_values = vec![];
@@ -86,17 +86,24 @@ pub(crate) fn to_v1_5_sheet(v: GridSchemaV1_3) -> Result<SheetV1_5> {
         let js_cell_ref = sheet.cell_ref(js_cell_pos);
         // column_values.push((js_cell.y, cell_value.to_string()));
 
-        // match js_cell.type_field.to_lowercase().as_str() {
-        //     "text" => {
-        //         let column = sheet.column(js_cell.x);
-        //         column.values.set(js_cell.y, Some(js_cell.value));
-
-        //         // ColumnValueV1_5 {
-        //         //     type_field: "text".into(),
-        //         //     value: js_cell.value,
-        //         // }
-        //     }
-        // };
+        match js_cell.type_field.to_lowercase().as_str() {
+            "text" => {
+                let column = sheet.column(js_cell.x);
+                // println!("{} {} {}", js_cell.x, js_cell.y, js_cell.value);
+                column.values.push((
+                    js_cell.y,
+                    (
+                        js_cell.y,
+                        ColumnValueV1_5 {
+                            type_field: "text".into(),
+                            value: js_cell.value.to_owned(),
+                        },
+                    )
+                        .into(),
+                ));
+            }
+            _ => {}
+        };
         // column_values.push((js_cell.y, values).into());
         // if let Some(code_cell_value) = js_cell.to_code_cell_value(|pos| sheet.cell_ref(pos)) {
         //     if let Some(output) = code_cell_value
@@ -130,7 +137,7 @@ pub(crate) fn to_v1_5_sheet(v: GridSchemaV1_3) -> Result<SheetV1_5> {
     }
 
     for js_format in v.formats {
-        let column: &mut ColumnV1_5 = sheet.column(js_format.x);
+        let column = sheet.column(js_format.x);
         let y = js_format.y.to_owned();
         js_format
             .alignment
@@ -172,8 +179,8 @@ pub(crate) fn to_v1_5_sheet(v: GridSchemaV1_3) -> Result<SheetV1_5> {
         id: IdV1_5::new(),
         name: "Sheet 1".into(),
         color: None,
-        order: "ao".into(),
-        offsets: vec![column_widths, row_heights],
+        order: "a0".into(),
+        offsets: (column_widths, row_heights),
         columns: sheet
             .columns
             .into_iter()
@@ -182,7 +189,7 @@ pub(crate) fn to_v1_5_sheet(v: GridSchemaV1_3) -> Result<SheetV1_5> {
                     id.to_owned(),
                     ColumnV1_5 {
                         id: col.id,
-                        values: vec![],
+                        values: col.values,
                         spills: col.spills,
                         align: col.align,
                         wrap: col.wrap,
@@ -213,6 +220,7 @@ pub(crate) fn to_v1_5_sheet(v: GridSchemaV1_3) -> Result<SheetV1_5> {
 mod tests {
 
     use crate::{controller::GridController, Pos, Rect};
+    use std::io::Write;
 
     use super::*;
 
@@ -220,15 +228,22 @@ mod tests {
     const V1_3_FILE: &str = include_str!("../../../examples/v1_3.json");
 
     #[tokio::test]
-    async fn import_a_V1_3_grid() {
+    async fn import_a_v1_3_grid() {
         let mut grid_controller = GridController::new();
-        let sheet_id = grid_controller.grid().sheets()[0].id;
-        let pos = Pos { x: 0, y: 0 };
-        let range = Rect::new_span(pos, Pos { x: 3, y: 10 });
+        // let sheet_id = grid_controller.grid().sheets()[0].id;
+        // let pos = Pos { x: 0, y: 0 };
+        // let range = Rect::new_span(pos, Pos { x: 3, y: 10 });
 
         let imported = import(V1_3_FILE).unwrap();
-        println!("{:?}", imported);
+        // println!("{:?}", imported);
         let upgraded = upgrade(imported).unwrap();
-        println!("{:?}", upgraded);
+        let json = serde_json::to_string(&upgraded).unwrap();
+        // println!("{}", json);
+
+        let imported = import_v1_5(&json).unwrap();
+        println!("{:?}", imported);
+        // let path = "results_v1_3.json";
+        // let mut output = std::fs::File::create(path).unwrap();
+        // write!(output, "{}", ).unwrap();
     }
 }

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GridSchemaV1_3 {
+pub struct GridSchema {
     pub borders: Vec<Border>,
     pub cells: Vec<Cell>,
     #[serde(rename = "cell_dependency")]
