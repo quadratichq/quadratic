@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::{
     grid::{
         Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericDecimals, NumericFormat,
@@ -8,7 +10,9 @@ use crate::{
 use serde::{Deserialize, Serialize};
 
 use super::{
-    operation::Operation, transaction_summary::TransactionSummary, transactions::TransactionType,
+    operation::Operation,
+    transaction_summary::{CellSheetsModified, TransactionSummary},
+    transactions::TransactionType,
     GridController,
 };
 
@@ -17,6 +21,7 @@ impl GridController {
         &mut self,
         region: &RegionRef,
         values: RunLengthEncoding<Option<A::Value>>,
+        cell_sheets_modified: Option<&mut HashSet<CellSheetsModified>>,
     ) -> RunLengthEncoding<Option<A::Value>> {
         let sheet = self.grid.sheet_mut_from_id(region.sheet);
         // TODO: optimize this for contiguous runs of the same value
@@ -26,6 +31,9 @@ impl GridController {
                 .cell_ref_to_pos(cell_ref)
                 .and_then(|pos| sheet.set_formatting_value::<A>(pos, value.clone()));
             old_values.push(old_value);
+        }
+        if let Some(cell_sheets_modified) = cell_sheets_modified {
+            CellSheetsModified::add_region(cell_sheets_modified, sheet, region);
         }
         old_values
     }

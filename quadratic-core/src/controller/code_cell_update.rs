@@ -1,14 +1,11 @@
 use crate::{
-    grid::{
-        js_types::{JsRenderCellUpdate, JsRenderCellUpdateEnum},
-        CellRef, CodeCellValue, Sheet,
-    },
+    grid::{CellRef, CodeCellValue, Sheet},
     ArraySize, Pos, Value,
 };
 
 use super::{
     operation::Operation,
-    transaction_summary::{OperationSummary, TransactionSummary},
+    transaction_summary::{CellSheetsModified, TransactionSummary},
     GridController,
 };
 
@@ -23,7 +20,6 @@ pub fn update_code_cell_value(
     let sheet = grid_controller.grid.sheet_mut_from_id(cell_ref.sheet);
     if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
         let old_code_cell_value = sheet.set_code_cell_value(pos, updated_code_cell_value.clone());
-        let mut summary_set = vec![];
         if let Some(updated_code_cell_value) = updated_code_cell_value.clone() {
             if let Some(output) = updated_code_cell_value.output {
                 match output.result.output_value() {
@@ -34,6 +30,9 @@ pub fn update_code_cell_value(
                                     let column_id =
                                         sheet.get_or_create_column(pos.x + x as i64).0.id;
                                     for y in 0..array.size().h.into() {
+                                        summary
+                                            .cell_sheets_modified
+                                            .insert(CellSheetsModified::new(sheet.id, pos.into()));
                                         let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
                                         // add all but the first cell to the compute cycle
                                         if x != 0 && y != 0 {
@@ -45,56 +44,16 @@ pub fn update_code_cell_value(
                                                 });
                                             }
                                         }
-                                        if let Ok(value) = array.get(x, y) {
-                                            let entry_pos = Pos {
-                                                x: pos.x + x as i64,
-                                                y: pos.y + y as i64,
-                                            };
-                                            let (numeric_format, numeric_decimals) =
-                                                sheet.cell_numeric_info(entry_pos);
-                                            summary_set.push(JsRenderCellUpdate {
-                                                x: pos.x + x as i64,
-                                                y: pos.y + y as i64,
-                                                update: JsRenderCellUpdateEnum::Value(Some(
-                                                    value.to_display(
-                                                        numeric_format,
-                                                        numeric_decimals,
-                                                    ),
-                                                )),
-                                            });
-                                        }
                                     }
                                 }
                             }
-                            Value::Single(value) => {
-                                let (numeric_format, numeric_decimals) =
-                                    sheet.cell_numeric_info(pos);
-                                summary_set.push(JsRenderCellUpdate {
-                                    x: pos.x,
-                                    y: pos.y,
-                                    update: JsRenderCellUpdateEnum::Value(Some(
-                                        value.to_display(numeric_format, numeric_decimals),
-                                    )),
-                                });
-                            }
+                            Value::Single(..) => (),
                         };
                     }
                     None => {
-                        summary_set.push(JsRenderCellUpdate {
-                            x: pos.x,
-                            y: pos.y,
-                            update: JsRenderCellUpdateEnum::Value(Some(" ERROR".into())),
-                        });
-                        summary_set.push(JsRenderCellUpdate {
-                            x: pos.x,
-                            y: pos.y,
-                            update: JsRenderCellUpdateEnum::TextColor(Some("red".into())),
-                        });
-                        summary_set.push(JsRenderCellUpdate {
-                            x: pos.x,
-                            y: pos.y,
-                            update: JsRenderCellUpdateEnum::Italic(Some(true)),
-                        });
+                        summary
+                            .cell_sheets_modified
+                            .insert(CellSheetsModified::new(sheet.id, pos.into()));
                     }
                 };
             }
@@ -104,19 +63,13 @@ pub fn update_code_cell_value(
             pos,
             old_code_cell_value.clone(),
             updated_code_cell_value.clone(),
-            &mut summary_set,
+            summary,
             cells_to_compute,
         );
         reverse_operations.push(Operation::SetCellCode {
             cell_ref,
             code_cell_value: old_code_cell_value,
         });
-        if !summary_set.is_empty() {
-            summary.operations.push(OperationSummary::SetCellValues(
-                sheet.id.to_string(),
-                summary_set.clone(),
-            ));
-        }
         summary.code_cells_modified.insert(sheet.id);
     }
 }
@@ -127,7 +80,7 @@ pub fn fetch_code_cell_difference(
     pos: Pos,
     old_code_cell_value: Option<CodeCellValue>,
     new_code_cell_value: Option<CodeCellValue>,
-    summary_set: &mut Vec<JsRenderCellUpdate>,
+    summary: &mut TransactionSummary,
     cells_to_compute: &mut Option<&mut Vec<CellRef>>,
 ) {
     let old_size = if let Some(old_code_cell_value) = old_code_cell_value {
@@ -150,15 +103,9 @@ pub fn fetch_code_cell_difference(
                     x: pos.x + x as i64,
                     y: pos.y + y as i64,
                 };
-                let (numeric_format, numeric_decimals) = sheet.cell_numeric_info(pos);
-                let value = sheet
-                    .get_cell_value(pos)
-                    .map(|value| value.to_display(numeric_format, numeric_decimals));
-                summary_set.push(JsRenderCellUpdate {
-                    x: pos.x,
-                    y: pos.y,
-                    update: JsRenderCellUpdateEnum::Value(value),
-                });
+                summary
+                    .cell_sheets_modified
+                    .insert(CellSheetsModified::new(sheet.id, pos.into()));
                 if let Some(cells_to_compute) = cells_to_compute {
                     cells_to_compute.push(CellRef {
                         sheet: sheet.id,
@@ -178,16 +125,9 @@ pub fn fetch_code_cell_difference(
                     x: pos.x + x as i64,
                     y: pos.y + y as i64,
                 };
-                // let (numeric_format, numeric_decimals) = sheet.cell_numeric_info(pos);
-                let (numeric_format, numeric_decimals) = sheet.cell_numeric_info(pos);
-                let value = sheet
-                    .get_cell_value(pos)
-                    .map(|value| value.to_display(numeric_format, numeric_decimals));
-                summary_set.push(JsRenderCellUpdate {
-                    x: pos.x,
-                    y: pos.y,
-                    update: JsRenderCellUpdateEnum::Value(value),
-                });
+                summary
+                    .cell_sheets_modified
+                    .insert(CellSheetsModified::new(sheet.id, pos.into()));
                 if let Some(cells_to_compute) = cells_to_compute {
                     cells_to_compute.push(CellRef {
                         sheet: sheet.id,
@@ -203,7 +143,9 @@ pub fn fetch_code_cell_difference(
 #[cfg(test)]
 mod test {
     use crate::{
-        controller::code_cell_update::fetch_code_cell_difference,
+        controller::{
+            code_cell_update::fetch_code_cell_difference, transaction_summary::TransactionSummary,
+        },
         grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellValue, Sheet},
         Array, ArraySize, SheetPos, Value,
     };
@@ -211,7 +153,6 @@ mod test {
     #[test]
     fn test_fetch_code_cell_difference() {
         let mut sheet = Sheet::test();
-        let mut summary_set = Vec::new();
 
         let old = Some(CodeCellValue {
             language: CodeCellLanguage::Python,
@@ -252,17 +193,19 @@ mod test {
             sheet_id: sheet.id,
         };
 
+        let mut summary = TransactionSummary::default();
+
         fetch_code_cell_difference(
             &mut sheet,
             sheet_pos.into(),
             old.clone(),
             new_smaller,
-            &mut summary_set,
+            &mut summary,
             &mut None,
         );
-        assert_eq!(summary_set.len(), 4);
+        assert_eq!(summary.cell_sheets_modified.len(), 1);
 
-        summary_set.clear();
+        summary.clear();
 
         let new_larger = Some(CodeCellValue {
             language: CodeCellLanguage::Python,
@@ -286,9 +229,9 @@ mod test {
             sheet_pos.into(),
             old,
             new_larger,
-            &mut summary_set,
+            &mut summary,
             &mut None,
         );
-        assert_eq!(summary_set.len(), 0);
+        assert_eq!(summary.cell_sheets_modified.len(), 0);
     }
 }

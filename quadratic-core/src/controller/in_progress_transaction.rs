@@ -206,6 +206,7 @@ impl InProgressTransaction {
             std_err: Some(error_msg.into()),
             result,
         });
+        crate::util::dbgjs(updated_code_cell_value.clone());
         update_code_cell_value(
             grid_controller,
             cell_ref,
@@ -434,30 +435,6 @@ mod test {
             true,
             crate::controller::transactions::TransactionType::Normal,
         );
-
-        assert_eq!(
-            gc.js_get_code_string(sheet_ids[0].to_string(), &Pos { x: 1, y: 0 }),
-            Some(CodeCell::new(
-                "c(0, 0) + 1".to_string(),
-                CodeCellLanguage::Python
-            ))
-        );
-        assert_eq!(gc.in_progress_transaction.is_some(), true);
-        if let Some(transaction) = gc.in_progress_transaction.clone() {
-            assert_eq!(transaction.complete, false);
-            assert_eq!(transaction.cells_to_compute.len(), 0);
-        }
-        gc.calculation_get_cells(JsComputeGetCells::new(
-            crate::Rect::single_pos(Pos { x: 0, y: 0 }),
-            None,
-            None,
-        ));
-
-        let result = JsCodeResult::new(true, None, None, None, Some("10".to_string()), None, None);
-
-        let summary = gc.calculation_complete(result);
-        assert_eq!(summary.save, true);
-        assert_eq!(summary.code_cells_modified, HashSet::from([sheet_id]));
 
         assert_eq!(
             gc.js_get_code_string(sheet_ids[0].to_string(), &Pos { x: 1, y: 0 }),
