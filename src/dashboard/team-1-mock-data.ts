@@ -4,7 +4,7 @@ import { AccessSchema, RoleSchema } from '../permissions';
 export const data: ApiTypes['/v0/teams/:uuid.GET.response'] = {
   team: {
     uuid: '1',
-    name: 'Costco',
+    name: 'Costco Wholesale Incorporated',
     // picture: 'https://avatars.githubusercontent.com/u/1051500?v=4',
     users: [
       {

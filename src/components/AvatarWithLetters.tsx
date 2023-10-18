@@ -45,7 +45,7 @@ export function AvatarWithLetters(props: Props) {
       ...(sx ? sx : {}),
 
       bgcolor: stringToColor(children),
-      ...(size === 'small' ? { width: 24, height: 24, fontSize: '.875rem' } : {}),
+      ...(size === 'small' ? { width: 24, height: 24, fontSize: '.75rem' } : {}),
       ...(size === 'medium' ? { width: 32, height: 32, fontSize: '1rem' } : {}),
       ...(size === 'large' ? { width: 40, height: 40, fontSize: '1.125rem' } : {}),
     },

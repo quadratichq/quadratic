@@ -38,7 +38,7 @@ export function DashboardHeader({
         },
       }}
     >
-      <Stack direction="row" alignItems={'center'} gap={theme.spacing()}>
+      <Stack direction="row" alignItems={'center'}>
         {titleStart}
         <Typography variant="h6" sx={{ py: theme.spacing(2) }} color="text.primary">
           {title}

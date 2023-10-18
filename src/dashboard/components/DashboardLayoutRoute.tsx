@@ -185,7 +185,7 @@ function Navbar({ handleDrawerToggle, loaderData }: { handleDrawerToggle: Functi
         {loaderData.teams.map(({ team }) => (
           <SidebarNavLink key={team.uuid} to={ROUTES.TEAM(team.uuid)} style={sidebarLinkStyles}>
             <AvatarWithLetters size="small">{team.name}</AvatarWithLetters>
-            <Typography variant="body2" color="text.primary">
+            <Typography variant="body2" color="text.primary" noWrap>
               {team.name}
             </Typography>
           </SidebarNavLink>

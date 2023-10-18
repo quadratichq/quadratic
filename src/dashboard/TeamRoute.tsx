@@ -1,13 +1,11 @@
 import { ErrorOutline, KeyboardArrowDown, PeopleAltOutlined } from '@mui/icons-material';
-import { Box, Button, Divider, IconButton, Menu, MenuItem, useTheme } from '@mui/material';
-import { Link, LoaderFunctionArgs, useLoaderData, useParams, useSearchParams } from 'react-router-dom';
-import { Empty } from '../components/Empty';
-
+import { Box, Button, Divider, IconButton, InputBase, Menu, MenuItem, Stack, useTheme } from '@mui/material';
 import { useState } from 'react';
+import { Link, LoaderFunctionArgs, useLoaderData, useParams, useSearchParams } from 'react-router-dom';
 import { ApiTypes } from '../api/types';
 import { AvatarWithLetters } from '../components/AvatarWithLetters';
+import { Empty } from '../components/Empty';
 import { QDialogConfirmDelete } from '../components/QDialog';
-import { ROUTES } from '../constants/routes';
 import { hasAccess } from '../permissions';
 import { DashboardHeader } from './components/DashboardHeader';
 import { TeamShareMenu } from './components/TeamShareMenu';
@@ -23,6 +21,7 @@ export const Component = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const { team } = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
+  const [teamName, setTeamName] = useState<string>(team.name);
 
   const dialog = searchParams.get('dialog');
   const showShareDialog = dialog === 'share';
@@ -32,11 +31,15 @@ export const Component = () => {
       <DashboardHeader
         title={team.name}
         titleStart={
-          <AvatarWithLetters size="large" src={team.picture}>
+          <AvatarWithLetters size="large" src={team.picture} sx={{ mr: theme.spacing(1.5) }}>
             {team.name}
           </AvatarWithLetters>
         }
-        titleEnd={<EditDropdownMenu setShowDeleteDialog={setShowDeleteDialog} />}
+        titleEnd={
+          <Box sx={{ position: 'relative', top: '1px', ml: theme.spacing(0.25) }}>
+            <EditDropdownMenu setShowDeleteDialog={setShowDeleteDialog} />
+          </Box>
+        }
         actions={
           <>
             <Button
@@ -57,6 +60,21 @@ export const Component = () => {
           </>
         }
       />
+
+      <Stack direction="row" alignItems={'center'}>
+        <InputBase
+          sx={{
+            typography: 'h6',
+            border: `1px solid ${theme.palette.primary.main}`,
+            borderRadius: theme.shape.borderRadius,
+            px: theme.spacing(0.5),
+          }}
+          value={teamName}
+          inputProps={{ fontSize: '18px', size: teamName.length > 1 ? teamName.length : 1, outline: '2px solid blue' }}
+          onChange={(e) => setTeamName(e.target.value)}
+        />
+        <KeyboardArrowDown fontSize="small" />
+      </Stack>
 
       <Box sx={{ p: theme.spacing(2), textAlign: 'center' }}>Team files</Box>
 
@@ -102,7 +120,7 @@ function EditDropdownMenu({ setShowDeleteDialog }: any) {
     setAnchorEl(null);
   };
 
-  if (hasAccess(access, 'TEAM_EDIT')) {
+  if (!hasAccess(access, 'TEAM_EDIT')) {
     return null;
   }
 
@@ -130,9 +148,6 @@ function EditDropdownMenu({ setShowDeleteDialog }: any) {
         open={open}
         onClose={handleClose}
       >
-        <MenuItem component={Link} to={ROUTES.EDIT_TEAM(uuid)}>
-          Edit
-        </MenuItem>
         <MenuItem
           onClick={() => {
             console.log(uuid);
