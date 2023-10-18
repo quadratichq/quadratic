@@ -79,14 +79,14 @@ export class Grid {
   private gridController!: GridController;
   private _dirty = false;
 
-  private transactionResponse(summary: TransactionSummary) {
-    if (!summary) return;
+  transactionResponse(summary: TransactionSummary) {
+    console.log(summary);
     if (summary.sheet_list_modified) {
       sheets.repopulate();
     }
 
-    if (summary.operations.length) {
-      pixiApp.cellsSheets.operations(summary.operations);
+    if (summary.cell_sheets_modified.length) {
+      pixiApp.cellsSheets.modified(summary.cell_sheets_modified);
     }
 
     if (summary.fill_sheets_modified.length) {
@@ -615,3 +615,12 @@ export class Grid {
 //#end
 
 export const grid = new Grid();
+
+// workaround so Rust can import TS functions
+declare global {
+  interface Window {
+    transactionSummary: any;
+  }
+}
+
+window.transactionSummary = grid.transactionResponse.bind(grid);

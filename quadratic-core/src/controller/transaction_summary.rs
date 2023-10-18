@@ -2,14 +2,44 @@ use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 
-use crate::grid::{js_types::JsRenderCellUpdate, SheetId};
+use crate::{
+    grid::{RegionRef, Sheet, SheetId},
+    Pos,
+};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+const CELL_SHEET_WIDTH: u32 = 20;
+const CELL_SHEET_HEIGHT: u32 = 40;
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase")]
-pub enum OperationSummary {
-    SetCellValues(String, Vec<JsRenderCellUpdate>),
-    SetCellFormats(String, Vec<JsRenderCellUpdate>),
+pub struct CellSheetsModified {
+    sheet_id: String,
+    x: i32,
+    y: i32,
+}
+
+impl CellSheetsModified {
+    pub fn new(sheet_id: SheetId, pos: Pos) -> Self {
+        let x = (pos.x as f64 / CELL_SHEET_WIDTH as f64).floor() as i32;
+        let y = (pos.y as f64 / CELL_SHEET_HEIGHT as f64).floor() as i32;
+        Self {
+            sheet_id: sheet_id.to_string(),
+            x,
+            y,
+        }
+    }
+
+    pub fn add_region(
+        cells_sheet_modified: &mut HashSet<CellSheetsModified>,
+        sheet: &Sheet,
+        region: &RegionRef,
+    ) {
+        region.iter().for_each(|cell_ref| {
+            if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
+                cells_sheet_modified.insert(Self::new(sheet.id, pos));
+            }
+        });
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
@@ -27,7 +57,8 @@ pub struct TransactionSummary {
     /// Sheet metadata or order was modified.
     pub sheet_list_modified: bool,
 
-    pub operations: Vec<OperationSummary>,
+    /// CellSheet regions that need updating
+    pub cell_sheets_modified: HashSet<CellSheetsModified>,
 
     /// SheetOffsets that are modified.
     pub offsets_modified: Vec<SheetId>,
@@ -45,7 +76,7 @@ impl TransactionSummary {
         self.border_sheets_modified.clear();
         self.code_cells_modified.clear();
         self.sheet_list_modified = false;
-        self.operations.clear();
+        self.cell_sheets_modified.clear();
         self.offsets_modified.clear();
         self.cursor = None;
         self.save = true;

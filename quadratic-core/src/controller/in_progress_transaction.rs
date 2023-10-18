@@ -79,7 +79,7 @@ impl InProgressTransaction {
                 break;
             }
             if self.cells_to_compute.is_empty() {
-                self.finalize(grid_controller);
+                self.finalize();
                 break;
             }
         }
@@ -166,13 +166,13 @@ impl InProgressTransaction {
             } else {
                 "Sheet not found".to_string()
             };
-            self.code_cell_error(grid_controller, msg, get_cells.line_number());
+            self.code_cell_sheet_error(grid_controller, msg, get_cells.line_number());
             None
         }
     }
 
     // todo: this should propagate, actually save the error to the cell, and continue the compute loop
-    fn code_cell_error(
+    fn code_cell_sheet_error(
         &mut self,
         grid_controller: &mut GridController,
         error_msg: String,
@@ -200,7 +200,6 @@ impl InProgressTransaction {
         };
         let error = Error { span, msg };
         let result = CodeCellRunResult::Err { error };
-
         updated_code_cell_value.output = Some(CodeCellRunOutput {
             std_out: None,
             std_err: Some(error_msg.into()),
@@ -214,33 +213,33 @@ impl InProgressTransaction {
             &mut self.reverse_operations,
             &mut self.summary,
         );
+        self.waiting_for_async = None;
         self.loop_compute(grid_controller);
     }
 
     /// finalize the compute cycle
-    pub fn finalize(&mut self, grid_controller: &mut GridController) {
+    fn finalize(&mut self) {
         if self.cells_to_compute.is_empty() {
             self.complete = true;
             self.summary.save = true;
-            let old_deps = if let Some(current_code_cell) = self.current_code_cell.as_ref() {
-                current_code_cell.cells_accessed_copy()
-            } else {
-                None
-            };
-            let deps = if self.cells_accessed.len() > 0 {
-                Some(self.cells_accessed.clone())
-            } else {
-                None
-            };
-            if deps != old_deps {
-                grid_controller.update_dependent_cells(
-                    self.current_cell_ref.unwrap(),
-                    deps,
-                    old_deps,
-                );
-            } else if cfg!(feature = "show-operations") {
-                crate::util::dbgjs("[Dependent Cells] unchanged");
-            }
+        }
+    }
+
+    fn update_deps(&mut self, grid_controller: &mut GridController) {
+        let old_deps = if let Some(current_code_cell) = self.current_code_cell.as_ref() {
+            current_code_cell.cells_accessed_copy()
+        } else {
+            None
+        };
+        let deps = if self.cells_accessed.len() > 0 {
+            Some(self.cells_accessed.clone())
+        } else {
+            None
+        };
+        if deps != old_deps {
+            grid_controller.update_dependent_cells(self.current_cell_ref.unwrap(), deps, old_deps);
+        } else if cfg!(feature = "show-operations") {
+            crate::util::dbgjs("[Dependent Cells] unchanged");
         }
     }
 
@@ -288,7 +287,10 @@ impl InProgressTransaction {
                     } else {
                         panic!("Expected current_sheet_pos to be defined in transaction::complete");
                     };
-                    update_code_cell_value(grid_controller, cell_ref, Some(updated_code_cell_value), &mut Some(&mut self.cells_to_compute), &mut self.reverse_operations, &mut self.summary);
+                    if update_code_cell_value(grid_controller, cell_ref, Some(updated_code_cell_value), &mut Some(&mut self.cells_to_compute), &mut self.reverse_operations, &mut self.summary) {
+                        // updates the dependencies only if the calculation was successful
+                        self.update_deps(grid_controller);
+                    }
                     self.waiting_for_async = None;
                 }
                 _ => panic!("Transaction.complete called for an unhandled language"),
@@ -434,30 +436,6 @@ mod test {
             true,
             crate::controller::transactions::TransactionType::Normal,
         );
-
-        assert_eq!(
-            gc.js_get_code_string(sheet_ids[0].to_string(), &Pos { x: 1, y: 0 }),
-            Some(CodeCell::new(
-                "c(0, 0) + 1".to_string(),
-                CodeCellLanguage::Python
-            ))
-        );
-        assert_eq!(gc.in_progress_transaction.is_some(), true);
-        if let Some(transaction) = gc.in_progress_transaction.clone() {
-            assert_eq!(transaction.complete, false);
-            assert_eq!(transaction.cells_to_compute.len(), 0);
-        }
-        gc.calculation_get_cells(JsComputeGetCells::new(
-            crate::Rect::single_pos(Pos { x: 0, y: 0 }),
-            None,
-            None,
-        ));
-
-        let result = JsCodeResult::new(true, None, None, None, Some("10".to_string()), None, None);
-
-        let summary = gc.calculation_complete(result);
-        assert_eq!(summary.save, true);
-        assert_eq!(summary.code_cells_modified, HashSet::from([sheet_id]));
 
         assert_eq!(
             gc.js_get_code_string(sheet_ids[0].to_string(), &Pos { x: 1, y: 0 }),

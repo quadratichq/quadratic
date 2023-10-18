@@ -6,3 +6,7 @@ export const runPython = async (
 ): Promise<void> => {
   return await window.startPython(python_code, getCells);
 };
+
+export const transactionSummary = async (transactionSummary: any) => {
+  return window.transactionSummary(transactionSummary);
+};

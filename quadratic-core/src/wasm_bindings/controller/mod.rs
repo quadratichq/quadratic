@@ -98,7 +98,7 @@ impl GridController {
             fill_sheets_modified: vec![],
             border_sheets_modified: vec![],
             code_cells_modified: HashSet::new(),
-            operations: vec![],
+            cell_sheets_modified: HashSet::new(),
             sheet_list_modified: false,
             cursor: None,
             offsets_modified: vec![],

@@ -50,29 +50,6 @@ impl From<Pos> for JsRenderCell {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase")]
-pub enum JsRenderCellUpdateEnum {
-    Value(Option<String>),
-    Language(Option<CodeCellLanguage>),
-    Align(Option<CellAlign>),
-    Wrap(Option<CellWrap>),
-    Bold(Option<bool>),
-    Italic(Option<bool>),
-    TextColor(Option<String>),
-    FillColor(Option<String>),
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-#[serde(rename_all = "camelCase")]
-pub struct JsRenderCellUpdate {
-    pub x: i64,
-    pub y: i64,
-    pub update: JsRenderCellUpdateEnum,
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsRenderFill {
