@@ -76,25 +76,22 @@ impl GridController {
         }
     }
     pub fn calculation_complete(&mut self, result: JsCodeResult) -> TransactionSummary {
+        // todo: there's probably a better way to do this
         if let Some(transaction) = &mut self.in_progress_transaction.clone() {
             transaction.calculation_complete(self, result);
-            let summary = transaction.transaction_summary();
-            if transaction.complete {
-                self.undo_stack.push(transaction.into());
-                self.redo_stack.clear();
-                self.in_progress_transaction = None;
-            }
-            summary
+            self.in_progress_transaction = Some(transaction.to_owned());
+            transaction.transaction_summary()
         } else {
             panic!("Expected an in progress transaction");
         }
     }
 
+    /// This is used to get cells during a TS-controlled async calculation
     pub fn calculation_get_cells(&mut self, get_cells: JsComputeGetCells) -> Option<CellsForArray> {
-        // todo: there's probably a better way to do this
+        // todo: there's probably a better way to do this - the clone is necessary b/c get_cells needs a mutable grid as well
         if let Some(transaction) = &mut self.in_progress_transaction.clone() {
             let result = transaction.get_cells(self, get_cells);
-            self.in_progress_transaction = Some(transaction.clone());
+            self.in_progress_transaction = Some(transaction.to_owned());
             result
         } else {
             panic!("Expected a transaction to still be running");

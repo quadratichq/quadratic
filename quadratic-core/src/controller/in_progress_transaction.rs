@@ -79,12 +79,9 @@ impl InProgressTransaction {
                 break;
             }
             if self.cells_to_compute.is_empty() {
-                self.complete = true;
-                self.summary.save = true;
+                self.finalize(grid_controller);
                 break;
             }
-
-            // todo deps!!!
         }
     }
 
@@ -126,14 +123,13 @@ impl InProgressTransaction {
         }
     }
 
+    /// gets cells for use in async calculations
     pub fn get_cells(
         &mut self,
         grid_controller: &mut GridController,
         get_cells: JsComputeGetCells,
     ) -> Option<CellsForArray> {
         let sheet_name = get_cells.sheet_name();
-
-        crate::util::dbgjs(&format!("[Compute] get_cells {:?}", sheet_name));
 
         // if sheet_name is None, use the sheet_id from the pos
         let sheet = sheet_name.clone().map_or_else(
@@ -170,17 +166,29 @@ impl InProgressTransaction {
             } else {
                 "Sheet not found".to_string()
             };
-            self.code_cell_error(msg, get_cells.line_number());
+            self.code_cell_error(grid_controller, msg, get_cells.line_number());
             None
         }
     }
 
-    fn code_cell_error(&mut self, error_msg: String, line_number: Option<i64>) {
-        let mut code_cell = if let Some(code_cell_value) = self.current_code_cell.clone() {
-            code_cell_value
+    // todo: this should propagate, actually save the error to the cell, and continue the compute loop
+    fn code_cell_error(
+        &mut self,
+        grid_controller: &mut GridController,
+        error_msg: String,
+        line_number: Option<i64>,
+    ) {
+        let cell_ref = if let Some(cell_ref) = self.current_cell_ref {
+            cell_ref
         } else {
-            panic!("Expected current_code_cell to be defined in transaction::code_cell_error");
+            panic!("Expected current_sheet_pos to be defined in transaction::code_cell_error");
         };
+        let mut updated_code_cell_value =
+            if let Some(code_cell_value) = self.current_code_cell.clone() {
+                code_cell_value
+            } else {
+                panic!("Expected current_code_cell to be defined in transaction::code_cell_error");
+            };
         let msg = ErrorMsg::PythonError(error_msg.clone().into());
         let span = if let Some(line_number) = line_number {
             Some(Span {
@@ -193,15 +201,24 @@ impl InProgressTransaction {
         let error = Error { span, msg };
         let result = CodeCellRunResult::Err { error };
 
-        code_cell.output = Some(CodeCellRunOutput {
+        updated_code_cell_value.output = Some(CodeCellRunOutput {
             std_out: None,
             std_err: Some(error_msg.into()),
             result,
         });
+        update_code_cell_value(
+            grid_controller,
+            cell_ref,
+            Some(updated_code_cell_value),
+            &mut Some(&mut self.cells_to_compute),
+            &mut self.reverse_operations,
+            &mut self.summary,
+        );
+        self.loop_compute(grid_controller);
     }
 
-    pub fn continue_loop(&mut self, grid_controller: &mut GridController) -> bool {
-        // finalize the compute cycle
+    /// finalize the compute cycle
+    pub fn finalize(&mut self, grid_controller: &mut GridController) {
         if self.cells_to_compute.is_empty() {
             self.complete = true;
             self.summary.save = true;
@@ -224,9 +241,6 @@ impl InProgressTransaction {
             } else if cfg!(feature = "show-operations") {
                 crate::util::dbgjs("[Dependent Cells] unchanged");
             }
-            true
-        } else {
-            false
         }
     }
 
@@ -248,7 +262,10 @@ impl InProgressTransaction {
                         pos
                     ));
                 }
-                crate::util::dbgjs(self.cells_accessed.clone());
+                crate::util::dbgjs(format!(
+                    "Cells to compute in claculation complete: {}",
+                    self.cells_to_compute.len()
+                ));
             }
         }
         let (language, code_string) =
@@ -266,13 +283,13 @@ impl InProgressTransaction {
             match waiting_for_async {
               CodeCellLanguage::Python => {
                     let updated_code_cell_value = result.into_code_cell_value(language, code_string, &self.cells_accessed);
-                    let sheet_pos = if let Some(sheet_pos) = self.current_cell_ref {
+                    let cell_ref = if let Some(sheet_pos) = self.current_cell_ref {
                         sheet_pos
                     } else {
                         panic!("Expected current_sheet_pos to be defined in transaction::complete");
                     };
-                    update_code_cell_value(grid_controller, sheet_pos, Some(updated_code_cell_value), &mut Some(&mut self.cells_to_compute), &mut self.reverse_operations, &mut self.summary);
-
+                    update_code_cell_value(grid_controller, cell_ref, Some(updated_code_cell_value), &mut Some(&mut self.cells_to_compute), &mut self.reverse_operations, &mut self.summary);
+                    self.waiting_for_async = None;
                 }
                 _ => panic!("Transaction.complete called for an unhandled language"),
             }
@@ -280,19 +297,24 @@ impl InProgressTransaction {
         }
         // continue the compute loop after a successful async call
         self.loop_compute(grid_controller);
-        self.continue_loop(grid_controller);
     }
 
     /// checks the next cell in the cells_to_compute and computes it
     /// returns true if an async call is made or the compute cycle is completed
     fn compute(&mut self, grid_controller: &mut GridController) {
+        if cfg!(feature = "show-operations") {
+            crate::util::dbgjs(&format!(
+                "[Compute] Cells to compute: {}",
+                self.cells_to_compute.len()
+            ));
+        }
         if let Some(cell_ref) = self.cells_to_compute.pop() {
             // todo: this would be a good place to check for cycles
             // add all dependent cells to the cells_to_compute
             if let Some(dependent_cells) = grid_controller.get_dependent_cells(cell_ref) {
                 if cfg!(feature = "show-operations") {
                     crate::util::dbgjs(&format!(
-                        "[Compute: Add Dependencies] {}",
+                        "[Compute] Add dependencies: {}",
                         Dependencies::to_debug(
                             cell_ref,
                             dependent_cells,
@@ -314,6 +336,9 @@ impl InProgressTransaction {
                 // add the updated cells to the cells_to_compute
 
                 if let Some(code_cell) = sheet.get_code_cell(pos) {
+                    if cfg!(feature = "show-operations") {
+                        crate::util::dbgjs("[Compute] Code cell found");
+                    }
                     self.current_cell_ref = Some(cell_ref);
                     self.current_code_cell = Some(code_cell.clone());
                     let code_string = code_cell.code_string.clone();
