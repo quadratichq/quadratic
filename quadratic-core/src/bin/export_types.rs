@@ -1,6 +1,9 @@
 use std::fs::create_dir_all;
 
-use quadratic_core::{controller::transaction_summary::TransactionSummary, *};
+use quadratic_core::{
+    controller::transaction_summary::{CellSheetsModified, TransactionSummary},
+    *,
+};
 use ts_rs::TS;
 
 macro_rules! generate_type_declarations {
@@ -19,6 +22,7 @@ fn main() {
 
     s += &generate_type_declarations!(
         TransactionSummary,
+        CellSheetsModified,
         formulas::RangeRef,
         formulas::CellRef,
         formulas::CellRefCoord,

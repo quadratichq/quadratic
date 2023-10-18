@@ -2,7 +2,7 @@ import { Container, Graphics, Rectangle } from 'pixi.js';
 import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '../../debugFlags';
 import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { JsRenderCellUpdate } from '../../quadratic-core/types';
+import { CellSheetsModified } from '../../quadratic-core/types';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { Coordinate } from '../types/size';
@@ -393,7 +393,7 @@ export class CellsSheet extends Container {
   update(): boolean {
     if (this.updateHeadings()) return true;
     this.cellsTextHashContainer.children.forEach((cellTextHash) => {
-      if (cellTextHash.updateDirtyLabels()) {
+      if (cellTextHash.update()) {
         return true;
       }
     });
@@ -437,14 +437,11 @@ export class CellsSheet extends Container {
   }
 
   // update values for cells
-  updateCells(updates: JsRenderCellUpdate[]): void {
-    for (const update of updates) {
-      // need to convert to any b/c of the way Rust enums are converted to TS
-      const cellUpdate = update.update as any;
-      // only create a hash if the cell has a value
-      const cellsHash = this.getCellsHash(Number(update.x), Number(update.y), !!cellUpdate.value);
+  modified(modified: CellSheetsModified[]): void {
+    for (const update of modified) {
+      const cellsHash = this.getCellsHash(Number(update.x), Number(update.y), true);
       if (cellsHash) {
-        cellsHash.updateCells(update);
+        cellsHash.dirty = true;
       }
     }
   }

@@ -1,6 +1,6 @@
 import { Container, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
-import { OperationSummary, SheetId } from '../../quadratic-core/types';
+import { CellSheetsModified, SheetId } from '../../quadratic-core/types';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { CellsSheet } from './CellsSheet';
@@ -131,20 +131,13 @@ export class CellsSheets extends Container<CellsSheet> {
     return this.current.getCellsContentMaxWidth(column);
   }
 
-  operations(operations: OperationSummary[]): void {
-    operations.forEach((op) => {
-      // need to convert to any to work through the operation type (not ideal)
-      const operation = op as any;
-      if (operation.setCellValues) {
-        const cellsSheet = this.getById(operation.setCellValues[0]);
-        if (!cellsSheet) throw new Error('Expected to find cellsSheet in cellsSheets.operations');
-        cellsSheet.updateCells(operation.setCellValues[1]);
-      } else if (operation.setCellFormats) {
-        const cellsSheet = this.getById(operation.setCellFormats[0]);
-        if (!cellsSheet) throw new Error('Expected to find cellsSheet in cellsSheets.operations');
-        cellsSheet.updateCells(operation.setCellFormats[1]);
+  modified(cellSheetsModified: CellSheetsModified[]): void {
+    for (const cellSheet of this.children) {
+      const modified = cellSheetsModified.filter((modified) => modified.sheet_id === cellSheet.sheet.id);
+      if (modified.length) {
+        cellSheet.modified(modified);
       }
-    });
+    }
   }
 
   updateCodeCells(codeCells: SheetId[]): void {
