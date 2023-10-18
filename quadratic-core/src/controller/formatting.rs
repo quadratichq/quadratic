@@ -200,6 +200,27 @@ mod test {
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "red");
         assert_eq!(get(&gc, pos3), "red");
+
+        // delete and redo
+        gc.delete_cell_values(sheet_id, rect1, None);
+        assert_eq!(get(&gc, pos1), "blue");
+        assert_eq!(get(&gc, pos2), "red");
+        assert_eq!(get(&gc, pos3), "red");
+
+        gc.clear_formatting(sheet_id, rect1, None);
+        assert_eq!(get(&gc, pos1), "");
+        assert_eq!(get(&gc, pos2), "");
+        assert_eq!(get(&gc, pos3), "red");
+
+        gc.undo(None);
+        assert_eq!(get(&gc, pos1), "blue");
+        assert_eq!(get(&gc, pos2), "red");
+        assert_eq!(get(&gc, pos3), "red");
+
+        gc.redo(None);
+        assert_eq!(get(&gc, pos1), "");
+        assert_eq!(get(&gc, pos2), "");
+        assert_eq!(get(&gc, pos3), "red");
     }
 
     #[test]
