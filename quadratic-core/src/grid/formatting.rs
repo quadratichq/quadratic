@@ -2,6 +2,7 @@ use std::fmt;
 use std::ops::{BitOr, BitOrAssign};
 
 use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumString};
 
 use super::{block::SameValue, Column, ColumnData};
 
@@ -91,7 +92,7 @@ impl CellFmtAttr for FillColor {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub enum CellAlign {
@@ -100,7 +101,9 @@ pub enum CellAlign {
     Right,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(
+    Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString,
+)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub enum CellWrap {

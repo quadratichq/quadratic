@@ -17,10 +17,8 @@ impl GridController {
     /// Imports a [`GridController`] from a JSON string.
     #[wasm_bindgen(js_name = "newFromFile")]
     pub fn js_new_from_file(file: &str) -> Result<GridController, JsValue> {
-        let result = file::import(file);
-        crate::util::dbgjs(&result);
         Ok(GridController::from_grid(
-            result.map_err(|e| e.to_string())?,
+            file::import(file).map_err(|e| e.to_string())?,
         ))
     }
 

@@ -7,7 +7,7 @@ use crate::{Array, ArraySize, Error, ErrorMsg, Span};
 
 use super::v1_5::*;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct GridSchemaV1_4 {
     pub sheets: Vec<JsSheetSchema>,
     pub cell_dependency: String,
