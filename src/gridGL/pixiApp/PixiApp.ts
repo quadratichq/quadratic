@@ -310,11 +310,15 @@ export class PixiApp {
     }
   }
 
-  updateCursorPosition(): void {
+  updateCursorPosition(
+    options = {
+      ensureVisible: true,
+    }
+  ): void {
     this.cursor.dirty = true;
     this.headings.dirty = true;
 
-    ensureVisible();
+    if (options.ensureVisible) ensureVisible();
 
     // triggers useGetBorderMenu clearSelection()
     window.dispatchEvent(new CustomEvent('cursor-position'));
