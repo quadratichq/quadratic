@@ -335,7 +335,7 @@ impl TransactionInProgress {
                             // python is run async so we exit the compute cycle and wait for TS to restart the transaction
                             if !cfg!(test) {
                                 let result = crate::wasm_bindings::js::runPython(code_string);
-                                crate::util::dbgjs(&format!("Python result: {:?}", result));
+
                                 // run python will return false if python is not loaded (this can be generalized if we need to return a different error)
                                 if result == JsValue::FALSE {
                                     let msg =
