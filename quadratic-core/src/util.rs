@@ -251,10 +251,10 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
 
 /// For debugging both in tests and in the JS console
 pub fn dbgjs(val: impl fmt::Debug) {
-    #[cfg(not(test))]
+    #[cfg(feature = "js")]
     crate::wasm_bindings::js::log(&(format!("{:?}", val)));
 
-    #[cfg(test)]
+    #[cfg(not(feature = "js"))]
     dbg!(val);
 }
 
