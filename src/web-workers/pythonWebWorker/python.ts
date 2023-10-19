@@ -40,7 +40,6 @@ class PythonWebWorker {
           pythonResult.line_number
         );
         grid.calculationComplete(result);
-
         // triggers any CodeEditor updates (if necessary)
         window.dispatchEvent(new CustomEvent('computation-complete'));
       } else if (event.type === 'get-cells') {
@@ -50,12 +49,15 @@ class PythonWebWorker {
         }
         const cells = grid.calculationGetCells(
           pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
-          range.sheet ? range.sheet.toString() : undefined,
+          range.sheet !== undefined ? range.sheet.toString() : undefined,
           event.range?.lineNumber
         );
         // cells will be undefined if the sheet_id (currently name) is invalid
         if (cells && this.worker) {
           this.worker.postMessage({ type: 'get-cells', cells });
+        } else {
+          // triggers any CodeEditor updates (if necessary)
+          window.dispatchEvent(new CustomEvent('computation-complete'));
         }
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
