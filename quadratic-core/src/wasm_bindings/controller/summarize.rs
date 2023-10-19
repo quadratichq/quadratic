@@ -74,17 +74,14 @@ mod tests {
     use crate::wasm_bindings::GridController;
     use crate::{Pos, Rect};
 
-    #[tokio::test]
-    async fn test_summarize() {
+    #[test]
+    fn test_summarize() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, String::from("12.12"), None)
-            .await;
-        gc.set_cell_value(sheet_id, Pos { x: 1, y: 2 }, String::from("12313"), None)
-            .await;
-        gc.set_cell_value(sheet_id, Pos { x: 1, y: 3 }, String::from("0"), None)
-            .await;
+        gc.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, String::from("12.12"), None);
+        gc.set_cell_value(sheet_id, Pos { x: 1, y: 2 }, String::from("12313"), None);
+        gc.set_cell_value(sheet_id, Pos { x: 1, y: 3 }, String::from("0"), None);
 
         let rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 10 });
         let result = gc
