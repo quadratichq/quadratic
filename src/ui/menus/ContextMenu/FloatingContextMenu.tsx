@@ -25,6 +25,7 @@ import { copySelectionToPNG, fullClipboardSupport } from '../../../grid/actions/
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
+import { focusGrid } from '../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
@@ -252,10 +253,12 @@ export const FloatingContextMenu = (props: Props) => {
             onChangeComplete={(color) => {
               textColorRef.current?.closeMenu();
               setTextColor(color);
+              focusGrid();
             }}
             onClear={() => {
               textColorRef.current?.closeMenu();
               setTextColor(undefined);
+              focusGrid();
             }}
           />
         </Menu>
@@ -297,10 +300,12 @@ export const FloatingContextMenu = (props: Props) => {
             onChangeComplete={(color) => {
               fillColorRef.current?.closeMenu();
               setFillColor(color);
+              focusGrid();
             }}
             onClear={() => {
               fillColorRef.current?.closeMenu();
               setFillColor(undefined);
+              focusGrid();
             }}
           />
         </Menu>
