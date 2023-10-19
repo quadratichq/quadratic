@@ -1,3 +1,5 @@
+use indexmap::IndexSet;
+
 use crate::{grid::*, values::IsBlank, Array, CellValue};
 
 use super::{
@@ -15,7 +17,7 @@ impl GridController {
     pub fn execute_operation(
         &mut self,
         op: Operation,
-        cells_to_compute: &mut Vec<CellRef>,
+        cells_to_compute: &mut IndexSet<CellRef>,
         summary: &mut TransactionSummary,
     ) -> Operation {
         let mut cells_deleted = vec![];
@@ -34,7 +36,7 @@ impl GridController {
                         if value.is_blank() {
                             cells_deleted.push(pos);
                         } else {
-                            cells_to_compute.push(cell_ref);
+                            cells_to_compute.insert(cell_ref);
                         }
                         summary
                             .cell_sheets_modified
@@ -66,7 +68,7 @@ impl GridController {
                     &mut reverse_operations,
                     summary,
                 );
-                cells_to_compute.push(cell_ref);
+                cells_to_compute.insert(cell_ref);
                 reverse_operations[0].clone()
             }
             Operation::SetCellFormats { region, attr } => {

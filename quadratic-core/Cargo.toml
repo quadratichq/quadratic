@@ -20,7 +20,7 @@ name = "export_types"
 path = "src/bin/export_types.rs"
 
 [features]
-default = ["console_error_panic_hook", "js", "show-operations"]
+default = ["console_error_panic_hook", "js"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
 js = ["js-sys", "serde-wasm-bindgen", "ts-rs", "wasm-bindgen", "wasm-bindgen-futures"]
 show-operations = []
@@ -62,6 +62,7 @@ lexicon_fractional_index = "0.0.3"
 htmlescape = "0.3.1"
 bigdecimal = { version = "0.4.1", features = ["serde"] }
 csv = "1.2.2"
+indexmap = "2.0.2"
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }

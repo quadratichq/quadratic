@@ -10,6 +10,7 @@ import {
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
+import { focusGrid } from '../../../helpers/focusGrid';
 import { CodeCellLanguage } from '../../../quadratic-core/quadratic_core';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
@@ -27,12 +28,6 @@ export const CodeEditor = () => {
     () => ({ x: editorInteractionState.selectedCell.x, y: editorInteractionState.selectedCell.y }),
     [editorInteractionState.selectedCell.x, editorInteractionState.selectedCell.y]
   );
-
-  // ensures that the console is updated after the code cell is run (for async calculations, like Python)
-  useEffect(() => {
-    window.addEventListener('computation-complete', updateCodeCell);
-    return () => window.removeEventListener('computation-complete', updateCodeCell);
-  });
 
   // update code cell
   const [codeString, setCodeString] = useState('');
@@ -55,6 +50,13 @@ export const CodeEditor = () => {
       setOut(undefined);
     }
   }, [editorInteractionState.selectedCell.x, editorInteractionState.selectedCell.y]);
+
+  // ensures that the console is updated after the code cell is run (for async calculations, like Python)
+  useEffect(() => {
+    window.addEventListener('computation-complete', updateCodeCell);
+    return () => window.removeEventListener('computation-complete', updateCodeCell);
+  });
+
   useEffect(() => {
     updateCodeCell();
   }, [updateCodeCell]);
@@ -84,6 +86,7 @@ export const CodeEditor = () => {
           showCodeEditor: false,
         }));
         setEditorHighlightedCells(editorHighlightedCellsStateDefault);
+        focusGrid();
       }
     },
     [codeString, editorContent, setEditorHighlightedCells, setEditorInteractionState]
@@ -107,8 +110,6 @@ export const CodeEditor = () => {
       codeString: editorContent ?? '',
       language,
     });
-    // todo: it's not done yet!!! ugh...
-    updateCodeCell();
     isRunningComputation.current = false;
   };
 

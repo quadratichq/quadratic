@@ -2,7 +2,6 @@ import { Container, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { CellSheetsModified, SheetId } from '../../quadratic-core/types';
 import { pixiApp } from '../pixiApp/PixiApp';
-import { Coordinate } from '../types/size';
 import { CellsSheet } from './CellsSheet';
 
 export class CellsSheets extends Container<CellsSheet> {
@@ -67,27 +66,6 @@ export class CellsSheets extends Container<CellsSheet> {
     return this.children.find((search) => search.sheet.id === id);
   }
 
-  changed(options: {
-    sheetId: string;
-    column?: number;
-    row?: number;
-    cells?: Coordinate[];
-    rectangle?: Rectangle;
-    labels: boolean;
-    background: boolean;
-  }): void {
-    const cellsSheet = this.getById(options.sheetId);
-    if (!cellsSheet) throw new Error('Expected to find cellsSheet in changed');
-    cellsSheet.changed({
-      cells: options.cells,
-      column: options.column,
-      row: options.row,
-      rectangle: options.rectangle,
-      labels: options.labels,
-      background: options.background,
-    });
-  }
-
   // this updates the first dirty CellsSheet, always starting with the current sheet
   update(): void {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets');
@@ -144,6 +122,9 @@ export class CellsSheets extends Container<CellsSheet> {
     this.children.forEach((cellsSheet) => {
       if (codeCells.find((id) => id.id === cellsSheet.sheet.id)) {
         cellsSheet.updateCellsArray();
+        if (sheets.sheet.id === cellsSheet.sheet.id) {
+          window.dispatchEvent(new CustomEvent('computation-complete'));
+        }
       }
     });
   }

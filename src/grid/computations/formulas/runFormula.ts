@@ -1,5 +1,7 @@
 import { Coordinate } from '../../../gridGL/types/size';
 
+// TODO: Delete this file
+
 export interface runFormulaReturnType {
   cells_accessed: [number, number][];
   success: boolean;

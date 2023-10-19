@@ -1,3 +1,5 @@
+use indexmap::IndexSet;
+
 use crate::{
     grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
     wasm_bindings::js::runPython,
@@ -6,23 +8,23 @@ use crate::{
 
 use super::{
     code_cell_update::update_code_cell_value,
-    dependencies::Dependencies,
     operation::Operation,
     transaction_summary::TransactionSummary,
     transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
-    transactions::Transaction,
+    transactions::{Transaction, TransactionType},
     GridController,
 };
 
 // only one InProgressTransaction can exist at a time (or no Transaction)
 
 #[derive(Debug, Default, Clone)]
-pub struct InProgressTransaction {
+pub struct TransactionInProgress {
     reverse_operations: Vec<Operation>,
-    cells_to_compute: Vec<CellRef>,
+    cells_to_compute: IndexSet<CellRef>,
     pub cursor: Option<String>,
     cells_accessed: Vec<CellRef>,
-    summary: TransactionSummary,
+    pub summary: TransactionSummary,
+    pub transaction_type: TransactionType,
 
     // save code_cell info for async calls
     current_code_cell: Option<CodeCellValue>,
@@ -33,7 +35,7 @@ pub struct InProgressTransaction {
     pub complete: bool,
 }
 
-impl InProgressTransaction {
+impl TransactionInProgress {
     /// Creates and runs a new Transaction
     ///
     /// Description
@@ -43,13 +45,14 @@ impl InProgressTransaction {
         operations: Vec<Operation>,
         cursor: Option<String>,
         compute: bool,
+        transaction_type: TransactionType,
     ) -> Self {
         let mut transaction = Self {
             reverse_operations: vec![],
             summary: TransactionSummary::default(),
             cursor,
-
-            cells_to_compute: vec![],
+            transaction_type,
+            cells_to_compute: IndexSet::new(),
             cells_accessed: vec![],
 
             current_code_cell: None,
@@ -79,13 +82,13 @@ impl InProgressTransaction {
                 break;
             }
             if self.cells_to_compute.is_empty() {
-                self.finalize();
+                self.finalize(grid_controller);
                 break;
             }
         }
     }
 
-    /// returns the TransactionSummary and clears it for future updates
+    /// returns the TransactionSummary
     pub fn transaction_summary(&mut self) -> TransactionSummary {
         let summary = self.summary.clone();
         self.summary.clear();
@@ -129,20 +132,35 @@ impl InProgressTransaction {
         grid_controller: &mut GridController,
         get_cells: JsComputeGetCells,
     ) -> Option<CellsForArray> {
+        // ensure that the get_cells is not requesting a reference to itself
+        let (current_sheet, pos) = if let Some(current_cell_ref) = self.current_cell_ref {
+            let sheet = grid_controller.sheet(current_cell_ref.sheet);
+            let pos = if let Some(pos) = sheet.cell_ref_to_pos(current_cell_ref) {
+                pos
+            } else {
+                panic!("Expected current_cell_ref's sheet to be defined in transaction::get_cells");
+            };
+            (sheet, pos)
+        } else {
+            panic!("Expected current_sheet_pos to be defined in transaction::get_cells");
+        };
+
+        if get_cells.rect().contains(pos) {
+            // unable to find sheet by name, generate error
+            let msg = if let Some(line_number) = get_cells.line_number() {
+                format!("cell cannot reference itself at line {}", line_number)
+            } else {
+                "Sheet not found".to_string()
+            };
+            self.code_cell_sheet_error(grid_controller, msg, get_cells.line_number());
+            return Some(CellsForArray::new(vec![], true));
+        }
+
         let sheet_name = get_cells.sheet_name();
 
         // if sheet_name is None, use the sheet_id from the pos
         let sheet = sheet_name.clone().map_or_else(
-            || {
-                if self.current_cell_ref.is_none() {
-                    panic!("Expected current_sheet_pos to be defined in transaction::get_cells");
-                }
-                Some(
-                    grid_controller
-                        .grid
-                        .sheet_from_id(self.current_cell_ref.unwrap().sheet),
-                )
-            },
+            || Some(current_sheet),
             |sheet_name| grid_controller.grid.sheet_from_name(sheet_name),
         );
 
@@ -167,11 +185,10 @@ impl InProgressTransaction {
                 "Sheet not found".to_string()
             };
             self.code_cell_sheet_error(grid_controller, msg, get_cells.line_number());
-            None
+            Some(CellsForArray::new(vec![], true))
         }
     }
 
-    // todo: this should propagate, actually save the error to the cell, and continue the compute loop
     fn code_cell_sheet_error(
         &mut self,
         grid_controller: &mut GridController,
@@ -213,16 +230,16 @@ impl InProgressTransaction {
             &mut self.reverse_operations,
             &mut self.summary,
         );
+        self.summary.code_cells_modified.insert(cell_ref.sheet);
         self.waiting_for_async = None;
         self.loop_compute(grid_controller);
     }
 
     /// finalize the compute cycle
-    fn finalize(&mut self) {
-        if self.cells_to_compute.is_empty() {
-            self.complete = true;
-            self.summary.save = true;
-        }
+    fn finalize(&mut self, grid_controller: &mut GridController) {
+        self.complete = true;
+        self.summary.save = true;
+        grid_controller.finalize_transaction(self);
     }
 
     fn update_deps(&mut self, grid_controller: &mut GridController) {
@@ -238,8 +255,6 @@ impl InProgressTransaction {
         };
         if deps != old_deps {
             grid_controller.update_dependent_cells(self.current_cell_ref.unwrap(), deps, old_deps);
-        } else if cfg!(feature = "show-operations") {
-            crate::util::dbgjs("[Dependent Cells] unchanged");
         }
     }
 
@@ -251,21 +266,6 @@ impl InProgressTransaction {
     ) {
         if self.complete {
             panic!("Transaction is already complete");
-        }
-        if cfg!(feature = "show-operations") {
-            if let Some(current_cell_ref) = self.current_cell_ref {
-                let sheet = grid_controller.sheet(current_cell_ref.sheet);
-                if let Some(pos) = sheet.cell_ref_to_pos(current_cell_ref) {
-                    crate::util::dbgjs(&format!(
-                        "[Compute] Async calculation returned for {:?}",
-                        pos
-                    ));
-                }
-                crate::util::dbgjs(format!(
-                    "Cells to compute in claculation complete: {}",
-                    self.cells_to_compute.len()
-                ));
-            }
         }
         let (language, code_string) =
             if let Some(old_code_cell_value) = self.current_code_cell.clone() {
@@ -314,19 +314,7 @@ impl InProgressTransaction {
             // todo: this would be a good place to check for cycles
             // add all dependent cells to the cells_to_compute
             if let Some(dependent_cells) = grid_controller.get_dependent_cells(cell_ref) {
-                if cfg!(feature = "show-operations") {
-                    crate::util::dbgjs(&format!(
-                        "[Compute] Add dependencies: {}",
-                        Dependencies::to_debug(
-                            cell_ref,
-                            dependent_cells,
-                            grid_controller.grid.sheet_from_id(cell_ref.sheet),
-                        ),
-                    ));
-                }
                 self.cells_to_compute.extend(dependent_cells);
-            } else {
-                crate::util::dbgjs("[Compute] No dependent cells");
             }
 
             let sheet = grid_controller.grid.sheet_mut_from_id(cell_ref.sheet);
@@ -338,9 +326,6 @@ impl InProgressTransaction {
                 // add the updated cells to the cells_to_compute
 
                 if let Some(code_cell) = sheet.get_code_cell(pos) {
-                    if cfg!(feature = "show-operations") {
-                        crate::util::dbgjs("[Compute] Code cell found");
-                    }
                     self.current_cell_ref = Some(cell_ref);
                     self.current_code_cell = Some(code_cell.clone());
                     let code_string = code_cell.code_string.clone();
@@ -350,9 +335,6 @@ impl InProgressTransaction {
                             // python is run async so we exit the compute cycle and wait for TS to restart the transaction
                             if !cfg!(test) {
                                 runPython(code_string);
-                            }
-                            if cfg!(feature = "show-operations") {
-                                crate::util::dbgjs("[Compute] Python code running")
                             }
                             self.waiting_for_async = Some(language);
                         }
@@ -369,7 +351,7 @@ impl InProgressTransaction {
     }
 }
 
-impl Into<Transaction> for InProgressTransaction {
+impl Into<Transaction> for TransactionInProgress {
     fn into(self) -> Transaction {
         Transaction {
             ops: self.reverse_operations.into_iter().rev().collect(),
@@ -378,7 +360,7 @@ impl Into<Transaction> for InProgressTransaction {
     }
 }
 
-impl Into<Transaction> for &mut InProgressTransaction {
+impl Into<Transaction> for &TransactionInProgress {
     fn into(self) -> Transaction {
         Transaction {
             ops: self.reverse_operations.clone().into_iter().rev().collect(),
@@ -387,7 +369,16 @@ impl Into<Transaction> for &mut InProgressTransaction {
     }
 }
 
-impl From<Transaction> for InProgressTransaction {
+impl Into<Transaction> for &mut TransactionInProgress {
+    fn into(self) -> Transaction {
+        Transaction {
+            ops: self.reverse_operations.clone().into_iter().rev().collect(),
+            cursor: self.cursor.clone(),
+        }
+    }
+}
+
+impl From<Transaction> for TransactionInProgress {
     fn from(value: Transaction) -> Self {
         Self {
             cursor: value.cursor,
@@ -444,8 +435,8 @@ mod test {
                 CodeCellLanguage::Python
             ))
         );
-        assert_eq!(gc.in_progress_transaction.is_some(), true);
-        if let Some(transaction) = gc.in_progress_transaction.clone() {
+        assert_eq!(gc.transaction_in_progress.is_some(), true);
+        if let Some(transaction) = gc.transaction_in_progress.clone() {
             assert_eq!(transaction.complete, false);
             assert_eq!(transaction.cells_to_compute.len(), 0);
         }

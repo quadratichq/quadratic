@@ -1,6 +1,10 @@
+use std::ops::Range;
+
+use indexmap::IndexSet;
+
 use crate::{
     grid::{CellRef, CodeCellValue, Sheet},
-    ArraySize, Pos, Value,
+    Pos, Value,
 };
 
 use super::{
@@ -15,7 +19,7 @@ pub fn update_code_cell_value(
     grid_controller: &mut GridController,
     cell_ref: CellRef,
     updated_code_cell_value: Option<CodeCellValue>,
-    cells_to_compute: &mut Option<&mut Vec<CellRef>>,
+    cells_to_compute: &mut Option<&mut IndexSet<CellRef>>,
     reverse_operations: &mut Vec<Operation>,
     summary: &mut TransactionSummary,
 ) -> bool {
@@ -31,18 +35,24 @@ pub fn update_code_cell_value(
                         success = true;
                         match output_value {
                             Value::Array(array) => {
-                                for x in 0..array.size().w.into() {
+                                for x in 0..array.width() {
                                     let column_id =
                                         sheet.get_or_create_column(pos.x + x as i64).0.id;
-                                    for y in 0..array.size().h.into() {
-                                        summary
-                                            .cell_sheets_modified
-                                            .insert(CellSheetsModified::new(sheet.id, pos.into()));
+                                    for y in 0..array.height() {
+                                        summary.cell_sheets_modified.insert(
+                                            CellSheetsModified::new(
+                                                sheet.id,
+                                                Pos {
+                                                    x: pos.x,
+                                                    y: pos.y + y as i64,
+                                                },
+                                            ),
+                                        );
                                         let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
                                         // add all but the first cell to the compute cycle
                                         if x != 0 && y != 0 {
                                             if let Some(cells_to_compute) = cells_to_compute {
-                                                cells_to_compute.push(CellRef {
+                                                cells_to_compute.insert(CellRef {
                                                     sheet: sheet.id,
                                                     column: column_id,
                                                     row: row_id,
@@ -52,13 +62,17 @@ pub fn update_code_cell_value(
                                     }
                                 }
                             }
-                            Value::Single(..) => (),
+                            Value::Single(..) => {
+                                summary
+                                    .cell_sheets_modified
+                                    .insert(CellSheetsModified::new(sheet.id, pos));
+                            }
                         };
                     }
                     None => {
                         summary
                             .cell_sheets_modified
-                            .insert(CellSheetsModified::new(sheet.id, pos.into()));
+                            .insert(CellSheetsModified::new(sheet.id, pos));
                     }
                 };
             }
@@ -87,23 +101,32 @@ pub fn fetch_code_cell_difference(
     old_code_cell_value: Option<CodeCellValue>,
     new_code_cell_value: Option<CodeCellValue>,
     summary: &mut TransactionSummary,
-    cells_to_compute: &mut Option<&mut Vec<CellRef>>,
+    cells_to_compute: &mut Option<&mut IndexSet<CellRef>>,
 ) {
-    let old_size = if let Some(old_code_cell_value) = old_code_cell_value {
-        old_code_cell_value.output_size()
+    let (old_w, old_h) = if let Some(old_code_cell_value) = old_code_cell_value {
+        let size = old_code_cell_value.output_size();
+        (size.w.get(), size.h.get())
     } else {
-        ArraySize::_1X1
+        (0, 0)
     };
-    let new_size = if let Some(new_code_cell_value) = new_code_cell_value {
-        new_code_cell_value.output_size()
+    let (new_w, new_h) = if let Some(new_code_cell_value) = new_code_cell_value {
+        let size = new_code_cell_value.output_size();
+        (size.w.get(), size.h.get())
     } else {
-        ArraySize::_1X1
+        (0, 0)
     };
 
-    if old_size.w > new_size.w {
-        for x in new_size.w.get()..old_size.w.get() {
-            let column_id = sheet.get_or_create_column(pos.x + x as i64).0.id;
-            for y in 0..new_size.h.get() {
+    if old_w > new_w {
+        for x in new_w..old_w {
+            let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
+            let column_id = column.id;
+
+            // todo: temporary way of cleaning up deleted spills. There needs to be a spill checker here....
+            column.spills.remove_range(Range {
+                start: pos.y,
+                end: pos.y + new_h as i64 + 1,
+            });
+            for y in 0..new_h {
                 let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
                 let pos = Pos {
                     x: pos.x + x as i64,
@@ -113,7 +136,7 @@ pub fn fetch_code_cell_difference(
                     .cell_sheets_modified
                     .insert(CellSheetsModified::new(sheet.id, pos.into()));
                 if let Some(cells_to_compute) = cells_to_compute {
-                    cells_to_compute.push(CellRef {
+                    cells_to_compute.insert(CellRef {
                         sheet: sheet.id,
                         column: column_id,
                         row: row_id,
@@ -122,10 +145,17 @@ pub fn fetch_code_cell_difference(
             }
         }
     }
-    if old_size.h > new_size.h {
-        for x in 0..old_size.w.get() {
-            let column_id = sheet.get_or_create_column(pos.x + x as i64).0.id;
-            for y in new_size.h.get()..old_size.h.get() {
+    if old_h > new_h {
+        for x in 0..old_w {
+            let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
+            let column_id = column.id;
+
+            // todo: temporary way of cleaning up deleted spills. There needs to be a spill checker here....
+            column.spills.remove_range(Range {
+                start: pos.y + new_h as i64,
+                end: pos.y + old_h as i64 + 1,
+            });
+            for y in new_h..old_h {
                 let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
                 let pos = Pos {
                     x: pos.x + x as i64,
@@ -135,7 +165,7 @@ pub fn fetch_code_cell_difference(
                     .cell_sheets_modified
                     .insert(CellSheetsModified::new(sheet.id, pos.into()));
                 if let Some(cells_to_compute) = cells_to_compute {
-                    cells_to_compute.push(CellRef {
+                    cells_to_compute.insert(CellRef {
                         sheet: sheet.id,
                         column: column_id,
                         row: row_id,

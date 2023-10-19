@@ -80,7 +80,6 @@ export class Grid {
   private _dirty = false;
 
   transactionResponse(summary: TransactionSummary) {
-    console.log(summary);
     if (summary.sheet_list_modified) {
       sheets.repopulate();
     }
@@ -588,6 +587,11 @@ export class Grid {
     this.transactionResponse(summary);
   }
 
+  getTransactionResponse(): TransactionSummary | undefined {
+    return this.gridController.getCalculationTransactionSummary();
+  }
+
+  // returns undefined if there was an error fetching cells (eg, invalid sheet name)
   calculationGetCells(
     rect: RectInternal,
     sheetName: string | undefined,
@@ -596,6 +600,15 @@ export class Grid {
     const getCells = new JsComputeGetCells(rect, sheetName, lineNumber === undefined ? undefined : BigInt(lineNumber));
     const array = this.gridController.calculationGetCells(getCells);
     if (array) {
+      // indication that getCells resulted in an error
+      // we get the transactionResponse via a rust call b/c of the way types are converted :(
+      if (array.transaction_response) {
+        const transactionSummary = this.getTransactionResponse();
+        if (transactionSummary) {
+          this.transactionResponse(transactionSummary);
+        }
+        return;
+      }
       let cell = array.next();
       const results: { x: number; y: number; value: string }[] = [];
       while (cell) {
@@ -607,6 +620,15 @@ export class Grid {
       array.free();
       return results;
     }
+  }
+
+  //#endregion
+
+  //#region Summarize
+  //-----------------
+
+  summarizeSelection() {
+    return this.gridController.summarizeSelection(sheets.sheet.id, rectangleToRect(sheets.sheet.cursor.getRectangle()));
   }
 
   //#endregion

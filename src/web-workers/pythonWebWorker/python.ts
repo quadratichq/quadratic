@@ -11,7 +11,6 @@ class PythonWebWorker {
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
-      console.log(event.type);
       if (event.type === 'results') {
         const pythonResult = event.results;
         if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
@@ -40,7 +39,6 @@ class PythonWebWorker {
           pythonResult.line_number
         );
         grid.calculationComplete(result);
-
         // triggers any CodeEditor updates (if necessary)
         window.dispatchEvent(new CustomEvent('computation-complete'));
       } else if (event.type === 'get-cells') {
@@ -48,15 +46,17 @@ class PythonWebWorker {
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');
         }
-        console.log({ range });
         const cells = grid.calculationGetCells(
           pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
-          range.sheet.toString(),
+          range.sheet !== undefined ? range.sheet.toString() : undefined,
           event.range?.lineNumber
         );
         // cells will be undefined if the sheet_id (currently name) is invalid
         if (cells && this.worker) {
           this.worker.postMessage({ type: 'get-cells', cells });
+        } else {
+          // triggers any CodeEditor updates (if necessary)
+          window.dispatchEvent(new CustomEvent('computation-complete'));
         }
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
@@ -83,7 +83,6 @@ class PythonWebWorker {
         },
       };
     } else {
-      console.log('execute');
       this.worker.postMessage({ type: 'execute', python });
     }
   }

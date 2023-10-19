@@ -17,6 +17,7 @@ pub mod import;
 pub mod render;
 pub mod sheet_offsets;
 pub mod sheets;
+pub mod summarize;
 
 #[wasm_bindgen]
 impl GridController {
@@ -73,6 +74,15 @@ impl GridController {
         Ok(serde_wasm_bindgen::to_value(
             &self.calculation_complete(result),
         )?)
+    }
+
+    #[wasm_bindgen(js_name = "getCalculationTransactionSummary")]
+    pub fn js_calculation_transaction_summary(&mut self) -> Result<JsValue, JsValue> {
+        if let Some(summary) = self.transaction_summary() {
+            Ok(serde_wasm_bindgen::to_value(&summary)?)
+        } else {
+            Err(JsValue::UNDEFINED)
+        }
     }
 
     #[wasm_bindgen(js_name = "calculationGetCells")]
