@@ -604,6 +604,10 @@ export class Grid {
       // indication that getCells resulted in an error
       // we get the transactionResponse via a rust call b/c of the way types are converted :(
       if (array.transaction_response) {
+        const transactionSummary = this.getTransactionResponse();
+        if (transactionSummary) {
+          this.transactionResponse(transactionSummary);
+        }
         return;
       }
       let cell = array.next();

@@ -227,6 +227,7 @@ impl TransactionInProgress {
             &mut self.reverse_operations,
             &mut self.summary,
         );
+        self.summary.code_cells_modified.insert(cell_ref.sheet);
         self.waiting_for_async = None;
         self.loop_compute(grid_controller);
     }
