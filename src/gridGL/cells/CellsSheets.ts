@@ -144,6 +144,10 @@ export class CellsSheets extends Container<CellsSheet> {
     this.children.forEach((cellsSheet) => {
       if (codeCells.find((id) => id.id === cellsSheet.sheet.id)) {
         cellsSheet.updateCellsArray();
+        if (sheets.sheet.id === cellsSheet.sheet.id) {
+          this.current = cellsSheet;
+          window.dispatchEvent(new CustomEvent('computation-complete'));
+        }
       }
     });
   }

@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use crate::{
     grid::{CellRef, CodeCellValue, Sheet},
-    ArraySize, Pos, Value,
+    Pos, Value,
 };
 
 use super::{
@@ -95,28 +95,30 @@ pub fn fetch_code_cell_difference(
     summary: &mut TransactionSummary,
     cells_to_compute: &mut Option<&mut Vec<CellRef>>,
 ) {
-    let old_size = if let Some(old_code_cell_value) = old_code_cell_value {
-        old_code_cell_value.output_size()
+    let (old_w, old_h) = if let Some(old_code_cell_value) = old_code_cell_value {
+        let size = old_code_cell_value.output_size();
+        (size.w.get(), size.h.get())
     } else {
-        ArraySize::_1X1
+        (0, 0)
     };
-    let new_size = if let Some(new_code_cell_value) = new_code_cell_value {
-        new_code_cell_value.output_size()
+    let (new_w, new_h) = if let Some(new_code_cell_value) = new_code_cell_value {
+        let size = new_code_cell_value.output_size();
+        (size.w.get(), size.h.get())
     } else {
-        ArraySize::_1X1
+        (0, 0)
     };
 
-    if old_size.w > new_size.w {
-        for x in new_size.w.get()..old_size.w.get() {
+    if old_w > new_w {
+        for x in new_w..old_w {
             let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
             let column_id = column.id;
 
             // todo: temporary way of cleaning up deleted spills. There needs to be a spill checker here....
             column.spills.remove_range(Range {
                 start: pos.y,
-                end: pos.y + new_size.h.get() as i64 + 1,
+                end: pos.y + new_h as i64 + 1,
             });
-            for y in 0..new_size.h.get() {
+            for y in 0..new_h {
                 let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
                 let pos = Pos {
                     x: pos.x + x as i64,
@@ -135,17 +137,17 @@ pub fn fetch_code_cell_difference(
             }
         }
     }
-    if old_size.h > new_size.h {
-        for x in 0..old_size.w.get() {
+    if old_h > new_h {
+        for x in 0..old_w {
             let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
             let column_id = column.id;
 
             // todo: temporary way of cleaning up deleted spills. There needs to be a spill checker here....
             column.spills.remove_range(Range {
-                start: pos.y + new_size.h.get() as i64,
-                end: pos.y + old_size.h.get() as i64 + 1,
+                start: pos.y + new_h as i64,
+                end: pos.y + old_h as i64 + 1,
             });
-            for y in new_size.h.get()..old_size.h.get() {
+            for y in new_h..old_h {
                 let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
                 let pos = Pos {
                     x: pos.x + x as i64,
