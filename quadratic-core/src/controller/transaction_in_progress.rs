@@ -1,8 +1,8 @@
 use indexmap::IndexSet;
+use wasm_bindgen::JsValue;
 
 use crate::{
     grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
-    wasm_bindings::js::runPython,
     Error, ErrorMsg, Pos, Span,
 };
 
@@ -334,7 +334,15 @@ impl TransactionInProgress {
                         CodeCellLanguage::Python => {
                             // python is run async so we exit the compute cycle and wait for TS to restart the transaction
                             if !cfg!(test) {
-                                runPython(code_string);
+                                let result = crate::wasm_bindings::js::runPython(code_string);
+
+                                // run python will return a value only if python is not loaded (this can be generalized if we need to return a different error)
+                                if result != JsValue::UNDEFINED {
+                                    let msg =
+                                        "Python library not loaded (please run again)".to_string();
+                                    self.code_cell_sheet_error(grid_controller, msg, None);
+                                    return;
+                                }
                             }
                             self.waiting_for_async = Some(language);
                         }
