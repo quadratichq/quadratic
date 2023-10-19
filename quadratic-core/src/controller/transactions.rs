@@ -11,13 +11,31 @@ use super::{
     GridController,
 };
 
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
 pub enum TransactionType {
+    #[default]
     Normal,
     Undo,
     Redo,
 }
 
 impl GridController {
+    pub fn finalize_transaction(&mut self, transaction_in_progress: &TransactionInProgress) {
+        let transaction: Transaction = transaction_in_progress.into();
+        match transaction_in_progress.transaction_type {
+            TransactionType::Normal => {
+                self.undo_stack.push(transaction);
+                self.redo_stack.clear();
+            }
+            TransactionType::Undo => {
+                self.redo_stack.push(transaction);
+            }
+            TransactionType::Redo => {
+                self.undo_stack.push(transaction);
+            }
+        }
+    }
+
     pub fn set_in_progress_transaction(
         &mut self,
         operations: Vec<Operation>,
@@ -33,22 +51,11 @@ impl GridController {
             // todo: this should be handled more gracefully. Perhaps as a queue of operations?
             panic!("Cannot start a transaction while a transaction is in progress");
         }
-        let mut transaction = TransactionInProgress::new(self, operations, cursor, compute);
+        let mut transaction = TransactionInProgress::new(self, operations, cursor, compute, undo);
         let mut summary = transaction.transaction_summary();
         if transaction.complete {
-            match undo {
-                TransactionType::Normal => {
-                    self.undo_stack.push(transaction.into());
-                    self.redo_stack.clear();
-                }
-                TransactionType::Undo => {
-                    self.redo_stack.push(transaction.into());
-                }
-                TransactionType::Redo => {
-                    self.undo_stack.push(transaction.into());
-                }
-            }
             summary.save = true;
+            self.finalize_transaction(&transaction);
         } else {
             self.transaction_in_progress = Some(transaction);
         }

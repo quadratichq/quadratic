@@ -9,7 +9,7 @@ use super::{
     operation::Operation,
     transaction_summary::TransactionSummary,
     transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
-    transactions::Transaction,
+    transactions::{Transaction, TransactionType},
     GridController,
 };
 
@@ -21,7 +21,8 @@ pub struct TransactionInProgress {
     cells_to_compute: Vec<CellRef>,
     pub cursor: Option<String>,
     cells_accessed: Vec<CellRef>,
-    summary: TransactionSummary,
+    pub summary: TransactionSummary,
+    pub transaction_type: TransactionType,
 
     // save code_cell info for async calls
     current_code_cell: Option<CodeCellValue>,
@@ -42,12 +43,13 @@ impl TransactionInProgress {
         operations: Vec<Operation>,
         cursor: Option<String>,
         compute: bool,
+        transaction_type: TransactionType,
     ) -> Self {
         let mut transaction = Self {
             reverse_operations: vec![],
             summary: TransactionSummary::default(),
             cursor,
-
+            transaction_type,
             cells_to_compute: vec![],
             cells_accessed: vec![],
 
@@ -78,7 +80,7 @@ impl TransactionInProgress {
                 break;
             }
             if self.cells_to_compute.is_empty() {
-                self.finalize();
+                self.finalize(grid_controller);
                 break;
             }
         }
@@ -232,10 +234,11 @@ impl TransactionInProgress {
     }
 
     /// finalize the compute cycle
-    fn finalize(&mut self) {
+    fn finalize(&mut self, grid_controller: &mut GridController) {
         if self.cells_to_compute.is_empty() {
             self.complete = true;
             self.summary.save = true;
+            grid_controller.finalize_transaction(self);
         }
     }
 
@@ -353,6 +356,15 @@ impl Into<Transaction> for TransactionInProgress {
         Transaction {
             ops: self.reverse_operations.into_iter().rev().collect(),
             cursor: self.cursor,
+        }
+    }
+}
+
+impl Into<Transaction> for &TransactionInProgress {
+    fn into(self) -> Transaction {
+        Transaction {
+            ops: self.reverse_operations.clone().into_iter().rev().collect(),
+            cursor: self.cursor.clone(),
         }
     }
 }

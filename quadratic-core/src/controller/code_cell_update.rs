@@ -54,7 +54,11 @@ pub fn update_code_cell_value(
                                     }
                                 }
                             }
-                            Value::Single(..) => (),
+                            Value::Single(..) => {
+                                summary
+                                    .cell_sheets_modified
+                                    .insert(CellSheetsModified::new(sheet.id, pos.into()));
+                            }
                         };
                     }
                     None => {
