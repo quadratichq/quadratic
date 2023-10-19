@@ -69,22 +69,12 @@ class PythonWebWorker {
     };
   }
 
-  start(python: string) {
+  start(python: string): boolean {
     if (!this.loaded || !this.worker) {
-      return {
-        complete: true,
-        result: {
-          success: false,
-          error_msg: 'Error: Python not loaded',
-          std_out: '',
-          output_value: undefined,
-          array_output: undefined,
-          formatted_code: undefined,
-        },
-      };
-    } else {
-      this.worker.postMessage({ type: 'execute', python });
+      return false;
     }
+    this.worker.postMessage({ type: 'execute', python });
+    return true;
   }
 
   getCells(cells: string) {

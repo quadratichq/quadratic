@@ -153,6 +153,7 @@ impl TransactionInProgress {
                 "Sheet not found".to_string()
             };
             self.code_cell_sheet_error(grid_controller, msg, get_cells.line_number());
+            self.loop_compute(grid_controller);
             return Some(CellsForArray::new(vec![], true));
         }
 
@@ -232,7 +233,6 @@ impl TransactionInProgress {
         );
         self.summary.code_cells_modified.insert(cell_ref.sheet);
         self.waiting_for_async = None;
-        self.loop_compute(grid_controller);
     }
 
     /// finalize the compute cycle
@@ -335,9 +335,9 @@ impl TransactionInProgress {
                             // python is run async so we exit the compute cycle and wait for TS to restart the transaction
                             if !cfg!(test) {
                                 let result = crate::wasm_bindings::js::runPython(code_string);
-
-                                // run python will return a value only if python is not loaded (this can be generalized if we need to return a different error)
-                                if result != JsValue::UNDEFINED {
+                                crate::util::dbgjs(&format!("Python result: {:?}", result));
+                                // run python will return false if python is not loaded (this can be generalized if we need to return a different error)
+                                if result == JsValue::FALSE {
                                     let msg =
                                         "Python library not loaded (please run again)".to_string();
                                     self.code_cell_sheet_error(grid_controller, msg, None);
