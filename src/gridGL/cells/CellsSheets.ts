@@ -113,7 +113,6 @@ export class CellsSheets extends Container<CellsSheet> {
     for (const cellSheet of this.children) {
       const modified = cellSheetsModified.filter((modified) => modified.sheet_id === cellSheet.sheet.id);
       if (modified.length) {
-        console.log(modified);
         cellSheet.modified(modified);
       }
     }

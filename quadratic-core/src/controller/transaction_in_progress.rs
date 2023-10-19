@@ -1,3 +1,5 @@
+use indexmap::IndexSet;
+
 use crate::{
     grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
     wasm_bindings::js::runPython,
@@ -18,7 +20,7 @@ use super::{
 #[derive(Debug, Default, Clone)]
 pub struct TransactionInProgress {
     reverse_operations: Vec<Operation>,
-    cells_to_compute: Vec<CellRef>,
+    cells_to_compute: IndexSet<CellRef>,
     pub cursor: Option<String>,
     cells_accessed: Vec<CellRef>,
     pub summary: TransactionSummary,
@@ -50,7 +52,7 @@ impl TransactionInProgress {
             summary: TransactionSummary::default(),
             cursor,
             transaction_type,
-            cells_to_compute: vec![],
+            cells_to_compute: IndexSet::new(),
             cells_accessed: vec![],
 
             current_code_cell: None,
@@ -88,8 +90,9 @@ impl TransactionInProgress {
 
     /// returns the TransactionSummary
     pub fn transaction_summary(&mut self) -> TransactionSummary {
-        // self.summary.clear();
-        self.summary.clone()
+        let summary = self.summary.clone();
+        self.summary.clear();
+        summary
     }
 
     /// executes a set of operations
@@ -234,11 +237,9 @@ impl TransactionInProgress {
 
     /// finalize the compute cycle
     fn finalize(&mut self, grid_controller: &mut GridController) {
-        if self.cells_to_compute.is_empty() {
-            self.complete = true;
-            self.summary.save = true;
-            grid_controller.finalize_transaction(self);
-        }
+        self.complete = true;
+        self.summary.save = true;
+        grid_controller.finalize_transaction(self);
     }
 
     fn update_deps(&mut self, grid_controller: &mut GridController) {

@@ -11,6 +11,7 @@
     "Fuzzysort",
     "hljs",
     "htmlescape",
+    "indexmap",
     "itertools",
     "msdf",
     "Northbridge",
