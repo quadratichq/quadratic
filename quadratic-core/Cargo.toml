@@ -20,7 +20,7 @@ name = "export_types"
 path = "src/bin/export_types.rs"
 
 [features]
-default = ["console_error_panic_hook", "js", "show-operations"]
+default = ["console_error_panic_hook", "js"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
 js = ["js-sys", "serde-wasm-bindgen", "ts-rs", "wasm-bindgen", "wasm-bindgen-futures"]
 show-operations = []
