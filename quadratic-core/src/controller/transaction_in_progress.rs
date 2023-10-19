@@ -167,7 +167,7 @@ impl TransactionInProgress {
                 "Sheet not found".to_string()
             };
             self.code_cell_sheet_error(grid_controller, msg, get_cells.line_number());
-            None
+            Some(CellsForArray::new(vec![], true))
         }
     }
 

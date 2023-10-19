@@ -46,11 +46,16 @@ impl CellForArray {
 pub struct CellsForArray {
     cells: Vec<CellForArray>,
     i: usize,
+    pub transaction_response: bool,
 }
 
 impl CellsForArray {
-    pub fn new(cells: Vec<CellForArray>) -> Self {
-        Self { cells, i: 0 }
+    pub fn new(cells: Vec<CellForArray>, transaction_response: bool) -> Self {
+        Self {
+            cells,
+            i: 0,
+            transaction_response,
+        }
     }
 }
 
@@ -63,6 +68,7 @@ impl CellsForArray {
         self.cells.get(i).cloned()
     }
 
+    #[wasm_bindgen]
     pub fn reset(&mut self) {
         self.i = 0;
     }

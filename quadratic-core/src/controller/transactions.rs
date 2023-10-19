@@ -97,6 +97,14 @@ impl GridController {
             panic!("Expected a transaction to still be running");
         }
     }
+
+    pub fn transaction_summary(&mut self) -> Option<TransactionSummary> {
+        if let Some(transaction) = &mut self.transaction_in_progress {
+            Some(transaction.transaction_summary())
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

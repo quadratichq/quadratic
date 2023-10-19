@@ -17,6 +17,6 @@ impl Sheet {
                 }
             }
         }
-        CellsForArray::new(array)
+        CellsForArray::new(array, false)
     }
 }

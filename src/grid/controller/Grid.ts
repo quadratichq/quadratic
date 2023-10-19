@@ -588,6 +588,11 @@ export class Grid {
     this.transactionResponse(summary);
   }
 
+  getTransactionResponse(): TransactionSummary | undefined {
+    return this.gridController.getCalculationTransactionSummary();
+  }
+
+  // returns undefined if there was an error fetching cells (eg, invalid sheet name)
   calculationGetCells(
     rect: RectInternal,
     sheetName: string | undefined,
@@ -596,6 +601,11 @@ export class Grid {
     const getCells = new JsComputeGetCells(rect, sheetName, lineNumber === undefined ? undefined : BigInt(lineNumber));
     const array = this.gridController.calculationGetCells(getCells);
     if (array) {
+      // indication that getCells resulted in an error
+      // we get the transactionResponse via a rust call b/c of the way types are converted :(
+      if (array.transaction_response) {
+        return;
+      }
       let cell = array.next();
       const results: { x: number; y: number; value: string }[] = [];
       while (cell) {

@@ -75,6 +75,15 @@ impl GridController {
         )?)
     }
 
+    #[wasm_bindgen(js_name = "getCalculationTransactionSummary")]
+    pub fn js_calculation_transaction_summary(&mut self) -> Result<JsValue, JsValue> {
+        if let Some(summary) = self.transaction_summary() {
+            Ok(serde_wasm_bindgen::to_value(&summary)?)
+        } else {
+            Err(JsValue::UNDEFINED)
+        }
+    }
+
     #[wasm_bindgen(js_name = "calculationGetCells")]
     pub fn js_calculation_get_cells(
         &mut self,
