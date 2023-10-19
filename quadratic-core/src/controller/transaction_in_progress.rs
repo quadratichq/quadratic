@@ -129,20 +129,35 @@ impl TransactionInProgress {
         grid_controller: &mut GridController,
         get_cells: JsComputeGetCells,
     ) -> Option<CellsForArray> {
+        // ensure that the get_cells is not requesting a reference to itself
+        let (current_sheet, pos) = if let Some(current_cell_ref) = self.current_cell_ref {
+            let sheet = grid_controller.sheet(current_cell_ref.sheet);
+            let pos = if let Some(pos) = sheet.cell_ref_to_pos(current_cell_ref) {
+                pos
+            } else {
+                panic!("Expected current_cell_ref's sheet to be defined in transaction::get_cells");
+            };
+            (sheet, pos)
+        } else {
+            panic!("Expected current_sheet_pos to be defined in transaction::get_cells");
+        };
+
+        if get_cells.rect().contains(pos) {
+            // unable to find sheet by name, generate error
+            let msg = if let Some(line_number) = get_cells.line_number() {
+                format!("cell cannot reference itself at line {}", line_number)
+            } else {
+                "Sheet not found".to_string()
+            };
+            self.code_cell_sheet_error(grid_controller, msg, get_cells.line_number());
+            return Some(CellsForArray::new(vec![], true));
+        }
+
         let sheet_name = get_cells.sheet_name();
 
         // if sheet_name is None, use the sheet_id from the pos
         let sheet = sheet_name.clone().map_or_else(
-            || {
-                if self.current_cell_ref.is_none() {
-                    panic!("Expected current_sheet_pos to be defined in transaction::get_cells");
-                }
-                Some(
-                    grid_controller
-                        .grid
-                        .sheet_from_id(self.current_cell_ref.unwrap().sheet),
-                )
-            },
+            || Some(current_sheet),
             |sheet_name| grid_controller.grid.sheet_from_name(sheet_name),
         );
 
@@ -171,7 +186,6 @@ impl TransactionInProgress {
         }
     }
 
-    // todo: this should propagate, actually save the error to the cell, and continue the compute loop
     fn code_cell_sheet_error(
         &mut self,
         grid_controller: &mut GridController,
