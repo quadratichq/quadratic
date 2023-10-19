@@ -87,6 +87,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   createLabels(): void {
+    console.log('createLabels', this.hashX, this.hashY);
     debugTimeReset();
     this.cellLabels = new Map();
     const cells = this.sheet.getRenderCells(this.AABB);

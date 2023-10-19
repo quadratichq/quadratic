@@ -363,7 +363,7 @@ export class CellsSheet extends Container {
   // update values for cells
   modified(modified: CellSheetsModified[]): void {
     for (const update of modified) {
-      const cellsHash = this.getCellsHash(Number(update.x), Number(update.y), true);
+      const cellsHash = this.getCellsHash(Number(update.x) * sheetHashWidth, Number(update.y) * sheetHashHeight, true);
       if (cellsHash) {
         cellsHash.dirty = true;
       }
