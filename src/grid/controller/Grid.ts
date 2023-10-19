@@ -80,6 +80,7 @@ export class Grid {
   private _dirty = false;
 
   transactionResponse(summary: TransactionSummary) {
+    console.log(summary);
     if (summary.sheet_list_modified) {
       sheets.repopulate();
     }

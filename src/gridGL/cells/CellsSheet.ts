@@ -5,7 +5,6 @@ import { Sheet } from '../../grid/sheet/Sheet';
 import { CellSheetsModified } from '../../quadratic-core/types';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
-import { Coordinate } from '../types/size';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
 import { CellsFills } from './CellsFills';
@@ -79,8 +78,7 @@ export class CellsSheet extends Container {
       sheetHashHeight - 1
     );
     const cells = this.sheet.getRenderCells(rect);
-    const background = this.sheet.getRenderFills(rect);
-    if (cells.length || background.length) {
+    if (cells.length) {
       const key = `${hashX},${hashY}`;
       const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
       this.cellsTextHash.set(key, cellsHash);
@@ -168,21 +166,6 @@ export class CellsSheet extends Container {
     return hash;
   }
 
-  // gets or creates a hash from a hashKey (received from Rust)
-  // note: this does not populate or render the hash
-  private getCellsHashFromKey(key: string): CellsTextHash {
-    const hash = this.cellsTextHash.get(key);
-    if (hash) {
-      return hash;
-    }
-    const split = key.split(',');
-    const hashX = parseInt(split[0]);
-    const hashY = parseInt(split[1]);
-    const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
-    this.cellsTextHash.set(key, cellsHash);
-    return cellsHash;
-  }
-
   getColumnHashes(column: number): CellsTextHash[] {
     const hashX = Math.floor(column / sheetHashWidth);
     const hashes: CellsTextHash[] = [];
@@ -217,65 +200,6 @@ export class CellsSheet extends Container {
       hash = this.getCellsHash(column, row);
     }
     return hash;
-  }
-
-  changed(options: {
-    cells?: Coordinate[];
-    column?: number;
-    row?: number;
-    rectangle?: Rectangle;
-    labels?: boolean;
-    background?: boolean;
-  }) {
-    const hashes = new Set<CellsTextHash>();
-    if (options.cells) {
-      options.cells.forEach((cell) => {
-        let hash = this.getCellsHash(cell.x, cell.y, true);
-        if (!hash) {
-          const { x, y } = CellsSheet.getHash(cell.x, cell.y);
-          hash = this.createHash(x, y);
-        }
-        if (hash) {
-          hashes.add(hash);
-          if (options.labels) {
-            this.dirtyRows.add(hash.hashY);
-          }
-        }
-      });
-    } else if (options.column) {
-      const columnHashes = this.getColumnHashes(options.column);
-      columnHashes.forEach((hash) => {
-        hashes.add(hash);
-        if (options.labels) {
-          this.dirtyRows.add(hash.hashY);
-        }
-      });
-    } else if (options.row) {
-      const rowHashes = this.getRowHashes(options.row);
-      rowHashes.forEach((hash) => hashes.add(hash));
-      if (options.labels) {
-        this.dirtyRows.add(Math.floor(options.row / sheetHashHeight));
-      }
-    } else if (options.rectangle) {
-      for (let y = options.rectangle.top; y <= options.rectangle.bottom + sheetHashHeight - 1; y += sheetHashHeight) {
-        for (let x = options.rectangle.left; x <= options.rectangle.right + sheetHashWidth - 1; x += sheetHashWidth) {
-          let hash = this.getCellsHash(x, y);
-          if (!hash) {
-            const hashCoordinate = CellsSheet.getHash(x, y);
-            hash = this.createHash(hashCoordinate.x, hashCoordinate.y);
-          }
-          if (hash) {
-            hashes.add(hash);
-            if (options.labels) {
-              this.dirtyRows.add(hash.hashY);
-            }
-          }
-        }
-      }
-    }
-    if (options.background) {
-      this.cellsFills.create();
-    }
   }
 
   // this assumes that dirtyRows has a size (checked in calling functions)

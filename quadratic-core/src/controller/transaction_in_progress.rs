@@ -86,11 +86,10 @@ impl TransactionInProgress {
         }
     }
 
-    /// returns the TransactionSummary and clears it for future updates
+    /// returns the TransactionSummary
     pub fn transaction_summary(&mut self) -> TransactionSummary {
-        let summary = self.summary.clone();
-        self.summary.clear();
-        summary
+        // self.summary.clear();
+        self.summary.clone()
     }
 
     /// executes a set of operations
