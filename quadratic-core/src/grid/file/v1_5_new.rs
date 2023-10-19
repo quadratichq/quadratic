@@ -1,3 +1,5 @@
+use std::collections::{BTreeMap, HashMap};
+
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -24,8 +26,30 @@ pub(crate) fn upgrade(schema: &GridSchema) -> Result<&GridSchema> {
 pub struct GridSchema {
     pub version: String,
     pub sheets: Vec<Sheet>,
-    // TODO(ddimaria): this is more complex than a string
-    pub dependencies: Vec<String>,
+    pub dependencies: Vec<(Dependency, Vec<DependencyRange>)>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Pos {
+    pub x: i64,
+    pub y: i64,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct Dependency {
+    pub x: i64,
+    pub y: i64,
+    pub sheet_id: Id,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct DependencyRange {
+    pub min: Pos,
+    pub max: Pos,
+    pub sheet_id: Id,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -59,13 +83,13 @@ impl Id {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CellRef {
-    pub sheet: String,
-    pub column: String,
-    pub row: String,
+    pub sheet: Id,
+    pub column: Id,
+    pub row: Id,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "snake_case")]
 pub struct CodeCellValue {
     pub language: String,
     pub code_string: String,
@@ -78,12 +102,14 @@ pub struct CodeCellValue {
 #[serde(rename_all = "camelCase")]
 pub struct CodeCellRunOutput {
     pub std_out: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub std_err: Option<String>,
     pub result: CodeCellRunResult,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[serde(untagged)]
 pub enum CodeCellRunResult {
     Ok {
         output_value: OutputValue,
@@ -93,9 +119,28 @@ pub enum CodeCellRunResult {
         error: Error,
     },
 }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[serde(untagged)]
+pub enum OutputValue {
+    Single(OutputValueValue),
+    Array(OutputArray),
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct OutputArray {
+    pub size: OutputSize,
+    pub values: Vec<OutputValueValue>,
+}
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct OutputValue {
+pub struct OutputSize {
+    pub w: i64,
+    pub h: i64,
+}
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OutputValueValue {
     #[serde(rename = "type")]
     pub type_field: String,
     pub value: String,
@@ -118,20 +163,20 @@ pub struct Span {
 #[serde(rename_all = "camelCase")]
 pub struct Column {
     pub id: Id,
-    pub values: Vec<(i64, ColumnValues)>,
+    pub values: HashMap<i64, ColumnValues>,
     pub spills: Spills,
-    pub align: Vec<(i64, ColumnFormatString)>,
-    pub wrap: Vec<(i64, String)>,
+    pub align: HashMap<i64, ColumnFormatString>,
+    pub wrap: HashMap<i64, String>,
     #[serde(rename = "numeric_format")]
     pub numeric_format: NumericFormat,
     #[serde(rename = "numeric_decimals")]
     pub numeric_decimals: NumericDecimals,
-    pub bold: Vec<(i64, ColumnFormatBool)>,
-    pub italic: Vec<(i64, ColumnFormatBool)>,
+    pub bold: HashMap<i64, ColumnFormatBool>,
+    pub italic: HashMap<i64, ColumnFormatBool>,
     #[serde(rename = "text_color")]
-    pub text_color: Vec<(i64, ColumnFormatString)>,
+    pub text_color: HashMap<i64, ColumnFormatString>,
     #[serde(rename = "fill_color")]
-    pub fill_color: Vec<(i64, ColumnFormatString)>,
+    pub fill_color: HashMap<i64, ColumnFormatString>,
 }
 impl Column {
     pub fn with_id(id: Id) -> Self {
@@ -239,8 +284,8 @@ pub struct Row {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Borders {
-    pub horizontal: Vec<Horizontal>,
-    pub vertical: Vec<Vertical>,
+    pub horizontal: HashMap<i64, Horizontal>,
+    pub vertical: HashMap<i64, Vertical>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

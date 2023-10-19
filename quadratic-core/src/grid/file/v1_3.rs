@@ -20,7 +20,7 @@ pub(crate) fn export(grid_schema: &GridSchema) -> Result<String> {
 }
 
 pub(crate) fn upgrade(schema: GridSchema) -> Result<GridSchemaV1_5> {
-    let sheet = to_v1_5_sheet(schema).unwrap();
+    let sheet = upgrade_sheet(schema).unwrap();
 
     let converted = GridSchemaV1_5 {
         version: "1.5".into(),
@@ -54,14 +54,14 @@ impl SheetBuilder {
     }
     fn cell_ref(&mut self, (x, y): (i64, i64)) -> CellRefV1_5 {
         CellRefV1_5 {
-            sheet: self.sheet_id.id.to_owned(),
-            column: self.column_id(x).id.to_owned(),
-            row: self.row_id(y).id.to_owned(),
+            sheet: self.sheet_id.to_owned(),
+            column: self.column_id(x).to_owned(),
+            row: self.row_id(y).to_owned(),
         }
     }
 }
 
-pub(crate) fn to_v1_5_sheet(v: GridSchema) -> Result<SheetV1_5> {
+pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
     let sheet_id = IdV1_5::new();
     let column_widths = v
         .columns
@@ -71,7 +71,6 @@ pub(crate) fn to_v1_5_sheet(v: GridSchema) -> Result<SheetV1_5> {
     let row_heights = v.rows.iter().map(|row| (row.id, row.size)).collect();
 
     let mut code_cells = vec![];
-    // let mut column_values = vec![];
 
     let mut sheet = SheetBuilder {
         sheet_id,
@@ -84,23 +83,22 @@ pub(crate) fn to_v1_5_sheet(v: GridSchema) -> Result<SheetV1_5> {
     for js_cell in &v.cells {
         let js_cell_pos = (js_cell.x, js_cell.y);
         let js_cell_ref = sheet.cell_ref(js_cell_pos);
-        // column_values.push((js_cell.y, cell_value.to_string()));
 
         match js_cell.type_field.to_lowercase().as_str() {
             "text" => {
                 let column = sheet.column(js_cell.x);
                 // println!("{} {} {}", js_cell.x, js_cell.y, js_cell.value);
-                column.values.push((
-                    js_cell.y,
-                    (
-                        js_cell.y,
-                        ColumnValueV1_5 {
-                            type_field: "text".into(),
-                            value: js_cell.value.to_owned(),
-                        },
-                    )
-                        .into(),
-                ));
+                // column.values.push((
+                //     js_cell.y,
+                //     (
+                //         js_cell.y,
+                //         ColumnValueV1_5 {
+                //             type_field: "text".into(),
+                //             value: js_cell.value.to_owned(),
+                //         },
+                //     )
+                //         .into(),
+                // ));
             }
             _ => {}
         };
@@ -141,23 +139,24 @@ pub(crate) fn to_v1_5_sheet(v: GridSchema) -> Result<SheetV1_5> {
         let y = js_format.y.to_owned();
         js_format
             .alignment
-            .map(|format| column.align.push((y, format.into())));
+            .map(|format| column.align.insert(y, format.into()));
         js_format
             .wrapping
-            .map(|format| column.wrap.push((y, format)));
+            .map(|format| column.wrap.insert(y, format));
         js_format
             .bold
-            .map(|format| column.bold.push((y, format.into())));
+            .map(|format| column.bold.insert(y, format.into()));
         js_format
             .italic
-            .map(|format| column.italic.push((y, format.into())));
+            .map(|format| column.italic.insert(y, format.into()));
         js_format
             .text_color
-            .map(|format| column.text_color.push((y, format.into())));
+            .map(|format| column.text_color.insert(y, format.into()));
         js_format
             .fill_color
-            .map(|format| column.fill_color.push((y, format.into())));
+            .map(|format| column.fill_color.insert(y, format.into()));
 
+        // TODO(ddimaria): deterine if this is needed for upgrades
         // if let Some(text_format) = js_format.text_format.clone() {
         //     column.numeric_format.set(
         //         js_format.y,
@@ -209,8 +208,8 @@ pub(crate) fn to_v1_5_sheet(v: GridSchema) -> Result<SheetV1_5> {
             .map(|(id, row_id)| (id, IdV1_5 { id: row_id.id }))
             .collect(),
         borders: BordersV1_5 {
-            horizontal: vec![],
-            vertical: vec![],
+            horizontal: HashMap::new(),
+            vertical: HashMap::new(),
         }, // TODO: import borders
         code_cells,
     })
@@ -242,6 +241,9 @@ mod tests {
 
         let imported = import_v1_5(&json).unwrap();
         println!("{:?}", imported);
+        let json = serde_json::to_string(&imported).unwrap();
+        println!("{}", json);
+
         // let path = "results_v1_3.json";
         // let mut output = std::fs::File::create(path).unwrap();
         // write!(output, "{}", ).unwrap();

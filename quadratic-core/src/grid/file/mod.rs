@@ -53,9 +53,11 @@ impl GridFile {
 }
 
 pub fn import(file_contents: &str) -> Result<current::Grid> {
-    let file = serde_json::from_str::<GridFile>(file_contents)
-        .map_err(|e| anyhow!(e))?
-        .into_latest()?;
+    let file = v1_5_new::import(file_contents)?;
+
+    // let file = serde_json::from_str::<GridFile>(file_contents)
+    //     .map_err(|e| anyhow!(e))?
+    //     .into_latest()?;
 
     Ok(current::Grid {
         sheets: file
@@ -101,9 +103,9 @@ pub fn import(file_contents: &str) -> Result<current::Grid> {
                         .map(|(cell_ref, code_cell_value)| {
                             (
                                 CellRef {
-                                    sheet: SheetId::from_str(&cell_ref.sheet).unwrap(),
-                                    column: ColumnId::from_str(&cell_ref.column).unwrap(),
-                                    row: RowId::from_str(&cell_ref.row).unwrap(),
+                                    sheet: SheetId::from_str(&cell_ref.sheet.id).unwrap(),
+                                    column: ColumnId::from_str(&cell_ref.column.id).unwrap(),
+                                    row: RowId::from_str(&cell_ref.row.id).unwrap(),
                                 },
                                 CodeCellValue {
                                     language: CodeCellLanguage::from_str(&code_cell_value.language)
@@ -121,27 +123,33 @@ pub fn import(file_contents: &str) -> Result<current::Grid> {
                                                     cells_accessed,
                                                 } => CodeCellRunResult::Ok {
                                                     // TODO(ddimaria): implement Value::Array()
-                                                    output_value: Value::Single(match output_value
-                                                        .type_field
-                                                        .to_lowercase()
-                                                        .as_str()
-                                                    {
-                                                        // TODO(ddimaria): implent for the rest of the types
-                                                        "text" => {
-                                                            CellValue::Text(output_value.value)
-                                                        }
-                                                        _ => unimplemented!(),
-                                                    }),
+                                                    // TODO(ddimaria): implent
+                                                    output_value: Value::Single(CellValue::Text(
+                                                        "".into(),
+                                                    )),
+                                                    // output_value: Value::Single(match output_value
+                                                    //     .type_field
+                                                    //     .to_lowercase()
+                                                    //     .as_str()
+                                                    // {
+                                                    //     // TODO(ddimaria): implent for the rest of the types
+                                                    //     "text" => {
+                                                    //         CellValue::Text(output_value.value)
+                                                    //     }
+                                                    //     _ => unimplemented!(),
+                                                    // }),
                                                     cells_accessed: cells_accessed
                                                         .into_iter()
                                                         .map(|cell| CellRef {
-                                                            sheet: SheetId::from_str(&cell.sheet)
-                                                                .unwrap(),
-                                                            column: ColumnId::from_str(
-                                                                &cell.column,
+                                                            sheet: SheetId::from_str(
+                                                                &cell.sheet.id,
                                                             )
                                                             .unwrap(),
-                                                            row: RowId::from_str(&cell.row)
+                                                            column: ColumnId::from_str(
+                                                                &cell.column.id,
+                                                            )
+                                                            .unwrap(),
+                                                            row: RowId::from_str(&cell.row.id)
                                                                 .unwrap(),
                                                         })
                                                         .collect(),
@@ -246,25 +254,26 @@ Springfield,OR,United States,56032
 Concord,NH,United States,42605
 "#;
 
-    #[tokio::test]
-    async fn exports_and_imports_a_V1_5_grid() {
-        let mut grid_controller = GridController::new();
-        let sheet_id = grid_controller.grid().sheets()[0].id;
-        let pos = Pos { x: 0, y: 0 };
-        let range = Rect::new_span(pos, Pos { x: 3, y: 10 });
+    #[test]
+    fn imports_and_exports_a_v1_5_grid() {
+        // let mut grid_controller = GridController::new();
+        // let sheet_id = grid_controller.grid().sheets()[0].id;
+        // let pos = Pos { x: 0, y: 0 };
+        // let range = Rect::new_span(pos, Pos { x: 3, y: 10 });
 
-        grid_controller
-            .import_csv(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos, None)
-            .await
-            .unwrap();
+        // grid_controller
+        //     .import_csv(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos, None)
+        //     .await
+        //     .unwrap();
 
-        grid_controller
-            .set_cell_bold(sheet_id, range, Some(true), None)
-            .await;
+        // grid_controller
+        //     .set_cell_bold(sheet_id, range, Some(true), None)
+        //     .await;
 
-        let exported = export(grid_controller.grid_mut()).unwrap();
-        println!("len: {}", exported.len());
-        println!("{}", exported);
+        // let exported = export(grid_controller.grid_mut()).unwrap();
+
+        let imported = import(V1_5_FILE).unwrap();
+        println!("{:?}", imported);
 
         // print_table(
         //     &grid_controller,
