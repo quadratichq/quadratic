@@ -38,9 +38,9 @@ export function DashboardHeader({
         },
       }}
     >
-      <Stack direction="row" alignItems={'center'}>
+      <Stack direction="row" alignItems={'center'} sx={{ my: theme.spacing(2), maxWidth: '70%' }}>
         {titleStart}
-        <Typography variant="h6" sx={{ py: theme.spacing(2) }} color="text.primary">
+        <Typography variant="h6" color="text.primary" noWrap>
           {title}
         </Typography>
         {titleEnd}
@@ -50,6 +50,8 @@ export function DashboardHeader({
           direction="row"
           gap={theme.spacing()}
           sx={{
+            flexShrink: '0',
+
             [theme.breakpoints.down('md')]: {
               display: 'none',
               paddingBottom: theme.spacing(1),

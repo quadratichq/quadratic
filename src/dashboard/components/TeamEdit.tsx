@@ -13,23 +13,17 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { useRef, useState } from 'react';
-import AvatarEditor from 'react-avatar-editor';
+import { useState } from 'react';
 import { ApiTypes } from '../../api/types';
 import { AvatarWithLetters } from '../../components/AvatarWithLetters';
-import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
-import { QDialog } from '../../components/QDialog';
+import { TeamLogoDialog, TeamLogoInput } from './TeamLogo';
 
 export function TeamEdit({ data }: { data?: ApiTypes['/v0/teams/:uuid.GET.response'] | undefined }) {
   const theme = useTheme();
   const [name, setName] = useState<string>(data ? data.team.name : '');
-  const [avatarInput, setAvatarInput] = useState<File>();
-  const [avatarUrl, setAvatarUrl] = useState<string>(); // TODO data.avatarUrl
-  // TODO window.URL.revokeObjectURL(avatarUrl) on unmount
-  const { addGlobalSnackbar } = useGlobalSnackbar();
 
-  // const { user } = useRootRouteLoaderData();
-  const toggleIconEditor = () => setAvatarInput(undefined);
+  const [currentLogoUrl, setCurrentLogoUrl] = useState<string>('');
+  const [userSelectedLogoUrl, setUserSelectedLogoUrl] = useState<string>('');
 
   // const loggedInUser: UserShare & { access: Access[] } = {
   //   id: 1,
@@ -41,71 +35,42 @@ export function TeamEdit({ data }: { data?: ApiTypes['/v0/teams/:uuid.GET.respon
   //   hasAccount: true,
   // };
 
-  const handleAvatarInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files ? e.target.files[0] : undefined;
-    if (!file) {
-      return;
-    }
-
-    const fileAsDataURL = window.URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      if (img.width > 400 && img.height > 400) {
-        setAvatarInput(file);
-      } else {
-        addGlobalSnackbar('Image must be at least 400×400 pixels', { severity: 'error' });
-      }
-    };
-    img.src = fileAsDataURL;
-  };
-
-  // TODO currently logged in user as default
-  // const [users, setUsers] = useState<UserShare[]>(data ? data.team.users : [loggedInUser]);
-
   return (
     <Stack maxWidth={'30rem'} gap={theme.spacing(4)}>
       <Typography variant="body2" color="text.secondary">
         Teams are for collaborating on files with other people. Once you create a team, you can invite people to it.
       </Typography>
 
-      {/* <EditTeamRow label="Details"> */}
       <Stack direction="row" gap={theme.spacing()} alignItems="center">
-        <AvatarWithLetters size="large" src={avatarUrl ? avatarUrl : undefined}>
+        <AvatarWithLetters size="large" src={currentLogoUrl}>
           {name}
         </AvatarWithLetters>
         <Box sx={{ color: 'text.secondary' }}>
-          {avatarUrl ? (
+          {currentLogoUrl ? (
             <Button
               color="inherit"
               size="small"
               onClick={() => {
-                setAvatarUrl(undefined);
-                setAvatarInput(undefined);
+                setCurrentLogoUrl('');
               }}
-              // startIcon={<DeleteOutline fontSize="small" color="inherit" />}
             >
               Remove logo
             </Button>
           ) : (
-            <Button
-              size="small"
-              component="label"
-              color="inherit"
-              // startIcon={<Add fontSize="small" color="inherit" />}
-            >
+            <Button size="small" component="label" color="inherit">
               Add logo
-              <input type="file" hidden accept="image/png, image/jpeg" onChange={handleAvatarInput} />
+              <TeamLogoInput onChange={(logoUrl: string) => setUserSelectedLogoUrl(logoUrl)} />
             </Button>
           )}
         </Box>
-        {avatarInput && (
-          <IconEditor
-            onClose={toggleIconEditor}
-            icon={avatarInput}
-            onSave={(avatarUrl: string) => {
-              console.log('setting as avatar URL', avatarUrl);
-              setAvatarUrl(avatarUrl);
-              setAvatarInput(undefined);
+        {userSelectedLogoUrl && (
+          <TeamLogoDialog
+            onClose={() => setUserSelectedLogoUrl('')}
+            logoUrl={userSelectedLogoUrl}
+            onSave={(logoUrl: string) => {
+              setCurrentLogoUrl(logoUrl);
+              setUserSelectedLogoUrl('');
+              // TODO window.URL.revokeObjectURL(avatarUrl) when file uploads
             }}
           />
         )}
@@ -121,32 +86,11 @@ export function TeamEdit({ data }: { data?: ApiTypes['/v0/teams/:uuid.GET.respon
         onChange={(e) => setName(e.target.value)}
       />
 
-      {/* </EditTeamRow> */}
-      {/*<EditTeamRow label="Members">
-        <ShareMenu.Wrapper>
-          <ShareMenu.Invite
-            onInvite={({ email, role }: ShareMenuInviteCallback) => {
-              // @ts-expect-error
-              setUsers((prev) => [...prev, { email, permissions: { role, status: 'INVITED', access: [] } }]);
-            }}
-            userEmails={users.map(({ email }: any) => email)}
-          />
-          <ShareMenu.Users
-            users={users}
-            loggedInUser={loggedInUser}
-            onDeleteUser={(user: UserShare) => {
-              setUsers((prevUsers) => prevUsers.filter((prevUser) => prevUser.email !== user.email));
-            }}
-            onUpdateUser={() => {}}
-          />
-        </ShareMenu.Wrapper>
-          </EditTeamRow>*/}
-      {/* <EditTeamRow label="Billing"> */}
       <FormControl>
         <FormLabel
           id="pricing"
           sx={{
-            fontSize: '.8125rem',
+            fontSize: '.75rem',
             textIndent: theme.spacing(1),
             mb: theme.spacing(-1),
             '&.Mui-focused + div': {
@@ -156,7 +100,9 @@ export function TeamEdit({ data }: { data?: ApiTypes['/v0/teams/:uuid.GET.respon
             },
           }}
         >
-          <span style={{ background: '#fff', padding: `0 ${theme.spacing(0.5)}` }}>Billing</span>
+          <span style={{ background: theme.palette.background.default, padding: `0 ${theme.spacing(0.5)}` }}>
+            Billing
+          </span>
         </FormLabel>
         <RadioGroup
           name="pricing"
@@ -206,7 +152,7 @@ export function TeamEdit({ data }: { data?: ApiTypes['/v0/teams/:uuid.GET.respon
   );
 }
 
-function PriceLabel({ primary, secondary, disabled }: any) {
+function PriceLabel({ primary, secondary, disabled }: { primary: string; secondary: string; disabled?: boolean }) {
   return (
     <Stack direction="row" justifyContent="space-between" flexGrow={1}>
       <Typography variant="body2" color={disabled ? 'text.disabled' : 'text.primary'}>
@@ -216,94 +162,5 @@ function PriceLabel({ primary, secondary, disabled }: any) {
         {secondary}
       </Typography>
     </Stack>
-  );
-}
-
-// function EditTeamRow({ label, children }: any /* TODO */) {
-//   const theme = useTheme();
-//   return (
-//     <Stack direction="row" alignItems={'flex-start'}>
-//       {/* <Typography variant="body2" fontWeight={'600'} flexBasis={'16rem'} pt={theme.spacing(1.25)}>
-//         {label}
-//       </Typography> */}
-//       <Stack gap={theme.spacing(1)} flexGrow={1}>
-//         {children}
-//       </Stack>
-//     </Stack>
-//   );
-// }
-
-function IconEditor({
-  onClose,
-  onSave,
-  icon,
-}: {
-  onClose: () => void;
-  onSave: Function;
-
-  icon: File;
-}) {
-  const editorRef = useRef<AvatarEditor>(null);
-  const theme = useTheme();
-  const [scaleInput, setScaleInput] = useState<number>(20);
-
-  // 1 or 1.02 or 1.98 or 2
-  const scale = 1 + Math.round(scaleInput * 10) / 1000;
-
-  return (
-    <QDialog onClose={onClose} maxWidth="xs">
-      <QDialog.Title>Edit icon</QDialog.Title>
-      <QDialog.Content>
-        <Stack alignItems={'center'} gap={theme.spacing(1)}>
-          <AvatarEditor
-            ref={editorRef}
-            image={icon}
-            width={200}
-            height={200}
-            border={30}
-            borderRadius={100}
-            // TODO make this black or white depending on the image...
-            color={[255, 255, 255, 0.8]}
-            scale={scale}
-            rotate={0}
-            crossOrigin="anonymous"
-            // style={{ backgroundColor: theme.palette.action.hover }}
-          />
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={scaleInput}
-            onChange={(e) => {
-              // TODO require at least X dimensions size, otherwise throw globalSnackbar
-              setScaleInput(Number(e.target.value));
-            }}
-          />
-        </Stack>
-      </QDialog.Content>
-      <QDialog.Actions>
-        <Button variant="outlined" size="small" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          disableElevation
-          size="small"
-          onClick={async () => {
-            if (editorRef.current) {
-              const dataUrl = editorRef.current.getImageScaledToCanvas().toDataURL();
-              const res = await fetch(dataUrl);
-              const blob = await res.blob();
-
-              const imageUrl = window.URL.createObjectURL(blob);
-              console.log(imageUrl);
-              onSave(imageUrl);
-            }
-          }}
-        >
-          Save
-        </Button>
-      </QDialog.Actions>
-    </QDialog>
   );
 }
