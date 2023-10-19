@@ -10,6 +10,7 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { colors } from '../../../theme/colors';
 import BottomBarItem from './BottomBarItem';
 import PythonState from './PythonState';
+import { SelectionSummary } from './SelectionSummary';
 import SyncState from './SyncState';
 
 export const BottomBar = () => {
@@ -108,11 +109,7 @@ export const BottomBar = () => {
         )}
       </Stack>
       <Stack direction="row">
-        {/*
-
-          todo: when runFormula works again...
-
-        <ActiveSelectionStats sheetController={props.sheetController}></ActiveSelectionStats> */}
+        <SelectionSummary></SelectionSummary>
         <SyncState />
 
         {showOnDesktop && <PythonState />}
