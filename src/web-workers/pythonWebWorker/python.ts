@@ -11,7 +11,6 @@ class PythonWebWorker {
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
-      console.log(event.type);
       if (event.type === 'results') {
         const pythonResult = event.results;
         if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
@@ -84,7 +83,6 @@ class PythonWebWorker {
         },
       };
     } else {
-      console.log('execute');
       this.worker.postMessage({ type: 'execute', python });
     }
   }

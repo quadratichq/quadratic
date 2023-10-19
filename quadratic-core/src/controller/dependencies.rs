@@ -14,9 +14,6 @@ pub struct Dependencies {
 
 impl Dependencies {
     pub fn new(grid: &Grid) -> Self {
-        if cfg!(feature = "show-operations") {
-            crate::util::dbgjs("[Dependent Cells] building...");
-        }
         let mut deps = Dependencies {
             dependencies: HashMap::new(),
         };
@@ -76,7 +73,10 @@ impl GridController {
         old_deps: Option<Vec<CellRef>>,
     ) {
         if cfg!(feature = "show-operations") {
-            crate::util::dbgjs(&format!("[Dependent Cells] {:?} {:?}", old_deps, deps));
+            crate::util::dbgjs(&format!(
+                "[Dependent Cells] changing: {:?} {:?}",
+                old_deps, deps
+            ));
         }
 
         if let Some(old_deps) = old_deps {

@@ -6,7 +6,6 @@ use crate::{
 
 use super::{
     code_cell_update::update_code_cell_value,
-    dependencies::Dependencies,
     operation::Operation,
     transaction_summary::TransactionSummary,
     transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
@@ -253,8 +252,6 @@ impl TransactionInProgress {
         };
         if deps != old_deps {
             grid_controller.update_dependent_cells(self.current_cell_ref.unwrap(), deps, old_deps);
-        } else if cfg!(feature = "show-operations") {
-            crate::util::dbgjs("[Dependent Cells] unchanged");
         }
     }
 
@@ -266,21 +263,6 @@ impl TransactionInProgress {
     ) {
         if self.complete {
             panic!("Transaction is already complete");
-        }
-        if cfg!(feature = "show-operations") {
-            if let Some(current_cell_ref) = self.current_cell_ref {
-                let sheet = grid_controller.sheet(current_cell_ref.sheet);
-                if let Some(pos) = sheet.cell_ref_to_pos(current_cell_ref) {
-                    crate::util::dbgjs(&format!(
-                        "[Compute] Async calculation returned for {:?}",
-                        pos
-                    ));
-                }
-                crate::util::dbgjs(format!(
-                    "Cells to compute in claculation complete: {}",
-                    self.cells_to_compute.len()
-                ));
-            }
         }
         let (language, code_string) =
             if let Some(old_code_cell_value) = self.current_code_cell.clone() {
@@ -329,19 +311,7 @@ impl TransactionInProgress {
             // todo: this would be a good place to check for cycles
             // add all dependent cells to the cells_to_compute
             if let Some(dependent_cells) = grid_controller.get_dependent_cells(cell_ref) {
-                if cfg!(feature = "show-operations") {
-                    crate::util::dbgjs(&format!(
-                        "[Compute] Add dependencies: {}",
-                        Dependencies::to_debug(
-                            cell_ref,
-                            dependent_cells,
-                            grid_controller.grid.sheet_from_id(cell_ref.sheet),
-                        ),
-                    ));
-                }
                 self.cells_to_compute.extend(dependent_cells);
-            } else {
-                crate::util::dbgjs("[Compute] No dependent cells");
             }
 
             let sheet = grid_controller.grid.sheet_mut_from_id(cell_ref.sheet);
@@ -353,9 +323,6 @@ impl TransactionInProgress {
                 // add the updated cells to the cells_to_compute
 
                 if let Some(code_cell) = sheet.get_code_cell(pos) {
-                    if cfg!(feature = "show-operations") {
-                        crate::util::dbgjs("[Compute] Code cell found");
-                    }
                     self.current_cell_ref = Some(cell_ref);
                     self.current_code_cell = Some(code_cell.clone());
                     let code_string = code_cell.code_string.clone();
@@ -365,9 +332,6 @@ impl TransactionInProgress {
                             // python is run async so we exit the compute cycle and wait for TS to restart the transaction
                             if !cfg!(test) {
                                 runPython(code_string);
-                            }
-                            if cfg!(feature = "show-operations") {
-                                crate::util::dbgjs("[Compute] Python code running")
                             }
                             self.waiting_for_async = Some(language);
                         }
