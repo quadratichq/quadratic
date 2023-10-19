@@ -35,13 +35,19 @@ pub fn update_code_cell_value(
                         success = true;
                         match output_value {
                             Value::Array(array) => {
-                                for x in 0..array.size().w.into() {
+                                for x in 0..array.width() {
                                     let column_id =
                                         sheet.get_or_create_column(pos.x + x as i64).0.id;
-                                    for y in 0..array.size().h.into() {
-                                        summary
-                                            .cell_sheets_modified
-                                            .insert(CellSheetsModified::new(sheet.id, pos.into()));
+                                    for y in 0..array.height() {
+                                        summary.cell_sheets_modified.insert(
+                                            CellSheetsModified::new(
+                                                sheet.id,
+                                                Pos {
+                                                    x: pos.x,
+                                                    y: pos.y + y as i64,
+                                                },
+                                            ),
+                                        );
                                         let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
                                         // add all but the first cell to the compute cycle
                                         if x != 0 && y != 0 {
@@ -59,14 +65,14 @@ pub fn update_code_cell_value(
                             Value::Single(..) => {
                                 summary
                                     .cell_sheets_modified
-                                    .insert(CellSheetsModified::new(sheet.id, pos.into()));
+                                    .insert(CellSheetsModified::new(sheet.id, pos));
                             }
                         };
                     }
                     None => {
                         summary
                             .cell_sheets_modified
-                            .insert(CellSheetsModified::new(sheet.id, pos.into()));
+                            .insert(CellSheetsModified::new(sheet.id, pos));
                     }
                 };
             }
