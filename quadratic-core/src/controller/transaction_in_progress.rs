@@ -66,9 +66,9 @@ impl TransactionInProgress {
         transaction.transact(grid_controller, operations);
 
         if compute {
-            transaction.loop_compute(grid_controller)
+            transaction.loop_compute(grid_controller);
         } else {
-            transaction.complete = true
+            transaction.complete = true;
         }
 
         transaction
@@ -138,11 +138,19 @@ impl TransactionInProgress {
             let pos = if let Some(pos) = sheet.cell_ref_to_pos(current_cell_ref) {
                 pos
             } else {
-                panic!("Expected current_cell_ref's sheet to be defined in transaction::get_cells");
+                // this should only occur after an internal logic error
+                crate::util::dbgjs(
+                    "Expected current_cell_ref's sheet to be defined in transaction::get_cells",
+                );
+                return Some(CellsForArray::new(vec![], true));
             };
             (sheet, pos)
         } else {
-            panic!("Expected current_sheet_pos to be defined in transaction::get_cells");
+            // this should only occur after an internal logic error
+            crate::util::dbgjs(
+                "Expected current_sheet_pos to be defined in transaction::get_cells",
+            );
+            return Some(CellsForArray::new(vec![], true));
         };
 
         if get_cells.rect().contains(pos) {
@@ -199,13 +207,21 @@ impl TransactionInProgress {
         let cell_ref = if let Some(cell_ref) = self.current_cell_ref {
             cell_ref
         } else {
-            panic!("Expected current_sheet_pos to be defined in transaction::code_cell_error");
+            // this should only happen after an internal logic error
+            crate::util::dbgjs(
+                "Expected current_sheet_pos to be defined in transaction::code_cell_error",
+            );
+            return;
         };
         let mut updated_code_cell_value =
             if let Some(code_cell_value) = self.current_code_cell.clone() {
                 code_cell_value
             } else {
-                panic!("Expected current_code_cell to be defined in transaction::code_cell_error");
+                // this should only happen after an internal logic error
+                crate::util::dbgjs(
+                    "Expected current_code_cell to be defined in transaction::code_cell_error",
+                );
+                return;
             };
         let msg = ErrorMsg::PythonError(error_msg.clone().into());
         let span = if let Some(line_number) = line_number {
@@ -277,25 +293,44 @@ impl TransactionInProgress {
                 panic!("Expected current_code_cell to be defined in transaction::complete");
             };
         match self.waiting_for_async {
-          None => panic!("Expected transaction to be waiting_for_async to be defined in transaction::complete"),
-          Some(waiting_for_async) => {
-            match waiting_for_async {
-              CodeCellLanguage::Python => {
-                    let updated_code_cell_value = result.into_code_cell_value(language, code_string, &self.cells_accessed);
-                    let cell_ref = if let Some(sheet_pos) = self.current_cell_ref {
-                        sheet_pos
-                    } else {
-                        panic!("Expected current_sheet_pos to be defined in transaction::complete");
-                    };
-                    if update_code_cell_value(grid_controller, cell_ref, Some(updated_code_cell_value), &mut Some(&mut self.cells_to_compute), &mut self.reverse_operations, &mut self.summary) {
-                        // updates the dependencies only if the calculation was successful
-                        self.update_deps(grid_controller);
-                    }
-                    self.waiting_for_async = None;
-                }
-                _ => panic!("Transaction.complete called for an unhandled language"),
+            None => {
+                // this should only occur after an internal logic error
+                crate::util::dbgjs("Expected transaction to be waiting_for_async to be defined in transaction::complete");
+                return;
             }
-          }
+            Some(waiting_for_async) => {
+                match waiting_for_async {
+                    CodeCellLanguage::Python => {
+                        let updated_code_cell_value = result.into_code_cell_value(
+                            language,
+                            code_string,
+                            &self.cells_accessed,
+                        );
+                        let cell_ref = if let Some(sheet_pos) = self.current_cell_ref {
+                            sheet_pos
+                        } else {
+                            panic!(
+                                "Expected current_sheet_pos to be defined in transaction::complete"
+                            );
+                        };
+                        if update_code_cell_value(
+                            grid_controller,
+                            cell_ref,
+                            Some(updated_code_cell_value),
+                            &mut Some(&mut self.cells_to_compute),
+                            &mut self.reverse_operations,
+                            &mut self.summary,
+                        ) {
+                            // updates the dependencies only if the calculation was successful
+                            self.update_deps(grid_controller);
+                        }
+                        self.waiting_for_async = None;
+                    }
+                    _ => {
+                        crate::util::dbgjs("Transaction.complete called for an unhandled language");
+                    }
+                }
+            }
         }
         // continue the compute loop after a successful async call
         self.loop_compute(grid_controller);
@@ -359,15 +394,6 @@ impl TransactionInProgress {
     }
 }
 
-impl Into<Transaction> for TransactionInProgress {
-    fn into(self) -> Transaction {
-        Transaction {
-            ops: self.reverse_operations.into_iter().rev().collect(),
-            cursor: self.cursor,
-        }
-    }
-}
-
 impl Into<Transaction> for &TransactionInProgress {
     fn into(self) -> Transaction {
         Transaction {
@@ -377,19 +403,10 @@ impl Into<Transaction> for &TransactionInProgress {
     }
 }
 
-impl Into<Transaction> for &mut TransactionInProgress {
-    fn into(self) -> Transaction {
-        Transaction {
-            ops: self.reverse_operations.clone().into_iter().rev().collect(),
-            cursor: self.cursor.clone(),
-        }
-    }
-}
-
-impl From<Transaction> for TransactionInProgress {
-    fn from(value: Transaction) -> Self {
-        Self {
-            cursor: value.cursor,
+impl Into<TransactionInProgress> for Transaction {
+    fn into(self) -> TransactionInProgress {
+        TransactionInProgress {
+            cursor: self.cursor,
             ..Default::default()
         }
     }

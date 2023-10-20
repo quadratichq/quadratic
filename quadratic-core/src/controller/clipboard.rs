@@ -51,6 +51,8 @@ impl GridController {
                 } else {
                     None
                 };
+
+                // todo: this only happens after a code error -- not ideal
                 let code: Option<CodeCellValue> = if value.is_none() && spill_value.is_none() {
                     let code_cell_value = sheet.get_code_cell(pos);
                     code_cell_value.map(|code_cell_value| CodeCellValue {
