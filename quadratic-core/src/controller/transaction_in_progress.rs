@@ -66,9 +66,9 @@ impl TransactionInProgress {
         transaction.transact(grid_controller, operations);
 
         if compute {
-            transaction.loop_compute(grid_controller)
+            transaction.loop_compute(grid_controller);
         } else {
-            transaction.complete = true
+            transaction.complete = true;
         }
 
         transaction
