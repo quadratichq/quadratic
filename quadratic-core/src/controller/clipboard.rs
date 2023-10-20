@@ -118,6 +118,9 @@ impl GridController {
                 }
             }
         }
+
+        // use: https://github.com/rust-lang/rust/issues/48564
+
         let now = SystemTime::now();
         let formats = self.get_all_cell_formats(sheet_id, rect);
         let format_time = now.elapsed().unwrap().as_millis();
