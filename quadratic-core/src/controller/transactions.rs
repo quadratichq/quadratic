@@ -19,10 +19,6 @@ pub enum TransactionType {
     Redo,
 }
 
-use super::{operations::Operation, transaction_summary::TransactionSummary, GridController};
-use crate::{grid::SheetId, Pos, SheetPos};
-use serde::{Deserialize, Serialize};
-
 impl GridController {
     pub fn finalize_transaction(&mut self, transaction_in_progress: &TransactionInProgress) {
         let transaction: Transaction = transaction_in_progress.into();

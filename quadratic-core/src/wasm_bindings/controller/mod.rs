@@ -1,14 +1,8 @@
 use super::*;
+use crate::controller::transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells};
 use crate::{controller::transaction_summary::TransactionSummary, grid::js_types::*};
-use crate::{
-    controller::{
-        transaction_summary::TransactionSummary,
-        transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
-    },
-    grid::js_types::*,
-};
+use std::collections::HashSet;
 use std::str::FromStr;
-use std::{collections::HashSet, str::FromStr};
 
 pub mod auto_complete;
 pub mod bounds;

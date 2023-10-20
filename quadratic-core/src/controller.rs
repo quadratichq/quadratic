@@ -14,6 +14,7 @@ pub mod clipboard;
 pub mod code_cell_update;
 pub mod dependencies;
 pub mod formatting;
+pub mod formula;
 pub mod import;
 pub mod operation;
 pub mod operations;

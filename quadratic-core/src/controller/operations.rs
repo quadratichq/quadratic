@@ -5,18 +5,8 @@ use indexmap::IndexSet;
 use crate::{grid::*, values::IsBlank, Array, CellValue};
 
 use super::code_cell_update::update_code_cell_value;
-use crate::{
-    grid::{
-        js_types::{JsRenderCellUpdate, JsRenderCellUpdateEnum},
-        *,
-    },
-    values::IsBlank,
-    Array, CellValue, Pos, SheetPos, SheetRect,
-};
-use serde::{Deserialize, Serialize};
 
 use super::{
-    code_cell_value::update_code_cell_value,
     formatting::CellFmtArray,
     operation::Operation,
     transaction_summary::{CellSheetsModified, TransactionSummary},

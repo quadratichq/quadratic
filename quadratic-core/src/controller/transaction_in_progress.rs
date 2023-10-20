@@ -380,6 +380,29 @@ impl TransactionInProgress {
                             }
                             self.waiting_for_async = Some(language);
                         }
+                        CodeCellLanguage::Formula => {
+                            let result = grid_controller.run_formula(
+                                cell_ref,
+                                code_string,
+                                &mut self.cells_to_compute,
+                                &mut self.reverse_operations,
+                                &mut self.summary,
+                            );
+                            if let Some(result) = result {
+                                if let Some(updated_code_cell_value) =
+                                    result.into_code_cell_value(language, code_string, &[])
+                                {
+                                    update_code_cell_value(
+                                        grid_controller,
+                                        cell_ref,
+                                        Some(updated_code_cell_value),
+                                        &mut Some(&mut self.cells_to_compute),
+                                        &mut self.reverse_operations,
+                                        &mut self.summary,
+                                    );
+                                }
+                            }
+                        }
                         _ => {
                             crate::util::dbgjs(&format!(
                                 "Compute language {} not supported in compute.rs",

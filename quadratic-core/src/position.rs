@@ -241,14 +241,6 @@ impl fmt::Display for SheetRect {
     }
 }
 
-/// Used for referencing a pos during computation.
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct SheetPos {
-    pub x: i64,
-    pub y: i64,
-    pub sheet_id: SheetId,
-}
-
 impl SheetPos {
     pub fn new(sheet_id: SheetId, x: i64, y: i64) -> Self {
         Self { sheet_id, x, y }
@@ -267,10 +259,5 @@ impl From<SheetRect> for Vec<SheetPos> {
             }
         }
         sheet_pos
-    }
-}
-impl fmt::Display for SheetPos {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} ({}, {})", self.sheet_id, self.x, self.y)
     }
 }
