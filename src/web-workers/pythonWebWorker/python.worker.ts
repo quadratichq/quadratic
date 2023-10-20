@@ -9,16 +9,17 @@ self.importScripts('/pyodide/pyodide.js');
 
 let getCellsMessages: (cells: { x: number; y: number; value: string }[]) => void | undefined;
 
-const getCellsDB = async (
+export const getCellsDB = async (
   x0: number,
   y0: number,
   x1: number,
   y1: number,
-  sheet?: string
+  sheet?: string,
+  lineNumber?: number
 ): Promise<{ x: number; y: number; value: string }[]> => {
   return new Promise((resolve) => {
     getCellsMessages = (cells: { x: number; y: number; value: string }[]) => resolve(cells);
-    self.postMessage({ type: 'get-cells', range: { x0, y0, x1, y1, sheet } } as PythonMessage);
+    self.postMessage({ type: 'get-cells', range: { x0, y0, x1, y1, sheet, lineNumber } } as PythonMessage);
   });
 };
 
@@ -43,6 +44,7 @@ async function pythonWebWorker() {
 
 self.onmessage = async (e: MessageEvent<PythonMessage>) => {
   const event = e.data;
+
   if (event.type === 'get-cells') {
     if (event.cells && getCellsMessages) {
       getCellsMessages(event.cells);

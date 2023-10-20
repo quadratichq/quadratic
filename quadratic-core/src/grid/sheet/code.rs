@@ -18,8 +18,8 @@ impl Sheet {
 
         if let Some(code_cell) = code_cell {
             if let Some(output) = code_cell.output.clone() {
-                if let Some(output_value) = output.output_value() {
-                    match output_value {
+                match output.output_value() {
+                    Some(output_value) => match output_value {
                         Value::Single(_) => {
                             let (_, column) = self.get_or_create_column(pos.x);
                             column.spills.set(pos.y, Some(cell_ref));
@@ -36,6 +36,10 @@ impl Sheet {
                                 column.spills.set_range(range.clone(), cell_ref);
                             }
                         }
+                    },
+                    None => {
+                        let (_, column) = self.get_or_create_column(pos.x);
+                        column.spills.set(pos.y, Some(cell_ref));
                     }
                 }
             }

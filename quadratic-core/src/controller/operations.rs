@@ -161,7 +161,6 @@ impl GridController {
                 code_cell_value,
             } => {
                 let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
-
                 let mut summary_set = vec![];
 
                 if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
@@ -180,6 +179,7 @@ impl GridController {
                         &mut summary_set,
                         cells_to_compute,
                     );
+
                     if !summary_set.is_empty() {
                         summary.operations.push(OperationSummary::SetCellValues(
                             sheet.id.to_string(),
@@ -197,12 +197,10 @@ impl GridController {
                 }
             }
             Operation::SetCellFormats { region, attr } => {
-                match attr {
-                    CellFmtArray::FillColor(_) => {
-                        summary.fill_sheets_modified.push(region.sheet);
-                    }
-                    _ => (),
+                if let CellFmtArray::FillColor(_) = attr {
+                    summary.fill_sheets_modified.push(region.sheet);
                 }
+
                 let old_attr = match attr {
                     CellFmtArray::Align(align) => {
                         let sheet = self.grid.sheet_from_id(region.sheet);
@@ -212,11 +210,11 @@ impl GridController {
                             .filter_map(|(i, cell_ref)| {
                                 let x = sheet.get_column_index(cell_ref.column);
                                 let y = sheet.get_row_index(cell_ref.row);
-                                if let (Some(x), Some(y)) = (x, y) {
+                                if let (Some(x), Some(y), Some(format)) = (x, y, align.get_at(i)) {
                                     Some(JsRenderCellUpdate {
                                         x,
                                         y,
-                                        update: JsRenderCellUpdateEnum::Align(align.get_at(i)),
+                                        update: JsRenderCellUpdateEnum::Align(format.to_owned()),
                                     })
                                 } else {
                                     None
@@ -243,29 +241,22 @@ impl GridController {
                             .filter_map(|(i, cell_ref)| {
                                 let x = sheet.get_column_index(cell_ref.column);
                                 let y = sheet.get_row_index(cell_ref.row);
-                                if let (Some(x), Some(y)) = (x, y) {
-                                    if let Some(value) = sheet.get_cell_value(Pos { x, y }) {
-                                        let numeric_decimal = match value {
-                                            CellValue::Number(_) => {
-                                                if let Some(column) = sheet.get_column(x) {
-                                                    column.numeric_decimals.get(y)
-                                                } else {
-                                                    None
-                                                }
-                                            }
-                                            _ => None,
-                                        };
-                                        Some(JsRenderCellUpdate {
+                                if let (Some(x), Some(y), Some(format)) = (x, y, num_fmt.get_at(i))
+                                {
+                                    sheet.get_cell_value(Pos { x, y }).map(|value| {
+                                        let numeric_decimal = sheet
+                                            .get_column(x)
+                                            .and_then(|column| column.numeric_decimals.get(y));
+
+                                        JsRenderCellUpdate {
                                             x,
                                             y,
                                             update: JsRenderCellUpdateEnum::Value(Some(
                                                 value
-                                                    .to_display(num_fmt.get_at(i), numeric_decimal),
+                                                    .to_display(format.to_owned(), numeric_decimal),
                                             )),
-                                        })
-                                    } else {
-                                        None
-                                    }
+                                        }
+                                    })
                                 } else {
                                     None
                                 }
@@ -288,31 +279,22 @@ impl GridController {
                             .filter_map(|(i, cell_ref)| {
                                 let x = sheet.get_column_index(cell_ref.column);
                                 let y = sheet.get_row_index(cell_ref.row);
-                                if let (Some(x), Some(y)) = (x, y) {
-                                    if let Some(value) = sheet.get_cell_value(Pos { x, y }) {
-                                        let numeric_format = match value {
-                                            CellValue::Number(_) => {
-                                                if let Some(column) = sheet.get_column(x) {
-                                                    column.numeric_format.get(y)
-                                                } else {
-                                                    None
-                                                }
-                                            }
-                                            _ => None,
-                                        };
-                                        Some(JsRenderCellUpdate {
+                                if let (Some(x), Some(y), Some(format)) =
+                                    (x, y, num_decimals.get_at(i))
+                                {
+                                    sheet.get_cell_value(Pos { x, y }).map(|value| {
+                                        let numeric_format = sheet
+                                            .get_column(x)
+                                            .and_then(|column| column.numeric_format.get(y));
+
+                                        JsRenderCellUpdate {
                                             x,
                                             y,
                                             update: JsRenderCellUpdateEnum::Value(Some(
-                                                value.to_display(
-                                                    numeric_format,
-                                                    num_decimals.get_at(i),
-                                                ),
+                                                value.to_display(numeric_format, format.to_owned()),
                                             )),
-                                        })
-                                    } else {
-                                        None
-                                    }
+                                        }
+                                    })
                                 } else {
                                     None
                                 }
@@ -337,17 +319,18 @@ impl GridController {
                             .filter_map(|(i, cell_ref)| {
                                 let x = sheet.get_column_index(cell_ref.column);
                                 let y = sheet.get_row_index(cell_ref.row);
-                                if let (Some(x), Some(y)) = (x, y) {
+                                if let (Some(x), Some(y), Some(format)) = (x, y, bold.get_at(i)) {
                                     Some(JsRenderCellUpdate {
                                         x,
                                         y,
-                                        update: JsRenderCellUpdateEnum::Bold(bold.get_at(i)),
+                                        update: JsRenderCellUpdateEnum::Bold(format.to_owned()),
                                     })
                                 } else {
                                     None
                                 }
                             })
                             .collect();
+
                         summary.operations.push(OperationSummary::SetCellFormats(
                             region.sheet.to_string(),
                             cells,
@@ -362,11 +345,11 @@ impl GridController {
                             .filter_map(|(i, cell_ref)| {
                                 let x = sheet.get_column_index(cell_ref.column);
                                 let y = sheet.get_row_index(cell_ref.row);
-                                if let (Some(x), Some(y)) = (x, y) {
+                                if let (Some(x), Some(y), Some(format)) = (x, y, italic.get_at(i)) {
                                     Some(JsRenderCellUpdate {
                                         x,
                                         y,
-                                        update: JsRenderCellUpdateEnum::Italic(italic.get_at(i)),
+                                        update: JsRenderCellUpdateEnum::Italic(format.to_owned()),
                                     })
                                 } else {
                                     None
@@ -389,12 +372,14 @@ impl GridController {
                             .filter_map(|(i, cell_ref)| {
                                 let x = sheet.get_column_index(cell_ref.column);
                                 let y = sheet.get_row_index(cell_ref.row);
-                                if let (Some(x), Some(y)) = (x, y) {
+                                if let (Some(x), Some(y), Some(format)) =
+                                    (x, y, text_color.get_at(i))
+                                {
                                     Some(JsRenderCellUpdate {
                                         x,
                                         y,
                                         update: JsRenderCellUpdateEnum::TextColor(
-                                            text_color.get_at(i),
+                                            format.to_owned(),
                                         ),
                                     })
                                 } else {

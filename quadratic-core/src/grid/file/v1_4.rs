@@ -261,3 +261,46 @@ impl JsCellSchema {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive};
+    use std::str::FromStr;
+
+    #[test]
+    fn test_converts_any_into_cellvalue() {
+        let big_number = BigDecimal::from_f64(1.22).unwrap();
+        let big_number_f64 = big_number.to_f64().unwrap();
+
+        assert_eq!(
+            CellValue::from(Any::Number(big_number_f64)),
+            CellValue::Number(big_number)
+        );
+
+        assert_eq!(
+            CellValue::from(Any::Number(f64::INFINITY)),
+            CellValue::Text(f64::INFINITY.to_string())
+        );
+
+        assert_eq!(
+            CellValue::from(Any::String("1.22".to_string())),
+            CellValue::Number(BigDecimal::from_str("1.22").unwrap())
+        );
+
+        assert_eq!(
+            CellValue::from(Any::String("foo".into())),
+            CellValue::Text("foo".into())
+        );
+
+        assert_eq!(
+            CellValue::from(Any::Boolean(true)),
+            CellValue::Logical(true)
+        );
+
+        assert_eq!(
+            CellValue::from(Any::Boolean(false)),
+            CellValue::Logical(false)
+        );
+    }
+}

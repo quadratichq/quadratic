@@ -146,11 +146,7 @@ pub enum CellFmtArray {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        controller::{transaction_summary::TransactionSummary, GridController},
-        grid::TextColor,
-        Pos, Rect,
-    };
+    use crate::{controller::GridController, grid::TextColor, Pos, Rect};
 
     #[tokio::test]
     async fn test_set_cell_text_color_undo_redo() {
@@ -168,43 +164,38 @@ mod test {
                 .unwrap_or_default()
         };
 
-        // let expected_summary = |rect| TransactionSummary {
-        //     cell_regions_modified: vec![(sheet_id, rect)],
-        //     ..Default::default()
-        // };
-
         assert_eq!(get(&gc, pos1), "");
         assert_eq!(get(&gc, pos2), "");
         assert_eq!(get(&gc, pos3), "");
-        // assert_eq!(
-        //     gc.set_cell_text_color(sheet_id, rect1, Some("blue".to_string()), None)
-        //         .await,
-        //     expected_summary(rect1),
-        // );
+
+        gc.set_cell_text_color(sheet_id, rect1, Some("blue".to_string()), None)
+            .await;
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "blue");
         assert_eq!(get(&gc, pos3), "");
-        // assert_eq!(
-        //     gc.set_cell_text_color(sheet_id, rect2, Some("red".to_string()), None)
-        //         .await,
-        //     expected_summary(rect2),
-        // );
+
+        gc.set_cell_text_color(sheet_id, rect2, Some("red".to_string()), None)
+            .await;
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "red");
         assert_eq!(get(&gc, pos3), "red");
-        // assert_eq!(gc.undo(None), Some(expected_summary(rect2)));
+
+        gc.undo(None);
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "blue");
         assert_eq!(get(&gc, pos3), "");
-        // assert_eq!(gc.undo(None), Some(expected_summary(rect1)));
+
+        gc.undo(None);
         assert_eq!(get(&gc, pos1), "");
         assert_eq!(get(&gc, pos2), "");
         assert_eq!(get(&gc, pos3), "");
-        // assert_eq!(gc.redo(None), Some(expected_summary(rect1)));
+
+        gc.redo(None);
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "blue");
         assert_eq!(get(&gc, pos3), "");
-        // assert_eq!(gc.redo(None), Some(expected_summary(rect2)));
+
+        gc.redo(None);
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "red");
         assert_eq!(get(&gc, pos3), "red");

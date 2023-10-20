@@ -40,7 +40,7 @@ pub fn column_from_name(s: &str) -> Option<f64> {
     Some(util::column_from_name(s)? as f64)
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, TS)]
 pub struct JsCodeResult {
     pub cells_accessed: Vec<[i64; 2]>,
     pub formatted_code: Option<String>,
@@ -57,6 +57,7 @@ pub struct JsComputeResult {
     pub complete: bool,
     pub rect: Option<Rect>,
     pub sheet_id: Option<String>,
+    pub line_number: Option<i64>,
     pub result: Option<JsCodeResult>,
 }
 

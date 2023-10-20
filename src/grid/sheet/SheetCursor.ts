@@ -66,6 +66,7 @@ export class SheetCursor {
     multiCursor?: MultiCursor;
     cursorPosition?: Coordinate;
     keyboardMovePosition?: Coordinate;
+    ensureVisible?: boolean;
   }): void {
     this.multiCursor = options.multiCursor;
     if (options.cursorPosition) {
@@ -74,7 +75,9 @@ export class SheetCursor {
     } else if (options.keyboardMovePosition) {
       this.keyboardMovePosition = options.keyboardMovePosition;
     }
-    pixiApp.updateCursorPosition();
+    pixiApp.updateCursorPosition({
+      ensureVisible: options.ensureVisible ?? true,
+    });
   }
 
   changeBoxCells(boxCells: boolean) {

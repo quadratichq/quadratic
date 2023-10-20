@@ -10,6 +10,7 @@ import init, {
   CodeCellLanguage,
   GridController,
   JsRenderBorders,
+  JsRenderCodeCell,
   MinMax,
   Pos,
   Rect as RectInternal,
@@ -23,7 +24,6 @@ import {
   FormattingSummary,
   JsClipboard,
   JsRenderCell,
-  JsRenderCodeCell,
   JsRenderFill,
   Rect,
 } from '../../quadratic-core/types';
@@ -194,7 +194,6 @@ export class Grid {
     this.dirty = true;
   }
 
-  // todo....
   async setCodeCellValue(options: {
     sheetId: string;
     x: number;
@@ -604,6 +603,15 @@ export class Grid {
     );
     transactionResponse(summary);
     this.dirty = true;
+  }
+
+  //#endregion
+
+  //#region Summarize
+  //-----------------
+
+  summarizeSelection() {
+    return this.gridController.summarizeSelection(sheets.sheet.id, rectangleToRect(sheets.sheet.cursor.getRectangle()));
   }
 
   //#endregion

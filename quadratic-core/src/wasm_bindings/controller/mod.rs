@@ -12,6 +12,7 @@ pub mod import;
 pub mod render;
 pub mod sheet_offsets;
 pub mod sheets;
+pub mod summarize;
 
 #[wasm_bindgen]
 impl GridController {

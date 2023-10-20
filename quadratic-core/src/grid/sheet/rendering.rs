@@ -6,7 +6,7 @@ use crate::{
         },
         CodeCellRunResult, NumericFormat, NumericFormatKind,
     },
-    Pos, Rect,
+    CellValue, Pos, Rect,
 };
 
 use super::Sheet;
@@ -35,17 +35,26 @@ impl Sheet {
                 .filter_map(move |block| {
                     let code_cell_pos = self.cell_ref_to_pos(block.content.value)?;
                     let code_cell = self.code_cells.get(&block.content.value)?;
+
+                    let (block_len, cell_error) = if let Some(error) = code_cell.get_error() {
+                        (1, Some(CellValue::Error(Box::new(error))))
+                    } else {
+                        (block.len(), None)
+                    };
+
                     let dx = (x - code_cell_pos.x) as u32;
                     let dy = (block.y - code_cell_pos.y) as u32;
 
-                    Some((0..block.len()).filter_map(move |y_within_block| {
+                    Some((0..block_len).filter_map(move |y_within_block| {
                         let y = block.y + y_within_block as i64;
                         let dy = dy + y_within_block as u32;
                         Some((
                             x,
                             y,
                             column,
-                            code_cell.get_output_value(dx, dy)?,
+                            cell_error
+                                .clone()
+                                .or_else(|| code_cell.get_output_value(dx, dy))?,
                             ((dx, dy) == (0, 0)).then_some(code_cell.language),
                         ))
                     }))
@@ -68,18 +77,35 @@ impl Sheet {
                     };
                     numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
                 }
-                JsRenderCell {
-                    x,
-                    y,
 
-                    value: value.to_display(numeric_format, numeric_decimals),
-                    language,
+                if value.type_name() == "error" {
+                    JsRenderCell {
+                        x,
+                        y,
 
-                    align: column.align.get(y),
-                    wrap: column.wrap.get(y),
-                    bold: column.bold.get(y),
-                    italic: column.italic.get(y),
-                    text_color: column.text_color.get(y),
+                        value: String::from(" ERROR"),
+                        language,
+
+                        align: None,
+                        wrap: None,
+                        bold: None,
+                        italic: Some(true),
+                        text_color: Some(String::from("red")),
+                    }
+                } else {
+                    JsRenderCell {
+                        x,
+                        y,
+
+                        value: value.to_display(numeric_format, numeric_decimals),
+                        language,
+
+                        align: column.align.get(y),
+                        wrap: column.wrap.get(y),
+                        bold: column.bold.get(y),
+                        italic: column.italic.get(y),
+                        text_color: column.text_color.get(y),
+                    }
                 }
             })
             .collect()

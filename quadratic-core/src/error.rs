@@ -41,8 +41,9 @@ impl Error {
 /// Information about the type of error that occurred.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
-#[serde(tag = "type")]
 pub enum ErrorMsg {
+    PythonError(Cow<'static, str>),
+
     // Miscellaneous errors
     Unimplemented,
     UnknownError,
@@ -101,6 +102,9 @@ pub enum ErrorMsg {
 impl fmt::Display for ErrorMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::PythonError(s) => {
+                write!(f, "Python error: {s}")
+            }
             Self::Unimplemented => {
                 write!(f, "This feature is unimplemented")
             }
