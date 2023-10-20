@@ -124,25 +124,25 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
 
     for js_format in v.formats {
         let column = sheet.column(js_format.x);
-        let y = js_format.y.to_string();
+        let y = js_format.y;
         js_format
             .alignment
-            .map(|format| column.align.insert(y.clone(), format.into()));
+            .map(|format| column.align.insert(y.to_string(), format.into()));
         js_format
             .wrapping
-            .map(|format| column.wrap.insert(y.clone(), format));
+            .map(|format| column.wrap.insert(y.to_string(), format));
         js_format
             .bold
-            .map(|format| column.bold.insert(y.clone(), format.into()));
+            .map(|format| column.bold.insert(y.to_string(), format.into()));
         js_format
             .italic
-            .map(|format| column.italic.insert(y.clone(), format.into()));
+            .map(|format| column.italic.insert(y.to_string(), format.into()));
         js_format
             .text_color
-            .map(|format| column.text_color.insert(y.clone(), format.into()));
+            .map(|format| column.text_color.insert(y.to_string(), format.into()));
         js_format
             .fill_color
-            .map(|format| column.fill_color.insert(y.clone(), format.into()));
+            .map(|format| column.fill_color.insert(y.to_string(), format.into()));
 
         // TODO(ddimaria): deterine if this is needed for upgrades
         // if let Some(text_format) = js_format.text_format.clone() {

@@ -132,7 +132,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                         .iter()
                         .map(|(x, row)| (*x, RowId::from_str(&row.id).unwrap()))
                         .collect(),
-                    offsets: SheetOffsets::import(sheet.offsets.clone()),
+                    offsets: SheetOffsets::import(sheet.offsets),
                     columns: import_column_builder(&sheet.columns),
                     // TODO(ddimaria): implement
                     // borders: sheet.borders,
