@@ -39,11 +39,20 @@ impl Rgba {
     pub fn from_str(color_str: &str) -> Result<Self, ParseIntError> {
         // TODO(jrice): serde
         assert_eq!(&color_str[0..=0], "#");
+
+        // Check length of the string
+        let len = color_str.len();
+        let alpha = if len == 9 {
+            u8::from_str_radix(&color_str[7..=8], 16)?
+        } else {
+            0xff
+        };
+
         Ok(Self {
             red: u8::from_str_radix(&color_str[1..=2], 16)?,
             green: u8::from_str_radix(&color_str[3..=4], 16)?,
             blue: u8::from_str_radix(&color_str[5..=6], 16)?,
-            alpha: u8::from_str_radix(&color_str[7..=8], 16)?,
+            alpha,
         })
     }
     pub fn as_string(&self) -> String {
