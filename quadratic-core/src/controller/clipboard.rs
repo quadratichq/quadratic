@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::{
     formatting::CellFmtArray, operation::Operation, transaction_summary::TransactionSummary,
     transactions::TransactionType, GridController,
@@ -26,92 +28,173 @@ pub struct Clipboard {
 
 impl GridController {
     pub fn copy_to_clipboard(&self, sheet_id: SheetId, rect: Rect) -> (String, String) {
-        let mut cells = vec![];
-        let mut plain_text = String::new();
-        let mut html = String::from("<tbody>");
+        let mut cells = HashMap::new();
 
         let sheet = self.grid().sheet_from_id(sheet_id);
-        for y in rect.y_range() {
-            if y != rect.min.y {
-                plain_text.push('\n');
-                html.push_str("</tr>");
-            }
-            html.push_str("<tr>");
-            for x in rect.x_range() {
-                if x != rect.min.x {
-                    plain_text.push('\t');
-                    html.push_str("</td>");
-                }
-                html.push_str("<td>");
-                let pos = Pos { x, y };
-                let value = sheet.get_cell_value(pos);
-
-                let spill_value = if value.is_none() {
-                    sheet.get_code_cell_value(pos)
-                } else {
-                    None
-                };
-
-                // todo: this only happens after a code error -- not ideal
-                let code: Option<CodeCellValue> = if value.is_none() && spill_value.is_none() {
-                    let code_cell_value = sheet.get_code_cell(pos);
-                    code_cell_value.map(|code_cell_value| CodeCellValue {
-                        language: code_cell_value.language,
-                        code_string: code_cell_value.code_string.clone(),
-                        formatted_code_string: None,
-                        last_modified: code_cell_value.last_modified.clone(),
-                        output: None,
-                    })
-                } else {
-                    None
-                };
-
-                // create quadratic clipboard values
-                cells.push(ClipboardCell {
-                    value: value.clone(),
-                    code: code.clone(),
-                });
-
-                let (bold, italic) =
-                    if let Some(format) = sheet.get_existing_cell_format_summary(pos) {
-                        (
-                            format.bold.is_some_and(|bold| bold),
-                            format.italic.is_some_and(|italic| italic),
-                        )
-                    } else {
-                        (false, false)
-                    };
-                if bold || italic {
-                    html.push_str("<span style={");
-                    if bold {
-                        html.push_str("font-weight:bold;");
-                    }
-                    if italic {
-                        html.push_str("font-style:italic;");
-                    }
-                    html.push_str("}>");
-                }
-                if value.is_some() {
-                    plain_text.push_str(&value.as_ref().unwrap().to_string());
-                    html.push_str(&value.as_ref().unwrap().to_string());
-                } else if code.is_some() {
-                    let output = code.unwrap().get_output_value(0, 0);
-                    if let Some(output) = output {
-                        plain_text.push_str(&output.repr());
-                    }
-                } else if spill_value.is_some() {
-                    plain_text.push_str(&spill_value.as_ref().unwrap().to_string());
-                    html.push_str(&spill_value.as_ref().unwrap().to_string());
-                }
-                if bold || italic {
-                    html.push_str("</span>");
+        for x in rect.x_range() {
+            let column = sheet.get_column(x);
+            if let Some(column) = column {
+                column
+                    .values
+                    .values_in_range_include_empty(rect.y_range())
+                    .for_each(|(y, value)| {
+                        cells.insert(
+                            Pos { x, y },
+                            ClipboardCell {
+                                value: value.clone(),
+                                code: None,
+                            },
+                        );
+                    });
+            } else {
+                for y in rect.y_range() {
+                    cells.insert(
+                        Pos { x, y },
+                        ClipboardCell {
+                            value: None,
+                            code: None,
+                        },
+                    );
                 }
             }
         }
 
+        //     for y in rect.y_range() {
+        //         if let Some(column) = column {
+        //             if let Some(cell_value) = column.values.get(y) {
+        //                 cells.push(ClipboardCell {
+        //                     value: Some(cell_value.clone()),
+        //                     code: None,
+        //                 })
+        //             // } else if let Some(code_cell) = sheet.get_code_cell(Pos { x, y }) {
+        //             //     let value = code_cell.get_output_value(0, 0);
+        //             //     cells.push(ClipboardCell {
+        //             //         value,
+        //             //         code: Some(code_cell.clone()),
+        //             //     })
+        //             // else if let Some(spill_cell_ref) = column.spills.get(y) {
+        //             //     let value =
+        //             //         if let Some(value) = sheet.get_code_cell_from_ref(spill_cell_ref) {
+        //             //             if let Some(pos) = sheet.cell_ref_to_pos(spill_cell_ref) {
+        //             //                 value.get_output_value(
+        //             //                     x as u32 - pos.x as u32,
+        //             //                     y as u32 - pos.y as u32,
+        //             //                 )
+        //             //             } else {
+        //             //                 None
+        //             //             }
+        //             //         } else {
+        //             //             None
+        //             //         };
+        //             //     cells.push(ClipboardCell { value, code: None })
+        //             } else {
+        //                 cells.push(ClipboardCell {
+        //                     value: None,
+        //                     code: None,
+        //                 })
+        //             }
+        //         }
+        //     }
+        // }
+
+        let mut plain_text = String::new();
+        let mut html = String::from("<tbody>");
+
+        // for y in rect.y_range() {
+        //     // push end of row marker
+        //     if y != rect.min.y {
+        //         plain_text.push('\n');
+        //         html.push_str("</tr>");
+        //     }
+        //     html.push_str("<tr>");
+        //     for x in rect.x_range() {
+        //         if x != rect.min.x {
+        //             plain_text.push('\t');
+        //             html.push_str("</td>");
+        //         }
+        //         html.push_str("<td>");
+
+        //         if let Some(cell) = cells.get(&Pos { x, y }) {
+        //             if let Some(value) = cell.value.clone() {
+        //                 plain_text.push_str(&value.to_string());
+        //                 html.push_str(&value.to_string());
+        //             }
+        //         } else {
+        //             crate::util::dbgjs(format!(
+        //                 "Expected to find cell in clipboard.copy_to_clipboard {} {}",
+        //                 x, y
+        //             ));
+        //         }
+        //     }
+        //     // let pos = Pos { x, y };
+        //     // let value = sheet.get_cell_value(pos);
+
+        //     // // let spill_value = if value.is_none() {
+        //     // //     sheet.get_code_cell_value(pos)
+        //     // // } else {
+        //     // //     None
+        //     // // };
+
+        //     // // todo: this only happens after a code error -- not ideal
+        //     // let code: Option<CodeCellValue> = if value.is_none() {
+        //     //     let code_cell_value = sheet.get_code_cell(pos);
+        //     //     code_cell_value.map(|code_cell_value| CodeCellValue {
+        //     //         language: code_cell_value.language,
+        //     //         code_string: code_cell_value.code_string.clone(),
+        //     //         formatted_code_string: None,
+        //     //         last_modified: code_cell_value.last_modified.clone(),
+        //     //         output: None,
+        //     //     })
+        //     // } else {
+        //     //     None
+        //     // };
+
+        //     // create quadratic clipboard values
+        //     // cells.push(ClipboardCell {
+        //     //     value: value.clone(),
+        //     //     code: code.clone(),
+        //     // });
+
+        //     // let (bold, italic) =
+        //     //     if let Some(format) = sheet.get_existing_cell_format_summary(pos) {
+        //     //         (
+        //     //             format.bold.is_some_and(|bold| bold),
+        //     //             format.italic.is_some_and(|italic| italic),
+        //     //         )
+        //     //     } else {
+        //     //         (false, false)
+        //     //     };
+        //     // if bold || italic {
+        //     //     html.push_str("<span style={");
+        //     //     if bold {
+        //     //         html.push_str("font-weight:bold;");
+        //     //     }
+        //     //     if italic {
+        //     //         html.push_str("font-style:italic;");
+        //     //     }
+        //     //     html.push_str("}>");
+        //     // }
+        //     // if value.is_some() {
+        //     //     plain_text.push_str(&value.as_ref().unwrap().to_string());
+        //     //     html.push_str(&value.as_ref().unwrap().to_string());
+        //     // } else if code.is_some() {
+        //     //     let output = code.unwrap().get_output_value(0, 0);
+        //     //     if let Some(output) = output {
+        //     //         plain_text.push_str(&output.repr());
+        //     //     }
+        //     // }
+        //     // else if spill_value.is_some() {
+        //     //     plain_text.push_str(&spill_value.as_ref().unwrap().to_string());
+        //     //     html.push_str(&spill_value.as_ref().unwrap().to_string());
+        //     // }
+        //     // if bold || italic {
+        //     //     html.push_str("</span>");
+        //     // }
+        // }
+
         let formats = self.get_all_cell_formats(sheet_id, rect);
         let clipboard = Clipboard {
-            cells,
+            cells: cells.into_values().collect(),
             formats,
             w: rect.width(),
             h: rect.height(),

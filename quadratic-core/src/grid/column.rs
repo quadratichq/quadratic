@@ -293,6 +293,15 @@ impl<B: BlockContent> ColumnData<B> {
                 (start..end).filter_map(|y| Some((y, block.get(y)?)))
             })
     }
+
+    /// Iterates over a range without skipping cells with no data.
+    pub fn values_in_range_include_empty(
+        &self,
+        y_range: Range<i64>,
+    ) -> impl '_ + Iterator<Item = (i64, Option<B::Item>)> {
+        self.blocks_covering_range(y_range.clone())
+            .flat_map(move |block| (y_range.start..y_range.end).map(move |y| (y, block.get(y))))
+    }
 }
 
 impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
