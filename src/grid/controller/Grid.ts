@@ -60,7 +60,6 @@ export const upgradeFileRust = async (
 } | null> => {
   await init();
   try {
-    console.log(JSON.stringify(grid));
     const gc = GridController.newFromFile(JSON.stringify(grid));
     const contents = gc.exportToFile();
     return { contents: contents, version: gc.getVersion() };

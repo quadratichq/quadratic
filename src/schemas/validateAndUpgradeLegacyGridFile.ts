@@ -15,7 +15,7 @@ const FILES = [
 ];
 
 // all versions validated by Rust
-const rustFileVersions = ['1.6'];
+const rustFileVersions = ['1.5'];
 
 /**
  * Given arbitrary JSON, validate whether it's a valid file format and return
