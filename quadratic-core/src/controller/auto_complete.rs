@@ -22,6 +22,13 @@ pub enum ExpandDirection {
 }
 
 impl GridController {
+    /// Extend and/or shrink the contents of selection to range by inferring patterns.
+    ///
+    /// selection: the range of cells to be expanded
+    ///
+    /// range: the range of cells to expand to
+    ///
+    /// cursor: the cursor position for the undo/redo stack
     pub fn autocomplete(
         &mut self,
         sheet_id: SheetId,
