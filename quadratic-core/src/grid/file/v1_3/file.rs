@@ -1,35 +1,20 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use std::collections::HashMap;
 
-use crate::grid::file::v1_3_schema::GridSchema;
-use crate::grid::file::v1_5_new::{
-    import as import_v1_5, Borders as BordersV1_5, CellRef as CellRefV1_5, Column as ColumnV1_5,
-    ColumnValue as ColumnValueV1_5, GridSchema as GridSchemaV1_5, Id as IdV1_5, Sheet as SheetV1_5,
+use crate::grid::file::v1_3::schema::GridSchema;
+use crate::grid::file::v1_5::schema::{
+    Borders as BordersV1_5, CellRef as CellRefV1_5, Column as ColumnV1_5,
+    GridSchema as GridSchemaV1_5, Id as IdV1_5, Sheet as SheetV1_5,
 };
-
-pub(crate) fn import(file_contents: &str) -> Result<GridSchema> {
-    Ok(serde_json::from_str::<GridSchema>(&file_contents)
-        .map_err(|e| anyhow!("Could not import file: {:?}", e))?)
-}
-
-pub(crate) fn export(grid_schema: &GridSchema) -> Result<String> {
-    Ok(
-        serde_json::to_string(grid_schema)
-            .map_err(|e| anyhow!("Could not export file: {:?}", e))?,
-    )
-}
 
 pub(crate) fn upgrade(schema: GridSchema) -> Result<GridSchemaV1_5> {
     let sheet = upgrade_sheet(schema).unwrap();
 
     let converted = GridSchemaV1_5 {
-        version: "1.5".into(),
         sheets: vec![sheet],
         dependencies: vec![],
-        // dependencies: v.sheets.into_iter().map(|s| s.cell_dependency).collect(),
     };
 
-    // println!("{:?}", converted);
     Ok(converted)
 }
 
@@ -136,25 +121,25 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
 
     for js_format in v.formats {
         let column = sheet.column(js_format.x);
-        let y = js_format.y.to_owned();
+        let y = js_format.y.to_string();
         js_format
             .alignment
-            .map(|format| column.align.insert(y, format.into()));
+            .map(|format| column.align.insert(y.clone(), format.into()));
         js_format
             .wrapping
-            .map(|format| column.wrap.insert(y, format));
+            .map(|format| column.wrap.insert(y.clone(), format));
         js_format
             .bold
-            .map(|format| column.bold.insert(y, format.into()));
+            .map(|format| column.bold.insert(y.clone(), format.into()));
         js_format
             .italic
-            .map(|format| column.italic.insert(y, format.into()));
+            .map(|format| column.italic.insert(y.clone(), format.into()));
         js_format
             .text_color
-            .map(|format| column.text_color.insert(y, format.into()));
+            .map(|format| column.text_color.insert(y.clone(), format.into()));
         js_format
             .fill_color
-            .map(|format| column.fill_color.insert(y, format.into()));
+            .map(|format| column.fill_color.insert(y.clone(), format.into()));
 
         // TODO(ddimaria): deterine if this is needed for upgrades
         // if let Some(text_format) = js_format.text_format.clone() {
@@ -217,35 +202,25 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
 
 #[cfg(test)]
 mod tests {
-
-    use crate::{controller::GridController, Pos, Rect};
-    use std::io::Write;
-
     use super::*;
+    use anyhow::anyhow;
 
-    const V1_5_FILE: &str = include_str!("../../../examples/v1_5.json");
-    const V1_3_FILE: &str = include_str!("../../../examples/v1_3.json");
+    const V1_3_FILE: &str = include_str!("../../../../examples/v1_3.json");
 
-    #[tokio::test]
-    async fn import_a_v1_3_grid() {
-        let mut grid_controller = GridController::new();
-        // let sheet_id = grid_controller.grid().sheets()[0].id;
-        // let pos = Pos { x: 0, y: 0 };
-        // let range = Rect::new_span(pos, Pos { x: 3, y: 10 });
+    fn import(file_contents: &str) -> Result<GridSchema> {
+        Ok(serde_json::from_str::<GridSchema>(&file_contents)
+            .map_err(|e| anyhow!("Could not import file: {:?}", e))?)
+    }
 
+    fn export(grid_schema: &GridSchema) -> Result<String> {
+        Ok(serde_json::to_string(grid_schema)
+            .map_err(|e| anyhow!("Could not export file: {:?}", e))?)
+    }
+
+    #[test]
+    fn import_export_and_convert_a_v1_3_file() {
         let imported = import(V1_3_FILE).unwrap();
-        // println!("{:?}", imported);
+        let exported = export(&imported).unwrap();
         let upgraded = upgrade(imported).unwrap();
-        let json = serde_json::to_string(&upgraded).unwrap();
-        // println!("{}", json);
-
-        let imported = import_v1_5(&json).unwrap();
-        println!("{:?}", imported);
-        let json = serde_json::to_string(&imported).unwrap();
-        println!("{}", json);
-
-        // let path = "results_v1_3.json";
-        // let mut output = std::fs::File::create(path).unwrap();
-        // write!(output, "{}", ).unwrap();
     }
 }

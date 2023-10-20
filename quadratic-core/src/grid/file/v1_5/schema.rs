@@ -1,30 +1,11 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
-use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-
-pub(crate) fn import(file_contents: &str) -> Result<GridSchema> {
-    Ok(serde_json::from_str::<GridSchema>(&file_contents)
-        .map_err(|e| anyhow!("Could not import file: {:?}", e))?)
-}
-
-pub(crate) fn export(grid_schema: &GridSchema) -> Result<String> {
-    Ok(
-        serde_json::to_string(grid_schema)
-            .map_err(|e| anyhow!("Could not export file: {:?}", e))?,
-    )
-}
-
-// noop as this is the current version
-pub(crate) fn upgrade(schema: &GridSchema) -> Result<&GridSchema> {
-    Ok(schema)
-}
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GridSchema {
-    pub version: String,
     pub sheets: Vec<Sheet>,
     pub dependencies: Vec<(Dependency, Vec<DependencyRange>)>,
 }
@@ -163,20 +144,20 @@ pub struct Span {
 #[serde(rename_all = "camelCase")]
 pub struct Column {
     pub id: Id,
-    pub values: HashMap<i64, ColumnValues>,
+    pub values: HashMap<String, ColumnValues>,
     pub spills: Spills,
-    pub align: HashMap<i64, ColumnFormatString>,
-    pub wrap: HashMap<i64, String>,
+    pub align: HashMap<String, ColumnFormatType<String>>,
+    pub wrap: HashMap<String, String>,
     #[serde(rename = "numeric_format")]
     pub numeric_format: NumericFormat,
     #[serde(rename = "numeric_decimals")]
     pub numeric_decimals: NumericDecimals,
-    pub bold: HashMap<i64, ColumnFormatBool>,
-    pub italic: HashMap<i64, ColumnFormatBool>,
+    pub bold: HashMap<String, ColumnFormatType<bool>>,
+    pub italic: HashMap<String, ColumnFormatType<bool>>,
     #[serde(rename = "text_color")]
-    pub text_color: HashMap<i64, ColumnFormatString>,
+    pub text_color: HashMap<String, ColumnFormatType<String>>,
     #[serde(rename = "fill_color")]
-    pub fill_color: HashMap<i64, ColumnFormatString>,
+    pub fill_color: HashMap<String, ColumnFormatType<String>>,
 }
 impl Column {
     pub fn with_id(id: Id) -> Self {
@@ -221,44 +202,37 @@ impl From<(i64, ColumnValue)> for ColumnValues {
 #[serde(rename_all = "camelCase")]
 pub struct Spills {}
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ColumnFormatString {
-    pub y: i64,
-    pub content: ColumnContentString,
-}
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ColumnContentString {
-    pub value: String,
-    pub len: i64,
-}
-impl From<String> for ColumnFormatString {
-    fn from(value: String) -> Self {
-        ColumnFormatString {
-            y: 0,
-            content: ColumnContentString { value, len: 1 },
-        }
-    }
-}
+// pub enum ColumnFormat {
+//     Bool,
+//     String,
+// }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ColumnFormatBool {
+pub struct ColumnFormatType<T> {
     pub y: i64,
-    pub content: ColumnContentBool,
+    pub content: ColumnFormatContent<T>,
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ColumnContentBool {
-    pub value: bool,
+pub struct ColumnFormatContent<T> {
+    pub value: T,
     pub len: i64,
 }
-impl From<bool> for ColumnFormatBool {
-    fn from(value: bool) -> Self {
-        ColumnFormatBool {
+impl<T> From<T> for ColumnFormatType<T> {
+    fn from(value: T) -> Self {
+        ColumnFormatType {
             y: 0,
-            content: ColumnContentBool { value, len: 1 },
+            content: ColumnFormatContent { value, len: 1 },
+        }
+    }
+}
+impl<T> From<(i64, T)> for ColumnFormatType<T> {
+    fn from((y, value): (i64, T)) -> Self {
+        // TODO(ddimaria): set len to a value
+        ColumnFormatType {
+            y,
+            content: ColumnFormatContent { value, len: 1 },
         }
     }
 }
