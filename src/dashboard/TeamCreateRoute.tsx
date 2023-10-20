@@ -1,11 +1,11 @@
 import { Box, Button, Stack, useTheme } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { apiClient } from '../api/apiClient';
 import { DashboardHeader } from './components/DashboardHeader';
 import { TeamEdit } from './components/TeamEdit';
 
 export const Component = () => {
   const theme = useTheme();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   return (
     <>
@@ -16,8 +16,10 @@ export const Component = () => {
           <Button
             variant="contained"
             disableElevation
-            onClick={() => {
-              navigate('/teams/2?dialog=share');
+            onClick={async () => {
+              // TODO use form submit that navigates to the new team
+              await apiClient.createTeam({ name: 'Test team' });
+              // navigate('/teams/2?dialog=share');
             }}
           >
             Create team

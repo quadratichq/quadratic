@@ -3,6 +3,12 @@ import z from 'zod';
 export const RoleSchema = z.enum(['OWNER', 'EDITOR', 'VIEWER']);
 export type Role = z.infer<typeof RoleSchema>;
 
+export const UserRoleSchema = z.enum(['OWNER', 'EDITOR', 'VIEWER']);
+export type UserRole = z.infer<typeof UserRoleSchema>;
+
+export const TeamRoleSchema = z.enum(['OWNER', /*'ADMIN',*/ 'EDITOR', 'VIEWER']);
+export type TeamRole = z.infer<typeof TeamRoleSchema>;
+
 export const AccessSchema = z.enum([
   'FILE_EDIT',
   'FILE_DELETE',

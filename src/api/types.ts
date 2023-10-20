@@ -134,9 +134,7 @@ export const ApiSchemas = {
    * Teams
    *
    */
-  '/v0/teams.GET.response': z.object({
-    teams: TeamSchema.pick({ uuid: true, name: true, picture: true }).array(),
-  }),
+  '/v0/teams.GET.response': z.array(TeamSchema.pick({ uuid: true, name: true /* TODO picture: true */ })),
   '/v0/teams.POST.request': TeamSchema.pick({ name: true, picture: true /* billing? */ }),
   '/v0/teams.POST.response': z.object({
     message: z.string(),

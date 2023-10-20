@@ -26,6 +26,22 @@ const DEFAULT_FILE: GridFile = {
 };
 
 export const apiClient = {
+  async getTeams() {
+    return fetchFromApi<ApiTypes['/v0/teams.GET.response']>(
+      `/v0/teams`,
+      { method: 'GET' },
+      ApiSchemas['/v0/teams.GET.response']
+    );
+  },
+
+  async createTeam(body: ApiTypes['/v0/teams.POST.request']) {
+    return fetchFromApi<ApiTypes['/v0/teams.POST.response']>(
+      `/v0/teams`,
+      { method: 'POST', body: JSON.stringify(body) },
+      ApiSchemas['/v0/teams.POST.response']
+    );
+  },
+
   async getFiles() {
     return fetchFromApi<ApiTypes['/v0/files.GET.response']>(
       `/v0/files`,

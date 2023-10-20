@@ -8,10 +8,11 @@ datasource db {
 }
 
 model User {
-    id        Int         @id @default(autoincrement())
-    auth0_id  String      @unique
-    files     File[]
-    QFeedback QFeedback[]
+    id           Int            @id @default(autoincrement())
+    auth0_id     String         @unique
+    files        File[]
+    QFeedback    QFeedback[]
+    UserTeamRole UserTeamRole[]
 }
 
 enum LinkPermission {
@@ -38,6 +39,77 @@ model File {
     times_updated      Int            @default(1)
     version            String?
 }
+
+model Team {
+    id           Int            @id @default(autoincrement())
+    uuid         String         @unique @default(uuid())
+    name         String
+    picture      String? // S3FileKey
+    created_date DateTime       @default(now())
+    UserTeamRole UserTeamRole[]
+    TeamInvite   TeamInvite[]
+}
+
+enum TeamRole {
+    OWNER
+    EDITOR
+    VIEWER
+}
+
+model UserTeamRole {
+    id           Int      @id @default(autoincrement())
+    userId       Int
+    teamId       Int
+    user         User     @relation(fields: [userId], references: [id])
+    team         Team     @relation(fields: [teamId], references: [id])
+    role         TeamRole
+    created_date DateTime @default(now())
+
+    @@unique([userId, teamId])
+}
+
+model TeamInvite {
+    id           Int      @id @default(autoincrement())
+    email        String
+    teamId       Int
+    team         Team     @relation(fields: [teamId], references: [id])
+    role         TeamRole
+    created_date DateTime @default(now())
+
+    @@unique([email, teamId])
+}
+
+// enum SharePermission {
+//     READONLY
+//     EDIT
+// }
+
+// model UserFileAccess {
+//   id Int
+//   userId    Int
+//   fileId    Int
+//   user      User      @relation(fields: [userId], references: [id])
+//   file      File      @relation(fields: [fileId], references: [id])
+//   permission SharePermission @default(READONLY)
+
+//   @@unique([userId, fileId])
+// }
+
+// model TeamFileAccess {
+//   id Int
+//   teamID    Int
+//   fileId    Int
+//   team      Team      @relation(fields: [teamID], references: [id])
+//   file      File      @relation(fields: [fileId], references: [id])
+//   permission SharePermission @default(READONLY)
+
+//   @@unique([userId, fileId])
+// }
+
+// Permission Logic
+// Public Link Access: Check the share_link column in the files table.
+// Direct User Access: Check for a row in UserFileAccess with the user's ID.
+// Team Access: Check for a row in TeamFileAccess with a team ID that the user is a part of.
 
 model QFeedback {
     id           Int      @id @default(autoincrement())
@@ -71,41 +143,3 @@ model QFile {
     times_updated Int      @default(1)
     version       String?
 }
-
-// model Team {
-//     id       Int    @id @default(autoincrement())
-//     name     String
-//     logo     Image?
-// }
-
-// enum SharePermission {
-//     READONLY
-//     EDIT
-// }
-
-// model UserFileAccess {
-//   id Int
-//   userId    Int
-//   fileId    Int
-//   user      User      @relation(fields: [userId], references: [id])
-//   file      File      @relation(fields: [fileId], references: [id])
-//   permission SharePermission @default(READONLY)
-
-//   @@unique([userId, fileId])
-// }
-
-// model TeamFileAccess {
-//   id Int
-//   teamID    Int
-//   fileId    Int
-//   team      Team      @relation(fields: [teamID], references: [id])
-//   file      File      @relation(fields: [fileId], references: [id])
-//   permission SharePermission @default(READONLY)
-
-//   @@unique([userId, fileId])
-// }
-
-// Permission Logic
-// Public Link Access: Check the share_link column in the files table.
-// Direct User Access: Check for a row in UserFileAccess with the user's ID.
-// Team Access: Check for a row in TeamFileAccess with a team ID that the user is a part of.

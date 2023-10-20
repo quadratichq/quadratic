@@ -3,6 +3,7 @@ import { Box, Button, Divider, IconButton, InputBase, Menu, MenuItem, useTheme }
 import { SxProps } from '@mui/system';
 import { useEffect, useRef, useState } from 'react';
 import { Link, LoaderFunctionArgs, useLoaderData, useSearchParams } from 'react-router-dom';
+import { apiClient } from '../api/apiClient';
 import { ApiTypes } from '../api/types';
 import { AvatarWithLetters } from '../components/AvatarWithLetters';
 import { Empty } from '../components/Empty';
@@ -11,11 +12,15 @@ import { hasAccess } from '../permissions';
 import { DashboardHeader } from './components/DashboardHeader';
 import { TeamLogoInput } from './components/TeamLogo';
 import { TeamShareMenu } from './components/TeamShareMenu';
-import { data, data2 } from './team-1-mock-data';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  const { uuid } = params;
-  return uuid === '2' ? data2 : data;
+  // const { uuid } = params as { uuid: string };
+  const data = await apiClient.getTeams().catch((e) => {
+    console.error(e);
+    return undefined;
+  });
+  return data;
+  // return uuid === '2' ? data2 : data;
 };
 
 export const Component = () => {

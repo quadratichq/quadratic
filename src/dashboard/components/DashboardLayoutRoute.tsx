@@ -2,29 +2,30 @@ import { Add, Close, ExtensionOutlined, FolderOpenOutlined, Menu } from '@mui/ic
 import { Avatar, Box, CircularProgress, Drawer, IconButton, Typography, useTheme } from '@mui/material';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLoaderData, useLocation, useNavigation } from 'react-router-dom';
+import { apiClient } from '../../api/apiClient';
 import { ApiTypes } from '../../api/types';
 import { AvatarWithLetters } from '../../components/AvatarWithLetters';
 import { ROUTES } from '../../constants/routes';
 import { useRootRouteLoaderData } from '../../router';
 import { colors } from '../../theme/colors';
-import { data, data2 } from '../team-1-mock-data';
 import { ReactComponent as QuadraticLogo } from './quadratic-logo.svg';
 import { ReactComponent as QuadraticLogotype } from './quadratic-logotype.svg';
 
 const drawerWidth = 264;
 
-type LoaderData = {
-  teams: ApiTypes['/v0/teams/:uuid.GET.response'][];
-};
+type LoaderData = ApiTypes['/v0/teams.GET.response'];
 
-export const loader = () => {
-  return {
-    teams: [data, data2],
-  };
+export const loader = async () => {
+  // TODO what if this fails? How should we handle that for routes
+  const teams = await apiClient.getTeams().catch((err) => {
+    console.log(err);
+    return [];
+  });
+  return teams;
 };
 
 export const Component = () => {
-  const loaderData = useLoaderData() as LoaderData;
+  const teams = useLoaderData() as LoaderData;
   const theme = useTheme();
   const navigation = useNavigation();
   const location = useLocation();
@@ -35,7 +36,7 @@ export const Component = () => {
     setIsOpen((prev) => !prev);
   };
 
-  const navbar = <Navbar handleDrawerToggle={handleDrawerToggle} loaderData={loaderData} />;
+  const navbar = <Navbar handleDrawerToggle={handleDrawerToggle} teams={teams} />;
 
   // When the location changes, close the menu (if it's already open)
   useEffect(() => {
@@ -113,7 +114,7 @@ export const Component = () => {
   );
 };
 
-function Navbar({ handleDrawerToggle, loaderData }: { handleDrawerToggle: Function; loaderData: LoaderData }) {
+function Navbar({ handleDrawerToggle, teams }: { handleDrawerToggle: Function; teams: LoaderData }) {
   const { user } = useRootRouteLoaderData();
 
   const theme = useTheme();
@@ -182,11 +183,11 @@ function Navbar({ handleDrawerToggle, loaderData }: { handleDrawerToggle: Functi
         </SidebarNavLink>
 
         <SidebarLabel>Teams</SidebarLabel>
-        {loaderData.teams.map(({ team }) => (
-          <SidebarNavLink key={team.uuid} to={ROUTES.TEAM(team.uuid)} style={sidebarLinkStyles}>
-            <AvatarWithLetters size="small">{team.name}</AvatarWithLetters>
+        {teams.map(({ uuid, name }) => (
+          <SidebarNavLink key={uuid} to={ROUTES.TEAM(uuid)} style={sidebarLinkStyles}>
+            <AvatarWithLetters size="small">{name}</AvatarWithLetters>
             <Typography variant="body2" color="text.primary" noWrap>
-              {team.name}
+              {name}
             </Typography>
           </SidebarNavLink>
         ))}
