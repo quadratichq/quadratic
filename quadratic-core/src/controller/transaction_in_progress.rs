@@ -96,8 +96,6 @@ impl TransactionInProgress {
     /// recalculate bounds for changed sheets
     pub fn updated_bounds(&mut self, grid_controller: &mut GridController) {
         self.sheets_with_changed_bounds.iter().for_each(|sheet_id| {
-            crate::util::dbgjs(sheet_id.clone());
-
             let sheet = grid_controller.grid.sheet_mut_from_id(*sheet_id);
             sheet.recalculate_bounds();
         });
