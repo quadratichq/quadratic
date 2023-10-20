@@ -62,11 +62,7 @@ impl From<Spanned<formulas::RangeRef>> for CellRefSpan {
 ///
 /// `parse_error_msg` may be null, and `parse_error_span` may be null. Even if
 /// `parse_error_span`, `parse_error_msg` may still be present.
-pub async fn parse_formula(formula_string: &str, x: f64, y: f64) -> FormulaParseResult {
-    let x = x as i64;
-    let y = y as i64;
-    let pos = Pos { x, y };
-
+pub fn parse_formula(formula_string: &str, pos: Pos) -> FormulaParseResult {
     let parse_error = formulas::parse_formula(formula_string, pos).err();
 
     let result = FormulaParseResult {
