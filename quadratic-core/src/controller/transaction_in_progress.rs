@@ -1,8 +1,12 @@
+use std::collections::HashSet;
+
 use indexmap::IndexSet;
 use wasm_bindgen::JsValue;
 
 use crate::{
-    grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
+    grid::{
+        CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, SheetId,
+    },
     Error, ErrorMsg, Pos, Span,
 };
 
@@ -24,13 +28,13 @@ pub struct TransactionInProgress {
     pub cursor: Option<String>,
     cells_accessed: Vec<CellRef>,
     pub summary: TransactionSummary,
+    sheets_with_changed_bounds: HashSet<SheetId>,
     pub transaction_type: TransactionType,
 
     // save code_cell info for async calls
     current_code_cell: Option<CodeCellValue>,
     pub current_cell_ref: Option<CellRef>,
     waiting_for_async: Option<CodeCellLanguage>,
-
     // true when transaction completes
     pub complete: bool,
 }
@@ -54,6 +58,7 @@ impl TransactionInProgress {
             transaction_type,
             cells_to_compute: IndexSet::new(),
             cells_accessed: vec![],
+            sheets_with_changed_bounds: HashSet::new(),
 
             current_code_cell: None,
             current_cell_ref: None,
@@ -88,6 +93,16 @@ impl TransactionInProgress {
         }
     }
 
+    /// recalculate bounds for changed sheets
+    pub fn updated_bounds(&mut self, grid_controller: &mut GridController) {
+        self.sheets_with_changed_bounds.iter().for_each(|sheet_id| {
+            crate::util::dbgjs(sheet_id.clone());
+
+            let sheet = grid_controller.grid.sheet_mut_from_id(*sheet_id);
+            sheet.recalculate_bounds();
+        });
+    }
+
     /// returns the TransactionSummary
     pub fn transaction_summary(&mut self) -> TransactionSummary {
         let summary = self.summary.clone();
@@ -97,32 +112,18 @@ impl TransactionInProgress {
 
     /// executes a set of operations
     fn transact(&mut self, grid_controller: &mut GridController, operations: Vec<Operation>) {
-        // todo: move bounds recalculation to somewhere else?
-        let mut sheets_with_changed_bounds = vec![];
-
         for op in operations.iter() {
             if cfg!(feature = "show-operations") {
                 crate::util::dbgjs(&format!("[Operation] {:?}", op.to_string()));
             }
 
-            if let Some(new_dirty_sheet) = op.sheet_with_changed_bounds() {
-                if !sheets_with_changed_bounds.contains(&new_dirty_sheet) {
-                    sheets_with_changed_bounds.push(new_dirty_sheet);
-                }
-            }
             let reverse_operation = grid_controller.execute_operation(
                 op.clone(),
                 &mut self.cells_to_compute,
                 &mut self.summary,
+                &mut self.sheets_with_changed_bounds,
             );
             self.reverse_operations.push(reverse_operation);
-        }
-
-        for dirty_sheet in sheets_with_changed_bounds {
-            grid_controller
-                .grid
-                .sheet_mut_from_id(dirty_sheet)
-                .recalculate_bounds();
         }
     }
 

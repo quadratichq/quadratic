@@ -1,6 +1,6 @@
 use core::panic;
 
-use crate::{grid::SheetId, Pos};
+use crate::Pos;
 use serde::{Deserialize, Serialize};
 
 use super::{
@@ -53,6 +53,7 @@ impl GridController {
         }
         let mut transaction = TransactionInProgress::new(self, operations, cursor, compute, undo);
         let mut summary = transaction.transaction_summary();
+        transaction.updated_bounds(self);
         if transaction.complete {
             summary.save = true;
             self.finalize_transaction(&transaction);
@@ -87,6 +88,7 @@ impl GridController {
         if let Some(transaction) = &mut self.transaction_in_progress.clone() {
             transaction.calculation_complete(self, result);
             self.transaction_in_progress = Some(transaction.to_owned());
+            transaction.updated_bounds(self);
             transaction.transaction_summary()
         } else {
             panic!("Expected an in progress transaction");
@@ -112,31 +114,19 @@ impl GridController {
             None
         }
     }
+
+    pub fn updated_bounds_in_transaction(&mut self) {
+        if let Some(transaction) = &mut self.transaction_in_progress.clone() {
+            transaction.updated_bounds(self);
+            self.transaction_in_progress = Some(transaction.to_owned());
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Transaction {
     pub ops: Vec<Operation>,
     pub cursor: Option<String>,
-}
-
-impl Operation {
-    pub fn sheet_with_changed_bounds(&self) -> Option<SheetId> {
-        match self {
-            Operation::SetCellValues { region, .. } => Some(region.sheet),
-            // Operation::SetCellDependencies { .. } => None,
-            Operation::SetCellCode { cell_ref, .. } => Some(cell_ref.sheet),
-            Operation::SetCellFormats { region, .. } => Some(region.sheet),
-            Operation::AddSheet { .. } => None,
-            Operation::DeleteSheet { .. } => None,
-            Operation::SetSheetColor { .. } => None,
-            Operation::SetSheetName { .. } => None,
-            Operation::ReorderSheet { .. } => None,
-            Operation::ResizeColumn { .. } => None,
-            Operation::ResizeRow { .. } => None,
-            Operation::None { .. } => None,
-        }
-    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -162,7 +152,7 @@ impl From<Pos> for CellHash {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Array, CellValue, Pos, Rect};
+    use crate::{grid::SheetId, Array, CellValue, Pos, Rect};
 
     use super::*;
 

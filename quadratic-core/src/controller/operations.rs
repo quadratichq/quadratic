@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use indexmap::IndexSet;
 
 use crate::{grid::*, values::IsBlank, Array, CellValue};
@@ -19,12 +21,14 @@ impl GridController {
         op: Operation,
         cells_to_compute: &mut IndexSet<CellRef>,
         summary: &mut TransactionSummary,
+        sheets_with_changed_bounds: &mut HashSet<SheetId>,
     ) -> Operation {
         let mut cells_deleted = vec![];
 
         let operation = match op {
             Operation::None => Operation::None,
             Operation::SetCellValues { region, values } => {
+                sheets_with_changed_bounds.insert(region.sheet);
                 let sheet = self.grid.sheet_mut_from_id(region.sheet);
 
                 let size = region.size().expect("msg: error getting size of region");
@@ -59,6 +63,7 @@ impl GridController {
                 cell_ref,
                 code_cell_value,
             } => {
+                sheets_with_changed_bounds.insert(cell_ref.sheet);
                 let mut reverse_operations = vec![];
                 update_code_cell_value(
                     self,
@@ -72,6 +77,8 @@ impl GridController {
                 reverse_operations[0].clone()
             }
             Operation::SetCellFormats { region, attr } => {
+                sheets_with_changed_bounds.insert(region.sheet);
+
                 if let CellFmtArray::FillColor(_) = attr {
                     summary.fill_sheets_modified.push(region.sheet);
                 }

@@ -78,6 +78,7 @@ impl GridController {
 
     #[wasm_bindgen(js_name = "getCalculationTransactionSummary")]
     pub fn js_calculation_transaction_summary(&mut self) -> Result<JsValue, JsValue> {
+        self.updated_bounds_in_transaction();
         if let Some(summary) = self.transaction_summary() {
             Ok(serde_wasm_bindgen::to_value(&summary)?)
         } else {
