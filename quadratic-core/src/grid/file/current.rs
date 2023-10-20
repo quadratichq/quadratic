@@ -24,10 +24,7 @@ fn set_column_format<T>(
     T: Serialize + for<'d> Deserialize<'d> + Debug + Clone + PartialEq,
 {
     column.iter().for_each(|(y, format)| {
-        column_data.set(
-            i64::from_str(y).unwrap(),
-            Some(format.content.value.clone()),
-        );
+        column_data.set(i64::from_str(y).unwrap(), Some(format.content.value));
     });
 }
 
@@ -50,7 +47,7 @@ fn import_column_builder(columns: &Vec<(i64, current::Column)>) -> BTreeMap<i64,
                         "text" => {
                             col.values.set(
                                 i64::from_str(y).unwrap(),
-                                Some(CellValue::Text(cell_value.value.clone())),
+                                Some(CellValue::Text(cell_value.value)),
                             );
                         }
                         _ => {}
@@ -127,7 +124,6 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                     order: sheet.order,
                     column_ids: sheet
                         .columns
-                        .clone()
                         .iter()
                         .map(|(x, column)| (*x, ColumnId::from_str(&column.id.id).unwrap()))
                         .collect(),
@@ -231,19 +227,19 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
     })
 }
 
-pub fn export(grid: &Grid) -> Result<current::GridSchema> {
+pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
     Ok(current::GridSchema {
         version: Some(CURRENT_VERSION.into()),
         sheets: grid
-            .sheets()
+            .sheets_mut()
             .into_iter()
-            .map(|sheet| current::Sheet {
+            .map(move |sheet| current::Sheet {
                 id: current::Id {
                     id: sheet.id.to_string(),
                 },
-                name: sheet.name.clone(),
-                color: sheet.color.clone(),
-                order: sheet.order.clone(),
+                name: sheet.name,
+                color: sheet.color,
+                order: sheet.order,
                 offsets: sheet.offsets.export(),
                 columns: export_column_builder(&sheet),
                 rows: sheet
@@ -258,7 +254,7 @@ pub fn export(grid: &Grid) -> Result<current::GridSchema> {
                     })
                     .collect(),
                 // TODO(ddimaria): implement
-                // borders: sheet.borders().clone(), // TODO: serialize borders
+                // borders: sheet.borders(), // TODO: serialize borders
                 borders: current::Borders {
                     horizontal: HashMap::new(),
                     vertical: HashMap::new(),
@@ -289,8 +285,8 @@ mod tests {
     #[test]
     fn imports_and_exports_a_current_grid() {
         let file = serde_json::from_str::<current::GridSchema>(V1_5_FILE).unwrap();
-        let imported = import(file).unwrap();
-        let exported = export(&imported).unwrap();
+        let mut imported = import(file).unwrap();
+        let exported = export(&mut imported).unwrap();
         println!("{:?}", exported);
     }
 }

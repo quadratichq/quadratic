@@ -43,8 +43,8 @@ pub fn import(file_contents: &str) -> Result<Grid> {
     current::import(file)
 }
 
-pub fn export(grid: &Grid) -> Result<String> {
-    let converted = current::export(&grid)?;
+pub fn export(grid: &mut Grid) -> Result<String> {
+    let converted = current::export(grid)?;
     let serialized = serde_json::to_string(&converted).map_err(|e| anyhow!(e))?;
 
     Ok(serialized)
@@ -59,9 +59,9 @@ mod tests {
 
     #[test]
     fn process_a_v1_3_file() {
-        let imported = import(V1_3_FILE).unwrap();
+        let mut imported = import(V1_3_FILE).unwrap();
         // println!("{:?}", imported);
-        let exported = export(&imported).unwrap();
+        let exported = export(&mut imported).unwrap();
         println!("{}", exported);
     }
 
