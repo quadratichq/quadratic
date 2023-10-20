@@ -198,6 +198,7 @@ export class PointerAutoComplete {
             y: bottom,
           },
         },
+        ensureVisible: false,
       });
     }
   }
