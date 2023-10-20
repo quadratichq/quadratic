@@ -3,12 +3,12 @@ import { v4 as uuid } from 'uuid';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { downloadFileInBrowser } from '../helpers/downloadFileInBrowser';
-import { GridFile, GridFileSchema } from '../schemas';
+import { GridFileSchema } from '../schemas';
 import { generateKeyBetween } from '../utils/fractionalIndexing';
 import { fetchFromApi } from './fetchFromApi';
 import { ApiSchemas, ApiTypes } from './types';
 
-const DEFAULT_FILE: GridFile = {
+const DEFAULT_FILE: any = {
   sheets: [
     {
       name: 'Sheet 1',

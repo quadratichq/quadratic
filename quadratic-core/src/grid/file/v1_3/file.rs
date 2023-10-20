@@ -4,13 +4,14 @@ use std::collections::HashMap;
 use crate::grid::file::v1_3::schema::GridSchema;
 use crate::grid::file::v1_5::schema::{
     Borders as BordersV1_5, CellRef as CellRefV1_5, Column as ColumnV1_5,
-    GridSchema as GridSchemaV1_5, Id as IdV1_5, Sheet as SheetV1_5,
+    ColumnValue as ColumnValueV1_5, GridSchema as GridSchemaV1_5, Id as IdV1_5, Sheet as SheetV1_5,
 };
 
 pub(crate) fn upgrade(schema: GridSchema) -> Result<GridSchemaV1_5> {
     let sheet = upgrade_sheet(schema).unwrap();
 
     let converted = GridSchemaV1_5 {
+        version: Some("1.5".into()),
         sheets: vec![sheet],
         dependencies: vec![],
     };
@@ -73,17 +74,17 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
             "text" => {
                 let column = sheet.column(js_cell.x);
                 // println!("{} {} {}", js_cell.x, js_cell.y, js_cell.value);
-                // column.values.push((
-                //     js_cell.y,
-                //     (
-                //         js_cell.y,
-                //         ColumnValueV1_5 {
-                //             type_field: "text".into(),
-                //             value: js_cell.value.to_owned(),
-                //         },
-                //     )
-                //         .into(),
-                // ));
+                column.values.insert(
+                    js_cell.y.to_string(),
+                    (
+                        js_cell.y,
+                        ColumnValueV1_5 {
+                            type_field: "text".into(),
+                            value: js_cell.value.to_owned(),
+                        },
+                    )
+                        .into(),
+                );
             }
             _ => {}
         };
@@ -118,6 +119,8 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
         //     column.values.set(js_cell.y, Some(cell_value));
         // }
     }
+
+    // println!("{:?}", sheet.columns);
 
     for js_format in v.formats {
         let column = sheet.column(js_format.x);
@@ -168,24 +171,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
         columns: sheet
             .columns
             .into_iter()
-            .map(|(id, col)| {
-                (
-                    id.to_owned(),
-                    ColumnV1_5 {
-                        id: col.id,
-                        values: col.values,
-                        spills: col.spills,
-                        align: col.align,
-                        wrap: col.wrap,
-                        numeric_format: col.numeric_format,
-                        numeric_decimals: col.numeric_decimals,
-                        bold: col.bold,
-                        italic: col.italic,
-                        text_color: col.text_color,
-                        fill_color: col.fill_color,
-                    },
-                )
-            })
+            .map(|(id, col)| (id.to_owned(), col))
             .collect(),
         rows: sheet
             .row_ids
@@ -222,5 +208,6 @@ mod tests {
         let imported = import(V1_3_FILE).unwrap();
         let exported = export(&imported).unwrap();
         let upgraded = upgrade(imported).unwrap();
+        println!("{:?}", upgraded);
     }
 }

@@ -1,7 +1,7 @@
 use crate::grid::{Grid, GridBounds};
 use crate::{CellValue, Error, ErrorMsg, Span, Value};
 
-use crate::grid::file::v1_5::schema as current;
+use crate::grid::file::v1_5::schema::{self as current, ColumnValue};
 use crate::grid::{
     block::SameValue, sheet::sheet_offsets::SheetOffsets, CellRef, CodeCellLanguage,
     CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Column, ColumnData, ColumnId, RowId,
@@ -14,6 +14,8 @@ use std::{
     fmt::Debug,
     str::FromStr,
 };
+
+use super::CURRENT_VERSION;
 
 fn set_column_format<T>(
     column_data: &mut ColumnData<SameValue<T>>,
@@ -41,6 +43,21 @@ fn import_column_builder(columns: &Vec<(i64, current::Column)>) -> BTreeMap<i64,
             set_column_format::<bool>(&mut col.italic, &column.italic);
             set_column_format::<String>(&mut col.text_color, &column.text_color);
             set_column_format::<String>(&mut col.fill_color, &column.fill_color);
+
+            column.values.iter().for_each(|(y, value)| {
+                value.content.values.iter().for_each(|cell_value| {
+                    match cell_value.type_field.to_lowercase().as_str() {
+                        "text" => {
+                            col.values.set(
+                                i64::from_str(y).unwrap(),
+                                Some(CellValue::Text(cell_value.value.clone())),
+                            );
+                        }
+                        _ => {}
+                    };
+                });
+            });
+
             (*y, col)
         })
         .collect()
@@ -73,7 +90,23 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                     text_color: export_column_data(&column.text_color),
                     fill_color: export_column_data(&column.fill_color),
                     // TODO(ddimaria): implement
-                    // values: column.values.into(),
+                    values: column
+                        .values
+                        .values()
+                        .map(|(y, value)| {
+                            (
+                                y.to_string(),
+                                (
+                                    y,
+                                    ColumnValue {
+                                        type_field: value.type_name().into(),
+                                        value: value.to_string(),
+                                    },
+                                )
+                                    .into(),
+                            )
+                        })
+                        .collect(),
                     ..Default::default()
                 },
             )
@@ -200,6 +233,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
 
 pub fn export(grid: &Grid) -> Result<current::GridSchema> {
     Ok(current::GridSchema {
+        version: Some(CURRENT_VERSION.into()),
         sheets: grid
             .sheets()
             .into_iter()
@@ -247,6 +281,7 @@ pub fn export(grid: &Grid) -> Result<current::GridSchema> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::grid::file::v1_3;
 
     const V1_5_FILE: &str = include_str!("../../../examples/v1_5.json");
     const V1_3_FILE: &str = include_str!("../../../examples/v1_3.json");
@@ -257,12 +292,5 @@ mod tests {
         let imported = import(file).unwrap();
         let exported = export(&imported).unwrap();
         println!("{:?}", exported);
-    }
-
-    #[test]
-    fn import_and_upgrade_a_v1_3_file() {
-        let file = serde_json::from_str::<current::GridSchema>(V1_3_FILE).unwrap();
-        let imported = import(file).unwrap();
-        let exported = export(&imported).unwrap();
     }
 }

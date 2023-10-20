@@ -8,6 +8,7 @@ use uuid::Uuid;
 pub struct GridSchema {
     pub sheets: Vec<Sheet>,
     pub dependencies: Vec<(Dependency, Vec<DependencyRange>)>,
+    pub version: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

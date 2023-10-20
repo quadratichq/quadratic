@@ -10,7 +10,7 @@ pub struct GridSchema {
     pub columns: Vec<Column>,
     pub formats: Vec<Format>,
     pub rows: Vec<Row>,
-    pub version: String,
+    // pub version: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

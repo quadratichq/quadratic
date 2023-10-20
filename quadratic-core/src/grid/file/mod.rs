@@ -35,6 +35,7 @@ impl GridFile {
 }
 
 pub fn import(file_contents: &str) -> Result<Grid> {
+    // println!("{}", &file_contents);
     let file = serde_json::from_str::<GridFile>(file_contents)
         .map_err(|e| anyhow!(e))?
         .into_latest()?;
@@ -47,4 +48,25 @@ pub fn export(grid: &Grid) -> Result<String> {
     let serialized = serde_json::to_string(&converted).map_err(|e| anyhow!(e))?;
 
     Ok(serialized)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const V1_3_FILE: &str = include_str!("../../../examples/v1_3.json");
+    const V1_5_FILE: &str = include_str!("../../../examples/v1_5.json");
+
+    #[test]
+    fn process_a_v1_3_file() {
+        let imported = import(V1_3_FILE).unwrap();
+        // println!("{:?}", imported);
+        let exported = export(&imported).unwrap();
+        println!("{}", exported);
+    }
+
+    #[test]
+    fn process_a_v1_5_file() {
+        let imported = import(V1_5_FILE).unwrap();
+    }
 }
