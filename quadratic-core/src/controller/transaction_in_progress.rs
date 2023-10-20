@@ -207,13 +207,21 @@ impl TransactionInProgress {
         let cell_ref = if let Some(cell_ref) = self.current_cell_ref {
             cell_ref
         } else {
-            panic!("Expected current_sheet_pos to be defined in transaction::code_cell_error");
+            // this should only happen after an internal logic error
+            crate::util::dbgjs(
+                "Expected current_sheet_pos to be defined in transaction::code_cell_error",
+            );
+            return;
         };
         let mut updated_code_cell_value =
             if let Some(code_cell_value) = self.current_code_cell.clone() {
                 code_cell_value
             } else {
-                panic!("Expected current_code_cell to be defined in transaction::code_cell_error");
+                // this should only happen after an internal logic error
+                crate::util::dbgjs(
+                    "Expected current_code_cell to be defined in transaction::code_cell_error",
+                );
+                return;
             };
         let msg = ErrorMsg::PythonError(error_msg.clone().into());
         let span = if let Some(line_number) = line_number {
