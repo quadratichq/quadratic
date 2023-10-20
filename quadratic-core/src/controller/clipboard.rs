@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use super::{
     formatting::CellFmtArray, operation::Operation, transaction_summary::TransactionSummary,
     transactions::TransactionType, GridController,
@@ -30,6 +32,9 @@ impl GridController {
         let mut plain_text = String::new();
         let mut html = String::from("<tbody>");
 
+        let mut get_code_cell_time = 0;
+        let mut get_cell_value_time = 0;
+
         let sheet = self.grid().sheet_from_id(sheet_id);
         for y in rect.y_range() {
             if y != rect.min.y {
@@ -44,10 +49,15 @@ impl GridController {
                 }
                 html.push_str("<td>");
                 let pos = Pos { x, y };
+                let now = SystemTime::now();
                 let value = sheet.get_cell_value(pos);
+                get_cell_value_time += now.elapsed().unwrap().as_millis();
 
                 let spill_value = if value.is_none() {
-                    sheet.get_code_cell_value(pos)
+                    let now = SystemTime::now();
+                    let r = sheet.get_code_cell_value(pos);
+                    get_code_cell_time += now.elapsed().unwrap().as_millis();
+                    r
                 } else {
                     None
                 };
@@ -108,8 +118,10 @@ impl GridController {
                 }
             }
         }
-
+        let now = SystemTime::now();
         let formats = self.get_all_cell_formats(sheet_id, rect);
+        let format_time = now.elapsed().unwrap().as_millis();
+
         let clipboard = Clipboard {
             cells,
             formats,
@@ -124,6 +136,11 @@ impl GridController {
         final_html.push_str(&encoded);
         final_html.push_str(&String::from("\">"));
         final_html.push_str(&html);
+
+        crate::util::dbgjs(get_cell_value_time);
+        crate::util::dbgjs(format_time);
+        crate::util::dbgjs(get_code_cell_time);
+
         (plain_text, final_html)
     }
 
