@@ -25,6 +25,10 @@ export const transactionResponse = (summary?: TransactionSummary): void => {
     pixiApp.cellsSheets.updateCodeCells(summary.code_cells_modified);
   }
 
+  if (summary.border_sheets_modified.length) {
+    pixiApp.cellsSheets.updateBorders(summary.border_sheets_modified);
+  }
+
   const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
   if (cursor) {
     sheets.current = cursor.sheetId;

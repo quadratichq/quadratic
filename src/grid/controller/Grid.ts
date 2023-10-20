@@ -5,8 +5,11 @@ import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerfor
 import { Coordinate } from '../../gridGL/types/size';
 import { readFileAsArrayBuffer } from '../../helpers/files';
 import init, {
+  BorderSelection,
+  BorderStyle,
   CodeCellLanguage,
   GridController,
+  JsRenderBorders,
   JsRenderCodeCell,
   MinMax,
   Pos,
@@ -339,6 +342,18 @@ export class Grid {
     this.dirty = true;
   }
 
+  async setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
+    const summary = await this.gridController.setRegionBorders(
+      sheetId,
+      rectangleToRect(rectangle),
+      selection,
+      style,
+      sheets.getCursorPosition()
+    );
+    transactionResponse(summary);
+    this.dirty = true;
+  }
+
   //#endregion
 
   //#region get grid information
@@ -385,6 +400,10 @@ export class Grid {
 
   getFormattingSummary(sheetId: string, rectangle: Rectangle): FormattingSummary {
     return this.gridController.getFormattingSummary(sheetId, rectangleToRect(rectangle) as RectInternal);
+  }
+
+  getRenderBorders(sheetId: string): JsRenderBorders {
+    return this.gridController.getRenderBorders(sheetId);
   }
 
   //#endregion

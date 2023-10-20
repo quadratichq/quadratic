@@ -175,6 +175,7 @@ export class Sheet {
       const delta = columns[i + 1];
       pixiApp.cellsSheets.adjustHeadings({ sheetId: this.id, column: index, delta });
     }
+    this.offsets.free();
     this.offsets = newOffsets;
   }
 
