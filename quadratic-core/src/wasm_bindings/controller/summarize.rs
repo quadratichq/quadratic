@@ -1,8 +1,6 @@
-use crate::wasm_bindings::BigDecimal;
 use crate::Pos;
 use crate::{grid::SheetId, wasm_bindings::GridController, CellValue, Rect};
-use bigdecimal::ToPrimitive;
-use bigdecimal::Zero;
+use bigdecimal::{BigDecimal, ToPrimitive, Zero};
 use std::str::FromStr;
 use wasm_bindgen::prelude::wasm_bindgen;
 

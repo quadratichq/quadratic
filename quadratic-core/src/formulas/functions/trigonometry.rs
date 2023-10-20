@@ -132,16 +132,15 @@ fn arc_cotangent(x: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-
     use crate::formulas::tests::*;
 
     fn test_trig_fn(name: &str, input_output_pairs: &[(f64, f64)]) {
-        let g = &mut NoGrid;
+        let g = Grid::new();
         for &(input, expected_output) in input_output_pairs {
             println!("Testing that {name}({input}) = {expected_output}");
             crate::util::assert_f64_approx_eq(
                 expected_output,
-                &eval_to_string(g, &format!("{name}({input})")),
+                &eval_to_string(&g, &format!("{name}({input})")),
             );
         }
     }
@@ -150,15 +149,15 @@ mod tests {
 
     #[test]
     fn test_formula_radian_degree_conversion() {
-        let g = &mut NoGrid;
+        let g = Grid::new();
 
-        assert_eq!("-4", eval_to_string(g, "RADIANS(-720) / PI()"));
-        assert_eq!("-720", eval_to_string(g, "DEGREES(-PI() * 4)"));
+        assert_eq!("-4", eval_to_string(&g, "RADIANS(-720) / PI()"));
+        assert_eq!("-720", eval_to_string(&g, "DEGREES(-PI() * 4)"));
     }
 
     #[test]
     fn test_formula_trigonometry() {
-        let g = &mut NoGrid;
+        let g = Grid::new();
 
         let test_cases = &[
             (-2.0 * PI, 0.0),
@@ -346,7 +345,7 @@ mod tests {
         ];
         test_trig_fn("COTH", test_cases);
 
-        assert!(eval_to_string(g, "ATAN2(2, 1)").starts_with("0.4636"));
+        assert!(eval_to_string(&g, "ATAN2(2, 1)").starts_with("0.4636"));
     }
 
     #[test]
@@ -481,11 +480,11 @@ mod tests {
 
     #[test]
     fn test_atan2() {
-        let g = &mut NoGrid;
+        let g = Grid::new();
 
-        assert_eq!("0", eval_to_string(g, "ATAN2(1, 0)"));
-        assert!(eval_to_string(g, "ATAN2(0, 1)").starts_with("1.57"));
-        assert!(eval_to_string(g, "ATAN2(1, 2)").starts_with("1.107"));
-        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(g, "ATAN2(0, 0)").msg,);
+        assert_eq!("0", eval_to_string(&g, "ATAN2(1, 0)"));
+        assert!(eval_to_string(&g, "ATAN2(0, 1)").starts_with("1.57"));
+        assert!(eval_to_string(&g, "ATAN2(1, 2)").starts_with("1.107"));
+        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(&g, "ATAN2(0, 0)").msg,);
     }
 }

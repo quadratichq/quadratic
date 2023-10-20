@@ -32,7 +32,7 @@ pub use formatting::{
 pub use ids::*;
 pub use sheet::Sheet;
 
-use crate::{CellValue, Pos, SheetPos, SheetRect, Value};
+use crate::{Array, CellValue, Pos, SheetPos, SheetRect, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
@@ -51,6 +51,16 @@ impl Grid {
             // dependencies: HashMap::new(),
         };
         ret.add_sheet(None).expect("error adding initial sheet");
+        ret
+    }
+    pub fn from_array(base_pos: Pos, array: &Array) -> Self {
+        let mut ret = Grid::new();
+        let sheet = &mut ret.sheets_mut()[0];
+        for ((x, y), value) in array.size().iter().zip(array.cell_values_slice()) {
+            let x = base_pos.x + x as i64;
+            let y = base_pos.y + y as i64;
+            sheet.set_cell_value(Pos { x, y }, value.clone());
+        }
         ret
     }
     pub fn sheets(&self) -> &[Sheet] {

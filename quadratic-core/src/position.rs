@@ -14,7 +14,6 @@ use crate::{grid::SheetId, ArraySize};
 )]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
-
 pub struct Pos {
     /// Column
     #[cfg_attr(test, proptest(strategy = "-4..=4_i64"))]
@@ -40,7 +39,18 @@ impl Pos {
 
     /// Returns an A1-style reference to the cell position.
     pub fn a1_string(self) -> String {
-        crate::util::column_name(self.x) + &self.y.to_string()
+        let col = crate::util::column_name(self.x);
+        if self.y < 0 {
+            format!("{col}n{}", -self.y)
+        } else {
+            format!("{col}{}", self.y.to_string())
+        }
+    }
+
+    /// Adds information about which sheet the position is in.
+    pub fn with_sheet(self, sheet_id: SheetId) -> SheetPos {
+        let Pos { x, y } = self;
+        SheetPos { x, y, sheet_id }
     }
 }
 impl From<(i64, i64)> for Pos {
@@ -156,6 +166,25 @@ pub struct ScreenRect {
     pub y: f64,
     pub w: f64,
     pub h: f64,
+}
+
+/// Used for referencing a pos during computation.
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct SheetPos {
+    pub x: i64,
+    pub y: i64,
+    pub sheet_id: SheetId,
+}
+impl fmt::Display for SheetPos {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} ({}, {})", self.sheet_id, self.x, self.y)
+    }
+}
+impl SheetPos {
+    pub fn without_sheet(self) -> Pos {
+        let SheetPos { x, y, .. } = self;
+        Pos { x, y }
+    }
 }
 
 /// Used for referencing a range during computation.

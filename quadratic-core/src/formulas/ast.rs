@@ -85,7 +85,7 @@ impl AstNodeContents {
 impl Spanned<AstNodeContents> {
     pub fn to_cell_ref(&self) -> CodeResult<CellRef> {
         match &self.inner {
-            AstNodeContents::CellRef(cellref) => Ok(*cellref),
+            AstNodeContents::CellRef(cellref) => Ok(cellref.clone()),
             AstNodeContents::Paren(contents) => contents.to_cell_ref(),
             _ => Err(ErrorMsg::Expected {
                 expected: "cell reference".into(),
@@ -97,19 +97,9 @@ impl Spanned<AstNodeContents> {
 }
 
 impl Formula {
-    /// Evaluates a formula, blocking on async calls.
-    ///
-    /// Use this when the grid proxy isn't actually doing anything async.
-    pub fn eval_blocking(&self, grid: &mut dyn GridProxy, pos: Pos) -> CodeResult<Value> {
-        pollster::block_on(self.eval(grid, pos))
-    }
-
     /// Evaluates a formula.
-    pub async fn eval(&self, grid: &mut dyn GridProxy, pos: Pos) -> CodeResult<Value> {
-        self.ast
-            .eval(&mut Ctx { grid, pos })
-            .await?
-            .into_non_error_value()
+    pub fn eval(&self, ctx: &mut Ctx<'_>) -> CodeResult<Value> {
+        pollster::block_on(self.ast.eval(ctx))?.into_non_error_value()
     }
 }
 
@@ -129,8 +119,11 @@ impl AstNode {
                 if args.len() != 2 {
                     internal_error!("invalid arguments to cell range operator");
                 }
-                let corner1 = args[0].to_cell_ref()?.resolve_from(ctx.pos);
-                let corner2 = args[1].to_cell_ref()?.resolve_from(ctx.pos);
+                let ref1 = args[0].to_cell_ref()?;
+                let ref2 = args[1].to_cell_ref()?;
+                let sheet_name = ref1.sheet.clone();
+                let corner1 = ref1.resolve_from(ctx.pos.without_sheet());
+                let corner2 = ref2.resolve_from(ctx.pos.without_sheet());
 
                 let x1 = std::cmp::min(corner1.x, corner2.x);
                 let y1 = std::cmp::min(corner1.y, corner2.y);
@@ -153,10 +146,14 @@ impl AstNode {
                 }
 
                 let mut flat_array = smallvec![];
+                // Reuse the same `CellRef` object so that we don't have to
+                // clone `sheet_name.`
+                let mut cell_ref = CellRef::absolute(sheet_name, Pos::ORIGIN); // We'll overwrite the position.
                 for y in y1..=y2 {
+                    cell_ref.y = CellRefCoord::Absolute(y);
                     for x in x1..=x2 {
-                        let cell_ref = CellRef::absolute(Pos { x, y });
-                        flat_array.push(ctx.get_cell(cell_ref, self.span).await?.inner);
+                        cell_ref.x = CellRefCoord::Absolute(x);
+                        flat_array.push(ctx.get_cell(&cell_ref, self.span).await?.inner);
                     }
                 }
 
@@ -207,7 +204,7 @@ impl AstNode {
 
             // Single cell references return 1x1 arrays for Excel compatibility.
             AstNodeContents::CellRef(cell_ref) => {
-                Array::from(ctx.get_cell(*cell_ref, self.span).await?.inner).into()
+                Array::from(ctx.get_cell(cell_ref, self.span).await?.inner).into()
             }
 
             AstNodeContents::String(s) => Value::from(s.to_string()),

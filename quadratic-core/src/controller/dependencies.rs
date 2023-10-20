@@ -5,6 +5,7 @@ use std::collections::{HashMap, HashSet};
 use crate::grid::{CellRef, Grid, Sheet};
 
 use super::GridController;
+use crate::{grid::Grid, SheetPos, SheetRect};
 
 /// track code dependencies per cell -- this is built on load and does not need to be serialized
 #[derive(Debug, Clone, Default)]
@@ -104,6 +105,11 @@ impl GridController {
 //     fn test_graph() {
 //         let mut cdc = Grid::new();
 //         let sheet_id = cdc.sheet_ids()[0];
+    use crate::{grid::Grid, Pos, SheetPos, SheetRect};
+    #[test]
+    fn test_graph() {
+        let mut cdc = Grid::new();
+        let sheet_id = cdc.sheet_ids()[0];
 
 //         cdc.set_dependencies(
 //             SheetPos {

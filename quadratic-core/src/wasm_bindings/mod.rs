@@ -1,7 +1,3 @@
-use std::collections::HashSet;
-
-use async_trait::async_trait;
-use bigdecimal::{BigDecimal, Num};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use wasm_bindgen::prelude::*;
@@ -13,7 +9,6 @@ pub mod pos;
 pub mod rect;
 
 use crate::controller::GridController;
-use crate::formulas::GridProxy;
 use crate::grid::*;
 use crate::*;
 
@@ -39,68 +34,26 @@ pub fn column_from_name(s: &str) -> Option<f64> {
     Some(util::column_from_name(s)? as f64)
 }
 
-/// Evaluates a formula and returns a formula result.
-// #[wasm_bindgen]
-// pub async fn eval_formula(
-//     formula_string: &str,
-//     x: f64,
-//     y: f64,
-//     grid_accessor_fn: js_sys::Function,
-// ) -> JsValue {
-// let mut grid_proxy = JsGridProxy::new(grid_accessor_fn);
-// let x = x as i64;
-// let y = y as i64;
-// let pos = Pos { x, y };
+#[derive(Serialize, Deserialize, Debug, Default, Clone, TS)]
+pub struct JsCodeResult {
+    pub cells_accessed: Vec<[i64; 2]>,
+    pub formatted_code: Option<String>,
+    pub success: bool,
+    pub error_span: Option<[u32; 2]>,
+    pub error_msg: Option<String>,
+    pub input_python_std_out: Option<String>,
+    pub output_value: Option<String>,
+    pub array_output: Option<Vec<Vec<String>>>,
+}
 
-// let formula_result = match formulas::parse_formula(formula_string, pos) {
-//     Ok(formula) => formula.eval(&mut grid_proxy, pos).await,
-//     Err(e) => Err(e),
-// };
-// let cells_accessed = grid_proxy
-//     .cells_accessed
-//     .into_iter()
-//     .map(|pos| [pos.x, pos.y])
-//     .collect_vec();
-
-// let result = match formula_result {
-//     Ok(formula_output) => {
-//         let mut output_value = None;
-//         let mut array_output = None;
-//         match formula_output {
-//             Value::Array(a) => {
-//                 array_output = Some(
-//                     a.rows()
-//                         .map(|row| row.iter().map(|cell| cell.to_string()).collect())
-//                         .collect(),
-//                 );
-//             }
-//             Value::Single(non_array_value) => output_value = Some(non_array_value.to_string()),
-//         };
-//         JsCodeResult {
-//             cells_accessed,
-//             success: true,
-//             error_span: None,
-//             error_msg: None,
-//             output_value,
-//             array_output,
-//             formatted_code: None,
-//             input_python_std_out: None,
-//         }
-//     }
-//     Err(error) => JsCodeResult {
-//         cells_accessed,
-//         success: false,
-//         error_span: error.span.map(|span| [span.start, span.end]),
-//         error_msg: Some(error.msg.to_string()),
-//         output_value: None,
-//         array_output: None,
-//         formatted_code: None,
-//         input_python_std_out: None,
-//     },
-// };
-
-// serde_wasm_bindgen::to_value(&result).unwrap()
-// }
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+pub struct JsComputeResult {
+    pub complete: bool,
+    pub rect: Option<Rect>,
+    pub sheet_id: Option<String>,
+    pub line_number: Option<i64>,
+    pub result: Option<JsCodeResult>,
+}
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, TS)]
 pub struct JsFormulaParseResult {
@@ -109,7 +62,7 @@ pub struct JsFormulaParseResult {
 
     pub cell_refs: Vec<JsCellRefSpan>,
 }
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, TS)]
 pub struct JsCellRefSpan {
     pub span: Span,
     pub cell_ref: formulas::RangeRef,
@@ -246,6 +199,7 @@ mod tests {
                 JsCellRefSpan {
                     span: Span { start: 1, end: 4 },
                     cell_ref: RangeRef::from(CellRef {
+                        sheet: None,
                         x: CellRefCoord::Relative(0),
                         y: CellRefCoord::Absolute(1),
                     }),
@@ -254,10 +208,12 @@ mod tests {
                     span: Span { start: 15, end: 25 },
                     cell_ref: RangeRef::CellRange {
                         start: CellRef {
+                            sheet: None,
                             x: CellRefCoord::Absolute(0),
                             y: CellRefCoord::Relative(-2),
                         },
                         end: CellRef {
+                            sheet: None,
                             x: CellRefCoord::Absolute(0),
                             y: CellRefCoord::Relative(2),
                         },
