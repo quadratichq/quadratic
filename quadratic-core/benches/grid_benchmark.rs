@@ -85,47 +85,176 @@ fn criterion_benchmark(c: &mut Criterion) {
     // });
 
     benchmark_grids(c, &inputs, "delete_20000_x20000", |b, grid| {
-        let mut gc = GridController::from_grid(grid.clone());
-        b.iter(|| {
-            let sheet_id = gc.sheet_ids()[0];
-            let rect = Rect {
-                min: Pos {
-                    x: -10000,
-                    y: -10000,
-                },
-                max: Pos { x: 10000, y: 10000 },
-            };
-            gc.delete_cell_values(sheet_id, rect, None);
-        });
+        b.iter_batched(
+            || {
+                // Setup
+                let gc = GridController::from_grid(grid.clone());
+                let sheet_id = gc.sheet_ids()[0];
+                let rect = Rect {
+                    min: Pos {
+                        x: -10000,
+                        y: -10000,
+                    },
+                    max: Pos { x: 10000, y: 10000 },
+                };
+                (gc, sheet_id, rect)
+            },
+            |(mut gc, sheet_id, rect)| {
+                // Test
+                gc.delete_cell_values(sheet_id, rect, None);
+            },
+            criterion::BatchSize::SmallInput,
+        )
     });
 
     benchmark_grids(c, &inputs, "undo_delete_20000_x20000", |b, grid| {
-        let mut gc = GridController::from_grid(grid.clone());
-        let sheet_id = gc.sheet_ids()[0];
-        let rect = Rect {
-            min: Pos {
-                x: -10000,
-                y: -10000,
+        b.iter_batched(
+            || {
+                // Setup
+                let mut gc = GridController::from_grid(grid.clone());
+                let sheet_id = gc.sheet_ids()[0];
+                let rect = Rect {
+                    min: Pos {
+                        x: -10000,
+                        y: -10000,
+                    },
+                    max: Pos { x: 10000, y: 10000 },
+                };
+                gc.delete_cell_values(sheet_id, rect, None);
+                gc
             },
-            max: Pos { x: 10000, y: 10000 },
-        };
-        gc.delete_cell_values(sheet_id, rect, None);
-        b.iter(|| gc.undo(None));
+            |mut gc| {
+                // Test
+                gc.undo(None);
+            },
+            criterion::BatchSize::SmallInput,
+        )
     });
 
     benchmark_grids(c, &inputs, "redo_delete_20000_x20000", |b, grid| {
-        let mut gc = GridController::from_grid(grid.clone());
-        let sheet_id = gc.sheet_ids()[0];
-        let rect = Rect {
-            min: Pos {
-                x: -10000,
-                y: -10000,
+        b.iter_batched(
+            || {
+                // Setup
+                let mut gc = GridController::from_grid(grid.clone());
+                let sheet_id = gc.sheet_ids()[0];
+                let rect = Rect {
+                    min: Pos {
+                        x: -10000,
+                        y: -10000,
+                    },
+                    max: Pos { x: 10000, y: 10000 },
+                };
+                gc.delete_cell_values(sheet_id, rect, None);
+                gc.undo(None);
+                gc
             },
-            max: Pos { x: 10000, y: 10000 },
+            |mut gc| {
+                // Test
+                gc.redo(None);
+            },
+            criterion::BatchSize::SmallInput,
+        )
+    });
+
+    benchmark_grids(c, &inputs, "add_sheet", |b, grid| {
+        b.iter_batched(
+            || {
+                // Setup
+                GridController::from_grid(grid.clone())
+            },
+            |mut gc| {
+                // Test
+                gc.add_sheet(None);
+            },
+            criterion::BatchSize::SmallInput,
+        )
+    });
+
+    benchmark_grids(c, &inputs, "autocomplete_10_to_100", |b, _grid| {
+        let grid = Grid::new();
+        let mut gc = GridController::from_grid(grid);
+        let sheet_id = gc.sheet_ids()[0];
+
+        let small_selection = Rect {
+            min: Pos { x: 0, y: 0 },
+            max: Pos { x: 10, y: 10 },
         };
-        gc.delete_cell_values(sheet_id, rect, None);
-        gc.undo(None);
-        b.iter(|| gc.redo(None));
+        // add some data
+        gc.populate_with_random_floats(sheet_id, &small_selection);
+
+        let expand_to = Rect {
+            min: Pos { x: 0, y: 0 },
+            max: Pos { x: 100, y: 100 },
+        };
+
+        b.iter_batched(
+            || {
+                // Setup
+                (gc.clone(), sheet_id, small_selection, expand_to)
+            },
+            |(mut gc, sheet_id, small_selection, expand_to)| {
+                // Test
+                gc.autocomplete(sheet_id, small_selection, expand_to, None)
+                    .unwrap();
+            },
+            criterion::BatchSize::SmallInput,
+        )
+    });
+
+    benchmark_grids(c, &inputs, "clear_formatting", |b, grid| {
+        b.iter_batched(
+            || {
+                // Setup
+                let gc = GridController::from_grid(grid.clone());
+                let sheet_id = gc.sheet_ids()[0];
+                let rect = Rect {
+                    min: Pos {
+                        x: -10000,
+                        y: -10000,
+                    },
+                    max: Pos { x: 10000, y: 10000 },
+                };
+                (gc, sheet_id, rect)
+            },
+            |(mut gc, sheet_id, rect)| {
+                // Test
+                gc.clear_formatting(sheet_id, rect, None);
+            },
+            criterion::BatchSize::SmallInput,
+        )
+    });
+
+    benchmark_grids(c, &inputs, "delete_sheet", |b, grid| {
+        b.iter_batched(
+            || {
+                // Setup
+                let gc = GridController::from_grid(grid.clone());
+                let sheet_id = gc.sheet_ids()[0];
+                (gc, sheet_id)
+            },
+            |(mut gc, sheet_id)| {
+                // Test
+                gc.delete_sheet(sheet_id, None)
+            },
+            criterion::BatchSize::SmallInput,
+        )
+    });
+
+    benchmark_grids(c, &inputs, "delete_sheet_undo", |b, grid| {
+        b.iter_batched(
+            || {
+                // Setup
+                let mut gc = GridController::from_grid(grid.clone());
+                let sheet_id = gc.sheet_ids()[0];
+                gc.delete_sheet(sheet_id, None);
+                gc
+            },
+            |mut gc| {
+                // Test
+                gc.undo(None);
+            },
+            criterion::BatchSize::SmallInput,
+        )
     });
 }
 
