@@ -1,7 +1,7 @@
 import { Add, Close, ExtensionOutlined, FolderOpenOutlined, Menu } from '@mui/icons-material';
 import { Avatar, Box, CircularProgress, Drawer, IconButton, Typography, useTheme } from '@mui/material';
 import { ReactNode, useEffect, useState } from 'react';
-import { NavLink, Outlet, useLoaderData, useLocation, useNavigation } from 'react-router-dom';
+import { NavLink, Outlet, useFetchers, useLoaderData, useLocation, useNavigation, useParams } from 'react-router-dom';
 import { apiClient } from '../../api/apiClient';
 import { ApiTypes } from '../../api/types';
 import { AvatarWithLetters } from '../../components/AvatarWithLetters';
@@ -25,7 +25,6 @@ export const loader = async () => {
 };
 
 export const Component = () => {
-  const teams = useLoaderData() as LoaderData;
   const theme = useTheme();
   const navigation = useNavigation();
   const location = useLocation();
@@ -36,7 +35,7 @@ export const Component = () => {
     setIsOpen((prev) => !prev);
   };
 
-  const navbar = <Navbar handleDrawerToggle={handleDrawerToggle} teams={teams} />;
+  const navbar = <Navbar handleDrawerToggle={handleDrawerToggle} />;
 
   // When the location changes, close the menu (if it's already open)
   useEffect(() => {
@@ -114,8 +113,13 @@ export const Component = () => {
   );
 };
 
-function Navbar({ handleDrawerToggle, teams }: { handleDrawerToggle: Function; teams: LoaderData }) {
+function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
+  const teams = useLoaderData() as LoaderData;
   const { user } = useRootRouteLoaderData();
+  const { teamUuid } = useParams();
+
+  const fetchers = useFetchers();
+  const inFlightTeamFetcher = fetchers.find((fetcher) => fetcher.formAction?.startsWith(`/teams/${teamUuid}`));
 
   const theme = useTheme();
 
@@ -146,6 +150,7 @@ function Navbar({ handleDrawerToggle, teams }: { handleDrawerToggle: Function; t
         justifyContent: 'space-between',
         flexDirection: 'column',
         height: '100%',
+        gap: theme.spacing(2),
 
         [theme.breakpoints.up('md')]: {
           p: theme.spacing(2),
@@ -183,14 +188,23 @@ function Navbar({ handleDrawerToggle, teams }: { handleDrawerToggle: Function; t
         </SidebarNavLink>
 
         <SidebarLabel>Teams</SidebarLabel>
-        {teams.map(({ uuid, name }) => (
-          <SidebarNavLink key={uuid} to={ROUTES.TEAM(uuid)} style={sidebarLinkStyles}>
-            <AvatarWithLetters size="small">{name}</AvatarWithLetters>
-            <Typography variant="body2" color="text.primary" noWrap>
-              {name}
-            </Typography>
-          </SidebarNavLink>
-        ))}
+        {teams.map(({ uuid, name }) => {
+          const teamName =
+            // @ts-expect-error
+            teamUuid === uuid && inFlightTeamFetcher?.json?.name
+              ? // @ts-expect-error
+                inFlightTeamFetcher.json.name
+              : name;
+
+          return (
+            <SidebarNavLink key={uuid} to={ROUTES.TEAM(uuid)} style={sidebarLinkStyles}>
+              <AvatarWithLetters size="small">{teamName}</AvatarWithLetters>
+              <Typography variant="body2" color="text.primary" noWrap>
+                {teamName}
+              </Typography>
+            </SidebarNavLink>
+          );
+        })}
         <SidebarNavLink to={ROUTES.CREATE_TEAM} style={sidebarLinkStyles}>
           <Add />
           <Typography variant="body2" color="text.primary">

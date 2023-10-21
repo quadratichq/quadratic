@@ -27,7 +27,13 @@ router.post(
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
 
-    await dbClient.team.create({
+    const select = {
+      uuid: true,
+      name: true,
+      picture: req.body.picture ? true : false,
+    };
+
+    const team = await dbClient.team.create({
       data: {
         name: req.body.name,
         // TODO picture
@@ -38,23 +44,10 @@ router.post(
           },
         },
       },
-      select: {
-        id: true,
-        uuid: true,
-        name: true,
-        picture: true,
-      },
+      select,
     });
 
-    // await dbClient.userTeamRole.create({
-    //   data: {
-    //     userId: req.user.id,
-    //     teamId: team.id,
-    //     role: 'OWNER',
-    //   },
-    // });
-
-    return res.status(201).json({ message: 'Team created' });
+    return res.status(201).json(team);
   }
 );
 

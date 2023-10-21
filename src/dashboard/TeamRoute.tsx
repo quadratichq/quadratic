@@ -1,10 +1,19 @@
-import { ErrorOutline, KeyboardArrowDown, PeopleAltOutlined } from '@mui/icons-material';
+import { ErrorOutline, KeyboardArrowDown, PeopleAltOutlined, QuestionMarkOutlined } from '@mui/icons-material';
 import { Box, Button, Divider, IconButton, InputBase, Menu, MenuItem, useTheme } from '@mui/material';
 import { SxProps } from '@mui/system';
 import { useEffect, useRef, useState } from 'react';
-import { Link, LoaderFunctionArgs, useLoaderData, useSearchParams } from 'react-router-dom';
+import {
+  ActionFunctionArgs,
+  Link,
+  LoaderFunctionArgs,
+  isRouteErrorResponse,
+  useFetcher,
+  useLoaderData,
+  useRouteError,
+  useSearchParams,
+} from 'react-router-dom';
 import { apiClient } from '../api/apiClient';
-import { ApiTypes } from '../api/types';
+import { ApiSchemas, ApiTypes } from '../api/types';
 import { AvatarWithLetters } from '../components/AvatarWithLetters';
 import { Empty } from '../components/Empty';
 import { QDialogConfirmDelete } from '../components/QDialog';
@@ -14,13 +23,33 @@ import { TeamLogoInput } from './components/TeamLogo';
 import { TeamShareMenu } from './components/TeamShareMenu';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  // const { uuid } = params as { uuid: string };
-  const data = await apiClient.getTeams().catch((e) => {
-    console.error(e);
-    return undefined;
+  const { teamUuid } = params as { teamUuid: string };
+
+  // Ensure we have an UUID that matches the schema
+  if (!ApiSchemas['/v0/teams/:uuid.GET.response'].shape.team.shape.uuid.safeParse(teamUuid).success) {
+    throw new Response('Bad request. Expected a UUID string.');
+  }
+
+  const data = await apiClient.getTeam(teamUuid).catch((e) => {
+    throw new Response('Failed to fetch team' + e.message);
   });
+
   return data;
   // return uuid === '2' ? data2 : data;
+};
+
+export const action = async ({ request, params }: ActionFunctionArgs) => {
+  const { name, picture }: ApiTypes['/v0/teams/:uuid.POST.request'] = await request.json();
+  const { teamUuid } = params as { teamUuid: string };
+
+  // await new Promise((resolve) => setTimeout(resolve, 20000));
+
+  try {
+    await apiClient.updateTeam(teamUuid, { name, picture });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false };
+  }
 };
 
 export const Component = () => {
@@ -28,8 +57,15 @@ export const Component = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const { team } = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
-  const [teamName, setTeamName] = useState<string>(team.name);
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
+  const fetcher = useFetcher();
+
+  let name = team.name;
+  if (fetcher.state !== 'idle') {
+    const optimisticData = fetcher.json as ApiTypes['/v0/teams/:uuid.POST.request'];
+    if (optimisticData.name) name = optimisticData.name;
+    // picture
+  }
 
   const dialog = searchParams.get('dialog');
   const showShareDialog = dialog === 'share';
@@ -37,20 +73,22 @@ export const Component = () => {
   return (
     <>
       <DashboardHeader
-        title={isRenaming ? '' : teamName}
+        title={isRenaming ? '' : name}
         titleStart={
           <AvatarWithLetters size="large" src={team.picture} sx={{ mr: theme.spacing(1.5) }}>
-            {team.name}
+            {name}
           </AvatarWithLetters>
         }
         titleEnd={
           <>
             {isRenaming && (
               <RenameInput
-                value={teamName}
-                onClose={(newValue?: string) => {
-                  if (newValue) {
-                    setTeamName(newValue);
+                value={name}
+                onClose={(newName?: string) => {
+                  if (newName) {
+                    fetcher.submit({ name: newName }, { method: 'POST', encType: 'application/json' });
+                    // setTeamName(newValue);
+                    // Post update to server
                   }
                   setIsRenaming(false);
                 }}
@@ -79,7 +117,7 @@ export const Component = () => {
                 })
               }
             >
-              {team.users.length}
+              {team.users?.length /* TODO not optional */}
             </Button>
             <Button variant="contained" disableElevation>
               TODO Create file
@@ -104,7 +142,7 @@ export const Component = () => {
       )}
       {showDeleteDialog && (
         <QDialogConfirmDelete
-          entityName={team.name}
+          entityName={name}
           entityNoun="team"
           onClose={() => {
             setShowDeleteDialog(false);
@@ -297,8 +335,30 @@ function EditDropdownMenu({ setShowDeleteDialog, onRename }: any) {
 }
 
 export const ErrorBoundary = () => {
-  // const error = useRouteError();
+  const error = useRouteError();
 
+  if (isRouteErrorResponse(error)) {
+    console.error(error);
+    // If the future, we can differentiate between the different kinds of file
+    // loading errors and be as granular in the message as we like.
+    // e.g. file found but didn't validate. file couldn't be found on server, etc.
+    // But for now, we'll just show a 404
+    return (
+      <Empty
+        title="404: team not found"
+        description="This team may have been deleted, moved, or made unavailable. Try reaching out to the team owner."
+        Icon={QuestionMarkOutlined}
+        actions={
+          <Button variant="contained" disableElevation component={Link} to="/">
+            Go home
+          </Button>
+        }
+      />
+    );
+  }
+
+  // Maybe we log this to Sentry someday...
+  console.error(error);
   return (
     <Empty
       title="Unexpected error"

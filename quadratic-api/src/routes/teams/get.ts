@@ -32,7 +32,13 @@ router.get('/', validateAccessToken, userMiddleware, async (req: Request, res) =
     ],
   });
 
-  return res.status(200).json(teams);
+  // Make picture optional when available
+  const clientTeams = teams.map(({ picture, ...rest }) => ({
+    ...rest,
+    ...(picture ? { picture } : {}),
+  }));
+
+  return res.status(200).json(clientTeams);
 });
 
 export default router;

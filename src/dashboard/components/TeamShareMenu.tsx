@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { UserShare } from '../../api/types';
 import { QDialog } from '../../components/QDialog';
 import { ShareMenu } from '../../components/ShareMenu';
 
@@ -48,9 +47,9 @@ export function TeamShareMenu({ onClose, team }: { onClose: () => void; team: an
           <ShareMenu.Users
             users={users}
             // usersIndexForLoggedInUser={users.findIndex((user: UserShare) => user.email === '')}
-            onUpdateUser={(user: UserShare) => {
-              setUsers((prevUsers: UserShare[]) =>
-                prevUsers.map((prevUser) => {
+            onUpdateUser={(user: any /* TODO */) => {
+              setUsers((prevUsers: any /* TODO */) =>
+                prevUsers.map((prevUser: any) => {
                   if (prevUser.email === user.email) {
                     return { ...prevUser, ...user };
                   } else {
@@ -59,9 +58,11 @@ export function TeamShareMenu({ onClose, team }: { onClose: () => void; team: an
                 })
               );
             }}
-            onDeleteUser={(user: UserShare) => {
+            onDeleteUser={(user: any /* TODO */) => {
               console.log(user);
-              setUsers((prevUsers: UserShare[]) => prevUsers.filter((prevUser) => prevUser.email !== user.email));
+              setUsers((prevUsers: any /* TODO */) =>
+                prevUsers.filter((prevUser: any) => prevUser.email !== user.email)
+              );
             }}
             // Current user and their relationship to the current team
             loggedInUser={{

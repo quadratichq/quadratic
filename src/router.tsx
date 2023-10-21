@@ -98,8 +98,7 @@ export const router = createBrowserRouter(
             <Route path={ROUTES.TEAMS}>
               <Route index element={<Navigate to={ROUTES.MY_FILES} replace />} />
               <Route path={ROUTES.CREATE_TEAM} lazy={() => import('./dashboard/TeamCreateRoute')} />
-              <Route path=":uuid" lazy={() => import('./dashboard/TeamRoute')} />
-              <Route path=":uuid/edit" lazy={() => import('./dashboard/TeamEditRoute')} />
+              <Route path=":teamUuid" lazy={() => import('./dashboard/TeamRoute')} />
             </Route>
           </Route>
 

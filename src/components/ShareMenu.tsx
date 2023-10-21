@@ -19,7 +19,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router-dom';
 import { z } from 'zod';
-import { PublicLinkAccess, UserShare } from '../api/types';
+import { PublicLinkAccess } from '../api/types';
 import { Access, Role, RoleSchema } from '../permissions';
 import { AvatarWithLetters } from './AvatarWithLetters';
 import { getUserShareOptions } from './ShareMenu.utils';
@@ -57,7 +57,7 @@ function Loading() {
 function ShareMenu({ fetcherUrl, uuid }: { fetcherUrl: string; uuid: string }) {
   const theme = useTheme();
   const fetcher = useFetcher();
-  const [users, setUsers] = useState<UserShare[]>([]);
+  const [users, setUsers] = useState([]); // TODO types
   const isLoading = Boolean(!fetcher.data?.ok);
   // const owner = fetcher.data?.data?.owner;
   const publicLinkAccess = fetcher.data?.data?.public_link_access;
@@ -103,6 +103,7 @@ function ShareMenu({ fetcherUrl, uuid }: { fetcherUrl: string; uuid: string }) {
       {canEdit && (
         <ShareMenu.Invite
           onInvite={({ email, role }) => {
+            // @ts-expect-error
             setUsers((prev: any) => [...prev, { email, role }]);
           }}
           userEmails={users.map(({ email }) => email)}
@@ -141,10 +142,10 @@ function Users({
   onUpdateUser,
   onDeleteUser,
 }: {
-  users: UserShare[];
+  users: any /* TODO */;
   loggedInUser: { id: number; role: Role; access: Access[] };
-  onUpdateUser: (user: UserShare) => void;
-  onDeleteUser: (user: UserShare) => void;
+  onUpdateUser: (user: any /* TODO UserShare */) => void;
+  onDeleteUser: (user: any /* TODO UserShare */) => void;
 }) {
   // const { user } = useRootRouteLoaderData();
 
@@ -152,7 +153,7 @@ function Users({
 
   return (
     <>
-      {users.map((user, i) => (
+      {users.map((user: any, i: number) => (
         <UserListItem
           key={user.email}
           users={users}
@@ -173,11 +174,11 @@ function UserListItem({
   onUpdateUser,
   onDeleteUser,
 }: {
-  users: UserShare[];
+  users: any /* TODO UserShare[]*/;
   loggedInUser: { id: number; role: Role; access: Access[] };
   usersIndexForRenderedUser: number;
-  onUpdateUser: (user: UserShare) => void;
-  onDeleteUser: (user: UserShare) => void;
+  onUpdateUser: (user: any /*TODO UserShare*/) => void;
+  onDeleteUser: (user: any /*TODO UserShare*/) => void;
 }) {
   const user = users[usersIndexForRenderedUser];
 

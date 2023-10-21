@@ -1,26 +1,33 @@
 import z from 'zod';
-import { AccessSchema, RoleSchema } from '../permissions';
+import { AccessSchema, RoleSchema, UserRoleFileSchema, UserRoleTeamSchema } from '../permissions';
 
 // TODO share these with the API
 
-const UserShareSchema = z.object({
+const user = {
   id: z.number(),
   email: z.string().email(),
-  role: RoleSchema,
-  // Users in the share list don't need access
-  // access: AccessSchema.array(),
   hasAccount: z.boolean(),
   name: z.string().optional(),
   picture: z.string().url().optional(),
+};
+const TeamUserSchema = z.object({
+  ...user,
+  // TODO bring these directly into this file?
+  role: UserRoleTeamSchema,
 });
-export type UserShare = z.infer<typeof UserShareSchema>;
+export type TeamUser = z.infer<typeof TeamUserSchema>;
+const FileUserSchema = z.object({
+  ...user,
+  role: UserRoleFileSchema,
+});
+export type FileUser = z.infer<typeof FileUserSchema>;
 
 const TeamSchema = z.object({
   uuid: z.string(),
   name: z.string(),
   picture: z.string().url().optional(),
-  users: z.array(UserShareSchema),
-  files: z.any(), // TODO
+  users: z.array(TeamUserSchema), // TODO not optional
+  // files: z.any(), // TODO
   // TODO billing
 });
 
@@ -134,27 +141,35 @@ export const ApiSchemas = {
    * Teams
    *
    */
-  '/v0/teams.GET.response': z.array(TeamSchema.pick({ uuid: true, name: true /* TODO picture: true */ })),
-  '/v0/teams.POST.request': TeamSchema.pick({ name: true, picture: true /* billing? */ }),
-  '/v0/teams.POST.response': z.object({
-    message: z.string(),
+  '/v0/teams.GET.response': z.array(TeamSchema.pick({ uuid: true, name: true, picture: true })),
+  '/v0/teams.POST.request': TeamSchema.pick({
+    name: true,
+    picture: true,
+    // TODO billing
   }),
+  '/v0/teams.POST.response': TeamSchema.pick({ uuid: true, name: true, picture: true }),
   '/v0/teams/:uuid.GET.response': z.object({
     team: TeamSchema,
     role: RoleSchema,
     access: AccessSchema.array(),
+    // TODO
+    billing: z.any().optional(),
   }),
-  '/v0/teams/:uuid.POST.request': TeamSchema.pick({ name: true, picture: true /* TODO files? */ }),
+  '/v0/teams/:uuid.POST.request': z.object({
+    name: TeamSchema.shape.name.optional(),
+    picture: TeamSchema.shape.picture,
+    // TODO files, billing
+  }),
   '/v0/teams/:uuid.POST.response': z.object({
     message: z.string(),
   }),
   // TODO equivalent for /files/:uuid/sharing
-  '/v0/teams/:uuid/sharing.POST.request': UserShareSchema.pick({ email: true, role: true }),
+  '/v0/teams/:uuid/sharing.POST.request': TeamUserSchema.pick({ email: true, role: true }),
   '/v0/teams/:uuid/sharing.POST.response': z.object({
     message: z.string(),
   }),
   // TODO DELETE for user
-  '/v0/teams/:uuid/sharing/:userId.POST.request': UserShareSchema.pick({ role: true }),
+  '/v0/teams/:uuid/sharing/:userId.POST.request': TeamUserSchema.pick({ role: true }),
   '/v0/teams/:uuid/sharing/:userId.POST.response': z.object({
     message: z.string(),
   }),
