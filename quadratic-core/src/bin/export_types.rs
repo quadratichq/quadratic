@@ -55,7 +55,6 @@ fn main() {
         // Value,
         Instant,
         Duration,
-        wasm_bindings::CellRefSpan,
         Error,
         ErrorMsg,
         Pos,

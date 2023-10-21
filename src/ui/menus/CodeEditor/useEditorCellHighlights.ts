@@ -32,7 +32,6 @@ function extractCellsFromParseFormula(parsedFormula: ParseFormulaReturnType): { 
         span,
       };
     } else {
-      debugger;
       return { cellId: getKey(cell_ref.cell.x.coord, cell_ref.cell.y.coord), span };
     }
   });
