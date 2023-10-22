@@ -6,11 +6,14 @@ import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { readFileAsArrayBuffer } from '../../helpers/files';
 import init, {
+  BorderSelection,
+  BorderStyle,
   CodeCell,
   CodeCellLanguage,
   GridController,
   JsCodeResult,
   JsComputeGetCells,
+  JsRenderBorders,
   JsRenderCodeCell,
   MinMax,
   Pos,
@@ -98,6 +101,10 @@ export class Grid {
 
     if (summary.code_cells_modified.length) {
       pixiApp.cellsSheets.updateCodeCells(summary.code_cells_modified);
+    }
+
+    if (summary.border_sheets_modified.length) {
+      pixiApp.cellsSheets.updateBorders(summary.border_sheets_modified);
     }
 
     const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
@@ -350,6 +357,18 @@ export class Grid {
     this.transactionResponse(summary);
   }
 
+  async setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
+    const summary = await this.gridController.setRegionBorders(
+      sheetId,
+      rectangleToRect(rectangle),
+      selection,
+      style,
+      sheets.getCursorPosition()
+    );
+    this.transactionResponse(summary);
+    this.dirty = true;
+  }
+
   //#endregion
 
   //#region get grid information
@@ -395,6 +414,10 @@ export class Grid {
 
   getFormattingSummary(sheetId: string, rectangle: Rectangle): FormattingSummary {
     return this.gridController.getFormattingSummary(sheetId, rectangleToRect(rectangle) as RectInternal);
+  }
+
+  getRenderBorders(sheetId: string): JsRenderBorders {
+    return this.gridController.getRenderBorders(sheetId);
   }
 
   //#endregion

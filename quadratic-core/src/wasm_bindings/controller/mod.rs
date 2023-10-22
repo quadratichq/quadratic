@@ -6,6 +6,7 @@ use std::str::FromStr;
 
 pub mod auto_complete;
 pub mod bounds;
+pub mod borders;
 pub mod cells;
 pub mod clipboard;
 pub mod formatting;

@@ -1,7 +1,9 @@
-import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
+import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
+import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
+import { JsRenderBorder, JsRenderBorders } from '../../quadratic-core/quadratic_core';
 import { CellsSheet } from './CellsSheet';
-import { BorderCull } from './drawBorders';
+import { BorderCull, drawCellBorder } from './drawBorders';
 
 export class CellsBorders extends Container {
   private cellsSheet: CellsSheet;
@@ -21,21 +23,46 @@ export class CellsBorders extends Container {
     this.removeChildren();
   }
 
+  drawHorizontal(borders: JsRenderBorders) {
+    let border: JsRenderBorder | undefined;
+    while ((border = borders.horizontal_next())) {
+      if (border.w === undefined) throw new Error('Expected border.w to be defined in CellsBorders.drawHorizontal');
+      const start = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y));
+      const end = this.sheet.offsets.getCellOffsets(Number(border.x) + border.w, Number(border.y));
+      const color = border.style.color;
+      this.sprites.push(
+        ...drawCellBorder({
+          position: new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y),
+          horizontal: { type: border.style.line, color },
+          getSprite: this.getSprite,
+        })
+      );
+    }
+  }
+
+  drawVertical(borders: JsRenderBorders) {
+    let border: JsRenderBorder | undefined;
+    while ((border = borders.vertical_next())) {
+      if (border.h === undefined) throw new Error('Expected border.h to be defined in CellsBorders.drawVertical');
+      const start = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y));
+      const end = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y) + border.h!);
+      const color = border.style.color;
+      this.sprites.push(
+        ...drawCellBorder({
+          position: new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y),
+          vertical: { type: border.style.line, color },
+          getSprite: this.getSprite,
+        })
+      );
+    }
+  }
+
   create(): void {
-    // const horizontal = this.sheet.gridSparse.getHorizontalBorders();
-    // console.log(horizontal);
-    // horizontal.forEach((border) => {
-    //   const start = this.sheet.gridOffsets.getCell(Number(border.x), Number(border.y));
-    //   let end: Rectangle;
-    //   if (border.w && border.h) {
-    //     end = this.sheet.gridOffsets.getCell(Number(border.x) + border.w, Number(border.y) + border.h);
-    //   } else {
-    //     end = start;
-    //   }
-    //   this.sprites.push(drawLine(start.x, start.y));
-    // });
-    // const vertical = this.sheet.gridSparse.getVerticalBorders();
-    // console.log(vertical);
+    this.clear();
+    const borders = grid.getRenderBorders(this.sheet.id);
+    this.drawHorizontal(borders);
+    this.drawVertical(borders);
+    borders.free();
   }
 
   private getSprite = (tiling?: boolean): Sprite | TilingSprite => {

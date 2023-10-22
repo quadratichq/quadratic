@@ -3,7 +3,10 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 
 use crate::{
-    grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind, RegionRef, SheetId},
+    grid::{
+        generate_borders, BorderSelection, CodeCellLanguage, CodeCellValue, NumericFormat,
+        NumericFormatKind, RegionRef, SheetId,
+    },
     Array, CellValue, Pos, Rect, RunLengthEncoding,
 };
 
@@ -171,11 +174,10 @@ impl GridController {
 
     pub fn clear_formatting_operations(&mut self, sheet_id: SheetId, rect: Rect) -> Vec<Operation> {
         let region = self.existing_region(sheet_id, rect);
-
         match region.size() {
             Some(_) => {
                 let len = region.size().unwrap().len();
-                vec![
+                let mut ops = vec![
                     Operation::SetCellFormats {
                         region: region.clone(),
                         attr: CellFmtArray::Align(RunLengthEncoding::repeat(None, len)),
@@ -208,7 +210,16 @@ impl GridController {
                         region: region.clone(),
                         attr: CellFmtArray::FillColor(RunLengthEncoding::repeat(None, len)),
                     },
-                ]
+                ];
+
+                // clear borders
+                let sheet = self.grid.sheet_from_id(sheet_id);
+                let borders = generate_borders(sheet, &region, vec![BorderSelection::Clear], None);
+                ops.push(Operation::SetBorders {
+                    region: region.clone(),
+                    borders,
+                });
+                ops
             }
             None => vec![],
         }
@@ -239,35 +250,13 @@ impl GridController {
     /// as needed.
     pub fn region(&mut self, sheet_id: SheetId, rect: Rect) -> RegionRef {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
-        let columns = rect
-            .x_range()
-            .map(|x| sheet.get_or_create_column(x).0.id)
-            .collect();
-        let rows = rect
-            .y_range()
-            .map(|y| sheet.get_or_create_row(y).id)
-            .collect();
-        RegionRef {
-            sheet: sheet_id,
-            columns,
-            rows,
-        }
+        sheet.region(rect)
     }
     /// Returns a region of the spreadsheet, ignoring columns and rows which
     /// have no contents and no IDs.
     pub fn existing_region(&self, sheet_id: SheetId, rect: Rect) -> RegionRef {
         let sheet = self.grid.sheet_from_id(sheet_id);
-        let columns = rect
-            .x_range()
-            .filter_map(|x| sheet.get_column(x))
-            .map(|col| col.id)
-            .collect();
-        let rows = rect.y_range().filter_map(|y| sheet.get_row(y)).collect();
-        RegionRef {
-            sheet: sheet_id,
-            columns,
-            rows,
-        }
+        sheet.existing_region(rect)
     }
 }
 
