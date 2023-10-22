@@ -153,18 +153,6 @@ impl TransactionInProgress {
             return Some(CellsForArray::new(vec![], true));
         };
 
-        if get_cells.rect().contains(pos) {
-            // unable to find sheet by name, generate error
-            let msg = if let Some(line_number) = get_cells.line_number() {
-                format!("cell cannot reference itself at line {}", line_number)
-            } else {
-                "Sheet not found".to_string()
-            };
-            self.code_cell_sheet_error(grid_controller, msg, get_cells.line_number());
-            self.loop_compute(grid_controller);
-            return Some(CellsForArray::new(vec![], true));
-        }
-
         let sheet_name = get_cells.sheet_name();
 
         // if sheet_name is None, use the sheet_id from the pos
@@ -174,6 +162,19 @@ impl TransactionInProgress {
         );
 
         if let Some(sheet) = sheet {
+            // ensure there's not a cell reference in the get_cells request
+            if get_cells.rect().contains(pos) && sheet.id == current_sheet.id {
+                // unable to find sheet by name, generate error
+                let msg = if let Some(line_number) = get_cells.line_number() {
+                    format!("cell cannot reference itself at line {}", line_number)
+                } else {
+                    "Sheet not found".to_string()
+                };
+                self.code_cell_sheet_error(grid_controller, msg, get_cells.line_number());
+                self.loop_compute(grid_controller);
+                return Some(CellsForArray::new(vec![], true));
+            }
+
             let rect = get_cells.rect();
             let array = sheet.cell_array(rect);
             for y in rect.y_range() {
