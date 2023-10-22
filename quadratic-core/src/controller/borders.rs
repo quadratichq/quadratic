@@ -1,5 +1,6 @@
+use super::operation::Operation;
+use super::transactions::TransactionType;
 use super::GridController;
-use crate::controller::operations::Operation;
 use crate::controller::transaction_summary::TransactionSummary;
 use crate::grid::generate_borders;
 use crate::{
@@ -20,6 +21,6 @@ impl GridController {
         let sheet = self.sheet(sheet_id);
         let borders = generate_borders(sheet, &region, selections, style);
         let ops = vec![Operation::SetBorders { region, borders }];
-        self.transact_forward(ops, cursor).await
+        self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
 }

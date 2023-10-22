@@ -150,6 +150,7 @@ impl GridController {
                 }
             }
             Operation::SetBorders { region, borders } => {
+                sheets_with_changed_bounds.insert(region.sheet);
                 summary.border_sheets_modified.push(region.sheet);
                 let sheet = self.grid.sheet_mut_from_id(region.sheet);
 

@@ -2,7 +2,7 @@ use core::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    grid::{CellRef, CodeCellValue, ColumnId, RegionRef, RowId, Sheet, SheetId},
+    grid::{CellRef, CodeCellValue, ColumnId, RegionRef, RowId, Sheet, SheetBorders, SheetId},
     Array,
 };
 
@@ -28,6 +28,10 @@ pub enum Operation {
     },
     DeleteSheet {
         sheet_id: SheetId,
+    },
+    SetBorders {
+        region: RegionRef,
+        borders: SheetBorders,
     },
     SetSheetName {
         sheet_id: SheetId,
@@ -107,6 +111,7 @@ impl fmt::Display for Operation {
                 "ResizeRow {{ sheet_id: {}, row: {}, new_size: {} }}",
                 sheet_id, row, new_size
             ),
+            Operation::SetBorders { .. } => write!(fmt, "SetBorders {{ todo }}"),
         }
     }
 }
