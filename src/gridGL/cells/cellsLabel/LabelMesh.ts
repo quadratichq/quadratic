@@ -15,7 +15,8 @@ import { debugShowCellHashesInfo } from '../../../debugFlags';
 import * as shaderNoTint from './cellLabelShader';
 import * as shaderTint from './cellLabelShaderTint';
 
-const MAX_VERTICES = 65535;
+// experimental value (recommended to be maximum of 100,000, with x6 for each label)
+const MAX_VERTICES = 15000;
 
 class LabelMeshEntry extends Mesh {
   private labelMesh: LabelMesh;
@@ -128,8 +129,8 @@ export class LabelMesh extends Container<LabelMeshEntry> {
   getBuffer(): LabelMeshEntry {
     const entry = this.children[this.currentEntry];
     if (entry.index + 1 > MAX_VERTICES) {
-      console.log('too large...');
       this.currentEntry++;
+
       // this should never happen
       if (this.currentEntry >= this.children.length) {
         throw new Error('LabelMeshEntries out of bounds');
