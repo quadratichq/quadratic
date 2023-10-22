@@ -12,6 +12,11 @@ interface CellPosition {
 
 export type Span = { start: number; end: number };
 
+export type CellRefCoord = {
+  x: { type: 'Relative' | 'Absolute'; coord: number };
+  y: { type: 'Relative' | 'Absolute'; coord: number };
+};
+
 export type CellRef =
   | {
       type: 'CellRange';
@@ -20,7 +25,7 @@ export type CellRef =
     }
   | {
       type: 'Cell';
-      cell: CellPosition;
+      pos: CellPosition;
     };
 
 export type ParseFormulaReturnType = {
