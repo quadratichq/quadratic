@@ -1,4 +1,4 @@
-use crate::grid::{Grid, GridBounds, IdMap};
+use crate::grid::{CellAlign, CellWrap, Grid, GridBounds, IdMap, NumericFormat};
 use crate::{CellValue, Error, ErrorMsg, Span, Value};
 
 use crate::grid::file::v1_5::schema::{self as current, ColumnValue};
@@ -21,7 +21,7 @@ use super::CURRENT_VERSION;
 
 fn set_column_format<T>(
     column_data: &mut ColumnData<SameValue<T>>,
-    column: &HashMap<String, current::ColumnFormatType<T>>,
+    column: &HashMap<String, current::ColumnFormatType<String>>,
 ) -> Result<()>
 where
     T: Serialize + for<'d> Deserialize<'d> + Debug + Clone + PartialEq,
@@ -29,7 +29,19 @@ where
     for (y, format) in column.iter() {
         let y =
             i64::from_str(y).map_err(|e| anyhow!("Unable to convert {} to an i64: {}", y, e))?;
-        column_data.set(y, Some(format.content.value.to_owned()));
+        column_data.set(y, serde_json::from_str(&format.content.value).ok());
+    }
+
+    Ok(())
+}
+fn set_column_format_bool(
+    column_data: &mut ColumnData<SameValue<bool>>,
+    column: &HashMap<String, current::ColumnFormatType<bool>>,
+) -> Result<()> {
+    for (y, format) in column.iter() {
+        let y =
+            i64::from_str(y).map_err(|e| anyhow!("Unable to convert {} to an i64: {}", y, e))?;
+        column_data.set(y, Some(format.content.value));
     }
 
     Ok(())
@@ -43,8 +55,13 @@ fn import_column_builder(columns: Vec<(i64, current::Column)>) -> Result<BTreeMa
                 id: ColumnId::from_str(&column.id.id)?,
                 ..Default::default()
             };
-            set_column_format::<bool>(&mut col.bold, &column.bold)?;
-            set_column_format::<bool>(&mut col.italic, &column.italic)?;
+            set_column_format::<CellRef>(&mut col.spills, &column.spills)?;
+            set_column_format::<CellAlign>(&mut col.align, &column.align)?;
+            set_column_format::<CellWrap>(&mut col.wrap, &column.wrap)?;
+            set_column_format::<i16>(&mut col.numeric_decimals, &column.numeric_decimals)?;
+            set_column_format::<NumericFormat>(&mut col.numeric_format, &column.numeric_format)?;
+            set_column_format_bool(&mut col.bold, &column.bold)?;
+            set_column_format_bool(&mut col.italic, &column.italic)?;
             set_column_format::<String>(&mut col.text_color, &column.text_color)?;
             set_column_format::<String>(&mut col.fill_color, &column.fill_color)?;
 
