@@ -37,7 +37,10 @@ impl GridFile {
 pub fn import(file_contents: &str) -> Result<Grid> {
     // println!("{}", &file_contents);
     let file = serde_json::from_str::<GridFile>(file_contents)
-        .map_err(|e| anyhow!(e))?
+        .map_err(|e| {
+            dbg!(&e);
+            return anyhow!(e);
+        })?
         .into_latest()?;
 
     current::import(file)
@@ -55,12 +58,20 @@ mod tests {
     use super::*;
 
     const V1_3_FILE: &str = include_str!("../../../examples/v1_3.json");
+    const V1_3_PYTHON_FILE: &str = include_str!("../../../examples/v1_3_python.grid");
     const V1_5_FILE: &str = include_str!("../../../examples/v1_5.json");
 
     #[test]
     fn process_a_v1_3_file() {
         // TODO(ddimaria): validate that elements of the imported and exported file are valid
         let mut imported = import(V1_3_FILE).unwrap();
+        let exported = export(&mut imported).unwrap();
+    }
+
+    #[test]
+    fn process_a_v1_3_python_file() {
+        // TODO(ddimaria): validate that elements of the imported and exported file are valid
+        let mut imported = import(V1_3_PYTHON_FILE).unwrap();
         let exported = export(&mut imported).unwrap();
     }
 

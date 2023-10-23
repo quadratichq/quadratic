@@ -10,7 +10,7 @@ pub struct GridSchema {
     pub columns: Vec<Column>,
     pub formats: Vec<Format>,
     pub rows: Vec<Row>,
-    pub version: String,
+    pub version: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -54,7 +54,7 @@ pub struct CellBorder {
     pub border_type: Option<String>,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EvaluationResult {
     pub success: bool,
@@ -69,10 +69,24 @@ pub struct EvaluationResult {
     #[serde(rename = "error_span")]
     pub error_span: Option<(u32, u32)>,
     #[serde(rename = "array_output")]
-    #[serde(default)]
-    pub array_output: Vec<Vec<String>>,
+    pub array_output: Option<ArrayOutput>,
     #[serde(rename = "std_err")]
     pub std_err: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ArrayOutput {
+    Block(Vec<Vec<Option<Any>>>),
+    Array(Vec<Option<Any>>),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Any {
+    Number(f64),
+    String(String),
+    Boolean(bool),
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
