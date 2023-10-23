@@ -14,7 +14,7 @@ export const teamMiddleware = async (req: Request, res: Response, next: NextFunc
   });
 
   if (team === null) {
-    return res.status(404).json({ error: { message: 'File not found' } });
+    return res.status(404).json({ error: { message: 'Team not found' } });
   }
 
   // TODO

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { apiClient } from '../../api/apiClient';
 import { QDialog } from '../../components/QDialog';
 import { ShareMenu } from '../../components/ShareMenu';
 
@@ -29,6 +30,7 @@ export function TeamShareMenu({ onClose, team }: { onClose: () => void; team: an
         <ShareMenu.Wrapper>
           <ShareMenu.Invite
             onInvite={({ email, role }) => {
+              apiClient.updateTeamSharing(team.uuid, { email, role });
               setUsers((prev: any) => [
                 ...prev,
                 {

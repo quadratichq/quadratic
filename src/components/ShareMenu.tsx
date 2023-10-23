@@ -20,7 +20,7 @@ import React, { useEffect, useState } from 'react';
 import { useFetcher, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { PublicLinkAccess } from '../api/types';
-import { Access, Role, RoleSchema } from '../permissions';
+import { Access, Role, RoleSchema, UserRoleTeam } from '../permissions';
 import { AvatarWithLetters } from './AvatarWithLetters';
 import { getUserShareOptions } from './ShareMenu.utils';
 
@@ -444,7 +444,7 @@ UpdateUserOptions: file & team
   <ShareMenu.InviteOptionEditor>
 */
 
-export type ShareMenuInviteCallback = { email: string; role: string /* TODO */ };
+export type ShareMenuInviteCallback = { email: string; role: UserRoleTeam /* TODO */ };
 function Invite({
   onInvite,
   disabled,

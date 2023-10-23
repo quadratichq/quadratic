@@ -153,6 +153,8 @@ export const ApiSchemas = {
     role: RoleSchema,
     access: AccessSchema.array(),
     // TODO
+    // files: []
+    // TODO
     billing: z.any().optional(),
   }),
   '/v0/teams/:uuid.POST.request': z.object({

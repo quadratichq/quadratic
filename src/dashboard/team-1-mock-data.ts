@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ApiTypes } from '../api/types';
 import { AccessSchema, RoleSchema } from '../permissions';
 
@@ -6,6 +7,7 @@ export const data: ApiTypes['/v0/teams/:uuid.GET.response'] = {
     uuid: '1',
     name: 'Costco Wholesale Incorporated',
     // picture: 'https://avatars.githubusercontent.com/u/1051500?v=4',
+    files: [],
     users: [
       {
         id: 1,
@@ -71,6 +73,7 @@ export const data2: ApiTypes['/v0/teams/:uuid.GET.response'] = {
     uuid: '2',
     name: 'Quadratic',
     // picture: 'https://avatars.githubusercontent.com/u/1051500?v=4',
+    files: [],
     users: [
       {
         id: 1,

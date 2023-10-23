@@ -17,6 +17,22 @@ const auth0 = new ManagementClient({
   scope: 'read:users',
 });
 
+export const getUsers = async (user_ids: number[]) => {
+  const dbUsers = await await dbClient.user.findMany({
+    where: {
+      id: {
+        in: user_ids,
+      },
+    },
+  });
+
+  const auth0Users = await auth0.getUsers({
+    q: `user_id:(${dbUsers.map(({ auth0_id }) => auth0_id).join(' OR ')})`,
+  });
+  console.log(dbUsers, auth0Users);
+  return auth0Users;
+};
+
 export const getUserProfile = async (user_id: number) => {
   const user = await dbClient.user.findUnique({
     where: { id: user_id },
@@ -29,4 +45,9 @@ export const getUserProfile = async (user_id: number) => {
     picture: auth0_user.picture,
     email: auth0_user.email,
   };
+};
+
+export const getUsersByEmail = async (email: string) => {
+  const auth0_user = await auth0.getUsersByEmail(email);
+  return auth0_user;
 };

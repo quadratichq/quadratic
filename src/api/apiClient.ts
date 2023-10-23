@@ -58,6 +58,17 @@ export const apiClient = {
     );
   },
 
+  async updateTeamSharing(uuid: string, body: ApiTypes['/v0/teams/:uuid/sharing.POST.request']) {
+    return fetchFromApi<ApiTypes['/v0/teams/:uuid/sharing.POST.response']>(
+      `/v0/teams/${uuid}/sharing`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+      },
+      ApiSchemas['/v0/teams/:uuid/sharing.POST.response']
+    );
+  },
+
   async getFiles() {
     return fetchFromApi<ApiTypes['/v0/files.GET.response']>(
       `/v0/files`,

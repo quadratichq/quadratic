@@ -7,7 +7,7 @@ export const UserRoleFileSchema = z.enum(['OWNER', 'EDITOR', 'VIEWER']);
 export type UserRoleFile = z.infer<typeof UserRoleFileSchema>;
 
 export const UserRoleTeamSchema = z.enum(['OWNER', /*'ADMIN',*/ 'EDITOR', 'VIEWER']);
-export type UserRoleTeamRole = z.infer<typeof UserRoleTeamSchema>;
+export type UserRoleTeam = z.infer<typeof UserRoleTeamSchema>;
 
 export const AccessSchema = z.enum([
   'FILE_EDIT',
