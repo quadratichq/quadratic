@@ -204,10 +204,13 @@ mod tests {
     }
 
     #[test]
-    fn import_export_and_convert_a_v1_3_file() {
+    fn import_export_and_upgrade_a_v1_3_file() {
         let imported = import(V1_3_FILE).unwrap();
-        let exported = export(&imported).unwrap();
+
+        // we currently just care that this doesn't error
+        export(&imported).unwrap();
+
+        // we currently just care that this doesn't error
         let upgraded = upgrade(imported).unwrap();
-        println!("{:?}", upgraded);
     }
 }

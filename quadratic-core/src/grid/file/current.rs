@@ -288,7 +288,6 @@ mod tests {
     use super::*;
 
     const V1_5_FILE: &str = include_str!("../../../examples/v1_5.json");
-    const V1_3_FILE: &str = include_str!("../../../examples/v1_3.json");
 
     #[test]
     fn imports_and_exports_a_current_grid() {

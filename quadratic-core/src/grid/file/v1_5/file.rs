@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::grid::file::v1_5::schema::GridSchema;
     use anyhow::{anyhow, Result};
 
