@@ -1,4 +1,4 @@
-use crate::grid::{Grid, GridBounds};
+use crate::grid::{Grid, GridBounds, IdMap};
 use crate::{CellValue, Error, ErrorMsg, Span, Value};
 
 use crate::grid::file::v1_5::schema::{self as current, ColumnValue};
@@ -26,39 +26,42 @@ where
     T: Serialize + for<'d> Deserialize<'d> + Debug + Clone + PartialEq,
 {
     for (y, format) in column.iter() {
-        let y = i64::from_str(y).map_err(|e| anyhow!("Unable to convert{} to an i64: {}", y, e))?;
-        column_data.set(y, Some(format.content.value));
+        let y =
+            i64::from_str(y).map_err(|e| anyhow!("Unable to convert {} to an i64: {}", y, e))?;
+        column_data.set(y, Some(format.content.value.to_owned()));
     }
 
     Ok(())
 }
 
-fn import_column_builder(columns: &Vec<(i64, current::Column)>) -> Result<BTreeMap<i64, Column>> {
+fn import_column_builder(columns: Vec<(i64, current::Column)>) -> Result<BTreeMap<i64, Column>> {
     columns
         .iter()
         .map(|(y, column)| {
             let mut col = Column {
-                id: ColumnId::from_str(&column.id.id).unwrap(),
+                id: ColumnId::from_str(&column.id.id)?,
                 ..Default::default()
             };
             set_column_format::<bool>(&mut col.bold, &column.bold)?;
-            set_column_format::<bool>(&mut col.italic, &column.italic);
-            set_column_format::<String>(&mut col.text_color, &column.text_color);
-            set_column_format::<String>(&mut col.fill_color, &column.fill_color);
+            set_column_format::<bool>(&mut col.italic, &column.italic)?;
+            set_column_format::<String>(&mut col.text_color, &column.text_color)?;
+            set_column_format::<String>(&mut col.fill_color, &column.fill_color)?;
 
-            column.values.iter().for_each(|(y, value)| {
-                value.content.values.iter().for_each(|cell_value| {
+            for (y, value) in column.values.iter() {
+                for cell_value in value.content.values.iter() {
                     match cell_value.type_field.to_lowercase().as_str() {
                         "text" => {
                             col.values.set(
-                                i64::from_str(y).unwrap(),
-                                Some(CellValue::Text(cell_value.value)),
+                                i64::from_str(y).map_err(|e| {
+                                    anyhow!("Could not convert {} to an i64: {}", &y, e)
+                                })?,
+                                Some(CellValue::Text(cell_value.value.to_owned())),
                             );
                         }
                         _ => {}
                     };
-                });
-            });
+                }
+            }
 
             Ok((*y, col))
         })
@@ -92,7 +95,6 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                     italic: export_column_data(&column.italic),
                     text_color: export_column_data(&column.text_color),
                     fill_color: export_column_data(&column.fill_color),
-                    // TODO(ddimaria): implement
                     values: column
                         .values
                         .values()
@@ -123,23 +125,23 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
             .sheets
             .into_iter()
             .map(|sheet| {
-                let mut sheet = Ok(Sheet {
-                    id: SheetId::from_str(&sheet.id.id).unwrap(),
+                let mut sheet = Sheet {
+                    id: SheetId::from_str(&sheet.id.id)?,
                     name: sheet.name,
                     color: sheet.color,
                     order: sheet.order,
                     column_ids: sheet
                         .columns
                         .iter()
-                        .map(|(x, column)| (*x, ColumnId::from_str(&column.id.id).unwrap()))
-                        .collect(),
+                        .map(|(x, column)| Ok((*x, ColumnId::from_str(&column.id.id)?)))
+                        .collect::<Result<_>>()?,
                     row_ids: sheet
                         .rows
                         .iter()
-                        .map(|(x, row)| (*x, RowId::from_str(&row.id).unwrap()))
-                        .collect(),
+                        .map(|(x, row)| Ok((*x, RowId::from_str(&row.id)?)))
+                        .collect::<Result<_>>()?,
                     offsets: SheetOffsets::import(sheet.offsets),
-                    columns: import_column_builder(&sheet.columns)?,
+                    columns: import_column_builder(sheet.columns)?,
                     // TODO(ddimaria): implement
                     // borders: sheet.borders,
                     borders: SheetBorders::new(),
@@ -147,15 +149,16 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                         .code_cells
                         .into_iter()
                         .map(|(cell_ref, code_cell_value)| {
-                            (
+                            Ok((
                                 CellRef {
-                                    sheet: SheetId::from_str(&cell_ref.sheet.id).unwrap(),
-                                    column: ColumnId::from_str(&cell_ref.column.id).unwrap(),
-                                    row: RowId::from_str(&cell_ref.row.id).unwrap(),
+                                    sheet: SheetId::from_str(&cell_ref.sheet.id)?,
+                                    column: ColumnId::from_str(&cell_ref.column.id)?,
+                                    row: RowId::from_str(&cell_ref.row.id)?,
                                 },
                                 CodeCellValue {
-                                    language: CodeCellLanguage::from_str(&code_cell_value.language)
-                                        .unwrap(),
+                                    language: CodeCellLanguage::from_str(
+                                        &code_cell_value.language,
+                                    )?,
                                     code_string: code_cell_value.code_string,
                                     formatted_code_string: code_cell_value.formatted_code_string,
                                     last_modified: code_cell_value.last_modified,
@@ -186,19 +189,19 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                                                     // }),
                                                     cells_accessed: cells_accessed
                                                         .into_iter()
-                                                        .map(|cell| CellRef {
-                                                            sheet: SheetId::from_str(
-                                                                &cell.sheet.id,
-                                                            )
-                                                            .unwrap(),
-                                                            column: ColumnId::from_str(
-                                                                &cell.column.id,
-                                                            )
-                                                            .unwrap(),
-                                                            row: RowId::from_str(&cell.row.id)
-                                                                .unwrap(),
+                                                        .map(|cell| {
+                                                            Ok(CellRef {
+                                                                sheet: SheetId::from_str(
+                                                                    &cell.sheet.id,
+                                                                )?,
+                                                                column: ColumnId::from_str(
+                                                                    &cell.column.id,
+                                                                )?,
+                                                                row: RowId::from_str(&cell.row.id)?,
+                                                            })
                                                         })
-                                                        .collect(),
+                                                        .collect::<Result<_>>()
+                                                        .ok()?,
                                                 },
                                                 current::CodeCellRunResult::Err { error } => {
                                                     CodeCellRunResult::Err {
@@ -218,14 +221,14 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                                         })
                                     }),
                                 },
-                            )
+                            ))
                         })
-                        .collect(),
+                        .collect::<Result<_>>()?,
                     data_bounds: GridBounds::Empty,
                     format_bounds: GridBounds::Empty,
-                });
-                sheet?.recalculate_bounds();
-                sheet
+                };
+                sheet.recalculate_bounds();
+                Ok(sheet)
             })
             .collect::<Result<_>>()?,
         // TODO(ddimaria): remove as dependencies are being removed in another branch
@@ -238,14 +241,14 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
         version: Some(CURRENT_VERSION.into()),
         sheets: grid
             .sheets_mut()
-            .into_iter()
-            .map(move |sheet| current::Sheet {
+            .iter()
+            .map(|sheet| current::Sheet {
                 id: current::Id {
                     id: sheet.id.to_string(),
                 },
-                name: sheet.name,
-                color: sheet.color,
-                order: sheet.order,
+                name: sheet.name.to_owned(),
+                color: sheet.color.to_owned(),
+                order: sheet.order.to_owned(),
                 offsets: sheet.offsets.export(),
                 columns: export_column_builder(&sheet),
                 rows: sheet
@@ -283,7 +286,6 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::grid::file::v1_3;
 
     const V1_5_FILE: &str = include_str!("../../../examples/v1_5.json");
     const V1_3_FILE: &str = include_str!("../../../examples/v1_3.json");

@@ -42,6 +42,9 @@ impl GridController {
     pub fn grid(&self) -> &Grid {
         &self.grid
     }
+    pub fn grid_value(self) -> Grid {
+        self.grid
+    }
     pub fn grid_mut(&mut self) -> &mut Grid {
         &mut self.grid
     }

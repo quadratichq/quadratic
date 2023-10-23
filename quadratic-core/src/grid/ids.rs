@@ -4,7 +4,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::str::FromStr;
 
-use serde::de::DeserializeOwned;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 #[cfg(feature = "js")]
@@ -27,11 +27,11 @@ macro_rules! uuid_wrapper_struct {
         }
 
         impl FromStr for $name {
-            type Err = String;
+            type Err = anyhow::Error;
 
-            fn from_str(s: &str) -> Result<Self, String> {
+            fn from_str(s: &str) -> Result<Self> {
                 let id = Uuid::parse_str(s);
-                Ok($name { id: id.unwrap() })
+                Ok($name { id: id? })
             }
         }
 

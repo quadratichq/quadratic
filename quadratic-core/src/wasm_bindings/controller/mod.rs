@@ -24,8 +24,8 @@ impl GridController {
 
     /// Exports a [`GridController`] to a file. Returns a `String`.
     #[wasm_bindgen(js_name = "exportToFile")]
-    pub fn js_export_to_file(&self) -> Result<String, JsValue> {
-        Ok(file::export(self.grid()).map_err(|e| e.to_string())?)
+    pub fn js_export_to_file(&mut self) -> Result<String, JsValue> {
+        Ok(file::export(self.grid_mut()).map_err(|e| e.to_string())?)
     }
 
     /// Exports a [`string`]
