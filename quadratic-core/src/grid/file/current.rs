@@ -1,4 +1,4 @@
-use crate::grid::{CellAlign, CellWrap, Grid, GridBounds, IdMap, NumericFormat};
+use crate::grid::{CellAlign, CellWrap, Grid, GridBounds, NumericFormat};
 use crate::{CellValue, Error, ErrorMsg, Span, Value};
 
 use crate::grid::file::v1_5::schema::{self as current, ColumnValue};
@@ -9,15 +9,29 @@ use crate::grid::{
 };
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
 use std::{
     collections::{BTreeMap, HashMap},
     fmt::Debug,
     str::FromStr,
 };
 
-use super::v1_5::schema::{ColumnFormatContent, ColumnFormatType};
 use super::CURRENT_VERSION;
+
+impl From<CellRef> for current::CellRef {
+    fn from(cell_ref: CellRef) -> Self {
+        Self {
+            sheet: current::Id {
+                id: cell_ref.sheet.to_string(),
+            },
+            column: current::Id {
+                id: cell_ref.column.to_string(),
+            },
+            row: current::Id {
+                id: cell_ref.row.to_string(),
+            },
+        }
+    }
+}
 
 fn set_column_format<T>(
     column_data: &mut ColumnData<SameValue<T>>,
@@ -309,13 +323,83 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                     vertical: HashMap::new(),
                 },
                 // TODO(ddimaria): implement
-                // code_cells: sheet
-                //     .iter_code_cells_locations()
-                //     .filter_map(|cell_ref| {
-                //         Some((cell_ref, sheet.get_code_cell_from_ref(cell_ref)?.clone()))
-                //     })
-                //     .collect(),
-                code_cells: vec![],
+                code_cells: sheet
+                    .iter_code_cells_locations()
+                    .map(|cell_ref| {
+                        let code_cell_value = sheet.get_code_cell_from_ref(cell_ref).unwrap().clone();
+                        (
+                            cell_ref.into(),
+                            current::CodeCellValue {
+                                language: code_cell_value.language.to_string(),
+                                code_string: code_cell_value.code_string,
+                                formatted_code_string: code_cell_value.formatted_code_string.and_then(|formatted| Some(formatted)),
+                                last_modified: code_cell_value.last_modified,
+                                output: code_cell_value.output.and_then(|output| {
+                                    Some(current::CodeCellRunOutput {
+                                        std_out: output.std_out,
+                                        std_err: output.std_err,
+                                        result: match output.result {
+                                            CodeCellRunResult::Ok {
+                                                output_value,
+                                                cells_accessed,
+                                            } => current::CodeCellRunResult::Ok {
+                                                output_value: match output_value {
+                                                    Value::Single(cell_value) => {
+                                                        current::OutputValue::Single(
+                                                            current::OutputValueValue {
+                                                                type_field: cell_value
+                                                                    .type_name()
+                                                                    .into(),
+                                                                value: cell_value.to_string(),
+                                                            },
+                                                        )
+                                                    }
+                                                    Value::Array(array) => {
+                                                        current::OutputValue::Array(
+                                                            current::OutputArray {
+                                                                size: current::OutputSize {
+                                                                    w: array.width() as i64,
+                                                                    h: array.height() as i64,
+                                                                },
+                                                                values: array
+                                                                    .rows().flat_map(|row| {
+                                                                        row.iter().map(|cell| {
+                                                                            current::OutputValueValue {
+                                                                                type_field: cell
+                                                                                    .type_name()
+                                                                                    .into(),
+                                                                                value: cell
+                                                                                    .to_string(),
+                                                                            }
+                                                                        })
+                                                                    })
+                                                                    .collect(),
+                                                            },
+                                                        )
+                                                    }
+                                                },
+                                                cells_accessed: cells_accessed.into_iter().map(|cell_ref| cell_ref.into()).collect(),
+                                            },
+                                            CodeCellRunResult::Err { error } => {
+                                                current::CodeCellRunResult::Err {
+                                                    error: current::Error {
+                                                        span: error.span.and_then(|span| {
+                                                            Some(current::Span {
+                                                                start: span.start,
+                                                                end: span.end,
+                                                            })
+                                                        }),
+                                                        msg: error.msg.to_string()
+                                                    }
+                                                }
+                                            }
+                                        },
+                                    })
+                                }),
+                            },
+                        )
+                    })
+                    .collect(),
             })
             .collect(),
         // TODO(ddimaria): remove as dependencies are being removed in another branch

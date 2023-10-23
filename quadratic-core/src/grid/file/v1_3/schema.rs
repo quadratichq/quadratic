@@ -10,7 +10,7 @@ pub struct GridSchema {
     pub columns: Vec<Column>,
     pub formats: Vec<Format>,
     pub rows: Vec<Row>,
-    // pub version: String,
+    pub version: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -22,7 +22,7 @@ pub struct Cell {
     pub type_field: String,
     pub value: String,
     #[serde(rename = "last_modified")]
-    pub last_modified: String,
+    pub last_modified: Option<String>,
     #[serde(rename = "array_cells")]
     #[serde(default)]
     pub array_cells: Vec<Vec<i64>>,

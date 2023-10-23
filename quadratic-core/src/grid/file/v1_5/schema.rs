@@ -1,5 +1,6 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -59,6 +60,11 @@ impl Id {
         Self {
             id: Uuid::new_v4().to_string(),
         }
+    }
+}
+impl From<String> for Id {
+    fn from(id: String) -> Self {
+        Self { id }
     }
 }
 
