@@ -1,4 +1,4 @@
-import { ArrowDropDown, Check, EmailOutlined, Public, PublicOff } from '@mui/icons-material';
+import { ArrowDropDown, CelebrationOutlined, Check, EmailOutlined, Public, PublicOff } from '@mui/icons-material';
 import {
   Alert,
   Avatar,
@@ -17,12 +17,18 @@ import {
   useTheme,
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
-import { useFetcher } from 'react-router-dom';
+import { useFetcher, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { PublicLinkAccess } from '../api/types';
 import { Access, Role, RoleSchema } from '../permissions';
 import { AvatarWithLetters } from './AvatarWithLetters';
 import { getUserShareOptions } from './ShareMenu.utils';
+
+// Possible values: `?share` | `?share=team-created`
+export const shareSearchParamKey = 'share';
+export const shareSearchParamValuesById = {
+  TEAM_CREATED: 'team-created',
+};
 
 /**
  * <ShareMenu> usage:
@@ -57,6 +63,7 @@ function Loading() {
 function ShareMenu({ fetcherUrl, uuid }: { fetcherUrl: string; uuid: string }) {
   const theme = useTheme();
   const fetcher = useFetcher();
+
   const [users, setUsers] = useState([]); // TODO types
   const isLoading = Boolean(!fetcher.data?.ok);
   // const owner = fetcher.data?.data?.owner;
@@ -147,9 +154,14 @@ function Users({
   onUpdateUser: (user: any /* TODO UserShare */) => void;
   onDeleteUser: (user: any /* TODO UserShare */) => void;
 }) {
-  // const { user } = useRootRouteLoaderData();
+  const [searchParams] = useSearchParams();
+  const shareValue = searchParams.get(shareSearchParamKey);
+  const showTeamCreatedMessage = shareValue === shareSearchParamValuesById.TEAM_CREATED;
 
-  // TODO if this isn't found (should be an error)
+  const theme = useTheme();
+
+  // TODO export search param values
+  // TODO make the query param disappear when you add things
 
   return (
     <>
@@ -163,6 +175,30 @@ function Users({
           onDeleteUser={onDeleteUser}
         />
       ))}
+
+      {showTeamCreatedMessage && (
+        <Stack
+          sx={{
+            p: '1rem',
+            position: 'relative',
+            alignItems: 'center',
+            borderTop: `1px dotted ${theme.palette.divider}`,
+            // background: 'lightyellow',
+            // mt: '.5rem',
+          }}
+        >
+          <CelebrationOutlined sx={{ color: 'text.disabled', my: '.5rem' }} />
+          <Typography variant="body1" color="text.secondary">
+            Team created
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Invite people to your team to collaborate on files.
+          </Typography>
+          {/* <IconButton sx={{ position: 'absolute', top: '.25rem', right: '.25rem', fontSize: '.875rem' }}>
+          <Close fontSize={'inherit'} />
+        </IconButton> */}
+        </Stack>
+      )}
     </>
   );
 }
@@ -422,6 +458,7 @@ function Invite({
   const [email, setEmail] = useState<string>('');
   const [role, setRole] = useState<z.infer<typeof RoleSchema>>(RoleSchema.enum.EDITOR);
   const theme = useTheme();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // TODO comma separate list someday
 
@@ -451,6 +488,15 @@ function Invite({
 
         onInvite({ email, role });
         setEmail('');
+
+        // If we have ?share=team-created, turn it into just ?share
+        if (searchParams.get(shareSearchParamKey) === shareSearchParamValuesById.TEAM_CREATED) {
+          setSearchParams((prevParams: URLSearchParams) => {
+            const newParams = new URLSearchParams(prevParams);
+            newParams.set(shareSearchParamKey, '');
+            return newParams;
+          });
+        }
       }}
     >
       <Box sx={{ position: 'relative', flexGrow: 2 }}>

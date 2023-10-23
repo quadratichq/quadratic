@@ -17,6 +17,7 @@ import { ApiSchemas, ApiTypes } from '../api/types';
 import { AvatarWithLetters } from '../components/AvatarWithLetters';
 import { Empty } from '../components/Empty';
 import { QDialogConfirmDelete } from '../components/QDialog';
+import { shareSearchParamKey } from '../components/ShareMenu';
 import { hasAccess } from '../permissions';
 import { DashboardHeader } from './components/DashboardHeader';
 import { TeamLogoInput } from './components/TeamLogo';
@@ -67,8 +68,7 @@ export const Component = () => {
     // picture
   }
 
-  const dialog = searchParams.get('dialog');
-  const showShareDialog = dialog === 'share';
+  const showShareDialog = searchParams.get(shareSearchParamKey) !== null;
 
   return (
     <>
@@ -112,7 +112,7 @@ export const Component = () => {
               variant="outlined"
               onClick={() =>
                 setSearchParams((prev) => {
-                  prev.set('dialog', 'share');
+                  prev.set(shareSearchParamKey, '');
                   return prev;
                 })
               }
@@ -133,7 +133,7 @@ export const Component = () => {
           onClose={() =>
             setSearchParams((prev) => {
               console.log(prev);
-              prev.delete('dialog');
+              prev.delete(shareSearchParamKey);
               return prev;
             })
           }

@@ -34,7 +34,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const { uuid } = await apiClient.createTeam(data);
   // await new Promise((resolve) => setTimeout(resolve, 5000));
   // TODO make dialog=share a const, or maybe share=1 or share=first for extra UI
-  return redirect(ROUTES.TEAM(uuid) + '?dialog=share');
+  return redirect(ROUTES.TEAM(uuid) + '?share=team-created');
 };
 
 export const Component = () => {
