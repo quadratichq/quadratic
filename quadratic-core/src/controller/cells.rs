@@ -152,14 +152,27 @@ impl GridController {
         rect: Rect,
     ) -> Vec<Operation> {
         let region = self.existing_region(sheet_id, rect);
-
+        let mut ops = vec![];
         match region.size() {
             Some(size) => {
                 let values = Array::new_empty(size);
-                vec![Operation::SetCellValues { region, values }]
+                ops.push(Operation::SetCellValues { region, values });
+                let sheet = self.grid.sheet_from_id(sheet_id);
+                let cell = sheet.get_code_cell(pos);
+                region.iter().for_each(|cell_ref| {
+                    if let Some(cell) = cell {
+                        if let Some(code_cell) = cell.code.as_ref() {
+                            ops.push(Operation::SetCellCode {
+                                cell_ref: cell_ref.clone(),
+                                code_cell_value: Some(code_cell.clone()),
+                            });
+                        }
+                    }
+                });
             }
-            None => vec![], // region is empty; do nothing
-        }
+            None => (),
+        };
+        ops
     }
 
     pub fn delete_cell_values(
