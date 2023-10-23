@@ -146,6 +146,8 @@ impl GridController {
         self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
 
+    /// Generates and returns the set of operations to deleted the values in a given region
+    /// Does not commit the operations or create a transaction.
     pub fn delete_cell_values_operations(
         &mut self,
         sheet_id: SheetId,
@@ -188,6 +190,9 @@ impl GridController {
         ops
     }
 
+    /// Deletes the cells in a given region.
+    /// Creates and runs a transaction, also updates dependent cells.
+    /// Returns a [`TransactionSummary`].
     pub fn delete_cell_values(
         &mut self,
         sheet_id: SheetId,
