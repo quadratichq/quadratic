@@ -4,41 +4,20 @@ use indexmap::IndexSet;
 use wasm_bindgen::JsValue;
 
 use crate::{
-    formulas::{parse_formula, Ctx},
-    grid::{
-        CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, SheetId,
-    },
-    Error, ErrorMsg, Pos, SheetPos, Span,
+    grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult},
+    Error, ErrorMsg, Span,
 };
 
-use super::{
+use crate::controller::{
     code_cell_update::update_code_cell_value,
     operation::Operation,
     transaction_summary::TransactionSummary,
-    transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
+    transaction_types::JsCodeResult,
     transactions::{Transaction, TransactionType},
     GridController,
 };
 
-// only one InProgressTransaction can exist at a time (or no Transaction)
-
-#[derive(Debug, Default, Clone)]
-pub struct TransactionInProgress {
-    reverse_operations: Vec<Operation>,
-    cells_to_compute: IndexSet<CellRef>,
-    pub cursor: Option<String>,
-    cells_accessed: Vec<CellRef>,
-    pub summary: TransactionSummary,
-    sheets_with_changed_bounds: HashSet<SheetId>,
-    pub transaction_type: TransactionType,
-
-    // save code_cell info for async calls
-    current_code_cell: Option<CodeCellValue>,
-    pub current_cell_ref: Option<CellRef>,
-    waiting_for_async: Option<CodeCellLanguage>,
-    // true when transaction completes
-    pub complete: bool,
-}
+use super::TransactionInProgress;
 
 impl TransactionInProgress {
     /// Creates and runs a new Transaction
@@ -81,7 +60,7 @@ impl TransactionInProgress {
     }
 
     // loop compute cycle until complete or an async call is made
-    fn loop_compute(&mut self, grid_controller: &mut GridController) {
+    pub(super) fn loop_compute(&mut self, grid_controller: &mut GridController) {
         loop {
             self.compute(grid_controller);
             if self.waiting_for_async.is_some() {
@@ -97,7 +76,7 @@ impl TransactionInProgress {
     /// recalculate bounds for changed sheets
     pub fn updated_bounds(&mut self, grid_controller: &mut GridController) {
         self.sheets_with_changed_bounds.iter().for_each(|sheet_id| {
-            let sheet = grid_controller.grid.sheet_mut_from_id(*sheet_id);
+            let sheet = grid_controller.grid_mut().sheet_mut_from_id(*sheet_id);
             sheet.recalculate_bounds();
         });
     }
@@ -126,80 +105,7 @@ impl TransactionInProgress {
         }
     }
 
-    /// gets cells for use in async calculations
-    pub fn get_cells(
-        &mut self,
-        grid_controller: &mut GridController,
-        get_cells: JsComputeGetCells,
-    ) -> Option<CellsForArray> {
-        // ensure that the get_cells is not requesting a reference to itself
-        let (current_sheet, pos) = if let Some(current_cell_ref) = self.current_cell_ref {
-            let sheet = grid_controller.sheet(current_cell_ref.sheet);
-            let pos = if let Some(pos) = sheet.cell_ref_to_pos(current_cell_ref) {
-                pos
-            } else {
-                // this should only occur after an internal logic error
-                crate::util::dbgjs(
-                    "Expected current_cell_ref's sheet to be defined in transaction::get_cells",
-                );
-                return Some(CellsForArray::new(vec![], true));
-            };
-            (sheet, pos)
-        } else {
-            // this should only occur after an internal logic error
-            crate::util::dbgjs(
-                "Expected current_sheet_pos to be defined in transaction::get_cells",
-            );
-            return Some(CellsForArray::new(vec![], true));
-        };
-
-        let sheet_name = get_cells.sheet_name();
-
-        // if sheet_name is None, use the sheet_id from the pos
-        let sheet = sheet_name.clone().map_or_else(
-            || Some(current_sheet),
-            |sheet_name| grid_controller.grid.sheet_from_name(sheet_name),
-        );
-
-        if let Some(sheet) = sheet {
-            // ensure there's not a cell reference in the get_cells request
-            if get_cells.rect().contains(pos) && sheet.id == current_sheet.id {
-                // unable to find sheet by name, generate error
-                let msg = if let Some(line_number) = get_cells.line_number() {
-                    format!("cell cannot reference itself at line {}", line_number)
-                } else {
-                    "Sheet not found".to_string()
-                };
-                self.code_cell_sheet_error(grid_controller, msg, get_cells.line_number());
-                self.loop_compute(grid_controller);
-                return Some(CellsForArray::new(vec![], true));
-            }
-
-            let rect = get_cells.rect();
-            let array = sheet.cell_array(rect);
-            for y in rect.y_range() {
-                for x in rect.x_range() {
-                    if let Some(cell_ref) = sheet.try_get_cell_ref(Pos { x, y }) {
-                        self.cells_accessed.push(cell_ref);
-                    }
-                }
-            }
-            Some(array)
-        } else {
-            // unable to find sheet by name, generate error
-            let msg = if let (Some(sheet_name), Some(line_number)) =
-                (sheet_name, get_cells.line_number())
-            {
-                format!("Sheet '{}' not found at line {}", sheet_name, line_number)
-            } else {
-                "Sheet not found".to_string()
-            };
-            self.code_cell_sheet_error(grid_controller, msg, get_cells.line_number());
-            Some(CellsForArray::new(vec![], true))
-        }
-    }
-
-    fn code_cell_sheet_error(
+    pub(super) fn code_cell_sheet_error(
         &mut self,
         grid_controller: &mut GridController,
         error_msg: String,
@@ -337,84 +243,6 @@ impl TransactionInProgress {
         self.loop_compute(grid_controller);
     }
 
-    fn eval_formula(
-        &mut self,
-        grid_controller: &mut GridController,
-        code_string: String,
-        language: CodeCellLanguage,
-        pos: Pos,
-        cell_ref: CellRef,
-        sheet_id: SheetId,
-    ) {
-        let mut ctx = Ctx::new(
-            grid_controller.grid(),
-            SheetPos {
-                sheet_id,
-                x: pos.x,
-                y: pos.y,
-            },
-        );
-        match parse_formula(&code_string, pos) {
-            Ok(parsed) => {
-                match parsed.eval(&mut ctx) {
-                    Ok(value) => {
-                        let updated_code_cell_value = CodeCellValue {
-                            language,
-                            code_string,
-                            formatted_code_string: None,
-                            output: Some(CodeCellRunOutput {
-                                std_out: None,
-                                std_err: None,
-                                result: CodeCellRunResult::Ok {
-                                    output_value: value,
-                                    cells_accessed: ctx
-                                        .cells_accessed
-                                        .iter()
-                                        .map(|sheet_pos| {
-                                            let sheet = grid_controller
-                                                .grid
-                                                .sheet_mut_from_id(sheet_pos.sheet_id);
-                                            let pos = (*sheet_pos).into();
-                                            sheet.get_or_create_cell_ref(pos)
-                                        })
-                                        .collect(),
-                                },
-                            }),
-                            // todo
-                            last_modified: String::new(),
-                        };
-                        update_code_cell_value(
-                            grid_controller,
-                            cell_ref,
-                            Some(updated_code_cell_value),
-                            &mut Some(&mut self.cells_to_compute),
-                            &mut self.reverse_operations,
-                            &mut self.summary,
-                        );
-                    }
-                    Err(error) => {
-                        let msg = error.msg.to_string();
-                        let line_number = if let Some(span) = error.span {
-                            Some(span.start as i64)
-                        } else {
-                            None
-                        };
-                        self.code_cell_sheet_error(
-                            grid_controller,
-                            msg,
-                            // todo: span should be multiline
-                            line_number,
-                        );
-                    }
-                }
-            }
-            Err(e) => {
-                let msg = e.to_string();
-                self.code_cell_sheet_error(grid_controller, msg, None);
-            }
-        }
-    }
-
     /// checks the next cell in the cells_to_compute and computes it
     /// returns true if an async call is made or the compute cycle is completed
     fn compute(&mut self, grid_controller: &mut GridController) {
@@ -431,7 +259,7 @@ impl TransactionInProgress {
                 self.cells_to_compute.extend(dependent_cells);
             }
 
-            let sheet = grid_controller.grid.sheet_from_id(cell_ref.sheet);
+            let sheet = grid_controller.grid().sheet_from_id(cell_ref.sheet);
             if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
                 if cfg!(feature = "show-operations") {
                     crate::util::dbgjs(&format!("[Compute] {:?}", pos));
@@ -452,9 +280,12 @@ impl TransactionInProgress {
 
                                 // run python will return false if python is not loaded (this can be generalized if we need to return a different error)
                                 if result == JsValue::FALSE {
-                                    let msg =
-                                        "Python library not loaded (please run again)".to_string();
-                                    self.code_cell_sheet_error(grid_controller, msg, None);
+                                    self.code_cell_sheet_error(
+                                        grid_controller,
+                                        "Python interpreter not yet loaded (please run again)"
+                                            .to_string(),
+                                        None,
+                                    );
                                     return;
                                 }
                             }

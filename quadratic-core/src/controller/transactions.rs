@@ -1,11 +1,10 @@
 use core::panic;
 
-use crate::Pos;
+use crate::{computation::TransactionInProgress, Pos};
 use serde::{Deserialize, Serialize};
 
 use super::{
     operation::Operation,
-    transaction_in_progress::TransactionInProgress,
     transaction_summary::TransactionSummary,
     transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
     GridController,
