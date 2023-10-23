@@ -29,6 +29,11 @@ export const CellInput = (props: CellInputProps) => {
   const cell = sheet.getEditCell(cellLocation.x, cellLocation.y);
   const formatting = sheet.getCellFormatSummary(cellLocation.x, cellLocation.y);
 
+  // don't allow input to shrink below the initial width
+  // this is used to cover up the existing text on the canvas
+  const [initialWidth, setInitialWidth] = useState(0);
+  const columnWidth = cellOffsets.width - CURSOR_THICKNESS * 2;
+
   // handle temporary changes to bold and italic (via keyboard)
   const [temporaryBold, setTemporaryBold] = useState<undefined | boolean>();
   const [temporaryItalic, setTemporaryItalic] = useState<undefined | boolean>();
@@ -57,6 +62,7 @@ export const CellInput = (props: CellInputProps) => {
           selection.removeAllRanges();
           selection.addRange(range);
         }
+        setInitialWidth(div.getBoundingClientRect().width);
       }
     }, 0);
   }, []);
@@ -173,7 +179,7 @@ export const CellInput = (props: CellInputProps) => {
         position: 'absolute',
         top: 0,
         left: 0,
-        minWidth: cellOffsets.width - CURSOR_THICKNESS * 2,
+        minWidth: Math.max(initialWidth, columnWidth - CURSOR_THICKNESS * 2),
         outline: 'none',
         color: formatting?.textColor ?? 'black',
         padding: `0 ${CURSOR_THICKNESS}px 0 0`,
