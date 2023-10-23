@@ -8,7 +8,7 @@ use crate::grid::file::v1_5::schema::{
 };
 
 pub(crate) fn upgrade(schema: GridSchema) -> Result<GridSchemaV1_5> {
-    let sheet = upgrade_sheet(schema).unwrap();
+    let sheet = upgrade_sheet(schema)?;
 
     let converted = GridSchemaV1_5 {
         version: Some("1.5".into()),

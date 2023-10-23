@@ -7,7 +7,8 @@ use crate::grid::{
     CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Column, ColumnData, ColumnId, RowId,
     Sheet, SheetBorders, SheetId,
 };
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -20,15 +21,19 @@ use super::CURRENT_VERSION;
 fn set_column_format<T>(
     column_data: &mut ColumnData<SameValue<T>>,
     column: &HashMap<String, current::ColumnFormatType<T>>,
-) where
+) -> Result<()>
+where
     T: Serialize + for<'d> Deserialize<'d> + Debug + Clone + PartialEq,
 {
-    column.iter().for_each(|(y, format)| {
-        column_data.set(i64::from_str(y).unwrap(), Some(format.content.value));
-    });
+    for (y, format) in column.iter() {
+        let y = i64::from_str(y).map_err(|e| anyhow!("Unable to convert{} to an i64: {}", y, e))?;
+        column_data.set(y, Some(format.content.value));
+    }
+
+    Ok(())
 }
 
-fn import_column_builder(columns: &Vec<(i64, current::Column)>) -> BTreeMap<i64, Column> {
+fn import_column_builder(columns: &Vec<(i64, current::Column)>) -> Result<BTreeMap<i64, Column>> {
     columns
         .iter()
         .map(|(y, column)| {
@@ -36,7 +41,7 @@ fn import_column_builder(columns: &Vec<(i64, current::Column)>) -> BTreeMap<i64,
                 id: ColumnId::from_str(&column.id.id).unwrap(),
                 ..Default::default()
             };
-            set_column_format::<bool>(&mut col.bold, &column.bold);
+            set_column_format::<bool>(&mut col.bold, &column.bold)?;
             set_column_format::<bool>(&mut col.italic, &column.italic);
             set_column_format::<String>(&mut col.text_color, &column.text_color);
             set_column_format::<String>(&mut col.fill_color, &column.fill_color);
@@ -55,9 +60,10 @@ fn import_column_builder(columns: &Vec<(i64, current::Column)>) -> BTreeMap<i64,
                 });
             });
 
-            (*y, col)
+            Ok((*y, col))
         })
-        .collect()
+        // .flatten_ok()
+        .collect::<Result<BTreeMap<i64, Column>>>()
 }
 
 fn export_column_data<T>(
@@ -117,7 +123,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
             .sheets
             .into_iter()
             .map(|sheet| {
-                let mut sheet = Sheet {
+                let mut sheet = Ok(Sheet {
                     id: SheetId::from_str(&sheet.id.id).unwrap(),
                     name: sheet.name,
                     color: sheet.color,
@@ -133,7 +139,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                         .map(|(x, row)| (*x, RowId::from_str(&row.id).unwrap()))
                         .collect(),
                     offsets: SheetOffsets::import(sheet.offsets),
-                    columns: import_column_builder(&sheet.columns),
+                    columns: import_column_builder(&sheet.columns)?,
                     // TODO(ddimaria): implement
                     // borders: sheet.borders,
                     borders: SheetBorders::new(),
@@ -217,11 +223,11 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                         .collect(),
                     data_bounds: GridBounds::Empty,
                     format_bounds: GridBounds::Empty,
-                };
-                sheet.recalculate_bounds();
+                });
+                sheet?.recalculate_bounds();
                 sheet
             })
-            .collect(),
+            .collect::<Result<_>>()?,
         // TODO(ddimaria): remove as dependencies are being removed in another branch
         dependencies: HashMap::new(),
     })
