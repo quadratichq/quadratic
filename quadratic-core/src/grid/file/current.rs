@@ -8,14 +8,15 @@ use crate::grid::{
     Sheet, SheetBorders, SheetId,
 };
 use anyhow::{anyhow, Result};
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 use std::{
     collections::{BTreeMap, HashMap},
     fmt::Debug,
     str::FromStr,
 };
 
+use super::v1_5::schema::{ColumnFormatContent, ColumnFormatType};
 use super::CURRENT_VERSION;
 
 fn set_column_format<T>(
@@ -69,15 +70,32 @@ fn import_column_builder(columns: Vec<(i64, current::Column)>) -> Result<BTreeMa
         .collect::<Result<BTreeMap<i64, Column>>>()
 }
 
-fn export_column_data<T>(
+fn export_column_data_bool(
+    column_data: &ColumnData<SameValue<bool>>,
+) -> HashMap<String, current::ColumnFormatType<bool>>
+// where
+//     T: Serialize + for<'d> Deserialize<'d> + Debug + Clone + PartialEq + Display,
+{
+    column_data
+        .values()
+        .map(|(y, value)| (y.to_string(), (y, value).into()))
+        .collect()
+}
+
+fn export_column_data_string<T>(
     column_data: &ColumnData<SameValue<T>>,
-) -> HashMap<String, current::ColumnFormatType<T>>
+) -> HashMap<String, current::ColumnFormatType<String>>
 where
     T: Serialize + for<'d> Deserialize<'d> + Debug + Clone + PartialEq,
 {
     column_data
         .values()
-        .map(|(y, value)| (y.to_string(), (y, value).into()))
+        .map(|(y, value)| {
+            (
+                y.to_string(),
+                (y, serde_json::to_string(&value).unwrap()).into(),
+            )
+        })
         .collect()
 }
 
@@ -91,10 +109,15 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                     id: current::Id {
                         id: column.id.to_string(),
                     },
-                    bold: export_column_data(&column.bold),
-                    italic: export_column_data(&column.italic),
-                    text_color: export_column_data(&column.text_color),
-                    fill_color: export_column_data(&column.fill_color),
+                    spills: export_column_data_string(&column.spills),
+                    align: export_column_data_string(&column.align),
+                    wrap: export_column_data_string(&column.wrap),
+                    numeric_decimals: export_column_data_string(&column.numeric_decimals),
+                    numeric_format: export_column_data_string(&column.numeric_format),
+                    bold: export_column_data_bool(&column.bold),
+                    italic: export_column_data_bool(&column.italic),
+                    text_color: export_column_data_string(&column.text_color),
+                    fill_color: export_column_data_string(&column.fill_color),
                     values: column
                         .values
                         .values()

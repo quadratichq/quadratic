@@ -121,7 +121,7 @@ pub struct NumericFormat {
     pub symbol: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, EnumString)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "UPPERCASE")]
 pub enum NumericFormatKind {

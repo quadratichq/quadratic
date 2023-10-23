@@ -130,7 +130,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
             .map(|format| column.align.insert(y.to_string(), format.into()));
         js_format
             .wrapping
-            .map(|format| column.wrap.insert(y.to_string(), format));
+            .map(|format| column.wrap.insert(y.to_string(), format.into()));
         js_format
             .bold
             .map(|format| column.bold.insert(y.to_string(), format.into()));

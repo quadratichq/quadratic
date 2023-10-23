@@ -146,13 +146,13 @@ pub struct Span {
 pub struct Column {
     pub id: Id,
     pub values: HashMap<String, ColumnValues>,
-    pub spills: Spills,
+    pub spills: HashMap<String, ColumnFormatType<String>>,
     pub align: HashMap<String, ColumnFormatType<String>>,
-    pub wrap: HashMap<String, String>,
+    pub wrap: HashMap<String, ColumnFormatType<String>>,
     #[serde(rename = "numeric_format")]
-    pub numeric_format: NumericFormat,
+    pub numeric_format: HashMap<String, ColumnFormatType<String>>,
     #[serde(rename = "numeric_decimals")]
-    pub numeric_decimals: NumericDecimals,
+    pub numeric_decimals: HashMap<String, ColumnFormatType<String>>,
     pub bold: HashMap<String, ColumnFormatType<bool>>,
     pub italic: HashMap<String, ColumnFormatType<bool>>,
     #[serde(rename = "text_color")]
@@ -199,10 +199,6 @@ impl From<(i64, ColumnValue)> for ColumnValues {
     }
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Spills {}
-
 // pub enum ColumnFormat {
 //     Bool,
 //     String,
@@ -228,8 +224,17 @@ impl<T> From<T> for ColumnFormatType<T> {
         }
     }
 }
-impl<T> From<(i64, T)> for ColumnFormatType<T> {
-    fn from((y, value): (i64, T)) -> Self {
+impl From<(i64, String)> for ColumnFormatType<String> {
+    fn from((y, value): (i64, String)) -> Self {
+        // TODO(ddimaria): set len to a value
+        ColumnFormatType {
+            y,
+            content: ColumnFormatContent { value, len: 1 },
+        }
+    }
+}
+impl From<(i64, bool)> for ColumnFormatType<bool> {
+    fn from((y, value): (i64, bool)) -> Self {
         // TODO(ddimaria): set len to a value
         ColumnFormatType {
             y,
@@ -240,15 +245,11 @@ impl<T> From<(i64, T)> for ColumnFormatType<T> {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Wrap {}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct NumericFormat {}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct NumericDecimals {}
+pub struct NumericFormat {
+    #[serde(rename = "type")]
+    pub kind: String,
+    pub symbol: Option<String>,
+}
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

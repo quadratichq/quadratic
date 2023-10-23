@@ -54,6 +54,11 @@ pub struct CellRef {
     pub column: ColumnId,
     pub row: RowId,
 }
+impl Display for CellRef {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, {}, {}", self.sheet, self.column, self.row)
+    }
+}
 
 /// Reference to a set of cells which stays the same, even as columns and rows
 /// move around. It typically is constructed as a rectangle, but if columns and
