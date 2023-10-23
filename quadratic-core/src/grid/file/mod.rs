@@ -59,14 +59,15 @@ mod tests {
 
     #[test]
     fn process_a_v1_3_file() {
+        // TODO(ddimaria): validate that elements of the imported and exported file are valid
         let mut imported = import(V1_3_FILE).unwrap();
-        // println!("{:?}", imported);
         let exported = export(&mut imported).unwrap();
-        println!("{}", exported);
     }
 
     #[test]
     fn process_a_v1_5_file() {
-        let imported = import(V1_5_FILE).unwrap();
+        // TODO(ddimaria): validate that elements of the imported and exported file are valid
+        let mut imported = import(V1_5_FILE).unwrap();
+        let exported = export(&mut imported).unwrap();
     }
 }

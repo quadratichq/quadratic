@@ -208,9 +208,11 @@ mod tests {
         let imported = import(V1_3_FILE).unwrap();
 
         // we currently just care that this doesn't error
+        // TODO(ddimaria): validate that elements of the exported GridSchema are valid
         export(&imported).unwrap();
 
         // we currently just care that this doesn't error
+        // TODO(ddimaria): validate that elements of the upgraded GridSchema are valid
         let upgraded = upgrade(imported).unwrap();
     }
 }
