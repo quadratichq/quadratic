@@ -256,6 +256,36 @@ fn criterion_benchmark(c: &mut Criterion) {
             criterion::BatchSize::SmallInput,
         )
     });
+
+    benchmark_grids(c, &inputs, "import_small_csv", |b, grid| {
+        const SIMPLE_CSV: &str = r#"city,region,country,population
+        Southborough,MA,United States,9686
+        Northbridge,MA,United States,14061
+        Westborough,MA,United States,29313
+        Marlborough,MA,United States,38334
+        Springfield,MA,United States,152227
+        Springfield,MO,United States,150443
+        Springfield,NJ,United States,14976
+        Springfield,OH,United States,64325
+        Springfield,OR,United States,56032
+        Concord,NH,United States,42605
+        "#;
+
+        b.iter_batched(
+            || {
+                // Setup
+                let gc = GridController::from_grid(grid.clone());
+                let sheet_id = gc.sheet_ids()[0];
+                let pos = Pos { x: 0, y: 0 };
+                (gc, sheet_id, pos)
+            },
+            |(mut gc, sheet_id, pos)| {
+                // Test
+                let _ = gc.import_csv(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos, None);
+            },
+            criterion::BatchSize::SmallInput,
+        )
+    });
 }
 
 fn benchmark_grids(
