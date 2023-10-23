@@ -99,7 +99,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
     if (this.dirty) {
       this.createLabels();
       this.overflowClip();
-      this.updateBuffers();
+      this.updateBuffers(false);
       this.dirty = false;
       return true;
     }
@@ -143,9 +143,9 @@ export class CellsTextHash extends Container<LabelMeshes> {
     }
   }
 
-  updateBuffers(): void {
+  updateBuffers(reuseBuffers: boolean): void {
     // creates labelMeshes webGL buffers based on size
-    this.labelMeshes.prepare();
+    this.labelMeshes.prepare(reuseBuffers);
 
     // populate labelMeshes webGL buffers
     this.viewBounds.clear();

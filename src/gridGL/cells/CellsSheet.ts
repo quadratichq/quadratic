@@ -210,7 +210,7 @@ export class CellsSheet extends Container {
     if (!hashes) throw new Error('Expected hashes to be defined in preload');
     hashes.forEach((hash) => hash.createLabels());
     hashes.forEach((hash) => hash.overflowClip());
-    hashes.forEach((hash) => hash.updateBuffers());
+    hashes.forEach((hash) => hash.updateBuffers(false));
   }
 
   // preloads one row of hashes per tick
@@ -306,7 +306,7 @@ export class CellsSheet extends Container {
     this.dirtyRowHeadings.clear();
 
     hashesToUpdate.forEach((hash) => hash.overflowClip());
-    this.cellsTextHash.forEach((hash) => hash.updateBuffers());
+    this.cellsTextHash.forEach((hash) => hash.updateBuffers(true));
 
     // todo: these can be much more efficient
     this.cellsFills.create();
