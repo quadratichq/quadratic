@@ -326,11 +326,12 @@ async def run_python(code):
         except Exception:
             pass
 
+        # removes output_value if there's an array
         if array_output:
             output_value = None
 
         return {
-            "output_value": output_value,
+            "output_value": str(output_value),
             "array_output": ensure_not_cell(array_output),
             "cells_accessed": cells_accessed,
             "std_out": sout.getvalue(),
