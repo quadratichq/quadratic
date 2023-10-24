@@ -82,20 +82,16 @@ fn import_column_builder(columns: Vec<(i64, current::Column)>) -> Result<BTreeMa
 
             for (y, value) in column.values.iter() {
                 for cell_value in value.content.values.iter() {
+                    let y = i64::from_str(y)
+                        .map_err(|e| anyhow!("Could not convert {} to an i64: {}", &y, e))?;
                     match cell_value.type_field.to_lowercase().as_str() {
                         "text" => {
-                            col.values.set(
-                                i64::from_str(y).map_err(|e| {
-                                    anyhow!("Could not convert {} to an i64: {}", &y, e)
-                                })?,
-                                Some(CellValue::Text(cell_value.value.to_owned())),
-                            );
+                            col.values
+                                .set(y, Some(CellValue::Text(cell_value.value.to_owned())));
                         }
                         "number" => {
                             col.values.set(
-                                i64::from_str(y).map_err(|e| {
-                                    anyhow!("Could not convert {} to an i64: {}", &y, e)
-                                })?,
+                                y,
                                 Some(CellValue::Number(BigDecimal::from_str(&cell_value.value)?)),
                             );
                         }

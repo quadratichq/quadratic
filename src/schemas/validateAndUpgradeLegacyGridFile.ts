@@ -43,6 +43,7 @@ export function validateAndUpgradeLegacyGridFile(input: any, logOutput: boolean 
     return null;
   }
 
+  console.log(Object.keys(json));
   // rust files are validated by rust
   if (rustFileVersions.includes(json.version)) {
     return json;
