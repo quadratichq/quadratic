@@ -1,14 +1,15 @@
 import express, { Response } from 'express';
-import { getUsers } from '../../../auth0/profile';
-import dbClient from '../../../dbClient';
-import { Request } from '../../../types/Request';
-import { teamMiddleware } from './teamMiddleware';
+import { getUsers } from '../../auth0/profile';
+import dbClient from '../../dbClient';
+import { teamMiddleware } from '../../middleware/team';
+import { Request } from '../../types/Request';
 const router = express.Router();
 
 router.get(
   '/:uuid',
   // validateUUID(),
   // userOptionalMiddleware,
+  // userMiddleware,
   teamMiddleware,
   async (req: Request, res: Response) => {
     if (!req.team) {
@@ -27,10 +28,11 @@ router.get(
         teamId: req.team.id,
       },
     });
-    const userIds = teamUsers.map(({ userId }) => userId);
+    const teamUserIds = teamUsers.map(({ userId }) => userId);
+
     // Get auth0 users
-    // TODO have it return a merger of auth0 and db users
-    const auth0Users = await getUsers(userIds);
+    // TODO how do we ensure that the order of the users is the same?
+    const auth0Users = await getUsers(teamUserIds);
 
     const response = {
       team: {
@@ -46,6 +48,7 @@ router.get(
           hasAccount: true,
           name,
           picture,
+          // TODO return access
         })),
         // { id: 1, email: 'jim.nielsen@quadratichq.com', role: 'OWNER', hasAccount: true }],
         // @ts-expect-error TODO

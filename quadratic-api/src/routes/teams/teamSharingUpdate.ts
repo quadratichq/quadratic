@@ -1,11 +1,11 @@
 import express, { Response } from 'express';
 import { body } from 'express-validator';
-import { getUsersByEmail } from '../../../../auth0/profile';
-import dbClient from '../../../../dbClient';
-import { userMiddleware } from '../../../../middleware/user';
-import { validateAccessToken } from '../../../../middleware/validateAccessToken';
-import { Request } from '../../../../types/Request';
-import { teamMiddleware } from '../teamMiddleware';
+import { getUsersByEmail } from '../../auth0/profile';
+import dbClient from '../../dbClient';
+import { teamMiddleware } from '../../middleware/team';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { Request } from '../../types/Request';
 const router = express.Router();
 
 const validateBodyEmail = () => body('email').isEmail().not().isEmpty();

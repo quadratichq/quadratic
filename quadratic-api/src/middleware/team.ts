@@ -1,6 +1,6 @@
 import { NextFunction, Response } from 'express';
-import dbClient from '../../../dbClient';
-import { Request } from '../../../types/Request';
+import dbClient from '../dbClient';
+import { Request } from '../types/Request';
 
 export const teamMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   if (req.params.uuid === undefined) {

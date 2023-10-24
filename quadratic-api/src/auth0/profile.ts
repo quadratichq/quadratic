@@ -18,19 +18,27 @@ const auth0 = new ManagementClient({
 });
 
 export const getUsers = async (user_ids: number[]) => {
-  const dbUsers = await await dbClient.user.findMany({
-    where: {
-      id: {
-        in: user_ids,
+  try {
+    const dbUsers = await dbClient.user.findMany({
+      where: {
+        id: {
+          in: user_ids,
+        },
       },
-    },
-  });
+    });
 
-  const auth0Users = await auth0.getUsers({
-    q: `user_id:(${dbUsers.map(({ auth0_id }) => auth0_id).join(' OR ')})`,
-  });
-  console.log(dbUsers, auth0Users);
-  return auth0Users;
+    const dbUsersAuth0Ids = dbUsers.map(({ auth0_id }) => auth0_id);
+
+    const auth0Users = await auth0.getUsers({
+      q: `user_id:(${dbUsersAuth0Ids.join(' OR ')})`,
+    });
+    // console.log(dbUsers, auth0Users);
+
+    return auth0Users;
+  } catch (e) {
+    console.error(e);
+    return [];
+  }
 };
 
 export const getUserProfile = async (user_id: number) => {
