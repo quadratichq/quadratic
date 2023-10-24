@@ -6,6 +6,7 @@ import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { provideCompletionItems, provideHover } from '../../../quadratic-core/quadratic_core';
 // import { CodeCellValue } from '../../../quadratic-core/types';
+import { CodeCellLanguage } from '../../../quadratic-core/quadratic_core';
 import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
@@ -18,6 +19,10 @@ interface Props {
   editorContent: string | undefined;
   setEditorContent: (value: string | undefined) => void;
 }
+
+const MONACO_THEME_QUADRATIC = 'quadratic';
+const MONACO_LANGUAGE_PYTHON = 'python';
+const MONACO_LANGUAGE_FORMULA = 'formula';
 
 export const CodeEditorBody = (props: Props) => {
   const { editorContent, setEditorContent } = props;
@@ -51,17 +56,17 @@ export const CodeEditorBody = (props: Props) => {
 
       editor.focus();
 
-      monaco.editor.defineTheme('quadratic', QuadraticEditorTheme);
-      monaco.editor.setTheme('quadratic');
+      monaco.editor.defineTheme(MONACO_THEME_QUADRATIC, QuadraticEditorTheme);
+      monaco.editor.setTheme(MONACO_THEME_QUADRATIC);
 
       if (didMount) return;
       // Only register language once
 
-      monaco.languages.register({ id: 'formula' });
-      monaco.languages.setLanguageConfiguration('formula', FormulaLanguageConfig);
-      monaco.languages.setMonarchTokensProvider('formula', FormulaTokenizerConfig);
-      monaco.languages.registerCompletionItemProvider('formula', { provideCompletionItems });
-      monaco.languages.registerHoverProvider('formula', { provideHover });
+      monaco.languages.register({ id: MONACO_LANGUAGE_FORMULA });
+      monaco.languages.setLanguageConfiguration(MONACO_LANGUAGE_FORMULA, FormulaLanguageConfig);
+      monaco.languages.setMonarchTokensProvider(MONACO_LANGUAGE_FORMULA, FormulaTokenizerConfig);
+      monaco.languages.registerCompletionItemProvider(MONACO_LANGUAGE_FORMULA, { provideCompletionItems });
+      monaco.languages.registerHoverProvider(MONACO_LANGUAGE_FORMULA, { provideHover });
 
       setDidMount(true);
     },
@@ -79,7 +84,13 @@ export const CodeEditorBody = (props: Props) => {
       <Editor
         height="100%"
         width="100%"
-        language={language === 'PYTHON' ? 'python' : language === 'FORMULA' ? 'formula' : 'plaintext'}
+        language={
+          language === CodeCellLanguage.Python
+            ? MONACO_LANGUAGE_PYTHON
+            : language === CodeCellLanguage.Formula
+            ? MONACO_LANGUAGE_FORMULA
+            : 'plaintext'
+        }
         value={editorContent}
         onChange={setEditorContent}
         onMount={onMount}
@@ -95,7 +106,7 @@ export const CodeEditorBody = (props: Props) => {
           wordWrap: 'on',
         }}
       />
-      {language === 'PYTHON' && (
+      {language === CodeCellLanguage.Python && (
         <CodeEditorPlaceholder
           editorContent={editorContent}
           setEditorContent={setEditorContent}

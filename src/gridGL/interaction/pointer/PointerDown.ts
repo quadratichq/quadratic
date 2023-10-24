@@ -70,13 +70,13 @@ export class PointerDown {
           return;
         }
         const code = sheet.getCodeCell(column, row);
-        let mode: 'PYTHON' | 'FORMULA' | undefined = undefined;
+        let mode: CodeCellLanguage.Python | CodeCellLanguage.Formula | undefined = undefined;
         if (code) {
           const language = code.getLanguage();
           if (language === CodeCellLanguage.Python) {
-            mode = 'PYTHON';
+            mode = CodeCellLanguage.Python;
           } else if (language === CodeCellLanguage.Formula) {
-            mode = 'FORMULA';
+            mode = CodeCellLanguage.Formula;
           } else {
             throw new Error('CodeEditor does not support this language');
           }

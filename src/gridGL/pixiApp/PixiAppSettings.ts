@@ -4,6 +4,7 @@ import {
   editorHighlightedCellsStateDefault,
 } from '../../atoms/editorHighlightedCellsStateAtom';
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
+import { CodeCellLanguage } from '../../quadratic-core/quadratic_core';
 import { GridSettings, defaultGridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
 import { pixiApp } from './PixiApp';
 
@@ -108,7 +109,7 @@ class PixiAppSettings {
   }
 
   get showA1Notation(): boolean {
-    if (this.editorInteractionState.showCodeEditor && this.editorInteractionState.mode === 'FORMULA') {
+    if (this.editorInteractionState.showCodeEditor && this.editorInteractionState.mode === CodeCellLanguage.Formula) {
       return true;
     }
     return this.settings.showA1Notation;

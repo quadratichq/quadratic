@@ -1,10 +1,11 @@
 import { isEditorOrAbove } from '../../../actions';
+import { CodeCellLanguage } from '../../../quadratic-core/quadratic_core';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 
 export function doubleClickCell(options: {
   column: number;
   row: number;
-  mode?: 'PYTHON' | 'FORMULA';
+  mode?: CodeCellLanguage.Python | CodeCellLanguage.Formula;
   cell?: string;
 }): void {
   const { mode, cell, column, row } = options;

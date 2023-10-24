@@ -7,6 +7,7 @@ import { isViewerOrAbove } from '../../../actions';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 // import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
+import { CodeCellLanguage } from '../../../quadratic-core/quadratic_core';
 import { colors } from '../../../theme/colors';
 import { CodeSnippet } from '../../components/CodeSnippet';
 import { LinkNewTab } from '../../components/LinkNewTab';
@@ -55,7 +56,7 @@ export function Console({ console, editorMode, editorContent }: ConsoleProps) {
             id="console-tab-1"
             aria-controls="console-tabpanel-1"
           ></Tab>
-          {editorMode === 'PYTHON' && isViewerOrAbove(permission) && (
+          {editorMode === CodeCellLanguage.Python && isViewerOrAbove(permission) && (
             <Tab
               style={{ minHeight: '32px' }}
               label="AI Assistant"
@@ -99,7 +100,7 @@ export function Console({ console, editorMode, editorContent }: ConsoleProps) {
               </>
             ) : (
               <div style={{ ...codeEditorCommentStyles, marginTop: theme.spacing(0.5) }}>
-                {editorMode === 'PYTHON'
+                {editorMode === CodeCellLanguage.Python
                   ? 'Print statements, standard out, and errors will show here.'
                   : 'Errors will show here.'}
               </div>
@@ -107,7 +108,7 @@ export function Console({ console, editorMode, editorContent }: ConsoleProps) {
           </div>
         </TabPanel>
         <TabPanel value={activeTabIndex} index={1}>
-          {editorMode === 'PYTHON' ? (
+          {editorMode === CodeCellLanguage.Python ? (
             <div style={{ overflow: 'scroll' }}>
               <h4>Logging</h4>
               <p>`print()` statements and errors are logged in the CONSOLE tab.</p>

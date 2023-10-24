@@ -96,9 +96,9 @@ export const CodeEditor = () => {
     if (isRunningComputation.current) return;
     isRunningComputation.current = true;
     const language =
-      editorInteractionState.mode === 'PYTHON'
+      editorInteractionState.mode === CodeCellLanguage.Python
         ? CodeCellLanguage.Python
-        : editorInteractionState.mode === 'FORMULA'
+        : editorInteractionState.mode === CodeCellLanguage.Formula
         ? CodeCellLanguage.Formula
         : undefined;
     if (language === undefined)
@@ -197,7 +197,8 @@ export const CodeEditor = () => {
           height: `${consoleHeight}px`,
         }}
       >
-        {(editorInteractionState.mode === 'PYTHON' || editorInteractionState.mode === 'FORMULA') && (
+        {(editorInteractionState.mode === CodeCellLanguage.Python ||
+          editorInteractionState.mode === CodeCellLanguage.Formula) && (
           <Console console={out} editorMode={editorMode} editorContent={editorContent} />
         )}
       </div>

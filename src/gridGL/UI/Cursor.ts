@@ -3,6 +3,7 @@ import { isEditorOrAbove } from '../../actions';
 import { sheets } from '../../grid/controller/Sheets';
 import { convertColorStringToTint } from '../../helpers/convertColor';
 import { getCellFromFormulaNotation, isCellRangeTypeGuard } from '../../helpers/formulaNotation';
+import { CodeCellLanguage } from '../../quadratic-core/quadratic_core';
 import { colors } from '../../theme/colors';
 import { dashedTextures } from '../dashedTextures';
 import { pixiApp } from '../pixiApp/PixiApp';
@@ -148,9 +149,9 @@ export class Cursor extends Graphics {
         editor_selected_cell.y === cell.y
       )
         color =
-          editorInteractionState.mode === 'PYTHON'
+          editorInteractionState.mode === CodeCellLanguage.Python
             ? colors.cellColorUserPython
-            : editorInteractionState.mode === 'FORMULA'
+            : editorInteractionState.mode === CodeCellLanguage.Formula
             ? colors.cellColorUserFormula
             : colors.cursorCell;
       this.beginFill(color).drawShape(this.indicator).endFill();
@@ -163,9 +164,9 @@ export class Cursor extends Graphics {
     const cell = editorInteractionState.selectedCell;
     const { x, y, width, height } = sheets.sheet.getCellOffsets(cell.x, cell.y);
     const color =
-      editorInteractionState.mode === 'PYTHON'
+      editorInteractionState.mode === CodeCellLanguage.Python
         ? colors.cellColorUserPython
-        : editorInteractionState.mode === 'FORMULA'
+        : editorInteractionState.mode === CodeCellLanguage.Formula
         ? colors.cellColorUserFormula
         : colors.independence;
     this.lineStyle({

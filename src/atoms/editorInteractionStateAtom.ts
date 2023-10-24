@@ -1,7 +1,7 @@
 import { atom } from 'recoil';
 import { ApiTypes } from '../api/types';
 import { Coordinate } from '../gridGL/types/size';
-import { CellType } from '../schemas';
+import { CodeCellLanguage } from '../quadratic-core/quadratic_core';
 
 export interface EditorInteractionState {
   showCellTypeMenu: boolean;
@@ -12,7 +12,7 @@ export interface EditorInteractionState {
   showShareFileMenu: boolean;
   permission: ApiTypes['/v0/files/:uuid.GET.response']['permission'];
   selectedCell: Coordinate;
-  mode: CellType;
+  mode: CodeCellLanguage;
 }
 
 export const editorInteractionStateDefault: EditorInteractionState = {
@@ -24,7 +24,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showShareFileMenu: false,
   permission: 'VIEWER', // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   selectedCell: { x: 0, y: 0 },
-  mode: 'TEXT',
+  mode: CodeCellLanguage.Python,
 };
 
 export const editorInteractionStateAtom = atom({

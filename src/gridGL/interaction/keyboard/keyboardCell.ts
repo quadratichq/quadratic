@@ -2,6 +2,7 @@ import { Rectangle } from 'pixi.js';
 import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
+import { CodeCellLanguage } from '../../../quadratic-core/quadratic_core';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { isAllowedFirstChar } from './keyboardCellChars';
 
@@ -40,7 +41,12 @@ export function keyboardCell(options: {
     const cell = sheet.getRenderCell(x, y);
     if (cell) {
       if (cell.language) {
-        const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;
+        const mode =
+          cell.language === 'Python'
+            ? CodeCellLanguage.Python
+            : cell.language === 'Formula'
+            ? CodeCellLanguage.Formula
+            : undefined;
         if (!mode) throw new Error(`Unhandled cell.language ${cell.language} in keyboardCell`);
         // Open code editor, or move code editor if already open.
         setEditorInteractionState({
@@ -89,7 +95,12 @@ export function keyboardCell(options: {
     const cell = sheet.getRenderCell(x, y);
     if (cell) {
       if (cell.language) {
-        const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;
+        const mode =
+          cell.language === 'Python'
+            ? CodeCellLanguage.Python
+            : cell.language === 'Formula'
+            ? CodeCellLanguage.Formula
+            : undefined;
         if (!mode) throw new Error(`Unhandled cell.language ${cell.language} in keyboardCell`);
 
         // Open code editor, or move code editor if already open.
@@ -111,7 +122,7 @@ export function keyboardCell(options: {
         showCellTypeMenu: true,
         showCodeEditor: false,
         selectedCell: { x: x, y: y },
-        mode: 'PYTHON',
+        mode: CodeCellLanguage.Python,
       });
     }
     event.preventDefault();

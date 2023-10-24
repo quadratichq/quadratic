@@ -7,6 +7,7 @@ import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 // import { CodeCellValue } from '../../../quadratic-core/types';
 import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { CodeCellLanguage } from '../../../quadratic-core/quadratic_core';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
 import { Formula, Python } from '../../icons';
@@ -32,7 +33,7 @@ export const CodeEditorHeader = (props: Props) => {
   const language = editorInteractionState.mode;
 
   if (!cellLocation) return null;
-  const isLoadingPython = !['loaded', 'initial'].includes(pythonLoadState) && language === 'PYTHON';
+  const isLoadingPython = !['loaded', 'initial'].includes(pythonLoadState) && language === CodeCellLanguage.Python;
 
   return (
     <div
@@ -54,9 +55,9 @@ export const CodeEditorHeader = (props: Props) => {
           padding: '0 .5rem',
         }}
       >
-        {language === 'PYTHON' ? (
+        {language === CodeCellLanguage.Python ? (
           <Python sx={{ color: colors.languagePython }} fontSize="small" />
-        ) : language === 'FORMULA' ? (
+        ) : language === CodeCellLanguage.Formula ? (
           <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
         ) : (
           <Subject />
@@ -67,7 +68,11 @@ export const CodeEditorHeader = (props: Props) => {
           }}
         >
           Cell ({cellLocation.x}, {cellLocation.y}) -{' '}
-          {language === 'PYTHON' ? 'Python' : language === 'FORMULA' ? 'Formula' : 'Unknown'}
+          {language === CodeCellLanguage.Python
+            ? 'Python'
+            : language === CodeCellLanguage.Formula
+            ? 'Formula'
+            : 'Unknown'}
           {unsaved && (
             <TooltipHint title="Your changes haven’t been saved or run">
               <FiberManualRecord
