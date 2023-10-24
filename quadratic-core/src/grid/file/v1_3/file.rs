@@ -219,8 +219,13 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
                 sheet.cell_value(js_cell.x, js_cell.y, "text", &js_cell.value);
             }
             // TODO(ddimaria): implement for other languages
-            "python" => {
-                sheet.cell_value(js_cell.x, js_cell.y, "python", &js_cell.value);
+            "python" | "formula" => {
+                sheet.cell_value(
+                    js_cell.x,
+                    js_cell.y,
+                    &js_cell.type_field.to_lowercase(),
+                    &js_cell.value,
+                );
 
                 let code_cell = (cell_ref, sheet.code_cell_value(&js_cell));
                 code_cells.push(code_cell);
