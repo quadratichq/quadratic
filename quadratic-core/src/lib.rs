@@ -5,6 +5,8 @@
 pub mod util;
 #[macro_use]
 mod error;
+mod color;
+mod computation;
 pub mod controller;
 pub mod ext;
 pub mod formulas;
@@ -17,7 +19,6 @@ mod test_util;
 mod values;
 #[cfg(feature = "js")]
 pub mod wasm_bindings;
-mod color;
 
 pub use error::*;
 pub use ext::*;
