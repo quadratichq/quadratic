@@ -8,6 +8,7 @@ use crate::grid::{
     Sheet, SheetBorders, SheetId,
 };
 use anyhow::{anyhow, Result};
+use bigdecimal::BigDecimal;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -88,6 +89,14 @@ fn import_column_builder(columns: Vec<(i64, current::Column)>) -> Result<BTreeMa
                                     anyhow!("Could not convert {} to an i64: {}", &y, e)
                                 })?,
                                 Some(CellValue::Text(cell_value.value.to_owned())),
+                            );
+                        }
+                        "number" => {
+                            col.values.set(
+                                i64::from_str(y).map_err(|e| {
+                                    anyhow!("Could not convert {} to an i64: {}", &y, e)
+                                })?,
+                                Some(CellValue::Number(BigDecimal::from_str(&cell_value.value)?)),
                             );
                         }
                         _ => {}
