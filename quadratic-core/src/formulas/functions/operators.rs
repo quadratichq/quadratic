@@ -102,43 +102,40 @@ mod tests {
     #[test]
     #[allow(clippy::identity_op)]
     fn test_formula_math_operators() {
-        let g = &mut NoGrid;
+        let g = Grid::new();
 
         assert_eq!(
             (1 * -6 + -2 - 1 * (-3_i32).pow(2_u32.pow(3))).to_string(),
-            eval_to_string(g, "1 * -6 + -2 - 1 * -3 ^ 2 ^ 3"),
+            eval_to_string(&g, "1 * -6 + -2 - 1 * -3 ^ 2 ^ 3"),
         );
-        assert_eq!((1.0 / 2.0).to_string(), eval_to_string(g, "1/2"));
-        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(g, "1 / 0").msg);
-        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(g, "0/ 0").msg);
+        assert_eq!((1.0 / 2.0).to_string(), eval_to_string(&g, "1/2"));
+        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(&g, "1 / 0").msg);
+        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(&g, "0/ 0").msg);
     }
 
     #[test]
     fn test_formula_math_operators_on_empty_string() {
         // Empty string should coerce to zero
 
-        let g = &mut BlankGrid;
+        let g = Grid::new();
 
         // Test addition
-        assert_eq!("2", eval_to_string(g, "C6 + 2"));
-        assert_eq!("2", eval_to_string(g, "2 + C6"));
+        assert_eq!("2", eval_to_string(&g, "C6 + 2"));
+        assert_eq!("2", eval_to_string(&g, "2 + C6"));
 
         // Test multiplication
-        assert_eq!("0", eval_to_string(g, "2 * C6"));
-        assert_eq!("0", eval_to_string(g, "C6 * 2"));
+        assert_eq!("0", eval_to_string(&g, "2 * C6"));
+        assert_eq!("0", eval_to_string(&g, "C6 * 2"));
 
-        // TODO: uncomment this once we have a type system that understands
-        // blank cells
-
-        // // Test comparisons (very cursed)
-        // assert_eq!("FALSE", eval_to_string(g, "1 < C6"));
-        // assert_eq!("FALSE", eval_to_string(g, "0 < C6"));
-        // assert_eq!("TRUE", eval_to_string(g, "0 <= C6"));
-        // assert_eq!("TRUE", eval_to_string(g, "-1 < C6"));
-        // assert_eq!("TRUE", eval_to_string(g, "0 = C6"));
-        // assert_eq!("FALSE", eval_to_string(g, "1 = C6"));
+        // Test comparisons (very cursed)
+        assert_eq!("FALSE", eval_to_string(&g, "1 < C6"));
+        assert_eq!("FALSE", eval_to_string(&g, "0 < C6"));
+        assert_eq!("TRUE", eval_to_string(&g, "0 <= C6"));
+        assert_eq!("TRUE", eval_to_string(&g, "-1 < C6"));
+        assert_eq!("TRUE", eval_to_string(&g, "0 = C6"));
+        assert_eq!("FALSE", eval_to_string(&g, "1 = C6"));
 
         // Test string concatenation
-        assert_eq!("apple", eval_to_string(g, "C6 & \"apple\" & D6"));
+        assert_eq!("apple", eval_to_string(&g, "C6 & \"apple\" & D6"));
     }
 }

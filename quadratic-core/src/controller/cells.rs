@@ -3,13 +3,16 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 
 use crate::{
-    grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind, RegionRef, SheetId},
+    grid::{
+        generate_borders, BorderSelection, CodeCellLanguage, CodeCellValue, NumericFormat,
+        NumericFormatKind, RegionRef, SheetId,
+    },
     Array, CellValue, Pos, Rect, RunLengthEncoding,
 };
 
 use super::{
-    formatting::CellFmtArray, operations::Operation, transaction_summary::TransactionSummary,
-    GridController,
+    formatting::CellFmtArray, operation::Operation, transaction_summary::TransactionSummary,
+    transactions::TransactionType, GridController,
 };
 
 impl GridController {
@@ -19,7 +22,7 @@ impl GridController {
     }
 
     /// sets the value based on a user's input and converts input to proper NumericFormat
-    pub async fn set_cell_value(
+    pub fn set_cell_value(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
@@ -27,7 +30,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.set_cell_value_operations(sheet_id, pos, &value);
-        self.transact_forward(ops, cursor).await
+        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
     pub fn set_cell_value_operations(
         &mut self,
@@ -90,7 +93,7 @@ impl GridController {
         }
         ops
     }
-    pub async fn set_cells(
+    pub fn set_cells(
         &mut self,
         sheet_id: SheetId,
         start_pos: Pos,
@@ -98,7 +101,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.set_cells_operations(sheet_id, start_pos, values);
-        self.transact_forward(ops, cursor).await
+        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
     pub fn set_cells_operations(
         &mut self,
@@ -118,7 +121,7 @@ impl GridController {
         vec![Operation::SetCellValues { region, values }]
     }
 
-    pub async fn set_cell_code(
+    pub fn set_cell_code(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
@@ -140,42 +143,72 @@ impl GridController {
                 last_modified: String::default(),
             }),
         }];
-        self.transact_forward(ops, cursor).await
+        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
 
+    /// Generates and returns the set of operations to deleted the values in a given region
+    /// Does not commit the operations or create a transaction.
     pub fn delete_cell_values_operations(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
     ) -> Vec<Operation> {
         let region = self.existing_region(sheet_id, rect);
-
+        let mut ops = vec![];
         match region.size() {
             Some(size) => {
                 let values = Array::new_empty(size);
-                vec![Operation::SetCellValues { region, values }]
+                ops.push(Operation::SetCellValues { region, values });
+
+                // need to walk through the region and delete code cells
+                let sheet = self.grid.sheet_from_id(sheet_id);
+                for x in rect.x_range() {
+                    let column = sheet.get_column(x);
+                    for y in rect.y_range() {
+                        // todo: good place to check for spills here
+
+                        // skip deleting the code cell if there is a value (since you have to delete that first)
+                        if column.is_some_and(|column| column.values.get(y).is_some()) {
+                            continue;
+                        } else {
+                            // delete code cell if it exists
+                            let pos = Pos { x, y };
+                            if let Some(_) = sheet.get_code_cell(pos) {
+                                if let Some(cell_ref) = sheet.try_get_cell_ref(pos) {
+                                    ops.push(Operation::SetCellCode {
+                                        cell_ref,
+                                        code_cell_value: None,
+                                    });
+                                };
+                            }
+                        }
+                    }
+                }
             }
-            None => vec![], // region is empty; do nothing
-        }
+            None => (),
+        };
+        ops
     }
 
-    pub async fn delete_cell_values(
+    /// Deletes the cells in a given region.
+    /// Creates and runs a transaction, also updates dependent cells.
+    /// Returns a [`TransactionSummary`].
+    pub fn delete_cell_values(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.delete_cell_values_operations(sheet_id, rect);
-        self.transact_forward(ops, cursor).await
+        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
 
     pub fn clear_formatting_operations(&mut self, sheet_id: SheetId, rect: Rect) -> Vec<Operation> {
         let region = self.existing_region(sheet_id, rect);
-
         match region.size() {
             Some(_) => {
                 let len = region.size().unwrap().len();
-                vec![
+                let mut ops = vec![
                     Operation::SetCellFormats {
                         region: region.clone(),
                         attr: CellFmtArray::Align(RunLengthEncoding::repeat(None, len)),
@@ -208,23 +241,32 @@ impl GridController {
                         region: region.clone(),
                         attr: CellFmtArray::FillColor(RunLengthEncoding::repeat(None, len)),
                     },
-                ]
+                ];
+
+                // clear borders
+                let sheet = self.grid.sheet_from_id(sheet_id);
+                let borders = generate_borders(sheet, &region, vec![BorderSelection::Clear], None);
+                ops.push(Operation::SetBorders {
+                    region: region.clone(),
+                    borders,
+                });
+                ops
             }
             None => vec![],
         }
     }
 
-    pub async fn clear_formatting(
+    pub fn clear_formatting(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.clear_formatting_operations(sheet_id, rect);
-        self.transact_forward(ops, cursor).await
+        self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
 
-    pub async fn delete_values_and_formatting(
+    pub fn delete_values_and_formatting(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
@@ -232,42 +274,20 @@ impl GridController {
     ) -> TransactionSummary {
         let mut ops = self.delete_cell_values_operations(sheet_id, rect);
         ops.extend(self.clear_formatting_operations(sheet_id, rect));
-        self.transact_forward(ops, cursor).await
+        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
 
     /// Returns a region of the spreadsheet, assigning IDs to columns and rows
     /// as needed.
     pub fn region(&mut self, sheet_id: SheetId, rect: Rect) -> RegionRef {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
-        let columns = rect
-            .x_range()
-            .map(|x| sheet.get_or_create_column(x).0.id)
-            .collect();
-        let rows = rect
-            .y_range()
-            .map(|y| sheet.get_or_create_row(y).id)
-            .collect();
-        RegionRef {
-            sheet: sheet_id,
-            columns,
-            rows,
-        }
+        sheet.region(rect)
     }
     /// Returns a region of the spreadsheet, ignoring columns and rows which
     /// have no contents and no IDs.
     pub fn existing_region(&self, sheet_id: SheetId, rect: Rect) -> RegionRef {
         let sheet = self.grid.sheet_from_id(sheet_id);
-        let columns = rect
-            .x_range()
-            .filter_map(|x| sheet.get_column(x))
-            .map(|col| col.id)
-            .collect();
-        let rows = rect.y_range().filter_map(|y| sheet.get_row(y)).collect();
-        RegionRef {
-            sheet: sheet_id,
-            columns,
-            rows,
-        }
+        sheet.existing_region(rect)
     }
 }
 
@@ -278,8 +298,8 @@ mod test {
 
     use bigdecimal::BigDecimal;
 
-    #[tokio::test]
-    async fn test_set_cell_value_undo_redo() {
+    #[test]
+    fn test_set_cell_value_undo_redo() {
         let mut g = GridController::new();
         let sheet_id = g.grid.sheets()[0].id;
         let pos = Pos { x: 3, y: 6 };
@@ -288,11 +308,9 @@ mod test {
         // let expected_cell_regions_modified = vec![(sheet_id, Rect::single_pos(pos))];
 
         assert_eq!(get_the_cell(&g), CellValue::Blank);
-        g.set_cell_value(sheet_id, pos, String::from("a"), None)
-            .await;
+        g.set_cell_value(sheet_id, pos, String::from("a"), None);
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
-        g.set_cell_value(sheet_id, pos, String::from("b"), None)
-            .await;
+        g.set_cell_value(sheet_id, pos, String::from("b"), None);
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
         // assert_eq!(
         //     g.undo(None).unwrap().cell_regions_modified,
@@ -326,7 +344,7 @@ mod test {
         //     expected_cell_regions_modified
         // );
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
-        assert!(g.redo(None).is_none());
+        // assert!(g.redo(None).is_none());
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
     }
 

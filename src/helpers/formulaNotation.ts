@@ -1,9 +1,14 @@
-import { getCoordinatesFromStringId } from '../grid/actions/updateCellAndDCells';
 import { sheets } from '../grid/controller/Sheets';
 import { Coordinate } from '../gridGL/types/size';
 import { CursorCell } from '../gridGL/UI/Cursor';
 import { CellRefId } from '../ui/menus/CodeEditor/useEditorCellHighlights';
 import { StringId } from './getKey';
+
+export function getCoordinatesFromStringId(stringId: StringId): [number, number] {
+  // required for type inference
+  const [x, y] = stringId.split(',').map((val) => parseInt(val));
+  return [x, y];
+}
 
 interface CellPosition {
   x: { type: 'Relative'; coord: number };
@@ -11,6 +16,11 @@ interface CellPosition {
 }
 
 export type Span = { start: number; end: number };
+
+export type CellRefCoord = {
+  x: { type: 'Relative' | 'Absolute'; coord: number };
+  y: { type: 'Relative' | 'Absolute'; coord: number };
+};
 
 export type CellRef =
   | {
@@ -20,7 +30,7 @@ export type CellRef =
     }
   | {
       type: 'Cell';
-      cell: CellPosition;
+      pos: CellPosition;
     };
 
 export type ParseFormulaReturnType = {

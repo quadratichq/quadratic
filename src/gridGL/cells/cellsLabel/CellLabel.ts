@@ -284,16 +284,18 @@ export class CellLabel extends Container {
       const texture = char.texture;
       const textureFrame = texture.frame;
       const textureUvs = texture._uvs;
+      const buffer = labelMesh.getBuffer();
+
       // remove letters that are outside the clipping bounds
       if (
         (this.clipRight !== undefined && xPos + textureFrame.width * scale >= this.clipRight) ||
         (this.clipLeft !== undefined && xPos <= this.clipLeft)
       ) {
         // this removes extra characters from the mesh after a clip
-        labelMesh.size -= 6;
+        buffer.reduceSize(6);
       } else {
-        const index = labelMesh.index++;
-        const buffers = labelMesh;
+        const index = buffer.index;
+        const buffers = buffer;
 
         buffers.indices![index * 6 + 0] = 0 + index * 4;
         buffers.indices![index * 6 + 1] = 1 + index * 4;
@@ -342,6 +344,7 @@ export class CellLabel extends Container {
           buffers.colors![index * 16 + 14] = color[2];
           buffers.colors![index * 16 + 15] = color[3];
         }
+        buffer.index++;
       }
     }
     return bounds;

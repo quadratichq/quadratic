@@ -1,13 +1,15 @@
 use anyhow::{anyhow, bail, Result};
 
-use super::{transaction_summary::TransactionSummary, GridController};
-use crate::{controller::operations::Operation, grid::SheetId, Pos};
+use super::{
+    transaction_summary::TransactionSummary, transactions::TransactionType, GridController,
+};
+use crate::{controller::operation::Operation, grid::SheetId, Pos};
 
 impl GridController {
     /// Imports a CSV file into the grid.
     ///
     /// Returns a [`TransactionSummary`].
-    pub async fn import_csv(
+    pub fn import_csv(
         &mut self,
         sheet_id: SheetId,
         file: &[u8],
@@ -50,7 +52,7 @@ impl GridController {
             .flatten()
             .collect::<Vec<Operation>>();
 
-        Ok(self.transact_forward(ops, cursor).await)
+        Ok(self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal))
     }
 }
 
@@ -77,16 +79,14 @@ Springfield,OR,United States,56032
 Concord,NH,United States,42605
 "#;
 
-    #[tokio::test]
-    async fn imports_a_simple_csv() {
+    #[test]
+    fn imports_a_simple_csv() {
         let mut grid_controller = GridController::new();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        grid_controller
-            .import_csv(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos, None)
-            .await
-            .unwrap();
+        let _ =
+            grid_controller.import_csv(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos, None);
 
         print_table(
             &grid_controller,
@@ -113,15 +113,13 @@ Concord,NH,United States,42605
         );
     }
 
-    #[tokio::test]
-    async fn errors_on_an_empty_csv() {
+    #[test]
+    fn errors_on_an_empty_csv() {
         let mut grid_controller = GridController::new();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        let result = grid_controller
-            .import_csv(sheet_id, "".as_bytes(), "smallpop.csv", pos, None)
-            .await;
+        let result = grid_controller.import_csv(sheet_id, "".as_bytes(), "smallpop.csv", pos, None);
         assert!(result.is_err());
     }
 }

@@ -5,6 +5,7 @@ import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -195,6 +196,7 @@ function TabName({
               setNameExists(false);
               setIsRenaming(false);
               sheets.sheet.name = value;
+              grid.setSheetName(sheet.id, value);
             }
           }
           focusGrid();

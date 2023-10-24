@@ -5,6 +5,8 @@
 pub mod util;
 #[macro_use]
 mod error;
+mod color;
+mod computation;
 pub mod controller;
 pub mod ext;
 pub mod formulas;

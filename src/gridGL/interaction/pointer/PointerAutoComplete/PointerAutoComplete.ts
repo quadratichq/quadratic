@@ -198,6 +198,7 @@ export class PointerAutoComplete {
             y: bottom,
           },
         },
+        ensureVisible: false,
       });
     }
   }
@@ -221,7 +222,7 @@ export class PointerAutoComplete {
         if (this.stateVertical === 'shrink') {
           fullBounds.height = this.endCell.y - this.selection.y;
         }
-        grid.expand(sheet.id, this.selection, fullBounds);
+        grid.autocomplete(sheet.id, this.selection, fullBounds);
       }
     }
 

@@ -3,6 +3,7 @@
   "cSpell.words": [
     "actix",
     "bigdecimal",
+    "bindgen",
     "dbgjs",
     "dcell",
     "dgraph",
@@ -10,8 +11,10 @@
     "Fuzzysort",
     "hljs",
     "htmlescape",
+    "indexmap",
     "itertools",
     "msdf",
+    "Northbridge",
     "openai",
     "opensans",
     "peekable",
@@ -19,9 +22,13 @@
     "pixiapp",
     "rects",
     "Signin",
+    "smallpop",
+    "Southborough",
     "subquadrant",
     "subquadrants",
-    "unspill"
+    "unspill",
+    "vals",
+    "Westborough"
   ],
   "editor.codeActionsOnSave": {
     "source.organizeImports": true

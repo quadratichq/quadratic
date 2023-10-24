@@ -8,7 +8,6 @@ use uuid::Uuid;
 #[serde(rename_all = "camelCase")]
 pub struct GridSchema {
     pub sheets: Vec<Sheet>,
-    pub dependencies: Vec<(Dependency, Vec<DependencyRange>)>,
     pub version: Option<String>,
 }
 
@@ -17,22 +16,6 @@ pub struct GridSchema {
 pub struct Pos {
     pub x: i64,
     pub y: i64,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub struct Dependency {
-    pub x: i64,
-    pub y: i64,
-    pub sheet_id: Id,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub struct DependencyRange {
-    pub min: Pos,
-    pub max: Pos,
-    pub sheet_id: Id,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

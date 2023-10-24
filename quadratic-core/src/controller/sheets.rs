@@ -3,7 +3,10 @@ use lexicon_fractional_index::key_between;
 
 use crate::grid::{Sheet, SheetId};
 
-use super::{operations::Operation, transaction_summary::TransactionSummary, GridController};
+use super::{
+    operation::Operation, transaction_summary::TransactionSummary, transactions::TransactionType,
+    GridController,
+};
 
 impl GridController {
     pub fn sheet_ids(&self) -> Vec<SheetId> {
@@ -13,27 +16,27 @@ impl GridController {
         self.grid.sheet_from_id(sheet_id)
     }
 
-    pub async fn set_sheet_name(
+    pub fn set_sheet_name(
         &mut self,
         sheet_id: SheetId,
         name: String,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        self.transact_forward(vec![Operation::SetSheetName { sheet_id, name }], cursor)
-            .await
+        let operations = vec![Operation::SetSheetName { sheet_id, name }];
+        self.set_in_progress_transaction(operations, cursor, false, TransactionType::Normal)
     }
 
-    pub async fn set_sheet_color(
+    pub fn set_sheet_color(
         &mut self,
         sheet_id: SheetId,
         color: Option<String>,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        self.transact_forward(vec![Operation::SetSheetColor { sheet_id, color }], cursor)
-            .await
+        let operations = vec![Operation::SetSheetColor { sheet_id, color }];
+        self.set_in_progress_transaction(operations, cursor, false, TransactionType::Normal)
     }
 
-    pub async fn add_sheet(&mut self, cursor: Option<String>) -> TransactionSummary {
+    pub fn add_sheet(&mut self, cursor: Option<String>) -> TransactionSummary {
         let sheet_names = &self
             .grid
             .sheets()
@@ -45,25 +48,25 @@ impl GridController {
         let name = crate::util::unused_name("Sheet", sheet_names);
         let order = self.grid.end_order();
         let sheet = Sheet::new(id, name, order);
-        let ops = vec![Operation::AddSheet { sheet }];
-        self.transact_forward(ops, cursor).await
+        let operations = vec![Operation::AddSheet { sheet }];
+        self.set_in_progress_transaction(operations, cursor, false, TransactionType::Normal)
     }
-    pub async fn delete_sheet(
+    pub fn delete_sheet(
         &mut self,
         sheet_id: SheetId,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let mut ops = vec![Operation::DeleteSheet { sheet_id }];
+        let mut operations = vec![Operation::DeleteSheet { sheet_id }];
         if self.sheet_ids().len() == 1 {
             let id = SheetId::new();
             let name = String::from("Sheet 1");
             let order = self.grid.end_order();
             let sheet = Sheet::new(id, name, order);
-            ops.push(Operation::AddSheet { sheet });
+            operations.push(Operation::AddSheet { sheet });
         }
-        self.transact_forward(ops, cursor).await
+        self.set_in_progress_transaction(operations, cursor, false, TransactionType::Normal)
     }
-    pub async fn move_sheet(
+    pub fn move_sheet(
         &mut self,
         sheet_id: SheetId,
         to_before: Option<SheetId>,
@@ -84,13 +87,13 @@ impl GridController {
             _ => unreachable!("to_before should be None or Some"),
         };
 
-        let ops = vec![Operation::ReorderSheet {
+        let operations = vec![Operation::ReorderSheet {
             target: sheet_id,
             order,
         }];
-        self.transact_forward(ops, cursor).await
+        self.set_in_progress_transaction(operations, cursor, false, TransactionType::Normal)
     }
-    pub async fn duplicate_sheet(
+    pub fn duplicate_sheet(
         &mut self,
         sheet_id: SheetId,
         cursor: Option<String>,
@@ -102,8 +105,8 @@ impl GridController {
         let right = self.grid.next_sheet(sheet_id);
         let right_order = right.map(|right| right.order.clone());
         new_sheet.order = key_between(&Some(source.order.clone()), &right_order).unwrap();
-        let ops = vec![Operation::AddSheet { sheet: new_sheet }];
-        self.transact_forward(ops, cursor).await
+        let operations = vec![Operation::AddSheet { sheet: new_sheet }];
+        self.set_in_progress_transaction(operations, cursor, false, TransactionType::Normal)
     }
 }
 
@@ -111,64 +114,64 @@ impl GridController {
 mod test {
     use crate::{controller::GridController, grid::SheetId};
 
-    #[tokio::test]
-    async fn test_add_delete_reorder_sheets() {
+    #[test]
+    fn test_add_delete_reorder_sheets() {
         let mut g = GridController::new();
-        g.add_sheet(None).await;
-        g.add_sheet(None).await;
+        g.add_sheet(None);
+        g.add_sheet(None);
         let old_sheet_ids = g.sheet_ids();
         let s1 = old_sheet_ids[0];
         let s2 = old_sheet_ids[1];
         let s3 = old_sheet_ids[2];
 
-        async fn test_reorder(
+        fn test_reorder(
             g: &mut GridController,
             a: SheetId,
             b: Option<SheetId>,
             expected: [SheetId; 3],
             old_sheet_ids: &Vec<SheetId>,
         ) {
-            g.move_sheet(a, b, None).await;
+            g.move_sheet(a, b, None);
             assert_eq!(expected.to_vec(), g.sheet_ids());
             g.undo(None);
             assert_eq!(*old_sheet_ids, g.sheet_ids());
         }
 
-        test_reorder(&mut g, s1, Some(s2), [s1, s2, s3], &old_sheet_ids).await;
-        test_reorder(&mut g, s1, Some(s3), [s2, s1, s3], &old_sheet_ids).await;
-        test_reorder(&mut g, s1, None, [s2, s3, s1], &old_sheet_ids).await;
-        test_reorder(&mut g, s2, Some(s1), [s2, s1, s3], &old_sheet_ids).await;
-        test_reorder(&mut g, s2, Some(s3), [s1, s2, s3], &old_sheet_ids).await;
-        test_reorder(&mut g, s2, None, [s1, s3, s2], &old_sheet_ids).await;
-        test_reorder(&mut g, s3, Some(s1), [s3, s1, s2], &old_sheet_ids).await;
-        test_reorder(&mut g, s3, Some(s2), [s1, s3, s2], &old_sheet_ids).await;
-        test_reorder(&mut g, s3, None, [s1, s2, s3], &old_sheet_ids).await;
+        test_reorder(&mut g, s1, Some(s2), [s1, s2, s3], &old_sheet_ids);
+        test_reorder(&mut g, s1, Some(s3), [s2, s1, s3], &old_sheet_ids);
+        test_reorder(&mut g, s1, None, [s2, s3, s1], &old_sheet_ids);
+        test_reorder(&mut g, s2, Some(s1), [s2, s1, s3], &old_sheet_ids);
+        test_reorder(&mut g, s2, Some(s3), [s1, s2, s3], &old_sheet_ids);
+        test_reorder(&mut g, s2, None, [s1, s3, s2], &old_sheet_ids);
+        test_reorder(&mut g, s3, Some(s1), [s3, s1, s2], &old_sheet_ids);
+        test_reorder(&mut g, s3, Some(s2), [s1, s3, s2], &old_sheet_ids);
+        test_reorder(&mut g, s3, None, [s1, s2, s3], &old_sheet_ids);
 
-        async fn test_delete(
+        fn test_delete(
             g: &mut GridController,
             a: SheetId,
             expected: [SheetId; 2],
             old_sheet_ids: &Vec<SheetId>,
         ) {
-            g.delete_sheet(a, None).await;
+            g.delete_sheet(a, None);
             assert_eq!(expected.to_vec(), g.sheet_ids());
             g.undo(None);
             assert_eq!(*old_sheet_ids, g.sheet_ids());
         }
 
-        test_delete(&mut g, s1, [s2, s3], &old_sheet_ids).await;
-        test_delete(&mut g, s2, [s1, s3], &old_sheet_ids).await;
-        test_delete(&mut g, s3, [s1, s2], &old_sheet_ids).await;
+        test_delete(&mut g, s1, [s2, s3], &old_sheet_ids);
+        test_delete(&mut g, s2, [s1, s3], &old_sheet_ids);
+        test_delete(&mut g, s3, [s1, s2], &old_sheet_ids);
     }
 
-    #[tokio::test]
-    async fn test_duplicate_sheet() {
+    #[test]
+    fn test_duplicate_sheet() {
         let mut g = GridController::new();
         let old_sheet_ids = g.sheet_ids();
         let s1 = old_sheet_ids[0];
 
-        g.set_sheet_name(s1, String::from("Nice Name"), None).await;
-        g.duplicate_sheet(s1, None).await;
+        g.set_sheet_name(s1, String::from("Nice Name"), None);
+        g.duplicate_sheet(s1, None);
         let sheet_ids = g.sheet_ids();
         let s2 = sheet_ids[1];
 
@@ -178,13 +181,13 @@ mod test {
         assert_eq!(sheet2.name, format!("{} Copy", sheet1.name));
     }
 
-    #[tokio::test]
-    async fn test_delete_last_sheet() {
+    #[test]
+    fn test_delete_last_sheet() {
         let mut g = GridController::new();
         let sheet_ids = g.sheet_ids();
         let first_sheet_id = sheet_ids[0];
 
-        g.delete_sheet(first_sheet_id, None).await;
+        g.delete_sheet(first_sheet_id, None);
         let new_sheet_ids = g.sheet_ids();
         assert_eq!(new_sheet_ids.len(), 1);
         assert_ne!(new_sheet_ids[0], sheet_ids[0]);

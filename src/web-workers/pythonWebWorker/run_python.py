@@ -320,7 +320,7 @@ async def run_python(code):
             "output_value": str(output_value),
             "array_output": array_output,
             "cells_accessed": cells_accessed,
-            "input_python_std_out": sout.getvalue(),
+            "std_out": sout.getvalue(),
             "success": True,
             "input_python_stack_trace": None,
             "formatted_code": formatted_code,
@@ -330,11 +330,12 @@ async def run_python(code):
         "output_value": output_value,
         "array_output": None,
         "cells_accessed": cells_accessed,
-        "input_python_std_out": sout.getvalue(),
+        "std_out": sout.getvalue(),
         "success": False,
         "input_python_stack_trace": "{} on line {}: {}".format(
             error_class, line_number, detail
         ),
+        "line_number": line_number,
         "formatted_code": code,
     }
 

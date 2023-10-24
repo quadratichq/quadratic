@@ -30,6 +30,14 @@ impl CodeCellValue {
         }
     }
 
+    pub fn cells_accessed_copy(&self) -> Option<Vec<CellRef>> {
+        if let Some(cells_accessed) = self.output.as_ref()?.cells_accessed() {
+            Some(cells_accessed.clone())
+        } else {
+            None
+        }
+    }
+
     pub fn get_error(&self) -> Option<Error> {
         let error = &self.output.as_ref()?.result;
         if let CodeCellRunResult::Err { error } = error {
@@ -63,6 +71,13 @@ impl CodeCellRunOutput {
     /// succeeded, or `None` if it failed or has never been run.
     pub fn output_value(&self) -> Option<&Value> {
         self.result.output_value()
+    }
+
+    pub fn cells_accessed(&self) -> Option<&Vec<CellRef>> {
+        match &self.result {
+            CodeCellRunResult::Ok { cells_accessed, .. } => Some(cells_accessed),
+            CodeCellRunResult::Err { .. } => None,
+        }
     }
 }
 

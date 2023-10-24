@@ -128,51 +128,56 @@ mod tests {
     fn test_formula_average() {
         let form = parse_formula("AVERAGE(3, B1:D3)", pos![nAn1]).unwrap();
 
-        let g = &mut FnGrid(|pos| {
-            if (1..=3).contains(&pos.x) && (1..=3).contains(&pos.y) {
-                Some((pos.x * 3 + pos.y).to_string()) // 4 .. 12
-            } else {
-                panic!("cell {pos} shouldn't be accessed")
+        let mut g = Grid::new();
+        let sheet = &mut g.sheets_mut()[0];
+        for x in 1..=3 {
+            for y in 1..=3 {
+                sheet.set_cell_value(Pos { x, y }, x * 3 + y);
             }
-        });
+        }
+        let sheet_id = sheet.id;
 
-        assert_eq!(
-            "7.5".to_string(),
-            form.eval_blocking(g, pos![nAn1]).unwrap().to_string(),
-        );
+        let mut ctx = Ctx::new(&g, pos![nAn1].with_sheet(sheet_id));
+        assert_eq!("7.5".to_string(), form.eval(&mut ctx).unwrap().to_string(),);
 
         assert_eq!(
             "17",
-            eval_to_string(g, "AVERAGE({\"_\", \"a\"}, 12, -3.5, 42.5)"),
+            eval_to_string(&g, "AVERAGE({\"_\", \"a\"}, 12, -3.5, 42.5)"),
         );
-        assert_eq!("5.5", eval_to_string(g, "AVERAGE(1..10)"));
-        assert_eq!("5", eval_to_string(g, "AVERAGE(0..10)"));
+        assert_eq!("5.5", eval_to_string(&g, "AVERAGE(1..10)"));
+        assert_eq!("5", eval_to_string(&g, "AVERAGE(0..10)"));
 
         // Test that null arguments count as zero.
-        assert_eq!("1", eval_to_string(g, "AVERAGE(3,,)"));
-        assert_eq!("1", eval_to_string(g, "AVERAGE(,3,)"));
-        assert_eq!("1", eval_to_string(g, "AVERAGE(,,3)"));
-        assert_eq!("0", eval_to_string(g, "AVERAGE(,)"));
+        assert_eq!("1", eval_to_string(&g, "AVERAGE(3,,)"));
+        assert_eq!("1", eval_to_string(&g, "AVERAGE(,3,)"));
+        assert_eq!("1", eval_to_string(&g, "AVERAGE(,,3)"));
+        assert_eq!("0", eval_to_string(&g, "AVERAGE(,)"));
 
         // Test with no arguments
-        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(g, "AVERAGE()").msg,);
+        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(&g, "AVERAGE()").msg,);
     }
 
     #[test]
     fn test_averageif() {
-        let g = &mut NoGrid;
+        let g = Grid::new();
 
-        assert_eq!("2.5", eval_to_string(g, "AVERAGEIF(0..10, \"<=5\")"));
-        assert_eq!("2.5", eval_to_string(g, "AVERAGEIF(0..10, \"<=5\")"));
+        assert_eq!("2.5", eval_to_string(&g, "AVERAGEIF(0..10, \"<=5\")"));
+        assert_eq!("2.5", eval_to_string(&g, "AVERAGEIF(0..10, \"<=5\")"));
 
         // Blank values are treated as zeros when summing, but *not* when
         // evaluating conditions.
-        let g = &mut FnGrid(|pos| (pos.y >= 0).then_some(pos.y));
-        assert_eq!("2.5", eval_to_string(g, "AVERAGEIF(Bn5:B10, \"<=5\")"));
-        let g = &mut BlankGrid;
+        {
+            let mut g = Grid::new();
+            let sheet = &mut g.sheets_mut()[0];
+            for y in 0..=10 {
+                sheet.set_cell_value(Pos { x: 1, y }, y);
+            }
+            assert_eq!("2.5", eval_to_string(&g, "AVERAGEIF(Bn5:B10, \"<=5\")"));
+        }
+        let g = Grid::new();
         assert_eq!(
             "7.5",
-            eval_to_string(g, "AVERAGEIF({0, 0, 0}, \"<=5\", {5, 10, B3})"),
+            eval_to_string(&g, "AVERAGEIF({0, 0, 0}, \"<=5\", {5, 10, B3})"),
         );
 
         // Error on range size mismatch.
@@ -181,7 +186,7 @@ mod tests {
                 expected: ArraySize::new(1, 11).unwrap(),
                 got: ArraySize::new(2, 1).unwrap(),
             },
-            eval_to_err(g, "AVERAGEIF(0..10, \"<=5\", {A1, A2})").msg,
+            eval_to_err(&g, "AVERAGEIF(0..10, \"<=5\", {A1, A2})").msg,
         );
         // ... even if one of the arguments is just a single value.
         assert_eq!(
@@ -189,83 +194,87 @@ mod tests {
                 expected: ArraySize::new(1, 11).unwrap(),
                 got: ArraySize::new(1, 1).unwrap(),
             },
-            eval_to_err(g, "AVERAGEIF(0..10, \"<=5\", 3)").msg,
+            eval_to_err(&g, "AVERAGEIF(0..10, \"<=5\", 3)").msg,
         );
         assert_eq!(
             ErrorMsg::ExactArraySizeMismatch {
                 expected: ArraySize::new(1, 1).unwrap(),
                 got: ArraySize::new(1, 11).unwrap(),
             },
-            eval_to_err(g, "AVERAGEIF(3, \"<=5\", 0..10)").msg,
+            eval_to_err(&g, "AVERAGEIF(3, \"<=5\", 0..10)").msg,
         );
     }
 
     #[test]
     fn test_count() {
-        let g = &mut BlankGrid;
-        assert_eq!("0", eval_to_string(g, "COUNT()"));
-        assert_eq!("0", eval_to_string(g, "COUNT(A1)"));
-        assert_eq!("0", eval_to_string(g, "COUNT(A1:B4)"));
+        let g = Grid::new();
+        assert_eq!("0", eval_to_string(&g, "COUNT()"));
+        assert_eq!("0", eval_to_string(&g, "COUNT(A1)"));
+        assert_eq!("0", eval_to_string(&g, "COUNT(A1:B4)"));
         assert_eq!(
             "3",
-            eval_to_string(g, "COUNT(\"_\", \"a\", 12, -3.5, 42.5)"),
+            eval_to_string(&g, "COUNT(\"_\", \"a\", 12, -3.5, 42.5)"),
         );
-        assert_eq!("1", eval_to_string(g, "COUNT(2)"));
-        assert_eq!("10", eval_to_string(g, "COUNT(1..10)"));
-        assert_eq!("11", eval_to_string(g, "COUNT(0..10)"));
-        assert_eq!("1", eval_to_string(g, "COUNT({\"\",1,,,})"));
+        assert_eq!("1", eval_to_string(&g, "COUNT(2)"));
+        assert_eq!("10", eval_to_string(&g, "COUNT(1..10)"));
+        assert_eq!("11", eval_to_string(&g, "COUNT(0..10)"));
+        assert_eq!("1", eval_to_string(&g, "COUNT({\"\",1,,,})"));
     }
 
     #[test]
     fn test_counta() {
-        let g = &mut BlankGrid;
-        assert_eq!("0", eval_to_string(g, "COUNTA()"));
-        assert_eq!("0", eval_to_string(g, "COUNTA(A1)"));
-        assert_eq!("0", eval_to_string(g, "COUNTA(A1:B4)"));
+        let g = Grid::new();
+        assert_eq!("0", eval_to_string(&g, "COUNTA()"));
+        assert_eq!("0", eval_to_string(&g, "COUNTA(A1)"));
+        assert_eq!("0", eval_to_string(&g, "COUNTA(A1:B4)"));
         assert_eq!(
             "5",
-            eval_to_string(g, "COUNTA(\"_\", \"a\", 12, -3.5, 42.5)"),
+            eval_to_string(&g, "COUNTA(\"_\", \"a\", 12, -3.5, 42.5)"),
         );
-        assert_eq!("1", eval_to_string(g, "COUNTA(\"\")"));
-        assert_eq!("1", eval_to_string(g, "COUNTA(2)"));
-        assert_eq!("10", eval_to_string(g, "COUNTA(1..10)"));
-        assert_eq!("11", eval_to_string(g, "COUNTA(0..10)"));
-        assert_eq!("2", eval_to_string(g, "COUNTA({\"\",1,,,})"));
+        assert_eq!("1", eval_to_string(&g, "COUNTA(\"\")"));
+        assert_eq!("1", eval_to_string(&g, "COUNTA(2)"));
+        assert_eq!("10", eval_to_string(&g, "COUNTA(1..10)"));
+        assert_eq!("11", eval_to_string(&g, "COUNTA(0..10)"));
+        assert_eq!("2", eval_to_string(&g, "COUNTA({\"\",1,,,})"));
     }
 
     #[test]
     fn test_countif() {
-        let g = &mut BlankGrid;
-        assert_eq!("6", eval_to_string(g, "COUNTIF(0..10, \"<=5\")"));
-        assert_eq!("6", eval_to_string(g, "COUNTIF(0..10, \"<=5\")"));
+        let g = Grid::new();
+        assert_eq!("6", eval_to_string(&g, "COUNTIF(0..10, \"<=5\")"));
+        assert_eq!("6", eval_to_string(&g, "COUNTIF(0..10, \"<=5\")"));
 
         // Test that blank cells are ignored
-        let g = &mut FnGrid(|pos| (pos.y >= 0).then_some(pos.y));
-        assert_eq!("6", eval_to_string(g, "COUNTIF(Bn5:B10, \"<=5\")"));
+        let mut g = Grid::new();
+        let sheet = &mut g.sheets_mut()[0];
+        for y in 0..=10 {
+            sheet.set_cell_value(Pos { x: 1, y }, y);
+        }
+        assert_eq!("6", eval_to_string(&g, "COUNTIF(Bn5:B10, \"<=5\")"))
     }
 
     #[test]
     fn test_countblank() {
-        let g = &mut BlankGrid;
-        assert_eq!("1", eval_to_string(g, "COUNTBLANK(\"\")"));
-        assert_eq!("0", eval_to_string(g, "COUNTBLANK(\"a\")"));
-        assert_eq!("0", eval_to_string(g, "COUNTBLANK(0)"));
-        assert_eq!("0", eval_to_string(g, "COUNTBLANK(1)"));
-        assert_eq!("1", eval_to_string(g, "COUNTBLANK({\"\", \"a\"; 0, 1})"));
-        assert_eq!("1", eval_to_string(g, "COUNTBLANK(B3)"));
-        assert_eq!("28", eval_to_string(g, "COUNTBLANK(B3:C16)"));
-        assert_eq!("3", eval_to_string(g, "COUNTBLANK({B3, \"\", C6, \"0\"})"));
+        let g = Grid::new();
+        assert_eq!("1", eval_to_string(&g, "COUNTBLANK(\"\")"));
+        assert_eq!("0", eval_to_string(&g, "COUNTBLANK(\"a\")"));
+        assert_eq!("0", eval_to_string(&g, "COUNTBLANK(0)"));
+        assert_eq!("0", eval_to_string(&g, "COUNTBLANK(1)"));
+        assert_eq!("1", eval_to_string(&g, "COUNTBLANK({\"\", \"a\"; 0, 1})"));
+        assert_eq!("1", eval_to_string(&g, "COUNTBLANK(B3)"));
+        assert_eq!("28", eval_to_string(&g, "COUNTBLANK(B3:C16)"));
+        assert_eq!("3", eval_to_string(&g, "COUNTBLANK({B3, \"\", C6, \"0\"})"));
     }
 
     #[test]
     fn test_min() {
-        let g = &mut NoGrid;
-        assert_eq!("1", eval_to_string(g, "MIN(1, 3, 2)"));
+        let g = Grid::new();
+        assert_eq!("1", eval_to_string(&g, "MIN(1, 3, 2)"));
     }
 
     #[test]
     fn test_max() {
-        let g = &mut NoGrid;
-        assert_eq!("3", eval_to_string(g, "MAX(1, 3, 2)"));
+        let g = Grid::new();
+        assert_eq!("3", eval_to_string(&g, "MAX(1, 3, 2)"));
     }
 }

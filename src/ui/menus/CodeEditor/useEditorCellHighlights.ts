@@ -31,9 +31,10 @@ function extractCellsFromParseFormula(parsedFormula: ParseFormulaReturnType): { 
         )}`,
         span,
       };
+    } else if (cell_ref.type === 'Cell') {
+      return { cellId: getKey(cell_ref.pos.x.coord, cell_ref.pos.y.coord), span };
     } else {
-      debugger;
-      return { cellId: getKey(cell_ref.cell.x.coord, cell_ref.cell.y.coord), span };
+      throw new Error('Unhandled cell_ref type in extractCellsFromParseFormula');
     }
   });
 }

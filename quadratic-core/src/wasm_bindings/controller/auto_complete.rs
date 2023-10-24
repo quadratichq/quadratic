@@ -8,8 +8,8 @@ impl GridController {
     /// Extend and/or shrink the contents of selection to range by inferring patterns.
     ///
     /// Returns a [`TransactionSummary`].
-    #[wasm_bindgen(js_name = "expand")]
-    pub async fn js_expand(
+    #[wasm_bindgen(js_name = "autocomplete")]
+    pub fn js_autocomplete(
         &mut self,
         sheet_id: String,
         selection: &Rect,
@@ -18,8 +18,7 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
         let output = self
-            .expand(sheet_id, *selection, *range, cursor)
-            .await
+            .autocomplete(sheet_id, *selection, *range, cursor)
             .map_err(|e| e.to_string())?;
         Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
     }

@@ -47,7 +47,7 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
   e.clipboardData.setData('text/html', html);
   e.clipboardData.setData('text', plainText);
   e.preventDefault();
-  debugTimeCheck('cut to clipboard');
+  debugTimeCheck('[Clipboard] cut to clipboard');
 };
 
 export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
@@ -77,6 +77,7 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
       plainText,
       html,
     });
+    debugTimeCheck('[Clipboard] paste to clipboard');
   }
 
   // enables Firefox menu pasting after a ctrl+v paste

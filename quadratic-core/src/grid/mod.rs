@@ -1,5 +1,4 @@
 use anyhow::{bail, Result};
-use std::collections::HashMap;
 use std::str::FromStr;
 
 use lexicon_fractional_index::key_between;
@@ -22,7 +21,10 @@ pub mod series;
 pub mod sheet;
 
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
-pub use borders::{CellBorder, CellBorderStyle, CellBorders, SheetBorders};
+pub use borders::{
+    generate_borders, set_region_borders, BorderSelection, BorderStyle, CellBorderLine,
+    LegacyCellBorder, LegacyCellBorders, SheetBorders,
+};
 pub use bounds::GridBounds;
 pub use code::*;
 pub use column::{Column, ColumnData};
@@ -33,16 +35,12 @@ pub use formatting::{
 pub use ids::*;
 pub use sheet::Sheet;
 
-use crate::{
-    controller::compute::{SheetPos, SheetRect},
-    CellValue, Pos, Value,
-};
+use crate::{Array, CellValue, Pos, SheetPos, SheetRect, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Grid {
     sheets: Vec<Sheet>,
-    dependencies: HashMap<SheetPos, Vec<SheetRect>>,
 }
 impl Default for Grid {
     fn default() -> Self {
@@ -53,17 +51,27 @@ impl Grid {
     pub fn new() -> Self {
         let mut ret = Grid {
             sheets: vec![],
-            dependencies: HashMap::new(),
+            // dependencies: HashMap::new(),
         };
         ret.add_sheet(None).expect("error adding initial sheet");
+        ret
+    }
+    pub fn from_array(base_pos: Pos, array: &Array) -> Self {
+        let mut ret = Grid::new();
+        let sheet = &mut ret.sheets_mut()[0];
+        for ((x, y), value) in array.size().iter().zip(array.cell_values_slice()) {
+            let x = base_pos.x + x as i64;
+            let y = base_pos.y + y as i64;
+            sheet.set_cell_value(Pos { x, y }, value.clone());
+        }
         ret
     }
     pub fn sheets(&self) -> &[Sheet] {
         &self.sheets
     }
-    pub fn dependencies_mut(&mut self) -> &mut HashMap<SheetPos, Vec<SheetRect>> {
-        &mut self.dependencies
-    }
+    // pub fn dependencies_mut(&mut self) -> &mut HashMap<SheetPos, Vec<SheetRect>> {
+    //     &mut self.dependencies
+    // }
     pub fn sheet_ids(&self) -> Vec<SheetId> {
         self.sheets.iter().map(|sheet| sheet.id).collect()
     }

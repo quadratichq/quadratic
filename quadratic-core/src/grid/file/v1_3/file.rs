@@ -18,7 +18,6 @@ pub(crate) fn upgrade(schema: GridSchema) -> Result<GridSchemaV1_5> {
     let converted = GridSchemaV1_5 {
         version: Some("1.5".into()),
         sheets: vec![sheet],
-        dependencies: vec![],
     };
 
     Ok(converted)

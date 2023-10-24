@@ -1,6 +1,6 @@
 use super::{
-    formatting::CellFmtArray, operations::Operation, transaction_summary::TransactionSummary,
-    GridController,
+    formatting::CellFmtArray, operation::Operation, transaction_summary::TransactionSummary,
+    transactions::TransactionType, GridController,
 };
 use crate::{
     grid::{CodeCellValue, SheetId},
@@ -51,6 +51,8 @@ impl GridController {
                 } else {
                     None
                 };
+
+                // todo: this only happens after a code error -- not ideal
                 let code: Option<CodeCellValue> = if value.is_none() && spill_value.is_none() {
                     let code_cell_value = sheet.get_code_cell(pos);
                     code_cell_value.map(|code_cell_value| CodeCellValue {
@@ -125,16 +127,14 @@ impl GridController {
         (plain_text, final_html)
     }
 
-    pub async fn cut_to_clipboard(
+    pub fn cut_to_clipboard(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
         cursor: Option<String>,
     ) -> (TransactionSummary, String, String) {
         let copy = self.copy_to_clipboard(sheet_id, rect);
-        let summary = self
-            .delete_values_and_formatting(sheet_id, rect, cursor)
-            .await;
+        let summary = self.delete_values_and_formatting(sheet_id, rect, cursor);
         (summary, copy.0, copy.1)
     }
 
@@ -165,7 +165,7 @@ impl GridController {
         Some(array)
     }
 
-    async fn set_clipboard_cells(
+    fn set_clipboard_cells(
         &mut self,
         sheet_id: SheetId,
         start_pos: Pos,
@@ -197,11 +197,10 @@ impl GridController {
                 attr: format.clone(),
             });
         });
-
-        self.transact_forward(ops, cursor).await
+        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
 
-    async fn paste_plain_text(
+    fn paste_plain_text(
         &mut self,
         sheet_id: SheetId,
         start_pos: Pos,
@@ -224,12 +223,11 @@ impl GridController {
                 ));
             }
         }
-
-        self.transact_forward(operations, cursor).await
+        self.set_in_progress_transaction(operations, cursor, true, TransactionType::Normal)
     }
 
     // todo: parse table structure to provide better pasting experience from other spreadsheets
-    async fn paste_html(
+    fn paste_html(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
@@ -255,12 +253,10 @@ impl GridController {
             return Err(());
         }
         let clipboard = parsed.unwrap();
-        Ok(self
-            .set_clipboard_cells(sheet_id, pos, clipboard, cursor)
-            .await)
+        Ok(self.set_clipboard_cells(sheet_id, pos, clipboard, cursor))
     }
 
-    pub async fn paste_from_clipboard(
+    pub fn paste_from_clipboard(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
@@ -270,7 +266,7 @@ impl GridController {
     ) -> TransactionSummary {
         // first try html
         if let Some(html) = html {
-            let pasted_html = self.paste_html(sheet_id, pos, html, cursor.clone()).await;
+            let pasted_html = self.paste_html(sheet_id, pos, html, cursor.clone());
             if let Ok(pasted_html) = pasted_html {
                 return pasted_html;
             }
@@ -279,9 +275,7 @@ impl GridController {
         // if not quadratic html, then use the plain text
         // first try html
         if let Some(plain_text) = plain_text {
-            return self
-                .paste_plain_text(sheet_id, pos, plain_text, cursor)
-                .await;
+            return self.paste_plain_text(sheet_id, pos, plain_text, cursor);
         }
         TransactionSummary::default()
     }
@@ -299,13 +293,12 @@ mod test {
         String::from("<table data-quadratic=\"&#x7B;&quot;w&quot;&#x3A;4&#x2C;&quot;h&quot;&#x3A;4&#x2C;&quot;cells&quot;&#x3A;&#x5B;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;text&quot;&#x2C;&quot;value&quot;&#x3A;&quot;1&#x2C;&#x20;1&quot;&#x7D;&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;number&quot;&#x2C;&quot;value&quot;&#x3A;&quot;12&quot;&#x7D;&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;code&quot;&#x3A;null&#x7D;&#x5D;&#x2C;&quot;formats&quot;&#x3A;&#x5B;&#x7B;&quot;Align&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Wrap&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericFormat&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericDecimals&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Bold&quot;&#x3A;&#x5B;&#x5B;null&#x2C;5&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;10&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Italic&quot;&#x3A;&#x5B;&#x5B;null&#x2C;11&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;4&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;TextColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;FillColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x5D;&#x7D;\"><tbody><tr><td></td><td></td><td></td><td></tr><tr><td></td><td><span style={font-weight:bold;}>1, 1</span></td><td></td><td></tr><tr><td></td><td></td><td></td><td><span style={font-style:italic;}>12</span></tr><tr><td></td><td></td><td></td><td></tr></tbody></table>")
     }
 
-    #[tokio::test]
-    async fn test_copy_to_clipboard() {
+    #[test]
+    fn test_copy_to_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, String::from("1, 1"), None)
-            .await;
+        gc.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, String::from("1, 1"), None);
         gc.set_cell_bold(
             sheet_id,
             Rect {
@@ -314,10 +307,9 @@ mod test {
             },
             Some(true),
             None,
-        )
-        .await;
-        gc.set_cell_value(sheet_id, Pos { x: 3, y: 2 }, String::from("12"), None)
-            .await;
+        );
+
+        gc.set_cell_value(sheet_id, Pos { x: 3, y: 2 }, String::from("12"), None);
         gc.set_cell_italic(
             sheet_id,
             Rect {
@@ -326,8 +318,7 @@ mod test {
             },
             Some(true),
             None,
-        )
-        .await;
+        );
 
         let rect = Rect {
             min: Pos { x: 1, y: 1 },
@@ -343,8 +334,7 @@ mod test {
         // paste using plain_text
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        gc.paste_from_clipboard(sheet_id, Pos { x: 0, y: 0 }, Some(clipboard.0), None, None)
-            .await;
+        gc.paste_from_clipboard(sheet_id, Pos { x: 0, y: 0 }, Some(clipboard.0), None, None);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.get_cell_value(Pos { x: 1, y: 1 }),
@@ -364,8 +354,7 @@ mod test {
             Some(String::from("")),
             Some(clipboard.1),
             None,
-        )
-        .await;
+        );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.get_cell_value(Pos { x: 1, y: 1 }),
@@ -395,8 +384,8 @@ mod test {
         );
     }
 
-    #[tokio::test]
-    async fn test_paste_from_quadratic_clipboard() {
+    #[test]
+    fn test_paste_from_quadratic_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
         gc.paste_from_clipboard(
@@ -405,8 +394,7 @@ mod test {
             None,
             Some(test_pasted_output()),
             None,
-        )
-        .await;
+        );
 
         let sheet = gc.sheet(sheet_id);
         let cell11 = sheet.get_cell_value(Pos { x: 2, y: 3 });

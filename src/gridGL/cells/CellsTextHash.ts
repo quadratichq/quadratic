@@ -1,7 +1,7 @@
 import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import { Bounds } from '../../grid/sheet/Bounds';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { JsRenderCell, JsRenderCellUpdate } from '../../quadratic-core/types';
+import { JsRenderCell } from '../../quadratic-core/types';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { CellsSheet } from './CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
@@ -28,9 +28,6 @@ export class CellsTextHash extends Container<LabelMeshes> {
 
   // flag to recreate label
   dirty = false;
-
-  // flag to update a label. Use true for a deleted cell to ensure labels' buffers update
-  dirtyLabels: (CellLabel | true)[] = [];
 
   // color to use for drawDebugBox
   debugColor = Math.floor(Math.random() * 0xffffff);
@@ -98,33 +95,15 @@ export class CellsTextHash extends Container<LabelMeshes> {
     debugTimeCheck('cellsLabels');
   }
 
-  updateDirtyLabels(): boolean {
+  update(): boolean {
     if (this.dirty) {
-      this.updateText();
+      this.createLabels();
       this.overflowClip();
-      this.updateBuffers();
+      this.updateBuffers(false);
       this.dirty = false;
       return true;
     }
     return false;
-
-    // todo: this should be put back in by taking into account mesh counts
-
-    // let changed = !!this.dirtyLabels.length;
-    // while (this.dirtyLabels.length) {
-    //   const label = this.dirtyLabels.pop();
-    //   if (label) {
-    //     if (label !== true) {
-    //       label.updateText(this.labelMeshes);
-    //     }
-    //     changed = true;
-    //   }
-    // }
-    // if (changed) {
-    //   this.overflowClip();
-    //   this.updateBuffers();
-    // }
-    // return changed;
   }
 
   private updateText() {
@@ -164,9 +143,9 @@ export class CellsTextHash extends Container<LabelMeshes> {
     }
   }
 
-  updateBuffers(): void {
+  updateBuffers(reuseBuffers: boolean): void {
     // creates labelMeshes webGL buffers based on size
-    this.labelMeshes.prepare();
+    this.labelMeshes.prepare(reuseBuffers);
 
     // populate labelMeshes webGL buffers
     this.viewBounds.clear();
@@ -237,47 +216,5 @@ export class CellsTextHash extends Container<LabelMeshes> {
       }
     });
     return max;
-  }
-
-  updateCells(cell: JsRenderCellUpdate) {
-    const key = this.getKey(cell);
-    // need to get the value from the update and cast it to any b/c of the conversion of enums to TS
-    const update = cell.update as any;
-    // special case for value where we may have to delete the CellLabel
-    if ('value' in update) {
-      if (update.value) {
-        const label = this.cellLabels.get(key) ?? this.createLabel({ x: cell.x, y: cell.y, value: update.value });
-        label.text = update.value;
-        this.dirty = true;
-        // label.dirty = true;
-        // this.dirtyLabels.push(label);
-      } else {
-        this.cellLabels.delete(key);
-        // this.dirtyLabels.push(true);
-        this.dirty = true;
-      }
-    }
-
-    // otherwise only update the formatting if the CellLabel already exists (otherwise there's nothing to display)
-    else {
-      const label = this.cellLabels.get(key);
-      if (label) {
-        if ('bold' in update) {
-          label.changeBold(update.bold);
-          this.dirty = true;
-        } else if ('italic' in update) {
-          label.changeItalic(update.italic);
-          this.dirty = true;
-        } else if ('align' in update) {
-          label.changeAlign(update.align);
-          this.dirty = true;
-        } else if ('wrap' in update) {
-          console.log('todo...');
-        } else if ('textColor' in update) {
-          label.changeTextColor(update.textColor);
-          this.dirty = true;
-        }
-      }
-    }
   }
 }

@@ -291,8 +291,6 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                 Ok(sheet)
             })
             .collect::<Result<_>>()?,
-        // TODO(ddimaria): remove as dependencies are being removed in another branch
-        dependencies: HashMap::new(),
     })
 }
 
@@ -408,8 +406,6 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                     .collect(),
             })
             .collect(),
-        // TODO(ddimaria): remove as dependencies are being removed in another branch
-        dependencies: vec![],
     })
 }
 

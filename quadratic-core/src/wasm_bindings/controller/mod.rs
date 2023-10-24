@@ -1,9 +1,12 @@
 use super::*;
+use crate::controller::transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells};
 use crate::{controller::transaction_summary::TransactionSummary, grid::js_types::*};
+use std::collections::HashSet;
 use std::str::FromStr;
 
 pub mod auto_complete;
 pub mod bounds;
+pub mod borders;
 pub mod cells;
 pub mod clipboard;
 pub mod formatting;
@@ -11,6 +14,7 @@ pub mod import;
 pub mod render;
 pub mod sheet_offsets;
 pub mod sheets;
+pub mod summarize;
 
 #[wasm_bindgen]
 impl GridController {
@@ -64,6 +68,31 @@ impl GridController {
         Ok(serde_wasm_bindgen::to_value(&self.redo(cursor))?)
     }
 
+    #[wasm_bindgen(js_name = "calculationComplete")]
+    pub fn js_calculation_complete(&mut self, result: JsCodeResult) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(
+            &self.calculation_complete(result),
+        )?)
+    }
+
+    #[wasm_bindgen(js_name = "getCalculationTransactionSummary")]
+    pub fn js_calculation_transaction_summary(&mut self) -> Result<JsValue, JsValue> {
+        self.updated_bounds_in_transaction();
+        if let Some(summary) = self.transaction_summary() {
+            Ok(serde_wasm_bindgen::to_value(&summary)?)
+        } else {
+            Err(JsValue::UNDEFINED)
+        }
+    }
+
+    #[wasm_bindgen(js_name = "calculationGetCells")]
+    pub fn js_calculation_get_cells(
+        &mut self,
+        get_cells: JsComputeGetCells,
+    ) -> Option<CellsForArray> {
+        self.calculation_get_cells(get_cells)
+    }
+
     /// Populates a portion of a sheet with random float values.
     ///
     /// Returns a [`TransactionSummary`].
@@ -79,10 +108,11 @@ impl GridController {
             fill_sheets_modified: vec![],
             border_sheets_modified: vec![],
             code_cells_modified: HashSet::new(),
-            operations: vec![],
+            cell_sheets_modified: HashSet::new(),
             sheet_list_modified: false,
             cursor: None,
             offsets_modified: vec![],
+            save: false,
         })?)
     }
 }
