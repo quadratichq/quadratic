@@ -17,15 +17,17 @@ import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
 interface ConsoleProps {
   editorMode: EditorInteractionState['mode'];
-  console?: { stdOut?: string; stdErr?: string };
+  consoleInput?: { stdOut?: string; stdErr?: string };
   editorContent: string | undefined;
+  evaluationResult?: any;
 }
 
-export function Console({ console, editorMode, editorContent }: ConsoleProps) {
+export function Console({ consoleInput, editorMode, editorContent, evaluationResult }: ConsoleProps) {
+  console.log(evaluationResult);
   const { permission } = useRecoilValue(editorInteractionStateAtom);
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const theme = useTheme();
-  let hasOutput = Boolean(console?.stdErr?.length || console?.stdOut?.length);
+  let hasOutput = Boolean(consoleInput?.stdErr?.length || consoleInput?.stdOut?.length);
 
   // Whenever we change to a different cell, reset the active tab to the 1st
   // useEffect(() => {
@@ -90,12 +92,12 @@ export function Console({ console, editorMode, editorContent }: ConsoleProps) {
           >
             {hasOutput ? (
               <>
-                {console?.stdErr && (
+                {consoleInput?.stdErr && (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.error }}>
-                    ERROR: {console?.stdErr}
+                    ERROR: {consoleInput?.stdErr}
                   </span>
                 )}
-                {console?.stdOut}
+                {consoleInput?.stdOut}
               </>
             ) : (
               <div style={{ ...codeEditorCommentStyles, marginTop: theme.spacing(0.5) }}>
@@ -157,7 +159,7 @@ export function Console({ console, editorMode, editorContent }: ConsoleProps) {
                 <li>Installing third-party packages.</li>
               </ul>
               <p>
-                <LinkNewTab href={DOCUMENTATION_PYTHON_URL}>Learn more in our documenation</LinkNewTab>.
+                <LinkNewTab href={DOCUMENTATION_PYTHON_URL}>Learn more in our documentation</LinkNewTab>.
               </p>
               <br />
             </div>
@@ -238,7 +240,7 @@ export function Console({ console, editorMode, editorContent }: ConsoleProps) {
         <TabPanel value={activeTabIndex} index={2}>
           <AITab
             // todo: fix this
-            evalResult={undefined} //evalResult}
+            evalResult={evaluationResult}
             editorMode={editorMode}
             editorContent={editorContent}
             isActive={activeTabIndex === 2}
