@@ -40,6 +40,8 @@ impl TransactionInProgress {
             cells_accessed: vec![],
             sheets_with_changed_bounds: HashSet::new(),
 
+            has_async: false,
+
             current_code_cell: None,
             current_cell_ref: None,
             waiting_for_async: None,
@@ -69,6 +71,9 @@ impl TransactionInProgress {
             if self.cells_to_compute.is_empty() {
                 self.complete = true;
                 self.summary.save = true;
+                if self.has_async {
+                    grid_controller.finalize_transaction(self);
+                }
                 break;
             }
         }
@@ -284,6 +289,7 @@ impl TransactionInProgress {
                                 }
                             }
                             self.waiting_for_async = Some(language);
+                            self.has_async = true;
                         }
                         CodeCellLanguage::Formula => {
                             self.eval_formula(
