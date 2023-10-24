@@ -9,7 +9,6 @@ pub mod auto_complete;
 pub mod borders;
 pub mod cells;
 pub mod clipboard;
-pub mod code_cell_update;
 pub mod dependencies;
 pub mod formatting;
 pub mod formula;
@@ -21,6 +20,7 @@ pub mod sheets;
 pub mod transaction_summary;
 pub mod transaction_types;
 pub mod transactions;
+pub mod update_code_cell_value;
 
 #[derive(Debug, Default, Clone)]
 #[cfg_attr(feature = "js", wasm_bindgen)]

@@ -3,14 +3,13 @@ use std::ops::Range;
 use indexmap::IndexSet;
 
 use crate::{
+    controller::{
+        operation::Operation,
+        transaction_summary::{CellSheetsModified, TransactionSummary},
+        GridController,
+    },
     grid::{CellRef, CodeCellValue, Sheet},
     Pos, Value,
-};
-
-use super::{
-    operation::Operation,
-    transaction_summary::{CellSheetsModified, TransactionSummary},
-    GridController,
 };
 
 /// updates code cell value
@@ -180,7 +179,8 @@ pub fn fetch_code_cell_difference(
 mod test {
     use crate::{
         controller::{
-            code_cell_update::fetch_code_cell_difference, transaction_summary::TransactionSummary,
+            transaction_summary::TransactionSummary,
+            update_code_cell_value::fetch_code_cell_difference,
         },
         grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellValue, Sheet},
         Array, ArraySize, SheetPos, Value,
