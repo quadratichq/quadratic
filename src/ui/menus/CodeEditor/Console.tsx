@@ -23,7 +23,6 @@ interface ConsoleProps {
 }
 
 export function Console({ consoleInput, editorMode, editorContent, evaluationResult }: ConsoleProps) {
-  console.log(evaluationResult);
   const { permission } = useRecoilValue(editorInteractionStateAtom);
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const theme = useTheme();
