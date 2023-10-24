@@ -1,7 +1,7 @@
 import sys
 import unittest
-from unittest import IsolatedAsyncioTestCase
 from pprint import pprint
+from unittest import IsolatedAsyncioTestCase
 
 
 #  Mock definitions
@@ -19,15 +19,20 @@ class mock_micropip:
         return None
 
 
+class mock_numpy:
+    def array(list):
+        return list
+
 # mock modules needed to import run_python
-sys.modules["GetCellsDB"] = mock_GetCellsDB
+sys.modules["getCellsDB"] = mock_GetCellsDB
 sys.modules["pyodide"] = mock_pyodide
 sys.modules["micropip"] = mock_micropip
+sys.modules["numpy"] = mock_numpy
 
 # add path to import run_python
 sys.path.insert(1, "src/web-workers/pythonWebWorker")
 
-from run_python import run_python, attempt_fix_await
+from run_python import attempt_fix_await, run_python
 
 
 class TestTesting(IsolatedAsyncioTestCase):
@@ -73,6 +78,9 @@ class TestTesting(IsolatedAsyncioTestCase):
         self.assertEqual(
             attempt_fix_await("c(0, 0)\nc(0, 0)"), "await c(0, 0)\nawait c(0, 0)"
         )
+
+    async def test_return_array(self):
+        result = await run_python("[1, 2, 3]")
 
 
 if __name__ == "__main__":
