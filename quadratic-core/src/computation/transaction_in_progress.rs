@@ -377,7 +377,8 @@ mod test {
             gc.js_get_code_string(sheet_ids[0].to_string(), &Pos { x: 1, y: 0 }),
             Some(CodeCell::new(
                 "c(0, 0) + 1".to_string(),
-                CodeCellLanguage::Python
+                CodeCellLanguage::Python,
+                None,
             ))
         );
         assert_eq!(gc.get_transaction_in_progress().is_some(), true);
