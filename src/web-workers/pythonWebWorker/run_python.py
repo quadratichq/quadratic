@@ -140,6 +140,16 @@ class Table:
     # TODO define iterator
 
 
+def not_cell(item):
+    if isinstance(item, Cell):
+        return item.value
+    return item
+
+def ensure_not_cell(item):
+    if isinstance(item, list):
+        return [ensure_not_cell(x) for x in item]
+    return not_cell(item)
+
 async def run_python(code):
     cells_accessed = []
 
@@ -316,9 +326,12 @@ async def run_python(code):
         except Exception:
             pass
 
+        if array_output:
+            output_value = None
+
         return {
-            "output_value": str(output_value),
-            "array_output": array_output,
+            "output_value": output_value,
+            "array_output": ensure_not_cell(array_output),
             "cells_accessed": cells_accessed,
             "std_out": sout.getvalue(),
             "success": True,
@@ -327,7 +340,7 @@ async def run_python(code):
         }
 
     return {
-        "output_value": output_value,
+        "output_value": not_cell(output_value),
         "array_output": None,
         "cells_accessed": cells_accessed,
         "std_out": sout.getvalue(),
