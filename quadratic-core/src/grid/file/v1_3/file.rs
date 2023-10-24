@@ -99,6 +99,13 @@ impl SheetBuilder {
     fn code_cell_value(&mut self, cell: &Cell) -> current::CodeCellValue {
         // let cell_ref = self.cell_ref((cell.x, cell.y));
         let default = String::new();
+        let language = match cell.type_field.to_lowercase().as_str() {
+            "python" => "Python",
+            "formula" => "Formula",
+            "javascript" => "JavaScript",
+            "sql" => "Sql",
+            _ => &default,
+        };
         let code_string = match cell.type_field.to_lowercase().as_str() {
             "python" => cell.python_code.as_ref().unwrap_or(&default),
             "formula" => cell.formula_code.as_ref().unwrap_or(&default),
@@ -112,7 +119,7 @@ impl SheetBuilder {
             .and_then(|result| Some(result.formatted_code));
 
         current::CodeCellValue {
-            language: cell.type_field.to_string(),
+            language: language.to_string(),
             code_string: code_string.to_string(),
             formatted_code_string,
             last_modified: cell.last_modified.as_ref().unwrap_or(&default).to_string(),
