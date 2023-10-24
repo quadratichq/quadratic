@@ -29,8 +29,8 @@ export class LabelMeshes extends Container<LabelMesh> {
   }
 
   // prepares the buffers for each labelMesh
-  prepare(): void {
-    this.children.forEach((labelMesh) => labelMesh.prepare());
+  prepare(reuseBuffers: boolean): void {
+    this.children.forEach((labelMesh) => labelMesh.prepare(reuseBuffers));
   }
 
   // finalizes the buffers after populated

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
-use crate::ArraySize;
+use crate::{grid::SheetId, ArraySize};
 
 /// Cell position {x, y}.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -14,7 +14,6 @@ use crate::ArraySize;
 )]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
-
 pub struct Pos {
     /// Column
     #[cfg_attr(test, proptest(strategy = "-4..=4_i64"))]
@@ -40,7 +39,28 @@ impl Pos {
 
     /// Returns an A1-style reference to the cell position.
     pub fn a1_string(self) -> String {
-        crate::util::column_name(self.x) + &self.y.to_string()
+        let col = crate::util::column_name(self.x);
+        if self.y < 0 {
+            format!("{col}n{}", -self.y)
+        } else {
+            format!("{col}{}", self.y.to_string())
+        }
+    }
+
+    /// Adds information about which sheet the position is in.
+    pub fn with_sheet(self, sheet_id: SheetId) -> SheetPos {
+        let Pos { x, y } = self;
+        SheetPos { x, y, sheet_id }
+    }
+}
+impl From<(i64, i64)> for Pos {
+    fn from(pos: (i64, i64)) -> Self {
+        Pos { x: pos.0, y: pos.1 }
+    }
+}
+impl From<SheetPos> for Pos {
+    fn from(pos: SheetPos) -> Self {
+        Pos { x: pos.x, y: pos.y }
     }
 }
 impl fmt::Display for Pos {
@@ -128,6 +148,14 @@ impl Rect {
     pub fn height(&self) -> u32 {
         (self.max.y - self.min.y + 1) as u32
     }
+
+    pub fn len(&self) -> u32 {
+        self.width() * self.height()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.width() == 0 && self.height() == 0
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone)]
@@ -138,4 +166,98 @@ pub struct ScreenRect {
     pub y: f64,
     pub w: f64,
     pub h: f64,
+}
+
+/// Used for referencing a pos during computation.
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct SheetPos {
+    pub x: i64,
+    pub y: i64,
+    pub sheet_id: SheetId,
+}
+impl fmt::Display for SheetPos {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} ({}, {})", self.sheet_id, self.x, self.y)
+    }
+}
+impl SheetPos {
+    pub fn without_sheet(self) -> Pos {
+        let SheetPos { x, y, .. } = self;
+        Pos { x, y }
+    }
+}
+
+/// Used for referencing a range during computation.
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct SheetRect {
+    /// Upper-left corner.
+    pub min: Pos,
+    /// Lower-right corner.
+    pub max: Pos,
+    /// The sheet that this region is on.
+    pub sheet_id: SheetId,
+}
+
+impl SheetRect {
+    /// Constructs a new rectangle containing only a single cell.
+    pub fn single_pos(pos: SheetPos) -> SheetRect {
+        SheetRect {
+            sheet_id: pos.sheet_id,
+            min: Pos { x: pos.x, y: pos.y },
+            max: Pos { x: pos.x, y: pos.y },
+        }
+    }
+    /// Returns whether a position is contained within the rectangle.
+    pub fn contains(self, pos: SheetPos) -> bool {
+        self.sheet_id == pos.sheet_id
+            && self.x_range().contains(&pos.x)
+            && self.y_range().contains(&pos.y)
+    }
+    /// Returns whether a rectangle intersects with the rectangle.
+    pub fn intersects(self, other: SheetRect) -> bool {
+        // https://en.wikipedia.org/wiki/Hyperplane_separation_theorem#:~:text=the%20following%20form%3A-,Separating%20axis%20theorem,-%E2%80%94%C2%A0Two%20closed
+        self.sheet_id == other.sheet_id
+            && !(other.max.x < self.min.x
+                || other.min.x > self.max.x
+                || other.max.y < self.min.y
+                || other.min.y > self.max.y)
+    }
+    /// Returns the range of X values in the rectangle.
+    pub fn x_range(self) -> Range<i64> {
+        self.min.x..self.max.x + 1
+    }
+    /// Returns the range of Y values in the rectangle.
+    pub fn y_range(self) -> Range<i64> {
+        self.min.y..self.max.y + 1
+    }
+}
+impl fmt::Display for SheetRect {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Sheet: {}, Min: {}, Max: {}",
+            self.sheet_id, self.min, self.max,
+        )
+    }
+}
+
+impl SheetPos {
+    pub fn new(sheet_id: SheetId, x: i64, y: i64) -> Self {
+        Self { sheet_id, x, y }
+    }
+}
+impl From<SheetRect> for Vec<SheetPos> {
+    fn from(rect: SheetRect) -> Vec<SheetPos> {
+        let mut sheet_pos = vec![];
+        for x in rect.min.x..=rect.max.x {
+            for y in rect.min.y..=rect.max.y {
+                sheet_pos.push(SheetPos {
+                    sheet_id: rect.sheet_id,
+                    x,
+                    y,
+                });
+            }
+        }
+        sheet_pos
+    }
 }

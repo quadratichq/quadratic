@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::fmt;
 use std::ops::Range;
 
@@ -94,7 +95,7 @@ impl<B: BlockContent> Block<B> {
                     resulting_blocks.push(Block {
                         y: y + 1,
                         content: right,
-                    })
+                    });
                 }
                 Ok((resulting_blocks, value_removed))
             }
@@ -126,7 +127,7 @@ impl<B: BlockContent> Block<B> {
     }
 
     fn index(&self, y: i64) -> Option<usize> {
-        self.contains(y).then(|| (y - self.y) as usize)
+        self.contains(y).then_some((y - self.y) as usize)
     }
 }
 
@@ -200,4 +201,164 @@ fn build_contiguous_blocks<B: BlockContent, C: FromIterator<Block<B>>>(
             block
         })
         .collect()
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct EmptyBlock {
+    pub y: i64,
+    pub len: usize,
+}
+impl EmptyBlock {
+    pub fn start(&self) -> i64 {
+        self.y
+    }
+    pub fn end(&self) -> i64 {
+        self.y + self.len as i64
+    }
+    pub fn range(&self) -> Range<i64> {
+        self.start()..self.end()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum OptionBlock<B: BlockContent> {
+    None(EmptyBlock),
+    Some(Block<B>),
+}
+
+/// Returns a contiguous range of blocks, filled with EmptyBlocks in between content
+pub fn contiguous_optional_blocks<B: BlockContent>(
+    blocks: Vec<Block<B>>,
+    expected_range: Range<i64>,
+) -> Vec<OptionBlock<B>> {
+    let block_ranges = blocks.iter().map(|block| block.range()).collect_vec();
+    let mut block_iter = blocks.into_iter();
+
+    // TODO(jrice): This could be simplified to just a blocks iter (no block_ranges vec) if we tag range equality somehow
+
+    expected_range
+        .group_by(|i| block_ranges.iter().find(|block| block.contains(i)))
+        .into_iter()
+        .map(|(containing_range, indices)| match containing_range {
+            None => {
+                let group = indices.collect_vec();
+                let start = group
+                    .first()
+                    .expect("group_by should not return empty groups");
+                let end = group.last().unwrap_or(start) + 1;
+                let len = (end - start) as usize;
+                OptionBlock::None(EmptyBlock { y: *start, len })
+            }
+            Some(_) => {
+                let block = block_iter.next().expect("TODO: Assert size before this");
+                OptionBlock::Some(block)
+            }
+        })
+        .collect_vec()
+}
+
+#[cfg(test)]
+mod test_blocks {
+    use super::*;
+
+    #[test]
+    fn idk() {
+        let blocks = vec![
+            Block::<SameValue<String>> {
+                y: 5,
+                content: SameValue {
+                    value: "A".into(),
+                    len: 2,
+                },
+            },
+            Block::<SameValue<String>> {
+                y: 8,
+                content: SameValue {
+                    value: "B".into(),
+                    len: 2,
+                },
+            },
+        ];
+
+        let result = contiguous_optional_blocks(blocks, 3i64..14i64);
+        assert_eq!(
+            result,
+            vec![
+                OptionBlock::None(EmptyBlock { y: 3, len: 2 }),
+                OptionBlock::Some(Block::<SameValue<String>> {
+                    y: 5,
+                    content: SameValue {
+                        value: "A".into(),
+                        len: 2,
+                    },
+                }),
+                OptionBlock::None(EmptyBlock { y: 7, len: 1 }),
+                OptionBlock::Some(Block::<SameValue<String>> {
+                    y: 8,
+                    content: SameValue {
+                        value: "B".into(),
+                        len: 2,
+                    },
+                }),
+                OptionBlock::None(EmptyBlock { y: 10, len: 4 }),
+            ]
+        );
+    }
+
+    #[test]
+    fn contiguous_singles() {
+        let blocks = vec![
+            Block::<SameValue<String>> {
+                y: 5,
+                content: SameValue {
+                    value: "A".into(),
+                    len: 1,
+                },
+            },
+            Block::<SameValue<String>> {
+                y: 6,
+                content: SameValue {
+                    value: "A".into(),
+                    len: 1,
+                },
+            },
+            Block::<SameValue<String>> {
+                y: 7,
+                content: SameValue {
+                    value: "A".into(),
+                    len: 1,
+                },
+            },
+        ];
+
+        let result = contiguous_optional_blocks(blocks, 3i64..10i64);
+        assert_eq!(
+            result,
+            vec![
+                OptionBlock::None(EmptyBlock { y: 3, len: 2 }),
+                OptionBlock::Some(Block::<SameValue<String>> {
+                    y: 5,
+                    content: SameValue {
+                        value: "A".into(),
+                        len: 1,
+                    },
+                }),
+                OptionBlock::Some(Block::<SameValue<String>> {
+                    y: 6,
+                    content: SameValue {
+                        value: "A".into(),
+                        len: 1,
+                    },
+                }),
+                OptionBlock::Some(Block::<SameValue<String>> {
+                    y: 7,
+                    content: SameValue {
+                        value: "A".into(),
+                        len: 1,
+                    },
+                }),
+                OptionBlock::None(EmptyBlock { y: 8, len: 2 }),
+            ]
+        );
+    }
 }

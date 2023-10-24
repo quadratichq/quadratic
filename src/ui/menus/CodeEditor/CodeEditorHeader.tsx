@@ -14,7 +14,6 @@ import { Formula, Python } from '../../icons';
 // todo: fix types
 
 interface Props {
-  cell: any | undefined; // CodeCellValue
   cellLocation: Coordinate | undefined;
   unsaved: boolean;
   isRunningComputation: boolean;
@@ -24,14 +23,16 @@ interface Props {
 }
 
 export const CodeEditorHeader = (props: Props) => {
-  const { cell, cellLocation, unsaved, isRunningComputation, saveAndRunCell, closeEditor } = props;
+  const { cellLocation, unsaved, isRunningComputation, saveAndRunCell, closeEditor } = props;
   const { pythonLoadState } = useRecoilValue(loadedStateAtom);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const theme = useTheme();
   const hasPermission = isEditorOrAbove(editorInteractionState.permission);
 
-  if (!cell || !cellLocation) return null;
-  const isLoadingPython = !['loaded', 'initial'].includes(pythonLoadState) && cell.language === 'Python';
+  const language = editorInteractionState.mode;
+
+  if (!cellLocation) return null;
+  const isLoadingPython = !['loaded', 'initial'].includes(pythonLoadState) && language === 'PYTHON';
 
   return (
     <div
@@ -53,9 +54,9 @@ export const CodeEditorHeader = (props: Props) => {
           padding: '0 .5rem',
         }}
       >
-        {cell.language === 'Python' ? (
+        {language === 'PYTHON' ? (
           <Python sx={{ color: colors.languagePython }} fontSize="small" />
-        ) : cell.language === 'Formula' ? (
+        ) : language === 'FORMULA' ? (
           <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
         ) : (
           <Subject />
@@ -65,7 +66,8 @@ export const CodeEditorHeader = (props: Props) => {
             color: 'black',
           }}
         >
-          Cell ({cellLocation.x}, {cellLocation.y}) - {cell.language}
+          Cell ({cellLocation.x}, {cellLocation.y}) -{' '}
+          {language === 'PYTHON' ? 'Python' : language === 'FORMULA' ? 'Formula' : 'Unknown'}
           {unsaved && (
             <TooltipHint title="Your changes haven’t been saved or run">
               <FiberManualRecord

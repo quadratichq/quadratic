@@ -2,7 +2,7 @@ import { removeItems } from '@pixi/utils';
 import { BitmapFont, Container, Point, Rectangle, Texture } from 'pixi.js';
 import { Bounds } from '../../../grid/sheet/Bounds';
 import { convertColorStringToTint, convertTintToArray } from '../../../helpers/convertColor';
-import { JsRenderCell } from '../../../quadratic-core/types';
+import { CellAlign, JsRenderCell } from '../../../quadratic-core/types';
 import { CellAlignment } from '../../../schemas';
 import { Coordinate } from '../../types/size';
 import { LabelMeshes } from './LabelMeshes';
@@ -26,7 +26,10 @@ const fontSize = 14;
 
 export class CellLabel extends Container {
   text: string;
-  fontName: string;
+
+  // created in updateFontName()
+  fontName!: string;
+
   fontSize: number;
   tint?: number;
   maxWidth: number;
@@ -42,6 +45,8 @@ export class CellLabel extends Container {
   lineAlignOffsets: number[] = [];
   align?: 'left' | 'right' | 'justify' | 'center';
   letterSpacing: number;
+  bold: boolean;
+  italic: boolean;
 
   textWidth = 0;
   textHeight = 0;
@@ -57,7 +62,6 @@ export class CellLabel extends Container {
     super();
 
     const cellText = cell.value ? cell.value.replace(/\n/g, '') : '';
-
     this.text = cellText;
     this.fontSize = fontSize;
     this.roundPixels = true;
@@ -69,10 +73,38 @@ export class CellLabel extends Container {
     this.AABB = screenRectangle;
     this.position.set(screenRectangle.x, screenRectangle.y);
 
-    const bold = cell?.bold ? 'Bold' : '';
-    const italic = cell?.italic ? 'Italic' : '';
-    this.fontName = `OpenSans${bold || italic ? '-' : ''}${bold}${italic}`;
+    this.bold = !!cell?.bold;
+    this.italic = !!cell?.italic;
+    this.updateFontName();
     this.alignment = cell.align;
+  }
+
+  updateFontName() {
+    const bold = this.bold ? 'Bold' : '';
+    const italic = this.italic ? 'Italic' : '';
+    this.fontName = `OpenSans${bold || italic ? '-' : ''}${bold}${italic}`;
+  }
+
+  changeBold(bold?: boolean) {
+    this.bold = !!bold;
+    this.updateFontName();
+    this.dirty = true;
+  }
+
+  changeItalic(italic?: boolean) {
+    this.italic = !!italic;
+    this.updateFontName();
+    this.dirty = true;
+  }
+
+  changeAlign(align?: CellAlign) {
+    this.alignment = align ?? 'left';
+    this.calculatePosition();
+  }
+
+  changeTextColor(color?: string) {
+    this.tint = color ? convertColorStringToTint(color) : undefined;
+    this.dirty = true;
   }
 
   get cellWidth(): number {
@@ -127,8 +159,8 @@ export class CellLabel extends Container {
 
   /** Calculates the text glyphs and positions and tracks whether the text overflows the cell */
   public updateText(labelMeshes: LabelMeshes): void {
-    if (!this.dirty) return;
-    this.dirty = false;
+    // if (!this.dirty && !force) return;
+    // this.dirty = false;
     const data = BitmapFont.available[this.fontName];
     if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateText');
     const pos = new Point();
@@ -252,16 +284,18 @@ export class CellLabel extends Container {
       const texture = char.texture;
       const textureFrame = texture.frame;
       const textureUvs = texture._uvs;
+      const buffer = labelMesh.getBuffer();
+
       // remove letters that are outside the clipping bounds
       if (
         (this.clipRight !== undefined && xPos + textureFrame.width * scale >= this.clipRight) ||
         (this.clipLeft !== undefined && xPos <= this.clipLeft)
       ) {
         // this removes extra characters from the mesh after a clip
-        labelMesh.size -= 6;
+        buffer.reduceSize(6);
       } else {
-        const index = labelMesh.index++;
-        const buffers = labelMesh;
+        const index = buffer.index;
+        const buffers = buffer;
 
         buffers.indices![index * 6 + 0] = 0 + index * 4;
         buffers.indices![index * 6 + 1] = 1 + index * 4;
@@ -310,6 +344,7 @@ export class CellLabel extends Container {
           buffers.colors![index * 16 + 14] = color[2];
           buffers.colors![index * 16 + 15] = color[3];
         }
+        buffer.index++;
       }
     }
     return bounds;

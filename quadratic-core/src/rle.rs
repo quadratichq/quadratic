@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 /// Run-length encoded sequence of values.
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
 pub struct RunLengthEncoding<T>(Vec<(T, usize)>);
-impl<T: Eq> RunLengthEncoding<T> {
+impl<T: Eq + Clone> RunLengthEncoding<T> {
     pub fn new() -> Self {
         RunLengthEncoding(vec![])
     }
@@ -23,8 +23,11 @@ impl<T: Eq> RunLengthEncoding<T> {
         self.iter_runs()
             .flat_map(|(value, len)| std::iter::repeat(value).take(len))
     }
+    pub fn get_at(&self, i: usize) -> Option<&T> {
+        self.iter_values().nth(i)
+    }
 }
-impl<T: Eq> FromIterator<T> for RunLengthEncoding<T> {
+impl<T: Eq + Clone> FromIterator<T> for RunLengthEncoding<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let mut ret = RunLengthEncoding::new();
         for it in iter {

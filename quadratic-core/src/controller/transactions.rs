@@ -1,43 +1,65 @@
-use crate::{grid::*, Pos, Rect};
+use core::panic;
+
+use crate::{computation::TransactionInProgress, Pos};
 use serde::{Deserialize, Serialize};
 
-use super::{compute::SheetRect, operations::Operation, GridController};
+use super::{
+    operation::Operation,
+    transaction_summary::TransactionSummary,
+    transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
+    GridController,
+};
+
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+pub enum TransactionType {
+    #[default]
+    Normal,
+    Undo,
+    Redo,
+}
 
 impl GridController {
-    /// Takes a Vec of initial Operations creates and runs a tractions, returning a transaction summary.
-    /// This is the main entry point actions added to the undo/redo stack.
-    /// Also runs computations for cells that need to be recomputed, and all of their dependencies.
-    pub fn transact_forward(
+    pub fn finalize_transaction(&mut self, transaction_in_progress: &TransactionInProgress) {
+        let transaction: Transaction = transaction_in_progress.into();
+        match transaction_in_progress.transaction_type {
+            TransactionType::Normal => {
+                self.undo_stack.push(transaction);
+                self.redo_stack.clear();
+            }
+            TransactionType::Undo => {
+                self.redo_stack.push(transaction);
+            }
+            TransactionType::Redo => {
+                self.undo_stack.push(transaction);
+            }
+        }
+    }
+
+    pub fn set_in_progress_transaction(
         &mut self,
         operations: Vec<Operation>,
         cursor: Option<String>,
+        compute: bool,
+        transaction_type: TransactionType,
     ) -> TransactionSummary {
-        // make initial changes
-        let mut summary = TransactionSummary::default();
-        let mut reverse_operations = self.transact(operations, &mut summary);
-
-        // run computations
-        // TODO cell_regions_modified also contains formatting updates, create new structure for just updated code and values
-        let mut additional_operations = self.compute(
-            summary
-                .cell_regions_modified
-                .iter()
-                .map(|rect| SheetRect {
-                    sheet_id: rect.0,
-                    min: rect.1.min,
-                    max: rect.1.max,
-                })
-                .collect(),
-        );
-
-        reverse_operations.append(&mut additional_operations);
-
-        // update undo/redo stack
-        self.redo_stack.clear();
-        self.undo_stack.push(Transaction {
-            ops: reverse_operations,
-            cursor,
-        });
+        if self
+            .transaction_in_progress
+            .as_ref()
+            .is_some_and(|in_progress_transaction| !in_progress_transaction.complete)
+        {
+            // todo: this should be handled more gracefully. Perhaps as a queue of operations?
+            panic!("Cannot start a transaction while a transaction is in progress");
+        }
+        let mut transaction =
+            TransactionInProgress::new(self, operations, cursor, compute, transaction_type);
+        let mut summary = transaction.transaction_summary();
+        transaction.updated_bounds(self);
+        if transaction.complete {
+            summary.save = true;
+            self.finalize_transaction(&transaction);
+        } else {
+            self.transaction_in_progress = Some(transaction);
+        }
         summary
     }
 
@@ -47,64 +69,57 @@ impl GridController {
     pub fn has_redo(&self) -> bool {
         !self.redo_stack.is_empty()
     }
-    pub fn undo(&mut self, cursor: Option<String>) -> Option<TransactionSummary> {
-        if self.undo_stack.is_empty() {
-            return None;
+    pub fn undo(&mut self, cursor: Option<String>) -> TransactionSummary {
+        if let Some(transaction) = self.undo_stack.pop() {
+            self.set_in_progress_transaction(transaction.ops, cursor, false, TransactionType::Undo)
+        } else {
+            TransactionSummary::default()
         }
-        let transaction = self.undo_stack.pop()?;
-        let cursor_old = transaction.cursor.clone();
-        let mut summary = TransactionSummary::default();
-        let reverse_operation = self.transact(transaction.ops, &mut summary);
-        self.redo_stack.push(Transaction {
-            ops: reverse_operation,
-            cursor,
-        });
-        summary.cursor = cursor_old;
-        Some(summary)
     }
-    pub fn redo(&mut self, cursor: Option<String>) -> Option<TransactionSummary> {
-        if self.redo_stack.is_empty() {
-            return None;
+    pub fn redo(&mut self, cursor: Option<String>) -> TransactionSummary {
+        if let Some(transaction) = self.redo_stack.pop() {
+            self.set_in_progress_transaction(transaction.ops, cursor, false, TransactionType::Redo)
+        } else {
+            TransactionSummary::default()
         }
-        let transaction = self.redo_stack.pop()?;
-        let cursor_old = transaction.cursor.clone();
-        let mut summary = TransactionSummary::default();
-        let reverse_operations = self.transact(transaction.ops, &mut summary);
-        self.undo_stack.push(Transaction {
-            ops: reverse_operations,
-            cursor,
-        });
-        summary.cursor = cursor_old;
-        Some(summary)
+    }
+    pub fn calculation_complete(&mut self, result: JsCodeResult) -> TransactionSummary {
+        // todo: there's probably a better way to do this
+        if let Some(transaction) = &mut self.transaction_in_progress.clone() {
+            transaction.calculation_complete(self, result);
+            self.transaction_in_progress = Some(transaction.to_owned());
+            transaction.updated_bounds(self);
+            transaction.transaction_summary()
+        } else {
+            panic!("Expected an in progress transaction");
+        }
     }
 
-    /// executes a set of operations and returns the reverse operations
-    /// TODO: remove this function and move code to transact_forward and execute_operation?
-    fn transact(
-        &mut self,
-        operations: Vec<Operation>,
-        summary: &mut TransactionSummary,
-    ) -> Vec<Operation> {
-        let mut reverse_operations = vec![];
-        // TODO move bounds recalculation to somewhere else?
-        let mut sheets_with_changed_bounds = vec![];
+    /// This is used to get cells during a TS-controlled async calculation
+    pub fn calculation_get_cells(&mut self, get_cells: JsComputeGetCells) -> Option<CellsForArray> {
+        // todo: there's probably a better way to do this - the clone is necessary b/c get_cells needs a mutable grid as well
+        if let Some(transaction) = &mut self.transaction_in_progress.clone() {
+            let result = transaction.get_cells(self, get_cells);
+            self.transaction_in_progress = Some(transaction.to_owned());
+            result
+        } else {
+            panic!("Expected a transaction to still be running");
+        }
+    }
 
-        for op in operations.iter() {
-            if let Some(new_dirty_sheet) = op.sheet_with_changed_bounds() {
-                if !sheets_with_changed_bounds.contains(&new_dirty_sheet) {
-                    sheets_with_changed_bounds.push(new_dirty_sheet)
-                }
-            }
-            let reverse_operation = self.execute_operation(op.clone(), summary);
-            reverse_operations.push(reverse_operation);
+    pub fn transaction_summary(&mut self) -> Option<TransactionSummary> {
+        if let Some(transaction) = &mut self.transaction_in_progress {
+            Some(transaction.transaction_summary())
+        } else {
+            None
         }
-        for dirty_sheet in sheets_with_changed_bounds {
-            self.grid
-                .sheet_mut_from_id(dirty_sheet)
-                .recalculate_bounds();
+    }
+
+    pub fn updated_bounds_in_transaction(&mut self) {
+        if let Some(transaction) = &mut self.transaction_in_progress.clone() {
+            transaction.updated_bounds(self);
+            self.transaction_in_progress = Some(transaction.to_owned());
         }
-        reverse_operations.reverse();
-        reverse_operations
     }
 }
 
@@ -114,37 +129,54 @@ pub struct Transaction {
     pub cursor: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct TransactionSummary {
-    /// Cell and text formatting regions modified.
-    pub cell_regions_modified: Vec<(SheetId, Rect)>,
-    /// Sheets where any fills have been modified.
-    pub fill_sheets_modified: Vec<SheetId>,
-    /// Sheets where any borders have been modified.
-    pub border_sheets_modified: Vec<SheetId>,
-    /// Locations of code cells that were modified. They may no longer exist.
-    pub code_cells_modified: Vec<(SheetId, Pos)>,
-    /// Sheet metadata or order was modified.
-    pub sheet_list_modified: bool,
-    /// Cursor location for undo/redo operation
-    pub cursor: Option<String>,
+#[derive(Debug, PartialEq)]
+pub struct CellHash(String);
+
+impl CellHash {
+    pub fn get(&self) -> String {
+        self.0.clone()
+    }
 }
 
-impl Operation {
-    pub fn sheet_with_changed_bounds(&self) -> Option<SheetId> {
-        match self {
-            Operation::SetCellValues { region, .. } => Some(region.sheet),
-            Operation::SetCellDependencies { .. } => None,
-            Operation::SetCellFormats { region, .. } => Some(region.sheet),
-            Operation::AddSheet { .. } => None,
-            Operation::DeleteSheet { .. } => None,
-            Operation::SetSheetColor { .. } => None,
-            Operation::SetSheetName { .. } => None,
-            Operation::ReorderSheet { .. } => None,
-            Operation::ResizeColumn { .. } => None,
-            Operation::ResizeRow { .. } => None,
-            Operation::None { .. } => None,
+impl From<Pos> for CellHash {
+    fn from(pos: Pos) -> Self {
+        let hash_width = 20_f64;
+        let hash_height = 40_f64;
+        let cell_hash_x = (pos.x as f64 / hash_width).floor() as i64;
+        let cell_hash_y = (pos.y as f64 / hash_height).floor() as i64;
+        let cell_hash = format!("{},{}", cell_hash_x, cell_hash_y);
+
+        CellHash(cell_hash)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{grid::SheetId, Array, CellValue, Pos, Rect};
+
+    use super::*;
+
+    fn _add_cell_value(
+        gc: &mut GridController,
+        sheet_id: SheetId,
+        pos: Pos,
+        value: CellValue,
+    ) -> Operation {
+        let rect = Rect::new_span(pos, pos);
+        let region = gc.region(sheet_id, rect);
+
+        Operation::SetCellValues {
+            region,
+            values: Array::from(value),
         }
+    }
+
+    fn _add_cell_text(
+        gc: &mut GridController,
+        sheet_id: SheetId,
+        pos: Pos,
+        value: &str,
+    ) -> Operation {
+        _add_cell_value(gc, sheet_id, pos, CellValue::Text(value.into()))
     }
 }

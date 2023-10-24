@@ -2,47 +2,91 @@ use std::collections::HashMap;
 
 use itertools::Itertools;
 
+use crate::sheet_offsets::OffsetWidthHeight;
+
 pub use super::current::*; // when creating new version, replace `current` with new module
 
 use super::v1_4;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Grid {
-    pub sheets: Vec<Sheet>,
+pub(crate) struct GridSchema {
+    pub sheets: Vec<SheetSchema>,
+    // pub dependencies: Vec<(SheetPos, Vec<SheetRect>)>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Sheet {
+pub(crate) struct SheetSchema {
     pub id: SheetId,
     pub name: String,
     pub color: Option<String>,
     pub order: String,
-
-    pub column_widths: Vec<(i64, f64)>,
-    pub row_heights: Vec<(i64, f64)>,
-
+    pub offsets: OffsetWidthHeight,
     pub columns: Vec<(i64, Column)>,
     pub rows: Vec<(i64, RowId)>,
     pub borders: SheetBorders,
     pub code_cells: Vec<(CellRef, CodeCellValue)>,
 }
 
-impl v1_4::GridFileV1_4 {
-    pub fn into_v1_5(self) -> Result<Grid, &'static str> {
-        let ret = Grid {
-            sheets: self
-                .sheets
-                .into_iter()
-                .map(|sheet| {
-                    sheet.into_v1_5()
-                    // TODO: validate that sheet name is unique.
-                    //       sheet ID is new so it is definitely unique.
-                })
-                .try_collect()?,
-        };
+type JSDependencySchema = HashMap<String, Vec<(i64, i64)>>;
 
+impl v1_4::GridSchemaV1_4 {
+    pub(crate) fn into_v1_5(self) -> Result<GridSchema, &'static str> {
+        let sheets: Vec<SheetSchema> = self
+            .sheets
+            .into_iter()
+            .map(|sheet| {
+                sheet.into_v1_5()
+                // TODO: validate that sheet name is unique.
+                //       sheet ID is new so it is definitely unique.
+            })
+            .try_collect()?;
+
+        // convert dependencies to Rust format
+        let mut rs_dependencies = HashMap::new();
+        let js_dependencies =
+            serde_json::from_str::<JSDependencySchema>(self.cell_dependency.as_str()).unwrap();
+        for (key, value) in js_dependencies {
+            let pos = get_value(key).ok_or("invalid dependency key")?;
+            let cell = SheetPos {
+                sheet_id: sheets[0].id,
+                x: pos.0,
+                y: pos.1,
+            };
+            let mut deps: Vec<SheetRect> = vec![];
+            for position in value {
+                let cell = Pos {
+                    x: position.0,
+                    y: position.1,
+                };
+                deps.push(SheetRect {
+                    sheet_id: sheets[0].id,
+                    min: cell,
+                    max: cell,
+                });
+            }
+            rs_dependencies.insert(cell, deps);
+        }
+
+        let ret = GridSchema {
+            sheets,
+            // dependencies: rs_dependencies.into_iter().collect(),
+        };
         Ok(ret)
     }
+}
+
+fn get_value(key: String) -> Option<(i64, i64)> {
+    let parts: Vec<&str> = key.split(',').collect();
+    if parts.len() != 2 {
+        return None;
+    }
+
+    let (part1, part2) = key.split_once(',')?;
+
+    let x = part1.parse().ok()?;
+    let y = part2.parse().ok()?;
+
+    Some((x, y))
 }
 
 struct SheetBuilder {
@@ -71,19 +115,19 @@ impl SheetBuilder {
     }
 }
 
-impl v1_4::JsSheet {
-    pub fn into_v1_5(self) -> Result<Sheet, &'static str> {
+impl v1_4::JsSheetSchema {
+    pub(crate) fn into_v1_5(self) -> Result<SheetSchema, &'static str> {
         let sheet_id = SheetId::new();
 
         let column_widths = self
             .columns
             .iter()
-            .filter_map(|column| Some((column.id, column.size? as f64)))
+            .filter_map(|column| Some((column.id, column.size?)))
             .collect();
         let row_heights = self
             .rows
             .iter()
-            .filter_map(|row| Some((row.id, row.size? as f64)))
+            .filter_map(|row| Some((row.id, row.size?)))
             .collect();
 
         let mut code_cells = vec![];
@@ -166,13 +210,12 @@ impl v1_4::JsSheet {
                 .set(js_format.y, js_format.fill_color.clone());
         }
 
-        Ok(Sheet {
+        Ok(SheetSchema {
             id: sheet_id,
             name: self.name,
             color: self.color,
             order: self.order,
-            column_widths,
-            row_heights,
+            offsets: (column_widths, row_heights),
             columns: sheet.columns.into_iter().collect(),
             rows: sheet.row_ids.into_iter().collect(),
             borders: SheetBorders::new(), // TODO: import borders
