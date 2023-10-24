@@ -82,4 +82,11 @@ mod tests {
         let mut imported = import(V1_5_FILE).unwrap();
         let exported = export(&mut imported).unwrap();
     }
+
+    #[test]
+    fn process_a_blank_v1_5_file() {
+        let empty = r#"{"sheets":[{"name":"Sheet 1","id":{"id":"4b42eacf-5737-47a2-ac44-e4929d3abc3a"},"order":"a0","cells":[],"code_cells":[],"formats":[],"columns":[],"rows":[],"offsets":[[],[]],"borders":{"horizontal":{},"vertical":{}}}],"version":"1.5"}"#;
+        let mut imported = import(empty).unwrap();
+        let exported = export(&mut imported).unwrap();
+    }
 }

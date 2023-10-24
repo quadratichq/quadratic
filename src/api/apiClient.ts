@@ -11,13 +11,15 @@ const DEFAULT_FILE: any = {
   sheets: [
     {
       name: 'Sheet 1',
-      id: uuid(),
+      id: { id: uuid() },
       order: generateKeyBetween(null, null),
       cells: [],
+      code_cells: [],
       formats: [],
       columns: [],
       rows: [],
-      borders: [],
+      offsets: [[], []],
+      borders: { horizontal: {}, vertical: {} },
     },
   ],
   // TODO(ddimaria): make this dynamic
