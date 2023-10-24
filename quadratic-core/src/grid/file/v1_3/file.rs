@@ -141,6 +141,7 @@ impl SheetBuilder {
             formatted_code_string,
             last_modified: cell.last_modified.as_ref().unwrap_or(&default).to_string(),
             output: cell.evaluation_result.to_owned().and_then(|result| {
+                let column = self.column(cell.x);
                 let code_cell_result = match result.success {
                     true => current::CodeCellRunResult::Ok {
                         output_value: if let Some(array) = result.array_output {
@@ -148,7 +149,6 @@ impl SheetBuilder {
                                 ArrayOutput::Array(values) => {
                                     for dy in 0..values.len() {
                                         let y = cell.y + dy as i64;
-                                        let column = self.column(cell.x);
 
                                         column
                                             .spills
@@ -172,8 +172,6 @@ impl SheetBuilder {
                                             let y = cell.y + dy as i64;
                                             let column = self.column(x);
 
-                                            println!("{}, {}", x, y);
-
                                             column.spills.insert(
                                                 y.to_string(),
                                                 (y, cell_ref.clone()).into(),
@@ -194,6 +192,9 @@ impl SheetBuilder {
                                 }
                             }
                         } else if let Some(value) = result.output_value {
+                            column
+                                .spills
+                                .insert(cell.y.to_string(), (cell.y, cell_ref.clone()).into());
                             current::OutputValue::Single(current::OutputValueValue {
                                 type_field: "TEXT".into(),
                                 value,
@@ -259,7 +260,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
             }
             // TODO(ddimaria): implement for other languages
             "python" | "formula" => {
-                // sheet.cell_value(cell.x, cell.y, "Python", &cell.value);
+                sheet.cell_value(cell.x, cell.y, "Python", &cell.value);
                 let code_cell = (cell_ref.clone(), sheet.code_cell_value(&cell, cell_ref));
                 code_cells.push(code_cell);
             }

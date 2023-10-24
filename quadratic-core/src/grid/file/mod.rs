@@ -59,8 +59,8 @@ mod tests {
 
     const V1_3_FILE: &str = include_str!("../../../examples/v1_3.json");
     const V1_3_PYTHON_FILE: &str = include_str!("../../../examples/v1_3_python.grid");
-    const V1_3_MULTI_COLUMN_CODE_CELL_FILE: &str =
-        include_str!("../../../examples/v1_3_multi_column_python.grid");
+    const V1_3_TEXT_ONLY_CODE_CELL_FILE: &str =
+        include_str!("../../../examples/c1_3_python_text_only.grid");
     const V1_5_FILE: &str = include_str!("../../../examples/v1_5.json");
 
     #[test]
@@ -73,7 +73,7 @@ mod tests {
     #[test]
     fn process_a_v1_3_python_file() {
         // TODO(ddimaria): validate that elements of the imported and exported file are valid
-        let mut imported = import(V1_3_MULTI_COLUMN_CODE_CELL_FILE).unwrap();
+        let mut imported = import(V1_3_TEXT_ONLY_CODE_CELL_FILE).unwrap();
         // println!("{:?}", imported);
         let exported = export(&mut imported).unwrap();
         // println!("{}", exported);
