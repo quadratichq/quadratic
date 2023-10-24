@@ -37,7 +37,7 @@ export default function CreateFileButton() {
     const contents = await file.text().catch((e) => null);
 
     // Ensure it's a valid Quadratic grid file
-    const validFile = validateAndUpgradeGridFile(contents);
+    const validFile = await validateAndUpgradeGridFile(contents);
     if (!validFile) {
       addGlobalSnackbar('Import failed: invalid `.grid` file.', { severity: 'error' });
       return;

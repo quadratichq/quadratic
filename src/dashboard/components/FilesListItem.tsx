@@ -216,7 +216,7 @@ export function FileListItem({
               <Box
                 sx={{
                   backgroundImage: `url(${preview})`,
-                  backgroundPosition: '50%',
+                  backgroundPosition: 0,
                   width: '100%',
                   height: '100%',
                   backgroundSize: 'cover',

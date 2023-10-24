@@ -81,6 +81,7 @@ export const upgradeFileRust = async (
 export class Grid {
   private gridController!: GridController;
   private _dirty = false;
+  thumbnailDirty = false;
 
   transactionResponse(summary: TransactionSummary) {
     if (summary.sheet_list_modified) {
@@ -114,6 +115,7 @@ export class Grid {
     }
     if (summary.save) {
       this.dirty = true;
+      this.thumbnailDirty = true;
     }
     pixiApp.setViewportDirty();
   }
