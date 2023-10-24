@@ -18,16 +18,10 @@ class mock_micropip:
     def install(name):
         return None
 
-
-class mock_numpy:
-    def array(list):
-        return list
-
 # mock modules needed to import run_python
 sys.modules["getCellsDB"] = mock_GetCellsDB
 sys.modules["pyodide"] = mock_pyodide
 sys.modules["micropip"] = mock_micropip
-sys.modules["numpy"] = mock_numpy
 
 # add path to import run_python
 sys.path.insert(1, "src/web-workers/pythonWebWorker")
