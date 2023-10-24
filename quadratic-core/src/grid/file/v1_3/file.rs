@@ -218,6 +218,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
             "text" => {
                 sheet.cell_value(js_cell.x, js_cell.y, "text", &js_cell.value);
             }
+            // TODO(ddimaria): implement for other languages
             "python" => {
                 sheet.cell_value(js_cell.x, js_cell.y, "python", &js_cell.value);
 

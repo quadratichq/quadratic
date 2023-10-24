@@ -225,22 +225,28 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                                                     output_value,
                                                     cells_accessed,
                                                 } => CodeCellRunResult::Ok {
-                                                    // TODO(ddimaria): implement Value::Array()
-                                                    // TODO(ddimaria): implent
-                                                    output_value: Value::Single(CellValue::Text(
-                                                        "".into(),
-                                                    )),
-                                                    // output_value: Value::Single(match output_value
-                                                    //     .type_field
-                                                    //     .to_lowercase()
-                                                    //     .as_str()
-                                                    // {
-                                                    //     // TODO(ddimaria): implent for the rest of the types
-                                                    //     "text" => {
-                                                    //         CellValue::Text(output_value.value)
-                                                    //     }
-                                                    //     _ => unimplemented!(),
-                                                    // }),
+                                                    output_value: match output_value {
+                                                        current::OutputValue::Single(
+                                                            current::OutputValueValue {
+                                                                type_field,
+                                                                value,
+                                                            },
+                                                        ) => Value::Single(CellValue::from(value)),
+                                                        current::OutputValue::Array(
+                                                            current::OutputArray { size, values },
+                                                        ) => Value::Array(crate::Array::from(
+                                                            values
+                                                                .chunks(size.w as usize)
+                                                                .map(|row| {
+                                                                    row.iter()
+                                                                        .map(|cell| {
+                                                                            cell.value.to_string()
+                                                                        })
+                                                                        .collect::<Vec<_>>()
+                                                                })
+                                                                .collect::<Vec<Vec<_>>>(),
+                                                        )),
+                                                    },
                                                     cells_accessed: cells_accessed
                                                         .into_iter()
                                                         .map(|cell| {
