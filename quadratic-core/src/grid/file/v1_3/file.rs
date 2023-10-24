@@ -82,21 +82,39 @@ impl SheetBuilder {
     }
     fn cell_value(&mut self, x: i64, y: i64, type_field: &str, value: &str) {
         let column = self.column(x);
-        // println!("{} {} {}", js_cell.x, js_cell.y, js_cell.value);
-        column.values.insert(
-            y.to_string(),
-            (
-                y,
-                current::ColumnValue {
-                    type_field: "text".into(),
-                    value: value.to_owned(),
-                },
-            )
-                .into(),
-        );
+        // println!("{} {} {} {}", x, y, type_field, value);
+
+        match type_field {
+            "text" => {
+                column.values.insert(
+                    y.to_string(),
+                    (
+                        y,
+                        current::ColumnValue {
+                            type_field: "text".into(),
+                            value: value.to_owned(),
+                        },
+                    )
+                        .into(),
+                );
+            }
+            // "python" | "formula" => {
+            //     column.values.insert(
+            //         y.to_string(),
+            //         (
+            //             y,
+            //             current::ColumnValue {
+            //                 type_field: type_field.to_lowercase(),
+            //                 value: value.to_owned(),
+            //             },
+            //         )
+            //             .into(),
+            //     );
+            // }
+            _ => {}
+        }
     }
-    fn code_cell_value(&mut self, cell: &Cell) -> current::CodeCellValue {
-        // let cell_ref = self.cell_ref((cell.x, cell.y));
+    fn code_cell_value(&mut self, cell: &Cell, cell_ref: CellRefV1_5) -> current::CodeCellValue {
         let default = String::new();
         let language = match cell.type_field.to_lowercase().as_str() {
             "python" => "Python",
@@ -126,8 +144,17 @@ impl SheetBuilder {
                 let code_cell_result = match result.success {
                     true => current::CodeCellRunResult::Ok {
                         output_value: if let Some(array) = result.array_output {
+                            let column = self.column(cell.x);
                             match array {
                                 ArrayOutput::Array(values) => {
+                                    println!("{:?}", values);
+                                    for dy in 0..values.len() {
+                                        let y = cell.y + dy as i64;
+
+                                        column
+                                            .spills
+                                            .insert(y.to_string(), (y, cell_ref.clone()).into());
+                                    }
                                     current::OutputValue::Array(current::OutputArray {
                                         size: current::OutputSize {
                                             w: 1 as i64,
@@ -140,6 +167,17 @@ impl SheetBuilder {
                                     })
                                 }
                                 ArrayOutput::Block(values) => {
+                                    for dy in 0..values.len() {
+                                        for dx in 0..values.get(0)?.len() {
+                                            let x = cell.x + dx as i64;
+                                            let y = cell.y + dy as i64;
+
+                                            column.spills.insert(
+                                                x.to_string(),
+                                                (y, cell_ref.clone()).into(),
+                                            );
+                                        }
+                                    }
                                     current::OutputValue::Array(current::OutputArray {
                                         size: current::OutputSize {
                                             w: values.get(0)?.len() as i64,
@@ -226,7 +264,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
                     &js_cell.value,
                 );
 
-                let code_cell = (cell_ref, sheet.code_cell_value(&js_cell));
+                let code_cell = (cell_ref.clone(), sheet.code_cell_value(&js_cell, cell_ref));
                 code_cells.push(code_cell);
             }
             _ => {}
@@ -263,7 +301,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
         // }
     }
 
-    // println!("{:?}", sheet.columns);
+    println!("{:?}", sheet.columns);
 
     for js_format in v.formats {
         let column = sheet.column(js_format.x);

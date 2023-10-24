@@ -1,4 +1,8 @@
-use std::{collections::HashMap, str::FromStr};
+use std::{
+    collections::HashMap,
+    fmt::{self, Display},
+    str::FromStr,
+};
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -50,6 +54,11 @@ impl From<String> for Id {
         Self { id }
     }
 }
+impl Display for Id {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.id)
+    }
+}
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -57,6 +66,11 @@ pub struct CellRef {
     pub sheet: Id,
     pub column: Id,
     pub row: Id,
+}
+impl Display for CellRef {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, {}, {}", self.sheet, self.column, self.row)
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -225,6 +239,16 @@ impl From<(i64, String)> for ColumnFormatType<String> {
 impl From<(i64, bool)> for ColumnFormatType<bool> {
     fn from((y, value): (i64, bool)) -> Self {
         // TODO(ddimaria): set len to a value
+        ColumnFormatType {
+            y,
+            content: ColumnFormatContent { value, len: 1 },
+        }
+    }
+}
+impl From<(i64, CellRef)> for ColumnFormatType<String> {
+    fn from((y, value): (i64, CellRef)) -> Self {
+        // TODO(ddimaria): set len to a value
+        let value = serde_json::to_string(&value).unwrap();
         ColumnFormatType {
             y,
             content: ColumnFormatContent { value, len: 1 },

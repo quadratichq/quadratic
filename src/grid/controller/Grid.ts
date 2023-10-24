@@ -147,7 +147,6 @@ export class Grid {
   }
 
   export(): string {
-    console.log(JSON.stringify(this.gridController.exportToFile()));
     return this.gridController.exportToFile();
   }
 
