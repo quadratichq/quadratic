@@ -1,7 +1,6 @@
 pub mod eval_formula;
 pub mod get_cells;
 pub mod transaction_in_progress;
-
 use std::collections::HashSet;
 
 use indexmap::IndexSet;
@@ -23,6 +22,9 @@ pub struct TransactionInProgress {
     pub summary: TransactionSummary,
     sheets_with_changed_bounds: HashSet<SheetId>,
     pub transaction_type: TransactionType,
+
+    // tracks whether there are any async calls (which changes how the transaction is finalized)
+    pub has_async: bool,
 
     // save code_cell info for async calls
     current_code_cell: Option<CodeCellValue>,

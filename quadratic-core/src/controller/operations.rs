@@ -4,12 +4,11 @@ use indexmap::IndexSet;
 
 use crate::{grid::*, values::IsBlank, Array, CellValue};
 
-use super::code_cell_update::update_code_cell_value;
-
 use super::{
     formatting::CellFmtArray,
     operation::Operation,
     transaction_summary::{CellSheetsModified, TransactionSummary},
+    update_code_cell_value::update_code_cell_value,
     GridController,
 };
 

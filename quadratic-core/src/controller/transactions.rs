@@ -40,7 +40,7 @@ impl GridController {
         operations: Vec<Operation>,
         cursor: Option<String>,
         compute: bool,
-        undo: TransactionType,
+        transaction_type: TransactionType,
     ) -> TransactionSummary {
         if self
             .transaction_in_progress
@@ -50,7 +50,8 @@ impl GridController {
             // todo: this should be handled more gracefully. Perhaps as a queue of operations?
             panic!("Cannot start a transaction while a transaction is in progress");
         }
-        let mut transaction = TransactionInProgress::new(self, operations, cursor, compute, undo);
+        let mut transaction =
+            TransactionInProgress::new(self, operations, cursor, compute, transaction_type);
         let mut summary = transaction.transaction_summary();
         transaction.updated_bounds(self);
         if transaction.complete {
