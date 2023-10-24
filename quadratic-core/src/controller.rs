@@ -54,3 +54,10 @@ impl GridController {
         &mut self.grid
     }
 }
+
+#[cfg(test)]
+impl GridController {
+    pub fn get_transaction_in_progress(&self) -> Option<&TransactionInProgress> {
+        self.transaction_in_progress.as_ref()
+    }
+}

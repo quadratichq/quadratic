@@ -353,7 +353,7 @@ mod test {
     fn test_execute_operation_set_cell_values() {
         let mut gc = GridController::new();
         let sheet_ids = gc.sheet_ids();
-        let sheet = gc.grid.sheet_mut_from_id(sheet_ids[0]);
+        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
         let sheet_id = sheet.id.clone();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
         let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 1, y: 0 });
@@ -380,8 +380,8 @@ mod test {
                 CodeCellLanguage::Python
             ))
         );
-        assert_eq!(gc.transaction_in_progress.is_some(), true);
-        if let Some(transaction) = gc.transaction_in_progress.clone() {
+        assert_eq!(gc.get_transaction_in_progress().is_some(), true);
+        if let Some(transaction) = gc.get_transaction_in_progress().clone() {
             assert_eq!(transaction.complete, false);
             assert_eq!(transaction.cells_to_compute.len(), 0);
         }
