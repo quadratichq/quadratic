@@ -341,7 +341,7 @@ async def run_python(code):
         }
 
     return {
-        "output_value": not_cell(output_value),
+        "output_value": None,
         "array_output": None,
         "cells_accessed": cells_accessed,
         "std_out": sout.getvalue(),
