@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub struct ClipboardCell {
     pub value: Option<CellValue>,
-    pub code: Option<CodeCellValue>,
+    pub spill: Option<CellValue>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -22,6 +22,7 @@ pub struct Clipboard {
     h: u32,
     cells: Vec<ClipboardCell>,
     formats: Vec<CellFmtArray>,
+    code: Vec<(Pos, CodeCellValue)>,
 }
 
 impl GridController {
@@ -29,6 +30,7 @@ impl GridController {
         let mut cells = vec![];
         let mut plain_text = String::new();
         let mut html = String::from("<tbody>");
+        let mut code = vec![];
 
         let sheet = self.grid().sheet_from_id(sheet_id);
         for y in rect.y_range() {
@@ -44,34 +46,40 @@ impl GridController {
                 }
                 html.push_str("<td>");
                 let pos = Pos { x, y };
-                let value = sheet.get_cell_value(pos);
+                let value = sheet.get_cell_value_only(pos);
 
+                // spill_value is only needed if there is no cell_value
                 let spill_value = if value.is_none() {
                     sheet.get_code_cell_value(pos)
                 } else {
                     None
                 };
 
-                // todo: this only happens after a code error -- not ideal
-                let code: Option<CodeCellValue> = if value.is_none() && spill_value.is_none() {
-                    let code_cell_value = sheet.get_code_cell(pos);
-                    code_cell_value.map(|code_cell_value| CodeCellValue {
-                        language: code_cell_value.language,
-                        code_string: code_cell_value.code_string.clone(),
-                        formatted_code_string: None,
-                        last_modified: code_cell_value.last_modified.clone(),
-                        output: None,
-                    })
-                } else {
-                    None
-                };
+                // store code_cells w/o output (which will be rerun on paste)
+                if let Some(code_cell_value) = sheet.get_code_cell(pos) {
+                    code.push((
+                        Pos {
+                            x: x - rect.min.x,
+                            y: y - rect.min.y,
+                        },
+                        CodeCellValue {
+                            language: code_cell_value.language,
+                            code_string: code_cell_value.code_string.clone(),
+                            formatted_code_string: None,
+                            last_modified: code_cell_value.last_modified.clone(),
+                            output: None,
+                        },
+                    ));
+                }
 
                 // create quadratic clipboard values
                 cells.push(ClipboardCell {
                     value: value.clone(),
-                    code: code.clone(),
+                    spill: spill_value.clone(),
                 });
 
+                // add styling for html (only used for pasting to other spreadsheets)
+                // todo: add text color, fill, etc.
                 let (bold, italic) =
                     if let Some(format) = sheet.get_existing_cell_format_summary(pos) {
                         (
@@ -94,11 +102,6 @@ impl GridController {
                 if value.is_some() {
                     plain_text.push_str(&value.as_ref().unwrap().to_string());
                     html.push_str(&value.as_ref().unwrap().to_string());
-                } else if code.is_some() {
-                    let output = code.unwrap().get_output_value(0, 0);
-                    if let Some(output) = output {
-                        plain_text.push_str(&output.repr());
-                    }
                 } else if spill_value.is_some() {
                     plain_text.push_str(&spill_value.as_ref().unwrap().to_string());
                     html.push_str(&spill_value.as_ref().unwrap().to_string());
@@ -113,6 +116,7 @@ impl GridController {
         let clipboard = Clipboard {
             cells,
             formats,
+            code,
             w: rect.width(),
             h: rect.height(),
         };
@@ -180,6 +184,7 @@ impl GridController {
             },
         };
         let formats = clipboard.formats.clone();
+        let code = clipboard.code.clone();
 
         let mut ops = vec![];
         let region = self.region(sheet_id, rect);
@@ -191,6 +196,39 @@ impl GridController {
             });
         }
 
+        let sheet = self.grid.sheet_mut_from_id(sheet_id);
+
+        // remove any overlapping code cells (which will automatically set the reverse operations)
+        region.iter().for_each(|cell_ref| {
+            if let Some(_code_cell) = sheet.get_code_cell_from_ref(cell_ref) {
+                if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
+                    // no need to clear code cells that are being pasted
+                    if !code.iter().any(|(code_pos, _)| {
+                        Pos {
+                            x: code_pos.x + start_pos.x,
+                            y: code_pos.y + start_pos.y,
+                        } == pos
+                    }) {
+                        ops.push(Operation::SetCellCode {
+                            cell_ref: cell_ref.clone(),
+                            code_cell_value: None,
+                        });
+                    }
+                }
+            }
+        });
+
+        // add copied code cells to the sheet
+        code.iter().for_each(|entry| {
+            let cell_ref = sheet.get_or_create_cell_ref(Pos {
+                x: entry.0.x + start_pos.x,
+                y: entry.0.y + start_pos.y,
+            });
+            ops.push(Operation::SetCellCode {
+                cell_ref,
+                code_cell_value: Some(entry.1.clone()),
+            });
+        });
         formats.iter().for_each(|format| {
             ops.push(Operation::SetCellFormats {
                 region: region.clone(),
@@ -286,7 +324,9 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use crate::{
-        controller::GridController, grid::js_types::CellFormatSummary, CellValue, Pos, Rect,
+        controller::GridController,
+        grid::{js_types::CellFormatSummary, CodeCellLanguage},
+        CellValue, Pos, Rect,
     };
 
     fn test_pasted_output() -> String {
@@ -330,7 +370,7 @@ mod test {
 
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 3 });
         let clipboard = gc.copy_to_clipboard(sheet_id, rect);
-        print!("{}", clipboard.1);
+
         // paste using plain_text
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
@@ -382,6 +422,74 @@ mod test {
                 fill_color: None,
             }
         );
+    }
+
+    #[test]
+    fn test_copy_code_to_clipboard() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_code(
+            sheet_id,
+            Pos { x: 1, y: 1 },
+            CodeCellLanguage::Formula,
+            String::from("1 + 1"),
+            None,
+        );
+
+        assert_eq!(gc.undo_stack.len(), 1);
+
+        let rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 1 });
+        let clipboard = gc.copy_to_clipboard(sheet_id, rect);
+
+        // paste using html
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+
+        assert_eq!(gc.undo_stack.len(), 0);
+
+        // overwrite an existing code cell
+        gc.set_cell_code(
+            sheet_id,
+            Pos { x: 0, y: 0 },
+            CodeCellLanguage::Formula,
+            String::from("2 + 2"),
+            None,
+        );
+
+        assert_eq!(gc.undo_stack.len(), 1);
+
+        gc.paste_from_clipboard(
+            sheet_id,
+            Pos { x: 0, y: 0 },
+            Some(String::from("")),
+            Some(clipboard.1),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+
+        assert_eq!(gc.undo_stack.len(), 2);
+
+        // original code cell value
+        gc.undo(None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(4)))
+        );
+
+        assert_eq!(gc.undo_stack.len(), 1);
+
+        // empty code cell
+        gc.undo(None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.get_cell_value(Pos { x: 0, y: 0 }), None);
+
+        assert_eq!(gc.undo_stack.len(), 0);
     }
 
     #[test]

@@ -4,12 +4,12 @@ use indexmap::IndexSet;
 use wasm_bindgen::JsValue;
 
 use crate::{
+    controller::update_code_cell_value::update_code_cell_value,
     grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult},
     Error, ErrorMsg, Span,
 };
 
 use crate::controller::{
-    code_cell_update::update_code_cell_value,
     operation::Operation,
     transaction_summary::TransactionSummary,
     transaction_types::JsCodeResult,
@@ -67,7 +67,8 @@ impl TransactionInProgress {
                 break;
             }
             if self.cells_to_compute.is_empty() {
-                self.finalize(grid_controller);
+                self.complete = true;
+                self.summary.save = true;
                 break;
             }
         }
@@ -156,13 +157,6 @@ impl TransactionInProgress {
         );
         self.summary.code_cells_modified.insert(cell_ref.sheet);
         self.waiting_for_async = None;
-    }
-
-    /// finalize the compute cycle
-    fn finalize(&mut self, grid_controller: &mut GridController) {
-        self.complete = true;
-        self.summary.save = true;
-        grid_controller.finalize_transaction(self);
     }
 
     fn update_deps(&mut self, grid_controller: &mut GridController) {
