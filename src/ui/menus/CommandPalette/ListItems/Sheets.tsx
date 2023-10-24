@@ -47,7 +47,7 @@ const ListItems = () => {
     sheets.forEach((sheet) => {
       items.push({
         label: `Sheet: Switch to “${sheet.name}”`,
-        isAvailable: (permission) => isEditorOrAbove(permission) && sheets.current !== sheet.id,
+        isAvailable: () => sheets.current !== sheet.id,
         Component: (props: any) => {
           return (
             <CommandPaletteListItem
