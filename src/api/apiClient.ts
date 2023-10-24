@@ -3,7 +3,6 @@ import { v4 as uuid } from 'uuid';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { downloadFileInBrowser } from '../helpers/downloadFileInBrowser';
-import { GridFileSchema } from '../schemas';
 import { generateKeyBetween } from '../utils/fractionalIndexing';
 import { fetchFromApi } from './fetchFromApi';
 import { ApiSchemas, ApiTypes } from './types';
@@ -21,8 +20,8 @@ const DEFAULT_FILE: any = {
       borders: [],
     },
   ],
-  cell_dependency: '{}',
-  version: GridFileSchema.shape.version.value,
+  // TODO(ddimaria): make this dynamic
+  version: '1.5',
 };
 
 export const apiClient = {
