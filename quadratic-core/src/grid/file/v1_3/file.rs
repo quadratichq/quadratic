@@ -1,11 +1,16 @@
 use anyhow::Result;
+use bigdecimal::{BigDecimal, FromPrimitive};
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use crate::grid::file::v1_3::schema::GridSchema;
+use crate::grid::file::v1_5::schema as current;
 use crate::grid::file::v1_5::schema::{
     Borders as BordersV1_5, CellRef as CellRefV1_5, Column as ColumnV1_5,
     ColumnValue as ColumnValueV1_5, GridSchema as GridSchemaV1_5, Id as IdV1_5, Sheet as SheetV1_5,
 };
+
+use super::schema::{Any, ArrayOutput, Cell};
 
 pub(crate) fn upgrade(schema: GridSchema) -> Result<GridSchemaV1_5> {
     let sheet = upgrade_sheet(schema)?;
@@ -17,6 +22,37 @@ pub(crate) fn upgrade(schema: GridSchema) -> Result<GridSchemaV1_5> {
     };
 
     Ok(converted)
+}
+
+impl From<Any> for current::OutputValueValue {
+    fn from(val: Any) -> Self {
+        match val {
+            Any::Number(n) => match BigDecimal::from_f64(n) {
+                Some(n) => Self {
+                    type_field: "NUMBER".into(),
+                    value: n.to_string(),
+                },
+                None => Self {
+                    type_field: "TEXT".into(),
+                    value: n.to_string(),
+                },
+            },
+            Any::String(s) => match BigDecimal::from_str(&s) {
+                Ok(n) => Self {
+                    type_field: "NUMBER".into(),
+                    value: n.to_string(),
+                },
+                Err(_) => Self {
+                    type_field: "TEXT".into(),
+                    value: s.to_string(),
+                },
+            },
+            Any::Boolean(b) => Self {
+                type_field: "LOGICAL".into(),
+                value: b.to_string(),
+            },
+        }
+    }
 }
 
 struct SheetBuilder {
@@ -45,6 +81,107 @@ impl SheetBuilder {
             row: self.row_id(y).to_owned(),
         }
     }
+    fn cell_value(&mut self, x: i64, y: i64, type_field: &str, value: &str) {
+        let column = self.column(x);
+        // println!("{} {} {}", js_cell.x, js_cell.y, js_cell.value);
+        column.values.insert(
+            y.to_string(),
+            (
+                y,
+                current::ColumnValue {
+                    type_field: "text".into(),
+                    value: value.to_owned(),
+                },
+            )
+                .into(),
+        );
+    }
+    fn code_cell_value(&mut self, cell: &Cell) -> current::CodeCellValue {
+        // let cell_ref = self.cell_ref((cell.x, cell.y));
+        let default = String::new();
+        let code_string = match cell.type_field.to_lowercase().as_str() {
+            "python" => cell.python_code.as_ref().unwrap_or(&default),
+            "formula" => cell.formula_code.as_ref().unwrap_or(&default),
+            "javascript" => &default,
+            "sql" => &default,
+            _ => &default,
+        };
+        let formatted_code_string = cell
+            .clone()
+            .evaluation_result
+            .and_then(|result| Some(result.formatted_code));
+
+        current::CodeCellValue {
+            language: cell.type_field.to_string(),
+            code_string: code_string.to_string(),
+            formatted_code_string,
+            last_modified: cell.last_modified.as_ref().unwrap_or(&default).to_string(),
+            output: cell.evaluation_result.to_owned().and_then(|result| {
+                let code_cell_result = match result.success {
+                    true => current::CodeCellRunResult::Ok {
+                        output_value: if let Some(array) = result.array_output {
+                            match array {
+                                ArrayOutput::Array(values) => {
+                                    current::OutputValue::Array(current::OutputArray {
+                                        size: current::OutputSize {
+                                            w: 1 as i64,
+                                            h: values.len() as i64,
+                                        },
+                                        values: values
+                                            .into_iter()
+                                            .flat_map(|v| v.and_then(|v| Some(v.into())))
+                                            .collect(),
+                                    })
+                                }
+                                ArrayOutput::Block(values) => {
+                                    current::OutputValue::Array(current::OutputArray {
+                                        size: current::OutputSize {
+                                            w: values.get(0)?.len() as i64,
+                                            h: values.len() as i64,
+                                        },
+                                        values: values
+                                            .into_iter()
+                                            .flatten()
+                                            .flat_map(|v| v.and_then(|v| Some(v.into())))
+                                            .collect(),
+                                    })
+                                }
+                            }
+                        } else if let Some(value) = result.output_value {
+                            current::OutputValue::Single(current::OutputValueValue {
+                                type_field: "TEXT".into(),
+                                value,
+                            })
+                        } else {
+                            current::OutputValue::Single(current::OutputValueValue {
+                                type_field: "BLANK".into(),
+                                value: "".into(),
+                            })
+                        },
+                        cells_accessed: result
+                            .cells_accessed
+                            .iter()
+                            .map(|&(x, y)| self.cell_ref((x, y)))
+                            .collect(),
+                    },
+                    false => current::CodeCellRunResult::Err {
+                        error: current::Error {
+                            span: result
+                                .error_span
+                                .map(|(start, end)| current::Span { start, end }),
+                            msg: "unknown error".into(),
+                        },
+                    },
+                };
+
+                Some(current::CodeCellRunOutput {
+                    std_out: result.std_out,
+                    std_err: result.std_err,
+                    result: code_cell_result,
+                })
+            }),
+        }
+    }
 }
 
 pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
@@ -66,25 +203,19 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
     };
 
     // Save cell data
-    for js_cell in &v.cells {
+    for js_cell in v.cells {
         let js_cell_pos = (js_cell.x, js_cell.y);
-        let js_cell_ref = sheet.cell_ref(js_cell_pos);
+        let cell_ref = sheet.cell_ref(js_cell_pos);
 
         match js_cell.type_field.to_lowercase().as_str() {
             "text" => {
-                let column = sheet.column(js_cell.x);
-                // println!("{} {} {}", js_cell.x, js_cell.y, js_cell.value);
-                column.values.insert(
-                    js_cell.y.to_string(),
-                    (
-                        js_cell.y,
-                        ColumnValueV1_5 {
-                            type_field: "text".into(),
-                            value: js_cell.value.to_owned(),
-                        },
-                    )
-                        .into(),
-                );
+                sheet.cell_value(js_cell.x, js_cell.y, "text", &js_cell.value);
+            }
+            "python" => {
+                sheet.cell_value(js_cell.x, js_cell.y, "python", &js_cell.value);
+
+                let code_cell = (cell_ref, sheet.code_cell_value(&js_cell));
+                code_cells.push(code_cell);
             }
             _ => {}
         };
