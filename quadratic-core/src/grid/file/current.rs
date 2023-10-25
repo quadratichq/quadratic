@@ -418,7 +418,7 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
 mod tests {
     use super::*;
 
-    const V1_4_FILE: &str = include_str!("../../../examples/v1_4.grid");
+    const V1_4_FILE: &str = include_str!("../../../examples/v1_4_simple.grid");
 
     #[test]
     fn imports_and_exports_a_current_grid() {

@@ -3,7 +3,7 @@ mod tests {
     use crate::grid::file::v1_4::schema::GridSchema;
     use anyhow::{anyhow, Result};
 
-    const V1_4_FILE: &str = include_str!("../../../../examples/v1_4.grid");
+    const V1_4_FILE: &str = include_str!("../../../../examples/v1_4_simple.grid");
 
     fn import(file_contents: &str) -> Result<GridSchema> {
         Ok(serde_json::from_str::<GridSchema>(&file_contents)

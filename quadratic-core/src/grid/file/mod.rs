@@ -63,7 +63,7 @@ mod tests {
         include_str!("../../../examples/c1_3_python_text_only.grid");
     const V1_3_SINGLE_FORMULS_CODE_CELL_FILE: &str =
         include_str!("../../../examples/v1_3_single_formula.grid");
-    const V1_4_FILE: &str = include_str!("../../../examples/v1_4.grid");
+    const V1_4_FILE: &str = include_str!("../../../examples/v1_4_simple.grid");
 
     #[test]
     fn process_a_v1_3_file() {
