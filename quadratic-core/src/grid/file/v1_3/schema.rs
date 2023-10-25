@@ -130,5 +130,7 @@ pub struct Format {
 pub struct TextFormat {
     #[serde(rename = "type")]
     pub type_field: String,
-    pub decimal_places: i64,
+    pub display: Option<String>,
+    pub symbol: Option<String>,
+    pub decimal_places: Option<i64>,
 }

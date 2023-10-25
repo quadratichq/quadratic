@@ -9,6 +9,7 @@ use crate::grid::{
 };
 use anyhow::{anyhow, Result};
 use bigdecimal::BigDecimal;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -49,6 +50,20 @@ where
 
     Ok(())
 }
+
+fn set_column_format_string(
+    column_data: &mut ColumnData<SameValue<String>>,
+    column: &HashMap<String, current::ColumnFormatType<String>>,
+) -> Result<()> {
+    for (y, format) in column.iter() {
+        let y =
+            i64::from_str(y).map_err(|e| anyhow!("Unable to convert {} to an i64: {}", y, e))?;
+        column_data.set(y, Some(format.content.value.to_string()));
+    }
+
+    Ok(())
+}
+
 fn set_column_format_bool(
     column_data: &mut ColumnData<SameValue<bool>>,
     column: &HashMap<String, current::ColumnFormatType<bool>>,
@@ -77,8 +92,8 @@ fn import_column_builder(columns: Vec<(i64, current::Column)>) -> Result<BTreeMa
             set_column_format::<NumericFormat>(&mut col.numeric_format, &column.numeric_format)?;
             set_column_format_bool(&mut col.bold, &column.bold)?;
             set_column_format_bool(&mut col.italic, &column.italic)?;
-            set_column_format::<String>(&mut col.text_color, &column.text_color)?;
-            set_column_format::<String>(&mut col.fill_color, &column.fill_color)?;
+            set_column_format_string(&mut col.text_color, &column.text_color)?;
+            set_column_format_string(&mut col.fill_color, &column.fill_color)?;
 
             for (y, value) in column.values.iter() {
                 for cell_value in value.content.values.iter() {
@@ -118,11 +133,20 @@ fn export_column_data_bool(
         .collect()
 }
 
-fn export_column_data_string<T>(
+fn export_column_data_string(
+    column_data: &ColumnData<SameValue<String>>,
+) -> HashMap<String, current::ColumnFormatType<String>> {
+    column_data
+        .values()
+        .map(|(y, value)| (y.to_string(), (y, value).into()))
+        .collect()
+}
+
+fn export_column_data<T>(
     column_data: &ColumnData<SameValue<T>>,
 ) -> HashMap<String, current::ColumnFormatType<String>>
 where
-    T: Serialize + for<'d> Deserialize<'d> + Debug + Clone + PartialEq,
+    T: Serialize + DeserializeOwned + Debug + Clone + PartialEq,
 {
     column_data
         .values()
@@ -145,11 +169,11 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                     id: current::Id {
                         id: column.id.to_string(),
                     },
-                    spills: export_column_data_string(&column.spills),
-                    align: export_column_data_string(&column.align),
-                    wrap: export_column_data_string(&column.wrap),
-                    numeric_decimals: export_column_data_string(&column.numeric_decimals),
-                    numeric_format: export_column_data_string(&column.numeric_format),
+                    spills: export_column_data(&column.spills),
+                    align: export_column_data(&column.align),
+                    wrap: export_column_data(&column.wrap),
+                    numeric_decimals: export_column_data(&column.numeric_decimals),
+                    numeric_format: export_column_data(&column.numeric_format),
                     bold: export_column_data_bool(&column.bold),
                     italic: export_column_data_bool(&column.italic),
                     text_color: export_column_data_string(&column.text_color),
@@ -300,6 +324,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
 }
 
 pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
+    // println!("{:?}", export_column_builder(&grid.sheets()[0]));
     Ok(current::GridSchema {
         version: Some(CURRENT_VERSION.into()),
         sheets: grid

@@ -18,6 +18,16 @@ pub(crate) fn upgrade(schema: GridSchema) -> Result<current::GridSchema> {
     Ok(converted)
 }
 
+pub fn language_conversion(language: &str) -> String {
+    match language.to_lowercase().as_str() {
+        "python" => "Python".into(),
+        "formula" => "Formula".into(),
+        "javascript" => "JavaScript".into(),
+        "sql" => "Sql".into(),
+        _ => String::new(),
+    }
+}
+
 impl From<Any> for current::OutputValueValue {
     fn from(val: Any) -> Self {
         match val {
@@ -102,13 +112,7 @@ impl SheetBuilder {
         cell_ref: current::CellRef,
     ) -> current::CodeCellValue {
         let default = String::new();
-        let language = match cell.type_field.to_lowercase().as_str() {
-            "python" => "Python",
-            "formula" => "Formula",
-            "javascript" => "JavaScript",
-            "sql" => "Sql",
-            _ => &default,
-        };
+        let language = language_conversion(&cell.type_field);
         let code_string = match cell.type_field.to_lowercase().as_str() {
             "python" => cell.python_code.as_ref().unwrap_or(&default),
             "formula" => cell.formula_code.as_ref().unwrap_or(&default),
@@ -122,7 +126,7 @@ impl SheetBuilder {
             .and_then(|result| Some(result.formatted_code));
 
         current::CodeCellValue {
-            language: language.to_string(),
+            language,
             code_string: code_string.to_string(),
             formatted_code_string,
             last_modified: cell.last_modified.as_ref().unwrap_or(&default).to_string(),
@@ -254,7 +258,12 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
             }
             // TODO(ddimaria): implement for other languages
             "python" | "formula" => {
-                sheet.cell_value(cell.x, cell.y, "Python", &cell.value);
+                sheet.cell_value(
+                    cell.x,
+                    cell.y,
+                    &language_conversion(&cell.type_field),
+                    &cell.value,
+                );
                 let code_cell = (cell_ref.clone(), sheet.code_cell_value(&cell, cell_ref));
                 code_cells.push(code_cell);
             }
@@ -302,7 +311,14 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
         // }
     }
 
-    // println!("{:#?}", code_cells);
+    // println!(
+    //     "{:#?}",
+    //     sheet
+    //         .columns
+    //         .iter()
+    //         .map(|(id, col)| (id.to_owned(), col))
+    //         .collect::<Vec<(i64, &current::Column)>>()
+    // );
 
     Ok(current::Sheet {
         id: sheet_id,
