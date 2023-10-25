@@ -13,6 +13,7 @@ use super::Sheet;
 
 impl Sheet {
     /// checks columns for any column that has data that might render
+    /// todo: borders
     pub fn has_render_cells(&self, region: Rect) -> bool {
         self.columns.range(region.x_range()).any(|(_, column)| {
             column.values.has_blocks_in_range(region.y_range())
