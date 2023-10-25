@@ -23,7 +23,7 @@ const DEFAULT_FILE: any = {
     },
   ],
   // TODO(ddimaria): make this dynamic
-  version: '1.5',
+  version: '1.4',
 };
 
 export const apiClient = {

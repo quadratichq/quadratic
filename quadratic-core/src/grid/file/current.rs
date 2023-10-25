@@ -1,7 +1,7 @@
 use crate::grid::{CellAlign, CellWrap, Grid, GridBounds, NumericFormat};
 use crate::{CellValue, Error, ErrorMsg, Span, Value};
 
-use crate::grid::file::v1_5::schema::{self as current, ColumnValue};
+use crate::grid::file::v1_4::schema::{self as current};
 use crate::grid::{
     block::SameValue, sheet::sheet_offsets::SheetOffsets, CellRef, CodeCellLanguage,
     CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Column, ColumnData, ColumnId, RowId,
@@ -162,7 +162,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                                 y.to_string(),
                                 (
                                     y,
-                                    ColumnValue {
+                                    current::ColumnValue {
                                         type_field: value.type_name().into(),
                                         value: value.to_string(),
                                     },
@@ -418,11 +418,11 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
 mod tests {
     use super::*;
 
-    const V1_5_FILE: &str = include_str!("../../../examples/v1_5.json");
+    const V1_4_FILE: &str = include_str!("../../../examples/v1_4.json");
 
     #[test]
     fn imports_and_exports_a_current_grid() {
-        let file = serde_json::from_str::<current::GridSchema>(V1_5_FILE).unwrap();
+        let file = serde_json::from_str::<current::GridSchema>(V1_4_FILE).unwrap();
         let mut imported = import(file).unwrap();
         let exported = export(&mut imported).unwrap();
         println!("{:?}", exported);

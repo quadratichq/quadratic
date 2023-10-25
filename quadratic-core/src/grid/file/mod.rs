@@ -6,17 +6,17 @@ use super::Grid;
 
 pub mod current;
 mod v1_3;
-mod v1_5;
+mod v1_4;
 
-pub static CURRENT_VERSION: &str = "1.5";
+pub static CURRENT_VERSION: &str = "1.4";
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
 enum GridFile {
-    #[serde(rename = "1.5")]
-    V1_5 {
+    #[serde(rename = "1.4")]
+    V1_4 {
         #[serde(flatten)]
-        grid: v1_5::schema::GridSchema,
+        grid: v1_4::schema::GridSchema,
     },
     #[serde(rename = "1.3")]
     V1_3 {
@@ -26,9 +26,9 @@ enum GridFile {
 }
 
 impl GridFile {
-    fn into_latest(self) -> Result<v1_5::schema::GridSchema> {
+    fn into_latest(self) -> Result<v1_4::schema::GridSchema> {
         match self {
-            GridFile::V1_5 { grid } => Ok(grid),
+            GridFile::V1_4 { grid } => Ok(grid),
             GridFile::V1_3 { grid } => v1_3::file::upgrade(grid),
         }
     }
@@ -63,7 +63,7 @@ mod tests {
         include_str!("../../../examples/c1_3_python_text_only.grid");
     const V1_3_SINGLE_FORMULS_CODE_CELL_FILE: &str =
         include_str!("../../../examples/v1_3_single_formula.grid");
-    const V1_5_FILE: &str = include_str!("../../../examples/v1_5.json");
+    const V1_4_FILE: &str = include_str!("../../../examples/v1_4.json");
 
     #[test]
     fn process_a_v1_3_file() {
@@ -94,15 +94,15 @@ mod tests {
     }
 
     #[test]
-    fn process_a_v1_5_file() {
+    fn process_a_v1_4_file() {
         // TODO(ddimaria): validate that elements of the imported and exported file are valid
-        let mut imported = import(V1_5_FILE).unwrap();
+        let mut imported = import(V1_4_FILE).unwrap();
         let _exported = export(&mut imported).unwrap();
     }
 
     #[test]
-    fn process_a_blank_v1_5_file() {
-        let empty = r#"{"sheets":[{"name":"Sheet 1","id":{"id":"4b42eacf-5737-47a2-ac44-e4929d3abc3a"},"order":"a0","cells":[],"code_cells":[],"formats":[],"columns":[],"rows":[],"offsets":[[],[]],"borders":{"horizontal":{},"vertical":{}}}],"version":"1.5"}"#;
+    fn process_a_blank_v1_4_file() {
+        let empty = r#"{"sheets":[{"name":"Sheet 1","id":{"id":"4b42eacf-5737-47a2-ac44-e4929d3abc3a"},"order":"a0","cells":[],"code_cells":[],"formats":[],"columns":[],"rows":[],"offsets":[[],[]],"borders":{"horizontal":{},"vertical":{}}}],"version":"1.4"}"#;
         let mut imported = import(empty).unwrap();
         let _exported = export(&mut imported).unwrap();
     }

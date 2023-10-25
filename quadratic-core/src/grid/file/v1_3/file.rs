@@ -5,13 +5,13 @@ use std::str::FromStr;
 
 use super::schema::{Any, ArrayOutput, Cell};
 use crate::grid::file::v1_3::schema::GridSchema;
-use crate::grid::file::v1_5::schema as current;
+use crate::grid::file::v1_4::schema as current;
 
 pub(crate) fn upgrade(schema: GridSchema) -> Result<current::GridSchema> {
     let sheet = upgrade_sheet(schema)?;
 
     let converted = current::GridSchema {
-        version: Some("1.5".into()),
+        version: Some("1.4".into()),
         sheets: vec![sheet],
     };
 

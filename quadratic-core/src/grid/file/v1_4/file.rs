@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use crate::grid::file::v1_5::schema::GridSchema;
+    use crate::grid::file::v1_4::schema::GridSchema;
     use anyhow::{anyhow, Result};
 
-    const V1_5_FILE: &str = include_str!("../../../../examples/v1_5.json");
+    const V1_4_FILE: &str = include_str!("../../../../examples/v1_4.json");
 
     fn import(file_contents: &str) -> Result<GridSchema> {
         Ok(serde_json::from_str::<GridSchema>(&file_contents)
@@ -16,10 +16,10 @@ mod tests {
     }
 
     #[test]
-    fn import_and_export_a_v1_5_file() {
-        let imported = import(V1_5_FILE).unwrap();
+    fn import_and_export_a_v1_4_file() {
+        let imported = import(V1_4_FILE).unwrap();
         let exported = export(&imported).unwrap();
         println!("{}", exported);
-        // assert_eq!(V1_5_FILE, exported);
+        // assert_eq!(V1_4_FILE, exported);
     }
 }
