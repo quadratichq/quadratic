@@ -11,28 +11,24 @@ import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
 import { CellsFills } from './CellsFills';
 import { CellsMarkers } from './CellsMarker';
+import { CellsSheetPreloader } from './CellsSheetPreloader';
 import { CellsTextHash } from './CellsTextHash';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
 
-const MAXIMUM_FRAME_TIME = 1000 / 15;
-
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
-
-  // used to draw debug boxes for cellsTextHash
-  private cellsTextDebug: Graphics;
-
-  private cellsTextHashContainer: Container<CellsTextHash>;
-
   private cellsArray: CellsArray;
+  private cellsBorders: CellsBorders;
 
   // friend of CellsArray
   cellsMarkers: CellsMarkers;
 
-  private cellsBorders: CellsBorders;
+  // used to draw debug boxes for cellsTextHash
+  private cellsTextDebug: Graphics;
 
   // (hashX, hashY) index into cellsTextHashContainer
   cellsTextHash: Map<string, CellsTextHash>;
+  private cellsTextHashContainer: Container<CellsTextHash>;
 
   // row index into cellsTextHashContainer (used for clipping)
   private cellsRows: Map<number, CellsTextHash[]>;
@@ -43,8 +39,6 @@ export class CellsSheet extends Container {
   // keep track of headings that need adjusting during next update tick
   private dirtyColumnHeadings: Map<number, number>;
   private dirtyRowHeadings: Map<number, number>;
-
-  private resolveTick?: () => void;
 
   sheet: Sheet;
 
@@ -72,6 +66,14 @@ export class CellsSheet extends Container {
     };
   }
 
+  async preload(): Promise<void> {
+    this.cellsFills.create();
+    this.cellsBorders.create();
+    this.cellsArray.create();
+    const cellsSheetPreloader = new CellsSheetPreloader(this);
+    await cellsSheetPreloader.preload();
+  }
+
   private createHash(hashX: number, hashY: number): CellsTextHash | undefined {
     const rect = new Rectangle(
       hashX * sheetHashWidth,
@@ -79,8 +81,7 @@ export class CellsSheet extends Container {
       sheetHashWidth - 1,
       sheetHashHeight - 1
     );
-    const cells = this.sheet.getRenderCells(rect);
-    if (cells.length) {
+    if (this.sheet.hasRenderCells(rect)) {
       const key = `${hashX},${hashY}`;
       const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
       this.cellsTextHash.set(key, cellsHash);
@@ -89,7 +90,6 @@ export class CellsSheet extends Container {
         row.push(cellsHash);
       } else {
         this.cellsRows.set(hashY, [cellsHash]);
-        this.dirtyRows.add(hashY);
       }
       return cellsHash;
     }
@@ -213,42 +213,6 @@ export class CellsSheet extends Container {
     hashes.forEach((hash) => hash.createLabels());
     hashes.forEach((hash) => hash.overflowClip());
     hashes.forEach((hash) => hash.updateBuffers(false));
-  }
-
-  // preloads one row of hashes per tick
-  private preloadTick = (time?: number): void => {
-    if (!this.dirtyRows.size) {
-      if (!this.resolveTick) throw new Error('Expected resolveTick to be defined in preloadTick');
-      this.resolveTick();
-      this.resolveTick = undefined;
-      return;
-    }
-    time = time ?? performance.now();
-    debugTimeReset();
-    this.updateNextDirtyRow();
-    const now = performance.now();
-    if (now - time < MAXIMUM_FRAME_TIME) {
-      this.preloadTick(time);
-    } else {
-      debugTimeCheck('preloadTick');
-      setTimeout(this.preloadTick);
-    }
-  };
-
-  preload(): Promise<void> {
-    return new Promise((resolve) => {
-      this.cellsFills.create();
-      this.cellsBorders.create();
-
-      if (!this.createHashes()) {
-        resolve();
-      } else {
-        this.cellsArray.create();
-        this.resolveTick = resolve;
-        debugTimeReset();
-        this.preloadTick();
-      }
-    });
   }
 
   updateCellsArray() {

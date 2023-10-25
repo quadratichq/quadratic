@@ -51,6 +51,10 @@ export class Sheet {
     return grid.getRenderCells(this.id, rectangle);
   }
 
+  hasRenderCells(rectangle: Rectangle): boolean {
+    return grid.hasRenderCells(this.id, rectangle);
+  }
+
   getRenderCell(x: number, y: number): JsRenderCell | undefined {
     return grid.getRenderCells(this.id, new Rectangle(x, y, 0, 0))?.[0];
   }

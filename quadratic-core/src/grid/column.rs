@@ -3,15 +3,13 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::ops::Range;
 
+use crate::grid::block::{contiguous_optional_blocks, OptionBlock};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
-use crate::grid::block::{contiguous_optional_blocks, OptionBlock};
 
 use super::formatting::*;
-use super::{
-    Block, BlockContent, CellRef, CellValueBlockContent, ColumnId, SameValue,
-};
+use super::{Block, BlockContent, CellRef, CellValueBlockContent, ColumnId, SameValue};
 use crate::IsBlank;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -213,6 +211,11 @@ impl<B: BlockContent> ColumnData<B> {
     pub fn blocks(&self) -> impl Iterator<Item = &Block<B>> {
         self.0.values()
     }
+
+    pub fn has_blocks_in_range(&self, y_range: Range<i64>) -> bool {
+        self.blocks_covering_range(y_range).next().is_some()
+    }
+
     pub fn blocks_of_range(&self, y_range: Range<i64>) -> impl Iterator<Item = Cow<'_, Block<B>>> {
         self.blocks_covering_range(y_range.clone())
             .with_position()
@@ -323,12 +326,8 @@ impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
             .collect_vec();
         for new_block in contiguous_optional_blocks(value_blocks, y_range) {
             let replaced_blocks = match new_block {
-                OptionBlock::None(empty) => {
-                    self.remove_range(empty.range())
-                },
-                OptionBlock::Some(block) => {
-                    self.set_range(block.range(), block.content.value)
-                }
+                OptionBlock::None(empty) => self.remove_range(empty.range()),
+                OptionBlock::Some(block) => self.set_range(block.range(), block.content.value),
             };
             replaced.extend(replaced_blocks.into_iter());
         }
