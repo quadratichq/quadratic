@@ -6,8 +6,8 @@ import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from './PixiApp';
 import { pixiAppSettings } from './PixiAppSettings';
 
-const width = 30;
-const height = 30;
+export const thumbnailColumns = 30;
+export const thumbnailRows = 30;
 const resolution = 1;
 const borderSize = 0;
 const maxTextureSize = 4096;
@@ -59,7 +59,7 @@ class Thumbnail {
     const sheet = sheets.getFirst();
 
     // might make sense to use bounds instead of (0, 0, width, height)
-    const rectangle = sheet.getScreenRectangle(0, 0, width, height);
+    const rectangle = sheet.getScreenRectangle(0, 0, thumbnailColumns, thumbnailRows);
 
     // captures bottom-right border size
     rectangle.width += borderSize * 2;
