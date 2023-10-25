@@ -389,6 +389,10 @@ export class Grid {
     return JSON.parse(data);
   }
 
+  hasRenderCells(sheetId: string, rectangle: Rectangle): boolean {
+    return this.gridController.hasRenderCells(sheetId, rectangleToRect(rectangle));
+  }
+
   getRenderFills(sheetId: string, rectangle: Rectangle): JsRenderFill[] {
     const data = this.gridController.getRenderFills(sheetId, rectangleToRect(rectangle));
     return JSON.parse(data);
