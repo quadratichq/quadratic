@@ -333,7 +333,7 @@ mod tests {
     use super::*;
     use anyhow::anyhow;
 
-    const V1_3_FILE: &str = include_str!("../../../../examples/v1_3.json");
+    const V1_3_FILE: &str = include_str!("../../../../examples/v1_3.grid");
 
     fn import(file_contents: &str) -> Result<GridSchema> {
         Ok(serde_json::from_str::<GridSchema>(&file_contents)

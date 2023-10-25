@@ -57,13 +57,13 @@ pub fn export(grid: &mut Grid) -> Result<String> {
 mod tests {
     use super::*;
 
-    const V1_3_FILE: &str = include_str!("../../../examples/v1_3.json");
+    const V1_3_FILE: &str = include_str!("../../../examples/v1_3.grid");
     const V1_3_PYTHON_FILE: &str = include_str!("../../../examples/v1_3_python.grid");
     const V1_3_TEXT_ONLY_CODE_CELL_FILE: &str =
         include_str!("../../../examples/c1_3_python_text_only.grid");
     const V1_3_SINGLE_FORMULS_CODE_CELL_FILE: &str =
         include_str!("../../../examples/v1_3_single_formula.grid");
-    const V1_4_FILE: &str = include_str!("../../../examples/v1_4.json");
+    const V1_4_FILE: &str = include_str!("../../../examples/v1_4.grid");
 
     #[test]
     fn process_a_v1_3_file() {
