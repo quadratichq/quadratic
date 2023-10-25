@@ -61,35 +61,49 @@ mod tests {
     const V1_3_PYTHON_FILE: &str = include_str!("../../../examples/v1_3_python.grid");
     const V1_3_TEXT_ONLY_CODE_CELL_FILE: &str =
         include_str!("../../../examples/c1_3_python_text_only.grid");
+    const V1_3_SINGLE_FORMULS_CODE_CELL_FILE: &str =
+        include_str!("../../../examples/v1_3_single_formula.grid");
     const V1_5_FILE: &str = include_str!("../../../examples/v1_5.json");
 
     #[test]
     fn process_a_v1_3_file() {
         // TODO(ddimaria): validate that elements of the imported and exported file are valid
         let mut imported = import(V1_3_FILE).unwrap();
-        let exported = export(&mut imported).unwrap();
+        let _exported = export(&mut imported).unwrap();
     }
 
     #[test]
     fn process_a_v1_3_python_file() {
         // TODO(ddimaria): validate that elements of the imported and exported file are valid
+        let mut imported = import(V1_3_PYTHON_FILE).unwrap();
+        let _exported = export(&mut imported).unwrap();
+    }
+
+    #[test]
+    fn process_a_v1_3_python_text_only_file() {
+        // TODO(ddimaria): validate that elements of the imported and exported file are valid
         let mut imported = import(V1_3_TEXT_ONLY_CODE_CELL_FILE).unwrap();
-        // println!("{:?}", imported);
-        let exported = export(&mut imported).unwrap();
-        // println!("{}", exported);
+        let _exported = export(&mut imported).unwrap();
+    }
+
+    #[test]
+    fn process_a_v1_3_single_formula_file() {
+        let mut imported = import(V1_3_SINGLE_FORMULS_CODE_CELL_FILE).unwrap();
+        assert!(imported.sheets[0].columns[&0_i64].spills.get(2).is_some());
+        let _exported = export(&mut imported).unwrap();
     }
 
     #[test]
     fn process_a_v1_5_file() {
         // TODO(ddimaria): validate that elements of the imported and exported file are valid
         let mut imported = import(V1_5_FILE).unwrap();
-        let exported = export(&mut imported).unwrap();
+        let _exported = export(&mut imported).unwrap();
     }
 
     #[test]
     fn process_a_blank_v1_5_file() {
         let empty = r#"{"sheets":[{"name":"Sheet 1","id":{"id":"4b42eacf-5737-47a2-ac44-e4929d3abc3a"},"order":"a0","cells":[],"code_cells":[],"formats":[],"columns":[],"rows":[],"offsets":[[],[]],"borders":{"horizontal":{},"vertical":{}}}],"version":"1.5"}"#;
         let mut imported = import(empty).unwrap();
-        let exported = export(&mut imported).unwrap();
+        let _exported = export(&mut imported).unwrap();
     }
 }

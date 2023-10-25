@@ -3,19 +3,14 @@ use bigdecimal::{BigDecimal, FromPrimitive};
 use std::collections::HashMap;
 use std::str::FromStr;
 
+use super::schema::{Any, ArrayOutput, Cell};
 use crate::grid::file::v1_3::schema::GridSchema;
 use crate::grid::file::v1_5::schema as current;
-use crate::grid::file::v1_5::schema::{
-    Borders as BordersV1_5, CellRef as CellRefV1_5, Column as ColumnV1_5,
-    ColumnValue as ColumnValueV1_5, GridSchema as GridSchemaV1_5, Id as IdV1_5, Sheet as SheetV1_5,
-};
 
-use super::schema::{Any, ArrayOutput, Cell};
-
-pub(crate) fn upgrade(schema: GridSchema) -> Result<GridSchemaV1_5> {
+pub(crate) fn upgrade(schema: GridSchema) -> Result<current::GridSchema> {
     let sheet = upgrade_sheet(schema)?;
 
-    let converted = GridSchemaV1_5 {
+    let converted = current::GridSchema {
         version: Some("1.5".into()),
         sheets: vec![sheet],
     };
@@ -55,26 +50,26 @@ impl From<Any> for current::OutputValueValue {
 }
 
 struct SheetBuilder {
-    sheet_id: IdV1_5,
-    columns: HashMap<i64, ColumnV1_5>,
-    column_ids: HashMap<i64, IdV1_5>,
-    row_ids: HashMap<i64, IdV1_5>,
+    sheet_id: current::Id,
+    columns: HashMap<i64, current::Column>,
+    column_ids: HashMap<i64, current::Id>,
+    row_ids: HashMap<i64, current::Id>,
 }
 impl SheetBuilder {
-    fn column_id(&mut self, x: i64) -> &mut IdV1_5 {
-        self.column_ids.entry(x).or_insert_with(IdV1_5::new)
+    fn column_id(&mut self, x: i64) -> &mut current::Id {
+        self.column_ids.entry(x).or_insert_with(current::Id::new)
     }
-    fn row_id(&mut self, x: i64) -> &mut IdV1_5 {
-        self.row_ids.entry(x).or_insert_with(IdV1_5::new)
+    fn row_id(&mut self, x: i64) -> &mut current::Id {
+        self.row_ids.entry(x).or_insert_with(current::Id::new)
     }
-    fn column(&mut self, x: i64) -> &mut ColumnV1_5 {
+    fn column(&mut self, x: i64) -> &mut current::Column {
         let id = self.column_id(x).to_owned();
         self.columns
             .entry(x)
-            .or_insert_with(|| ColumnV1_5::with_id(id))
+            .or_insert_with(|| current::Column::with_id(id))
     }
-    fn cell_ref(&mut self, (x, y): (i64, i64)) -> CellRefV1_5 {
-        CellRefV1_5 {
+    fn cell_ref(&mut self, (x, y): (i64, i64)) -> current::CellRef {
+        current::CellRef {
             sheet: self.sheet_id.to_owned(),
             column: self.column_id(x).to_owned(),
             row: self.row_id(y).to_owned(),
@@ -98,23 +93,14 @@ impl SheetBuilder {
                         .into(),
                 );
             }
-            // "python" | "formula" => {
-            //     column.values.insert(
-            //         y.to_string(),
-            //         (
-            //             y,
-            //             current::ColumnValue {
-            //                 type_field: type_field.to_lowercase(),
-            //                 value: value.to_owned(),
-            //             },
-            //         )
-            //             .into(),
-            //     );
-            // }
             _ => {}
         }
     }
-    fn code_cell_value(&mut self, cell: &Cell, cell_ref: CellRefV1_5) -> current::CodeCellValue {
+    fn code_cell_value(
+        &mut self,
+        cell: &Cell,
+        cell_ref: current::CellRef,
+    ) -> current::CodeCellValue {
         let default = String::new();
         let language = match cell.type_field.to_lowercase().as_str() {
             "python" => "Python",
@@ -165,7 +151,15 @@ impl SheetBuilder {
                                             .collect(),
                                     })
                                 }
-                                ArrayOutput::Block(values) => {
+                                ArrayOutput::Block(mut values) => {
+                                    // TODO(ddimaria): this is a hack, but makes a single use case pass
+                                    // review approaches and refine this
+                                    if values.len() == 0 {
+                                        if let Some(output_value) = result.output_value {
+                                            values = vec![vec![Some(Any::String(output_value))]];
+                                        }
+                                    }
+
                                     for dy in 0..values.len() {
                                         for dx in 0..values.get(0)?.len() {
                                             let x = cell.x + dx as i64;
@@ -231,8 +225,8 @@ impl SheetBuilder {
     }
 }
 
-pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
-    let sheet_id = IdV1_5::new();
+pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
+    let sheet_id = current::Id::new();
     let column_widths = v
         .columns
         .iter()
@@ -310,7 +304,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
 
     // println!("{:#?}", code_cells);
 
-    Ok(SheetV1_5 {
+    Ok(current::Sheet {
         id: sheet_id,
         name: "Sheet 1".into(),
         color: None,
@@ -324,9 +318,9 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<SheetV1_5> {
         rows: sheet
             .row_ids
             .into_iter()
-            .map(|(id, row_id)| (id, IdV1_5 { id: row_id.id }))
+            .map(|(id, row_id)| (id, current::Id { id: row_id.id }))
             .collect(),
-        borders: BordersV1_5 {
+        borders: current::Borders {
             horizontal: HashMap::new(),
             vertical: HashMap::new(),
         }, // TODO: import borders
@@ -361,6 +355,6 @@ mod tests {
 
         // we currently just care that this doesn't error
         // TODO(ddimaria): validate that elements of the upgraded GridSchema are valid
-        let upgraded = upgrade(imported).unwrap();
+        let _upgraded = upgrade(imported).unwrap();
     }
 }

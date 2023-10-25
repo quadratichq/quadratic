@@ -1,10 +1,8 @@
 use std::{
     collections::HashMap,
     fmt::{self, Display},
-    str::FromStr,
 };
 
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

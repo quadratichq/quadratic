@@ -35,7 +35,7 @@ pub use formatting::{
 pub use ids::*;
 pub use sheet::Sheet;
 
-use crate::{Array, CellValue, Pos, SheetPos, SheetRect, Value};
+use crate::{Array, CellValue, Pos};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
