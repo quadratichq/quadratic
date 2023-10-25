@@ -244,8 +244,10 @@ export const CellInput = (props: CellInputProps) => {
           event.preventDefault();
         } else if (event.key === 'ArrowUp') {
           closeInput({ x: 0, y: -1 });
+          event.stopPropagation();
         } else if (event.key === 'ArrowDown') {
           closeInput({ x: 0, y: 1 });
+          event.stopPropagation();
         } else if ((event.metaKey || event.ctrlKey) && event.key === 'p') {
           event.preventDefault();
         } else if (event.key === ' ') {
