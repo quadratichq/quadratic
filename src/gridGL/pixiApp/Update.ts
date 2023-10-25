@@ -64,7 +64,6 @@ export class Update {
       this.fps?.update();
       return;
     }
-
     if (!pixiApp.cellsSheets.isReady()) {
       this.raf = requestAnimationFrame(this.update);
       return;
