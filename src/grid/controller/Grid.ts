@@ -83,6 +83,7 @@ export class Grid {
   private _dirty = false;
   thumbnailDirty = false;
 
+  // todo: move thumbnailDirty code to Rust
   transactionResponse(summary: TransactionSummary) {
     if (summary.sheet_list_modified) {
       sheets.repopulate();
