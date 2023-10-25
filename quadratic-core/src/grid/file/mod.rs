@@ -63,6 +63,7 @@ mod tests {
         include_str!("../../../examples/c1_3_python_text_only.grid");
     const V1_3_SINGLE_FORMULS_CODE_CELL_FILE: &str =
         include_str!("../../../examples/v1_3_single_formula.grid");
+    const V1_3_NPM_DOWNLOADS_FILE: &str = include_str!("../../../examples/v1_3_npm_downloads.grid");
     const V1_4_FILE: &str = include_str!("../../../examples/v1_4_simple.grid");
 
     #[test]
@@ -91,6 +92,12 @@ mod tests {
     fn process_a_v1_3_single_formula_file() {
         let mut imported = import(V1_3_SINGLE_FORMULS_CODE_CELL_FILE).unwrap();
         assert!(imported.sheets[0].columns[&0_i64].spills.get(2).is_some());
+        let _exported = export(&mut imported).unwrap();
+    }
+
+    #[test]
+    fn process_a_v1_3_npm_downloads_file() {
+        let mut imported = import(V1_3_NPM_DOWNLOADS_FILE).unwrap();
         let _exported = export(&mut imported).unwrap();
     }
 

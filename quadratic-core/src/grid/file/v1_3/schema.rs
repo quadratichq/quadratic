@@ -121,6 +121,14 @@ pub struct Format {
     pub italic: Option<bool>,
     pub fill_color: Option<String>,
     pub text_color: Option<String>,
-    pub text_format: Option<String>,
+    pub text_format: Option<TextFormat>,
     pub wrapping: Option<String>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextFormat {
+    #[serde(rename = "type")]
+    pub type_field: String,
+    pub decimal_places: i64,
 }
