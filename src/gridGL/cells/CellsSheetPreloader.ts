@@ -48,10 +48,6 @@ export class CellsSheetPreloader {
 
   preload(): Promise<void> {
     return new Promise((resolve) => {
-      this.cellsSheet.cellsFills.create();
-      this.cellsSheet.cellsBorders.create();
-      this.cellsSheet.cellsArray.create();
-
       if (!this.cellsSheet.createHashes()) {
         resolve();
       } else {

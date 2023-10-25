@@ -14,10 +14,9 @@ import { CellsTextHash } from './CellsTextHash';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
 
 export class CellsSheet extends Container {
-  // friends of CellsSheetPreloader.ts
-  cellsFills: CellsFills;
-  cellsArray: CellsArray;
-  cellsBorders: CellsBorders;
+  private cellsFills: CellsFills;
+  private cellsArray: CellsArray;
+  private cellsBorders: CellsBorders;
 
   // friend of CellsArray
   cellsMarkers: CellsMarkers;
@@ -66,6 +65,9 @@ export class CellsSheet extends Container {
   }
 
   async preload(): Promise<void> {
+    this.cellsFills.create();
+    this.cellsBorders.create();
+    this.cellsArray.create();
     const cellsSheetPreloader = new CellsSheetPreloader(this);
     await cellsSheetPreloader.preload();
   }
