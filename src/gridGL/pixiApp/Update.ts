@@ -1,7 +1,5 @@
 import { Point } from 'pixi.js';
-import { apiClient } from '../../api/apiClient';
 import { debugShowFPS, debugShowWhyRendering } from '../../debugFlags';
-import { grid } from '../../grid/controller/Grid';
 import { FPS } from '../helpers/Fps';
 import {
   debugRendererLight,
@@ -13,15 +11,11 @@ import {
 import { pixiApp } from './PixiApp';
 import { thumbnail } from './thumbnail';
 
-// time when renderer is not busy to perform an action
-const TIME_FOR_IDLE = 1000;
-
 export class Update {
   private raf?: number;
   private fps?: FPS;
   private lastViewportPosition: Point = new Point();
   private lastViewportScale = 1;
-  private lastUpdate = 0;
 
   constructor() {
     if (debugShowFPS) {
@@ -118,26 +112,10 @@ export class Update {
       debugRendererLight(true);
       debugShowChildren(pixiApp.stage, 'stage');
       debugShowCachedCounts();
-      this.lastUpdate = performance.now();
+      thumbnail.rendererBusy();
     } else {
       debugRendererLight(false);
-      const now = performance.now();
-      if (this.lastUpdate + TIME_FOR_IDLE > now) {
-        if (grid.thumbnailDirty) {
-          const url = window.location.pathname.split('/');
-          const uuid = url[2];
-          if (uuid) {
-            thumbnail().then((blob) => {
-              if (blob) {
-                apiClient.updateFilePreview(uuid, blob);
-              }
-            });
-            console.log('[Thumbnail] Updated.');
-            grid.thumbnailDirty = false;
-          }
-        }
-        this.lastUpdate = performance.now();
-      }
+      thumbnail.check();
     }
 
     this.raf = requestAnimationFrame(this.update);
