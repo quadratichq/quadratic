@@ -32,7 +32,7 @@ function getLettersFromString(str: string) {
   }
 }
 
-type Props = AvatarProps & {
+type Props = Omit<AvatarProps, 'children'> & {
   children: string;
   size?: 'small' | 'medium' | 'large';
 };

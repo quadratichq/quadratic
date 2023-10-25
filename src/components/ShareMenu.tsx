@@ -1,4 +1,4 @@
-import { ArrowDropDown, CelebrationOutlined, Check, EmailOutlined, Public, PublicOff } from '@mui/icons-material';
+import { ArrowDropDown, Check, EmailOutlined, Public, PublicOff } from '@mui/icons-material';
 import {
   Alert,
   Avatar,
@@ -19,8 +19,8 @@ import {
 import React, { useEffect, useState } from 'react';
 import { useFetcher, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
-import { PublicLinkAccess } from '../api/types';
-import { Access, Role, RoleSchema, UserRoleTeam } from '../permissions';
+import { ApiTypes, PublicLinkAccess } from '../api/types';
+import { RoleSchema, UserRoleTeam } from '../permissions';
 import { AvatarWithLetters } from './AvatarWithLetters';
 import { getUserShareOptions } from './ShareMenu.utils';
 
@@ -39,7 +39,7 @@ export const shareSearchParamValuesById = {
  */
 ShareMenu.Wrapper = Wrapper;
 ShareMenu.Invite = Invite;
-ShareMenu.Users = Users;
+// ShareMenu.Users = Users;
 ShareMenu.UserListItem = UserListItem;
 
 function Wrapper({ children }: { children: React.ReactNode }) {
@@ -144,79 +144,79 @@ function ShareMenu({ fetcherUrl, uuid }: { fetcherUrl: string; uuid: string }) {
   );
 }
 
-function Users({
-  users,
-  loggedInUser,
-  onUpdateUser,
-  onDeleteUser,
-}: {
-  users: any /* TODO */;
-  loggedInUser: { id: number; role: Role; access: Access[] };
-  onUpdateUser: (user: any /* TODO UserShare */) => void;
-  onDeleteUser: (user: any /* TODO UserShare */) => void;
-}) {
-  const [searchParams] = useSearchParams();
-  const shareValue = searchParams.get(shareSearchParamKey);
-  const showTeamCreatedMessage = shareValue === shareSearchParamValuesById.TEAM_CREATED;
+// function Users({
+//   users,
+//   loggedInUser,
+//   onUpdateUser,
+//   onDeleteUser,
+// }: {
+//   users: any /* TODO */;
+//   loggedInUser: { email: string; role: Role; access: Access[] };
+//   onUpdateUser: (user: any /* TODO UserShare */) => void;
+//   onDeleteUser: (user: any /* TODO UserShare */) => void;
+// }) {
+//   const [searchParams] = useSearchParams();
+//   const shareValue = searchParams.get(shareSearchParamKey);
+//   const showTeamCreatedMessage = shareValue === shareSearchParamValuesById.TEAM_CREATED;
 
-  const theme = useTheme();
+//   const theme = useTheme();
 
-  // TODO export search param values
-  // TODO make the query param disappear when you add things
+//   // TODO export search param values
+//   // TODO make the query param disappear when you add things
 
-  return (
-    <>
-      {users.map((user: any, i: number) => {
-        return (
-          <UserListItem
-            key={user.email}
-            users={users}
-            loggedInUser={loggedInUser}
-            user={user}
-            onUpdateUser={onUpdateUser}
-            onDeleteUser={onDeleteUser}
-          />
-        );
-      })}
+//   return (
+//     <>
+//       {users.map((user: any, i: number) => {
+//         return (
+//           <UserListItem
+//             key={user.email}
+//             users={users}
+//             loggedInUser={loggedInUser}
+//             user={user}
+//             onUpdateUser={onUpdateUser}
+//             onDeleteUser={onDeleteUser}
+//           />
+//         );
+//       })}
 
-      {showTeamCreatedMessage && (
-        <Stack
-          sx={{
-            p: '1rem',
-            position: 'relative',
-            alignItems: 'center',
-            borderTop: `1px dotted ${theme.palette.divider}`,
-            // background: 'lightyellow',
-            // mt: '.5rem',
-          }}
-        >
-          <CelebrationOutlined sx={{ color: 'text.disabled', my: '.5rem' }} />
-          <Typography variant="body1" color="text.secondary">
-            Team created
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Invite people to your team to collaborate on files.
-          </Typography>
-          {/* <IconButton sx={{ position: 'absolute', top: '.25rem', right: '.25rem', fontSize: '.875rem' }}>
-          <Close fontSize={'inherit'} />
-        </IconButton> */}
-        </Stack>
-      )}
-    </>
-  );
-}
+//       {showTeamCreatedMessage && (
+//         <Stack
+//           sx={{
+//             p: '1rem',
+//             position: 'relative',
+//             alignItems: 'center',
+//             borderTop: `1px dotted ${theme.palette.divider}`,
+//             // background: 'lightyellow',
+//             // mt: '.5rem',
+//           }}
+//         >
+//           <CelebrationOutlined sx={{ color: 'text.disabled', my: '.5rem' }} />
+//           <Typography variant="body1" color="text.secondary">
+//             Team created
+//           </Typography>
+//           <Typography variant="body2" color="text.secondary">
+//             Invite people to your team to collaborate on files.
+//           </Typography>
+//           {/* <IconButton sx={{ position: 'absolute', top: '.25rem', right: '.25rem', fontSize: '.875rem' }}>
+//           <Close fontSize={'inherit'} />
+//         </IconButton> */}
+//         </Stack>
+//       )}
+//     </>
+//   );
+// }
 
 function UserListItem({
-  users,
+  numberOfOwners,
   loggedInUser,
   user,
   onUpdateUser,
   onDeleteUser,
   disabled,
 }: {
-  users: any /* TODO UserShare[]*/;
-  loggedInUser: { id: number; role: Role; access: Access[] };
-  user: any;
+  numberOfOwners: number;
+  loggedInUser: ApiTypes['/v0/teams/:uuid.GET.response']['user'];
+  user: ApiTypes['/v0/teams/:uuid.GET.response']['team']['users'][0];
   onUpdateUser: (user: any /*TODO UserShare*/) => void;
   onDeleteUser: (user: any /*TODO UserShare*/) => void;
   disabled?: boolean;
@@ -237,11 +237,15 @@ function UserListItem({
   );
 
   let labels = disabled
-    ? ['Can edit']
+    ? user.role === 'OWNER'
+      ? ['Owner']
+      : user.role === 'EDITOR'
+      ? ['Can edit']
+      : ['Can view']
     : getUserShareOptions({
         user,
         loggedInUser,
-        users,
+        numberOfOwners,
         canHaveMoreThanOneOwner: true, // TODO teams? yes. files? no.
       });
   let options: Option[] = [];

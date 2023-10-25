@@ -3,14 +3,14 @@ const { OWNER, EDITOR, VIEWER } = RoleSchema.enum;
 
 type Label = 'Owner' | 'Can edit' | 'Can view' | 'Leave' | 'Remove';
 
-export function getUserShareOptions({ users, user, loggedInUser }: /* TODO */ any) {
+export function getUserShareOptions({ numberOfOwners, user, loggedInUser }: /* TODO */ any) {
   let options: Label[] = [];
 
   const userIsOwner = user.role === OWNER;
   const userIsEditor = user.role === EDITOR;
   // const userIsViewer = user.role === VIEWER;
 
-  const isLoggedInUser = loggedInUser.email === user.email;
+  const isLoggedInUser = loggedInUser.id === user.id;
 
   // TODO
   // if (hasAccess(loggedInUser.access, 'TEAM_EDIT') || hasAccess(loggedInUser.access, 'FILE_EDIT')) {
@@ -43,7 +43,7 @@ export function getUserShareOptions({ users, user, loggedInUser }: /* TODO */ an
   if (isLoggedInUser) {
     if (hasAccess(loggedInUser.access, 'TEAM_EDIT') || hasAccess(loggedInUser.access, 'FILE_EDIT')) {
       if (loggedInUser.role === OWNER) {
-        if (users.filter((usr: any) => usr.role === OWNER).length > 1) {
+        if (numberOfOwners > 1) {
           options.push('Owner', 'Can edit', 'Can view', 'Leave');
         } else {
           options.push('Owner');

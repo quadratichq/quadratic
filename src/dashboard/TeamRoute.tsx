@@ -48,14 +48,21 @@ export type Action = {
     action: 'update-team';
     payload: ApiTypes['/v0/teams/:uuid.POST.request'];
   };
+  'request.update-user': {
+    action: 'update-user';
+    id: number;
+    payload: ApiTypes['/v0/teams/:uuid/sharing/:userId.POST.request'];
+  };
+  'request.delete-user': {
+    action: 'delete-user';
+    id: number;
+  };
   request: Action['request.update-team'] | Action['request.invite-user'];
 };
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const data = (await request.json()) as Action['request'];
   const { teamUuid } = params as { teamUuid: string };
   const { action } = data;
-
-  // await new Promise((resolve) => setTimeout(resolve, 20000));
 
   if (action === 'update-team') {
     try {
@@ -71,9 +78,33 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   if (action === 'invite-user') {
     try {
-      // const { payload: { email, role } } = data;
-      // await apiClient.updateTeamSharing(teamUuid, { email, role });
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const {
+        payload: { email, role },
+      } = data;
+      await apiClient.updateTeamSharing(teamUuid, { email, role });
+      return { ok: true };
+    } catch (e) {
+      return { ok: false };
+    }
+  }
+
+  if (action === 'update-user') {
+    try {
       await new Promise((resolve) => setTimeout(resolve, 5000));
+      // const { payload: { id, role } } = data;
+      // apiClient.updateTeamSharing(id, { role })
+      return { ok: true };
+    } catch (e) {
+      return { ok: false };
+    }
+  }
+
+  if (action === 'delete-user') {
+    try {
+      // const { id } = data;
+      // apiClient.updateTeamSharingUser(id, { role })
+      await new Promise((reject) => setTimeout(reject, 5000));
       return { ok: true };
     } catch (e) {
       return { ok: false };
@@ -87,9 +118,13 @@ export const Component = () => {
   const theme = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
-  const { team } = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
+  const loaderData = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
+  const { team } = loaderData;
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const fetcher = useFetcher();
+
+  // const [shareQueryValue, setShareQueryValue] = useState<string>('');
+  // useUpdateQueryStringValueWithoutNavigation("share", queryValue);
 
   let name = team.name;
   if (fetcher.state !== 'idle') {
@@ -98,6 +133,7 @@ export const Component = () => {
     // picture
   }
 
+  console.log(searchParams.get(shareSearchParamKey));
   const showShareDialog = searchParams.get(shareSearchParamKey) !== null;
 
   return (
@@ -168,7 +204,7 @@ export const Component = () => {
               return prev;
             })
           }
-          team={team}
+          data={loaderData}
         />
       )}
       {showDeleteDialog && (
@@ -289,7 +325,9 @@ function RenameInput({
 }
 
 function EditDropdownMenu({ setShowDeleteDialog, onRename }: any) {
-  const { access } = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
+  const {
+    user: { access },
+  } = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {

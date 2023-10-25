@@ -1,43 +1,44 @@
 import express, { Response } from 'express';
-import { body } from 'express-validator';
+import { z } from 'zod';
+import { ApiSchemas } from '../../../../src/api/types';
 import { getUsersByEmail } from '../../auth0/profile';
 import dbClient from '../../dbClient';
 import { teamMiddleware } from '../../middleware/team';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { validateZodSchema } from '../../middleware/validateZodSchema';
 import { Request } from '../../types/Request';
 const router = express.Router();
 
-const validateBodyEmail = () => body('email').isEmail().not().isEmpty();
-const validateBodyRole = () => body('role').isIn(['OWNER', 'EDITOR', 'VIEWER']); // TODO share types
+const ReqSchema = z.object({
+  params: z.object({
+    uuid: z.string().uuid(),
+  }),
+  body: ApiSchemas['/v0/teams/:uuid/sharing.POST.request'],
+});
 
 router.post(
   '/:uuid/sharing',
-  // validateUUID(),
-  // userOptionalMiddleware,
-  validateBodyEmail(),
-  validateBodyRole(),
+  validateZodSchema(ReqSchema),
   validateAccessToken,
   userMiddleware,
   teamMiddleware,
   async (req: Request, res: Response) => {
-    if (!req.team) {
-      return res.status(500).json({ error: { message: 'Internal server error' } });
-    }
+    // if (!req.team) {
+    //   return res.status(500).json({ error: { message: 'Internal server error' } });
+    // }
 
-    // TODO email invitation to the team
-
+    // TODO
     // Check if invited email is already user of Quadratic
-    // TODO two different email templates
-    // If so, add them to the team
-    // If not, send them an invitation email and add to the team
+    // (1) If so, add them to the team and send invite email-template-1
+    // (2) If not, add them to the team (as an inited user) and send invite-email-2
 
     const users = await getUsersByEmail(req.body.email);
 
     if (users.length === 0) {
-      // TODO send invite email, add to team
+      // (2)
     } else if (users.length === 1) {
-      // TODO add to team and send email
+      // (1)
       let user = await dbClient.user.findUnique({
         where: {
           auth0_id: users[0].user_id,
@@ -52,10 +53,10 @@ router.post(
       });
     } else {
       console.error('Duplicate email: ' + req.body.email);
-      // DUPLICATE EMAIL! TODO
+      // TODO, DUPLICATE EMAIL!
     }
 
-    return res.status(200).json({ message: '' });
+    return res.status(200).json({ message: 'User invited.' });
   }
 );
 

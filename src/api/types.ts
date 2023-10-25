@@ -150,12 +150,16 @@ export const ApiSchemas = {
   '/v0/teams.POST.response': TeamSchema.pick({ uuid: true, name: true, picture: true }),
   '/v0/teams/:uuid.GET.response': z.object({
     team: TeamSchema,
-    role: RoleSchema,
-    access: AccessSchema.array(),
+    user: z.object({
+      role: RoleSchema,
+      access: AccessSchema.array(),
+      id: z.number(),
+    }),
+
     // TODO
     // files: []
     // TODO
-    billing: z.any().optional(),
+    // billing: z.any().optional(),
   }),
   '/v0/teams/:uuid.POST.request': z.object({
     name: TeamSchema.shape.name.optional(),

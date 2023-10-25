@@ -1,12 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router-dom';
+import { ApiTypes } from '../../api/types';
 import { QDialog } from '../../components/QDialog';
 import { ShareMenu } from '../../components/ShareMenu';
 import { Action } from '../TeamRoute';
 
-export function TeamShareMenu({ onClose, team }: { onClose: () => void; team: any }) {
+export function TeamShareMenu({
+  onClose,
+  data,
+}: {
+  onClose: () => void;
+  data: ApiTypes['/v0/teams/:uuid.GET.response'];
+}) {
   // const theme = useTheme();
-  // const rootLoaderData = useRootRouteLoaderData();
+  const { team } = data;
   // const currentUser = rootLoaderData.user;
 
   const fetcher = useFetcher();
@@ -25,6 +32,7 @@ export function TeamShareMenu({ onClose, team }: { onClose: () => void; team: an
   //   users.push({ email, role });
   //   console.log(users);
   // }
+  const numberOfOwners = users.filter(({ role }) => role === 'OWNER').length;
 
   return (
     <QDialog onClose={onClose}>
@@ -41,6 +49,10 @@ export function TeamShareMenu({ onClose, team }: { onClose: () => void; team: an
             onDeleteUser={}
             onResendUserInvite={}
           />
+
+          <ShareMenu>
+            <ShareMenu.Invite />
+            <ShareMenu.User />
         */}
 
         <ShareMenu.Wrapper>
@@ -67,24 +79,9 @@ export function TeamShareMenu({ onClose, team }: { onClose: () => void; team: an
               }}
             />
           ))}
-          {users.map((user: any, i: number) => {
-            // const fetcher = useFetcher();
-            return (
-              <ShareMenu.UserListItem
-                key={user.email}
-                users={users}
-                loggedInUser={{
-                  // TODO this needs to come from the app
-                  id: 1,
-                  role: 'OWNER',
-                  access: ['TEAM_EDIT', 'TEAM_BILLING_EDIT', 'TEAM_DELETE'],
-                }}
-                user={user}
-                onUpdateUser={() => {}}
-                onDeleteUser={() => {}}
-              />
-            );
-          })}
+          {users.map((user: any) => (
+            <Item user={user} data={data} numberOfOwners={numberOfOwners} />
+          ))}
           {/* <ShareMenu.Users
             users={users}
             // usersIndexForLoggedInUser={users.findIndex((user: UserShare) => user.email === '')}
@@ -162,6 +159,23 @@ export function TeamShareMenu({ onClose, team }: { onClose: () => void; team: an
 //   // secondary = {}
 //   return <ShareMenu.UserListItem />
 // }
+
+function Item({ user, numberOfOwners, data }: any) {
+  const fetcher = useFetcher();
+  return (
+    <ShareMenu.UserListItem
+      key={user.email}
+      numberOfOwners={numberOfOwners}
+      loggedInUser={data.user}
+      user={user}
+      onUpdateUser={({ id, role }) => {
+        const data: Action['request.update-user'] = { action: 'update-user', id, payload: { role } };
+        fetcher.submit(data, { method: 'post', encType: 'application/json' });
+      }}
+      onDeleteUser={(userId) => {}}
+    />
+  );
+}
 
 function PendingItem({ pendingUser, onComplete }: any) {
   const fetcher = useFetcher();

@@ -30,6 +30,7 @@ window.lf = localforage;
 
 export type RootLoaderData = {
   isAuthenticated: boolean;
+  // TODO consider renaming to `loggedInUser` for clarity's sake
   user?: User;
 };
 
