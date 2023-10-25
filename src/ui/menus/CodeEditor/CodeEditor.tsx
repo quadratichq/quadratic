@@ -32,6 +32,8 @@ export const CodeEditor = () => {
   // update code cell
   const [codeString, setCodeString] = useState('');
   const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
+  const [evaluationResult, setEvaluationResult] = useState<any>(undefined);
+
   const updateCodeCell = useCallback(() => {
     const codeCell = grid.getCodeCell(
       sheets.sheet.id,
@@ -43,10 +45,12 @@ export const CodeEditor = () => {
       setCodeString(codeString);
       setOut({ stdOut: codeCell.getStdOut(), stdErr: codeCell.getStdErr() });
       setEditorContent(codeString);
+      setEvaluationResult(codeCell.getEvaluationResult());
       codeCell.free();
     } else {
       setCodeString('');
       setEditorContent('');
+      setEvaluationResult('');
       setOut(undefined);
     }
   }, [editorInteractionState.selectedCell.x, editorInteractionState.selectedCell.y]);
@@ -198,7 +202,12 @@ export const CodeEditor = () => {
         }}
       >
         {(editorInteractionState.mode === 'PYTHON' || editorInteractionState.mode === 'FORMULA') && (
-          <Console console={out} editorMode={editorMode} editorContent={editorContent} />
+          <Console
+            consoleInput={out}
+            editorMode={editorMode}
+            editorContent={editorContent}
+            evaluationResult={evaluationResult}
+          />
         )}
       </div>
     </div>
