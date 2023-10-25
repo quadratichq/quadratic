@@ -151,9 +151,9 @@ pub struct Column {
     pub align: HashMap<String, ColumnFormatType<String>>,
     pub wrap: HashMap<String, ColumnFormatType<String>>,
     #[serde(rename = "numeric_format")]
-    pub numeric_format: HashMap<String, ColumnFormatType<String>>,
+    pub numeric_format: HashMap<String, ColumnFormatType<NumericFormat>>,
     #[serde(rename = "numeric_decimals")]
-    pub numeric_decimals: HashMap<String, ColumnFormatType<String>>,
+    pub numeric_decimals: HashMap<String, ColumnFormatType<i16>>,
     pub bold: HashMap<String, ColumnFormatType<bool>>,
     pub italic: HashMap<String, ColumnFormatType<bool>>,
     #[serde(rename = "text_color")]
@@ -236,6 +236,24 @@ impl From<(i64, String)> for ColumnFormatType<String> {
 }
 impl From<(i64, bool)> for ColumnFormatType<bool> {
     fn from((y, value): (i64, bool)) -> Self {
+        // TODO(ddimaria): set len to a value
+        ColumnFormatType {
+            y,
+            content: ColumnFormatContent { value, len: 1 },
+        }
+    }
+}
+impl From<(i64, NumericFormat)> for ColumnFormatType<NumericFormat> {
+    fn from((y, value): (i64, NumericFormat)) -> Self {
+        // TODO(ddimaria): set len to a value
+        ColumnFormatType {
+            y,
+            content: ColumnFormatContent { value, len: 1 },
+        }
+    }
+}
+impl From<(i64, i16)> for ColumnFormatType<i16> {
+    fn from((y, value): (i64, i16)) -> Self {
         // TODO(ddimaria): set len to a value
         ColumnFormatType {
             y,

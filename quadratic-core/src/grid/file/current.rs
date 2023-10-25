@@ -1,4 +1,4 @@
-use crate::grid::{CellAlign, CellWrap, Grid, GridBounds, NumericFormat};
+use crate::grid::{CellAlign, CellWrap, Grid, GridBounds, NumericFormat, NumericFormatKind};
 use crate::{CellValue, Error, ErrorMsg, Span, Value};
 
 use crate::grid::file::v1_4::schema::{self as current};
@@ -51,6 +51,38 @@ where
     Ok(())
 }
 
+fn set_column_format_numeric_format(
+    column_data: &mut ColumnData<SameValue<NumericFormat>>,
+    column: &HashMap<String, current::ColumnFormatType<current::NumericFormat>>,
+) -> Result<()> {
+    for (y, format) in column.iter() {
+        let y =
+            i64::from_str(y).map_err(|e| anyhow!("Unable to convert {} to an i64: {}", y, e))?;
+        column_data.set(
+            y,
+            Some(NumericFormat {
+                kind: NumericFormatKind::from_str(&format.content.value.kind.to_string()).unwrap(),
+                symbol: format.content.value.symbol.clone(),
+            }),
+        );
+    }
+
+    Ok(())
+}
+
+fn set_column_format_i16(
+    column_data: &mut ColumnData<SameValue<i16>>,
+    column: &HashMap<String, current::ColumnFormatType<i16>>,
+) -> Result<()> {
+    for (y, format) in column.iter() {
+        let y =
+            i64::from_str(y).map_err(|e| anyhow!("Unable to convert {} to an i64: {}", y, e))?;
+        column_data.set(y, Some(format.content.value));
+    }
+
+    Ok(())
+}
+
 fn set_column_format_string(
     column_data: &mut ColumnData<SameValue<String>>,
     column: &HashMap<String, current::ColumnFormatType<String>>,
@@ -88,8 +120,8 @@ fn import_column_builder(columns: Vec<(i64, current::Column)>) -> Result<BTreeMa
             set_column_format::<CellRef>(&mut col.spills, &column.spills)?;
             set_column_format::<CellAlign>(&mut col.align, &column.align)?;
             set_column_format::<CellWrap>(&mut col.wrap, &column.wrap)?;
-            set_column_format::<i16>(&mut col.numeric_decimals, &column.numeric_decimals)?;
-            set_column_format::<NumericFormat>(&mut col.numeric_format, &column.numeric_format)?;
+            set_column_format_i16(&mut col.numeric_decimals, &column.numeric_decimals)?;
+            set_column_format_numeric_format(&mut col.numeric_format, &column.numeric_format)?;
             set_column_format_bool(&mut col.bold, &column.bold)?;
             set_column_format_bool(&mut col.italic, &column.italic)?;
             set_column_format_string(&mut col.text_color, &column.text_color)?;
@@ -142,6 +174,38 @@ fn export_column_data_string(
         .collect()
 }
 
+fn export_column_data_i16(
+    column_data: &ColumnData<SameValue<i16>>,
+) -> HashMap<String, current::ColumnFormatType<i16>> {
+    column_data
+        .values()
+        .map(|(y, value)| (y.to_string(), (y, value).into()))
+        .collect()
+}
+
+fn export_column_data_numeric_format(
+    column_data: &ColumnData<SameValue<NumericFormat>>,
+) -> HashMap<String, current::ColumnFormatType<current::NumericFormat>> {
+    column_data
+        .values()
+        .map(|(y, value)| {
+            (
+                y.to_string(),
+                current::ColumnFormatType {
+                    y,
+                    content: current::ColumnFormatContent {
+                        value: current::NumericFormat {
+                            kind: value.kind.to_string(),
+                            symbol: value.symbol,
+                        },
+                        len: 1,
+                    },
+                },
+            )
+        })
+        .collect()
+}
+
 fn export_column_data<T>(
     column_data: &ColumnData<SameValue<T>>,
 ) -> HashMap<String, current::ColumnFormatType<String>>
@@ -172,8 +236,8 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                     spills: export_column_data(&column.spills),
                     align: export_column_data(&column.align),
                     wrap: export_column_data(&column.wrap),
-                    numeric_decimals: export_column_data(&column.numeric_decimals),
-                    numeric_format: export_column_data(&column.numeric_format),
+                    numeric_decimals: export_column_data_i16(&column.numeric_decimals),
+                    numeric_format: export_column_data_numeric_format(&column.numeric_format),
                     bold: export_column_data_bool(&column.bold),
                     italic: export_column_data_bool(&column.italic),
                     text_color: export_column_data_string(&column.text_color),

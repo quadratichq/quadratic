@@ -87,16 +87,21 @@ impl SheetBuilder {
     }
     fn cell_value(&mut self, x: i64, y: i64, type_field: &str, value: &str) {
         let column = self.column(x);
-        // println!("{} {} {} {}", x, y, type_field, value);
+        println!("{} {} {} {}", x, y, type_field, value);
 
         match type_field {
             "text" => {
+                let type_field = match BigDecimal::from_str(value) {
+                    Ok(_) => "NUMBER",
+                    Err(_) => "TEXT",
+                };
+
                 column.values.insert(
                     y.to_string(),
                     (
                         y,
                         current::ColumnValue {
-                            type_field: "text".into(),
+                            type_field: type_field.into(),
                             value: value.to_owned(),
                         },
                     )
@@ -271,44 +276,48 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
         };
     }
 
-    for js_format in v.formats {
-        let column = sheet.column(js_format.x);
-        let y = js_format.y;
-        js_format
+    for format in v.formats {
+        let column = sheet.column(format.x);
+        let y = format.y;
+
+        format
             .alignment
             .map(|format| column.align.insert(y.to_string(), format.into()));
-        js_format
+        format
             .wrapping
             .map(|format| column.wrap.insert(y.to_string(), format.into()));
-        js_format
+        format
             .bold
             .map(|format| column.bold.insert(y.to_string(), format.into()));
-        js_format
+        format
             .italic
             .map(|format| column.italic.insert(y.to_string(), format.into()));
-        js_format
+        format
             .text_color
             .map(|format| column.text_color.insert(y.to_string(), format.into()));
-        js_format
+        format
             .fill_color
             .map(|format| column.fill_color.insert(y.to_string(), format.into()));
 
-        // TODO(ddimaria): deterine if this is needed for upgrades
-        // if let Some(text_format) = js_format.text_format.clone() {
-        //     column.numeric_format.set(
-        //         js_format.y,
-        //         Some(NumericFormat {
-        //             kind: text_format.kind,
-        //             symbol: text_format.symbol,
-        //         }),
-        //     );
+        format.text_format.map(|text_format| {
+            column.numeric_format.insert(
+                format.y.to_string(),
+                current::NumericFormat {
+                    kind: text_format.type_field,
+                    symbol: text_format.symbol.map(|symbol| match symbol.as_ref() {
+                        "USD" => "$".into(),
+                        _ => symbol,
+                    }),
+                }
+                .into(),
+            );
 
-        //     if let Some(decimals) = text_format.decimal_places {
-        //         column
-        //             .numeric_decimals
-        //             .set(js_format.y, Some(decimals as i16));
-        //     }
-        // }
+            text_format.decimal_places.map(|decimals| {
+                column
+                    .numeric_decimals
+                    .insert(format.y.to_string(), (decimals as i16).into())
+            });
+        });
     }
 
     // println!(
