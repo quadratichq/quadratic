@@ -2,36 +2,45 @@ import * as Sentry from '@sentry/browser';
 import { Point, Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
+import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { readFileAsArrayBuffer } from '../../helpers/files';
 import init, {
+  BorderSelection,
+  BorderStyle,
+  CodeCell,
+  CodeCellLanguage,
   GridController,
+  JsCodeResult,
+  JsComputeGetCells,
+  JsRenderBorders,
+  JsRenderCodeCell,
   MinMax,
-  Placement,
   Pos,
   Rect as RectInternal,
+  SheetOffsets,
+  TransientResize,
 } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
   CellFormatSummary,
   CellWrap,
-  // CodeCellValue,
   FormattingSummary,
   JsClipboard,
   JsRenderCell,
-  JsRenderCodeCell,
   JsRenderFill,
   Rect,
+  TransactionSummary,
 } from '../../quadratic-core/types';
 import { GridFile } from '../../schemas';
+import { SheetCursorSave } from '../sheet/SheetCursor';
 import { sheets } from './Sheets';
-import { transactionResponse } from './transactionResponse';
 
 const rectangleToRect = (rectangle: Rectangle): RectInternal => {
   return new RectInternal(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
 };
 
-const pointsToRect = (x: number, y: number, width: number, height: number): RectInternal => {
+export const pointsToRect = (x: number, y: number, width: number, height: number): RectInternal => {
   return new RectInternal(new Pos(x, y), new Pos(x + width, y + height));
 };
 
@@ -73,6 +82,42 @@ export class Grid {
   private gridController!: GridController;
   private _dirty = false;
 
+  transactionResponse(summary: TransactionSummary) {
+    if (summary.sheet_list_modified) {
+      sheets.repopulate();
+    }
+
+    if (summary.cell_sheets_modified.length) {
+      pixiApp.cellsSheets.modified(summary.cell_sheets_modified);
+    }
+
+    if (summary.fill_sheets_modified.length) {
+      pixiApp.cellsSheets.updateFills(summary.fill_sheets_modified);
+    }
+
+    if (summary.offsets_modified.length) {
+      sheets.updateOffsets(summary.offsets_modified);
+    }
+
+    if (summary.code_cells_modified.length) {
+      pixiApp.cellsSheets.updateCodeCells(summary.code_cells_modified);
+    }
+
+    if (summary.border_sheets_modified.length) {
+      pixiApp.cellsSheets.updateBorders(summary.border_sheets_modified);
+    }
+
+    const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
+    if (cursor) {
+      sheets.current = cursor.sheetId;
+      sheets.sheet.cursor.load(cursor);
+    }
+    if (summary.save) {
+      this.dirty = true;
+    }
+    pixiApp.setViewportDirty();
+  }
+
   get dirty(): boolean {
     // the sheet is never dirty when mocking large data (to stop it from saving over an actual file)
     return debugMockLargeData ? false : this._dirty;
@@ -97,7 +142,7 @@ export class Grid {
     }
   }
 
-  populateWithRandomFloats(sheetId: string, width: number, height: number): void {
+  populateWithRandomFloats(sheetId: string, width: number, height: number) {
     this.gridController.populateWithRandomFloats(sheetId, pointsToRect(0, 0, width, height));
   }
 
@@ -138,40 +183,34 @@ export class Grid {
     return JSON.parse(data);
   }
 
-  addSheet(): void {
+  addSheet() {
     const summary = this.gridController.addSheet(sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  deleteSheet(sheetId: string): void {
+  deleteSheet(sheetId: string) {
     const summary = this.gridController.deleteSheet(sheetId, sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  setSheetName(sheetId: string, name: string): void {
+  setSheetName(sheetId: string, name: string) {
     const summary = this.gridController.setSheetName(sheetId, name, sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  setSheetColor(sheetId: string, color: string | undefined): void {
+  setSheetColor(sheetId: string, color: string | undefined) {
     const summary = this.gridController.setSheetColor(sheetId, color, sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  duplicateSheet(sheetId: string): void {
+  duplicateSheet(sheetId: string) {
     const summary = this.gridController.duplicateSheet(sheetId, sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  moveSheet(sheetId: string, leftSheetId: string | undefined): void {
+  moveSheet(sheetId: string, leftSheetId: string | undefined) {
     const summary = this.gridController.moveSheet(sheetId, leftSheetId, sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   //#endregion
@@ -179,133 +218,125 @@ export class Grid {
   //#region set grid operations
   //-----------------------------
 
-  setCellValue(options: { sheetId: string; x: number; y: number; value: string }): void {
+  setCellValue(options: { sheetId: string; x: number; y: number; value: string }) {
     const summary = this.gridController.setCellValue(
       options.sheetId,
       new Pos(options.x, options.y),
       options.value,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  // todo....
-  setCodeCellValue(options: { sheetId: string; x: number; y: number; codeString: string }): void {
-    // const summary = this.gridController.set;
-    throw new Error('not implemented yet...');
-    // transactionResponse(summary);
-    // this.dirty = true;
+  setCodeCellValue(options: { sheetId: string; x: number; y: number; language: CodeCellLanguage; codeString: string }) {
+    const summary = this.gridController.setCellCode(
+      options.sheetId,
+      new Pos(options.x, options.y),
+      options.language,
+      options.codeString,
+      sheets.getCursorPosition()
+    );
+    this.transactionResponse(summary);
   }
 
-  deleteCellValues(sheetId: string, rectangle: Rectangle): void {
+  deleteCellValues(sheetId: string, rectangle: Rectangle) {
     const summary = this.gridController.deleteCellValues(
       sheetId,
       rectangleToRect(rectangle),
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  setCellAlign(sheetId: string, rectangle: Rectangle, align: CellAlign | undefined): void {
+  setCellAlign(sheetId: string, rectangle: Rectangle, align: CellAlign | undefined) {
     const summary = this.gridController.setCellAlign(
       sheetId,
       rectangleToRect(rectangle),
       align,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  setCellWrap(sheetId: string, rectangle: Rectangle, wrap: CellWrap): void {
+  setCellWrap(sheetId: string, rectangle: Rectangle, wrap: CellWrap) {
     const summary = this.gridController.setCellWrap(
       sheetId,
       rectangleToRect(rectangle),
       wrap,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  setCellCurrency(sheetId: string, rectangle: Rectangle, symbol: string): void {
+  setCellCurrency(sheetId: string, rectangle: Rectangle, symbol: string) {
     const summary = this.gridController.setCellCurrency(
       sheetId,
       rectangleToRect(rectangle),
       symbol,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  setCellPercentage(sheetId: string, rectangle: Rectangle): void {
+  setCellPercentage(sheetId: string, rectangle: Rectangle) {
     const summary = this.gridController.setCellPercentage(
       sheetId,
       rectangleToRect(rectangle),
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  removeCellNumericFormat(sheetId: string, rectangle: Rectangle): void {
+  removeCellNumericFormat(sheetId: string, rectangle: Rectangle) {
     const summary = this.gridController.removeCellNumericFormat(
       sheetId,
       rectangleToRect(rectangle),
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  setCellBold(sheetId: string, rectangle: Rectangle, bold: boolean): void {
+  setCellBold(sheetId: string, rectangle: Rectangle, bold: boolean) {
     const summary = this.gridController.setCellBold(
       sheetId,
       rectangleToRect(rectangle),
       bold,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  setCellItalic(sheetId: string, rectangle: Rectangle, italic: boolean): void {
+  setCellItalic(sheetId: string, rectangle: Rectangle, italic: boolean) {
     const summary = this.gridController.setCellItalic(
       sheetId,
       rectangleToRect(rectangle),
       italic,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  setCellTextColor(sheetId: string, rectangle: Rectangle, textColor: string | undefined): void {
+  setCellTextColor(sheetId: string, rectangle: Rectangle, textColor: string | undefined) {
     const summary = this.gridController.setCellTextColor(
       sheetId,
       rectangleToRect(rectangle),
       textColor,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  setCellFillColor(sheetId: string, rectangle: Rectangle, fillColor: string | undefined): void {
+  setCellFillColor(sheetId: string, rectangle: Rectangle, fillColor: string | undefined) {
     const summary = this.gridController.setCellFillColor(
       sheetId,
       rectangleToRect(rectangle),
       fillColor,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  changeDecimalPlaces(sheetId: string, source: Pos, rectangle: Rectangle, delta: number): void {
+  changeDecimalPlaces(sheetId: string, source: Pos, rectangle: Rectangle, delta: number) {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
     const summary = this.gridController.changeDecimalPlaces(
       sheetId,
@@ -314,17 +345,27 @@ export class Grid {
       delta,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  clearFormatting(sheetId: string, rectangle: Rectangle): void {
+  clearFormatting(sheetId: string, rectangle: Rectangle) {
     const summary = this.gridController.clearFormatting(
       sheetId,
       rectangleToRect(rectangle),
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
+    this.transactionResponse(summary);
+  }
+
+  async setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
+    const summary = await this.gridController.setRegionBorders(
+      sheetId,
+      rectangleToRect(rectangle),
+      selection,
+      style,
+      sheets.getCursorPosition()
+    );
+    this.transactionResponse(summary);
     this.dirty = true;
   }
 
@@ -348,6 +389,10 @@ export class Grid {
     return JSON.parse(data);
   }
 
+  hasRenderCells(sheetId: string, rectangle: Rectangle): boolean {
+    return this.gridController.hasRenderCells(sheetId, rectangleToRect(rectangle));
+  }
+
   getRenderFills(sheetId: string, rectangle: Rectangle): JsRenderFill[] {
     const data = this.gridController.getRenderFills(sheetId, rectangleToRect(rectangle));
     return JSON.parse(data);
@@ -358,9 +403,8 @@ export class Grid {
     return JSON.parse(data);
   }
 
-  // todo: fix types
-  getCodeValue(sheetId: string, x: number, y: number): any | undefined {
-    return this.gridController.getCodeCellValue(sheetId, new Pos(x, y));
+  getCodeCell(sheetId: string, x: number, y: number): CodeCell | undefined {
+    return this.gridController.getCodeCell(sheetId, new Pos(x, y));
   }
 
   getRenderCodeCells(sheetId: string): JsRenderCodeCell[] {
@@ -374,6 +418,10 @@ export class Grid {
 
   getFormattingSummary(sheetId: string, rectangle: Rectangle): FormattingSummary {
     return this.gridController.getFormattingSummary(sheetId, rectangleToRect(rectangle) as RectInternal);
+  }
+
+  getRenderBorders(sheetId: string): JsRenderBorders {
+    return this.gridController.getRenderBorders(sheetId);
   }
 
   //#endregion
@@ -454,16 +502,14 @@ export class Grid {
     return this.gridController.hasRedo();
   }
 
-  undo(): void {
+  undo() {
     const summary = this.gridController.undo(sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
-  redo(): void {
+  redo() {
     const summary = this.gridController.redo(sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   //#endregion
@@ -480,8 +526,8 @@ export class Grid {
       rectangleToRect(rectangle),
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
+
     return { html, plainText };
   }
 
@@ -491,7 +537,7 @@ export class Grid {
     y: number;
     plainText: string | undefined;
     html: string | undefined;
-  }): void {
+  }) {
     const { sheetId, x, y, plainText, html } = options;
     const summary = this.gridController.pasteFromClipboard(
       sheetId,
@@ -500,8 +546,7 @@ export class Grid {
       html,
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
   }
 
   //#endregion
@@ -515,7 +560,7 @@ export class Grid {
 
     try {
       const summary = this.gridController.importCsv(sheetId, file_bytes, file.name, pos, sheets.getCursorPosition());
-      transactionResponse(summary);
+      this.transactionResponse(summary);
     } catch (error) {
       // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
       // type in the UI.
@@ -529,76 +574,18 @@ export class Grid {
 
   //#region column/row sizes
 
-  getColumnWidth(sheetId: string, x: number): number {
-    return this.gridController.getColumnWidth(sheetId, x);
+  commitTransientResize(sheetId: string, transientResize: TransientResize) {
+    const summary = this.gridController.commitOffsetsResize(sheetId, transientResize, sheets.getCursorPosition());
+    this.transactionResponse(summary);
   }
 
-  getRowHeight(sheetId: string, y: number): number {
-    return this.gridController.getRowHeight(sheetId, y);
+  commitSingleResize(sheetId: string, column: number | undefined, row: number | undefined, size: number) {
+    const summary = this.gridController.commitSingleResize(sheetId, column, row, size, sheets.getCursorPosition());
+    this.transactionResponse(summary);
   }
 
-  getColumnPlacement(sheetId: string, column: number): Placement {
-    return this.gridController.getColumnPlacement(sheetId, column);
-  }
-
-  getRowPlacement(sheetId: string, row: number): Placement {
-    return this.gridController.getRowPlacement(sheetId, row);
-  }
-
-  getXPlacement(sheetId: string, x: number): Placement {
-    return this.gridController.getXPlacement(sheetId, x);
-  }
-
-  getYPlacement(sheetId: string, y: number): Placement {
-    return this.gridController.getYPlacement(sheetId, y);
-  }
-
-  getColumnRow(sheetId: string, x: number, y: number): { column: number; row: number } {
-    return {
-      column: this.getXPlacement(sheetId, x).index,
-      row: this.getYPlacement(sheetId, y).index,
-    };
-  }
-
-  // @returns screen position of a cell
-  getCellOffsets(sheetId: string, column: number, row: number): Rectangle {
-    const screenRect = this.gridController.getCellOffsets(sheetId, column, row);
-    return new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
-  }
-
-  // @returns screen rectangle for a column/row rectangle
-  getScreenRectangle(sheetId: string, column: number, row: number, width: number, height: number): Rectangle {
-    const topLeft = this.getCellOffsets(sheetId, column, row);
-    const bottomRight = this.getCellOffsets(sheetId, column + width, row + height);
-    return new Rectangle(topLeft.left, topLeft.top, bottomRight.right - topLeft.left, bottomRight.bottom - topLeft.top);
-  }
-
-  commitHeadingResize(): void {
-    const summary = this.gridController.commitResize(sheets.getCursorPosition());
-    transactionResponse(summary);
-    this.dirty = true;
-  }
-
-  cancelHeadingResize(): void {
-    this.gridController.cancelResize();
-  }
-
-  headingResizeColumn(sheetId: string, column: number, size?: number): void {
-    this.gridController.resizeColumnTransiently(sheetId, column, size);
-  }
-
-  headingResizeColumnCommit(sheetId: string, column: number, size: number, skipUpdate: boolean): void {
-    const summary = this.gridController.resizeColumn(sheetId, column, size);
-
-    // does not work properly
-    if (!skipUpdate) {
-      transactionResponse(summary);
-    }
-    this.dirty = true;
-  }
-
-  headingResizeRow(sheetId: string, row: number, size?: number): void {
-    this.gridController.resizeRowTransiently(sheetId, row, size);
+  getOffsets(sheetId: string): SheetOffsets {
+    return this.gridController.getOffsets(sheetId);
   }
 
   //#endregion
@@ -606,17 +593,69 @@ export class Grid {
   //#region AutoComplete
   //-----------------
 
-  expand(sheetId: string, rectangle: Rectangle, range: Rectangle) {
+  autocomplete(sheetId: string, rectangle: Rectangle, range: Rectangle) {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
 
-    const summary = this.gridController.expand(
+    const summary = this.gridController.autocomplete(
       sheetId,
       rectangleToRect(rectangle),
       rectangleToRect(range),
       sheets.getCursorPosition()
     );
-    transactionResponse(summary);
-    this.dirty = true;
+    this.transactionResponse(summary);
+  }
+
+  //#endregion
+
+  //#region Compute
+
+  calculationComplete(result: JsCodeResult) {
+    const summary = this.gridController.calculationComplete(result);
+    this.transactionResponse(summary);
+  }
+
+  getTransactionResponse(): TransactionSummary | undefined {
+    return this.gridController.getCalculationTransactionSummary();
+  }
+
+  // returns undefined if there was an error fetching cells (eg, invalid sheet name)
+  calculationGetCells(
+    rect: RectInternal,
+    sheetName: string | undefined,
+    lineNumber: number | undefined
+  ): { x: number; y: number; value: string }[] | undefined {
+    const getCells = new JsComputeGetCells(rect, sheetName, lineNumber === undefined ? undefined : BigInt(lineNumber));
+    const array = this.gridController.calculationGetCells(getCells);
+    if (array) {
+      // indication that getCells resulted in an error
+      // we get the transactionResponse via a rust call b/c of the way types are converted :(
+      if (array.transaction_response) {
+        const transactionSummary = this.getTransactionResponse();
+        if (transactionSummary) {
+          this.transactionResponse(transactionSummary);
+        }
+        return;
+      }
+      let cell = array.next();
+      const results: { x: number; y: number; value: string }[] = [];
+      while (cell) {
+        const pos = cell.getPos();
+        const value = cell.getValue();
+        results.push({ x: Number(pos.x), y: Number(pos.y), value: value });
+        cell = array.next();
+      }
+      array.free();
+      return results;
+    }
+  }
+
+  //#endregion
+
+  //#region Summarize
+  //-----------------
+
+  summarizeSelection() {
+    return this.gridController.summarizeSelection(sheets.sheet.id, rectangleToRect(sheets.sheet.cursor.getRectangle()));
   }
 
   //#endregion
@@ -625,3 +664,12 @@ export class Grid {
 //#end
 
 export const grid = new Grid();
+
+// workaround so Rust can import TS functions
+declare global {
+  interface Window {
+    transactionSummary: any;
+  }
+}
+
+window.transactionSummary = grid.transactionResponse.bind(grid);

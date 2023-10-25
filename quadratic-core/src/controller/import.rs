@@ -1,13 +1,9 @@
-use anyhow::{anyhow, Result};
-use bigdecimal::BigDecimal;
-use smallvec::SmallVec;
-use std::str::FromStr;
+use anyhow::{anyhow, bail, Result};
 
-use crate::{
-    controller::operations::Operation, grid::SheetId, Array, ArraySize, CellValue, Pos, Rect,
+use super::{
+    transaction_summary::TransactionSummary, transactions::TransactionType, GridController,
 };
-
-use super::{transactions::TransactionSummary, GridController};
+use crate::{controller::operation::Operation, grid::SheetId, Pos};
 
 impl GridController {
     /// Imports a CSV file into the grid.
@@ -25,58 +21,48 @@ impl GridController {
         let width = csv::ReaderBuilder::new().from_reader(file).headers()?.len() as u32;
 
         if width == 0 {
-            return Err(error("empty files cannot be processed".into()));
+            bail!("empty files cannot be processed");
         }
 
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .from_reader(file);
 
-        let values = reader
+        let ops = reader
             .records()
             .enumerate()
-            .map(|(index, record)| {
-                let record = record.map_err(|e| error(format!("line {}: {}", index + 1, e)))?;
-
-                // convert the record into a vector of CellValues
+            .map(|(row, record)| {
+                // convert the record into a vector of Operations
                 record
+                    .map_err(|e| error(format!("line {}: {}", row + 1, e)))?
                     .iter()
-                    .map(|value| {
-                        // TODO(ddimaria): Replace with a standard converter once it's in place
-                        Ok(if let Ok(number) = BigDecimal::from_str(value) {
-                            CellValue::Number(number)
-                        } else {
-                            CellValue::Text(value.into())
-                        })
+                    .enumerate()
+                    .map(|(col, value)| {
+                        Ok(self.set_cell_value_operations(
+                            sheet_id,
+                            (insert_at.x + col as i64, insert_at.y + row as i64).into(),
+                            value,
+                        ))
                     })
-                    .collect::<Result<SmallVec<[CellValue; 1]>>>()
+                    .collect::<Result<Vec<Vec<Operation>>>>()
             })
-            .collect::<Result<Vec<SmallVec<[CellValue; 1]>>>>()?
+            .collect::<Result<Vec<Vec<Vec<Operation>>>>>()?
             .into_iter()
             .flatten()
-            .collect::<SmallVec<[CellValue; 1]>>();
+            .flatten()
+            .collect::<Vec<Operation>>();
 
-        let height = values.len() as u32 / width;
-        let size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
-        let values = Array::new_row_major(size, values).map_err(|e| error(e.to_string()))?;
-        let rect = Rect::new_span(
-            insert_at,
-            Pos {
-                x: insert_at.x + (width as i64) - 1,
-                y: insert_at.y + (height as i64) - 1,
-            },
-        );
-        let region = self.region(sheet_id, rect);
-        let ops = vec![Operation::SetCellValues { region, values }];
-
-        Ok(self.transact_forward(ops, cursor))
+        Ok(self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal))
     }
 }
 
 #[cfg(test)]
 mod tests {
 
-    use crate::test_util::{assert_cell_value_row, print_table};
+    use crate::{
+        test_util::{assert_cell_value_row, print_table},
+        Rect,
+    };
 
     use super::*;
 
@@ -97,11 +83,10 @@ Concord,NH,United States,42605
     fn imports_a_simple_csv() {
         let mut grid_controller = GridController::new();
         let sheet_id = grid_controller.grid.sheets()[0].id;
-        let pos = Pos { x: -100, y: 100 };
+        let pos = Pos { x: 0, y: 0 };
 
-        grid_controller
-            .import_csv(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos, None)
-            .unwrap();
+        let _ =
+            grid_controller.import_csv(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos, None);
 
         print_table(
             &grid_controller,
@@ -112,18 +97,18 @@ Concord,NH,United States,42605
         assert_cell_value_row(
             &grid_controller,
             sheet_id,
-            -100,
-            -97,
-            100,
+            0,
+            3,
+            0,
             vec!["city", "region", "country", "population"],
         );
 
         assert_cell_value_row(
             &grid_controller,
             sheet_id,
-            -100,
-            -97,
-            110,
+            0,
+            3,
+            10,
             vec!["Concord", "NH", "United States", "42605"],
         );
     }

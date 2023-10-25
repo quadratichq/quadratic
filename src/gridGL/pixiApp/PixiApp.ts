@@ -3,7 +3,7 @@ import { Container, Graphics, Renderer } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { HEADING_SIZE } from '../../constants/gridConstants';
-import { debugAlwaysShowCache, debugShowCacheFlag } from '../../debugFlags';
+import { debugShowCacheFlag } from '../../debugFlags';
 import {
   copyToClipboardEvent,
   cutToClipboardEvent,
@@ -126,8 +126,8 @@ export class PixiApp {
     this.pointer = new Pointer(this.viewport);
     this.update = new Update();
 
-    if (debugAlwaysShowCache) this.showCache();
-
+    // if (debugAlwaysShowCache) this.showCache();
+    // console.log('listeners...');
     this.setupListeners();
   }
 
@@ -310,11 +310,15 @@ export class PixiApp {
     }
   }
 
-  updateCursorPosition(): void {
+  updateCursorPosition(
+    options = {
+      ensureVisible: true,
+    }
+  ): void {
     this.cursor.dirty = true;
     this.headings.dirty = true;
 
-    ensureVisible();
+    if (options.ensureVisible) ensureVisible();
 
     // triggers useGetBorderMenu clearSelection()
     window.dispatchEvent(new CustomEvent('cursor-position'));

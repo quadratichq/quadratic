@@ -21,7 +21,7 @@ import { CellType } from '../../../schemas';
 import { colors } from '../../../theme/colors';
 import focusInput from '../../../utils/focusInput';
 import { LinkNewTab } from '../../components/LinkNewTab';
-import { AI, Formula, JavaScript, Python, Sql } from '../../icons';
+import { Formula, JavaScript, Python, Sql } from '../../icons';
 import '../../styles/floating-dialog.css';
 
 export interface CellTypeOption {
@@ -55,13 +55,6 @@ let CELL_TYPE_OPTIONS = [
         <LinkNewTabWrapper href={DOCUMENTATION_PYTHON_URL}>and more</LinkNewTabWrapper>.
       </>
     ),
-  },
-  {
-    name: 'Artificial Intelligence (AI)',
-    mode: 'AI',
-    icon: <AI sx={{ color: colors.languageAI }} />,
-    description: <>Generate data using an AI prompt. </>,
-    experimental: true,
   },
   {
     name: 'SQL Query',

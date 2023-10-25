@@ -2,35 +2,31 @@ import { Container, Graphics, Rectangle } from 'pixi.js';
 import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '../../debugFlags';
 import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
+import { CellSheetsModified } from '../../quadratic-core/types';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
-import { Coordinate } from '../types/size';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
 import { CellsFills } from './CellsFills';
 import { CellsMarkers } from './CellsMarker';
+import { CellsSheetPreloader } from './CellsSheetPreloader';
 import { CellsTextHash } from './CellsTextHash';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
 
-const MAXIMUM_FRAME_TIME = 1000 / 15;
-
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
-
-  // used to draw debug boxes for cellsTextHash
-  private cellsTextDebug: Graphics;
-
-  private cellsTextHashContainer: Container;
-
   private cellsArray: CellsArray;
+  private cellsBorders: CellsBorders;
 
   // friend of CellsArray
   cellsMarkers: CellsMarkers;
 
-  private cellsBorders: CellsBorders;
+  // used to draw debug boxes for cellsTextHash
+  private cellsTextDebug: Graphics;
 
   // (hashX, hashY) index into cellsTextHashContainer
   cellsTextHash: Map<string, CellsTextHash>;
+  private cellsTextHashContainer: Container<CellsTextHash>;
 
   // row index into cellsTextHashContainer (used for clipping)
   private cellsRows: Map<number, CellsTextHash[]>;
@@ -41,8 +37,6 @@ export class CellsSheet extends Container {
   // keep track of headings that need adjusting during next update tick
   private dirtyColumnHeadings: Map<number, number>;
   private dirtyRowHeadings: Map<number, number>;
-
-  private resolveTick?: () => void;
 
   sheet: Sheet;
 
@@ -56,7 +50,7 @@ export class CellsSheet extends Container {
     this.dirtyRowHeadings = new Map();
     this.cellsFills = this.addChild(new CellsFills(this));
     this.cellsTextDebug = this.addChild(new Graphics());
-    this.cellsTextHashContainer = this.addChild(new Container());
+    this.cellsTextHashContainer = this.addChild(new Container<CellsTextHash>());
     this.cellsArray = this.addChild(new CellsArray(this));
     this.cellsBorders = this.addChild(new CellsBorders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
@@ -70,6 +64,14 @@ export class CellsSheet extends Container {
     };
   }
 
+  async preload(): Promise<void> {
+    this.cellsFills.create();
+    this.cellsBorders.create();
+    this.cellsArray.create();
+    const cellsSheetPreloader = new CellsSheetPreloader(this);
+    await cellsSheetPreloader.preload();
+  }
+
   private createHash(hashX: number, hashY: number): CellsTextHash | undefined {
     const rect = new Rectangle(
       hashX * sheetHashWidth,
@@ -77,9 +79,7 @@ export class CellsSheet extends Container {
       sheetHashWidth - 1,
       sheetHashHeight - 1
     );
-    const cells = this.sheet.getRenderCells(rect);
-    const background = this.sheet.getRenderFills(rect);
-    if (cells.length || background.length) {
+    if (this.sheet.hasRenderCells(rect)) {
       const key = `${hashX},${hashY}`;
       const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
       this.cellsTextHash.set(key, cellsHash);
@@ -88,7 +88,6 @@ export class CellsSheet extends Container {
         row.push(cellsHash);
       } else {
         this.cellsRows.set(hashY, [cellsHash]);
-        this.dirtyRows.add(hashY);
       }
       return cellsHash;
     }
@@ -203,65 +202,6 @@ export class CellsSheet extends Container {
     return hash;
   }
 
-  changed(options: {
-    cells?: Coordinate[];
-    column?: number;
-    row?: number;
-    rectangle?: Rectangle;
-    labels?: boolean;
-    background?: boolean;
-  }) {
-    const hashes = new Set<CellsTextHash>();
-    if (options.cells) {
-      options.cells.forEach((cell) => {
-        let hash = this.getCellsHash(cell.x, cell.y, true);
-        if (!hash) {
-          const { x, y } = CellsSheet.getHash(cell.x, cell.y);
-          hash = this.createHash(x, y);
-        }
-        if (hash) {
-          hashes.add(hash);
-          if (options.labels) {
-            this.dirtyRows.add(hash.hashY);
-          }
-        }
-      });
-    } else if (options.column) {
-      const columnHashes = this.getColumnHashes(options.column);
-      columnHashes.forEach((hash) => {
-        hashes.add(hash);
-        if (options.labels) {
-          this.dirtyRows.add(hash.hashY);
-        }
-      });
-    } else if (options.row) {
-      const rowHashes = this.getRowHashes(options.row);
-      rowHashes.forEach((hash) => hashes.add(hash));
-      if (options.labels) {
-        this.dirtyRows.add(Math.floor(options.row / sheetHashHeight));
-      }
-    } else if (options.rectangle) {
-      for (let y = options.rectangle.top; y <= options.rectangle.bottom + sheetHashHeight - 1; y += sheetHashHeight) {
-        for (let x = options.rectangle.left; x <= options.rectangle.right + sheetHashWidth - 1; x += sheetHashWidth) {
-          let hash = this.getCellsHash(x, y);
-          if (!hash) {
-            const hashCoordinate = CellsSheet.getHash(x, y);
-            hash = this.createHash(hashCoordinate.x, hashCoordinate.y);
-          }
-          if (hash) {
-            hashes.add(hash);
-            if (options.labels) {
-              this.dirtyRows.add(hash.hashY);
-            }
-          }
-        }
-      }
-    }
-    if (options.background) {
-      this.cellsFills.create();
-    }
-  }
-
   // this assumes that dirtyRows has a size (checked in calling functions)
   private updateNextDirtyRow(): void {
     const nextRow = this.dirtyRows.values().next().value;
@@ -270,43 +210,11 @@ export class CellsSheet extends Container {
     if (!hashes) throw new Error('Expected hashes to be defined in preload');
     hashes.forEach((hash) => hash.createLabels());
     hashes.forEach((hash) => hash.overflowClip());
-    hashes.forEach((hash) => hash.updateBuffers());
+    hashes.forEach((hash) => hash.updateBuffers(false));
   }
 
-  // preloads one row of hashes per tick
-  private preloadTick = (time?: number): void => {
-    if (!this.dirtyRows.size) {
-      if (!this.resolveTick) throw new Error('Expected resolveTick to be defined in preloadTick');
-      this.resolveTick();
-      this.resolveTick = undefined;
-      return;
-    }
-    time = time ?? performance.now();
-    debugTimeReset();
-    this.updateNextDirtyRow();
-    const now = performance.now();
-    if (now - time < MAXIMUM_FRAME_TIME) {
-      this.preloadTick(time);
-    } else {
-      debugTimeCheck('preloadTick');
-      setTimeout(this.preloadTick);
-    }
-  };
-
-  preload(): Promise<void> {
-    return new Promise((resolve) => {
-      this.cellsFills.create();
-      this.cellsBorders.create();
-
-      if (!this.createHashes()) {
-        resolve();
-      } else {
-        this.cellsArray.create();
-        this.resolveTick = resolve;
-        debugTimeReset();
-        this.preloadTick();
-      }
-    });
+  updateCellsArray() {
+    this.cellsArray.create();
   }
 
   updateFill(): void {
@@ -315,8 +223,8 @@ export class CellsSheet extends Container {
 
   // adjust hashes after a column/row resize
   // todo: this may need to be scheduled for large data sets
-  private updateHeadings(): void {
-    if (!this.dirtyColumnHeadings.size && !this.dirtyRowHeadings.size) return;
+  private updateHeadings(): boolean {
+    if (!this.dirtyColumnHeadings.size && !this.dirtyRowHeadings.size) return false;
 
     // hashes that need to update their clipping and buffers
     const hashesToUpdate: Set<CellsTextHash> = new Set();
@@ -362,15 +270,21 @@ export class CellsSheet extends Container {
     this.dirtyRowHeadings.clear();
 
     hashesToUpdate.forEach((hash) => hash.overflowClip());
-    this.cellsTextHash.forEach((hash) => hash.updateBuffers());
+    this.cellsTextHash.forEach((hash) => hash.updateBuffers(true));
 
     // todo: these can be much more efficient
     this.cellsFills.create();
     this.cellsArray.create();
+    return true;
   }
 
   update(): boolean {
-    this.updateHeadings();
+    if (this.updateHeadings()) return true;
+    this.cellsTextHashContainer.children.forEach((cellTextHash) => {
+      if (cellTextHash.update()) {
+        return true;
+      }
+    });
     if (this.dirtyRows.size) {
       this.updateNextDirtyRow();
       return true;
@@ -408,5 +322,15 @@ export class CellsSheet extends Container {
       }
     });
     return max;
+  }
+
+  // update values for cells
+  modified(modified: CellSheetsModified[]): void {
+    for (const update of modified) {
+      const cellsHash = this.getCellsHash(Number(update.x) * sheetHashWidth, Number(update.y) * sheetHashHeight, true);
+      if (cellsHash) {
+        cellsHash.dirty = true;
+      }
+    }
   }
 }

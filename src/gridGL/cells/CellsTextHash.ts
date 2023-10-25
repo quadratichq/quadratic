@@ -1,5 +1,4 @@
 import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
-import { grid } from '../../grid/controller/Grid';
 import { Bounds } from '../../grid/sheet/Bounds';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { JsRenderCell } from '../../quadratic-core/types';
@@ -27,6 +26,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
 
   viewBounds: Bounds;
 
+  // flag to recreate label
   dirty = false;
 
   // color to use for drawDebugBox
@@ -48,7 +48,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   // key used to find individual cell labels
-  private getKey(cell: JsRenderCell): string {
+  private getKey(cell: { x: bigint | number; y: bigint | number }): string {
     return `${cell.x},${cell.y}`;
   }
 
@@ -79,17 +79,31 @@ export class CellsTextHash extends Container<LabelMeshes> {
     }
   }
 
+  private createLabel(cell: JsRenderCell): CellLabel {
+    const rectangle = this.sheet.getCellOffsets(Number(cell.x), Number(cell.y));
+    const cellLabel = new CellLabel(cell, rectangle);
+    this.cellLabels.set(this.getKey(cell), cellLabel);
+    return cellLabel;
+  }
+
   createLabels(): void {
     debugTimeReset();
     this.cellLabels = new Map();
     const cells = this.sheet.getRenderCells(this.AABB);
-    cells.forEach((cell) => {
-      const rectangle = grid.getCellOffsets(this.sheet.id, Number(cell.x), Number(cell.y));
-      const cellLabel = new CellLabel(cell, rectangle);
-      this.cellLabels.set(this.getKey(cell), cellLabel);
-    });
+    cells.forEach((cell) => this.createLabel(cell));
     this.updateText();
     debugTimeCheck('cellsLabels');
+  }
+
+  update(): boolean {
+    if (this.dirty) {
+      this.createLabels();
+      this.overflowClip();
+      this.updateBuffers(false);
+      this.dirty = false;
+      return true;
+    }
+    return false;
   }
 
   private updateText() {
@@ -129,9 +143,9 @@ export class CellsTextHash extends Container<LabelMeshes> {
     }
   }
 
-  updateBuffers(): void {
+  updateBuffers(reuseBuffers: boolean): void {
     // creates labelMeshes webGL buffers based on size
-    this.labelMeshes.prepare();
+    this.labelMeshes.prepare(reuseBuffers);
 
     // populate labelMeshes webGL buffers
     this.viewBounds.clear();
@@ -188,13 +202,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   drawDebugBox(g: Graphics) {
-    const screen = grid.getScreenRectangle(
-      this.sheet.id,
-      this.AABB.left,
-      this.AABB.top,
-      this.AABB.width,
-      this.AABB.height
-    );
+    const screen = this.sheet.getScreenRectangle(this.AABB.left, this.AABB.top, this.AABB.width, this.AABB.height);
     g.beginFill(this.debugColor, 0.25);
     g.drawShape(screen);
     g.endFill();

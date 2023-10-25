@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::Pos;
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(tag = "type")]
 pub enum RangeRef {
@@ -61,22 +61,27 @@ impl RangeRef {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CellRef {
+    pub sheet: Option<String>,
     pub x: CellRefCoord,
     pub y: CellRefCoord,
 }
 impl fmt::Display for CellRef {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let Self { x, y } = self;
+        let Self { sheet, x, y } = self;
+        if let Some(sheet) = sheet {
+            write!(f, "'{}'!", crate::formulas::escape_string(sheet))?;
+        }
         write!(f, "R{y}C{x}")
     }
 }
 impl CellRef {
     /// Constructs an absolute cell reference.
-    pub fn absolute(pos: Pos) -> Self {
+    pub fn absolute(sheet: Option<String>, pos: Pos) -> Self {
         Self {
+            sheet,
             x: CellRefCoord::Absolute(pos.x),
             y: CellRefCoord::Absolute(pos.y),
         }
@@ -84,7 +89,7 @@ impl CellRef {
 
     /// Resolves the reference to a absolute coordinates, given the cell
     /// coordinate where evaluation is taking place.
-    pub fn resolve_from(self, base: Pos) -> Pos {
+    pub fn resolve_from(&self, base: Pos) -> Pos {
         Pos {
             x: self.x.resolve_from(base.x),
             y: self.y.resolve_from(base.y),
@@ -92,14 +97,28 @@ impl CellRef {
     }
     /// Returns the human-friendly string representing this cell reference in
     /// A1-style notation.
-    pub fn a1_string(self, base: Pos) -> String {
+    pub fn a1_string(&self, base: Pos) -> String {
+        let sheet_str = match &self.sheet {
+            Some(sheet_name) => format!("{}!", crate::formulas::escape_string(sheet_name)),
+            None => String::new(),
+        };
         let col = self.x.col_string(base.x);
         let row = self.y.col_string(base.y);
-        format!("{col}{row}")
+        format!("{sheet_str}{col}{row}")
     }
 
     /// Parses an A1-style cell reference relative to a given location.
-    pub fn parse_a1(s: &str, base: Pos) -> Option<CellRef> {
+    pub fn parse_a1(mut s: &str, base: Pos) -> Option<CellRef> {
+        let mut sheet = None;
+        if let Some((sheet_name_str, rest)) = s.split_once('!') {
+            s = rest;
+            if sheet_name_str.starts_with(['\'', '"']) {
+                sheet = crate::formulas::parse_string_literal(sheet_name_str);
+            } else {
+                sheet = Some(sheet_name_str.to_string());
+            }
+        }
+
         lazy_static! {
             /// ^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)$
             /// ^                             $     match full string
@@ -109,7 +128,7 @@ impl CellRef {
             ///                      (n?)           group 4: optional `n`
             ///                          (\d+)      group 5: row number
             pub static ref A1_CELL_REFERENCE_REGEX: Regex =
-                Regex::new(r#"^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)$"#).unwrap();
+                Regex::new(r"^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)$").unwrap();
         }
 
         let captures = A1_CELL_REFERENCE_REGEX.captures(s)?;
@@ -138,6 +157,7 @@ impl CellRef {
         };
 
         Some(CellRef {
+            sheet,
             x: col_ref,
             y: row_ref,
         })
@@ -213,5 +233,23 @@ impl CellRefCoord {
     fn row_string(self, base: i64) -> String {
         let row = self.resolve_from(base);
         format!("{}{row}", self.prefix())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_a1_parsing() {
+        for col in ["A", "B", "C", "AE", "QR", "nA", "nB", "nQR"] {
+            for row in ["n99", "n42", "n2", "n1", "0", "1", "2", "42", "99"] {
+                let s = format!("{col}{row}");
+                let pos = CellRef::parse_a1(&s, crate::Pos::ORIGIN)
+                    .expect("invalid cell reference")
+                    .resolve_from(crate::Pos::ORIGIN);
+                assert_eq!(s, pos.a1_string());
+            }
+        }
     }
 }

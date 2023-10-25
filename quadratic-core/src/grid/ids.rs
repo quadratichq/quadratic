@@ -93,6 +93,10 @@ impl RegionRef {
     pub fn len(&self) -> usize {
         self.columns.len() * self.rows.len()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.columns.len() == 0 && self.rows.len() == 0
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -152,6 +156,10 @@ impl<Id: Copy + Hash + Eq, Idx: Copy + Ord> IdMap<Id, Idx> {
 
     pub fn len(&self) -> usize {
         self.id_to_index.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.id_to_index.is_empty()
     }
 
     pub fn add(&mut self, id: Id, index: Idx) {

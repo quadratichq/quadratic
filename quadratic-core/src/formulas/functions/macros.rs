@@ -496,9 +496,11 @@ macro_rules! params_list {
     () => { vec![] };
     ($($arg_name:tt: $arg_type:tt),+ $(,)?) => {{
         let mut result = vec![];
+
         $(
             params_list!(@append(result, $arg_name, $arg_type));
         )*
+        println!("params_list!({:?})", result);
         result
     }};
 }

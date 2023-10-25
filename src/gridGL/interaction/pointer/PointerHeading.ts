@@ -36,7 +36,7 @@ export class PointerHeading {
   handleEscape(): boolean {
     if (this.active) {
       this.active = false;
-      grid.cancelHeadingResize();
+      sheets.sheet.offsets.cancelResize();
       pixiApp.gridLines.dirty = true;
       pixiApp.cursor.dirty = true;
       pixiApp.headings.dirty = true;
@@ -75,10 +75,11 @@ export class PointerHeading {
         originalSize: headingResize.width ?? headingResize.height ?? 0,
         viewportStart: headingResize.row === undefined ? viewport.x : viewport.y,
       };
+      const offsets = sheets.sheet.offsets;
       if (headingResize.column !== undefined) {
-        grid.headingResizeColumn(sheets.sheet.id, headingResize.column, headingResize.width);
+        offsets.resizeColumnTransiently(headingResize.column, headingResize.width);
       } else if (headingResize.row !== undefined) {
-        grid.headingResizeRow(sheets.sheet.id, headingResize.row, headingResize.height);
+        offsets.resizeRowTransiently(headingResize.row, headingResize.height);
       }
       this.resizing = {
         lastSize: this.viewportChanges.originalSize,
@@ -147,6 +148,7 @@ export class PointerHeading {
     if (!this.active) {
       return false;
     } else if (this.resizing) {
+      const offsets = sheets.sheet.offsets;
       if (this.resizing.column !== undefined) {
         let size: number;
         if (this.resizing.column >= 0) {
@@ -162,7 +164,7 @@ export class PointerHeading {
 
         if (size !== this.resizing.width) {
           this.resizing.width = size;
-          grid.headingResizeColumn(sheets.sheet.id, this.resizing.column, size);
+          offsets.resizeColumnTransiently(this.resizing.column, size);
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
@@ -189,7 +191,7 @@ export class PointerHeading {
 
         if (size !== this.resizing.height) {
           this.resizing.height = size;
-          grid.headingResizeRow(sheets.sheet.id, this.resizing.row, size);
+          offsets.resizeRowTransiently(this.resizing.row, size);
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
@@ -215,7 +217,10 @@ export class PointerHeading {
       this.active = false;
       const { resizing: headingResizing } = this;
       if (headingResizing) {
-        grid.commitHeadingResize();
+        const transientResize = sheets.sheet.offsets.getResizeToApply();
+        if (transientResize) {
+          grid.commitTransientResize(sheets.sheet.id, transientResize);
+        }
         this.resizing = undefined;
 
         // fixes a bug where the viewport may still be decelerating
@@ -231,10 +236,9 @@ export class PointerHeading {
     const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
     const size = Math.max(contentSizePlusMargin, MINIMUM_COLUMN_SIZE);
     const sheetId = sheets.sheet.id;
-    const originalSize = grid.getCellOffsets(sheetId, column, 0);
+    const originalSize = sheets.sheet.getCellOffsets(column, 0);
     if (originalSize.width !== size) {
-      grid.headingResizeColumnCommit(sheetId, column, size, true);
-      pixiApp.adjustHeadings({ sheetId, column, delta: size - originalSize.width });
+      grid.commitSingleResize(sheetId, column, undefined, size);
     }
   }
 

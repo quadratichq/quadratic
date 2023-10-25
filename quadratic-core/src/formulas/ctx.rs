@@ -1,8 +1,10 @@
+use std::collections::HashSet;
+
 use futures::future::LocalBoxFuture;
 use smallvec::SmallVec;
 
 use super::*;
-use crate::{Array, CellValue, CodeResult, ErrorMsg, Pos, Span, Spanned, Value};
+use crate::{grid::Grid, Array, CellValue, CodeResult, ErrorMsg, SheetPos, Span, Spanned, Value};
 
 macro_rules! zip_map_impl {
     ($arrays:ident.zip_map(|$args_buffer:ident| $eval_f:expr)) => {{
@@ -37,22 +39,46 @@ macro_rules! zip_map_impl {
 
 /// Formula execution context.
 pub struct Ctx<'ctx> {
-    pub grid: &'ctx mut dyn GridProxy,
-    pub pos: Pos,
+    /// Grid file to access cells from.
+    pub grid: &'ctx Grid,
+    /// Position in the grid from which the formula is being evaluated.
+    pub pos: SheetPos,
+    /// Cells that have been accessed in evaluating the formula.
+    pub cells_accessed: HashSet<SheetPos>,
 }
-impl Ctx<'_> {
+impl<'ctx> Ctx<'ctx> {
+    /// Constructs a context for evaluating a formula at `pos` in `grid`.
+    pub fn new(grid: &'ctx Grid, pos: SheetPos) -> Self {
+        Ctx {
+            grid,
+            pos,
+            cells_accessed: HashSet::new(),
+        }
+    }
+
     /// Fetches the contents of the cell at `ref_pos` evaluated at `base_pos`,
     /// or returns an error in the case of a circular reference.
     pub async fn get_cell(
         &mut self,
-        ref_pos: CellRef,
+        ref_pos: &CellRef,
         span: Span,
     ) -> CodeResult<Spanned<CellValue>> {
-        let ref_pos = ref_pos.resolve_from(self.pos);
-        if ref_pos == self.pos {
+        let sheet = match &ref_pos.sheet {
+            Some(sheet_name) => self
+                .grid
+                .sheet_from_name(sheet_name.clone()) // TODO: should not need clone
+                .ok_or(ErrorMsg::BadCellReference.with_span(span))?,
+            None => self.grid.sheet_from_id(self.pos.sheet_id),
+        };
+        let ref_pos = ref_pos.resolve_from(self.pos.without_sheet());
+        let ref_pos_with_sheet = ref_pos.with_sheet(sheet.id);
+        if ref_pos_with_sheet == self.pos {
             return Err(ErrorMsg::CircularReference.with_span(span));
         }
-        let value = self.grid.get(ref_pos).await;
+
+        self.cells_accessed.insert(ref_pos_with_sheet);
+
+        let value = sheet.get_cell_value(ref_pos).unwrap_or(CellValue::Blank);
         Ok(Spanned { inner: value, span })
     }
 

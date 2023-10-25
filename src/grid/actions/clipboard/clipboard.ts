@@ -4,6 +4,7 @@ import mixpanel from 'mixpanel-browser';
 import { isEditorOrAbove } from '../../../actions';
 import { GlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { debugTimeCheck, debugTimeReset } from '../../../gridGL/helpers/debugPerformance';
+import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
 import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
 import { grid } from '../../controller/Grid';
@@ -17,29 +18,28 @@ export const fullClipboardSupport = (): boolean => {
 
 //#region document event handler for copy, paste, and cut
 
+// returns if focus is not on the body or canvas or parent of canvas
+const canvasIsTarget = (e: ClipboardEvent) => {
+  return (
+    e.target === document.body || e.target === pixiApp.canvas || (e.target as HTMLElement)?.contains(pixiApp.canvas)
+  );
+};
+
 export const copyToClipboardEvent = (e: ClipboardEvent) => {
+  if (!canvasIsTarget(e)) return;
   debugTimeReset();
   const rectangle = sheets.sheet.cursor.getRectangle();
   const { plainText, html } = grid.copyToClipboard(sheets.sheet.id, rectangle);
-  if (!e.clipboardData) {
-    Sentry.captureEvent({
-      message: 'ClipboardData not defined',
-      level: Sentry.Severity.Warning,
-    });
-    console.warn('clipboardData is not defined');
-    return;
-  }
-  e.clipboardData.setData('text/html', html);
-  e.clipboardData.setData('text', plainText);
+  toClipboard(plainText, html);
   e.preventDefault();
   debugTimeCheck('copy to clipboard');
 };
 
-export const cutToClipboardEvent = (e: ClipboardEvent) => {
+export const cutToClipboardEvent = async (e: ClipboardEvent) => {
   if (!isEditorOrAbove(pixiAppSettings.permission)) return;
   debugTimeReset();
   const rectangle = sheets.sheet.cursor.getRectangle();
-  const { plainText, html } = grid.cutToClipboard(sheets.sheet.id, rectangle);
+  const { plainText, html } = await grid.cutToClipboard(sheets.sheet.id, rectangle);
   if (!e.clipboardData) {
     console.warn('clipboardData is not defined');
     return;
@@ -47,10 +47,11 @@ export const cutToClipboardEvent = (e: ClipboardEvent) => {
   e.clipboardData.setData('text/html', html);
   e.clipboardData.setData('text', plainText);
   e.preventDefault();
-  debugTimeCheck('cut to clipboard');
+  debugTimeCheck('[Clipboard] cut to clipboard');
 };
 
 export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
+  if (!canvasIsTarget(e)) return;
   if (!isEditorOrAbove(pixiAppSettings.permission)) return;
 
   if (!e.clipboardData) {
@@ -76,6 +77,7 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
       plainText,
       html,
     });
+    debugTimeCheck('[Clipboard] paste to clipboard');
   }
 
   // enables Firefox menu pasting after a ctrl+v paste
@@ -103,15 +105,15 @@ const toClipboard = (plainText: string, html: string) => {
 
   // fallback support for firefox
   else {
-    localforage.setItem(clipboardLocalStorageKey, html);
     navigator.clipboard.writeText(plainText);
+    localforage.setItem(clipboardLocalStorageKey, html);
   }
 };
 
 export const cutToClipboard = async () => {
   if (!isEditorOrAbove(pixiAppSettings.permission)) return;
   debugTimeReset();
-  const { plainText, html } = grid.cutToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
+  const { plainText, html } = await grid.cutToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
   toClipboard(plainText, html);
   debugTimeCheck('cut to clipboard (fallback)');
 };
@@ -154,8 +156,7 @@ export const pasteFromClipboard = async () => {
   if (!isEditorOrAbove(pixiAppSettings.permission)) return;
   const target = sheets.sheet.cursor.originPosition;
 
-  // handles non-Firefox browsers
-  if (navigator.clipboard?.read) {
+  if (fullClipboardSupport()) {
     const clipboardData = await navigator.clipboard.read();
 
     // get text/plain if available

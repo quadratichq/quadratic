@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use anyhow::{bail, Result};
 use std::str::FromStr;
 
 use lexicon_fractional_index::key_between;
@@ -18,10 +18,13 @@ pub mod js_types;
 mod offsets;
 mod response;
 pub mod series;
-mod sheet;
+pub mod sheet;
 
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
-pub use borders::{CellBorder, CellBorderStyle, CellBorders, SheetBorders};
+pub use borders::{
+    generate_borders, set_region_borders, BorderSelection, BorderStyle, CellBorderLine,
+    LegacyCellBorder, LegacyCellBorders, SheetBorders,
+};
 pub use bounds::GridBounds;
 pub use code::*;
 pub use column::{Column, ColumnData};
@@ -32,16 +35,12 @@ pub use formatting::{
 pub use ids::*;
 pub use sheet::Sheet;
 
-use crate::{
-    controller::compute::{SheetPos, SheetRect},
-    CellValue, Pos, Rect, Value,
-};
+use crate::{Array, CellValue, Pos, SheetPos, SheetRect, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Grid {
     sheets: Vec<Sheet>,
-    dependencies: HashMap<SheetPos, Vec<SheetRect>>,
 }
 impl Default for Grid {
     fn default() -> Self {
@@ -52,19 +51,39 @@ impl Grid {
     pub fn new() -> Self {
         let mut ret = Grid {
             sheets: vec![],
-            dependencies: HashMap::new(),
+            // dependencies: HashMap::new(),
         };
         ret.add_sheet(None).expect("error adding initial sheet");
+        ret
+    }
+    pub fn from_array(base_pos: Pos, array: &Array) -> Self {
+        let mut ret = Grid::new();
+        let sheet = &mut ret.sheets_mut()[0];
+        for ((x, y), value) in array.size().iter().zip(array.cell_values_slice()) {
+            let x = base_pos.x + x as i64;
+            let y = base_pos.y + y as i64;
+            sheet.set_cell_value(Pos { x, y }, value.clone());
+        }
         ret
     }
     pub fn sheets(&self) -> &[Sheet] {
         &self.sheets
     }
-    pub fn dependencies_mut(&mut self) -> &mut HashMap<SheetPos, Vec<SheetRect>> {
-        &mut self.dependencies
-    }
+    // pub fn dependencies_mut(&mut self) -> &mut HashMap<SheetPos, Vec<SheetRect>> {
+    //     &mut self.dependencies
+    // }
     pub fn sheet_ids(&self) -> Vec<SheetId> {
         self.sheets.iter().map(|sheet| sheet.id).collect()
+    }
+    pub fn sheet_mut_from_name(&mut self, name: String) -> Option<&Sheet> {
+        if let Some(sheet) = self.sheets.iter().find(|sheet| sheet.name == name) {
+            Some(sheet)
+        } else {
+            None
+        }
+    }
+    pub fn sheet_from_name(&self, name: String) -> Option<&Sheet> {
+        self.sheets.iter().find(|sheet| sheet.name == name)
     }
     pub fn sheets_mut(&mut self) -> &mut [Sheet] {
         &mut self.sheets
@@ -73,20 +92,14 @@ impl Grid {
         self.sheets.sort_by(|a, b| a.order.cmp(&b.order));
     }
     pub fn end_order(&self) -> String {
-        let last_order = match self.sheets.last() {
-            Some(last) => Some(last.order.clone()),
-            None => None,
-        };
+        let last_order = self.sheets.last().map(|last| last.order.clone());
         key_between(&last_order, &None).unwrap()
     }
     pub fn previous_sheet_order(&self, sheet_id: SheetId) -> Option<String> {
         let mut previous: Option<&Sheet> = None;
         for sheet in self.sheets.iter() {
             if sheet.id == sheet_id {
-                return match previous {
-                    Some(previous) => Some(previous.order.clone()),
-                    None => None,
-                };
+                return previous.map(|previous| previous.order.clone());
             }
             previous = Some(sheet);
         }
@@ -100,13 +113,13 @@ impl Grid {
             }
             if sheet.id == sheet_id {
                 next = true;
-            }
+            };
         }
         None
     }
     /// Adds a sheet to the grid. Returns an error if the sheet name is already
     /// in use.
-    pub fn add_sheet(&mut self, sheet: Option<Sheet>) -> Result<SheetId, ()> {
+    pub fn add_sheet(&mut self, sheet: Option<Sheet>) -> Result<SheetId> {
         // for new sheets, order is after the last one
         let sheet = sheet.unwrap_or_else(|| {
             Sheet::new(
@@ -123,7 +136,7 @@ impl Grid {
             .iter()
             .any(|old_sheet| old_sheet.name == sheet.name)
         {
-            return Err(());
+            bail!("sheet name already in use");
         }
         self.sheets.push(sheet);
         self.sort_sheets();
@@ -154,7 +167,7 @@ impl Grid {
         let Some(sheet_id) = sheet_id else {
             return false;
         };
-        self.sheets.iter().position(|s| s.id == sheet_id).is_some()
+        self.sheets.iter().any(|s| s.id == sheet_id)
     }
     pub fn sheet_from_id(&self, sheet_id: SheetId) -> &Sheet {
         let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");
@@ -172,14 +185,6 @@ impl Grid {
     pub fn sheet_mut_from_string(&mut self, sheet_id: String) -> &Sheet {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         self.sheet_mut_from_id(sheet_id)
-    }
-
-    /// Returns a list of rectangles that exactly covers a region. Ignores IDs
-    /// for columns and rows that don't exist.
-    pub(crate) fn region_rects(&self, region: &RegionRef) -> impl Iterator<Item = (SheetId, Rect)> {
-        let sheet_id = region.sheet;
-        let sheet = self.sheet_from_id(sheet_id);
-        sheet.region_rects(region).map(move |rect| (sheet_id, rect))
     }
 }
 

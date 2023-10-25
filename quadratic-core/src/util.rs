@@ -30,7 +30,7 @@ pub(crate) mod btreemap_serde {
     ) -> Result<BTreeMap<K, V>, D::Error> {
         Ok(HashMap::<String, V>::deserialize(d)?
             .into_iter()
-            .map(|(k, v)| ((serde_json::from_str(&k).unwrap(), v)))
+            .map(|(k, v)| (serde_json::from_str(&k).unwrap(), v))
             .collect())
     }
 }
@@ -62,7 +62,7 @@ pub(crate) mod hashmap_serde {
     ) -> Result<HashMap<K, V>, D::Error> {
         Ok(HashMap::<String, V>::deserialize(d)?
             .into_iter()
-            .map(|(k, v)| ((serde_json::from_str(&k).unwrap(), v)))
+            .map(|(k, v)| (serde_json::from_str(&k).unwrap(), v))
             .collect())
     }
 }
@@ -185,7 +185,7 @@ pub fn column_from_name(mut s: &str) -> Option<i64> {
     }
 
     fn digit(c: char) -> Option<i64> {
-        ('A'..='Z').contains(&c).then(|| c as i64 - 'A' as i64)
+        c.is_ascii_uppercase().then_some(c as i64 - 'A' as i64)
     }
 
     let mut chars = s.chars();
@@ -234,7 +234,7 @@ macro_rules! impl_display {
 pub fn union_ranges(ranges: impl IntoIterator<Item = Option<Range<i64>>>) -> Option<Range<i64>> {
     ranges
         .into_iter()
-        .filter_map(|x| x)
+        .flatten()
         .reduce(|a, b| std::cmp::min(a.start, b.start)..std::cmp::max(a.end, b.end))
 }
 
@@ -245,16 +245,16 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
         .collect();
 
     // Find the first number that's not already used.
-    let i = (1..).find(|i| !already_used_numbers.contains(&i)).unwrap();
+    let i = (1..).find(|i| !already_used_numbers.contains(i)).unwrap();
     format!("{prefix} {i}")
 }
 
 /// For debugging both in tests and in the JS console
 pub fn dbgjs(val: impl fmt::Debug) {
-    #[cfg(not(test))]
+    #[cfg(feature = "js")]
     crate::wasm_bindings::js::log(&(format!("{:?}", val)));
 
-    #[cfg(test)]
+    #[cfg(not(feature = "js"))]
     dbg!(val);
 }
 

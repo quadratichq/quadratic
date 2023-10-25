@@ -35,6 +35,13 @@ export default function QuadraticGrid() {
     pixiAppSettings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
   }, [editorInteractionState, setEditorInteractionState]);
 
+  const [showInput, setShowInput] = useState(false);
+  useEffect(() => {
+    const changeInput = (e: any) => setShowInput(e.detail.showInput);
+    window.addEventListener('change-input', changeInput);
+    return () => window.removeEventListener('change-input', changeInput);
+  }, []);
+
   const [editorHighlightedCellsState, setEditorHighlightedCellsState] = useRecoilState(editorHighlightedCellsStateAtom);
   useEffect(() => {
     pixiAppSettings.updateEditorHighlightedCellsState(editorHighlightedCellsState, setEditorHighlightedCellsState);
@@ -114,7 +121,7 @@ export default function QuadraticGrid() {
       }}
       onKeyUp={onKeyUp}
     >
-      <CellInput container={container} />
+      {showInput && <CellInput container={container} />}
       <FloatingContextMenu container={container} showContextMenu={showContextMenu} />
     </div>
   );

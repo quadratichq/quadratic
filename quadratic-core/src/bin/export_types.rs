@@ -1,6 +1,9 @@
 use std::fs::create_dir_all;
 
-use quadratic_core::{controller::transactions, *};
+use quadratic_core::{
+    controller::transaction_summary::{CellSheetsModified, TransactionSummary},
+    *,
+};
 use ts_rs::TS;
 
 macro_rules! generate_type_declarations {
@@ -18,15 +21,12 @@ fn main() {
     s += "// Do not modify it manually.\n\n";
 
     s += &generate_type_declarations!(
-        transactions::TransactionSummary,
+        TransactionSummary,
+        CellSheetsModified,
         formulas::RangeRef,
         formulas::CellRef,
         formulas::CellRefCoord,
-        grid::CellBorders,
-        grid::CellBorderStyle,
-        grid::CellBorder,
         grid::GridBounds,
-        grid::CodeCellLanguage,
         // grid::CodeCellValue,
         // grid::CodeCellRunOutput,
         // grid::CodeCellRunResult,
@@ -41,11 +41,8 @@ fn main() {
         grid::CellRef,
         grid::js_types::JsRenderCell,
         grid::js_types::JsRenderFill,
-        grid::js_types::JsRenderBorder,
         grid::js_types::FormattingSummary,
         grid::js_types::CellFormatSummary,
-        grid::js_types::JsRenderCodeCell,
-        grid::js_types::JsRenderCodeCellState,
         grid::js_types::JsClipboard,
         // values
         ArraySize,
@@ -54,9 +51,6 @@ fn main() {
         // Value,
         Instant,
         Duration,
-        wasm_bindings::JsCodeResult,
-        wasm_bindings::JsFormulaParseResult,
-        wasm_bindings::JsCellRefSpan,
         Error,
         ErrorMsg,
         Pos,

@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Rectangle } from 'pixi.js';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
-import { grid } from '../../grid/controller/Grid';
 import { sheets } from '../../grid/controller/Sheets';
 import { focusGrid } from '../../helpers/focusGrid';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
@@ -26,16 +25,14 @@ export const CellInput = (props: CellInputProps) => {
 
   const text = useRef('');
 
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const changeInput = (e: any) => setVisible(e.detail.showInput);
-    window.addEventListener('change-input', changeInput);
-    return () => window.removeEventListener('change-input', changeInput);
-  }, []);
-
-  const cellOffsets = grid.getCellOffsets(sheet.id, cellLocation.x, cellLocation.y);
+  const cellOffsets = sheet.getCellOffsets(cellLocation.x, cellLocation.y);
   const cell = sheet.getEditCell(cellLocation.x, cellLocation.y);
   const formatting = sheet.getCellFormatSummary(cellLocation.x, cellLocation.y);
+
+  // don't allow input to shrink below the initial width
+  // this is used to cover up the existing text on the canvas
+  const [initialWidth, setInitialWidth] = useState(0);
+  const columnWidth = cellOffsets.width - CURSOR_THICKNESS * 2;
 
   // handle temporary changes to bold and italic (via keyboard)
   const [temporaryBold, setTemporaryBold] = useState<undefined | boolean>();
@@ -65,6 +62,7 @@ export const CellInput = (props: CellInputProps) => {
           selection.removeAllRanges();
           selection.addRange(range);
         }
+        setInitialWidth(div.getBoundingClientRect().width);
       }
     }, 0);
   }, []);
@@ -126,11 +124,6 @@ export const CellInput = (props: CellInputProps) => {
     return transform;
   }
 
-  // If the input is not shown, we can do nothing and return null
-  if (!visible) {
-    return null;
-  }
-
   // need this variable to cancel second closeInput call from blur after pressing Escape (this happens before the state can update)
   let closed = false;
 
@@ -186,7 +179,7 @@ export const CellInput = (props: CellInputProps) => {
         position: 'absolute',
         top: 0,
         left: 0,
-        minWidth: cellOffsets.width - CURSOR_THICKNESS * 2,
+        minWidth: Math.max(initialWidth, columnWidth - CURSOR_THICKNESS * 2),
         outline: 'none',
         color: formatting?.textColor ?? 'black',
         padding: `0 ${CURSOR_THICKNESS}px 0 0`,
@@ -251,8 +244,10 @@ export const CellInput = (props: CellInputProps) => {
           event.preventDefault();
         } else if (event.key === 'ArrowUp') {
           closeInput({ x: 0, y: -1 });
+          event.stopPropagation();
         } else if (event.key === 'ArrowDown') {
           closeInput({ x: 0, y: 1 });
+          event.stopPropagation();
         } else if ((event.metaKey || event.ctrlKey) && event.key === 'p') {
           event.preventDefault();
         } else if (event.key === ' ') {

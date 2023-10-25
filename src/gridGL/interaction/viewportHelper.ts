@@ -1,5 +1,4 @@
 import { HEADING_SIZE } from '../../constants/gridConstants';
-import { grid } from '../../grid/controller/Grid';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
@@ -14,7 +13,7 @@ export function isVisible() {
 
   const column = cursor.keyboardMovePosition.x;
   const row = cursor.keyboardMovePosition.y;
-  const cell = grid.getCellOffsets(sheet.id, column, row);
+  const cell = sheet.getCellOffsets(column, row);
   let is_off_screen = false;
 
   if (cell.x + headingSize.width < viewport.left) {
@@ -56,13 +55,13 @@ export function moveViewport(options: { center?: Coordinate; topLeft?: Coordinat
   const sheet = sheets.sheet;
 
   if (center) {
-    const cell = grid.getCellOffsets(sheet.id, center.x, center.y);
+    const cell = sheet.getCellOffsets(center.x, center.y);
     pixiApp.viewport.moveCenter(cell.x + cell.width / 2, cell.y + cell.height / 2);
   }
 
   if (topLeft) {
     const adjust = pixiAppSettings.showHeadings ? HEADING_SIZE : 0;
-    const cell = grid.getCellOffsets(sheet.id, topLeft.x + adjust, topLeft.y + adjust);
+    const cell = sheet.getCellOffsets(topLeft.x + adjust, topLeft.y + adjust);
     pixiApp.viewport.moveCorner(cell.x, cell.y);
   }
 
