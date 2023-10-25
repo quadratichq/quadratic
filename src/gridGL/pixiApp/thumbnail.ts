@@ -32,10 +32,11 @@ class Thumbnail {
         if (uuid) {
           this.generate().then((blob) => {
             if (blob) {
-              if (debugShowFileIO) {
-                console.log(`[Thumbnail Updated (${Math.round(blob!.size / 1000)}kb)`);
-              }
-              apiClient.updateFilePreview(uuid, blob);
+              apiClient.updateFilePreview(uuid, blob).then(() => {
+                if (debugShowFileIO) {
+                  console.log(`[Thumbnail] uploaded file (${Math.round(blob!.size / 1000)}kb).`);
+                }
+              });
             }
           });
           grid.thumbnailDirty = false;
