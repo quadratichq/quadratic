@@ -77,6 +77,7 @@ mod tests {
         // TODO(ddimaria): validate that elements of the imported and exported file are valid
         let mut imported = import(V1_3_PYTHON_FILE).unwrap();
         let _exported = export(&mut imported).unwrap();
+        println!("{:#?}", imported);
     }
 
     #[test]

@@ -331,7 +331,6 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                     horizontal: HashMap::new(),
                     vertical: HashMap::new(),
                 },
-                // TODO(ddimaria): implement
                 code_cells: sheet
                     .iter_code_cells_locations()
                     .map(|cell_ref| {
