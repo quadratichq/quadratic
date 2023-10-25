@@ -115,6 +115,11 @@ export const CodeEditor = () => {
       language,
     });
     isRunningComputation.current = false;
+
+    mixpanel.track('[CodeEditor].cellRun', {
+      type: editorMode,
+      code: editorContent,
+    });
   };
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
