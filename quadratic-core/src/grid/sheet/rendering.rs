@@ -12,14 +12,13 @@ use crate::{
 use super::Sheet;
 
 impl Sheet {
+    /// checks columns for any column that has data that might render
     pub fn has_render_cells(&self, region: Rect) -> bool {
-        self.columns
-            .range(region.x_range())
-            .any(|(_, column)| column.values.has_blocks_in_range(region.y_range()))
-            || self
-                .columns
-                .range(region.x_range())
-                .any(|(_, column)| column.spills.has_blocks_in_range(region.y_range()))
+        self.columns.range(region.x_range()).any(|(_, column)| {
+            column.values.has_blocks_in_range(region.y_range())
+                || column.spills.has_blocks_in_range(region.y_range())
+                || column.fill_color.has_blocks_in_range(region.y_range())
+        })
     }
 
     /// Returns cell data in a format useful for rendering. This includes only
