@@ -3,6 +3,7 @@ import { apiClient } from '../../api/apiClient';
 import { debugShowFileIO } from '../../debugFlags';
 import { grid } from '../../grid/controller/Grid';
 import { sheets } from '../../grid/controller/Sheets';
+import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiApp } from './PixiApp';
 import { pixiAppSettings } from './PixiAppSettings';
 
@@ -10,7 +11,7 @@ export const thumbnailColumns = 30;
 export const thumbnailRows = 30;
 const resolution = 1;
 const borderSize = 0;
-const maxTextureSize = 4096;
+const maxTextureSize = 2048;
 
 // time when renderer is not busy to perform an action
 const TIME_FOR_IDLE = 1000;
@@ -30,8 +31,10 @@ class Thumbnail {
         const url = window.location.pathname.split('/');
         const uuid = url[2];
         if (uuid) {
+          debugTimeReset();
           this.generate().then((blob) => {
             if (blob) {
+              debugTimeCheck('thumbnail');
               apiClient.updateFilePreview(uuid, blob).then(() => {
                 if (debugShowFileIO) {
                   console.log(`[Thumbnail] uploaded file (${Math.round(blob!.size / 1000)}kb).`);
