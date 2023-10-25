@@ -40,6 +40,7 @@ export const shareSearchParamValuesById = {
 ShareMenu.Wrapper = Wrapper;
 ShareMenu.Invite = Invite;
 ShareMenu.Users = Users;
+ShareMenu.UserListItem = UserListItem;
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
@@ -165,16 +166,18 @@ function Users({
 
   return (
     <>
-      {users.map((user: any, i: number) => (
-        <UserListItem
-          key={user.email}
-          users={users}
-          loggedInUser={loggedInUser}
-          usersIndexForRenderedUser={i}
-          onUpdateUser={onUpdateUser}
-          onDeleteUser={onDeleteUser}
-        />
-      ))}
+      {users.map((user: any, i: number) => {
+        return (
+          <UserListItem
+            key={user.email}
+            users={users}
+            loggedInUser={loggedInUser}
+            user={user}
+            onUpdateUser={onUpdateUser}
+            onDeleteUser={onDeleteUser}
+          />
+        );
+      })}
 
       {showTeamCreatedMessage && (
         <Stack
@@ -206,18 +209,18 @@ function Users({
 function UserListItem({
   users,
   loggedInUser,
-  usersIndexForRenderedUser,
+  user,
   onUpdateUser,
   onDeleteUser,
+  disabled,
 }: {
   users: any /* TODO UserShare[]*/;
   loggedInUser: { id: number; role: Role; access: Access[] };
-  usersIndexForRenderedUser: number;
+  user: any;
   onUpdateUser: (user: any /*TODO UserShare*/) => void;
   onDeleteUser: (user: any /*TODO UserShare*/) => void;
+  disabled?: boolean;
 }) {
-  const user = users[usersIndexForRenderedUser];
-
   // TODO figure out primary vs. secondary display & "resend"
   const primary = user.name ? user.name : user.email;
   const theme = useTheme();
@@ -233,12 +236,14 @@ function UserListItem({
     </Stack>
   );
 
-  let labels = getUserShareOptions({
-    user,
-    loggedInUser,
-    users,
-    canHaveMoreThanOneOwner: true, // TODO teams? yes. files? no.
-  });
+  let labels = disabled
+    ? ['Can edit']
+    : getUserShareOptions({
+        user,
+        loggedInUser,
+        users,
+        canHaveMoreThanOneOwner: true, // TODO teams? yes. files? no.
+      });
   let options: Option[] = [];
   labels.forEach((label) => {
     if (label === 'Owner') {

@@ -39,18 +39,48 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // return uuid === '2' ? data2 : data;
 };
 
+export type Action = {
+  'request.invite-user': {
+    action: 'invite-user';
+    payload: ApiTypes['/v0/teams/:uuid/sharing.POST.request'];
+  };
+  'request.update-team': {
+    action: 'update-team';
+    payload: ApiTypes['/v0/teams/:uuid.POST.request'];
+  };
+  request: Action['request.update-team'] | Action['request.invite-user'];
+};
 export const action = async ({ request, params }: ActionFunctionArgs) => {
-  const { name, picture }: ApiTypes['/v0/teams/:uuid.POST.request'] = await request.json();
+  const data = (await request.json()) as Action['request'];
   const { teamUuid } = params as { teamUuid: string };
+  const { action } = data;
 
   // await new Promise((resolve) => setTimeout(resolve, 20000));
 
-  try {
-    await apiClient.updateTeam(teamUuid, { name, picture });
-    return { ok: true };
-  } catch (e) {
-    return { ok: false };
+  if (action === 'update-team') {
+    try {
+      const {
+        payload: { name, picture },
+      } = data;
+      await apiClient.updateTeam(teamUuid, { name, picture });
+      return { ok: true };
+    } catch (e) {
+      return { ok: false };
+    }
   }
+
+  if (action === 'invite-user') {
+    try {
+      // const { payload: { email, role } } = data;
+      // await apiClient.updateTeamSharing(teamUuid, { email, role });
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      return { ok: true };
+    } catch (e) {
+      return { ok: false };
+    }
+  }
+
+  return null;
 };
 
 export const Component = () => {
@@ -86,7 +116,8 @@ export const Component = () => {
                 value={name}
                 onClose={(newName?: string) => {
                   if (newName) {
-                    fetcher.submit({ name: newName }, { method: 'POST', encType: 'application/json' });
+                    const data: Action['request.update-team'] = { action: 'update-team', payload: { name: newName } };
+                    fetcher.submit(data, { method: 'POST', encType: 'application/json' });
                     // setTeamName(newValue);
                     // Post update to server
                   }
