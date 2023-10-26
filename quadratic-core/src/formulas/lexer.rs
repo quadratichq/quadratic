@@ -73,6 +73,8 @@ const TOKEN_PATTERNS: &[&str] = &[
     r"//[^\n]*",
     // Start of a block comment (block comment has special handling).
     r"/\*",
+    // Sheet reference.
+    UNQUOTED_SHEET_REFERENCE_PATTERN,
     // String literal.
     SINGLE_QUOTE_STRING_LITERAL_PATTERN,
     DOUBLE_QUOTE_STRING_LITERAL_PATTERN,
