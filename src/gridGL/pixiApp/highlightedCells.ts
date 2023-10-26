@@ -1,17 +1,42 @@
 import { sheets } from '../../grid/controller/Sheets';
-import { CellPosition, ParseFormulaReturnType } from '../../helpers/formulaNotation';
+import { CellPosition, ParseFormulaReturnType, Span } from '../../helpers/formulaNotation';
 import { Coordinate } from '../types/size';
 import { pixiApp } from './PixiApp';
 
+export interface HighlightedCellRange {
+  column: number;
+  row: number;
+  width: number;
+  height: number;
+  span: Span;
+  sheet: string;
+  index: number;
+}
+
+export interface HighlightedCell {
+  column: number;
+  row: number;
+  sheet: string;
+}
+
 export class HighlightedCells {
-  private highlightedCells: Set<{ column: number; row: number; width: number; height: number; sheet: string }> =
-    new Set();
+  private highlightedCells: Set<HighlightedCellRange> = new Set();
+  highlightedCellIndex: number | undefined;
+
+  clear() {
+    this.highlightedCells.clear();
+    this.highlightedCellIndex = undefined;
+    pixiApp.cursor.dirty = true;
+  }
 
   private fromCellRange(
     cellRange: { type: 'CellRange'; start: CellPosition; end: CellPosition },
     cell: Coordinate,
-    sheet: string
+    sheet: string,
+    span: Span,
+    index: number
   ) {
+    // parse_formula always returns absolute regardless of type
     let relative = false; //cellRange.start.x.type === 'Relative';
     this.highlightedCells.add({
       column: (relative ? cell.x : 0) + cellRange.start.x.coord,
@@ -19,10 +44,13 @@ export class HighlightedCells {
       width: cellRange.end.x.coord - cellRange.start.x.coord,
       height: cellRange.end.y.coord - cellRange.start.y.coord,
       sheet: cellRange.start.sheet ?? sheet,
+      span,
+      index,
     });
   }
 
-  private fromCell(cell: CellPosition, origin: Coordinate, sheet: string) {
+  private fromCell(cell: CellPosition, origin: Coordinate, sheet: string, span: Span, index: number) {
+    // parse_formula always returns absolute regardless of type
     const relative = false; //cell.x.type === 'Relative';
     this.highlightedCells.add({
       column: cell.x.coord + (relative ? origin.x : 0),
@@ -30,25 +58,34 @@ export class HighlightedCells {
       width: 0,
       height: 0,
       sheet: cell.sheet ?? sheet,
+      span,
+      index,
     });
   }
 
   fromFormula(formula: ParseFormulaReturnType, cell: Coordinate, sheet: string) {
     this.highlightedCells.clear();
-    formula.cell_refs.forEach((cellRef) => {
+    formula.cell_refs.forEach((cellRef, index) => {
       switch (cellRef.cell_ref.type) {
         case 'CellRange':
-          this.fromCellRange(cellRef.cell_ref, cell, sheet);
+          this.fromCellRange(cellRef.cell_ref, cell, sheet, cellRef.span, index);
           break;
         case 'Cell':
-          this.fromCell(cellRef.cell_ref.pos, cell, sheet);
+          this.fromCell(cellRef.cell_ref.pos, cell, sheet, cellRef.span, index);
           break;
+        default:
+          throw new Error('Unsupported cell-ref in fromFormula');
       }
     });
     pixiApp.cursor.dirty = true;
   }
 
-  get() {
+  setHighlightedCell(index: number) {
+    this.highlightedCellIndex = this.getHighlightedCells().findIndex((cell) => cell.index === index);
+    pixiApp.cursor.dirty = true;
+  }
+
+  getHighlightedCells(): HighlightedCellRange[] {
     return Array.from(this.highlightedCells.values()).filter((cell) => cell.sheet === sheets.sheet.id);
   }
 }

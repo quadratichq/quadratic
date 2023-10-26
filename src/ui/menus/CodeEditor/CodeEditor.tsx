@@ -1,14 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilState, useSetRecoilState } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
-import {
-  editorHighlightedCellsStateAtom,
-  editorHighlightedCellsStateDefault,
-} from '../../../atoms/editorHighlightedCellsStateAtom';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
+import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { CodeCellLanguage } from '../../../quadratic-core/quadratic_core';
 import { CodeEditorBody } from './CodeEditorBody';
@@ -19,7 +16,6 @@ import { SaveChangesAlert } from './SaveChangesAlert';
 
 export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const setEditorHighlightedCells = useSetRecoilState(editorHighlightedCellsStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
   const isRunningComputation = useRef(false);
 
@@ -99,11 +95,11 @@ export const CodeEditor = () => {
           ...oldState,
           showCodeEditor: false,
         }));
-        setEditorHighlightedCells(editorHighlightedCellsStateDefault);
+        pixiApp.highlightedCells.clear();
         focusGrid();
       }
     },
-    [codeString, editorContent, setEditorHighlightedCells, setEditorInteractionState]
+    [codeString, editorContent, setEditorInteractionState]
   );
 
   const saveAndRunCell = async () => {

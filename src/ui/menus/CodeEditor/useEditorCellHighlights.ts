@@ -19,8 +19,10 @@ import { colors } from '../../../theme/colors';
 //   return true;
 // }
 
-function extractCellsFromParseFormula(parsedFormula: ParseFormulaReturnType): { cellId: CellRefId; span: Span }[] {
-  return parsedFormula.cell_refs.map(({ cell_ref, span }) => {
+function extractCellsFromParseFormula(
+  parsedFormula: ParseFormulaReturnType
+): { cellId: CellRefId; span: Span; index: number }[] {
+  return parsedFormula.cell_refs.map(({ cell_ref, span }, index) => {
     if (cell_ref.type === 'CellRange') {
       if (cell_ref.start.x.type !== 'Relative' || cell_ref.end.x.type !== 'Relative') {
         throw new Error('Unhandled non-Relative type in extractCellsFromParseFormula');
@@ -31,9 +33,10 @@ function extractCellsFromParseFormula(parsedFormula: ParseFormulaReturnType): { 
           cell_ref.end.y.coord
         )}`,
         span,
+        index,
       };
     } else if (cell_ref.type === 'Cell') {
-      return { cellId: getKey(cell_ref.pos.x.coord, cell_ref.pos.y.coord), span };
+      return { cellId: getKey(cell_ref.pos.x.coord, cell_ref.pos.y.coord), span, index };
     } else {
       throw new Error('Unhandled cell_ref type in extractCellsFromParseFormula');
     }
@@ -97,7 +100,8 @@ export const useEditorCellHighlights = (
 
       const extractedCells = extractCellsFromParseFormula(parsedFormula);
 
-      for (const { cellId, span } of extractedCells) {
+      extractedCells.forEach((value, index) => {
+        const { cellId, span } = value;
         const startPosition = model.getPositionAt(span.start);
 
         const cellColor =
@@ -119,10 +123,14 @@ export const useEditorCellHighlights = (
           },
         });
         cellsMatches.set(cellId, range);
-        // const editorCursorPosition = editor.getPosition();
-        // if (editorCursorPosition && range.containsPosition(editorCursorPosition)) selectedCell = cellId;
-      }
+        const editorCursorPosition = editor.getPosition();
+        if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
+          pixiApp.highlightedCells.setHighlightedCell(index);
+          // selectedCell = cellId;
+        }
+      });
 
+      // todo: this should use editor.createDecorationCollection() instead
       const decorationsIds = editor.deltaDecorations(oldDecorations, newDecorations);
       // setStateOnChangedMatches(oldCellsMatches, cellsMatches);
 
@@ -142,5 +150,5 @@ export const useEditorCellHighlights = (
     // }
 
     return () => editor.dispose();
-  }, [isValidRef, editorRef, monacoRef]);
+  }, [isValidRef, editorRef, monacoRef, editorInteractionState.selectedCell, editorInteractionState.selectedCellSheet]);
 };

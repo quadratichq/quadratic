@@ -41,11 +41,6 @@ export default function QuadraticGrid() {
     return () => window.removeEventListener('change-input', changeInput);
   }, []);
 
-  // const [editorHighlightedCellsState, setEditorHighlightedCellsState] = useRecoilState(editorHighlightedCellsStateAtom);
-  // useEffect(() => {
-  //   pixiAppSettings.updateEditorHighlightedCellsState(editorHighlightedCellsState, setEditorHighlightedCellsState);
-  // }, [editorHighlightedCellsState, setEditorHighlightedCellsState]);
-
   // Right click menu
   const [showContextMenu, setShowContextMenu] = useState(false);
 

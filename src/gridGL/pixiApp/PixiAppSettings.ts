@@ -17,8 +17,6 @@ class PixiAppSettings {
   temporarilyHideCellTypeOutlines = false;
   editorInteractionState = editorInteractionStateDefault;
   setEditorInteractionState?: (value: EditorInteractionState) => void;
-  // editorHighlightedCellsState = editorHighlightedCellsStateDefault;
-  // setEditorHighlightedCellsState?: (value: EditorHighlightedCellsState) => void;
 
   constructor() {
     const settings = localStorage.getItem('viewSettings');
@@ -55,7 +53,6 @@ class PixiAppSettings {
     ) {
       pixiApp.cellsSheets.toggleOutlines();
       pixiApp.viewport.dirty = true;
-      // pixiApp.quadrants.build();
     }
     this.lastSettings = this.settings;
   };
@@ -72,17 +69,7 @@ class PixiAppSettings {
     this.setEditorInteractionState = setEditorInteractionState;
     pixiApp.headings.dirty = true;
     pixiApp.cursor.dirty = true;
-    // pixiApp.cells.dirty = true;
   }
-
-  // updateEditorHighlightedCellsState(
-  //   editorHighlightedCellsState: EditorHighlightedCellsState,
-  //   setEditorHighlightedCellsState: (value: EditorHighlightedCellsState) => void
-  // ): void {
-  //   this.editorHighlightedCellsState = editorHighlightedCellsState;
-  //   this.setEditorHighlightedCellsState = setEditorHighlightedCellsState;
-  //   pixiApp.cursor.dirty = true;
-  // }
 
   get showGridLines(): boolean {
     return !this.settings.presentationMode && this.settings.showGridLines;

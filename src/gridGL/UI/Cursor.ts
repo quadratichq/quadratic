@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Graphics, Rectangle } from 'pixi.js';
 import { isEditorOrAbove } from '../../actions';
 import { sheets } from '../../grid/controller/Sheets';
@@ -178,13 +177,14 @@ export class Cursor extends Graphics {
   }
 
   private drawEditorHighlightedCells(): void {
-    const highlightedCells = pixiApp.highlightedCells.get();
+    const highlightedCells = pixiApp.highlightedCells.getHighlightedCells();
+    const highlightedCellIndex = pixiApp.highlightedCells.highlightedCellIndex;
     if (!highlightedCells.length) return;
     let colorIndex = 0;
-    highlightedCells.forEach((cell) => {
+    highlightedCells.forEach((cell, index) => {
       const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % NUM_OF_CELL_REF_COLORS]);
       const cursorCell = sheets.sheet.getScreenRectangle(cell.column, cell.row, cell.width, cell.height);
-      this.drawDashedRectangle(colorNumber, false, cursorCell);
+      this.drawDashedRectangle(colorNumber, highlightedCellIndex === index, cursorCell);
       colorIndex++;
     });
   }
