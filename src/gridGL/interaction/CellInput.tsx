@@ -32,7 +32,6 @@ export const CellInput = (props: CellInputProps) => {
   // don't allow input to shrink below the initial width
   // this is used to cover up the existing text on the canvas
   const [initialWidth, setInitialWidth] = useState(0);
-  const columnWidth = cellOffsets.width - CURSOR_THICKNESS * 2;
 
   // handle temporary changes to bold and italic (via keyboard)
   const [temporaryBold, setTemporaryBold] = useState<undefined | boolean>();
@@ -175,6 +174,9 @@ export const CellInput = (props: CellInputProps) => {
     event.preventDefault();
   };
 
+  const columnWidth = cellOffsets.width * viewport.scale.x;
+  const minWidth = Math.max(initialWidth, columnWidth) / viewport.scale.x - CURSOR_THICKNESS * 2;
+
   return (
     <div
       id="cell-edit"
@@ -187,7 +189,7 @@ export const CellInput = (props: CellInputProps) => {
         position: 'absolute',
         top: 0,
         left: 0,
-        minWidth: Math.max(initialWidth, columnWidth - CURSOR_THICKNESS * 2),
+        minWidth: minWidth,
         outline: 'none',
         color: formatting?.textColor ?? 'black',
         padding: `0 ${CURSOR_THICKNESS}px 0 0`,
