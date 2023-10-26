@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Rectangle } from 'pixi.js';
-import { useCallback, useRef, useState } from 'react';
+import { ClipboardEvent, useCallback, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../grid/controller/Sheets';
@@ -168,13 +168,11 @@ export const CellInput = (props: CellInputProps) => {
   const transform = updateInputCSSTransform();
 
   const handlePaste = (event: ClipboardEvent) => {
+    const text = event.clipboardData?.getData('text') || '';
+    const parsed = new DOMParser().parseFromString(text, 'text/html');
+    const result = parsed.body.textContent || '';
+    document.execCommand('insertHTML', false, result.replace(/(\r\n|\n|\r)/gm, ''));
     event.preventDefault();
-
-    // Get plain text from clipboard
-    const text = event.clipboardData?.getData('text/plain');
-
-    // Insert the plain text at the cursor position
-    document.execCommand('insertText', false, text);
   };
 
   return (
@@ -201,8 +199,9 @@ export const CellInput = (props: CellInputProps) => {
         fontFamily,
         fontSize: '14px',
         backgroundColor: formatting?.fillColor ?? 'white',
-        whiteSpace: 'break-spaces',
+        whiteSpace: 'nowrap',
       }}
+      onPaste={handlePaste}
       onInput={(event: React.FormEvent<HTMLDivElement>) => {
         // viewport should try to keep the input box in view
         if (!textInput) return;
@@ -237,17 +236,6 @@ export const CellInput = (props: CellInputProps) => {
           viewport.moveCenter(x, y);
           pixiApp.setViewportDirty();
         }
-
-        // stripHTML
-        const stripHtml = (html: string) => {
-          const tmp = document.createElement('DIV');
-          tmp.innerHTML = html;
-          return tmp.textContent || tmp.innerText || '';
-        };
-        const target = event.target as HTMLDivElement;
-        const currentContent = target.innerHTML;
-        const textOnly = stripHtml(currentContent);
-        target.innerText = textOnly;
       }}
       onFocus={handleFocus}
       onBlur={() => closeInput()}
