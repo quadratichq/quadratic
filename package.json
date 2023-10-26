@@ -17,6 +17,7 @@
     "@mui/base": "^5.0.0-beta.11",
     "@mui/icons-material": "^5.2.0",
     "@mui/material": "^5.2.2",
+    "@sentry/browser": "^7.75.1",
     "@sentry/react": "^6.19.6",
     "@sentry/tracing": "^6.19.6",
     "@szhsin/react-menu": "^4.0.2",

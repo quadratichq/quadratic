@@ -1,5 +1,5 @@
 import { Auth0Client, User, createAuth0Client } from '@auth0/auth0-spa-js';
-import * as Sentry from '@sentry/browser';
+import * as Sentry from '@sentry/react';
 import { LoaderFunction, LoaderFunctionArgs, redirect } from 'react-router-dom';
 import { ROUTES } from './constants/routes';
 

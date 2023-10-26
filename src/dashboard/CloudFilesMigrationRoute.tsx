@@ -1,6 +1,6 @@
 import { CheckCircleOutlineOutlined, ErrorOutline } from '@mui/icons-material';
 import { Box, Button, Chip, CircularProgress, Stack, Typography, useTheme } from '@mui/material';
-import * as Sentry from '@sentry/browser';
+import * as Sentry from '@sentry/react';
 import localforage from 'localforage';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef, useState } from 'react';

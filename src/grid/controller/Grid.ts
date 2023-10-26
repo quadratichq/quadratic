@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/browser';
 import { Point, Rectangle } from 'pixi.js';
-import { debugMockLargeData } from '../../debugFlags';
+import { debugMockLargeData, debugShowTime } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
@@ -663,7 +663,28 @@ export class Grid {
 
 //#end
 
-export const grid = new Grid();
+function performanceProxy<T extends object>(object: T): T {
+  return new Proxy(object, {
+    get(target, prop, receiver) {
+      const original = Reflect.get(target, prop, receiver);
+      if (typeof original === 'function') {
+        return function (...args: any[]) {
+          const start = performance.now();
+          let result = Sentry.startSpan({ name: `Grid.${String(prop)}` }, () => {
+            // Call function
+            return Reflect.apply(original, receiver, args);
+          });
+          const end = performance.now();
+          if (debugShowTime) console.log(`Grid.${String(prop)} took ${end - start}ms`);
+          return result;
+        };
+      }
+      return original;
+    },
+  });
+}
+
+export const grid = performanceProxy(new Grid());
 
 // workaround so Rust can import TS functions
 declare global {
