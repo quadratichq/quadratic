@@ -91,6 +91,7 @@
     "lint:eslint": "eslint --ext .ts,.tsx src",
     "lint:prettier": "prettier --check src",
     "lint:prettier:write": "prettier --write src",
+    "lint:clippy": "cd quadratic-core && cargo clippy",
     "api:start": "cd quadratic-api && npm start"
   },
   "eslintConfig": {
