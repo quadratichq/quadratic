@@ -69,6 +69,7 @@ pub fn parse_formula(formula_string: &str, pos: Pos) -> FormulaParseResult {
         parse_error_msg: parse_error.as_ref().map(|e| e.msg.to_string()),
         parse_error_span: parse_error.and_then(|e| e.span),
 
+        // todo: cell_refs are returning Relative positions that are actually Absolute
         cell_refs: formulas::find_cell_references(formula_string, pos)
             .into_iter()
             .map(|r| r.into())

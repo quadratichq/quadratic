@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { editorHighlightedCellsStateAtom } from '../atoms/editorHighlightedCellsStateAtom';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
 import { CellInput } from './interaction/CellInput';
@@ -42,10 +41,10 @@ export default function QuadraticGrid() {
     return () => window.removeEventListener('change-input', changeInput);
   }, []);
 
-  const [editorHighlightedCellsState, setEditorHighlightedCellsState] = useRecoilState(editorHighlightedCellsStateAtom);
-  useEffect(() => {
-    pixiAppSettings.updateEditorHighlightedCellsState(editorHighlightedCellsState, setEditorHighlightedCellsState);
-  }, [editorHighlightedCellsState, setEditorHighlightedCellsState]);
+  // const [editorHighlightedCellsState, setEditorHighlightedCellsState] = useRecoilState(editorHighlightedCellsStateAtom);
+  // useEffect(() => {
+  //   pixiAppSettings.updateEditorHighlightedCellsState(editorHighlightedCellsState, setEditorHighlightedCellsState);
+  // }, [editorHighlightedCellsState, setEditorHighlightedCellsState]);
 
   // Right click menu
   const [showContextMenu, setShowContextMenu] = useState(false);

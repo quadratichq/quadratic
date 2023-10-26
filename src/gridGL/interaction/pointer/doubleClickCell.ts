@@ -1,4 +1,5 @@
 import { isEditorOrAbove } from '../../../actions';
+import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 
 export function doubleClickCell(options: {
@@ -19,6 +20,7 @@ export function doubleClickCell(options: {
       showCellTypeMenu: false,
       showCodeEditor: true,
       selectedCell: { x: column, y: row },
+      selectedCellSheet: sheets.sheet.id,
       mode,
     });
   } else if (hasPermission) {

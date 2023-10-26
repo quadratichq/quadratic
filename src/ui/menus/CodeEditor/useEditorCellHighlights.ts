@@ -1,22 +1,23 @@
 import monaco from 'monaco-editor';
 import { useEffect } from 'react';
-import { useSetRecoilState } from 'recoil';
-import { editorHighlightedCellsStateAtom } from '../../../atoms/editorHighlightedCellsStateAtom';
+import { useRecoilValue } from 'recoil';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { ParseFormulaReturnType, Span } from '../../../helpers/formulaNotation';
 import { StringId, getKey } from '../../../helpers/getKey';
 import { parse_formula } from '../../../quadratic-core/quadratic_core';
 import { colors } from '../../../theme/colors';
 
-function compareOldToNewMatches(oldCellsMatches: CellMatch, cellsMatches: CellMatch): boolean {
-  if (oldCellsMatches.size !== cellsMatches.size) return false;
+// function compareOldToNewMatches(oldCellsMatches: CellMatch, cellsMatches: CellMatch): boolean {
+//   if (oldCellsMatches.size !== cellsMatches.size) return false;
 
-  for (const [cellRefId, range] of oldCellsMatches.entries()) {
-    const newRange = cellsMatches.get(cellRefId);
-    if (!newRange || !range.equalsRange(newRange)) return false;
-  }
+//   for (const [cellRefId, range] of oldCellsMatches.entries()) {
+//     const newRange = cellsMatches.get(cellRefId);
+//     if (!newRange || !range.equalsRange(newRange)) return false;
+//   }
 
-  return true;
-}
+//   return true;
+// }
 
 function extractCellsFromParseFormula(parsedFormula: ParseFormulaReturnType): { cellId: CellRefId; span: Span }[] {
   return parsedFormula.cell_refs.map(({ cell_ref, span }) => {
@@ -48,7 +49,8 @@ export const useEditorCellHighlights = (
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>,
   monacoRef: React.MutableRefObject<typeof monaco | null>
 ) => {
-  const setEditorHighlightedCells = useSetRecoilState(editorHighlightedCellsStateAtom);
+  // const setEditorHighlightedCells = useSetRecoilState(editorHighlightedCellsStateAtom);
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
 
   // Dynamically generate the classnames we'll use for cell references by pulling
   // the colors from the same colors used in pixi and stick them in the DOM
@@ -77,8 +79,8 @@ export const useEditorCellHighlights = (
     if (!model) return;
 
     let oldDecorations: string[] = [];
-    let oldCellsMatches: CellMatch = new Map();
-    let selectedCell: string;
+    // let oldCellsMatches: CellMatch = new Map();
+    // let selectedCell: string;
     const onChangeModel = async () => {
       const cellColorReferences = new Map<string, number>();
       let newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
@@ -87,6 +89,11 @@ export const useEditorCellHighlights = (
       const modelValue = editor.getValue();
 
       const parsedFormula = (await parse_formula(modelValue, 0, 0)) as ParseFormulaReturnType;
+      pixiApp.highlightedCells.fromFormula(
+        parsedFormula,
+        editorInteractionState.selectedCell,
+        editorInteractionState.selectedCellSheet
+      );
 
       const extractedCells = extractCellsFromParseFormula(parsedFormula);
 
@@ -112,26 +119,28 @@ export const useEditorCellHighlights = (
           },
         });
         cellsMatches.set(cellId, range);
-        const editorCursorPosition = editor.getPosition();
-        if (editorCursorPosition && range.containsPosition(editorCursorPosition)) selectedCell = cellId;
+        // const editorCursorPosition = editor.getPosition();
+        // if (editorCursorPosition && range.containsPosition(editorCursorPosition)) selectedCell = cellId;
       }
 
       const decorationsIds = editor.deltaDecorations(oldDecorations, newDecorations);
-      setStateOnChangedMatches(oldCellsMatches, cellsMatches);
+      // setStateOnChangedMatches(oldCellsMatches, cellsMatches);
 
       oldDecorations = decorationsIds;
-      oldCellsMatches = cellsMatches;
+      // oldCellsMatches = cellsMatches;
     };
 
     onChangeModel();
     editor.onDidChangeModelContent(onChangeModel);
 
-    function setStateOnChangedMatches(oldCellsMatches: CellMatch, cellsMatches: CellMatch) {
-      // setting the state on each interaction takes too long and makes the input laggy
-      if (compareOldToNewMatches(oldCellsMatches, cellsMatches)) return;
-      setEditorHighlightedCells({ highlightedCells: cellsMatches, selectedCell });
-    }
+    // function setStateOnChangedMatches(oldCellsMatches: CellMatch, cellsMatches: CellMatch) {
+    //   // setting the state on each interaction takes too long and makes the input laggy
+    //   pixiApp.highlightedCells.clear();
+    //   cellsMatches.forEach((range, cellRefId) => {});
+    //   if (compareOldToNewMatches(oldCellsMatches, cellsMatches)) return;
+    //   // setEditorHighlightedCells({ highlightedCells: cellsMatches, selectedCell });
+    // }
 
     return () => editor.dispose();
-  }, [isValidRef, editorRef, monacoRef, setEditorHighlightedCells]);
+  }, [isValidRef, editorRef, monacoRef]);
 };

@@ -1,8 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Graphics, Rectangle } from 'pixi.js';
 import { isEditorOrAbove } from '../../actions';
 import { sheets } from '../../grid/controller/Sheets';
 import { convertColorStringToTint } from '../../helpers/convertColor';
-import { getCellFromFormulaNotation, isCellRangeTypeGuard } from '../../helpers/formulaNotation';
 import { colors } from '../../theme/colors';
 import { dashedTextures } from '../dashedTextures';
 import { pixiApp } from '../pixiApp/PixiApp';
@@ -159,7 +159,7 @@ export class Cursor extends Graphics {
 
   private drawCodeCursor(): void {
     const { editorInteractionState } = pixiAppSettings;
-    if (!editorInteractionState.showCodeEditor) return;
+    if (!editorInteractionState.showCodeEditor || sheets.sheet.id !== editorInteractionState.selectedCellSheet) return;
     const cell = editorInteractionState.selectedCell;
     const { x, y, width, height } = sheets.sheet.getCellOffsets(cell.x, cell.y);
     const color =
@@ -178,25 +178,15 @@ export class Cursor extends Graphics {
   }
 
   private drawEditorHighlightedCells(): void {
-    const { editorHighlightedCellsState, editorInteractionState } = pixiAppSettings;
-    const { highlightedCells, selectedCell } = editorHighlightedCellsState;
-    if (!highlightedCells || highlightedCells.size === 0) return;
-
+    const highlightedCells = pixiApp.highlightedCells.get();
+    if (!highlightedCells.length) return;
     let colorIndex = 0;
-    for (const [cellRefId] of highlightedCells.entries()) {
-      const cell = getCellFromFormulaNotation(sheets.sheet.id, cellRefId, editorInteractionState.selectedCell);
-
-      if (!cell) continue;
+    highlightedCells.forEach((cell) => {
       const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % NUM_OF_CELL_REF_COLORS]);
-      const isCellRange = isCellRangeTypeGuard(cell);
-      this.drawDashedRectangle(
-        colorNumber,
-        cellRefId === selectedCell,
-        isCellRange ? cell.startCell : cell,
-        isCellRange ? cell.endCell : undefined
-      );
+      const cursorCell = sheets.sheet.getScreenRectangle(cell.column, cell.row, cell.width, cell.height);
+      this.drawDashedRectangle(colorNumber, false, cursorCell);
       colorIndex++;
-    }
+    });
   }
 
   private drawDashedRectangle(color: number, isSelected: boolean, startCell: CursorCell, endCell?: CursorCell) {

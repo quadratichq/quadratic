@@ -1,8 +1,4 @@
 import { ApiTypes } from '../../api/types';
-import {
-  EditorHighlightedCellsState,
-  editorHighlightedCellsStateDefault,
-} from '../../atoms/editorHighlightedCellsStateAtom';
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { GridSettings, defaultGridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
 import { pixiApp } from './PixiApp';
@@ -18,12 +14,11 @@ class PixiAppSettings {
   private lastSettings: GridSettings;
   private _panMode: PanMode;
   private _input: { show: boolean; initialValue?: string };
-
   temporarilyHideCellTypeOutlines = false;
   editorInteractionState = editorInteractionStateDefault;
   setEditorInteractionState?: (value: EditorInteractionState) => void;
-  editorHighlightedCellsState = editorHighlightedCellsStateDefault;
-  setEditorHighlightedCellsState?: (value: EditorHighlightedCellsState) => void;
+  // editorHighlightedCellsState = editorHighlightedCellsStateDefault;
+  // setEditorHighlightedCellsState?: (value: EditorHighlightedCellsState) => void;
 
   constructor() {
     const settings = localStorage.getItem('viewSettings');
@@ -80,14 +75,14 @@ class PixiAppSettings {
     // pixiApp.cells.dirty = true;
   }
 
-  updateEditorHighlightedCellsState(
-    editorHighlightedCellsState: EditorHighlightedCellsState,
-    setEditorHighlightedCellsState: (value: EditorHighlightedCellsState) => void
-  ): void {
-    this.editorHighlightedCellsState = editorHighlightedCellsState;
-    this.setEditorHighlightedCellsState = setEditorHighlightedCellsState;
-    pixiApp.cursor.dirty = true;
-  }
+  // updateEditorHighlightedCellsState(
+  //   editorHighlightedCellsState: EditorHighlightedCellsState,
+  //   setEditorHighlightedCellsState: (value: EditorHighlightedCellsState) => void
+  // ): void {
+  //   this.editorHighlightedCellsState = editorHighlightedCellsState;
+  //   this.setEditorHighlightedCellsState = setEditorHighlightedCellsState;
+  //   pixiApp.cursor.dirty = true;
+  // }
 
   get showGridLines(): boolean {
     return !this.settings.presentationMode && this.settings.showGridLines;
