@@ -8,17 +8,6 @@ import { StringId, getKey } from '../../../helpers/getKey';
 import { parse_formula } from '../../../quadratic-core/quadratic_core';
 import { colors } from '../../../theme/colors';
 
-// function compareOldToNewMatches(oldCellsMatches: CellMatch, cellsMatches: CellMatch): boolean {
-//   if (oldCellsMatches.size !== cellsMatches.size) return false;
-
-//   for (const [cellRefId, range] of oldCellsMatches.entries()) {
-//     const newRange = cellsMatches.get(cellRefId);
-//     if (!newRange || !range.equalsRange(newRange)) return false;
-//   }
-
-//   return true;
-// }
-
 function extractCellsFromParseFormula(
   parsedFormula: ParseFormulaReturnType
 ): { cellId: CellRefId; span: Span; index: number }[] {
@@ -52,7 +41,6 @@ export const useEditorCellHighlights = (
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>,
   monacoRef: React.MutableRefObject<typeof monaco | null>
 ) => {
-  // const setEditorHighlightedCells = useSetRecoilState(editorHighlightedCellsStateAtom);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
 
   // Dynamically generate the classnames we'll use for cell references by pulling
@@ -82,8 +70,6 @@ export const useEditorCellHighlights = (
     if (!model) return;
 
     let oldDecorations: string[] = [];
-    // let oldCellsMatches: CellMatch = new Map();
-    // let selectedCell: string;
     const onChangeModel = async () => {
       const cellColorReferences = new Map<string, number>();
       let newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
@@ -126,7 +112,6 @@ export const useEditorCellHighlights = (
         const editorCursorPosition = editor.getPosition();
         if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
           pixiApp.highlightedCells.setHighlightedCell(index);
-          // selectedCell = cellId;
         }
       });
 

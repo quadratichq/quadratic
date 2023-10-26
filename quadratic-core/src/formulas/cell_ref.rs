@@ -257,4 +257,26 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_a1_sheet_parsing() {
+        let pos = CellRef::parse_a1("'Sheet 2'!A0", crate::Pos::ORIGIN);
+        assert_eq!(
+            pos,
+            Some(CellRef {
+                sheet: Some("Sheet 2".to_string()),
+                x: CellRefCoord::Relative(0),
+                y: CellRefCoord::Relative(0),
+            })
+        );
+        let pos = CellRef::parse_a1("\"Sheet 2\"!A0", crate::Pos::ORIGIN);
+        assert_eq!(
+            pos,
+            Some(CellRef {
+                sheet: Some("Sheet 2".to_string()),
+                x: CellRefCoord::Relative(0),
+                y: CellRefCoord::Relative(0),
+            })
+        );
+    }
 }
