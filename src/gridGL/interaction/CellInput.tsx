@@ -167,6 +167,16 @@ export const CellInput = (props: CellInputProps) => {
   // set input's initial position correctly
   const transform = updateInputCSSTransform();
 
+  const handlePaste = (event: ClipboardEvent) => {
+    event.preventDefault();
+
+    // Get plain text from clipboard
+    const text = event.clipboardData?.getData('text/plain');
+
+    // Insert the plain text at the cursor position
+    document.execCommand('insertText', false, text);
+  };
+
   return (
     <div
       id="cell-edit"
@@ -193,7 +203,7 @@ export const CellInput = (props: CellInputProps) => {
         backgroundColor: formatting?.fillColor ?? 'white',
         whiteSpace: 'break-spaces',
       }}
-      onInput={() => {
+      onInput={(event: React.FormEvent<HTMLDivElement>) => {
         // viewport should try to keep the input box in view
         if (!textInput) return;
         const bounds = textInput.getBoundingClientRect();
@@ -227,6 +237,17 @@ export const CellInput = (props: CellInputProps) => {
           viewport.moveCenter(x, y);
           pixiApp.setViewportDirty();
         }
+
+        // stripHTML
+        const stripHtml = (html: string) => {
+          const tmp = document.createElement('DIV');
+          tmp.innerHTML = html;
+          return tmp.textContent || tmp.innerText || '';
+        };
+        const target = event.target as HTMLDivElement;
+        const currentContent = target.innerHTML;
+        const textOnly = stripHtml(currentContent);
+        target.innerText = textOnly;
       }}
       onFocus={handleFocus}
       onBlur={() => closeInput()}
