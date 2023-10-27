@@ -119,7 +119,7 @@ mod tests {
 
     #[test]
     fn process_a_blank_v1_4_file() {
-        let empty = r#"{"sheets":[{"name":"Sheet 1","id":{"id":"4b42eacf-5737-47a2-ac44-e4929d3abc3a"},"order":"a0","cells":[],"code_cells":[],"formats":[],"columns":[],"rows":[],"offsets":[[],[]],"borders":{"horizontal":{},"vertical":{}}}],"version":"1.4"}"#;
+        let empty = r#"{"sheets":[{"name":"Sheet 1","id":{"id":"4b42eacf-5737-47a2-ac44-e4929d3abc3a"},"order":"a0","cells":[],"code_cells":[],"formats":[],"columns":[],"rows":[],"offsets":[[],[]],"borders":{}}],"version":"1.4"}"#;
         let mut imported = import(empty).unwrap();
         let _exported = export(&mut imported).unwrap();
     }
@@ -139,7 +139,7 @@ mod tests {
         let sheets = grid.sheets_mut();
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
         let region = sheets[0].region(rect);
-        let selection = vec![BorderSelection::All];
+        let selection = vec![BorderSelection::Top];
         let style = BorderStyle {
             color: Rgba::from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
@@ -151,7 +151,7 @@ mod tests {
         let _exported = export(&mut grid).unwrap();
         println!("{}", _exported);
         let mut imported = import(&_exported).unwrap();
-        println!("{:#?}", imported.sheets()[0].borders);
+        // println!("{:#?}", imported.sheets()[0].borders);
         // // println!("{:?}", serde_json::to_string(&sheet.column_).unwrap());
         // println!("{:#?}", &sheets[0].borders.per_cell.borders);
     }

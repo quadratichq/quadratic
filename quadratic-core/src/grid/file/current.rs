@@ -166,23 +166,33 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
         .for_each(|(column_id, cell_borders)| {
             cell_borders.iter().for_each(|(y, cell_borders)| {
                 cell_borders.iter().for_each(|border| {
-                    let style = BorderStyle {
-                        color: Rgba::from_str(&border.color)
-                            .unwrap_or_else(|_| Rgba::new(0, 0, 0, 255)),
-                        line: CellBorderLine::from_str(&border.line)
-                            .unwrap_or(CellBorderLine::Line1),
-                    };
-                    let row_id = sheet.get_row(*y).unwrap();
-                    let region = RegionRef {
-                        sheet: sheet.id,
-                        columns: vec![
-                            ColumnId::from_str(&*column_id).unwrap_or_else(|_| ColumnId::new())
-                        ],
-                        rows: vec![row_id],
-                    };
-                    let borders =
-                        generate_borders(sheet, &region, vec![BorderSelection::All], Some(style));
-                    set_region_borders(sheet, vec![region], borders);
+                    if let Some(border) = border {
+                        let style = BorderStyle {
+                            color: Rgba::from_str(&border.color)
+                                .unwrap_or_else(|_| Rgba::new(0, 0, 0, 255)),
+                            line: CellBorderLine::from_str(&border.line)
+                                .unwrap_or(CellBorderLine::Line1),
+                        };
+
+                        if let (Ok(column_id), Some(row_id)) =
+                            (ColumnId::from_str(&*column_id), sheet.get_row(*y))
+                        {
+                            let region = RegionRef {
+                                sheet: sheet.id,
+                                columns: vec![column_id],
+                                rows: vec![row_id],
+                            };
+                            let borders = generate_borders(
+                                sheet,
+                                &region,
+                                vec![BorderSelection::All],
+                                Some(style),
+                            );
+
+                            // necessary to fill in render_lookup in SheetBorders
+                            set_region_borders(sheet, vec![region], borders);
+                        }
+                    }
                 })
             })
         });
@@ -298,7 +308,9 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
         .collect()
 }
 
-fn export_borders_builder(sheet: &Sheet) -> HashMap<String, Vec<(i64, Vec<current::CellBorder>)>> {
+fn export_borders_builder(
+    sheet: &Sheet,
+) -> HashMap<String, Vec<(i64, Vec<Option<current::CellBorder>>)>> {
     sheet
         .borders()
         .per_cell
@@ -315,10 +327,12 @@ fn export_borders_builder(sheet: &Sheet) -> HashMap<String, Vec<(i64, Vec<curren
                             cell_borders
                                 .borders
                                 .iter()
-                                .filter_map(|border_style| {
-                                    border_style.map(|border_style| current::CellBorder {
-                                        color: border_style.color.as_string(),
-                                        line: border_style.line.to_string(),
+                                .map(|border_style| {
+                                    border_style.and_then(|border_style| {
+                                        Some(current::CellBorder {
+                                            color: border_style.color.as_string(),
+                                            line: border_style.line.to_string(),
+                                        })
                                     })
                                 })
                                 .collect(),

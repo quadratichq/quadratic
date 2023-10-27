@@ -30,7 +30,7 @@ pub struct Sheet {
     pub offsets: (Vec<(i64, f64)>, Vec<(i64, f64)>),
     pub columns: Vec<(i64, Column)>,
     pub rows: Vec<(i64, Id)>,
-    pub borders: HashMap<String, Vec<(i64, Vec<CellBorder>)>>,
+    pub borders: HashMap<String, Vec<(i64, Vec<Option<CellBorder>>)>>,
     #[serde(rename = "code_cells")]
     pub code_cells: Vec<(CellRef, CodeCellValue)>,
 }
