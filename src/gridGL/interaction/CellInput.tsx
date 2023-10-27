@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Rectangle } from 'pixi.js';
-import { useCallback, useRef, useState } from 'react';
+import { ClipboardEvent, useCallback, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../grid/controller/Sheets';
@@ -32,7 +32,6 @@ export const CellInput = (props: CellInputProps) => {
   // don't allow input to shrink below the initial width
   // this is used to cover up the existing text on the canvas
   const [initialWidth, setInitialWidth] = useState(0);
-  const columnWidth = cellOffsets.width - CURSOR_THICKNESS * 2;
 
   // handle temporary changes to bold and italic (via keyboard)
   const [temporaryBold, setTemporaryBold] = useState<undefined | boolean>();
@@ -167,6 +166,17 @@ export const CellInput = (props: CellInputProps) => {
   // set input's initial position correctly
   const transform = updateInputCSSTransform();
 
+  const handlePaste = (event: ClipboardEvent) => {
+    const text = event.clipboardData?.getData('text') || '';
+    const parsed = new DOMParser().parseFromString(text, 'text/html');
+    const result = parsed.body.textContent || '';
+    document.execCommand('insertHTML', false, result.replace(/(\r\n|\n|\r)/gm, ''));
+    event.preventDefault();
+  };
+
+  const columnWidth = cellOffsets.width * viewport.scale.x;
+  const minWidth = Math.max(initialWidth, columnWidth) / viewport.scale.x - CURSOR_THICKNESS * 2;
+
   return (
     <div
       id="cell-edit"
@@ -179,7 +189,7 @@ export const CellInput = (props: CellInputProps) => {
         position: 'absolute',
         top: 0,
         left: 0,
-        minWidth: Math.max(initialWidth, columnWidth - CURSOR_THICKNESS * 2),
+        minWidth: minWidth,
         outline: 'none',
         color: formatting?.textColor ?? 'black',
         padding: `0 ${CURSOR_THICKNESS}px 0 0`,
@@ -191,9 +201,10 @@ export const CellInput = (props: CellInputProps) => {
         fontFamily,
         fontSize: '14px',
         backgroundColor: formatting?.fillColor ?? 'white',
-        whiteSpace: 'break-spaces',
+        whiteSpace: 'nowrap',
       }}
-      onInput={() => {
+      onPaste={handlePaste}
+      onInput={(event: React.FormEvent<HTMLDivElement>) => {
         // viewport should try to keep the input box in view
         if (!textInput) return;
         const bounds = textInput.getBoundingClientRect();
