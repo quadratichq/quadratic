@@ -1,13 +1,10 @@
 use crate::color::Rgba;
-use crate::controller::operation::Operation;
-use crate::controller::transactions::TransactionType;
 use crate::grid::{
     generate_borders, set_region_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
     CellWrap, Grid, GridBounds, NumericFormat, NumericFormatKind, RegionRef,
 };
-use crate::{CellValue, Error, ErrorMsg, Rect, Span, Value};
+use crate::{CellValue, Error, ErrorMsg, Span, Value};
 
-use crate::grid::borders::CellSide;
 use crate::grid::file::v1_4::schema::{self as current};
 use crate::grid::{
     block::SameValue, sheet::sheet_offsets::SheetOffsets, CellRef, CodeCellLanguage,
