@@ -664,12 +664,3 @@ export class Grid {
 //#end
 
 export const grid = new Grid();
-
-// workaround so Rust can import TS functions
-declare global {
-  interface Window {
-    transactionSummary: any;
-  }
-}
-
-window.transactionSummary = grid.transactionResponse.bind(grid);
