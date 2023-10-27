@@ -95,7 +95,7 @@ pub fn set_region_border_selection(
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct SheetBorders {
-    per_cell: IdSpaceBorders,
+    pub per_cell: IdSpaceBorders,
     pub(super) render_lookup: GridSpaceBorders,
 }
 
@@ -134,8 +134,8 @@ impl SheetBorders {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
-struct IdSpaceBorders {
-    borders: HashMap<ColumnId, ColumnData<SameValue<CellBorders>>>,
+pub struct IdSpaceBorders {
+    pub borders: HashMap<ColumnId, ColumnData<SameValue<CellBorders>>>,
 }
 
 impl IdSpaceBorders {
@@ -213,7 +213,7 @@ impl IdSpaceBorders {
         }
     }
 
-    fn set_cell_border(
+    pub fn set_cell_border(
         &mut self,
         column_id: ColumnId,
         row_index: i64,

@@ -50,7 +50,7 @@ impl SheetOffsets {
     }
 
     /// import offsets from a GridFile
-    pub fn import(offsets: OffsetWidthHeight) -> Self {
+    pub fn import(offsets: &OffsetWidthHeight) -> Self {
         SheetOffsets {
             column_widths: Offsets::from_iter(
                 crate::DEFAULT_COLUMN_WIDTH,

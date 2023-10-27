@@ -345,10 +345,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
             .into_iter()
             .map(|(id, row_id)| (id, current::Id { id: row_id.id }))
             .collect(),
-        borders: current::Borders {
-            horizontal: HashMap::new(),
-            vertical: HashMap::new(),
-        }, // TODO: import borders
+        borders: HashMap::new(), // TODO: import borders
         code_cells,
     })
 }

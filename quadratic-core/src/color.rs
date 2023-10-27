@@ -15,6 +15,15 @@ pub struct Rgba {
 }
 #[wasm_bindgen]
 impl Rgba {
+    pub fn new(red: u8, green: u8, blue: u8, alpha: u8) -> Self {
+        Self {
+            red,
+            green,
+            blue,
+            alpha,
+        }
+    }
+
     #[cfg_attr(feature = "js", wasm_bindgen(constructor))]
     pub fn from_js(red: f64, green: f64, blue: f64, alpha: f64) -> Self {
         Self {

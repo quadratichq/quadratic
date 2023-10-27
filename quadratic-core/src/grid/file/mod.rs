@@ -55,6 +55,14 @@ pub fn export(grid: &mut Grid) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        color::Rgba,
+        grid::{
+            generate_borders, set_region_borders, BorderSelection, BorderStyle, CellBorderLine,
+        },
+        Pos, Rect,
+    };
+
     use super::*;
 
     const V1_3_FILE: &str = include_str!("../../../examples/v1_3.grid");
@@ -114,5 +122,37 @@ mod tests {
         let empty = r#"{"sheets":[{"name":"Sheet 1","id":{"id":"4b42eacf-5737-47a2-ac44-e4929d3abc3a"},"order":"a0","cells":[],"code_cells":[],"formats":[],"columns":[],"rows":[],"offsets":[[],[]],"borders":{"horizontal":{},"vertical":{}}}],"version":"1.4"}"#;
         let mut imported = import(empty).unwrap();
         let _exported = export(&mut imported).unwrap();
+    }
+
+    #[test]
+    fn process_a_simple_v1_4_borders_file() {
+        let empty = r##"{"sheets":[{"id":{"id":"d48a3488-fb1d-438d-ba0b-d4ad81b8c239"},"name":"Sheet 1","color":null,"order":"a0","offsets":[[],[]],"columns":[[0,{"id":{"id":"6287d0f0-b559-4de2-a73f-5b140237b3c4"},"values":{"0":{"y":0,"content":{"Values":[{"type":"text","value":"a"}]}}},"spills":{},"align":{},"wrap":{},"numeric_format":{},"numeric_decimals":{},"bold":{},"italic":{},"text_color":{},"fill_color":{}}]],"rows":[[0,{"id":"a9ed07c9-98af-453d-9b5e-311c48be42f7"}]],"borders":{"6287d0f0-b559-4de2-a73f-5b140237b3c4":[[0,[{"color":"#000000ff","line":"line1"},{"color":"#000000ff","line":"line1"},{"color":"#000000ff","line":"line1"},{"color":"#000000ff","line":"line1"}]]]},"code_cells":[]}],"version":"1.4"}"##;
+        let mut imported = import(empty).unwrap();
+        // println!("{:#?}", imported.sheets()[0].borders);
+        let _exported = export(&mut imported).unwrap();
+        println!("{}", _exported);
+    }
+
+    #[test]
+    fn process_a_v1_4_borders_file() {
+        let mut grid = Grid::new();
+        let sheets = grid.sheets_mut();
+        let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
+        let region = sheets[0].region(rect);
+        let selection = vec![BorderSelection::All];
+        let style = BorderStyle {
+            color: Rgba::from_str("#000000").unwrap(),
+            line: CellBorderLine::Line1,
+        };
+        let borders = generate_borders(&sheets[0], &region, selection, Some(style));
+        set_region_borders(&mut sheets[0], vec![region.clone()], borders);
+        println!("{:#?}", sheets[0].borders);
+
+        let _exported = export(&mut grid).unwrap();
+        println!("{}", _exported);
+        let mut imported = import(&_exported).unwrap();
+        println!("{:#?}", imported.sheets()[0].borders);
+        // // println!("{:?}", serde_json::to_string(&sheet.column_).unwrap());
+        // println!("{:#?}", &sheets[0].borders.per_cell.borders);
     }
 }

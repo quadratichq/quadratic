@@ -30,7 +30,7 @@ pub struct Sheet {
     pub offsets: (Vec<(i64, f64)>, Vec<(i64, f64)>),
     pub columns: Vec<(i64, Column)>,
     pub rows: Vec<(i64, Id)>,
-    pub borders: Borders,
+    pub borders: HashMap<String, Vec<(i64, Vec<CellBorder>)>>,
     #[serde(rename = "code_cells")]
     pub code_cells: Vec<(CellRef, CodeCellValue)>,
 }
@@ -288,15 +288,17 @@ pub struct Row {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Borders {
-    pub horizontal: HashMap<i64, Horizontal>,
-    pub vertical: HashMap<i64, Vertical>,
+pub struct CellBorder {
+    pub color: String,
+    pub line: String,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Horizontal {}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Vertical {}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+#[repr(u8)]
+pub enum CellSide {
+    Left = 0,
+    Top = 1,
+    Right = 2,
+    Bottom = 3,
+}

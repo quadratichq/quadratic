@@ -19,7 +19,7 @@ const DEFAULT_FILE: any = {
       columns: [],
       rows: [],
       offsets: [[], []],
-      borders: { horizontal: {}, vertical: {} },
+      borders: {},
     },
   ],
   // TODO(ddimaria): make this dynamic

@@ -1,6 +1,13 @@
-use crate::grid::{CellAlign, CellWrap, Grid, GridBounds, NumericFormat, NumericFormatKind};
-use crate::{CellValue, Error, ErrorMsg, Span, Value};
+use crate::color::Rgba;
+use crate::controller::operation::Operation;
+use crate::controller::transactions::TransactionType;
+use crate::grid::{
+    generate_borders, set_region_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
+    CellWrap, Grid, GridBounds, NumericFormat, NumericFormatKind, RegionRef,
+};
+use crate::{CellValue, Error, ErrorMsg, Rect, Span, Value};
 
+use crate::grid::borders::CellSide;
 use crate::grid::file::v1_4::schema::{self as current};
 use crate::grid::{
     block::SameValue, sheet::sheet_offsets::SheetOffsets, CellRef, CodeCellLanguage,
@@ -109,7 +116,7 @@ fn set_column_format_bool(
     Ok(())
 }
 
-fn import_column_builder(columns: Vec<(i64, current::Column)>) -> Result<BTreeMap<i64, Column>> {
+fn import_column_builder(columns: &Vec<(i64, current::Column)>) -> Result<BTreeMap<i64, Column>> {
     columns
         .iter()
         .map(|(y, column)| {
@@ -149,16 +156,41 @@ fn import_column_builder(columns: Vec<(i64, current::Column)>) -> Result<BTreeMa
 
             Ok((*y, col))
         })
-        // .flatten_ok()
         .collect::<Result<BTreeMap<i64, Column>>>()
+}
+
+fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet) {
+    current_sheet
+        .borders
+        .iter()
+        .for_each(|(column_id, cell_borders)| {
+            cell_borders.iter().for_each(|(y, cell_borders)| {
+                cell_borders.iter().for_each(|border| {
+                    let style = BorderStyle {
+                        color: Rgba::from_str(&border.color)
+                            .unwrap_or_else(|_| Rgba::new(0, 0, 0, 255)),
+                        line: CellBorderLine::from_str(&border.line)
+                            .unwrap_or(CellBorderLine::Line1),
+                    };
+                    let row_id = sheet.get_row(*y).unwrap();
+                    let region = RegionRef {
+                        sheet: sheet.id,
+                        columns: vec![
+                            ColumnId::from_str(&*column_id).unwrap_or_else(|_| ColumnId::new())
+                        ],
+                        rows: vec![row_id],
+                    };
+                    let borders =
+                        generate_borders(sheet, &region, vec![BorderSelection::All], Some(style));
+                    set_region_borders(sheet, vec![region], borders);
+                })
+            })
+        });
 }
 
 fn export_column_data_bool(
     column_data: &ColumnData<SameValue<bool>>,
-) -> HashMap<String, current::ColumnFormatType<bool>>
-// where
-//     T: Serialize + for<'d> Deserialize<'d> + Debug + Clone + PartialEq + Display,
-{
+) -> HashMap<String, current::ColumnFormatType<bool>> {
     column_data
         .values()
         .map(|(y, value)| (y.to_string(), (y, value).into()))
@@ -266,17 +298,49 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
         .collect()
 }
 
+fn export_borders_builder(sheet: &Sheet) -> HashMap<String, Vec<(i64, Vec<current::CellBorder>)>> {
+    sheet
+        .borders()
+        .per_cell
+        .borders
+        .iter()
+        .map(|(column_id, border)| {
+            (
+                column_id.to_string(),
+                border
+                    .values()
+                    .map(|(y, cell_borders)| {
+                        (
+                            y,
+                            cell_borders
+                                .borders
+                                .iter()
+                                .filter_map(|border_style| {
+                                    border_style.map(|border_style| current::CellBorder {
+                                        color: border_style.color.as_string(),
+                                        line: border_style.line.to_string(),
+                                    })
+                                })
+                                .collect(),
+                        )
+                    })
+                    .collect(),
+            )
+        })
+        .collect()
+}
+
 pub fn import(file: current::GridSchema) -> Result<Grid> {
     Ok(Grid {
         sheets: file
             .sheets
             .into_iter()
             .map(|sheet| {
-                let mut sheet = Sheet {
+                let mut new_sheet = Sheet {
                     id: SheetId::from_str(&sheet.id.id)?,
-                    name: sheet.name,
-                    color: sheet.color,
-                    order: sheet.order,
+                    name: sheet.name.to_owned(),
+                    color: sheet.color.to_owned(),
+                    order: sheet.order.to_owned(),
                     column_ids: sheet
                         .columns
                         .iter()
@@ -287,14 +351,13 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                         .iter()
                         .map(|(x, row)| Ok((*x, RowId::from_str(&row.id)?)))
                         .collect::<Result<_>>()?,
-                    offsets: SheetOffsets::import(sheet.offsets),
-                    columns: import_column_builder(sheet.columns)?,
-                    // TODO(ddimaria): implement
-                    // borders: sheet.borders,
+                    offsets: SheetOffsets::import(&sheet.offsets),
+                    columns: import_column_builder(&sheet.columns)?,
+                    // borders set after sheet is loaded
                     borders: SheetBorders::new(),
                     code_cells: sheet
                         .code_cells
-                        .into_iter()
+                        .iter()
                         .map(|(cell_ref, code_cell_value)| {
                             Ok((
                                 CellRef {
@@ -306,10 +369,12 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                                     language: CodeCellLanguage::from_str(
                                         &code_cell_value.language,
                                     )?,
-                                    code_string: code_cell_value.code_string,
-                                    formatted_code_string: code_cell_value.formatted_code_string,
-                                    last_modified: code_cell_value.last_modified,
-                                    output: code_cell_value.output.and_then(|output| {
+                                    code_string: code_cell_value.code_string.to_owned(),
+                                    formatted_code_string: code_cell_value
+                                        .formatted_code_string
+                                        .to_owned(),
+                                    last_modified: code_cell_value.last_modified.to_owned(),
+                                    output: code_cell_value.output.to_owned().and_then(|output| {
                                         Some(CodeCellRunOutput {
                                             std_out: output.std_out,
                                             std_err: output.std_err,
@@ -321,7 +386,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                                                     output_value: match output_value {
                                                         current::OutputValue::Single(
                                                             current::OutputValueValue {
-                                                                type_field,
+                                                                type_field: _type_field,
                                                                 value,
                                                             },
                                                         ) => Value::Single(CellValue::from(value)),
@@ -380,8 +445,9 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                     data_bounds: GridBounds::Empty,
                     format_bounds: GridBounds::Empty,
                 };
-                sheet.recalculate_bounds();
-                Ok(sheet)
+                new_sheet.recalculate_bounds();
+                import_borders_builder(&mut new_sheet, &mut sheet.clone());
+                Ok(new_sheet)
             })
             .collect::<Result<_>>()?,
     })
@@ -416,10 +482,7 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                     .collect(),
                 // TODO(ddimaria): implement
                 // borders: sheet.borders(), // TODO: serialize borders
-                borders: current::Borders {
-                    horizontal: HashMap::new(),
-                    vertical: HashMap::new(),
-                },
+                borders: export_borders_builder(sheet),
                 code_cells: sheet
                     .iter_code_cells_locations()
                     .map(|cell_ref| {
