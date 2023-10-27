@@ -49,7 +49,7 @@ impl CellBorders {
     }
 
     fn with_side(&self, side: CellSide, style: Option<BorderStyle>) -> Self {
-        let mut cloned = self.clone();
+        let mut cloned = *self;
         cloned.borders[side as usize] = style;
         cloned
     }

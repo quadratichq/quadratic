@@ -172,7 +172,7 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
                         };
 
                         if let (Ok(column_id), Some(row_id)) =
-                            (ColumnId::from_str(&*column_id), sheet.get_row(*y))
+                            (ColumnId::from_str(column_id), sheet.get_row(*y))
                         {
                             let region = RegionRef {
                                 sheet: sheet.id,
@@ -190,8 +190,8 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
                             set_region_borders(sheet, vec![region], borders);
                         }
                     }
-                })
-            })
+                });
+            });
         });
 }
 
@@ -435,12 +435,10 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                                                 current::CodeCellRunResult::Err { error } => {
                                                     CodeCellRunResult::Err {
                                                         error: Error {
-                                                            span: error.span.and_then(|span| {
-                                                                Some(Span {
+                                                            span: error.span.map(|span| Span {
                                                                     start: span.start,
                                                                     end: span.end,
-                                                                })
-                                                            }),
+                                                                }),
                                                             // TODO(ddimaria): implement ErrorMsg
                                                             msg: ErrorMsg::UnknownError,
                                                         },
@@ -479,7 +477,7 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                 color: sheet.color.to_owned(),
                 order: sheet.order.to_owned(),
                 offsets: sheet.offsets.export(),
-                columns: export_column_builder(&sheet),
+                columns: export_column_builder(sheet),
                 rows: sheet
                     .iter_rows()
                     .map(|(x, row_id)| {
@@ -503,10 +501,9 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                             current::CodeCellValue {
                                 language: code_cell_value.language.to_string(),
                                 code_string: code_cell_value.code_string,
-                                formatted_code_string: code_cell_value.formatted_code_string.and_then(|formatted| Some(formatted)),
+                                formatted_code_string: code_cell_value.formatted_code_string,
                                 last_modified: code_cell_value.last_modified,
-                                output: code_cell_value.output.and_then(|output| {
-                                    Some(current::CodeCellRunOutput {
+                                output: code_cell_value.output.map(|output| current::CodeCellRunOutput {
                                         std_out: output.std_out,
                                         std_err: output.std_err,
                                         result: match output.result {
@@ -554,19 +551,16 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                                             CodeCellRunResult::Err { error } => {
                                                 current::CodeCellRunResult::Err {
                                                     error: current::Error {
-                                                        span: error.span.and_then(|span| {
-                                                            Some(current::Span {
+                                                        span: error.span.map(|span| current::Span {
                                                                 start: span.start,
                                                                 end: span.end,
-                                                            })
-                                                        }),
+                                                            }),
                                                         msg: error.msg.to_string()
                                                     }
                                                 }
                                             }
                                         },
-                                    })
-                                }),
+                                    }),
                             },
                         )
                     })

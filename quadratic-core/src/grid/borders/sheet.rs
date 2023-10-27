@@ -177,7 +177,7 @@ impl IdSpaceBorders {
         let mut column = ColumnData::new();
         if let Some(source_column) = self.borders.get(&column_id) {
             for range in row_ranges {
-                column.clone_range(&source_column, range);
+                column.clone_range(source_column, range);
             }
         }
         column

@@ -173,7 +173,7 @@ impl GridController {
                         } else {
                             // delete code cell if it exists
                             let pos = Pos { x, y };
-                            if let Some(_) = sheet.get_code_cell(pos) {
+                            if sheet.get_code_cell(pos).is_some() {
                                 if let Some(cell_ref) = sheet.try_get_cell_ref(pos) {
                                     ops.push(Operation::SetCellCode {
                                         cell_ref,

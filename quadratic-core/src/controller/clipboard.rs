@@ -210,7 +210,7 @@ impl GridController {
                         } == pos
                     }) {
                         ops.push(Operation::SetCellCode {
-                            cell_ref: cell_ref.clone(),
+                            cell_ref,
                             code_cell_value: None,
                         });
                     }

@@ -67,11 +67,7 @@ impl TransactionInProgress {
                     }
                     Err(error) => {
                         let msg = error.msg.to_string();
-                        let line_number = if let Some(span) = error.span {
-                            Some(span.start as i64)
-                        } else {
-                            None
-                        };
+                        let line_number = error.span.map(|span| span.start as i64);
                         self.code_cell_sheet_error(
                             grid_controller,
                             msg,

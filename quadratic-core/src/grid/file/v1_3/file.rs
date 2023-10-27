@@ -67,10 +67,10 @@ struct SheetBuilder {
 }
 impl SheetBuilder {
     fn column_id(&mut self, x: i64) -> &mut current::Id {
-        self.column_ids.entry(x).or_insert_with(current::Id::new)
+        self.column_ids.entry(x).or_default()
     }
     fn row_id(&mut self, x: i64) -> &mut current::Id {
-        self.row_ids.entry(x).or_insert_with(current::Id::new)
+        self.row_ids.entry(x).or_default()
     }
     fn column(&mut self, x: i64) -> &mut current::Column {
         let id = self.column_id(x).to_owned();
@@ -127,8 +127,7 @@ impl SheetBuilder {
         };
         let formatted_code_string = cell
             .clone()
-            .evaluation_result
-            .and_then(|result| Some(result.formatted_code));
+            .evaluation_result.map(|result| result.formatted_code);
 
         current::CodeCellValue {
             language,
@@ -151,19 +150,19 @@ impl SheetBuilder {
                                     }
                                     current::OutputValue::Array(current::OutputArray {
                                         size: current::OutputSize {
-                                            w: 1 as i64,
+                                            w: 1_i64,
                                             h: values.len() as i64,
                                         },
                                         values: values
                                             .into_iter()
-                                            .flat_map(|v| v.and_then(|v| Some(v.into())))
+                                            .flat_map(|v| v.map(|v| v.into()))
                                             .collect(),
                                     })
                                 }
                                 ArrayOutput::Block(mut values) => {
                                     // TODO(ddimaria): this is a hack, but makes a single use case pass
                                     // review approaches and refine this
-                                    if values.len() == 0 {
+                                    if values.is_empty() {
                                         if let Some(output_value) = result.output_value {
                                             values = vec![vec![Some(Any::String(output_value))]];
                                         }
@@ -189,7 +188,7 @@ impl SheetBuilder {
                                         values: values
                                             .into_iter()
                                             .flatten()
-                                            .flat_map(|v| v.and_then(|v| Some(v.into())))
+                                            .flat_map(|v| v.map(|v| v.into()))
                                             .collect(),
                                     })
                                 }

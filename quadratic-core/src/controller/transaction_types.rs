@@ -107,14 +107,10 @@ impl JsCodeResult {
                 .to_owned()
                 .unwrap_or_else(|| "Unknown Python Error".into());
             let msg = ErrorMsg::PythonError(error_msg.into());
-            let span = if let Some(line_number) = self.line_number {
-                Some(Span {
+            let span = self.line_number.map(|line_number| Span {
                     start: line_number,
                     end: line_number,
-                })
-            } else {
-                None
-            };
+                });
             CodeCellRunResult::Err {
                 error: Error { span, msg },
             }

@@ -31,11 +31,7 @@ impl CodeCellValue {
     }
 
     pub fn cells_accessed_copy(&self) -> Option<Vec<CellRef>> {
-        if let Some(cells_accessed) = self.output.as_ref()?.cells_accessed() {
-            Some(cells_accessed.clone())
-        } else {
-            None
-        }
+        self.output.as_ref()?.cells_accessed().cloned()
     }
 
     pub fn get_error(&self) -> Option<Error> {

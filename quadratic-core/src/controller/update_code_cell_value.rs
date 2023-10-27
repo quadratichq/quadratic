@@ -133,7 +133,7 @@ pub fn fetch_code_cell_difference(
                 };
                 summary
                     .cell_sheets_modified
-                    .insert(CellSheetsModified::new(sheet.id, pos.into()));
+                    .insert(CellSheetsModified::new(sheet.id, pos));
                 if let Some(cells_to_compute) = cells_to_compute {
                     cells_to_compute.insert(CellRef {
                         sheet: sheet.id,
@@ -162,7 +162,7 @@ pub fn fetch_code_cell_difference(
                 };
                 summary
                     .cell_sheets_modified
-                    .insert(CellSheetsModified::new(sheet.id, pos.into()));
+                    .insert(CellSheetsModified::new(sheet.id, pos));
                 if let Some(cells_to_compute) = cells_to_compute {
                     cells_to_compute.insert(CellRef {
                         sheet: sheet.id,

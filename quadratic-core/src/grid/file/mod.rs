@@ -39,7 +39,7 @@ pub fn import(file_contents: &str) -> Result<Grid> {
     let file = serde_json::from_str::<GridFile>(file_contents)
         .map_err(|e| {
             dbg!(&e);
-            return anyhow!(e);
+            anyhow!(e)
         })?
         .into_latest()?;
 

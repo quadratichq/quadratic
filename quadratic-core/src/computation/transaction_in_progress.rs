@@ -137,19 +137,15 @@ impl TransactionInProgress {
                 return;
             };
         let msg = ErrorMsg::PythonError(error_msg.clone().into());
-        let span = if let Some(line_number) = line_number {
-            Some(Span {
+        let span = line_number.map(|line_number| Span {
                 start: line_number as u32,
                 end: line_number as u32,
-            })
-        } else {
-            None
-        };
+            });
         let error = Error { span, msg };
         let result = CodeCellRunResult::Err { error };
         updated_code_cell_value.output = Some(CodeCellRunOutput {
             std_out: None,
-            std_err: Some(error_msg.into()),
+            std_err: Some(error_msg),
             result,
         });
         update_code_cell_value(
@@ -170,7 +166,7 @@ impl TransactionInProgress {
         } else {
             None
         };
-        let deps = if self.cells_accessed.len() > 0 {
+        let deps = if !self.cells_accessed.is_empty() {
             Some(self.cells_accessed.clone())
         } else {
             None
@@ -246,7 +242,7 @@ impl TransactionInProgress {
     /// returns true if an async call is made or the compute cycle is completed
     fn compute(&mut self, grid_controller: &mut GridController) {
         if cfg!(feature = "show-operations") {
-            crate::util::dbgjs(&format!(
+            crate::util::dbgjs(format!(
                 "[Compute] Cells to compute: {}",
                 self.cells_to_compute.len()
             ));
@@ -261,7 +257,7 @@ impl TransactionInProgress {
             let sheet = grid_controller.grid().sheet_from_id(cell_ref.sheet);
             if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
                 if cfg!(feature = "show-operations") {
-                    crate::util::dbgjs(&format!("[Compute] {:?}", pos));
+                    crate::util::dbgjs(format!("[Compute] {:?}", pos));
                 }
                 // find which cells have code. Run the code and update the cells.
                 // add the updated cells to the cells_to_compute
@@ -298,11 +294,11 @@ impl TransactionInProgress {
                                 language,
                                 pos,
                                 cell_ref,
-                                sheet.id.clone(),
+                                sheet.id,
                             );
                         }
                         _ => {
-                            crate::util::dbgjs(&format!(
+                            crate::util::dbgjs(format!(
                                 "Compute language {} not supported in compute.rs",
                                 language
                             ));
@@ -314,19 +310,19 @@ impl TransactionInProgress {
     }
 }
 
-impl Into<Transaction> for &TransactionInProgress {
-    fn into(self) -> Transaction {
+impl From<&TransactionInProgress> for Transaction {
+    fn from(val: &TransactionInProgress) -> Self {
         Transaction {
-            ops: self.reverse_operations.clone().into_iter().rev().collect(),
-            cursor: self.cursor.clone(),
+            ops: val.reverse_operations.clone().into_iter().rev().collect(),
+            cursor: val.cursor.clone(),
         }
     }
 }
 
-impl Into<TransactionInProgress> for Transaction {
-    fn into(self) -> TransactionInProgress {
+impl From<Transaction> for TransactionInProgress {
+    fn from(val: Transaction) -> Self {
         TransactionInProgress {
-            cursor: self.cursor,
+            cursor: val.cursor,
             ..Default::default()
         }
     }
