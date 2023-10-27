@@ -59,7 +59,7 @@ impl GridController {
         // otherwise you end up redrawing too often
         if transaction.complete {
             summary.save = true;
-            self.finalize_transaction(&mut transaction);
+            self.finalize_transaction(&transaction);
         } else {
             self.transaction_in_progress = Some(transaction);
         }
@@ -115,7 +115,9 @@ impl GridController {
     }
 
     pub fn transaction_summary(&mut self) -> Option<TransactionSummary> {
-        self.transaction_in_progress.as_mut().map(|transaction| transaction.transaction_summary())
+        self.transaction_in_progress
+            .as_mut()
+            .map(|transaction| transaction.transaction_summary())
     }
 
     pub fn updated_bounds_in_transaction(&mut self) {
