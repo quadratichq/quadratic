@@ -150,7 +150,7 @@ mod tests {
 
         let _exported = export(&mut grid).unwrap();
         println!("{}", _exported);
-        let mut imported = import(&_exported).unwrap();
+        let _imported = import(&_exported).unwrap();
         // println!("{:#?}", imported.sheets()[0].borders);
         // // println!("{:?}", serde_json::to_string(&sheet.column_).unwrap());
         // println!("{:#?}", &sheets[0].borders.per_cell.borders);

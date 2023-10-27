@@ -355,13 +355,12 @@ mod tests {
     const V1_3_FILE: &str = include_str!("../../../../examples/v1_3.grid");
 
     fn import(file_contents: &str) -> Result<GridSchema> {
-        Ok(serde_json::from_str::<GridSchema>(&file_contents)
-            .map_err(|e| anyhow!("Could not import file: {:?}", e))?)
+        serde_json::from_str::<GridSchema>(file_contents)
+            .map_err(|e| anyhow!("Could not import file: {:?}", e))
     }
 
     fn export(grid_schema: &GridSchema) -> Result<String> {
-        Ok(serde_json::to_string(grid_schema)
-            .map_err(|e| anyhow!("Could not export file: {:?}", e))?)
+        serde_json::to_string(grid_schema).map_err(|e| anyhow!("Could not export file: {:?}", e))
     }
 
     #[test]

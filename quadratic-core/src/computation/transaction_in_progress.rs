@@ -138,9 +138,9 @@ impl TransactionInProgress {
             };
         let msg = ErrorMsg::PythonError(error_msg.clone().into());
         let span = line_number.map(|line_number| Span {
-                start: line_number as u32,
-                end: line_number as u32,
-            });
+            start: line_number as u32,
+            end: line_number as u32,
+        });
         let error = Error { span, msg };
         let result = CodeCellRunResult::Err { error };
         updated_code_cell_value.output = Some(CodeCellRunOutput {
@@ -350,7 +350,7 @@ mod test {
         let mut gc = GridController::new();
         let sheet_ids = gc.sheet_ids();
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
-        let sheet_id = sheet.id.clone();
+        let sheet_id = sheet.id;
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
         let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 1, y: 0 });
         gc.set_in_progress_transaction(
@@ -377,9 +377,9 @@ mod test {
                 None,
             ))
         );
-        assert_eq!(gc.get_transaction_in_progress().is_some(), true);
-        if let Some(transaction) = gc.get_transaction_in_progress().clone() {
-            assert_eq!(transaction.complete, false);
+        assert!(gc.get_transaction_in_progress().is_some());
+        if let Some(transaction) = gc.get_transaction_in_progress() {
+            assert!(!transaction.complete);
             assert_eq!(transaction.cells_to_compute.len(), 0);
         }
         gc.calculation_get_cells(JsComputeGetCells::new(
@@ -391,7 +391,7 @@ mod test {
         let result = JsCodeResult::new(true, None, None, None, Some("10".to_string()), None, None);
 
         let summary = gc.calculation_complete(result);
-        assert_eq!(summary.save, true);
+        assert!(summary.save);
         assert_eq!(summary.code_cells_modified, HashSet::from([sheet_id]));
     }
 }

@@ -335,8 +335,7 @@ pub mod debug {
         ) -> Option<CellBorders> {
             if let Some(column_id) = column_ids.id_at(pos.x) {
                 let column = self.borders.get(&column_id);
-                let result = column.and_then(|column| column.get(pos.y));
-                result
+                column.and_then(|column| column.get(pos.y))
             } else {
                 None
             }
@@ -384,10 +383,7 @@ pub mod debug {
         for col in rect.x_range() {
             let pos = Pos { x: col, y: row };
             let borders = sheet_borders.get_cell_borders(pos, column_ids);
-            if borders
-                .clone()
-                .is_some_and(|borders| borders.contains(&CellSide::Left))
-            {
+            if borders.is_some_and(|borders| borders.contains(&CellSide::Left)) {
                 print!("|");
             } else {
                 print!(" ");

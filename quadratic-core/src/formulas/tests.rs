@@ -68,7 +68,7 @@ fn test_formula_circular_array_ref() {
     assert_eq!(
         ErrorMsg::CircularReference,
         form.eval(&mut ctx).unwrap_err().msg,
-    )
+    );
 }
 
 #[test]
