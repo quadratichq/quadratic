@@ -152,7 +152,7 @@ impl TransactionInProgress {
             grid_controller,
             cell_ref,
             Some(updated_code_cell_value),
-            &mut Some(&mut self.cells_to_compute),
+            &mut self.cells_to_compute,
             &mut self.reverse_operations,
             &mut self.summary,
         );
@@ -219,7 +219,7 @@ impl TransactionInProgress {
                             grid_controller,
                             cell_ref,
                             Some(updated_code_cell_value),
-                            &mut Some(&mut self.cells_to_compute),
+                            &mut self.cells_to_compute,
                             &mut self.reverse_operations,
                             &mut self.summary,
                         ) {

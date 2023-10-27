@@ -54,9 +54,12 @@ impl GridController {
             TransactionInProgress::new(self, operations, cursor, compute, transaction_type);
         let mut summary = transaction.transaction_summary();
         transaction.updated_bounds(self);
+
+        // only trigger update to grid when computation cycle is complete
+        // otherwise you end up redrawing too often
         if transaction.complete {
             summary.save = true;
-            self.finalize_transaction(&transaction);
+            self.finalize_transaction(&mut transaction);
         } else {
             self.transaction_in_progress = Some(transaction);
         }
@@ -89,7 +92,11 @@ impl GridController {
             transaction.calculation_complete(self, result);
             self.transaction_in_progress = Some(transaction.to_owned());
             transaction.updated_bounds(self);
-            transaction.transaction_summary()
+            if transaction.complete {
+                transaction.transaction_summary()
+            } else {
+                TransactionSummary::default()
+            }
         } else {
             panic!("Expected an in progress transaction");
         }
