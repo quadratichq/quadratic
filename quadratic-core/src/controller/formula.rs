@@ -130,13 +130,8 @@ mod tests {
         assert_eq!(result.cell_refs[0].span, Span { start: 0, end: 12 });
         assert_eq!(
             result.cell_refs[0].cell_ref,
-            RangeRef::CellRange {
-                start: CellRef {
-                    sheet: Some("Sheet 2".to_string()),
-                    x: CellRefCoord::Relative(0),
-                    y: CellRefCoord::Relative(0)
-                },
-                end: CellRef {
+            RangeRef::Cell {
+                pos: CellRef {
                     sheet: Some("Sheet 2".to_string()),
                     x: CellRefCoord::Relative(0),
                     y: CellRefCoord::Relative(0)
