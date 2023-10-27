@@ -139,17 +139,17 @@ mod tests {
         let sheets = grid.sheets_mut();
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
         let region = sheets[0].region(rect);
-        let selection = vec![BorderSelection::Top];
+        let selection = vec![BorderSelection::Bottom];
         let style = BorderStyle {
             color: Rgba::from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
         let borders = generate_borders(&sheets[0], &region, selection, Some(style));
         set_region_borders(&mut sheets[0], vec![region.clone()], borders);
-        println!("{:#?}", sheets[0].borders);
+        // println!("{:#?}", sheets[0].borders);
 
         let _exported = export(&mut grid).unwrap();
-        println!("{}", _exported);
+        // println!("{}", _exported);
         let _imported = import(&_exported).unwrap();
         // println!("{:#?}", imported.sheets()[0].borders);
         // // println!("{:?}", serde_json::to_string(&sheet.column_).unwrap());

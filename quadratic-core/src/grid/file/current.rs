@@ -163,7 +163,14 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
         .iter()
         .for_each(|(column_id, cell_borders)| {
             cell_borders.iter().for_each(|(y, cell_borders)| {
-                cell_borders.iter().for_each(|border| {
+                cell_borders.iter().enumerate().for_each(|(index, border)| {
+                    let border_selection = match index {
+                        0 => BorderSelection::Top,
+                        1 => BorderSelection::Left,
+                        2 => BorderSelection::Right,
+                        3 => BorderSelection::Bottom,
+                        _ => BorderSelection::Clear,
+                    };
                     if let Some(border) = border {
                         let style = BorderStyle {
                             color: Rgba::from_str(&border.color)
@@ -183,7 +190,7 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
                             let borders = generate_borders(
                                 sheet,
                                 &region,
-                                vec![BorderSelection::All],
+                                vec![border_selection],
                                 Some(style),
                             );
 
@@ -194,6 +201,7 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
                 });
             });
         });
+    // println!("{:#?}", sheet.borders);
 }
 
 fn export_column_data_bool(
