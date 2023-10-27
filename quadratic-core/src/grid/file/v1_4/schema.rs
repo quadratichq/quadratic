@@ -20,6 +20,9 @@ pub struct Pos {
     pub y: i64,
 }
 
+pub type Offsets = (Vec<(i64, f64)>, Vec<(i64, f64)>);
+pub type Borders = HashMap<String, Vec<(i64, Vec<Option<CellBorder>>)>>;
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Sheet {
@@ -27,10 +30,10 @@ pub struct Sheet {
     pub name: String,
     pub color: Option<String>,
     pub order: String,
-    pub offsets: (Vec<(i64, f64)>, Vec<(i64, f64)>),
+    pub offsets: Offsets,
     pub columns: Vec<(i64, Column)>,
     pub rows: Vec<(i64, Id)>,
-    pub borders: HashMap<String, Vec<(i64, Vec<Option<CellBorder>>)>>,
+    pub borders: Borders,
     #[serde(rename = "code_cells")]
     pub code_cells: Vec<(CellRef, CodeCellValue)>,
 }

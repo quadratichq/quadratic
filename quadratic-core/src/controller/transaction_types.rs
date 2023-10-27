@@ -62,6 +62,7 @@ impl CellsForArray {
 #[wasm_bindgen]
 impl CellsForArray {
     #[wasm_bindgen]
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<CellForArray> {
         let i = self.i;
         self.i += 1;
@@ -108,9 +109,9 @@ impl JsCodeResult {
                 .unwrap_or_else(|| "Unknown Python Error".into());
             let msg = ErrorMsg::PythonError(error_msg.into());
             let span = self.line_number.map(|line_number| Span {
-                    start: line_number,
-                    end: line_number,
-                });
+                start: line_number,
+                end: line_number,
+            });
             CodeCellRunResult::Err {
                 error: Error { span, msg },
             }

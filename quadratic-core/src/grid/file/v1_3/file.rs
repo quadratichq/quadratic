@@ -87,28 +87,25 @@ impl SheetBuilder {
     }
     fn cell_value(&mut self, x: i64, y: i64, type_field: &str, value: &str) {
         let column = self.column(x);
-        println!("{} {} {} {}", x, y, type_field, value);
+        // println!("{} {} {} {}", x, y, type_field, value);
 
-        match type_field {
-            "text" => {
-                let type_field = match BigDecimal::from_str(value) {
-                    Ok(_) => "NUMBER",
-                    Err(_) => "TEXT",
-                };
+        if type_field == "text" {
+            let type_field = match BigDecimal::from_str(value) {
+                Ok(_) => "NUMBER",
+                Err(_) => "TEXT",
+            };
 
-                column.values.insert(
-                    y.to_string(),
-                    (
-                        y,
-                        current::ColumnValue {
-                            type_field: type_field.into(),
-                            value: value.to_owned(),
-                        },
-                    )
-                        .into(),
-                );
-            }
-            _ => {}
+            column.values.insert(
+                y.to_string(),
+                (
+                    y,
+                    current::ColumnValue {
+                        type_field: type_field.into(),
+                        value: value.to_owned(),
+                    },
+                )
+                    .into(),
+            );
         }
     }
     fn code_cell_value(
@@ -127,7 +124,8 @@ impl SheetBuilder {
         };
         let formatted_code_string = cell
             .clone()
-            .evaluation_result.map(|result| result.formatted_code);
+            .evaluation_result
+            .map(|result| result.formatted_code);
 
         current::CodeCellValue {
             language,
@@ -298,7 +296,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
             .fill_color
             .map(|format| column.fill_color.insert(y.to_string(), format.into()));
 
-        format.text_format.map(|text_format| {
+        if let Some(text_format) = format.text_format {
             column.numeric_format.insert(
                 format.y.to_string(),
                 current::NumericFormat {
@@ -316,7 +314,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
                     .numeric_decimals
                     .insert(format.y.to_string(), (decimals as i16).into())
             });
-        });
+        }
     }
 
     // println!(

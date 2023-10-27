@@ -22,6 +22,7 @@ use std::{
 };
 
 use super::CURRENT_VERSION;
+pub type ExportBorders = HashMap<String, Vec<(i64, Vec<Option<current::CellBorder>>)>>;
 
 impl From<CellRef> for current::CellRef {
     fn from(cell_ref: CellRef) -> Self {
@@ -113,7 +114,7 @@ fn set_column_format_bool(
     Ok(())
 }
 
-fn import_column_builder(columns: &Vec<(i64, current::Column)>) -> Result<BTreeMap<i64, Column>> {
+fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<i64, Column>> {
     columns
         .iter()
         .map(|(y, column)| {
@@ -298,16 +299,13 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                             )
                         })
                         .collect(),
-                    ..Default::default()
                 },
             )
         })
         .collect()
 }
 
-fn export_borders_builder(
-    sheet: &Sheet,
-) -> HashMap<String, Vec<(i64, Vec<Option<current::CellBorder>>)>> {
+fn export_borders_builder(sheet: &Sheet) -> ExportBorders {
     sheet
         .borders()
         .per_cell
@@ -436,9 +434,9 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                                                     CodeCellRunResult::Err {
                                                         error: Error {
                                                             span: error.span.map(|span| Span {
-                                                                    start: span.start,
-                                                                    end: span.end,
-                                                                }),
+                                                                start: span.start,
+                                                                end: span.end,
+                                                            }),
                                                             // TODO(ddimaria): implement ErrorMsg
                                                             msg: ErrorMsg::UnknownError,
                                                         },
