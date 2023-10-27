@@ -32,6 +32,5 @@ export const useEditorOnSelectionChange = (
         return false;
       });
     });
-    return () => editor.dispose();
   }, [isValidRef, editorRef, monacoRef]);
 };

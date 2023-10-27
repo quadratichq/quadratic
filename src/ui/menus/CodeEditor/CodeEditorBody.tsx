@@ -68,6 +68,10 @@ export const CodeEditorBody = (props: Props) => {
     [didMount]
   );
 
+  useEffect(() => {
+    return () => editorRef.current?.dispose();
+  }, []);
+
   return (
     <div
       style={{

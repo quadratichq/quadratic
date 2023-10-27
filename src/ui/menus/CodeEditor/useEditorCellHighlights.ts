@@ -133,7 +133,5 @@ export const useEditorCellHighlights = (
     //   if (compareOldToNewMatches(oldCellsMatches, cellsMatches)) return;
     //   // setEditorHighlightedCells({ highlightedCells: cellsMatches, selectedCell });
     // }
-
-    return () => editor.dispose();
   }, [isValidRef, editorRef, monacoRef, editorInteractionState.selectedCell, editorInteractionState.selectedCellSheet]);
 };
