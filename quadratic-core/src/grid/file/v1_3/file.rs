@@ -65,12 +65,13 @@ struct SheetBuilder {
     column_ids: HashMap<i64, current::Id>,
     row_ids: HashMap<i64, current::Id>,
 }
+#[allow(clippy::unwrap_or_default)]
 impl SheetBuilder {
     fn column_id(&mut self, x: i64) -> &mut current::Id {
-        self.column_ids.entry(x).or_default()
+        self.column_ids.entry(x).or_insert_with(current::Id::new)
     }
     fn row_id(&mut self, x: i64) -> &mut current::Id {
-        self.row_ids.entry(x).or_default()
+        self.row_ids.entry(x).or_insert_with(current::Id::new)
     }
     fn column(&mut self, x: i64) -> &mut current::Column {
         let id = self.column_id(x).to_owned();
