@@ -37,5 +37,8 @@
     "editor.defaultFormatter": "rust-lang.rust-analyzer"
   },
   "rust-analyzer.linkedProjects": ["./quadratic-core/Cargo.toml"],
-  "rust-analyzer.checkOnSave": true
+  "rust-analyzer.checkOnSave": true,
+  "files.associations": {
+    "*.grid": "json"
+  }
 }

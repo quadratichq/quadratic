@@ -95,7 +95,7 @@ pub fn set_region_border_selection(
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct SheetBorders {
-    per_cell: IdSpaceBorders,
+    pub per_cell: IdSpaceBorders,
     pub(super) render_lookup: GridSpaceBorders,
 }
 
@@ -134,8 +134,8 @@ impl SheetBorders {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
-struct IdSpaceBorders {
-    borders: HashMap<ColumnId, ColumnData<SameValue<CellBorders>>>,
+pub struct IdSpaceBorders {
+    pub borders: HashMap<ColumnId, ColumnData<SameValue<CellBorders>>>,
 }
 
 impl IdSpaceBorders {
@@ -177,7 +177,7 @@ impl IdSpaceBorders {
         let mut column = ColumnData::new();
         if let Some(source_column) = self.borders.get(&column_id) {
             for range in row_ranges {
-                column.clone_range(&source_column, range);
+                column.clone_range(source_column, range);
             }
         }
         column
@@ -213,7 +213,7 @@ impl IdSpaceBorders {
         }
     }
 
-    fn set_cell_border(
+    pub fn set_cell_border(
         &mut self,
         column_id: ColumnId,
         row_index: i64,
@@ -335,8 +335,7 @@ pub mod debug {
         ) -> Option<CellBorders> {
             if let Some(column_id) = column_ids.id_at(pos.x) {
                 let column = self.borders.get(&column_id);
-                let result = column.and_then(|column| column.get(pos.y));
-                result
+                column.and_then(|column| column.get(pos.y))
             } else {
                 None
             }
@@ -384,10 +383,7 @@ pub mod debug {
         for col in rect.x_range() {
             let pos = Pos { x: col, y: row };
             let borders = sheet_borders.get_cell_borders(pos, column_ids);
-            if borders
-                .clone()
-                .is_some_and(|borders| borders.contains(&CellSide::Left))
-            {
+            if borders.is_some_and(|borders| borders.contains(&CellSide::Left)) {
                 print!("|");
             } else {
                 print!(" ");

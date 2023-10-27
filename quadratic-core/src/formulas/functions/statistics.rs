@@ -250,7 +250,7 @@ mod tests {
         for y in 0..=10 {
             sheet.set_cell_value(Pos { x: 1, y }, y);
         }
-        assert_eq!("6", eval_to_string(&g, "COUNTIF(Bn5:B10, \"<=5\")"))
+        assert_eq!("6", eval_to_string(&g, "COUNTIF(Bn5:B10, \"<=5\")"));
     }
 
     #[test]

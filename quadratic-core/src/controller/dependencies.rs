@@ -24,12 +24,12 @@ impl Dependencies {
                         cells_accessed.iter().for_each(|cell_accessed| {
                             deps.dependencies
                                 .entry(*cell_accessed)
-                                .or_insert_with(HashSet::new)
+                                .or_default()
                                 .insert(*cell_ref);
                         });
                     }
                 }
-            })
+            });
         });
         deps
     }
@@ -41,7 +41,7 @@ impl Dependencies {
     pub fn add(&mut self, cell: CellRef, dep: CellRef) {
         self.dependencies
             .entry(cell)
-            .or_insert_with(HashSet::new)
+            .or_default()
             .insert(dep);
     }
 
