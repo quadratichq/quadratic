@@ -18,7 +18,7 @@ pub fn update_code_cell_value(
     grid_controller: &mut GridController,
     cell_ref: CellRef,
     updated_code_cell_value: Option<CodeCellValue>,
-    cells_to_compute: &mut Option<&mut IndexSet<CellRef>>,
+    cells_to_compute: &mut IndexSet<CellRef>,
     reverse_operations: &mut Vec<Operation>,
     summary: &mut TransactionSummary,
 ) -> bool {
@@ -49,14 +49,12 @@ pub fn update_code_cell_value(
                                         );
                                         let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
                                         // add all but the first cell to the compute cycle
-                                        if x != 0 && y != 0 {
-                                            if let Some(cells_to_compute) = cells_to_compute {
-                                                cells_to_compute.insert(CellRef {
-                                                    sheet: sheet.id,
-                                                    column: column_id,
-                                                    row: row_id,
-                                                });
-                                            }
+                                        if x != 0 || y != 0 {
+                                            cells_to_compute.insert(CellRef {
+                                                sheet: sheet.id,
+                                                column: column_id,
+                                                row: row_id,
+                                            });
                                         }
                                     }
                                 }
@@ -100,7 +98,7 @@ pub fn fetch_code_cell_difference(
     old_code_cell_value: Option<CodeCellValue>,
     new_code_cell_value: Option<CodeCellValue>,
     summary: &mut TransactionSummary,
-    cells_to_compute: &mut Option<&mut IndexSet<CellRef>>,
+    cells_to_compute: &mut IndexSet<CellRef>,
 ) {
     let (old_w, old_h) = if let Some(old_code_cell_value) = old_code_cell_value {
         let size = old_code_cell_value.output_size();
@@ -134,13 +132,11 @@ pub fn fetch_code_cell_difference(
                 summary
                     .cell_sheets_modified
                     .insert(CellSheetsModified::new(sheet.id, pos.into()));
-                if let Some(cells_to_compute) = cells_to_compute {
-                    cells_to_compute.insert(CellRef {
-                        sheet: sheet.id,
-                        column: column_id,
-                        row: row_id,
-                    });
-                }
+                cells_to_compute.insert(CellRef {
+                    sheet: sheet.id,
+                    column: column_id,
+                    row: row_id,
+                });
             }
         }
     }
@@ -163,13 +159,11 @@ pub fn fetch_code_cell_difference(
                 summary
                     .cell_sheets_modified
                     .insert(CellSheetsModified::new(sheet.id, pos.into()));
-                if let Some(cells_to_compute) = cells_to_compute {
-                    cells_to_compute.insert(CellRef {
-                        sheet: sheet.id,
-                        column: column_id,
-                        row: row_id,
-                    });
-                }
+                cells_to_compute.insert(CellRef {
+                    sheet: sheet.id,
+                    column: column_id,
+                    row: row_id,
+                });
             }
         }
     }
@@ -177,6 +171,8 @@ pub fn fetch_code_cell_difference(
 
 #[cfg(test)]
 mod test {
+    use indexmap::IndexSet;
+
     use crate::{
         controller::{
             transaction_summary::TransactionSummary,
@@ -231,13 +227,15 @@ mod test {
 
         let mut summary = TransactionSummary::default();
 
+        let mut cells_to_compute = IndexSet::new();
+
         fetch_code_cell_difference(
             &mut sheet,
             sheet_pos.into(),
             old.clone(),
             new_smaller,
             &mut summary,
-            &mut None,
+            &mut cells_to_compute,
         );
         assert_eq!(summary.cell_sheets_modified.len(), 1);
 
@@ -266,7 +264,7 @@ mod test {
             old,
             new_larger,
             &mut summary,
-            &mut None,
+            &mut cells_to_compute,
         );
         assert_eq!(summary.cell_sheets_modified.len(), 0);
     }

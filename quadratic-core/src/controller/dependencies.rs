@@ -72,13 +72,6 @@ impl GridController {
         deps: Option<Vec<CellRef>>,
         old_deps: Option<Vec<CellRef>>,
     ) {
-        if cfg!(feature = "show-operations") {
-            crate::util::dbgjs(&format!(
-                "[Dependent Cells] changing: {:?} {:?}",
-                old_deps, deps
-            ));
-        }
-
         if let Some(old_deps) = old_deps {
             for old_dep in old_deps {
                 self.dependencies.remove(old_dep, cell);
