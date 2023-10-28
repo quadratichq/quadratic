@@ -131,7 +131,16 @@ impl GridController {
     ) -> TransactionSummary {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
         let cell_ref = sheet.get_or_create_cell_ref(pos);
-        let ops = vec![Operation::SetCellCode {
+        let mut ops = vec![];
+
+        // remove any values that were originally over the code cell
+        if let Some(_) = sheet.get_cell_value(pos) {
+            ops.push(Operation::SetCellValues {
+                region: RegionRef::from(cell_ref),
+                values: Array::from(CellValue::Blank),
+            });
+        }
+        ops.push(Operation::SetCellCode {
             cell_ref,
             code_cell_value: Some(CodeCellValue {
                 language,
@@ -142,7 +151,7 @@ impl GridController {
                 // todo
                 last_modified: String::default(),
             }),
-        }];
+        });
         self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
 
