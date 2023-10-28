@@ -43,6 +43,14 @@ impl GridController {
         let region = RegionRef::from(cell_ref);
         let mut ops = vec![];
 
+        // remove any code cell that was originally over the cell
+        if let Some(_) = sheet.get_code_cell(pos) {
+            ops.push(Operation::SetCellCode {
+                cell_ref,
+                code_cell_value: None,
+            });
+        }
+
         // check for currency
         if let Some((currency, number)) = CellValue::unpack_currency(value) {
             ops.push(Operation::SetCellValues {
