@@ -62,10 +62,13 @@ export const FileProvider = ({
   // Create and save the fn used by the sheetController to save the file
   const save = useCallback(async (): Promise<void> => {
     setContents((oldContents) => {
+      const now = performance.now();
       let newContents = {
         ...oldContents,
         ...sheetController.sheet.export_file(),
       };
+      const saved = JSON.stringify(newContents);
+      console.log(`Saving file... (${Math.round(saved.length / 1000)}kb in ${Math.round(performance.now() - now)}ms)`);
       return newContents;
     });
   }, [setContents, sheetController.sheet]);
