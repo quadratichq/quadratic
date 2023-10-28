@@ -101,7 +101,12 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
       } else if (grid.dirty) {
         const now = performance.now();
         const contents = grid.export();
-        if (debugShowFileIO) console.log(`[FileProvider] saving file... (${Math.round(performance.now() - now)}ms)`);
+        if (debugShowFileIO)
+          console.log(
+            `[FileProvider] saving file... (${Math.round(contents.length / 1000)}kb in ${Math.round(
+              performance.now() - now
+            )}ms)`
+          );
         syncChanges(() => apiClient.updateFile(uuid, { contents, version: grid.getVersion() }));
         grid.dirty = false;
       }
