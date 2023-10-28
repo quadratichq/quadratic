@@ -1,6 +1,4 @@
 use crate::grid::borders::{get_render_horizontal_borders, get_render_vertical_borders};
-use crate::grid::NumericFormat;
-use crate::CellValue;
 use crate::{
     grid::{
         js_types::{
