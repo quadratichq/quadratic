@@ -45,7 +45,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   }
 
   // Validate and upgrade file to the latest version in TS (up to 1.4)
-  console.log(data.file.contents);
   const file = await validateAndUpgradeGridFile(data.file.contents);
   if (!file) {
     Sentry.captureEvent({
