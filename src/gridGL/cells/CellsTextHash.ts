@@ -92,7 +92,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
     const cells = this.sheet.getRenderCells(this.AABB);
     cells.forEach((cell) => this.createLabel(cell));
     this.updateText();
-    debugTimeCheck('cellsLabels');
+    debugTimeCheck('CellsTextHash.createLabels');
   }
 
   update(): boolean {
