@@ -74,7 +74,10 @@ impl Sheet {
                                             text_color: Some(String::from("red")),
                                         });
                                     }
-                                } else {
+                                }
+                                // otherwise we need to render the value within the code cell's results
+                                else {
+                                    // language is only shown on the first cell
                                     let language = if pos.x == x && pos.y == y {
                                         Some(code_cell.language)
                                     } else {

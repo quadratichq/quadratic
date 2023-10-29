@@ -236,7 +236,7 @@ export class CellLabel extends Container {
         spaceCount = 0;
       }
     }
-    const lastChar = charsInput[i]; // charsInput.length - 1];
+    const lastChar = charsInput[i];
     if (lastChar !== '\r' && lastChar !== '\n') {
       if (/(?:\s)/.test(lastChar)) {
         lastLineWidth = lastBreakWidth;
