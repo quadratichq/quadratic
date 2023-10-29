@@ -271,7 +271,6 @@ impl TransactionInProgress {
                     }
                     self.current_cell_ref = Some(cell_ref);
                     self.current_code_cell = Some(code_cell.clone());
-                    self.cells_accessed = vec![];
                     let code_string = code_cell.code_string.clone();
                     let language = code_cell.language;
                     match language {
