@@ -4,6 +4,7 @@ import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { CellSheetsModified } from '../../quadratic-core/types';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
+import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
@@ -278,13 +279,29 @@ export class CellsSheet extends Container {
     return true;
   }
 
+  private dirtyCellsTextHashes(): CellsTextHash[] {
+    const cellsTextHashes = this.cellsTextHashContainer.children.filter((hash) => hash.dirty);
+    const viewportCenter = pixiApp.viewport.center;
+    cellsTextHashes.sort((a, b) => {
+      const aDistance =
+        Math.pow(viewportCenter.x - (a.AABB.x + a.AABB.width / 2), 2) +
+        Math.pow(viewportCenter.y - (a.AABB.y + a.AABB.height / 2), 2);
+      const bDistance =
+        Math.pow(viewportCenter.x - (b.AABB.x + b.AABB.width / 2), 2) +
+        Math.pow(viewportCenter.y - (b.AABB.y + b.AABB.height / 2), 2);
+      return aDistance - bDistance;
+    });
+    return cellsTextHashes;
+  }
+
   update(): boolean {
     if (this.updateHeadings()) return true;
-    this.cellsTextHashContainer.children.forEach((cellTextHash) => {
+    const cellTextHashes = this.dirtyCellsTextHashes();
+    for (const cellTextHash of cellTextHashes) {
       if (cellTextHash.update()) {
         return true;
       }
-    });
+    }
     if (this.dirtyRows.size) {
       this.updateNextDirtyRow();
       return true;

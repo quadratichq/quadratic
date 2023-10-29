@@ -17,7 +17,6 @@ impl Sheet {
         self.columns.range(region.x_range()).any(|(_, column)| {
             column.values.has_blocks_in_range(region.y_range())
                 || column.spills.has_blocks_in_range(region.y_range())
-                || column.fill_color.has_blocks_in_range(region.y_range())
         })
     }
 
@@ -26,104 +25,100 @@ impl Sheet {
     pub fn get_render_cells(&self, rect: Rect) -> Vec<JsRenderCell> {
         let mut render_cells = vec![];
         rect.x_range().for_each(|x| {
-            if let Some(column) = self.get_column(x) {
-                column
-                    .values
-                    .values_in_range_all(rect.y_range())
-                    .for_each(|(y, cell_value)| {
-                        if let Some(value) = cell_value {
-                            let (numeric_format, numeric_decimal) = if value.type_name() == "number"
+            let column = self.get_column(x);
+            rect.y_range().for_each(|y| {
+                if let Some(column) = column {
+                    // first check if there a column.values
+                    if let Some(value) = column.values.get(y) {
+                        let (numeric_format, numeric_decimal) = if value.type_name() == "number" {
+                            let numeric_format = column.numeric_format.get(y);
+                            let is_percentage = if let Some(numeric_format) = numeric_format.clone()
                             {
-                                let numeric_format = column.numeric_format.get(y);
-                                let is_percentage =
-                                    if let Some(numeric_format) = numeric_format.clone() {
-                                        numeric_format.kind == NumericFormatKind::Percentage
-                                    } else {
-                                        false
-                                    };
-                                let numeric_decimals =
-                                    self.decimal_places(Pos { x, y }, is_percentage);
-                                (numeric_format, numeric_decimals)
+                                numeric_format.kind == NumericFormatKind::Percentage
                             } else {
-                                (None, None)
+                                false
                             };
-                            render_cells.push(JsRenderCell {
-                                x,
-                                y,
-                                value: value.to_display(numeric_format, numeric_decimal),
-                                language: None,
-                                align: column.align.get(y),
-                                wrap: column.wrap.get(y),
-                                bold: column.bold.get(y),
-                                italic: column.italic.get(y),
-                                text_color: column.text_color.get(y),
-                            });
-                        } else if let Some(cell_ref) = column.spills.get(y) {
-                            if let Some(code_cell) = self.code_cells.get(&cell_ref) {
-                                if let Some(pos) = self.cell_ref_to_pos(cell_ref) {
-                                    if let Some(_) = code_cell.get_error() {
-                                        // only show the error in the first cell
-                                        if pos.x == x && pos.y == y {
-                                            render_cells.push(JsRenderCell {
-                                                x,
-                                                y,
-                                                value: String::from(" ERROR"),
-                                                language: Some(code_cell.language),
-                                                align: None,
-                                                wrap: None,
-                                                bold: None,
-                                                italic: Some(true),
-                                                text_color: Some(String::from("red")),
-                                            });
-                                        }
+                            let numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
+                            (numeric_format, numeric_decimals)
+                        } else {
+                            (None, None)
+                        };
+                        render_cells.push(JsRenderCell {
+                            x,
+                            y,
+                            value: value.to_display(numeric_format, numeric_decimal),
+                            language: None,
+                            align: column.align.get(y),
+                            wrap: column.wrap.get(y),
+                            bold: column.bold.get(y),
+                            italic: column.italic.get(y),
+                            text_color: column.text_color.get(y),
+                        });
+                    }
+                    // next check if there a spills value
+                    else if let Some(cell_ref) = column.spills.get(y) {
+                        if let Some(code_cell) = self.code_cells.get(&cell_ref) {
+                            if let Some(pos) = self.cell_ref_to_pos(cell_ref) {
+                                if let Some(_) = code_cell.get_error() {
+                                    // only show the error in the first cell
+                                    if pos.x == x && pos.y == y {
+                                        render_cells.push(JsRenderCell {
+                                            x,
+                                            y,
+                                            value: String::from(" ERROR"),
+                                            language: Some(code_cell.language),
+                                            align: None,
+                                            wrap: None,
+                                            bold: None,
+                                            italic: Some(true),
+                                            text_color: Some(String::from("red")),
+                                        });
+                                    }
+                                } else {
+                                    let language = if pos.x == x && pos.y == y {
+                                        Some(code_cell.language)
                                     } else {
-                                        let language = if pos.x == x && pos.y == y {
-                                            Some(code_cell.language)
-                                        } else {
-                                            None
-                                        };
-                                        if let Some(value) = code_cell.get_output_value(
-                                            (x - pos.x) as u32,
-                                            (y - pos.y) as u32,
-                                        ) {
-                                            let (numeric_format, numeric_decimal) = if value
-                                                .type_name()
-                                                == "number"
+                                        None
+                                    };
+                                    if let Some(value) = code_cell
+                                        .get_output_value((x - pos.x) as u32, (y - pos.y) as u32)
+                                    {
+                                        let (numeric_format, numeric_decimal) = if value.type_name()
+                                            == "number"
+                                        {
+                                            let numeric_format = column.numeric_format.get(y);
+                                            let is_percentage = if let Some(numeric_format) =
+                                                numeric_format.clone()
                                             {
-                                                let numeric_format = column.numeric_format.get(y);
-                                                let is_percentage = if let Some(numeric_format) =
-                                                    numeric_format.clone()
-                                                {
-                                                    numeric_format.kind
-                                                        == NumericFormatKind::Percentage
-                                                } else {
-                                                    false
-                                                };
-                                                let numeric_decimals = self
-                                                    .decimal_places(Pos { x, y }, is_percentage);
-                                                (numeric_format, numeric_decimals)
+                                                numeric_format.kind == NumericFormatKind::Percentage
                                             } else {
-                                                (None, None)
+                                                false
                                             };
-                                            render_cells.push(JsRenderCell {
-                                                x,
-                                                y,
-                                                value: value
-                                                    .to_display(numeric_format, numeric_decimal),
-                                                language,
-                                                align: column.align.get(y),
-                                                wrap: column.wrap.get(y),
-                                                bold: column.bold.get(y),
-                                                italic: column.italic.get(y),
-                                                text_color: column.text_color.get(y),
-                                            });
-                                        }
+                                            let numeric_decimals =
+                                                self.decimal_places(Pos { x, y }, is_percentage);
+                                            (numeric_format, numeric_decimals)
+                                        } else {
+                                            (None, None)
+                                        };
+                                        render_cells.push(JsRenderCell {
+                                            x,
+                                            y,
+                                            value: value
+                                                .to_display(numeric_format, numeric_decimal),
+                                            language,
+                                            align: column.align.get(y),
+                                            wrap: column.wrap.get(y),
+                                            bold: column.bold.get(y),
+                                            italic: column.italic.get(y),
+                                            text_color: column.text_color.get(y),
+                                        });
                                     }
                                 }
                             }
                         }
-                    })
-            }
+                    }
+                }
+            });
         });
         render_cells
     }
