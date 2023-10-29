@@ -26,8 +26,11 @@ export class CellsTextHash extends Container<LabelMeshes> {
 
   viewBounds: Bounds;
 
-  // flag to recreate label
+  // rebuild CellsTextHash
   dirty = false;
+
+  // rebuild only buffers
+  dirtyBuffers = false;
 
   // color to use for drawDebugBox
   debugColor = Math.floor(Math.random() * 0xffffff);
@@ -97,10 +100,16 @@ export class CellsTextHash extends Container<LabelMeshes> {
 
   update(): boolean {
     if (this.dirty) {
+      console.log('updating CellsTextHash');
       this.createLabels();
       this.overflowClip();
       this.updateBuffers(false);
       this.dirty = false;
+      this.dirtyBuffers = false;
+      return true;
+    } else if (this.dirtyBuffers) {
+      this.updateBuffers(true);
+      this.dirtyBuffers = false;
       return true;
     }
     return false;
@@ -216,5 +225,14 @@ export class CellsTextHash extends Container<LabelMeshes> {
       }
     });
     return max;
+  }
+
+  showLabel(x: number, y: number, show: boolean) {
+    const label = this.getLabel(x, y);
+    if (label && label.visible !== show) {
+      console.log(label, x, y, 'visible', show);
+      label.visible = show;
+      this.dirtyBuffers = true;
+    }
   }
 }
