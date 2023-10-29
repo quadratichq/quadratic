@@ -100,7 +100,6 @@ export class CellsTextHash extends Container<LabelMeshes> {
 
   update(): boolean {
     if (this.dirty) {
-      console.log('updating CellsTextHash');
       this.createLabels();
       this.overflowClip();
       this.updateBuffers(false);
@@ -230,7 +229,6 @@ export class CellsTextHash extends Container<LabelMeshes> {
   showLabel(x: number, y: number, show: boolean) {
     const label = this.getLabel(x, y);
     if (label && label.visible !== show) {
-      console.log(label, x, y, 'visible', show);
       label.visible = show;
       this.dirtyBuffers = true;
     }

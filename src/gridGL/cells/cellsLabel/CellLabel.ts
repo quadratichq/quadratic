@@ -159,7 +159,6 @@ export class CellLabel extends Container {
 
   /** Calculates the text glyphs and positions and tracks whether the text overflows the cell */
   public updateText(labelMeshes: LabelMeshes): void {
-    console.log('updateText', this.visible);
     if (this.visible === false) return;
 
     const data = BitmapFont.available[this.fontName];
@@ -272,7 +271,6 @@ export class CellLabel extends Container {
 
     // visible is only used to hide a cell label when a cell is being edited
     if (this.visible === false) {
-      console.log('not visible');
       return bounds;
     }
 
