@@ -125,7 +125,7 @@ export const Component = () => {
         });
         Sentry.captureEvent({
           message: 'Cloud files migration failed to upload some local file(s).',
-          level: Sentry.Severity.Critical,
+          level: 'error',
           extra: {
             fileIdsThatFailed,
           },

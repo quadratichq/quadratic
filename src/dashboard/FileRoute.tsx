@@ -49,7 +49,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   if (!file) {
     Sentry.captureEvent({
       message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
-      level: Sentry.Severity.Critical,
+      level: 'error',
     });
     throw new Response('Invalid file that could not be upgraded.');
   }
@@ -66,7 +66,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   if (compareVersions(fileVersion, gridVersion) === VersionComparisonResult.GreaterThan) {
     Sentry.captureEvent({
       message: `User opened a file at version ${fileVersion} but the app is at version ${gridVersion}. The app will automatically reload.`,
-      level: Sentry.Severity.Log,
+      level: 'log',
     });
     // @ts-expect-error hard reload via `true` only works in some browsers
     window.location.reload(true);

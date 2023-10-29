@@ -670,7 +670,7 @@ function performanceProxy<T extends object>(object: T): T {
       if (typeof original === 'function') {
         return function (...args: any[]) {
           const start = performance.now();
-          let result = Sentry.startSpan({ name: `Grid.${String(prop)}` }, () => {
+          let result = Sentry.startSpan({ name: `Grid.${String(prop)}`, op: 'function' }, () => {
             // Call function
             return Reflect.apply(original, receiver, args);
           });
@@ -683,6 +683,17 @@ function performanceProxy<T extends object>(object: T): T {
     },
   });
 }
+
+// let activeTransaction: any = undefined;
+
+// const createTransaction = () => {
+//   if (activeTransaction) activeTransaction.finish();
+//   activeTransaction = Sentry.startTransaction({ name: 'GridController', op: 'function' });
+//   // Sentry.getActiveTransaction();
+//   // Sentry.startTransaction({ name: 'GridController', op: 'function' });
+// };
+
+// setInterval(createTransaction, 1000 * 30);
 
 export const grid = performanceProxy(new Grid());
 

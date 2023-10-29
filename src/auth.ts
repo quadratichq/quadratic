@@ -13,7 +13,7 @@ if (!(AUTH0_DOMAIN && AUTH0_CLIENT_ID && AUTH0_AUDIENCE && AUTH0_ISSUER)) {
   const message = 'Auth0 variables are not configured correctly.';
   Sentry.captureEvent({
     message,
-    level: Sentry.Severity.Fatal,
+    level: 'fatal',
   });
 }
 

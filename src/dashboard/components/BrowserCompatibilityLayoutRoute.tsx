@@ -9,7 +9,7 @@ export function BrowserCompatibilityLayoutRoute() {
   if (!isWASMSupported || !isWebGLSupported()) {
     Sentry.captureEvent({
       message: 'Browser does not support WebGL or WASM',
-      level: Sentry.Severity.Info,
+      level: 'info',
     });
 
     return (

@@ -1,5 +1,4 @@
 import * as Sentry from '@sentry/react';
-import { BrowserTracing } from '@sentry/tracing';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
@@ -13,12 +12,16 @@ import { QuadraticLoading } from './ui/loading/QuadraticLoading';
 if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'none')
   Sentry.init({
     dsn: process.env.REACT_APP_SENTRY_DSN,
-    integrations: [new BrowserTracing()],
+    environment: 'development',
+    integrations: [new Sentry.BrowserTracing()],
 
     // We recommend adjusting this value in production, or using tracesSampler
     // for finer control
-    tracesSampleRate: 1.0,
+    tracesSampleRate: 0.05,
+    tracePropagationTargets: ['localhost'],
   });
+
+Sentry.addTracingExtensions();
 
 const container = document.getElementById('root');
 const root = createRoot(container);
