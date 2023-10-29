@@ -49,9 +49,10 @@ impl TransactionInProgress {
             complete: false,
         };
 
-        // run computations
+        // apply operations
         transaction.transact(grid_controller, operations);
 
+        // run computations
         if compute {
             transaction.loop_compute(grid_controller);
         } else {
