@@ -17,8 +17,7 @@ if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'no
 
     // We recommend adjusting this value in production, or using tracesSampler
     // for finer control
-    tracesSampleRate: 0.05,
-    tracePropagationTargets: ['localhost'],
+    tracesSampleRate: 0.1,
   });
 
 Sentry.addTracingExtensions();
