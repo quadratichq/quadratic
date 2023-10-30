@@ -65,11 +65,15 @@ impl GridController {
             } => {
                 sheets_with_changed_bounds.insert(cell_ref.sheet);
                 let mut reverse_operations = vec![];
+
+                // we don't want to trigger any computation with the initial SetCodeCell, as it will be recomputed
+                let not_used_cells_to_compute = &mut IndexSet::new();
+
                 update_code_cell_value(
                     self,
                     cell_ref,
                     code_cell_value,
-                    &mut None,
+                    not_used_cells_to_compute,
                     &mut reverse_operations,
                     summary,
                 );
@@ -184,6 +188,7 @@ impl GridController {
                 let sheet = self.grid.sheet_from_id(target);
                 let original_order = sheet.order.clone();
                 self.grid.move_sheet(target, order);
+                summary.sheet_list_modified = true;
 
                 // return reverse operation
                 Operation::ReorderSheet {

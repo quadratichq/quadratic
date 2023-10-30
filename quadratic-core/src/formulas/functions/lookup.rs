@@ -773,8 +773,8 @@ mod tests {
         ) {
             let w = array.width() as i64;
             let h = array.height() as i64;
-            let mut grid_vlookup = Grid::from_array(pos![A1], array);
-            let mut grid_hlookup = Grid::from_array(pos![A1], &array.transpose());
+            let grid_vlookup = Grid::from_array(pos![A1], array);
+            let grid_hlookup = Grid::from_array(pos![A1], &array.transpose());
             for &col in columns_to_search {
                 for if_not_found in [CellValue::Blank, "default-value".into()] {
                     let if_not_found_repr = if_not_found.repr();
@@ -810,11 +810,11 @@ mod tests {
 
                         // Test vertical lookup
                         let formula = format!("XLOOKUP({needle}, {v_params})");
-                        expect_val(expected.clone(), &mut grid_vlookup, &formula);
+                        expect_val(expected.clone(), &grid_vlookup, &formula);
 
                         // Test horizontal lookup
                         let formula = format!("XLOOKUP({needle}, {h_params})");
-                        expect_val(expected.transpose(), &mut grid_hlookup, &formula);
+                        expect_val(expected.transpose(), &grid_hlookup, &formula);
                     }
 
                     // Test `if_not_found`
@@ -823,8 +823,8 @@ mod tests {
                         let v_formula = format!("XLOOKUP({needle}, {v_params})");
                         let h_formula = format!("XLOOKUP({needle}, {h_params})");
 
-                        let v_result = eval(&mut grid_vlookup, &v_formula);
-                        let h_result = eval(&mut grid_hlookup, &h_formula);
+                        let v_result = eval(&grid_vlookup, &v_formula);
+                        let h_result = eval(&grid_hlookup, &h_formula);
                         let results = [&v_result, &h_result]
                             .into_iter()
                             .flat_map(|a| a.cell_values_slice());
@@ -917,7 +917,7 @@ mod tests {
                 assert_eq!(
                     expected,
                     eval_to_string(
-                        &grid,
+                        grid,
                         &format!(
                             "XLOOKUP({needle}, A1:A{h}, A1:C{h}, 'x', \
                                      {match_mode}{search_mode})",
@@ -955,7 +955,7 @@ mod tests {
         test_xlookup_comparison_match("{x, x, x}", "9999", 1);
 
         // Test wildcard search
-        let mut g = Grid::from_array(pos![A1], &MIXED_LOOKUP_ARRAY);
+        let g = Grid::from_array(pos![A1], &MIXED_LOOKUP_ARRAY);
         assert_eq!(
             "{bread}",
             eval_to_string(&g, "XLOOKUP('b*', A1:A20, A1:A20,, 2)"),
@@ -970,12 +970,12 @@ mod tests {
         ); // linear reverse
         expect_err(
             &ErrorMsg::InvalidArgument,
-            &mut g,
+            &g,
             "XLOOKUP('b*', A1:A20, A1:A20,, 2, 2)", // binary ascending (invalid!)
         );
         expect_err(
             &ErrorMsg::InvalidArgument,
-            &mut g,
+            &g,
             "XLOOKUP('b*', A1:A20, A1:A20,, 2, -2)", // binary descending (invalid!)
         );
     }

@@ -196,11 +196,7 @@ impl Sheet {
 
     pub fn get_cell_value_only(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
-        if let Some(value) = column.values.get(pos.y) {
-            Some(value)
-        } else {
-            None
-        }
+        column.values.get(pos.y)
     }
 
     /// Returns a formatting property of a cell.
