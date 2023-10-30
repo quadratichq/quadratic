@@ -96,12 +96,7 @@ impl GridController {
         }
         // todo: include other types here
         else {
-            let values = if value.is_empty() {
-                Array::from(CellValue::Blank)
-            } else {
-                Array::from(CellValue::Text(value.into()))
-            };
-
+            let values = Array::from(CellValue::Text(value.into()));
             ops.push(Operation::SetCellValues { region, values });
         }
         ops
