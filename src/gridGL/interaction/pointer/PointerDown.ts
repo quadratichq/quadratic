@@ -27,17 +27,16 @@ export class PointerDown {
     const offsets = sheet.offsets;
     const cursor = sheet.cursor;
 
-    // note: directly call pixiAppSettings instead of locally defining it here; otherwise it dereferences this
-
-    // this is a hack to ensure CellInput properly closes and updates before the cursor moves positions
-    if (pixiAppSettings.input.show) {
-      this.afterShowInput = true;
-      setTimeout(() => {
-        this.pointerDown(world, event);
-        this.afterShowInput = false;
-      }, 0);
-      return;
-    }
+    // todo: this was an infinite loop. not sure if this is still needed.
+    // // this is a hack to ensure CellInput properly closes and updates before the cursor moves positions
+    // if (pixiAppSettings.input.show) {
+    //   this.afterShowInput = true;
+    //   setTimeout(() => {
+    //     this.pointerDown(world, event);
+    //     this.afterShowInput = false;
+    //   }, 0);
+    //   return;
+    // }
 
     this.positionRaw = world;
     const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);

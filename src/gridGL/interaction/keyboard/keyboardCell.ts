@@ -88,7 +88,7 @@ export function keyboardCell(options: {
     const x = cursorPosition.x;
     const y = cursorPosition.y;
     const cell = sheet.getRenderCell(x, y);
-    if (cell) {
+    if (cell?.language) {
       if (cell.language) {
         const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;
         if (!mode) throw new Error(`Unhandled cell.language ${cell.language} in keyboardCell`);
@@ -102,9 +102,6 @@ export function keyboardCell(options: {
           selectedCellSheet: sheets.sheet.id,
           mode,
         });
-      } else {
-        // Open cell input for editing text
-        pixiAppSettings.changeInput(true, cell.value);
       }
     } else {
       // Open cell type menu, close editor.
