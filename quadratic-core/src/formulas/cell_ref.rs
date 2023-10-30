@@ -11,13 +11,17 @@ use crate::Pos;
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(tag = "type")]
 pub enum RangeRef {
+    // this is not yet used...
     RowRange {
         start: CellRefCoord,
         end: CellRefCoord,
+        sheet: Option<String>,
     },
+    // this is not yet used...
     ColRange {
         start: CellRefCoord,
         end: CellRefCoord,
+        sheet: Option<String>,
     },
     CellRange {
         start: CellRef,
@@ -30,8 +34,8 @@ pub enum RangeRef {
 impl fmt::Display for RangeRef {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RangeRef::RowRange { start, end } => write!(f, "R{start}:R{end}"),
-            RangeRef::ColRange { start, end } => write!(f, "C{start}:C{end}"),
+            RangeRef::RowRange { start, end, .. } => write!(f, "R{start}:R{end}"),
+            RangeRef::ColRange { start, end, .. } => write!(f, "C{start}:C{end}"),
             RangeRef::CellRange { start, end } => write!(f, "{start}:{end}"),
             RangeRef::Cell { pos } => write!(f, "{pos}"),
         }
@@ -47,10 +51,10 @@ impl RangeRef {
     /// A1-style notation.
     pub fn a1_string(self, base: Pos) -> String {
         match self {
-            RangeRef::RowRange { start, end } => {
+            RangeRef::RowRange { start, end, .. } => {
                 format!("{}:{}", start.row_string(base.y), end.row_string(base.y))
             }
-            RangeRef::ColRange { start, end } => {
+            RangeRef::ColRange { start, end, .. } => {
                 format!("{}:{}", start.col_string(base.x), end.col_string(base.x))
             }
             RangeRef::CellRange { start, end } => {
@@ -167,6 +171,7 @@ impl CellRef {
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(tag = "type", content = "coord")]
+// todo: this needs to be refactored to include sheet
 pub enum CellRefCoord {
     Relative(i64),
     Absolute(i64),
@@ -251,5 +256,27 @@ mod tests {
                 assert_eq!(s, pos.a1_string());
             }
         }
+    }
+
+    #[test]
+    fn test_a1_sheet_parsing() {
+        let pos = CellRef::parse_a1("'Sheet 2'!A0", crate::Pos::ORIGIN);
+        assert_eq!(
+            pos,
+            Some(CellRef {
+                sheet: Some("Sheet 2".to_string()),
+                x: CellRefCoord::Relative(0),
+                y: CellRefCoord::Relative(0),
+            })
+        );
+        let pos = CellRef::parse_a1("\"Sheet 2\"!A0", crate::Pos::ORIGIN);
+        assert_eq!(
+            pos,
+            Some(CellRef {
+                sheet: Some("Sheet 2".to_string()),
+                x: CellRefCoord::Relative(0),
+                y: CellRefCoord::Relative(0),
+            })
+        );
     }
 }
