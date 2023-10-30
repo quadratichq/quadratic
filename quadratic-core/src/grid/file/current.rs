@@ -66,8 +66,9 @@ fn set_column_format_numeric_format(
         column_data.set(
             y,
             Some(NumericFormat {
-                kind: NumericFormatKind::from_str(&format.content.value.kind.to_string()).unwrap(),
-                symbol: format.content.value.symbol.clone(),
+                kind: NumericFormatKind::from_str(&format.content.value.kind.to_string())
+                    .unwrap_or(NumericFormatKind::Number),
+                symbol: format.content.value.symbol.to_owned(),
             }),
         );
     }
@@ -164,14 +165,14 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
         .for_each(|(column_id, cell_borders)| {
             cell_borders.iter().for_each(|(y, cell_borders)| {
                 cell_borders.iter().enumerate().for_each(|(index, border)| {
-                    let border_selection = match index {
-                        0 => BorderSelection::Top,
-                        1 => BorderSelection::Left,
-                        2 => BorderSelection::Right,
-                        3 => BorderSelection::Bottom,
-                        _ => BorderSelection::Clear,
-                    };
                     if let Some(border) = border {
+                        let border_selection = match index {
+                            0 => BorderSelection::Top,
+                            1 => BorderSelection::Left,
+                            2 => BorderSelection::Right,
+                            3 => BorderSelection::Bottom,
+                            _ => BorderSelection::Clear,
+                        };
                         let style = BorderStyle {
                             color: Rgba::from_str(&border.color)
                                 .unwrap_or_else(|_| Rgba::new(0, 0, 0, 255)),
@@ -201,7 +202,6 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
                 });
             });
         });
-    // println!("{:#?}", sheet.borders);
 }
 
 fn export_column_data_bool(
@@ -265,7 +265,7 @@ where
         .map(|(y, value)| {
             (
                 y.to_string(),
-                (y, serde_json::to_string(&value).unwrap()).into(),
+                (y, serde_json::to_string(&value).unwrap_or_default()).into(),
             )
         })
         .collect()
@@ -352,7 +352,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
         sheets: file
             .sheets
             .into_iter()
-            .map(|sheet| {
+            .map(|mut sheet| {
                 let mut new_sheet = Sheet {
                     id: SheetId::from_str(&sheet.id.id)?,
                     name: sheet.name.to_owned(),
@@ -461,7 +461,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                     format_bounds: GridBounds::Empty,
                 };
                 new_sheet.recalculate_bounds();
-                import_borders_builder(&mut new_sheet, &mut sheet.clone());
+                import_borders_builder(&mut new_sheet, &mut sheet);
                 Ok(new_sheet)
             })
             .collect::<Result<_>>()?,

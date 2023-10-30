@@ -124,9 +124,9 @@ impl SheetBuilder {
             _ => &default,
         };
         let formatted_code_string = cell
-            .clone()
             .evaluation_result
-            .map(|result| result.formatted_code);
+            .as_ref()
+            .map(|result| result.formatted_code.to_string());
 
         current::CodeCellValue {
             language,
@@ -145,7 +145,7 @@ impl SheetBuilder {
 
                                         column
                                             .spills
-                                            .insert(y.to_string(), (y, cell_ref.clone()).into());
+                                            .insert(y.to_string(), (y, cell_ref.to_owned()).into());
                                     }
                                     current::OutputValue::Array(current::OutputArray {
                                         size: current::OutputSize {
@@ -175,7 +175,7 @@ impl SheetBuilder {
 
                                             column.spills.insert(
                                                 y.to_string(),
-                                                (y, cell_ref.clone()).into(),
+                                                (y, cell_ref.to_owned()).into(),
                                             );
                                         }
                                     }
@@ -195,7 +195,7 @@ impl SheetBuilder {
                         } else if let Some(value) = result.output_value {
                             column
                                 .spills
-                                .insert(cell.y.to_string(), (cell.y, cell_ref.clone()).into());
+                                .insert(cell.y.to_string(), (cell.y, cell_ref.to_owned()).into());
                             current::OutputValue::Single(current::OutputValueValue {
                                 type_field: "TEXT".into(),
                                 value,
@@ -267,7 +267,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
                     &language_conversion(&cell.type_field),
                     &cell.value,
                 );
-                let code_cell = (cell_ref.clone(), sheet.code_cell_value(&cell, cell_ref));
+                let code_cell = (cell_ref.to_owned(), sheet.code_cell_value(&cell, cell_ref));
                 code_cells.push(code_cell);
             }
             _ => {}
