@@ -10,9 +10,10 @@ export function getCoordinatesFromStringId(stringId: StringId): [number, number]
   return [x, y];
 }
 
-interface CellPosition {
+export interface CellPosition {
   x: { type: 'Relative'; coord: number };
   y: { type: 'Relative'; coord: number };
+  sheet?: string;
 }
 
 export type Span = { start: number; end: number };

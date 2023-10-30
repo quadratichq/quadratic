@@ -60,18 +60,14 @@ impl TransactionInProgress {
                             grid_controller,
                             cell_ref,
                             Some(updated_code_cell_value),
-                            &mut Some(&mut self.cells_to_compute),
+                            &mut self.cells_to_compute,
                             &mut self.reverse_operations,
                             &mut self.summary,
                         );
                     }
                     Err(error) => {
                         let msg = error.msg.to_string();
-                        let line_number = if let Some(span) = error.span {
-                            Some(span.start as i64)
-                        } else {
-                            None
-                        };
+                        let line_number = error.span.map(|span| span.start as i64);
                         self.code_cell_sheet_error(
                             grid_controller,
                             msg,

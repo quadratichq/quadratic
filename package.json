@@ -68,8 +68,8 @@
     "build:wasm:nodejs": "cd quadratic-core && wasm-pack build --target nodejs --out-dir ../src/quadratic-core/__mocks__ --weak-refs",
     "watch:javascript": "export REACT_APP_VERSION=$(git rev-parse HEAD) && react-scripts start",
     "watch:fast:javascript": "export REACT_APP_VERSION=$(git rev-parse HEAD) && react-app-rewired start",
-    "watch:wasm:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --dev --target web --out-dir ../src/quadratic-core --weak-refs'",
-    "watch:wasm:fast:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --target web --out-dir ../src/quadratic-core --dev --weak-refs'",
+    "watch:wasm:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --dev --target web --out-dir ../src/quadratic-core --dev --weak-refs'",
+    "watch:wasm:fast:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --target web --out-dir ../src/quadratic-core --weak-refs'",
     "watch:wasm:types": "cd quadratic-core && cargo watch -s 'cargo run --bin export_types'",
     "watch:front-end": "concurrently --hide=3 -n=react,rust,rust-types \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:watch:wasm:types\" \"npm run api:start\"",
     "watch:front-end-back-end": "concurrently -n=react,rust,rust-types,api \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:watch:wasm:types\" \"npm run api:start\"",
@@ -91,6 +91,7 @@
     "lint:eslint": "eslint --ext .ts,.tsx src",
     "lint:prettier": "prettier --check src",
     "lint:prettier:write": "prettier --write src",
+    "lint:clippy": "cd quadratic-core && cargo clippy",
     "api:start": "cd quadratic-api && npm start"
   },
   "eslintConfig": {

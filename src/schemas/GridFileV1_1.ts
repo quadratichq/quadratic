@@ -130,7 +130,7 @@ export function upgradeV1_0toV1_1(file: GridFileV1_0): GridFileV1_1 {
 
   return {
     ...file,
-    borders: file.borders.map((oldBorder) => {
+    borders: file.borders?.map((oldBorder) => {
       // Make a deep copy, modify as necessary, and return it
       const border = JSON.parse(JSON.stringify(oldBorder));
 

@@ -21,19 +21,21 @@ impl GridController {
     /// Imports a [`GridController`] from a JSON string.
     #[wasm_bindgen(js_name = "newFromFile")]
     pub fn js_new_from_file(file: &str) -> Result<GridController, JsValue> {
-        Ok(GridController::from_grid(file::import(file)?))
+        Ok(GridController::from_grid(
+            file::import(file).map_err(|e| e.to_string())?,
+        ))
     }
 
     /// Exports a [`GridController`] to a file. Returns a `String`.
     #[wasm_bindgen(js_name = "exportToFile")]
-    pub fn js_export_to_file(&self) -> Result<String, JsValue> {
-        Ok(file::export(self.grid())?)
+    pub fn js_export_to_file(&mut self) -> Result<String, JsValue> {
+        Ok(file::export(self.grid_mut()).map_err(|e| e.to_string())?)
     }
 
     /// Exports a [`string`]
     #[wasm_bindgen(js_name = "getVersion")]
     pub fn js_file_version(&self) -> String {
-        file::version()
+        file::CURRENT_VERSION.into()
     }
 
     /// Constructs a new empty grid.

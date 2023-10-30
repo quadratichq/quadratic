@@ -54,6 +54,9 @@ impl GridController {
             TransactionInProgress::new(self, operations, cursor, compute, transaction_type);
         let mut summary = transaction.transaction_summary();
         transaction.updated_bounds(self);
+
+        // only trigger update to grid when computation cycle is complete
+        // otherwise you end up redrawing too often
         if transaction.complete {
             summary.save = true;
             self.finalize_transaction(&transaction);
@@ -71,14 +74,28 @@ impl GridController {
     }
     pub fn undo(&mut self, cursor: Option<String>) -> TransactionSummary {
         if let Some(transaction) = self.undo_stack.pop() {
-            self.set_in_progress_transaction(transaction.ops, cursor, false, TransactionType::Undo)
+            let mut summary = self.set_in_progress_transaction(
+                transaction.ops,
+                cursor,
+                false,
+                TransactionType::Undo,
+            );
+            summary.cursor = transaction.cursor;
+            summary
         } else {
             TransactionSummary::default()
         }
     }
     pub fn redo(&mut self, cursor: Option<String>) -> TransactionSummary {
         if let Some(transaction) = self.redo_stack.pop() {
-            self.set_in_progress_transaction(transaction.ops, cursor, false, TransactionType::Redo)
+            let mut summary = self.set_in_progress_transaction(
+                transaction.ops,
+                cursor,
+                false,
+                TransactionType::Redo,
+            );
+            summary.cursor = transaction.cursor;
+            summary
         } else {
             TransactionSummary::default()
         }
@@ -89,7 +106,11 @@ impl GridController {
             transaction.calculation_complete(self, result);
             self.transaction_in_progress = Some(transaction.to_owned());
             transaction.updated_bounds(self);
-            transaction.transaction_summary()
+            if transaction.complete {
+                transaction.transaction_summary()
+            } else {
+                TransactionSummary::default()
+            }
         } else {
             panic!("Expected an in progress transaction");
         }
@@ -108,11 +129,9 @@ impl GridController {
     }
 
     pub fn transaction_summary(&mut self) -> Option<TransactionSummary> {
-        if let Some(transaction) = &mut self.transaction_in_progress {
-            Some(transaction.transaction_summary())
-        } else {
-            None
-        }
+        self.transaction_in_progress
+            .as_mut()
+            .map(|transaction| transaction.transaction_summary())
     }
 
     pub fn updated_bounds_in_transaction(&mut self) {

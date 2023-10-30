@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use strum_macros::Display;
+use strum_macros::{Display, EnumString};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::CellRef;
@@ -31,11 +31,7 @@ impl CodeCellValue {
     }
 
     pub fn cells_accessed_copy(&self) -> Option<Vec<CellRef>> {
-        if let Some(cells_accessed) = self.output.as_ref()?.cells_accessed() {
-            Some(cells_accessed.clone())
-        } else {
-            None
-        }
+        self.output.as_ref()?.cells_accessed().cloned()
     }
 
     pub fn get_error(&self) -> Option<Error> {
@@ -48,7 +44,7 @@ impl CodeCellValue {
     }
 }
 
-#[derive(Serialize, Deserialize, Display, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Display, Debug, Copy, Clone, PartialEq, Eq, Hash, EnumString)]
 #[wasm_bindgen]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum CodeCellLanguage {

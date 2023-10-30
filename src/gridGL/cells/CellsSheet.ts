@@ -213,6 +213,13 @@ export class CellsSheet extends Container {
     hashes.forEach((hash) => hash.updateBuffers(false));
   }
 
+  showLabel(x: number, y: number, show: boolean) {
+    const hash = this.getCellsHash(x, y);
+    if (hash) {
+      hash.showLabel(x, y, show);
+    }
+  }
+
   updateCellsArray() {
     this.cellsArray.create();
   }

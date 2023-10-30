@@ -53,10 +53,11 @@ impl SyntaxRule for CellReference {
     type Output = AstNode;
 
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
-        matches!(
-            p.next(),
-            Some(Token::CellRef | Token::StringLiteral | Token::UnquotedSheetReference),
-        )
+        match p.next() {
+            Some(Token::CellRef | Token::UnquotedSheetReference) => true,
+            Some(Token::StringLiteral) => p.peek_next() == Some(Token::SheetRefOp),
+            _ => false,
+        }
     }
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let start_span = p.peek_next_span();

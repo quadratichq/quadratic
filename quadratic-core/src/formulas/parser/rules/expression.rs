@@ -162,10 +162,10 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 p,
                 [
                     FunctionCall.map(Some),
+                    CellReference.map(Some),
                     StringLiteralExpression.map(Some),
                     NumericLiteral.map(Some),
                     ArrayLiteral.map(Some),
-                    CellReference.map(Some),
                     BoolExpression.map(Some),
                     ParenExpression.map(Some),
                     EmptyExpression.map(Some),

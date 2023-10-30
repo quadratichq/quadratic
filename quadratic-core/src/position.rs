@@ -43,7 +43,7 @@ impl Pos {
         if self.y < 0 {
             format!("{col}n{}", -self.y)
         } else {
-            format!("{col}{}", self.y.to_string())
+            format!("{col}{}", self.y)
         }
     }
 

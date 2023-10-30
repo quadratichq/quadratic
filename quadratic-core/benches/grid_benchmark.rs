@@ -9,7 +9,7 @@ criterion_main!(benches);
 
 fn criterion_benchmark(c: &mut Criterion) {
     let airports =
-        quadratic_core::grid::file::import(include_str!("../examples/airports.json")).unwrap();
+        quadratic_core::grid::file::import(include_str!("../examples/airports.grid")).unwrap();
 
     let inputs = vec![
         ("empty", Grid::new()), // empty file
