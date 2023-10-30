@@ -175,7 +175,6 @@ export const CellInput = (props: CellInputProps) => {
   };
 
   const columnWidth = cellOffsets.width * viewport.scale.x;
-  const minWidth = Math.max(initialWidth, columnWidth) / viewport.scale.x - CURSOR_THICKNESS * 2;
 
   return (
     <div
@@ -189,7 +188,7 @@ export const CellInput = (props: CellInputProps) => {
         position: 'absolute',
         top: 0,
         left: 0,
-        minWidth: minWidth,
+        minWidth: columnWidth,
         outline: 'none',
         color: formatting?.textColor ?? 'black',
         padding: `0 ${CURSOR_THICKNESS}px 0 0`,
