@@ -12,7 +12,7 @@ import { QuadraticLoading } from './ui/loading/QuadraticLoading';
 if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'none')
   Sentry.init({
     dsn: process.env.REACT_APP_SENTRY_DSN,
-    environment: 'development',
+    environment: process.env.REACT_APP_ENVIRONMENT ?? 'development',
     integrations: [new Sentry.BrowserTracing()],
 
     // We recommend adjusting this value in production, or using tracesSampler
