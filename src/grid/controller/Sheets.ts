@@ -48,9 +48,14 @@ class Sheets {
     this.sheets.forEach((sheet, index) => {
       if (!sheetIds.includes(sheet.id)) {
         this.sheets.splice(index, 1);
+        pixiApp.cellsSheets.deleteSheet(sheet.id);
+        if (this.current === sheet.id) {
+          this.current = this.sheets[0].id;
+        }
       }
     });
-    this.sort();
+    this.sheets.forEach((sheet) => sheet.updateMetadata());
+    this.updateSheetBar();
   }
 
   // updates the SheetBar UI
