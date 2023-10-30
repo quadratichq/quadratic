@@ -80,8 +80,8 @@ impl Rgba {
     pub fn from_css_str(css: &str) -> Result<Self> {
         let colors = css
             .trim_start_matches("rgb(")
-            .trim_end_matches(")")
-            .split(",")
+            .trim_end_matches(')')
+            .split(',')
             .map(|s| s.trim().parse::<u8>())
             .collect::<Result<Vec<u8>, ParseIntError>>()?;
 
