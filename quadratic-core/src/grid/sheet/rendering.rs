@@ -25,19 +25,16 @@ impl Sheet {
     pub fn get_render_cells(&self, rect: Rect) -> Vec<JsRenderCell> {
         let mut render_cells = vec![];
         rect.x_range().for_each(|x| {
-            let column = self.get_column(x);
-            rect.y_range().for_each(|y| {
-                if let Some(column) = column {
+            if let Some(column) = self.get_column(x) {
+                rect.y_range().for_each(|y| {
                     // first check if there a column.values
                     if let Some(value) = column.values.get(y) {
                         let (numeric_format, numeric_decimal) = if value.type_name() == "number" {
                             let numeric_format = column.numeric_format.get(y);
-                            let is_percentage = if let Some(numeric_format) = numeric_format.clone()
-                            {
-                                numeric_format.kind == NumericFormatKind::Percentage
-                            } else {
-                                false
-                            };
+                            let is_percentage =
+                                numeric_format.as_ref().is_some_and(|numeric_format| {
+                                    numeric_format.kind == NumericFormatKind::Percentage
+                                });
                             let numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
                             (numeric_format, numeric_decimals)
                         } else {
@@ -86,23 +83,21 @@ impl Sheet {
                                     if let Some(value) = code_cell
                                         .get_output_value((x - pos.x) as u32, (y - pos.y) as u32)
                                     {
-                                        let (numeric_format, numeric_decimal) = if value.type_name()
-                                            == "number"
-                                        {
-                                            let numeric_format = column.numeric_format.get(y);
-                                            let is_percentage = if let Some(numeric_format) =
-                                                numeric_format.clone()
-                                            {
-                                                numeric_format.kind == NumericFormatKind::Percentage
+                                        let (numeric_format, numeric_decimal) =
+                                            if value.type_name() == "number" {
+                                                let numeric_format = column.numeric_format.get(y);
+                                                let is_percentage = numeric_format
+                                                    .as_ref()
+                                                    .is_some_and(|numeric_format| {
+                                                        numeric_format.kind
+                                                            == NumericFormatKind::Percentage
+                                                    });
+                                                let numeric_decimals = self
+                                                    .decimal_places(Pos { x, y }, is_percentage);
+                                                (numeric_format, numeric_decimals)
                                             } else {
-                                                false
+                                                (None, None)
                                             };
-                                            let numeric_decimals =
-                                                self.decimal_places(Pos { x, y }, is_percentage);
-                                            (numeric_format, numeric_decimals)
-                                        } else {
-                                            (None, None)
-                                        };
                                         render_cells.push(JsRenderCell {
                                             x,
                                             y,
@@ -120,8 +115,8 @@ impl Sheet {
                             }
                         }
                     }
-                }
-            });
+                });
+            }
         });
         render_cells
     }

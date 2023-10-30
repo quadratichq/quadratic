@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     operation::Operation,
-    transaction_summary::TransactionSummary,
+    transaction_summary::{TransactionSummary, CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
     GridController,
 };
@@ -159,8 +159,8 @@ impl CellHash {
 
 impl From<Pos> for CellHash {
     fn from(pos: Pos) -> Self {
-        let hash_width = 20_f64;
-        let hash_height = 40_f64;
+        let hash_width = CELL_SHEET_WIDTH as f64;
+        let hash_height = CELL_SHEET_HEIGHT as f64;
         let cell_hash_x = (pos.x as f64 / hash_width).floor() as i64;
         let cell_hash_y = (pos.y as f64 / hash_height).floor() as i64;
         let cell_hash = format!("{},{}", cell_hash_x, cell_hash_y);

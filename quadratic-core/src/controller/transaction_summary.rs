@@ -7,8 +7,8 @@ use crate::{
     Pos,
 };
 
-const CELL_SHEET_WIDTH: u32 = 10;
-const CELL_SHEET_HEIGHT: u32 = 20;
+pub const CELL_SHEET_WIDTH: u32 = 10;
+pub const CELL_SHEET_HEIGHT: u32 = 20;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
