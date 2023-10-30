@@ -35,7 +35,6 @@ impl GridFile {
 }
 
 pub fn import(file_contents: &str) -> Result<Grid> {
-    // println!("{}", &file_contents);
     let file = serde_json::from_str::<GridFile>(file_contents)
         .map_err(|e| {
             dbg!(&e);
@@ -55,6 +54,7 @@ pub fn export(grid: &mut Grid) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::{
         color::Rgba,
         grid::{
@@ -63,8 +63,6 @@ mod tests {
         Pos, Rect,
     };
 
-    use super::*;
-
     const V1_3_FILE: &str = include_str!("../../../examples/v1_3.grid");
     const V1_3_PYTHON_FILE: &str = include_str!("../../../examples/v1_3_python.grid");
     const V1_3_TEXT_ONLY_CODE_CELL_FILE: &str =
@@ -72,7 +70,10 @@ mod tests {
     const V1_3_SINGLE_FORMULS_CODE_CELL_FILE: &str =
         include_str!("../../../examples/v1_3_single_formula.grid");
     const V1_3_NPM_DOWNLOADS_FILE: &str = include_str!("../../../examples/v1_3_fill_color.grid");
+    const V1_3_BORDERS_FILE: &str = include_str!("../../../examples/v1_3_borders.grid");
     const V1_4_FILE: &str = include_str!("../../../examples/v1_4_simple.grid");
+    const V1_4_AIRPORTS_DISTANCE_FILE: &str =
+        include_str!("../../../examples/v1_4_airports_distance.grid");
 
     #[test]
     fn process_a_v1_3_file() {
@@ -125,12 +126,20 @@ mod tests {
     }
 
     #[test]
+    fn process_a_v1_3_borders_file() {
+        let mut imported = import(V1_3_BORDERS_FILE).unwrap();
+        // println!("{:?}", imported.sheets[0].borders);
+        let _exported = export(&mut imported).unwrap();
+        // println!("{}", _exported);
+    }
+
+    #[test]
     fn process_a_simple_v1_4_borders_file() {
         let empty = r##"{"sheets":[{"id":{"id":"d48a3488-fb1d-438d-ba0b-d4ad81b8c239"},"name":"Sheet 1","color":null,"order":"a0","offsets":[[],[]],"columns":[[0,{"id":{"id":"6287d0f0-b559-4de2-a73f-5b140237b3c4"},"values":{"0":{"y":0,"content":{"Values":[{"type":"text","value":"a"}]}}},"spills":{},"align":{},"wrap":{},"numeric_format":{},"numeric_decimals":{},"bold":{},"italic":{},"text_color":{},"fill_color":{}}]],"rows":[[0,{"id":"a9ed07c9-98af-453d-9b5e-311c48be42f7"}]],"borders":{"6287d0f0-b559-4de2-a73f-5b140237b3c4":[[0,[{"color":"#000000ff","line":"line1"},{"color":"#000000ff","line":"line1"},{"color":"#000000ff","line":"line1"},{"color":"#000000ff","line":"line1"}]]]},"code_cells":[]}],"version":"1.4"}"##;
         let mut imported = import(empty).unwrap();
         // println!("{:#?}", imported.sheets()[0].borders);
         let _exported = export(&mut imported).unwrap();
-        println!("{}", _exported);
+        // println!("{}", _exported);
     }
 
     #[test]
@@ -154,5 +163,11 @@ mod tests {
         // println!("{:#?}", imported.sheets()[0].borders);
         // // println!("{:?}", serde_json::to_string(&sheet.column_).unwrap());
         // println!("{:#?}", &sheets[0].borders.per_cell.borders);
+    }
+
+    #[test]
+    fn process_a_v1_4_airports_distance_file() {
+        let mut imported = import(V1_4_AIRPORTS_DISTANCE_FILE).unwrap();
+        let _exported = export(&mut imported).unwrap();
     }
 }

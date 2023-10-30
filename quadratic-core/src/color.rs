@@ -1,3 +1,4 @@
+use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use std::fmt::Write;
 use std::num::ParseIntError;
@@ -13,6 +14,18 @@ pub struct Rgba {
     pub blue: u8,
     pub alpha: u8,
 }
+
+impl Default for Rgba {
+    fn default() -> Self {
+        Self {
+            red: 0,
+            green: 0,
+            blue: 0,
+            alpha: 255,
+        }
+    }
+}
+
 #[wasm_bindgen]
 impl Rgba {
     pub fn new(red: u8, green: u8, blue: u8, alpha: u8) -> Self {
@@ -64,6 +77,20 @@ impl Rgba {
             alpha,
         })
     }
+    pub fn from_css_str(css: &str) -> Result<Self> {
+        let colors = css
+            .trim_start_matches("rgb(")
+            .trim_end_matches(")")
+            .split(",")
+            .map(|s| s.trim().parse::<u8>())
+            .collect::<Result<Vec<u8>, ParseIntError>>()?;
+
+        if colors.len() != 3 {
+            bail!("Invalid number of colors");
+        }
+
+        Ok(Self::new(colors[0], colors[1], colors[2], 255))
+    }
     pub fn as_string(&self) -> String {
         let mut s = String::with_capacity(1 + 3 * 2);
         write!(&mut s, "#").unwrap();
@@ -95,5 +122,13 @@ mod tests {
         assert_eq!(color.green, 0x44);
         assert_eq!(color.blue, 0x66);
         assert_eq!(color.alpha, 0xff);
+    }
+
+    #[test]
+    fn test_from_css_str() {
+        let css = "rgb(1, 2, 3)";
+        println!("{}", Rgba::from_css_str(css).unwrap().as_string());
+        // let maybe_color = Rgba::from_css_str(css);
+        // assert_eq!(maybe_color.unwrap().as_string(), "#010203ff");
     }
 }
