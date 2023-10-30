@@ -188,6 +188,7 @@ impl GridController {
                 let sheet = self.grid.sheet_from_id(target);
                 let original_order = sheet.order.clone();
                 self.grid.move_sheet(target, order);
+                summary.sheet_list_modified = true;
 
                 // return reverse operation
                 Operation::ReorderSheet {
