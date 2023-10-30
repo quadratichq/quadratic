@@ -59,7 +59,7 @@ impl Sheet {
                     else if let Some(cell_ref) = column.spills.get(y) {
                         if let Some(code_cell) = self.code_cells.get(&cell_ref) {
                             if let Some(pos) = self.cell_ref_to_pos(cell_ref) {
-                                if let Some(_) = code_cell.get_error() {
+                                if code_cell.get_error().is_some() {
                                     // only show the error in the first cell
                                     if pos.x == x && pos.y == y {
                                         render_cells.push(JsRenderCell {
