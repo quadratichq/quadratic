@@ -48,6 +48,7 @@ export function keyboardCell(options: {
           showCellTypeMenu: false,
           showCodeEditor: true,
           selectedCell: { x: x, y: y },
+          selectedCellSheet: sheets.sheet.id,
           mode,
         });
       } else {
@@ -98,6 +99,7 @@ export function keyboardCell(options: {
           showCellTypeMenu: false,
           showCodeEditor: true,
           selectedCell: { x: x, y: y },
+          selectedCellSheet: sheets.sheet.id,
           mode,
         });
       } else {
@@ -111,6 +113,7 @@ export function keyboardCell(options: {
         showCellTypeMenu: true,
         showCodeEditor: false,
         selectedCell: { x: x, y: y },
+        selectedCellSheet: sheets.sheet.id,
         mode: 'PYTHON',
       });
     }

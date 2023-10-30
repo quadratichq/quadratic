@@ -23,6 +23,7 @@ import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
 import { Quadrants } from '../quadrants/Quadrants';
 import { pixiAppSettings } from './PixiAppSettings';
 import { Update } from './Update';
+import { HighlightedCells } from './highlightedCells';
 import './pixiApp.css';
 
 export class PixiApp {
@@ -30,6 +31,7 @@ export class PixiApp {
   private update!: Update;
   private cacheIsVisible = false;
 
+  highlightedCells = new HighlightedCells();
   canvas!: HTMLCanvasElement;
   viewport!: Viewport;
   gridLines!: GridLines;
