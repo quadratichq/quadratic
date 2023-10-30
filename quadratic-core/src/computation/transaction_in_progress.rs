@@ -250,8 +250,10 @@ impl TransactionInProgress {
                 self.cells_to_compute.extend(dependent_cells);
                 dependent_cells.iter().for_each(|cell_ref| {
                     let sheet = grid_controller.sheet(cell_ref.sheet);
-                    if let Some(pos) = sheet.cell_ref_to_pos(*cell_ref) {
-                        crate::util::dbgjs(format!("[Adding Dependent Cell] {:?}", pos));
+                    if cfg!(feature = "show-operations") {
+                        if let Some(pos) = sheet.cell_ref_to_pos(*cell_ref) {
+                            crate::util::dbgjs(format!("[Adding Dependent Cell] {:?}", pos));
+                        }
                     }
                 });
             }
