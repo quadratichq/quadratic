@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/browser';
 import { Point, Rectangle } from 'pixi.js';
-import { debugMockLargeData, debugShowTime } from '../../debugFlags';
+import { debugMockLargeData } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
@@ -34,6 +34,7 @@ import {
 } from '../../quadratic-core/types';
 import { GridFile } from '../../schemas';
 import { SheetCursorSave } from '../sheet/SheetCursor';
+import { GridPerformanceProxy } from './GridPerformanceProxy';
 import { sheets } from './Sheets';
 
 const rectangleToRect = (rectangle: Rectangle): RectInternal => {
@@ -663,39 +664,7 @@ export class Grid {
 
 //#end
 
-function performanceProxy<T extends object>(object: T): T {
-  return new Proxy(object, {
-    get(target, prop, receiver) {
-      const original = Reflect.get(target, prop, receiver);
-      if (typeof original === 'function') {
-        return function (...args: any[]) {
-          const start = performance.now();
-          let result = Sentry.startSpan({ name: `Grid.${String(prop)}`, op: 'function' }, () => {
-            // Call function
-            return Reflect.apply(original, receiver, args);
-          });
-          const end = performance.now();
-          if (debugShowTime) console.log(`Grid.${String(prop)} took ${end - start}ms`);
-          return result;
-        };
-      }
-      return original;
-    },
-  });
-}
-
-// let activeTransaction: any = undefined;
-
-// const createTransaction = () => {
-//   if (activeTransaction) activeTransaction.finish();
-//   activeTransaction = Sentry.startTransaction({ name: 'GridController', op: 'function' });
-//   // Sentry.getActiveTransaction();
-//   // Sentry.startTransaction({ name: 'GridController', op: 'function' });
-// };
-
-// setInterval(createTransaction, 1000 * 30);
-
-export const grid = performanceProxy(new Grid());
+export const grid = GridPerformanceProxy(new Grid());
 
 // workaround so Rust can import TS functions
 declare global {
