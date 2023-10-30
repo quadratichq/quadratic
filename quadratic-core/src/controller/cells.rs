@@ -142,7 +142,7 @@ impl GridController {
         let mut ops = vec![];
 
         // remove any values that were originally over the code cell
-        if let Some(_) = sheet.get_cell_value(pos) {
+        if sheet.get_cell_value(pos).is_some() {
             ops.push(Operation::SetCellValues {
                 region: RegionRef::from(cell_ref),
                 values: Array::from(CellValue::Blank),
