@@ -44,7 +44,7 @@ impl GridController {
         let mut ops = vec![];
 
         // remove any code cell that was originally over the cell
-        if let Some(_) = sheet.get_code_cell(pos) {
+        if sheet.get_code_cell(pos).is_some() {
             ops.push(Operation::SetCellCode {
                 cell_ref,
                 code_cell_value: None,
