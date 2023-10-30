@@ -116,7 +116,7 @@ export const apiClient = {
       const message = 'REACT_APP_QUADRATIC_API_URL env variable is not set.';
       Sentry.captureEvent({
         message,
-        level: Sentry.Severity.Fatal,
+        level: 'fatal',
       });
       throw new Error(message);
     }

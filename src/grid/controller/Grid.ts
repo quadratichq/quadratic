@@ -34,6 +34,7 @@ import {
 } from '../../quadratic-core/types';
 import { GridFile } from '../../schemas';
 import { SheetCursorSave } from '../sheet/SheetCursor';
+import { GridPerformanceProxy } from './GridPerformanceProxy';
 import { sheets } from './Sheets';
 
 const rectangleToRect = (rectangle: Rectangle): RectInternal => {
@@ -663,4 +664,13 @@ export class Grid {
 
 //#end
 
-export const grid = new Grid();
+export const grid = GridPerformanceProxy(new Grid());
+
+// workaround so Rust can import TS functions
+declare global {
+  interface Window {
+    transactionSummary: any;
+  }
+}
+
+window.transactionSummary = grid.transactionResponse.bind(grid);
