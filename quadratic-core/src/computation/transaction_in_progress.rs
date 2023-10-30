@@ -49,9 +49,10 @@ impl TransactionInProgress {
             complete: false,
         };
 
-        // run computations
+        // apply operations
         transaction.transact(grid_controller, operations);
 
+        // run computations
         if compute {
             transaction.loop_compute(grid_controller);
         } else {
@@ -174,6 +175,7 @@ impl TransactionInProgress {
         if deps != old_deps {
             grid_controller.update_dependent_cells(self.current_cell_ref.unwrap(), deps, old_deps);
         }
+        self.cells_accessed.clear();
     }
 
     /// continues the calculate cycle after an async call
@@ -241,28 +243,34 @@ impl TransactionInProgress {
     /// checks the next cell in the cells_to_compute and computes it
     /// returns true if an async call is made or the compute cycle is completed
     fn compute(&mut self, grid_controller: &mut GridController) {
-        if cfg!(feature = "show-operations") {
-            crate::util::dbgjs(format!(
-                "[Compute] Cells to compute: {}",
-                self.cells_to_compute.len()
-            ));
-        }
-        if let Some(cell_ref) = self.cells_to_compute.pop() {
+        if let Some(cell_ref) = self.cells_to_compute.shift_remove_index(0) {
             // todo: this would be a good place to check for cycles
             // add all dependent cells to the cells_to_compute
             if let Some(dependent_cells) = grid_controller.get_dependent_cells(cell_ref) {
                 self.cells_to_compute.extend(dependent_cells);
+                dependent_cells.iter().for_each(|cell_ref| {
+                    let sheet = grid_controller.sheet(cell_ref.sheet);
+                    if cfg!(feature = "show-operations") {
+                        if let Some(pos) = sheet.cell_ref_to_pos(*cell_ref) {
+                            crate::util::dbgjs(format!("[Adding Dependent Cell] {:?}", pos));
+                        }
+                    }
+                });
             }
 
             let sheet = grid_controller.grid().sheet_from_id(cell_ref.sheet);
             if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                if cfg!(feature = "show-operations") {
-                    crate::util::dbgjs(format!("[Compute] {:?}", pos));
-                }
                 // find which cells have code. Run the code and update the cells.
                 // add the updated cells to the cells_to_compute
 
                 if let Some(code_cell) = sheet.get_code_cell(pos) {
+                    if cfg!(feature = "show-operations") {
+                        crate::util::dbgjs(format!(
+                            "[Compute] {:?} ({} remaining)",
+                            pos,
+                            self.cells_to_compute.len()
+                        ));
+                    }
                     self.current_cell_ref = Some(cell_ref);
                     self.current_code_cell = Some(code_cell.clone());
                     let code_string = code_cell.code_string.clone();

@@ -62,7 +62,10 @@ impl TransactionInProgress {
             for y in rect.y_range() {
                 for x in rect.x_range() {
                     if let Some(cell_ref) = sheet.try_get_cell_ref(Pos { x, y }) {
-                        self.cells_accessed.push(cell_ref);
+                        // only cell_ref one time to cells_accessed
+                        if !self.cells_accessed.contains(&cell_ref) {
+                            self.cells_accessed.push(cell_ref);
+                        }
                     }
                 }
             }
