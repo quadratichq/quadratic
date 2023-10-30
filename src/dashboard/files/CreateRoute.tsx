@@ -42,7 +42,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       // If we get here, something's wrong
       Sentry.captureEvent({
         message: 'Client tried to load an invalid example file.',
-        level: Sentry.Severity.Warning,
+        level: 'warning',
         extra: {
           exampleId,
         },
@@ -72,7 +72,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     } catch (error) {
       Sentry.captureEvent({
         message: 'Client failed to load the selected example file.',
-        level: Sentry.Severity.Warning,
+        level: 'warning',
         extra: {
           exampleId,
         },

@@ -69,6 +69,7 @@ pub fn parse_formula(formula_string: &str, pos: Pos) -> FormulaParseResult {
         parse_error_msg: parse_error.as_ref().map(|e| e.msg.to_string()),
         parse_error_span: parse_error.and_then(|e| e.span),
 
+        // todo: cell_refs are returning Relative positions that are actually Absolute
         cell_refs: formulas::find_cell_references(formula_string, pos)
             .into_iter()
             .map(|r| r.into())
@@ -79,15 +80,14 @@ pub fn parse_formula(formula_string: &str, pos: Pos) -> FormulaParseResult {
 
 #[cfg(test)]
 mod tests {
-    use crate::controller::formula::{CellRefSpan, FormulaParseResult};
+    use crate::controller::formula::{parse_formula, CellRefSpan, FormulaParseResult};
+    use crate::formulas::{CellRef, CellRefCoord, RangeRef};
+    use crate::Span;
 
     /// Run this test with `--nocapture` to generate the example for the
     /// `parse_formula()` docs.
     #[test]
     fn example_parse_formula_output() {
-        use crate::formulas::{CellRef, CellRefCoord, RangeRef};
-        use crate::Span;
-
         let example_result = FormulaParseResult {
             parse_error_msg: Some("Bad argument count".to_string()),
             parse_error_span: Some(Span { start: 12, end: 46 }),
@@ -119,5 +119,26 @@ mod tests {
         };
 
         println!("{}", serde_json::to_string_pretty(&example_result).unwrap());
+    }
+
+    #[test]
+    fn text_parse_formula_output() {
+        let result = parse_formula("'Sheet 2'!A0", crate::Pos::ORIGIN);
+        assert_eq!(result.parse_error_msg, None);
+        assert_eq!(result.parse_error_span, None);
+        assert_eq!(result.cell_refs.len(), 1);
+
+        // todo
+        // assert_eq!(result.cell_refs[0].span, Span { start: 0, end: 12 });
+        // assert_eq!(
+        //     result.cell_refs[0].cell_ref,
+        //     RangeRef::Cell {
+        //         pos: CellRef {
+        //             sheet: Some("Sheet 2".to_string()),
+        //             x: CellRefCoord::Relative(0),
+        //             y: CellRefCoord::Relative(0)
+        //         }
+        //     }
+        // );
     }
 }

@@ -99,8 +99,15 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
         apiClient.updateFileSharing(uuid, { public_link_access: publicLinkAccess });
         grid.dirty = false;
       } else if (grid.dirty) {
-        if (debugShowFileIO) console.log('[FileProvider] saving file...');
-        syncChanges(() => apiClient.updateFile(uuid, { contents: grid.export(), version: grid.getVersion() }));
+        const now = performance.now();
+        const contents = grid.export();
+        if (debugShowFileIO)
+          console.log(
+            `[FileProvider] saving file... (${Math.round(contents.length / 1000)}kb in ${Math.round(
+              performance.now() - now
+            )}ms)`
+          );
+        syncChanges(() => apiClient.updateFile(uuid, { contents, version: grid.getVersion() }));
         grid.dirty = false;
       }
     },
