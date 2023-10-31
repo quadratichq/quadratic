@@ -34,7 +34,7 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Returns `TRUE` if `a` is falsey and `FALSE` if `a` is truthy.
             #[examples("NOT(A113)")]
-            #[pure_zip_map]
+            #[zip_map]
             fn NOT([boolean]: bool) {
                 !boolean
             }
@@ -76,7 +76,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 "IF(A2<0, \"A2 is negative\", \"A2 is nonnegative\")",
                 "IF(A2<0, \"A2 is negative\", IF(A2>0, \"A2 is positive\", \"A2 is zero\"))"
             )]
-            #[pure_zip_map]
+            #[zip_map]
             fn IF([condition]: bool, [t]: CellValue, [f]: CellValue) {
                 if condition { t } else { f }.clone()
             }
