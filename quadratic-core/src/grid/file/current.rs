@@ -486,8 +486,6 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                         )
                     })
                     .collect(),
-                // TODO(ddimaria): implement
-                // borders: sheet.borders(), // TODO: serialize borders
                 borders: export_borders_builder(sheet),
                 code_cells: sheet
                     .iter_code_cells_locations()

@@ -3,7 +3,7 @@ use super::{
     transactions::TransactionType, GridController,
 };
 use crate::{
-    grid::{CodeCellValue, SheetId},
+    grid::{get_cell_borders_in_rect, CellBorders, CodeCellValue, SheetId},
     Array, ArraySize, CellValue, Pos, Rect,
 };
 use htmlescape;
@@ -22,6 +22,7 @@ pub struct Clipboard {
     h: u32,
     cells: Vec<ClipboardCell>,
     formats: Vec<CellFmtArray>,
+    borders: Vec<Option<CellBorders>>,
     code: Vec<(Pos, CodeCellValue)>,
 }
 
@@ -39,6 +40,7 @@ impl GridController {
                 html.push_str("</tr>");
             }
             html.push_str("<tr>");
+
             for x in rect.x_range() {
                 if x != rect.min.x {
                     plain_text.push('\t');
@@ -113,9 +115,11 @@ impl GridController {
         }
 
         let formats = self.get_all_cell_formats(sheet_id, rect);
+        let borders = get_cell_borders_in_rect(sheet, rect);
         let clipboard = Clipboard {
             cells,
             formats,
+            borders,
             code,
             w: rect.width(),
             h: rect.height(),

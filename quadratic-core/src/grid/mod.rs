@@ -22,8 +22,8 @@ pub mod sheet;
 
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
 pub use borders::{
-    generate_borders, set_region_borders, BorderSelection, BorderStyle, CellBorderLine,
-    LegacyCellBorder, LegacyCellBorders, SheetBorders,
+    generate_borders, get_cell_borders_in_rect, set_region_borders, BorderSelection, BorderStyle,
+    CellBorderLine, CellBorders, LegacyCellBorder, LegacyCellBorders, SheetBorders,
 };
 pub use bounds::GridBounds;
 pub use code::*;

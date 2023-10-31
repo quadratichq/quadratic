@@ -93,6 +93,22 @@ pub fn set_region_border_selection(
     set_region_borders(sheet, vec![region.clone()], borders)
 }
 
+pub fn get_cell_borders_in_rect(sheet: &Sheet, rect: Rect) -> Vec<Option<CellBorders>> {
+    let mut borders = vec![];
+    let mut id_space_borders = sheet.borders().per_cell.to_owned();
+
+    for x in rect.x_range() {
+        let column = sheet.get_column(x).unwrap();
+
+        for y in rect.y_range() {
+            let border = id_space_borders.get_cell_border(column.id, y);
+            borders.push(border);
+        }
+    }
+
+    borders
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct SheetBorders {
     pub per_cell: IdSpaceBorders,
@@ -230,6 +246,11 @@ impl IdSpaceBorders {
         } else {
             column_borders.set(row_index, Some(new_borders));
         }
+    }
+
+    pub fn get_cell_border(&mut self, column_id: ColumnId, row_index: i64) -> Option<CellBorders> {
+        let column_borders = self.borders.entry(column_id).or_default();
+        column_borders.get(row_index)
     }
 }
 
