@@ -89,12 +89,9 @@ impl TransactionInProgress {
     }
 
     /// returns the TransactionSummary
-    pub fn transaction_summary(&mut self, skip_cell_rendering: bool) -> TransactionSummary {
-        let mut summary = self.summary.clone();
-        // if skip_cell_rendering {
-        // summary.cell_sheets_modified.clear();
-        // }
-        self.summary.clear(skip_cell_rendering);
+    pub fn transaction_summary(&mut self) -> TransactionSummary {
+        let summary = self.summary.clone();
+        self.summary.clear();
         summary
     }
 

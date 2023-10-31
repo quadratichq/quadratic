@@ -52,7 +52,7 @@ impl GridController {
         }
         let mut transaction =
             TransactionInProgress::new(self, operations, cursor, compute, transaction_type);
-        let mut summary = transaction.transaction_summary(false);
+        let mut summary = transaction.transaction_summary();
         transaction.updated_bounds(self);
 
         if transaction.complete {
@@ -105,7 +105,7 @@ impl GridController {
             self.transaction_in_progress = Some(transaction.to_owned());
             transaction.updated_bounds(self);
             if transaction.complete {
-                transaction.transaction_summary(true)
+                transaction.transaction_summary()
             } else {
                 TransactionSummary::default()
             }
@@ -135,7 +135,7 @@ impl GridController {
         //     .is_some_and(|transaction| !transaction.complete);
         self.transaction_in_progress
             .as_mut()
-            .map(|transaction| transaction.transaction_summary(true)) //skip_cell_rendering))
+            .map(|transaction| transaction.transaction_summary())
     }
 
     pub fn updated_bounds_in_transaction(&mut self) {
