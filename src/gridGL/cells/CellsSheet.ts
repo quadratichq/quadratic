@@ -286,10 +286,29 @@ export class CellsSheet extends Container {
     return true;
   }
 
-  private dirtyCellsTextHashes(): CellsTextHash[] {
+  private dirtyCellTextHashesByDistance(): CellsTextHash[] {
     const cellsTextHashes = this.cellsTextHashContainer.children.filter((hash) => hash.dirty);
-    const viewportCenter = pixiApp.viewport.center;
+    const viewport = pixiApp.viewport;
+    const viewportCenter = viewport.center;
+    const isInsideViewport = (hash: CellsTextHash): boolean => {
+      return (
+        hash.AABB.left >= viewport.left &&
+        hash.AABB.right <= viewport.right &&
+        hash.AABB.top >= viewport.top &&
+        hash.AABB.bottom <= viewport.bottom
+      );
+    };
     cellsTextHashes.sort((a, b) => {
+      // if hashes are both inside the Viewport then sort by y
+      if (isInsideViewport(a)) {
+        if (!isInsideViewport(b)) return -1;
+        return a.AABB.y - b.AABB.y;
+      }
+      if (isInsideViewport(b)) {
+        return 1;
+      }
+
+      // otherwise sort by distance from viewport center
       const aDistance =
         Math.pow(viewportCenter.x - (a.AABB.x + a.AABB.width / 2), 2) +
         Math.pow(viewportCenter.y - (a.AABB.y + a.AABB.height / 2), 2);
@@ -303,7 +322,7 @@ export class CellsSheet extends Container {
 
   update(): boolean {
     if (this.updateHeadings()) return true;
-    const cellTextHashes = this.dirtyCellsTextHashes();
+    const cellTextHashes = this.dirtyCellTextHashesByDistance();
     for (const cellTextHash of cellTextHashes) {
       if (cellTextHash.update()) {
         return true;

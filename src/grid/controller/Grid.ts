@@ -119,6 +119,7 @@ export class Grid {
     if (summary.save) {
       this.dirty = true;
     }
+    if (summary.cell_sheets_modified.length) console.log('cell_sheets_modified', summary.cell_sheets_modified);
     pixiApp.setViewportDirty();
   }
 

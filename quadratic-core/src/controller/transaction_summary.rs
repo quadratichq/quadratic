@@ -71,12 +71,14 @@ pub struct TransactionSummary {
 }
 
 impl TransactionSummary {
-    pub fn clear(&mut self) {
+    pub fn clear(&mut self, no_cells: bool) {
         self.fill_sheets_modified.clear();
         self.border_sheets_modified.clear();
         self.code_cells_modified.clear();
         self.sheet_list_modified = false;
+        // if !no_cells {
         self.cell_sheets_modified.clear();
+        // }
         self.offsets_modified.clear();
         self.cursor = None;
         self.save = true;

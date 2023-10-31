@@ -52,11 +52,9 @@ impl GridController {
         }
         let mut transaction =
             TransactionInProgress::new(self, operations, cursor, compute, transaction_type);
-        let mut summary = transaction.transaction_summary();
+        let mut summary = transaction.transaction_summary(false);
         transaction.updated_bounds(self);
 
-        // only trigger update to grid when computation cycle is complete
-        // otherwise you end up redrawing too often
         if transaction.complete {
             summary.save = true;
             self.finalize_transaction(&transaction);
@@ -107,7 +105,7 @@ impl GridController {
             self.transaction_in_progress = Some(transaction.to_owned());
             transaction.updated_bounds(self);
             if transaction.complete {
-                transaction.transaction_summary()
+                transaction.transaction_summary(true)
             } else {
                 TransactionSummary::default()
             }
@@ -128,10 +126,16 @@ impl GridController {
         }
     }
 
+    /// Creates a TransactionSummary and cleans
+    /// Note: it may not pass cells_sheet_modified if the transaction is not complete (to avoid redrawing cells multiple times)
     pub fn transaction_summary(&mut self) -> Option<TransactionSummary> {
+        // let skip_cell_rendering = self
+        //     .transaction_in_progress
+        //     .as_ref()
+        //     .is_some_and(|transaction| !transaction.complete);
         self.transaction_in_progress
             .as_mut()
-            .map(|transaction| transaction.transaction_summary())
+            .map(|transaction| transaction.transaction_summary(true)) //skip_cell_rendering))
     }
 
     pub fn updated_bounds_in_transaction(&mut self) {
