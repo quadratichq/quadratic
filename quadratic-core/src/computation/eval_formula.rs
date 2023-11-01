@@ -56,16 +56,17 @@ impl TransactionInProgress {
                             // todo
                             last_modified: String::new(),
                         };
-                        update_code_cell_value(
+                        if update_code_cell_value(
                             grid_controller,
                             cell_ref,
                             Some(updated_code_cell_value),
                             &mut self.cells_to_compute,
                             &mut self.reverse_operations,
                             &mut self.summary,
-                        );
-                        // updates the dependencies
-                        self.update_deps(grid_controller);
+                        ) {
+                            // updates the dependencies
+                            self.update_deps(grid_controller);
+                        }
                     }
                     Err(error) => {
                         let msg = error.msg.to_string();
