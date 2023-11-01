@@ -27,6 +27,7 @@ import { getUserShareOptions } from './ShareMenu.utils';
 // Possible values: `?share` | `?share=team-created`
 export const shareSearchParamKey = 'share';
 export const shareSearchParamValuesById = {
+  OPEN: '',
   TEAM_CREATED: 'team-created',
 };
 
@@ -213,13 +214,15 @@ function UserListItem({
   onUpdateUser,
   onDeleteUser,
   disabled,
+  error,
 }: {
   numberOfOwners: number;
   loggedInUser: ApiTypes['/v0/teams/:uuid.GET.response']['user'];
   user: ApiTypes['/v0/teams/:uuid.GET.response']['team']['users'][0];
-  onUpdateUser: (user: any /*TODO UserShare*/) => void;
-  onDeleteUser: (user: any /*TODO UserShare*/) => void;
+  onUpdateUser: (userId: number, role: ApiTypes['/v0/teams/:uuid.GET.response']['team']['users'][0]['role']) => void;
+  onDeleteUser: (userId: number) => void;
   disabled?: boolean;
+  error?: string;
 }) {
   // TODO figure out primary vs. secondary display & "resend"
   const primary = user.name ? user.name : user.email;
@@ -227,14 +230,19 @@ function UserListItem({
 
   const isPending = false; // TODO user.permissions.status === 'INVITE_SENT';
 
-  let secondary = user.hasAccount ? (
-    user.email
-  ) : (
-    <Stack direction="row" gap={theme.spacing(0.5)}>
-      Invite sent.{' '}
-      <ButtonBase sx={{ textDecoration: 'underline', fontSize: 'inherit', fontFamily: 'inherit' }}>Resend</ButtonBase>
-    </Stack>
-  );
+  let secondary;
+  if (error) {
+    secondary = error;
+  } else if (user.hasAccount) {
+    secondary = user.email;
+  } else {
+    secondary = (
+      <Stack direction="row" gap={theme.spacing(0.5)}>
+        Invite sent.{' '}
+        <ButtonBase sx={{ textDecoration: 'underline', fontSize: 'inherit', fontFamily: 'inherit' }}>Resend</ButtonBase>
+      </Stack>
+    );
+  }
 
   let labels = disabled
     ? user.role === 'OWNER'
@@ -253,19 +261,19 @@ function UserListItem({
     if (label === 'Owner') {
       options.push({
         label,
-        onClick: () => onUpdateUser({ ...user, role: RoleSchema.enum.OWNER }),
+        onClick: () => onUpdateUser(user.id, RoleSchema.enum.OWNER),
       });
     }
     if (label === 'Can edit') {
       options.push({
         label,
-        onClick: () => onUpdateUser({ ...user, role: RoleSchema.enum.EDITOR }),
+        onClick: () => onUpdateUser(user.id, RoleSchema.enum.EDITOR),
       });
     }
     if (label === 'Can view') {
       options.push({
         label,
-        onClick: () => onUpdateUser({ ...user, role: RoleSchema.enum.VIEWER }),
+        onClick: () => onUpdateUser(user.id, RoleSchema.enum.VIEWER),
       });
     }
     if (label === 'Leave' || label === 'Remove') {
@@ -274,7 +282,7 @@ function UserListItem({
         {
           label,
           onClick: () => {
-            onDeleteUser(user);
+            onDeleteUser(user.id);
             // TODO if 'leave' then redirect user to dashboard
           },
         }
@@ -300,7 +308,7 @@ function UserListItem({
           {primary} {loggedInUser.id === user.id && ' (You)'}
         </Typography>
         {secondary && (
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" color={error ? 'error.main' : 'text.secondary'}>
             {secondary}
           </Typography>
         )}

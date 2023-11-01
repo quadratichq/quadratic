@@ -174,9 +174,13 @@ export const ApiSchemas = {
   '/v0/teams/:uuid/sharing.POST.response': z.object({
     message: z.string(),
   }),
-  // TODO DELETE for user
+  // Update a user's sharing role
   '/v0/teams/:uuid/sharing/:userId.POST.request': TeamUserSchema.pick({ role: true }),
   '/v0/teams/:uuid/sharing/:userId.POST.response': z.object({
+    message: z.string(),
+  }),
+  // Delete a user from a team
+  '/v0/teams/:uuid/sharing/:userId.DELETE.response': z.object({
     message: z.string(),
   }),
 };

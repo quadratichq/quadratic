@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 
-export function useUpdateQueryStringValueWithoutNavigation(queryKey: string, queryValue: string) {
+// Use this in combination with local state to keep the query string in sync
+// without triggering a navigation (and data reloading) via react-router
+export function useUpdateQueryStringValueWithoutNavigation(queryKey: string, queryValue: string | null) {
   useEffect(() => {
     const currentSearchParams = new URLSearchParams(window.location.search);
-    const oldQuery = currentSearchParams.get(queryKey) ?? '';
+    const oldQuery = currentSearchParams.get(queryKey) ?? null;
     if (queryValue === oldQuery) return;
 
-    if (queryValue) {
+    if (queryValue !== null) {
       currentSearchParams.set(queryKey, queryValue);
     } else {
       currentSearchParams.delete(queryKey);

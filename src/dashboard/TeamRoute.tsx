@@ -17,7 +17,8 @@ import { ApiSchemas, ApiTypes } from '../api/types';
 import { AvatarWithLetters } from '../components/AvatarWithLetters';
 import { Empty } from '../components/Empty';
 import { QDialogConfirmDelete } from '../components/QDialog';
-import { shareSearchParamKey } from '../components/ShareMenu';
+import { shareSearchParamKey, shareSearchParamValuesById } from '../components/ShareMenu';
+import { useUpdateQueryStringValueWithoutNavigation } from '../hooks/useUpdateQueryStringValueWithoutNavigation';
 import { hasAccess } from '../permissions';
 import { DashboardHeader } from './components/DashboardHeader';
 import { TeamLogoInput } from './components/TeamLogo';
@@ -57,9 +58,18 @@ export type Action = {
     action: 'delete-user';
     id: number;
   };
-  request: Action['request.update-team'] | Action['request.invite-user'];
+  request:
+    | Action['request.update-team']
+    | Action['request.invite-user']
+    | Action['request.update-user']
+    | Action['request.delete-user'];
+  response: {
+    ok: boolean;
+    action: Action['request'][keyof Action['request']];
+  } | null;
 };
-export const action = async ({ request, params }: ActionFunctionArgs) => {
+
+export const action = async ({ request, params }: ActionFunctionArgs): Promise<Action['response']> => {
   const data = (await request.json()) as Action['request'];
   const { teamUuid } = params as { teamUuid: string };
   const { action } = data;
@@ -70,9 +80,9 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         payload: { name, picture },
       } = data;
       await apiClient.updateTeam(teamUuid, { name, picture });
-      return { ok: true };
+      return { ok: true, action };
     } catch (e) {
-      return { ok: false };
+      return { ok: false, action };
     }
   }
 
@@ -82,32 +92,33 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       const {
         payload: { email, role },
       } = data;
-      await apiClient.updateTeamSharing(teamUuid, { email, role });
-      return { ok: true };
+      await apiClient.updateUserInTeam(teamUuid, { email, role });
+      return { ok: true, action };
     } catch (e) {
-      return { ok: false };
+      return { ok: false, action };
     }
   }
 
   if (action === 'update-user') {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve, reject) => setTimeout(reject, 3000));
       // const { payload: { id, role } } = data;
-      // apiClient.updateTeamSharing(id, { role })
-      return { ok: true };
+      // apiClient.updateUserInTeam(id, { role })
+      return { ok: true, action };
     } catch (e) {
-      return { ok: false };
+      return { ok: false, action };
     }
   }
 
   if (action === 'delete-user') {
     try {
-      // const { id } = data;
-      // apiClient.updateTeamSharingUser(id, { role })
-      await new Promise((reject) => setTimeout(reject, 5000));
-      return { ok: true };
+      const { id } = data;
+      await apiClient.deleteUserInTeam(teamUuid, id);
+      // console.warn('Deleting user', data);
+      // await new Promise((resolve, reject) => setTimeout(reject, 3000));
+      return { ok: true, action };
     } catch (e) {
-      return { ok: false };
+      return { ok: false, action };
     }
   }
 
@@ -116,12 +127,16 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
 export const Component = () => {
   const theme = useTheme();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const loaderData = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
   const { team } = loaderData;
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const fetcher = useFetcher();
+  const [shareSearchParamValue, setShareSearchParamValue] = useState<string | null>(
+    searchParams.get(shareSearchParamKey)
+  );
+  useUpdateQueryStringValueWithoutNavigation(shareSearchParamKey, shareSearchParamValue);
 
   // const [shareQueryValue, setShareQueryValue] = useState<string>('');
   // useUpdateQueryStringValueWithoutNavigation("share", queryValue);
@@ -133,8 +148,7 @@ export const Component = () => {
     // picture
   }
 
-  console.log(searchParams.get(shareSearchParamKey));
-  const showShareDialog = searchParams.get(shareSearchParamKey) !== null;
+  const showShareDialog = shareSearchParamValue !== null;
 
   return (
     <>
@@ -177,12 +191,9 @@ export const Component = () => {
             <Button
               startIcon={<PeopleAltOutlined />}
               variant="outlined"
-              onClick={() =>
-                setSearchParams((prev) => {
-                  prev.set(shareSearchParamKey, '');
-                  return prev;
-                })
-              }
+              onClick={() => {
+                setShareSearchParamValue(shareSearchParamValuesById.OPEN);
+              }}
             >
               {team.users?.length /* TODO not optional */}
             </Button>
@@ -195,18 +206,7 @@ export const Component = () => {
 
       <Box sx={{ p: theme.spacing(2), textAlign: 'center' }}>Team files</Box>
 
-      {showShareDialog && (
-        <TeamShareMenu
-          onClose={() =>
-            setSearchParams((prev) => {
-              console.log(prev);
-              prev.delete(shareSearchParamKey);
-              return prev;
-            })
-          }
-          data={loaderData}
-        />
-      )}
+      {showShareDialog && <TeamShareMenu onClose={() => setShareSearchParamValue(null)} data={loaderData} />}
       {showDeleteDialog && (
         <QDialogConfirmDelete
           entityName={name}

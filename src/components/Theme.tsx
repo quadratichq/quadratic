@@ -74,7 +74,7 @@ export function Theme(props: any) {
           MuiBackdrop: {
             styleOverrides: {
               root: {
-                backgroundColor: 'rgba(255,255,255,0.5)',
+                backgroundColor: 'rgba(0,0,0,0.333)',
               },
               invisible: {
                 backgroundColor: 'transparent',

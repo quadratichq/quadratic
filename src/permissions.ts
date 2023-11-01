@@ -10,12 +10,17 @@ export const UserRoleTeamSchema = z.enum(['OWNER', /*'ADMIN',*/ 'EDITOR', 'VIEWE
 export type UserRoleTeam = z.infer<typeof UserRoleTeamSchema>;
 
 export const AccessSchema = z.enum([
+  'FILE_VIEW',
   'FILE_EDIT',
   'FILE_DELETE',
-  'FILE_VIEW',
-  'TEAM_EDIT',
-  'TEAM_DELETE',
+
+  // View a team, including its members and files
   'TEAM_VIEW',
+  // Edit attributes of a team, like name/picture, as well as its members and files
+  'TEAM_EDIT',
+  // Delete a team
+  'TEAM_DELETE',
+  // Edit the billing info on a team
   'TEAM_BILLING_EDIT',
 ]);
 export type Access = z.infer<typeof AccessSchema>;

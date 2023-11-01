@@ -12,18 +12,13 @@ export function TeamShareMenu({
   onClose: () => void;
   data: ApiTypes['/v0/teams/:uuid.GET.response'];
 }) {
-  // const theme = useTheme();
-  const { team } = data;
-  // const currentUser = rootLoaderData.user;
-
+  let [pendingUsers, setPendingUsers] = useState<{ email: string; role: string }[]>([]);
   const fetcher = useFetcher();
 
-  // const [users, setUsers] = useState(team.users);
+  const { team } = data;
   const users = team.users;
-
-  let [pendingUsers, setPendingUsers] = useState<{ email: string; role: string }[]>([]); // TODO types
-  console.log(pendingUsers);
-  const userEmails = users.map(({ email }: any) => email).concat(pendingUsers.map(({ email }: any) => email));
+  const userEmails = users.map(({ email }) => email).concat(pendingUsers.map(({ email }) => email));
+  const numberOfOwners = users.filter(({ role }) => role === 'OWNER').length;
   // if (fetcher.state !== 'idle' && !fetcher.data) {
   //   console.log(fetcher);
   //   const {
@@ -32,24 +27,13 @@ export function TeamShareMenu({
   //   users.push({ email, role });
   //   console.log(users);
   // }
-  const numberOfOwners = users.filter(({ role }) => role === 'OWNER').length;
 
   return (
     <QDialog onClose={onClose}>
       <QDialog.Title>Share team “{team.name}”</QDialog.Title>
       <QDialog.Content>
         {/* 
-          <Share
-            users={users}
-            usersIndexForLoggedInUser={}
-            isLoading={}
-            error={}
-            onAddUser={}
-            onModifyUser={}
-            onDeleteUser={}
-            onResendUserInvite={}
-          />
-
+          TODO
           <ShareMenu>
             <ShareMenu.Invite />
             <ShareMenu.User />
@@ -58,14 +42,8 @@ export function TeamShareMenu({
         <ShareMenu.Wrapper>
           <ShareMenu.Invite
             disabled={fetcher.state !== 'idle'}
-            onInvite={async ({ email, role }) => {
-              setPendingUsers((prev: any) => [...prev, { email, role }]);
-              // const data: Action['request.invite-user'] = { action: 'invite-user', payload: { email, role } };
-              // fetcher.submit(data, {
-              //   method: 'POST',
-              //   // action: `/api/teams/${teamUuid}/sharing`,
-              //   encType: 'application/json',
-              // });
+            onInvite={({ email, role }) => {
+              setPendingUsers((prev) => [...prev, { email, role }]);
             }}
             userEmails={userEmails}
           />
@@ -79,40 +57,11 @@ export function TeamShareMenu({
               }}
             />
           ))}
-          {users.map((user: any) => (
-            <Item user={user} data={data} numberOfOwners={numberOfOwners} />
+          {users.map((user) => (
+            <Item key={user.id} user={user} data={data} numberOfOwners={numberOfOwners} />
           ))}
-          {/* <ShareMenu.Users
-            users={users}
-            // usersIndexForLoggedInUser={users.findIndex((user: UserShare) => user.email === '')}
-            onUpdateUser={(user: any) => {
-              // setUsers((prevUsers: any ) =>
-              //   prevUsers.map((prevUser: any) => {
-              //     if (prevUser.email === user.email) {
-              //       return { ...prevUser, ...user };
-              //     } else {
-              //       return prevUser;
-              //     }
-              //   })
-              // );
-            }}
-            onDeleteUser={(user: any ) => {
-              console.log(user);
-              // setUsers((prevUsers: any) =>
-              //   prevUsers.filter((prevUser: any) => prevUser.email !== user.email)
-              // );
-            }}
-            // Current user and their relationship to the current team
-            loggedInUser={{
-              // TODO this needs to come from the app
-              id: 1,
-              role: 'OWNER',
-              access: ['TEAM_EDIT', 'TEAM_BILLING_EDIT', 'TEAM_DELETE'],
-            }}
-          />*/}
 
           {/* 
-
               // avatar={
               //   user.isPending ? (
               //     <Avatar sx={{ width: 24, height: 24, fontSize: '16px' }}>
@@ -127,7 +76,7 @@ export function TeamShareMenu({
               //     </AvatarWithLetters>
               //   )
               // }
-              // primary={user.isPending ? user.email : user.name ? user.name : user.email}
+              
               // secondary={
               //   user.isPending ? (
               //     <Stack direction="row" gap={theme.spacing(0.5)}>
@@ -150,29 +99,50 @@ export function TeamShareMenu({
   );
 }
 
-// function Item({ user }) {
-//   const fetcher = useFetcher();
+function Item({
+  user,
+  numberOfOwners,
+  data,
+}: {
+  user: ApiTypes['/v0/teams/:uuid.GET.response']['team']['users'][0];
+  numberOfOwners: number;
+  data: ApiTypes['/v0/teams/:uuid.GET.response'];
+}) {
+  const fetcher = useFetcher<Action['response']>();
+  const json = fetcher.json as Action['request'] | undefined;
 
-//   // if deleting, return null
+  // Optimistically hide when being deleted
+  if (fetcher.state !== 'idle' && json?.action === 'delete-user') {
+    return null;
+  }
 
-//   // user = { }
-//   // secondary = {}
-//   return <ShareMenu.UserListItem />
-// }
+  // Optimistically update role when being updated
+  if (fetcher.state !== 'idle' && json?.action === 'update-user') {
+    user.role = json.payload.role;
+  }
 
-function Item({ user, numberOfOwners, data }: any) {
-  const fetcher = useFetcher();
+  // Show error if delete or update failed
+  let error = '';
+  if (fetcher.state === 'idle' && fetcher.data?.ok === false) {
+    console.log(fetcher.data);
+    error = `Failed to ${fetcher.data.action === 'delete-user' ? 'delete' : 'update'}`;
+  }
+
   return (
     <ShareMenu.UserListItem
-      key={user.email}
+      key={user.id}
+      error={error}
       numberOfOwners={numberOfOwners}
       loggedInUser={data.user}
       user={user}
-      onUpdateUser={({ id, role }) => {
+      onUpdateUser={(id, role) => {
         const data: Action['request.update-user'] = { action: 'update-user', id, payload: { role } };
         fetcher.submit(data, { method: 'post', encType: 'application/json' });
       }}
-      onDeleteUser={(userId) => {}}
+      onDeleteUser={(id) => {
+        const data: Action['request.delete-user'] = { action: 'delete-user', id };
+        fetcher.submit(data, { method: 'post', encType: 'application/json' });
+      }}
     />
   );
 }
@@ -197,10 +167,12 @@ function PendingItem({ pendingUser, onComplete }: any) {
     }
   }, [fetcher, onComplete]);
 
+  // TODO better state for pending user
+
   return (
     <ShareMenu.UserListItem
       key={email}
-      users={[pendingUser]}
+      numberOfOwners={0}
       // @ts-expect-error
       loggedInUser={{}}
       user={pendingUser}

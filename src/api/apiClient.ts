@@ -27,23 +27,15 @@ const DEFAULT_FILE: GridFile = {
 
 export const apiClient = {
   async getTeams() {
-    return fetchFromApi<ApiTypes['/v0/teams.GET.response']>(
-      `/v0/teams`,
-      { method: 'GET' },
-      ApiSchemas['/v0/teams.GET.response']
-    );
+    return fetchFromApi(`/v0/teams`, { method: 'GET' }, ApiSchemas['/v0/teams.GET.response']);
   },
 
   async getTeam(uuid: string) {
-    return fetchFromApi<ApiTypes['/v0/teams/:uuid.GET.response']>(
-      `/v0/teams/${uuid}`,
-      { method: 'GET' },
-      ApiSchemas['/v0/teams/:uuid.GET.response']
-    );
+    return fetchFromApi(`/v0/teams/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/teams/:uuid.GET.response']);
   },
 
   async createTeam(body: ApiTypes['/v0/teams.POST.request']) {
-    return fetchFromApi<ApiTypes['/v0/teams.POST.response']>(
+    return fetchFromApi(
       `/v0/teams`,
       { method: 'POST', body: JSON.stringify(body) },
       ApiSchemas['/v0/teams.POST.response']
@@ -51,15 +43,15 @@ export const apiClient = {
   },
 
   async updateTeam(uuid: string, body: ApiTypes['/v0/teams/:uuid.POST.request']) {
-    return fetchFromApi<ApiTypes['/v0/teams/:uuid.POST.response']>(
+    return fetchFromApi(
       `/v0/teams/${uuid}`,
       { method: 'POST', body: JSON.stringify(body) },
       ApiSchemas['/v0/teams/:uuid.POST.response']
     );
   },
 
-  async updateTeamSharing(uuid: string, body: ApiTypes['/v0/teams/:uuid/sharing.POST.request']) {
-    return fetchFromApi<ApiTypes['/v0/teams/:uuid/sharing.POST.response']>(
+  async updateUserInTeam(uuid: string, body: ApiTypes['/v0/teams/:uuid/sharing.POST.request']) {
+    return fetchFromApi(
       `/v0/teams/${uuid}/sharing`,
       {
         method: 'POST',
@@ -69,20 +61,20 @@ export const apiClient = {
     );
   },
 
-  async getFiles() {
-    return fetchFromApi<ApiTypes['/v0/files.GET.response']>(
-      `/v0/files`,
-      { method: 'GET' },
-      ApiSchemas['/v0/files.GET.response']
+  async deleteUserInTeam(teamUuid: string, userId: number) {
+    return fetchFromApi(
+      `/v0/teams/${teamUuid}/sharing/${userId}`,
+      { method: 'DELETE' },
+      ApiSchemas['/v0/teams/:uuid/sharing/:userId.DELETE.response']
     );
   },
 
+  async getFiles() {
+    return fetchFromApi(`/v0/files`, { method: 'GET' }, ApiSchemas['/v0/files.GET.response']);
+  },
+
   async getFile(uuid: string) {
-    return fetchFromApi<ApiTypes['/v0/files/:uuid.GET.response']>(
-      `/v0/files/${uuid}`,
-      { method: 'GET' },
-      ApiSchemas['/v0/files/:uuid.GET.response']
-    );
+    return fetchFromApi(`/v0/files/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/files/:uuid.GET.response']);
   },
 
   async createFile(
@@ -92,7 +84,7 @@ export const apiClient = {
       version: DEFAULT_FILE.version,
     }
   ) {
-    return fetchFromApi<ApiTypes['/v0/files.POST.response']>(
+    return fetchFromApi(
       `/v0/files/`,
       { method: 'POST', body: JSON.stringify(body) },
       ApiSchemas['/v0/files.POST.response']
@@ -106,15 +98,11 @@ export const apiClient = {
 
   async deleteFile(uuid: string) {
     mixpanel.track('[Files].deleteFile', { id: uuid });
-    return fetchFromApi<ApiTypes['/v0/files/:uuid.DELETE.response']>(
-      `/v0/files/${uuid}`,
-      { method: 'DELETE' },
-      ApiSchemas['/v0/files/:uuid.DELETE.response']
-    );
+    return fetchFromApi(`/v0/files/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/files/:uuid.DELETE.response']);
   },
 
   async updateFile(uuid: string, body: ApiTypes['/v0/files/:uuid.POST.request']) {
-    return fetchFromApi<ApiTypes['/v0/files/:uuid.POST.response']>(
+    return fetchFromApi(
       `/v0/files/${uuid}`,
       {
         method: 'POST',
@@ -125,7 +113,7 @@ export const apiClient = {
   },
 
   async getFileSharing(uuid: string) {
-    return fetchFromApi<ApiTypes['/v0/files/:uuid/sharing.GET.response']>(
+    return fetchFromApi(
       `/v0/files/${uuid}/sharing`,
       {
         method: 'GET',
@@ -134,7 +122,7 @@ export const apiClient = {
     );
   },
   async updateFileSharing(uuid: string, body: ApiTypes['/v0/files/:uuid/sharing.POST.request']) {
-    return fetchFromApi<ApiTypes['/v0/files/:uuid/sharing.POST.response']>(
+    return fetchFromApi(
       `/v0/files/${uuid}/sharing`,
       {
         method: 'POST',
@@ -145,7 +133,7 @@ export const apiClient = {
   },
 
   async postFeedback(body: ApiTypes['/v0/feedback.POST.request']) {
-    return fetchFromApi<ApiTypes['/v0/feedback.POST.response']>(
+    return fetchFromApi(
       `/v0/feedback`,
       { method: 'POST', body: JSON.stringify(body) },
       ApiSchemas['/v0/feedback.POST.response']

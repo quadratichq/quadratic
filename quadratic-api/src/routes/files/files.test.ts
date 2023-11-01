@@ -1,8 +1,6 @@
-import { NextFunction, Response } from 'express';
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
-import { Request } from '../../types/Request';
 
 beforeAll(async () => {
   // Create a test user
@@ -39,24 +37,6 @@ afterAll(async () => {
   const deleteFiles = dbClient.file.deleteMany();
 
   await dbClient.$transaction([deleteFiles, deleteUsers]);
-});
-
-// For auth we expect the following Authorization header format:
-// Bearer ValidToken {user.sub}
-jest.mock('../../middleware/validateAccessToken', () => {
-  return {
-    validateAccessToken: jest.fn().mockImplementation(async (req: Request, res: Response, next: NextFunction) => {
-      // expected format is `Bearer ValidToken {user.sub}`
-      if (req.headers.authorization?.substring(0, 17) === 'Bearer ValidToken') {
-        req.auth = {
-          sub: req.headers.authorization?.substring(18), // Extract user.sub from the Authorization header
-        };
-        return next();
-      } else {
-        return res.status(401).json({ error: { message: 'No authorization token was found' } });
-      }
-    }),
-  };
 });
 
 describe('READ - GET /v0/files/ no auth', () => {

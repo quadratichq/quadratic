@@ -3,7 +3,11 @@ import z from 'zod';
 import { authClient } from '../auth';
 import { apiClient } from './apiClient';
 
-export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z.Schema<T>): Promise<T> {
+export async function fetchFromApi<T>(
+  path: string,
+  init: RequestInit,
+  schema: z.Schema<T>
+): Promise<z.infer<typeof schema>> {
   // Set headers
   const isAuthenticated = await authClient.isAuthenticated();
   const sharedInit = {
