@@ -5,8 +5,8 @@ use std::collections::HashSet;
 use std::str::FromStr;
 
 pub mod auto_complete;
-pub mod bounds;
 pub mod borders;
+pub mod bounds;
 pub mod cells;
 pub mod clipboard;
 pub mod formatting;
@@ -113,6 +113,7 @@ impl GridController {
             cursor: None,
             offsets_modified: vec![],
             save: false,
+            transaction_busy: false,
         })?)
     }
 }

@@ -108,6 +108,12 @@ export class Grid {
       pixiApp.cellsSheets.updateBorders(summary.border_sheets_modified);
     }
 
+    if (summary.transaction_busy) {
+      window.dispatchEvent(
+        new CustomEvent('snackbar', { detail: { message: 'Please wait until previous operation completes...' } })
+      );
+    }
+
     const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
     if (cursor) {
       sheets.current = cursor.sheetId;
