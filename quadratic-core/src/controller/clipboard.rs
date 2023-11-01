@@ -243,18 +243,7 @@ impl GridController {
             });
         });
 
-        //    let mut id_space_borders = sheet.borders.per_cell.clone_region(&sheet.row_ids, region);
-
-        // let mut sheet_borders = SheetBorders::new();
-        // borders.iter().for_each(|border| {
-        //     sheet_borders.per_cell.set_cell_border(column_id, row_index, side, style)
-        //     ops.push(Operation::SetBorders {
-        //         region: region.clone(),
-        //         borders: sheet.borders().clone(),
-        //     });
-        // });
-
-        // println!("{:?}", borders);
+        // add borders to the sheet
         borders.iter().for_each(|(x, y, cell_borders)| {
             if let Some(cell_borders) = cell_borders {
                 cell_borders
@@ -285,18 +274,10 @@ impl GridController {
                                 Some(border_style),
                             );
 
-                            crate::util::dbgjs(format!(
-                                "{:?}, {}, {}, {}, {}",
-                                start_pos,
-                                x,
-                                y,
-                                x + start_pos.x,
-                                y + start_pos.y,
-                            ));
-                            // println!("{:?}", borders);
-
                             // necessary to fill in render_lookup in SheetBorders
-                            set_region_borders(sheet, vec![region], borders);
+                            set_region_borders(sheet, vec![region.clone()], borders.clone());
+
+                            ops.push(Operation::SetBorders { region, borders });
                         }
                     });
             }
@@ -597,8 +578,6 @@ mod test {
             Some(clipboard.1),
             None,
         );
-
-        let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 3 });
 
         println!("{:?}", gc.sheet(sheet_id).borders().per_cell.borders);
     }
