@@ -48,7 +48,8 @@ impl GridController {
             .is_some_and(|in_progress_transaction| !in_progress_transaction.complete)
         {
             // todo: this should be handled more gracefully. Perhaps as a queue of operations?
-            panic!("Cannot start a transaction while a transaction is in progress");
+            crate::util::dbgjs("Cannot start a transaction while a transaction is in progress");
+            return TransactionSummary::default();
         }
         let mut transaction =
             TransactionInProgress::new(self, operations, cursor, compute, transaction_type);
