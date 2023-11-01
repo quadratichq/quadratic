@@ -7,6 +7,8 @@ use crate::{
     Pos,
 };
 
+use super::transactions::Transaction;
+
 const CELL_SHEET_WIDTH: u32 = 20;
 const CELL_SHEET_HEIGHT: u32 = 40;
 
@@ -74,6 +76,13 @@ pub struct TransactionSummary {
 }
 
 impl TransactionSummary {
+    pub fn new(transaction_busy: bool) -> Self {
+        TransactionSummary {
+            transaction_busy,
+            ..Default::default()
+        }
+    }
+
     pub fn clear(&mut self) {
         self.fill_sheets_modified.clear();
         self.border_sheets_modified.clear();

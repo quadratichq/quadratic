@@ -48,9 +48,7 @@ impl GridController {
             .is_some_and(|in_progress_transaction| !in_progress_transaction.complete)
         {
             // todo: add this to a queue of operations instead of setting the busy flag
-            let mut summary = TransactionSummary::default();
-            summary.transaction_busy = true;
-            return summary;
+            return TransactionSummary::new(true);
         }
         let mut transaction =
             TransactionInProgress::new(self, operations, cursor, compute, transaction_type);
