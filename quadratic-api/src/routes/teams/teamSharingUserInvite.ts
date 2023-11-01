@@ -7,7 +7,7 @@ import { teamMiddleware } from '../../middleware/team';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateZodSchema } from '../../middleware/validateZodSchema';
-import { Request } from '../../types/Request';
+import { Request, RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
 const router = express.Router();
 
 const ReqSchema = z.object({
@@ -23,7 +23,7 @@ router.post(
   validateAccessToken,
   userMiddleware,
   teamMiddleware,
-  async (req: Request, res: Response) => {
+  async (req: Request & RequestWithAuth & RequestWithUser & RequestWithTeam, res: Response) => {
     const {
       body: { email, role },
     } = req;

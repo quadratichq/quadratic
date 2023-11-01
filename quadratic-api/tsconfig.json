@@ -10,16 +10,10 @@
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
-      "*": [
-        "node_modules/*"
-      ]
+      "*": ["node_modules/*"]
     },
-    "typeRoots" : ["./node_modules/@types", "./src/types"]
+    "typeRoots": ["./node_modules/@types", "./src/types"]
   },
-  "include": [
-    "src/**/*.ts", 
-    "src/**/*.d.ts",
-    "src/**/*.test.ts",
-  ],
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.test.ts"],
   "exclude": ["node_modules"]
 }

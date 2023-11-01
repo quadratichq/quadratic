@@ -1,5 +1,6 @@
 import { File, Team, User } from '@prisma/client';
 import { Request as JWTRequest } from 'express-jwt';
+import { Access, UserRoleTeam } from '../../../src/permissions';
 
 // API Request that extends the express-jwt Request type
 // middleware is used to these fields
@@ -13,5 +14,20 @@ export interface Request extends JWTRequest {
   };
   user?: User;
   file?: File;
-  team?: Team;
 }
+
+export type RequestWithAuth = JWTRequest & {
+  auth: { sub: string };
+};
+
+export type RequestWithUser = {
+  user: User;
+};
+
+export type RequestWithTeam = {
+  team: Team;
+  teamUser: {
+    role: UserRoleTeam;
+    access: Access[];
+  };
+};

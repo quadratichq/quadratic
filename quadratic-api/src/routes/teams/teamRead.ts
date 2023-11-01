@@ -6,7 +6,7 @@ import { teamMiddleware } from '../../middleware/team';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateZodSchema } from '../../middleware/validateZodSchema';
-import { Request } from '../../types/Request';
+import { RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
 const router = express.Router();
 
 const ReqSchema = z.object({
@@ -23,7 +23,7 @@ router.get(
   // userOptionalMiddleware,
   userMiddleware,
   teamMiddleware,
-  async (req: Request, res: Response) => {
+  async (req: RequestWithAuth & RequestWithUser & RequestWithTeam, res: Response) => {
     if (!req.team) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }

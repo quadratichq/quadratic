@@ -169,6 +169,7 @@ export const ApiSchemas = {
   '/v0/teams/:uuid.POST.response': z.object({
     message: z.string(),
   }),
+
   // TODO equivalent for /files/:uuid/sharing
   '/v0/teams/:uuid/sharing.POST.request': TeamUserSchema.pick({ email: true, role: true }),
   '/v0/teams/:uuid/sharing.POST.response': z.object({
