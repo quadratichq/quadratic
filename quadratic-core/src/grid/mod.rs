@@ -22,8 +22,9 @@ pub mod sheet;
 
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
 pub use borders::{
-    generate_borders, get_cell_borders_in_rect, set_region_borders, BorderSelection, BorderStyle,
-    CellBorderLine, CellBorders, LegacyCellBorder, LegacyCellBorders, SheetBorders,
+    generate_borders, get_cell_borders_in_rect, get_region_borders, set_region_borders,
+    BorderSelection, BorderStyle, CellBorderLine, CellBorders, IdSpaceBorders, LegacyCellBorder,
+    LegacyCellBorders, SheetBorders,
 };
 pub use bounds::GridBounds;
 pub use code::*;
@@ -36,6 +37,9 @@ pub use ids::*;
 pub use sheet::Sheet;
 
 use crate::{Array, CellValue, Pos};
+
+#[cfg(test)]
+pub use borders::print_borders;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]

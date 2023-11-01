@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::ops::Range;
+use std::str::FromStr;
 
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -93,16 +94,20 @@ pub fn set_region_border_selection(
     set_region_borders(sheet, vec![region.clone()], borders)
 }
 
-pub fn get_cell_borders_in_rect(sheet: &Sheet, rect: Rect) -> Vec<Option<CellBorders>> {
+pub fn get_region_borders(sheet: &Sheet, regions: Vec<RegionRef>) -> SheetBorders {
+    sheet.borders.get_regions(&sheet.row_ids, regions)
+}
+
+pub fn get_cell_borders_in_rect(sheet: &Sheet, rect: Rect) -> Vec<(i64, i64, Option<CellBorders>)> {
     let mut borders = vec![];
     let mut id_space_borders = sheet.borders().per_cell.to_owned();
 
-    for x in rect.x_range() {
-        let column = sheet.get_column(x).unwrap();
-
-        for y in rect.y_range() {
-            let border = id_space_borders.get_cell_border(column.id, y);
-            borders.push(border);
+    for (i, x) in rect.x_range().enumerate() {
+        if let Some(column) = sheet.get_column(x) {
+            for (j, y) in rect.y_range().enumerate() {
+                let border = id_space_borders.get_cell_border(column.id, y);
+                borders.push((i as i64, j as i64, border));
+            }
         }
     }
 
@@ -147,11 +152,55 @@ impl SheetBorders {
 
         previous_borders
     }
+
+    fn get_regions(&self, row_ids: &IdMap<RowId, i64>, regions: Vec<RegionRef>) -> SheetBorders {
+        let mut sheet_borders = SheetBorders::default();
+
+        for region in regions {
+            let cloned_id_space = self.per_cell.clone_region(row_ids, &region);
+            sheet_borders
+                .per_cell
+                .replace_region(&cloned_id_space, row_ids, &region);
+        }
+
+        sheet_borders
+    }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct IdSpaceBorders {
     pub borders: HashMap<ColumnId, ColumnData<SameValue<CellBorders>>>,
+}
+
+impl Serialize for IdSpaceBorders {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let map: HashMap<String, ColumnData<SameValue<CellBorders>>> = self
+            .borders
+            .iter()
+            .map(|(id, idx)| (id.to_string(), idx.to_owned()))
+            .collect();
+        map.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for IdSpaceBorders {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let map =
+            HashMap::<&'de str, ColumnData<SameValue<CellBorders>>>::deserialize(deserializer)?;
+        let mut ret = IdSpaceBorders {
+            borders: HashMap::new(),
+        };
+        for (k, v) in map {
+            ret.borders.insert(ColumnId::from_str(k).unwrap(), v);
+        }
+        Ok(ret)
+    }
 }
 
 impl IdSpaceBorders {
@@ -248,6 +297,27 @@ impl IdSpaceBorders {
         }
     }
 
+    // pub fn set_cell_borders(
+    //     &mut self,
+    //     column_id: ColumnId,
+    //     row_index: i64,
+    //     cell_borders: CellBorders,
+    // ) {
+    //     // pub enum CellSide {
+    //     //     Left = 0,
+    //     //     Top = 1,
+    //     //     Right = 2,
+    //     //     Bottom = 3,
+    //     // }
+
+    //     self.set_cell_border(
+    //         column_id,
+    //         row_index,
+    //         CellSide::Left,
+    //         cell_borders.borders[0],
+    //     );
+    // }
+
     pub fn get_cell_border(&mut self, column_id: ColumnId, row_index: i64) -> Option<CellBorders> {
         let column_borders = self.borders.entry(column_id).or_default();
         column_borders.get(row_index)
@@ -330,7 +400,7 @@ pub mod debug {
 
     use super::*;
 
-    pub(in super::super) trait GetCellBorders {
+    pub trait GetCellBorders {
         fn get_cell_borders(
             &self,
             pos: Pos,
@@ -363,7 +433,7 @@ pub mod debug {
         }
     }
 
-    pub(in super::super) fn print_borders<T: GetCellBorders>(
+    pub fn print_borders<T: GetCellBorders>(
         rect: Rect,
         sheet_borders: &T,
         column_ids: &IdMap<ColumnId, i64>,

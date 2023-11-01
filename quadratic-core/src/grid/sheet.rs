@@ -183,6 +183,11 @@ impl Sheet {
         borders::set_region_borders(self, vec![region.clone()], borders)
     }
 
+    /// Gets borders in a region.
+    pub fn get_region_borders(&self, region: RegionRef) -> SheetBorders {
+        borders::get_region_borders(self, vec![region])
+    }
+
     /// Returns the value of a cell (i.e., what would be returned if code asked
     /// for it).
     pub fn get_cell_value(&self, pos: Pos) -> Option<CellValue> {

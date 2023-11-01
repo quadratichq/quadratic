@@ -3,26 +3,29 @@ use super::{
     transactions::TransactionType, GridController,
 };
 use crate::{
-    grid::{get_cell_borders_in_rect, CellBorders, CodeCellValue, SheetId},
+    grid::{
+        generate_borders, get_cell_borders_in_rect, set_region_borders, BorderSelection,
+        CellBorders, CodeCellValue, RegionRef, SheetId,
+    },
     Array, ArraySize, CellValue, Pos, Rect,
 };
 use htmlescape;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ClipboardCell {
     pub value: Option<CellValue>,
     pub spill: Option<CellValue>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Clipboard {
     w: u32,
     h: u32,
     cells: Vec<ClipboardCell>,
     formats: Vec<CellFmtArray>,
-    borders: Vec<Option<CellBorders>>,
+    borders: Vec<(i64, i64, Option<CellBorders>)>,
     code: Vec<(Pos, CodeCellValue)>,
 }
 
@@ -32,8 +35,8 @@ impl GridController {
         let mut plain_text = String::new();
         let mut html = String::from("<tbody>");
         let mut code = vec![];
+        let sheet = &mut self.grid().sheet_from_id(sheet_id);
 
-        let sheet = self.grid().sheet_from_id(sheet_id);
         for y in rect.y_range() {
             if y != rect.min.y {
                 plain_text.push('\n');
@@ -154,22 +157,20 @@ impl GridController {
         let mut array = Array::new_empty(ArraySize::new(clipboard.w, clipboard.h).unwrap());
         let mut x = 0;
         let mut y = 0;
+
         clipboard.cells.iter().for_each(|cell| {
-            match &cell.value {
-                Some(value) => {
-                    let value = value.as_ref().clone();
-                    let _ = array.set(x, y, value);
-                }
-                None => {
-                    let _ = array.set(x, y, CellValue::Blank);
-                }
-            };
+            let value = cell.value.to_owned().map_or(CellValue::Blank, |v| v);
+            // ignore result errors
+            let _ = array.set(x, y, value);
+
             x += 1;
+
             if x == clipboard.w {
                 x = 0;
                 y += 1;
             }
         });
+
         Some(array)
     }
 
@@ -188,6 +189,7 @@ impl GridController {
             },
         };
         let formats = clipboard.formats.clone();
+        let borders = clipboard.borders.clone();
         let code = clipboard.code.clone();
 
         let mut ops = vec![];
@@ -233,12 +235,73 @@ impl GridController {
                 code_cell_value: Some(entry.1.clone()),
             });
         });
+
         formats.iter().for_each(|format| {
             ops.push(Operation::SetCellFormats {
                 region: region.clone(),
                 attr: format.clone(),
             });
         });
+
+        //    let mut id_space_borders = sheet.borders.per_cell.clone_region(&sheet.row_ids, region);
+
+        // let mut sheet_borders = SheetBorders::new();
+        // borders.iter().for_each(|border| {
+        //     sheet_borders.per_cell.set_cell_border(column_id, row_index, side, style)
+        //     ops.push(Operation::SetBorders {
+        //         region: region.clone(),
+        //         borders: sheet.borders().clone(),
+        //     });
+        // });
+
+        // println!("{:?}", borders);
+        borders.iter().for_each(|(x, y, cell_borders)| {
+            if let Some(cell_borders) = cell_borders {
+                cell_borders
+                    .borders
+                    .iter()
+                    .enumerate()
+                    .for_each(|(index, border_style)| {
+                        if let Some(border_style) = border_style.to_owned() {
+                            let border_selection = match index {
+                                0 => BorderSelection::Top,
+                                1 => BorderSelection::Left,
+                                2 => BorderSelection::Right,
+                                3 => BorderSelection::Bottom,
+                                _ => BorderSelection::Clear,
+                            };
+
+                            let (column, _) = sheet.get_or_create_column(*x + start_pos.x);
+                            let row_id = sheet.get_or_create_row(*y + start_pos.y);
+                            let region = RegionRef {
+                                sheet: sheet.id,
+                                columns: vec![column.id],
+                                rows: vec![row_id.id],
+                            };
+                            let borders = generate_borders(
+                                sheet,
+                                &region,
+                                vec![border_selection],
+                                Some(border_style),
+                            );
+
+                            crate::util::dbgjs(format!(
+                                "{:?}, {}, {}, {}, {}",
+                                start_pos,
+                                x,
+                                y,
+                                x + start_pos.x,
+                                y + start_pos.y,
+                            ));
+                            // println!("{:?}", borders);
+
+                            // necessary to fill in render_lookup in SheetBorders
+                            set_region_borders(sheet, vec![region], borders);
+                        }
+                    });
+            }
+        });
+
         self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
 
@@ -328,13 +391,29 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use crate::{
+        color::Rgba,
         controller::GridController,
-        grid::{js_types::CellFormatSummary, CodeCellLanguage},
+        grid::{
+            generate_borders, js_types::CellFormatSummary, set_region_borders, BorderSelection,
+            BorderStyle, CellBorderLine, CodeCellLanguage, Sheet,
+        },
         CellValue, Pos, Rect,
     };
 
     fn test_pasted_output() -> String {
         String::from("<table data-quadratic=\"&#x7B;&quot;w&quot;&#x3A;4&#x2C;&quot;h&quot;&#x3A;4&#x2C;&quot;cells&quot;&#x3A;&#x5B;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;text&quot;&#x2C;&quot;value&quot;&#x3A;&quot;1&#x2C;&#x20;1&quot;&#x7D;&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;number&quot;&#x2C;&quot;value&quot;&#x3A;&quot;12&quot;&#x7D;&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x5D;&#x2C;&quot;formats&quot;&#x3A;&#x5B;&#x7B;&quot;Align&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Wrap&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericFormat&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericDecimals&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Bold&quot;&#x3A;&#x5B;&#x5B;null&#x2C;5&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;10&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Italic&quot;&#x3A;&#x5B;&#x5B;null&#x2C;11&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;4&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;TextColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;FillColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x5D;&#x2C;&quot;code&quot;&#x3A;&#x5B;&#x5D;&#x7D;\"><tbody><tr><td></td><td></td><td></td><td></tr><tr><td></td><td><span style={font-weight:bold;}>1, 1</span></td><td></td><td></tr><tr><td></td><td></td><td></td><td><span style={font-style:italic;}>12</span></tr><tr><td></td><td></td><td></td><td></tr></tbody></table>")
+    }
+
+    fn set_borders(sheet: &mut Sheet) {
+        let selection = vec![BorderSelection::All];
+        let style = BorderStyle {
+            color: Rgba::from_str("#000000").unwrap(),
+            line: CellBorderLine::Line1,
+        };
+        let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
+        let region = sheet.region(rect);
+        let borders = generate_borders(&sheet, &region, selection, Some(style));
+        set_region_borders(sheet, vec![region.clone()], borders);
     }
 
     #[test]
@@ -497,9 +576,41 @@ mod test {
     }
 
     #[test]
+    fn test_copy_borders_to_clipboard() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+        let mut sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+
+        set_borders(&mut sheet);
+
+        println!("{:?}", &gc.sheet(sheet_id).borders().per_cell.borders.len());
+
+        let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
+        let clipboard = gc.copy_to_clipboard(sheet_id, rect);
+
+        println!("{:?}", &gc.sheet(sheet_id).borders().per_cell.borders);
+
+        gc.paste_from_clipboard(
+            sheet_id,
+            Pos { x: 3, y: 3 },
+            Some(String::from("")),
+            Some(clipboard.1),
+            None,
+        );
+
+        let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 3 });
+
+        println!("{:?}", gc.sheet(sheet_id).borders().per_cell.borders);
+    }
+
+    #[test]
     fn test_paste_from_quadratic_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
+        // let mut sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+
+        // set_borders(&mut sheet);
+
         gc.paste_from_clipboard(
             sheet_id,
             Pos { x: 1, y: 2 },
@@ -507,6 +618,8 @@ mod test {
             Some(test_pasted_output()),
             None,
         );
+
+        // println!("{:?}", gc.sheet(sheet_id).borders().per_cell);
 
         let sheet = gc.sheet(sheet_id);
         let cell11 = sheet.get_cell_value(Pos { x: 2, y: 3 });
