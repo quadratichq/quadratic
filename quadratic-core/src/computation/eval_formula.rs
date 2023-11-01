@@ -64,6 +64,8 @@ impl TransactionInProgress {
                             &mut self.reverse_operations,
                             &mut self.summary,
                         );
+                        // updates the dependencies
+                        self.update_deps(grid_controller);
                     }
                     Err(error) => {
                         let msg = error.msg.to_string();

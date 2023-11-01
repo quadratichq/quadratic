@@ -161,7 +161,7 @@ impl TransactionInProgress {
         self.waiting_for_async = None;
     }
 
-    fn update_deps(&mut self, grid_controller: &mut GridController) {
+    pub fn update_deps(&mut self, grid_controller: &mut GridController) {
         let old_deps = if let Some(current_code_cell) = self.current_code_cell.as_ref() {
             current_code_cell.cells_accessed_copy()
         } else {
