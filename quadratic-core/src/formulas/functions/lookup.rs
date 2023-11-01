@@ -18,11 +18,11 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Returns the value of the cell at a given location.
             #[examples("INDIRECT(\"Cn7\")", "INDIRECT(\"F\" & B0)")]
-            #[async_zip_map]
+            #[zip_map]
             fn INDIRECT(ctx: Ctx, [cellref_string]: (Spanned<String>)) {
                 let pos = CellRef::parse_a1(&cellref_string.inner, ctx.pos.without_sheet())
                     .ok_or(ErrorMsg::BadCellReference.with_span(cellref_string.span))?;
-                ctx.get_cell(&pos, cellref_string.span).await?.inner
+                ctx.get_cell(&pos, cellref_string.span)?.inner
             }
         ),
         formula_fn!(
@@ -41,7 +41,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// array, then they must be compatible sizes and a lookup will be
             /// performed for each corresponding set of elements.
             #[examples("VLOOKUP(17, A1:C10, 3)", "VLOOKUP(17, A1:C10, 2, FALSE)")]
-            #[pure_zip_map]
+            #[zip_map]
             fn VLOOKUP(
                 span: Span,
                 [search_key]: CellValue,
@@ -82,7 +82,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// array, then they must be compatible sizes and a lookup will be
             /// performed for each corresponding set of elements.
             #[examples("HLOOKUP(17, A1:Z3, 3)", "HLOOKUP(17, A1:Z3, 2, FALSE)")]
-            #[pure_zip_map]
+            #[zip_map]
             fn HLOOKUP(
                 span: Span,
                 [search_key]: CellValue,
