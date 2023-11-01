@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/browser';
-import { debugShowTime } from '../../debugFlags';
+import { debugShowRustTime } from '../../debugFlags';
 
 export const GridPerformanceProxy = <T extends object>(object: T): T => {
   return new Proxy(object, {
@@ -13,7 +13,7 @@ export const GridPerformanceProxy = <T extends object>(object: T): T => {
             return Reflect.apply(original, receiver, args);
           });
           const end = performance.now();
-          if (debugShowTime) console.log(`Grid.${String(prop)} took ${end - start}ms`);
+          if (debugShowRustTime) console.log(`Grid.${String(prop)} took ${end - start}ms`);
           return result;
         };
       }

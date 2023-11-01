@@ -36,6 +36,9 @@ export const debugShowRunComputation = debug && false;
 // shows rendering time
 export const debugShowTime = debug && true;
 
+// show rust time
+export const debugShowRustTime = debug && false;
+
 // counts number of children and which are visible in the viewport
 export const debugShowCountRenderedObjects = debug && false;
 
