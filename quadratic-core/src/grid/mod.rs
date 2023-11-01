@@ -22,9 +22,9 @@ pub mod sheet;
 
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
 pub use borders::{
-    generate_borders, get_cell_borders_in_rect, get_region_borders, set_region_borders,
-    BorderSelection, BorderStyle, CellBorderLine, CellBorders, IdSpaceBorders, LegacyCellBorder,
-    LegacyCellBorders, SheetBorders,
+    generate_borders, generate_borders_full, get_cell_borders_in_rect, get_region_borders,
+    set_region_borders, BorderSelection, BorderStyle, CellBorderLine, CellBorders, CellSide,
+    IdSpaceBorders, LegacyCellBorder, LegacyCellBorders, SheetBorders,
 };
 pub use bounds::GridBounds;
 pub use code::*;

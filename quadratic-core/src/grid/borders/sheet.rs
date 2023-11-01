@@ -18,6 +18,15 @@ pub fn generate_borders(
     selections: Vec<BorderSelection>,
     style: Option<BorderStyle>,
 ) -> SheetBorders {
+    generate_borders_full(sheet, region, selections, vec![style])
+}
+
+pub fn generate_borders_full(
+    sheet: &Sheet,
+    region: &RegionRef,
+    selections: Vec<BorderSelection>,
+    styles: Vec<Option<BorderStyle>>,
+) -> SheetBorders {
     let mut id_space_borders = sheet.borders.per_cell.clone_region(&sheet.row_ids, region);
     let mut render_borders = sheet
         .borders
@@ -25,43 +34,49 @@ pub fn generate_borders(
         .clone_rects(&sheet.region_rects(region).collect_vec());
 
     // if Clear then set style to None
-    let style = if selections.len() == 1 && selections[0] == BorderSelection::Clear {
-        None
+    let styles = if selections.len() == 1 && selections[0] == BorderSelection::Clear {
+        vec![None]
     } else {
-        style
+        styles
     };
 
     for rect in sheet.region_rects(region) {
-        let horizontal = compute_indices::horizontal(rect, selections.clone());
-        let vertical = compute_indices::vertical(rect, selections.clone());
+        for style in styles.iter() {
+            let horizontal = compute_indices::horizontal(rect, selections.clone());
+            let vertical = compute_indices::vertical(rect, selections.clone());
 
-        for &horizontal_border_index in &horizontal {
-            let above_index = horizontal_border_index - 1;
-            let column_ids = rect
-                .x_range()
-                .filter_map(|index| sheet.get_column(index))
-                .map(|column| column.id)
-                .collect_vec();
+            for &horizontal_border_index in &horizontal {
+                let above_index = horizontal_border_index - 1;
+                let column_ids = rect
+                    .x_range()
+                    .filter_map(|index| sheet.get_column(index))
+                    .map(|column| column.id)
+                    .collect_vec();
 
-            id_space_borders.set_horizontal_border(&column_ids, above_index, style);
-            render_borders.set_horizontal_border(horizontal_border_index, rect.x_range(), style);
-        }
+                id_space_borders.set_horizontal_border(&column_ids, above_index, *style);
+                render_borders.set_horizontal_border(
+                    horizontal_border_index,
+                    rect.x_range(),
+                    *style,
+                );
+            }
 
-        for &vertical_border_index in &vertical {
-            let column_left_index = vertical_border_index - 1;
-            let column_left_id = sheet.get_column(column_left_index).map(|column| column.id);
+            for &vertical_border_index in &vertical {
+                let column_left_index = vertical_border_index - 1;
+                let column_left_id = sheet.get_column(column_left_index).map(|column| column.id);
 
-            let column_right_index = vertical_border_index;
-            let column_right_id = sheet.get_column(column_right_index).map(|column| column.id);
+                let column_right_index = vertical_border_index;
+                let column_right_id = sheet.get_column(column_right_index).map(|column| column.id);
 
-            let row_indices = rect.y_range().collect_vec();
-            id_space_borders.set_vertical_border(
-                column_left_id,
-                column_right_id,
-                &row_indices,
-                style,
-            );
-            render_borders.set_vertical_border(vertical_border_index, rect.y_range(), style);
+                let row_indices = rect.y_range().collect_vec();
+                id_space_borders.set_vertical_border(
+                    column_left_id,
+                    column_right_id,
+                    &row_indices,
+                    *style,
+                );
+                render_borders.set_vertical_border(vertical_border_index, rect.y_range(), *style);
+            }
         }
     }
     SheetBorders {

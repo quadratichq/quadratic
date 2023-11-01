@@ -313,6 +313,11 @@ impl Sheet {
         &self.borders
     }
 
+    /// Returns all cell borders.
+    pub fn mut_borders(&mut self) -> &mut SheetBorders {
+        &mut self.borders
+    }
+
     /// Returns an iterator over each column and its X coordinate.
     pub fn iter_columns(&self) -> impl '_ + Iterator<Item = (i64, &Column)> {
         self.columns.iter().map(|(&x, column)| (x, column))

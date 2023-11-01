@@ -4,8 +4,8 @@ use super::{
 };
 use crate::{
     grid::{
-        generate_borders, get_cell_borders_in_rect, set_region_borders, BorderSelection,
-        CellBorders, CodeCellValue, RegionRef, SheetId,
+        generate_borders_full, get_cell_borders_in_rect, BorderSelection, CellBorders,
+        CodeCellValue, RegionRef, SheetId,
     },
     Array, ArraySize, CellValue, Pos, Rect,
 };
@@ -246,6 +246,16 @@ impl GridController {
         // add borders to the sheet
         borders.iter().for_each(|(x, y, cell_borders)| {
             if let Some(cell_borders) = cell_borders {
+                let mut border_selections = vec![];
+                let mut border_styles = vec![];
+                let (column, _) = sheet.get_or_create_column(*x + start_pos.x);
+                let row_id = sheet.get_or_create_row(*y + start_pos.y);
+                let region = RegionRef {
+                    sheet: sheet.id,
+                    columns: vec![column.id],
+                    rows: vec![row_id.id],
+                };
+
                 cell_borders
                     .borders
                     .iter()
@@ -259,27 +269,14 @@ impl GridController {
                                 3 => BorderSelection::Bottom,
                                 _ => BorderSelection::Clear,
                             };
-
-                            let (column, _) = sheet.get_or_create_column(*x + start_pos.x);
-                            let row_id = sheet.get_or_create_row(*y + start_pos.y);
-                            let region = RegionRef {
-                                sheet: sheet.id,
-                                columns: vec![column.id],
-                                rows: vec![row_id.id],
-                            };
-                            let borders = generate_borders(
-                                sheet,
-                                &region,
-                                vec![border_selection],
-                                Some(border_style),
-                            );
-
-                            // necessary to fill in render_lookup in SheetBorders
-                            set_region_borders(sheet, vec![region.clone()], borders.clone());
-
-                            ops.push(Operation::SetBorders { region, borders });
+                            border_selections.push(border_selection);
+                            border_styles.push(Some(border_style));
                         }
                     });
+
+                let borders =
+                    generate_borders_full(sheet, &region, border_selections, border_styles);
+                ops.push(Operation::SetBorders { region, borders });
             }
         });
 
@@ -564,12 +561,8 @@ mod test {
 
         set_borders(&mut sheet);
 
-        println!("{:?}", &gc.sheet(sheet_id).borders().per_cell.borders.len());
-
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
         let clipboard = gc.copy_to_clipboard(sheet_id, rect);
-
-        println!("{:?}", &gc.sheet(sheet_id).borders().per_cell.borders);
 
         gc.paste_from_clipboard(
             sheet_id,
@@ -579,16 +572,25 @@ mod test {
             None,
         );
 
-        println!("{:?}", gc.sheet(sheet_id).borders().per_cell.borders);
+        let borders = gc
+            .sheet(sheet_id)
+            .borders()
+            .per_cell
+            .borders
+            .iter()
+            .collect::<Vec<_>>();
+
+        // compare the border info stored in the block's content
+        assert_eq!(
+            borders[0].1.blocks().next().unwrap().content,
+            borders[1].1.blocks().next().unwrap().content
+        );
     }
 
     #[test]
     fn test_paste_from_quadratic_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        // let mut sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
-
-        // set_borders(&mut sheet);
 
         gc.paste_from_clipboard(
             sheet_id,
@@ -597,8 +599,6 @@ mod test {
             Some(test_pasted_output()),
             None,
         );
-
-        // println!("{:?}", gc.sheet(sheet_id).borders().per_cell);
 
         let sheet = gc.sheet(sheet_id);
         let cell11 = sheet.get_cell_value(Pos { x: 2, y: 3 });
