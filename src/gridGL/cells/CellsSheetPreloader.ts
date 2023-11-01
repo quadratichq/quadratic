@@ -39,7 +39,8 @@ export class CellsSheetPreloader {
       if (performance.now() - time < MAXIMUM_FRAME_TIME) {
         this.preloadTick(time);
       } else {
-        debugTimeCheck('preloadTick', MAXIMUM_FRAME_TIME);
+        // we expect this to run longer than MINIMUM_FRAME_TIME
+        debugTimeCheck('preloadTick', MAXIMUM_FRAME_TIME * 1.5);
         setTimeout(this.preloadTick);
       }
     }

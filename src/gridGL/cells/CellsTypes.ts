@@ -57,5 +57,5 @@ export interface CodeRust {
 }
 
 // this is the columns/rows for the CellsHash
-export const sheetHashWidth = 10;
-export const sheetHashHeight = 20;
+export const sheetHashWidth = 20;
+export const sheetHashHeight = 40;

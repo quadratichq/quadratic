@@ -149,25 +149,13 @@ impl GridController {
             });
         }
 
-        // keep the old output value for the cell code until the new one is computed
-        // this improves rendering for async calculations (e.g., python)
-        let output = if let Some(old_code_cell_value) = sheet.get_code_cell(pos) {
-            if old_code_cell_value.language == CodeCellLanguage::Python {
-                old_code_cell_value.output.clone()
-            } else {
-                None
-            }
-        } else {
-            None
-        };
-
         ops.push(Operation::SetCellCode {
             cell_ref,
             code_cell_value: Some(CodeCellValue {
                 language,
                 code_string,
                 formatted_code_string: None,
-                output,
+                output: None,
 
                 // todo
                 last_modified: String::default(),
