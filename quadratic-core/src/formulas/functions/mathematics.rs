@@ -29,7 +29,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 "SUMIF(A1:A10, \">0\")",
                 "SUMIF(A1:A10, \"<>INVALID\", B1:B10)"
             )]
-            #[pure_zip_map]
+            #[zip_map]
             fn SUMIF(
                 eval_range: (Spanned<Array>),
                 [criteria]: (Spanned<CellValue>),
@@ -52,7 +52,7 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Returns the absolute value of a number.
             #[examples("ABS(-4)")]
-            #[pure_zip_map]
+            #[zip_map]
             fn ABS([number]: f64) {
                 number.abs()
             }
@@ -60,7 +60,7 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Returns the square root of a number.
             #[examples("SQRT(2)")]
-            #[pure_zip_map]
+            #[zip_map]
             fn SQRT([number]: f64) {
                 number.sqrt()
             }
