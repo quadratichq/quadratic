@@ -45,8 +45,7 @@ export class LabelMesh extends Container<LabelMeshEntry> {
       this.currentEntry = 0;
       while (this.total > 0) {
         const size = this.total > MAX_VERTICES ? MAX_VERTICES : this.total;
-        const entry = new LabelMeshEntry(this, size);
-        this.addChild(entry);
+        this.addChild(new LabelMeshEntry(this, size));
         this.total -= size;
       }
     }
