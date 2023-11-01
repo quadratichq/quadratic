@@ -109,9 +109,7 @@ export class Grid {
     }
 
     if (summary.transaction_busy) {
-      window.dispatchEvent(
-        new CustomEvent('snackbar', { detail: { message: 'Please wait until previous operation completes...' } })
-      );
+      window.dispatchEvent(new CustomEvent('snackbar', { detail: { message: 'Spreadsheet busy, try again."' } }));
     }
 
     const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
