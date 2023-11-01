@@ -7,8 +7,6 @@ use crate::{
     Pos,
 };
 
-use super::transactions::Transaction;
-
 const CELL_SHEET_WIDTH: u32 = 20;
 const CELL_SHEET_HEIGHT: u32 = 40;
 
