@@ -3,7 +3,7 @@ import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { Request } from '../../types/Request';
-import { CreateSecret, GetSecret } from './awsSecret';
+import { CreateSecret } from './awsSecret';
 
 const router = express.Router();
 
@@ -28,12 +28,8 @@ router.post(
     const response = await CreateSecret(JSON.stringify(secret));
 
     if (response.$metadata.httpStatusCode !== 200) {
-      return res.status(500).json({ error: { message: 'Internal server error' } });
+      return res.status(500).json({ error: { message: 'Credential was not created successfully' } });
     }
-
-    const response2 = await GetSecret(response.ARN);
-
-    console.log(response2);
 
     const new_connection = await dbClient.connection.create({
       data: {
