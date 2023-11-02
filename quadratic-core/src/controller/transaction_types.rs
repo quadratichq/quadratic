@@ -114,7 +114,7 @@ impl JsCodeResult {
                         column: start.column,
                         row: start.row,
                     };
-                    let (cell_value, ops) = CellValue::from_string(&output_value, cell_ref, sheet);
+                    let (cell_value, ops) = CellValue::from_string(output_value, cell_ref, sheet);
                     reverse_operations.extend(ops);
                     Value::Single(cell_value)
                 } else {

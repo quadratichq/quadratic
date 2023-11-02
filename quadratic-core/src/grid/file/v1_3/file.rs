@@ -65,7 +65,7 @@ struct SheetBuilder {
     column_ids: HashMap<i64, current::Id>,
     row_ids: HashMap<i64, current::Id>,
 }
-#[allow(clippy::unwrap_or_default)]
+#[allow(clippy::unwrap_or_else_default)]
 impl SheetBuilder {
     fn column_id(&mut self, x: i64) -> &mut current::Id {
         self.column_ids.entry(x).or_insert_with(current::Id::new)
