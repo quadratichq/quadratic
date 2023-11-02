@@ -60,7 +60,6 @@ export class CellsBorders extends Container {
   create(): void {
     this.clear();
     const borders = grid.getRenderBorders(this.sheet.id);
-    console.log('borders', borders);
     this.drawHorizontal(borders);
     this.drawVertical(borders);
     borders.free();

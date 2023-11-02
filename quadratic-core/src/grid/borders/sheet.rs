@@ -312,27 +312,6 @@ impl IdSpaceBorders {
         }
     }
 
-    // pub fn set_cell_borders(
-    //     &mut self,
-    //     column_id: ColumnId,
-    //     row_index: i64,
-    //     cell_borders: CellBorders,
-    // ) {
-    //     // pub enum CellSide {
-    //     //     Left = 0,
-    //     //     Top = 1,
-    //     //     Right = 2,
-    //     //     Bottom = 3,
-    //     // }
-
-    //     self.set_cell_border(
-    //         column_id,
-    //         row_index,
-    //         CellSide::Left,
-    //         cell_borders.borders[0],
-    //     );
-    // }
-
     pub fn get_cell_border(&mut self, column_id: ColumnId, row_index: i64) -> Option<CellBorders> {
         let column_borders = self.borders.entry(column_id).or_default();
         column_borders.get(row_index)
