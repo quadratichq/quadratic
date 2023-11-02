@@ -300,6 +300,7 @@ impl TransactionInProgress {
                             self.has_async = true;
                         }
                         CodeCellLanguage::Formula => {
+                            crate::util::dbgjs("Compute called for a formula cell");
                             self.eval_formula(
                                 grid_controller,
                                 code_string.clone(),
@@ -350,6 +351,7 @@ mod test {
         controller::{
             operation::Operation,
             transaction_types::{JsCodeResult, JsComputeGetCells},
+            transactions::TransactionType,
             GridController,
         },
         grid::{CodeCellLanguage, CodeCellValue},
@@ -405,5 +407,113 @@ mod test {
         let summary = gc.calculation_complete(result);
         assert!(summary.save);
         assert_eq!(summary.code_cells_modified, HashSet::from([sheet_id]));
+    }
+
+    #[test]
+    fn test_execute_operation_set_cell_values_formula() {
+        let mut gc = GridController::new();
+        let sheet_ids = gc.sheet_ids();
+        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
+
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
+        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 1, y: 0 });
+        gc.set_in_progress_transaction(
+            vec![Operation::SetCellCode {
+                cell_ref,
+                code_cell_value: Some(CodeCellValue {
+                    language: CodeCellLanguage::Formula,
+                    code_string: "A0 + 1".to_string(),
+                    formatted_code_string: None,
+                    output: None,
+                    last_modified: String::new(),
+                }),
+            }],
+            None,
+            true,
+            crate::controller::transactions::TransactionType::Normal,
+        );
+        assert!(gc.get_transaction_in_progress().is_none());
+
+        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
+        if let Some(code_cell) = sheet.get_code_cell(Pos { x: 1, y: 0 }) {
+            assert_eq!(code_cell.code_string, "A0 + 1".to_string());
+            assert_eq!(
+                code_cell.get_output_value(0, 0),
+                Some(CellValue::Number(11.into()))
+            );
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn test_multiple_formula() {
+        let mut gc = GridController::new();
+        let sheet_ids = gc.sheet_ids();
+        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
+
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
+        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 1, y: 0 });
+        gc.set_in_progress_transaction(
+            vec![Operation::SetCellCode {
+                cell_ref,
+                code_cell_value: Some(CodeCellValue {
+                    language: CodeCellLanguage::Formula,
+                    code_string: "A0 + 1".to_string(),
+                    formatted_code_string: None,
+                    output: None,
+                    last_modified: String::new(),
+                }),
+            }],
+            None,
+            true,
+            crate::controller::transactions::TransactionType::Normal,
+        );
+
+        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
+        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 2, y: 0 });
+        gc.set_in_progress_transaction(
+            vec![Operation::SetCellCode {
+                cell_ref,
+                code_cell_value: Some(CodeCellValue {
+                    language: CodeCellLanguage::Formula,
+                    code_string: "B0 + 1".to_string(),
+                    formatted_code_string: None,
+                    output: None,
+                    last_modified: String::new(),
+                }),
+            }],
+            None,
+            true,
+            crate::controller::transactions::TransactionType::Normal,
+        );
+
+        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 2, y: 0 }),
+            Some(CellValue::Number(12.into()))
+        );
+
+        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
+        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
+        gc.set_in_progress_transaction(
+            vec![Operation::SetCellValues {
+                region: cell_ref.into(),
+                values: CellValue::Number(1.into()).into(),
+            }],
+            None,
+            true,
+            TransactionType::Normal,
+        );
+
+        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 1, y: 0 }),
+            Some(CellValue::Number(2.into()))
+        );
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 2, y: 0 }),
+            Some(CellValue::Number(3.into()))
+        );
     }
 }

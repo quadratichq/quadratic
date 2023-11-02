@@ -31,6 +31,8 @@ impl TransactionInProgress {
             Ok(parsed) => {
                 match parsed.eval(&mut ctx) {
                     Ok(value) => {
+                        crate::util::dbgjs(ctx.cells_accessed.clone());
+
                         let updated_code_cell_value = CodeCellValue {
                             language,
                             code_string,

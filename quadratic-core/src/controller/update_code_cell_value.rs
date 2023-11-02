@@ -22,6 +22,7 @@ pub fn update_code_cell_value(
     reverse_operations: &mut Vec<Operation>,
     summary: &mut TransactionSummary,
 ) -> bool {
+    crate::util::dbgjs(7);
     let mut success = false;
     summary.save = true;
     let sheet = grid_controller.grid.sheet_mut_from_id(cell_ref.sheet);
@@ -59,7 +60,9 @@ pub fn update_code_cell_value(
                                     }
                                 }
                             }
-                            Value::Single(..) => {
+                            Value::Single(value) => {
+                                crate::util::dbgjs(value);
+
                                 summary
                                     .cell_sheets_modified
                                     .insert(CellSheetsModified::new(sheet.id, pos));
@@ -74,11 +77,12 @@ pub fn update_code_cell_value(
                 };
             }
         }
+
         fetch_code_cell_difference(
             sheet,
             pos,
             old_code_cell_value.clone(),
-            updated_code_cell_value.clone(),
+            updated_code_cell_value,
             summary,
             cells_to_compute,
         );

@@ -75,6 +75,9 @@ impl GridController {
         deps: Option<Vec<CellRef>>,
         old_deps: Option<Vec<CellRef>>,
     ) {
+        crate::util::dbgjs("deps****");
+        crate::util::dbgjs(deps.clone());
+        crate::util::dbgjs(old_deps.clone());
         if let Some(old_deps) = old_deps {
             for old_dep in old_deps {
                 self.dependencies.remove(old_dep, cell);
