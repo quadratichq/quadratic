@@ -489,6 +489,17 @@ mod test {
         );
 
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
+        if let Some(code_cell) = sheet.get_code_cell(Pos { x: 2, y: 0 }) {
+            assert_eq!(code_cell.code_string, "B0 + 1".to_string());
+            assert_eq!(
+                code_cell.get_output_value(0, 0),
+                Some(CellValue::Number(12.into()))
+            );
+            crate::util::dbgjs("cells accessed:");
+            crate::util::dbgjs(sheet.cell_ref_to_pos(code_cell.cells_accessed_copy().unwrap()[0]));
+        } else {
+            assert!(false);
+        }
         assert_eq!(
             sheet.get_cell_value(Pos { x: 2, y: 0 }),
             Some(CellValue::Number(12.into()))
