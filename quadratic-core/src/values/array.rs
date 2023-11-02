@@ -7,7 +7,11 @@ use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
 use super::{ArraySize, Axis, CellValue, Spanned, Value};
-use crate::{CodeResult, ErrorMsg};
+use crate::{
+    controller::operation::Operation,
+    grid::{CellRef, RegionRef, Sheet},
+    CodeResult, ErrorMsg,
+};
 
 #[macro_export]
 macro_rules! array {
@@ -78,7 +82,6 @@ impl From<Vec<Vec<String>>> for Array {
         let w = v[0].len();
         let h = v.len();
         Array {
-            // todo: this unwrap is dangerous--fix!!!
             size: ArraySize::new(w as u32, h as u32).unwrap(),
             values: v
                 .iter()
@@ -248,7 +251,49 @@ impl Array {
 
         Ok(NonZeroU32::new(common_len).expect("bad array size"))
     }
+
+    // todo: this is super complicated; we need to move the number formats into CellValue to simplify this
+    pub fn from_string_list(
+        start: CellRef,
+        sheet: &mut Sheet,
+        v: Vec<Vec<String>>,
+    ) -> (Option<Array>, Vec<Operation>) {
+        let size = ArraySize::new(v[0].len() as u32, v.len() as u32).unwrap();
+        let values;
+        let pos = sheet.cell_ref_to_pos(start);
+        if let Some(pos) = pos {
+            let mut ops = vec![];
+            let mut x = pos.x;
+            let mut y = pos.y;
+            values = v
+                .iter()
+                .flatten()
+                .map(|s| {
+                    let column_id = sheet.get_or_create_column(x).0.id;
+                    let row_id = sheet.get_or_create_row(y).id;
+                    let region = RegionRef {
+                        sheet: start.sheet,
+                        columns: vec![column_id],
+                        rows: vec![row_id],
+                    };
+                    x += 1;
+                    if x == v[0].len() as i64 + pos.x {
+                        x = pos.x;
+                        y += 1;
+                    }
+                    let (value, updated_ops) = CellValue::from_string(s, region);
+                    ops.extend(updated_ops);
+                    value
+                })
+                .collect();
+            return (Some(Array { size, values }), ops);
+        }
+
+        // return nothing when pos is not defined
+        (None, vec![])
+    }
 }
+
 impl Spanned<Array> {
     /// Checks that an array is linear (width=1 or height=1), then returns which
     /// is the long axis. Returns `None` in the case of a 1x1 array.

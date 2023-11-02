@@ -205,11 +205,6 @@ impl TransactionInProgress {
             Some(waiting_for_async) => {
                 match waiting_for_async {
                     CodeCellLanguage::Python => {
-                        let updated_code_cell_value = result.into_code_cell_value(
-                            language,
-                            code_string,
-                            &self.cells_accessed,
-                        );
                         let cell_ref = if let Some(sheet_pos) = self.current_cell_ref {
                             sheet_pos
                         } else {
@@ -217,6 +212,15 @@ impl TransactionInProgress {
                                 "Expected current_sheet_pos to be defined in transaction::complete"
                             );
                         };
+                        let sheet = grid_controller.grid_mut().sheet_mut_from_id(cell_ref.sheet);
+                        let updated_code_cell_value = result.into_code_cell_value(
+                            sheet,
+                            cell_ref,
+                            language,
+                            code_string,
+                            &self.cells_accessed,
+                            &mut self.reverse_operations,
+                        );
                         if update_code_cell_value(
                             grid_controller,
                             cell_ref,
