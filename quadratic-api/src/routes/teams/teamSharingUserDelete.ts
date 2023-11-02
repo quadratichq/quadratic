@@ -38,16 +38,14 @@ router.delete(
     if (userMakingRequestId === userToDeleteId) {
       // If they're the owner, make sure there's another owner before deleting
       if (userMakingRequest.role === 'OWNER') {
-        const teamUsers = await dbClient.userTeamRole.findMany({
+        const teamOwners = await dbClient.userTeamRole.findMany({
           where: {
             teamId,
+            role: 'OWNER',
           },
         });
-        const numberOfOwners = teamUsers.filter(({ role }) => role === 'OWNER').length;
-        if (numberOfOwners <= 1) {
-          return res
-            .status(403)
-            .json({ error: { message: 'There must be another team owner for the user to leave.' } });
+        if (teamOwners.length <= 1) {
+          return res.status(403).json({ error: { message: 'There must be at least one owner on a team.' } });
         }
       }
 

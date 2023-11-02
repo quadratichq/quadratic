@@ -172,13 +172,13 @@ export const ApiSchemas = {
 
   // TODO equivalent for /files/:uuid/sharing
   '/v0/teams/:uuid/sharing.POST.request': TeamUserSchema.pick({ email: true, role: true }),
-  '/v0/teams/:uuid/sharing.POST.response': z.object({
-    message: z.string(),
+  '/v0/teams/:uuid/sharing.POST.response': TeamUserSchema.pick({ email: true, role: true }).extend({
+    id: TeamUserSchema.shape.id.optional(),
   }),
   // Update a user's sharing role
   '/v0/teams/:uuid/sharing/:userId.POST.request': TeamUserSchema.pick({ role: true }),
   '/v0/teams/:uuid/sharing/:userId.POST.response': z.object({
-    message: z.string(),
+    role: UserRoleTeamSchema,
   }),
   // Delete a user from a team
   '/v0/teams/:uuid/sharing/:userId.DELETE.response': z.object({

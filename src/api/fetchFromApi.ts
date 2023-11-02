@@ -28,6 +28,7 @@ export async function fetchFromApi<T>(
   }
 
   // Handle if the response is not JSON
+  // TODO handle if it's a 204 else this below
   const json = await response.json().catch(async () => {
     const error = await newHTTPError('Not a JSON body', response, init.method);
     throw error;

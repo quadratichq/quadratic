@@ -3,7 +3,7 @@ import { z } from 'zod';
 import dbClient from '../dbClient';
 import { Request, RequestWithTeam, RequestWithUser } from '../types/Request';
 import { ResponseError } from '../types/Response';
-import { getTeamAccess } from '../utils/access';
+import { getTeamAccess } from '../utils';
 
 const teamUuidSchema = z.string().uuid();
 

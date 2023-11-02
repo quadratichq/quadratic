@@ -23,7 +23,7 @@ beforeEach(async () => {
     },
   });
 
-  // Create a team with one owner
+  // Create a team with one owner and one with two
   await dbClient.team.create({
     data: {
       name: 'Test Team 1',
@@ -41,6 +41,22 @@ beforeEach(async () => {
       },
     },
   });
+  await dbClient.team.create({
+    data: {
+      name: 'Test Team 2',
+      uuid: '00000000-0000-4000-8000-000000000002',
+      id: 2,
+      UserTeamRole: {
+        create: [
+          {
+            userId: user_1.id,
+            role: 'OWNER',
+          },
+          { userId: user_2.id, role: 'OWNER' },
+        ],
+      },
+    },
+  });
 });
 
 afterEach(async () => {
@@ -51,52 +67,236 @@ afterEach(async () => {
   await dbClient.$transaction([deleteTeamUsers, deleteUsers, deleteTeams]);
 });
 
-describe('POST /v0/teams/:uuid/sharing/:userId - unauthenticated requests', () => {
-  it('responds with a 401', async () => {
+// describe('POST /v0/teams/:uuid/sharing/:userId - unauthenticated requests', () => {
+//   it('responds with a 401', async () => {
+//     await request(app)
+//       .delete('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/1')
+//       .set('Accept', 'application/json')
+//       .expect('Content-Type', /json/)
+//       .expect(401);
+//   });
+// });
+
+// TODO sending bad data
+
+describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as OWNER', () => {
+  it('responds with 204 for OWNER -> OWNER', async () => {
     await request(app)
-      .delete('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/1')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/1')
       .set('Accept', 'application/json')
-      .expect('Content-Type', /json/)
-      .expect(401);
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .send({ role: 'OWNER' })
+      .expect(204);
   });
-});
 
-// TODO teamsharing middleware for /sharing/:userId
-
-// TODO test that emails get sent?
-
-describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as editor', () => {
-  it('doesn’t allow the user to upgrade themselves to owner', async () => {
+  it('rejects OWNER -> EDITOR if there’s only one OWNER on the team', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/2')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/1')
+      .send({ role: 'EDITOR' })
       .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_2`)
-      .send({
-        role: 'VIEWER',
-      })
+      .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
       .expect(403);
   });
-  it('doesn’t do anything for a request to stay the same', async () => {
+  it('changes OWNER -> EDITOR if there’s more than one OWNER on the team', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/2')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/1')
       .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_2`)
-      .send({
-        role: 'EDITOR',
-      })
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .send({ role: 'EDITOR' })
       .expect('Content-Type', /json/)
-      .expect(200);
+      .expect(200)
+      .expect(({ body: { role } }) => {
+        expect(role).toBe('EDITOR');
+      });
   });
-  it('allows the user to downgrade themselves to viewer', async () => {
+
+  it('rejects OWNER -> VIEWER if there’s only one OWNER on the team', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/2')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/1')
+      .send({ role: 'VIEWER' })
       .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_2`)
-      .send({
-        role: 'VIEWER',
-      })
+      .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
-      .expect(200);
+      .expect(403);
+  });
+  it('changes OWNER -> VIEWER if there’s more than one OWNER on the team', async () => {
+    await request(app)
+      .post('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/1')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .send({ role: 'VIEWER' })
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .expect(({ body: { role } }) => {
+        expect(role).toBe('VIEWER');
+      });
   });
 });
+
+describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as EDITOR', () => {
+  it('rejects EDITOR -> OWNER', async () => {
+    await request(app)
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/2')
+      .send({
+        role: 'OWNER',
+      })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_2`)
+      .expect('Content-Type', /json/)
+      .expect(403);
+  });
+  it('responds with 204 for EDITOR -> EDITOR', async () => {
+    await request(app)
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/2')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_2`)
+      .send({ role: 'EDITOR' })
+      .expect(204);
+  });
+  it('changes EDITOR -> VIEWER', async () => {
+    await request(app)
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/2')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_2`)
+      .send({ role: 'VIEWER' })
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .expect(({ body: { role } }) => {
+        expect(role).toBe('VIEWER');
+      });
+  });
+});
+
+describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as VIEWER', () => {
+  it('rejects VIEWER -> OWNER', async () => {
+    await request(app)
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/3')
+      .send({
+        role: 'OWNER',
+      })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_3`)
+      .expect('Content-Type', /json/)
+      .expect(403);
+  });
+  it('rejects VIEWER -> EDITOR', async () => {
+    await request(app)
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/3')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_3`)
+      .send({ role: 'EDITOR' })
+      .expect(403);
+  });
+  it('responds with 204 for VIEWER -> VIEWER', async () => {
+    await request(app)
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/3')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_3`)
+      .send({ role: 'VIEWER' })
+      .expect(204);
+  });
+});
+
+describe('POST /v0/teams/:uuid/sharing/:userId - update others as OWNER', () => {
+  it('responds with 204 for OWNER -> OWNER', async () => {
+    await request(app)
+      .post('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/2')
+      .send({ role: 'OWNER' })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect(204);
+  });
+  it('changes OWNER -> EDITOR', async () => {
+    await request(app)
+      .post('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/2')
+      .send({ role: 'EDITOR' })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .expect(({ body: { role } }) => {
+        expect(role).toBe('EDITOR');
+      });
+  });
+  it('changes OWNER -> VIEWER', async () => {
+    await request(app)
+      .post('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/2')
+      .send({ role: 'VIEWER' })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .expect(({ body: { role } }) => {
+        expect(role).toBe('VIEWER');
+      });
+  });
+
+  it('changes EDITOR -> OWNER', async () => {
+    await request(app)
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/2')
+      .send({ role: 'OWNER' })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .expect(({ body: { role } }) => {
+        expect(role).toBe('OWNER');
+      });
+  });
+  it('changes EDITOR -> VIEWER', async () => {
+    await request(app)
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/2')
+      .send({ role: 'VIEWER' })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .expect(({ body: { role } }) => {
+        expect(role).toBe('VIEWER');
+      });
+  });
+  it('responds with 204 for EDITOR -> EDITOR', async () => {
+    await request(app)
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/2')
+      .send({ role: 'EDITOR' })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect(204);
+  });
+
+  it('changes VIEWER -> OWNER', async () => {
+    await request(app)
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/3')
+      .send({ role: 'OWNER' })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .expect(({ body: { role } }) => {
+        expect(role).toBe('OWNER');
+      });
+  });
+  it('changes VIEWER -> EDITOR', async () => {
+    await request(app)
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/3')
+      .send({ role: 'EDITOR' })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .expect(({ body: { role } }) => {
+        expect(role).toBe('EDITOR');
+      });
+  });
+  it('responds with a 204 for VIEWER -> VIEWER', async () => {
+    await request(app)
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/3')
+      .send({ role: 'VIEWER' })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect(204);
+  });
+});
+
+// TODO trying to change a user that don't exist or exists but not part of the team

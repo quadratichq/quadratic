@@ -1,4 +1,11 @@
-import { AccessSchema, UserRoleFileSchema, UserRoleTeam, UserRoleTeamSchema } from '../../../src/permissions';
+// TODO write tests for this
+import {
+  AccessSchema,
+  UserRoleFile,
+  UserRoleFileSchema,
+  UserRoleTeam,
+  UserRoleTeamSchema,
+} from '../../src/permissions';
 
 const { TEAM_EDIT, TEAM_DELETE, TEAM_BILLING_EDIT, TEAM_VIEW, FILE_VIEW, FILE_EDIT, FILE_DELETE } = AccessSchema.enum;
 
@@ -27,5 +34,22 @@ export const getFileAccess = (userRole: UserRoleTeam, context: 'FILE' | 'TEAM') 
       return [FILE_VIEW];
     default:
       return [];
+  }
+};
+
+export const firstRoleIsHigherThanSecond = (
+  firstRole: UserRoleTeam | UserRoleFile,
+  secondRole: UserRoleTeam | UserRoleFile
+) => {
+  switch (secondRole) {
+    case 'OWNER':
+      return false;
+    case 'EDITOR':
+      return firstRole === 'OWNER';
+    case 'VIEWER':
+      return firstRole === 'OWNER' || firstRole === 'EDITOR';
+    default:
+      // TODO log error to sentry because we should never reach this
+      return false;
   }
 };

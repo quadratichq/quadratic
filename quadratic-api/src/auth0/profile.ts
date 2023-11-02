@@ -56,6 +56,6 @@ export const getUserProfile = async (user_id: number) => {
 };
 
 export const getUsersByEmail = async (email: string) => {
-  const auth0_user = await auth0.getUsersByEmail(email);
-  return auth0_user;
+  const auth0_users = await auth0.getUsersByEmail(email);
+  return auth0_users;
 };
