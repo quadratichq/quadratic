@@ -47,8 +47,8 @@ impl GridController {
             .as_ref()
             .is_some_and(|in_progress_transaction| !in_progress_transaction.complete)
         {
-            // todo: this should be handled more gracefully. Perhaps as a queue of operations?
-            panic!("Cannot start a transaction while a transaction is in progress");
+            // todo: add this to a queue of operations instead of setting the busy flag
+            return TransactionSummary::new(true);
         }
         let mut transaction =
             TransactionInProgress::new(self, operations, cursor, compute, transaction_type);
