@@ -11,6 +11,7 @@ import {
   Stepper,
   TextField,
 } from '@mui/material';
+import { apiClient } from '../../../api/apiClient';
 
 export const AddConnection = (props: { show: boolean; setShow: (show: boolean) => void }) => {
   return (
@@ -37,7 +38,16 @@ export const AddConnection = (props: { show: boolean; setShow: (show: boolean) =
         <TextField id="outlined-basic" label="Client Key" variant="outlined" />
         <FormControlLabel control={<Checkbox />} label="Connect via SSH Tunnel" />
         <DialogActions>
-          <Button autoFocus>Test Connection</Button>
+          <Button
+            autoFocus
+            onClick={async () => {
+              const result = await apiClient.createConnection({});
+
+              console.log(result);
+            }}
+          >
+            Test Connection
+          </Button>
         </DialogActions>
       </DialogContent>
     </Dialog>

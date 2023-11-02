@@ -110,6 +110,14 @@ export const apiClient = {
     );
   },
 
+  async createConnection(body: ApiTypes['/v0/connections.POST.request']) {
+    return fetchFromApi(
+      `/v0/connections`,
+      { method: 'POST', body: JSON.stringify(body) },
+      ApiSchemas['/v0/connections.POST.response']
+    );
+  },
+
   getApiUrl() {
     const url = process.env.REACT_APP_QUADRATIC_API_URL;
     if (!url) {
