@@ -19,6 +19,7 @@
   },
   "author": "David Kircos",
   "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.441.0",
     "@prisma/client": "^4.12.0",
     "@sentry/node": "^7.50.0",
     "@sentry/tracing": "^7.50.0",
@@ -51,6 +52,7 @@
   "devDependencies": {
     "@tsconfig/node20": "^1.0.1",
     "@types/auth0": "^3.3.4",
+    "@types/aws-sdk": "^2.7.0",
     "@types/cors": "^2.8.12",
     "dotenv-cli": "^7.1.0",
     "prisma": "^4.12.0"
