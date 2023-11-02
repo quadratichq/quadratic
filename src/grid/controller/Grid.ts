@@ -112,6 +112,10 @@ export class Grid {
       pixiApp.cellsSheets.updateBorders(summary.border_sheets_modified);
     }
 
+    if (summary.transaction_busy) {
+      window.dispatchEvent(new CustomEvent('transaction-busy'));
+    }
+
     const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
     if (cursor) {
       sheets.current = cursor.sheetId;
@@ -119,6 +123,7 @@ export class Grid {
     }
     if (summary.save) {
       this.dirty = true;
+      window.dispatchEvent(new CustomEvent('transaction-complete'));
     }
     pixiApp.setViewportDirty();
   }

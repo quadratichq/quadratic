@@ -113,6 +113,7 @@ impl GridController {
             cursor: None,
             offsets_modified: vec![],
             save: false,
+            transaction_busy: false,
         })?)
     }
 }
