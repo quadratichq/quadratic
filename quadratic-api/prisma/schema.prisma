@@ -8,10 +8,11 @@ datasource db {
 }
 
 model User {
-    id        Int         @id @default(autoincrement())
-    auth0_id  String      @unique
-    files     File[]
-    QFeedback QFeedback[]
+    id                 Int                  @id @default(autoincrement())
+    auth0_id           String               @unique
+    files              File[]
+    QFeedback          QFeedback[]
+    UserConnectionRole UserConnectionRole[]
 }
 
 enum LinkPermission {
@@ -37,6 +38,38 @@ model File {
     // analytics fields
     times_updated      Int            @default(1)
     version            String?
+}
+
+enum ConnectionRole {
+    OWNER
+    EDITOR
+    VIEWER
+}
+
+model Connection {
+    id                 Int                  @id @default(autoincrement())
+    name               String
+    created_date       DateTime             @default(now())
+    updated_date       DateTime             @default(now())
+    deleted            Boolean              @default(false)
+    deleted_date       DateTime?
+    // Details
+    type               String
+    database           Json
+    secretArn          String // AWS Secret Manager ARN
+    UserConnectionRole UserConnectionRole[]
+}
+
+model UserConnectionRole {
+    id           Int            @id @default(autoincrement())
+    userId       Int
+    connectionId Int
+    user         User           @relation(fields: [userId], references: [id])
+    connection   Connection     @relation(fields: [connectionId], references: [id])
+    role         ConnectionRole
+    created_date DateTime       @default(now())
+
+    @@unique([userId, connectionId])
 }
 
 model QFeedback {
