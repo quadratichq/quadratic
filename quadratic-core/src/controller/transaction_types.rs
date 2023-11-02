@@ -233,7 +233,7 @@ mod test {
     #[test]
     fn test_into_code_cell_value_single() {
         let mut gc = GridController::new();
-        let sheet_id = gc.sheet_ids()[0].clone();
+        let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
         let result = JsCodeResult {
             success: true,
@@ -273,7 +273,7 @@ mod test {
     #[test]
     fn test_into_code_cell_value_array() {
         let mut gc = GridController::new();
-        let sheet_id = gc.sheet_ids()[0].clone();
+        let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
         let array_output: Vec<Vec<String>> = vec![
             vec!["$1.1".into(), "20%".into()],
@@ -295,18 +295,14 @@ mod test {
         let _ = array.set(
             0,
             0,
-            CellValue::Number(BigDecimal::from_str("1.1".into()).unwrap()),
+            CellValue::Number(BigDecimal::from_str("1.1").unwrap()),
         );
         let _ = array.set(
             1,
             0,
-            CellValue::Number(BigDecimal::from_str("0.2".into()).unwrap()),
+            CellValue::Number(BigDecimal::from_str("0.2").unwrap()),
         );
-        let _ = array.set(
-            0,
-            1,
-            CellValue::Number(BigDecimal::from_str("3".into()).unwrap()),
-        );
+        let _ = array.set(0, 1, CellValue::Number(BigDecimal::from_str("3").unwrap()));
         let _ = array.set(1, 1, CellValue::Text("Hello".into()));
         assert_eq!(
             result
