@@ -81,6 +81,7 @@ impl fmt::Display for CellRef {
         write!(f, "R{y}C{x}")
     }
 }
+
 impl CellRef {
     /// Constructs an absolute cell reference.
     pub fn absolute(sheet: Option<String>, pos: Pos) -> Self {

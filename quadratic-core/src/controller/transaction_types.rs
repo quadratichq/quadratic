@@ -2,10 +2,7 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
-    grid::{
-        CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, RegionRef,
-        Sheet,
-    },
+    grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Sheet},
     Array, CellValue, Error, ErrorMsg, Pos, Rect, Span, Value,
 };
 
@@ -112,12 +109,12 @@ impl JsCodeResult {
                         Value::Single("".into())
                     }
                 } else if let Some(output_value) = self.output_value.as_ref() {
-                    let region_ref = RegionRef {
+                    let cell_ref = CellRef {
                         sheet: sheet.id,
-                        columns: vec![start.column],
-                        rows: vec![start.row],
+                        column: start.column,
+                        row: start.row,
                     };
-                    let (cell_value, ops) = CellValue::from_string(&output_value, region_ref);
+                    let (cell_value, ops) = CellValue::from_string(&output_value, cell_ref, sheet);
                     reverse_operations.extend(ops);
                     Value::Single(cell_value)
                 } else {

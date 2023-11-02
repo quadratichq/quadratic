@@ -9,7 +9,7 @@ use smallvec::{smallvec, SmallVec};
 use super::{ArraySize, Axis, CellValue, Spanned, Value};
 use crate::{
     controller::operation::Operation,
-    grid::{CellRef, RegionRef, Sheet},
+    grid::{CellRef, Sheet},
     CodeResult, ErrorMsg,
 };
 
@@ -271,17 +271,17 @@ impl Array {
                 .map(|s| {
                     let column_id = sheet.get_or_create_column(x).0.id;
                     let row_id = sheet.get_or_create_row(y).id;
-                    let region = RegionRef {
+                    let cell_ref = CellRef {
                         sheet: start.sheet,
-                        columns: vec![column_id],
-                        rows: vec![row_id],
+                        column: column_id,
+                        row: row_id,
                     };
                     x += 1;
                     if x == v[0].len() as i64 + pos.x {
                         x = pos.x;
                         y += 1;
                     }
-                    let (value, updated_ops) = CellValue::from_string(s, region);
+                    let (value, updated_ops) = CellValue::from_string(s, cell_ref, sheet);
                     ops.extend(updated_ops);
                     value
                 })
