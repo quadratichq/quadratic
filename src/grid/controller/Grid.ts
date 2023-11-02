@@ -109,7 +109,7 @@ export class Grid {
     }
 
     if (summary.transaction_busy) {
-      window.dispatchEvent(new CustomEvent('snackbar', { detail: { message: 'Spreadsheet busy, try again."' } }));
+      window.dispatchEvent(new CustomEvent('transaction-busy'));
     }
 
     const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
@@ -119,6 +119,7 @@ export class Grid {
     }
     if (summary.save) {
       this.dirty = true;
+      window.dispatchEvent(new CustomEvent('transaction-complete'));
     }
     pixiApp.setViewportDirty();
   }

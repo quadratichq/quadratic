@@ -63,37 +63,6 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
     }
   }, [messageQueue, activeMessage, open]);
 
-  // accept snackbar events from Pixi
-  React.useEffect(() => {
-    const fromPixiSnackbar = (event: any) => {
-      setMessageQueue((prev) => [
-        ...prev,
-        {
-          message: event.detail.message,
-          key: new Date().getTime(),
-          stayOpen: event.detail.stayOpen,
-          ...(event.detail.severity ? { severity: event.detail.severity } : {}),
-        },
-      ]);
-    };
-    window.addEventListener('snackbar', fromPixiSnackbar);
-    return () => window.removeEventListener('snackbar', fromPixiSnackbar);
-  }, []);
-
-  // close an async snackbar message
-  React.useEffect(() => {
-    const fromPixiFinishSnackbar = (event: any) => {
-      setStayOpen((stayOpen) => {
-        if (stayOpen === true) {
-          setOpen(false);
-        }
-        return false;
-      });
-    };
-    window.addEventListener('snackbar-complete', fromPixiFinishSnackbar);
-    return () => window.addEventListener('snackbar-complete', fromPixiFinishSnackbar);
-  });
-
   /*
    * By default, take a message and display a snackbar that auto-hides
    * after a certain amount of time and is dismissible
