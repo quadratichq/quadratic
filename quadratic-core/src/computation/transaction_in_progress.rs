@@ -444,6 +444,10 @@ mod test {
         } else {
             assert!(false);
         }
+
+        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
+        let dependencies = gc.get_dependent_cells(cell_ref).unwrap().clone();
+        assert_eq!(dependencies.len(), 1);
     }
 
     #[test]
@@ -485,7 +489,7 @@ mod test {
             }],
             None,
             true,
-            crate::controller::transactions::TransactionType::Normal,
+            TransactionType::Normal,
         );
 
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
@@ -495,8 +499,6 @@ mod test {
                 code_cell.get_output_value(0, 0),
                 Some(CellValue::Number(12.into()))
             );
-            crate::util::dbgjs("cells accessed:");
-            crate::util::dbgjs(sheet.cell_ref_to_pos(code_cell.cells_accessed_copy().unwrap()[0]));
         } else {
             assert!(false);
         }
