@@ -67,10 +67,9 @@ impl GridController {
                 sheets_with_changed_bounds.insert(cell_ref.sheet);
 
                 let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
-                let old_code_cell_value = match sheet.get_code_cell_from_ref(cell_ref) {
-                    Some(old_code_cell_value) => Some(old_code_cell_value.clone()),
-                    None => None,
-                };
+                let old_code_cell_value = sheet
+                    .get_code_cell_from_ref(cell_ref)
+                    .map(|old_code_cell_value| old_code_cell_value.clone());
                 let pos = if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
                     pos
                 } else {
