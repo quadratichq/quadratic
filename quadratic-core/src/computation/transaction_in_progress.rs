@@ -300,7 +300,6 @@ impl TransactionInProgress {
                             self.has_async = true;
                         }
                         CodeCellLanguage::Formula => {
-                            crate::util::dbgjs("Compute called for a formula cell");
                             self.eval_formula(
                                 grid_controller,
                                 code_string.clone(),
