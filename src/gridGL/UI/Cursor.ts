@@ -237,6 +237,8 @@ export class Cursor extends Graphics {
         this.drawCursorIndicator();
         this.drawEditorHighlightedCells();
       }
+
+      pixiApp.setViewportDirty();
     }
   }
 }
