@@ -434,15 +434,13 @@ mod test {
         assert!(gc.get_transaction_in_progress().is_none());
 
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
-        if let Some(code_cell) = sheet.get_code_cell(Pos { x: 1, y: 0 }) {
-            assert_eq!(code_cell.code_string, "A0 + 1".to_string());
-            assert_eq!(
-                code_cell.get_output_value(0, 0),
-                Some(CellValue::Number(11.into()))
-            );
-        } else {
-            assert!(false);
-        }
+        assert_eq!(sheet.get_code_cell(Pos { x: 1, y: 0 }).is_some(), true);
+        let code_cell = sheet.get_code_cell(Pos { x: 1, y: 0 }).unwrap();
+        assert_eq!(code_cell.code_string, "A0 + 1".to_string());
+        assert_eq!(
+            code_cell.get_output_value(0, 0),
+            Some(CellValue::Number(11.into()))
+        );
 
         let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
         let dependencies = gc.get_dependent_cells(cell_ref).unwrap().clone();
@@ -492,15 +490,13 @@ mod test {
         );
 
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
-        if let Some(code_cell) = sheet.get_code_cell(Pos { x: 2, y: 0 }) {
-            assert_eq!(code_cell.code_string, "B0 + 1".to_string());
-            assert_eq!(
-                code_cell.get_output_value(0, 0),
-                Some(CellValue::Number(12.into()))
-            );
-        } else {
-            assert!(false);
-        }
+        assert_eq!(sheet.get_code_cell(Pos { x: 2, y: 0 }).is_some(), true);
+        let code_cell = sheet.get_code_cell(Pos { x: 2, y: 0 }).unwrap();
+        assert_eq!(code_cell.code_string, "B0 + 1".to_string());
+        assert_eq!(
+            code_cell.get_output_value(0, 0),
+            Some(CellValue::Number(12.into()))
+        );
         assert_eq!(
             sheet.get_cell_value(Pos { x: 2, y: 0 }),
             Some(CellValue::Number(12.into()))
