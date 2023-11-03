@@ -50,7 +50,7 @@ impl TransactionInProgress {
         };
 
         // apply operations
-        transaction.transact(grid_controller, operations);
+        transaction.transact(grid_controller, operations, compute);
 
         // run computations
         if compute {
@@ -96,7 +96,12 @@ impl TransactionInProgress {
     }
 
     /// executes a set of operations
-    fn transact(&mut self, grid_controller: &mut GridController, operations: Vec<Operation>) {
+    fn transact(
+        &mut self,
+        grid_controller: &mut GridController,
+        operations: Vec<Operation>,
+        compute: bool,
+    ) {
         for op in operations.iter() {
             if cfg!(feature = "show-operations") {
                 crate::util::dbgjs(&format!("[Operation] {:?}", op.to_string()));
@@ -107,6 +112,7 @@ impl TransactionInProgress {
                 &mut self.cells_to_compute,
                 &mut self.summary,
                 &mut self.sheets_with_changed_bounds,
+                compute,
             );
             self.reverse_operations.push(reverse_operation);
         }
