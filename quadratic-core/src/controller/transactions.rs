@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     operation::Operation,
-    transaction_summary::TransactionSummary,
+    transaction_summary::{TransactionSummary, CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
     GridController,
 };
@@ -47,16 +47,14 @@ impl GridController {
             .as_ref()
             .is_some_and(|in_progress_transaction| !in_progress_transaction.complete)
         {
-            // todo: this should be handled more gracefully. Perhaps as a queue of operations?
-            panic!("Cannot start a transaction while a transaction is in progress");
+            // todo: add this to a queue of operations instead of setting the busy flag
+            return TransactionSummary::new(true);
         }
         let mut transaction =
             TransactionInProgress::new(self, operations, cursor, compute, transaction_type);
         let mut summary = transaction.transaction_summary();
         transaction.updated_bounds(self);
 
-        // only trigger update to grid when computation cycle is complete
-        // otherwise you end up redrawing too often
         if transaction.complete {
             summary.save = true;
             self.finalize_transaction(&transaction);
@@ -128,7 +126,13 @@ impl GridController {
         }
     }
 
+    /// Creates a TransactionSummary and cleans
+    /// Note: it may not pass cells_sheet_modified if the transaction is not complete (to avoid redrawing cells multiple times)
     pub fn transaction_summary(&mut self) -> Option<TransactionSummary> {
+        // let skip_cell_rendering = self
+        //     .transaction_in_progress
+        //     .as_ref()
+        //     .is_some_and(|transaction| !transaction.complete);
         self.transaction_in_progress
             .as_mut()
             .map(|transaction| transaction.transaction_summary())
@@ -159,8 +163,8 @@ impl CellHash {
 
 impl From<Pos> for CellHash {
     fn from(pos: Pos) -> Self {
-        let hash_width = 20_f64;
-        let hash_height = 40_f64;
+        let hash_width = CELL_SHEET_WIDTH as f64;
+        let hash_height = CELL_SHEET_HEIGHT as f64;
         let cell_hash_x = (pos.x as f64 / hash_width).floor() as i64;
         let cell_hash_y = (pos.y as f64 / hash_height).floor() as i64;
         let cell_hash = format!("{},{}", cell_hash_x, cell_hash_y);

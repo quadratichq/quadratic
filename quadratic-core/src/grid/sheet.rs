@@ -192,11 +192,8 @@ impl Sheet {
     /// for it).
     pub fn get_cell_value(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
-        if let Some(value) = column.values.get(pos.y) {
-            Some(value)
-        } else {
-            self.get_code_cell_value(pos)
-        }
+        None.or_else(|| self.get_code_cell_value(pos))
+            .or_else(|| column.values.get(pos.y))
     }
 
     pub fn get_cell_value_only(&self, pos: Pos) -> Option<CellValue> {

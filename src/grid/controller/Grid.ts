@@ -45,6 +45,10 @@ export const pointsToRect = (x: number, y: number, width: number, height: number
   return new RectInternal(new Pos(x, y), new Pos(x + width, y + height));
 };
 
+export const posToRect = (x: number, y: number): RectInternal => {
+  return new RectInternal(new Pos(x, y), new Pos(x, y));
+};
+
 export const rectToRectangle = (rect: Rect): Rectangle => {
   return new Rectangle(
     Number(rect.min.x),
@@ -108,6 +112,10 @@ export class Grid {
       pixiApp.cellsSheets.updateBorders(summary.border_sheets_modified);
     }
 
+    if (summary.transaction_busy) {
+      window.dispatchEvent(new CustomEvent('transaction-busy'));
+    }
+
     const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
     if (cursor) {
       sheets.current = cursor.sheetId;
@@ -115,6 +123,7 @@ export class Grid {
     }
     if (summary.save) {
       this.dirty = true;
+      window.dispatchEvent(new CustomEvent('transaction-complete'));
     }
     pixiApp.setViewportDirty();
   }
@@ -380,9 +389,7 @@ export class Grid {
   }
 
   cellHasContent(sheetId: string, column: number, row: number): boolean {
-    const data = this.gridController.getRenderCells(sheetId, rectangleToRect(new Rectangle(column, row, 0, 0)));
-    const results = JSON.parse(data);
-    return results.length ? !!results[0].value : false;
+    return this.gridController.hasRenderCells(sheetId, posToRect(column, row));
   }
 
   getRenderCells(sheetId: string, rectangle: Rectangle): JsRenderCell[] {

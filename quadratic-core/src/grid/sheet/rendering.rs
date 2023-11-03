@@ -1,6 +1,6 @@
-use crate::grid::borders::{get_render_horizontal_borders, get_render_vertical_borders};
 use crate::{
     grid::{
+        borders::{get_render_horizontal_borders, get_render_vertical_borders},
         js_types::{
             JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill,
         },
@@ -17,7 +17,6 @@ impl Sheet {
         self.columns.range(region.x_range()).any(|(_, column)| {
             column.values.has_blocks_in_range(region.y_range())
                 || column.spills.has_blocks_in_range(region.y_range())
-                || column.fill_color.has_blocks_in_range(region.y_range())
         })
     }
 
@@ -79,11 +78,9 @@ impl Sheet {
                 // only get numeric_format only if it's a CellValue::Number (although it can exist for other types)
                 if value.type_name() == "number" {
                     numeric_format = column.numeric_format.get(y);
-                    let is_percentage = if let Some(numeric_format) = numeric_format.clone() {
+                    let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
                         numeric_format.kind == NumericFormatKind::Percentage
-                    } else {
-                        false
-                    };
+                    });
                     numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
                 }
 

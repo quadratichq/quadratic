@@ -21,6 +21,7 @@ export const colors = {
   lightGray: '#f6f8fa',
   mediumGray: '#cfd7de',
   darkGray: '#55606b',
+  warning: '#C0803F',
   quadraticPrimary: '#6cd4ff',
   quadraticSecondary: '#8ecb89',
   quadraticThird: '#cb8999',
