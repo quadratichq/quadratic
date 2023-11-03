@@ -8,7 +8,6 @@ use super::{
     formatting::CellFmtArray,
     operation::Operation,
     transaction_summary::{CellSheetsModified, TransactionSummary},
-    update_code_cell_value::update_code_cell_value,
     GridController,
 };
 
@@ -64,21 +63,41 @@ impl GridController {
                 code_cell_value,
             } => {
                 sheets_with_changed_bounds.insert(cell_ref.sheet);
-                let mut reverse_operations = vec![];
 
-                // we don't want to trigger any computation with the initial SetCodeCell, as it will be recomputed
-                let not_used_cells_to_compute = &mut IndexSet::new();
+                let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
+                let pos = if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
+                    pos
+                } else {
+                    return Operation::None;
+                };
 
-                update_code_cell_value(
-                    self,
-                    cell_ref,
-                    code_cell_value,
-                    not_used_cells_to_compute,
-                    &mut reverse_operations,
-                    summary,
-                );
+                let old_code_cell_value = match sheet.get_code_cell(pos) {
+                    Some(old_code_cell_value) => Some(old_code_cell_value.clone()),
+                    None => None,
+                };
+                if let Some(code_cell_value) = code_cell_value {
+                    let updated_code_cell_value =
+                        if let Some(old_code_cell_value) = old_code_cell_value.as_ref() {
+                            let mut updated_code_cell_value = code_cell_value.clone();
+                            updated_code_cell_value.output = old_code_cell_value.output.clone();
+                            updated_code_cell_value
+                        } else {
+                            code_cell_value
+                        };
+                    sheet.set_code_cell_value(pos, Some(updated_code_cell_value));
+                } else {
+                    sheet.set_code_cell_value(pos, code_cell_value);
+                }
                 cells_to_compute.insert(cell_ref);
-                reverse_operations[0].clone()
+
+                summary
+                    .cell_sheets_modified
+                    .insert(CellSheetsModified::new(sheet.id, pos));
+
+                Operation::SetCellCode {
+                    cell_ref,
+                    code_cell_value: old_code_cell_value,
+                }
             }
             Operation::SetCellFormats { region, attr } => {
                 sheets_with_changed_bounds.insert(region.sheet);
