@@ -434,7 +434,7 @@ mod test {
         assert!(gc.get_transaction_in_progress().is_none());
 
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
-        assert_eq!(sheet.get_code_cell(Pos { x: 1, y: 0 }).is_some(), true);
+        assert!(sheet.get_code_cell(Pos { x: 1, y: 0 }).is_some());
         let code_cell = sheet.get_code_cell(Pos { x: 1, y: 0 }).unwrap();
         assert_eq!(code_cell.code_string, "A0 + 1".to_string());
         assert_eq!(
@@ -490,7 +490,7 @@ mod test {
         );
 
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
-        assert_eq!(sheet.get_code_cell(Pos { x: 2, y: 0 }).is_some(), true);
+        assert!(sheet.get_code_cell(Pos { x: 2, y: 0 }).is_some());
         let code_cell = sheet.get_code_cell(Pos { x: 2, y: 0 }).unwrap();
         assert_eq!(code_cell.code_string, "B0 + 1".to_string());
         assert_eq!(
