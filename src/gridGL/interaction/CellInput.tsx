@@ -169,8 +169,6 @@ export const CellInput = (props: CellInputProps) => {
     event.preventDefault();
   };
 
-  const columnWidth = cellOffsets.width * viewport.scale.x;
-
   return (
     <div
       id="cell-edit"
@@ -183,7 +181,7 @@ export const CellInput = (props: CellInputProps) => {
         position: 'absolute',
         top: 0,
         left: 0,
-        minWidth: columnWidth,
+        minWidth: cellOffsets.width - CURSOR_THICKNESS * 2,
         outline: 'none',
         color: formatting?.textColor ?? 'black',
         padding: `0 ${CURSOR_THICKNESS}px 0 0`,
