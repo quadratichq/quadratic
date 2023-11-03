@@ -5,7 +5,7 @@ import { ApiSchemas, ApiTypes } from '../../../../src/api/types';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateZodSchema } from '../../middleware/validateZodSchema';
+import { validateRequestAgainstZodSchema } from '../../middleware/validateRequestAgainstZodSchema';
 import { Request } from '../../types/Request';
 const router = express.Router();
 
@@ -21,7 +21,7 @@ router.post(
   // validateUUID(),
   validateAccessToken,
   userMiddleware,
-  validateZodSchema(ReqSchema),
+  validateRequestAgainstZodSchema(ReqSchema),
   // fileMiddleware,
   // validateFileContents().optional(),
   // validateFileVersion().optional(),

@@ -25,9 +25,11 @@ export type RequestWithUser = {
 };
 
 export type RequestWithTeam = {
-  team: Team;
-  teamUser: {
-    role: UserRoleTeam;
-    access: Access[];
+  team: {
+    data: Team;
+    user: {
+      role: UserRoleTeam;
+      access: Access[];
+    };
   };
 };

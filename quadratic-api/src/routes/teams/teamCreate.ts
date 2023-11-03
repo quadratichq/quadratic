@@ -1,45 +1,41 @@
-import express from 'express';
+import express, { Response } from 'express';
+import { z } from 'zod';
+import { ApiSchemas, ApiTypes } from '../../../../src/api/types';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { Request } from '../../types/Request';
+import { validateRequestAgainstZodSchema } from '../../middleware/validateRequestAgainstZodSchema';
+import { RequestWithAuth, RequestWithUser } from '../../types/Request';
 const router = express.Router();
+
+const Schema = z.object({
+  // TODO do we put a limit on the name length?
+  body: ApiSchemas['/v0/teams.POST.request'],
+});
 
 router.post(
   '/',
   validateAccessToken,
+  validateRequestAgainstZodSchema(Schema),
   userMiddleware,
-  // validateFileContents(),
-  // validateFileVersion(),
-  // validateFileName(),
-  // TODO
-  async (req: Request, res) => {
-    // POST creates a new file with the provided name, contents, and version
-
-    // const errors = validationResult(req);
-    // if (!errors.isEmpty()) {
-    //   return res.status(400).json({ errors: errors.array() });
-    // }
-
-    // TODO validate req.body
-
-    if (!req.user) {
-      return res.status(500).json({ error: { message: 'Internal server error' } });
-    }
-
+  async (req: RequestWithAuth & RequestWithUser, res: Response<ApiTypes['/v0/teams.POST.response']>) => {
+    const {
+      body: { name, picture },
+      user: { id: userId },
+    } = req;
     const select = {
       uuid: true,
       name: true,
-      picture: req.body.picture ? true : false,
+      picture: picture ? true : false,
     };
 
     const team = await dbClient.team.create({
       data: {
-        name: req.body.name,
+        name,
         // TODO picture
         UserTeamRole: {
           create: {
-            userId: req.user.id,
+            userId,
             role: 'OWNER',
           },
         },
@@ -47,6 +43,7 @@ router.post(
       select,
     });
 
+    // TODO should return the same as `/teams/:uuid`
     return res.status(201).json(team);
   }
 );

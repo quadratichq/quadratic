@@ -1,11 +1,12 @@
 import express, { Response } from 'express';
 import { z } from 'zod';
+import { ApiTypes } from '../../../../src/api/types';
 import { getUsers } from '../../auth0/profile';
 import dbClient from '../../dbClient';
 import { teamMiddleware } from '../../middleware/team';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateZodSchema } from '../../middleware/validateZodSchema';
+import { validateRequestAgainstZodSchema } from '../../middleware/validateRequestAgainstZodSchema';
 import { RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
 const router = express.Router();
 
@@ -17,30 +18,32 @@ const ReqSchema = z.object({
 
 router.get(
   '/:uuid',
-  validateZodSchema(ReqSchema),
   validateAccessToken,
-  // validateUUID(),
-  // userOptionalMiddleware,
+  validateRequestAgainstZodSchema(ReqSchema),
   userMiddleware,
   teamMiddleware,
-  async (req: RequestWithAuth & RequestWithUser & RequestWithTeam, res: Response) => {
-    if (!req.team) {
-      return res.status(500).json({ error: { message: 'Internal server error' } });
-    }
-
-    // Validate request parameters
-    // const errors = validationResult(req);
-    // if (!errors.isEmpty()) {
-    //   return res.status(400).json({ errors: errors.array() });
-    // }
+  async (
+    req: RequestWithAuth & RequestWithUser & RequestWithTeam,
+    res: Response<ApiTypes['/v0/teams/:uuid.GET.response']>
+  ) => {
+    const {
+      user: { id: userId },
+      team: {
+        data: team,
+        data: { id: teamId },
+        user: teamUser,
+      },
+    } = req;
 
     // Get users in the team
     const teamUsers = await dbClient.userTeamRole.findMany({
       where: {
-        teamId: req.team.id,
+        teamId,
       },
     });
     const teamUserIds = teamUsers.map(({ userId }) => userId);
+
+    // TODO get the invited users of a team
 
     // Get auth0 users
     // TODO how do we ensure that the order of the users is the same?
@@ -48,11 +51,12 @@ router.get(
 
     const response = {
       team: {
-        uuid: req.team.uuid,
-        name: req.team.name,
-        created_date: req.team.created_date,
-        ...(req.team.picture ? { picture: req.team.picture } : {}),
-        // TODO
+        uuid: team.uuid,
+        name: team.name,
+        created_date: team.created_date,
+        ...(team.picture ? { picture: team.picture } : {}),
+        // TODO we could put this in /sharing and just return the userCount
+        // TODO invited users, also can we guarantee ordering here?
         users: auth0Users.map(({ email, name, picture }, i) => ({
           id: teamUsers[i].userId,
           email,
@@ -65,9 +69,9 @@ router.get(
         files: [],
       },
       user: {
-        role: 'OWNER', // TODO
-        access: ['TEAM_EDIT'], // TODO
-        id: req.user.id, // req.user.id, // TODO
+        id: userId,
+        role: teamUser.role,
+        access: teamUser.access,
       },
     };
 

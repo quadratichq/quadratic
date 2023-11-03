@@ -5,7 +5,7 @@ import dbClient from '../../dbClient';
 import { teamMiddleware } from '../../middleware/team';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateZodSchema } from '../../middleware/validateZodSchema';
+import { validateRequestAgainstZodSchema } from '../../middleware/validateRequestAgainstZodSchema';
 import { RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
 import { ResponseError } from '../../types/Response';
 
@@ -20,7 +20,7 @@ const ReqSchema = z.object({
 
 router.delete(
   '/:uuid/sharing/:userId',
-  validateZodSchema(ReqSchema),
+  validateRequestAgainstZodSchema(ReqSchema),
   validateAccessToken,
   userMiddleware,
   teamMiddleware,
@@ -31,8 +31,12 @@ router.delete(
     const resSuccess = { message: 'User deleted' };
     const userToDeleteId = Number(req.params.userId);
     const userMakingRequestId = req.user.id;
-    const { team, teamUser: userMakingRequest } = req;
-    const teamId = team.id;
+    const {
+      team: {
+        data: { id: teamId },
+        user: userMakingRequest,
+      },
+    } = req;
 
     // Allow the user to delete themselves from a team
     if (userMakingRequestId === userToDeleteId) {

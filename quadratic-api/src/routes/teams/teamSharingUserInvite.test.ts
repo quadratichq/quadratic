@@ -7,25 +7,25 @@ beforeEach(async () => {
   // Create some users & team
   const user_1 = await dbClient.user.create({
     data: {
-      auth0_id: 'test_user_1',
+      auth0_id: 'team_1_owner',
       id: 1,
     },
   });
   const user_2 = await dbClient.user.create({
     data: {
-      auth0_id: 'test_user_2',
+      auth0_id: 'team_1_editor',
       id: 2,
     },
   });
   const user_3 = await dbClient.user.create({
     data: {
-      auth0_id: 'test_user_3',
+      auth0_id: 'team_1_viewer',
       id: 3,
     },
   });
   await dbClient.user.create({
     data: {
-      auth0_id: 'test_user_4',
+      auth0_id: 'user_without_team',
       id: 4,
     },
   });
@@ -49,12 +49,19 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  const deleteTeamInvites = dbClient.teamInvite.deleteMany();
   const deleteTeamUsers = dbClient.userTeamRole.deleteMany();
   const deleteUsers = dbClient.user.deleteMany();
   const deleteTeams = dbClient.team.deleteMany();
 
-  await dbClient.$transaction([deleteTeamUsers, deleteUsers, deleteTeams]);
+  await dbClient.$transaction([deleteTeamInvites, deleteTeamUsers, deleteUsers, deleteTeams]);
 });
+
+const expectErrorMsg = (req: any) => {
+  expect(req).toHaveProperty('body');
+  expect(req.body).toHaveProperty('error');
+  expect(req.body.error).toHaveProperty('message');
+};
 
 // Mock Auth0 getUsersByEmail
 jest.mock('auth0', () => {
@@ -64,26 +71,26 @@ jest.mock('auth0', () => {
         getUsersByEmail: jest.fn().mockImplementation((email: string) => {
           const users: User[] = [
             {
-              user_id: 'test_user_1',
-              email: 'test_user_1@example.com',
+              user_id: 'team_1_owner',
+              email: 'team_1_owner@example.com',
               picture: null,
               name: 'Test User 1',
             },
             {
-              user_id: 'test_user_2',
-              email: 'test_user_2@example.com',
+              user_id: 'team_1_editor',
+              email: 'team_1_editor@example.com',
               picture: null,
               name: 'Test User 2',
             },
             {
-              user_id: 'test_user_3',
-              email: 'test_user_3@example.com',
+              user_id: 'team_1_viewer',
+              email: 'team_1_viewer@example.com',
               picture: null,
               name: 'Test User 3',
             },
             {
-              user_id: 'test_user_4',
-              email: 'test_user_4@example.com',
+              user_id: 'user_without_team',
+              email: 'user_without_team@example.com',
               picture: null,
               name: 'Test User 4',
             },
@@ -107,112 +114,293 @@ jest.mock('auth0', () => {
   };
 });
 
-// TODO unauthenticated requests
+describe('POST /v0/teams/:uuid/sharing', () => {
+  describe('sending a bad request', () => {
+    it('responds with a 401 without authentication', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ role: 'OWNER', email: 'test@example.com' })
+        .set('Accept', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(401)
+        .expect(expectErrorMsg);
+    });
+    it('responds with a 404 for requesting a team that doesn’t exist', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000000/sharing')
+        .send({ email: 'test@example.com', role: 'OWNER' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect('Content-Type', /json/)
+        .expect(404)
+        .expect(expectErrorMsg);
+    });
+    it('responds with a 400 for failing schema validation on the team UUID', async () => {
+      await request(app)
+        .post('/v0/teams/foo/sharing')
+        .send({ email: 'test@example.com', role: 'OWNER' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect('Content-Type', /json/)
+        .expect(400)
+        .expect(expectErrorMsg);
+    });
+    it('responds with a 400 for failing schema validation on the payload', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ role: 'OWNER' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect('Content-Type', /json/)
+        .expect(400)
+        .expect(expectErrorMsg);
+    });
+  });
 
-describe('POST /v0/teams/:uuid/sharing - bad data', () => {
-  it('fails schema validation', async () => {
-    await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
-      .send({ role: 'OWNER' })
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_1`)
-      .expect('Content-Type', /json/)
-      .expect(400)
-      .expect(({ body: { error } }) => {
-        expect(typeof error.message).toBe('string');
-        expect(error).toHaveProperty('meta');
-      });
+  describe('inviting yourself to a team', () => {
+    it('responds with 400 for owners', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email: 'team_1_owner@example.com', role: 'EDITOR' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect('Content-Type', /json/)
+        .expect(400)
+        .expect(expectErrorMsg);
+    });
+    it('responds with 400 for editors', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email: 'team_1_editor@example.com', role: 'EDITOR' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_editor`)
+        .expect('Content-Type', /json/)
+        .expect(400)
+        .expect(expectErrorMsg);
+    });
+  });
+
+  describe('inviting someone to a team who is already a member', () => {
+    it('responds with 400', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email: 'team_1_editor@example.com', role: 'EDITOR' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect('Content-Type', /json/)
+        .expect(400)
+        .expect(expectErrorMsg);
+    });
+  });
+
+  describe('adding users who already have a Quadratic account', () => {
+    it('adds OWNER invited by OWNER', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email: 'user_without_team@example.com', role: 'OWNER' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect('Content-Type', /json/)
+        .expect(201)
+        .expect(({ body: { email, role, id } }) => {
+          expect(email).toBe('user_without_team@example.com');
+          expect(role).toBe('OWNER');
+          expect(id).toBe(4);
+        });
+    });
+    it('adds EDITOR invited by OWNER', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email: 'user_without_team@example.com', role: 'EDITOR' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect('Content-Type', /json/)
+        .expect(201)
+        .expect(({ body: { email, role, id } }) => {
+          expect(email).toBe('user_without_team@example.com');
+          expect(role).toBe('EDITOR');
+          expect(id).toBe(4);
+        });
+    });
+    it('adds VIEWER invited by OWNER', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email: 'user_without_team@example.com', role: 'VIEWER' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect('Content-Type', /json/)
+        .expect(201)
+        .expect(({ body: { email, role, id } }) => {
+          expect(email).toBe('user_without_team@example.com');
+          expect(role).toBe('VIEWER');
+          expect(id).toBe(4);
+        });
+    });
+
+    it('rejects OWNER invited by EDITOR', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email: 'user_without_team@example.com', role: 'OWNER' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_editor`)
+        .expect('Content-Type', /json/)
+        .expect(403)
+        .expect(expectErrorMsg);
+    });
+    it('adds EDITOR invited by EDITOR', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email: 'user_without_team@example.com', role: 'EDITOR' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_editor`)
+        .expect('Content-Type', /json/)
+        .expect(201)
+        .expect(({ body: { email, role, id } }) => {
+          expect(email).toBe('user_without_team@example.com');
+          expect(role).toBe('EDITOR');
+          expect(id).toBe(4);
+        });
+    });
+    it('adds VIEWER invited by EDITOR', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email: 'user_without_team@example.com', role: 'VIEWER' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_editor`)
+        .expect('Content-Type', /json/)
+        .expect(201)
+        .expect(({ body: { email, role, id } }) => {
+          expect(email).toBe('user_without_team@example.com');
+          expect(role).toBe('VIEWER');
+          expect(id).toBe(4);
+        });
+    });
+
+    it('rejects OWNER invited by VIEWER', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email: 'user_without_team@example.com', role: 'OWNER' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_viewer`)
+        .expect('Content-Type', /json/)
+        .expect(403)
+        .expect(expectErrorMsg);
+    });
+    it('rejects EDITOR invited by VIEWER', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email: 'user_without_team@example.com', role: 'EDITOR' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_viewer`)
+        .expect('Content-Type', /json/)
+        .expect(403)
+        .expect(expectErrorMsg);
+    });
+    it('rejects VIEWER invited by VIEWER', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email: 'user_without_team@example.com', role: 'VIEWER' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_viewer`)
+        .expect('Content-Type', /json/)
+        .expect(403)
+        .expect(expectErrorMsg);
+    });
+  });
+
+  describe('adding users who don’t have a Quadratic account', () => {
+    const email = 'jane_doe@example.com';
+    it('adds OWNER invited by OWNER', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email, role: 'OWNER' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect('Content-Type', /json/)
+        .expect(201);
+    });
+    it('adds EDITOR invited by OWNER', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email, role: 'EDITOR' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect('Content-Type', /json/)
+        .expect(201);
+    });
+    it('adds VIEWER invited by OWNER', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email, role: 'VIEWER' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .expect('Content-Type', /json/)
+        .expect(201);
+    });
+
+    it('rejects OWNER invited by EDITOR', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email, role: 'OWNER' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_editor`)
+        .expect('Content-Type', /json/)
+        .expect(403)
+        .expect(expectErrorMsg);
+    });
+    it('adds EDITOR invited by EDITOR', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email, role: 'EDITOR' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_editor`)
+        .expect('Content-Type', /json/)
+        .expect(201);
+    });
+    it('adds VIEWER invited by EDITOR', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email, role: 'VIEWER' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_editor`)
+        .expect('Content-Type', /json/)
+        .expect(201);
+    });
+
+    it('rejects OWNER invited by VIEWER', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email, role: 'OWNER' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_viewer`)
+        .expect('Content-Type', /json/)
+        .expect(403)
+        .expect(expectErrorMsg);
+    });
+    it('rejects EDITOR invited by VIEWER', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email, role: 'EDITOR' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_viewer`)
+        .expect('Content-Type', /json/)
+        .expect(403)
+        .expect(expectErrorMsg);
+    });
+    it('rejects VIEWER invited by VIEWER', async () => {
+      await request(app)
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .send({ email, role: 'VIEWER' })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken team_1_viewer`)
+        .expect('Content-Type', /json/)
+        .expect(403)
+        .expect(expectErrorMsg);
+    });
+  });
+
+  // TODO add users who have duplicate emails
+  describe('adding users who have duplicate emails', () => {
+    it.todo('what do we do?');
   });
 });
-
-// TODO invite someone who is already a member
-// describe('POST /v0/teams/:uuid/sharing - invite people who are already memebers', () => {
-//   it('responds with a 204', async () => {
-//     await request(app)
-//       .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
-//       .send({ email: 'test_user_2@example.com', role: 'EDITOR' })
-//       .set('Accept', 'application/json')
-//       .set('Authorization', `Bearer ValidToken test_user_1`)
-//       .expect('Content-Type', /json/)
-//       .expect(204);
-//   });
-// });
-
-// TODO inviting yourself
-
-// TODO these shouldn't fire if the user already exists on the team
-describe('POST /v0/teams/:uuid/sharing - users who already have a Quadratic account', () => {
-  // it('adds OWNER invited by OWNER', async () => {});
-  // it('adds EDITOR invited by OWNER', async () => {});
-  // it('adds VIEWER invited by OWNER', async () => {});
-  it('rejects OWNER invited by EDITOR', async () => {
-    await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
-      .send({ email: 'test_user_4@example.com', role: 'OWNER' })
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_2`)
-      .expect('Content-Type', /json/)
-      .expect(403);
-  });
-  it('adds EDITOR invited by EDITOR', async () => {
-    await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
-      .send({ email: 'test_user_4@example.com', role: 'EDITOR' })
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_2`)
-      .expect('Content-Type', /json/)
-      .expect(200)
-      .expect(({ body: { email, role, id } }) => {
-        expect(email).toBe('test_user_4@example.com');
-        expect(role).toBe('EDITOR');
-        expect(id).toBe(4);
-      });
-  });
-  it('adds VIEWER invited by EDITOR', async () => {
-    await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
-      .send({ email: 'test_user_4@example.com', role: 'VIEWER' })
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_2`)
-      .expect('Content-Type', /json/)
-      .expect(200)
-      .expect(({ body: { email, role, id } }) => {
-        expect(email).toBe('test_user_4@example.com');
-        expect(role).toBe('VIEWER');
-        expect(id).toBe(4);
-      });
-  });
-
-  it('rejects OWNER invited by VIEWER', async () => {
-    await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
-      .send({ email: 'test_user_4@example.com', role: 'OWNER' })
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_3`)
-      .expect('Content-Type', /json/)
-      .expect(403);
-  });
-  it('rejects EDITOR invited by VIEWER', async () => {
-    await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
-      .send({ email: 'test_user_4@example.com', role: 'EDITOR' })
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_3`)
-      .expect('Content-Type', /json/)
-      .expect(403);
-  });
-  it('rejects VIEWER invited by VIEWER', async () => {
-    await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
-      .send({ email: 'test_user_4@example.com', role: 'VIEWER' })
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_3`)
-      .expect('Content-Type', /json/)
-      .expect(403);
-  });
-});
-
-// add users who don't yet have quadratic accounts
-// it('adds OWNER inviting OWNER', async () => {});
-
-// add users who are duplicates

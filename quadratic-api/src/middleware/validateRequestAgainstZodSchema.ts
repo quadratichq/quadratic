@@ -19,10 +19,9 @@ import { ResponseError } from '../types/Response';
  * @param schema
  * @returns
  */
-export const validateZodSchema =
+export const validateRequestAgainstZodSchema =
   (schema: AnyZodObject) => async (req: Request, res: Response<ResponseError>, next: NextFunction) => {
     try {
-      // TODO maybe just .parse
       await schema.parseAsync({
         body: req.body,
         query: req.query,

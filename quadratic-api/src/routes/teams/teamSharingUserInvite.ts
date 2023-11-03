@@ -6,7 +6,7 @@ import dbClient from '../../dbClient';
 import { teamMiddleware } from '../../middleware/team';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateZodSchema } from '../../middleware/validateZodSchema';
+import { validateRequestAgainstZodSchema } from '../../middleware/validateRequestAgainstZodSchema';
 import { Request, RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
 import { ResponseError } from '../../types/Response';
 import { firstRoleIsHigherThanSecond } from '../../utils';
@@ -23,7 +23,7 @@ const ReqSchema = z.object({
 router.post(
   '/:uuid/sharing',
   validateAccessToken,
-  validateZodSchema(ReqSchema),
+  validateRequestAgainstZodSchema(ReqSchema),
   userMiddleware,
   teamMiddleware,
   async (
@@ -32,7 +32,10 @@ router.post(
   ) => {
     const {
       body: { email, role },
-      teamUser,
+      team: {
+        data: { id: teamId },
+        user: teamUser,
+      },
     } = req;
 
     const userMakingRequestRole = teamUser.role;
@@ -44,48 +47,71 @@ router.post(
         .json({ error: { message: 'User does not have permission to invite other users to this team.' } });
     }
 
-    // Are you trying to invite someone to a role higher than your own? No buddy
+    // Are you trying to invite someone to a role higher than your own? No go
     if (firstRoleIsHigherThanSecond(role, userMakingRequestRole)) {
       return res
         .status(403)
         .json({ error: { message: 'User cannot invite someone to a role higher than their own.' } });
     }
 
-    // You can, look up the invited user by email in Auth0
+    // Look up the invited user by email in Auth0
     const auth0Users = await getUsersByEmail(email);
 
-    // No user for the given email, add them to the team and send them an invite email
+    // Nobody with an account by that email
     if (auth0Users.length === 0) {
-      // TODO
+      // TODO where do we remove them from this table once they become a user?
+      await dbClient.teamInvite.create({
+        data: {
+          email,
+          role,
+          teamId,
+        },
+      });
+      // TODO send them an invitation email
       return res.status(201).json({ email, role, id: 100 });
     }
 
-    // The user already exists, add them to the team and send them an invite email
+    // Somebody with that email already has an account
     if (auth0Users.length === 1) {
-      // TODO send them an email
+      const auth0User = auth0Users[0];
 
-      // Get the user and make them a member of the given team
+      // Lookup the user in our database
       const dbUser = await dbClient.user.findUnique({
         where: {
-          auth0_id: auth0Users[0].user_id,
+          auth0_id: auth0User.user_id,
         },
       });
+
+      // See if they're already a member of the team
+      const u = await dbClient.userTeamRole.findUnique({
+        where: {
+          userId_teamId: {
+            userId: dbUser.id,
+            teamId,
+          },
+        },
+      });
+      if (u !== null) {
+        return res.status(400).json({ error: { message: 'User is already a member of this team' } });
+      }
+
+      // If not, add them!
       await dbClient.userTeamRole.create({
         data: {
           userId: dbUser.id,
-          teamId: req.team.id,
+          teamId,
           role,
         },
       });
 
-      // What to return exactly...?
-      return res.status(200).json({ email, role, id: dbUser.id });
-    } else {
-      console.error('-----> Duplicate email: ' + email);
-      // TODO, DUPLICATE EMAIL!
+      // TODO send them an email
+
+      // TODO what to return exactly...?
+      return res.status(201).json({ email, role, id: dbUser.id });
     }
 
-    return res.status(500).json({ error: { message: 'Internal server error: unreachable code' } });
+    // TODO, how should we handle duplicate email?
+    return res.status(500).json({ error: { message: 'Internal server error: duplicate email' } });
   }
 );
 

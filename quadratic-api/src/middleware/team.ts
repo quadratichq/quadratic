@@ -53,11 +53,13 @@ export const teamMiddleware = async (
   // TODO if the team is deleted
 
   // Attach info about the team and the user's access to the team on the request
-  req.teamUser = {
-    role: userMakingRequest.role,
-    access: getTeamAccess(userMakingRequest.role),
+  req.team = {
+    data: team,
+    user: {
+      role: userMakingRequest.role,
+      access: getTeamAccess(userMakingRequest.role),
+    },
   };
-  req.team = team;
 
   next();
 };

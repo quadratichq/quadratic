@@ -5,7 +5,7 @@ import dbClient from '../../dbClient';
 import { teamMiddleware } from '../../middleware/team';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateZodSchema } from '../../middleware/validateZodSchema';
+import { validateRequestAgainstZodSchema } from '../../middleware/validateRequestAgainstZodSchema';
 import { RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
 import { ResponseError } from '../../types/Response';
 import { firstRoleIsHigherThanSecond } from '../../utils';
@@ -22,7 +22,7 @@ const ReqSchema = z.object({
 router.post(
   '/:uuid/sharing/:userId',
   validateAccessToken,
-  validateZodSchema(ReqSchema),
+  validateRequestAgainstZodSchema(ReqSchema),
   userMiddleware,
   teamMiddleware,
   async (
@@ -31,15 +31,20 @@ router.post(
     // type ReturnType = ApiTypes['/v0/teams/:uuid/sharing/:userId.POST.response']
     res: Response<ApiTypes['/v0/teams/:uuid/sharing/:userId.POST.response'] | ResponseError>
   ) => {
-    const teamUser = req.teamUser;
-    const teamId = req.team.id;
-    const newRole = req.body.role;
-    const userBeingChangedId = Number(req.params.userId);
-    const userMakingChangeId = req.user.id;
+    const {
+      body: { role: newRole },
+      user: { id: userMakingChangeId },
+      params: { userId },
+      team: {
+        data: { id: teamId },
+        user: teamUser,
+      },
+    } = req;
+    const userBeingChangedId = Number(userId);
 
     // User is trying to update their own role
     if (userBeingChangedId === userMakingChangeId) {
-      const currentRole = req.teamUser.role;
+      const currentRole = teamUser.role;
 
       // To the same role
       if (newRole === currentRole) {
