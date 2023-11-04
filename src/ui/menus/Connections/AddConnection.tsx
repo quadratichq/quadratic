@@ -44,9 +44,13 @@ export const AddConnection = (props: { show: boolean; setShow: (show: boolean) =
               const result = await apiClient.createConnection({});
 
               console.log(result);
+
+              const result2 = await apiClient.runConnection(result.uuid, {});
+
+              console.log(result2);
             }}
           >
-            Test Connection
+            Create Connection
           </Button>
         </DialogActions>
       </DialogContent>

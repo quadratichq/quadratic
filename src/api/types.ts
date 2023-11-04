@@ -90,6 +90,8 @@ export const ApiSchemas = {
   // Connections
   '/v0/connections.POST.request': z.object({}),
   '/v0/connections.POST.response': z.any(),
+  '/v0/connections/:uuid/run.POST.request': z.object({}),
+  '/v0/connections/:uuid/run.POST.response': z.any(),
 };
 
 // Types for API endpoitns
@@ -112,4 +114,6 @@ export type ApiTypes = {
 
   '/v0/connections.POST.request': z.infer<(typeof ApiSchemas)['/v0/connections.POST.request']>;
   '/v0/connections.POST.response': z.infer<(typeof ApiSchemas)['/v0/connections.POST.response']>;
+  '/v0/connections/:uuid/run.POST.request': z.infer<(typeof ApiSchemas)['/v0/connections/:uuid/run.POST.request']>;
+  '/v0/connections/:uuid/run.POST.response': z.infer<(typeof ApiSchemas)['/v0/connections/:uuid/run.POST.response']>;
 };

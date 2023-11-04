@@ -1,5 +1,6 @@
 import express from 'express';
 import connectionCreate from './connectionCreate';
+import connectionRun from './connectionRun';
 import supportedConnections from './supportedConnections';
 // import teamRead from './teamRead';
 // import teamSharingDelete from './teamSharingUserDelete';
@@ -9,6 +10,7 @@ import supportedConnections from './supportedConnections';
 const router = express.Router();
 
 router.use('/', connectionCreate);
+router.use('/:uuid/run', connectionRun);
 router.use('/supported', supportedConnections);
 
 export default router;

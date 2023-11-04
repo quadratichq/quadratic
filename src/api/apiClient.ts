@@ -118,6 +118,14 @@ export const apiClient = {
     );
   },
 
+  async runConnection(uuid: string, body: ApiTypes['/v0/connections/:uuid/run.POST.request']) {
+    return fetchFromApi(
+      `/v0/connections/${uuid}/run`,
+      { method: 'POST', body: JSON.stringify(body) },
+      ApiSchemas['/v0/connections.POST.response']
+    );
+  },
+
   getApiUrl() {
     const url = process.env.REACT_APP_QUADRATIC_API_URL;
     if (!url) {
