@@ -10,7 +10,7 @@ import supportedConnections from './supportedConnections';
 const router = express.Router();
 
 router.use('/', connectionCreate);
-router.use('/:uuid/run', connectionRun);
+router.use('/', connectionRun);
 router.use('/supported', supportedConnections);
 
 export default router;

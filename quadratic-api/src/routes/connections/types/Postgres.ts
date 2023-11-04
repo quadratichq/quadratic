@@ -1,3 +1,4 @@
+import { Client } from 'pg';
 import { ConnectionConfiguration } from './Base';
 
 export const PostgresConnectionConfiguration = {
@@ -18,13 +19,14 @@ export const PostgresConnectionConfiguration = {
       type: 'string',
       sensitive: false,
       required: true,
+      default: '5432',
     },
     {
       name: 'database',
       description: 'The database of the Postgres database.',
       type: 'string',
       sensitive: false,
-      required: true,
+      required: false,
     },
     {
       name: 'username',
@@ -38,7 +40,7 @@ export const PostgresConnectionConfiguration = {
       description: 'The password of the Postgres database.',
       type: 'string',
       sensitive: true,
-      required: true,
+      required: false,
     },
   ],
 } as ConnectionConfiguration;
@@ -53,7 +55,20 @@ export class PostgresConnection {
     // verify that the credentials given are read only
   }
 
-  getData() {
-    // takes the connection and a cell and returns the data in the Quadratic Format
+  public async runConnection(connection: any, query: string) {
+    const client = new Client({
+      host: connection.host,
+      port: connection.port,
+      database: connection.database,
+      user: connection.username,
+      password: connection.password,
+    });
+    await client.connect();
+
+    const res = await client.query('SELECT $1::text as message', ['Hello world!']);
+    console.log(res.rows[0].message); // Hello world!
+    await client.end();
+
+    return res.rows;
   }
 }

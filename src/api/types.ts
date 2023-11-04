@@ -1,4 +1,5 @@
 import z from 'zod';
+import { ConnectionConfiguration } from '../../quadratic-api/src/routes/connections/types/Base'; // TODO: fix this path
 
 // TODO share these with the API
 
@@ -88,7 +89,15 @@ export const ApiSchemas = {
   }),
 
   // Connections
-  '/v0/connections.POST.request': z.object({}),
+  '/v0/connections/supported.GET.response': z.array(z.any()),
+  '/v0/connections.POST.request': z.object({
+    name: z.string(),
+    host: z.string(),
+    port: z.string(),
+    database: z.string(),
+    username: z.string(),
+    password: z.string().optional(),
+  }), // TODO: refactor to get from ConnectionConfiguration Types
   '/v0/connections.POST.response': z.any(),
   '/v0/connections/:uuid/run.POST.request': z.object({}),
   '/v0/connections/:uuid/run.POST.response': z.any(),
@@ -112,8 +121,9 @@ export type ApiTypes = {
   '/v0/feedback.POST.request': z.infer<(typeof ApiSchemas)['/v0/feedback.POST.request']>;
   '/v0/feedback.POST.response': z.infer<(typeof ApiSchemas)['/v0/feedback.POST.response']>;
 
+  '/v0/connections/supported.GET.response': z.infer<(typeof ApiSchemas)['/v0/connections/supported.GET.response']>;
   '/v0/connections.POST.request': z.infer<(typeof ApiSchemas)['/v0/connections.POST.request']>;
   '/v0/connections.POST.response': z.infer<(typeof ApiSchemas)['/v0/connections.POST.response']>;
   '/v0/connections/:uuid/run.POST.request': z.infer<(typeof ApiSchemas)['/v0/connections/:uuid/run.POST.request']>;
-  '/v0/connections/:uuid/run.POST.response': z.infer<(typeof ApiSchemas)['/v0/connections/:uuid/run.POST.response']>;
+  '/v0/connections/:uuid/run.POST.response': ConnectionConfiguration;
 };

@@ -2,6 +2,7 @@ import { v4 as uuid } from 'uuid';
 
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
+import { ConnectionConfiguration } from '../../quadratic-api/src/routes/connections/types/Base'; // TODO: fix this path
 import { downloadFileInBrowser } from '../helpers/downloadFileInBrowser';
 import { generateKeyBetween } from '../utils/fractionalIndexing';
 import { fetchFromApi } from './fetchFromApi';
@@ -108,6 +109,14 @@ export const apiClient = {
       { method: 'POST', body: JSON.stringify(body) },
       ApiSchemas['/v0/feedback.POST.response']
     );
+  },
+
+  async getSupportedConnections() {
+    return fetchFromApi(
+      `/v0/connections/supported`,
+      { method: 'GET' },
+      ApiSchemas['/v0/connections/supported.GET.response']
+    ) as Promise<ConnectionConfiguration[]>;
   },
 
   async createConnection(body: ApiTypes['/v0/connections.POST.request']) {

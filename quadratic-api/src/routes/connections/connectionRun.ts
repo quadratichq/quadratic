@@ -4,11 +4,12 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { Request } from '../../types/Request';
 import { GetSecret } from './awsSecret';
+import { PostgresConnection } from './types/Postgres';
 
 const router = express.Router();
 
 router.post(
-  '/',
+  '/:uuid/run',
   validateAccessToken,
   userMiddleware,
   // TODO validate connection
@@ -16,8 +17,9 @@ router.post(
     if (!req.user) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
+    console.log('request.params', req.params);
 
-    const connection = await dbClient.connection.findFirstOrThrow({
+    const connection = await dbClient.connection.findUnique({
       where: {
         uuid: req.params.uuid,
       },
@@ -29,7 +31,15 @@ router.post(
     console.log(connection);
     console.log(connection_secret);
 
-    return res.status(200).json({});
+    const connection_key = JSON.parse(connection_secret.SecretString);
+
+    console.log('connection_key', connection_key);
+
+    const result = new PostgresConnection().runConnection(connection_key, 'SELECT * FROM User;');
+
+    return res.status(200).json({
+      result,
+    });
   }
 );
 

@@ -4,6 +4,7 @@ export interface ConnectionField {
   type: string | number | boolean;
   sensitive: boolean;
   required: boolean;
+  default?: string;
 }
 
 export interface ConnectionConfiguration {

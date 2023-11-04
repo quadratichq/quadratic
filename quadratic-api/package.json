@@ -54,6 +54,7 @@
     "@types/auth0": "^3.3.4",
     "@types/aws-sdk": "^2.7.0",
     "@types/cors": "^2.8.12",
+    "@types/pg": "^8.10.7",
     "dotenv-cli": "^7.1.0",
     "prisma": "^5.5.2"
   },
