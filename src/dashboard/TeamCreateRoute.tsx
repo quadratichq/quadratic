@@ -45,7 +45,7 @@ export const Component = () => {
   const submit = useSubmit();
 
   const handleSubmit = () => {
-    const data: ActionData = { name, picture: currentLogoUrl };
+    const data: ActionData = { name /* TODO picture: currentLogoUrl */ };
     submit(data, { method: 'POST', encType: 'application/json' });
   };
 

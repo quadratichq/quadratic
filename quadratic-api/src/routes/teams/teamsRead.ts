@@ -40,7 +40,7 @@ router.get('/', validateAccessToken, userMiddleware, async (req: Request, res) =
         select: {
           uuid: true,
           name: true,
-          created_date: true,
+          createdDate: true,
           picture: true,
         },
       },
@@ -48,7 +48,7 @@ router.get('/', validateAccessToken, userMiddleware, async (req: Request, res) =
     orderBy: [
       {
         team: {
-          created_date: 'asc',
+          createdDate: 'asc',
         },
       },
     ],

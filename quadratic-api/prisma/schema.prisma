@@ -45,7 +45,7 @@ model Team {
     uuid         String         @unique @default(uuid())
     name         String
     picture      String? // S3FileKey
-    created_date DateTime       @default(now())
+    createdDate  DateTime       @default(now())
     UserTeamRole UserTeamRole[]
     TeamInvite   TeamInvite[]
 }
@@ -57,24 +57,24 @@ enum TeamRole {
 }
 
 model UserTeamRole {
-    id           Int      @id @default(autoincrement())
-    userId       Int
-    teamId       Int
-    user         User     @relation(fields: [userId], references: [id])
-    team         Team     @relation(fields: [teamId], references: [id])
-    role         TeamRole
-    created_date DateTime @default(now())
+    id          Int      @id @default(autoincrement())
+    userId      Int
+    teamId      Int
+    user        User     @relation(fields: [userId], references: [id])
+    team        Team     @relation(fields: [teamId], references: [id])
+    role        TeamRole
+    createdDate DateTime @default(now())
 
     @@unique([userId, teamId])
 }
 
 model TeamInvite {
-    id           Int      @id @default(autoincrement())
-    email        String
-    teamId       Int
-    team         Team     @relation(fields: [teamId], references: [id])
-    role         TeamRole
-    created_date DateTime @default(now())
+    id          Int      @id @default(autoincrement())
+    email       String
+    teamId      Int
+    team        Team     @relation(fields: [teamId], references: [id])
+    role        TeamRole
+    createdDate DateTime @default(now())
 
     @@unique([email, teamId])
 }

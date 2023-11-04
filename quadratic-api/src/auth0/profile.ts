@@ -17,45 +17,34 @@ const auth0 = new ManagementClient({
   scope: 'read:users',
 });
 
-export const getUsers = async (user_ids: number[]) => {
+export const getAuth0Users = async (auth0Ids: string[]) => {
   try {
-    const dbUsers = await dbClient.user.findMany({
-      where: {
-        id: {
-          in: user_ids,
-        },
-      },
-    });
-
-    const dbUsersAuth0Ids = dbUsers.map(({ auth0_id }) => auth0_id);
-
     const auth0Users = await auth0.getUsers({
-      q: `user_id:(${dbUsersAuth0Ids.join(' OR ')})`,
+      q: `user_id:(${auth0Ids.join(' OR ')})`,
     });
-    // console.log(dbUsers, auth0Users);
-
     return auth0Users;
   } catch (e) {
+    // TODO log to sentry?
     console.error(e);
     return [];
   }
 };
 
-export const getUserProfile = async (user_id: number) => {
+export const getUserProfile = async (userId: number) => {
   const user = await dbClient.user.findUnique({
-    where: { id: user_id },
+    where: { id: userId },
   });
 
-  const auth0_user = await auth0.getUser({ id: user.auth0_id });
+  const { name, picture, email } = await auth0.getUser({ id: user.auth0_id });
 
   return {
-    name: auth0_user.name,
-    picture: auth0_user.picture,
-    email: auth0_user.email,
+    name,
+    picture,
+    email,
   };
 };
 
 export const getUsersByEmail = async (email: string) => {
-  const auth0_users = await auth0.getUsersByEmail(email);
-  return auth0_users;
+  const auth0Users = await auth0.getUsersByEmail(email);
+  return auth0Users;
 };

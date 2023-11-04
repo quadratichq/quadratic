@@ -1,7 +1,7 @@
 import express, { Response } from 'express';
 import { z } from 'zod';
 import { ApiTypes } from '../../../../src/api/types';
-import { getUsers } from '../../auth0/profile';
+import { getAuth0Users } from '../../auth0/profile';
 import dbClient from '../../dbClient';
 import { teamMiddleware } from '../../middleware/team';
 import { userMiddleware } from '../../middleware/user';
@@ -10,7 +10,7 @@ import { validateRequestAgainstZodSchema } from '../../middleware/validateReques
 import { RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
 const router = express.Router();
 
-const ReqSchema = z.object({
+const schema = z.object({
   params: z.object({
     uuid: z.string().uuid(),
   }),
@@ -19,7 +19,7 @@ const ReqSchema = z.object({
 router.get(
   '/:uuid',
   validateAccessToken,
-  validateRequestAgainstZodSchema(ReqSchema),
+  validateRequestAgainstZodSchema(schema),
   userMiddleware,
   teamMiddleware,
   async (
@@ -40,31 +40,47 @@ router.get(
       where: {
         teamId,
       },
+      include: {
+        user: true,
+      },
+      orderBy: {
+        createdDate: 'asc',
+      },
     });
-    const teamUserIds = teamUsers.map(({ userId }) => userId);
+    const auth0UserIds = teamUsers.map(({ user: { auth0_id } }) => auth0_id);
 
     // TODO get the invited users of a team
 
     // Get auth0 users
-    // TODO how do we ensure that the order of the users is the same?
-    const auth0Users = await getUsers(teamUserIds);
+    const auth0Users = await getAuth0Users(auth0UserIds);
+    // @ts-expect-error fix types
+    const auth0UsersByAuth0Id: Record<string, (typeof auth0Users)[0]> = auth0Users.reduce(
+      (acc, auth0User) => ({ ...acc, [auth0User.user_id]: auth0User }),
+      {}
+    );
+
+    // TODO sort users by created_date in the team
 
     const response = {
       team: {
         uuid: team.uuid,
         name: team.name,
-        created_date: team.created_date,
+        created_date: team.createdDate,
         ...(team.picture ? { picture: team.picture } : {}),
         // TODO we could put this in /sharing and just return the userCount
         // TODO invited users, also can we guarantee ordering here?
-        users: auth0Users.map(({ email, name, picture }, i) => ({
-          id: teamUsers[i].userId,
-          email,
-          role: teamUsers[i].role,
-          hasAccount: true,
-          name,
-          picture,
-        })),
+        users: teamUsers.map(({ userId: id, role, user: { auth0_id } }) => {
+          const { email, name, picture } = auth0UsersByAuth0Id[auth0_id];
+          return {
+            id,
+            email,
+            role,
+            hasAccount: true,
+            name,
+            picture,
+          };
+        }),
+
         // @ts-expect-error TODO
         files: [],
       },

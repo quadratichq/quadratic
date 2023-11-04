@@ -7,7 +7,7 @@ CREATE TABLE "Team" (
     "uuid" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "picture" TEXT,
-    "created_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Team_pkey" PRIMARY KEY ("id")
 );
@@ -18,7 +18,7 @@ CREATE TABLE "UserTeamRole" (
     "userId" INTEGER NOT NULL,
     "teamId" INTEGER NOT NULL,
     "role" "TeamRole" NOT NULL,
-    "created_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "UserTeamRole_pkey" PRIMARY KEY ("id")
 );
@@ -29,7 +29,7 @@ CREATE TABLE "TeamInvite" (
     "email" TEXT NOT NULL,
     "teamId" INTEGER NOT NULL,
     "role" "TeamRole" NOT NULL,
-    "created_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "TeamInvite_pkey" PRIMARY KEY ("id")
 );
