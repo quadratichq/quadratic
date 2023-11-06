@@ -1,9 +1,8 @@
 {
-  "version": "1.5",
   "sheets": [
     {
       "id": {
-        "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
+        "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
       },
       "name": "Sheet 1",
       "color": null,
@@ -22,28 +21,9 @@
           0,
           {
             "id": {
-              "id": "eac8572c-2a53-43de-8b16-aa6ce3ee000c"
+              "id": "f992e95d-bb22-463c-87b8-c67b7a65ac32"
             },
             "values": {
-              "0": {
-                "y": 0,
-                "content": {
-                  "Values": [
-                    {
-                      "type": "text",
-                      "value": "Quadratic"
-                    },
-                    {
-                      "type": "text",
-                      "value": "The data science spreadsheet"
-                    },
-                    {
-                      "type": "text",
-                      "value": "Read more docs.quadratichq.com"
-                    }
-                  ]
-                }
-              },
               "5": {
                 "y": 5,
                 "content": {
@@ -55,38 +35,65 @@
                   ]
                 }
               },
-              "7": {
-                "y": 7,
+              "8": {
+                "y": 8,
                 "content": {
                   "Values": [
                     {
                       "type": "text",
-                      "value": "1. Cells can contain code"
-                    },
-                    {
-                      "type": "text",
                       "value": "2. Move to an empty cell and press ="
-                    },
+                    }
+                  ]
+                }
+              },
+              "2": {
+                "y": 2,
+                "content": {
+                  "Values": [
                     {
                       "type": "text",
-                      "value": "    to create a new Formula or Python cell"
-                    },
+                      "value": "Read more docs.quadratichq.com"
+                    }
+                  ]
+                }
+              },
+              "10": {
+                "y": 10,
+                "content": {
+                  "Values": [
                     {
                       "type": "text",
                       "value": "3. Right click to access formatting menu"
-                    },
-                    {
-                      "type": "text",
-                      "value": "4. Reference other cell values in Python"
-                    },
-                    {
-                      "type": "text",
-                      "value": "5. Double click and correct this error"
-                    },
+                    }
+                  ]
+                }
+              },
+              "13": {
+                "y": 13,
+                "content": {
+                  "Values": [
                     {
                       "type": "text",
                       "value": "6. Blue cell outlines show you what cells"
-                    },
+                    }
+                  ]
+                }
+              },
+              "11": {
+                "y": 11,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "4. Reference other cell values in Python"
+                    }
+                  ]
+                }
+              },
+              "14": {
+                "y": 14,
+                "content": {
+                  "Values": [
                     {
                       "type": "text",
                       "value": "    contain code and purple for formulas."
@@ -104,6 +111,61 @@
                     }
                   ]
                 }
+              },
+              "1": {
+                "y": 1,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "The data science spreadsheet"
+                    }
+                  ]
+                }
+              },
+              "12": {
+                "y": 12,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "5. Double click and correct this error"
+                    }
+                  ]
+                }
+              },
+              "7": {
+                "y": 7,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "1. Cells can contain code"
+                    }
+                  ]
+                }
+              },
+              "9": {
+                "y": 9,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "    to create a new Formula or Python cell"
+                    }
+                  ]
+                }
+              },
+              "0": {
+                "y": 0,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "Quadratic"
+                    }
+                  ]
+                }
               }
             },
             "spills": {},
@@ -112,15 +174,15 @@
             "numeric_format": {},
             "numeric_decimals": {},
             "bold": {
-              "0": {
-                "y": 0,
+              "5": {
+                "y": 5,
                 "content": {
                   "value": true,
                   "len": 1
                 }
               },
-              "5": {
-                "y": 5,
+              "0": {
+                "y": 0,
                 "content": {
                   "value": true,
                   "len": 1
@@ -139,7 +201,14 @@
                 "y": 1,
                 "content": {
                   "value": true,
-                  "len": 2
+                  "len": 1
+                }
+              },
+              "2": {
+                "y": 2,
+                "content": {
+                  "value": true,
+                  "len": 1
                 }
               }
             },
@@ -151,7 +220,7 @@
           1,
           {
             "id": {
-              "id": "b6336d95-5590-4c1c-b229-e279c3a43c87"
+              "id": "b25c66f7-58c4-47bc-8a3e-06d10bfeeca6"
             },
             "values": {
               "10": {
@@ -170,17 +239,21 @@
               "11": {
                 "y": 11,
                 "content": {
-                  "value": {
-                    "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
-                    },
-                    "column": {
-                      "id": "b6336d95-5590-4c1c-b229-e279c3a43c87"
-                    },
-                    "row": {
-                      "id": "b82b2577-ee57-409f-a9b9-821bc1ef099a"
-                    }
-                  },
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"b25c66f7-58c4-47bc-8a3e-06d10bfeeca6\"},\"row\":{\"id\":\"2603ae46-6447-4da8-b3ed-7a5c3b32c814\"}}",
+                  "len": 1
+                }
+              },
+              "12": {
+                "y": 12,
+                "content": {
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"b25c66f7-58c4-47bc-8a3e-06d10bfeeca6\"},\"row\":{\"id\":\"83b50319-10a1-4fbf-a6c0-88af771da674\"}}",
+                  "len": 1
+                }
+              },
+              "7": {
+                "y": 7,
+                "content": {
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"b25c66f7-58c4-47bc-8a3e-06d10bfeeca6\"},\"row\":{\"id\":\"65334faf-6836-41b7-bef4-3360c1904799\"}}",
                   "len": 1
                 }
               }
@@ -207,7 +280,7 @@
           3,
           {
             "id": {
-              "id": "59d12dd8-b0f4-4359-95d2-55bd94692047"
+              "id": "7f5e7768-bfb8-45b5-ab2d-414ea1c4ef29"
             },
             "values": {
               "9": {
@@ -217,14 +290,28 @@
                     {
                       "type": "text",
                       "value": "Ex Data"
-                    },
-                    {
-                      "type": "text",
-                      "value": "SUM Formula"
-                    },
+                    }
+                  ]
+                }
+              },
+              "11": {
+                "y": 11,
+                "content": {
+                  "Values": [
                     {
                       "type": "text",
                       "value": "SUM Python"
+                    }
+                  ]
+                }
+              },
+              "10": {
+                "y": 10,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "SUM Formula"
                     }
                   ]
                 }
@@ -245,11 +332,18 @@
               }
             },
             "italic": {
+              "11": {
+                "y": 11,
+                "content": {
+                  "value": true,
+                  "len": 1
+                }
+              },
               "10": {
                 "y": 10,
                 "content": {
                   "value": true,
-                  "len": 2
+                  "len": 1
                 }
               }
             },
@@ -261,7 +355,7 @@
           4,
           {
             "id": {
-              "id": "fdaa473b-91e1-48c3-86cb-faa0463fa4ab"
+              "id": "634396df-a29e-44c1-96eb-18667c31cacb"
             },
             "values": {
               "5": {
@@ -280,11 +374,18 @@
                 "content": {
                   "Values": [
                     {
-                      "type": "text",
+                      "type": "number",
                       "value": "343"
-                    },
+                    }
+                  ]
+                }
+              },
+              "8": {
+                "y": 8,
+                "content": {
+                  "Values": [
                     {
-                      "type": "text",
+                      "type": "number",
                       "value": "120"
                     }
                   ]
@@ -295,17 +396,14 @@
               "11": {
                 "y": 11,
                 "content": {
-                  "value": {
-                    "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
-                    },
-                    "column": {
-                      "id": "fdaa473b-91e1-48c3-86cb-faa0463fa4ab"
-                    },
-                    "row": {
-                      "id": "b82b2577-ee57-409f-a9b9-821bc1ef099a"
-                    }
-                  },
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"634396df-a29e-44c1-96eb-18667c31cacb\"},\"row\":{\"id\":\"2603ae46-6447-4da8-b3ed-7a5c3b32c814\"}}",
+                  "len": 1
+                }
+              },
+              "10": {
+                "y": 10,
+                "content": {
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"634396df-a29e-44c1-96eb-18667c31cacb\"},\"row\":{\"id\":\"2fd8d67b-9c39-4ab5-a756-b8e52bae1f9a\"}}",
                   "len": 1
                 }
               }
@@ -330,7 +428,14 @@
                 "y": 7,
                 "content": {
                   "value": "rgb(218, 240, 255)",
-                  "len": 2
+                  "len": 1
+                }
+              },
+              "8": {
+                "y": 8,
+                "content": {
+                  "value": "rgb(218, 240, 255)",
+                  "len": 1
                 }
               }
             }
@@ -340,9 +445,42 @@
           6,
           {
             "id": {
-              "id": "1cf79c2e-d091-4acc-934e-bc72fed3e722"
+              "id": "e0808990-5990-4c1d-a51d-ac6efee8ce81"
             },
             "values": {
+              "8": {
+                "y": 8,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "AAPL"
+                    }
+                  ]
+                }
+              },
+              "12": {
+                "y": 12,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "Use Python packages from PIP"
+                    }
+                  ]
+                }
+              },
+              "13": {
+                "y": 13,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "Generate a fake person using the Python package Faker"
+                    }
+                  ]
+                }
+              },
               "5": {
                 "y": 5,
                 "content": {
@@ -361,63 +499,38 @@
                     {
                       "type": "text",
                       "value": "Make an API request"
-                    },
-                    {
-                      "type": "text",
-                      "value": "AAPL"
-                    }
-                  ]
-                }
-              },
-              "12": {
-                "y": 12,
-                "content": {
-                  "Values": [
-                    {
-                      "type": "text",
-                      "value": "Use Python packages from PIP"
-                    },
-                    {
-                      "type": "text",
-                      "value": "Generate a fake person using the Python package Faker"
                     }
                   ]
                 }
               }
             },
             "spills": {
-              "9": {
-                "y": 9,
+              "15": {
+                "y": 15,
                 "content": {
-                  "value": {
-                    "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
-                    },
-                    "column": {
-                      "id": "1cf79c2e-d091-4acc-934e-bc72fed3e722"
-                    },
-                    "row": {
-                      "id": "4c788e8c-8f15-4bc7-8757-1867fa91131e"
-                    }
-                  },
-                  "len": 2
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ea18bc6d-d911-4219-9055-713025773d82\"}}",
+                  "len": 1
                 }
               },
               "14": {
                 "y": 14,
                 "content": {
-                  "value": {
-                    "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
-                    },
-                    "column": {
-                      "id": "1cf79c2e-d091-4acc-934e-bc72fed3e722"
-                    },
-                    "row": {
-                      "id": "915a193a-9257-49e8-8ba5-3570093fbc6e"
-                    }
-                  },
-                  "len": 2
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ea18bc6d-d911-4219-9055-713025773d82\"}}",
+                  "len": 1
+                }
+              },
+              "9": {
+                "y": 9,
+                "content": {
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ffb3288a-95f0-4c6b-88f2-f9bdce366ea2\"}}",
+                  "len": 1
+                }
+              },
+              "10": {
+                "y": 10,
+                "content": {
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ffb3288a-95f0-4c6b-88f2-f9bdce366ea2\"}}",
+                  "len": 1
                 }
               }
             },
@@ -426,6 +539,13 @@
             "numeric_format": {},
             "numeric_decimals": {},
             "bold": {
+              "12": {
+                "y": 12,
+                "content": {
+                  "value": true,
+                  "len": 1
+                }
+              },
               "5": {
                 "y": 5,
                 "content": {
@@ -435,13 +555,6 @@
               },
               "7": {
                 "y": 7,
-                "content": {
-                  "value": true,
-                  "len": 1
-                }
-              },
-              "12": {
-                "y": 12,
                 "content": {
                   "value": true,
                   "len": 1
@@ -465,7 +578,7 @@
           7,
           {
             "id": {
-              "id": "669a3caf-dd5a-4809-890d-75762079c9c8"
+              "id": "7eca6f1a-176a-4b58-bdfa-81ecc5c9441f"
             },
             "values": {
               "8": {
@@ -484,35 +597,29 @@
               "9": {
                 "y": 9,
                 "content": {
-                  "value": {
-                    "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
-                    },
-                    "column": {
-                      "id": "1cf79c2e-d091-4acc-934e-bc72fed3e722"
-                    },
-                    "row": {
-                      "id": "4c788e8c-8f15-4bc7-8757-1867fa91131e"
-                    }
-                  },
-                  "len": 2
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ffb3288a-95f0-4c6b-88f2-f9bdce366ea2\"}}",
+                  "len": 1
+                }
+              },
+              "15": {
+                "y": 15,
+                "content": {
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ea18bc6d-d911-4219-9055-713025773d82\"}}",
+                  "len": 1
                 }
               },
               "14": {
                 "y": 14,
                 "content": {
-                  "value": {
-                    "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
-                    },
-                    "column": {
-                      "id": "1cf79c2e-d091-4acc-934e-bc72fed3e722"
-                    },
-                    "row": {
-                      "id": "915a193a-9257-49e8-8ba5-3570093fbc6e"
-                    }
-                  },
-                  "len": 2
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ea18bc6d-d911-4219-9055-713025773d82\"}}",
+                  "len": 1
+                }
+              },
+              "10": {
+                "y": 10,
+                "content": {
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ffb3288a-95f0-4c6b-88f2-f9bdce366ea2\"}}",
+                  "len": 1
                 }
               }
             },
@@ -530,42 +637,36 @@
           8,
           {
             "id": {
-              "id": "c80ac838-bda3-4958-a38f-6da1b9a785a5"
+              "id": "2c46c11b-ca41-4104-bf04-1c92cee8ae29"
             },
             "values": {},
             "spills": {
+              "10": {
+                "y": 10,
+                "content": {
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ffb3288a-95f0-4c6b-88f2-f9bdce366ea2\"}}",
+                  "len": 1
+                }
+              },
+              "15": {
+                "y": 15,
+                "content": {
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ea18bc6d-d911-4219-9055-713025773d82\"}}",
+                  "len": 1
+                }
+              },
               "9": {
                 "y": 9,
                 "content": {
-                  "value": {
-                    "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
-                    },
-                    "column": {
-                      "id": "1cf79c2e-d091-4acc-934e-bc72fed3e722"
-                    },
-                    "row": {
-                      "id": "4c788e8c-8f15-4bc7-8757-1867fa91131e"
-                    }
-                  },
-                  "len": 2
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ffb3288a-95f0-4c6b-88f2-f9bdce366ea2\"}}",
+                  "len": 1
                 }
               },
               "14": {
                 "y": 14,
                 "content": {
-                  "value": {
-                    "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
-                    },
-                    "column": {
-                      "id": "1cf79c2e-d091-4acc-934e-bc72fed3e722"
-                    },
-                    "row": {
-                      "id": "915a193a-9257-49e8-8ba5-3570093fbc6e"
-                    }
-                  },
-                  "len": 2
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ea18bc6d-d911-4219-9055-713025773d82\"}}",
+                  "len": 1
                 }
               }
             },
@@ -583,42 +684,36 @@
           9,
           {
             "id": {
-              "id": "fec1c5a0-084f-42fd-a0be-87e5ab66b08d"
+              "id": "a0b2fd15-486b-42b0-817d-148f506381e6"
             },
             "values": {},
             "spills": {
+              "10": {
+                "y": 10,
+                "content": {
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ffb3288a-95f0-4c6b-88f2-f9bdce366ea2\"}}",
+                  "len": 1
+                }
+              },
+              "15": {
+                "y": 15,
+                "content": {
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ea18bc6d-d911-4219-9055-713025773d82\"}}",
+                  "len": 1
+                }
+              },
               "9": {
                 "y": 9,
                 "content": {
-                  "value": {
-                    "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
-                    },
-                    "column": {
-                      "id": "1cf79c2e-d091-4acc-934e-bc72fed3e722"
-                    },
-                    "row": {
-                      "id": "4c788e8c-8f15-4bc7-8757-1867fa91131e"
-                    }
-                  },
-                  "len": 2
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ffb3288a-95f0-4c6b-88f2-f9bdce366ea2\"}}",
+                  "len": 1
                 }
               },
               "14": {
                 "y": 14,
                 "content": {
-                  "value": {
-                    "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
-                    },
-                    "column": {
-                      "id": "1cf79c2e-d091-4acc-934e-bc72fed3e722"
-                    },
-                    "row": {
-                      "id": "915a193a-9257-49e8-8ba5-3570093fbc6e"
-                    }
-                  },
-                  "len": 2
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ea18bc6d-d911-4219-9055-713025773d82\"}}",
+                  "len": 1
                 }
               }
             },
@@ -636,25 +731,22 @@
           10,
           {
             "id": {
-              "id": "ae5f8bc5-3215-48af-8c9a-7d8313bb8d16"
+              "id": "874e5552-cba5-4038-8121-0a46875237a7"
             },
             "values": {},
             "spills": {
+              "15": {
+                "y": 15,
+                "content": {
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ea18bc6d-d911-4219-9055-713025773d82\"}}",
+                  "len": 1
+                }
+              },
               "14": {
                 "y": 14,
                 "content": {
-                  "value": {
-                    "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
-                    },
-                    "column": {
-                      "id": "1cf79c2e-d091-4acc-934e-bc72fed3e722"
-                    },
-                    "row": {
-                      "id": "915a193a-9257-49e8-8ba5-3570093fbc6e"
-                    }
-                  },
-                  "len": 2
+                  "value": "{\"sheet\":{\"id\":\"ba0e1092-a79c-4f20-8759-c14655f88a38\"},\"column\":{\"id\":\"e0808990-5990-4c1d-a51d-ac6efee8ce81\"},\"row\":{\"id\":\"ea18bc6d-d911-4219-9055-713025773d82\"}}",
+                  "len": 1
                 }
               }
             },
@@ -673,117 +765,146 @@
         [
           0,
           {
-            "id": "cb355bcf-8363-4d98-a0e6-b4d4a9b40ee3"
+            "id": "2669725a-37d3-420c-bbed-349cd509ad53"
           }
         ],
         [
           1,
           {
-            "id": "fead88dc-e64e-4550-8d9e-daa8e7f1fe6c"
+            "id": "c05b7233-6c9c-4434-b826-b3d4bf897818"
           }
         ],
         [
           2,
           {
-            "id": "3a91b463-f3fd-4463-961e-b099fbd23cdc"
+            "id": "210a1543-0b1a-4089-a816-b7e0cba7fa37"
           }
         ],
         [
           5,
           {
-            "id": "9741519d-59a8-4d05-a4e3-7a2da2cdb500"
+            "id": "ef3c0b2e-eded-4412-8656-69946efc5a48"
           }
         ],
         [
           7,
           {
-            "id": "68fe5427-58b0-458e-b7a3-11418347a691"
+            "id": "65334faf-6836-41b7-bef4-3360c1904799"
           }
         ],
         [
           8,
           {
-            "id": "68d0b407-09b1-4b48-a851-06d1741c3d94"
+            "id": "a716aad6-b03f-4f97-a7f9-6e581292c32e"
           }
         ],
         [
           9,
           {
-            "id": "4c788e8c-8f15-4bc7-8757-1867fa91131e"
+            "id": "ffb3288a-95f0-4c6b-88f2-f9bdce366ea2"
           }
         ],
         [
           10,
           {
-            "id": "41a96153-d406-427f-b329-09e9722ebec0"
+            "id": "2fd8d67b-9c39-4ab5-a756-b8e52bae1f9a"
           }
         ],
         [
           11,
           {
-            "id": "b82b2577-ee57-409f-a9b9-821bc1ef099a"
+            "id": "2603ae46-6447-4da8-b3ed-7a5c3b32c814"
           }
         ],
         [
           12,
           {
-            "id": "66526cf0-ac34-4cfa-bf80-fa23dcb93337"
+            "id": "83b50319-10a1-4fbf-a6c0-88af771da674"
           }
         ],
         [
           13,
           {
-            "id": "d58fdbf5-08ce-4bed-bac2-52c96a08702b"
+            "id": "904c319e-8e8e-4dc6-afc7-a231e1a383f5"
           }
         ],
         [
           14,
           {
-            "id": "915a193a-9257-49e8-8ba5-3570093fbc6e"
+            "id": "ea18bc6d-d911-4219-9055-713025773d82"
           }
         ],
         [
           15,
           {
-            "id": "1d70c068-7114-4752-a044-03e0a1650812"
+            "id": "f5505e1f-c1d3-4013-9eb3-af41369c682d"
           }
         ],
         [
           17,
           {
-            "id": "d14254c3-c2ef-4ff8-bb63-a488cc72bc94"
+            "id": "2a427bdb-1d71-4622-b37d-3e2d68f9ae54"
           }
         ]
       ],
-      "borders": {
-        "per_cell": {
-          "borders": {}
-        },
-        "render_lookup": {
-          "vertical": {},
-          "horizontal": {}
-        }
-      },
+      "borders": {},
       "code_cells": [
         [
           {
             "sheet": {
-              "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
+              "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
             },
             "column": {
-              "id": "b6336d95-5590-4c1c-b229-e279c3a43c87"
+              "id": "b25c66f7-58c4-47bc-8a3e-06d10bfeeca6"
             },
             "row": {
-              "id": "b82b2577-ee57-409f-a9b9-821bc1ef099a"
+              "id": "65334faf-6836-41b7-bef4-3360c1904799"
             }
           },
           {
             "language": "Python",
-            "code_string": "# You can reference other cells and ranges in Python\\n# using the build in function `cell` to get a value.\\n# cell(x, y)\\nprint(\"The value of cell 4, 7 is: \", cell(4, 7))\\n\\n# With cells you can do math\\nprint(\"Addition cell 4, 7 and 4, 8: \", \\n    cell(4, 7) + cell(4, 8))\\n\\n# And equality comparisons\\n# Tip: you can use `c` for short referencing a cell\\nprint(\"Equal: \", c(4, 7) == c(4, 8))\\n\\n\"Click Here\"",
-            "formatted_code_string": "# You can reference other cells and ranges in Python\\n# using the build in function `cell` to get a value.\\n# cell(x, y)\\nprint(\"The value of cell 4, 7 is: \", cell(4, 7))\\n\\n# With cells you can do math\\nprint(\"Addition cell 4, 7 and 4, 8: \",\\n      cell(4, 7) + cell(4, 8))\\n\\n# And equality comparisons\\n# Tip: you can use `c` for short referencing a cell\\nprint(\"Equal: \", c(4, 7) == c(4, 8))\\n\\n\"Click Here\"\\n",
+            "code_string": "print(\"Hello world!\")\n# The last python statement is returned \n# as the cell value.\n\"Double click to see the code in this cell\"\n",
+            "formatted_code_string": "print(\"Hello world!\")\n# The last python statement is returned\n# as the cell value.\n\"Double click to see the code in this cell\"\n",
+            "last_modified": "2023-02-16T00:08:31.578Z",
+            "output": {
+              "stdOut": "Hello world!\n",
+              "result": {
+                "output_value": {
+                  "size": {
+                    "w": 1,
+                    "h": 1
+                  },
+                  "values": [
+                    {
+                      "type": "text",
+                      "value": "Double click to see the code in this cell"
+                    }
+                  ]
+                },
+                "cells_accessed": []
+              }
+            }
+          }
+        ],
+        [
+          {
+            "sheet": {
+              "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
+            },
+            "column": {
+              "id": "b25c66f7-58c4-47bc-8a3e-06d10bfeeca6"
+            },
+            "row": {
+              "id": "2603ae46-6447-4da8-b3ed-7a5c3b32c814"
+            }
+          },
+          {
+            "language": "Python",
+            "code_string": "# You can reference other cells and ranges in Python\n# using the build in function `cell` to get a value.\n# cell(x, y)\nprint(\"The value of cell 4, 7 is: \", cell(4, 7))\n\n# With cells you can do math\nprint(\"Addition cell 4, 7 and 4, 8: \", \n    cell(4, 7) + cell(4, 8))\n\n# And equality comparisons\n# Tip: you can use `c` for short referencing a cell\nprint(\"Equal: \", c(4, 7) == c(4, 8))\n\n\"Click Here\"",
+            "formatted_code_string": "# You can reference other cells and ranges in Python\n# using the build in function `cell` to get a value.\n# cell(x, y)\nprint(\"The value of cell 4, 7 is: \", cell(4, 7))\n\n# With cells you can do math\nprint(\"Addition cell 4, 7 and 4, 8: \",\n      cell(4, 7) + cell(4, 8))\n\n# And equality comparisons\n# Tip: you can use `c` for short referencing a cell\nprint(\"Equal: \", c(4, 7) == c(4, 8))\n\n\"Click Here\"\n",
             "last_modified": "2023-03-17T04:24:47.001Z",
             "output": {
-              "std_out": "The value of cell 4, 7 is:  343\\nAddition cell 4, 7 and 4, 8:  463\\nEqual:  False\\n",
+              "stdOut": "The value of cell 4, 7 is:  343\nAddition cell 4, 7 and 4, 8:  463\nEqual:  False\n",
               "result": {
                 "output_value": {
                   "type": "text",
@@ -792,57 +913,57 @@
                 "cells_accessed": [
                   {
                     "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
+                      "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
                     },
                     "column": {
-                      "id": "fdaa473b-91e1-48c3-86cb-faa0463fa4ab"
+                      "id": "634396df-a29e-44c1-96eb-18667c31cacb"
                     },
                     "row": {
-                      "id": "68fe5427-58b0-458e-b7a3-11418347a691"
+                      "id": "65334faf-6836-41b7-bef4-3360c1904799"
                     }
                   },
                   {
                     "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
+                      "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
                     },
                     "column": {
-                      "id": "fdaa473b-91e1-48c3-86cb-faa0463fa4ab"
+                      "id": "634396df-a29e-44c1-96eb-18667c31cacb"
                     },
                     "row": {
-                      "id": "68fe5427-58b0-458e-b7a3-11418347a691"
+                      "id": "65334faf-6836-41b7-bef4-3360c1904799"
                     }
                   },
                   {
                     "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
+                      "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
                     },
                     "column": {
-                      "id": "fdaa473b-91e1-48c3-86cb-faa0463fa4ab"
+                      "id": "634396df-a29e-44c1-96eb-18667c31cacb"
                     },
                     "row": {
-                      "id": "68d0b407-09b1-4b48-a851-06d1741c3d94"
+                      "id": "a716aad6-b03f-4f97-a7f9-6e581292c32e"
                     }
                   },
                   {
                     "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
+                      "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
                     },
                     "column": {
-                      "id": "fdaa473b-91e1-48c3-86cb-faa0463fa4ab"
+                      "id": "634396df-a29e-44c1-96eb-18667c31cacb"
                     },
                     "row": {
-                      "id": "68fe5427-58b0-458e-b7a3-11418347a691"
+                      "id": "65334faf-6836-41b7-bef4-3360c1904799"
                     }
                   },
                   {
                     "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
+                      "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
                     },
                     "column": {
-                      "id": "fdaa473b-91e1-48c3-86cb-faa0463fa4ab"
+                      "id": "634396df-a29e-44c1-96eb-18667c31cacb"
                     },
                     "row": {
-                      "id": "68d0b407-09b1-4b48-a851-06d1741c3d94"
+                      "id": "a716aad6-b03f-4f97-a7f9-6e581292c32e"
                     }
                   }
                 ]
@@ -853,22 +974,22 @@
         [
           {
             "sheet": {
-              "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
+              "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
             },
             "column": {
-              "id": "1cf79c2e-d091-4acc-934e-bc72fed3e722"
+              "id": "e0808990-5990-4c1d-a51d-ac6efee8ce81"
             },
             "row": {
-              "id": "4c788e8c-8f15-4bc7-8757-1867fa91131e"
+              "id": "ffb3288a-95f0-4c6b-88f2-f9bdce366ea2"
             }
           },
           {
             "language": "Python",
-            "code_string": "from pprint import pprint\\nimport pandas as pd\\nimport json\\nimport js\\n\\nsymbol = c(6, 8)\\n\\nstock_financials = await js.fetch('https://api.polygon.io/vX/reference/financials?ticker={}&apiKey=_xBCl_0zcb9H1W25jJEK5pQaQTVLtemL'.format(symbol), {\\n    \"method\": \"GET\",\\n    \"headers\": {\"Content-Type\": \"application/json\"}\\n})\\nstock_financials_json = json.loads(await stock_financials.text())\\nincome_statement = stock_financials_json[\"results\"][1][\"financials\"][\"income_statement\"]\\nrevenue = income_statement[\"revenues\"][\"value\"]\\n\\n\\nmarket_data = await js.fetch('https://api.polygon.io/v3/reference/tickers/{}?apiKey=_xBCl_0zcb9H1W25jJEK5pQaQTVLtemL'.format(symbol), {\\n    \"method\": \"GET\",\\n    \"headers\": {\"Content-Type\": \"application/json\"}\\n})\\nmarket_data_json = json.loads(await market_data.text())[\"results\"]\\nmarket_cap = market_data_json[\"market_cap\"]\\nname = market_data_json[\"name\"]\\n\\npd.DataFrame([[\\n    name[:20],\\n    \"${:,}\".format(int(revenue)),\\n    \"${:.2e}\".format(market_cap),\\n    \"{:,.2f}\".format(market_cap / revenue),\\n]], columns=[\"Full Name\", \"Revenue\", \"Market Cap\", \"Multiple\"])\\n",
-            "formatted_code_string": "from pprint import pprint\\nimport pandas as pd\\nimport json\\nimport js\\n\\nsymbol = c(6, 8)\\n\\nstock_financials = await js.fetch('https://api.polygon.io/vX/reference/financials?ticker={}&apiKey=_xBCl_0zcb9H1W25jJEK5pQaQTVLtemL'.format(symbol), {\\n    \"method\": \"GET\",\\n    \"headers\": {\"Content-Type\": \"application/json\"}\\n})\\nstock_financials_json = json.loads(await stock_financials.text())\\nincome_statement = stock_financials_json[\"results\"][1][\"financials\"][\"income_statement\"]\\nrevenue = income_statement[\"revenues\"][\"value\"]\\n\\n\\nmarket_data = await js.fetch('https://api.polygon.io/v3/reference/tickers/{}?apiKey=_xBCl_0zcb9H1W25jJEK5pQaQTVLtemL'.format(symbol), {\\n    \"method\": \"GET\",\\n    \"headers\": {\"Content-Type\": \"application/json\"}\\n})\\nmarket_data_json = json.loads(await market_data.text())[\"results\"]\\nmarket_cap = market_data_json[\"market_cap\"]\\nname = market_data_json[\"name\"]\\n\\npd.DataFrame([[\\n    name[:20],\\n    \"${:,}\".format(int(revenue)),\\n    \"${:.2e}\".format(market_cap),\\n    \"{:,.2f}\".format(market_cap / revenue),\\n]], columns=[\"Full Name\", \"Revenue\", \"Market Cap\", \"Multiple\"])\\n",
+            "code_string": "from pprint import pprint\nimport pandas as pd\nimport json\nimport js\n\nsymbol = c(6, 8)\n\nstock_financials = await js.fetch('https://api.polygon.io/vX/reference/financials?ticker={}&apiKey=_xBCl_0zcb9H1W25jJEK5pQaQTVLtemL'.format(symbol), {\n    \"method\": \"GET\",\n    \"headers\": {\"Content-Type\": \"application/json\"}\n})\nstock_financials_json = json.loads(await stock_financials.text())\nincome_statement = stock_financials_json[\"results\"][1][\"financials\"][\"income_statement\"]\nrevenue = income_statement[\"revenues\"][\"value\"]\n\n\nmarket_data = await js.fetch('https://api.polygon.io/v3/reference/tickers/{}?apiKey=_xBCl_0zcb9H1W25jJEK5pQaQTVLtemL'.format(symbol), {\n    \"method\": \"GET\",\n    \"headers\": {\"Content-Type\": \"application/json\"}\n})\nmarket_data_json = json.loads(await market_data.text())[\"results\"]\nmarket_cap = market_data_json[\"market_cap\"]\nname = market_data_json[\"name\"]\n\npd.DataFrame([[\n    name[:20],\n    \"${:,}\".format(int(revenue)),\n    \"${:.2e}\".format(market_cap),\n    \"{:,.2f}\".format(market_cap / revenue),\n]], columns=[\"Full Name\", \"Revenue\", \"Market Cap\", \"Multiple\"])\n",
+            "formatted_code_string": "from pprint import pprint\nimport pandas as pd\nimport json\nimport js\n\nsymbol = c(6, 8)\n\nstock_financials = await js.fetch('https://api.polygon.io/vX/reference/financials?ticker={}&apiKey=_xBCl_0zcb9H1W25jJEK5pQaQTVLtemL'.format(symbol), {\n    \"method\": \"GET\",\n    \"headers\": {\"Content-Type\": \"application/json\"}\n})\nstock_financials_json = json.loads(await stock_financials.text())\nincome_statement = stock_financials_json[\"results\"][1][\"financials\"][\"income_statement\"]\nrevenue = income_statement[\"revenues\"][\"value\"]\n\n\nmarket_data = await js.fetch('https://api.polygon.io/v3/reference/tickers/{}?apiKey=_xBCl_0zcb9H1W25jJEK5pQaQTVLtemL'.format(symbol), {\n    \"method\": \"GET\",\n    \"headers\": {\"Content-Type\": \"application/json\"}\n})\nmarket_data_json = json.loads(await market_data.text())[\"results\"]\nmarket_cap = market_data_json[\"market_cap\"]\nname = market_data_json[\"name\"]\n\npd.DataFrame([[\n    name[:20],\n    \"${:,}\".format(int(revenue)),\n    \"${:.2e}\".format(market_cap),\n    \"{:,.2f}\".format(market_cap / revenue),\n]], columns=[\"Full Name\", \"Revenue\", \"Market Cap\", \"Multiple\"])\n",
             "last_modified": "2023-03-21T19:52:22.507Z",
             "output": {
-              "std_out": "",
+              "stdOut": "",
               "result": {
                 "output_value": {
                   "size": {
@@ -913,13 +1034,13 @@
                 "cells_accessed": [
                   {
                     "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
+                      "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
                     },
                     "column": {
-                      "id": "1cf79c2e-d091-4acc-934e-bc72fed3e722"
+                      "id": "e0808990-5990-4c1d-a51d-ac6efee8ce81"
                     },
                     "row": {
-                      "id": "68d0b407-09b1-4b48-a851-06d1741c3d94"
+                      "id": "a716aad6-b03f-4f97-a7f9-6e581292c32e"
                     }
                   }
                 ]
@@ -930,46 +1051,90 @@
         [
           {
             "sheet": {
-              "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
+              "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
             },
             "column": {
-              "id": "fdaa473b-91e1-48c3-86cb-faa0463fa4ab"
+              "id": "634396df-a29e-44c1-96eb-18667c31cacb"
             },
             "row": {
-              "id": "41a96153-d406-427f-b329-09e9722ebec0"
+              "id": "2fd8d67b-9c39-4ab5-a756-b8e52bae1f9a"
             }
           },
           {
             "language": "Formula",
             "code_string": "SUM(E7:E8)",
             "formatted_code_string": "SUM(E7:E8)",
-            "last_modified": "2023-03-14T17:21:29.341Z"
+            "last_modified": "2023-03-14T17:21:29.341Z",
+            "output": {
+              "stdOut": null,
+              "result": {
+                "output_value": {
+                  "size": {
+                    "w": 1,
+                    "h": 1
+                  },
+                  "values": [
+                    {
+                      "type": "number",
+                      "value": "463"
+                    }
+                  ]
+                },
+                "cells_accessed": [
+                  {
+                    "sheet": {
+                      "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
+                    },
+                    "column": {
+                      "id": "634396df-a29e-44c1-96eb-18667c31cacb"
+                    },
+                    "row": {
+                      "id": "a716aad6-b03f-4f97-a7f9-6e581292c32e"
+                    }
+                  },
+                  {
+                    "sheet": {
+                      "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
+                    },
+                    "column": {
+                      "id": "634396df-a29e-44c1-96eb-18667c31cacb"
+                    },
+                    "row": {
+                      "id": "65334faf-6836-41b7-bef4-3360c1904799"
+                    }
+                  }
+                ]
+              }
+            }
           }
         ],
         [
           {
             "sheet": {
-              "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
+              "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
             },
             "column": {
-              "id": "b6336d95-5590-4c1c-b229-e279c3a43c87"
+              "id": "b25c66f7-58c4-47bc-8a3e-06d10bfeeca6"
             },
             "row": {
-              "id": "66526cf0-ac34-4cfa-bf80-fa23dcb93337"
+              "id": "83b50319-10a1-4fbf-a6c0-88af771da674"
             }
           },
           {
             "language": "Python",
-            "code_string": "# Cells show when they are in the error state.\\n# Fix this error by changing 0 to another number.\\n1 / 0",
-            "formatted_code_string": "# Cells show when they are in the error state.\\n# Fix this error by changing 0 to another number.\\n1 / 0",
-            "last_modified": "2023-02-16T00:08:54.000Z",
+            "code_string": "# Cells show when they are in the error state.\n# Fix this error by changing 0 to another number.\n1 / 0",
+            "formatted_code_string": "# Cells show when they are in the error state.\n# Fix this error by changing 0 to another number.\n1 / 0",
+            "last_modified": "",
             "output": {
-              "std_out": "",
-              "std_err": "ZeroDivisionError on line 3: division by zero",
+              "stdOut": "",
+              "stdErr": "ZeroDivisionError on line 3: division by zero",
               "result": {
                 "error": {
-                  "span": null,
-                  "msg": "UnknownError"
+                  "span": {
+                    "start": 3,
+                    "end": 3
+                  },
+                  "msg": "Python error: ZeroDivisionError on line 3: division by zero"
                 }
               }
             }
@@ -978,41 +1143,22 @@
         [
           {
             "sheet": {
-              "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
+              "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
             },
             "column": {
-              "id": "b6336d95-5590-4c1c-b229-e279c3a43c87"
+              "id": "634396df-a29e-44c1-96eb-18667c31cacb"
             },
             "row": {
-              "id": "68fe5427-58b0-458e-b7a3-11418347a691"
-            }
-          },
-          {
-            "language": "Python",
-            "code_string": "print(\"Hello world!\")\\n# The last python statement is returned \\n# as the cell value.\\n\"Double click to see the code in this cell\"\\n",
-            "formatted_code_string": "print(\"Hello world!\")\\n# The last python statement is returned\\n# as the cell value.\\n\"Double click to see the code in this cell\"\\n",
-            "last_modified": "2023-02-16T00:08:31.578Z"
-          }
-        ],
-        [
-          {
-            "sheet": {
-              "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
-            },
-            "column": {
-              "id": "fdaa473b-91e1-48c3-86cb-faa0463fa4ab"
-            },
-            "row": {
-              "id": "b82b2577-ee57-409f-a9b9-821bc1ef099a"
+              "id": "2603ae46-6447-4da8-b3ed-7a5c3b32c814"
             }
           },
           {
             "language": "Python",
             "code_string": "cell(4, 7) + cell(4, 8)",
-            "formatted_code_string": "cell(4, 7) + cell(4, 8)\\n",
+            "formatted_code_string": "cell(4, 7) + cell(4, 8)\n",
             "last_modified": "2023-02-21T23:39:22.445Z",
             "output": {
-              "std_out": "",
+              "stdOut": "",
               "result": {
                 "output_value": {
                   "type": "text",
@@ -1021,24 +1167,24 @@
                 "cells_accessed": [
                   {
                     "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
+                      "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
                     },
                     "column": {
-                      "id": "fdaa473b-91e1-48c3-86cb-faa0463fa4ab"
+                      "id": "634396df-a29e-44c1-96eb-18667c31cacb"
                     },
                     "row": {
-                      "id": "68fe5427-58b0-458e-b7a3-11418347a691"
+                      "id": "65334faf-6836-41b7-bef4-3360c1904799"
                     }
                   },
                   {
                     "sheet": {
-                      "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
+                      "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
                     },
                     "column": {
-                      "id": "fdaa473b-91e1-48c3-86cb-faa0463fa4ab"
+                      "id": "634396df-a29e-44c1-96eb-18667c31cacb"
                     },
                     "row": {
-                      "id": "68d0b407-09b1-4b48-a851-06d1741c3d94"
+                      "id": "a716aad6-b03f-4f97-a7f9-6e581292c32e"
                     }
                   }
                 ]
@@ -1049,22 +1195,22 @@
         [
           {
             "sheet": {
-              "id": "f1946424-a91f-4c43-9a5a-31e733a138b5"
+              "id": "ba0e1092-a79c-4f20-8759-c14655f88a38"
             },
             "column": {
-              "id": "1cf79c2e-d091-4acc-934e-bc72fed3e722"
+              "id": "e0808990-5990-4c1d-a51d-ac6efee8ce81"
             },
             "row": {
-              "id": "915a193a-9257-49e8-8ba5-3570093fbc6e"
+              "id": "ea18bc6d-d911-4219-9055-713025773d82"
             }
           },
           {
             "language": "Python",
-            "code_string": "# Run this cell again to generate a new fake person\\n\\nimport micropip\\n\\nawait micropip.install(\"faker\")\\n\\nfrom faker import Faker\\nfake = Faker()\\n\\n[\\n    [\\n        \"Name\"[:13],\\n        \"Birthday\",\\n        \"SSN\",\\n        \"Phone\",\\n        \"Address\"\\n    ],\\n    [\\n        fake.name(),\\n        str(fake.date_of_birth()),\\n        fake.ssn(),\\n        fake.phone_number()[:13],\\n        fake.address()\\n    ]\\n]\\n",
-            "formatted_code_string": "# Run this cell again to generate a new fake person\\n\\nimport micropip\\n\\nawait micropip.install(\"faker\")\\n\\nfrom faker import Faker\\nfake = Faker()\\n\\n[\\n    [\\n        \"Name\"[:13],\\n        \"Birthday\",\\n        \"SSN\",\\n        \"Phone\",\\n        \"Address\"\\n    ],\\n    [\\n        fake.name(),\\n        str(fake.date_of_birth()),\\n        fake.ssn(),\\n        fake.phone_number()[:13],\\n        fake.address()\\n    ]\\n]\\n",
+            "code_string": "# Run this cell again to generate a new fake person\n\nimport micropip\n\nawait micropip.install(\"faker\")\n\nfrom faker import Faker\nfake = Faker()\n\n[\n    [\n        \"Name\"[:13],\n        \"Birthday\",\n        \"SSN\",\n        \"Phone\",\n        \"Address\"\n    ],\n    [\n        fake.name(),\n        str(fake.date_of_birth()),\n        fake.ssn(),\n        fake.phone_number()[:13],\n        fake.address()\n    ]\n]\n",
+            "formatted_code_string": "# Run this cell again to generate a new fake person\n\nimport micropip\n\nawait micropip.install(\"faker\")\n\nfrom faker import Faker\nfake = Faker()\n\n[\n    [\n        \"Name\"[:13],\n        \"Birthday\",\n        \"SSN\",\n        \"Phone\",\n        \"Address\"\n    ],\n    [\n        fake.name(),\n        str(fake.date_of_birth()),\n        fake.ssn(),\n        fake.phone_number()[:13],\n        fake.address()\n    ]\n]\n",
             "last_modified": "2023-03-17T04:20:14.849Z",
             "output": {
-              "std_out": "",
+              "stdOut": "",
               "result": {
                 "output_value": {
                   "size": {
@@ -1110,7 +1256,7 @@
                     },
                     {
                       "type": "text",
-                      "value": "975 Cynthia Turnpike\\nNew John, GA 73140"
+                      "value": "975 Cynthia Turnpike\nNew John, GA 73140"
                     }
                   ]
                 },
@@ -1121,5 +1267,6 @@
         ]
       ]
     }
-  ]
+  ],
+  "version": "1.4"
 }
