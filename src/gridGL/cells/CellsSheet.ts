@@ -287,7 +287,7 @@ export class CellsSheet extends Container {
   }
 
   private dirtyCellTextHashesByDistance(): CellsTextHash[] {
-    const cellsTextHashes = this.cellsTextHashContainer.children.filter((hash) => hash.dirty);
+    const cellsTextHashes = this.cellsTextHashContainer.children.filter((hash) => hash.dirty || hash.dirtyBuffers);
     const viewport = pixiApp.viewport;
     const viewportCenter = viewport.center;
     const isInsideViewport = (hash: CellsTextHash): boolean => {

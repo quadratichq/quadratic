@@ -24,6 +24,14 @@ class PythonWebWorker {
             pythonResult.array_output = pythonResult.array_output.map((entry: (string | number)[]) =>
               entry.map((entry: String | number) => entry.toString())
             );
+
+            // ensure that the 2d array has equally sized rows
+            const size = pythonResult.array_output[0].length;
+            for (let i = 1; i < pythonResult.array_output.length; i++) {
+              while (pythonResult.array_output[i].length < size) {
+                pythonResult.array_output[i].push('');
+              }
+            }
           }
         }
         if (!pythonResult.success) {
