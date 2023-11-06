@@ -390,7 +390,7 @@ mod test {
         };
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
         let region = sheet.region(rect);
-        let borders = generate_borders(&sheet, &region, selection, Some(style));
+        let borders = generate_borders(sheet, &region, selection, Some(style));
         set_region_borders(sheet, vec![region.clone()], borders);
     }
 
@@ -566,9 +566,9 @@ mod test {
     fn test_copy_borders_to_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let mut sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
 
-        set_borders(&mut sheet);
+        set_borders(sheet);
 
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
         let clipboard = gc.copy_to_clipboard(sheet_id, rect);
@@ -609,55 +609,40 @@ mod test {
         };
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 });
         let region = sheet.region(rect);
-        let borders = generate_borders(&sheet, &region, selection, Some(style.clone()));
+        let borders = generate_borders(sheet, &region, selection, Some(style));
         set_region_borders(sheet, vec![region.clone()], borders);
 
         // weird: can't test them by comparing arrays since the order is seemingly random
         let render = gc.get_render_borders(sheet_id.to_string());
-        assert!(render
-            .get_horizontal()
-            .iter()
-            .find(|border| {
-                border.x == 0
-                    && border.y == 0
-                    && border.w == Some(5)
-                    && border.h == None
-                    && border.style == style
-            })
-            .is_some());
-        assert!(render
-            .get_horizontal()
-            .iter()
-            .find(|border| {
-                border.x == 0
-                    && border.y == 5
-                    && border.w == Some(5)
-                    && border.h == None
-                    && border.style == style
-            })
-            .is_some());
-        assert!(render
-            .get_vertical()
-            .iter()
-            .find(|border| {
-                border.x == 0
-                    && border.y == 0
-                    && border.w == None
-                    && border.h == Some(5)
-                    && border.style == style
-            })
-            .is_some());
-        assert!(render
-            .get_vertical()
-            .iter()
-            .find(|border| {
-                border.x == 5
-                    && border.y == 0
-                    && border.w == None
-                    && border.h == Some(5)
-                    && border.style == style
-            })
-            .is_some());
+        assert!(render.get_horizontal().iter().any(|border| {
+            border.x == 0
+                && border.y == 0
+                && border.w == Some(5)
+                && border.h.is_none()
+                && border.style == style
+        }));
+        assert!(render.get_horizontal().iter().any(|border| {
+            border.x == 0
+                && border.y == 5
+                && border.w == Some(5)
+                && border.h.is_none()
+                && border.style == style
+        }));
+        assert!(render.get_vertical().iter().any(|border| {
+            border.x == 0
+                && border.y == 0
+                && border.w.is_none()
+                && border.h == Some(5)
+                && border.style == style
+        }));
+
+        assert!(render.get_vertical().iter().any(|border| {
+            border.x == 5
+                && border.y == 0
+                && border.w.is_none()
+                && border.h == Some(5)
+                && border.style == style
+        }));
 
         let (_, html) = gc.copy_to_clipboard(
             sheet_id,
@@ -666,50 +651,34 @@ mod test {
         let _ = gc.paste_html(sheet_id, Pos { x: 0, y: 10 }, html, None);
 
         let render = gc.get_render_borders(sheet_id.to_string());
-        assert!(render
-            .get_horizontal()
-            .iter()
-            .find(|border| {
-                border.x == 0
-                    && border.y == 10
-                    && border.w == Some(5)
-                    && border.h == None
-                    && border.style == style
-            })
-            .is_some());
-        assert!(render
-            .get_horizontal()
-            .iter()
-            .find(|border| {
-                border.x == 0
-                    && border.y == 15
-                    && border.w == Some(5)
-                    && border.h == None
-                    && border.style == style
-            })
-            .is_some());
-        assert!(render
-            .get_vertical()
-            .iter()
-            .find(|border| {
-                border.x == 0
-                    && border.y == 10
-                    && border.w == None
-                    && border.h == Some(5)
-                    && border.style == style
-            })
-            .is_some());
-        assert!(render
-            .get_vertical()
-            .iter()
-            .find(|border| {
-                border.x == 5
-                    && border.y == 10
-                    && border.w == None
-                    && border.h == Some(5)
-                    && border.style == style
-            })
-            .is_some());
+        assert!(render.get_horizontal().iter().any(|border| {
+            border.x == 0
+                && border.y == 10
+                && border.w == Some(5)
+                && border.h.is_none()
+                && border.style == style
+        }));
+        assert!(render.get_horizontal().iter().any(|border| {
+            border.x == 0
+                && border.y == 15
+                && border.w == Some(5)
+                && border.h.is_none()
+                && border.style == style
+        }));
+        assert!(render.get_vertical().iter().any(|border| {
+            border.x == 0
+                && border.y == 10
+                && border.w.is_none()
+                && border.h == Some(5)
+                && border.style == style
+        }));
+        assert!(render.get_vertical().iter().any(|border| {
+            border.x == 5
+                && border.y == 10
+                && border.w.is_none()
+                && border.h == Some(5)
+                && border.style == style
+        }));
     }
 
     #[test]
