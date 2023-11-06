@@ -78,6 +78,7 @@ impl From<CellRef> for RegionRef {
         }
     }
 }
+
 impl RegionRef {
     /// Iterates over cells in row-major order.
     pub fn iter(&self) -> impl '_ + Iterator<Item = CellRef> {

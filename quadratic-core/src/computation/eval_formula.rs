@@ -31,6 +31,18 @@ impl TransactionInProgress {
             Ok(parsed) => {
                 match parsed.eval(&mut ctx) {
                     Ok(value) => {
+                        self.cells_accessed = ctx
+                            .cells_accessed
+                            .iter()
+                            .map(|sheet_pos| {
+                                let sheet = grid_controller
+                                    .grid_mut()
+                                    .sheet_mut_from_id(sheet_pos.sheet_id);
+                                let pos = (*sheet_pos).into();
+                                sheet.get_or_create_cell_ref(pos)
+                            })
+                            .collect();
+
                         let updated_code_cell_value = CodeCellValue {
                             language,
                             code_string,
@@ -40,17 +52,7 @@ impl TransactionInProgress {
                                 std_err: None,
                                 result: CodeCellRunResult::Ok {
                                     output_value: value,
-                                    cells_accessed: ctx
-                                        .cells_accessed
-                                        .iter()
-                                        .map(|sheet_pos| {
-                                            let sheet = grid_controller
-                                                .grid_mut()
-                                                .sheet_mut_from_id(sheet_pos.sheet_id);
-                                            let pos = (*sheet_pos).into();
-                                            sheet.get_or_create_cell_ref(pos)
-                                        })
-                                        .collect(),
+                                    cells_accessed: self.cells_accessed.clone(),
                                 },
                             }),
                             // todo

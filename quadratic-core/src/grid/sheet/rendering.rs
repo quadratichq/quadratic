@@ -72,18 +72,6 @@ impl Sheet {
 
         itertools::chain(ordinary_cells, code_output_cells)
             .map(|(x, y, column, value, language)| {
-                let mut numeric_format: Option<NumericFormat> = None;
-                let mut numeric_decimals: Option<i16> = None;
-
-                // only get numeric_format only if it's a CellValue::Number (although it can exist for other types)
-                if value.type_name() == "number" {
-                    numeric_format = column.numeric_format.get(y);
-                    let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
-                        numeric_format.kind == NumericFormatKind::Percentage
-                    });
-                    numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
-                }
-
                 if value.type_name() == "error" {
                     JsRenderCell {
                         x,
@@ -99,6 +87,17 @@ impl Sheet {
                         text_color: Some(String::from("red")),
                     }
                 } else {
+                    let mut numeric_format: Option<NumericFormat> = None;
+                    let mut numeric_decimals: Option<i16> = None;
+
+                    // only get numeric_format only if it's a CellValue::Number (although it can exist for other types)
+                    if value.type_name() == "number" {
+                        numeric_format = column.numeric_format.get(y);
+                        let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
+                            numeric_format.kind == NumericFormatKind::Percentage
+                        });
+                        numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
+                    }
                     JsRenderCell {
                         x,
                         y,
