@@ -92,6 +92,17 @@ impl From<Vec<Vec<String>>> for Array {
     }
 }
 
+impl From<Vec<Vec<CellValue>>> for Array {
+    fn from(v: Vec<Vec<CellValue>>) -> Self {
+        let w = v[0].len();
+        let h = v.len();
+        Array {
+            size: ArraySize::new(w as u32, h as u32).unwrap(),
+            values: v.into_iter().flatten().collect(),
+        }
+    }
+}
+
 impl Array {
     /// Constructs an array of blank values.
     pub fn new_empty(size: ArraySize) -> Self {
