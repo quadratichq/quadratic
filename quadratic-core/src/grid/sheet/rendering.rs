@@ -102,7 +102,6 @@ impl Sheet {
                         // if align is not set, set it to right only for numbers
                         if align.is_none() {
                             align = Some(CellAlign::Right);
-                            crate::util::dbgjs("HERE");
                         }
                     }
                     JsRenderCell {
