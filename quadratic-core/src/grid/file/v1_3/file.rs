@@ -33,7 +33,7 @@ pub fn language_conversion(language: &str) -> String {
 impl From<Any> for current::OutputValueValue {
     fn from(val: Any) -> Self {
         match val {
-            Any::Number(n) => match BigDecimal::from_f64(n) {
+            Any::Number(n) => match BigDecimal::from_str(n.to_string().as_str()).ok() {
                 Some(n) => Self {
                     type_field: "NUMBER".into(),
                     value: n.to_string(),
