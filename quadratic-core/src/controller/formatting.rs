@@ -403,4 +403,28 @@ mod test {
         assert_eq!(cells.len(), 1);
         assert_eq!(cells[0].value, "$1.12");
     }
+
+    #[test]
+    fn test_remove_formatting() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            sheet_id,
+            Pos { x: 0, y: 0 },
+            String::from("1.12345678"),
+            None,
+        );
+        gc.set_currency(
+            sheet_id,
+            &Rect::single_pos(Pos { x: 0, y: 0 }),
+            Some("$".to_string()),
+            None,
+        );
+        gc.clear_formatting(sheet_id, Rect::single_pos(Pos { x: 0, y: 0 }), None);
+        let cells = gc
+            .sheet(sheet_id)
+            .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }));
+        assert_eq!(cells.len(), 1);
+        assert_eq!(cells[0].value, "1.12345678");
+    }
 }
