@@ -118,8 +118,7 @@ impl JsCodeResult {
                     reverse_operations.extend(ops);
                     Value::Single(cell_value)
                 } else {
-                    // this should not happen
-                    Value::Single("".into())
+                    unreachable!()
                 },
                 cells_accessed: cells_accessed.to_owned(),
             }

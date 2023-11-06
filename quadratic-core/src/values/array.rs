@@ -10,7 +10,7 @@ use super::{ArraySize, Axis, CellValue, Spanned, Value};
 use crate::{
     controller::operation::Operation,
     grid::{CellRef, Sheet},
-    CodeResult, ErrorMsg,
+    CodeResult, ErrorMsg, Pos,
 };
 
 #[macro_export]
@@ -263,8 +263,7 @@ impl Array {
         let pos = sheet.cell_ref_to_pos(start);
         if let Some(pos) = pos {
             let mut ops = vec![];
-            let mut x = pos.x;
-            let mut y = pos.y;
+            let Pos { mut x, mut y } = pos;
             values = v
                 .iter()
                 .flatten()
