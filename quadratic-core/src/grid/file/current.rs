@@ -241,7 +241,24 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<CellRef, C
                                                 .chunks(size.w as usize)
                                                 .map(|row| {
                                                     row.iter()
-                                                        .map(|cell| cell.value.to_string())
+                                                        .map(|cell| {
+                                                            match cell
+                                                                .type_field
+                                                                .to_lowercase()
+                                                                .as_str()
+                                                            {
+                                                                "text" => CellValue::Text(
+                                                                    cell.value.to_owned(),
+                                                                ),
+                                                                "number" => CellValue::Number(
+                                                                    BigDecimal::from_str(
+                                                                        &cell.value,
+                                                                    )
+                                                                    .unwrap_or_default(),
+                                                                ),
+                                                                _ => CellValue::Blank,
+                                                            }
+                                                        })
                                                         .collect::<Vec<_>>()
                                                 })
                                                 .collect::<Vec<Vec<_>>>(),
