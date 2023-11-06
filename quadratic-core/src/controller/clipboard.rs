@@ -181,6 +181,7 @@ impl GridController {
         clipboard: Clipboard,
         cursor: Option<String>,
     ) -> TransactionSummary {
+        let mut compute = false;
         let rect = Rect {
             min: start_pos,
             max: Pos {
@@ -200,6 +201,7 @@ impl GridController {
                 region: region.clone(),
                 values,
             });
+            compute = true;
         }
 
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
@@ -219,6 +221,7 @@ impl GridController {
                             cell_ref,
                             code_cell_value: None,
                         });
+                        compute = true;
                     }
                 }
             }
@@ -234,6 +237,7 @@ impl GridController {
                 cell_ref,
                 code_cell_value: Some(entry.1.clone()),
             });
+            compute = true;
         });
 
         formats.iter().for_each(|format| {
@@ -263,8 +267,8 @@ impl GridController {
                     .for_each(|(index, border_style)| {
                         if let Some(border_style) = border_style.to_owned() {
                             let border_selection = match index {
-                                0 => BorderSelection::Top,
-                                1 => BorderSelection::Left,
+                                0 => BorderSelection::Left,
+                                1 => BorderSelection::Top,
                                 2 => BorderSelection::Right,
                                 3 => BorderSelection::Bottom,
                                 _ => BorderSelection::Clear,
@@ -280,7 +284,7 @@ impl GridController {
             }
         });
 
-        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
+        self.set_in_progress_transaction(ops, cursor, compute, TransactionType::Normal)
     }
 
     fn paste_plain_text(
@@ -590,6 +594,122 @@ mod test {
             borders[0].1.blocks().next().unwrap().content,
             borders[1].1.blocks().next().unwrap().content
         );
+    }
+
+    #[test]
+    fn test_copy_borders_inside() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+
+        let selection = vec![BorderSelection::Outer];
+        let style = BorderStyle {
+            color: Rgba::from_str("#000000").unwrap(),
+            line: CellBorderLine::Line1,
+        };
+        let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 });
+        let region = sheet.region(rect);
+        let borders = generate_borders(&sheet, &region, selection, Some(style.clone()));
+        set_region_borders(sheet, vec![region.clone()], borders);
+
+        // weird: can't test them by comparing arrays since the order is seemingly random
+        let render = gc.get_render_borders(sheet_id.to_string());
+        assert!(render
+            .get_horizontal()
+            .iter()
+            .find(|border| {
+                border.x == 0
+                    && border.y == 0
+                    && border.w == Some(5)
+                    && border.h == None
+                    && border.style == style
+            })
+            .is_some());
+        assert!(render
+            .get_horizontal()
+            .iter()
+            .find(|border| {
+                border.x == 0
+                    && border.y == 5
+                    && border.w == Some(5)
+                    && border.h == None
+                    && border.style == style
+            })
+            .is_some());
+        assert!(render
+            .get_vertical()
+            .iter()
+            .find(|border| {
+                border.x == 0
+                    && border.y == 0
+                    && border.w == None
+                    && border.h == Some(5)
+                    && border.style == style
+            })
+            .is_some());
+        assert!(render
+            .get_vertical()
+            .iter()
+            .find(|border| {
+                border.x == 5
+                    && border.y == 0
+                    && border.w == None
+                    && border.h == Some(5)
+                    && border.style == style
+            })
+            .is_some());
+
+        let (_, html) = gc.copy_to_clipboard(
+            sheet_id,
+            Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 }),
+        );
+        let _ = gc.paste_html(sheet_id, Pos { x: 0, y: 10 }, html, None);
+
+        let render = gc.get_render_borders(sheet_id.to_string());
+        assert!(render
+            .get_horizontal()
+            .iter()
+            .find(|border| {
+                border.x == 0
+                    && border.y == 10
+                    && border.w == Some(5)
+                    && border.h == None
+                    && border.style == style
+            })
+            .is_some());
+        assert!(render
+            .get_horizontal()
+            .iter()
+            .find(|border| {
+                border.x == 0
+                    && border.y == 15
+                    && border.w == Some(5)
+                    && border.h == None
+                    && border.style == style
+            })
+            .is_some());
+        assert!(render
+            .get_vertical()
+            .iter()
+            .find(|border| {
+                border.x == 0
+                    && border.y == 10
+                    && border.w == None
+                    && border.h == Some(5)
+                    && border.style == style
+            })
+            .is_some());
+        assert!(render
+            .get_vertical()
+            .iter()
+            .find(|border| {
+                border.x == 5
+                    && border.y == 10
+                    && border.w == None
+                    && border.h == Some(5)
+                    && border.style == style
+            })
+            .is_some());
     }
 
     #[test]
