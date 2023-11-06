@@ -2,7 +2,7 @@ export interface ConnectionField {
   name: string;
   description: string;
   type: string | number | boolean;
-  sensitive: boolean;
+  sensitive: 'AWS_SECRET' | 'ENCRYPTED' | 'PLAINTEXT';
   required: boolean;
   default?: string;
 }

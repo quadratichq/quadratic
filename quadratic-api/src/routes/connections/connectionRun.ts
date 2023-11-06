@@ -1,4 +1,5 @@
 import express from 'express';
+import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -8,11 +9,16 @@ import { PostgresConnection } from './types/Postgres';
 
 const router = express.Router();
 
+const Schema = z.object({
+  query: z.string(),
+});
+
 router.post(
   '/:uuid/run',
   validateAccessToken,
   userMiddleware,
   // TODO validate connection
+  //   validateRequestAgainstZodSchema(Schema),
   async (req: Request, res) => {
     if (!req.user) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
@@ -35,7 +41,9 @@ router.post(
 
     console.log('connection_key', connection_key);
 
-    const result = new PostgresConnection().runConnection(connection_key, 'SELECT * FROM User;');
+    const result = await new PostgresConnection().runConnection(connection_key, req.body.query);
+
+    console.log('query response', result);
 
     return res.status(200).json({
       result,

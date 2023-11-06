@@ -10,14 +10,14 @@ export const PostgresConnectionConfiguration = {
       name: 'host',
       description: 'The host of the Postgres database.',
       type: 'string',
-      sensitive: false,
+      sensitive: 'ENCRYPTED',
       required: true,
     },
     {
       name: 'port',
       description: 'The port of the Postgres database.',
       type: 'string',
-      sensitive: false,
+      sensitive: 'ENCRYPTED',
       required: true,
       default: '5432',
     },
@@ -25,21 +25,21 @@ export const PostgresConnectionConfiguration = {
       name: 'database',
       description: 'The database of the Postgres database.',
       type: 'string',
-      sensitive: false,
+      sensitive: 'ENCRYPTED',
       required: false,
     },
     {
       name: 'username',
       description: 'The username of the Postgres database.',
       type: 'string',
-      sensitive: false,
+      sensitive: 'ENCRYPTED',
       required: true,
     },
     {
       name: 'password',
       description: 'The password of the Postgres database.',
       type: 'string',
-      sensitive: true,
+      sensitive: 'AWS_SECRET',
       required: false,
     },
   ],
@@ -65,7 +65,7 @@ export class PostgresConnection {
     });
     await client.connect();
 
-    const res = await client.query('SELECT $1::text as message', ['Hello world!']);
+    const res = await client.query(query);
     console.log(res.rows[0].message); // Hello world!
     await client.end();
 
