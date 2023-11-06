@@ -297,6 +297,15 @@ export class Grid {
     this.transactionResponse(summary);
   }
 
+  setCellExponential(sheetId: string, rectangle: Rectangle) {
+    const summary = this.gridController.setCellExponential(
+      sheetId,
+      rectangleToRect(rectangle),
+      sheets.getCursorPosition()
+    );
+    this.transactionResponse(summary);
+  }
+
   removeCellNumericFormat(sheetId: string, rectangle: Rectangle) {
     const summary = this.gridController.removeCellNumericFormat(
       sheetId,

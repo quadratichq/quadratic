@@ -1,6 +1,6 @@
 use std::{fmt, str::FromStr};
 
-use bigdecimal::{BigDecimal, Zero};
+use bigdecimal::{BigDecimal, ToPrimitive, Zero};
 use serde::{Deserialize, Serialize};
 
 use super::{Duration, Instant, IsBlank};
@@ -97,15 +97,24 @@ impl CellValue {
             CellValue::Blank => String::new(),
             CellValue::Text(s) => s.to_string(),
             CellValue::Number(n) => {
-                let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
-                    numeric_format.kind == NumericFormatKind::Percentage
-                });
-                let result: BigDecimal = if is_percentage { n * 100 } else { n.clone() };
-                let mut number = if let Some(decimals) = numeric_decimals {
+                let numeric_format = numeric_format.unwrap_or_default();
+                let result: BigDecimal = if numeric_format.kind == NumericFormatKind::Percentage {
+                    n * 100
+                } else {
+                    n.clone()
+                };
+                let mut number = if numeric_format.kind == NumericFormatKind::Exponential {
+                    let num = result.to_f64().unwrap_or_default();
+                    if let Some(decimals) = numeric_decimals {
+                        format!("{:.precision$e}", num, precision = decimals as usize)
+                    } else {
+                        format!("{:.e}", num)
+                    }
+                } else if let Some(decimals) = numeric_decimals {
                     result
                         .with_scale_round(decimals as i64, bigdecimal::RoundingMode::HalfUp)
                         .to_string()
-                } else if is_percentage {
+                } else if numeric_format.kind == NumericFormatKind::Percentage {
                     let s = result.to_string();
                     if s.contains('.') {
                         s.trim_end_matches('0').to_string()
@@ -115,26 +124,22 @@ impl CellValue {
                 } else {
                     result.to_string()
                 };
-                if let Some(numeric_format) = numeric_format {
-                    match numeric_format.kind {
-                        NumericFormatKind::Currency => {
-                            let mut currency = if let Some(symbol) = numeric_format.symbol {
-                                symbol
-                            } else {
-                                String::from("")
-                            };
-                            currency.push_str(&number);
-                            currency
-                        }
-                        NumericFormatKind::Percentage => {
-                            number.push('%');
-                            number
-                        }
-                        NumericFormatKind::Number => number.to_string(),
-                        NumericFormatKind::Exponential => todo!(),
+                match numeric_format.kind {
+                    NumericFormatKind::Currency => {
+                        let mut currency = if let Some(symbol) = numeric_format.symbol.as_ref() {
+                            symbol.clone()
+                        } else {
+                            String::from("")
+                        };
+                        currency.push_str(&number);
+                        currency
                     }
-                } else {
-                    number.to_string()
+                    NumericFormatKind::Percentage => {
+                        number.push('%');
+                        number
+                    }
+                    NumericFormatKind::Number => number,
+                    NumericFormatKind::Exponential => number,
                 }
             }
             CellValue::Logical(true) => "true".to_string(),
@@ -490,5 +495,30 @@ mod test {
 
         let value = String::from("$123.123abc");
         assert_eq!(CellValue::unpack_currency(&value), None);
+    }
+
+    #[test]
+    fn text_exponential_display() {
+        let value = CellValue::Number(BigDecimal::from_str("98172937192739718923.12312").unwrap());
+        assert_eq!(
+            value.to_display(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Exponential,
+                    symbol: None
+                }),
+                None
+            ),
+            "9.817293719273972e19"
+        );
+        assert_eq!(
+            value.to_display(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Exponential,
+                    symbol: None
+                }),
+                Some(2)
+            ),
+            "9.82e19"
+        );
     }
 }
