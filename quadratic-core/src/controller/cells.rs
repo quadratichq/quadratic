@@ -308,8 +308,11 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use crate::{controller::GridController, CellValue, Pos};
-    use std::str::FromStr;
+    use crate::{
+        controller::{transaction_summary::CellSheetsModified, GridController},
+        CellValue, Pos,
+    };
+    use std::{collections::HashSet, str::FromStr};
 
     use bigdecimal::BigDecimal;
 
@@ -320,46 +323,28 @@ mod test {
         let pos = Pos { x: 3, y: 6 };
         let get_the_cell =
             |g: &GridController| g.sheet(sheet_id).get_cell_value(pos).unwrap_or_default();
-        // let expected_cell_regions_modified = vec![(sheet_id, Rect::single_pos(pos))];
-
+        let mut cell_sheets_modified = HashSet::new();
+        cell_sheets_modified.insert(CellSheetsModified::new(sheet_id, pos));
         assert_eq!(get_the_cell(&g), CellValue::Blank);
         g.set_cell_value(sheet_id, pos, String::from("a"), None);
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
         g.set_cell_value(sheet_id, pos, String::from("b"), None);
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
-        // assert_eq!(
-        //     g.undo(None).unwrap().cell_regions_modified,
-        //     expected_cell_regions_modified
-        // );
-        // assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
-        // assert_eq!(
-        //     g.redo(None).unwrap().cell_regions_modified,
-        //     expected_cell_regions_modified
-        // );
-        // assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
-        // assert_eq!(
-        //     g.undo(None).unwrap().cell_regions_modified,
-        //     expected_cell_regions_modified
-        // );
-        // assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
-        // assert_eq!(
-        //     g.undo(None).unwrap().cell_regions_modified,
-        //     expected_cell_regions_modified
-        // );
-        // assert_eq!(get_the_cell(&g), CellValue::Blank);
-        // assert!(g.undo(None).is_none());
-        // assert_eq!(get_the_cell(&g), CellValue::Blank);
-        // assert_eq!(
-        //     g.redo(None).unwrap().cell_regions_modified,
-        //     expected_cell_regions_modified
-        // );
-        // assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
-        // assert_eq!(
-        //     g.redo(None).unwrap().cell_regions_modified,
-        //     expected_cell_regions_modified
-        // );
+        assert_eq!(g.undo(None).cell_sheets_modified, cell_sheets_modified);
+        assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
+        assert_eq!(g.redo(None).cell_sheets_modified, cell_sheets_modified);
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
-        // assert!(g.redo(None).is_none());
+        assert_eq!(g.undo(None).cell_sheets_modified, cell_sheets_modified);
+        assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
+        assert_eq!(g.undo(None).cell_sheets_modified, cell_sheets_modified);
+        assert_eq!(get_the_cell(&g), CellValue::Blank);
+        assert_eq!(g.undo(None).cell_sheets_modified, HashSet::default());
+        assert_eq!(get_the_cell(&g), CellValue::Blank);
+        assert_eq!(g.redo(None).cell_sheets_modified, cell_sheets_modified);
+        assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
+        assert_eq!(g.redo(None).cell_sheets_modified, cell_sheets_modified);
+        assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
+        assert_eq!(g.redo(None).cell_sheets_modified, HashSet::default());
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
     }
 
