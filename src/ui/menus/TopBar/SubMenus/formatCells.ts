@@ -52,15 +52,8 @@ export const removeCellNumericFormat = (): void => {
 };
 
 export const textFormatSetNumber = (): void => {
-  throw new Error('not implemented yet');
-};
-
-export const textFormatSetExponential = (): void => {
-  throw new Error('not implemented yet');
-};
-
-export const textFormatClear = (): void => {
-  throw new Error('not implemented yet');
+  const rectangle = sheets.sheet.cursor.getRectangle();
+  sheets.sheet.removeCellNumericFormat(rectangle);
 };
 
 export const clearFormatting = () => {
