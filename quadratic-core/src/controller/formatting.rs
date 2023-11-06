@@ -70,6 +70,27 @@ impl GridController {
         self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
 
+    /// Sets NumericFormat and NumericDecimals to None
+    pub fn remove_number_formatting(
+        &mut self,
+        sheet_id: SheetId,
+        rect: &Rect,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let region = self.grid_mut().sheet_mut_from_id(sheet_id).region(*rect);
+        let ops = vec![
+            Operation::SetCellFormats {
+                region: region.clone(),
+                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(None, region.len())),
+            },
+            Operation::SetCellFormats {
+                region: region.clone(),
+                attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(None, region.len())),
+            },
+        ];
+        self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
+    }
+
     // todo: should also check the results of spills
     pub fn change_decimal_places(
         &mut self,

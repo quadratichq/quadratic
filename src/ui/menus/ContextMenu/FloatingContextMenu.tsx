@@ -339,7 +339,7 @@ export const FloatingContextMenu = (props: Props) => {
           </IconButton>
         </TooltipHint>
 
-        <TooltipHint title="Format as number">
+        <TooltipHint title="Clear number formatting">
           <IconButton onClick={() => removeCellNumericFormat()} color="inherit">
             <Numbers fontSize={iconSize} />
           </IconButton>
