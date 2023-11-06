@@ -9,6 +9,7 @@ import {
   FormatColorFill,
   FormatColorText,
   FormatItalic,
+  Functions,
   MoreHoriz,
   Numbers,
   Percent,
@@ -44,6 +45,7 @@ import {
   textFormatDecreaseDecimalPlaces,
   textFormatIncreaseDecimalPlaces,
   textFormatSetCurrency,
+  textFormatSetExponential,
   textFormatSetPercentage,
 } from '../TopBar/SubMenus/formatCells';
 
@@ -340,6 +342,12 @@ export const FloatingContextMenu = (props: Props) => {
         <TooltipHint title="Format as number">
           <IconButton onClick={() => removeCellNumericFormat()} color="inherit">
             <Numbers fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+
+        <TooltipHint title="Format as scientific">
+          <IconButton onClick={() => textFormatSetExponential()} color="inherit">
+            <Functions fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 

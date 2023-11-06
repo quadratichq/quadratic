@@ -1,16 +1,15 @@
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 
-import { AbcOutlined, AttachMoney, Functions, Percent } from '@mui/icons-material';
+import { AttachMoney, Functions, Percent } from '@mui/icons-material';
 import '@szhsin/react-menu/dist/index.css';
 import { DecimalDecrease, DecimalIncrease, Icon123 } from '../../../icons';
 import { MenuLineItem } from '../MenuLineItem';
 import {
-  textFormatClear,
+  removeCellNumericFormat,
   textFormatDecreaseDecimalPlaces,
   textFormatIncreaseDecimalPlaces,
   textFormatSetCurrency,
   textFormatSetExponential,
-  textFormatSetNumber,
   textFormatSetPercentage,
 } from './formatCells';
 
@@ -26,10 +25,7 @@ export const NumberFormatMenu = () => {
         </TopBarMenuItem>
       )}
     >
-      <MenuItem onClick={() => textFormatClear()}>
-        <MenuLineItem primary="Plain text" secondary={<code>Abc</code>} Icon={AbcOutlined} />
-      </MenuItem>
-      <MenuItem onClick={() => textFormatSetNumber()}>
+      <MenuItem onClick={() => removeCellNumericFormat()}>
         <MenuLineItem primary="Number" secondary={<code>9,999.99</code>} Icon={Icon123} />
       </MenuItem>
       <MenuItem onClick={() => textFormatSetCurrency()}>

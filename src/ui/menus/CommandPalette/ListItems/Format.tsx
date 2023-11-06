@@ -1,15 +1,14 @@
-import { AbcOutlined, AttachMoney, FormatClear, Functions, Percent } from '@mui/icons-material';
+import { AttachMoney, FormatClear, Functions, Percent } from '@mui/icons-material';
 import { isEditorOrAbove } from '../../../../actions';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { DecimalDecrease, DecimalIncrease, Icon123 } from '../../../icons';
 import {
   clearFormattingAndBorders,
-  textFormatClear,
+  removeCellNumericFormat,
   textFormatDecreaseDecimalPlaces,
   textFormatIncreaseDecimalPlaces,
   textFormatSetCurrency,
   textFormatSetExponential,
-  textFormatSetNumber,
   textFormatSetPercentage,
 } from '../../TopBar/SubMenus/formatCells';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
@@ -31,17 +30,10 @@ const ListItems = [
     },
   },
   {
-    label: 'Format: Style as plain text',
-    isAvailable: isEditorOrAbove,
-    Component: (props: any) => {
-      return <CommandPaletteListItem {...props} icon={<AbcOutlined />} action={textFormatClear} />;
-    },
-  },
-  {
     label: 'Format: Style as number',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} icon={<Icon123 />} action={textFormatSetNumber} />;
+      return <CommandPaletteListItem {...props} icon={<Icon123 />} action={removeCellNumericFormat} />;
     },
   },
   {
