@@ -2,8 +2,10 @@ use anyhow::Result;
 use bigdecimal::{BigDecimal, FromPrimitive};
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::vec;
 
 use super::schema::{Any, ArrayOutput, Cell};
+use crate::color::Rgba;
 use crate::grid::file::v1_3::schema::GridSchema;
 use crate::grid::file::v1_4::schema as current;
 
@@ -64,21 +66,25 @@ struct SheetBuilder {
     columns: HashMap<i64, current::Column>,
     column_ids: HashMap<i64, current::Id>,
     row_ids: HashMap<i64, current::Id>,
+    borders: current::Borders,
 }
 #[allow(clippy::unwrap_or_default)]
 impl SheetBuilder {
     fn column_id(&mut self, x: i64) -> &mut current::Id {
         self.column_ids.entry(x).or_insert_with(current::Id::new)
     }
+
     fn row_id(&mut self, x: i64) -> &mut current::Id {
         self.row_ids.entry(x).or_insert_with(current::Id::new)
     }
+
     fn column(&mut self, x: i64) -> &mut current::Column {
         let id = self.column_id(x).to_owned();
         self.columns
             .entry(x)
             .or_insert_with(|| current::Column::with_id(id))
     }
+
     fn cell_ref(&mut self, (x, y): (i64, i64)) -> current::CellRef {
         current::CellRef {
             sheet: self.sheet_id.to_owned(),
@@ -86,9 +92,9 @@ impl SheetBuilder {
             row: self.row_id(y).to_owned(),
         }
     }
+
     fn cell_value(&mut self, x: i64, y: i64, type_field: &str, value: &str) {
         let column = self.column(x);
-        // println!("{} {} {} {}", x, y, type_field, value);
 
         if type_field == "text" {
             let type_field = match BigDecimal::from_str(value) {
@@ -109,6 +115,7 @@ impl SheetBuilder {
             );
         }
     }
+
     fn code_cell_value(
         &mut self,
         cell: &Cell,
@@ -124,9 +131,9 @@ impl SheetBuilder {
             _ => &default,
         };
         let formatted_code_string = cell
-            .clone()
             .evaluation_result
-            .map(|result| result.formatted_code);
+            .as_ref()
+            .map(|result| result.formatted_code.to_string());
 
         current::CodeCellValue {
             language,
@@ -145,7 +152,7 @@ impl SheetBuilder {
 
                                         column
                                             .spills
-                                            .insert(y.to_string(), (y, cell_ref.clone()).into());
+                                            .insert(y.to_string(), (y, cell_ref.to_owned()).into());
                                     }
                                     current::OutputValue::Array(current::OutputArray {
                                         size: current::OutputSize {
@@ -175,7 +182,7 @@ impl SheetBuilder {
 
                                             column.spills.insert(
                                                 y.to_string(),
-                                                (y, cell_ref.clone()).into(),
+                                                (y, cell_ref.to_owned()).into(),
                                             );
                                         }
                                     }
@@ -195,7 +202,7 @@ impl SheetBuilder {
                         } else if let Some(value) = result.output_value {
                             column
                                 .spills
-                                .insert(cell.y.to_string(), (cell.y, cell_ref.clone()).into());
+                                .insert(cell.y.to_string(), (cell.y, cell_ref.to_owned()).into());
                             current::OutputValue::Single(current::OutputValueValue {
                                 type_field: "TEXT".into(),
                                 value,
@@ -248,6 +255,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
         columns: HashMap::new(),
         column_ids: HashMap::new(),
         row_ids: HashMap::new(),
+        borders: HashMap::new(),
     };
 
     // Save cell data
@@ -267,7 +275,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
                     &language_conversion(&cell.type_field),
                     &cell.value,
                 );
-                let code_cell = (cell_ref.clone(), sheet.code_cell_value(&cell, cell_ref));
+                let code_cell = (cell_ref.to_owned(), sheet.code_cell_value(&cell, cell_ref));
                 code_cells.push(code_cell);
             }
             _ => {}
@@ -318,14 +326,31 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
         }
     }
 
-    // println!(
-    //     "{:#?}",
-    //     sheet
-    //         .columns
-    //         .iter()
-    //         .map(|(id, col)| (id.to_owned(), col))
-    //         .collect::<Vec<(i64, &current::Column)>>()
-    // );
+    for border in v.borders {
+        let column = sheet.column(border.x);
+        let column_id = column.id.to_string();
+        let top = border.horizontal.map(|horizontal| current::CellBorder {
+            color: Rgba::from_css_str(&horizontal.color.unwrap_or("rgb(0, 0, 0)".into()))
+                .unwrap_or_default()
+                .as_string(),
+            line: horizontal.border_type.unwrap_or("line1".into()),
+        });
+        let left = border.vertical.map(|vertical| current::CellBorder {
+            color: Rgba::from_css_str(&vertical.color.unwrap_or("rgb(0, 0, 0)".into()))
+                .unwrap_or_default()
+                .as_string(),
+            line: vertical.border_type.unwrap_or("line1".into()),
+        });
+
+        let sides = vec![top, left, None, None];
+        let entry = (border.y, sides);
+
+        sheet
+            .borders
+            .entry(column_id)
+            .and_modify(|value| value.push(entry.clone()))
+            .or_insert(vec![entry]);
+    }
 
     Ok(current::Sheet {
         id: sheet_id,
@@ -343,7 +368,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
             .into_iter()
             .map(|(id, row_id)| (id, current::Id { id: row_id.id }))
             .collect(),
-        borders: HashMap::new(), // TODO: import borders
+        borders: sheet.borders,
         code_cells,
     })
 }
