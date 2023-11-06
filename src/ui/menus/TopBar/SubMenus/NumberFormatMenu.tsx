@@ -25,9 +25,6 @@ export const NumberFormatMenu = () => {
         </TopBarMenuItem>
       )}
     >
-      {/* <MenuItem onClick={() => textFormat()}>
-        <MenuLineItem primary="Plain text" secondary={<code>Abc</code>} Icon={AbcOutlined} />
-      </MenuItem> */}
       <MenuItem onClick={() => removeCellNumericFormat()}>
         <MenuLineItem primary="Number" secondary={<code>9,999.99</code>} Icon={Icon123} />
       </MenuItem>

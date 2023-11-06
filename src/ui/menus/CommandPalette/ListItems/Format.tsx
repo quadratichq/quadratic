@@ -29,13 +29,6 @@ const ListItems = [
       );
     },
   },
-  // {
-  //   label: 'Format: Style as plain text',
-  //   isAvailable: isEditorOrAbove,
-  //   Component: (props: any) => {
-  //     return <CommandPaletteListItem {...props} icon={<AbcOutlined />} action={textFormat} />;
-  //   },
-  // },
   {
     label: 'Format: Style as number',
     isAvailable: isEditorOrAbove,

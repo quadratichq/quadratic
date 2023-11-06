@@ -96,14 +96,7 @@ impl CellValue {
             CellValue::Blank => String::new(),
             CellValue::Text(s) => s.to_string(),
             CellValue::Number(n) => {
-                let numeric_format = if let Some(numeric_format) = numeric_format.as_ref() {
-                    numeric_format
-                } else {
-                    &NumericFormat {
-                        kind: NumericFormatKind::Number,
-                        symbol: None,
-                    }
-                };
+                let numeric_format = numeric_format.unwrap_or_default();
                 let result: BigDecimal = if numeric_format.kind == NumericFormatKind::Percentage {
                     n * 100
                 } else {

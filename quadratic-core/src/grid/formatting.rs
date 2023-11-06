@@ -113,7 +113,7 @@ pub enum CellWrap {
     Clip,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct NumericFormat {
     #[serde(rename = "type")]
@@ -121,11 +121,14 @@ pub struct NumericFormat {
     pub symbol: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Display, EnumString)]
+#[derive(
+    Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Display, EnumString,
+)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "UPPERCASE")]
 #[strum(ascii_case_insensitive)]
 pub enum NumericFormatKind {
+    #[default]
     Number,
     Currency, // { symbol: String }, // TODO: would be nice if this were just a single char (and it could be)
     Percentage,
