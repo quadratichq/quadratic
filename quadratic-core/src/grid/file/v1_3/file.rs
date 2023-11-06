@@ -1,5 +1,5 @@
 use anyhow::Result;
-use bigdecimal::{BigDecimal, FromPrimitive};
+use bigdecimal::BigDecimal;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::vec;
