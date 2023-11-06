@@ -403,6 +403,7 @@ export class Grid {
 
   getRenderCells(sheetId: string, rectangle: Rectangle): JsRenderCell[] {
     const data = this.gridController.getRenderCells(sheetId, rectangleToRect(rectangle));
+    console.log(JSON.parse(data));
     return JSON.parse(data);
   }
 
