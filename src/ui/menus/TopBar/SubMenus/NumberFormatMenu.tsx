@@ -1,14 +1,15 @@
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 
-import { AttachMoney, Percent } from '@mui/icons-material';
+import { AttachMoney, Functions, Percent } from '@mui/icons-material';
 import '@szhsin/react-menu/dist/index.css';
 import { DecimalDecrease, DecimalIncrease, Icon123 } from '../../../icons';
 import { MenuLineItem } from '../MenuLineItem';
 import {
+  removeCellNumericFormat,
   textFormatDecreaseDecimalPlaces,
   textFormatIncreaseDecimalPlaces,
   textFormatSetCurrency,
-  textFormatSetNumber,
+  textFormatSetExponential,
   textFormatSetPercentage,
 } from './formatCells';
 
@@ -27,7 +28,7 @@ export const NumberFormatMenu = () => {
       {/* <MenuItem onClick={() => textFormat()}>
         <MenuLineItem primary="Plain text" secondary={<code>Abc</code>} Icon={AbcOutlined} />
       </MenuItem> */}
-      <MenuItem onClick={() => textFormatSetNumber()}>
+      <MenuItem onClick={() => removeCellNumericFormat()}>
         <MenuLineItem primary="Number" secondary={<code>9,999.99</code>} Icon={Icon123} />
       </MenuItem>
       <MenuItem onClick={() => textFormatSetCurrency()}>
@@ -36,9 +37,9 @@ export const NumberFormatMenu = () => {
       <MenuItem onClick={() => textFormatSetPercentage()}>
         <MenuLineItem primary="Percent" secondary={<code>99.99%</code>} Icon={Percent} />
       </MenuItem>
-      {/* <MenuItem onClick={() => textFormatSetExponential()}>
+      <MenuItem onClick={() => textFormatSetExponential()}>
         <MenuLineItem primary="Scientific" secondary={<code>6.02E+23</code>} Icon={Functions} />
-      </MenuItem> */}
+      </MenuItem>
 
       <MenuDivider />
 

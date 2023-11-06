@@ -117,6 +117,26 @@ impl GridController {
         )?)
     }
 
+    /// Sets cells numeric_format to scientific notation
+    ///
+    /// Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "setCellExponential")]
+    pub fn js_set_cell_exponential(
+        &mut self,
+        sheet_id: String,
+        rect: &Rect,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        let exponential = NumericFormat {
+            kind: NumericFormatKind::Exponential,
+            symbol: None,
+        };
+        Ok(serde_wasm_bindgen::to_value(
+            &self.set_cell_numeric_format(sheet_id, *rect, Some(exponential), cursor),
+        )?)
+    }
+
     /// Sets cell bold formatting given as an optional [`bool`].
     ///
     /// Returns a [`TransactionSummary`].

@@ -51,9 +51,9 @@ export const removeCellNumericFormat = (): void => {
   sheets.sheet.removeCellNumericFormat(rectangle);
 };
 
-export const textFormatSetNumber = (): void => {
+export const textFormatSetExponential = (): void => {
   const rectangle = sheets.sheet.cursor.getRectangle();
-  sheets.sheet.removeCellNumericFormat(rectangle);
+  sheets.sheet.setExponential(rectangle);
 };
 
 export const clearFormatting = () => {

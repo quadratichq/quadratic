@@ -1,13 +1,14 @@
-import { AttachMoney, FormatClear, Percent } from '@mui/icons-material';
+import { AttachMoney, FormatClear, Functions, Percent } from '@mui/icons-material';
 import { isEditorOrAbove } from '../../../../actions';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { DecimalDecrease, DecimalIncrease, Icon123 } from '../../../icons';
 import {
   clearFormattingAndBorders,
+  removeCellNumericFormat,
   textFormatDecreaseDecimalPlaces,
   textFormatIncreaseDecimalPlaces,
   textFormatSetCurrency,
-  textFormatSetNumber,
+  textFormatSetExponential,
   textFormatSetPercentage,
 } from '../../TopBar/SubMenus/formatCells';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
@@ -39,7 +40,7 @@ const ListItems = [
     label: 'Format: Style as number',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} icon={<Icon123 />} action={textFormatSetNumber} />;
+      return <CommandPaletteListItem {...props} icon={<Icon123 />} action={removeCellNumericFormat} />;
     },
   },
   {
@@ -56,13 +57,13 @@ const ListItems = [
       return <CommandPaletteListItem {...props} icon={<Percent />} action={textFormatSetPercentage} />;
     },
   },
-  // {
-  //   label: 'Format: Style as scientific',
-  //   isAvailable: isEditorOrAbove,
-  //   Component: (props: any) => {
-  //     return <CommandPaletteListItem {...props} icon={<Functions />} action={textFormatSetExponential} />;
-  //   },
-  // },
+  {
+    label: 'Format: Style as scientific',
+    isAvailable: isEditorOrAbove,
+    Component: (props: any) => {
+      return <CommandPaletteListItem {...props} icon={<Functions />} action={textFormatSetExponential} />;
+    },
+  },
   {
     label: 'Format: Increase decimal place',
     isAvailable: isEditorOrAbove,

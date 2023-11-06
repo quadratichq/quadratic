@@ -136,6 +136,10 @@ export class Sheet {
     grid.setCellPercentage(this.id, rectangle);
   }
 
+  setExponential(rectangle: Rectangle) {
+    grid.setCellExponential(this.id, rectangle);
+  }
+
   removeCellNumericFormat(rectangle: Rectangle) {
     grid.removeCellNumericFormat(this.id, rectangle);
   }
