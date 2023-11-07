@@ -487,6 +487,28 @@ impl Sheet {
             None
         }
     }
+
+    /// returns whether an output array would cause a spill error
+    pub fn is_a_spill(&self, cell_ref: CellRef, w: u32, h: u32) -> bool {
+        let pos = self.cell_ref_to_pos(cell_ref).unwrap();
+        let x = pos.x;
+        let y = pos.y;
+        // check if the output array would cause a spill
+        for i in 0..w {
+            for j in 0..h {
+                let x = x + i as i64;
+                let y = y + j as i64;
+                if let Some(column) = self.columns.get(&x) {
+                    if let Some(spill) = column.spills.get(y) {
+                        if spill != cell_ref {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
 }
 
 fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {

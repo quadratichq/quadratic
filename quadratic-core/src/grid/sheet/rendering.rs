@@ -49,6 +49,10 @@ impl Sheet {
                     } else {
                         (block.len(), None)
                     };
+                    if code_cell.spill {
+                        block_len = 1;
+                        cell_error = Some(CellValue::Error(Box::new()))
+                    }
 
                     let dx = (x - code_cell_pos.x) as u32;
                     let dy = (block.y - code_cell_pos.y) as u32;

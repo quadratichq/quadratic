@@ -154,6 +154,7 @@ impl TransactionInProgress {
             std_out: None,
             std_err: Some(error_msg),
             result,
+            spill: false,
         });
         update_code_cell_value(
             grid_controller,

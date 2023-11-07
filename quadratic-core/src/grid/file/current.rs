@@ -221,6 +221,7 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<CellRef, C
                         Some(CodeCellRunOutput {
                             std_out: output.std_out,
                             std_err: output.std_err,
+                            spill: false,
                             result: match output.result {
                                 current::CodeCellRunResult::Ok {
                                     output_value,

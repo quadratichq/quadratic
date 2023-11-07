@@ -26,7 +26,7 @@ pub fn update_code_cell_value(
     summary.save = true;
     let sheet = grid_controller.grid.sheet_mut_from_id(cell_ref.sheet);
     if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-        let old_code_cell_value = sheet.set_code_cell_value(pos, updated_code_cell_value.clone());
+        let mut spill = false;
         if let Some(updated_code_cell_value) = updated_code_cell_value.clone() {
             if let Some(output) = updated_code_cell_value.output {
                 match output.result.output_value() {
@@ -34,32 +34,43 @@ pub fn update_code_cell_value(
                         success = true;
                         match output_value {
                             Value::Array(array) => {
-                                for x in 0..array.width() {
-                                    let column_id =
-                                        sheet.get_or_create_column(pos.x + x as i64).0.id;
-                                    for y in 0..array.height() {
-                                        summary.cell_sheets_modified.insert(
-                                            CellSheetsModified::new(
-                                                sheet.id,
-                                                Pos {
-                                                    x: pos.x,
-                                                    y: pos.y + y as i64,
-                                                },
-                                            ),
-                                        );
-                                        let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
-                                        // add all but the first cell to the compute cycle
-                                        if x != 0 || y != 0 {
-                                            cells_to_compute.insert(CellRef {
-                                                sheet: sheet.id,
-                                                column: column_id,
-                                                row: row_id,
-                                            });
+                                if sheet.is_a_spill(cell_ref, array.width(), array.height()) {
+                                    summary.cell_sheets_modified.insert(CellSheetsModified::new(
+                                        sheet.id,
+                                        Pos { x: pos.x, y: pos.y },
+                                    ));
+                                    spill = true;
+                                } else {
+                                    spill = false;
+                                    for x in 0..array.width() {
+                                        let column_id =
+                                            sheet.get_or_create_column(pos.x + x as i64).0.id;
+                                        for y in 0..array.height() {
+                                            summary.cell_sheets_modified.insert(
+                                                CellSheetsModified::new(
+                                                    sheet.id,
+                                                    Pos {
+                                                        x: pos.x,
+                                                        y: pos.y + y as i64,
+                                                    },
+                                                ),
+                                            );
+                                            let row_id =
+                                                sheet.get_or_create_row(pos.y + y as i64).id;
+                                            // add all but the first cell to the compute cycle
+                                            if x != 0 || y != 0 {
+                                                cells_to_compute.insert(CellRef {
+                                                    sheet: sheet.id,
+                                                    column: column_id,
+                                                    row: row_id,
+                                                });
+                                            }
                                         }
                                     }
                                 }
                             }
                             Value::Single(_) => {
+                                spill = false;
                                 summary
                                     .cell_sheets_modified
                                     .insert(CellSheetsModified::new(sheet.id, pos));
@@ -74,6 +85,16 @@ pub fn update_code_cell_value(
                 };
             }
         }
+
+        let updated_code_cell_value = if spill {
+            // spill can only be set if updated_code_cell value is not None
+            let mut updated_code_cell_value = updated_code_cell_value.unwrap();
+            updated_code_cell_value.output.as_mut().unwrap().spill = true;
+            Some(updated_code_cell_value)
+        } else {
+            updated_code_cell_value
+        };
+        let old_code_cell_value = sheet.set_code_cell_value(pos, updated_code_cell_value.clone());
 
         fetch_code_cell_difference(
             sheet,
@@ -201,6 +222,7 @@ mod test {
                     )),
                     cells_accessed: Vec::new(),
                 },
+                spill: false,
             }),
         });
         let new_smaller = Some(CodeCellValue {
@@ -217,6 +239,7 @@ mod test {
                     )),
                     cells_accessed: Vec::new(),
                 },
+                spill: false,
             }),
         });
 
@@ -256,6 +279,7 @@ mod test {
                     )),
                     cells_accessed: Vec::new(),
                 },
+                spill: false,
             }),
         });
 
