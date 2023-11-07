@@ -26,10 +26,10 @@ export const NumberFormatMenu = () => {
       )}
     >
       <MenuItem onClick={() => removeCellNumericFormat()}>
-        <MenuLineItem primary="Number" secondary={<code>9,999.99</code>} Icon={Icon123} />
+        <MenuLineItem primary="Auto" secondary={<code>999.99</code>} Icon={Icon123} />
       </MenuItem>
       <MenuItem onClick={() => textFormatSetCurrency()}>
-        <MenuLineItem primary="Currency" secondary={<code>$9,999.99</code>} Icon={AttachMoney} />
+        <MenuLineItem primary="Currency" secondary={<code>$999.99</code>} Icon={AttachMoney} />
       </MenuItem>
       <MenuItem onClick={() => textFormatSetPercentage()}>
         <MenuLineItem primary="Percent" secondary={<code>99.99%</code>} Icon={Percent} />

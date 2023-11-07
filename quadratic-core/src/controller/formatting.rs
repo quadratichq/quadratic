@@ -38,6 +38,59 @@ impl GridController {
         old_values
     }
 
+    /// set currency type for a region
+    /// this also resets NumericDecimals to 2
+    pub fn set_currency(
+        &mut self,
+        sheet_id: SheetId,
+        rect: &Rect,
+        symbol: Option<String>,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let region = self.grid_mut().sheet_mut_from_id(sheet_id).region(*rect);
+        let ops = vec![
+            Operation::SetCellFormats {
+                region: region.clone(),
+                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
+                    Some(NumericFormat {
+                        kind: NumericFormatKind::Currency,
+                        symbol,
+                    }),
+                    region.len(),
+                )),
+            },
+            Operation::SetCellFormats {
+                region: region.clone(),
+                attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
+                    Some(2),
+                    region.len(),
+                )),
+            },
+        ];
+        self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
+    }
+
+    /// Sets NumericFormat and NumericDecimals to None
+    pub fn remove_number_formatting(
+        &mut self,
+        sheet_id: SheetId,
+        rect: &Rect,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let region = self.grid_mut().sheet_mut_from_id(sheet_id).region(*rect);
+        let ops = vec![
+            Operation::SetCellFormats {
+                region: region.clone(),
+                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(None, region.len())),
+            },
+            Operation::SetCellFormats {
+                region: region.clone(),
+                attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(None, region.len())),
+            },
+        ];
+        self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
+    }
+
     // todo: should also check the results of spills
     pub fn change_decimal_places(
         &mut self,
@@ -326,5 +379,52 @@ mod test {
         assert_eq!(cells[0].value, "1.12345678");
         assert_eq!(cells[1].value, "abcd");
         assert_eq!(cells[2].value, "0.12345678");
+    }
+
+    #[test]
+    fn test_set_currency() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            sheet_id,
+            Pos { x: 0, y: 0 },
+            String::from("1.12345678"),
+            None,
+        );
+        gc.set_currency(
+            sheet_id,
+            &Rect::single_pos(Pos { x: 0, y: 0 }),
+            Some("$".to_string()),
+            None,
+        );
+        let cells = gc
+            .sheet(sheet_id)
+            .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }));
+        assert_eq!(cells.len(), 1);
+        assert_eq!(cells[0].value, "$1.12");
+    }
+
+    #[test]
+    fn test_remove_formatting() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            sheet_id,
+            Pos { x: 0, y: 0 },
+            String::from("1.12345678"),
+            None,
+        );
+        gc.set_currency(
+            sheet_id,
+            &Rect::single_pos(Pos { x: 0, y: 0 }),
+            Some("$".to_string()),
+            None,
+        );
+        gc.clear_formatting(sheet_id, Rect::single_pos(Pos { x: 0, y: 0 }), None);
+        let cells = gc
+            .sheet(sheet_id)
+            .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }));
+        assert_eq!(cells.len(), 1);
+        assert_eq!(cells[0].value, "1.12345678");
     }
 }

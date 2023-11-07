@@ -4,8 +4,8 @@ use bigdecimal::BigDecimal;
 
 use crate::{
     grid::{
-        generate_borders, BorderSelection, CodeCellLanguage, CodeCellValue, NumericFormat,
-        NumericFormatKind, RegionRef, SheetId,
+        generate_borders, BorderSelection, CodeCellLanguage, CodeCellValue, NumericDecimals,
+        NumericFormat, NumericFormatKind, RegionRef, SheetId,
     },
     Array, CellValue, Pos, Rect, RunLengthEncoding,
 };
@@ -68,10 +68,14 @@ impl GridController {
                     1,
                 )),
             });
-            ops.push(Operation::SetCellFormats {
-                region,
-                attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
-            });
+
+            // only change decimal places if decimals have not been set
+            if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
+                ops.push(Operation::SetCellFormats {
+                    region,
+                    attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
+                });
+            }
         } else if let Ok(bd) = BigDecimal::from_str(value) {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
