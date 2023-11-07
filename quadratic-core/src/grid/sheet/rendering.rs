@@ -89,6 +89,7 @@ impl Sheet {
                 } else {
                     let mut numeric_format: Option<NumericFormat> = None;
                     let mut numeric_decimals: Option<i16> = None;
+                    let mut numeric_commas: Option<bool> = None;
                     let mut align: Option<CellAlign> = column.align.get(y);
 
                     if value.type_name() == "number" {
@@ -98,6 +99,7 @@ impl Sheet {
                             numeric_format.kind == NumericFormatKind::Percentage
                         });
                         numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
+                        numeric_commas = column.numeric_commas.get(y);
 
                         // if align is not set, set it to right only for numbers
                         if align.is_none() {
@@ -108,7 +110,7 @@ impl Sheet {
                         x,
                         y,
 
-                        value: value.to_display(numeric_format, numeric_decimals),
+                        value: value.to_display(numeric_format, numeric_decimals, numeric_commas),
                         language,
 
                         align,
