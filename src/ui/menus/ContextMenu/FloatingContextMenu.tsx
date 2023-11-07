@@ -327,7 +327,7 @@ export const FloatingContextMenu = (props: Props) => {
 
         <MenuDivider />
 
-        <TooltipHint title="Format as auto">
+        <TooltipHint title="Format as automatic">
           <IconButton onClick={() => removeCellNumericFormat()} color="inherit">
             <Numbers fontSize={iconSize} />
           </IconButton>

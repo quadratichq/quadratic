@@ -31,7 +31,7 @@ const ListItems = [
     },
   },
   {
-    label: 'Format: Number as auto',
+    label: 'Format: Number as automatic',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
       return <CommandPaletteListItem {...props} icon={<Icon123 />} action={removeCellNumericFormat} />;
