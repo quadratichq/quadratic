@@ -74,7 +74,7 @@ impl GridController {
                     return Operation::None;
                 };
 
-                // for compute, we keep the original cell output since it will be overridden once computed
+                // for compute, we keep the original cell output to avoid flashing of output (since values will be overridden once computation is complete)
                 if compute {
                     if let Some(code_cell_value) = code_cell_value {
                         let updated_code_cell_value =
