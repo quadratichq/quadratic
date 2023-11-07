@@ -165,8 +165,8 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
                 cell_borders.iter().enumerate().for_each(|(index, border)| {
                     if let Some(border) = border {
                         let border_selection = match index {
-                            0 => BorderSelection::Top,
-                            1 => BorderSelection::Left,
+                            0 => BorderSelection::Left,
+                            1 => BorderSelection::Top,
                             2 => BorderSelection::Right,
                             3 => BorderSelection::Bottom,
                             _ => BorderSelection::Clear,
