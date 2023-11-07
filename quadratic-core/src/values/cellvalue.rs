@@ -89,18 +89,13 @@ impl CellValue {
     }
 
     fn add_commas(s: &str) -> String {
-        let mut chars: Vec<char> = s.chars().collect();
-        let mut result = String::new();
-        let mut count = 0;
-        while let Some(c) = chars.pop() {
-            if count == 3 {
-                result.push(',');
-                count = 0;
-            }
-            result.push(c);
-            count += 1;
-        }
-        result.chars().rev().collect()
+        s.as_bytes()
+            .rchunks(3)
+            .rev()
+            .map(std::str::from_utf8)
+            .collect::<Result<Vec<&str>, _>>()
+            .unwrap()
+            .join(",")
     }
 
     /// converts a BigDecimal to a String w/commas
