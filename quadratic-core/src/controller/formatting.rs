@@ -154,6 +154,7 @@ impl GridController {
             CellFmtArray::Wrap(RunLengthEncoding::new()),
             CellFmtArray::NumericFormat(RunLengthEncoding::new()),
             CellFmtArray::NumericDecimals(RunLengthEncoding::new()),
+            CellFmtArray::NumericCommas(RunLengthEncoding::new()),
             CellFmtArray::Bold(RunLengthEncoding::new()),
             CellFmtArray::Italic(RunLengthEncoding::new()),
             CellFmtArray::TextColor(RunLengthEncoding::new()),
