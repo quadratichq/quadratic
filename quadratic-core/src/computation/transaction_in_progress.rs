@@ -424,31 +424,6 @@ mod test {
             )]
         );
 
-        println!(
-            "{:?}",
-            gc.sheet(sheet_id).get_cell_value(Pos { x: 0, y: 0 })
-        );
-
-        println!(
-            "{:?}",
-            gc.sheet(sheet_id).get_cell_value(Pos { x: 1, y: 0 })
-        );
-
-        println!(
-            "{:?}",
-            gc.sheet(sheet_id).get_cell_value(Pos { x: 0, y: 1 })
-        );
-
-        println!(
-            "{:?}",
-            gc.sheet(sheet_id).get_cell_value(Pos { x: 2, y: 0 })
-        );
-
-        println!(
-            "{:?}",
-            gc.sheet(sheet_id).get_cell_value(Pos { x: 0, y: 2 })
-        );
-
         let result = JsCodeResult::new(true, None, None, None, Some(expected), array_output, None);
         let summary = gc.calculation_complete(result);
 
