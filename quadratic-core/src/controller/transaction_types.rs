@@ -8,7 +8,7 @@ use crate::{
 
 use super::operation::Operation;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[wasm_bindgen]
 pub struct CellForArray {
     pub x: i64,
@@ -44,6 +44,7 @@ impl CellForArray {
     }
 }
 
+#[derive(Debug)]
 #[wasm_bindgen]
 pub struct CellsForArray {
     cells: Vec<CellForArray>,
@@ -58,6 +59,9 @@ impl CellsForArray {
             i: 0,
             transaction_response,
         }
+    }
+    pub fn get_cells(&self) -> &Vec<CellForArray> {
+        &self.cells
     }
 }
 

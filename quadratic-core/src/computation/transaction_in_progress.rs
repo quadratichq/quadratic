@@ -355,7 +355,7 @@ mod test {
     use crate::{
         controller::{
             operation::Operation,
-            transaction_types::{JsCodeResult, JsComputeGetCells},
+            transaction_types::{CellForArray, JsCodeResult, JsComputeGetCells},
             transactions::TransactionType,
             GridController,
         },
@@ -364,20 +364,27 @@ mod test {
         CellValue, Pos,
     };
 
-    #[test]
-    fn test_execute_operation_set_cell_values() {
+    fn test_python(
+        code_string: String,
+        cell_value: CellValue,
+        expected: String,
+        array_output: Option<String>,
+    ) {
         let mut gc = GridController::new();
         let sheet_ids = gc.sheet_ids();
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
         let sheet_id = sheet.id;
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
-        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 1, y: 0 });
+        let cell_value_pos = Pos { x: 0, y: 0 };
+        let code_cell_pos = Pos { x: 1, y: 0 };
+        sheet.set_cell_value(cell_value_pos.clone(), cell_value.clone());
+        let cell_ref = sheet.get_or_create_cell_ref(code_cell_pos.clone());
+
         gc.set_in_progress_transaction(
             vec![Operation::SetCellCode {
                 cell_ref,
                 code_cell_value: Some(CodeCellValue {
                     language: CodeCellLanguage::Python,
-                    code_string: "c(0, 0) + 1".to_string(),
+                    code_string: code_string.clone(),
                     formatted_code_string: None,
                     output: None,
                     last_modified: String::new(),
@@ -388,30 +395,95 @@ mod test {
             crate::controller::transactions::TransactionType::Normal,
         );
 
+        // code should be at (1, 0)
         assert_eq!(
-            gc.js_get_code_string(sheet_ids[0].to_string(), &Pos { x: 1, y: 0 }),
-            Some(CodeCell::new(
-                "c(0, 0) + 1".to_string(),
-                CodeCellLanguage::Python,
-                None,
-            ))
+            gc.js_get_code_string(sheet_ids[0].to_string(), &code_cell_pos.clone()),
+            Some(CodeCell::new(code_string, CodeCellLanguage::Python, None,))
         );
+
         assert!(gc.get_transaction_in_progress().is_some());
+
         if let Some(transaction) = gc.get_transaction_in_progress() {
             assert!(!transaction.complete);
             assert_eq!(transaction.cells_to_compute.len(), 0);
         }
-        gc.calculation_get_cells(JsComputeGetCells::new(
-            crate::Rect::single_pos(Pos { x: 0, y: 0 }),
+
+        let cells_for_array = gc.calculation_get_cells(JsComputeGetCells::new(
+            crate::Rect::single_pos(cell_value_pos),
             None,
             None,
         ));
 
-        let result = JsCodeResult::new(true, None, None, None, Some("10".to_string()), None, None);
+        assert_eq!(cells_for_array.as_ref().unwrap().get_cells().len(), 1);
+        assert_eq!(
+            *cells_for_array.as_ref().unwrap().get_cells(),
+            vec![CellForArray::new(
+                cell_value_pos.x,
+                cell_value_pos.y,
+                Some(cell_value.to_string())
+            )]
+        );
 
+        println!(
+            "{:?}",
+            gc.sheet(sheet_id).get_cell_value(Pos { x: 0, y: 0 })
+        );
+
+        println!(
+            "{:?}",
+            gc.sheet(sheet_id).get_cell_value(Pos { x: 1, y: 0 })
+        );
+
+        println!(
+            "{:?}",
+            gc.sheet(sheet_id).get_cell_value(Pos { x: 0, y: 1 })
+        );
+
+        println!(
+            "{:?}",
+            gc.sheet(sheet_id).get_cell_value(Pos { x: 2, y: 0 })
+        );
+
+        println!(
+            "{:?}",
+            gc.sheet(sheet_id).get_cell_value(Pos { x: 0, y: 2 })
+        );
+
+        let result = JsCodeResult::new(true, None, None, None, Some(expected), array_output, None);
         let summary = gc.calculation_complete(result);
+
         assert!(summary.save);
         assert_eq!(summary.code_cells_modified, HashSet::from([sheet_id]));
+    }
+
+    #[test]
+    fn test_python_hello_world() {
+        let code_string = "print('hello world')".to_string();
+        let cell_value = CellValue::Blank;
+        let expected = "hello world".to_string();
+        test_python(code_string, cell_value, expected, None);
+    }
+
+    #[test]
+    fn test_python_addition_with_cell_reference() {
+        let cell_value = CellValue::Number(BigDecimal::from(10));
+        let code_string = "c(0, 0) + 1".to_string();
+        let expected = "11".to_string();
+        test_python(code_string, cell_value, expected, None);
+    }
+
+    #[test]
+    fn test_python_array_output_variable_length() {
+        let cell_value = CellValue::Blank;
+        let code_string = "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]".to_string();
+        let expected = "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]".to_string();
+        let array_output = r#"[["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]]"#.to_string();
+        test_python(
+            code_string,
+            cell_value,
+            expected.clone(),
+            Some(array_output),
+        );
     }
 
     #[test]
