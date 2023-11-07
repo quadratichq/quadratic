@@ -327,21 +327,21 @@ export const FloatingContextMenu = (props: Props) => {
 
         <MenuDivider />
 
+        <TooltipHint title="Format as auto">
+          <IconButton onClick={() => removeCellNumericFormat()} color="inherit">
+            <Numbers fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+
         <TooltipHint title="Format as currency">
           <IconButton onClick={() => textFormatSetCurrency()} color="inherit">
             <AttachMoneyOutlined fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
-        <TooltipHint title="Format as percent">
+        <TooltipHint title="Format as percentage">
           <IconButton onClick={() => textFormatSetPercentage()} color="inherit">
             <Percent fontSize={iconSize} />
-          </IconButton>
-        </TooltipHint>
-
-        <TooltipHint title="Clear number formatting">
-          <IconButton onClick={() => removeCellNumericFormat()} color="inherit">
-            <Numbers fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 

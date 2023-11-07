@@ -31,35 +31,35 @@ const ListItems = [
     },
   },
   {
-    label: 'Format: Style as automatic',
+    label: 'Format: Number as auto',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
       return <CommandPaletteListItem {...props} icon={<Icon123 />} action={removeCellNumericFormat} />;
     },
   },
   {
-    label: 'Format: Style as currency',
+    label: 'Format: Number as currency',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
       return <CommandPaletteListItem {...props} icon={<AttachMoney />} action={textFormatSetCurrency} />;
     },
   },
   {
-    label: 'Format: Style as percentage',
+    label: 'Format: Number as percentage',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
       return <CommandPaletteListItem {...props} icon={<Percent />} action={textFormatSetPercentage} />;
     },
   },
   {
-    label: 'Format: Style as scientific',
+    label: 'Format: Number as scientific',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
       return <CommandPaletteListItem {...props} icon={<Functions />} action={textFormatSetExponential} />;
     },
   },
   {
-    label: 'Format: Toggle commas',
+    label: 'Format: Number toggle commas',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
       return <CommandPaletteListItem {...props} icon={<ModeEditOutline />} action={toggleCommas} />;
