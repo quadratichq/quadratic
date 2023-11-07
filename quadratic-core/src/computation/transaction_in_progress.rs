@@ -480,7 +480,7 @@ mod test {
         let array_output = r#"[["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]]"#.to_string();
         let code_cell_value = test_python(
             code_string,
-            cell_value,
+            cell_value.clone(),
             expected.clone(),
             Some(array_output),
         );
@@ -502,6 +502,37 @@ mod test {
         assert_at_pos(7, 0, 8);
         assert_at_pos(8, 0, 9);
         assert_at_pos(9, 0, 10);
+
+        let code_string = "[1, 2, 3, 4, 5]".to_string();
+        let expected = "[1, 2, 3, 4, 5]".to_string();
+        let array_output = r#"[["1", "2", "3", "4", "5"]]"#.to_string();
+        let code_cell_value = test_python(
+            code_string,
+            cell_value,
+            expected.clone(),
+            Some(array_output),
+        );
+
+        let assert_at_pos = |x: u32, y: u32, value: u32| {
+            assert_eq!(
+                code_cell_value.get_output_value(x, y),
+                Some(CellValue::Number(BigDecimal::from(value)))
+            );
+        };
+        let assert_at_pos_none = |x: u32, y: u32| {
+            assert_eq!(code_cell_value.get_output_value(x, y), None);
+        };
+
+        assert_at_pos(0, 0, 1);
+        assert_at_pos(1, 0, 2);
+        assert_at_pos(2, 0, 3);
+        assert_at_pos(3, 0, 4);
+        assert_at_pos(4, 0, 5);
+        assert_at_pos_none(5, 0);
+        assert_at_pos_none(6, 0);
+        assert_at_pos_none(7, 0);
+        assert_at_pos_none(8, 0);
+        assert_at_pos_none(9, 0);
     }
 
     #[test]
