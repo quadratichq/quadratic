@@ -198,6 +198,7 @@ export class PixiApp {
     this.resize();
     this.update.start();
     this.canvas.focus();
+    this.setViewportDirty();
   }
 
   destroy(): void {
@@ -293,6 +294,7 @@ export class PixiApp {
     this.viewport.dirty = true;
     this.paused = false;
     this.reset();
+    this.setViewportDirty();
   }
 
   loadViewport(): void {
