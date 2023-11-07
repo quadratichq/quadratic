@@ -1,4 +1,5 @@
 import { ColorResult } from 'react-color';
+import { grid } from '../../../../grid/controller/Grid';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
 import { CellAlignment } from '../../../../schemas';
@@ -34,6 +35,11 @@ export const textFormatIncreaseDecimalPlaces = (): void => {
 
 export const textFormatDecreaseDecimalPlaces = (): void => {
   sheets.sheet.changeDecimals(-1);
+};
+
+export const toggleCommas = (): void => {
+  const rectangle = sheets.sheet.cursor.getRectangle();
+  grid.toggleCommas(sheets.sheet.id, sheets.sheet.cursor.getPos(), rectangle);
 };
 
 export const textFormatSetCurrency = (): void => {

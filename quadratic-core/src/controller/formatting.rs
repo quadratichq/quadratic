@@ -2,8 +2,8 @@ use std::collections::HashSet;
 
 use crate::{
     grid::{
-        Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericDecimals, NumericFormat,
-        NumericFormatKind, RegionRef, SheetId, TextColor,
+        Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericCommas, NumericDecimals,
+        NumericFormat, NumericFormatKind, RegionRef, SheetId, TextColor,
     },
     Pos, Rect, RunLengthEncoding,
 };
@@ -87,6 +87,10 @@ impl GridController {
                 region: region.clone(),
                 attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(None, region.len())),
             },
+            Operation::SetCellFormats {
+                region: region.clone(),
+                attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(None, region.len())),
+            },
         ];
         self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
@@ -113,6 +117,30 @@ impl GridController {
             region: region.clone(),
             attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
                 numeric_decimals,
+                region.len(),
+            )),
+        }];
+        self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
+    }
+
+    pub fn toggle_commas(
+        &mut self,
+        sheet_id: SheetId,
+        source: Pos,
+        rect: Rect,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let sheet = self.sheet(sheet_id);
+        let commas = if let Some(commas) = sheet.get_formatting_value::<NumericCommas>(source) {
+            !commas
+        } else {
+            true
+        };
+        let region = self.region(sheet_id, rect);
+        let ops = vec![Operation::SetCellFormats {
+            region: region.clone(),
+            attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(
+                Some(commas),
                 region.len(),
             )),
         }];
@@ -146,6 +174,9 @@ impl GridController {
                     }
                     CellFmtArray::NumericDecimals(array) => {
                         array.push(sheet.get_formatting_value::<NumericDecimals>(pos));
+                    }
+                    CellFmtArray::NumericCommas(array) => {
+                        array.push(sheet.get_formatting_value::<NumericCommas>(pos));
                     }
                     CellFmtArray::Bold(array) => {
                         array.push(sheet.get_formatting_value::<Bold>(pos));
@@ -202,6 +233,7 @@ pub enum CellFmtArray {
     Wrap(RunLengthEncoding<Option<CellWrap>>),
     NumericFormat(RunLengthEncoding<Option<NumericFormat>>),
     NumericDecimals(RunLengthEncoding<Option<i16>>),
+    NumericCommas(RunLengthEncoding<Option<bool>>),
     Bold(RunLengthEncoding<Option<bool>>),
     Italic(RunLengthEncoding<Option<bool>>),
     TextColor(RunLengthEncoding<Option<String>>),

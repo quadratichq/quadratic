@@ -1,4 +1,4 @@
-import { AttachMoney, FormatClear, Functions, Percent } from '@mui/icons-material';
+import { AttachMoney, FormatClear, Functions, ModeEditOutline, Percent } from '@mui/icons-material';
 import { isEditorOrAbove } from '../../../../actions';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { DecimalDecrease, DecimalIncrease, Icon123 } from '../../../icons';
@@ -10,6 +10,7 @@ import {
   textFormatSetCurrency,
   textFormatSetExponential,
   textFormatSetPercentage,
+  toggleCommas,
 } from '../../TopBar/SubMenus/formatCells';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 
@@ -55,6 +56,13 @@ const ListItems = [
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
       return <CommandPaletteListItem {...props} icon={<Functions />} action={textFormatSetExponential} />;
+    },
+  },
+  {
+    label: 'Format: Toggle commas',
+    isAvailable: isEditorOrAbove,
+    Component: (props: any) => {
+      return <CommandPaletteListItem {...props} icon={<ModeEditOutline />} action={toggleCommas} />;
     },
   },
   {
