@@ -164,12 +164,10 @@ impl CellValue {
                     } else {
                         s
                     }
+                } else if use_commas {
+                    CellValue::with_commas(result)
                 } else {
-                    if use_commas {
-                        CellValue::with_commas(result)
-                    } else {
-                        result.to_string()
-                    }
+                    result.to_string()
                 };
                 match numeric_format.kind {
                     NumericFormatKind::Currency => {
