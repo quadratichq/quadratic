@@ -62,6 +62,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {},
             "italic": {},
             "text_color": {
@@ -364,6 +365,7 @@
               }
             },
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "0": {
                 "y": 0,
@@ -510,6 +512,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "0": {
                 "y": 0,
@@ -685,6 +688,7 @@
                 }
               }
             },
+            "numeric_commas": {},
             "bold": {
               "0": {
                 "y": 0,
@@ -824,6 +828,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "0": {
                 "y": 0,

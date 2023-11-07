@@ -306,6 +306,16 @@ export class Grid {
     this.transactionResponse(summary);
   }
 
+  toggleCommas(sheetId: string, source: Pos, rectangle: Rectangle) {
+    const summary = this.gridController.toggleCommas(
+      sheetId,
+      source,
+      rectangleToRect(rectangle),
+      sheets.getCursorPosition()
+    );
+    this.transactionResponse(summary);
+  }
+
   removeCellNumericFormat(sheetId: string, rectangle: Rectangle) {
     const summary = this.gridController.removeCellNumericFormat(
       sheetId,

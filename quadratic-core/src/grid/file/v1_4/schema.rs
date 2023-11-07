@@ -157,6 +157,8 @@ pub struct Column {
     pub numeric_format: HashMap<String, ColumnFormatType<NumericFormat>>,
     #[serde(rename = "numeric_decimals")]
     pub numeric_decimals: HashMap<String, ColumnFormatType<i16>>,
+    #[serde(rename = "numeric_commas")]
+    pub numeric_commas: HashMap<String, ColumnFormatType<bool>>,
     pub bold: HashMap<String, ColumnFormatType<bool>>,
     pub italic: HashMap<String, ColumnFormatType<bool>>,
     #[serde(rename = "text_color")]

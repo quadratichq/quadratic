@@ -51,6 +51,17 @@ impl CellFmtAttr for NumericDecimals {
     }
 }
 
+pub struct NumericCommas;
+impl CellFmtAttr for NumericCommas {
+    type Value = bool;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.numeric_commas
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.numeric_commas
+    }
+}
+
 pub struct Bold;
 impl CellFmtAttr for Bold {
     type Value = bool;

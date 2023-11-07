@@ -126,6 +126,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
             set_column_format::<CellWrap>(&mut col.wrap, &column.wrap)?;
             set_column_format_i16(&mut col.numeric_decimals, &column.numeric_decimals)?;
             set_column_format_numeric_format(&mut col.numeric_format, &column.numeric_format)?;
+            set_column_format_bool(&mut col.numeric_commas, &column.numeric_commas)?;
             set_column_format_bool(&mut col.bold, &column.bold)?;
             set_column_format_bool(&mut col.italic, &column.italic)?;
             set_column_format_string(&mut col.text_color, &column.text_color)?;
@@ -416,6 +417,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                     wrap: export_column_data(&column.wrap),
                     numeric_decimals: export_column_data_i16(&column.numeric_decimals),
                     numeric_format: export_column_data_numeric_format(&column.numeric_format),
+                    numeric_commas: export_column_data_bool(&column.numeric_commas),
                     bold: export_column_data_bool(&column.bold),
                     italic: export_column_data_bool(&column.italic),
                     text_color: export_column_data_string(&column.text_color),
