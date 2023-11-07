@@ -72,7 +72,7 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_numeric_format(sheet_id, *rect, None, cursor),
+            &self.remove_number_formatting(sheet_id, rect, cursor),
         )?)
     }
 
@@ -87,14 +87,13 @@ impl GridController {
         symbol: String,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let currency = NumericFormat {
-            kind: NumericFormatKind::Currency,
-            symbol: Some(symbol),
-        };
-        Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_numeric_format(sheet_id, *rect, Some(currency), cursor),
-        )?)
+        let sheet = SheetId::from_str(&sheet_id).unwrap();
+        Ok(serde_wasm_bindgen::to_value(&self.set_currency(
+            sheet,
+            rect,
+            Some(symbol),
+            cursor,
+        ))?)
     }
 
     /// Sets cells numeric_format to percentage

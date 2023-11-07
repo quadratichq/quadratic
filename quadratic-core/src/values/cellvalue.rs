@@ -347,19 +347,24 @@ impl CellValue {
             };
             if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
                 sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
-                sheet.set_formatting_value::<NumericDecimals>(pos, Some(2));
+
+                ops.push(Operation::SetCellFormats {
+                    region: cell_ref.into(),
+                    attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
+                        Some(numeric_format),
+                        1,
+                    )),
+                });
+
+                // only change decimals if it hasn't already been set
+                if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
+                    sheet.set_formatting_value::<NumericDecimals>(pos, Some(2));
+                    ops.push(Operation::SetCellFormats {
+                        region: cell_ref.into(),
+                        attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
+                    });
+                }
             }
-            ops.push(Operation::SetCellFormats {
-                region: cell_ref.into(),
-                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                    Some(numeric_format),
-                    1,
-                )),
-            });
-            ops.push(Operation::SetCellFormats {
-                region: cell_ref.into(),
-                attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
-            });
         } else if let Ok(bd) = BigDecimal::from_str(s) {
             value = CellValue::Number(bd);
         } else if let Some(percent) = CellValue::unpack_percentage(s) {
