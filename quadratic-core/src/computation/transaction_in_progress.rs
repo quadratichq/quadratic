@@ -348,7 +348,7 @@ impl From<Transaction> for TransactionInProgress {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
+    use std::{collections::HashSet, str::FromStr};
 
     use bigdecimal::BigDecimal;
 
@@ -369,15 +369,15 @@ mod test {
         cell_value: CellValue,
         expected: String,
         array_output: Option<String>,
-    ) {
+    ) -> CodeCellValue {
         let mut gc = GridController::new();
         let sheet_ids = gc.sheet_ids();
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
         let sheet_id = sheet.id;
         let cell_value_pos = Pos { x: 0, y: 0 };
         let code_cell_pos = Pos { x: 1, y: 0 };
-        sheet.set_cell_value(cell_value_pos.clone(), cell_value.clone());
-        let cell_ref = sheet.get_or_create_cell_ref(code_cell_pos.clone());
+        sheet.set_cell_value(cell_value_pos, cell_value.clone());
+        let cell_ref = sheet.get_or_create_cell_ref(code_cell_pos);
 
         gc.set_in_progress_transaction(
             vec![Operation::SetCellCode {
@@ -401,19 +401,19 @@ mod test {
             Some(CodeCell::new(code_string, CodeCellLanguage::Python, None,))
         );
 
-        assert!(gc.get_transaction_in_progress().is_some());
+        // pending transaction
+        let transaction = gc.get_transaction_in_progress().unwrap();
+        assert!(!transaction.complete);
+        assert_eq!(transaction.cells_to_compute.len(), 0);
 
-        if let Some(transaction) = gc.get_transaction_in_progress() {
-            assert!(!transaction.complete);
-            assert_eq!(transaction.cells_to_compute.len(), 0);
-        }
-
+        // pull out the code cell
         let cells_for_array = gc.calculation_get_cells(JsComputeGetCells::new(
             crate::Rect::single_pos(cell_value_pos),
             None,
             None,
         ));
 
+        // inspect the cell_value cell at (0, 0)
         assert_eq!(cells_for_array.as_ref().unwrap().get_cells().len(), 1);
         assert_eq!(
             *cells_for_array.as_ref().unwrap().get_cells(),
@@ -424,11 +424,26 @@ mod test {
             )]
         );
 
-        let result = JsCodeResult::new(true, None, None, None, Some(expected), array_output, None);
-        let summary = gc.calculation_complete(result);
+        // mock the python result
+        let result = JsCodeResult::new(
+            true,
+            None,
+            None,
+            None,
+            Some(expected.clone()),
+            array_output,
+            None,
+        );
 
+        // complete the transaction and verify the result
+        let summary = gc.calculation_complete(result);
         assert!(summary.save);
         assert_eq!(summary.code_cells_modified, HashSet::from([sheet_id]));
+
+        gc.sheet(sheet_id)
+            .get_code_cell(Pos { x: 1, y: 0 })
+            .unwrap()
+            .to_owned()
     }
 
     #[test]
@@ -436,7 +451,12 @@ mod test {
         let code_string = "print('hello world')".to_string();
         let cell_value = CellValue::Blank;
         let expected = "hello world".to_string();
-        test_python(code_string, cell_value, expected, None);
+        let code_cell_value = test_python(code_string, cell_value, expected.clone(), None);
+
+        assert_eq!(
+            code_cell_value.get_output_value(1, 0),
+            Some(CellValue::Text(expected))
+        );
     }
 
     #[test]
@@ -444,7 +464,12 @@ mod test {
         let cell_value = CellValue::Number(BigDecimal::from(10));
         let code_string = "c(0, 0) + 1".to_string();
         let expected = "11".to_string();
-        test_python(code_string, cell_value, expected, None);
+        let code_cell_value = test_python(code_string, cell_value, expected.clone(), None);
+
+        assert_eq!(
+            code_cell_value.get_output_value(1, 0),
+            Some(CellValue::Number(BigDecimal::from_str(&expected).unwrap()))
+        );
     }
 
     #[test]
@@ -453,12 +478,30 @@ mod test {
         let code_string = "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]".to_string();
         let expected = "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]".to_string();
         let array_output = r#"[["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]]"#.to_string();
-        test_python(
+        let code_cell_value = test_python(
             code_string,
             cell_value,
             expected.clone(),
             Some(array_output),
         );
+
+        let assert_at_pos = |x: u32, y: u32, value: u32| {
+            assert_eq!(
+                code_cell_value.get_output_value(x, y),
+                Some(CellValue::Number(BigDecimal::from(value)))
+            );
+        };
+
+        assert_at_pos(0, 0, 1);
+        assert_at_pos(1, 0, 2);
+        assert_at_pos(2, 0, 3);
+        assert_at_pos(3, 0, 4);
+        assert_at_pos(4, 0, 5);
+        assert_at_pos(5, 0, 6);
+        assert_at_pos(6, 0, 7);
+        assert_at_pos(7, 0, 8);
+        assert_at_pos(8, 0, 9);
+        assert_at_pos(9, 0, 10);
     }
 
     #[test]
