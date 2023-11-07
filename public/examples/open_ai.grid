@@ -69,7 +69,7 @@
                   "Values": [
                     {
                       "type": "number",
-                      "value": "100"
+                      "value": "256"
                     }
                   ]
                 }
@@ -135,7 +135,7 @@
                   "Values": [
                     {
                       "type": "text",
-                      "value": "text-babbage-001"
+                      "value": "gpt-3.5-turbo"
                     }
                   ]
                 }
@@ -4129,16 +4129,19 @@
           },
           {
             "language": "Python",
-            "code_string": "import json\nimport pyodide\n\napi_key = c(0,3)\nmodel = c(0, 5)\nmax_tokens = c(0, 7)\ntemperature = c(0, 9)\ntop_p = c(0, 11)\nprompt = c(0, 13)\n\n# Make API Request\nresponse = await pyodide.http.pyfetch(\n  'https://api.openai.com/v1/completions',\n  \n    method= \"POST\",\n    headers = {\n        \"Content-Type\": \"application/json\",\n        \"Authorization\": \"Bearer {}\".format(api_key),\n    },\n    body = json.dumps({\n        \"model\": str(model),\n        \"prompt\": str(prompt),\n        \"max_tokens\": int(max_tokens),\n        \"temperature\":  float(temperature),\n        \"top_p\": float(top_p)\n    })\n)\n\nif (response.status == 401):\n    raise Exception(\"Check your OpenAI API key\")\nelse:\n    response_json = await response.json()\n    result = response_json[\"choices\"][0][\"text\"].strip()\n\nresult",
-            "formatted_code_string": "import json\nimport pyodide\n\napi_key = c(0,3)\nmodel = c(0, 5)\nmax_tokens = c(0, 7)\ntemperature = c(0, 9)\ntop_p = c(0, 11)\nprompt = c(0, 13)\n\n# Make API Request\nresponse = await pyodide.http.pyfetch(\n  'https://api.openai.com/v1/completions',\n  \n    method= \"POST\",\n    headers = {\n        \"Content-Type\": \"application/json\",\n        \"Authorization\": \"Bearer {}\".format(api_key),\n    },\n    body = json.dumps({\n        \"model\": str(model),\n        \"prompt\": str(prompt),\n        \"max_tokens\": int(max_tokens),\n        \"temperature\":  float(temperature),\n        \"top_p\": float(top_p)\n    })\n)\n\nif (response.status == 401):\n    raise Exception(\"Check your OpenAI API key\")\nelse:\n    response_json = await response.json()\n    result = response_json[\"choices\"][0][\"text\"].strip()\n\nresult",
-            "last_modified": "2023-03-21T19:58:37.128Z",
+            "code_string": "import json\nimport pyodide\n\napi_key = c(0,3)\nmodel = c(0, 5)\nmax_tokens = c(0, 7)\ntemperature = c(0, 9)\ntop_p = c(0, 11)\nprompt = c(0, 13)\n\n# Make API Request\nresponse = await pyodide.http.pyfetch(\n  'https://api.openai.com/v1/chat/completions',\n  \n    method= \"POST\",\n    headers = {\n        \"Content-Type\": \"application/json\",\n        \"Authorization\": \"Bearer {}\".format(api_key),\n    },\n    body = json.dumps({\n        \"model\": str(model),\n        \"messages\": [{\n            \"role\": \"user\",\n            \"content\": str(prompt)\n        }],\n        \"max_tokens\": int(max_tokens),\n        \"temperature\":  float(temperature),\n        \"top_p\": float(top_p),\n        \"frequency_penalty\": 0,\n        \"presence_penalty\": 0\n    })\n)\n\nif (response.status == 401):\n    raise Exception(\"Check your OpenAI API key\")\nelse:\n    response_json = await response.json()\n    result = response_json[\"choices\"][0][\"message\"][\"content\"].strip()\n\nresult",
+            "formatted_code_string": "import json\nimport pyodide\n\napi_key = c(0,3)\nmodel = c(0, 5)\nmax_tokens = c(0, 7)\ntemperature = c(0, 9)\ntop_p = c(0, 11)\nprompt = c(0, 13)\n\n# Make API Request\nresponse = await pyodide.http.pyfetch(\n  'https://api.openai.com/v1/chat/completions',\n  \n    method= \"POST\",\n    headers = {\n        \"Content-Type\": \"application/json\",\n        \"Authorization\": \"Bearer {}\".format(api_key),\n    },\n    body = json.dumps({\n        \"model\": str(model),\n        \"messages\": [{\n            \"role\": \"user\",\n            \"content\": str(prompt)\n        }],\n        \"max_tokens\": int(max_tokens),\n        \"temperature\":  float(temperature),\n        \"top_p\": float(top_p),\n        \"frequency_penalty\": 0,\n        \"presence_penalty\": 0\n    })\n)\n\nif (response.status == 401):\n    raise Exception(\"Check your OpenAI API key\")\nelse:\n    response_json = await response.json()\n    result = response_json[\"choices\"][0][\"message\"][\"content\"].strip()\n\nresult",
+            "last_modified": "",
             "output": {
               "stdOut": "",
-              "stdErr": "Exception on line 30: Check your OpenAI API key",
+              "stdErr": "Exception on line 35: Check your OpenAI API key",
               "result": {
                 "error": {
-                  "span": null,
-                  "msg": "(unknown error)"
+                  "span": {
+                    "start": 35,
+                    "end": 35
+                  },
+                  "msg": "Python error: Exception on line 35: Check your OpenAI API key"
                 }
               }
             }
