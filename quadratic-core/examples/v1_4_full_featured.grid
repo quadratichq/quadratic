@@ -127,6 +127,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "0": {
                 "y": 0,
@@ -221,6 +222,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "10": {
                 "y": 10,
@@ -271,6 +273,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {},
             "italic": {},
             "text_color": {},
@@ -309,6 +312,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,
@@ -381,6 +385,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "5": {
                 "y": 5,
@@ -415,6 +420,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {},
             "italic": {},
             "text_color": {},
@@ -491,6 +497,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "5": {
                 "y": 5,
@@ -574,6 +581,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {},
             "italic": {},
             "text_color": {},
@@ -623,6 +631,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {},
             "italic": {},
             "text_color": {},
@@ -672,6 +681,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {},
             "italic": {},
             "text_color": {},
@@ -706,6 +716,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {},
             "italic": {},
             "text_color": {},
@@ -724,6 +735,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {},
             "italic": {},
             "text_color": {},
@@ -742,6 +754,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {},
             "italic": {},
             "text_color": {},
@@ -760,6 +773,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {},
             "italic": {},
             "text_color": {},

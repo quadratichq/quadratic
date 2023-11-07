@@ -136,6 +136,23 @@ impl GridController {
         )?)
     }
 
+    /// Sets cells numeric_commas
+    ///
+    /// Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "toggleCommas")]
+    pub fn js_toggle_commas(
+        &mut self,
+        sheet_id: String,
+        source: Pos,
+        rect: Rect,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        Ok(serde_wasm_bindgen::to_value(
+            &self.toggle_commas(sheet_id, source, rect, cursor),
+        )?)
+    }
+
     /// Sets cell bold formatting given as an optional [`bool`].
     ///
     /// Returns a [`TransactionSummary`].

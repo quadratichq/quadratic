@@ -148,6 +148,13 @@ impl GridController {
                             Some(&mut summary.cell_sheets_modified),
                         ),
                     ),
+                    CellFmtArray::NumericCommas(num_commas) => CellFmtArray::NumericCommas(
+                        self.set_cell_formats_for_type::<NumericCommas>(
+                            &region,
+                            num_commas,
+                            Some(&mut summary.cell_sheets_modified),
+                        ),
+                    ),
                     CellFmtArray::Bold(bold) => {
                         CellFmtArray::Bold(self.set_cell_formats_for_type::<Bold>(
                             &region,
