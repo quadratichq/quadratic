@@ -342,7 +342,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
             line: vertical.border_type.unwrap_or("line1".into()),
         });
 
-        let sides = vec![top, left, None, None];
+        let sides = vec![left, top, None, None];
         let entry = (border.y, sides);
 
         sheet
