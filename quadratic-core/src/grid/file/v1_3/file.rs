@@ -233,6 +233,7 @@ impl SheetBuilder {
                     std_out: result.std_out,
                     std_err: result.std_err,
                     result: code_cell_result,
+                    spill: false,
                 })
             }),
         }

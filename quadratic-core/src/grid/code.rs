@@ -30,6 +30,10 @@ impl CodeCellValue {
         }
     }
 
+    pub fn spilled(&self) -> bool {
+        self.output.as_ref().map(|out| out.spill).unwrap_or(false)
+    }
+
     pub fn cells_accessed_copy(&self) -> Option<Vec<CellRef>> {
         self.output.as_ref()?.cells_accessed().cloned()
     }

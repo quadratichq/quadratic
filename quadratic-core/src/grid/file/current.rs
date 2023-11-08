@@ -222,7 +222,7 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<CellRef, C
                         Some(CodeCellRunOutput {
                             std_out: output.std_out,
                             std_err: output.std_err,
-                            spill: false,
+                            spill: output.spill,
                             result: match output.result {
                                 current::CodeCellRunResult::Ok {
                                     output_value,
@@ -521,6 +521,7 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                                 output: code_cell_value.output.map(|output| current::CodeCellRunOutput {
                                         std_out: output.std_out,
                                         std_err: output.std_err,
+                                        spill: output.spill,
                                         result: match output.result {
                                             CodeCellRunResult::Ok {
                                                 output_value,

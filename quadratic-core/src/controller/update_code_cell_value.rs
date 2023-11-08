@@ -35,6 +35,7 @@ pub fn update_code_cell_value(
                         match output_value {
                             Value::Array(array) => {
                                 if sheet.is_a_spill(cell_ref, array.width(), array.height()) {
+                                    crate::util::dbgjs("spilled");
                                     summary.cell_sheets_modified.insert(CellSheetsModified::new(
                                         sheet.id,
                                         Pos { x: pos.x, y: pos.y },
@@ -123,14 +124,22 @@ pub fn fetch_code_cell_difference(
     cells_to_compute: &mut IndexSet<CellRef>,
 ) {
     let (old_w, old_h) = if let Some(old_code_cell_value) = old_code_cell_value {
-        let size = old_code_cell_value.output_size();
-        (size.w.get(), size.h.get())
+        if old_code_cell_value.spilled() {
+            (0, 0)
+        } else {
+            let size = old_code_cell_value.output_size();
+            (size.w.get(), size.h.get())
+        }
     } else {
         (0, 0)
     };
     let (new_w, new_h) = if let Some(new_code_cell_value) = new_code_cell_value {
-        let size = new_code_cell_value.output_size();
-        (size.w.get(), size.h.get())
+        if new_code_cell_value.spilled() {
+            (0, 0)
+        } else {
+            let size = new_code_cell_value.output_size();
+            (size.w.get(), size.h.get())
+        }
     } else {
         (0, 0)
     };

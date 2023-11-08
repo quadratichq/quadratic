@@ -44,6 +44,8 @@ impl Error {
 pub enum ErrorMsg {
     PythonError(Cow<'static, str>),
 
+    Spill,
+
     // Miscellaneous errors
     Unimplemented,
     UnknownError,
@@ -104,6 +106,9 @@ impl fmt::Display for ErrorMsg {
         match self {
             Self::PythonError(s) => {
                 write!(f, "Python error: {s}")
+            }
+            Self::Spill => {
+                write!(f, "Spill error")
             }
             Self::Unimplemented => {
                 write!(f, "This feature is unimplemented")

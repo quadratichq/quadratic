@@ -6,7 +6,7 @@ use crate::{
         },
         CellAlign, CodeCellRunResult, NumericFormat, NumericFormatKind,
     },
-    CellValue, Pos, Rect,
+    CellValue, Error, ErrorMsg, Pos, Rect,
 };
 
 use super::Sheet;
@@ -44,14 +44,23 @@ impl Sheet {
                     let code_cell_pos = self.cell_ref_to_pos(block.content.value)?;
                     let code_cell = self.code_cells.get(&block.content.value)?;
 
-                    let (block_len, cell_error) = if let Some(error) = code_cell.get_error() {
-                        (1, Some(CellValue::Error(Box::new(error))))
-                    } else {
-                        (block.len(), None)
-                    };
-                    if code_cell.spill {
+                    let mut block_len = block.len();
+                    let mut cell_error = None;
+
+                    // check for error in code cell
+                    if let Some(error) = code_cell.get_error() {
                         block_len = 1;
-                        cell_error = Some(CellValue::Error(Box::new()))
+                        cell_error = Some(CellValue::Error(Box::new(error)));
+                    }
+                    // check for spill in code_cell
+                    else if let Some(output) = code_cell.output.as_ref() {
+                        if output.spill {
+                            block_len = 1;
+                            cell_error = Some(CellValue::Error(Box::new(Error {
+                                span: None,
+                                msg: ErrorMsg::Spill,
+                            })))
+                        }
                     }
 
                     let dx = (x - code_cell_pos.x) as u32;
@@ -77,11 +86,20 @@ impl Sheet {
         itertools::chain(ordinary_cells, code_output_cells)
             .map(|(x, y, column, value, language)| {
                 if value.type_name() == "error" {
+                    let value = if let CellValue::Error(error) = value {
+                        if error.msg == ErrorMsg::Spill {
+                            String::from(" SPILL")
+                        } else {
+                            String::from(" ERROR")
+                        }
+                    } else {
+                        unreachable!()
+                    };
                     JsRenderCell {
                         x,
                         y,
 
-                        value: String::from(" ERROR"),
+                        value,
                         language,
 
                         align: None,
@@ -170,18 +188,28 @@ impl Sheet {
                 }
                 let code_cell = self.code_cells.get(&cell_ref)?;
                 let output_size = code_cell.output_size();
-                let state = match &code_cell.output {
-                    Some(output) => match output.result {
-                        CodeCellRunResult::Ok { .. } => JsRenderCodeCellState::Success,
-                        CodeCellRunResult::Err { .. } => JsRenderCodeCellState::RunError,
+                let (state, w, h) = match &code_cell.output {
+                    Some(output) => match &output.result {
+                        CodeCellRunResult::Ok { .. } => {
+                            if output.spill {
+                                (JsRenderCodeCellState::SpillError, 1, 1)
+                            } else {
+                                (
+                                    JsRenderCodeCellState::Success,
+                                    output_size.w.get(),
+                                    output_size.h.get(),
+                                )
+                            }
+                        }
+                        CodeCellRunResult::Err { .. } => (JsRenderCodeCellState::RunError, 1, 1),
                     },
-                    None => JsRenderCodeCellState::NotYetRun,
+                    None => (JsRenderCodeCellState::NotYetRun, 1, 1),
                 };
                 Some(JsRenderCodeCell {
                     x: pos.x,
                     y: pos.y,
-                    w: output_size.w.get(),
-                    h: output_size.h.get(),
+                    w,
+                    h,
                     language: code_cell.language,
                     state,
                 })
@@ -196,19 +224,31 @@ impl Sheet {
                 let pos = self.cell_ref_to_pos(cell_ref)?;
                 let code_cell = self.code_cells.get(&cell_ref)?;
                 let output_size = code_cell.output_size();
+
+                let (state, w, h) = match &code_cell.output {
+                    Some(output) => match &output.result {
+                        CodeCellRunResult::Ok { .. } => {
+                            if output.spill {
+                                (JsRenderCodeCellState::SpillError, 1, 1)
+                            } else {
+                                (
+                                    JsRenderCodeCellState::Success,
+                                    output_size.w.get(),
+                                    output_size.h.get(),
+                                )
+                            }
+                        }
+                        CodeCellRunResult::Err { .. } => (JsRenderCodeCellState::RunError, 1, 1),
+                    },
+                    None => (JsRenderCodeCellState::NotYetRun, 1, 1),
+                };
                 Some(JsRenderCodeCell {
                     x: pos.x,
                     y: pos.y,
-                    w: output_size.w.get(),
-                    h: output_size.h.get(),
+                    w,
+                    h,
                     language: code_cell.language,
-                    state: match &code_cell.output {
-                        Some(output) => match &output.result {
-                            CodeCellRunResult::Ok { .. } => JsRenderCodeCellState::Success,
-                            CodeCellRunResult::Err { .. } => JsRenderCodeCellState::RunError,
-                        },
-                        None => JsRenderCodeCellState::NotYetRun,
-                    },
+                    state,
                 })
             })
             .collect()

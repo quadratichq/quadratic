@@ -504,6 +504,11 @@ impl Sheet {
                             return true;
                         }
                     }
+                    if let Some(value) = column.values.get(y) {
+                        if !value.is_blank() {
+                            return true;
+                        }
+                    }
                 }
             }
         }

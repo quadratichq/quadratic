@@ -91,6 +91,9 @@ pub struct CodeCellRunOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub std_err: Option<String>,
     pub result: CodeCellRunResult,
+
+    #[serde(default)]
+    pub spill: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
