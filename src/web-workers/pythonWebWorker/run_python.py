@@ -324,9 +324,9 @@ async def run_python(code):
         except Exception:
             pass
 
-        # removes output_value if there's an array
-        if array_output:
-            output_value = None
+        # removes output_value if there's an array or None
+        if array_output or output_value is None:
+            output_value = ""
 
         return {
             "output_value": str(output_value),
