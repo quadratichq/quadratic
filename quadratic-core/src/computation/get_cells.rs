@@ -63,8 +63,10 @@ impl TransactionInProgress {
             let rect = get_cells.rect();
             let array = sheet.cell_array(rect);
 
-            let mut cells_accessed: HashSet<CellRef> =
-                HashSet::from_iter(self.cells_accessed.clone());
+            let mut cells_accessed: HashSet<CellRef> = HashSet::new();
+            while let Some(cell_ref) = self.cells_accessed.pop() {
+                cells_accessed.insert(cell_ref);
+            }
             for y in rect.y_range() {
                 for x in rect.x_range() {
                     if let Some(cell_ref) = sheet.try_get_cell_ref(Pos { x, y }) {

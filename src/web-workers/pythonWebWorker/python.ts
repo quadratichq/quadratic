@@ -12,7 +12,6 @@ class PythonWebWorker {
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
       if (event.type === 'results') {
-        console.log('results');
         const pythonResult = event.results;
         if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
 
