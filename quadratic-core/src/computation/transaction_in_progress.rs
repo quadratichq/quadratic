@@ -363,17 +363,14 @@ mod test {
         CellValue, Pos,
     };
 
-    fn test_python(
+    fn setup_python(
         gc: Option<GridController>,
         code_string: String,
         cell_value: CellValue,
-        expected: String,
-        array_output: Option<String>,
-    ) -> (GridController, CodeCellValue) {
+    ) -> GridController {
         let mut gc = gc.unwrap_or_default();
         let sheet_ids = gc.sheet_ids();
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
-        let sheet_id = sheet.id;
         let cell_value_pos = Pos { x: 0, y: 0 };
         let code_cell_pos = Pos { x: 1, y: 0 };
         sheet.set_cell_value(cell_value_pos, cell_value.clone());
@@ -425,6 +422,19 @@ mod test {
             )]
         );
 
+        gc
+    }
+
+    fn test_python(
+        gc: Option<GridController>,
+        code_string: String,
+        cell_value: CellValue,
+        expected: String,
+        array_output: Option<String>,
+    ) -> (GridController, CodeCellValue) {
+        let mut gc = setup_python(gc, code_string, cell_value);
+        let sheet_id = gc.sheet_ids()[0];
+
         // mock the python result
         let result = JsCodeResult::new(
             true,
@@ -446,6 +456,45 @@ mod test {
             .get_code_cell(Pos { x: 1, y: 0 })
             .unwrap()
             .to_owned();
+
+        (gc, code_cell_value)
+    }
+
+    fn python_array(
+        gc: GridController,
+        array: Vec<i32>,
+        start_x: u32,
+    ) -> (GridController, CodeCellValue) {
+        let cell_value = CellValue::Blank;
+        let numbers = array
+            .iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>()
+            .join(",");
+        let strings = numbers.replace(',', r#"",""#);
+        let code_string = format!("[{}]", numbers);
+        let expected = code_string.clone();
+        let array_output = format!(r#"[["{}"]]"#, strings);
+
+        // maintain ownership of gc so that we can reuse for smaller array
+        let (gc, code_cell_value) = test_python(
+            Some(gc),
+            code_string,
+            cell_value.clone(),
+            expected.clone(),
+            Some(array_output),
+        );
+        let assert_at_pos = |x: u32, y: u32, value: u32| {
+            assert_eq!(
+                code_cell_value.get_output_value(x, y),
+                Some(CellValue::Number(BigDecimal::from(value)))
+            );
+        };
+
+        for (x, number) in array.iter().enumerate() {
+            assert_at_pos(x as u32 + start_x, 0, *number as u32);
+        }
+
         (gc, code_cell_value)
     }
 
@@ -457,6 +506,7 @@ mod test {
         let (_, code_cell_value) =
             test_python(None, code_string, cell_value, expected.clone(), None);
 
+        // check that the value at (1,0) contains the expected output
         assert_eq!(
             code_cell_value.get_output_value(1, 0),
             Some(CellValue::Text(expected))
@@ -471,6 +521,7 @@ mod test {
         let (_, code_cell_value) =
             test_python(None, code_string, cell_value, expected.clone(), None);
 
+        // check that the value at (1,0) contains the expected output
         assert_eq!(
             code_cell_value.get_output_value(1, 0),
             Some(CellValue::Number(BigDecimal::from_str(&expected).unwrap()))
@@ -480,68 +531,66 @@ mod test {
     #[test]
     fn test_python_array_output_variable_length() {
         let gc = GridController::new();
-        let cell_value = CellValue::Blank;
-        let code_string = "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]".to_string();
-        let expected = "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]".to_string();
-        let array_output = r#"[["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]]"#.to_string();
-        let (gc, code_cell_value) = test_python(
-            Some(gc),
-            code_string,
-            cell_value.clone(),
-            expected.clone(),
-            Some(array_output),
-        );
-
-        let assert_at_pos = |x: u32, y: u32, value: u32| {
-            assert_eq!(
-                code_cell_value.get_output_value(x, y),
-                Some(CellValue::Number(BigDecimal::from(value)))
-            );
-        };
-
-        assert_at_pos(0, 0, 1);
-        assert_at_pos(1, 0, 2);
-        assert_at_pos(2, 0, 3);
-        assert_at_pos(3, 0, 4);
-        assert_at_pos(4, 0, 5);
-        assert_at_pos(5, 0, 6);
-        assert_at_pos(6, 0, 7);
-        assert_at_pos(7, 0, 8);
-        assert_at_pos(8, 0, 9);
-        assert_at_pos(9, 0, 10);
+        let (gc, _) = python_array(gc, vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0);
 
         // now shorten the array to make sure the old values are cleared properly
-        let code_string = "[11, 12, 13, 14, 15]".to_string();
-        let expected = "[11, 12, 13, 14, 15]".to_string();
-        let array_output = r#"[["11", "12", "13", "14", "15"]]"#.to_string();
-        let (_, code_cell_value) = test_python(
-            Some(gc),
-            code_string,
-            cell_value,
-            expected.clone(),
-            Some(array_output),
-        );
-
-        let assert_at_pos = |x: u32, y: u32, value: u32| {
-            assert_eq!(
-                code_cell_value.get_output_value(x, y),
-                Some(CellValue::Number(BigDecimal::from(value)))
-            );
-        };
+        let (_, code_cell_value) = python_array(gc, vec![11, 12, 13, 14, 15], 0);
         let assert_at_pos_none = |x: u32, y: u32| {
             assert_eq!(code_cell_value.get_output_value(x, y), None);
         };
 
-        assert_at_pos(0, 0, 11);
-        assert_at_pos(1, 0, 12);
-        assert_at_pos(2, 0, 13);
-        assert_at_pos(3, 0, 14);
-        assert_at_pos(4, 0, 15);
+        // check that the value at (5,0) -> (9,0) contains None
         assert_at_pos_none(5, 0);
         assert_at_pos_none(6, 0);
         assert_at_pos_none(7, 0);
         assert_at_pos_none(8, 0);
         assert_at_pos_none(9, 0);
+    }
+
+    #[test]
+    fn test_python_error() {
+        let gc = GridController::new();
+
+        // first generate cell values from 0 -> 9 in the x-axis
+        let (gc, code_cell_value) = python_array(gc, vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0);
+
+        // cell values at (1,0) should now be 2
+        assert_eq!(
+            code_cell_value.get_output_value(1, 0),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+
+        // now overwrite the cell at (1,0) with an invalid python expression
+        let code_string = "asdf".to_string();
+        let error = "NameError on line 1: name 'asdf' is not defined".to_string();
+        let cell_value = CellValue::Blank;
+        let mut gc = setup_python(Some(gc), code_string.clone(), cell_value);
+        let sheet_id = gc.sheet_ids()[0];
+
+        // mock the python error result
+        let result = JsCodeResult::new(
+            false,
+            Some(code_string),
+            Some(error),
+            None,
+            None,
+            None,
+            None,
+        );
+
+        // complete the transaction and verify the result
+        let summary = gc.calculation_complete(result);
+        assert!(summary.save);
+        assert_eq!(summary.code_cells_modified, HashSet::from([sheet_id]));
+
+        let code_cell_value = gc
+            .sheet(sheet_id)
+            .get_code_cell(Pos { x: 1, y: 0 })
+            .unwrap()
+            .to_owned();
+
+        // cell values at (1,0) should now be none
+        assert!(code_cell_value.get_output_value(1, 0).is_none());
     }
 
     #[test]
