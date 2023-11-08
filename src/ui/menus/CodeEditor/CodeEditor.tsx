@@ -36,7 +36,6 @@ export const CodeEditor = () => {
   const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
   const [evaluationResult, setEvaluationResult] = useState<any>(undefined);
   const updateCodeCell = useCallback(() => {
-    // this is wrong. sheet.id needs to be set on open
     const codeCell = grid.getCodeCell(
       editorInteractionState.selectedCellSheet,
       editorInteractionState.selectedCell.x,
@@ -120,13 +119,22 @@ export const CodeEditor = () => {
       codeString: editorContent ?? '',
       language,
     });
-    isRunningComputation.current = false;
-
     mixpanel.track('[CodeEditor].cellRun', {
       type: editorMode,
       code: editorContent,
     });
   };
+
+  useEffect(() => {
+    const completeTransaction = () => {
+      if (isRunningComputation.current) {
+        isRunningComputation.current = false;
+        updateCodeCell();
+      }
+    };
+    window.addEventListener('transaction-complete', completeTransaction);
+    return () => window.removeEventListener('transaction-complete', completeTransaction);
+  }, [updateCodeCell]);
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // Esc
