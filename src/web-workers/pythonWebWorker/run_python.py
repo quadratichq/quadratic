@@ -293,7 +293,10 @@ async def run_python(code):
         # return array_output if output is an array
         array_output = None
         if isinstance(output_value, list):
-            array_output = output_value
+            if len(output_value) > 0:
+                array_output = output_value
+            else:
+                output_value = ''
 
         # Convert DF to array_output
         if isinstance(output_value, pd.DataFrame):
