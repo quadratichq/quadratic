@@ -13,7 +13,7 @@ impl Sheet {
                 if let Some(cell) = self.get_cell_value(Pos { x, y }) {
                     array.push(CellForArray::new(x, y, Some(cell.to_edit())));
                 } else {
-                    array.push(CellForArray::new(x, y, Some("".into())));
+                    array.push(CellForArray::new(x, y, None));
                 }
             }
         }
