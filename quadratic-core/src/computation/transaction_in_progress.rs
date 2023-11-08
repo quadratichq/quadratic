@@ -360,17 +360,17 @@ mod test {
             GridController,
         },
         grid::{CodeCellLanguage, CodeCellValue},
-        wasm_bindings::controller::cells::CodeCell,
         CellValue, Pos,
     };
 
     fn test_python(
+        gc: Option<GridController>,
         code_string: String,
         cell_value: CellValue,
         expected: String,
         array_output: Option<String>,
-    ) -> CodeCellValue {
-        let mut gc = GridController::new();
+    ) -> (GridController, CodeCellValue) {
+        let mut gc = gc.unwrap_or_default();
         let sheet_ids = gc.sheet_ids();
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
         let sheet_id = sheet.id;
@@ -396,10 +396,11 @@ mod test {
         );
 
         // code should be at (1, 0)
-        assert_eq!(
-            gc.js_get_code_string(sheet_ids[0].to_string(), &code_cell_pos.clone()),
-            Some(CodeCell::new(code_string, CodeCellLanguage::Python, None,))
-        );
+        let code_cell = gc
+            .js_get_code_string(sheet_ids[0].to_string(), &code_cell_pos.clone())
+            .unwrap();
+        assert_eq!(code_cell.code_string(), code_string);
+        assert_eq!(code_cell.language(), CodeCellLanguage::Python);
 
         // pending transaction
         let transaction = gc.get_transaction_in_progress().unwrap();
@@ -440,10 +441,12 @@ mod test {
         assert!(summary.save);
         assert_eq!(summary.code_cells_modified, HashSet::from([sheet_id]));
 
-        gc.sheet(sheet_id)
+        let code_cell_value = gc
+            .sheet(sheet_id)
             .get_code_cell(Pos { x: 1, y: 0 })
             .unwrap()
-            .to_owned()
+            .to_owned();
+        (gc, code_cell_value)
     }
 
     #[test]
@@ -451,7 +454,8 @@ mod test {
         let code_string = "print('hello world')".to_string();
         let cell_value = CellValue::Blank;
         let expected = "hello world".to_string();
-        let code_cell_value = test_python(code_string, cell_value, expected.clone(), None);
+        let (_, code_cell_value) =
+            test_python(None, code_string, cell_value, expected.clone(), None);
 
         assert_eq!(
             code_cell_value.get_output_value(1, 0),
@@ -464,7 +468,8 @@ mod test {
         let cell_value = CellValue::Number(BigDecimal::from(10));
         let code_string = "c(0, 0) + 1".to_string();
         let expected = "11".to_string();
-        let code_cell_value = test_python(code_string, cell_value, expected.clone(), None);
+        let (_, code_cell_value) =
+            test_python(None, code_string, cell_value, expected.clone(), None);
 
         assert_eq!(
             code_cell_value.get_output_value(1, 0),
@@ -474,11 +479,13 @@ mod test {
 
     #[test]
     fn test_python_array_output_variable_length() {
+        let gc = GridController::new();
         let cell_value = CellValue::Blank;
         let code_string = "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]".to_string();
         let expected = "[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]".to_string();
         let array_output = r#"[["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]]"#.to_string();
-        let code_cell_value = test_python(
+        let (gc, code_cell_value) = test_python(
+            Some(gc),
             code_string,
             cell_value.clone(),
             expected.clone(),
@@ -503,10 +510,12 @@ mod test {
         assert_at_pos(8, 0, 9);
         assert_at_pos(9, 0, 10);
 
-        let code_string = "[1, 2, 3, 4, 5]".to_string();
-        let expected = "[1, 2, 3, 4, 5]".to_string();
-        let array_output = r#"[["1", "2", "3", "4", "5"]]"#.to_string();
-        let code_cell_value = test_python(
+        // now shorten the array to make sure the old values are cleared properly
+        let code_string = "[11, 12, 13, 14, 15]".to_string();
+        let expected = "[11, 12, 13, 14, 15]".to_string();
+        let array_output = r#"[["11", "12", "13", "14", "15"]]"#.to_string();
+        let (_, code_cell_value) = test_python(
+            Some(gc),
             code_string,
             cell_value,
             expected.clone(),
@@ -523,11 +532,11 @@ mod test {
             assert_eq!(code_cell_value.get_output_value(x, y), None);
         };
 
-        assert_at_pos(0, 0, 1);
-        assert_at_pos(1, 0, 2);
-        assert_at_pos(2, 0, 3);
-        assert_at_pos(3, 0, 4);
-        assert_at_pos(4, 0, 5);
+        assert_at_pos(0, 0, 11);
+        assert_at_pos(1, 0, 12);
+        assert_at_pos(2, 0, 13);
+        assert_at_pos(3, 0, 14);
+        assert_at_pos(4, 0, 15);
         assert_at_pos_none(5, 0);
         assert_at_pos_none(6, 0);
         assert_at_pos_none(7, 0);
