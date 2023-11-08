@@ -36,6 +36,7 @@ export const copyToClipboardEvent = (e: ClipboardEvent) => {
 };
 
 export const cutToClipboardEvent = async (e: ClipboardEvent) => {
+  if (!canvasIsTarget(e)) return;
   if (!isEditorOrAbove(pixiAppSettings.permission)) return;
   debugTimeReset();
   const rectangle = sheets.sheet.cursor.getRectangle();
