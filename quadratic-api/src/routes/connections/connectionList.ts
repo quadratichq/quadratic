@@ -1,15 +1,13 @@
 import express from 'express';
+import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { Request } from '../../types/Request';
-import { PostgresConnectionConfiguration } from './types/Postgres';
 
 const router = express.Router();
 
-const SUPPORTED_CONNECTIONS = [PostgresConnectionConfiguration];
-
 router.get(
-  '/supported',
+  '/',
   validateAccessToken,
   userMiddleware,
   // TODO validate connection
@@ -18,7 +16,17 @@ router.get(
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
 
-    return res.status(200).json(SUPPORTED_CONNECTIONS);
+    const list = await dbClient.connection.findMany({
+      where: {
+        UserConnectionRole: {
+          some: {
+            userId: req.user.id,
+          },
+        },
+      },
+    });
+
+    return res.status(200).json(list);
   }
 );
 

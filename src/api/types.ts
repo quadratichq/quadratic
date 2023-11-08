@@ -1,5 +1,4 @@
 import z from 'zod';
-import { ConnectionConfiguration } from '../../quadratic-api/src/routes/connections/types/Base'; // TODO: fix this path
 
 // TODO share these with the API
 
@@ -16,6 +15,35 @@ const fileMeta = {
 
 export const PermissionSchema = z.enum(['OWNER', 'EDITOR', 'VIEWER', 'ANONYMOUS']);
 export type Permission = z.infer<typeof PermissionSchema>;
+
+const connection = z.object({
+  uuid: z.string(),
+  name: z.string(),
+  host: z.string(),
+  port: z.string(),
+  database: z.string(),
+  username: z.string(),
+  password: z.string().optional(),
+});
+
+// TODO: duplicated with API
+export const connectionFieldZ = z.object({
+  name: z.string(),
+  description: z.string(),
+  type: z.string(),
+  sensitive: z.enum(['AWS_SECRET', 'ENCRYPTED', 'PLAINTEXT']),
+  required: z.boolean(),
+  default: z.string().optional(),
+});
+
+// TODO: duplicated with API
+export const connectionConfigurationZ = z.object({
+  name: z.string(),
+  type: z.enum(['POSTGRES']),
+  description: z.string(),
+  connectionFields: z.array(connectionFieldZ),
+  cellLevelInput: z.enum(['SINGLE_QUERY_EDITOR']),
+});
 
 // Zod schemas for API endpoints
 export const ApiSchemas = {
@@ -89,18 +117,21 @@ export const ApiSchemas = {
   }),
 
   // Connections
-  '/v0/connections/supported.GET.response': z.array(z.any()),
-  '/v0/connections.POST.request': z.object({
-    name: z.string(),
-    host: z.string(),
-    port: z.string(),
-    database: z.string(),
-    username: z.string(),
-    password: z.string().optional(),
-  }), // TODO: refactor to get from ConnectionConfiguration Types
-  '/v0/connections.POST.response': z.any(),
-  '/v0/connections/:uuid/run.POST.request': z.object({}),
-  '/v0/connections/:uuid/run.POST.response': z.any(),
+  '/v0/connections/supported.GET.response': z.array(connectionConfigurationZ),
+  '/v0/connections.GET.response': z.array(
+    z.object({
+      uuid: z.string(),
+      name: z.string(),
+      created_date: z.string().datetime(),
+      updated_date: z.string().datetime(),
+      type: z.enum(['POSTGRES']),
+      database: z.string(),
+    })
+  ),
+  '/v0/connections.POST.request': connection.omit({ uuid: true }),
+  '/v0/connections.POST.response': z.any(), // TODO:
+  '/v0/connections/:uuid/run.POST.request': z.object({}), // TODO:
+  '/v0/connections/:uuid/run.POST.response': z.any(), // TODO:
 };
 
 // Types for API endpoitns
@@ -121,9 +152,9 @@ export type ApiTypes = {
   '/v0/feedback.POST.request': z.infer<(typeof ApiSchemas)['/v0/feedback.POST.request']>;
   '/v0/feedback.POST.response': z.infer<(typeof ApiSchemas)['/v0/feedback.POST.response']>;
 
+  '/v0/connections.GET.response': z.infer<(typeof ApiSchemas)['/v0/connections.GET.response']>;
   '/v0/connections/supported.GET.response': z.infer<(typeof ApiSchemas)['/v0/connections/supported.GET.response']>;
   '/v0/connections.POST.request': z.infer<(typeof ApiSchemas)['/v0/connections.POST.request']>;
   '/v0/connections.POST.response': z.infer<(typeof ApiSchemas)['/v0/connections.POST.response']>;
   '/v0/connections/:uuid/run.POST.request': z.infer<(typeof ApiSchemas)['/v0/connections/:uuid/run.POST.request']>;
-  '/v0/connections/:uuid/run.POST.response': ConnectionConfiguration;
 };

@@ -7,17 +7,17 @@ import {
 } from '@mui/icons-material';
 import { Menu, MenuHeader, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
-import { useState } from 'react';
+import { useSetRecoilState } from 'recoil';
+import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE } from '../../../../constants/appConstants';
-import { ConnectionsList } from '../../Connections/ConnectionsList';
 import { MenuLineItem } from '../MenuLineItem';
 import { TopBarMenuItem } from '../TopBarMenuItem';
 
 export const DataMenu = () => {
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
-  const [showConnectionsList, setShowConnectionsList] = useState(false);
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
   return (
     <>
@@ -43,12 +43,19 @@ export const DataMenu = () => {
         <MenuItem disabled>
           <MenuLineItem primary="Add Connection" Icon={AddCircleOutline} />
         </MenuItem>
-        <MenuItem onClick={() => setShowConnectionsList(true)}>
+        <MenuItem
+          onClick={() =>
+            setEditorInteractionState((state) => {
+              return {
+                ...state,
+                showConnectionsMenu: true,
+              };
+            })
+          }
+        >
           <MenuLineItem primary="Manage Connections" Icon={StorageOutlined} />
         </MenuItem>
       </Menu>
-
-      <ConnectionsList show={showConnectionsList} setShow={setShowConnectionsList}></ConnectionsList>
     </>
   );
 };

@@ -12,6 +12,8 @@ export const ROUTES = {
   TEAMS: '/teams',
   ACCOUNT: '/account',
   FILE: (uuid: string) => `/file/${uuid}`,
+  CONNECTIONS: '/connections',
+  CONNECTIONS_SUPPORTED: '/connections/supported',
 };
 
 export const ROUTE_LOADER_IDS = {

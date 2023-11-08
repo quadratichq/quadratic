@@ -1,10 +1,11 @@
 import { Client } from 'pg';
-import { ConnectionConfiguration } from './Base';
+import { connectionConfigurationZ } from '../../../../../src/api/types';
 
-export const PostgresConnectionConfiguration = {
+export const PostgresConnectionConfiguration = connectionConfigurationZ.parse({
   name: 'Postgres',
   type: 'POSTGRES',
   description: 'Postgres allows you to connect to a Postgres database.',
+  cellLevelInput: 'SINGLE_QUERY_EDITOR',
   connectionFields: [
     {
       name: 'host',
@@ -43,7 +44,7 @@ export const PostgresConnectionConfiguration = {
       required: false,
     },
   ],
-} as ConnectionConfiguration;
+});
 
 export class PostgresConnection {
   validateConnectionFields(params: any) {

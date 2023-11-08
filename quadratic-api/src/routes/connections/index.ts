@@ -1,16 +1,14 @@
 import express from 'express';
 import connectionCreate from './connectionCreate';
+import connectionList from './connectionList';
 import connectionRun from './connectionRun';
 import supportedConnections from './supportedConnections';
-// import teamRead from './teamRead';
-// import teamSharingDelete from './teamSharingUserDelete';
-// import teamSharingUpdate from './teamSharingUserInvite';
-// import teamUpdate from './teamUpdate';
-// import teamsRead from './teamsRead';
+
 const router = express.Router();
 
+router.use('/', connectionList);
 router.use('/', connectionCreate);
 router.use('/', connectionRun);
-router.use('/supported', supportedConnections);
+router.use('/', supportedConnections);
 
 export default router;
