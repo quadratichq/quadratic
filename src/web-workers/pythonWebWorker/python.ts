@@ -51,7 +51,6 @@ class PythonWebWorker {
         // triggers any CodeEditor updates (if necessary)
         window.dispatchEvent(new CustomEvent('computation-complete'));
       } else if (event.type === 'get-cells') {
-        console.log('get-cells');
         const range = event.range;
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');
@@ -61,7 +60,6 @@ class PythonWebWorker {
           range.sheet !== undefined ? range.sheet.toString() : undefined,
           event.range?.lineNumber
         );
-        console.log('got cells');
         // cells will be undefined if the sheet_id (currently name) is invalid
         if (cells && this.worker) {
           this.worker.postMessage({ type: 'get-cells', cells });

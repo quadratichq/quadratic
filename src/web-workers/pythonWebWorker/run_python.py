@@ -55,8 +55,6 @@ def stack_line_number():
 
 class Cell:
     def __init__(self, object):
-        self.x = object.x
-        self.y = object.y
         self.value = object.value
 
     def __str__(self):
@@ -66,11 +64,11 @@ class Cell:
         return str(self.value)
 
     def __int__(self):
-        return int(self.value)
+        return int(self.value or 0)
 
     def __float__(self):
         self_only_num = "".join(_ for _ in str(self) if _ in "+-,.1234567890")
-        return float(self_only_num)
+        return float(self_only_num or 0)
 
     def generic_overload(self, other, op):
         if type(other) is Cell:
@@ -172,7 +170,7 @@ async def run_python(code):
         x_offset = p0[0]
         y_offset = p0[1]
         for cell in cells:
-            df.at[cell.y - y_offset, cell.x - x_offset] = cell.value
+            df.at[cell.y - y_offset, cell.x - x_offset] = Cell(cell)
 
         # Move the first row to the header
         if first_row_header:
