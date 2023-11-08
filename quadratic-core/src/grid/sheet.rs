@@ -25,6 +25,7 @@ pub mod cells;
 pub mod code;
 pub mod rendering;
 pub mod sheet_offsets;
+pub mod spills;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {
@@ -489,7 +490,7 @@ impl Sheet {
     }
 
     /// returns whether an output array would cause a spill error
-    pub fn is_a_spill(&self, cell_ref: CellRef, w: u32, h: u32) -> bool {
+    pub fn spilled(&self, cell_ref: CellRef, w: u32, h: u32) -> bool {
         let pos = self.cell_ref_to_pos(cell_ref).unwrap();
         let x = pos.x;
         let y = pos.y;

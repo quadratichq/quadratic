@@ -125,6 +125,7 @@ mod test {
                         output_value: Value::Single(CellValue::Text("test".to_string())),
                         cells_accessed: cells_accessed.clone(),
                     },
+                    spill: false,
                 }),
             }),
         );

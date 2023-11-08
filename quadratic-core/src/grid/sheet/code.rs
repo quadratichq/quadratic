@@ -24,15 +24,23 @@ impl Sheet {
                             column.spills.set(pos.y, Some(cell_ref));
                         }
                         Value::Array(array) => {
-                            let start = pos.x;
-                            let end = start + array.width() as i64;
-                            let range = Range {
-                                start: pos.y,
-                                end: pos.y + array.height() as i64,
-                            };
-                            for x in start..end {
-                                let (_, column) = self.get_or_create_column(x);
-                                column.spills.set_range(range.clone(), cell_ref);
+                            // if spilled only set the top left cell
+                            if output.spill {
+                                let (_, column) = self.get_or_create_column(pos.x);
+                                column.spills.set(pos.y, Some(cell_ref));
+                            }
+                            // otherwise set the whole array
+                            else {
+                                let start = pos.x;
+                                let end = start + array.width() as i64;
+                                let range = Range {
+                                    start: pos.y,
+                                    end: pos.y + array.height() as i64,
+                                };
+                                for x in start..end {
+                                    let (_, column) = self.get_or_create_column(x);
+                                    column.spills.set_range(range.clone(), cell_ref);
+                                }
                             }
                         }
                     },
@@ -74,8 +82,6 @@ impl Sheet {
         &self,
         region: Rect,
     ) -> impl Iterator<Item = CellRef> {
-        // Scan spilled cells to find code cells. TODO: this won't work for
-        // unspilled code cells
         let code_cell_refs: HashSet<CellRef> = self
             .columns
             .range(region.x_range())

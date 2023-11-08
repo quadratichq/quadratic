@@ -34,8 +34,7 @@ pub fn update_code_cell_value(
                         success = true;
                         match output_value {
                             Value::Array(array) => {
-                                if sheet.is_a_spill(cell_ref, array.width(), array.height()) {
-                                    crate::util::dbgjs("spilled");
+                                if sheet.spilled(cell_ref, array.width(), array.height()) {
                                     summary.cell_sheets_modified.insert(CellSheetsModified::new(
                                         sheet.id,
                                         Pos { x: pos.x, y: pos.y },
@@ -125,17 +124,17 @@ pub fn fetch_code_cell_difference(
 ) {
     let (old_w, old_h) = if let Some(old_code_cell_value) = old_code_cell_value {
         if old_code_cell_value.spilled() {
-            (0, 0)
+            (1, 1)
         } else {
             let size = old_code_cell_value.output_size();
             (size.w.get(), size.h.get())
         }
     } else {
-        (0, 0)
+        (1, 1)
     };
     let (new_w, new_h) = if let Some(new_code_cell_value) = new_code_cell_value {
         if new_code_cell_value.spilled() {
-            (0, 0)
+            (1, 1)
         } else {
             let size = new_code_cell_value.output_size();
             (size.w.get(), size.h.get())
@@ -207,11 +206,13 @@ mod test {
     use crate::{
         controller::{
             transaction_summary::TransactionSummary,
-            update_code_cell_value::fetch_code_cell_difference,
+            update_code_cell_value::fetch_code_cell_difference, GridController,
         },
         grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellValue, Sheet},
-        Array, ArraySize, SheetPos, Value,
+        Array, ArraySize, CellValue, Pos, SheetPos, Value,
     };
+
+    use super::update_code_cell_value;
 
     #[test]
     fn test_fetch_code_cell_difference() {
@@ -301,5 +302,122 @@ mod test {
             &mut cells_to_compute,
         );
         assert_eq!(summary.cell_sheets_modified.len(), 0);
+    }
+
+    #[test]
+    fn test_spilled_output_over_normal_cell() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.grid.sheet_mut_from_id(sheet_id);
+        sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Text("test".into()));
+
+        let code_cell_output = Some(CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code_string: "print(1)".to_string(),
+            formatted_code_string: None,
+            last_modified: String::from(""),
+            output: Some(CodeCellRunOutput {
+                std_out: None,
+                std_err: None,
+                result: crate::grid::CodeCellRunResult::Ok {
+                    output_value: Value::Array(Array::new_empty(
+                        ArraySize::try_from((2, 3)).expect("failed to create array"),
+                    )),
+                    cells_accessed: Vec::new(),
+                },
+                spill: false,
+            }),
+        });
+
+        let sheet = gc.grid.sheet_mut_from_id(sheet_id);
+        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
+
+        update_code_cell_value(
+            &mut gc,
+            cell_ref,
+            code_cell_output.clone(),
+            &mut IndexSet::default(),
+            &mut vec![],
+            &mut TransactionSummary::default(),
+        );
+
+        let sheet = gc.grid.sheet_from_id(sheet_id);
+        let code_cell = sheet.get_code_cell(Pos { x: 0, y: 0 });
+        assert_eq!(code_cell.unwrap().spilled(), true);
+    }
+
+    #[test]
+    fn test_spilled_output_over_code_cell() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let code_cell_output = Some(CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code_string: "print(1)".to_string(),
+            formatted_code_string: None,
+            last_modified: String::from(""),
+            output: Some(CodeCellRunOutput {
+                std_out: None,
+                std_err: None,
+                result: crate::grid::CodeCellRunResult::Ok {
+                    output_value: Value::Array(Array::new_empty(
+                        ArraySize::try_from((2, 3)).expect("failed to create array"),
+                    )),
+                    cells_accessed: Vec::new(),
+                },
+                spill: false,
+            }),
+        });
+
+        let sheet = gc.grid.sheet_mut_from_id(sheet_id);
+        let original_cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 1 });
+
+        update_code_cell_value(
+            &mut gc,
+            original_cell_ref,
+            code_cell_output.clone(),
+            &mut IndexSet::default(),
+            &mut vec![],
+            &mut TransactionSummary::default(),
+        );
+
+        let code_cell_output = Some(CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code_string: "print(1)".to_string(),
+            formatted_code_string: None,
+            last_modified: String::from(""),
+            output: Some(CodeCellRunOutput {
+                std_out: None,
+                std_err: None,
+                result: crate::grid::CodeCellRunResult::Ok {
+                    output_value: Value::Array(Array::new_empty(
+                        ArraySize::try_from((1, 3)).expect("failed to create array"),
+                    )),
+                    cells_accessed: Vec::new(),
+                },
+                spill: false,
+            }),
+        });
+
+        let sheet = gc.grid.sheet_mut_from_id(sheet_id);
+        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
+
+        update_code_cell_value(
+            &mut gc,
+            cell_ref,
+            code_cell_output.clone(),
+            &mut IndexSet::default(),
+            &mut vec![],
+            &mut TransactionSummary::default(),
+        );
+
+        let sheet = gc.grid.sheet_from_id(sheet_id);
+        let code_cell = sheet.get_code_cell(Pos { x: 0, y: 0 });
+        assert_eq!(code_cell.unwrap().spilled(), true);
+        assert_eq!(sheet.get_column(0).unwrap().spills.get(0), Some(cell_ref));
+        assert_eq!(
+            sheet.get_column(0).unwrap().spills.get(1),
+            Some(original_cell_ref)
+        );
     }
 }
