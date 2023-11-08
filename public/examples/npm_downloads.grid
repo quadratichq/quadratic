@@ -1393,6 +1393,7 @@
                 }
               }
             },
+            "numeric_commas": {},
             "bold": {
               "4": {
                 "y": 4,
@@ -2796,6 +2797,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,
@@ -4148,6 +4150,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,
@@ -5470,6 +5473,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,
@@ -6792,6 +6796,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,
@@ -8114,6 +8119,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,
@@ -9436,6 +9442,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,
@@ -10758,6 +10765,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,
@@ -12080,6 +12088,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,
@@ -13402,6 +13411,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,
@@ -14724,6 +14734,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,
@@ -16046,6 +16057,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,
@@ -17368,6 +17380,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,
@@ -18690,6 +18703,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,
@@ -20012,6 +20026,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,
@@ -21334,6 +21349,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,
@@ -22656,6 +22672,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,
@@ -23978,6 +23995,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "9": {
                 "y": 9,

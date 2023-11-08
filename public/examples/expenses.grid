@@ -398,6 +398,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "0": {
                 "y": 0,
@@ -794,6 +795,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "2": {
                 "y": 2,
@@ -1183,6 +1185,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "2": {
                 "y": 2,
@@ -1583,6 +1586,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "54": {
                 "y": 54,
@@ -2505,6 +2509,7 @@
                 }
               }
             },
+            "numeric_commas": {},
             "bold": {
               "2": {
                 "y": 2,
@@ -3395,6 +3400,7 @@
               }
             },
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "2": {
                 "y": 2,
@@ -3494,6 +3500,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "11": {
                 "y": 11,
@@ -3673,6 +3680,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "11": {
                 "y": 11,
@@ -3807,6 +3815,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "11": {
                 "y": 11,
@@ -3883,6 +3892,7 @@
             "wrap": {},
             "numeric_format": {},
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "11": {
                 "y": 11,
@@ -4057,6 +4067,7 @@
                 }
               }
             },
+            "numeric_commas": {},
             "bold": {
               "8": {
                 "y": 8,
@@ -4201,6 +4212,7 @@
               }
             },
             "numeric_decimals": {},
+            "numeric_commas": {},
             "bold": {
               "11": {
                 "y": 11,
