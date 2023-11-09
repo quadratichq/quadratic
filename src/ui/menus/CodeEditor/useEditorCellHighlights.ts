@@ -39,13 +39,15 @@ export type CellMatch = Map<CellRefId, monaco.Range>;
 export const useEditorCellHighlights = (
   isValidRef: boolean,
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>,
-  monacoRef: React.MutableRefObject<typeof monaco | null>
+  monacoRef: React.MutableRefObject<typeof monaco | null>,
+  language: 'TEXT' | 'FORMULA' | 'JAVASCRIPT' | 'PYTHON' | 'SQL' | 'COMPUTED' | 'AI'
 ) => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
 
   // Dynamically generate the classnames we'll use for cell references by pulling
   // the colors from the same colors used in pixi and stick them in the DOM
   useEffect(() => {
+    if (language !== 'FORMULA') return;
     const id = 'useEditorCellHighlights';
     if (!document.querySelector(id)) {
       const style = document.createElement('style');
@@ -61,6 +63,7 @@ export const useEditorCellHighlights = (
   }, []);
 
   useEffect(() => {
+    if (language !== 'FORMULA') return;
     const editor = editorRef.current;
     const monacoInst = monacoRef.current;
     if (!isValidRef || !editor || !monacoInst) return;
@@ -117,21 +120,19 @@ export const useEditorCellHighlights = (
 
       // todo: this should use editor.createDecorationCollection() instead
       const decorationsIds = editor.deltaDecorations(oldDecorations, newDecorations);
-      // setStateOnChangedMatches(oldCellsMatches, cellsMatches);
-
       oldDecorations = decorationsIds;
-      // oldCellsMatches = cellsMatches;
     };
 
-    onChangeModel();
-    editor.onDidChangeModelContent(onChangeModel);
-
-    // function setStateOnChangedMatches(oldCellsMatches: CellMatch, cellsMatches: CellMatch) {
-    //   // setting the state on each interaction takes too long and makes the input laggy
-    //   pixiApp.highlightedCells.clear();
-    //   cellsMatches.forEach((range, cellRefId) => {});
-    //   if (compareOldToNewMatches(oldCellsMatches, cellsMatches)) return;
-    //   // setEditorHighlightedCells({ highlightedCells: cellsMatches, selectedCell });
-    // }
-  }, [isValidRef, editorRef, monacoRef, editorInteractionState.selectedCell, editorInteractionState.selectedCellSheet]);
+    if (language === 'FORMULA') {
+      onChangeModel();
+      editor.onDidChangeModelContent(onChangeModel);
+    }
+  }, [
+    isValidRef,
+    editorRef,
+    monacoRef,
+    editorInteractionState.selectedCell,
+    editorInteractionState.selectedCellSheet,
+    language,
+  ]);
 };
