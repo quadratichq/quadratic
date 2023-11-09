@@ -86,6 +86,6 @@ export class HighlightedCells {
   }
 
   getHighlightedCells(): HighlightedCellRange[] {
-    return Array.from(this.highlightedCells.values()).filter((cell) => cell.sheet === sheets.sheet.id);
+    return Array.from(this.highlightedCells.values()).filter((cell) => cell.sheet === sheets.sheet.name);
   }
 }
