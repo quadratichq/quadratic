@@ -300,3 +300,69 @@ impl GridController {
         operation
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn execute(gc: &mut GridController, operation: Operation) {
+        let mut cells_to_compute = IndexSet::new();
+        let mut summary = TransactionSummary::default();
+        let mut sheets_with_changed_bounds = HashSet::new();
+        gc.execute_operation(
+            operation,
+            &mut cells_to_compute,
+            &mut summary,
+            &mut sheets_with_changed_bounds,
+            false,
+        );
+    }
+
+    #[test]
+    fn test_execute_operation_set_sheet_color() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let color = Some("red".to_string());
+        let operation = Operation::SetSheetColor {
+            sheet_id,
+            color: color.clone(),
+        };
+
+        assert_eq!(
+            format!("{:?}", operation),
+            format!(
+                "SetSheetColor {{ sheet_id: SheetId {{ id: {} }}, color: Some(\"red\") }}",
+                sheet_id
+            )
+        );
+
+        execute(&mut gc, operation);
+        assert_eq!(gc.grid.sheets()[0].color, color);
+    }
+
+    // #[test]
+    // fn test_execute_operation_resize_column() {
+    //     let mut gc = GridController::new();
+    //     let (_, column) = gc.grid_mut().sheets()[0].get_or_create_column(0);
+    //     let sheet_id = gc.sheet_ids()[0];
+    //     let color = Some("red".to_string());
+    //     let operation = Operation::ResizeColumn {
+    //         sheet_id,
+    //         column: column.id,
+    //         new_size: 100.0,
+    //     };
+
+    //     assert_eq!(
+    //         format!("{:?}", operation),
+    //         format!(
+    //             "SetSheetColor {{ sheet_id: SheetId {{ id: {} }}, color: Some(\"red\") }}",
+    //             sheet_id
+    //         )
+    //     );
+
+    //     execute(&mut gc, operation);
+    //     assert_eq!(gc.grid.sheets()[0].color, color);
+
+    //     // println!("{:?}", gc.grid.sheets()[0].color);
+    // }
+}
