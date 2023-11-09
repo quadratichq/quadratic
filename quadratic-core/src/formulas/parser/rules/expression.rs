@@ -162,7 +162,7 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 p,
                 [
                     FunctionCall.map(Some),
-                    CellReference.map(Some),
+                    CellReferenceExpression.map(Some),
                     StringLiteralExpression.map(Some),
                     NumericLiteral.map(Some),
                     ArrayLiteral.map(Some),
@@ -340,6 +340,21 @@ impl SyntaxRule for FunctionCall {
             span: Span::merge(func.span, spanned_args.span),
             inner: ast::AstNodeContents::FunctionCall { func, args },
         })
+    }
+}
+
+/// Matches a single cell reference.
+#[derive(Debug, Copy, Clone)]
+pub struct CellReferenceExpression;
+impl_display!(for CellReferenceExpression, "cell reference, such as 'A6' or '$ZB$3'");
+impl SyntaxRule for CellReferenceExpression {
+    type Output = AstNode;
+
+    fn prefix_matches(&self, p: Parser<'_>) -> bool {
+        CellReference.prefix_matches(p)
+    }
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
+        Ok(p.parse(CellReference)?.map(ast::AstNodeContents::CellRef))
     }
 }
 
