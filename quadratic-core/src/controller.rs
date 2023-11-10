@@ -17,6 +17,7 @@ pub mod operation;
 pub mod operations;
 pub mod sheet_offsets;
 pub mod sheets;
+pub mod spills;
 pub mod transaction_summary;
 pub mod transaction_types;
 pub mod transactions;

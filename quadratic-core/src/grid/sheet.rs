@@ -25,7 +25,6 @@ pub mod cells;
 pub mod code;
 pub mod rendering;
 pub mod sheet_offsets;
-pub mod spills;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {

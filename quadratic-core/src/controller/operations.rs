@@ -23,11 +23,11 @@ impl GridController {
         summary: &mut TransactionSummary,
         sheets_with_changed_bounds: &mut HashSet<SheetId>,
         compute: bool,
-    ) -> Operation {
+    ) -> Vec<Operation> {
+        let mut reverse_operations = vec![];
         let mut cells_deleted = vec![];
 
-        let operation = match op {
-            Operation::None => Operation::None,
+        match op {
             Operation::SetCellValues { region, values } => {
                 sheets_with_changed_bounds.insert(region.sheet);
                 let sheet = self.grid.sheet_mut_from_id(region.sheet);
@@ -54,11 +54,18 @@ impl GridController {
 
                 let old_values = Array::new_row_major(size, old_values)
                     .expect("error constructing array of old values for SetCells operation");
-                // return reverse operation
-                Operation::SetCellValues {
+
+                self.check_spills(
+                    region.clone(),
+                    cells_to_compute,
+                    summary,
+                    &mut reverse_operations,
+                );
+
+                reverse_operations.push(Operation::SetCellValues {
                     region,
                     values: old_values,
-                }
+                });
             }
             Operation::SetCellCode {
                 cell_ref,
@@ -71,7 +78,7 @@ impl GridController {
                 let pos = if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
                     pos
                 } else {
-                    return Operation::None;
+                    return reverse_operations;
                 };
 
                 // for compute, we keep the original cell output to avoid flashing of output (since values will be overridden once computation is complete)
@@ -106,10 +113,10 @@ impl GridController {
                     .cell_sheets_modified
                     .insert(CellSheetsModified::new(sheet.id, pos));
                 summary.code_cells_modified.insert(cell_ref.sheet);
-                Operation::SetCellCode {
+                reverse_operations.push(Operation::SetCellCode {
                     cell_ref,
                     code_cell_value: old_code_cell_value,
-                }
+                });
             }
             Operation::SetCellFormats { region, attr } => {
                 sheets_with_changed_bounds.insert(region.sheet);
@@ -183,12 +190,10 @@ impl GridController {
                         )
                     }
                 };
-
-                // return reverse operation
-                Operation::SetCellFormats {
+                reverse_operations.push(Operation::SetCellFormats {
                     region,
                     attr: old_attr,
-                }
+                });
             }
             Operation::SetBorders { region, borders } => {
                 sheets_with_changed_bounds.insert(region.sheet);
@@ -196,10 +201,10 @@ impl GridController {
                 let sheet = self.grid.sheet_mut_from_id(region.sheet);
 
                 let old_borders = sheet.set_region_borders(&region, borders);
-                Operation::SetBorders {
+                reverse_operations.push(Operation::SetBorders {
                     region,
                     borders: old_borders,
-                }
+                });
             }
             Operation::AddSheet { sheet } => {
                 // todo: need to handle the case where sheet.order overlaps another sheet order
@@ -210,17 +215,15 @@ impl GridController {
                     .expect("duplicate sheet name");
                 summary.sheet_list_modified = true;
 
-                // return reverse operation
-                Operation::DeleteSheet { sheet_id }
+                reverse_operations.push(Operation::DeleteSheet { sheet_id });
             }
             Operation::DeleteSheet { sheet_id } => {
                 let deleted_sheet = self.grid.remove_sheet(sheet_id);
                 summary.sheet_list_modified = true;
 
-                // return reverse operation
-                Operation::AddSheet {
+                reverse_operations.push(Operation::AddSheet {
                     sheet: deleted_sheet,
-                }
+                });
             }
             Operation::ReorderSheet { target, order } => {
                 let sheet = self.grid.sheet_from_id(target);
@@ -228,11 +231,10 @@ impl GridController {
                 self.grid.move_sheet(target, order);
                 summary.sheet_list_modified = true;
 
-                // return reverse operation
-                Operation::ReorderSheet {
+                reverse_operations.push(Operation::ReorderSheet {
                     target,
                     order: original_order,
-                }
+                });
             }
             Operation::SetSheetName { sheet_id, name } => {
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
@@ -240,11 +242,10 @@ impl GridController {
                 sheet.name = name;
                 summary.sheet_list_modified = true;
 
-                // return reverse operation
-                Operation::SetSheetName {
+                reverse_operations.push(Operation::SetSheetName {
                     sheet_id,
                     name: old_name,
-                }
+                });
             }
             Operation::SetSheetColor { sheet_id, color } => {
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
@@ -252,11 +253,10 @@ impl GridController {
                 sheet.color = color;
                 summary.sheet_list_modified = true;
 
-                // return reverse operation
-                Operation::SetSheetColor {
+                reverse_operations.push(Operation::SetSheetColor {
                     sheet_id,
                     color: old_color,
-                }
+                });
             }
 
             Operation::ResizeColumn {
@@ -268,13 +268,11 @@ impl GridController {
                 if let Some(x) = sheet.get_column_index(column) {
                     summary.offsets_modified.push(sheet.id);
                     let old_size = sheet.offsets.set_column_width(x, new_size);
-                    Operation::ResizeColumn {
+                    reverse_operations.push(Operation::ResizeColumn {
                         sheet_id,
                         column,
                         new_size: old_size,
-                    }
-                } else {
-                    Operation::None
+                    });
                 }
             }
 
@@ -287,16 +285,14 @@ impl GridController {
                 if let Some(y) = sheet.get_row_index(row) {
                     let old_size = sheet.offsets.set_row_height(y, new_size);
                     summary.offsets_modified.push(sheet.id);
-                    Operation::ResizeRow {
+                    reverse_operations.push(Operation::ResizeRow {
                         sheet_id,
                         row,
                         new_size: old_size,
-                    }
-                } else {
-                    Operation::None
+                    });
                 }
             }
         };
-        operation
+        reverse_operations
     }
 }

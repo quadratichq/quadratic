@@ -114,7 +114,7 @@ impl TransactionInProgress {
                 &mut self.sheets_with_changed_bounds,
                 compute,
             );
-            self.reverse_operations.push(reverse_operation);
+            self.reverse_operations.extend(reverse_operation);
         }
     }
 

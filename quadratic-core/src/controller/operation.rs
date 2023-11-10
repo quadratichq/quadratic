@@ -10,7 +10,6 @@ use super::formatting::CellFmtArray;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Operation {
-    None,
     SetCellValues {
         region: RegionRef,
         values: Array,
@@ -60,7 +59,6 @@ pub enum Operation {
 impl fmt::Display for Operation {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Operation::None => write!(fmt, "None"),
             Operation::SetCellValues { values, .. } => {
                 write!(fmt, "SetCellValues {{ value count: {} }}", values.size())
             }

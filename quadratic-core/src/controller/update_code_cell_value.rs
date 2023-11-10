@@ -123,7 +123,7 @@ pub fn fetch_code_cell_difference(
     cells_to_compute: &mut IndexSet<CellRef>,
 ) {
     let (old_w, old_h) = if let Some(old_code_cell_value) = old_code_cell_value {
-        if old_code_cell_value.spilled() {
+        if old_code_cell_value.spill_error() {
             (1, 1)
         } else {
             let size = old_code_cell_value.output_size();
@@ -133,7 +133,7 @@ pub fn fetch_code_cell_difference(
         (1, 1)
     };
     let (new_w, new_h) = if let Some(new_code_cell_value) = new_code_cell_value {
-        if new_code_cell_value.spilled() {
+        if new_code_cell_value.spill_error() {
             (1, 1)
         } else {
             let size = new_code_cell_value.output_size();
@@ -343,7 +343,7 @@ mod test {
 
         let sheet = gc.grid.sheet_from_id(sheet_id);
         let code_cell = sheet.get_code_cell(Pos { x: 0, y: 0 });
-        assert_eq!(code_cell.unwrap().spilled(), true);
+        assert_eq!(code_cell.unwrap().spill_error(), true);
     }
 
     #[test]
@@ -413,7 +413,7 @@ mod test {
 
         let sheet = gc.grid.sheet_from_id(sheet_id);
         let code_cell = sheet.get_code_cell(Pos { x: 0, y: 0 });
-        assert_eq!(code_cell.unwrap().spilled(), true);
+        assert_eq!(code_cell.unwrap().spill_error(), true);
         assert_eq!(sheet.get_column(0).unwrap().spills.get(0), Some(cell_ref));
         assert_eq!(
             sheet.get_column(0).unwrap().spills.get(1),
