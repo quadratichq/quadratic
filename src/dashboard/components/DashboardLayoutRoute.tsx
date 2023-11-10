@@ -1,9 +1,12 @@
-import { Close, FileCopyOutlined, InsertDriveFileOutlined, Menu, PeopleOutline } from '@mui/icons-material';
-import { Avatar, Box, CircularProgress, Drawer, IconButton, Typography, useTheme } from '@mui/material';
+import { Avatar, Box, CircularProgress, Typography, useTheme } from '@mui/material';
+import { FileIcon, PersonIcon, StarIcon } from '@radix-ui/react-icons';
+import clsx from 'clsx';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigation } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
 import { useRootRouteLoaderData } from '../../router';
+import { Button } from '../../shadcn/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '../../shadcn/ui/sheet';
 import { colors } from '../../theme/colors';
 import { ReactComponent as QuadraticLogo } from './quadratic-logo.svg';
 import { ReactComponent as QuadraticLogotype } from './quadratic-logotype.svg';
@@ -11,17 +14,12 @@ import { ReactComponent as QuadraticLogotype } from './quadratic-logotype.svg';
 const drawerWidth = 264;
 
 export const Component = () => {
-  const theme = useTheme();
   const navigation = useNavigation();
   const location = useLocation();
   const isLoading = navigation.state !== 'idle';
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
-  const handleDrawerToggle = () => {
-    setIsOpen((prev) => !prev);
-  };
-
-  const navbar = <Navbar handleDrawerToggle={handleDrawerToggle} />;
+  const navbar = <Navbar />;
 
   // When the location changes, close the menu (if it's already open)
   useEffect(() => {
@@ -29,77 +27,86 @@ export const Component = () => {
   }, [location.pathname]);
 
   return (
-    <Box
-      sx={{
-        backgroundColor: theme.palette.background.default,
-        height: '100%',
-        [theme.breakpoints.up('md')]: {
-          display: 'flex',
-          ml: drawerWidth + 'px',
-        },
-      }}
-    >
-      <Drawer
+    <div className={`h-full lg:flex lg:flex-row`}>
+      <div className={`hidden flex-shrink-0 border-r border-r-border lg:block`} style={{ width: drawerWidth }}>
+        {navbar}
+      </div>
+      {/* <Drawer
         variant="temporary"
         open={isOpen}
-        onClose={handleDrawerToggle}
+        onClose={toggleNavbar}
         anchor={'right'}
         ModalProps={{
           keepMounted: true, // Better open performance on mobile.
         }}
         sx={{
+          borderRight: 'none',
           display: { xs: 'block', md: 'none' },
           '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
         }}
       >
         {navbar}
       </Drawer>
-      <Drawer
-        variant="permanent"
-        sx={{
-          display: { xs: 'none', md: 'block' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-        }}
-        open
-      >
-        {navbar}
-      </Drawer>
-      <Box
-        sx={{
-          width: '100%',
-          height: '100%',
-          px: theme.spacing(2),
-          overflow: isLoading ? 'hidden' : 'scroll',
-          paddingBottom: theme.spacing(5),
-          position: 'relative',
-          transition: '.2s ease opacity',
-          ...(isLoading ? { opacity: '.25', pointerEvents: 'none' } : {}),
-
-          [theme.breakpoints.up('md')]: {
-            px: theme.spacing(5),
-          },
-        }}
-      >
-        <Box
+      <div className={` w-[264px] w-[${drawerWidth}px]`}>
+        <Drawer
+          variant="permanent"
+          className={`border-r border-border`}
           sx={{
-            display: { xs: 'block', md: 'none' },
-            position: 'absolute',
-            top: theme.spacing(1.5),
-            right: theme.spacing(2),
-            zIndex: 100,
+            display: { xs: 'none', md: 'block' },
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
+              width: drawerWidth,
+              borderRight: `none`,
+              // This is a fix where MUI and shadcn clash. Once we remove mui, we can remove this
+              zIndex: '49',
+            },
           }}
+          open
         >
-          <IconButton onClick={handleDrawerToggle}>
-            <Menu />
-          </IconButton>
-        </Box>
+          {navbar}
+        </Drawer>
+      </div> */}
+      <div
+        className={clsx(
+          `h-full w-full px-4 pb-10 transition-opacity lg:px-10`,
+          isLoading ? 'overflow-hidden' : 'overflow-scroll',
+          isLoading && 'pointer-events-none opacity-25'
+        )}
+
+        // sx={{
+        //   width: '100%',
+        //   height: '100%',
+        //   px: theme.spacing(2),
+        //   overflow: isLoading ? 'hidden' : 'scroll',
+        //   paddingBottom: theme.spacing(5),
+        //   position: 'relative',
+        //   transition: '.2s ease opacity',
+        //   ...(isLoading ? { opacity: '.25', pointerEvents: 'none' } : {}),
+
+        //   [theme.breakpoints.up('md')]: {
+        //     px: theme.spacing(5),
+        //   },
+        // }}
+      >
+        <div className={`absolute right-4 top-3 z-10 lg:hidden`}>
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" onClick={() => setIsOpen(true)}>
+                Menu
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="p-0" style={{ width: drawerWidth }}>
+              {navbar}
+            </SheetContent>
+          </Sheet>
+        </div>
         <Outlet />
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };
 
-function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
+function Navbar() {
   const { user } = useRootRouteLoaderData();
 
   const theme = useTheme();
@@ -110,9 +117,7 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
     color: 'inherit',
     gap: theme.spacing(1),
     padding: `${theme.spacing(1)} ${theme.spacing(1)}`,
-    borderBottom: '2px solid transparent',
     textDecoration: 'none',
-    borderRadius: theme.shape.borderRadius,
   };
   const SidebarLabel = ({ children }: { children: ReactNode }) => (
     <Typography variant="overline" color="text.secondary" style={{ marginTop: theme.spacing(2) }}>
@@ -145,31 +150,26 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
             </div>
             <QuadraticLogotype fill={theme.palette.mode === 'light' ? colors.quadraticFifth : '#fff'} />
           </SidebarNavLink>
-
-          <Box sx={{ marginLeft: 'auto', [theme.breakpoints.up('md')]: { display: 'none' } }}>
-            <IconButton onClick={() => handleDrawerToggle()}>
-              <Close />
-            </IconButton>
-          </Box>
         </Box>
 
-        <SidebarLabel>Personal</SidebarLabel>
-        <SidebarNavLink to={ROUTES.MY_FILES} style={sidebarLinkStyles}>
-          <InsertDriveFileOutlined />
-          <Typography variant="body2" color="text.primary">
-            My files
-          </Typography>
-        </SidebarNavLink>
-        <SidebarNavLink to={ROUTES.EXAMPLES} style={sidebarLinkStyles}>
-          <FileCopyOutlined />
-          <Typography variant="body2" color="text.primary">
-            Examples
-          </Typography>
-        </SidebarNavLink>
+        <div className="mt-4 grid gap-1">
+          <SidebarNavLink to={ROUTES.MY_FILES} style={sidebarLinkStyles}>
+            <FileIcon className="h-5 w-5" />
+            <Typography variant="body2" color="text.primary">
+              My files
+            </Typography>
+          </SidebarNavLink>
+          <SidebarNavLink to={ROUTES.EXAMPLES} style={sidebarLinkStyles}>
+            <StarIcon className="h-5 w-5" />
+            <Typography variant="body2" color="text.primary">
+              Examples
+            </Typography>
+          </SidebarNavLink>
+        </div>
 
         <SidebarLabel>Teams</SidebarLabel>
         <SidebarNavLink to={ROUTES.TEAMS} style={sidebarLinkStyles}>
-          <PeopleOutline />
+          <PersonIcon className="h-5 w-5" />
           <Typography variant="body2" color="text.primary">
             My team
           </Typography>
@@ -197,7 +197,6 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
 function SidebarNavLink({ to, children, style, isLogo }: any) {
   const location = useLocation();
   const navigation = useNavigation();
-  const theme = useTheme();
 
   const isActive =
     // We're currently on this page and not navigating elsewhere
@@ -206,38 +205,11 @@ function SidebarNavLink({ to, children, style, isLogo }: any) {
     to === navigation.location?.pathname;
 
   return (
-    <Box
-      sx={{
-        '.MuiSvgIcon-root': {
-          fill: theme.palette.text.secondary,
-        },
-        '&:hover .MuiSvgIcon-root': {
-          fill: theme.palette.text.primary,
-        },
-      }}
-    >
-      <NavLink to={to} style={{ ...style, position: 'relative' }}>
-        <Box
-          sx={[
-            {
-              position: 'absolute',
-              top: '0',
-              left: '0',
-              right: '0',
-              bottom: '0',
-              backgroundColor: isActive ? theme.palette.action.hover : 'inherit',
-
-              '&:hover': {
-                backgroundColor: theme.palette.action.hover,
-              },
-            },
-          ]}
-        />
-        {children}
-        {navigation.state === 'loading' && navigation.location.pathname.includes(to) && !isLogo && (
-          <CircularProgress size={18} sx={{ ml: 'auto' }} />
-        )}
-      </NavLink>
-    </Box>
+    <NavLink to={to} style={{ ...style, position: 'relative' }} className={`${isActive && 'bg-muted'} hover:bg-accent`}>
+      {children}
+      {navigation.state === 'loading' && navigation.location.pathname.includes(to) && !isLogo && (
+        <CircularProgress size={18} sx={{ ml: 'auto' }} />
+      )}
+    </NavLink>
   );
 }

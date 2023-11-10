@@ -6,6 +6,7 @@ import { RouterProvider } from 'react-router-dom';
 import { ShowAfter } from './components/ShowAfter';
 import reportWebVitals from './reportWebVitals';
 import { router } from './router';
+import './shadcn/styles.css';
 import './styles.css';
 import { QuadraticLoading } from './ui/loading/QuadraticLoading';
 

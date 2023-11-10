@@ -1,4 +1,4 @@
-import { InsertDriveFileOutlined, SearchOff } from '@mui/icons-material';
+import { FileIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { useState } from 'react';
 import { ActionFunctionArgs, useFetchers, useLocation } from 'react-router-dom';
 import { apiClient } from '../../api/apiClient';
@@ -107,7 +107,11 @@ export function FilesList({ files }: { files: FilesListFile[] }) {
       </FilesListItems>
 
       {filterValue && filesToRender.length === 0 && (
-        <Empty title="No matches" description={<>No files found with that specified name.</>} Icon={SearchOff} />
+        <Empty
+          title="No matches"
+          description={<>No files found with that specified name.</>}
+          Icon={MagnifyingGlassIcon}
+        />
       )}
 
       {filesBeingDeleted.length === files.length && filesBeingDuplicated.length === 0 && (
@@ -118,7 +122,7 @@ export function FilesList({ files }: { files: FilesListFile[] }) {
               Using the buttons on this page, create a new file or import a <code>.grid</code> file from your computer.
             </>
           }
-          Icon={InsertDriveFileOutlined}
+          Icon={FileIcon}
         />
       )}
 

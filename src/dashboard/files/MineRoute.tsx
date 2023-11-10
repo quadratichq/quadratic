@@ -1,5 +1,5 @@
-import { ErrorOutline } from '@mui/icons-material';
 import { Box, useTheme } from '@mui/material';
+import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
 import { apiClient } from '../../api/apiClient';
 import { Empty } from '../../components/Empty';
@@ -38,7 +38,7 @@ export const ErrorBoundary = () => {
       <Empty
         title="Unexpected error"
         description="An unexpected error occurred while retrieving your files. Try reloading the page. If the issue continues, contact us."
-        Icon={ErrorOutline}
+        Icon={ExclamationTriangleIcon}
         severity="error"
       />
     </Box>

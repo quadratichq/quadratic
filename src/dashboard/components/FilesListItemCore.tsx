@@ -1,7 +1,7 @@
-import { Public } from '@mui/icons-material';
-import { Stack, Typography, useTheme } from '@mui/material';
+import { GlobeIcon } from '@radix-ui/react-icons';
+import clsx from 'clsx';
 import { ReactNode } from 'react';
-import { FilesListItemInput } from './FilesListItemInput';
+import { TYPE } from '../../constants/appConstants';
 import { Layout, ViewPreferences } from './FilesListViewControlsDropdown';
 
 export function FilesListItemCore({
@@ -9,7 +9,6 @@ export function FilesListItemCore({
   description,
   filterValue,
   hasNetworkError,
-  isRenaming,
   isShared,
   renameFile,
   viewPreferences,
@@ -19,58 +18,51 @@ export function FilesListItemCore({
   description: string;
   filterValue: string;
   hasNetworkError: boolean;
-  isRenaming: boolean;
   isShared: boolean;
   renameFile: Function;
   viewPreferences: ViewPreferences;
   actions?: ReactNode;
 }) {
-  const theme = useTheme();
   const __html = filterValue ? highlightMatchingString(name, filterValue) : name;
+  const isGrid = viewPreferences.layout === Layout.Grid;
 
   return (
-    <Stack direction="row" alignItems="center" gap={theme.spacing(1)}>
-      <Stack sx={{ position: 'relative', mr: 'auto', minWidth: '0', flexGrow: '2' }}>
-        <Typography
-          variant={viewPreferences.layout === Layout.List ? 'body1' : 'body2'}
-          color="text.primary"
-          noWrap
+    <div className={`flex flex-row items-center gap-2`}>
+      <div
+        className={clsx(
+          `flex`,
+          isGrid ? 'flex-col' : 'flex-col md:flex-row md:gap-2',
+          `relative mr-auto min-w-0 flex-grow-[2]`
+        )}
+      >
+        <h2
+          className={clsx(isGrid ? 'truncate text-sm' : 'text-md flex-1 leading-tight')}
           dangerouslySetInnerHTML={{ __html }}
         />
 
         {hasNetworkError ? (
-          <Typography variant="caption" color="error">
-            Failed to sync changes
-          </Typography>
+          <p className={`${TYPE.caption} !text-destructive`}>Failed to sync changes</p>
         ) : (
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            noWrap
-            sx={{
-              '& > *:not(:last-child):after': { content: '"·"', mx: theme.spacing(0.5) },
-            }}
-          >
+          <ul className={`flex items-center ${TYPE.caption}`}>
             {isShared && (
-              <span>
-                <Public fontSize="inherit" sx={{ position: 'relative', top: '2px' }} /> Public
-              </span>
+              <li className={`after:mr-1 after:pl-1 after:content-['·']`}>
+                <GlobeIcon className="relative -top-[1px] inline h-3 w-3" /> Public
+              </li>
             )}
-            <span>{description}</span>
-          </Typography>
+            <li>{description}</li>
+          </ul>
         )}
-
-        {isRenaming && <FilesListItemInput setValue={renameFile} value={name} />}
-      </Stack>
+      </div>
       {actions}
-    </Stack>
+    </div>
   );
 }
 
-function highlightMatchingString(inputString: string, searchString: string) {
-  const regex = new RegExp(searchString, 'gi'); // case insensitive matching
-  const highlightedString = inputString.replace(regex, (match: string) => {
-    return `<mark>${match}</mark>`;
+function highlightMatchingString(str: string, search: string) {
+  const searchWithEscapedParenthesis = search.replace('(', '\\(').replace(')', '\\)');
+  const regex = new RegExp(searchWithEscapedParenthesis, 'gi'); // case insensitive matching
+  const highlightedString = str.replace(regex, (match: string) => {
+    return `<b class="bg-yellow-100">${match}</b>`;
   });
   return highlightedString;
 }

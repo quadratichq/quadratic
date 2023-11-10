@@ -1,5 +1,6 @@
-import { Box, SvgIcon, Typography, useTheme } from '@mui/material';
+import { StopwatchIcon } from '@radix-ui/react-icons';
 import { ReactNode } from 'react';
+import { TYPE } from '../constants/appConstants';
 
 export function Empty({
   title,
@@ -11,35 +12,27 @@ export function Empty({
   title: String;
   description: ReactNode;
   actions?: ReactNode;
-  Icon: typeof SvgIcon;
+  Icon: typeof StopwatchIcon;
   severity?: 'error';
 }) {
-  const theme = useTheme();
+  const isMui = Object.hasOwn(Icon, 'muiName');
 
   return (
-    <Box sx={{ maxWidth: '30rem', my: theme.spacing(5), mx: 'auto', px: theme.spacing(), textAlign: 'center' }}>
-      <Box
-        sx={{
-          mx: 'auto',
-          border: `1px solid ${theme.palette.divider}`,
-          mb: theme.spacing(3),
-          width: '64px',
-          height: '64px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: theme.palette.text.secondary,
-        }}
+    <div className={`max-w mx-auto my-10 max-w-md px-2 text-center`}>
+      <div
+        className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center border border-border text-muted-foreground`}
       >
-        <Icon fontSize="large" color={severity === 'error' ? 'error' : 'inherit'} />
-      </Box>
-      <Typography variant="h6" sx={{ mb: theme.spacing(0.5) }} color={severity === 'error' ? 'error' : 'text.primary'}>
-        {title}
-      </Typography>
-      <Typography variant="body2" color="text.secondary">
-        {description}
-      </Typography>
-      {actions && <Box sx={{ mt: theme.spacing(3) }}>{actions}</Box>}
-    </Box>
+        <Icon
+          {...(isMui
+            ? { fontSize: 'large', color: severity === 'error' ? 'error' : 'inherit' }
+            : { className: `w-[30px] h-[30px] ${severity === 'error' && 'text-destructive'}` })}
+        />
+      </div>
+      <h4 className={`${TYPE.h4} mb-1 ${severity === 'error' && 'text-destructive'}`}>{title}</h4>
+
+      <p className="text-sm text-muted-foreground">{description}</p>
+
+      {actions && <div className={`mt-6`}>{actions}</div>}
+    </div>
   );
 }
