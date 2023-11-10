@@ -74,13 +74,13 @@
   "main": "public/electron.js",
   "scripts": {
     "start": "npm run watch:fast:front-end",
-    "build": "export REACT_APP_VERSION=$(git rev-parse HEAD) && react-scripts build",
+    "build": "export REACT_APP_VERSION=$(git rev-parse HEAD) && craco build",
     "build:wasm": "npm run build:wasm:javascript && npm run build:wasm:nodejs && npm run build:wasm:types",
     "build:wasm:types": "cd quadratic-core && cargo run --bin export_types",
     "build:wasm:javascript": "cd quadratic-core && wasm-pack build --target web --out-dir ../src/quadratic-core --weak-refs",
     "build:wasm:nodejs": "cd quadratic-core && wasm-pack build --target nodejs --out-dir ../src/quadratic-core/__mocks__ --weak-refs",
-    "watch:javascript": "export REACT_APP_VERSION=$(git rev-parse HEAD) && react-scripts start",
-    "watch:fast:javascript": "export REACT_APP_VERSION=$(git rev-parse HEAD) && react-app-rewired start",
+    "watch:javascript": "export REACT_APP_VERSION=$(git rev-parse HEAD) && craco start",
+    "watch:fast:javascript": "export REACT_APP_VERSION=$(git rev-parse HEAD) && craco start --fast",
     "watch:wasm:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --dev --target web --out-dir ../src/quadratic-core --weak-refs'",
     "watch:wasm:fast:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --target web --out-dir ../src/quadratic-core --dev --weak-refs'",
     "watch:wasm:types": "cd quadratic-core && cargo watch -s 'cargo run --bin export_types'",
@@ -97,7 +97,7 @@
     "test:e2e:debug": "playwright test --debug",
     "test:python": "python3 tests-python/test.py",
     "test:wasm": "cd quadratic-core && cargo test --workspace",
-    "eject": "react-scripts eject",
+    "eject": "craco eject",
     "dev": "concurrently \"BROWSER=none npm start\" \"electron .\"",
     "electron": "electron .",
     "lint:ts": "tsc --noemit",
@@ -113,7 +113,8 @@
     ],
     "rules": {
       "no-unused-vars": "off",
-      "@typescript-eslint/no-unused-vars": "error"
+      "@typescript-eslint/no-unused-vars": "error",
+      "import/no-default-export": "error"
     }
   },
   "eslintIgnore": [
@@ -131,6 +132,7 @@
     ]
   },
   "devDependencies": {
+    "@craco/craco": "^7.1.0",
     "@playwright/test": "^1.22.2",
     "@types/common-tags": "^1.8.1",
     "@types/lodash.debounce": "^4.0.7",
@@ -146,7 +148,6 @@
     "prettier": "2.8.3",
     "prettier-plugin-tailwindcss": "^0.4.1",
     "pyodide": "^0.22.0",
-    "react-app-rewired": "^2.2.1",
     "serve": "^14.2.0",
     "tailwindcss": "^3.3.5",
     "ts-jest": "^29.1.1",
