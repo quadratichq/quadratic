@@ -101,13 +101,15 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
         apiClient.updateFileSharing(uuid, { public_link_access: publicLinkAccess });
         grid.dirty = false;
       } else if (grid.dirty) {
+        const now = performance.now();
         const contents = grid.export();
-
-        syncChanges(() =>
-          apiClient.updateFile(uuid, { contents, version: grid.getVersion() }).then(() => {
-            if (debugShowFileIO) console.log(`[FileProvider] uploaded file (${Math.round(contents.length / 1000)}kb).`);
-          })
-        );
+        if (debugShowFileIO)
+          console.log(
+            `[FileProvider] saving file... (${Math.round(contents.length / 1000)}kb in ${Math.round(
+              performance.now() - now
+            )}ms)`
+          );
+        syncChanges(() => apiClient.updateFile(uuid, { contents, version: grid.getVersion() }));
         grid.dirty = false;
       }
     },

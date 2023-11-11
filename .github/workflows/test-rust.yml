@@ -37,7 +37,7 @@ jobs:
       - name: Lint
         run: |
           cd quadratic-core
-          cargo clippy --all-targets --all-features
+          cargo clippy --all-targets --all-features -- -D warnings
       #      cargo fmt -- --check
       - name: Test
         run: |

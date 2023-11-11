@@ -60,7 +60,6 @@ export class CellLabel extends Container {
 
   constructor(cell: JsRenderCell, screenRectangle: Rectangle) {
     super();
-
     const cellText = cell.value ? cell.value.replace(/\n/g, '') : '';
     this.text = cellText;
     this.fontSize = fontSize;
@@ -157,10 +156,11 @@ export class CellLabel extends Container {
     }
   }
 
-  /** Calculates the text glyphs and positions and tracks whether the text overflows the cell */
+  /** Calculates the text glyphs and positions */
   public updateText(labelMeshes: LabelMeshes): void {
-    // if (!this.dirty && !force) return;
-    // this.dirty = false;
+    // visible is false when a cell is being edited
+    if (this.visible === false) return;
+
     const data = BitmapFont.available[this.fontName];
     if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateText');
     const pos = new Point();
@@ -180,7 +180,6 @@ export class CellLabel extends Container {
     let maxLineHeight = 0;
     let spaceCount = 0;
     let i: number;
-
     for (i = 0; i < charsInput.length; i++) {
       const char = charsInput[i];
       const charCode = extractCharCode(char);
@@ -236,7 +235,7 @@ export class CellLabel extends Container {
         spaceCount = 0;
       }
     }
-    const lastChar = charsInput[i]; // charsInput.length - 1];
+    const lastChar = charsInput[i];
     if (lastChar !== '\r' && lastChar !== '\n') {
       if (/(?:\s)/.test(lastChar)) {
         lastLineWidth = lastBreakWidth;
@@ -268,6 +267,12 @@ export class CellLabel extends Container {
   /** Adds the glyphs to the CellsLabels container */
   updateLabelMesh(labelMeshes: LabelMeshes): Bounds {
     const bounds = new Bounds();
+
+    // visible is only used to hide a cell label when a cell is being edited
+    if (this.visible === false) {
+      return bounds;
+    }
+
     const data = BitmapFont.available[this.fontName];
     const scale = this.fontSize / data.size;
     const color = this.tint ? convertTintToArray(this.tint) : undefined;

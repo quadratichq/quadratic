@@ -32,6 +32,12 @@ export class Sheet {
     this.cursor = new SheetCursor(this);
   }
 
+  updateMetadata() {
+    this.name = grid.getSheetName(this.id) ?? '';
+    this.order = grid.getSheetOrder(this.id);
+    this.color = grid.getSheetColor(this.id);
+  }
+
   //#region set sheet actions
   // -----------------------------------
 
@@ -128,6 +134,10 @@ export class Sheet {
 
   setPercentage(rectangle: Rectangle) {
     grid.setCellPercentage(this.id, rectangle);
+  }
+
+  setExponential(rectangle: Rectangle) {
+    grid.setCellExponential(this.id, rectangle);
   }
 
   removeCellNumericFormat(rectangle: Rectangle) {

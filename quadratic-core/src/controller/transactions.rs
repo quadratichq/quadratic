@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     operation::Operation,
-    transaction_summary::TransactionSummary,
+    transaction_summary::{TransactionSummary, CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
     GridController,
 };
@@ -47,13 +47,14 @@ impl GridController {
             .as_ref()
             .is_some_and(|in_progress_transaction| !in_progress_transaction.complete)
         {
-            // todo: this should be handled more gracefully. Perhaps as a queue of operations?
-            panic!("Cannot start a transaction while a transaction is in progress");
+            // todo: add this to a queue of operations instead of setting the busy flag
+            return TransactionSummary::new(true);
         }
         let mut transaction =
             TransactionInProgress::new(self, operations, cursor, compute, transaction_type);
         let mut summary = transaction.transaction_summary();
         transaction.updated_bounds(self);
+
         if transaction.complete {
             summary.save = true;
             self.finalize_transaction(&transaction);
@@ -71,14 +72,28 @@ impl GridController {
     }
     pub fn undo(&mut self, cursor: Option<String>) -> TransactionSummary {
         if let Some(transaction) = self.undo_stack.pop() {
-            self.set_in_progress_transaction(transaction.ops, cursor, false, TransactionType::Undo)
+            let mut summary = self.set_in_progress_transaction(
+                transaction.ops,
+                cursor,
+                false,
+                TransactionType::Undo,
+            );
+            summary.cursor = transaction.cursor;
+            summary
         } else {
             TransactionSummary::default()
         }
     }
     pub fn redo(&mut self, cursor: Option<String>) -> TransactionSummary {
         if let Some(transaction) = self.redo_stack.pop() {
-            self.set_in_progress_transaction(transaction.ops, cursor, false, TransactionType::Redo)
+            let mut summary = self.set_in_progress_transaction(
+                transaction.ops,
+                cursor,
+                false,
+                TransactionType::Redo,
+            );
+            summary.cursor = transaction.cursor;
+            summary
         } else {
             TransactionSummary::default()
         }
@@ -89,7 +104,11 @@ impl GridController {
             transaction.calculation_complete(self, result);
             self.transaction_in_progress = Some(transaction.to_owned());
             transaction.updated_bounds(self);
-            transaction.transaction_summary()
+            if transaction.complete {
+                transaction.transaction_summary()
+            } else {
+                TransactionSummary::default()
+            }
         } else {
             panic!("Expected an in progress transaction");
         }
@@ -107,12 +126,16 @@ impl GridController {
         }
     }
 
+    /// Creates a TransactionSummary and cleans
+    /// Note: it may not pass cells_sheet_modified if the transaction is not complete (to avoid redrawing cells multiple times)
     pub fn transaction_summary(&mut self) -> Option<TransactionSummary> {
-        if let Some(transaction) = &mut self.transaction_in_progress {
-            Some(transaction.transaction_summary())
-        } else {
-            None
-        }
+        // let skip_cell_rendering = self
+        //     .transaction_in_progress
+        //     .as_ref()
+        //     .is_some_and(|transaction| !transaction.complete);
+        self.transaction_in_progress
+            .as_mut()
+            .map(|transaction| transaction.transaction_summary())
     }
 
     pub fn updated_bounds_in_transaction(&mut self) {
@@ -140,8 +163,8 @@ impl CellHash {
 
 impl From<Pos> for CellHash {
     fn from(pos: Pos) -> Self {
-        let hash_width = 20_f64;
-        let hash_height = 40_f64;
+        let hash_width = CELL_SHEET_WIDTH as f64;
+        let hash_height = CELL_SHEET_HEIGHT as f64;
         let cell_hash_x = (pos.x as f64 / hash_width).floor() as i64;
         let cell_hash_y = (pos.y as f64 / hash_height).floor() as i64;
         let cell_hash = format!("{},{}", cell_hash_x, cell_hash_y);

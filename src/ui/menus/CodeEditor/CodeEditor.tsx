@@ -1,15 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilState, useSetRecoilState } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
-import {
-  editorHighlightedCellsStateAtom,
-  editorHighlightedCellsStateDefault,
-} from '../../../atoms/editorHighlightedCellsStateAtom';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
-import { sheets } from '../../../grid/controller/Sheets';
+import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { CodeCellLanguage } from '../../../quadratic-core/quadratic_core';
 import { CodeEditorBody } from './CodeEditorBody';
@@ -20,23 +16,28 @@ import { SaveChangesAlert } from './SaveChangesAlert';
 
 export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const setEditorHighlightedCells = useSetRecoilState(editorHighlightedCellsStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
   const isRunningComputation = useRef(false);
 
-  const cellLocation = useMemo(
-    () => ({ x: editorInteractionState.selectedCell.x, y: editorInteractionState.selectedCell.y }),
-    [editorInteractionState.selectedCell.x, editorInteractionState.selectedCell.y]
-  );
+  const cellLocation = useMemo(() => {
+    return {
+      x: editorInteractionState.selectedCell.x,
+      y: editorInteractionState.selectedCell.y,
+      sheetId: editorInteractionState.selectedCellSheet,
+    };
+  }, [
+    editorInteractionState.selectedCell.x,
+    editorInteractionState.selectedCell.y,
+    editorInteractionState.selectedCellSheet,
+  ]);
 
   // update code cell
   const [codeString, setCodeString] = useState('');
   const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
   const [evaluationResult, setEvaluationResult] = useState<any>(undefined);
-
   const updateCodeCell = useCallback(() => {
     const codeCell = grid.getCodeCell(
-      sheets.sheet.id,
+      editorInteractionState.selectedCellSheet,
       editorInteractionState.selectedCell.x,
       editorInteractionState.selectedCell.y
     );
@@ -53,7 +54,11 @@ export const CodeEditor = () => {
       setEvaluationResult('');
       setOut(undefined);
     }
-  }, [editorInteractionState.selectedCell.x, editorInteractionState.selectedCell.y]);
+  }, [
+    editorInteractionState.selectedCell.x,
+    editorInteractionState.selectedCell.y,
+    editorInteractionState.selectedCellSheet,
+  ]);
 
   // ensures that the console is updated after the code cell is run (for async calculations, like Python)
   useEffect(() => {
@@ -89,11 +94,11 @@ export const CodeEditor = () => {
           ...oldState,
           showCodeEditor: false,
         }));
-        setEditorHighlightedCells(editorHighlightedCellsStateDefault);
+        pixiApp.highlightedCells.clear();
         focusGrid();
       }
     },
-    [codeString, editorContent, setEditorHighlightedCells, setEditorInteractionState]
+    [codeString, editorContent, setEditorInteractionState]
   );
 
   const saveAndRunCell = async () => {
@@ -108,14 +113,28 @@ export const CodeEditor = () => {
     if (language === undefined)
       throw new Error(`Language ${editorInteractionState.mode} not supported in CodeEditor#saveAndRunCell`);
     grid.setCodeCellValue({
-      sheetId: sheets.sheet.id,
+      sheetId: cellLocation.sheetId,
       x: cellLocation.x,
       y: cellLocation.y,
       codeString: editorContent ?? '',
       language,
     });
-    isRunningComputation.current = false;
+    mixpanel.track('[CodeEditor].cellRun', {
+      type: editorMode,
+      code: editorContent,
+    });
   };
+
+  useEffect(() => {
+    const completeTransaction = () => {
+      if (isRunningComputation.current) {
+        isRunningComputation.current = false;
+        updateCodeCell();
+      }
+    };
+    window.addEventListener('transaction-complete', completeTransaction);
+    return () => window.removeEventListener('transaction-complete', completeTransaction);
+  }, [updateCodeCell]);
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // Esc

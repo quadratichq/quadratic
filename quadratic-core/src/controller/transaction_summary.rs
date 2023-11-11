@@ -7,8 +7,8 @@ use crate::{
     Pos,
 };
 
-const CELL_SHEET_WIDTH: u32 = 20;
-const CELL_SHEET_HEIGHT: u32 = 40;
+pub const CELL_SHEET_WIDTH: u32 = 20;
+pub const CELL_SHEET_HEIGHT: u32 = 40;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -68,9 +68,19 @@ pub struct TransactionSummary {
 
     // should the grid trigger a save
     pub save: bool,
+
+    // let TS know that the grid is already busy
+    pub transaction_busy: bool,
 }
 
 impl TransactionSummary {
+    pub fn new(transaction_busy: bool) -> Self {
+        TransactionSummary {
+            transaction_busy,
+            ..Default::default()
+        }
+    }
+
     pub fn clear(&mut self) {
         self.fill_sheets_modified.clear();
         self.border_sheets_modified.clear();
@@ -79,6 +89,7 @@ impl TransactionSummary {
         self.cell_sheets_modified.clear();
         self.offsets_modified.clear();
         self.cursor = None;
+        self.transaction_busy = false;
         self.save = true;
     }
 }

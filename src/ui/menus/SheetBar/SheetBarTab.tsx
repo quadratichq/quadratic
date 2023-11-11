@@ -36,7 +36,9 @@ export const SheetBarTab = (props: Props): JSX.Element => {
       setIsRenaming(true);
     }
   }, [forceRename]);
-
+  if (containerRef.current) {
+    containerRef.current.style.order = order;
+  }
   return (
     <Box
       ref={containerRef}
