@@ -162,8 +162,6 @@ export function FileListItem({
     description: displayDescription,
     hasNetworkError: hasNetworkError,
     isShared,
-
-    renameFile,
     viewPreferences,
   };
 

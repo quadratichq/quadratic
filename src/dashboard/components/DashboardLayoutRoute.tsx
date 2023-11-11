@@ -1,5 +1,5 @@
 import { Avatar, Box, CircularProgress, Typography, useTheme } from '@mui/material';
-import { FileIcon, PersonIcon, StarIcon } from '@radix-ui/react-icons';
+import { FileIcon, MixIcon, PersonIcon } from '@radix-ui/react-icons';
 import clsx from 'clsx';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigation } from 'react-router-dom';
@@ -31,62 +31,12 @@ export const Component = () => {
       <div className={`hidden flex-shrink-0 border-r border-r-border lg:block`} style={{ width: drawerWidth }}>
         {navbar}
       </div>
-      {/* <Drawer
-        variant="temporary"
-        open={isOpen}
-        onClose={toggleNavbar}
-        anchor={'right'}
-        ModalProps={{
-          keepMounted: true, // Better open performance on mobile.
-        }}
-        sx={{
-          borderRight: 'none',
-          display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-        }}
-      >
-        {navbar}
-      </Drawer>
-      <div className={` w-[264px] w-[${drawerWidth}px]`}>
-        <Drawer
-          variant="permanent"
-          className={`border-r border-border`}
-          sx={{
-            display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
-              width: drawerWidth,
-              borderRight: `none`,
-              // This is a fix where MUI and shadcn clash. Once we remove mui, we can remove this
-              zIndex: '49',
-            },
-          }}
-          open
-        >
-          {navbar}
-        </Drawer>
-      </div> */}
       <div
         className={clsx(
           `h-full w-full px-4 pb-10 transition-opacity lg:px-10`,
           isLoading ? 'overflow-hidden' : 'overflow-scroll',
           isLoading && 'pointer-events-none opacity-25'
         )}
-
-        // sx={{
-        //   width: '100%',
-        //   height: '100%',
-        //   px: theme.spacing(2),
-        //   overflow: isLoading ? 'hidden' : 'scroll',
-        //   paddingBottom: theme.spacing(5),
-        //   position: 'relative',
-        //   transition: '.2s ease opacity',
-        //   ...(isLoading ? { opacity: '.25', pointerEvents: 'none' } : {}),
-
-        //   [theme.breakpoints.up('md')]: {
-        //     px: theme.spacing(5),
-        //   },
-        // }}
       >
         <div className={`absolute right-4 top-3 z-10 lg:hidden`}>
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -160,7 +110,7 @@ function Navbar() {
             </Typography>
           </SidebarNavLink>
           <SidebarNavLink to={ROUTES.EXAMPLES} style={sidebarLinkStyles}>
-            <StarIcon className="h-5 w-5" />
+            <MixIcon className="h-5 w-5" />
             <Typography variant="body2" color="text.primary">
               Examples
             </Typography>

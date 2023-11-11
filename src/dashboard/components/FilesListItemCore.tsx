@@ -10,7 +10,6 @@ export function FilesListItemCore({
   filterValue,
   hasNetworkError,
   isShared,
-  renameFile,
   viewPreferences,
   actions,
 }: {
@@ -19,7 +18,6 @@ export function FilesListItemCore({
   filterValue: string;
   hasNetworkError: boolean;
   isShared: boolean;
-  renameFile: Function;
   viewPreferences: ViewPreferences;
   actions?: ReactNode;
 }) {

@@ -1,26 +1,25 @@
-import { EXAMPLE_FILES } from '../../constants/appConstants';
+import { ROUTES } from '@/constants/routes';
+import { Link } from 'react-router-dom';
+import { EXAMPLE_FILES, TYPE } from '../../constants/appConstants';
 import { DashboardHeader } from '../components/DashboardHeader';
-import { FilesList } from '../components/FilesList';
-
-const files = Object.entries(EXAMPLE_FILES).map(([id, { name, description }]) => ({
-  name,
-  uuid: id,
-  description,
-  created_date: '',
-  updated_date: '',
-  public_link_access: 'NOT_SHARED',
-}));
 
 export const Component = () => {
   return (
     <>
       <DashboardHeader title="Examples" />
 
-      <FilesList
-        // TODO refine the list view if we keep examples as-is
-        // @ts-expect-error
-        files={files}
-      />
+      <div className={`md:grid md:grid-cols-2 md:gap-4 xl:grid-cols-3`}>
+        {Object.entries(EXAMPLE_FILES).map(([id, { name, description }]) => (
+          <Link
+            key={id}
+            to={ROUTES.CREATE_FILE + `?example=${id}`}
+            className="flex flex-col border-t border-border py-4 md:border md:px-4 md:py-4 md:hover:border-primary"
+          >
+            <h2 className="text-md truncate">{name}</h2>
+            <p className={`${TYPE.caption} text-muted-foreground`}>{description}</p>
+          </Link>
+        ))}
+      </div>
     </>
   );
 };
