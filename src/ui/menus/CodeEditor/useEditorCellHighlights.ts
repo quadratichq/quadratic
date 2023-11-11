@@ -60,7 +60,7 @@ export const useEditorCellHighlights = (
         )
       );
     }
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     if (language !== 'FORMULA') return;
@@ -81,6 +81,7 @@ export const useEditorCellHighlights = (
       const modelValue = editor.getValue();
 
       const parsedFormula = (await parse_formula(modelValue, 0, 0)) as ParseFormulaReturnType;
+
       pixiApp.highlightedCells.fromFormula(
         parsedFormula,
         editorInteractionState.selectedCell,

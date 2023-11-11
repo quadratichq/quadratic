@@ -15,9 +15,8 @@ export const useEditorOnSelectionChange = (
     const model = editor.getModel();
     const monacoInst = monacoRef.current;
     if (!monacoInst || !model) return;
-
     editor.onDidChangeCursorPosition((e) => {
-      pixiApp.highlightedCells.getHighlightedCells().find((value, index) => {
+      pixiApp.highlightedCells.getHighlightedCells().find((value) => {
         const span = value.span;
         const startPosition = model.getPositionAt(span.start);
         const endPosition = model.getPositionAt(span.end);
@@ -28,9 +27,10 @@ export const useEditorOnSelectionChange = (
           endPosition.column
         );
         if (range.containsPosition(e.position)) {
-          pixiApp.highlightedCells.setHighlightedCell(index);
+          pixiApp.highlightedCells.setHighlightedCell(value.index);
           return true;
         }
+        pixiApp.highlightedCells.setHighlightedCell(-1);
         return false;
       });
     });
