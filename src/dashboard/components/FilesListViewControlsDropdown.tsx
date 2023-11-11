@@ -1,168 +1,184 @@
-import { ArrowDropDown, Check, SortOutlined } from '@mui/icons-material';
-import { Button, Divider, IconButton, ListItemIcon, ListItemText, ListSubheader, Menu, MenuItem } from '@mui/material';
-import { Dispatch, SetStateAction, useState } from 'react';
+import { ChevronDownIcon, DashboardIcon, DropdownMenuIcon, ListBulletIcon } from '@radix-ui/react-icons';
+import { Dispatch, SetStateAction } from 'react';
+import { Button } from '../../shadcn/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../../shadcn/ui/dropdown-menu';
 
 export type ViewPreferences = {
   sort: Sort;
   order: Order;
   layout: Layout;
 };
-
 export enum Sort {
-  Updated,
-  Created,
-  Alphabetical,
+  Updated = '1',
+  Created = '2',
+  Alphabetical = '3',
 }
 export enum Layout {
-  List,
-  Grid,
+  List = '1',
+  Grid = '2',
 }
 export enum Order {
-  Ascending,
-  Descending,
+  Ascending = '1',
+  Descending = '2',
 }
 
-const sortOptions = [
-  { label: 'Last updated', value: Sort.Updated },
-  { label: 'Date created', value: Sort.Created },
-  { label: 'Alphabetical', value: Sort.Alphabetical },
-];
-const orderOptions = [
-  { label: 'Oldest first', altLabel: 'A-Z', value: Order.Ascending },
-  { label: 'Newest first', altLabel: 'Z-A', value: Order.Descending },
-];
-const layoutOptions = [
-  { label: 'List', value: Layout.List },
-  { label: 'Grid', value: Layout.Grid },
-];
+const sortLabelsByValue = {
+  [Sort.Updated]: 'Last updated',
+  [Sort.Created]: 'Date created',
+  [Sort.Alphabetical]: 'Alphabetical',
+};
+const layoutOptionsByValue = {
+  [Layout.List]: 'List',
+  [Layout.Grid]: 'Grid',
+};
 
 export function FileListViewControlsDropdown({
-  showToggle,
   viewPreferences,
   setViewPreferences,
 }: {
-  showToggle: boolean;
   viewPreferences: ViewPreferences;
   setViewPreferences: Dispatch<SetStateAction<ViewPreferences>>;
 }) {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
-
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
+  const orderOptionsByValue = {
+    [Order.Ascending]: viewPreferences.sort === Sort.Alphabetical ? 'A-Z' : 'Oldest first',
+    [Order.Descending]: viewPreferences.sort === Sort.Alphabetical ? 'Z-A' : 'Newest first',
   };
 
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
+  const sortButtonLabel = sortLabelsByValue[viewPreferences.sort];
+  const orderButtonLabel = orderOptionsByValue[viewPreferences.order];
 
-  const buttonLabel = sortOptions.find((el) => el.value === viewPreferences.sort)?.label;
+  const sortOptionsMenu = (
+    <DropdownMenuRadioGroup
+      value={viewPreferences.sort}
+      onValueChange={(val) => {
+        const value = val as Sort;
+        setViewPreferences((prev) => ({
+          ...prev,
+          sort: value,
+          order: value === Sort.Alphabetical ? Order.Ascending : Order.Descending,
+        }));
+      }}
+    >
+      {Object.entries(sortLabelsByValue).map(([value, label]) => (
+        <DropdownMenuRadioItem key={label} value={String(value)}>
+          {label}
+        </DropdownMenuRadioItem>
+      ))}
+    </DropdownMenuRadioGroup>
+  );
+
+  const orderOptionsMenu = (
+    <DropdownMenuRadioGroup
+      value={viewPreferences.order}
+      onValueChange={(val) => {
+        const value = val as Order;
+        setViewPreferences((prev) => ({ ...prev, order: value }));
+      }}
+    >
+      {Object.entries(orderOptionsByValue).map(([value, label]) => (
+        <DropdownMenuRadioItem key={label} value={String(value)}>
+          {label}
+        </DropdownMenuRadioItem>
+      ))}
+    </DropdownMenuRadioGroup>
+  );
+
+  const layoutOptionsMenu = (
+    <DropdownMenuRadioGroup
+      value={viewPreferences.layout}
+      onValueChange={(val) => {
+        const value = val as Layout;
+        setViewPreferences((prev) => ({ ...prev, layout: value }));
+      }}
+    >
+      {Object.entries(layoutOptionsByValue).map(([value, label]) => (
+        <DropdownMenuRadioItem key={label} value={String(value)}>
+          {label}
+        </DropdownMenuRadioItem>
+      ))}
+    </DropdownMenuRadioGroup>
+  );
 
   return (
-    <div>
-      {showToggle ? (
-        <Button
-          aria-controls={open ? 'basic-menu' : undefined}
-          aria-haspopup={true}
-          aria-expanded={open ? 'true' : undefined}
-          id="basic-button"
-          onClick={handleClick}
-          variant="text"
-          color="inherit"
-          endIcon={<ArrowDropDown color="inherit" fontSize="inherit" />}
-        >
-          {/* <span style={{ fontWeight: 'normal', marginRight: '4px' }}>Sort: </span> */}
-          {buttonLabel}
-        </Button>
-      ) : (
-        <IconButton
-          onClick={handleClick}
-          id="basic-button"
-          aria-controls={open ? 'basic-menu' : undefined}
-          aria-haspopup={true}
-          aria-expanded={open ? 'true' : undefined}
-        >
-          <SortOutlined />
-        </IconButton>
-      )}
-      <Menu
-        transitionDuration={100} // This has to be fast, or react will re-render first
-        id="basic-menu"
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        MenuListProps={{
-          dense: true,
-          'aria-labelledby': 'basic-button',
-        }}
-      >
-        <ListSubheader sx={{ lineHeight: '2' }}>Sort:</ListSubheader>
-
-        {sortOptions.map(({ label, value }) => (
-          <MenuItem
-            key={label}
-            onClick={() => {
-              setViewPreferences((prev) => ({
-                ...prev,
-                sort: value,
-                order: value === Sort.Alphabetical ? Order.Ascending : Order.Descending,
-              }));
-              handleClose();
-            }}
-          >
-            <MenuItemChild label={label} isActive={viewPreferences.sort === value} />
-          </MenuItem>
-        ))}
-
-        <Divider />
-
-        <ListSubheader sx={{ lineHeight: '1.5' }}>Order:</ListSubheader>
-        {orderOptions.map(({ altLabel, label, value }) => (
-          <MenuItem
-            key={label}
-            onClick={() => {
-              setViewPreferences((prev) => ({ ...prev, order: value }));
-              handleClose();
-            }}
-          >
-            <MenuItemChild
-              label={viewPreferences.sort === Sort.Alphabetical ? altLabel : label}
-              isActive={viewPreferences.order === value}
-            />
-          </MenuItem>
-        ))}
-        {!showToggle && (
-          <>
-            <Divider />
-
-            <ListSubheader sx={{ lineHeight: '1.5' }}>Layout:</ListSubheader>
-            {layoutOptions.map(({ label, value }) => (
-              <MenuItem
-                key={label}
-                onClick={() => {
-                  setViewPreferences((prev) => ({ ...prev, layout: value }));
-                  handleClose();
-                }}
-              >
-                <MenuItemChild label={label} isActive={viewPreferences.layout === value} />
-              </MenuItem>
-            ))}
-          </>
-        )}
-      </Menu>
-    </div>
-  );
-}
-
-function MenuItemChild({ label, isActive }: { label: string; isActive: boolean }) {
-  return isActive ? (
     <>
-      <ListItemIcon>
-        <Check />
-      </ListItemIcon>
-      {label}
+      <div className="hidden sm:flex sm:flex-row sm:items-center sm:gap-1">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="text-muted-foreground">
+              {orderButtonLabel} <ChevronDownIcon className="ml-1" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-52">{orderOptionsMenu}</DropdownMenuContent>
+        </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="text-muted-foreground">
+              {sortButtonLabel} <ChevronDownIcon className="ml-1" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-52">{sortOptionsMenu}</DropdownMenuContent>
+        </DropdownMenu>
+        <div>
+          <Button
+            className={`${viewPreferences.layout === Layout.Grid ? 'bg-accent' : ''} !opacity-100`}
+            variant="ghost"
+            size="icon"
+            disabled={viewPreferences.layout === Layout.Grid}
+            onClick={() => setViewPreferences((prev: any) => ({ ...prev, layout: Layout.Grid }))}
+          >
+            <DashboardIcon />
+          </Button>
+          <Button
+            className={`${viewPreferences.layout === Layout.List ? 'bg-accent' : ''} !opacity-100`}
+            variant="ghost"
+            size="icon"
+            disabled={viewPreferences.layout === Layout.List}
+            onClick={() => setViewPreferences((prev: any) => ({ ...prev, layout: Layout.List }))}
+          >
+            <ListBulletIcon />
+          </Button>
+        </div>
+      </div>
+      <div className="sm:hidden">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon">
+              <DropdownMenuIcon />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56">
+            <DropdownMenuLabel>Sort</DropdownMenuLabel>
+            {sortOptionsMenu}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Order</DropdownMenuLabel>
+            {orderOptionsMenu}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Layout</DropdownMenuLabel>
+            {layoutOptionsMenu}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </>
-  ) : (
-    <ListItemText inset>{label}</ListItemText>
   );
 }
+
+// function MenuItemChild({ label, isActive }: { label: string; isActive: boolean }) {
+//   return isActive ? (
+//     <>
+//       <ListItemIcon>
+//         <Check />
+//       </ListItemIcon>
+//       {label}
+//     </>
+//   ) : (
+//     <ListItemText inset>{label}</ListItemText>
+//   );
+// }

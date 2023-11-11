@@ -1,7 +1,6 @@
 import { ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
-import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { JsRenderCodeCell } from '../../quadratic-core/types';
+import { CodeCellLanguage, JsRenderCodeCell } from '../../quadratic-core/quadratic_core';
 import { colors } from '../../theme/colors';
 import { intersects } from '../helpers/intersects';
 import { CellsSheet } from './CellsSheet';
@@ -24,7 +23,6 @@ export class CellsArray extends ParticleContainer {
   create(): void {
     this.removeChildren();
     this.lines = [];
-
     const codeCells = this.cellsSheet.sheet.getRenderCodeCells();
     this.cellsSheet.cellsMarkers.clear();
     codeCells?.forEach((codeCell) => {
@@ -37,13 +35,13 @@ export class CellsArray extends ParticleContainer {
   }
 
   private draw(codeCell: JsRenderCodeCell): void {
-    const start = grid.getCellOffsets(this.sheet.id, Number(codeCell.x), Number(codeCell.y));
-    const end = grid.getCellOffsets(this.sheet.id, Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
-    const type = codeCell.language;
+    const start = this.sheet.getCellOffsets(Number(codeCell.x), Number(codeCell.y));
+    const end = this.sheet.getCellOffsets(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
+    const type = codeCell.language as CodeCellLanguage | string;
     let tint = colors.independence;
-    if (type === 'Python') {
+    if (type === CodeCellLanguage.Python || type === 'Python') {
       tint = colors.cellColorUserPython;
-    } else if (type === 'Formula') {
+    } else if (type === CodeCellLanguage.Formula || type === 'Formula') {
       tint = colors.cellColorUserFormula;
     }
 
@@ -90,7 +88,7 @@ export class CellsArray extends ParticleContainer {
         })
       );
     }
-    this.cellsSheet.cellsMarkers.add(start.x, start.y, type, false);
+    this.cellsSheet.cellsMarkers.add(start.x, start.y, codeCell.language, codeCell.state);
   }
 
   private getSprite = (): Sprite => {

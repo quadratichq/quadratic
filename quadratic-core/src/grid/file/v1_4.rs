@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{hash::Hash, str::FromStr};
 
 use bigdecimal::{BigDecimal, FromPrimitive};
 use serde::{Deserialize, Serialize};
@@ -8,8 +8,9 @@ use crate::{Array, ArraySize, Error, ErrorMsg, Span};
 use super::v1_5::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GridFileV1_4 {
-    pub sheets: Vec<JsSheet>,
+pub struct GridSchemaV1_4 {
+    pub sheets: Vec<JsSheetSchema>,
+    pub cell_dependency: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -33,17 +34,17 @@ pub struct JsRectangle {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct JsCell {
+pub struct JsCellSchema {
     pub x: i64,
     pub y: i64,
-    pub r#type: JsCellType,
+    pub r#type: JsCellTypeSchema,
     pub value: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub array_cells: Option<Vec<(i64, i64)>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dependent_cells: Option<Vec<(i64, i64)>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub evaluation_result: Option<JsCellEvalResult>,
+    pub evaluation_result: Option<JsCellEvalResultSchema>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub formula_code: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -55,7 +56,7 @@ pub struct JsCell {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct JsCellEvalResult {
+pub struct JsCellEvalResultSchema {
     pub success: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub std_out: Option<String>,
@@ -65,7 +66,7 @@ pub struct JsCellEvalResult {
     pub output_value: Option<String>,
     pub cells_accessed: Vec<(i64, i64)>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub array_output: Option<JsArrayOutput>,
+    pub array_output: Option<JsArrayOutputSchema>,
     pub formatted_code: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error_span: Option<(u32, u32)>,
@@ -73,14 +74,14 @@ pub struct JsCellEvalResult {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
-pub enum JsArrayOutput {
+pub enum JsArrayOutputSchema {
     Block(Vec<Vec<Option<Any>>>),
     Array(Vec<Option<Any>>),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct JsTextFormat {
+pub struct JsTextFormatSchema {
     #[serde(rename = "type")]
     pub kind: NumericFormatKind,
     pub symbol: Option<String>,
@@ -89,7 +90,7 @@ pub struct JsTextFormat {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct JsCellFormat {
+pub struct JsCellFormatSchema {
     pub x: i64,
     pub y: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -103,19 +104,19 @@ pub struct JsCellFormat {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text_color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub text_format: Option<JsTextFormat>,
+    pub text_format: Option<JsTextFormatSchema>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub wrapping: Option<CellWrap>, // default is overflow
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct JsBorders {
+pub struct JsBordersSchema {
     pub x: i64,
     pub y: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub horizontal: Option<CellBorder>,
+    pub horizontal: Option<LegacyCellBorder>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub vertical: Option<CellBorder>,
+    pub vertical: Option<LegacyCellBorder>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
@@ -127,7 +128,7 @@ pub struct JsHeadingSchema {
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum JsCellType {
+pub enum JsCellTypeSchema {
     Text,
     Formula,
     Javascript,
@@ -137,18 +138,14 @@ pub enum JsCellType {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct JsSheet {
+pub struct JsSheetSchema {
     pub name: String,
     pub color: Option<String>,
     pub order: String,
-
-    pub borders: Vec<JsBorders>,
-    pub cells: Vec<JsCell>,
-    pub cell_dependency: String,
+    pub borders: Vec<JsBordersSchema>,
+    pub cells: Vec<JsCellSchema>,
     pub columns: Vec<JsHeadingSchema>,
-
-    pub formats: Vec<JsCellFormat>,
-
+    pub formats: Vec<JsCellFormatSchema>,
     pub rows: Vec<JsHeadingSchema>,
 }
 
@@ -159,9 +156,9 @@ pub enum Any {
     String(String),
     Boolean(bool),
 }
-impl Into<CellValue> for Any {
-    fn into(self) -> CellValue {
-        match self {
+impl From<Any> for CellValue {
+    fn from(val: Any) -> Self {
+        match val {
             Any::Number(n) => match BigDecimal::from_f64(n) {
                 Some(n) => CellValue::Number(n),
                 None => CellValue::Text(n.to_string()),
@@ -175,13 +172,13 @@ impl Into<CellValue> for Any {
     }
 }
 
-impl JsCell {
+impl JsCellSchema {
     pub fn to_cell_value(&self) -> Option<CellValue> {
         match self.r#type {
-            JsCellType::Text => Some(CellValue::Text(self.value.clone())),
+            JsCellTypeSchema::Text => Some(CellValue::Text(self.value.clone())),
 
             // we add computed cells with the original code that produced them
-            JsCellType::Computed => None,
+            JsCellTypeSchema::Computed => None,
 
             _ => None,
         }
@@ -191,11 +188,11 @@ impl JsCell {
         get_cell_ref: impl FnMut(Pos) -> CellRef,
     ) -> Option<CodeCellValue> {
         let language = match self.r#type {
-            JsCellType::Text | JsCellType::Computed => return None,
-            JsCellType::Formula => CodeCellLanguage::Formula,
-            JsCellType::Javascript => CodeCellLanguage::JavaScript,
-            JsCellType::Python => CodeCellLanguage::Python,
-            JsCellType::Sql => CodeCellLanguage::Sql,
+            JsCellTypeSchema::Text | JsCellTypeSchema::Computed => return None,
+            JsCellTypeSchema::Formula => CodeCellLanguage::Formula,
+            JsCellTypeSchema::Javascript => CodeCellLanguage::JavaScript,
+            JsCellTypeSchema::Python => CodeCellLanguage::Python,
+            JsCellTypeSchema::Sql => CodeCellLanguage::Sql,
         };
 
         Some(CodeCellValue {
@@ -219,13 +216,13 @@ impl JsCell {
                             let array_contents;
 
                             match array {
-                                JsArrayOutput::Array(values) => {
+                                JsArrayOutputSchema::Array(values) => {
                                     width = 1;
                                     height = values.len() as u32;
                                     array_contents =
                                         values.iter().map(|v| v.clone().into()).collect();
                                 }
-                                JsArrayOutput::Block(values) => {
+                                JsArrayOutputSchema::Block(values) => {
                                     width = values.get(0)?.len() as u32;
                                     height = values.len() as u32;
                                     array_contents =
@@ -262,5 +259,48 @@ impl JsCell {
                 })
             }),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bigdecimal::{BigDecimal, FromPrimitive, ToPrimitive};
+    use std::str::FromStr;
+
+    #[test]
+    fn test_converts_any_into_cellvalue() {
+        let big_number = BigDecimal::from_f64(1.22).unwrap();
+        let big_number_f64 = big_number.to_f64().unwrap();
+
+        assert_eq!(
+            CellValue::from(Any::Number(big_number_f64)),
+            CellValue::Number(big_number)
+        );
+
+        assert_eq!(
+            CellValue::from(Any::Number(f64::INFINITY)),
+            CellValue::Text(f64::INFINITY.to_string())
+        );
+
+        assert_eq!(
+            CellValue::from(Any::String("1.22".to_string())),
+            CellValue::Number(BigDecimal::from_str("1.22").unwrap())
+        );
+
+        assert_eq!(
+            CellValue::from(Any::String("foo".into())),
+            CellValue::Text("foo".into())
+        );
+
+        assert_eq!(
+            CellValue::from(Any::Boolean(true)),
+            CellValue::Logical(true)
+        );
+
+        assert_eq!(
+            CellValue::from(Any::Boolean(false)),
+            CellValue::Logical(false)
+        );
     }
 }

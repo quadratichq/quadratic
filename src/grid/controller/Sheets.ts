@@ -1,6 +1,7 @@
 import { debugMockLargeData } from '../../debugFlags';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
+import { SheetId } from '../../quadratic-core/types';
 import { Sheet } from '../sheet/Sheet';
 import { grid } from './Grid';
 import { mockLargeData } from './mockLargeData';
@@ -92,6 +93,15 @@ class Sheets {
     }
   }
 
+  getSheetByName(name: string): Sheet | undefined {
+    this.sheets.forEach((sheet) => {
+      if (sheet.name === name) {
+        return sheet;
+      }
+    });
+    return;
+  }
+
   get size(): number {
     return this.sheets.length;
   }
@@ -168,16 +178,16 @@ class Sheets {
   // Sheet operations
   // ----------------
 
-  createNew(): void {
-    grid.addSheet();
+  async createNew() {
+    await grid.addSheet();
 
     // sets the current sheet to the new sheet
     this.current = this.sheets[this.sheets.length - 1].id;
   }
 
-  duplicate(): void {
+  async duplicate() {
     const oldSheetId = this.current;
-    grid.duplicateSheet(this.current);
+    await grid.duplicateSheet(this.current);
 
     // sets the current sheet to the duplicated sheet
     const currentIndex = this.sheets.findIndex((sheet) => sheet.id === oldSheetId);
@@ -188,9 +198,9 @@ class Sheets {
     this.sort();
   }
 
-  deleteSheet(id: string): void {
+  async deleteSheet(id: string) {
     const order = this.sheet.order;
-    grid.deleteSheet(id);
+    await grid.deleteSheet(id);
 
     // set current to next sheet (before this.sheets is updated)
     if (this.sheets.length) {
@@ -239,6 +249,16 @@ class Sheets {
 
   getCursorPosition(): string {
     return JSON.stringify(this.sheet.cursor.save());
+  }
+
+  // handle changes to sheet offsets by only updating columns/rows impacted by resize
+  updateOffsets(sheetIds: SheetId[]) {
+    sheetIds.forEach((sheetId) => {
+      const sheet = this.getById(sheetId.id);
+      if (!sheet) throw new Error('Expected sheet to be defined in updateOffsets');
+      sheet.updateSheetOffsets();
+    });
+    pixiApp.gridLines.dirty = true;
   }
 }
 

@@ -1,12 +1,14 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::ops::Range;
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use itertools::Itertools;
 
 /// Data structure that tracks column widths or row heights in pixel units,
 /// optimized for converting between column/row indices and pixel units.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Offsets {
     default: f64,
     #[serde(with = "crate::util::btreemap_serde")]
@@ -120,6 +122,25 @@ impl Offsets {
     pub fn iter_sizes(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
         self.sizes.iter().map(|(&k, &v)| (k, v))
     }
+
+    pub fn changes(&self, offsets: &Offsets) -> Vec<(i64, f64)> {
+        let mut changes = Vec::new();
+        for (k, v) in &self.sizes {
+            if let Some(old_v) = offsets.sizes.get(k) {
+                if *v != *old_v {
+                    changes.push((*k, *old_v - *v));
+                }
+            } else {
+                changes.push((*k, self.default - *v));
+            }
+        }
+        for (k, v) in &offsets.sizes {
+            if !self.sizes.contains_key(k) {
+                changes.push((*k, self.default - *v));
+            }
+        }
+        changes
+    }
 }
 
 #[cfg(test)]
@@ -224,5 +245,18 @@ mod tests {
 
         // -40 .^. -30 .. -20 .. 0
         assert_eq!(offsets.find_offset(-35.0), (-3, -40.0));
+    }
+
+    #[test]
+    fn test_changes() {
+        let mut first = Offsets::new(10.0);
+        first.set_size(0, 20.0);
+        first.set_size(-1, 25.0);
+        let mut second = Offsets::new(10.0);
+        second.set_size(0, 10.0);
+        second.set_size(-1, 15.0);
+        second.set_size(1, 30.0);
+        let changes = first.changes(&second);
+        assert_eq!(changes, vec![(-1, -10.0), (0, -10.0), (1, -20.0)]);
     }
 }

@@ -1,6 +1,5 @@
 import { Graphics, Rectangle } from 'pixi.js';
 import { isEditorOrAbove } from '../../actions';
-import { grid } from '../../grid/controller/Grid';
 import { sheets } from '../../grid/controller/Sheets';
 import { convertColorStringToTint } from '../../helpers/convertColor';
 import { getCellFromFormulaNotation, isCellRangeTypeGuard } from '../../helpers/formulaNotation';
@@ -47,7 +46,7 @@ export class Cursor extends Graphics {
     const cell = cursor.cursorPosition;
     const showInput = pixiAppSettings.input.show;
 
-    let { x, y, width, height } = grid.getCellOffsets(sheet.id, cell.x, cell.y);
+    let { x, y, width, height } = sheet.getCellOffsets(cell.x, cell.y);
     const color = colors.cursorCell;
     const editor_selected_cell = editorInteractionState.selectedCell;
 
@@ -105,13 +104,14 @@ export class Cursor extends Graphics {
   }
 
   private drawMultiCursor(): void {
-    const { cursor, id } = sheets.sheet;
+    const sheet = sheets.sheet;
+    const { cursor } = sheet;
 
     if (cursor.multiCursor) {
       this.lineStyle(1, colors.cursorCell, 1, 0, true);
       this.beginFill(colors.cursorCell, FILL_ALPHA);
-      this.startCell = grid.getCellOffsets(id, cursor.originPosition.x, cursor.originPosition.y);
-      this.endCell = grid.getCellOffsets(id, cursor.terminalPosition.x, cursor.terminalPosition.y);
+      this.startCell = sheet.getCellOffsets(cursor.originPosition.x, cursor.originPosition.y);
+      this.endCell = sheet.getCellOffsets(cursor.terminalPosition.x, cursor.terminalPosition.y);
       this.drawRect(
         this.startCell.x,
         this.startCell.y,
@@ -119,8 +119,8 @@ export class Cursor extends Graphics {
         this.endCell.y + this.endCell.height - this.startCell.y
       );
     } else {
-      this.startCell = grid.getCellOffsets(id, cursor.cursorPosition.x, cursor.cursorPosition.y);
-      this.endCell = grid.getCellOffsets(id, cursor.cursorPosition.x, cursor.cursorPosition.y);
+      this.startCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
+      this.endCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
     }
   }
 
@@ -152,8 +152,6 @@ export class Cursor extends Graphics {
             ? colors.cellColorUserPython
             : editorInteractionState.mode === 'FORMULA'
             ? colors.cellColorUserFormula
-            : editorInteractionState.mode === 'AI'
-            ? colors.cellColorUserAI
             : colors.cursorCell;
       this.beginFill(color).drawShape(this.indicator).endFill();
     }
@@ -163,14 +161,12 @@ export class Cursor extends Graphics {
     const { editorInteractionState } = pixiAppSettings;
     if (!editorInteractionState.showCodeEditor) return;
     const cell = editorInteractionState.selectedCell;
-    const { x, y, width, height } = grid.getCellOffsets(sheets.sheet.id, cell.x, cell.y);
+    const { x, y, width, height } = sheets.sheet.getCellOffsets(cell.x, cell.y);
     const color =
       editorInteractionState.mode === 'PYTHON'
         ? colors.cellColorUserPython
         : editorInteractionState.mode === 'FORMULA'
         ? colors.cellColorUserFormula
-        : editorInteractionState.mode === 'AI'
-        ? colors.cellColorUserAI
         : colors.independence;
     this.lineStyle({
       width: CURSOR_THICKNESS * 1.5,

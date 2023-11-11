@@ -1,15 +1,20 @@
 {
   "editor.formatOnSave": true,
   "cSpell.words": [
+    "actix",
     "bigdecimal",
+    "bindgen",
+    "dbgjs",
     "dcell",
     "dgraph",
     "endregion",
     "Fuzzysort",
     "hljs",
     "htmlescape",
+    "indexmap",
     "itertools",
     "msdf",
+    "Northbridge",
     "openai",
     "opensans",
     "peekable",
@@ -17,9 +22,13 @@
     "pixiapp",
     "rects",
     "Signin",
+    "smallpop",
+    "Southborough",
     "subquadrant",
     "subquadrants",
-    "unspill"
+    "unspill",
+    "vals",
+    "Westborough"
   ],
   "editor.codeActionsOnSave": {
     "source.organizeImports": true
@@ -27,5 +36,6 @@
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer"
   },
-  "rust-analyzer.linkedProjects": ["./quadratic-core/Cargo.toml"]
+  "rust-analyzer.linkedProjects": ["./quadratic-core/Cargo.toml"],
+  "rust-analyzer.checkOnSave": true
 }

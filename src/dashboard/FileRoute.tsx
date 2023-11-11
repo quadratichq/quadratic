@@ -1,5 +1,4 @@
-import { ErrorOutline, QuestionMarkOutlined } from '@mui/icons-material';
-import { Button } from '@mui/material';
+import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import {
   Link,
@@ -19,6 +18,7 @@ import { grid } from '../grid/controller/Grid';
 import init, { hello } from '../quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '../schemas/compareVersions';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
+import { Button } from '../shadcn/ui/button';
 import QuadraticApp from '../ui/QuadraticApp';
 
 export type FileData = {
@@ -45,8 +45,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   }
 
   // Validate and upgrade file to the latest version in TS (up to 1.4)
-  const contents = validateAndUpgradeGridFile(data.file.contents);
-  if (!contents) {
+  const file = await validateAndUpgradeGridFile(data.file.contents);
+  if (!file) {
     Sentry.captureEvent({
       message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
       level: Sentry.Severity.Critical,
@@ -58,9 +58,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   await init();
   hello();
   grid.init();
+  grid.openFromContents(file.contents);
 
   // If the file is newer than the app, do a (hard) reload.
-  const fileVersion = contents.version;
+  const fileVersion = file.version;
   const gridVersion = grid.getVersion();
   if (compareVersions(fileVersion, gridVersion) === VersionComparisonResult.GreaterThan) {
     Sentry.captureEvent({
@@ -69,15 +70,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     });
     // @ts-expect-error hard reload via `true` only works in some browsers
     window.location.reload(true);
-  }
-
-  // attempt to load the sheet
-  if (!grid.newFromFile(contents)) {
-    Sentry.captureEvent({
-      message: `Failed to validate and upgrade user file from database (to Rust). It will likely have to be fixed manually. File UUID: ${uuid}`,
-      level: Sentry.Severity.Critical,
-    });
-    throw new Response('Invalid file that could not be upgraded by Rust.', { status: 400 });
   }
 
   // Fetch the file's sharing info
@@ -126,10 +118,10 @@ export const ErrorBoundary = () => {
       <Empty
         title="404: file not found"
         description="This file may have been deleted, moved, or made unavailable. Try reaching out to the file owner."
-        Icon={QuestionMarkOutlined}
+        Icon={ExclamationTriangleIcon}
         actions={
-          <Button variant="contained" disableElevation component={Link} to="/">
-            Go home
+          <Button asChild variant="secondary">
+            <Link to="/">Go home</Link>
           </Button>
         }
       />
@@ -142,10 +134,10 @@ export const ErrorBoundary = () => {
     <Empty
       title="Unexpected error"
       description="Something went wrong loading this file. If the error continues, contact us."
-      Icon={ErrorOutline}
+      Icon={ExclamationTriangleIcon}
       actions={
-        <Button variant="contained" disableElevation component={Link} to="/">
-          Go home
+        <Button asChild variant="secondary">
+          <Link to="/">Go home</Link>
         </Button>
       }
       severity="error"

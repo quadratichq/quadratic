@@ -1,57 +1,16 @@
-use crate::{grid::*, Array, CellValue};
-use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+
+use indexmap::IndexSet;
+
+use crate::{grid::*, values::IsBlank, Array, CellValue};
 
 use super::{
-    compute::{SheetPos, SheetRect},
     formatting::CellFmtArray,
-    transactions::TransactionSummary,
+    operation::Operation,
+    transaction_summary::{CellSheetsModified, TransactionSummary},
+    update_code_cell_value::update_code_cell_value,
     GridController,
 };
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum Operation {
-    None,
-    SetCellValues {
-        region: RegionRef,
-        values: Array,
-    },
-    SetCellDependencies {
-        cell: SheetPos,
-        dependencies: Option<Vec<SheetRect>>,
-    },
-    SetCellFormats {
-        region: RegionRef,
-        attr: CellFmtArray,
-    },
-    AddSheet {
-        sheet: Sheet,
-    },
-    DeleteSheet {
-        sheet_id: SheetId,
-    },
-    SetSheetName {
-        sheet_id: SheetId,
-        name: String,
-    },
-    SetSheetColor {
-        sheet_id: SheetId,
-        color: Option<String>,
-    },
-    ReorderSheet {
-        target: SheetId,
-        order: String,
-    },
-    ResizeColumn {
-        sheet_id: SheetId,
-        column: ColumnId,
-        new_size: f64,
-    },
-    ResizeRow {
-        sheet_id: SheetId,
-        row: RowId,
-        new_size: f64,
-    },
-}
 
 impl GridController {
     /// Executes the given operation and returns the reverse operation.
@@ -60,83 +19,127 @@ impl GridController {
     pub fn execute_operation(
         &mut self,
         op: Operation,
+        cells_to_compute: &mut IndexSet<CellRef>,
         summary: &mut TransactionSummary,
+        sheets_with_changed_bounds: &mut HashSet<SheetId>,
     ) -> Operation {
-        match op {
+        let mut cells_deleted = vec![];
+
+        let operation = match op {
             Operation::None => Operation::None,
             Operation::SetCellValues { region, values } => {
-                summary
-                    .cell_regions_modified
-                    .extend(self.grid.region_rects(&region));
-
+                sheets_with_changed_bounds.insert(region.sheet);
                 let sheet = self.grid.sheet_mut_from_id(region.sheet);
 
                 let size = region.size().expect("msg: error getting size of region");
-
                 let old_values = region
                     .iter()
                     .zip(values.into_cell_values_vec())
                     .map(|(cell_ref, value)| {
                         let pos = sheet.cell_ref_to_pos(cell_ref)?;
+                        if value.is_blank() {
+                            cells_deleted.push(pos);
+                        } else {
+                            cells_to_compute.insert(cell_ref);
+                        }
+                        summary
+                            .cell_sheets_modified
+                            .insert(CellSheetsModified::new(sheet.id, pos));
                         let response = sheet.set_cell_value(pos, value)?;
                         Some(response.old_value)
                     })
                     .map(|old_value| old_value.unwrap_or(CellValue::Blank))
                     .collect();
+
                 let old_values = Array::new_row_major(size, old_values)
                     .expect("error constructing array of old values for SetCells operation");
-
                 // return reverse operation
                 Operation::SetCellValues {
                     region,
                     values: old_values,
                 }
             }
-            Operation::SetCellDependencies { cell, dependencies } => {
-                let old_deps = self.grid.set_dependencies(cell, dependencies);
-
-                // return reverse operation
-                Operation::SetCellDependencies {
-                    cell,
-                    dependencies: old_deps,
-                }
+            Operation::SetCellCode {
+                cell_ref,
+                code_cell_value,
+            } => {
+                sheets_with_changed_bounds.insert(cell_ref.sheet);
+                let mut reverse_operations = vec![];
+                update_code_cell_value(
+                    self,
+                    cell_ref,
+                    code_cell_value,
+                    &mut None,
+                    &mut reverse_operations,
+                    summary,
+                );
+                cells_to_compute.insert(cell_ref);
+                reverse_operations[0].clone()
             }
             Operation::SetCellFormats { region, attr } => {
-                match attr {
-                    CellFmtArray::FillColor(_) => {
-                        summary.fill_sheets_modified.push(region.sheet);
-                    }
-                    _ => {
-                        summary
-                            .cell_regions_modified
-                            .extend(self.grid.region_rects(&region));
-                    }
+                sheets_with_changed_bounds.insert(region.sheet);
+
+                if let CellFmtArray::FillColor(_) = attr {
+                    summary.fill_sheets_modified.push(region.sheet);
                 }
+
                 let old_attr = match attr {
-                    CellFmtArray::Align(align) => CellFmtArray::Align(
-                        self.set_cell_formats_for_type::<CellAlign>(&region, align),
-                    ),
-                    CellFmtArray::Wrap(wrap) => CellFmtArray::Wrap(
-                        self.set_cell_formats_for_type::<CellWrap>(&region, wrap),
-                    ),
+                    CellFmtArray::Align(align) => {
+                        CellFmtArray::Align(self.set_cell_formats_for_type::<CellAlign>(
+                            &region,
+                            align,
+                            Some(&mut summary.cell_sheets_modified),
+                        ))
+                    }
+
+                    CellFmtArray::Wrap(wrap) => {
+                        CellFmtArray::Wrap(self.set_cell_formats_for_type::<CellWrap>(
+                            &region,
+                            wrap,
+                            Some(&mut summary.cell_sheets_modified),
+                        ))
+                    }
                     CellFmtArray::NumericFormat(num_fmt) => CellFmtArray::NumericFormat(
-                        self.set_cell_formats_for_type::<NumericFormat>(&region, num_fmt),
+                        self.set_cell_formats_for_type::<NumericFormat>(
+                            &region,
+                            num_fmt,
+                            Some(&mut summary.cell_sheets_modified),
+                        ),
                     ),
                     CellFmtArray::NumericDecimals(num_decimals) => CellFmtArray::NumericDecimals(
-                        self.set_cell_formats_for_type::<NumericDecimals>(&region, num_decimals),
+                        self.set_cell_formats_for_type::<NumericDecimals>(
+                            &region,
+                            num_decimals,
+                            Some(&mut summary.cell_sheets_modified),
+                        ),
                     ),
                     CellFmtArray::Bold(bold) => {
-                        CellFmtArray::Bold(self.set_cell_formats_for_type::<Bold>(&region, bold))
+                        CellFmtArray::Bold(self.set_cell_formats_for_type::<Bold>(
+                            &region,
+                            bold,
+                            Some(&mut summary.cell_sheets_modified),
+                        ))
                     }
-                    CellFmtArray::Italic(italic) => CellFmtArray::Italic(
-                        self.set_cell_formats_for_type::<Italic>(&region, italic),
-                    ),
-                    CellFmtArray::TextColor(text_color) => CellFmtArray::TextColor(
-                        self.set_cell_formats_for_type::<TextColor>(&region, text_color),
-                    ),
-                    CellFmtArray::FillColor(fill_color) => CellFmtArray::FillColor(
-                        self.set_cell_formats_for_type::<FillColor>(&region, fill_color),
-                    ),
+                    CellFmtArray::Italic(italic) => {
+                        CellFmtArray::Italic(self.set_cell_formats_for_type::<Italic>(
+                            &region,
+                            italic,
+                            Some(&mut summary.cell_sheets_modified),
+                        ))
+                    }
+                    CellFmtArray::TextColor(text_color) => {
+                        CellFmtArray::TextColor(self.set_cell_formats_for_type::<TextColor>(
+                            &region,
+                            text_color,
+                            Some(&mut summary.cell_sheets_modified),
+                        ))
+                    }
+                    CellFmtArray::FillColor(fill_color) => {
+                        summary.fill_sheets_modified.push(region.sheet);
+                        CellFmtArray::FillColor(
+                            self.set_cell_formats_for_type::<FillColor>(&region, fill_color, None),
+                        )
+                    }
                 };
 
                 // return reverse operation
@@ -145,10 +148,21 @@ impl GridController {
                     attr: old_attr,
                 }
             }
+            Operation::SetBorders { region, borders } => {
+                sheets_with_changed_bounds.insert(region.sheet);
+                summary.border_sheets_modified.push(region.sheet);
+                let sheet = self.grid.sheet_mut_from_id(region.sheet);
+
+                let old_borders = sheet.set_region_borders(&region, borders);
+                Operation::SetBorders {
+                    region,
+                    borders: old_borders,
+                }
+            }
             Operation::AddSheet { sheet } => {
                 // todo: need to handle the case where sheet.order overlaps another sheet order
                 // this may happen after (1) delete a sheet; (2) MP update w/an added sheet; and (3) undo the deleted sheet
-                let sheet_id = sheet.id.clone();
+                let sheet_id = sheet.id;
                 self.grid
                     .add_sheet(Some(sheet))
                     .expect("duplicate sheet name");
@@ -207,9 +221,10 @@ impl GridController {
                 column,
                 new_size,
             } => {
-                let sheet = self.sheet(sheet_id);
+                let sheet = self.grid.sheet_mut_from_id(sheet_id);
                 if let Some(x) = sheet.get_column_index(column) {
-                    let old_size = self.resize_column_internal(sheet_id, x, new_size);
+                    summary.offsets_modified.push(sheet.id);
+                    let old_size = sheet.offsets.set_column_width(x, new_size);
                     Operation::ResizeColumn {
                         sheet_id,
                         column,
@@ -225,9 +240,10 @@ impl GridController {
                 row,
                 new_size,
             } => {
-                let sheet = self.sheet(sheet_id);
+                let sheet = self.grid.sheet_mut_from_id(sheet_id);
                 if let Some(y) = sheet.get_row_index(row) {
-                    let old_size = self.resize_row_internal(sheet_id, y, new_size);
+                    let old_size = sheet.offsets.set_row_height(y, new_size);
+                    summary.offsets_modified.push(sheet.id);
                     Operation::ResizeRow {
                         sheet_id,
                         row,
@@ -237,6 +253,7 @@ impl GridController {
                     Operation::None
                 }
             }
-        }
+        };
+        operation
     }
 }

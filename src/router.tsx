@@ -1,6 +1,5 @@
 import { User } from '@auth0/auth0-spa-js';
-import { ErrorOutline, WarningAmber } from '@mui/icons-material';
-import { Button } from '@mui/material';
+import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import localforage from 'localforage';
 import {
@@ -25,6 +24,7 @@ import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
 import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
 import { action as filesAction } from './dashboard/components/FilesList';
 import * as Create from './dashboard/files/CreateRoute';
+import { Button } from './shadcn/ui/button';
 import { initializeAnalytics } from './utils/analytics';
 // @ts-expect-error - for testing purposes
 window.lf = localforage;
@@ -118,10 +118,10 @@ export const router = createBrowserRouter(
                   Check the URL and try again. Or, contact us for help at <a href={SUPPORT_EMAIL}>{SUPPORT_EMAIL}</a>
                 </>
               }
-              Icon={WarningAmber}
+              Icon={ExclamationTriangleIcon}
               actions={
-                <Button component={Link} to="/" variant="contained" disableElevation>
-                  Go home
+                <Button asChild variant="secondary">
+                  <Link to="/">Go home</Link>
                 </Button>
               }
             />
@@ -211,7 +211,7 @@ function RootError() {
     <Empty
       title="Something went wrong"
       description="An unexpected error occurred. Try reloading the page or contact us if the error continues."
-      Icon={ErrorOutline}
+      Icon={ExclamationTriangleIcon}
     />
   );
 }

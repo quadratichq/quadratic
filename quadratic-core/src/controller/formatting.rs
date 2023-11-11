@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::{
     grid::{
         Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericDecimals, NumericFormat,
@@ -7,13 +9,19 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::{operations::Operation, transactions::TransactionSummary, GridController};
+use super::{
+    operation::Operation,
+    transaction_summary::{CellSheetsModified, TransactionSummary},
+    transactions::TransactionType,
+    GridController,
+};
 
 impl GridController {
     pub fn set_cell_formats_for_type<A: CellFmtAttr>(
         &mut self,
         region: &RegionRef,
         values: RunLengthEncoding<Option<A::Value>>,
+        cell_sheets_modified: Option<&mut HashSet<CellSheetsModified>>,
     ) -> RunLengthEncoding<Option<A::Value>> {
         let sheet = self.grid.sheet_mut_from_id(region.sheet);
         // TODO: optimize this for contiguous runs of the same value
@@ -23,6 +31,9 @@ impl GridController {
                 .cell_ref_to_pos(cell_ref)
                 .and_then(|pos| sheet.set_formatting_value::<A>(pos, value.clone()));
             old_values.push(old_value);
+        }
+        if let Some(cell_sheets_modified) = cell_sheets_modified {
+            CellSheetsModified::add_region(cell_sheets_modified, sheet, region);
         }
         old_values
     }
@@ -44,7 +55,7 @@ impl GridController {
             return TransactionSummary::default();
         }
         let region = self.region(sheet_id, rect);
-        let numeric_decimals = Some((decimals as i16) + delta as i16);
+        let numeric_decimals = Some(decimals + delta as i16);
         let ops = vec![Operation::SetCellFormats {
             region: region.clone(),
             attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
@@ -52,7 +63,7 @@ impl GridController {
                 region.len(),
             )),
         }];
-        self.transact_forward(ops, cursor)
+        self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
 
     pub fn get_all_cell_formats(&self, sheet_id: SheetId, rect: Rect) -> Vec<CellFmtArray> {
@@ -72,28 +83,28 @@ impl GridController {
                 let pos = Pos { x, y };
                 cell_formats.iter_mut().for_each(|array| match array {
                     CellFmtArray::Align(array) => {
-                        array.push(sheet.get_formatting_value::<CellAlign>(pos))
+                        array.push(sheet.get_formatting_value::<CellAlign>(pos));
                     }
                     CellFmtArray::Wrap(array) => {
-                        array.push(sheet.get_formatting_value::<CellWrap>(pos))
+                        array.push(sheet.get_formatting_value::<CellWrap>(pos));
                     }
                     CellFmtArray::NumericFormat(array) => {
-                        array.push(sheet.get_formatting_value::<NumericFormat>(pos))
+                        array.push(sheet.get_formatting_value::<NumericFormat>(pos));
                     }
                     CellFmtArray::NumericDecimals(array) => {
-                        array.push(sheet.get_formatting_value::<NumericDecimals>(pos))
+                        array.push(sheet.get_formatting_value::<NumericDecimals>(pos));
                     }
                     CellFmtArray::Bold(array) => {
-                        array.push(sheet.get_formatting_value::<Bold>(pos))
+                        array.push(sheet.get_formatting_value::<Bold>(pos));
                     }
                     CellFmtArray::Italic(array) => {
-                        array.push(sheet.get_formatting_value::<Italic>(pos))
+                        array.push(sheet.get_formatting_value::<Italic>(pos));
                     }
                     CellFmtArray::TextColor(array) => {
-                        array.push(sheet.get_formatting_value::<TextColor>(pos))
+                        array.push(sheet.get_formatting_value::<TextColor>(pos));
                     }
                     CellFmtArray::FillColor(array) => {
-                        array.push(sheet.get_formatting_value::<FillColor>(pos))
+                        array.push(sheet.get_formatting_value::<FillColor>(pos));
                     }
                 });
             }
@@ -116,7 +127,7 @@ macro_rules! impl_set_cell_fmt_method {
                 let attr =
                     $cell_fmt_array_constructor(RunLengthEncoding::repeat(value, region.len()));
                 let ops = vec![Operation::SetCellFormats { region, attr }];
-                self.transact_forward(ops, cursor)
+                self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
             }
         }
     };
@@ -146,19 +157,15 @@ pub enum CellFmtArray {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        controller::{transactions::TransactionSummary, GridController},
-        grid::TextColor,
-        Pos, Rect,
-    };
+    use crate::{controller::GridController, grid::TextColor, Pos, Rect};
 
     #[test]
     fn test_set_cell_text_color_undo_redo() {
         let mut gc = GridController::new();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos1 = crate::Pos { x: 3, y: 6 };
-        let pos2 = crate::Pos { x: 5, y: 8 };
-        let pos3 = crate::Pos { x: 9, y: 6 };
+        let pos1 = Pos { x: 3, y: 6 };
+        let pos2 = Pos { x: 5, y: 8 };
+        let pos3 = Pos { x: 9, y: 6 };
         let rect1 = Rect::new_span(pos1, pos2);
         let rect2 = Rect::new_span(pos2, pos3);
 
@@ -168,43 +175,59 @@ mod test {
                 .unwrap_or_default()
         };
 
-        let expected_summary = |rect| TransactionSummary {
-            cell_regions_modified: vec![(sheet_id, rect)],
-            ..Default::default()
-        };
-
         assert_eq!(get(&gc, pos1), "");
         assert_eq!(get(&gc, pos2), "");
         assert_eq!(get(&gc, pos3), "");
-        assert_eq!(
-            gc.set_cell_text_color(sheet_id, rect1, Some("blue".to_string()), None),
-            expected_summary(rect1),
-        );
+
+        gc.set_cell_text_color(sheet_id, rect1, Some("blue".to_string()), None);
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "blue");
         assert_eq!(get(&gc, pos3), "");
-        assert_eq!(
-            gc.set_cell_text_color(sheet_id, rect2, Some("red".to_string()), None),
-            expected_summary(rect2),
-        );
+
+        gc.set_cell_text_color(sheet_id, rect2, Some("red".to_string()), None);
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "red");
         assert_eq!(get(&gc, pos3), "red");
-        assert_eq!(gc.undo(None), Some(expected_summary(rect2)));
+
+        gc.undo(None);
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "blue");
         assert_eq!(get(&gc, pos3), "");
-        assert_eq!(gc.undo(None), Some(expected_summary(rect1)));
+
+        gc.undo(None);
         assert_eq!(get(&gc, pos1), "");
         assert_eq!(get(&gc, pos2), "");
         assert_eq!(get(&gc, pos3), "");
-        assert_eq!(gc.redo(None), Some(expected_summary(rect1)));
+
+        gc.redo(None);
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "blue");
         assert_eq!(get(&gc, pos3), "");
-        assert_eq!(gc.redo(None), Some(expected_summary(rect2)));
+
+        gc.redo(None);
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "red");
+        assert_eq!(get(&gc, pos3), "red");
+
+        // delete and redo
+        gc.delete_cell_values(sheet_id, rect1, None);
+        assert_eq!(get(&gc, pos1), "blue");
+        assert_eq!(get(&gc, pos2), "red");
+        assert_eq!(get(&gc, pos3), "red");
+
+        gc.clear_formatting(sheet_id, rect1, None);
+        assert_eq!(get(&gc, pos1), "");
+        assert_eq!(get(&gc, pos2), "");
+        assert_eq!(get(&gc, pos3), "red");
+
+        gc.undo(None);
+        assert_eq!(get(&gc, pos1), "blue");
+        assert_eq!(get(&gc, pos2), "red");
+        assert_eq!(get(&gc, pos3), "red");
+
+        gc.redo(None);
+        assert_eq!(get(&gc, pos1), "");
+        assert_eq!(get(&gc, pos2), "");
         assert_eq!(get(&gc, pos3), "red");
     }
 
@@ -243,7 +266,7 @@ mod test {
             min: crate::Pos { x: -100, y: -100 },
             max: crate::Pos { x: 100, y: 100 },
         });
-        assert_eq!(10, render_fills.len())
+        assert_eq!(10, render_fills.len());
     }
 
     #[test]

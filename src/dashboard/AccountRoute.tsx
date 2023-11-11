@@ -1,7 +1,8 @@
-import { Box, Button, Typography, useTheme } from '@mui/material';
+import { Box, Typography, useTheme } from '@mui/material';
 import { Form } from 'react-router-dom';
 import { ROUTES } from '../constants/routes';
 import { useRootRouteLoaderData } from '../router';
+import { Button } from '../shadcn/ui/button';
 import { DashboardHeader } from './components/DashboardHeader';
 // import { useColorMode } from 'shared/root/Theme';
 
@@ -15,18 +16,18 @@ export const Component = () => {
       <DashboardHeader title="My account" />
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: theme.spacing(3), mt: theme.spacing(3) }}>
         <Row>
-          <Typography variant="body1" color="text.primary" fontWeight="bold">
+          <Typography variant="body2" color="text.primary" fontWeight="bold">
             Name
           </Typography>
-          <Typography variant="body1" color="text.primary">
+          <Typography variant="body2" color="text.primary">
             {user?.name}
           </Typography>
         </Row>
         <Row>
-          <Typography variant="body1" color="text.primary" fontWeight="bold">
+          <Typography variant="body2" color="text.primary" fontWeight="bold">
             Email
           </Typography>
-          <Typography variant="body1" color="text.primary">
+          <Typography variant="body2" color="text.primary">
             {user?.email}
           </Typography>
         </Row>
@@ -60,7 +61,7 @@ export const Component = () => {
           Additional account management coming in the future.
         </Typography>
         <Form method="post" action={ROUTES.LOGOUT}>
-          <Button variant="outlined" type="submit">
+          <Button variant="outline" type="submit">
             Log out
           </Button>
         </Form>

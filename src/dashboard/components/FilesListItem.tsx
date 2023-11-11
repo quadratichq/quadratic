@@ -1,37 +1,35 @@
-import { DeleteOutline, IosShare, MoreVert } from '@mui/icons-material';
-import { Box, Divider, IconButton, Menu, MenuItem, Stack, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Stack, useTheme } from '@mui/material';
+import { DotsVerticalIcon, Share2Icon, TrashIcon } from '@radix-ui/react-icons';
 import React, { useEffect, useState } from 'react';
 import { Link, SubmitOptions, useFetcher } from 'react-router-dom';
 import { deleteFile, downloadFile, duplicateFile, renameFile as renameFileAction } from '../../actions';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
+import { FILE_AND_TEAM_NAME_MAX_LENGTH } from '../../constants/appConstants';
 import { ROUTES } from '../../constants/routes';
-import { TooltipHint } from '../../ui/components/TooltipHint';
+import { Button as Btn, Button } from '../../shadcn/ui/button';
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../shadcn/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../../shadcn/ui/dropdown-menu';
+import { Input } from '../../shadcn/ui/input';
+import { Separator } from '../../shadcn/ui/separator';
 import { Action, FilesListFile } from './FilesList';
 import { FilesListItemCore } from './FilesListItemCore';
 import { Layout, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
 
 export function FilesListItems({ children, viewPreferences }: any) {
-  const theme = useTheme();
-
   return (
-    <Box
-      sx={
-        viewPreferences.layout === Layout.Grid
-          ? {
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-              gap: theme.spacing(3),
-              pb: theme.spacing(),
-
-              [theme.breakpoints.up('md')]: {
-                px: theme.spacing(),
-              },
-            }
-          : {}
-      }
+    <ul
+      className={`${
+        viewPreferences.layout === Layout.Grid ? 'grid grid-cols-[repeat(auto-fill,minmax(272px,1fr))] gap-4 pb-2' : ''
+      }`}
     >
       {children}
-    </Box>
+    </ul>
   );
 }
 
@@ -54,9 +52,10 @@ export function FileListItem({
   const fetcherDuplicate = useFetcher();
   const fetcherRename = useFetcher();
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [isRenaming, setIsRenaming] = useState<boolean>(false);
-  const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
+
+  const [open, setOpen] = useState<boolean>(false);
+
+  // const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
 
   const { uuid, name, created_date, updated_date, public_link_access, preview } = file;
 
@@ -65,7 +64,7 @@ export function FileListItem({
     action: ROUTES.API_FILE(uuid),
     encType: 'application/json',
   };
-  const open = Boolean(anchorEl);
+
   const failedToDelete = fetcherDelete.data && !fetcherDelete.data.ok;
   const failedToRename = fetcherRename.data && !fetcherRename.data.ok;
 
@@ -82,29 +81,8 @@ export function FileListItem({
     return null;
   }
 
-  const handleActionsMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleActionsMenuClose = () => {
-    setAnchorEl(null);
-  };
-
   const renameFile = (value: string) => {
-    setIsRenaming(false);
-
-    // Don't allow empty file names
-    if (!(value && value.trim())) {
-      return;
-    }
-
-    // Don't do anything if the name didn't change
-    if (value === name) {
-      return;
-    }
-
-    // Otherwise update on the server and optimistically in the UI
+    // Update on the server and optimistically in the UI
     const data: Action['request.rename'] = { action: 'rename', name: value };
     fetcherRename.submit(data, fetcherSubmitOpts);
   };
@@ -116,7 +94,6 @@ export function FileListItem({
       };
       fetcherDelete.submit(data, fetcherSubmitOpts);
     }
-    handleActionsMenuClose();
   };
 
   const handleDownload = () => {
@@ -124,7 +101,6 @@ export function FileListItem({
       action: 'download',
     };
     fetcherDownload.submit(data, fetcherSubmitOpts);
-    handleActionsMenuClose();
   };
 
   const handleDuplicate = () => {
@@ -143,57 +119,57 @@ export function FileListItem({
       },
     };
     fetcherDuplicate.submit(data, fetcherSubmitOpts);
-    handleActionsMenuClose();
   };
 
-  const handleRename = () => {
-    setIsRenaming(true);
-    handleActionsMenuClose();
-  };
+  // const handleRename = () => {
+  //   setIsRenaming(true);
+  // };
 
   const handleShare = () => {
     setActiveShareMenuFileId(uuid);
-    handleActionsMenuClose();
   };
 
   const displayName = fetcherRename.json ? (fetcherRename.json as Action['request.rename']).name : name;
-  const displayNameHtml = filterValue ? highlightMatchingString(displayName, filterValue) : displayName;
   const displayDescription =
-    viewPreferences.sort === Sort.Created ? `Created ${timeAgo(created_date)}` : `Updated ${timeAgo(updated_date)}`;
+    viewPreferences.sort === Sort.Created ? `Created ${timeAgo(created_date)}` : `Modified ${timeAgo(updated_date)}`;
   const hasNetworkError = Boolean(failedToDelete || failedToRename);
-  const isDisabled = uuid.startsWith('duplicate-') || isRenaming;
+  const isDisabled = uuid.startsWith('duplicate-'); // || isRenaming;
   const isShared = public_link_access !== 'NOT_SHARED';
   const to = ROUTES.FILE(uuid);
 
   const MoreButton = (
-    <TooltipHint title="More…">
-      <IconButton
-        id="file-actions-button"
-        aria-controls={open ? 'files-list-item-actions-menu' : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? 'true' : undefined}
-        onClick={handleActionsMenuClick}
-      >
-        <MoreVert />
-      </IconButton>
-    </TooltipHint>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Btn variant="ghost" size="icon">
+          <DotsVerticalIcon className="h-4 w-4" />
+        </Btn>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-48">
+        <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>
+        <DropdownMenuItem onClick={handleDuplicate}>{duplicateFile.label}</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>
+        <DropdownMenuItem onClick={handleDownload}>{downloadFile.label}</DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleDelete}>{deleteFile.label}</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 
   const sharedProps = {
     key: uuid,
     filterValue,
-    name: displayNameHtml,
+    name: displayName,
     description: displayDescription,
     hasNetworkError: hasNetworkError,
     isShared,
-    isRenaming,
+
     renameFile,
     viewPreferences,
   };
 
   return (
-    <>
-      {viewPreferences.layout === Layout.List && <Divider />}
+    <li>
+      {/*viewPreferences.layout === Layout.List && <Separator />*/}
       <Link
         key={uuid}
         to={to}
@@ -205,111 +181,171 @@ export function FileListItem({
         }}
       >
         {viewPreferences.layout === Layout.Grid ? (
-          <Stack
-            sx={{
-              border: `1px solid ${theme.palette.divider}`,
-              borderRadius: '2px',
-              '&:hover': { borderColor: theme.palette.text.secondary },
-            }}
-          >
-            <Box sx={{ aspectRatio: '16/9' }}>
-              <Box
-                sx={{
-                  backgroundImage: `url(${preview})`,
-                  backgroundPosition: '50%',
-                  width: '100%',
-                  height: '100%',
-                  backgroundSize: 'cover',
-                }}
-              />
-            </Box>
-            <Divider />
-            <Box
-              sx={{
-                px: theme.spacing(1),
-                py: theme.spacing(1),
-              }}
-            >
+          <div className="border border-border hover:border-primary">
+            <div className="flex aspect-video items-center justify-center">
+              {preview ? (
+                <img src={preview} alt="Thumbnail" className="object-cover" />
+              ) : (
+                <div className="flex items-center justify-center">
+                  <img
+                    src={'/favicon.ico'}
+                    alt="File thumbnail placeholder"
+                    className={`opacity-10 brightness-0 grayscale`}
+                    width="24"
+                    height="24"
+                  />
+                </div>
+              )}
+            </div>
+            <Separator />
+            <div className="p-2">
               <FilesListItemCore {...sharedProps} actions={MoreButton} />
-            </Box>
-          </Stack>
+            </div>
+          </div>
         ) : (
-          <Box
-            sx={{
-              px: theme.spacing(1),
-              py: theme.spacing(1.5),
-              [theme.breakpoints.down('md')]: {
-                px: 0,
-              },
-              '&:hover': { backgroundColor: theme.palette.action.hover },
-              '&:hover .additional-icons': { display: isDesktop ? 'block' : 'none' },
-            }}
+          <div
+            className={`flex flex-row items-center gap-2 border border-transparent py-2 hover:border-primary lg:px-2`}
+            // sx={{
+            //   // px: theme.spacing(1),
+            //   // py: theme.spacing(1),
+            //   [theme.breakpoints.down('md')]: {
+            //     px: 0,
+            //   },
+            //   // '&:hover': { backgroundColor: theme.palette.action.hover },
+            //   // '&:hover .additional-icons': { display: isDesktop ? 'block' : 'none' },
+            // }}
           >
-            <FilesListItemCore
-              {...sharedProps}
-              actions={
-                <Stack gap={theme.spacing(1)} alignItems="center" direction="row">
-                  <Box className="additional-icons" sx={{ display: 'none' }}>
-                    <TooltipHint title="Share">
-                      <IconButton
+            <div className={`hidden border border-border shadow-sm md:block`}>
+              {preview ? (
+                <img src={preview} alt="File thumbnail preview" className={`aspect-video object-fill`} width="80" />
+              ) : (
+                <div className="flex aspect-video w-20 items-center justify-center">
+                  <img
+                    src={'/favicon.ico'}
+                    alt="File thumbnail placeholder"
+                    className={`h-4 w-4 opacity-10 brightness-0 grayscale`}
+                    width="16"
+                    height="16"
+                  />
+                </div>
+              )}
+            </div>
+            <div className="flex-grow">
+              <FilesListItemCore
+                {...sharedProps}
+                actions={
+                  <Stack gap={theme.spacing(1)} alignItems="center" direction="row">
+                    <Box className="additional-icons" sx={{ display: 'none' }}>
+                      <Btn
+                        variant="ghost"
+                        size="icon"
                         onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                           e.preventDefault();
                           handleShare();
                         }}
                       >
-                        <IosShare />
-                      </IconButton>
-                    </TooltipHint>
-                    <TooltipHint title="Delete">
-                      <IconButton
+                        <Share2Icon className="h-4 w-4" />
+                      </Btn>
+                      <Btn
+                        variant="ghost"
+                        size="icon"
                         onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                           e.preventDefault();
                           handleDelete();
                         }}
                       >
-                        <DeleteOutline />
-                      </IconButton>
-                    </TooltipHint>
-                  </Box>
+                        <TrashIcon className="h-4 w-4" />
+                      </Btn>
+                    </Box>
 
-                  {MoreButton}
-                </Stack>
-              }
-            />
-          </Box>
+                    {MoreButton}
+                  </Stack>
+                }
+              />
+            </div>
+          </div>
         )}
       </Link>
-      <Menu
-        id="files-list-item-actions-menu"
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleActionsMenuClose}
-        MenuListProps={{
-          'aria-labelledby': 'file-actions-button',
-        }}
-      >
-        <MenuItem dense onClick={handleShare}>
-          Share
-        </MenuItem>
+      {open && (
+        <RenameItemDialog
+          onClose={() => setOpen(false)}
+          value={displayName}
+          onSave={(newValue: string) => {
+            renameFile(newValue);
+          }}
+        />
+      )}
+    </li>
+  );
+}
 
-        <MenuItem dense onClick={handleDuplicate}>
-          {duplicateFile.label}
-        </MenuItem>
+// Eventually this can be moved to another file so it can be used with "Rename team"
+function RenameItemDialog({
+  onClose,
+  onSave,
+  value,
+}: {
+  onClose: () => void;
+  onSave: (newValue: string) => void;
+  value: string;
+}) {
+  const [localValue, setLocalValue] = useState<string>(value);
 
-        <MenuItem dense onClick={handleRename}>
-          {renameFileAction.label}
-        </MenuItem>
+  const count = localValue.length;
+  // TODO this needs to happen inside the app as well
+  const disabled = count === 0 || count > FILE_AND_TEAM_NAME_MAX_LENGTH;
 
-        <MenuItem dense onClick={handleDownload}>
-          {downloadFile.label}
-        </MenuItem>
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
 
-        <Divider />
-        <MenuItem dense onClick={handleDelete}>
-          {deleteFile.label}
-        </MenuItem>
-      </Menu>
-    </>
+    // Don't do anything if we're disabled
+    if (disabled) {
+      return;
+    }
+
+    // Don't do anything if the name didn't change
+    if (localValue === value) {
+      onClose();
+      return;
+    }
+
+    onSave(localValue);
+    onClose();
+  };
+
+  const handleInputChange = (e: React.FormEvent<HTMLInputElement>) => {
+    const newValue = e.currentTarget.value;
+    setLocalValue(newValue);
+  };
+
+  const formId = 'rename-item';
+  const inputId = 'rename-item-input';
+
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle asChild>
+            <label htmlFor={inputId}>Rename</label>
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} id={formId}>
+          <Input id={inputId} value={localValue} autoComplete="off" onChange={handleInputChange} />
+          <p className={`text-right text-sm ${disabled ? 'text-destructive' : 'text-muted-foreground'}`}>
+            {count} / {FILE_AND_TEAM_NAME_MAX_LENGTH}
+          </p>
+        </form>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Cancel</Button>
+          </DialogClose>
+
+          <Button disabled={disabled} type="submit" formTarget={formId}>
+            Rename
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -317,6 +353,7 @@ export function FileListItem({
 // https://blog.webdevsimplified.com/2020-07/relative-time-format/
 const formatter = new Intl.RelativeTimeFormat(undefined, {
   numeric: 'auto',
+  style: 'narrow',
 });
 const DIVISIONS: { amount: number; name: Intl.RelativeTimeFormatUnit }[] = [
   { amount: 60, name: 'seconds' },
@@ -339,12 +376,4 @@ export function timeAgo(dateString: string) {
     }
     duration /= division.amount;
   }
-}
-
-function highlightMatchingString(inputString: string, searchString: string) {
-  const regex = new RegExp(searchString, 'gi'); // case insensitive matching
-  const highlightedString = inputString.replace(regex, (match: string) => {
-    return `<mark>${match}</mark>`;
-  });
-  return highlightedString;
 }

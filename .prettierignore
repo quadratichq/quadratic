@@ -1,2 +1,3 @@
 *.svg
 src/quadratic-core
+src/shadcn/ui

@@ -1,5 +1,4 @@
 import { ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
-import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { convertColorStringToTint } from '../../helpers/convertColor';
 import { intersects } from '../helpers/intersects';
@@ -27,7 +26,7 @@ export class CellsFills extends ParticleContainer {
     fills.forEach((fill) => {
       const sprite = this.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
       sprite.tint = convertColorStringToTint(fill.color);
-      const screen = grid.getScreenRectangle(this.sheet.id, Number(fill.x), Number(fill.y), fill.w - 1, fill.h - 1);
+      const screen = this.sheet.getScreenRectangle(Number(fill.x), Number(fill.y), fill.w - 1, fill.h - 1);
       sprite.position.set(screen.x, screen.y);
       sprite.width = screen.width + 1;
       sprite.height = screen.height + 1;

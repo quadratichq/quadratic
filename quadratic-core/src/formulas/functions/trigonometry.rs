@@ -132,45 +132,44 @@ fn arc_cotangent(x: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-
     use crate::formulas::tests::*;
 
     fn test_trig_fn(name: &str, input_output_pairs: &[(f64, f64)]) {
-        let g = &mut NoGrid;
+        let g = Grid::new();
         for &(input, expected_output) in input_output_pairs {
             println!("Testing that {name}({input}) = {expected_output}");
             crate::util::assert_f64_approx_eq(
                 expected_output,
-                &eval_to_string(g, &format!("{name}({input})")),
+                &eval_to_string(&g, &format!("{name}({input})")),
             );
         }
     }
 
-    use std::f64::consts::PI;
+    use std::f64::consts::{FRAC_1_SQRT_2, PI, SQRT_2};
 
     #[test]
     fn test_formula_radian_degree_conversion() {
-        let g = &mut NoGrid;
+        let g = Grid::new();
 
-        assert_eq!("-4", eval_to_string(g, "RADIANS(-720) / PI()"));
-        assert_eq!("-720", eval_to_string(g, "DEGREES(-PI() * 4)"));
+        assert_eq!("-4", eval_to_string(&g, "RADIANS(-720) / PI()"));
+        assert_eq!("-720", eval_to_string(&g, "DEGREES(-PI() * 4)"));
     }
 
     #[test]
     fn test_formula_trigonometry() {
-        let g = &mut NoGrid;
+        let g = Grid::new();
 
         let test_cases = &[
             (-2.0 * PI, 0.0),
             (-1.5 * PI, 1.0),
             (-1.0 * PI, 0.0),
-            (-0.75 * PI, -0.70711),
+            (-0.75 * PI, -FRAC_1_SQRT_2),
             (-0.5 * PI, -1.0),
-            (-0.25 * PI, -0.70711),
+            (-0.25 * PI, -FRAC_1_SQRT_2),
             (0.0 * PI, 0.0),
-            (0.25 * PI, 0.70711),
+            (0.25 * PI, FRAC_1_SQRT_2),
             (0.5 * PI, 1.0),
-            (0.75 * PI, 0.70711),
+            (0.75 * PI, FRAC_1_SQRT_2),
             (1.0 * PI, 0.0),
             (1.5 * PI, -1.0),
             (2.0 * PI, 0.0),
@@ -181,13 +180,13 @@ mod tests {
             (-2.0 * PI, 1.0),
             (-1.5 * PI, 0.0),
             (-1.0 * PI, -1.0),
-            (-0.75 * PI, -0.70711),
+            (-0.75 * PI, -FRAC_1_SQRT_2),
             (-0.5 * PI, 0.0),
-            (-0.25 * PI, 0.70711),
+            (-0.25 * PI, FRAC_1_SQRT_2),
             (0.0 * PI, 1.0),
-            (0.25 * PI, 0.70711),
+            (0.25 * PI, FRAC_1_SQRT_2),
             (0.5 * PI, 0.0),
-            (0.75 * PI, -0.70711),
+            (0.75 * PI, -FRAC_1_SQRT_2),
             (1.0 * PI, -1.0),
             (1.5 * PI, 0.0),
             (2.0 * PI, 1.0),
@@ -209,12 +208,12 @@ mod tests {
 
         let test_cases = &[
             (-1.5 * PI, 1.0),
-            (-0.75 * PI, -1.41421),
+            (-0.75 * PI, -SQRT_2),
             (-0.5 * PI, -1.0),
-            (-0.25 * PI, -1.41421),
-            (0.25 * PI, 1.41421),
+            (-0.25 * PI, -SQRT_2),
+            (0.25 * PI, SQRT_2),
             (0.5 * PI, 1.0),
-            (0.75 * PI, 1.41421),
+            (0.75 * PI, SQRT_2),
             (1.5 * PI, -1.0),
         ];
         test_trig_fn("CSC", test_cases);
@@ -222,11 +221,11 @@ mod tests {
         let test_cases = &[
             (-2.0 * PI, 1.0),
             (-1.0 * PI, -1.0),
-            (-0.75 * PI, -1.41421),
-            (-0.25 * PI, 1.41421),
+            (-0.75 * PI, -SQRT_2),
+            (-0.25 * PI, SQRT_2),
             (0.0 * PI, 1.0),
-            (0.25 * PI, 1.41421),
-            (0.75 * PI, -1.41421),
+            (0.25 * PI, SQRT_2),
+            (0.75 * PI, -SQRT_2),
             (1.0 * PI, -1.0),
             (2.0 * PI, 1.0),
         ];
@@ -346,25 +345,25 @@ mod tests {
         ];
         test_trig_fn("COTH", test_cases);
 
-        assert!(eval_to_string(g, "ATAN2(2, 1)").starts_with("0.4636"));
+        assert!(eval_to_string(&g, "ATAN2(2, 1)").starts_with("0.4636"));
     }
 
     #[test]
     fn test_formula_inverse_trigonometry() {
         let test_cases = &[
             (-1.0, -0.5 * PI),
-            (-0.70711, -0.25 * PI),
+            (-FRAC_1_SQRT_2, -0.25 * PI),
             (0.0, 0.0 * PI),
-            (0.70711, 0.25 * PI),
+            (FRAC_1_SQRT_2, 0.25 * PI),
             (1.0, 0.5 * PI),
         ];
         test_trig_fn("ASIN", test_cases);
 
         let test_cases = &[
             (1.0, 0.0 * PI),
-            (0.70711, 0.25 * PI),
+            (FRAC_1_SQRT_2, 0.25 * PI),
             (0.0, 0.5 * PI),
-            (-0.70711, 0.75 * PI),
+            (-FRAC_1_SQRT_2, 0.75 * PI),
             (-1.0, 1.0 * PI),
         ];
         test_trig_fn("ACOS", test_cases);
@@ -374,16 +373,16 @@ mod tests {
 
         let test_cases = &[
             (-1.0, -0.5 * PI),
-            (-1.41421, -0.25 * PI),
-            (1.41421, 0.25 * PI),
+            (-SQRT_2, -0.25 * PI),
+            (SQRT_2, 0.25 * PI),
             (1.0, 0.5 * PI),
         ];
         test_trig_fn("ACSC", test_cases);
 
         let test_cases = &[
             (1.0, 0.0 * PI),
-            (1.41421, 0.25 * PI),
-            (-1.41421, 0.75 * PI),
+            (SQRT_2, 0.25 * PI),
+            (-SQRT_2, 0.75 * PI),
             (-1.0, 1.0 * PI),
         ];
         test_trig_fn("ASEC", test_cases);
@@ -481,11 +480,11 @@ mod tests {
 
     #[test]
     fn test_atan2() {
-        let g = &mut NoGrid;
+        let g = Grid::new();
 
-        assert_eq!("0", eval_to_string(g, "ATAN2(1, 0)"));
-        assert!(eval_to_string(g, "ATAN2(0, 1)").starts_with("1.57"));
-        assert!(eval_to_string(g, "ATAN2(1, 2)").starts_with("1.107"));
-        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(g, "ATAN2(0, 0)").msg,);
+        assert_eq!("0", eval_to_string(&g, "ATAN2(1, 0)"));
+        assert!(eval_to_string(&g, "ATAN2(0, 1)").starts_with("1.57"));
+        assert!(eval_to_string(&g, "ATAN2(1, 2)").starts_with("1.107"));
+        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(&g, "ATAN2(0, 0)").msg,);
     }
 }

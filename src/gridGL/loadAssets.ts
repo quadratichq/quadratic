@@ -39,8 +39,8 @@ export function loadAssets(): Promise<void> {
     Loader.shared.add('OpenSans-BoldItalic', '/fonts/opensans/OpenSans-BoldItalic.fnt');
 
     // CellsMarker
-    Loader.shared.add('images/formula-fx-icon.png');
-    Loader.shared.add('images/python-icon.png');
+    Loader.shared.add('/images/formula-fx-icon.png');
+    Loader.shared.add('/images/python-icon.png');
 
     // Wait until pixi fonts are loaded before resolving
     Loader.shared.load(() => ensureBitmapFontLoaded(resolve));

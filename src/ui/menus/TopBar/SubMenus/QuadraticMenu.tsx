@@ -60,7 +60,7 @@ export const QuadraticMenu = () => {
       <Menu
         menuButton={({ open }) => (
           <TopBarMenuItem title="Main menu" open={open}>
-            <img src="/favicon.ico" height="22px" alt="Quadratic Icon" />
+            <img src="/favicon.ico" width="22" height="22" alt="Quadratic Icon" />
           </TopBarMenuItem>
         )}
       >
@@ -121,13 +121,13 @@ export const QuadraticMenu = () => {
         )}
         <SubMenu label={<MenuLineItem primary="Edit" />}>
           {undo.isAvailable(permission) && (
-            <MenuItem onClick={grid.undo}>
+            <MenuItem onClick={() => grid.undo()} disabled={!grid.hasUndo()}>
               <MenuLineItem primary={undo.label} secondary={KeyboardSymbols.Command + 'Z'} />
             </MenuItem>
           )}
           {redo.isAvailable(permission) && (
             <>
-              <MenuItem onClick={grid.redo}>
+              <MenuItem onClick={() => grid.redo()} disabled={!grid.hasRedo()}>
                 <MenuLineItem
                   primary={redo.label}
                   secondary={

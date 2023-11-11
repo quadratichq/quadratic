@@ -1,5 +1,5 @@
-import { ErrorOutline } from '@mui/icons-material';
 import { isWebGLSupported } from '@pixi/utils';
+import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/browser';
 import { Outlet } from 'react-router-dom';
 import { Empty } from '../../components/Empty';
@@ -16,7 +16,7 @@ export function BrowserCompatibilityLayoutRoute() {
       <Empty
         title="Browser not supported"
         description="Your browser does not support WebAssembly or WebGL. We recommend using the latest version of Google Chrome."
-        Icon={ErrorOutline}
+        Icon={ExclamationTriangleIcon}
         severity="error"
       />
     );
