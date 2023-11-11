@@ -7,9 +7,8 @@ import { ROUTES } from '../../constants/routes';
 import { useRootRouteLoaderData } from '../../router';
 import { Button } from '../../shadcn/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '../../shadcn/ui/sheet';
-import { colors } from '../../theme/colors';
-import { ReactComponent as QuadraticLogo } from './quadratic-logo.svg';
-import { ReactComponent as QuadraticLogotype } from './quadratic-logotype.svg';
+import QuadraticLogo from './quadratic-logo.svg';
+import QuadraticLogotype from './quadratic-logotype.svg';
 
 const drawerWidth = 264;
 
@@ -146,9 +145,10 @@ function Navbar() {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <SidebarNavLink to="/" style={{ ...sidebarLinkStyles, paddingRight: theme.spacing(1.5) }} isLogo={true}>
             <div style={{ width: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <QuadraticLogo />
+              <img src={QuadraticLogo} />
             </div>
-            <QuadraticLogotype fill={theme.palette.mode === 'light' ? colors.quadraticFifth : '#fff'} />
+            <img src={QuadraticLogotype} />
+            {/* <QuadraticLogotype /> */}
           </SidebarNavLink>
         </Box>
 

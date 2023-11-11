@@ -4,6 +4,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { ShowAfter } from './components/ShowAfter';
+// @ts-expect-error
 import reportWebVitals from './reportWebVitals';
 import { router } from './router';
 import './shadcn/styles.css';
@@ -11,9 +12,9 @@ import './styles.css';
 import { QuadraticLoading } from './ui/loading/QuadraticLoading';
 
 // Enable sentry only if SENTRY_DSN is in ENV
-if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'none')
+if (import.meta.env.VITE_SENTRY_DSN && import.meta.env.VITE_SENTRY_DSN !== 'none')
   Sentry.init({
-    dsn: process.env.REACT_APP_SENTRY_DSN,
+    dsn: import.meta.env.VITE_SENTRY_DSN,
     integrations: [new BrowserTracing()],
 
     // We recommend adjusting this value in production, or using tracesSampler
@@ -22,7 +23,7 @@ if (process.env.REACT_APP_SENTRY_DSN && process.env.REACT_APP_SENTRY_DSN !== 'no
   });
 
 const container = document.getElementById('root');
-const root = createRoot(container);
+const root = createRoot(container as HTMLElement);
 root.render(
   <React.StrictMode>
     <RouterProvider

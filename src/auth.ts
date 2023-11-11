@@ -3,10 +3,10 @@ import * as Sentry from '@sentry/browser';
 import { LoaderFunction, LoaderFunctionArgs, redirect } from 'react-router-dom';
 import { ROUTES } from './constants/routes';
 
-const AUTH0_DOMAIN = process.env.REACT_APP_AUTH0_DOMAIN || '';
-const AUTH0_CLIENT_ID = process.env.REACT_APP_AUTH0_CLIENT_ID || '';
-const AUTH0_AUDIENCE = process.env.REACT_APP_AUTH0_AUDIENCE;
-const AUTH0_ISSUER = process.env.REACT_APP_AUTH0_ISSUER;
+const AUTH0_DOMAIN = import.meta.env.VITE_AUTH0_DOMAIN || '';
+const AUTH0_CLIENT_ID = import.meta.env.VITE_AUTH0_CLIENT_ID || '';
+const AUTH0_AUDIENCE = import.meta.env.VITE_AUTH0_AUDIENCE;
+const AUTH0_ISSUER = import.meta.env.VITE_AUTH0_ISSUER;
 
 // verify all AUTH0 env variables are set
 if (!(AUTH0_DOMAIN && AUTH0_CLIENT_ID && AUTH0_AUDIENCE && AUTH0_ISSUER)) {

@@ -124,9 +124,9 @@ export const apiClient = {
   },
 
   getApiUrl() {
-    const url = process.env.REACT_APP_QUADRATIC_API_URL;
+    const url = import.meta.env.VITE_QUADRATIC_API_URL;
     if (!url) {
-      const message = 'REACT_APP_QUADRATIC_API_URL env variable is not set.';
+      const message = 'VITE_QUADRATIC_API_URL env variable is not set.';
       Sentry.captureEvent({
         message,
         level: Sentry.Severity.Fatal,

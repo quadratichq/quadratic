@@ -1,16 +1,17 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "module": "esnext",
-    "esModuleInterop": true,
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "esModuleInterop": false,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "lib": ["dom", "dom.iterable", "esnext", "WebWorker"],
-    "allowJs": true,
+    "lib": ["dom", "dom.Iterable", "ESNext", "WebWorker"],
+    "allowJs": false,
     "allowSyntheticDefaultImports": true,
     "noFallthroughCasesInSwitch": true,
-    "moduleResolution": "node",
+    "moduleResolution": "Node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
@@ -21,5 +22,6 @@
     }
   },
   "include": ["src"],
-  "exclude": ["node_modules/*", "src/grid/controller/runners/*", "quadratic-core/*", "quadratic-api/*"]
+  "exclude": ["node_modules/*", "src/grid/controller/runners/*", "quadratic-core/*", "quadratic-api/*"],
+  "references": [{ "path": "./tsconfig.node.json" }]
 }

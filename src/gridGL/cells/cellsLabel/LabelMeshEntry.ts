@@ -12,8 +12,10 @@ export class LabelMeshEntry extends Mesh {
   vertexCount = 0;
   uvsCount = 0;
 
+  // @ts-expect-error
   indices!: Uint16Array;
   vertices!: Float32Array;
+  // @ts-expect-error
   uvs!: Float32Array;
   colors!: Float32Array;
 

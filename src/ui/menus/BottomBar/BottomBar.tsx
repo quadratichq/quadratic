@@ -124,7 +124,7 @@ export const BottomBar = () => {
           </BottomBarItem>
         )}
         <BottomBarItem icon={<Commit fontSize="inherit" />}>
-          Quadratic {process.env.REACT_APP_VERSION?.slice(0, 7)} (BETA)
+          Quadratic {import.meta.env.VITE_VERSION?.slice(0, 7)} (BETA)
         </BottomBarItem>
       </Stack>
     </div>

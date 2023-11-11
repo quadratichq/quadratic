@@ -8,7 +8,7 @@ import { redirect, useLoaderData, useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/apiClient';
 import { SUPPORT_EMAIL } from '../constants/appConstants';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
-import { ReactComponent as QuadraticLogo } from './components/quadratic-logo.svg';
+import QuadraticLogo from './components/quadratic-logo.svg';
 const LOCAL_FILES_KEY = 'file-list';
 
 type Progress = 'uploading' | 'success' | 'fail';
@@ -153,7 +153,7 @@ export const Component = () => {
         textAlign: 'center',
       }}
     >
-      <QuadraticLogo width="53" height="80" />
+      <img src={QuadraticLogo} width="53" height="80" alt="Quadratic logo" />
       <Stack gap={theme.spacing(1)} mb={theme.spacing(1)}>
         <Typography variant="h5" color="text.primary">
           Cloud storage is here

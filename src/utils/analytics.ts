@@ -19,13 +19,13 @@ export function initializeAnalytics({ isAuthenticated, user }: Options) {
 }
 
 function loadGoogleAnalytics() {
-  if (!process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG && process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG !== 'none') {
+  if (!import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG && import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG !== 'none') {
     return;
   }
 
   // set up Google Analytics
   const script_1 = document.createElement('script');
-  script_1.src = `https://www.googletagmanager.com/gtag/js?id=${process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG}`;
+  script_1.src = `https://www.googletagmanager.com/gtag/js?id=${import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG}`;
   script_1.async = true;
 
   const script_2 = document.createElement('script');
@@ -33,7 +33,7 @@ function loadGoogleAnalytics() {
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', '${process.env.REACT_APP_GOOGLE_ANALYTICS_GTAG}');
+        gtag('config', '${import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG}');
       `;
 
   // add google analytics scripts to document
@@ -47,13 +47,13 @@ function loadGoogleAnalytics() {
 
 function initAmplitudeAnalytics(user: Options['user']) {
   if (
-    !process.env.REACT_APP_AMPLITUDE_ANALYTICS_API_KEY &&
-    process.env.REACT_APP_AMPLITUDE_ANALYTICS_API_KEY !== 'none'
+    !import.meta.env.VITE_AMPLITUDE_ANALYTICS_API_KEY &&
+    import.meta.env.VITE_AMPLITUDE_ANALYTICS_API_KEY !== 'none'
   ) {
     return;
   }
 
-  amplitude.init(process.env.REACT_APP_AMPLITUDE_ANALYTICS_API_KEY, user?.sub, {
+  amplitude.init(import.meta.env.VITE_AMPLITUDE_ANALYTICS_API_KEY, user?.sub, {
     defaultTracking: { sessions: true, pageViews: true, formInteractions: true, fileDownloads: true },
   });
 
@@ -61,7 +61,7 @@ function initAmplitudeAnalytics(user: Options['user']) {
 }
 
 export function initMixpanelAnalytics(user: Options['user']) {
-  if (!process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY && process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY !== 'none') {
+  if (!import.meta.env.VITE_MIXPANEL_ANALYTICS_KEY && import.meta.env.VITE_MIXPANEL_ANALYTICS_KEY !== 'none') {
     // Without init Mixpanel, all mixpanel events throw an error and break the app.
     // So we have to init Mixpanel with a fake key, and disable Mixpanel.
     mixpanel.init('FAKE_KEY');
@@ -69,7 +69,7 @@ export function initMixpanelAnalytics(user: Options['user']) {
     return;
   }
 
-  mixpanel.init(process.env.REACT_APP_MIXPANEL_ANALYTICS_KEY, {
+  mixpanel.init(import.meta.env.VITE_MIXPANEL_ANALYTICS_KEY, {
     api_host: 'https://mixpanel-proxy.quadratichq.com',
   });
 
