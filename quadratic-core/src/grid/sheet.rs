@@ -113,25 +113,11 @@ impl Sheet {
         let (column_response, column) = self.get_or_create_column(pos.x);
         let old_value = column.values.set(pos.y, value).unwrap_or_default();
 
-        let unspill = None;
-        // if !is_blank {
-        //     if let Some(source) = column.spills.get(pos.y) {
-        //         self.unspill(source);
-        //         unspill = Some(source);
-        //     }
-        // }
-
-        // TODO: check for new spills, if the cell was deleted
-        let spill = None;
-
         let row_response = self.get_or_create_row(pos.y);
         Some(SetCellResponse {
             column: column_response,
             row: row_response,
             old_value,
-
-            spill,
-            unspill,
         })
     }
 

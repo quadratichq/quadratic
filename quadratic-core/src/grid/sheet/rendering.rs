@@ -22,8 +22,8 @@ impl Sheet {
 
     /// Returns cell data in a format useful for rendering. This includes only
     /// the data necessary to render raw text values.
-    pub fn get_render_cells(&self, region: Rect) -> Vec<JsRenderCell> {
-        let columns_iter = region
+    pub fn get_render_cells(&self, rect: Rect) -> Vec<JsRenderCell> {
+        let columns_iter = rect
             .x_range()
             .filter_map(|x| Some((x, self.get_column(x)?)));
 
@@ -31,7 +31,7 @@ impl Sheet {
         let ordinary_cells = columns_iter.clone().flat_map(|(x, column)| {
             column
                 .values
-                .values_in_range(region.y_range())
+                .values_in_range(rect.y_range())
                 .map(move |(y, value)| (x, y, column, value, None))
         });
 
@@ -39,7 +39,7 @@ impl Sheet {
         let code_output_cells = columns_iter.flat_map(move |(x, column)| {
             column
                 .spills
-                .blocks_of_range(region.y_range())
+                .blocks_of_range(rect.y_range())
                 .filter_map(move |block| {
                     let code_cell_pos = self.cell_ref_to_pos(block.content.value)?;
                     let code_cell = self.code_cells.get(&block.content.value)?;

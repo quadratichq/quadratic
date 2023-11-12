@@ -86,13 +86,21 @@ pub fn update_code_cell_value(
             }
         }
 
-        let updated_code_cell_value = if spill {
-            // spill can only be set if updated_code_cell value is not None
-            let mut updated_code_cell_value = updated_code_cell_value.unwrap();
-            updated_code_cell_value.output.as_mut().unwrap().spill = true;
-            Some(updated_code_cell_value)
+        let updated_code_cell_value = if let Some(cell_value) = updated_code_cell_value {
+            if spill {
+                // spill can only be set if updated_code_cell value is not None
+                let mut updated_code_cell_value = cell_value;
+                updated_code_cell_value.output.as_mut().unwrap().spill = true;
+                Some(updated_code_cell_value)
+            } else if cell_value.spill_error() {
+                let mut updated_code_cell_value = cell_value;
+                updated_code_cell_value.output.as_mut().unwrap().spill = false;
+                Some(updated_code_cell_value)
+            } else {
+                Some(cell_value)
+            }
         } else {
-            updated_code_cell_value
+            None
         };
         let old_code_cell_value = sheet.set_code_cell_value(pos, updated_code_cell_value.clone());
 
@@ -148,7 +156,6 @@ pub fn fetch_code_cell_difference(
             let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
             let column_id = column.id;
 
-            // todo: temporary way of cleaning up deleted spills. There needs to be a spill checker here....
             column.spills.remove_range(Range {
                 start: pos.y,
                 end: pos.y + new_h as i64 + 1,
@@ -175,7 +182,6 @@ pub fn fetch_code_cell_difference(
             let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
             let column_id = column.id;
 
-            // todo: temporary way of cleaning up deleted spills. There needs to be a spill checker here....
             column.spills.remove_range(Range {
                 start: pos.y + new_h as i64,
                 end: pos.y + old_h as i64 + 1,

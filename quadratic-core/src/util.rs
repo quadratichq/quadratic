@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::fmt;
 use std::ops::Range;
 
+use chrono::Utc;
 use itertools::Itertools;
 
 pub(crate) mod btreemap_serde {
@@ -256,6 +257,11 @@ pub fn dbgjs(val: impl fmt::Debug) {
     } else {
         crate::wasm_bindings::js::log(&(format!("{:?}", val)));
     }
+}
+
+pub fn date_string() -> String {
+    let now = Utc::now();
+    now.format("%Y-%m-%d %H:%M:%S").to_string()
 }
 
 #[cfg(test)]

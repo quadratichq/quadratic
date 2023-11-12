@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
     grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Sheet},
+    util::date_string,
     Array, CellValue, Error, ErrorMsg, Pos, Rect, Span, Value,
 };
 
@@ -150,9 +151,7 @@ impl JsCodeResult {
                 result,
                 spill: false,
             }),
-
-            // todo: figure out how to handle modified dates in cells
-            last_modified: String::new(),
+            last_modified: date_string(),
         }
     }
 }

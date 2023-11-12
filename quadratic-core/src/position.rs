@@ -156,6 +156,13 @@ impl Rect {
     pub fn is_empty(&self) -> bool {
         self.width() == 0 && self.height() == 0
     }
+
+    pub fn translate(&mut self, x: i64, y: i64) {
+        self.min.x += x;
+        self.min.y += y;
+        self.max.x += x;
+        self.max.y += y;
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone)]

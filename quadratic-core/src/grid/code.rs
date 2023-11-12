@@ -3,7 +3,7 @@ use strum_macros::{Display, EnumString};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::CellRef;
-use crate::{ArraySize, CellValue, Error, Value};
+use crate::{ArraySize, CellValue, Error, Pos, Rect, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CodeCellValue {
@@ -23,11 +23,26 @@ impl CodeCellValue {
         }
     }
 
+    // todo: output_size outputs a 1x1 for output == None. That seems wrong
     pub fn output_size(&self) -> ArraySize {
         match self.output.as_ref().and_then(|out| out.output_value()) {
             Some(Value::Array(a)) => a.size(),
             Some(Value::Single(_)) | None => ArraySize::_1X1,
         }
+    }
+
+    /// returns a Rect for the output of the code cell if it is an array
+    pub fn output_rect(&self) -> Option<Rect> {
+        self.output.as_ref().is_some().then(|| {
+            let array_size = self.output_size();
+            Rect {
+                min: Pos { x: 0, y: 0 },
+                max: Pos {
+                    x: array_size.w.get() as i64,
+                    y: array_size.h.get() as i64,
+                },
+            }
+        })
     }
 
     pub fn spill_error(&self) -> bool {
@@ -109,5 +124,50 @@ impl CodeCellRunResult {
             CodeCellRunResult::Ok { .. } => true,
             CodeCellRunResult::Err { .. } => false,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{
+        grid::{CodeCellRunOutput, CodeCellValue},
+        Array, ArraySize, Pos, Rect,
+    };
+
+    #[test]
+    fn test_output_size() {
+        let code_cell = CodeCellValue {
+            language: super::CodeCellLanguage::Python,
+            code_string: "1".to_string(),
+            formatted_code_string: None,
+            last_modified: "1".to_string(),
+            output: None,
+        };
+        assert_eq!(code_cell.output_size(), super::ArraySize::_1X1);
+        assert_eq!(code_cell.output_rect(), None);
+
+        let code_cell = CodeCellValue {
+            language: super::CodeCellLanguage::Python,
+            code_string: "1".to_string(),
+            formatted_code_string: None,
+            last_modified: "1".to_string(),
+            output: Some(CodeCellRunOutput {
+                std_out: None,
+                std_err: None,
+                result: super::CodeCellRunResult::Ok {
+                    output_value: crate::Value::Array(Array::new_empty(
+                        ArraySize::new(10, 11).unwrap(),
+                    )),
+                    cells_accessed: vec![],
+                },
+                spill: false,
+            }),
+        };
+        assert_eq!(code_cell.output_size().w.get(), 10);
+        assert_eq!(code_cell.output_size().h.get(), 11);
+        assert_eq!(
+            code_cell.output_rect(),
+            Some(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 10, y: 11 }))
+        );
     }
 }

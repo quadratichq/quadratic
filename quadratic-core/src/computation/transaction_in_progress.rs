@@ -6,6 +6,7 @@ use wasm_bindgen::JsValue;
 use crate::{
     controller::update_code_cell_value::update_code_cell_value,
     grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult},
+    util::date_string,
     Error, ErrorMsg, Span,
 };
 
@@ -143,6 +144,7 @@ impl TransactionInProgress {
                 );
                 return;
             };
+        updated_code_cell_value.last_modified = date_string();
         let msg = ErrorMsg::PythonError(error_msg.clone().into());
         let span = line_number.map(|line_number| Span {
             start: line_number as u32,

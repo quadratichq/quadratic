@@ -98,6 +98,13 @@ impl GridController {
                 )),
             });
         }
+        // blank value
+        else if value.is_empty() {
+            ops.push(Operation::SetCellValues {
+                region: region.clone(),
+                values: Array::from(CellValue::Blank),
+            });
+        }
         // todo: include other types here
         else {
             let values = Array::from(CellValue::Text(value.into()));
