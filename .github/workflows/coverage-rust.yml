@@ -58,6 +58,7 @@ jobs:
         run: cargo test
       - name: Generate coverage
         run: |
+          cd quadratic-core \
           ./target/debug/grcov $(find . -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
