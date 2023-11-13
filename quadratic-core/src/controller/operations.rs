@@ -24,8 +24,6 @@ impl GridController {
         sheets_with_changed_bounds: &mut HashSet<SheetId>,
         compute: bool,
     ) -> Operation {
-        let mut cells_deleted = vec![];
-
         let operation = match op {
             Operation::None => Operation::None,
             Operation::SetCellValues { region, values } => {
@@ -39,7 +37,7 @@ impl GridController {
                     .map(|(cell_ref, value)| {
                         let pos = sheet.cell_ref_to_pos(cell_ref)?;
                         if value.is_blank() {
-                            cells_deleted.push(pos);
+                            cells_to_compute.insert(cell_ref);
                         } else {
                             cells_to_compute.insert(cell_ref);
                         }
