@@ -208,7 +208,7 @@ mod tests {
     }
 
     #[test]
-    fn test_finalize_transaction() {
+    fn test_transactions_finalize_transaction() {
         let mut gc = GridController::new();
         let (operation, operation_undo) = get_operations(&mut gc);
 
@@ -248,7 +248,7 @@ mod tests {
     }
 
     #[test]
-    fn test_undo_redo() {
+    fn test_transactions_undo_redo() {
         let mut gc = GridController::new();
         let (operation, operation_undo) = get_operations(&mut gc);
 
@@ -277,7 +277,7 @@ mod tests {
     }
 
     #[test]
-    fn test_transaction_summary() {
+    fn test_transactions_transaction_summary() {
         let mut gc = GridController::new();
         let summary = gc.transaction_summary();
 
@@ -285,7 +285,7 @@ mod tests {
     }
 
     #[test]
-    fn test_updated_bounds_in_transaction() {
+    fn test_transactions_updated_bounds_in_transaction() {
         let mut gc = GridController::new();
         let (operation, _) = get_operations(&mut gc);
 
@@ -296,5 +296,17 @@ mod tests {
 
         let expected = GridBounds::NonEmpty(Rect::single_pos((0, 0).into()));
         assert_eq!(gc.grid().sheets()[0].bounds(true), expected);
+    }
+
+    #[test]
+    fn test_transactions_cell_hash() {
+        let hash = "test".to_string();
+        let cell_hash = CellHash(hash.clone());
+        assert_eq!(cell_hash.get(), hash);
+
+        let pos = Pos::from((0, 0));
+        let cell_hash = CellHash::from(pos);
+        assert_eq!(cell_hash, CellHash("0,0".into()));
+        println!("{:?}", cell_hash);
     }
 }
