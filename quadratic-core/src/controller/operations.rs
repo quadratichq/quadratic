@@ -345,8 +345,8 @@ mod tests {
         let mut gc = GridController::new();
         let sheet = &mut gc.grid_mut().sheets_mut()[0];
         let (_, column) = sheet.get_or_create_column(0);
-        let column_id = column.id.clone();
-        let sheet_id = sheet.id.clone();
+        let column_id = column.id;
+        let sheet_id = sheet.id;
         let new_size = 100.0;
         let operation = Operation::ResizeColumn {
             sheet_id,
@@ -372,8 +372,8 @@ mod tests {
         let mut gc = GridController::new();
         let sheet = &mut gc.grid_mut().sheets_mut()[0];
         let row = sheet.get_or_create_row(0);
-        let row_id = row.id.clone();
-        let sheet_id = sheet.id.clone();
+        let row_id = row.id;
+        let sheet_id = sheet.id;
         let new_size = 100.0;
         let operation = Operation::ResizeRow {
             sheet_id,

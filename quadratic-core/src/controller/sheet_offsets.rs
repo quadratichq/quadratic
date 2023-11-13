@@ -40,3 +40,28 @@ impl GridController {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_commit_offsets_resize() {
+        let mut gc = GridController::new();
+        let sheet = &mut gc.grid_mut().sheets_mut()[0];
+        let sheet_id = sheet.id;
+        let old_size = 100.0;
+        let new_size = 200.0;
+
+        let transient_resize = TransientResize {
+            column: Some(0),
+            row: Some(0),
+            old_size,
+            new_size,
+        };
+
+        assert_eq!(old_size, gc.grid.sheets()[0].offsets.column_width(0));
+        gc.commit_offsets_resize(sheet_id, Some(transient_resize), None);
+        assert_eq!(new_size, gc.grid.sheets()[0].offsets.column_width(0));
+    }
+}
