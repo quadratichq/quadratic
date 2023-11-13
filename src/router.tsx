@@ -95,11 +95,23 @@ export const router = createBrowserRouter(
             <Route path={ROUTES.EXAMPLES} lazy={() => import('./dashboard/files/ExamplesRoute')} />
             <Route path={ROUTES.TEAMS} lazy={() => import('./dashboard/TeamsRoute')} />
             <Route path={ROUTES.ACCOUNT} lazy={() => import('./dashboard/AccountRoute')} />
-            <Route path={ROUTES.CONNECTIONS} lazy={() => import('./dashboard/connections/ConnectionsRoute')} />
-            <Route
-              path={ROUTES.CONNECTIONS_SUPPORTED}
+            {/* <Route path={ROUTES.CONNECTIONS} lazy={() => import('./dashboard/connections/ConnectionsRoute')} /> */}
+            {/* <Route
+              path={ROUTES.CONNECTIONS_CREATE}
               lazy={() => import('./dashboard/connections/SupportedConnectionsRoute')}
             />
+            <Route
+              path={ROUTES.CONNECTIONS_CREATE_TYPE}
+              lazy={() => import('./dashboard/connections/SupportedConnectionsRoute')}
+            /> */}
+
+            <Route path="connections">
+              <Route index lazy={() => import('./dashboard/connections/ConnectionsRoute')} />
+              <Route path={'create'} lazy={() => import('./dashboard/connections/SupportedConnectionsRoute')}>
+                <Route path={':type'} lazy={() => import('./dashboard/connections/SupportedConnectionsRoute')} />
+              </Route>
+              <Route path=":uuid" lazy={() => import('./dashboard/FileRoute')} />
+            </Route>
           </Route>
 
           <Route // TODO: remove route

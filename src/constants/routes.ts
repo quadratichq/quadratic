@@ -13,7 +13,8 @@ export const ROUTES = {
   ACCOUNT: '/account',
   FILE: (uuid: string) => `/file/${uuid}`,
   CONNECTIONS: '/connections',
-  CONNECTIONS_SUPPORTED: '/connections/supported',
+  CONNECTIONS_CREATE: '/connections/create',
+  CONNECTIONS_CREATE_TYPE: (type: 'postgres' | 'etc') => `/connections/create/${type}`, // TODO: Pull types from backend
 };
 
 export const ROUTE_LOADER_IDS = {

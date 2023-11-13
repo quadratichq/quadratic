@@ -27,14 +27,14 @@ export const Component = () => {
               variant="contained"
               disableElevation
               component={Link}
-              to={ROUTES.CONNECTIONS_SUPPORTED}
+              to={ROUTES.CONNECTIONS_CREATE}
             >
               Add Connection
             </Button>
           </div>
         }
       ></DashboardHeader>
-      <ConnectionsListComponent connections={connections} />;
+      <ConnectionsListComponent connections={connections} />
     </>
   );
 };
