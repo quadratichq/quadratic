@@ -45,7 +45,12 @@ jobs:
           cargo --version --verbose
           rustc --version
           cargo clippy --version
-          
+
+      - name: Run Clippy
+        run: |
+          cd quadratic-core
+          cargo clippy --all-targets --all-features -- -D warnings
+      #      cargo fmt -- --check
 
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
