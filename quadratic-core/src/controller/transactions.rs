@@ -175,7 +175,10 @@ impl From<Pos> for CellHash {
 
 #[cfg(test)]
 mod tests {
-    use crate::{grid::SheetId, Array, CellValue, Pos, Rect};
+    use crate::{
+        grid::{GridBounds, SheetId},
+        Array, CellValue, Pos, Rect,
+    };
 
     use super::*;
 
@@ -194,14 +197,20 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_finalize_transaction() {
-        let mut gc = GridController::new();
+    fn get_operations(gc: &mut GridController) -> (Operation, Operation) {
         let sheet_id = gc.sheet_ids()[0];
         let pos = Pos::from((0, 0));
         let value = CellValue::Text("test".into());
-        let operation = add_cell_value(&mut gc, sheet_id, pos, value);
-        let operation_undo = add_cell_value(&mut gc, sheet_id, pos, CellValue::Blank);
+        let operation = add_cell_value(gc, sheet_id, pos, value);
+        let operation_undo = add_cell_value(gc, sheet_id, pos, CellValue::Blank);
+
+        (operation, operation_undo)
+    }
+
+    #[test]
+    fn test_finalize_transaction() {
+        let mut gc = GridController::new();
+        let (operation, operation_undo) = get_operations(&mut gc);
 
         // TransactionType::Normal
         let transaction_in_progress = TransactionInProgress::new(
@@ -241,11 +250,7 @@ mod tests {
     #[test]
     fn test_undo_redo() {
         let mut gc = GridController::new();
-        let sheet_id = gc.sheet_ids()[0];
-        let pos = Pos::from((0, 0));
-        let value = CellValue::Text("test".into());
-        let operation = add_cell_value(&mut gc, sheet_id, pos, value);
-        let operation_undo = add_cell_value(&mut gc, sheet_id, pos, CellValue::Blank);
+        let (operation, operation_undo) = get_operations(&mut gc);
 
         assert_eq!(gc.has_undo(), false);
         assert_eq!(gc.has_redo(), false);
@@ -256,21 +261,40 @@ mod tests {
             false,
             TransactionType::Normal,
         );
-
         assert_eq!(gc.has_undo(), true);
         assert_eq!(gc.has_redo(), false);
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].ops);
 
         // undo
         gc.undo(None);
-
         assert_eq!(gc.has_undo(), false);
         assert_eq!(gc.has_redo(), true);
 
-        // undo
+        // redo
         gc.redo(None);
-
         assert_eq!(gc.has_undo(), true);
         assert_eq!(gc.has_redo(), false);
+    }
+
+    #[test]
+    fn test_transaction_summary() {
+        let mut gc = GridController::new();
+        let summary = gc.transaction_summary();
+
+        assert!(summary.is_none());
+    }
+
+    #[test]
+    fn test_updated_bounds_in_transaction() {
+        let mut gc = GridController::new();
+        let (operation, _) = get_operations(&mut gc);
+
+        assert_eq!(gc.grid().sheets()[0].bounds(true), GridBounds::Empty);
+
+        gc.set_in_progress_transaction(vec![operation], None, true, TransactionType::Normal);
+        gc.updated_bounds_in_transaction();
+
+        let expected = GridBounds::NonEmpty(Rect::single_pos((0, 0).into()));
+        assert_eq!(gc.grid().sheets()[0].bounds(true), expected);
     }
 }
