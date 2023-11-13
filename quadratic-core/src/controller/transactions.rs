@@ -237,4 +237,40 @@ mod tests {
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].ops);
         assert_eq!(gc.redo_stack[0].ops.len(), 0);
     }
+
+    #[test]
+    fn test_undo_redo() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let pos = Pos::from((0, 0));
+        let value = CellValue::Text("test".into());
+        let operation = add_cell_value(&mut gc, sheet_id, pos, value);
+        let operation_undo = add_cell_value(&mut gc, sheet_id, pos, CellValue::Blank);
+
+        assert_eq!(gc.has_undo(), false);
+        assert_eq!(gc.has_redo(), false);
+
+        gc.set_in_progress_transaction(
+            vec![operation.clone()],
+            None,
+            false,
+            TransactionType::Normal,
+        );
+
+        assert_eq!(gc.has_undo(), true);
+        assert_eq!(gc.has_redo(), false);
+        assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].ops);
+
+        // undo
+        gc.undo(None);
+
+        assert_eq!(gc.has_undo(), false);
+        assert_eq!(gc.has_redo(), true);
+
+        // undo
+        gc.redo(None);
+
+        assert_eq!(gc.has_undo(), true);
+        assert_eq!(gc.has_redo(), false);
+    }
 }
