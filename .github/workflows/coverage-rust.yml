@@ -8,14 +8,15 @@ on:
 
 jobs:
   test-coverage:
-    name: Test coverage (gcc-11, clang-13)
+    name: Test coverage
     runs-on: ubuntu-latest-4-cores
     env:
-      CXX: clang++-13
-      CLANG_CXX: clang++-13
-      GCC_CXX: g++-11
-      GCOV: gcov-11
+      CXX: clang++-11
+      CLANG_CXX: clang++-11
+      GCC_CXX: g++-10
+      GCOV: gcov-10
     continue-on-error: true
+
     steps:
       - name: Prepare C toolchains
         run: |
@@ -26,17 +27,20 @@ jobs:
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test
           sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-11 main'
           sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-12 main'
-          sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main'
+          sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-11 main'
 
           # Install toolchains
           sudo apt-get update
-          sudo apt-get install -y clang-13 g++-11
+          sudo apt-get install -y clang-11 g++-10
+
       - name: Checkout repository
         uses: actions/checkout@v3
+
       - name: Setup Rust
         run: |
           rustup toolchain add nightly --component llvm-tools-preview
           rustup override set nightly
+
       - name: Configure cache
         uses: actions/cache@v3
         with:
@@ -45,14 +49,16 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-            target/
-          key: test-${{ runner.os }}-cargo-gcc-11-clang-13-${{ hashFiles('**/Cargo.lock') }}
+            quadratic-core/target/
+          key: test-${{ runner.os }}-cargo-gcc-10-clang-11-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Build
         env:
           RUSTFLAGS: -Cinstrument-coverage
         run: |
           cd quadratic-core
           cargo build
+
       - name: Test
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
@@ -60,6 +66,7 @@ jobs:
         run: |
           cd quadratic-core
           cargo test
+
       - name: Generate coverage
         run: |
           cd quadratic-core
