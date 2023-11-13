@@ -21,9 +21,9 @@ import { Theme } from './components/Theme';
 import { SUPPORT_EMAIL } from './constants/appConstants';
 import { ROUTES, ROUTE_LOADER_IDS } from './constants/routes';
 import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
+import * as Create from './dashboard/FilesCreateRoute';
 import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
 import { action as filesAction } from './dashboard/components/FilesList';
-import * as Create from './dashboard/files/CreateRoute';
 import { Button } from './shadcn/ui/button';
 import { initializeAnalytics } from './utils/analytics';
 // @ts-expect-error - for testing purposes
@@ -91,9 +91,8 @@ export const router = createBrowserRouter(
           />
 
           <Route lazy={() => import('./dashboard/components/DashboardLayoutRoute')}>
-            <Route path={ROUTES.FILES} element={<Navigate to={ROUTES.MY_FILES} replace />} />
-            <Route path={ROUTES.MY_FILES} lazy={() => import('./dashboard/files/MineRoute')} />
-            <Route path={ROUTES.EXAMPLES} lazy={() => import('./dashboard/files/ExamplesRoute')} />
+            <Route path={ROUTES.FILES} lazy={() => import('./dashboard/FilesRoute')} />
+            <Route path={ROUTES.EXAMPLES} lazy={() => import('./dashboard/ExamplesRoute')} />
             <Route path={ROUTES.TEAMS} lazy={() => import('./dashboard/TeamsRoute')} />
             <Route path={ROUTES.ACCOUNT} lazy={() => import('./dashboard/AccountRoute')} />
           </Route>

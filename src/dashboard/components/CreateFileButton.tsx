@@ -4,7 +4,7 @@ import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
 import { Button } from '../../shadcn/ui/button';
-import { CreateActionRequest } from '../files/CreateRoute';
+import { CreateActionRequest } from '../FilesCreateRoute';
 
 // TODO this will need props when it becomes a button that can be used
 // on the team page as well as the user's files page

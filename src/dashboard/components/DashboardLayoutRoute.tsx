@@ -103,7 +103,7 @@ function Navbar() {
         </Box>
 
         <div className="mt-4 grid gap-1">
-          <SidebarNavLink to={ROUTES.MY_FILES} style={sidebarLinkStyles}>
+          <SidebarNavLink to={ROUTES.FILES} style={sidebarLinkStyles}>
             <FileIcon className="h-5 w-5" />
             <Typography variant="body2" color="text.primary">
               My files

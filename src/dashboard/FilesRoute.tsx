@@ -1,12 +1,12 @@
 import { Box, useTheme } from '@mui/material';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
-import { apiClient } from '../../api/apiClient';
-import { Empty } from '../../components/Empty';
-import { debugShowUILogs } from '../../debugFlags';
-import CreateFileButton from '../components/CreateFileButton';
-import { DashboardHeader } from '../components/DashboardHeader';
-import { FilesList } from '../components/FilesList';
+import { apiClient } from '../api/apiClient';
+import { Empty } from '../components/Empty';
+import { debugShowUILogs } from '../debugFlags';
+import CreateFileButton from './components/CreateFileButton';
+import { DashboardHeader } from './components/DashboardHeader';
+import { FilesList } from './components/FilesList';
 
 export type ListFile = Awaited<ReturnType<typeof apiClient.getFiles>>[0];
 type LoaderResponse = ListFile[];

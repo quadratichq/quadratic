@@ -42,7 +42,7 @@ export const TopBarFileMenu = () => {
                   '&:hover a': { color: theme.palette.text.primary },
                 }}
               >
-                <Link to={ROUTES.MY_FILES} reloadDocument style={{ textDecoration: 'none' }}>
+                <Link to={ROUTES.FILES} reloadDocument style={{ textDecoration: 'none' }}>
                   My files
                 </Link>
               </Typography>
