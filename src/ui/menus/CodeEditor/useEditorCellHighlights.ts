@@ -81,11 +81,6 @@ export const useEditorCellHighlights = (
       const modelValue = editor.getValue();
 
       const parsedFormula = (await parse_formula(modelValue, 0, 0)) as ParseFormulaReturnType;
-      pixiApp.highlightedCells.fromFormula(
-        parsedFormula,
-        editorInteractionState.selectedCell,
-        editorInteractionState.selectedCellSheet
-      );
 
       pixiApp.highlightedCells.fromFormula(
         parsedFormula,
@@ -126,21 +121,19 @@ export const useEditorCellHighlights = (
 
       // todo: this should use editor.createDecorationCollection() instead
       const decorationsIds = editor.deltaDecorations(oldDecorations, newDecorations);
-      // setStateOnChangedMatches(oldCellsMatches, cellsMatches);
-
       oldDecorations = decorationsIds;
-      // oldCellsMatches = cellsMatches;
     };
 
-    onChangeModel();
-    editor.onDidChangeModelContent(onChangeModel);
-
-    // function setStateOnChangedMatches(oldCellsMatches: CellMatch, cellsMatches: CellMatch) {
-    //   // setting the state on each interaction takes too long and makes the input laggy
-    //   pixiApp.highlightedCells.clear();
-    //   cellsMatches.forEach((range, cellRefId) => {});
-    //   if (compareOldToNewMatches(oldCellsMatches, cellsMatches)) return;
-    //   // setEditorHighlightedCells({ highlightedCells: cellsMatches, selectedCell });
-    // }
-  }, [isValidRef, editorRef, monacoRef, editorInteractionState.selectedCell, editorInteractionState.selectedCellSheet]);
+    if (language === 'FORMULA') {
+      onChangeModel();
+      editor.onDidChangeModelContent(onChangeModel);
+    }
+  }, [
+    isValidRef,
+    editorRef,
+    monacoRef,
+    editorInteractionState.selectedCell,
+    editorInteractionState.selectedCellSheet,
+    language,
+  ]);
 };
