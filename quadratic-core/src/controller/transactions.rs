@@ -179,7 +179,7 @@ mod tests {
 
     use super::*;
 
-    fn _add_cell_value(
+    fn add_cell_value(
         gc: &mut GridController,
         sheet_id: SheetId,
         pos: Pos,
@@ -194,12 +194,47 @@ mod tests {
         }
     }
 
-    fn _add_cell_text(
-        gc: &mut GridController,
-        sheet_id: SheetId,
-        pos: Pos,
-        value: &str,
-    ) -> Operation {
-        _add_cell_value(gc, sheet_id, pos, CellValue::Text(value.into()))
+    #[test]
+    fn test_finalize_transaction() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let pos = Pos::from((0, 0));
+        let value = CellValue::Text("test".into());
+        let operation = add_cell_value(&mut gc, sheet_id, pos, value);
+        let operation_undo = add_cell_value(&mut gc, sheet_id, pos, CellValue::Blank);
+
+        // TransactionType::Normal
+        let transaction_in_progress = TransactionInProgress::new(
+            &mut gc,
+            vec![operation.clone()],
+            None,
+            false,
+            TransactionType::Normal,
+        );
+        gc.finalize_transaction(&transaction_in_progress);
+
+        assert_eq!(gc.undo_stack.len(), 1);
+        assert_eq!(gc.redo_stack.len(), 0);
+        assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].ops);
+
+        // TransactionType::Undo
+        let transaction_in_progress =
+            TransactionInProgress::new(&mut gc, vec![], None, false, TransactionType::Undo);
+        gc.finalize_transaction(&transaction_in_progress);
+
+        assert_eq!(gc.undo_stack.len(), 1);
+        assert_eq!(gc.redo_stack.len(), 1);
+        assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].ops);
+        assert_eq!(gc.redo_stack[0].ops.len(), 0);
+
+        // TransactionType::Redo
+        let transaction_in_progress =
+            TransactionInProgress::new(&mut gc, vec![], None, false, TransactionType::Redo);
+        gc.finalize_transaction(&transaction_in_progress);
+
+        assert_eq!(gc.undo_stack.len(), 2);
+        assert_eq!(gc.redo_stack.len(), 1);
+        assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].ops);
+        assert_eq!(gc.redo_stack[0].ops.len(), 0);
     }
 }

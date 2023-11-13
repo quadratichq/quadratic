@@ -228,7 +228,7 @@ impl_set_cell_fmt_method!(set_cell_text_color<TextColor>(CellFmtArray::TextColor
 impl_set_cell_fmt_method!(set_cell_fill_color<FillColor>(CellFmtArray::FillColor));
 
 /// Array of a single cell formatting attribute.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum CellFmtArray {
     Align(RunLengthEncoding<Option<CellAlign>>),
     Wrap(RunLengthEncoding<Option<CellWrap>>),
