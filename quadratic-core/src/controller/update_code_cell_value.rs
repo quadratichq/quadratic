@@ -8,7 +8,7 @@ use crate::{
         transaction_summary::{CellSheetsModified, TransactionSummary},
         GridController,
     },
-    grid::{CellRef, CodeCellValue, Sheet},
+    grid::{CellRef, CodeCellValue, SheetId},
     Pos, Value,
 };
 
@@ -24,7 +24,8 @@ pub fn update_code_cell_value(
 ) -> bool {
     let mut success = false;
     summary.save = true;
-    let sheet = grid_controller.grid.sheet_mut_from_id(cell_ref.sheet);
+    let sheet_id = cell_ref.sheet.clone();
+    let sheet = grid_controller.grid.sheet_mut_from_id(sheet_id);
     if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
         let mut spill = false;
         if let Some(updated_code_cell_value) = updated_code_cell_value.clone() {
@@ -105,12 +106,14 @@ pub fn update_code_cell_value(
         let old_code_cell_value = sheet.set_code_cell_value(pos, updated_code_cell_value.clone());
 
         fetch_code_cell_difference(
-            sheet,
+            grid_controller,
+            sheet_id,
             pos,
             old_code_cell_value.clone(),
             updated_code_cell_value,
             summary,
             cells_to_compute,
+            reverse_operations,
         );
 
         reverse_operations.push(Operation::SetCellCode {
@@ -118,7 +121,7 @@ pub fn update_code_cell_value(
             code_cell_value: old_code_cell_value,
         });
 
-        summary.code_cells_modified.insert(sheet.id);
+        summary.code_cells_modified.insert(sheet_id);
 
         grid_controller.check_spill(
             cell_ref.into(),
@@ -133,13 +136,16 @@ pub fn update_code_cell_value(
 
 /// Fetches the difference between the old and new code cell values and updates the UI
 pub fn fetch_code_cell_difference(
-    sheet: &mut Sheet,
+    grid_controller: &mut GridController,
+    sheet_id: SheetId,
     pos: Pos,
     old_code_cell_value: Option<CodeCellValue>,
     new_code_cell_value: Option<CodeCellValue>,
     summary: &mut TransactionSummary,
     cells_to_compute: &mut IndexSet<CellRef>,
+    reverse_operations: &mut Vec<Operation>,
 ) {
+    let sheet = grid_controller.grid.sheet_mut_from_id(sheet_id);
     let (old_w, old_h) = if let Some(old_code_cell_value) = old_code_cell_value {
         if old_code_cell_value.spill_error() {
             (1, 1)
@@ -161,11 +167,14 @@ pub fn fetch_code_cell_difference(
         (0, 0)
     };
 
+    let mut possible_spills = vec![];
+
     if old_w > new_w {
         for x in new_w..old_w {
             let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
             let column_id = column.id;
 
+            sheet.remove_spills
             column.spills.remove_range(Range {
                 start: pos.y,
                 end: pos.y + new_h as i64 + 1,
@@ -178,12 +187,16 @@ pub fn fetch_code_cell_difference(
                 };
                 summary
                     .cell_sheets_modified
-                    .insert(CellSheetsModified::new(sheet.id, pos));
-                cells_to_compute.insert(CellRef {
-                    sheet: sheet.id,
+                    .insert(CellSheetsModified::new(sheet_id, pos));
+                let cell_ref = CellRef {
+                    sheet: sheet_id,
                     column: column_id,
                     row: row_id,
-                });
+                };
+                cells_to_compute.insert(cell_ref.clone());
+                if y <= old_h {
+                    possible_spills.push(cell_ref);
+                }
             }
         }
     }
@@ -192,9 +205,16 @@ pub fn fetch_code_cell_difference(
             let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
             let column_id = column.id;
 
-            column.spills.remove_range(Range {
+            // only remove the spill range when cell_value = this
+            for y in (pos.y + new_h as i64)..(pos.y + old_h as i64) {
+                if column.spills.get(y).is_some_and(|c| c != cell_ref) {
+                    column.spills.remove_range(y.into());
+                }
+            }
+            column.spills.remove_range_cell_ref(Range {
                 start: pos.y + new_h as i64,
                 end: pos.y + old_h as i64 + 1,
+                cell_ref,
             });
             for y in new_h..old_h {
                 let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
@@ -204,15 +224,27 @@ pub fn fetch_code_cell_difference(
                 };
                 summary
                     .cell_sheets_modified
-                    .insert(CellSheetsModified::new(sheet.id, pos));
-                cells_to_compute.insert(CellRef {
-                    sheet: sheet.id,
+                    .insert(CellSheetsModified::new(sheet_id, pos));
+                let cell_ref = CellRef {
+                    sheet: sheet_id,
                     column: column_id,
                     row: row_id,
-                });
+                };
+                cells_to_compute.insert(cell_ref.clone());
+                possible_spills.push(cell_ref);
             }
         }
     }
+
+    // check for released spills
+    possible_spills.iter().for_each(|cell_ref| {
+        grid_controller.check_release_spill(
+            *cell_ref,
+            cells_to_compute,
+            summary,
+            reverse_operations,
+        );
+    });
 }
 
 #[cfg(test)]
@@ -224,7 +256,7 @@ mod test {
             transaction_summary::TransactionSummary,
             update_code_cell_value::fetch_code_cell_difference, GridController,
         },
-        grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellValue, Sheet},
+        grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellValue},
         Array, ArraySize, CellValue, Pos, SheetPos, Value,
     };
 
@@ -232,7 +264,9 @@ mod test {
 
     #[test]
     fn test_fetch_code_cell_difference() {
-        let mut sheet = Sheet::test();
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.grid.sheet_mut_from_id(sheet_id);
 
         let old = Some(CodeCellValue {
             language: CodeCellLanguage::Python,
@@ -278,14 +312,16 @@ mod test {
         let mut summary = TransactionSummary::default();
 
         let mut cells_to_compute = IndexSet::new();
-
+        let mut reverse_operations = Vec::new();
         fetch_code_cell_difference(
-            &mut sheet,
+            &mut gc,
+            sheet_id,
             sheet_pos.into(),
             old.clone(),
             new_smaller,
             &mut summary,
             &mut cells_to_compute,
+            &mut reverse_operations,
         );
         assert_eq!(summary.cell_sheets_modified.len(), 1);
 
@@ -310,12 +346,14 @@ mod test {
         });
 
         super::fetch_code_cell_difference(
-            &mut sheet,
+            &mut gc,
+            sheet_id,
             sheet_pos.into(),
             old,
             new_larger,
             &mut summary,
             &mut cells_to_compute,
+            &mut reverse_operations,
         );
         assert_eq!(summary.cell_sheets_modified.len(), 0);
     }

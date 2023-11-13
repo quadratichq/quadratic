@@ -22,14 +22,6 @@ impl Sheet {
             if let Some(output) = code_cell.output.as_ref() {
                 match output.output_value() {
                     Some(output_value) => {
-                        // if there is already a spill here, the 0,0 will cause that code_cell to have a spill error
-                        if let Some(column) = self.get_column(pos.x) {
-                            if let Some(spill) = column.spills.get(pos.y) {
-                                if spill != cell_ref {
-                                    self.set_spill_error(spill);
-                                }
-                            }
-                        }
                         match output_value {
                             Value::Single(_) => {
                                 let (_, column) = self.get_or_create_column(pos.x);
@@ -62,8 +54,12 @@ impl Sheet {
                         column.spills.set(pos.y, Some(cell_ref));
                     }
                 }
+            } else {
+                let (_, column) = self.get_or_create_column(pos.x);
+                column.spills.set(pos.y, Some(cell_ref));
             }
             self.code_cells.insert(cell_ref, code_cell);
+        } else {
         }
         old
     }
@@ -87,6 +83,12 @@ impl Sheet {
             (pos.x - code_cell_pos.x) as u32,
             (pos.y - code_cell_pos.y) as u32,
         )
+    }
+
+    pub fn get_spill(&self, cell_ref: CellRef) -> Option<CellRef> {
+        let pos = self.cell_ref_to_pos(cell_ref)?;
+        let column = self.get_column(pos.x)?;
+        column.spills.get(pos.y)
     }
 
     /// Returns an iterator over all locations containing code cells that may
@@ -113,14 +115,30 @@ impl Sheet {
         self.code_cells.keys().copied()
     }
 
-    /// Adds a spill to a code_cell
-    pub fn set_spill_error(&mut self, cell_ref: CellRef) {
-        if let Some(code_cell) = self.code_cells.get_mut(&cell_ref) {
-            if let Some(output) = code_cell.output.as_mut() {
-                output.spill = true;
-            }
-        }
-    }
+    /// Adds a spill error to a code_cell and removes
+    /// todo: this is wrong
+    // pub fn set_spill_error(&mut self, spill_error: CellRef) {
+    //     if let Some(pos) = self.cell_ref_to_pos(spill_error) {
+    //         if let Some(code_cell) = self.code_cells.get_mut(&spill_error) {
+    //             if let Some(output) = code_cell.output.as_mut() {
+    //                 if output.spill == false {
+    //                     output.spill = true;
+    //                     let output_size = code_cell.output_size();
+    //                     for x in pos.x..output_size.w.get() as i64 {
+    //                         let (_, column) = self.get_or_create_column(x);
+    //                         for y in pos.y..output_size.h.get() as i64 {
+    //                             if let Some(spill) = column.spills.get(y) {
+    //                                 if spill == spill_error {
+    //                                     column.spills.set(y, None);
+    //                                 }
+    //                             }
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
     /// Checks if the deletion of a cell or a code_cell released a spill error; sorted by earliest last_modified
     /// Returns the cell_ref and the code_cell_value if it did

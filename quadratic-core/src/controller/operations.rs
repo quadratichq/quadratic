@@ -89,10 +89,13 @@ impl GridController {
                 code_cell_value,
             } => {
                 let empty_code_cell = code_cell_value.as_ref().is_none();
+                let sheet_id = cell_ref.sheet.clone();
 
-                sheets_with_changed_bounds.insert(cell_ref.sheet);
+                sheets_with_changed_bounds.insert(sheet_id);
 
-                let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
+                let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                let old_spill = sheet.get_spill(cell_ref);
+
                 let old_code_cell_value = sheet.get_code_cell_from_ref(cell_ref).cloned();
                 let pos = if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
                     pos
@@ -101,6 +104,7 @@ impl GridController {
                 };
 
                 // for compute, we keep the original cell output to avoid flashing of output (since values will be overridden once computation is complete)
+                let sheet = self.grid.sheet_mut_from_id(sheet_id);
                 if compute {
                     if let Some(code_cell_value) = code_cell_value {
                         let updated_code_cell_value =
@@ -119,21 +123,39 @@ impl GridController {
                 } else {
                     // need to update summary (cells_to_compute will be ignored)
                     fetch_code_cell_difference(
-                        sheet,
+                        self,
+                        sheet_id,
                         pos,
                         old_code_cell_value.clone(),
                         code_cell_value.clone(),
                         summary,
                         cells_to_compute,
+                        &mut reverse_operations,
                     );
+                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
                     sheet.set_code_cell_value(pos, code_cell_value.clone());
                 }
 
                 summary
                     .cell_sheets_modified
-                    .insert(CellSheetsModified::new(sheet.id, pos));
-                summary.code_cells_modified.insert(cell_ref.sheet);
+                    .insert(CellSheetsModified::new(sheet_id, pos));
+                summary.code_cells_modified.insert(sheet_id);
 
+                // check if a new code_cell causes a spill error in another code cell
+                if old_code_cell_value.is_none() && !empty_code_cell {
+                    if let Some(old_spill) = old_spill {
+                        if old_spill != cell_ref {
+                            self.set_spill_error(
+                                old_spill,
+                                cells_to_compute,
+                                summary,
+                                &mut reverse_operations,
+                            );
+                        }
+                    }
+                }
+
+                // check if deleting a code cell releases a spill
                 if empty_code_cell {
                     self.check_release_spill(
                         cell_ref,
@@ -141,8 +163,6 @@ impl GridController {
                         summary,
                         &mut reverse_operations,
                     );
-                } else {
-                    self.check_spill(cell_ref, cells_to_compute, summary, &mut reverse_operations);
                 }
 
                 reverse_operations.push(Operation::SetCellCode {

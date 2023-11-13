@@ -18,21 +18,14 @@ impl GridController {
         summary: &mut TransactionSummary,
         reverse_operations: &mut Vec<Operation>,
     ) {
-        // check if the change in a cell causes a spill or release of a spill error
+        // check if the addition of a cell causes a spill error
         let sheet = self.grid.sheet_from_id(cell_ref.sheet);
         if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
             if let Some(column) = sheet.get_column(pos.x) {
                 if let Some(code_cell_ref) = column.spills.get(pos.y) {
-                    if let Some(code_cell) = sheet.get_code_cell_from_ref(code_cell_ref) {
-                        let array_size = code_cell.output_size();
-                        let w = array_size.w.get();
-                        let h = array_size.h.get();
-                        // if the code_cell has an array output, then its spill status may change
-                        if w > 1 || h > 1 {
-                            let should_spill = sheet.spilled(code_cell_ref, w, h);
-                            if (should_spill && !code_cell.spill_error())
-                                || (!should_spill && code_cell.spill_error())
-                            {
+                    if code_cell_ref != cell_ref {
+                        if let Some(code_cell) = sheet.get_code_cell_from_ref(code_cell_ref) {
+                            if !code_cell.spill_error() {
                                 update_code_cell_value(
                                     self,
                                     code_cell_ref,
@@ -47,6 +40,29 @@ impl GridController {
                 }
             }
         };
+    }
+
+    /// sets a spill error for a code_cell
+    pub fn set_spill_error(
+        &mut self,
+        cell_ref: CellRef,
+        cells_to_compute: &mut IndexSet<CellRef>,
+        summary: &mut TransactionSummary,
+        reverse_operations: &mut Vec<Operation>,
+    ) {
+        let sheet = self.grid.sheet_from_id(cell_ref.sheet);
+        if let Some(code_cell) = sheet.get_code_cell_from_ref(cell_ref) {
+            if !code_cell.spill_error() {
+                update_code_cell_value(
+                    self,
+                    cell_ref,
+                    Some(code_cell.clone()),
+                    cells_to_compute,
+                    reverse_operations,
+                    summary,
+                );
+            }
+        }
     }
 
     /// check if the deletion of a cell released a spill error
