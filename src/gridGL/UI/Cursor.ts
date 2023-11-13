@@ -91,7 +91,7 @@ export class Cursor extends Graphics {
     this.lineTo(x, y + height);
     this.lineTo(x, y);
 
-    if (showInput && cellEdit && sheets.sheet.id === editorInteractionState.selectedCellSheet) {
+    if (showInput && cellEdit) {
       this.lineStyle({
         width: CURSOR_THICKNESS * 1.5,
         color,
@@ -172,7 +172,6 @@ export class Cursor extends Graphics {
       color,
       alignment: 0.5,
     });
-
     this.drawRect(x, y, width, height);
   }
 
@@ -230,12 +229,12 @@ export class Cursor extends Graphics {
       this.dirty = false;
       this.clear();
       this.drawCursor();
+      this.drawCodeCursor();
+      this.drawEditorHighlightedCells();
 
       if (!pixiAppSettings.input.show) {
         this.drawMultiCursor();
-        this.drawCodeCursor();
         this.drawCursorIndicator();
-        this.drawEditorHighlightedCells();
       }
 
       pixiApp.setViewportDirty();

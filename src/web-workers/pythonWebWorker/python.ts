@@ -22,7 +22,7 @@ class PythonWebWorker {
             ]);
           } else {
             pythonResult.array_output = pythonResult.array_output.map((entry: (string | number)[]) =>
-              entry.map((entry: String | number) => entry.toString())
+              entry.map((entry: String | number) => (entry ? entry.toString() : ''))
             );
 
             // ensure that the 2d array has equally sized rows
