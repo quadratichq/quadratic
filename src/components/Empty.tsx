@@ -23,9 +23,9 @@ export function Empty({
       >
         <Icon className={clsx(`h-[30px] w-[30px]`, severity === 'error' && 'text-destructive')} />
       </div>
-      <h4 className={`${TYPE.h4} mb-1 ${severity === 'error' && 'text-destructive'}`}>{title}</h4>
+      <h4 className={clsx(TYPE.h4, `mb-1`, severity === 'error' && 'text-destructive')}>{title}</h4>
 
-      <p className="text-sm text-muted-foreground">{description}</p>
+      <p className={`text-sm text-muted-foreground`}>{description}</p>
 
       {actions && <div className={`mt-6`}>{actions}</div>}
     </div>
