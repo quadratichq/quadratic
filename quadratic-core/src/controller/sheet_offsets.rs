@@ -53,15 +53,30 @@ mod tests {
         let old_size = 100.0;
         let new_size = 200.0;
 
+        assert_eq!(old_size, gc.grid.sheets()[0].offsets.column_width(0));
+
+        // resize nothing
+        gc.commit_offsets_resize(sheet_id, None, None);
+        assert_eq!(old_size, gc.grid.sheets()[0].offsets.column_width(0));
+
+        // resize column
         let transient_resize = TransientResize {
             column: Some(0),
+            row: None,
+            old_size,
+            new_size,
+        };
+        gc.commit_offsets_resize(sheet_id, Some(transient_resize), None);
+        assert_eq!(new_size, gc.grid.sheets()[0].offsets.column_width(0));
+
+        // resize row
+        let transient_resize = TransientResize {
+            column: None,
             row: Some(0),
             old_size,
             new_size,
         };
-
-        assert_eq!(old_size, gc.grid.sheets()[0].offsets.column_width(0));
         gc.commit_offsets_resize(sheet_id, Some(transient_resize), None);
-        assert_eq!(new_size, gc.grid.sheets()[0].offsets.column_width(0));
+        assert_eq!(new_size, gc.grid.sheets()[0].offsets.row_height(0));
     }
 }
