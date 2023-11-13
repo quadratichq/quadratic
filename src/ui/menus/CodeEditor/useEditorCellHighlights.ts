@@ -39,13 +39,15 @@ export type CellMatch = Map<CellRefId, monaco.Range>;
 export const useEditorCellHighlights = (
   isValidRef: boolean,
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>,
-  monacoRef: React.MutableRefObject<typeof monaco | null>
+  monacoRef: React.MutableRefObject<typeof monaco | null>,
+  language: 'TEXT' | 'FORMULA' | 'JAVASCRIPT' | 'PYTHON' | 'SQL' | 'COMPUTED' | 'AI'
 ) => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
 
   // Dynamically generate the classnames we'll use for cell references by pulling
   // the colors from the same colors used in pixi and stick them in the DOM
   useEffect(() => {
+    if (language !== 'FORMULA') return;
     const id = 'useEditorCellHighlights';
     if (!document.querySelector(id)) {
       const style = document.createElement('style');
@@ -58,9 +60,10 @@ export const useEditorCellHighlights = (
         )
       );
     }
-  }, []);
+  }, [language]);
 
   useEffect(() => {
+    if (language !== 'FORMULA') return;
     const editor = editorRef.current;
     const monacoInst = monacoRef.current;
     if (!isValidRef || !editor || !monacoInst) return;
@@ -78,6 +81,12 @@ export const useEditorCellHighlights = (
       const modelValue = editor.getValue();
 
       const parsedFormula = (await parse_formula(modelValue, 0, 0)) as ParseFormulaReturnType;
+      pixiApp.highlightedCells.fromFormula(
+        parsedFormula,
+        editorInteractionState.selectedCell,
+        editorInteractionState.selectedCellSheet
+      );
+
       pixiApp.highlightedCells.fromFormula(
         parsedFormula,
         editorInteractionState.selectedCell,

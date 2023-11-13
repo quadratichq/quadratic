@@ -172,7 +172,6 @@ export class Cursor extends Graphics {
       color,
       alignment: 0.5,
     });
-
     this.drawRect(x, y, width, height);
   }
 
