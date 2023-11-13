@@ -55,12 +55,29 @@ impl GridController {
                 let old_values = Array::new_row_major(size, old_values)
                     .expect("error constructing array of old values for SetCells operation");
 
-                self.check_spills(
-                    region.clone(),
-                    cells_to_compute,
-                    summary,
-                    &mut reverse_operations,
-                );
+                // check for changes in spills
+                region.iter().for_each(|cell_ref| {
+                    let sheet = self.grid.sheet_from_id(cell_ref.sheet);
+                    if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
+                        // if there is a value, check if it caused a spill
+                        if let Some(_) = sheet.get_cell_value(pos) {
+                            self.check_spill(
+                                cell_ref,
+                                cells_to_compute,
+                                summary,
+                                &mut reverse_operations,
+                            )
+                        } else {
+                            // otherwise check if it released a spill
+                            self.check_release_spill(
+                                cell_ref,
+                                cells_to_compute,
+                                summary,
+                                &mut reverse_operations,
+                            )
+                        }
+                    }
+                });
 
                 reverse_operations.push(Operation::SetCellValues {
                     region,
@@ -71,6 +88,8 @@ impl GridController {
                 cell_ref,
                 code_cell_value,
             } => {
+                let empty_code_cell = code_cell_value.as_ref().is_none();
+
                 sheets_with_changed_bounds.insert(cell_ref.sheet);
 
                 let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
@@ -94,7 +113,7 @@ impl GridController {
                             };
                         sheet.set_code_cell_value(pos, Some(updated_code_cell_value));
                     } else {
-                        sheet.set_code_cell_value(pos, code_cell_value);
+                        sheet.set_code_cell_value(pos, code_cell_value.clone());
                     }
                     cells_to_compute.insert(cell_ref);
                 } else {
@@ -107,12 +126,25 @@ impl GridController {
                         summary,
                         cells_to_compute,
                     );
-                    sheet.set_code_cell_value(pos, code_cell_value);
+                    sheet.set_code_cell_value(pos, code_cell_value.clone());
                 }
+
                 summary
                     .cell_sheets_modified
                     .insert(CellSheetsModified::new(sheet.id, pos));
                 summary.code_cells_modified.insert(cell_ref.sheet);
+
+                if empty_code_cell {
+                    self.check_release_spill(
+                        cell_ref,
+                        cells_to_compute,
+                        summary,
+                        &mut reverse_operations,
+                    );
+                } else {
+                    self.check_spill(cell_ref, cells_to_compute, summary, &mut reverse_operations);
+                }
+
                 reverse_operations.push(Operation::SetCellCode {
                     cell_ref,
                     code_cell_value: old_code_cell_value,

@@ -112,12 +112,22 @@ pub fn update_code_cell_value(
             summary,
             cells_to_compute,
         );
+
         reverse_operations.push(Operation::SetCellCode {
             cell_ref,
             code_cell_value: old_code_cell_value,
         });
+
         summary.code_cells_modified.insert(sheet.id);
+
+        grid_controller.check_spill(
+            cell_ref.into(),
+            cells_to_compute,
+            summary,
+            reverse_operations,
+        );
     }
+
     success
 }
 

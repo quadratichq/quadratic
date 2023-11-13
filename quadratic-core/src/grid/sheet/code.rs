@@ -1,5 +1,7 @@
 use std::{collections::HashSet, ops::Range};
 
+use itertools::Itertools;
+
 use super::Sheet;
 use crate::{
     grid::{CellRef, CodeCellValue},
@@ -16,36 +18,45 @@ impl Sheet {
         let cell_ref = self.get_or_create_cell_ref(pos);
         let old = self.code_cells.remove(&cell_ref);
 
-        // set column.spills for output unless spill_error
         if let Some(code_cell) = code_cell {
             if let Some(output) = code_cell.output.as_ref() {
                 match output.output_value() {
-                    Some(output_value) => match output_value {
-                        Value::Single(_) => {
-                            let (_, column) = self.get_or_create_column(pos.x);
-                            column.spills.set(pos.y, Some(cell_ref));
-                        }
-                        Value::Array(array) => {
-                            // if spilled only set the top left cell
-                            if output.spill {
-                                let (_, column) = self.get_or_create_column(pos.x);
-                                column.spills.set(pos.y, Some(cell_ref));
-                            }
-                            // otherwise set the whole array
-                            else {
-                                let start = pos.x;
-                                let end = start + array.width() as i64;
-                                let range = Range {
-                                    start: pos.y,
-                                    end: pos.y + array.height() as i64,
-                                };
-                                for x in start..end {
-                                    let (_, column) = self.get_or_create_column(x);
-                                    column.spills.set_range(range.clone(), cell_ref);
+                    Some(output_value) => {
+                        // if there is already a spill here, the 0,0 will cause that code_cell to have a spill error
+                        if let Some(column) = self.get_column(pos.x) {
+                            if let Some(spill) = column.spills.get(pos.y) {
+                                if spill != cell_ref {
+                                    self.set_spill_error(spill);
                                 }
                             }
                         }
-                    },
+                        match output_value {
+                            Value::Single(_) => {
+                                let (_, column) = self.get_or_create_column(pos.x);
+                                column.spills.set(pos.y, Some(cell_ref));
+                            }
+                            Value::Array(array) => {
+                                // if spilled only set the top left cell
+                                if output.spill {
+                                    let (_, column) = self.get_or_create_column(pos.x);
+                                    column.spills.set(pos.y, Some(cell_ref));
+                                }
+                                // otherwise set the whole array
+                                else {
+                                    let start = pos.x;
+                                    let end = start + array.width() as i64;
+                                    let range = Range {
+                                        start: pos.y,
+                                        end: pos.y + array.height() as i64,
+                                    };
+                                    for x in start..end {
+                                        let (_, column) = self.get_or_create_column(x);
+                                        column.spills.set_range(range.clone(), cell_ref);
+                                    }
+                                }
+                            }
+                        }
+                    }
                     None => {
                         let (_, column) = self.get_or_create_column(pos.x);
                         column.spills.set(pos.y, Some(cell_ref));
@@ -102,7 +113,48 @@ impl Sheet {
         self.code_cells.keys().copied()
     }
 
-    // fn unspill(&mut self, source: CellRef) {
-    //     todo!("unspill cells from {source:?}");
-    // }
+    /// Adds a spill to a code_cell
+    pub fn set_spill_error(&mut self, cell_ref: CellRef) {
+        if let Some(code_cell) = self.code_cells.get_mut(&cell_ref) {
+            if let Some(output) = code_cell.output.as_mut() {
+                output.spill = true;
+            }
+        }
+    }
+
+    /// Checks if the deletion of a cell or a code_cell released a spill error; sorted by earliest last_modified
+    /// Returns the cell_ref and the code_cell_value if it did
+    pub fn release_spill_error(&self, cell_ref: CellRef) -> Option<(CellRef, CodeCellValue)> {
+        self.code_cells
+            .iter()
+            .filter(|(_, code_cell)| code_cell.spill_error())
+            .sorted_by(|a, b| a.1.last_modified.cmp(&b.1.last_modified))
+            .filter_map(|(code_cell_ref, code_cell)| {
+                if let Some(mut rect) = code_cell.output_rect() {
+                    if let Some(pos) = self.cell_ref_to_pos(*code_cell_ref) {
+                        rect.translate(pos.x, pos.y);
+                        let region = self.existing_region(rect);
+                        if region.contains(cell_ref) {
+                            Some((code_cell_ref.clone(), code_cell.clone()))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .find(|(cell_ref, code_cell)| {
+                let array_size = code_cell.output_size();
+                let w = array_size.w.into();
+                let h = array_size.h.into();
+                if w > 1 || h > 1 {
+                    !self.spilled(*cell_ref, w, h)
+                } else {
+                    false
+                }
+            })
+    }
 }
