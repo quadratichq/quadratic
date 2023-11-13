@@ -67,7 +67,7 @@ impl TransactionInProgress {
             while let Some(cell_ref) = self.cells_accessed.pop() {
                 cells_accessed.insert(cell_ref);
             }
-            let sheet_id = sheet.id.clone();
+            let sheet_id = sheet.id;
             let sheet = grid_controller.grid_mut().sheet_mut_from_id(sheet_id);
             for y in rect.y_range() {
                 for x in rect.x_range() {
