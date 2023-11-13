@@ -1,30 +1,23 @@
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 
-import { AbcOutlined, AttachMoney, Functions, Percent } from '@mui/icons-material';
+import { AttachMoney, Functions, ModeEditOutline, Percent } from '@mui/icons-material';
 import '@szhsin/react-menu/dist/index.css';
-import { SheetController } from '../../../../grid/controller/sheetController';
-import { PixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { DecimalDecrease, DecimalIncrease, Icon123 } from '../../../icons';
 import { MenuLineItem } from '../MenuLineItem';
+import {
+  removeCellNumericFormat,
+  textFormatDecreaseDecimalPlaces,
+  textFormatIncreaseDecimalPlaces,
+  textFormatSetCurrency,
+  textFormatSetExponential,
+  textFormatSetPercentage,
+  toggleCommas,
+} from './formatCells';
+
+import '@szhsin/react-menu/dist/index.css';
 import { TopBarMenuItem } from '../TopBarMenuItem';
-import { useFormatCells } from './useFormatCells';
 
-interface IProps {
-  app: PixiApp;
-  sheet_controller: SheetController;
-}
-
-export const NumberFormatMenu = (props: IProps) => {
-  const {
-    textFormatIncreaseDecimalPlaces,
-    textFormatDecreaseDecimalPlaces,
-    textFormatClear,
-    textFormatSetCurrency,
-    textFormatSetPercentage,
-    textFormatSetNumber,
-    textFormatSetExponential,
-  } = useFormatCells(props.sheet_controller, props.app);
-
+export const NumberFormatMenu = () => {
   return (
     <Menu
       menuButton={({ open }) => (
@@ -33,11 +26,8 @@ export const NumberFormatMenu = (props: IProps) => {
         </TopBarMenuItem>
       )}
     >
-      <MenuItem onClick={() => textFormatClear()}>
-        <MenuLineItem primary="Plain text" secondary={<code>Abc</code>} Icon={AbcOutlined} />
-      </MenuItem>
-      <MenuItem onClick={() => textFormatSetNumber()}>
-        <MenuLineItem primary="Number" secondary={<code>9,999.99</code>} Icon={Icon123} />
+      <MenuItem onClick={() => removeCellNumericFormat()}>
+        <MenuLineItem primary="Automatic" secondary={<code>999.99</code>} Icon={Icon123} />
       </MenuItem>
       <MenuItem onClick={() => textFormatSetCurrency()}>
         <MenuLineItem primary="Currency" secondary={<code>$9,999.99</code>} Icon={AttachMoney} />
@@ -47,6 +37,9 @@ export const NumberFormatMenu = (props: IProps) => {
       </MenuItem>
       <MenuItem onClick={() => textFormatSetExponential()}>
         <MenuLineItem primary="Scientific" secondary={<code>6.02E+23</code>} Icon={Functions} />
+      </MenuItem>
+      <MenuItem onClick={() => toggleCommas()}>
+        <MenuLineItem primary="Toggle Commas" secondary={<code>9,999.99</code>} Icon={ModeEditOutline} />
       </MenuItem>
 
       <MenuDivider />

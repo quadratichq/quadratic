@@ -42,7 +42,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       // If we get here, something's wrong
       Sentry.captureEvent({
         message: 'Client tried to load an invalid example file.',
-        level: Sentry.Severity.Warning,
+        level: 'warning',
         extra: {
           exampleId,
         },
@@ -59,20 +59,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const contents = await res.text();
 
       // Validate and upgrade file
-      const file = validateAndUpgradeGridFile(contents);
+      const file = await validateAndUpgradeGridFile(contents);
       if (!file) {
         throw new Error(`Failed to create a new file because the example file is corrupt: ${file}`);
       }
 
       // Create a new file from that example file
-      const { uuid } = await apiClient.createFile({ name, contents: JSON.stringify(file), version: file.version });
+      const { uuid } = await apiClient.createFile({ name, contents: file.contents, version: file.version });
 
       // Navigate to it
       return navigate(uuid);
     } catch (error) {
       Sentry.captureEvent({
         message: 'Client failed to load the selected example file.',
-        level: Sentry.Severity.Warning,
+        level: 'warning',
         extra: {
           exampleId,
         },

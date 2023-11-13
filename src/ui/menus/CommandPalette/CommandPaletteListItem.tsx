@@ -1,10 +1,7 @@
-import { ListItem, ListItemButton, ListItemText, ListItemSecondaryAction, ListItemIcon } from '@mui/material';
+import { ListItem, ListItemButton, ListItemIcon, ListItemSecondaryAction, ListItemText } from '@mui/material';
 import fuzzysort from 'fuzzysort';
-import { ReactElement } from 'react';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
-import { SheetController } from '../../../grid/controller/sheetController';
-import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
 import mixpanel from 'mixpanel-browser';
+import { ReactElement } from 'react';
 
 // Props generated in the root CommandPalette and passed to every CommandPaletteListItem
 export interface CommandPaletteListItemSharedProps {
@@ -13,14 +10,6 @@ export interface CommandPaletteListItemSharedProps {
   label: string;
   listItemIndex: number;
   selectedListItemIndex: number;
-
-  // NOTE: possible optimiziation here.
-  // Props are passed dynamically to subcomponent, e.g. <CommandPaletteListItem {...props}>
-  // but these aren’t needed in that component but are in the intermediary one
-  // for capturing stateful values when needed.
-  app: PixiApp;
-  interactionState: GridInteractionState;
-  sheetController: SheetController;
 }
 
 // Contextual props added to each individual <CommandPaletteListItem>
@@ -54,7 +43,7 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
   return (
     <ListItem disablePadding key={label}>
       <ListItemButton
-        // FYI: this is used to anitmate scroll through list items and trigger click on ENTER
+        // FYI: this is used to animate scroll through list items and trigger click on ENTER
         data-command-bar-list-item-index={listItemIndex}
         disabled={disabled}
         onClick={() => {

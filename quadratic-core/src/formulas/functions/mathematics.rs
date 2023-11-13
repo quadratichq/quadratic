@@ -15,7 +15,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Returns `0` if given no values.
             #[examples("SUM(B2:C6, 15, E1)")]
             fn SUM(numbers: (Iter<f64>)) {
-                numbers.sum::<FormulaResult<f64>>()
+                numbers.sum::<CodeResult<f64>>()
             }
         ),
         formula_fn!(
@@ -29,16 +29,16 @@ fn get_functions() -> Vec<FormulaFunction> {
                 "SUMIF(A1:A10, \">0\")",
                 "SUMIF(A1:A10, \"<>INVALID\", B1:B10)"
             )]
-            #[pure_zip_map]
+            #[zip_map]
             fn SUMIF(
                 eval_range: (Spanned<Array>),
-                [criteria]: (Spanned<BasicValue>),
+                [criteria]: (Spanned<CellValue>),
                 numbers_range: (Option<Spanned<Array>>),
             ) {
                 let criteria = Criterion::try_from(*criteria)?;
                 let numbers =
                     criteria.iter_matching_coerced::<f64>(eval_range, numbers_range.as_ref())?;
-                numbers.sum::<FormulaResult<f64>>()
+                numbers.sum::<CodeResult<f64>>()
             }
         ),
         formula_fn!(
@@ -46,13 +46,13 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Returns `1` if given no values.
             #[examples("PRODUCT(B2:C6, 0.002, E1)")]
             fn PRODUCT(numbers: (Iter<f64>)) {
-                numbers.product::<FormulaResult<f64>>()
+                numbers.product::<CodeResult<f64>>()
             }
         ),
         formula_fn!(
             /// Returns the absolute value of a number.
             #[examples("ABS(-4)")]
-            #[pure_zip_map]
+            #[zip_map]
             fn ABS([number]: f64) {
                 number.abs()
             }
@@ -60,7 +60,7 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Returns the square root of a number.
             #[examples("SQRT(2)")]
-            #[pure_zip_map]
+            #[zip_map]
             fn SQRT([number]: f64) {
                 number.sqrt()
             }
@@ -89,107 +89,106 @@ mod tests {
 
     #[test]
     fn test_sum() {
-        let g = &mut NoGrid;
+        let g = Grid::new();
         assert_eq!(
-            FormulaErrorMsg::Expected {
+            ErrorMsg::Expected {
                 expected: "number".into(),
                 got: Some("text".into()),
             },
-            eval_to_err(g, "SUM(\"abc\")").msg,
+            eval_to_err(&g, "SUM(\"abc\")").msg,
         );
-        assert_eq!(
-            FormulaErrorMsg::DivideByZero,
-            eval_to_err(g, "SUM(1/0)").msg
-        );
-        assert_eq!(
-            FormulaErrorMsg::DivideByZero,
-            eval_to_err(g, "SUM({1/0})").msg
-        );
-        assert_eq!("0", eval_to_string(g, "SUM()"));
-        assert_eq!("12", eval_to_string(g, "SUM(12)"));
-        assert_eq!("27", eval_to_string(g, "SUM(0..5, 12)"));
-        assert_eq!("27", eval_to_string(g, "SUM(0..5, {\"\", \"abc\"}, 12)"));
-        assert_eq!("27", eval_to_string(g, "SUM(0..5, {\"\"}, {\"abc\"}, 12)"));
-        assert_eq!("0", eval_to_string(g, "SUM({\"\", \"abc\"})"));
-        assert_eq!("12", eval_to_string(g, "SUM({\"\", \"abc\", 12})"));
+        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(&g, "SUM(1/0)").msg);
+        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(&g, "SUM({1/0})").msg);
+        assert_eq!("0", eval_to_string(&g, "SUM()"));
+        assert_eq!("12", eval_to_string(&g, "SUM(12)"));
+        assert_eq!("27", eval_to_string(&g, "SUM(0..5, 12)"));
+        assert_eq!("27", eval_to_string(&g, "SUM(0..5, {\"\", \"abc\"}, 12)"));
+        assert_eq!("27", eval_to_string(&g, "SUM(0..5, {\"\"}, {\"abc\"}, 12)"));
+        assert_eq!("0", eval_to_string(&g, "SUM({\"\", \"abc\"})"));
+        assert_eq!("12", eval_to_string(&g, "SUM({\"\", \"abc\", 12})"));
 
-        let g = &mut FnGrid(|_| Some("text".to_string()));
+        let mut g = Grid::new();
+        let sheet = &mut g.sheets_mut()[0];
+        sheet.set_cell_value(pos![A6], "text");
+        sheet.set_cell_value(pos![A7], "text");
         // One bad cell reference on its own doesn't cause an error because it's
         // a 1x1 array.
-        assert_eq!("12", eval_to_string(g, "SUM(12, A6)"));
+        assert_eq!("12", eval_to_string(&g, "SUM(12, A6)"));
         // But doing an operation on it converts it to a single value, which
         // does cause an error.
         assert_eq!(
-            FormulaErrorMsg::Expected {
+            ErrorMsg::Expected {
                 expected: "number".into(),
                 got: Some("text".into())
             },
-            eval_to_err(g, "SUM(12, A6&A7)").msg,
+            eval_to_err(&g, "SUM(12, A6&A7)").msg,
         );
     }
 
     #[test]
     fn test_sumif() {
-        let g = &mut BlankGrid;
-        assert_eq!("15", eval_to_string(g, "SUMIF(0..10, \"<=5\")"));
-        assert_eq!("63", eval_to_string(g, "SUMIF(0..10, \"<=5\", 2^0..10)"));
+        let g = Grid::new();
+        assert_eq!("15", eval_to_string(&g, "SUMIF(0..10, \"<=5\")"));
+        assert_eq!("63", eval_to_string(&g, "SUMIF(0..10, \"<=5\", 2^0..10)"));
         // Test with an array of conditions.
         assert_eq!(
             "{63, 16; 1984, 1}",
-            eval_to_string(g, "SUMIF(0..10, {\"<=5\", 4; \">5\", 0}, 2^0..10)"),
+            eval_to_string(&g, "SUMIF(0..10, {\"<=5\", 4; \">5\", 0}, 2^0..10)"),
         );
     }
 
     #[test]
     fn test_product() {
-        let g = &mut NoGrid;
-        assert_eq!("1", eval_to_string(g, "PRODUCT()"));
-        assert_eq!("12", eval_to_string(g, "PRODUCT(12)"));
-        assert_eq!("1440", eval_to_string(g, "PRODUCT(1..5, 12)"));
+        let g = Grid::new();
+        assert_eq!("1", eval_to_string(&g, "PRODUCT()"));
+        assert_eq!("12", eval_to_string(&g, "PRODUCT(12)"));
+        assert_eq!("1440", eval_to_string(&g, "PRODUCT(1..5, 12)"));
         assert_eq!(
             "1440",
-            eval_to_string(g, "PRODUCT(1..5, {\"_\", \"abc\"}, 12)"),
+            eval_to_string(&g, "PRODUCT(1..5, {\"_\", \"abc\"}, 12)"),
         );
         assert_eq!(
             "1440",
-            eval_to_string(g, "PRODUCT(1..5, {\"_\"}, {\"abc\"}, 12)"),
+            eval_to_string(&g, "PRODUCT(1..5, {\"_\"}, {\"abc\"}, 12)"),
         );
-        assert_eq!("1", eval_to_string(g, "PRODUCT({\"_\", \"abc\"})"));
-        assert_eq!("12", eval_to_string(g, "PRODUCT({\"_\", \"abc\", 12})"));
+        assert_eq!("1", eval_to_string(&g, "PRODUCT({\"_\", \"abc\"})"));
+        assert_eq!("12", eval_to_string(&g, "PRODUCT({\"_\", \"abc\", 12})"));
         assert_eq!(
             "1440",
-            eval_to_string(g, "PRODUCT(1..5, {\"_\", \"abc\"}, 12)"),
+            eval_to_string(&g, "PRODUCT(1..5, {\"_\", \"abc\"}, 12)"),
         );
         assert_eq!(
             "0",
-            eval_to_string(g, "PRODUCT(0..5, {\"_\", \"abc\"}, 12)"),
+            eval_to_string(&g, "PRODUCT(0..5, {\"_\", \"abc\"}, 12)"),
         );
     }
 
     #[test]
     fn test_abs() {
-        let g = &mut NoGrid;
-        assert_eq!("10", eval_to_string(g, "ABS(-10)"));
-        assert_eq!("10", eval_to_string(g, "ABS(10)"));
+        let g = Grid::new();
+        assert_eq!("10", eval_to_string(&g, "ABS(-10)"));
+        assert_eq!("10", eval_to_string(&g, "ABS(10)"));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.with_sheet(g.sheets()[0].id));
         assert_eq!(
-            FormulaErrorMsg::MissingRequiredArgument {
-                func_name: "ABS",
-                arg_name: "number"
+            ErrorMsg::MissingRequiredArgument {
+                func_name: "ABS".into(),
+                arg_name: "number".into(),
             },
             parse_formula("ABS()", Pos::ORIGIN)
                 .unwrap()
-                .eval_blocking(g, Pos::ORIGIN)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.with_sheet(g.sheets()[0].id));
         assert_eq!(
-            FormulaErrorMsg::TooManyArguments {
-                func_name: "ABS",
-                max_arg_count: 1
+            ErrorMsg::TooManyArguments {
+                func_name: "ABS".into(),
+                max_arg_count: 1,
             },
             parse_formula("ABS(16, 17)", Pos::ORIGIN)
                 .unwrap()
-                .eval_blocking(g, Pos::ORIGIN)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -197,28 +196,30 @@ mod tests {
 
     #[test]
     fn test_sqrt() {
-        let g = &mut NoGrid;
-        crate::util::assert_f64_approx_eq(3.0_f64.sqrt(), &eval_to_string(g, "SQRT(3)"));
-        assert_eq!("4", eval_to_string(g, "SQRT(16)"));
+        let g = Grid::new();
+        crate::util::assert_f64_approx_eq(3.0_f64.sqrt(), &eval_to_string(&g, "SQRT(3)"));
+        assert_eq!("4", eval_to_string(&g, "SQRT(16)"));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.with_sheet(g.sheets()[0].id));
         assert_eq!(
-            FormulaErrorMsg::MissingRequiredArgument {
-                func_name: "SQRT",
-                arg_name: "number"
+            ErrorMsg::MissingRequiredArgument {
+                func_name: "SQRT".into(),
+                arg_name: "number".into(),
             },
             parse_formula("SQRT()", Pos::ORIGIN)
                 .unwrap()
-                .eval_blocking(g, Pos::ORIGIN)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.with_sheet(g.sheets()[0].id));
         assert_eq!(
-            FormulaErrorMsg::TooManyArguments {
-                func_name: "SQRT",
-                max_arg_count: 1
+            ErrorMsg::TooManyArguments {
+                func_name: "SQRT".into(),
+                max_arg_count: 1,
             },
             parse_formula("SQRT(16, 17)", Pos::ORIGIN)
                 .unwrap()
-                .eval_blocking(g, Pos::ORIGIN)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -226,16 +227,17 @@ mod tests {
 
     #[test]
     fn test_pi() {
-        let g = &mut NoGrid;
-        assert!(eval_to_string(g, "PI()").starts_with("3.14159"));
+        let g = Grid::new();
+        assert!(eval_to_string(&g, "PI()").starts_with("3.14159"));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.with_sheet(g.sheets()[0].id));
         assert_eq!(
-            FormulaErrorMsg::TooManyArguments {
-                func_name: "PI",
-                max_arg_count: 0
+            ErrorMsg::TooManyArguments {
+                func_name: "PI".into(),
+                max_arg_count: 0,
             },
             parse_formula("PI(16)", Pos::ORIGIN)
                 .unwrap()
-                .eval_blocking(g, Pos::ORIGIN)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );
@@ -243,16 +245,17 @@ mod tests {
 
     #[test]
     fn test_tau() {
-        let g = &mut NoGrid;
-        assert!(eval_to_string(g, "TAU()").starts_with("6.283"));
+        let g = Grid::new();
+        assert!(eval_to_string(&g, "TAU()").starts_with("6.283"));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.with_sheet(g.sheets()[0].id));
         assert_eq!(
-            FormulaErrorMsg::TooManyArguments {
-                func_name: "TAU",
-                max_arg_count: 0
+            ErrorMsg::TooManyArguments {
+                func_name: "TAU".into(),
+                max_arg_count: 0,
             },
             parse_formula("TAU(16)", Pos::ORIGIN)
                 .unwrap()
-                .eval_blocking(g, Pos::ORIGIN)
+                .eval(&mut ctx)
                 .unwrap_err()
                 .msg,
         );

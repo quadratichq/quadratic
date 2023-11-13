@@ -40,6 +40,14 @@ export class Bounds {
     }
   }
 
+  addRectanglePoints(x0: number, y0: number, x1: number, y1: number): void {
+    this.minX = Math.min(x0, this.minX);
+    this.maxX = Math.max(x1, this.maxX);
+    this.minY = Math.min(y0, this.minY);
+    this.maxY = Math.max(y1, this.maxY);
+    this.empty = false;
+  }
+
   addRectangle(rectangle: Rectangle): void {
     this.minX = Math.min(rectangle.left, this.minX);
     this.maxX = Math.max(rectangle.right, this.maxX);
@@ -82,6 +90,15 @@ export class Bounds {
     return x >= this.minX && x <= this.maxX && y >= this.minY && y <= this.maxY;
   }
 
+  intersectsRectangle(rectangle: Rectangle): boolean {
+    return (
+      rectangle.left < this.maxX &&
+      rectangle.right > this.minX &&
+      rectangle.top < this.maxY &&
+      rectangle.bottom > this.minY
+    );
+  }
+
   containsCoordinate(coordinate: Coordinate): boolean {
     return this.contains(coordinate.x, coordinate.y);
   }
@@ -89,5 +106,10 @@ export class Bounds {
   toRectangle(): Rectangle | undefined {
     if (this.empty) return;
     return new Rectangle(this.minX, this.minY, this.maxX - this.minX, this.maxY - this.minY);
+  }
+
+  // checks if either x or y are at the boundary - this is used to test whether a recalculation is necessary for a deleted value
+  atBounds(x: number, y: number): boolean {
+    return x <= this.minX || x >= this.maxX || y <= this.minY || y >= this.maxX;
   }
 }

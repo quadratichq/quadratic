@@ -13,7 +13,7 @@ const { ANONYMOUS, VIEWER, OWNER, EDITOR } = PermissionSchema.enum;
 export function PermissionOverlay() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const { permission } = useRecoilValue(editorInteractionStateAtom);
-  const { name, contents } = useFileContext();
+  const { name } = useFileContext();
   const theme = useTheme();
   const submit = useSubmit();
 
@@ -69,7 +69,7 @@ export function PermissionOverlay() {
               variant="outlined"
               size="small"
               disableElevation
-              onClick={() => duplicateFile.run({ name, contents, submit })}
+              onClick={() => duplicateFile.run({ name, submit })}
             >
               {duplicateFile.label}
             </Button>
@@ -90,7 +90,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
     <Paper
       sx={{
         position: 'fixed',
-        bottom: theme.spacing(5),
+        bottom: theme.spacing(8),
         transform: 'translateX(-50%)',
         left: '50%',
         width: '95%',

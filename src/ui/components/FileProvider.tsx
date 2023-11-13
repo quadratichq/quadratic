@@ -6,10 +6,12 @@ import { isOwner as isOwnerTest } from '../../actions';
 import { apiClient } from '../../api/apiClient';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { useFileRouteLoaderData } from '../../dashboard/FileRoute';
-import { SheetController } from '../../grid/controller/sheetController';
-import { useDebounce } from '../../hooks/useDebounce';
+import { debugShowFileIO } from '../../debugFlags';
+import { grid } from '../../grid/controller/Grid';
 import { useInterval } from '../../hooks/useInterval';
-import { GridFile } from '../../schemas';
+
+const syncInterval = 500;
+const syncErrorInterval = 1000;
 
 type Sync = {
   id: number;
@@ -19,7 +21,6 @@ type Sync = {
 export type FileContextType = {
   name: string;
   renameFile: (newName: string) => void;
-  contents: GridFile;
   syncState: Sync['state'];
 };
 
@@ -31,19 +32,12 @@ const FileContext = createContext<FileContextType>({} as FileContextType);
 /**
  * Provider
  */
-export const FileProvider = ({
-  children,
-  sheetController,
-}: {
-  children: React.ReactElement;
-  sheetController: SheetController;
-}) => {
-  // We can gaurantee this is in the URL when it runs, so cast as string
+export const FileProvider = ({ children }: { children: React.ReactElement }) => {
+  // We can guarantee this is in the URL when it runs, so cast as string
   const { uuid } = useParams() as { uuid: string };
   const initialFileData = useFileRouteLoaderData();
   const [name, setName] = useState<FileContextType['name']>(initialFileData.name);
-  const [contents, setContents] = useState<FileContextType['contents']>(initialFileData.contents);
-  const debouncedContents = useDebounce<FileContextType['contents']>(contents, 1000);
+  const [publicLinkAccess] = useState(initialFileData.sharing.public_link_access);
   let isFirstUpdate = useRef(true);
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
@@ -60,25 +54,6 @@ export const FileProvider = ({
   );
 
   // Create and save the fn used by the sheetController to save the file
-  const save = useCallback(async (): Promise<void> => {
-    setContents((oldContents) => {
-      let newContents = {
-        ...oldContents,
-        ...sheetController.sheet.export_file(),
-      };
-      return newContents;
-    });
-  }, [setContents, sheetController.sheet]);
-  useEffect(() => {
-    sheetController.saveFile = save;
-  }, [sheetController, save]);
-
-  // On mounting, load the sheet
-  useEffect(() => {
-    if (isFirstUpdate.current) {
-      sheetController.sheet.load_file(initialFileData.contents);
-    }
-  }, [sheetController.sheet, initialFileData.contents]);
 
   const syncChanges = useCallback(
     async (apiClientFn: Function) => {
@@ -107,27 +82,36 @@ export const FileProvider = ({
     syncChanges(() => apiClient.updateFile(uuid, { name }));
   }, [name, syncChanges, uuid]);
 
-  // When the contents of the file changes, sync to server (debounce it so that
-  // quick changes, especially undo/redos, don’t sync all at once)
-  useEffect(() => {
-    syncChanges(() =>
-      apiClient.updateFile(uuid, { contents: JSON.stringify(debouncedContents), version: debouncedContents.version })
-    );
-  }, [debouncedContents, syncChanges, uuid]);
-
   // If a sync fails, start an interval that tries to sync everything about the
   // file anew every few seconds until a sync completes again
   useInterval(
     () => {
-      syncChanges(() =>
-        apiClient.updateFile(uuid, {
-          contents: JSON.stringify(debouncedContents),
-          version: debouncedContents.version,
-          name,
-        })
-      );
+      // on error, attempt to resync everything
+      if (syncState === 'error') {
+        if (debugShowFileIO) console.log('[FileProvider] attempting to resync entire file after error...');
+        syncChanges(() =>
+          apiClient.updateFile(uuid, {
+            name,
+            contents: grid.export(),
+            version: grid.getVersion(),
+          })
+        );
+        apiClient.updateFileSharing(uuid, { public_link_access: publicLinkAccess });
+        grid.dirty = false;
+      } else if (grid.dirty) {
+        const now = performance.now();
+        const contents = grid.export();
+        if (debugShowFileIO)
+          console.log(
+            `[FileProvider] saving file... (${Math.round(contents.length / 1000)}kb in ${Math.round(
+              performance.now() - now
+            )}ms)`
+          );
+        syncChanges(() => apiClient.updateFile(uuid, { contents, version: grid.getVersion() }));
+        grid.dirty = false;
+      }
     },
-    syncState === 'error' ? 5000 : null
+    syncState === 'error' ? syncErrorInterval : syncInterval
   );
 
   // Set the permission in recoil based on the initial state
@@ -154,7 +138,6 @@ export const FileProvider = ({
       value={{
         name,
         renameFile,
-        contents,
         syncState,
       }}
     >

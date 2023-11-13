@@ -3,9 +3,14 @@ import { useRecoilState } from 'recoil';
 import { copy, cut, paste, redo, undo } from '../../../../actions';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
-import { PNG_MESSAGE } from '../../../../constants/appConstants';
-import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
-import { copyAsPNG } from '../../../../gridGL/pixiApp/copyAsPNG';
+import {
+  copySelectionToPNG,
+  copyToClipboard,
+  cutToClipboard,
+  fullClipboardSupport,
+  pasteFromClipboard,
+} from '../../../../grid/actions/clipboard/clipboard';
+import { grid } from '../../../../grid/controller/Grid';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { isMac } from '../../../../utils/isMac';
 import { CopyAsPNG } from '../../../icons';
@@ -20,9 +25,7 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           icon={<Undo />}
-          action={() => {
-            props.sheetController.undo();
-          }}
+          action={grid.undo}
           shortcut="Z"
           shortcutModifiers={[KeyboardSymbols.Command]}
         />
@@ -37,9 +40,7 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           icon={<Redo />}
-          action={() => {
-            props.sheetController.redo();
-          }}
+          action={grid.redo}
           shortcut={isMac ? 'Z' : 'Y'}
           shortcutModifiers={isMac ? [KeyboardSymbols.Command, KeyboardSymbols.Shift] : [KeyboardSymbols.Command]}
         />
@@ -53,19 +54,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          action={() => {
-            cutToClipboard(
-              props.sheetController,
-              {
-                x: props.interactionState.multiCursorPosition.originPosition.x,
-                y: props.interactionState.multiCursorPosition.originPosition.y,
-              },
-              {
-                x: props.interactionState.multiCursorPosition.terminalPosition.x,
-                y: props.interactionState.multiCursorPosition.terminalPosition.y,
-              }
-            );
-          }}
+          action={cutToClipboard}
           icon={<ContentCut />}
           shortcut="X"
           shortcutModifiers={[KeyboardSymbols.Command]}
@@ -79,13 +68,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          action={() => {
-            copyToClipboard(
-              props.sheetController,
-              props.interactionState.multiCursorPosition.originPosition,
-              props.interactionState.multiCursorPosition.terminalPosition
-            );
-          }}
+          action={copyToClipboard}
           icon={<ContentCopy />}
           shortcut="C"
           shortcutModifiers={[KeyboardSymbols.Command]}
@@ -100,9 +83,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          action={() => {
-            pasteFromClipboard(props.sheetController, props.interactionState.cursorPosition);
-          }}
+          action={pasteFromClipboard}
           icon={<ContentPaste />}
           shortcut="V"
           shortcutModifiers={[KeyboardSymbols.Command]}
@@ -112,14 +93,14 @@ const ListItems = [
   },
   {
     label: 'Copy selection as PNG',
+    isAvailable: () => fullClipboardSupport(),
     Component: (props: CommandPaletteListItemSharedProps) => {
       const { addGlobalSnackbar } = useGlobalSnackbar();
       return (
         <CommandPaletteListItem
           {...props}
           action={() => {
-            copyAsPNG(props.app);
-            addGlobalSnackbar(PNG_MESSAGE);
+            copySelectionToPNG(addGlobalSnackbar);
           }}
           icon={<CopyAsPNG />}
           shortcut="C"

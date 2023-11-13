@@ -19,7 +19,6 @@
       ],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
-      "disableOptimisticBPs": true,
       "internalConsoleOptions": "neverOpen",
       "env": {
         "NODE_OPTIONS": "--experimental-vm-modules"

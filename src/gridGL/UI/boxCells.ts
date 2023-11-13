@@ -1,21 +1,16 @@
 import { Graphics, Rectangle } from 'pixi.js';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { sheets } from '../../grid/controller/Sheets';
 import { colors } from '../../theme/colors';
+import { pixiApp } from '../pixiApp/PixiApp';
 
 const thickness = 3;
 
 export class BoxCells extends Graphics {
-  private app: PixiApp;
   private gridRectangle?: Rectangle;
   private horizontalDelete = false;
   private verticalDelete = false;
   private deleteRectangles?: Rectangle[];
   dirty = false;
-
-  constructor(app: PixiApp) {
-    super();
-    this.app = app;
-  }
 
   /**
    * @param rectangle in grid coordinates
@@ -40,11 +35,12 @@ export class BoxCells extends Graphics {
     this.horizontalDelete = false;
     this.verticalDelete = false;
     this.deleteRectangles = undefined;
+    pixiApp.setViewportDirty();
   }
 
   private drawRectangle(): void {
     if (!this.gridRectangle) return;
-    const screenRectangle = this.app.sheet.gridOffsets.getScreenRectangle(
+    const screenRectangle = sheets.sheet.getScreenRectangle(
       this.gridRectangle.x,
       this.gridRectangle.y,
       this.gridRectangle.width,
@@ -76,7 +72,7 @@ export class BoxCells extends Graphics {
     this.lineStyle(0);
     this.deleteRectangles?.forEach((rectangle) => {
       this.beginFill(colors.boxCellsDeleteColor, colors.boxCellsAlpha);
-      const screenRectangle = this.app.sheet.gridOffsets.getScreenRectangle(
+      const screenRectangle = sheets.sheet.getScreenRectangle(
         rectangle.x,
         rectangle.y,
         rectangle.width,

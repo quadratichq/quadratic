@@ -3,8 +3,9 @@ import { Menu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useEffect } from 'react';
 import { isMobile } from 'react-device-detect';
-import { useNavigate, useParams, useSubmit } from 'react-router-dom';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useParams } from 'react-router';
+import { useNavigate, useSubmit } from 'react-router-dom';
+import { useRecoilState } from 'recoil';
 import {
   copy,
   createNewFile,
@@ -20,12 +21,11 @@ import {
   viewDocs,
 } from '../../../../actions';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { gridInteractionStateAtom } from '../../../../atoms/gridInteractionStateAtom';
 import { authClient } from '../../../../auth';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../../../constants/routes';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
-import { SheetController } from '../../../../grid/controller/sheetController';
+import { grid } from '../../../../grid/controller/Grid';
 import { focusGrid } from '../../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRootRouteLoaderData } from '../../../../router';
@@ -35,20 +35,15 @@ import { MenuLineItem } from '../MenuLineItem';
 import { TopBarMenuItem } from '../TopBarMenuItem';
 import { useGridSettings } from './useGridSettings';
 
-interface Props {
-  sheetController: SheetController;
-}
-
-export const QuadraticMenu = (props: Props) => {
-  const { sheetController } = props;
-  const interactionState = useRecoilValue(gridInteractionStateAtom);
+export const QuadraticMenu = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
+
   const navigate = useNavigate();
   const submit = useSubmit();
   const { uuid } = useParams() as { uuid: string };
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const { name, contents } = useFileContext();
+  const { name } = useFileContext();
   const { isAuthenticated } = useRootRouteLoaderData();
   const { permission } = editorInteractionState;
 
@@ -97,14 +92,14 @@ export const QuadraticMenu = (props: Props) => {
               </MenuItem>
             )}
             {duplicateFile.isAvailable(permission) && (
-              <MenuItem onClick={() => duplicateFile.run({ contents, name, submit })}>
+              <MenuItem onClick={() => duplicateFile.run({ name, submit })}>
                 <MenuLineItem primary={duplicateFile.label} />
               </MenuItem>
             )}
             {downloadFile.isAvailable(permission) && (
               <MenuItem
                 onClick={() => {
-                  downloadFile.run({ name, contents });
+                  downloadFile.run({ name });
                 }}
               >
                 <MenuLineItem primary={downloadFile.label} />
@@ -126,21 +121,13 @@ export const QuadraticMenu = (props: Props) => {
         )}
         <SubMenu label={<MenuLineItem primary="Edit" />}>
           {undo.isAvailable(permission) && (
-            <MenuItem
-              onClick={() => {
-                sheetController.undo();
-              }}
-            >
+            <MenuItem onClick={() => grid.undo()} disabled={!grid.hasUndo()}>
               <MenuLineItem primary={undo.label} secondary={KeyboardSymbols.Command + 'Z'} />
             </MenuItem>
           )}
           {redo.isAvailable(permission) && (
             <>
-              <MenuItem
-                onClick={() => {
-                  sheetController.redo();
-                }}
-              >
+              <MenuItem onClick={() => grid.redo()} disabled={!grid.hasRedo()}>
                 <MenuLineItem
                   primary={redo.label}
                   secondary={
@@ -153,41 +140,15 @@ export const QuadraticMenu = (props: Props) => {
           )}
 
           {cut.isAvailable(permission) && (
-            <MenuItem
-              onClick={() => {
-                cutToClipboard(
-                  sheetController,
-                  {
-                    x: interactionState.multiCursorPosition.originPosition.x,
-                    y: interactionState.multiCursorPosition.originPosition.y,
-                  },
-                  {
-                    x: interactionState.multiCursorPosition.terminalPosition.x,
-                    y: interactionState.multiCursorPosition.terminalPosition.y,
-                  }
-                );
-              }}
-            >
+            <MenuItem onClick={cutToClipboard}>
               <MenuLineItem primary={cut.label} secondary={KeyboardSymbols.Command + 'X'} />
             </MenuItem>
           )}
-          <MenuItem
-            onClick={() => {
-              copyToClipboard(
-                props.sheetController,
-                interactionState.multiCursorPosition.originPosition,
-                interactionState.multiCursorPosition.terminalPosition
-              );
-            }}
-          >
+          <MenuItem onClick={copyToClipboard}>
             <MenuLineItem primary={copy.label} secondary={KeyboardSymbols.Command + 'C'} />
           </MenuItem>
           {paste.isAvailable(permission) && (
-            <MenuItem
-              onClick={() => {
-                pasteFromClipboard(props.sheetController, interactionState.cursorPosition);
-              }}
-            >
+            <MenuItem onClick={pasteFromClipboard}>
               <MenuLineItem primary={paste.label} secondary={KeyboardSymbols.Command + 'V'} />
             </MenuItem>
           )}

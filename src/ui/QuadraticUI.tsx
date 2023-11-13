@@ -3,42 +3,33 @@ import { useNavigation, useParams } from 'react-router';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { ShareFileMenu } from '../components/ShareFileMenu';
-import { SheetController } from '../grid/controller/sheetController';
-import { GetCellsDBSetSheet } from '../grid/sheet/Cells/GetCellsDB';
 import QuadraticGrid from '../gridGL/QuadraticGrid';
-import { PixiApp } from '../gridGL/pixiApp/PixiApp';
+import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../helpers/focusGrid';
 import CodeEditor from '../ui/menus/CodeEditor';
 import TopBar from '../ui/menus/TopBar';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { PermissionOverlay } from './components/PermissionOverlay';
 import PresentationModeHint from './components/PresentationModeHint';
+import { TransactionBusy } from './components/TransactionBusy';
 import BottomBar from './menus/BottomBar';
 import CellTypeMenu from './menus/CellTypeMenu';
 import CommandPalette from './menus/CommandPalette';
 import FeedbackMenu from './menus/FeedbackMenu';
 import GoTo from './menus/GoTo';
+import SheetBar from './menus/SheetBar';
 import { useGridSettings } from './menus/TopBar/SubMenus/useGridSettings';
 
-export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sheetController: SheetController }) {
+export default function QuadraticUI() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { presentationMode } = useGridSettings();
   const navigation = useNavigation();
   const { uuid } = useParams() as { uuid: string };
 
-  useEffect(() => {
-    sheetController.setApp(app);
-  }, [sheetController, app]);
-
-  // Temporary way to attach sheet to global for use in GetCellsDB function
-  useEffect(() => {
-    GetCellsDBSetSheet(sheetController.sheet);
-  }, [sheetController.sheet]);
-
   // Resize the canvas when user goes in/out of presentation mode
   useEffect(() => {
-    app.resize();
-  }, [presentationMode, app]);
+    pixiApp.resize();
+  }, [presentationMode]);
 
   return (
     <div
@@ -53,9 +44,9 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
       }}
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}
-      {!presentationMode && <TopBar app={app} sheetController={sheetController} />}
-      {editorInteractionState.showCommandPalette && <CommandPalette app={app} sheetController={sheetController} />}
-      {editorInteractionState.showGoToMenu && <GoTo app={app} sheetController={sheetController} />}
+      {!presentationMode && <TopBar />}
+      {editorInteractionState.showCommandPalette && <CommandPalette confirmSheetDelete={() => 0} />}
+      {editorInteractionState.showGoToMenu && <GoTo />}
 
       <div
         style={{
@@ -66,13 +57,14 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
           position: 'relative',
         }}
       >
-        <FileUploadWrapper sheetController={sheetController} app={app}>
-          <QuadraticGrid sheetController={sheetController} app={app} />
+        <FileUploadWrapper>
+          <QuadraticGrid />
         </FileUploadWrapper>
-        <CodeEditor sheet_controller={sheetController} />
+        {editorInteractionState.showCodeEditor && <CodeEditor />}
       </div>
 
-      {!presentationMode && <BottomBar sheet={sheetController.sheet} />}
+      {!presentationMode && <SheetBar />}
+      {!presentationMode && <BottomBar />}
       {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
       {editorInteractionState.showShareFileMenu && (
         <ShareFileMenu
@@ -90,7 +82,7 @@ export default function QuadraticUI({ app, sheetController }: { app: PixiApp; sh
         />
       )}
       {presentationMode && <PresentationModeHint />}
-
+      <TransactionBusy />
       <PermissionOverlay />
     </div>
   );

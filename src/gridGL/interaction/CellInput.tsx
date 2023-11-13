@@ -1,47 +1,40 @@
-import { useCallback, useRef, useState } from 'react';
-import { EditorInteractionState } from '../../atoms/editorInteractionStateAtom';
-import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
-import { DeleteCells } from '../../grid/actions/DeleteCells';
-import { updateCellAndDCells } from '../../grid/actions/updateCellAndDCells';
-import { SheetController } from '../../grid/controller/sheetController';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { Rectangle } from 'pixi.js';
+import { ClipboardEvent, useCallback, useRef, useState } from 'react';
+import { useRecoilValue } from 'recoil';
+import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
+import { sheets } from '../../grid/controller/Sheets';
 import { focusGrid } from '../../helpers/focusGrid';
-import { CellFormat } from '../../schemas';
-import { useFormatCells } from '../../ui/menus/TopBar/SubMenus/useFormatCells';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { pixiApp } from '../pixiApp/PixiApp';
+import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { Coordinate } from '../types/size';
 
 interface CellInputProps {
-  interactionState: GridInteractionState;
-  editorInteractionState: EditorInteractionState;
-  setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   container?: HTMLDivElement;
-  app?: PixiApp;
-  sheetController: SheetController;
 }
 
 export const CellInput = (props: CellInputProps) => {
-  const { interactionState, editorInteractionState, setInteractionState, app, container, sheetController } = props;
-  const { changeBold, changeItalic } = useFormatCells(sheetController, app, true);
+  const { container } = props;
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
 
-  const viewport = app?.viewport;
+  const viewport = pixiApp.viewport;
 
-  const cellLocation = interactionState.cursorPosition;
-  const [saveInteractionState, setSaveInteractionState] = useState<GridInteractionState>();
+  const sheet = sheets.sheet;
+  const cellLocation = sheet.cursor.cursorPosition;
 
   const text = useRef('');
 
-  const cell_offsets = sheetController.sheet.gridOffsets.getCell(cellLocation.x, cellLocation.y);
-  const copy = sheetController.sheet.getCellAndFormatCopy(cellLocation.x, cellLocation.y);
-  const cell = copy?.cell;
-  const format = copy?.format ?? ({} as CellFormat);
+  const cellOffsets = sheet.getCellOffsets(cellLocation.x, cellLocation.y);
+  const cell = sheet.getEditCell(cellLocation.x, cellLocation.y);
+  const formatting = sheet.getCellFormatSummary(cellLocation.x, cellLocation.y);
 
   // handle temporary changes to bold and italic (via keyboard)
   const [temporaryBold, setTemporaryBold] = useState<undefined | boolean>();
   const [temporaryItalic, setTemporaryItalic] = useState<undefined | boolean>();
   let fontFamily = 'OpenSans';
-  const italic = temporaryItalic === undefined ? format.italic : temporaryItalic;
-  const bold = temporaryBold === undefined ? format.bold : temporaryBold;
+  const italic = temporaryItalic === undefined ? formatting?.italic : temporaryItalic;
+  const bold = temporaryBold === undefined ? formatting?.bold : temporaryBold;
   if (italic && bold) {
     fontFamily = 'OpenSans-BoldItalic';
   } else if (italic) {
@@ -75,12 +68,13 @@ export const CellInput = (props: CellInputProps) => {
       if (!node) return;
       node.focus();
       setTextInput(node);
-      text.current = interactionState.inputInitialValue ?? (cell?.value || '');
+      const value = cell;
+      text.current = pixiAppSettings.input.initialValue ?? (value || '');
       if (document.hasFocus() && node.contains(document.activeElement)) {
         handleFocus({ target: node });
       }
     },
-    [cell?.value, handleFocus, interactionState.inputInitialValue]
+    [cell, handleFocus]
   );
 
   // If we don't have a viewport, we can't continue.
@@ -96,13 +90,13 @@ export const CellInput = (props: CellInputProps) => {
 
   // Function used to move and scale the Input with the Grid
   function updateInputCSSTransform() {
-    if (!app || !viewport || !container) return '';
+    if (!container) return '';
 
     // Get world transform matrix
     let worldTransform = viewport.worldTransform;
 
     // Calculate position of input based on cell (magic number via experimentation)
-    let cell_offset_scaled = viewport.toScreen(cell_offsets.x + CURSOR_THICKNESS, cell_offsets.y + CURSOR_THICKNESS);
+    let cell_offset_scaled = viewport.toScreen(cellOffsets.x + CURSOR_THICKNESS, cellOffsets.y + CURSOR_THICKNESS);
 
     // Generate transform CSS
     const transform =
@@ -124,16 +118,6 @@ export const CellInput = (props: CellInputProps) => {
     return transform;
   }
 
-  // If the input is not shown, we can do nothing and return null
-  if (!interactionState.showInput) {
-    return null;
-  }
-
-  // copy interaction state when input starts
-  if (!saveInteractionState) {
-    setSaveInteractionState(interactionState);
-  }
-
   // need this variable to cancel second closeInput call from blur after pressing Escape (this happens before the state can update)
   let closed = false;
 
@@ -144,67 +128,23 @@ export const CellInput = (props: CellInputProps) => {
 
     const value = textInput.innerText;
 
-    if (!cancel) {
-      sheetController.start_transaction(saveInteractionState);
-      // Update Cell and dependent cells
-      if (value === '') {
-        // delete cell if input is empty, and wasn't empty before
-        if (cell !== undefined)
-          DeleteCells({
-            x0: cellLocation.x,
-            y0: cellLocation.y,
-            x1: cellLocation.x,
-            y1: cellLocation.y,
-            sheetController,
-            app,
-            create_transaction: false,
-          });
-      } else {
-        // create cell with value at input location
-        await updateCellAndDCells({
-          create_transaction: false,
-          starting_cells: [
-            {
-              x: cellLocation.x,
-              y: cellLocation.y,
-              type: 'TEXT',
-              value: value || '',
-            },
-          ],
-          sheetController,
-          app,
-        });
-        if (temporaryBold !== undefined && temporaryBold !== !!format?.bold) {
-          changeBold(temporaryBold);
-        }
-        if (temporaryItalic !== undefined && temporaryItalic !== !!format?.italic) {
-          changeItalic(temporaryItalic);
-        }
-      }
+    if (!cancel && (value.trim() || cell)) {
+      sheet.setCellValue(cellLocation.x, cellLocation.y, value);
       setTemporaryBold(undefined);
       setTemporaryItalic(undefined);
-      sheetController.end_transaction();
-      app.quadrants.quadrantChanged({ cells: [cellLocation] });
       textInput.innerText = '';
     }
 
     // Update Grid Interaction state, reset input value state
-    setInteractionState({
-      ...interactionState,
-      keyboardMovePosition: {
-        x: interactionState.cursorPosition.x + transpose.x,
-        y: interactionState.cursorPosition.y + transpose.y,
-      },
+    const position = sheet.cursor.cursorPosition;
+    sheet.cursor.changePosition({
       cursorPosition: {
-        x: interactionState.cursorPosition.x + transpose.x,
-        y: interactionState.cursorPosition.y + transpose.y,
+        x: position.x + transpose.x,
+        y: position.y + transpose.y,
       },
-      showInput: false,
-      inputInitialValue: '',
     });
-    // setValue(undefined);
 
-    setSaveInteractionState(undefined);
+    pixiAppSettings.changeInput(false);
 
     // Set focus back to Grid
     focusGrid();
@@ -221,6 +161,14 @@ export const CellInput = (props: CellInputProps) => {
   // set input's initial position correctly
   const transform = updateInputCSSTransform();
 
+  const handlePaste = (event: ClipboardEvent) => {
+    const text = event.clipboardData?.getData('text') || '';
+    const parsed = new DOMParser().parseFromString(text, 'text/html');
+    const result = parsed.body.textContent || '';
+    document.execCommand('insertHTML', false, result.replace(/(\r\n|\n|\r)/gm, ''));
+    event.preventDefault();
+  };
+
   return (
     <div
       id="cell-edit"
@@ -233,53 +181,54 @@ export const CellInput = (props: CellInputProps) => {
         position: 'absolute',
         top: 0,
         left: 0,
-        minWidth: cell_offsets.width - CURSOR_THICKNESS * 2,
+        minWidth: cellOffsets.width - CURSOR_THICKNESS * 2,
         outline: 'none',
-        color: format?.textColor ?? 'black',
+        color: formatting?.textColor ?? 'black',
         padding: `0 ${CURSOR_THICKNESS}px 0 0`,
         margin: 0,
-        lineHeight: `${cell_offsets.height - CURSOR_THICKNESS * 2}px`,
+        lineHeight: `${cellOffsets.height - CURSOR_THICKNESS * 2}px`,
         verticalAlign: 'text-top',
-        background: 'transparent',
         transformOrigin: '0 0',
         transform,
         fontFamily,
         fontSize: '14px',
-        backgroundColor: format?.fillColor ?? 'white',
-        whiteSpace: 'break-spaces',
+        backgroundColor: formatting?.fillColor ?? 'white',
+        whiteSpace: 'nowrap',
       }}
-      onInput={() => {
+      onPaste={handlePaste}
+      onInput={(event: React.FormEvent<HTMLDivElement>) => {
         // viewport should try to keep the input box in view
         if (!textInput) return;
         const bounds = textInput.getBoundingClientRect();
-        const canvas = app.canvas.getBoundingClientRect();
-        const center = app.viewport.center;
+        const canvas = pixiApp.canvas.getBoundingClientRect();
+        const center = pixiApp.viewport.center;
+        const scale = pixiApp.viewport.scale.x;
         let x = center.x,
           y = center.y,
           move = false;
         if (bounds.right > canvas.right) {
-          x = center.x + (bounds.right - canvas.right) / app.viewport.scale.x;
+          x = center.x + (bounds.right - canvas.right) / scale;
           move = true;
         } else if (bounds.left < canvas.left) {
-          const change = (bounds.left - canvas.left) / app.viewport.scale.x;
+          const change = (bounds.left - canvas.left) / scale;
           if (bounds.right < canvas.right + change) {
             x = center.x + change;
             move = true;
           }
         }
         if (bounds.bottom > canvas.bottom) {
-          y = center.y + (bounds.bottom - canvas.bottom) / app.viewport.scale.x;
+          y = center.y + (bounds.bottom - canvas.bottom) / scale;
           move = true;
         } else if (bounds.top < canvas.top) {
-          const change = (bounds.top - canvas.top) / app.viewport.scale.x;
+          const change = (bounds.top - canvas.top) / scale;
           if (bounds.bottom < canvas.bottom + change) {
             y = center.y + change;
             move = true;
           }
         }
         if (move) {
-          app.viewport.moveCenter(x, y);
-          app.setViewportDirty();
+          viewport.moveCenter(x, y);
+          pixiApp.setViewportDirty();
         }
       }}
       onFocus={handleFocus}
@@ -287,33 +236,41 @@ export const CellInput = (props: CellInputProps) => {
       onKeyDown={(event) => {
         if (event.key === 'Enter') {
           closeInput({ x: 0, y: 1 });
+          event.stopPropagation();
           event.preventDefault();
         } else if (event.key === 'Tab') {
           closeInput({ x: 1, y: 0 });
+          event.stopPropagation();
           event.preventDefault();
         } else if (event.key === 'Escape') {
           closeInput(undefined, true);
           event.preventDefault();
         } else if (event.key === 'ArrowUp') {
           closeInput({ x: 0, y: -1 });
+          event.stopPropagation();
         } else if (event.key === 'ArrowDown') {
           closeInput({ x: 0, y: 1 });
+          event.stopPropagation();
         } else if ((event.metaKey || event.ctrlKey) && event.key === 'p') {
           event.preventDefault();
         } else if (event.key === ' ') {
           // Don't propagate so panning mode doesn't get triggered
           event.stopPropagation();
         } else if (event.key === 'i' && (event.ctrlKey || event.metaKey)) {
-          setTemporaryItalic((italic) => (italic === undefined ? !format.italic : !italic));
+          const italic = temporaryItalic === undefined ? !formatting?.italic : !temporaryItalic;
+          setTemporaryItalic(italic);
+          sheet.setCellItalic(new Rectangle(cellLocation.x, cellLocation.y, 0, 0), italic);
           event.stopPropagation();
           event.preventDefault();
         } else if (event.key === 'b' && (event.ctrlKey || event.metaKey)) {
-          setTemporaryBold((bold) => (bold === undefined ? !format.bold : !bold));
+          const bold = temporaryBold === undefined ? !formatting?.italic : !temporaryBold;
+          setTemporaryBold(bold);
+          sheet.setCellBold(new Rectangle(cellLocation.x, cellLocation.y, 0, 0), bold);
           event.stopPropagation();
           event.preventDefault();
         }
         // ensure the cell border is redrawn
-        app.cursor.dirty = true;
+        pixiApp.cursor.dirty = true;
       }}
     >
       {text.current}

@@ -1,15 +1,15 @@
 import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
-import { PanMode } from '../../../atoms/gridInteractionStateAtom';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { PixiApp } from '../../pixiApp/PixiApp';
+import { sheets } from '../../../grid/controller/Sheets';
+import { CodeCellLanguage } from '../../../quadratic-core/quadratic_core';
+import { pixiApp } from '../../pixiApp/PixiApp';
+import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { doubleClickCell } from './doubleClickCell';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
 const MINIMUM_MOVE_POSITION = 5;
 
 export class PointerDown {
-  private app: PixiApp;
   active = false;
 
   private positionRaw?: Point;
@@ -21,44 +21,36 @@ export class PointerDown {
   // flag that ensures that if pointerUp triggers during setTimeout, pointerUp is still called (see below)
   private afterShowInput?: boolean;
 
-  constructor(app: PixiApp) {
-    this.app = app;
-  }
-
-  get sheet(): Sheet {
-    return this.app.sheet;
-  }
-
   pointerDown(world: Point, event: PointerEvent): void {
-    if (isMobile || this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
+    if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled) return;
+    const sheet = sheets.sheet;
+    const offsets = sheet.offsets;
+    const cursor = sheet.cursor;
 
-    // note: directly call this.app.settings instead of locally defining it here; otherwise it dereferences this
-
-    // this is a hack to ensure CellInput properly closes and updates before the cursor moves positions
-    if (this.app.settings.interactionState.showInput) {
-      this.afterShowInput = true;
-      setTimeout(() => {
-        this.pointerDown(world, event);
-        this.afterShowInput = false;
-      }, 0);
-      return;
-    }
-
-    const { gridOffsets } = this.sheet;
+    // todo: this was an infinite loop. not sure if this is still needed.
+    // // this is a hack to ensure CellInput properly closes and updates before the cursor moves positions
+    // if (pixiAppSettings.input.show) {
+    //   this.afterShowInput = true;
+    //   setTimeout(() => {
+    //     this.pointerDown(world, event);
+    //     this.afterShowInput = false;
+    //   }, 0);
+    //   return;
+    // }
 
     this.positionRaw = world;
-    const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
+    const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
 
     const rightClick = event.button === 2 || (event.button === 0 && event.ctrlKey);
 
     // If right click and we have a multi cell selection.
     // If the user has clicked inside the selection.
-    if (rightClick && this.app.settings.interactionState.showMultiCursor) {
+    if (rightClick && cursor.multiCursor) {
       if (
-        column >= this.app.settings.interactionState.multiCursorPosition.originPosition.x &&
-        column <= this.app.settings.interactionState.multiCursorPosition.terminalPosition.x &&
-        row >= this.app.settings.interactionState.multiCursorPosition.originPosition.y &&
-        row <= this.app.settings.interactionState.multiCursorPosition.terminalPosition.y
+        column >= cursor.multiCursor.originPosition.x &&
+        column <= cursor.multiCursor.terminalPosition.x &&
+        row >= cursor.multiCursor.originPosition.y &&
+        row <= cursor.multiCursor.terminalPosition.y
       )
         // Ignore this click. User is accessing the RightClickMenu.
         return;
@@ -76,7 +68,21 @@ export class PointerDown {
         if (rightClick) {
           return;
         }
-        doubleClickCell({ cell: this.sheet.grid.getCell(column, row), app: this.app });
+        const code = sheet.getCodeCell(column, row);
+        let mode: 'PYTHON' | 'FORMULA' | undefined = undefined;
+        if (code) {
+          const language = code.getLanguage();
+          if (language === CodeCellLanguage.Python) {
+            mode = 'PYTHON';
+          } else if (language === CodeCellLanguage.Formula) {
+            mode = 'FORMULA';
+          } else {
+            throw new Error('CodeEditor does not support this language');
+          }
+          code.free();
+        }
+        const cell = sheet.getEditCell(column, row);
+        doubleClickCell({ column, row, mode, cell });
         this.active = false;
         event.preventDefault();
         return;
@@ -85,8 +91,8 @@ export class PointerDown {
 
     // select cells between pressed and cursor position
     if (event.shiftKey) {
-      const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
-      const cursorPosition = this.app.settings.interactionState.cursorPosition;
+      const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
+      const cursorPosition = cursor.cursorPosition;
       if (column !== cursorPosition.x || row !== cursorPosition.y) {
         // make origin top left, and terminal bottom right
         const originX = cursorPosition.x < column ? cursorPosition.x : column;
@@ -94,14 +100,12 @@ export class PointerDown {
         const termX = cursorPosition.x > column ? cursorPosition.x : column;
         const termY = cursorPosition.y > row ? cursorPosition.y : row;
 
-        this.app.settings.setInteractionState({
-          ...this.app.settings.interactionState,
+        cursor.changePosition({
           keyboardMovePosition: { x: column, y: row },
-          multiCursorPosition: {
+          multiCursor: {
             originPosition: new Point(originX, originY),
             terminalPosition: new Point(termX, termY),
           },
-          showMultiCursor: true,
         });
       }
       return;
@@ -120,24 +124,21 @@ export class PointerDown {
 
     // Move cursor to mouse down position
     // For single click, hide multiCursor
-    this.app.settings.setInteractionState({
-      ...this.app.settings.interactionState,
+    cursor.changePosition({
       keyboardMovePosition: { x: column, y: row },
       cursorPosition: { x: column, y: row },
-      multiCursorPosition: previousPosition,
-      showMultiCursor: false,
-      showInput: false,
     });
     this.pointerMoved = false;
   }
 
   pointerMove(world: Point): void {
-    if (this.app.settings.interactionState.panMode !== PanMode.Disabled) return;
+    if (pixiAppSettings.panMode !== PanMode.Disabled) return;
 
     if (!this.active) return;
 
-    const { viewport, settings } = this.app;
-    const { gridOffsets } = this.sheet;
+    const { viewport } = pixiApp;
+    const sheet = sheets.sheet;
+    const offsets = sheet.offsets;
 
     // for determining if double click
     if (!this.pointerMoved && this.doubleClickTimeout && this.positionRaw) {
@@ -151,34 +152,21 @@ export class PointerDown {
     }
 
     // cursor intersects bottom-corner indicator (disabled for now)
-    if (
-      !this.active ||
-      !this.position ||
-      !this.previousPosition ||
-      !this.positionRaw ||
-      !settings.setInteractionState
-    ) {
+    if (!this.active || !this.position || !this.previousPosition || !this.positionRaw) {
       return;
     }
 
     // calculate mouse move position
-    const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
+    const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
 
     // cursor start and end in the same cell
     if (column === this.position.x && row === this.position.y) {
       // hide multi cursor when only selecting one cell
-      settings.setInteractionState({
-        ...settings.interactionState,
+      sheet.cursor.changePosition({
         keyboardMovePosition: { x: this.position.x, y: this.position.y },
         cursorPosition: { x: this.position.x, y: this.position.y },
-        multiCursorPosition: {
-          originPosition: { x: this.position.x, y: this.position.y },
-          terminalPosition: { x: this.position.x, y: this.position.y },
-        },
-        showMultiCursor: false,
-        showInput: false,
-        inputInitialValue: '',
       });
+      pixiAppSettings.changeInput(false);
     } else {
       // cursor origin and terminal are not in the same cell
 
@@ -200,18 +188,15 @@ export class PointerDown {
       // this reduces the number of hooks fired
       if (hasMoved) {
         // update multiCursor
-        settings.setInteractionState({
-          ...settings.interactionState,
+        sheet.cursor.changePosition({
           keyboardMovePosition: { x: column, y: row },
           cursorPosition: { x: this.position.x, y: this.position.y },
-          multiCursorPosition: {
+          multiCursor: {
             originPosition: { x: originX, y: originY },
             terminalPosition: { x: termX, y: termY },
           },
-          showMultiCursor: true,
-          showInput: false,
-          inputInitialValue: '',
         });
+        pixiAppSettings.changeInput(false);
 
         // update previousPosition
         this.previousPosition = {

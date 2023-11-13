@@ -6,8 +6,8 @@ import { EditorInteractionState } from './atoms/editorInteractionStateAtom';
 import { GlobalSnackbar } from './components/GlobalSnackbarProvider';
 import { ROUTES } from './constants/routes';
 import { DOCUMENTATION_URL } from './constants/urls';
+import { grid } from './grid/controller/Grid';
 import { downloadFileInBrowser } from './helpers/downloadFileInBrowser';
-import { GridFile, GridFileSchema } from './schemas';
 import { FileContextType } from './ui/components/FileProvider';
 const { OWNER, EDITOR, VIEWER } = PermissionSchema.enum;
 
@@ -66,11 +66,11 @@ export const renameFile = {
 export const duplicateFile = {
   label: 'Duplicate',
   isAvailable: isViewerOrAbove,
-  run({ contents, name, submit }: { name: string; contents: GridFile; submit: SubmitFunction }) {
+  run({ name, submit }: { name: string; submit: SubmitFunction }) {
     let formData = new FormData();
     formData.append('name', name + ' (Copy)');
-    formData.append('contents', JSON.stringify(contents));
-    formData.append('version', GridFileSchema.shape.version.value);
+    formData.append('contents', grid.export());
+    formData.append('version', grid.getVersion());
     submit(formData, { method: 'POST', action: ROUTES.CREATE_FILE });
   },
 };
@@ -78,8 +78,8 @@ export const duplicateFile = {
 export const downloadFile = {
   label: 'Download local copy',
   isAvailable: isViewerOrAbove,
-  run({ name, contents }: { name: FileContextType['name']; contents: FileContextType['contents'] }) {
-    downloadFileInBrowser(name, JSON.stringify(contents));
+  run({ name }: { name: FileContextType['name'] }) {
+    downloadFileInBrowser(name, grid.export());
   },
 };
 

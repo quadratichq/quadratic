@@ -1,110 +1,107 @@
 import { Rectangle } from 'pixi.js';
-import { GridFileData, GridFile } from '../../schemas';
-import { intersects } from '../../gridGL/helpers/intersects';
-import { GridBorders } from './GridBorders';
-import { GridRenderDependency } from './GridRenderDependency';
-import { GridOffsets } from './GridOffsets';
-import { CellAndFormat, GridSparse } from './GridSparse';
-import { Cell, CellFormat } from '../../schemas';
-import { CellDependencyManager } from './CellDependencyManager';
+import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
+import { CodeCell, JsRenderCodeCell, OffsetsSizeChanges, Pos, SheetOffsets } from '../../quadratic-core/quadratic_core';
+import {
+  CellAlign,
+  CellFormatSummary,
+  FormattingSummary,
+  JsRenderCell,
+  JsRenderFill,
+} from '../../quadratic-core/types';
+import { grid } from '../controller/Grid';
+import { SheetCursor } from './SheetCursor';
 
 export class Sheet {
-  gridOffsets: GridOffsets;
-  grid: GridSparse;
-  borders: GridBorders;
+  id: string;
+  cursor: SheetCursor;
+  offsets: SheetOffsets;
 
-  // visual dependency for overflowing cells
-  render_dependency: GridRenderDependency;
+  name: string;
+  order: string;
+  color?: string;
 
-  // visual dependency for drawing array lines
-  array_dependency: GridRenderDependency;
-
-  // cell calculation dependency
-  cell_dependency: CellDependencyManager;
-
-  onRebuild?: () => void;
-
-  constructor() {
-    this.gridOffsets = new GridOffsets();
-    this.grid = new GridSparse(this.gridOffsets);
-    this.borders = new GridBorders(this.gridOffsets);
-    this.render_dependency = new GridRenderDependency();
-    this.array_dependency = new GridRenderDependency();
-    this.cell_dependency = new CellDependencyManager();
-  }
-
-  newFile(): void {
-    this.gridOffsets = new GridOffsets();
-    this.grid = new GridSparse(this.gridOffsets);
-    this.borders = new GridBorders(this.gridOffsets);
-    this.render_dependency = new GridRenderDependency();
-    this.cell_dependency = new CellDependencyManager();
-    this.onRebuild?.();
-  }
-
-  load_file(sheet: GridFile): void {
-    this.gridOffsets.populate(sheet.columns, sheet.rows);
-    this.grid.populate(sheet.cells, sheet.formats);
-    this.borders.populate(sheet.borders);
-    this.cell_dependency.loadFromString(sheet.cell_dependency);
-    this.onRebuild?.();
-  }
-
-  export_file(): GridFileData {
-    const { cells, formats } = this.grid.getArrays();
-    return {
-      columns: this.gridOffsets.getColumnsArray(),
-      rows: this.gridOffsets.getRowsArray(),
-      cells,
-      formats,
-      borders: this.borders.getArray(),
-      cell_dependency: this.cell_dependency.exportToString(),
-    };
-  }
-
-  private copyCell(cell: Cell | undefined): Cell | undefined {
-    if (!cell) return undefined;
-    return {
-      ...cell,
-      evaluation_result: cell.evaluation_result ? { ...cell.evaluation_result } : undefined,
-    };
-  }
-
-  private copyFormat(format: CellFormat | undefined): CellFormat | undefined {
-    if (!format) return undefined;
-    return {
-      ...format,
-      textFormat: format.textFormat ? { ...format.textFormat } : undefined,
-    };
-  }
-
-  getCellCopy(x: number, y: number): Cell | undefined {
-    // proper deep copy of a cell
-    const cell = this.grid.get(x, y);
-    if (!cell || !cell.cell) return;
-    return this.copyCell(cell.cell);
-  }
-
-  getCellAndFormatCopy(x: number, y: number): CellAndFormat | undefined {
-    const cell = this.grid.get(x, y);
-    if (!cell) return;
-    return {
-      cell: this.copyCell(cell.cell),
-      format: this.copyFormat(cell.format),
-    };
-  }
-
-  /** finds grid bounds based on GridSparse, GridBounds, and GridRenderDependency */
-  getGridBounds(onlyData: boolean): Rectangle | undefined {
-    if (onlyData) {
-      return this.grid.getGridBounds(true);
+  constructor(index: number | 'test') {
+    if (index === 'test') {
+      this.id = 'test';
+      this.offsets = new SheetOffsets();
+      this.name = 'test';
+      this.order = 'A0';
+    } else {
+      const sheetId = grid.sheetIndexToId(index);
+      if (!sheetId) throw new Error('Expected sheetId to be defined in Sheet');
+      this.id = sheetId;
+      this.name = grid.getSheetName(sheetId) ?? '';
+      this.order = grid.getSheetOrder(sheetId);
+      this.color = grid.getSheetColor(sheetId);
+      this.offsets = grid.getOffsets(this.id);
     }
-    return intersects.rectangleUnion(
-      this.grid.getGridBounds(false),
-      this.borders.getGridBounds(),
-      this.render_dependency.getGridBounds()
-    );
+    this.cursor = new SheetCursor(this);
+  }
+
+  updateMetadata() {
+    this.name = grid.getSheetName(this.id) ?? '';
+    this.order = grid.getSheetOrder(this.id);
+    this.color = grid.getSheetColor(this.id);
+  }
+
+  //#region set sheet actions
+  // -----------------------------------
+
+  setCellValue(x: number, y: number, value: string): void {
+    grid.setCellValue({ sheetId: this.id, x, y, value });
+  }
+
+  deleteCells(rectangle: Rectangle): void {
+    grid.deleteCellValues(this.id, rectangle);
+  }
+
+  //#endregion
+
+  //#region get grid information
+
+  getRenderCells(rectangle: Rectangle): JsRenderCell[] {
+    return grid.getRenderCells(this.id, rectangle);
+  }
+
+  hasRenderCells(rectangle: Rectangle): boolean {
+    return grid.hasRenderCells(this.id, rectangle);
+  }
+
+  getRenderCell(x: number, y: number): JsRenderCell | undefined {
+    return grid.getRenderCells(this.id, new Rectangle(x, y, 0, 0))?.[0];
+  }
+
+  getCodeCell(x: number, y: number): CodeCell | undefined {
+    return grid.getCodeCell(this.id, x, y);
+  }
+
+  getEditCell(x: number, y: number): string {
+    return grid.getEditCell(this.id, new Pos(x, y));
+  }
+
+  getRenderFills(rectangle: Rectangle): JsRenderFill[] {
+    return grid.getRenderFills(this.id, rectangle);
+  }
+
+  getAllRenderFills(): JsRenderFill[] {
+    return grid.getAllRenderFills(this.id);
+  }
+
+  getRenderCodeCells(): JsRenderCodeCell[] {
+    return grid.getRenderCodeCells(this.id);
+  }
+
+  getFormattingSummary(rectangle: Rectangle): FormattingSummary {
+    return grid.getFormattingSummary(this.id, rectangle);
+  }
+
+  getCellFormatSummary(x: number, y: number): CellFormatSummary {
+    return grid.getCellFormatSummary(this.id, x, y);
+  }
+
+  getGridBounds(onlyData: boolean): Rectangle | undefined {
+    return grid.getGridBounds(this.id, onlyData);
   }
 
   getMinMax(onlyData: boolean): Coordinate[] | undefined {
@@ -116,74 +113,90 @@ export class Sheet {
     ];
   }
 
-  getGridRowMinMax(row: number, onlyData: boolean): Coordinate[] | undefined {
-    const gridRowMinMax = this.grid.getRowMinMax(row, onlyData);
-    if (onlyData) {
-      if (!gridRowMinMax) return;
-      return [
-        { x: gridRowMinMax.min, y: row },
-        { x: gridRowMinMax.max, y: row },
-      ];
-    }
-    const bordersRowMinMax = this.borders.getRowMinMax(row);
-    if (!gridRowMinMax && !bordersRowMinMax) return;
-    if (!gridRowMinMax) {
-      return [
-        { x: bordersRowMinMax.min, y: row },
-        { x: bordersRowMinMax.max, y: row },
-      ];
-    }
-    if (!bordersRowMinMax) {
-      return [
-        { x: gridRowMinMax.min, y: row },
-        { x: gridRowMinMax.max, y: row },
-      ];
-    }
-    return [
-      { x: Math.min(gridRowMinMax.min, bordersRowMinMax.min), y: row },
-      { x: Math.max(gridRowMinMax.max, bordersRowMinMax.max), y: row },
-    ];
+  //#region set grid information
+
+  setCellFillColor(rectangle: Rectangle, fillColor?: string) {
+    return grid.setCellFillColor(this.id, rectangle, fillColor);
   }
 
-  getGridColumnMinMax(column: number, onlyData: boolean): Coordinate[] | undefined {
-    const gridColumnMinMax = this.grid.getColumnMinMax(column, onlyData);
-    if (onlyData) {
-      if (!gridColumnMinMax) return;
-      return [
-        { x: column, y: gridColumnMinMax.min },
-        { x: column, y: gridColumnMinMax.max },
-      ];
-    }
-    const bordersColumnMinMax = this.borders.getColumnMinMax(column);
-    if (!gridColumnMinMax && !bordersColumnMinMax) return;
-    if (!gridColumnMinMax) {
-      return [
-        { x: column, y: bordersColumnMinMax!.min },
-        { x: column, y: bordersColumnMinMax!.max },
-      ];
-    }
-    if (!bordersColumnMinMax) {
-      return [
-        { x: column, y: gridColumnMinMax.min },
-        { x: column, y: gridColumnMinMax.max },
-      ];
-    }
-    return [
-      { x: column, y: Math.min(gridColumnMinMax.min, bordersColumnMinMax.min) },
-      { x: column, y: Math.max(gridColumnMinMax.max, bordersColumnMinMax.max) },
-    ];
+  setCellBold(rectangle: Rectangle, bold: boolean): void {
+    grid.setCellBold(this.id, rectangle, bold);
   }
 
-  hasQuadrant(x: number, y: number): boolean {
-    return (
-      this.grid.hasQuadrant(x, y) ||
-      this.borders.hasQuadrant(x, y) ||
-      this.render_dependency.hasQuadrant(x, y) ||
-      this.array_dependency.hasQuadrant(x, y)
+  setCellItalic(rectangle: Rectangle, italic: boolean): void {
+    grid.setCellItalic(this.id, rectangle, italic);
+  }
+
+  setCellTextColor(rectangle: Rectangle, color?: string): void {
+    grid.setCellTextColor(this.id, rectangle, color);
+  }
+
+  setCellAlign(rectangle: Rectangle, align?: CellAlign): void {
+    grid.setCellAlign(this.id, rectangle, align);
+  }
+
+  setCurrency(rectangle: Rectangle, symbol: string = '$') {
+    grid.setCellCurrency(this.id, rectangle, symbol);
+  }
+
+  setPercentage(rectangle: Rectangle) {
+    grid.setCellPercentage(this.id, rectangle);
+  }
+
+  setExponential(rectangle: Rectangle) {
+    grid.setCellExponential(this.id, rectangle);
+  }
+
+  removeCellNumericFormat(rectangle: Rectangle) {
+    grid.removeCellNumericFormat(this.id, rectangle);
+  }
+
+  changeDecimals(delta: number): void {
+    grid.changeDecimalPlaces(
+      this.id,
+      new Pos(this.cursor.originPosition.x, this.cursor.originPosition.y),
+      this.cursor.getRectangle(),
+      delta
     );
   }
 
-  debugGetCells(): Cell[] {
-    return this.grid.getAllCells();
+  clearFormatting(): void {
+    grid.clearFormatting(this.id, this.cursor.getRectangle());
   }
+
+  getFormatPrimaryCell(): CellFormatSummary {
+    return grid.getCellFormatSummary(this.id, this.cursor.originPosition.x, this.cursor.originPosition.y);
+  }
+
+  //#endregion
+
+  //#region Offsets
+
+  // @returns screen position of a cell
+  getCellOffsets(column: number, row: number): Rectangle {
+    const screenRect = this.offsets.getCellOffsets(column, row);
+    return new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
+  }
+
+  // @returns screen rectangle for a column/row rectangle
+  getScreenRectangle(column: number, row: number, width: number, height: number): Rectangle {
+    const topLeft = this.getCellOffsets(column, row);
+    const bottomRight = this.getCellOffsets(column + width, row + height);
+    return new Rectangle(topLeft.left, topLeft.top, bottomRight.right - topLeft.left, bottomRight.bottom - topLeft.top);
+  }
+
+  updateSheetOffsets() {
+    const newOffsets = grid.getOffsets(this.id);
+    const offsetSizeChanges: OffsetsSizeChanges = this.offsets.findResizeChanges(newOffsets);
+    const columns = offsetSizeChanges.getChanges(true);
+    for (let i = 0; i < columns.length; i += 2) {
+      const index = columns[i];
+      const delta = columns[i + 1];
+      pixiApp.cellsSheets.adjustHeadings({ sheetId: this.id, column: index, delta });
+    }
+    this.offsets.free();
+    this.offsets = newOffsets;
+  }
+
+  //#endregion
 }

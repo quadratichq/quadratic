@@ -2,6 +2,7 @@ import {
   BorderAll,
   BorderBottom,
   BorderClear,
+  // BorderClear,
   BorderColor,
   BorderHorizontal,
   BorderInner,
@@ -13,101 +14,43 @@ import {
   LineStyle,
 } from '@mui/icons-material';
 import { Tooltip } from '@mui/material';
-import { ClickEvent, MenuItem, SubMenu, SubMenuProps } from '@szhsin/react-menu';
+import { ClickEvent, MenuItem, SubMenu } from '@szhsin/react-menu';
 import { useCallback, useEffect, useState } from 'react';
 import { ColorResult } from 'react-color';
-import { useRecoilState } from 'recoil';
-import { gridInteractionStateAtom } from '../../../../../atoms/gridInteractionStateAtom';
-import { Sheet } from '../../../../../grid/sheet/Sheet';
-import { PixiApp } from '../../../../../gridGL/pixiApp/PixiApp';
+import { sheets } from '../../../../../grid/controller/Sheets';
 import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
-import { BorderType, BorderTypeEnum } from '../../../../../schemas';
+import { BorderSelection, CellBorderLine } from '../../../../../quadratic-core/quadratic_core';
 import { colors } from '../../../../../theme/colors';
 import { QColorPicker } from '../../../../components/qColorPicker';
 import { ChangeBorder, useBorders } from '../useBorders';
 import './useGetBorderMenu.css';
 
-interface Props extends SubMenuProps {
-  sheet: Sheet;
-  app: PixiApp;
-}
+export function useGetBorderMenu(): JSX.Element {
+  const sheet = sheets.sheet;
+  const cursor = sheet.cursor;
 
-enum BorderSelection {
-  none = 0,
-  all,
-  inner,
-  outer,
-  horizontal,
-  vertical,
-  left,
-  top,
-  right,
-  bottom,
-  clear,
-}
-
-export function useGetBorderMenu(props: Props): JSX.Element {
-  const [interactionState] = useRecoilState(gridInteractionStateAtom);
-  const multiCursor = interactionState.showMultiCursor;
-
-  const [lineStyle, setLineStyle] = useState<BorderType | undefined>();
-  const [borderSelection, setBorderSelection] = useState<BorderSelection>(BorderSelection.none);
+  const [lineStyle, setLineStyle] = useState<CellBorderLine | undefined>();
+  const [borderSelection, setBorderSelection] = useState<BorderSelection | undefined>();
   const defaultColor = convertTintToString(colors.defaultBorderColor);
   const [color, setColor] = useState<string>(defaultColor);
 
-  const { changeBorders, clearBorders } = useBorders(props.sheet, props.app);
+  const { changeBorders } = useBorders();
 
+  const clearSelection = useCallback(() => setBorderSelection(0), []);
   // clear border type when changing selection
   useEffect(() => {
-    setBorderSelection(0);
-  }, [interactionState]);
+    window.addEventListener('cursor-position', clearSelection);
+    return () => window.removeEventListener('cursor-position', clearSelection);
+  }, [clearSelection]);
 
   const handleChangeBorders = useCallback(
-    (borderSelection: BorderSelection, color: string, lineStyle?: BorderType): void => {
-      if (!borderSelection) return;
-      if (borderSelection === BorderSelection.clear) {
-        clearBorders();
-        return;
-      }
-      const borders: ChangeBorder = {};
+    (borderSelection: BorderSelection | undefined, color: string, lineStyle?: CellBorderLine): void => {
+      if (borderSelection === undefined) return;
+      const borders: ChangeBorder = { selection: borderSelection, type: lineStyle };
       if (color !== defaultColor) borders.color = color;
-      if (lineStyle) borders.type = lineStyle;
-      switch (borderSelection) {
-        case BorderSelection.all:
-          borders.borderAll = true;
-          break;
-        case BorderSelection.outer:
-          borders.borderLeft = true;
-          borders.borderRight = true;
-          borders.borderTop = true;
-          borders.borderBottom = true;
-          break;
-        case BorderSelection.inner:
-          borders.borderHorizontal = true;
-          borders.borderVertical = true;
-          break;
-        case BorderSelection.horizontal:
-          borders.borderHorizontal = true;
-          break;
-        case BorderSelection.vertical:
-          borders.borderVertical = true;
-          break;
-        case BorderSelection.left:
-          borders.borderLeft = true;
-          break;
-        case BorderSelection.top:
-          borders.borderTop = true;
-          break;
-        case BorderSelection.right:
-          borders.borderRight = true;
-          break;
-        case BorderSelection.bottom:
-          borders.borderBottom = true;
-          break;
-      }
       changeBorders(borders);
     },
-    [changeBorders, defaultColor, clearBorders]
+    [changeBorders, defaultColor]
   );
 
   const handleChangeBorderColor = useCallback(
@@ -122,7 +65,7 @@ export function useGetBorderMenu(props: Props): JSX.Element {
   );
 
   const handleChangeBorderType = useCallback(
-    (e: ClickEvent, change?: BorderType): void => {
+    (e: ClickEvent, change?: CellBorderLine): void => {
       e.keepOpen = true;
       if (change !== lineStyle) {
         setLineStyle(change);
@@ -159,33 +102,33 @@ export function useGetBorderMenu(props: Props): JSX.Element {
     <div className="borderMenu">
       <div className="borderMenuLines">
         <div className="borderMenuLine">
-          <BorderSelectionButton type={BorderSelection.all} title="All borders" label={<BorderAll />} />
+          <BorderSelectionButton type={BorderSelection.All} title="All borders" label={<BorderAll />} />
           <BorderSelectionButton
-            type={BorderSelection.inner}
+            type={BorderSelection.Inner}
             title="Inner borders"
             label={<BorderInner />}
-            disabled={!multiCursor}
+            disabled={!cursor.multiCursor}
           />
-          <BorderSelectionButton type={BorderSelection.outer} title="Outer borders" label={<BorderOuter />} />
+          <BorderSelectionButton type={BorderSelection.Outer} title="Outer borders" label={<BorderOuter />} />
           <BorderSelectionButton
-            type={BorderSelection.horizontal}
+            type={BorderSelection.Horizontal}
             title="Horizontal borders"
             label={<BorderHorizontal />}
-            disabled={!multiCursor}
+            disabled={!cursor.multiCursor}
           />
           <BorderSelectionButton
-            type={BorderSelection.vertical}
+            type={BorderSelection.Vertical}
             title="Vertical borders"
             label={<BorderVertical />}
-            disabled={!multiCursor}
+            disabled={!cursor.multiCursor}
           />
         </div>
         <div className="borderMenuLine">
-          <BorderSelectionButton type={BorderSelection.left} title="Left border" label={<BorderLeft />} />
-          <BorderSelectionButton type={BorderSelection.top} title="Top border" label={<BorderTop />} />
-          <BorderSelectionButton type={BorderSelection.right} title="Right border" label={<BorderRight />} />
-          <BorderSelectionButton type={BorderSelection.bottom} title="Bottom border" label={<BorderBottom />} />
-          <BorderSelectionButton type={BorderSelection.clear} title="Clear borders" label={<BorderClear />} />
+          <BorderSelectionButton type={BorderSelection.Left} title="Left border" label={<BorderLeft />} />
+          <BorderSelectionButton type={BorderSelection.Top} title="Top border" label={<BorderTop />} />
+          <BorderSelectionButton type={BorderSelection.Right} title="Right border" label={<BorderRight />} />
+          <BorderSelectionButton type={BorderSelection.Bottom} title="Bottom border" label={<BorderBottom />} />
+          <BorderSelectionButton type={BorderSelection.Clear} title="Clear borders" label={<BorderClear />} />
         </div>
       </div>
       <div className="borderMenuFormatting">
@@ -207,19 +150,19 @@ export function useGetBorderMenu(props: Props): JSX.Element {
           <MenuItem onClick={(e) => handleChangeBorderType(e)}>
             <div className="lineStyleBorder normalBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderTypeEnum.line2)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, CellBorderLine.Line2)}>
             <div className="lineStyleBorder doubleBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderTypeEnum.line3)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, CellBorderLine.Line3)}>
             <div className="lineStyleBorder tripleBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderTypeEnum.dashed)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, CellBorderLine.Dashed)}>
             <div className="lineStyleBorder dashedBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderTypeEnum.dotted)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, CellBorderLine.Dotted)}>
             <div className="lineStyleBorder dottedBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, BorderTypeEnum.double)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, CellBorderLine.Double)}>
             <div className="lineStyleBorder twoLineBorder"></div>
           </MenuItem>
         </SubMenu>

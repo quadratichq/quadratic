@@ -9,71 +9,61 @@ import {
   FormatColorFill,
   FormatColorText,
   FormatItalic,
+  Functions,
   MoreHoriz,
   Percent,
 } from '@mui/icons-material';
 import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
-import { ControlledMenu, Menu, MenuItem, useMenuState } from '@szhsin/react-menu';
+import { ControlledMenu, Menu, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef } from 'react';
+import { useRecoilValue } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
-import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { GridInteractionState } from '../../../atoms/gridInteractionStateAtom';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
-import { PNG_MESSAGE } from '../../../constants/appConstants';
-import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
-import { SheetController } from '../../../grid/controller/sheetController';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { copySelectionToPNG, fullClipboardSupport } from '../../../grid/actions/clipboard/clipboard';
+import { sheets } from '../../../grid/controller/Sheets';
+import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
+import { focusGrid } from '../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
 import { QColorPicker } from '../../components/qColorPicker';
-import { CopyAsPNG, DecimalDecrease, DecimalIncrease } from '../../icons';
+import { CopyAsPNG, DecimalDecrease, DecimalIncrease, Icon123 } from '../../icons';
 import { MenuLineItem } from '../TopBar/MenuLineItem';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
-import { useClearAllFormatting } from '../TopBar/SubMenus/useClearAllFormatting';
-import { useFormatCells } from '../TopBar/SubMenus/useFormatCells';
-import { useGetSelection } from '../TopBar/SubMenus/useGetSelection';
+import {
+  clearFormattingAndBorders,
+  removeCellNumericFormat,
+  setAlignment,
+  setBold,
+  setFillColor,
+  setItalic,
+  setTextColor,
+  textFormatDecreaseDecimalPlaces,
+  textFormatIncreaseDecimalPlaces,
+  textFormatSetCurrency,
+  textFormatSetExponential,
+  textFormatSetPercentage,
+} from '../TopBar/SubMenus/formatCells';
 
 interface Props {
-  editorInteractionState: EditorInteractionState;
-  interactionState: GridInteractionState;
-  setInteractionState: React.Dispatch<React.SetStateAction<GridInteractionState>>;
   container?: HTMLDivElement;
-  app: PixiApp;
-  sheetController: SheetController;
   showContextMenu: boolean;
 }
 
 export const FloatingContextMenu = (props: Props) => {
-  const {
-    editorInteractionState: { permission },
-    interactionState,
-    app,
-    app: { viewport },
-    container,
-    sheetController,
-    showContextMenu,
-  } = props;
+  const { container, showContextMenu } = props;
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const [moreMenuProps, moreMenuToggle] = useMenuState();
   const menuDiv = useRef<HTMLDivElement>(null);
   const moreMenuButtonRef = useRef(null);
-  const borders = useGetBorderMenu({ sheet: sheetController.sheet, app: app });
-  const {
-    changeFillColor,
-    removeFillColor,
-    changeBold,
-    changeItalic,
-    changeTextColor,
-    changeAlignment,
-    textFormatDecreaseDecimalPlaces,
-    textFormatIncreaseDecimalPlaces,
-    textFormatSetCurrency,
-    textFormatSetPercentage,
-  } = useFormatCells(sheetController, props.app);
-  const { format } = useGetSelection(sheetController.sheet);
-  const { clearAllFormatting } = useClearAllFormatting(sheetController, props.app);
+  const borders = useGetBorderMenu();
+
+  const textColorRef = useRef<MenuInstance>(null);
+  const fillColorRef = useRef<MenuInstance>(null);
 
   // close moreMenu when context menu closes
   useEffect(() => {
@@ -82,21 +72,21 @@ export const FloatingContextMenu = (props: Props) => {
 
   // Function used to move and scale the Input with the Grid
   const updateContextMenuCSSTransform = useCallback(() => {
-    if (!app || !viewport || !container) return '';
-    if (!menuDiv.current) return '';
+    if (!container || !menuDiv.current) return '';
+
+    const { viewport } = pixiApp;
+
+    const sheet = sheets.sheet;
+    const cursor = sheet.cursor;
 
     // Calculate position of input based on cell
-    const cell_offsets = sheetController.sheet.gridOffsets.getCell(
-      Math.min(
-        interactionState.cursorPosition.x,
-        interactionState.multiCursorPosition.originPosition.x,
-        interactionState.multiCursorPosition.terminalPosition.x
-      ),
-      Math.min(
-        interactionState.cursorPosition.y,
-        interactionState.multiCursorPosition.originPosition.y,
-        interactionState.multiCursorPosition.terminalPosition.y
-      )
+    const cell_offsets = sheet.getCellOffsets(
+      cursor.multiCursor
+        ? Math.min(cursor.cursorPosition.x, cursor.multiCursor.originPosition.x, cursor.multiCursor.terminalPosition.x)
+        : cursor.cursorPosition.x,
+      cursor.multiCursor
+        ? Math.min(cursor.cursorPosition.y, cursor.multiCursor.originPosition.y, cursor.multiCursor.terminalPosition.y)
+        : cursor.cursorPosition.y
     );
     let cell_offset_scaled = viewport.toScreen(cell_offsets.x, cell_offsets.y);
 
@@ -116,26 +106,26 @@ export const FloatingContextMenu = (props: Props) => {
       visibility = 'hidden';
     }
     // hide if boxCells is active
-    if (interactionState.boxCells) {
+    if (cursor.boxCells) {
       visibility = 'hidden';
     }
 
     // Hide if it's not 1) a multicursor or, 2) an active right click
-    if (!(interactionState.showMultiCursor || showContextMenu)) visibility = 'hidden';
+    if (!(cursor.multiCursor || showContextMenu)) visibility = 'hidden';
 
     // Hide if currently selecting
-    if (app?.pointer?.pointerDown?.active) visibility = 'hidden';
+    if (pixiApp.pointer?.pointerDown?.active) visibility = 'hidden';
 
     // Hide if in presentation mode
-    if (app.settings.presentationMode) visibility = 'hidden';
+    if (pixiAppSettings.presentationMode) visibility = 'hidden';
 
     // Hide if you don't have edit access
-    if (!isEditorOrAbove(permission)) visibility = 'hidden';
+    if (!isEditorOrAbove(editorInteractionState.permission)) visibility = 'hidden';
 
     // Hide FloatingFormatMenu if multi cursor is off screen
-    const terminal_pos = sheetController.sheet.gridOffsets.getCell(
-      interactionState.multiCursorPosition.terminalPosition.x,
-      interactionState.multiCursorPosition.terminalPosition.y
+    const terminal_pos = sheet.getCellOffsets(
+      cursor.multiCursor ? cursor.multiCursor.terminalPosition.x : cursor.cursorPosition.x,
+      cursor.multiCursor ? cursor.multiCursor.terminalPosition.y : cursor.cursorPosition.y
     );
     let multiselect_offset = viewport.toScreen(
       terminal_pos.x + terminal_pos.width,
@@ -170,11 +160,12 @@ export const FloatingContextMenu = (props: Props) => {
       // that we check again soon to see if the viewport is done moving
       setTimeout(updateContextMenuCSSTransform, 100);
     } else menuDiv.current.style.pointerEvents = 'auto';
-
     return transform;
-  }, [app, viewport, container, sheetController.sheet.gridOffsets, interactionState, showContextMenu, permission]);
+  }, [container, showContextMenu, editorInteractionState.permission]);
 
   useEffect(() => {
+    const { viewport } = pixiApp;
+
     if (!viewport) return;
     viewport.on('moved', updateContextMenuCSSTransform);
     viewport.on('moved-end', updateContextMenuCSSTransform);
@@ -185,16 +176,12 @@ export const FloatingContextMenu = (props: Props) => {
       viewport.removeListener('moved-end', updateContextMenuCSSTransform);
       document.removeEventListener('pointerup', updateContextMenuCSSTransform);
     };
-  }, [viewport, updateContextMenuCSSTransform]);
+  }, [updateContextMenuCSSTransform]);
 
   const copyAsPNG = useCallback(async () => {
-    await copySelectionToPNG(app);
+    await copySelectionToPNG(addGlobalSnackbar);
     moreMenuToggle();
-    addGlobalSnackbar(PNG_MESSAGE);
-  }, [app, moreMenuToggle, addGlobalSnackbar]);
-
-  // If we don't have a viewport, we can't continue.
-  if (!viewport || !container) return null;
+  }, [moreMenuToggle, addGlobalSnackbar]);
 
   // set input's initial position correctly
   const transform = updateContextMenuCSSTransform();
@@ -228,18 +215,31 @@ export const FloatingContextMenu = (props: Props) => {
         }}
       >
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
-          <IconButton onClick={() => changeBold(!format.bold)} color="inherit">
+          <IconButton
+            onClick={() => {
+              const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
+              setBold(!formatPrimaryCell?.bold);
+            }}
+            color="inherit"
+          >
             <FormatBold fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
-          <IconButton onClick={() => changeItalic(!format.italic)} color="inherit">
+          <IconButton
+            onClick={() => {
+              const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
+              setItalic(!formatPrimaryCell?.italic);
+            }}
+            color="inherit"
+          >
             <FormatItalic fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
         <Menu
           className="color-picker-submenu"
+          instanceRef={textColorRef}
           menuButton={
             <div>
               <TooltipHint title="Text color">
@@ -250,23 +250,34 @@ export const FloatingContextMenu = (props: Props) => {
             </div>
           }
         >
-          <QColorPicker onChangeComplete={changeTextColor} onClear={removeFillColor} />
+          <QColorPicker
+            onChangeComplete={(color) => {
+              textColorRef.current?.closeMenu();
+              setTextColor(color);
+              focusGrid();
+            }}
+            onClear={() => {
+              textColorRef.current?.closeMenu();
+              setTextColor(undefined);
+              focusGrid();
+            }}
+          />
         </Menu>
 
         <MenuDivider />
 
         <TooltipHint title="Align left">
-          <IconButton size="small" onClick={() => changeAlignment('left')}>
+          <IconButton size="small" onClick={() => setAlignment('left')}>
             <FormatAlignLeft fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
         <TooltipHint title="Align center">
-          <IconButton size="small" onClick={() => changeAlignment('center')}>
+          <IconButton size="small" onClick={() => setAlignment('center')}>
             <FormatAlignCenter fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
         <TooltipHint title="Align right">
-          <IconButton size="small" onClick={() => changeAlignment('right')}>
+          <IconButton size="small" onClick={() => setAlignment('right')}>
             <FormatAlignRight fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
@@ -275,6 +286,7 @@ export const FloatingContextMenu = (props: Props) => {
 
         <Menu
           className="color-picker-submenu"
+          instanceRef={fillColorRef}
           menuButton={
             <div>
               <TooltipHint title="Fill color">
@@ -285,7 +297,18 @@ export const FloatingContextMenu = (props: Props) => {
             </div>
           }
         >
-          <QColorPicker onChangeComplete={changeFillColor} onClear={removeFillColor} />
+          <QColorPicker
+            onChangeComplete={(color) => {
+              fillColorRef.current?.closeMenu();
+              setFillColor(color);
+              focusGrid();
+            }}
+            onClear={() => {
+              fillColorRef.current?.closeMenu();
+              setFillColor(undefined);
+              focusGrid();
+            }}
+          />
         </Menu>
         <Menu
           menuButton={
@@ -303,15 +326,27 @@ export const FloatingContextMenu = (props: Props) => {
 
         <MenuDivider />
 
+        <TooltipHint title="Format as automatic">
+          <IconButton onClick={() => removeCellNumericFormat()} color="inherit">
+            <Icon123 fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+
         <TooltipHint title="Format as currency">
           <IconButton onClick={() => textFormatSetCurrency()} color="inherit">
             <AttachMoneyOutlined fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
-        <TooltipHint title="Format as percent">
+        <TooltipHint title="Format as percentage">
           <IconButton onClick={() => textFormatSetPercentage()} color="inherit">
             <Percent fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+
+        <TooltipHint title="Format as scientific">
+          <IconButton onClick={() => textFormatSetExponential()} color="inherit">
+            <Functions fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
@@ -329,16 +364,18 @@ export const FloatingContextMenu = (props: Props) => {
 
         <MenuDivider />
         <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
-          <IconButton onClick={() => clearAllFormatting()} color="inherit">
+          <IconButton onClick={clearFormattingAndBorders} color="inherit">
             <FormatClear fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
-        <MenuDivider />
-        <TooltipHint title="More commands…">
-          <IconButton onClick={() => moreMenuToggle()} color="inherit" ref={moreMenuButtonRef}>
-            <MoreHoriz fontSize={iconSize} />
-          </IconButton>
-        </TooltipHint>
+        {fullClipboardSupport() && <MenuDivider />}
+        {fullClipboardSupport() && (
+          <TooltipHint title="More commands…">
+            <IconButton onClick={() => moreMenuToggle()} color="inherit" ref={moreMenuButtonRef}>
+              <MoreHoriz fontSize={iconSize} />
+            </IconButton>
+          </TooltipHint>
+        )}
         <ControlledMenu
           state={moreMenuProps.state}
           menuStyle={{ padding: '2px 0', color: 'inherit' }}

@@ -12,7 +12,7 @@ import { MenuLineItem } from './MenuLineItem';
 
 export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispatch<SetStateAction<boolean>> }) {
   const theme = useTheme();
-  const { name, contents } = useFileContext();
+  const { name } = useFileContext();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { uuid } = useParams() as { uuid: string };
   const submit = useSubmit();
@@ -64,14 +64,14 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
         </MenuItem>
       )}
       {duplicateFile.isAvailable(permission) && (
-        <MenuItem onClick={() => duplicateFile.run({ contents, name, submit })}>
+        <MenuItem onClick={() => duplicateFile.run({ name, submit })}>
           <MenuLineItem primary={duplicateFile.label} />
         </MenuItem>
       )}
       {downloadFile.isAvailable(permission) && (
         <MenuItem
           onClick={() => {
-            downloadFile.run({ name, contents });
+            downloadFile.run({ name });
           }}
         >
           <MenuLineItem primary={downloadFile.label} />

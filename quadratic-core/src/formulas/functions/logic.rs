@@ -34,7 +34,7 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Returns `TRUE` if `a` is falsey and `FALSE` if `a` is truthy.
             #[examples("NOT(A113)")]
-            #[pure_zip_map]
+            #[zip_map]
             fn NOT([boolean]: bool) {
                 !boolean
             }
@@ -76,8 +76,8 @@ fn get_functions() -> Vec<FormulaFunction> {
                 "IF(A2<0, \"A2 is negative\", \"A2 is nonnegative\")",
                 "IF(A2<0, \"A2 is negative\", IF(A2>0, \"A2 is positive\", \"A2 is zero\"))"
             )]
-            #[pure_zip_map]
-            fn IF([condition]: bool, [t]: BasicValue, [f]: BasicValue) {
+            #[zip_map]
+            fn IF([condition]: bool, [t]: CellValue, [f]: CellValue) {
                 if condition { t } else { f }.clone()
             }
         ),
@@ -92,21 +92,15 @@ mod tests {
     fn test_formula_if() {
         let form = parse_formula("IF(A1='q', 'yep', 'nope')", pos![A0]).unwrap();
 
-        let mut g = FnGrid(|pos| {
-            Some(match (pos.x, pos.y) {
-                (0, 1) => "q".to_string(),
-                (1, 1) => "w".to_string(),
-                _ => panic!("cell {pos} shouldn't be accessed"),
-            })
-        });
+        let mut g = Grid::new();
+        let sheet = &mut g.sheets_mut()[0];
+        sheet.set_cell_value(Pos { x: 0, y: 1 }, "q");
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, "w");
+        let sheet_id = sheet.id;
 
-        assert_eq!(
-            "yep".to_string(),
-            form.eval_blocking(&mut g, pos![A0]).unwrap().to_string(),
-        );
-        assert_eq!(
-            "nope".to_string(),
-            form.eval_blocking(&mut g, pos![B0]).unwrap().to_string(),
-        );
+        let mut ctx = Ctx::new(&g, pos![A0].with_sheet(sheet_id));
+        assert_eq!("yep".to_string(), form.eval(&mut ctx).unwrap().to_string());
+        let mut ctx = Ctx::new(&g, pos![B0].with_sheet(sheet_id));
+        assert_eq!("nope".to_string(), form.eval(&mut ctx).unwrap().to_string());
     }
 }

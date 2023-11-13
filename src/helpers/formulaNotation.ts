@@ -1,23 +1,38 @@
-import { getCoordinatesFromStringId } from '../grid/actions/updateCellAndDCells';
-import { GridOffsets } from '../grid/sheet/GridOffsets';
+import { sheets } from '../grid/controller/Sheets';
 import { Coordinate } from '../gridGL/types/size';
 import { CursorCell } from '../gridGL/UI/Cursor';
-import { CellRefId } from '../hooks/useEditorCellHighlights';
+import { CellRefId } from '../ui/menus/CodeEditor/useEditorCellHighlights';
 import { StringId } from './getKey';
 
-type Position = {
-  Relative: number;
-  Absolute?: number;
-};
+export function getCoordinatesFromStringId(stringId: StringId): [number, number] {
+  // required for type inference
+  const [x, y] = stringId.split(',').map((val) => parseInt(val));
+  return [x, y];
+}
 
-type CoordiantePositionType = {
-  x: Position;
-  y: Position;
-};
+export interface CellPosition {
+  x: { type: 'Relative'; coord: number };
+  y: { type: 'Relative'; coord: number };
+  sheet?: string;
+}
 
 export type Span = { start: number; end: number };
 
-export type CellRef = { Cell: CoordiantePositionType } | { CellRange: CoordiantePositionType[] };
+export type CellRefCoord = {
+  x: { type: 'Relative' | 'Absolute'; coord: number };
+  y: { type: 'Relative' | 'Absolute'; coord: number };
+};
+
+export type CellRef =
+  | {
+      type: 'CellRange';
+      start: CellPosition;
+      end: CellPosition;
+    }
+  | {
+      type: 'Cell';
+      pos: CellPosition;
+    };
 
 export type ParseFormulaReturnType = {
   parse_error_msg: string | undefined;
@@ -28,29 +43,25 @@ export type ParseFormulaReturnType = {
   }[];
 };
 
-export function getCellFromFormulaNotation(
-  cellRefId: CellRefId,
-  gridOffsets: GridOffsets,
-  editorCursorPosition: Coordinate
-) {
+export function getCellFromFormulaNotation(sheetId: string, cellRefId: CellRefId, editorCursorPosition: Coordinate) {
   const isSimpleCell = !cellRefId.includes(':');
 
   if (isSimpleCell) {
     const [x, y] = getCoordinatesFromStringId(cellRefId);
-    return getCellWithLimit(gridOffsets, editorCursorPosition, y, x);
+    return getCellWithLimit(sheetId, editorCursorPosition, y, x);
   }
   const [startCell, endCell] = cellRefId.split(':') as [StringId, StringId];
   const [startCellX, startCellY] = getCoordinatesFromStringId(startCell);
   const [endCellX, endCellY] = getCoordinatesFromStringId(endCell);
 
   return {
-    startCell: getCellWithLimit(gridOffsets, editorCursorPosition, startCellY, startCellX),
-    endCell: getCellWithLimit(gridOffsets, editorCursorPosition, endCellY, endCellX),
+    startCell: getCellWithLimit(sheetId, editorCursorPosition, startCellY, startCellX),
+    endCell: getCellWithLimit(sheetId, editorCursorPosition, endCellY, endCellX),
   };
 }
 
 function getCellWithLimit(
-  gridOffsets: GridOffsets,
+  sheetId: string,
   editorCursorPosition: Coordinate,
   row: number,
   column: number,
@@ -59,7 +70,7 @@ function getCellWithLimit(
   // getCell is slow with more than 9 digits, so limit if column or row is > editorCursorPosition + an offset
   // If it's a single cell to be highlighted, it won't be visible anyway, and if it's a range
   // It will highlight beyond the what's visible in the viewport
-  return gridOffsets.getCell(
+  return sheets.sheet.getCellOffsets(
     Math.min(column, editorCursorPosition.x + offset),
     Math.min(row, editorCursorPosition.y + offset)
   );

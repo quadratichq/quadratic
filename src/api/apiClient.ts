@@ -1,18 +1,29 @@
+import { v4 as uuid } from 'uuid';
+
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { downloadFileInBrowser } from '../helpers/downloadFileInBrowser';
-import { GridFile, GridFileSchema } from '../schemas';
+import { generateKeyBetween } from '../utils/fractionalIndexing';
 import { fetchFromApi } from './fetchFromApi';
 import { ApiSchemas, ApiTypes } from './types';
 
-const DEFAULT_FILE: GridFile = {
-  cells: [],
-  formats: [],
-  columns: [],
-  rows: [],
-  borders: [],
-  cell_dependency: '',
-  version: GridFileSchema.shape.version.value,
+const DEFAULT_FILE: any = {
+  sheets: [
+    {
+      name: 'Sheet 1',
+      id: { id: uuid() },
+      order: generateKeyBetween(null, null),
+      cells: [],
+      code_cells: [],
+      formats: [],
+      columns: [],
+      rows: [],
+      offsets: [[], []],
+      borders: {},
+    },
+  ],
+  // TODO(ddimaria): make this dynamic
+  version: '1.4',
 };
 
 export const apiClient = {
@@ -105,7 +116,7 @@ export const apiClient = {
       const message = 'REACT_APP_QUADRATIC_API_URL env variable is not set.';
       Sentry.captureEvent({
         message,
-        level: Sentry.Severity.Fatal,
+        level: 'fatal',
       });
       throw new Error(message);
     }

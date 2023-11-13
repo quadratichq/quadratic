@@ -1,10 +1,12 @@
-import { Container, BitmapText, Rectangle, Graphics, Point } from 'pixi.js';
-import { CELL_WIDTH, CELL_HEIGHT } from '../../../constants/gridConstants';
+import { BitmapText, Container, Graphics, Point, Rectangle } from 'pixi.js';
+import { CELL_HEIGHT, CELL_WIDTH } from '../../../constants/gridConstants';
+import { sheets } from '../../../grid/controller/Sheets';
 import { colors } from '../../../theme/colors';
-import { calculateAlphaForGridLines } from '../gridUtils';
-import { Size } from '../../types/size';
 import { intersects } from '../../helpers/intersects';
-import { PixiApp } from '../../pixiApp/PixiApp';
+import { pixiApp } from '../../pixiApp/PixiApp';
+import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
+import { Size } from '../../types/size';
+import { calculateAlphaForGridLines } from '../gridUtils';
 import { GridHeadingsLabels } from './GridHeadingsLabels';
 import { getColumnA1Notation, getRowA1Notation } from './getA1Notation';
 
@@ -20,7 +22,6 @@ const GRID_HEADING_RESIZE_TOLERANCE = 3;
 export const LABEL_DIGITS_TO_CALCULATE_SKIP = 4;
 
 export class GridHeadings extends Container {
-  private app: PixiApp;
   private characterSize?: Size;
   private headingsGraphics: Graphics;
   private labels: GridHeadingsLabels;
@@ -40,11 +41,10 @@ export class GridHeadings extends Container {
 
   dirty = true;
 
-  constructor(app: PixiApp) {
+  constructor() {
     super();
-    this.app = app;
     this.headingsGraphics = this.addChild(new Graphics());
-    this.labels = this.addChild(new GridHeadingsLabels(app));
+    this.labels = this.addChild(new GridHeadingsLabels());
     this.corner = this.addChild(new Graphics());
   }
 
@@ -76,40 +76,32 @@ export class GridHeadings extends Container {
 
   // creates arrays of selected columns and rows
   private createSelectedArrays(): { selectedColumns: number[]; selectedRows: number[] } {
-    const interactionState = this.app.settings.interactionState;
+    const cursor = sheets.sheet.cursor;
     const selectedColumns: number[] = [];
     const selectedRows: number[] = [];
-    if (interactionState.showMultiCursor) {
-      for (
-        let x = interactionState.multiCursorPosition.originPosition.x;
-        x <= interactionState.multiCursorPosition.terminalPosition.x;
-        x++
-      ) {
+    if (cursor.multiCursor) {
+      for (let x = cursor.multiCursor.originPosition.x; x <= cursor.multiCursor.terminalPosition.x; x++) {
         selectedColumns.push(x);
       }
-      for (
-        let y = interactionState.multiCursorPosition.originPosition.y;
-        y <= interactionState.multiCursorPosition.terminalPosition.y;
-        y++
-      ) {
+      for (let y = cursor.multiCursor.originPosition.y; y <= cursor.multiCursor.terminalPosition.y; y++) {
         selectedRows.push(y);
       }
     } else {
-      selectedColumns.push(interactionState.cursorPosition.x);
-      selectedRows.push(interactionState.cursorPosition.y);
+      selectedColumns.push(cursor.cursorPosition.x);
+      selectedRows.push(cursor.cursorPosition.y);
     }
     return { selectedColumns, selectedRows };
   }
 
   private drawHorizontal() {
     if (!this.characterSize) return;
-    const { viewport } = this.app;
-    const { gridOffsets } = this.app.sheet;
-    const showA1Notation = this.app.settings.showA1Notation;
+    const { viewport } = pixiApp;
+    const showA1Notation = pixiAppSettings.showA1Notation;
     const cellWidth = CELL_WIDTH / viewport.scale.x;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const gridAlpha = calculateAlphaForGridLines(viewport);
     const bounds = viewport.getVisibleBounds();
+    const offsets = sheets.sheet.offsets;
 
     // draw horizontal bar
     this.headingsGraphics.lineStyle(0);
@@ -119,12 +111,12 @@ export class GridHeadings extends Container {
     this.headingsGraphics.endFill();
 
     // calculate selection bounds
-    const selectedStart = gridOffsets.getColumnPlacement(this.selectedColumns[0]);
-    const selectedEnd = gridOffsets.getColumnPlacement(this.selectedColumns[this.selectedColumns.length - 1]);
-    const xSelectedStart = selectedStart.x;
-    let xSelectedEnd = xSelectedStart + selectedStart.width;
+    const selectedStart = offsets.getColumnPlacement(this.selectedColumns[0]);
+    const selectedEnd = offsets.getRowPlacement(this.selectedColumns[this.selectedColumns.length - 1]);
+    const xSelectedStart = selectedStart.position;
+    let xSelectedEnd = xSelectedStart + selectedStart.size;
     for (let i = 1; i < this.selectedColumns.length; i++) {
-      xSelectedEnd += gridOffsets.getColumnWidth(this.selectedColumns[i]);
+      xSelectedEnd += offsets.getColumnWidth(this.selectedColumns[i]);
     }
 
     // use these bounds for digit overlap comparison
@@ -132,12 +124,12 @@ export class GridHeadings extends Container {
       (this.characterSize.width * this.selectedColumns[0].toString().length) / 2 / viewport.scale.x;
     const endHalfWidth = (this.characterSize.width * this.selectedColumns[0].toString().length) / 2 / viewport.scale.x;
     const xSelectedStartLine1D = {
-      start: xSelectedStart + selectedStart.width / 2 - startHalfWidth,
-      end: xSelectedStart + selectedStart.width / 2 + startHalfWidth,
+      start: xSelectedStart + selectedStart.size / 2 - startHalfWidth,
+      end: xSelectedStart + selectedStart.size / 2 + startHalfWidth,
     };
     const xSelectedEndLine1D = {
-      start: xSelectedEnd - selectedEnd.width / 2 - endHalfWidth,
-      end: xSelectedEnd - selectedEnd.width / 2 + endHalfWidth,
+      start: xSelectedEnd - selectedEnd.size / 2 - endHalfWidth,
+      end: xSelectedEnd - selectedEnd.size / 2 + endHalfWidth,
     };
 
     // highlight column headings based on selected cells
@@ -145,10 +137,10 @@ export class GridHeadings extends Container {
     this.headingsGraphics.drawRect(xSelectedStart, viewport.top, xSelectedEnd - xSelectedStart, cellHeight);
     this.headingsGraphics.endFill();
 
-    const start = gridOffsets.getColumnIndex(bounds.left);
-    const end = gridOffsets.getColumnIndex(bounds.right);
+    const start = offsets.getXPlacement(bounds.left);
+    const end = offsets.getXPlacement(bounds.right);
     const leftOffset = start.position;
-    const rightOffset = end.position;
+    const rightOffset = end.position + end.size;
 
     // labelWidth uses the constant for number of digits--this ensures the mod factor doesn't change when panning
     const labelWidth = LABEL_DIGITS_TO_CALCULATE_SKIP * this.characterSize.width;
@@ -163,12 +155,12 @@ export class GridHeadings extends Container {
     let currentWidth = 0;
     this.gridLinesColumns = [];
     for (let x = leftOffset; x <= rightOffset; x += currentWidth) {
-      currentWidth = gridOffsets.getColumnWidth(column);
+      currentWidth = offsets.getColumnWidth(column);
       if (gridAlpha !== 0) {
         this.headingsGraphics.lineStyle(1, colors.gridHeadingBorder, 0.5 * gridAlpha, 0.5, true);
         this.headingsGraphics.moveTo(x, bounds.top);
         this.headingsGraphics.lineTo(x, bounds.top + cellHeight);
-        this.gridLinesColumns.push({ column: column - 1, x, width: gridOffsets.getColumnWidth(column - 1) });
+        this.gridLinesColumns.push({ column: column - 1, x, width: offsets.getColumnWidth(column - 1) });
       }
 
       // show first and last selected numbers unless last selected number overlaps first selected number
@@ -213,18 +205,18 @@ export class GridHeadings extends Container {
 
   private drawVertical() {
     if (!this.characterSize) return;
-    const { viewport } = this.app;
-    const { gridOffsets } = this.app.sheet;
-    const showA1Notation = this.app.settings.showA1Notation;
+    const { viewport } = pixiApp;
+    const showA1Notation = pixiAppSettings.showA1Notation;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const gridAlpha = calculateAlphaForGridLines(viewport);
     const bounds = viewport.getVisibleBounds();
+    const offsets = sheets.sheet.offsets;
 
     // determine width of row header
-    const start = gridOffsets.getRowIndex(bounds.top);
-    const end = gridOffsets.getRowIndex(bounds.bottom);
+    const start = offsets.getYPlacement(bounds.top);
+    const end = offsets.getYPlacement(bounds.bottom);
     const topOffset = start.position;
-    const bottomOffset = end.position;
+    const bottomOffset = end.position + end.size;
     const topNumberLength = Math.round(topOffset / CELL_HEIGHT - 1).toString().length;
     const bottomNumberLength = Math.round(bottomOffset / CELL_HEIGHT - 1).toString().length;
 
@@ -244,23 +236,23 @@ export class GridHeadings extends Container {
     this.headingsGraphics.endFill();
 
     // calculated selection bounds
-    const selectedStart = gridOffsets.getRowPlacement(this.selectedRows[0]);
-    const selectedEnd = gridOffsets.getRowPlacement(this.selectedRows[this.selectedRows.length - 1]);
-    const ySelectedStart = selectedStart.y;
-    let ySelectedEnd = ySelectedStart + selectedStart.height;
+    const selectedStart = offsets.getRowPlacement(this.selectedRows[0]);
+    const selectedEnd = offsets.getRowPlacement(this.selectedRows[this.selectedRows.length - 1]);
+    const ySelectedStart = selectedStart.position;
+    let ySelectedEnd = ySelectedStart + selectedStart.size;
     for (let i = 1; i < this.selectedRows.length; i++) {
-      ySelectedEnd += gridOffsets.getRowHeight(this.selectedRows[i]);
+      ySelectedEnd += offsets.getRowHeight(this.selectedRows[i]);
     }
     const halfCharacterHeight = this.characterSize.height / 2 / viewport.scale.x;
 
     // use these bounds for digit overlap comparison
     const ySelectedStartLine1D = {
-      start: ySelectedStart + selectedStart.height / 2 - halfCharacterHeight,
-      end: ySelectedStart + selectedStart.height / 2 + halfCharacterHeight,
+      start: ySelectedStart + selectedStart.size / 2 - halfCharacterHeight,
+      end: ySelectedStart + selectedStart.size / 2 + halfCharacterHeight,
     };
     const ySelectedEndLine1D = {
-      start: ySelectedEnd - selectedEnd.height / 2 - halfCharacterHeight,
-      end: ySelectedEnd - selectedEnd.height / 2 + halfCharacterHeight,
+      start: ySelectedEnd - selectedEnd.size / 2 - halfCharacterHeight,
+      end: ySelectedEnd - selectedEnd.size / 2 + halfCharacterHeight,
     };
 
     // highlight row headings based on selected cells
@@ -279,12 +271,12 @@ export class GridHeadings extends Container {
     let currentHeight = 0;
     this.gridLinesRows = [];
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
-      currentHeight = gridOffsets.getRowHeight(row);
+      currentHeight = offsets.getRowHeight(row);
       if (gridAlpha !== 0) {
         this.headingsGraphics.lineStyle(1, colors.gridHeadingBorder, 0.5 * gridAlpha, 0.5, true);
         this.headingsGraphics.moveTo(bounds.left, y);
         this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
-        this.gridLinesRows.push({ row: row - 1, y, height: gridOffsets.getRowHeight(row - 1) });
+        this.gridLinesRows.push({ row: row - 1, y, height: offsets.getRowHeight(row - 1) });
       }
 
       // show first and last selected numbers unless last selected number overlaps first selected number
@@ -331,7 +323,7 @@ export class GridHeadings extends Container {
   }
 
   private drawCorner(): void {
-    const { viewport } = this.app;
+    const { viewport } = pixiApp;
     const bounds = viewport.getVisibleBounds();
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     this.corner.clear();
@@ -342,7 +334,7 @@ export class GridHeadings extends Container {
   }
 
   private drawHeadingLines(): void {
-    const { viewport } = this.app;
+    const { viewport } = pixiApp;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const bounds = viewport.getVisibleBounds();
     this.headingsGraphics.lineStyle(1, colors.gridHeadingBorder, 1, 0.5, true);
@@ -362,12 +354,12 @@ export class GridHeadings extends Container {
 
     this.headingsGraphics.clear();
 
-    if (!this.app.settings.showHeadings) {
+    if (!pixiAppSettings.showHeadings) {
       this.visible = false;
       this.rowRect = undefined;
       this.columnRect = undefined;
       this.headingSize = { width: 0, height: 0 };
-      this.app.setViewportDirty();
+      pixiApp.setViewportDirty();
       return;
     }
     this.visible = true;
@@ -381,21 +373,22 @@ export class GridHeadings extends Container {
     this.labels.update();
     this.drawCorner();
 
-    this.headingSize = { width: this.rowWidth * this.app.viewport.scale.x, height: CELL_HEIGHT };
+    this.headingSize = { width: this.rowWidth * pixiApp.viewport.scale.x, height: CELL_HEIGHT };
   }
 
   // whether the point is in the heading
   intersectsHeadings(world: Point): { column?: number; row?: number; corner?: true } | undefined {
     if (!this.columnRect || !this.rowRect || !this.cornerRect) return;
+    const offsets = sheets.sheet.offsets;
+
     if (intersects.rectanglePoint(this.cornerRect, world)) {
       return { corner: true };
     }
-    const { gridOffsets } = this.app.sheet;
     if (intersects.rectanglePoint(this.columnRect, world)) {
-      return { column: gridOffsets.getColumnIndex(world.x).index };
+      return { column: offsets.getXPlacement(world.x).index };
     }
     if (intersects.rectanglePoint(this.rowRect, world)) {
-      return { row: gridOffsets.getRowIndex(world.y).index };
+      return { row: offsets.getYPlacement(world.y).index };
     }
   }
 
@@ -403,24 +396,28 @@ export class GridHeadings extends Container {
   intersectsHeadingGridLine(
     world: Point
   ): { start: number; column?: number; row?: number; width?: number; height?: number } | undefined {
-    const tolerance = GRID_HEADING_RESIZE_TOLERANCE / this.app.viewport.scale.x;
+    const offsets = sheets.sheet.offsets;
+    const tolerance = GRID_HEADING_RESIZE_TOLERANCE / pixiApp.viewport.scale.x;
     if (!this.columnRect || !this.rowRect) return;
-    const { gridOffsets } = this.app.sheet;
     if (intersects.rectanglePoint(this.columnRect, world)) {
       for (const line of this.gridLinesColumns) {
         if (Math.abs(world.x - line.x) < tolerance) {
-          const start = gridOffsets.getColumnPlacement(line.column);
-          return { start: start.x, column: line.column, width: line.width };
+          const start = offsets.getColumnPlacement(line.column);
+          return { start: start.position, column: line.column, width: line.width };
         }
       }
     }
+
+    // todo: disabled until we support wrapping
+    /*
     if (intersects.rectanglePoint(this.rowRect, world)) {
       for (const line of this.gridLinesRows) {
         if (Math.abs(world.y - line.y) < tolerance) {
-          const start = gridOffsets.getRowPlacement(line.row);
-          return { start: start.y, row: line.row, height: line.height };
+          const start = offsets.getRowPlacement(sheetId, line.row);
+          return { start: start.position, row: line.row, height: line.height };
         }
       }
     }
+    */
   }
 }

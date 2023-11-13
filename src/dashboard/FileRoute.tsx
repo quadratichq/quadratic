@@ -15,13 +15,15 @@ import { ApiSchemas, ApiTypes } from '../api/types';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { Empty } from '../components/Empty';
 import { ROUTE_LOADER_IDS } from '../constants/routes';
-import { GridFile, GridFileSchema } from '../schemas';
+import { grid } from '../grid/controller/Grid';
+import init, { hello } from '../quadratic-core/quadratic_core';
+import { VersionComparisonResult, compareVersions } from '../schemas/compareVersions';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
 import QuadraticApp from '../ui/QuadraticApp';
 
 export type FileData = {
   name: string;
-  contents: GridFile;
+  sharing: ApiTypes['/v0/files/:uuid/sharing.GET.response'];
   permission: ApiTypes['/v0/files/:uuid.GET.response']['permission'];
 };
 
@@ -39,34 +41,50 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     return undefined;
   });
   if (!data) {
-    throw new Response('Failed to retrive file from server');
+    throw new Response('Failed to retrieve file from server');
   }
 
-  // Validate and upgrade file to the latest version
-  const contents = validateAndUpgradeGridFile(data.file.contents);
-  if (!contents) {
+  // Validate and upgrade file to the latest version in TS (up to 1.4)
+  const file = await validateAndUpgradeGridFile(data.file.contents);
+  if (!file) {
     Sentry.captureEvent({
       message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
-      level: Sentry.Severity.Critical,
+      level: 'error',
     });
     throw new Response('Invalid file that could not be upgraded.');
   }
 
-  // If the file version is newer than what is supported by the current version
-  // of the app, do a (hard) reload.
-  if (contents.version > GridFileSchema.shape.version.value) {
+  // load WASM
+  await init();
+  hello();
+  grid.init();
+  grid.openFromContents(file.contents);
+
+  // If the file is newer than the app, do a (hard) reload.
+  const fileVersion = file.version;
+  const gridVersion = grid.getVersion();
+  if (compareVersions(fileVersion, gridVersion) === VersionComparisonResult.GreaterThan) {
     Sentry.captureEvent({
-      message: `User opened a file at version ${contents.version} but the app is at version ${GridFileSchema.shape.version.value}. The app will automatically reload.`,
-      level: Sentry.Severity.Log,
+      message: `User opened a file at version ${fileVersion} but the app is at version ${gridVersion}. The app will automatically reload.`,
+      level: 'log',
     });
     // @ts-expect-error hard reload via `true` only works in some browsers
     window.location.reload(true);
   }
 
+  // Fetch the file's sharing info
+  const sharing = await apiClient.getFileSharing(uuid).catch((e) => {
+    console.error(e);
+    return undefined;
+  });
+  if (!sharing) {
+    throw new Error('Failed to retrieve file sharing info from the server.');
+  }
+
   return {
-    contents,
     name: data.file.name,
     permission: data.permission,
+    sharing,
   };
 };
 

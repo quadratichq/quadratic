@@ -1,6 +1,3 @@
-import { Menu, MenuChangeEvent, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
-import { useCallback } from 'react';
-
 import {
   BorderAll,
   FormatAlignCenter,
@@ -9,55 +6,38 @@ import {
   FormatBold,
   FormatClear,
   FormatColorFill,
-  // FormatAlignLeft,
-  // FormatAlignRight,
-  // FormatAlignCenter,
   FormatColorText,
   FormatItalic,
   PaletteOutlined,
 } from '@mui/icons-material';
-import '@szhsin/react-menu/dist/index.css';
+import { Menu, MenuChangeEvent, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
+import { useCallback } from 'react';
+import { focusGrid } from '../../../../../helpers/focusGrid';
+import { KeyboardSymbols } from '../../../../../helpers/keyboardSymbols';
 import { QColorPicker } from '../../../../components/qColorPicker';
-import { useFormatCells } from '../useFormatCells';
+import { MenuLineItem } from '../../MenuLineItem';
+import { TopBarMenuItem } from '../../TopBarMenuItem';
+import {
+  clearFormattingAndBorders,
+  setAlignment,
+  setBold,
+  setFillColor,
+  setItalic,
+  setTextColor,
+} from '../formatCells';
 import './formatMenuStyles.scss';
 import { useGetBorderMenu } from './useGetBorderMenu';
 
-import { SheetController } from '../../../../../grid/controller/sheetController';
-import { PixiApp } from '../../../../../gridGL/pixiApp/PixiApp';
-import { KeyboardSymbols } from '../../../../../helpers/keyboardSymbols';
-import { MenuLineItem } from '../../MenuLineItem';
-import { TopBarMenuItem } from '../../TopBarMenuItem';
-import { useClearAllFormatting } from '../useClearAllFormatting';
-import { useGetSelection } from '../useGetSelection';
-
-interface IProps {
-  app: PixiApp;
-  sheet_controller: SheetController;
-}
-
-export const FormatMenu = (props: IProps) => {
-  const { format } = useGetSelection(props.sheet_controller.sheet);
-  const {
-    changeFillColor,
-    removeFillColor,
-    changeBold,
-    changeItalic,
-    changeTextColor,
-    removeTextColor,
-    changeAlignment,
-  } = useFormatCells(props.sheet_controller, props.app);
+export const FormatMenu = () => {
+  // todo!!!
+  const formatPrimaryCell = { bold: false, italic: false };
 
   // focus canvas after the format menu closes
-  const onMenuChange = useCallback(
-    (event: MenuChangeEvent) => {
-      if (!event.open) props.app?.focus();
-    },
-    [props.app]
-  );
+  const onMenuChange = useCallback((event: MenuChangeEvent) => {
+    if (!event.open) focusGrid();
+  }, []);
 
-  const borders = useGetBorderMenu({ sheet: props.sheet_controller.sheet, app: props.app });
-
-  const { clearAllFormatting } = useClearAllFormatting(props.sheet_controller, props.app);
+  const borders = useGetBorderMenu();
 
   return (
     <Menu
@@ -68,10 +48,10 @@ export const FormatMenu = (props: IProps) => {
         </TopBarMenuItem>
       )}
     >
-      <MenuItem onClick={() => changeBold(!(format.bold === true))}>
+      <MenuItem onClick={() => setBold(!(formatPrimaryCell?.bold === true))}>
         <MenuLineItem primary="Bold" secondary={KeyboardSymbols.Command + 'B'} Icon={FormatBold} />
       </MenuItem>
-      <MenuItem onClick={() => changeItalic(!(format.italic === true))}>
+      <MenuItem onClick={() => setItalic(!(formatPrimaryCell?.italic === true))}>
         <MenuLineItem primary="Italic" secondary={KeyboardSymbols.Command + 'I'} Icon={FormatItalic} />
       </MenuItem>
       <SubMenu
@@ -79,38 +59,17 @@ export const FormatMenu = (props: IProps) => {
         id="TextColorMenuID"
         label={<MenuLineItem primary="Text color" Icon={FormatColorText} />}
       >
-        <QColorPicker onChangeComplete={changeTextColor} onClear={removeTextColor} />
+        <QColorPicker onChangeComplete={setTextColor} onClear={() => setTextColor()} />
       </SubMenu>
 
-      {/* <MenuItem >
-        <FormatColorText></FormatColorText> Text color
-      </MenuItem> */}
-
-      {/*
       <MenuDivider />
-      <SubMenu
-
-        label={
-          <Fragment>
-            <ReadMore style={menuItemIconStyles}></ReadMore>
-            <span>Wrapping</span>
-          </Fragment>
-        }
-      >
-        <MenuItem type="checkbox">Overflow</MenuItem>
-        <MenuItem type="checkbox">Wrap</MenuItem>
-        <MenuItem type="checkbox">Clip</MenuItem>
-      </SubMenu>
-
-      */}
-      <MenuDivider />
-      <MenuItem onClick={() => changeAlignment('left')}>
+      <MenuItem onClick={() => setAlignment('left')}>
         <MenuLineItem primary="Left" Icon={FormatAlignLeft} secondary="" />
       </MenuItem>
-      <MenuItem onClick={() => changeAlignment('center')}>
+      <MenuItem onClick={() => setAlignment('center')}>
         <MenuLineItem primary="Center" Icon={FormatAlignCenter} />
       </MenuItem>
-      <MenuItem onClick={() => changeAlignment('right')}>
+      <MenuItem onClick={() => setAlignment('right')}>
         <MenuLineItem primary="Right" Icon={FormatAlignRight} />
       </MenuItem>
 
@@ -120,17 +79,13 @@ export const FormatMenu = (props: IProps) => {
         id="FillColorMenuID"
         label={<MenuLineItem primary="Fill color" Icon={FormatColorFill} />}
       >
-        <QColorPicker onChangeComplete={changeFillColor} onClear={removeFillColor} />
+        <QColorPicker onChangeComplete={setFillColor} onClear={() => setFillColor()} />
       </SubMenu>
 
       <SubMenu label={<MenuLineItem primary="Border" Icon={BorderAll} />}>{borders}</SubMenu>
 
       <MenuDivider />
-      <MenuItem
-        onClick={() => {
-          clearAllFormatting();
-        }}
-      >
+      <MenuItem onClick={clearFormattingAndBorders}>
         <MenuLineItem primary="Clear formatting" secondary={KeyboardSymbols.Command + '\\'} Icon={FormatClear} />
       </MenuItem>
     </Menu>

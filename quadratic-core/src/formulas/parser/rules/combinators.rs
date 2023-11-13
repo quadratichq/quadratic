@@ -27,7 +27,7 @@ impl<B, R: SyntaxRule, F: Fn(R::Output) -> B> SyntaxRule for TokenMapper<R, F> {
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         self.inner.prefix_matches(p)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         self.inner.consume_match(p).map(&self.f)
     }
 }
@@ -70,7 +70,7 @@ impl<R: Copy + SyntaxRule> SyntaxRule for Surround<R> {
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         self.start.prefix_matches(p)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let span1 = p.peek_next_span();
 
         p.parse(self.start)?;
@@ -117,7 +117,7 @@ impl<R: Copy + SyntaxRule> SyntaxRule for List<R> {
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         self.start.prefix_matches(p)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let span1 = p.peek_next_span();
 
         let mut items = vec![];
@@ -158,7 +158,7 @@ impl SyntaxRule for Epsilon {
     fn prefix_matches(&self, _p: Parser<'_>) -> bool {
         true
     }
-    fn consume_match(&self, _p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, _p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         Ok(())
     }
 }
@@ -173,7 +173,7 @@ impl SyntaxRule for EndOfFile {
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next().is_none()
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         match p.next() {
             Some(_) => Ok(()),
             None => p.expected(self),

@@ -1,119 +1,59 @@
-import { Viewport } from 'pixi-viewport';
-import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
-import { Sheet } from '../../grid/sheet/Sheet';
-import { Coordinate } from '../types/size';
-import { Cell } from '../../schemas';
+import { grid } from '../../grid/controller/Grid';
+import { sheets } from '../../grid/controller/Sheets';
 
-export function selectAllCells(options: {
-  sheet: Sheet;
-  setInteractionState: (value: GridInteractionState) => void;
-  interactionState: GridInteractionState;
-  viewport?: Viewport;
-  column?: number;
-  row?: number;
-}): void {
-  const { sheet } = options;
-  let bounds: Coordinate[] | undefined;
-  if (options.row !== undefined) {
-    bounds = sheet.getGridRowMinMax(options.row, true);
-  } else if (options.column !== undefined) {
-    bounds = sheet.getGridColumnMinMax(options.column, true);
+export function selectAllCells(): void {
+  const sheet = sheets.sheet;
+  const bounds = grid.getGridBounds(sheet.id, true);
+  if (bounds) {
+    sheet.cursor.changePosition({
+      multiCursor: {
+        originPosition: { x: bounds.left, y: bounds.top },
+        terminalPosition: { x: bounds.right, y: bounds.bottom },
+      },
+      cursorPosition: { x: bounds.left, y: bounds.top },
+    });
   } else {
-    bounds = sheet.getMinMax(true);
-  }
-  if (!bounds) return;
-  const cursorPosition = { x: bounds[0].x, y: bounds[0].y };
-  if (bounds !== undefined) {
-    options.setInteractionState({
-      ...options.interactionState,
-      ...{
-        multiCursorPosition: {
-          originPosition: bounds[0],
-          terminalPosition: bounds[1],
-        },
-        showMultiCursor: true,
-      },
-      cursorPosition,
+    sheet.cursor.changePosition({
+      multiCursor: undefined,
+      cursorPosition: { x: 0, y: 0 },
     });
-    if (options.viewport) options.viewport.dirty = true;
   }
 }
 
-export function selectColumns(options: {
-  sheet: Sheet;
-  setInteractionState: (value: GridInteractionState) => void;
-  interactionState: GridInteractionState;
-  viewport?: Viewport;
-  start: number;
-  end: number;
-}): void {
-  const { sheet } = options;
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
-  for (let x = options.start; x <= options.end; x++) {
-    const bounds = sheet.getGridColumnMinMax(x, true);
-    if (bounds) {
-      minX = Math.min(minX, bounds[0].x);
-      maxX = Math.max(maxX, bounds[1].x);
-      minY = Math.min(minY, bounds[0].y);
-      maxY = Math.max(maxY, bounds[1].y);
-    }
-  }
-  if (minX !== Infinity && minY !== Infinity) {
-    options.setInteractionState({
-      ...options.interactionState,
-      ...{
-        multiCursorPosition: {
-          originPosition: { x: minX, y: minY },
-          terminalPosition: { x: maxX, y: maxY },
-        },
-        showMultiCursor: true,
+export function selectColumns(start: number, end: number): void {
+  const sheet = sheets.sheet;
+  const bounds = grid.getColumnsBounds(sheet.id, start, end, true);
+  if (bounds) {
+    sheet.cursor.changePosition({
+      cursorPosition: { x: start, y: bounds.min },
+      multiCursor: {
+        originPosition: { x: start, y: bounds.min },
+        terminalPosition: { x: end, y: bounds.max },
       },
     });
-    if (options.viewport) options.viewport.dirty = true;
+  } else {
+    sheet.cursor.changePosition({
+      cursorPosition: { x: start, y: 0 },
+      multiCursor: undefined,
+    });
   }
 }
 
-export async function selectRows(options: {
-  sheet: Sheet;
-  setInteractionState: (value: GridInteractionState) => void;
-  interactionState: GridInteractionState;
-  viewport?: Viewport;
-  start: number;
-  end: number;
-}): Promise<void> {
-  const { sheet } = options;
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
-  for (let y = options.start; y <= options.end; y++) {
-    const bounds = sheet.getGridRowMinMax(y, true);
-    if (bounds) {
-      minX = Math.min(minX, bounds[0].x);
-      maxX = Math.max(maxX, bounds[bounds.length - 1].x);
-      minY = Math.min(minY, bounds[0].y);
-      maxY = Math.max(maxY, bounds[bounds.length - 1].y);
-    }
-  }
-  if (minX !== Infinity && minY !== Infinity) {
-    options.setInteractionState({
-      ...options.interactionState,
-      ...{
-        multiCursorPosition: {
-          originPosition: { x: minX, y: minY },
-          terminalPosition: { x: maxX, y: maxY },
-        },
-        showMultiCursor: true,
+export async function selectRows(start: number, end: number): Promise<void> {
+  const sheet = sheets.sheet;
+  const bounds = grid.getRowsBounds(sheet.id, start, end, true);
+  if (bounds) {
+    sheet.cursor.changePosition({
+      cursorPosition: { x: bounds.min, y: start },
+      multiCursor: {
+        originPosition: { x: bounds.min, y: start },
+        terminalPosition: { x: bounds.max, y: end },
       },
     });
-    if (options.viewport) options.viewport.dirty = true;
+  } else {
+    sheet.cursor.changePosition({
+      cursorPosition: { x: 0, y: start },
+      multiCursor: undefined,
+    });
   }
-}
-
-export function cellHasContent(cell?: Cell): boolean {
-  if (!cell) return false;
-  return !!cell.value || cell.type !== 'TEXT';
 }

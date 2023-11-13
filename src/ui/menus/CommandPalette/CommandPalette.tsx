@@ -3,25 +3,23 @@ import mixpanel from 'mixpanel-browser';
 import React, { useEffect } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { gridInteractionStateAtom } from '../../../atoms/gridInteractionStateAtom';
-import { SheetController } from '../../../grid/controller/sheetController';
-import { PixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../helpers/focusGrid';
 import focusInput from '../../../utils/focusInput';
 import '../../styles/floating-dialog.css';
+import { useSheetListItems } from './ListItems/useSheetListItems';
 import { getCommandPaletteListItems } from './getCommandPaletteListItems';
 
 interface Props {
-  app: PixiApp;
-  sheetController: SheetController;
+  confirmSheetDelete: () => void;
 }
 
 export const CommandPalette = (props: Props) => {
-  const [interactionState] = useRecoilState(gridInteractionStateAtom);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { confirmSheetDelete } = props;
+
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [activeSearchValue, setActiveSearchValue] = React.useState<string>('');
   const [selectedListItemIndex, setSelectedListItemIndex] = React.useState<number>(0);
+  const { permission } = editorInteractionState;
 
   // Fn that closes the command palette and gets passed down to individual ListItems
   const closeCommandPalette = () => {
@@ -47,25 +45,26 @@ export const CommandPalette = (props: Props) => {
     }
   }, [selectedListItemIndex]);
 
-  // Otherwise, define vars and render the lsit
+  const sheets = useSheetListItems();
+
+  // Otherwise, define vars and render the list
   const ListItems = getCommandPaletteListItems({
-    permission: editorInteractionState.permission,
-    sheetController: props.sheetController,
-    app: props.app,
-    interactionState,
+    permission,
     closeCommandPalette,
     activeSearchValue: activeSearchValue,
     selectedListItemIndex: selectedListItemIndex,
+    extraItems: sheets,
+    confirmDelete: confirmSheetDelete,
   });
 
-  const searchlabel = 'Search menus and commands…';
+  const searchLabel = 'Search menus and commands…';
 
   return (
-    <Dialog open={true} onClose={closeCommandPalette} fullWidth maxWidth={'xs'}>
+    <Dialog open={true} onClose={closeCommandPalette} fullWidth maxWidth={'xs'} BackdropProps={{ invisible: true }}>
       <Paper
         component="form"
         elevation={12}
-        onKeyUp={(e: React.KeyboardEvent) => {
+        onKeyDown={(e: React.KeyboardEvent) => {
           if (e.key === 'ArrowDown') {
             e.preventDefault();
             e.stopPropagation();
@@ -86,9 +85,16 @@ export const CommandPalette = (props: Props) => {
       >
         <InputBase
           sx={{ width: '100%', padding: '8px 16px' }}
-          placeholder={searchlabel}
-          inputProps={{ 'aria-label': searchlabel }}
+          placeholder={searchLabel}
+          inputProps={{
+            'aria-label': searchLabel,
+            autoComplete: 'off',
+            autoCorrect: 'off',
+            autoCapitalize: 'off',
+            spellCheck: 'false',
+          }}
           inputRef={focusInput}
+          autoFocus
           value={activeSearchValue}
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
             setSelectedListItemIndex(0);

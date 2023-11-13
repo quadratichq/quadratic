@@ -2,7 +2,6 @@
 
 use lazy_static::lazy_static;
 use serde::Serialize;
-use wasm_bindgen::prelude::*;
 
 pub mod types;
 
@@ -10,21 +9,15 @@ pub use types::*;
 
 use super::functions;
 
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = JSON)]
-    fn stringify(value: &JsValue) -> String;
-}
-
 #[derive(Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-struct CompletionList<'a> {
+pub struct CompletionList<'a> {
     suggestions: &'a [CompletionItem],
 }
 
 #[derive(Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-struct Hover {
+pub struct Hover {
     contents: Vec<MarkdownString>,
 }
 
@@ -42,39 +35,21 @@ lazy_static! {
             insert_text_rules: Some(CompletionItemInsertTextRule::INSERT_AS_SNIPPET),
             kind: CompletionItemKind::Function,
             label: f.name.to_string(),
-            ..Default::default()
         })
         .collect();
 }
 
-#[wasm_bindgen(js_name = "provideCompletionItems")]
-pub fn provide_completion_items(
-    _text_model: JsValue,
-    _position: JsValue,
-    _context: JsValue,
-    _token: JsValue,
-) -> Result<JsValue, JsValue> {
-    Ok(serde_wasm_bindgen::to_value(&CompletionList {
+pub fn provide_completion_items() -> CompletionList<'static> {
+    CompletionList {
         suggestions: &FUNCTION_COMPLETION_ITEMS,
-    })?)
+    }
 }
 
-#[wasm_bindgen(js_name = "provideHover")]
-pub async fn provide_hover(
-    text_model: JsValue,
-    position: JsValue,
-    _token: JsValue,
-) -> Result<JsValue, JsValue> {
-    let function = jsexpr!(text_model.getWordAtPosition(position).word)
-        .as_string()
-        .and_then(|name| functions::lookup_function(&name));
-
-    match function {
-        Some(function) => Ok(serde_wasm_bindgen::to_value(&Hover {
-            contents: vec![MarkdownString {
-                value: format!("`{}`\n", function.usages_string()) + &function.lsp_full_docs(),
-            }],
-        })?),
-        None => Ok(JsValue::NULL),
-    }
+pub fn provide_hover(partial_function_name: &str) -> Option<Hover> {
+    let function = functions::lookup_function(partial_function_name)?;
+    Some(Hover {
+        contents: vec![MarkdownString {
+            value: format!("`{}`\n", function.usages_string()) + &function.lsp_full_docs(),
+        }],
+    })
 }

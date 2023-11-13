@@ -1,5 +1,7 @@
 import { Matrix, Renderer } from 'pixi.js';
-import { PixiApp } from './PixiApp';
+import { sheets } from '../../grid/controller/Sheets';
+import { pixiApp } from './PixiApp';
+import { pixiAppSettings } from './PixiAppSettings';
 
 const resolution = 4;
 const borderSize = 1;
@@ -8,7 +10,7 @@ const maxTextureSize = 4096;
 let renderer: Renderer | undefined;
 
 /** returns a dataURL to a copy of the selected cells */
-export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
+export const copyAsPNG = async (): Promise<Blob | null> => {
   if (!renderer) {
     renderer = new Renderer({
       resolution,
@@ -18,19 +20,20 @@ export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
   }
 
   let column, width, row, height;
-  const interaction = app.settings.interactionState;
-  if (interaction.showMultiCursor) {
-    const { originPosition, terminalPosition } = interaction.multiCursorPosition;
+  const sheet = sheets.sheet;
+  const cursor = sheet.cursor;
+  if (cursor.multiCursor) {
+    const { originPosition, terminalPosition } = cursor.multiCursor;
     column = originPosition.x;
     row = originPosition.y;
-    width = terminalPosition.x - column + 1;
-    height = terminalPosition.y - row + 1;
+    width = terminalPosition.x - column;
+    height = terminalPosition.y - row;
   } else {
-    column = interaction.cursorPosition.x;
-    row = interaction.cursorPosition.y;
-    width = height = 1;
+    column = cursor.cursorPosition.x;
+    row = cursor.cursorPosition.y;
+    width = height = 0;
   }
-  const rectangle = app.sheet.gridOffsets.getScreenRectangle(column, row, width, height);
+  const rectangle = sheet.getScreenRectangle(column, row, width, height);
 
   // captures bottom-right border size
   rectangle.width += borderSize * 2;
@@ -50,16 +53,18 @@ export const copyAsPNG = async (app: PixiApp): Promise<Blob | null> => {
   renderer.resize(imageWidth, imageHeight);
   renderer.view.width = imageWidth;
   renderer.view.height = imageHeight;
-  app.prepareForCopying();
-  app.settings.temporarilyHideCellTypeOutlines = true;
-  app.cells.drawCells(rectangle, false);
+  pixiApp.prepareForCopying();
+  pixiAppSettings.temporarilyHideCellTypeOutlines = true;
+
+  // todo
+  // app.cells.drawCells(app.sheet, rectangle, false);
   const transform = new Matrix();
   transform.translate(-rectangle.x + borderSize / 2, -rectangle.y + borderSize / 2);
   const scale = imageWidth / (rectangle.width * resolution);
   transform.scale(scale, scale);
-  renderer.render(app.viewportContents, { transform });
-  app.cleanUpAfterCopying();
-  app.settings.temporarilyHideCellTypeOutlines = false;
+  renderer.render(pixiApp.viewportContents, { transform });
+  pixiApp.cleanUpAfterCopying();
+  pixiAppSettings.temporarilyHideCellTypeOutlines = false;
   return new Promise((resolve) => {
     renderer!.view.toBlob((blob) => resolve(blob));
   });

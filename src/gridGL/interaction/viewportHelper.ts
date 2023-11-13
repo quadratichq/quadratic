@@ -1,19 +1,19 @@
-import { GridInteractionState } from '../../atoms/gridInteractionStateAtom';
 import { HEADING_SIZE } from '../../constants/gridConstants';
-import { Sheet } from '../../grid/sheet/Sheet';
-import { PixiApp } from '../pixiApp/PixiApp';
+import { sheets } from '../../grid/controller/Sheets';
+import { pixiApp } from '../pixiApp/PixiApp';
+import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { Coordinate } from '../types/size';
 
-export function isVisible(options: { app: PixiApp; interactionState: GridInteractionState; sheet: Sheet }) {
+export function isVisible() {
   // returns true if the cursor is visible in the viewport
-  const { interactionState, app, sheet } = options;
-  const { viewport, headings } = app;
-  const { gridOffsets } = sheet;
+  const { viewport, headings } = pixiApp;
+  const sheet = sheets.sheet;
+  const { cursor } = sheet;
   const headingSize = headings.headingSize;
 
-  const column = interactionState.keyboardMovePosition.x;
-  const row = interactionState.keyboardMovePosition.y;
-  const cell = gridOffsets.getCell(column, row);
+  const column = cursor.keyboardMovePosition.x;
+  const row = cursor.keyboardMovePosition.y;
+  const cell = sheet.getCellOffsets(column, row);
   let is_off_screen = false;
 
   if (cell.x + headingSize.width < viewport.left) {
@@ -36,11 +36,9 @@ export function isVisible(options: { app: PixiApp; interactionState: GridInterac
 }
 
 // Ensures the cursor is always visible
-export function ensureVisible(options: { app: PixiApp; interactionState: GridInteractionState; sheet: Sheet }): void {
-  const { interactionState, app, sheet } = options;
-
-  if (!isVisible({ app, interactionState, sheet })) {
-    app.viewportChanged();
+export function ensureVisible(): void {
+  if (!isVisible()) {
+    pixiApp.viewportChanged();
   }
 }
 
@@ -51,20 +49,21 @@ export function ensureVisible(options: { app: PixiApp; interactionState: GridInt
  * @param [options.center] cell coordinate to center viewport
  * @param [options.topLeft] cell coordinate to place at topLeft of viewport (adjusting for ruler if needed)
  */
-export function moveViewport(options: { app: PixiApp; center?: Coordinate; topLeft?: Coordinate }): void {
-  const { app, center, topLeft } = options;
+export function moveViewport(options: { center?: Coordinate; topLeft?: Coordinate }): void {
+  const { center, topLeft } = options;
   if (!center && !topLeft) return;
+  const sheet = sheets.sheet;
 
   if (center) {
-    const cell = app.sheet.gridOffsets.getCell(center.x, center.y);
-    app.viewport.moveCenter(cell.x + cell.width / 2, cell.y + cell.height / 2);
+    const cell = sheet.getCellOffsets(center.x, center.y);
+    pixiApp.viewport.moveCenter(cell.x + cell.width / 2, cell.y + cell.height / 2);
   }
 
   if (topLeft) {
-    const adjust = app.settings.showHeadings ? HEADING_SIZE : 0;
-    const cell = app.sheet.gridOffsets.getCell(topLeft.x + adjust, topLeft.y + adjust);
-    app.viewport.moveCorner(cell.x, cell.y);
+    const adjust = pixiAppSettings.showHeadings ? HEADING_SIZE : 0;
+    const cell = sheet.getCellOffsets(topLeft.x + adjust, topLeft.y + adjust);
+    pixiApp.viewport.moveCorner(cell.x, cell.y);
   }
 
-  app.viewportChanged();
+  pixiApp.viewportChanged();
 }
