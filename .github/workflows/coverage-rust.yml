@@ -40,6 +40,7 @@ jobs:
         run: |
           rustup toolchain add nightly --component llvm-tools-preview
           rustup override set nightly
+          cargo install grcov
 
       - name: Configure cache
         uses: actions/cache@v3
@@ -69,7 +70,7 @@ jobs:
 
       - name: Generate coverage
         run: |
-          ./quadratic-core/target/debug/grcov $(find . -name "grcov-*.profraw" -print) \
+          grcov $(find . -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
             --binary-path ./target/debug/ \
