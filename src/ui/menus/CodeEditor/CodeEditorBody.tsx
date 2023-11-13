@@ -30,10 +30,10 @@ export const CodeEditorBody = (props: Props) => {
   const [didMount, setDidMount] = useState(false);
   const [isValidRef, setIsValidRef] = useState(false);
 
-  useEditorCellHighlights(isValidRef, editorRef, monacoRef);
-  useEditorOnSelectionChange(isValidRef, editorRef, monacoRef);
-
   const language = editorInteractionState.mode;
+
+  useEditorCellHighlights(isValidRef, editorRef, monacoRef, language);
+  useEditorOnSelectionChange(isValidRef, editorRef, monacoRef, language);
 
   useEffect(() => {
     if (editorInteractionState.showCodeEditor) {

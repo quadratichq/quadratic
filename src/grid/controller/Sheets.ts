@@ -183,13 +183,8 @@ class Sheets {
   // Sheet operations
   // ----------------
 
-<<<<<<< HEAD
   async createNew() {
     await grid.addSheet();
-=======
-  createNew() {
-    grid.addSheet();
->>>>>>> main
 
     // sets the current sheet to the new sheet
     this.current = this.sheets[this.sheets.length - 1].id;
