@@ -41,7 +41,7 @@ export default function CreateFileButton() {
   return (
     <div className="flex gap-2">
       <Button asChild variant="outline">
-        <label>
+        <label className="cursor-pointer">
           Import file
           <input type="file" name="content" accept=".grid" onChange={handleImport} hidden />
         </label>

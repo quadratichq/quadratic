@@ -53,7 +53,6 @@ export function FileListViewControlsDropdown({
   };
 
   const sortButtonLabel = sortLabelsByValue[viewPreferences.sort];
-  const orderButtonLabel = orderOptionsByValue[viewPreferences.order];
 
   const sortOptionsMenu = (
     <DropdownMenuRadioGroup
@@ -113,19 +112,18 @@ export function FileListViewControlsDropdown({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="text-muted-foreground">
-              {orderButtonLabel} <ChevronDownIcon className="ml-1" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-52">{orderOptionsMenu}</DropdownMenuContent>
-        </DropdownMenu>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-muted-foreground">
               {sortButtonLabel} <ChevronDownIcon className="ml-1" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-52">{sortOptionsMenu}</DropdownMenuContent>
+          <DropdownMenuContent className="w-52">
+            <DropdownMenuLabel>Sort</DropdownMenuLabel>
+            {sortOptionsMenu}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Order</DropdownMenuLabel>
+            {orderOptionsMenu}
+          </DropdownMenuContent>
         </DropdownMenu>
+
         <div>
           <Button
             className={`${viewPreferences.layout === Layout.Grid ? 'bg-accent' : ''} !opacity-100`}

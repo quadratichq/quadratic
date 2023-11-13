@@ -135,7 +135,7 @@ export function FileListItem({
     actions: (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Btn variant="ghost" size="icon">
+          <Btn variant="ghost" size="icon" className="hover:bg-background">
             <DotsVerticalIcon className="h-4 w-4" />
           </Btn>
         </DropdownMenuTrigger>
@@ -165,8 +165,8 @@ export function FileListItem({
         }}
       >
         {viewPreferences.layout === Layout.Grid ? (
-          <div className="border border-border hover:border-primary">
-            <div className="flex aspect-video items-center justify-center">
+          <div className="border border-border p-2 hover:bg-accent">
+            <div className="flex aspect-video items-center justify-center bg-background">
               {preview ? (
                 <img src={preview} alt="Thumbnail" className="object-cover" />
               ) : (
@@ -181,20 +181,18 @@ export function FileListItem({
                 </div>
               )}
             </div>
-            <Separator />
-            <div className="p-2">
+            <Separator className="border-accent" />
+            <div className="pt-2">
               <FilesListItemCore {...sharedProps} />
             </div>
           </div>
         ) : (
-          <div
-            className={`flex flex-row items-center gap-2 border border-transparent py-2 hover:border-primary lg:px-2`}
-          >
+          <div className={`flex flex-row items-center gap-2 py-2 hover:bg-accent lg:px-2`}>
             <div className={`hidden border border-border shadow-sm md:block`}>
               {preview ? (
                 <img src={preview} alt="File thumbnail preview" className={`aspect-video object-fill`} width="80" />
               ) : (
-                <div className="flex aspect-video w-20 items-center justify-center">
+                <div className="flex aspect-video w-20 items-center justify-center bg-background">
                   <img
                     src={'/favicon.ico'}
                     alt="File thumbnail placeholder"
