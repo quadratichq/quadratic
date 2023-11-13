@@ -1,5 +1,4 @@
-import { Box, Stack, useTheme } from '@mui/material';
-import { DotsVerticalIcon, Share2Icon, TrashIcon } from '@radix-ui/react-icons';
+import { DotsVerticalIcon } from '@radix-ui/react-icons';
 import React, { useEffect, useState } from 'react';
 import { Link, SubmitOptions, useFetcher } from 'react-router-dom';
 import { deleteFile, downloadFile, duplicateFile, renameFile as renameFileAction } from '../../actions';
@@ -46,16 +45,12 @@ export function FileListItem({
   setActiveShareMenuFileId: Function;
   viewPreferences: ViewPreferences;
 }) {
-  const theme = useTheme();
   const fetcherDelete = useFetcher();
   const fetcherDownload = useFetcher();
   const fetcherDuplicate = useFetcher();
   const fetcherRename = useFetcher();
   const { addGlobalSnackbar } = useGlobalSnackbar();
-
   const [open, setOpen] = useState<boolean>(false);
-
-  // const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
 
   const { uuid, name, created_date, updated_date, public_link_access, preview } = file;
 
@@ -121,48 +116,39 @@ export function FileListItem({
     fetcherDuplicate.submit(data, fetcherSubmitOpts);
   };
 
-  // const handleRename = () => {
-  //   setIsRenaming(true);
-  // };
-
   const handleShare = () => {
     setActiveShareMenuFileId(uuid);
   };
 
   const displayName = fetcherRename.json ? (fetcherRename.json as Action['request.rename']).name : name;
-  const displayDescription =
-    viewPreferences.sort === Sort.Created ? `Created ${timeAgo(created_date)}` : `Modified ${timeAgo(updated_date)}`;
-  const hasNetworkError = Boolean(failedToDelete || failedToRename);
-  const isDisabled = uuid.startsWith('duplicate-'); // || isRenaming;
-  const isShared = public_link_access !== 'NOT_SHARED';
-  const to = ROUTES.FILE(uuid);
-
-  const MoreButton = (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Btn variant="ghost" size="icon">
-          <DotsVerticalIcon className="h-4 w-4" />
-        </Btn>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-48">
-        <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>
-        <DropdownMenuItem onClick={handleDuplicate}>{duplicateFile.label}</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>
-        <DropdownMenuItem onClick={handleDownload}>{downloadFile.label}</DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleDelete}>{deleteFile.label}</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+  const isDisabled = uuid.startsWith('duplicate-');
 
   const sharedProps = {
     key: uuid,
     filterValue,
     name: displayName,
-    description: displayDescription,
-    hasNetworkError: hasNetworkError,
-    isShared,
+    description:
+      viewPreferences.sort === Sort.Created ? `Created ${timeAgo(created_date)}` : `Modified ${timeAgo(updated_date)}`,
+    hasNetworkError: Boolean(failedToDelete || failedToRename),
+    isShared: public_link_access !== 'NOT_SHARED',
     viewPreferences,
+    actions: (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Btn variant="ghost" size="icon">
+            <DotsVerticalIcon className="h-4 w-4" />
+          </Btn>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-48">
+          <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleDuplicate}>{duplicateFile.label}</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleDownload}>{downloadFile.label}</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleDelete}>{deleteFile.label}</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ),
   };
 
   return (
@@ -170,7 +156,7 @@ export function FileListItem({
       {/*viewPreferences.layout === Layout.List && <Separator />*/}
       <Link
         key={uuid}
-        to={to}
+        to={ROUTES.FILE(uuid)}
         reloadDocument
         style={{
           textDecoration: 'none',
@@ -197,21 +183,12 @@ export function FileListItem({
             </div>
             <Separator />
             <div className="p-2">
-              <FilesListItemCore {...sharedProps} actions={MoreButton} />
+              <FilesListItemCore {...sharedProps} />
             </div>
           </div>
         ) : (
           <div
             className={`flex flex-row items-center gap-2 border border-transparent py-2 hover:border-primary lg:px-2`}
-            // sx={{
-            //   // px: theme.spacing(1),
-            //   // py: theme.spacing(1),
-            //   [theme.breakpoints.down('md')]: {
-            //     px: 0,
-            //   },
-            //   // '&:hover': { backgroundColor: theme.palette.action.hover },
-            //   // '&:hover .additional-icons': { display: isDesktop ? 'block' : 'none' },
-            // }}
           >
             <div className={`hidden border border-border shadow-sm md:block`}>
               {preview ? (
@@ -229,37 +206,7 @@ export function FileListItem({
               )}
             </div>
             <div className="flex-grow">
-              <FilesListItemCore
-                {...sharedProps}
-                actions={
-                  <Stack gap={theme.spacing(1)} alignItems="center" direction="row">
-                    <Box className="additional-icons" sx={{ display: 'none' }}>
-                      <Btn
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                          e.preventDefault();
-                          handleShare();
-                        }}
-                      >
-                        <Share2Icon className="h-4 w-4" />
-                      </Btn>
-                      <Btn
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                          e.preventDefault();
-                          handleDelete();
-                        }}
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </Btn>
-                    </Box>
-
-                    {MoreButton}
-                  </Stack>
-                }
-              />
+              <FilesListItemCore {...sharedProps} />
             </div>
           </div>
         )}
