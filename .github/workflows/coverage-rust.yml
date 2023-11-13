@@ -1,0 +1,68 @@
+name: Rust Test Coverage
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test-coverage:
+    name: Test coverage (gcc-11, clang-13)
+    runs-on: ubuntu-latest-4-cores
+    env:
+      CXX: clang++-13
+      CLANG_CXX: clang++-13
+      GCC_CXX: g++-11
+      GCOV: gcov-11
+    continue-on-error: true
+    steps:
+      - name: Prepare C toolchains
+        run: |
+          # Add LLVM keys
+          curl -o- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+
+          # Add extra APT repos
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-11 main'
+          sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-12 main'
+          sudo add-apt-repository 'deb http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main'
+
+          # Install toolchains
+          sudo apt-get update
+          sudo apt-get install -y clang-13 g++-11
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup Rust
+        run: |
+          rustup toolchain add nightly --component llvm-tools-preview
+          rustup override set nightly
+      - name: Configure cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: test-${{ runner.os }}-cargo-gcc-11-clang-13-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build
+        env:
+          RUSTFLAGS: -Cinstrument-coverage
+        run: cargo build
+      - name: Test
+        env:
+          LLVM_PROFILE_FILE: grcov-%p-%m.profraw
+          RUSTFLAGS: -Cinstrument-coverage
+        run: cargo test
+      - name: Generate coverage
+        run: |
+          ./target/debug/grcov $(find . -name "grcov-*.profraw" -print) \
+            --branch \
+            --ignore-not-existing \
+            --binary-path ./target/debug/ \
+            -s . \
+            -t lcov \
+            --ignore "/*" \
+            -o lcov.info
