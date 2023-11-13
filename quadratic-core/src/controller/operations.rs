@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use indexmap::IndexSet;
 
-use crate::{grid::*, values::IsBlank, Array, CellValue};
+use crate::{grid::*, Array, CellValue};
 
 use super::{
     formatting::CellFmtArray,
@@ -24,8 +24,6 @@ impl GridController {
         sheets_with_changed_bounds: &mut HashSet<SheetId>,
         compute: bool,
     ) -> Operation {
-        let mut cells_deleted = vec![];
-
         let operation = match op {
             Operation::None => Operation::None,
             Operation::SetCellValues { region, values } => {
@@ -38,11 +36,7 @@ impl GridController {
                     .zip(values.into_cell_values_vec())
                     .map(|(cell_ref, value)| {
                         let pos = sheet.cell_ref_to_pos(cell_ref)?;
-                        if value.is_blank() {
-                            cells_deleted.push(pos);
-                        } else {
-                            cells_to_compute.insert(cell_ref);
-                        }
+                        cells_to_compute.insert(cell_ref);
                         summary
                             .cell_sheets_modified
                             .insert(CellSheetsModified::new(sheet.id, pos));
