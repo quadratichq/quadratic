@@ -45,7 +45,6 @@ jobs:
           cargo --version --verbose
           rustc --version
           cargo clippy --version
-          
 
       - name: Run Clippy
         run: npm run lint:clippy
