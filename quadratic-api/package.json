@@ -53,9 +53,9 @@
     "zod": "^3.21.4"
   },
   "devDependencies": {
+    "@aws-sdk/types": "^3.449.0",
     "@tsconfig/node20": "^1.0.1",
     "@types/auth0": "^3.3.4",
-    "@types/aws-sdk": "^2.7.0",
     "@types/cors": "^2.8.12",
     "@types/multer": "^1.4.8",
     "@types/multer-s3": "^3.0.1",
