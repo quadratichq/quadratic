@@ -51,7 +51,7 @@ jobs:
         env:
           RUSTFLAGS: -Cinstrument-coverage
         run: |
-          cd quadratic-core \
+          cd quadratic-core
           cargo build
       - name: Test
         env:
