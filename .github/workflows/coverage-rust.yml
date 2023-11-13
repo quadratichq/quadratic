@@ -50,7 +50,9 @@ jobs:
       - name: Build
         env:
           RUSTFLAGS: -Cinstrument-coverage
-        run: cargo build
+        run: |
+          cd quadratic-core \
+          cargo build
       - name: Test
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
@@ -58,7 +60,6 @@ jobs:
         run: cargo test
       - name: Generate coverage
         run: |
-          cd quadratic-core \
           ./target/debug/grcov $(find . -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
