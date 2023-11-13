@@ -54,6 +54,7 @@
   },
   "devDependencies": {
     "@aws-sdk/types": "^3.449.0",
+    "@smithy/protocol-http": "^3.0.8",
     "@tsconfig/node20": "^1.0.1",
     "@types/auth0": "^3.3.4",
     "@types/cors": "^2.8.12",
