@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Rectangle } from 'pixi.js';
 import { ClipboardEvent, useCallback, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../grid/controller/Sheets';
 import { focusGrid } from '../../helpers/focusGrid';
@@ -17,7 +17,7 @@ interface CellInputProps {
 
 export const CellInput = (props: CellInputProps) => {
   const { container } = props;
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
   const viewport = pixiApp.viewport;
 
@@ -255,6 +255,17 @@ export const CellInput = (props: CellInputProps) => {
           closeInput({ x: 0, y: 1 });
           event.stopPropagation();
           event.preventDefault();
+        } else if (event.key === '=' && (!textInput || textInput.innerText.length === 0)) {
+          // Open cell type menu, close editor.
+          setEditorInteractionState({
+            ...editorInteractionState,
+            showCellTypeMenu: true,
+            showCodeEditor: false,
+            selectedCell: { x: cellLocation.x, y: cellLocation.y },
+            selectedCellSheet: sheets.sheet.id,
+            mode: 'PYTHON',
+          });
+          event.stopPropagation();
         } else if (event.key === 'Tab') {
           if (event.shiftKey) closeInput({ x: -1, y: 0 });
           else closeInput({ x: 1, y: 0 });
