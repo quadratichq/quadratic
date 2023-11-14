@@ -30,7 +30,7 @@ jobs:
         run: |
           rustup toolchain add nightly --component llvm-tools-preview
           rustup override set nightly
-          cargo install grcov
+          if ! which grcov; then cargo install grcov; fi
 
       - name: Build
         env:
