@@ -71,6 +71,10 @@ files_router.get(
       return res.status(400).json({ errors: errors.array() });
     }
 
+    if (req.document.preview) {
+      req.document.preview = await generatePresignedUrl(req.document.preview);
+    }
+
     return res.status(200).json({
       file: {
         uuid: req.document.uuid,
@@ -79,6 +83,7 @@ files_router.get(
         updated_date: req.document.updated_date,
         version: req.document.version,
         contents: req.document.contents.toString('utf8'),
+        preview: req.document.preview,
       },
       permission: getFilePermissions(req.user, req.document),
     });
@@ -166,9 +171,6 @@ files_router.post(
     if (permissions !== 'OWNER') {
       return res.status(403).json({ error: { message: 'Permission denied' } });
     }
-
-    console.log('updated preview');
-    console.log(req.file);
 
     // update the file object with the preview URL
     await dbClient.file.update({
