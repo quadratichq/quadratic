@@ -252,8 +252,8 @@ mod tests {
         let mut gc = GridController::new();
         let (operation, operation_undo) = get_operations(&mut gc);
 
-        assert_eq!(gc.has_undo(), false);
-        assert_eq!(gc.has_redo(), false);
+        assert!(!gc.has_undo());
+        assert!(!gc.has_redo());
 
         gc.set_in_progress_transaction(
             vec![operation.clone()],
@@ -261,19 +261,19 @@ mod tests {
             false,
             TransactionType::Normal,
         );
-        assert_eq!(gc.has_undo(), true);
-        assert_eq!(gc.has_redo(), false);
+        assert!(gc.has_undo());
+        assert!(!gc.has_redo());
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].ops);
 
         // undo
         gc.undo(None);
-        assert_eq!(gc.has_undo(), false);
-        assert_eq!(gc.has_redo(), true);
+        assert!(!gc.has_undo());
+        assert!(gc.has_redo());
 
         // redo
         gc.redo(None);
-        assert_eq!(gc.has_undo(), true);
-        assert_eq!(gc.has_redo(), false);
+        assert!(gc.has_undo());
+        assert!(!gc.has_redo());
     }
 
     #[test]
