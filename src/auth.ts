@@ -1,5 +1,5 @@
 import { Auth0Client, User, createAuth0Client } from '@auth0/auth0-spa-js';
-import * as Sentry from '@sentry/browser';
+import * as Sentry from '@sentry/react';
 import { LoaderFunction, LoaderFunctionArgs, redirect } from 'react-router-dom';
 import { ROUTES } from './constants/routes';
 
@@ -13,7 +13,7 @@ if (!(AUTH0_DOMAIN && AUTH0_CLIENT_ID && AUTH0_AUDIENCE && AUTH0_ISSUER)) {
   const message = 'Auth0 variables are not configured correctly.';
   Sentry.captureEvent({
     message,
-    level: Sentry.Severity.Fatal,
+    level: 'fatal',
   });
 }
 

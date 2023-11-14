@@ -2,11 +2,13 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
-    grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
-    Error, ErrorMsg, Pos, Rect, Span, Value,
+    grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Sheet},
+    Array, CellValue, Error, ErrorMsg, Pos, Rect, Span, Value,
 };
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+use super::operation::Operation;
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[wasm_bindgen]
 pub struct CellForArray {
     pub x: i64,
@@ -42,6 +44,7 @@ impl CellForArray {
     }
 }
 
+#[derive(Debug)]
 #[wasm_bindgen]
 pub struct CellsForArray {
     cells: Vec<CellForArray>,
@@ -57,11 +60,15 @@ impl CellsForArray {
             transaction_response,
         }
     }
+    pub fn get_cells(&self) -> &Vec<CellForArray> {
+        &self.cells
+    }
 }
 
 #[wasm_bindgen]
 impl CellsForArray {
     #[wasm_bindgen]
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<CellForArray> {
         let i = self.i;
         self.i += 1;
@@ -88,16 +95,34 @@ pub struct JsCodeResult {
 impl JsCodeResult {
     pub fn into_code_cell_value(
         &self,
+        sheet: &mut Sheet,
+        start: CellRef,
         language: CodeCellLanguage,
         code_string: String,
         cells_accessed: &Vec<CellRef>,
+        reverse_operations: &mut Vec<Operation>,
     ) -> CodeCellValue {
         let result = if self.success {
             CodeCellRunResult::Ok {
                 output_value: if let Some(array_output) = self.array_output.to_owned() {
-                    Value::Array(array_output.into())
+                    let (array, ops) = Array::from_string_list(start, sheet, array_output);
+                    reverse_operations.extend(ops);
+                    if let Some(array) = array {
+                        Value::Array(array)
+                    } else {
+                        Value::Single("".into())
+                    }
+                } else if let Some(output_value) = self.output_value.as_ref() {
+                    let cell_ref = CellRef {
+                        sheet: sheet.id,
+                        column: start.column,
+                        row: start.row,
+                    };
+                    let (cell_value, ops) = CellValue::from_string(output_value, cell_ref, sheet);
+                    reverse_operations.extend(ops);
+                    Value::Single(cell_value)
                 } else {
-                    self.output_value.to_owned().into()
+                    unreachable!()
                 },
                 cells_accessed: cells_accessed.to_owned(),
             }
@@ -107,14 +132,10 @@ impl JsCodeResult {
                 .to_owned()
                 .unwrap_or_else(|| "Unknown Python Error".into());
             let msg = ErrorMsg::PythonError(error_msg.into());
-            let span = if let Some(line_number) = self.line_number {
-                Some(Span {
-                    start: line_number,
-                    end: line_number,
-                })
-            } else {
-                None
-            };
+            let span = self.line_number.map(|line_number| Span {
+                start: line_number,
+                end: line_number,
+            });
             CodeCellRunResult::Err {
                 error: Error { span, msg },
             }
@@ -197,5 +218,115 @@ impl JsComputeGetCells {
     }
     pub fn line_number(&self) -> Option<i64> {
         self.line_number
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::str::FromStr;
+
+    use bigdecimal::BigDecimal;
+
+    use crate::{
+        controller::{operation::Operation, transaction_types::JsCodeResult, GridController},
+        grid::{CodeCellLanguage, CodeCellRunOutput},
+        Array, ArraySize, CellValue, Pos, Value,
+    };
+
+    #[test]
+    fn test_into_code_cell_value_single() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+        let result = JsCodeResult {
+            success: true,
+            formatted_code: None,
+            error_msg: None,
+            input_python_std_out: None,
+            output_value: Some("$12".into()),
+            array_output: None,
+            line_number: None,
+        };
+
+        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
+        let mut ops: Vec<Operation> = vec![];
+        assert_eq!(
+            result
+                .into_code_cell_value(
+                    sheet,
+                    cell_ref,
+                    CodeCellLanguage::Python,
+                    "".into(),
+                    &vec![],
+                    &mut ops
+                )
+                .output,
+            Some(CodeCellRunOutput {
+                std_out: None,
+                std_err: None,
+                result: crate::grid::CodeCellRunResult::Ok {
+                    output_value: Value::Single(CellValue::Number(12.into())),
+                    cells_accessed: vec![]
+                }
+            }),
+        );
+        assert_eq!(ops.len(), 2);
+    }
+
+    #[test]
+    fn test_into_code_cell_value_array() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+        let array_output: Vec<Vec<String>> = vec![
+            vec!["$1.1".into(), "20%".into()],
+            vec!["3".into(), "Hello".into()],
+        ];
+        let result = JsCodeResult {
+            success: true,
+            formatted_code: None,
+            error_msg: None,
+            input_python_std_out: None,
+            output_value: None,
+            array_output: Some(array_output),
+            line_number: None,
+        };
+
+        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
+        let mut ops: Vec<Operation> = vec![];
+        let mut array = Array::new_empty(ArraySize::new(2, 2).unwrap());
+        let _ = array.set(
+            0,
+            0,
+            CellValue::Number(BigDecimal::from_str("1.1").unwrap()),
+        );
+        let _ = array.set(
+            1,
+            0,
+            CellValue::Number(BigDecimal::from_str("0.2").unwrap()),
+        );
+        let _ = array.set(0, 1, CellValue::Number(BigDecimal::from_str("3").unwrap()));
+        let _ = array.set(1, 1, CellValue::Text("Hello".into()));
+        assert_eq!(
+            result
+                .into_code_cell_value(
+                    sheet,
+                    cell_ref,
+                    CodeCellLanguage::Python,
+                    "".into(),
+                    &vec![],
+                    &mut ops
+                )
+                .output,
+            Some(CodeCellRunOutput {
+                std_out: None,
+                std_err: None,
+                result: crate::grid::CodeCellRunResult::Ok {
+                    output_value: Value::Array(array),
+                    cells_accessed: vec![]
+                }
+            }),
+        );
+        assert_eq!(ops.len(), 3);
     }
 }

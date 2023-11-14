@@ -4,6 +4,7 @@ import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { CellSheetsModified } from '../../quadratic-core/types';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
+import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
@@ -213,6 +214,13 @@ export class CellsSheet extends Container {
     hashes.forEach((hash) => hash.updateBuffers(false));
   }
 
+  showLabel(x: number, y: number, show: boolean) {
+    const hash = this.getCellsHash(x, y);
+    if (hash) {
+      hash.showLabel(x, y, show);
+    }
+  }
+
   updateCellsArray() {
     this.cellsArray.create();
   }
@@ -278,13 +286,48 @@ export class CellsSheet extends Container {
     return true;
   }
 
+  private dirtyCellTextHashesByDistance(): CellsTextHash[] {
+    const cellsTextHashes = this.cellsTextHashContainer.children.filter((hash) => hash.dirty || hash.dirtyBuffers);
+    const viewport = pixiApp.viewport;
+    const viewportCenter = viewport.center;
+    const isInsideViewport = (hash: CellsTextHash): boolean => {
+      return (
+        hash.AABB.left >= viewport.left &&
+        hash.AABB.right <= viewport.right &&
+        hash.AABB.top >= viewport.top &&
+        hash.AABB.bottom <= viewport.bottom
+      );
+    };
+    cellsTextHashes.sort((a, b) => {
+      // if hashes are both inside the Viewport then sort by y
+      if (isInsideViewport(a)) {
+        if (!isInsideViewport(b)) return -1;
+        return a.AABB.y - b.AABB.y;
+      }
+      if (isInsideViewport(b)) {
+        return 1;
+      }
+
+      // otherwise sort by distance from viewport center
+      const aDistance =
+        Math.pow(viewportCenter.x - (a.AABB.x + a.AABB.width / 2), 2) +
+        Math.pow(viewportCenter.y - (a.AABB.y + a.AABB.height / 2), 2);
+      const bDistance =
+        Math.pow(viewportCenter.x - (b.AABB.x + b.AABB.width / 2), 2) +
+        Math.pow(viewportCenter.y - (b.AABB.y + b.AABB.height / 2), 2);
+      return aDistance - bDistance;
+    });
+    return cellsTextHashes;
+  }
+
   update(): boolean {
     if (this.updateHeadings()) return true;
-    this.cellsTextHashContainer.children.forEach((cellTextHash) => {
+    const cellTextHashes = this.dirtyCellTextHashesByDistance();
+    for (const cellTextHash of cellTextHashes) {
       if (cellTextHash.update()) {
         return true;
       }
-    });
+    }
     if (this.dirtyRows.size) {
       this.updateNextDirtyRow();
       return true;

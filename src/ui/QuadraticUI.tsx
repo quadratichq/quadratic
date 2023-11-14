@@ -11,6 +11,7 @@ import TopBar from '../ui/menus/TopBar';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { PermissionOverlay } from './components/PermissionOverlay';
 import PresentationModeHint from './components/PresentationModeHint';
+import { TransactionBusy } from './components/TransactionBusy';
 import BottomBar from './menus/BottomBar';
 import CellTypeMenu from './menus/CellTypeMenu';
 import CommandPalette from './menus/CommandPalette';
@@ -81,6 +82,7 @@ export default function QuadraticUI() {
         />
       )}
       {presentationMode && <PresentationModeHint />}
+      <TransactionBusy />
       <PermissionOverlay />
     </div>
   );

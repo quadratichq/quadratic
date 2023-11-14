@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Rectangle } from 'pixi.js';
-import { useCallback, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { ClipboardEvent, useCallback, useRef, useState } from 'react';
+import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../grid/controller/Sheets';
 import { focusGrid } from '../../helpers/focusGrid';
@@ -16,7 +16,7 @@ interface CellInputProps {
 
 export const CellInput = (props: CellInputProps) => {
   const { container } = props;
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
   const viewport = pixiApp.viewport;
 
@@ -28,11 +28,6 @@ export const CellInput = (props: CellInputProps) => {
   const cellOffsets = sheet.getCellOffsets(cellLocation.x, cellLocation.y);
   const cell = sheet.getEditCell(cellLocation.x, cellLocation.y);
   const formatting = sheet.getCellFormatSummary(cellLocation.x, cellLocation.y);
-
-  // don't allow input to shrink below the initial width
-  // this is used to cover up the existing text on the canvas
-  const [initialWidth, setInitialWidth] = useState(0);
-  const columnWidth = cellOffsets.width - CURSOR_THICKNESS * 2;
 
   // handle temporary changes to bold and italic (via keyboard)
   const [temporaryBold, setTemporaryBold] = useState<undefined | boolean>();
@@ -62,7 +57,6 @@ export const CellInput = (props: CellInputProps) => {
           selection.removeAllRanges();
           selection.addRange(range);
         }
-        setInitialWidth(div.getBoundingClientRect().width);
       }
     }, 0);
   }, []);
@@ -167,6 +161,14 @@ export const CellInput = (props: CellInputProps) => {
   // set input's initial position correctly
   const transform = updateInputCSSTransform();
 
+  const handlePaste = (event: ClipboardEvent) => {
+    const text = event.clipboardData?.getData('text') || '';
+    const parsed = new DOMParser().parseFromString(text, 'text/html');
+    const result = parsed.body.textContent || '';
+    document.execCommand('insertHTML', false, result.replace(/(\r\n|\n|\r)/gm, ''));
+    event.preventDefault();
+  };
+
   return (
     <div
       id="cell-edit"
@@ -179,7 +181,7 @@ export const CellInput = (props: CellInputProps) => {
         position: 'absolute',
         top: 0,
         left: 0,
-        minWidth: Math.max(initialWidth, columnWidth - CURSOR_THICKNESS * 2),
+        minWidth: cellOffsets.width - CURSOR_THICKNESS * 2,
         outline: 'none',
         color: formatting?.textColor ?? 'black',
         padding: `0 ${CURSOR_THICKNESS}px 0 0`,
@@ -191,9 +193,10 @@ export const CellInput = (props: CellInputProps) => {
         fontFamily,
         fontSize: '14px',
         backgroundColor: formatting?.fillColor ?? 'white',
-        whiteSpace: 'break-spaces',
+        whiteSpace: 'nowrap',
       }}
-      onInput={() => {
+      onPaste={handlePaste}
+      onInput={(event: React.FormEvent<HTMLDivElement>) => {
         // viewport should try to keep the input box in view
         if (!textInput) return;
         const bounds = textInput.getBoundingClientRect();
@@ -235,6 +238,17 @@ export const CellInput = (props: CellInputProps) => {
           closeInput({ x: 0, y: 1 });
           event.stopPropagation();
           event.preventDefault();
+        } else if (event.key === '=' && (!textInput || textInput.innerText.length === 0)) {
+          // Open cell type menu, close editor.
+          setEditorInteractionState({
+            ...editorInteractionState,
+            showCellTypeMenu: true,
+            showCodeEditor: false,
+            selectedCell: { x: cellLocation.x, y: cellLocation.y },
+            selectedCellSheet: sheets.sheet.id,
+            mode: 'PYTHON',
+          });
+          event.stopPropagation();
         } else if (event.key === 'Tab') {
           closeInput({ x: 1, y: 0 });
           event.stopPropagation();

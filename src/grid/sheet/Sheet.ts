@@ -21,19 +21,39 @@ export class Sheet {
   order: string;
   color?: string;
 
-  constructor(index: number) {
-    const sheetId = grid.sheetIndexToId(index);
-    if (!sheetId) throw new Error('Expected sheetId to be defined in Sheet');
-    this.id = sheetId;
-    this.name = grid.getSheetName(sheetId) ?? '';
-    this.order = grid.getSheetOrder(sheetId);
-    this.color = grid.getSheetColor(sheetId);
-    this.offsets = grid.getOffsets(this.id);
+  constructor(index: number | 'test') {
+    if (index === 'test') {
+      this.id = 'test';
+      this.offsets = new SheetOffsets();
+      this.name = 'test';
+      this.order = 'A0';
+    } else {
+      const sheetId = grid.sheetIndexToId(index);
+      if (!sheetId) throw new Error('Expected sheetId to be defined in Sheet');
+      this.id = sheetId;
+      this.name = grid.getSheetName(sheetId) ?? '';
+      this.order = grid.getSheetOrder(sheetId);
+      this.color = grid.getSheetColor(sheetId);
+      this.offsets = grid.getOffsets(this.id);
+    }
     this.cursor = new SheetCursor(this);
+  }
+
+  updateMetadata() {
+    this.name = grid.getSheetName(this.id) ?? '';
+    this.order = grid.getSheetOrder(this.id);
+    this.color = grid.getSheetColor(this.id);
   }
 
   //#region set sheet actions
   // -----------------------------------
+
+  setName(name: string): void {
+    if (name !== this.name) {
+      grid.setSheetName(this.id, name);
+      this.name = name;
+    }
+  }
 
   setCellValue(x: number, y: number, value: string): void {
     grid.setCellValue({ sheetId: this.id, x, y, value });
@@ -128,6 +148,10 @@ export class Sheet {
 
   setPercentage(rectangle: Rectangle) {
     grid.setCellPercentage(this.id, rectangle);
+  }
+
+  setExponential(rectangle: Rectangle) {
+    grid.setCellExponential(this.id, rectangle);
   }
 
   removeCellNumericFormat(rectangle: Rectangle) {

@@ -59,7 +59,7 @@ const DOUBLE_QUOTE_STRING_LITERAL_PATTERN: &str = r#""([^"\\]|\\[\s\S])*""#;
 /// Unquoted sheet reference, such as `Sheet1!`. A quoted sheet reference such
 /// as `'Sheet1'!` is parsed as a string followed by a sheet reference operator
 /// `!`.
-const UNQUOTED_SHEET_REFERENCE_PATTERN: &str = r#"[A-Za-z_][A-Za-z0-9_\.]*\s*!"#;
+const UNQUOTED_SHEET_REFERENCE_PATTERN: &str = r"[A-Za-z_][A-Za-z0-9_\.]*\s*!";
 /// Unterminated string literal.
 const UNTERMINATED_STRING_LITERAL_PATTERN: &str = r#"["']"#;
 
@@ -73,6 +73,8 @@ const TOKEN_PATTERNS: &[&str] = &[
     r"//[^\n]*",
     // Start of a block comment (block comment has special handling).
     r"/\*",
+    // Sheet reference.
+    UNQUOTED_SHEET_REFERENCE_PATTERN,
     // String literal.
     SINGLE_QUOTE_STRING_LITERAL_PATTERN,
     DOUBLE_QUOTE_STRING_LITERAL_PATTERN,

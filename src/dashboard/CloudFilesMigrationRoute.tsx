@@ -1,6 +1,6 @@
 import { CheckCircleOutlineOutlined, ErrorOutline } from '@mui/icons-material';
 import { Box, Button, Chip, CircularProgress, Stack, Typography, useTheme } from '@mui/material';
-import * as Sentry from '@sentry/browser';
+import * as Sentry from '@sentry/react';
 import localforage from 'localforage';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef, useState } from 'react';
@@ -89,7 +89,11 @@ export const Component = () => {
           // Validate and upgrade it to the latest version
           const newFile = await validateAndUpgradeGridFile(JSON.stringify(oldFile));
           if (!newFile) {
-            throw new Error('Failed to upgrade file');
+            Sentry.captureEvent({
+              message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File name ${localFile.filename}, File ID: ${localFile.id}`,
+              level: 'error',
+            });
+            throw new Response('Invalid file that could not be upgraded.');
           }
 
           // Create a new file in the DB
@@ -125,7 +129,7 @@ export const Component = () => {
         });
         Sentry.captureEvent({
           message: 'Cloud files migration failed to upload some local file(s).',
-          level: Sentry.Severity.Critical,
+          level: 'error',
           extra: {
             fileIdsThatFailed,
           },

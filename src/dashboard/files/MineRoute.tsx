@@ -1,5 +1,6 @@
 import { AddOutlined, ErrorOutline, InsertDriveFileOutlined } from '@mui/icons-material';
 import { Box, Button, useTheme } from '@mui/material';
+import * as Sentry from '@sentry/react';
 import { useEffect, useState } from 'react';
 import {
   ActionFunctionArgs,
@@ -116,6 +117,10 @@ export const Component = () => {
                     const validFile = await validateAndUpgradeGridFile(contents);
                     if (!validFile) {
                       addGlobalSnackbar('Import failed: invalid `.grid` file.', { severity: 'error' });
+                      Sentry.captureEvent({
+                        message: `Failed to validate and upgrade user file from an upload. It will likely have to be fixed manually. File name ${file.name}`,
+                        level: 'error',
+                      });
                       return;
                     }
 

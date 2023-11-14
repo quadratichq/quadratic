@@ -2,13 +2,13 @@ use std::collections::HashSet;
 
 use indexmap::IndexSet;
 
-use crate::{grid::*, values::IsBlank, Array, CellValue};
+use crate::{grid::*, Array, CellValue};
 
 use super::{
     formatting::CellFmtArray,
     operation::Operation,
     transaction_summary::{CellSheetsModified, TransactionSummary},
-    update_code_cell_value::update_code_cell_value,
+    update_code_cell_value::fetch_code_cell_difference,
     GridController,
 };
 
@@ -22,9 +22,8 @@ impl GridController {
         cells_to_compute: &mut IndexSet<CellRef>,
         summary: &mut TransactionSummary,
         sheets_with_changed_bounds: &mut HashSet<SheetId>,
+        compute: bool,
     ) -> Operation {
-        let mut cells_deleted = vec![];
-
         let operation = match op {
             Operation::None => Operation::None,
             Operation::SetCellValues { region, values } => {
@@ -37,11 +36,7 @@ impl GridController {
                     .zip(values.into_cell_values_vec())
                     .map(|(cell_ref, value)| {
                         let pos = sheet.cell_ref_to_pos(cell_ref)?;
-                        if value.is_blank() {
-                            cells_deleted.push(pos);
-                        } else {
-                            cells_to_compute.insert(cell_ref);
-                        }
+                        cells_to_compute.insert(cell_ref);
                         summary
                             .cell_sheets_modified
                             .insert(CellSheetsModified::new(sheet.id, pos));
@@ -64,17 +59,51 @@ impl GridController {
                 code_cell_value,
             } => {
                 sheets_with_changed_bounds.insert(cell_ref.sheet);
-                let mut reverse_operations = vec![];
-                update_code_cell_value(
-                    self,
+
+                let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
+                let old_code_cell_value = sheet.get_code_cell_from_ref(cell_ref).cloned();
+                let pos = if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
+                    pos
+                } else {
+                    return Operation::None;
+                };
+
+                // for compute, we keep the original cell output to avoid flashing of output (since values will be overridden once computation is complete)
+                if compute {
+                    if let Some(code_cell_value) = code_cell_value {
+                        let updated_code_cell_value =
+                            if let Some(old_code_cell_value) = old_code_cell_value.as_ref() {
+                                let mut updated_code_cell_value = code_cell_value.clone();
+                                updated_code_cell_value.output = old_code_cell_value.output.clone();
+                                updated_code_cell_value
+                            } else {
+                                code_cell_value
+                            };
+                        sheet.set_code_cell_value(pos, Some(updated_code_cell_value));
+                    } else {
+                        sheet.set_code_cell_value(pos, code_cell_value);
+                    }
+                    cells_to_compute.insert(cell_ref);
+                } else {
+                    // need to update summary (cells_to_compute will be ignored)
+                    fetch_code_cell_difference(
+                        sheet,
+                        pos,
+                        old_code_cell_value.clone(),
+                        code_cell_value.clone(),
+                        summary,
+                        cells_to_compute,
+                    );
+                    sheet.set_code_cell_value(pos, code_cell_value);
+                }
+                summary
+                    .cell_sheets_modified
+                    .insert(CellSheetsModified::new(sheet.id, pos));
+                summary.code_cells_modified.insert(cell_ref.sheet);
+                Operation::SetCellCode {
                     cell_ref,
-                    code_cell_value,
-                    &mut None,
-                    &mut reverse_operations,
-                    summary,
-                );
-                cells_to_compute.insert(cell_ref);
-                reverse_operations[0].clone()
+                    code_cell_value: old_code_cell_value,
+                }
             }
             Operation::SetCellFormats { region, attr } => {
                 sheets_with_changed_bounds.insert(region.sheet);
@@ -110,6 +139,13 @@ impl GridController {
                         self.set_cell_formats_for_type::<NumericDecimals>(
                             &region,
                             num_decimals,
+                            Some(&mut summary.cell_sheets_modified),
+                        ),
+                    ),
+                    CellFmtArray::NumericCommas(num_commas) => CellFmtArray::NumericCommas(
+                        self.set_cell_formats_for_type::<NumericCommas>(
+                            &region,
+                            num_commas,
                             Some(&mut summary.cell_sheets_modified),
                         ),
                     ),
@@ -184,6 +220,7 @@ impl GridController {
                 let sheet = self.grid.sheet_from_id(target);
                 let original_order = sheet.order.clone();
                 self.grid.move_sheet(target, order);
+                summary.sheet_list_modified = true;
 
                 // return reverse operation
                 Operation::ReorderSheet {
@@ -255,5 +292,99 @@ impl GridController {
             }
         };
         operation
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn execute(gc: &mut GridController, operation: Operation) {
+        let mut cells_to_compute = IndexSet::new();
+        let mut summary = TransactionSummary::default();
+        let mut sheets_with_changed_bounds = HashSet::new();
+        gc.execute_operation(
+            operation,
+            &mut cells_to_compute,
+            &mut summary,
+            &mut sheets_with_changed_bounds,
+            false,
+        );
+    }
+
+    #[test]
+    fn test_execute_operation_set_sheet_color() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let color = Some("red".to_string());
+        let operation = Operation::SetSheetColor {
+            sheet_id,
+            color: color.clone(),
+        };
+
+        assert_eq!(
+            format!("{:?}", operation),
+            format!(
+                "SetSheetColor {{ sheet_id: SheetId {{ id: {} }}, color: Some(\"red\") }}",
+                sheet_id
+            )
+        );
+
+        execute(&mut gc, operation);
+        assert_eq!(gc.grid.sheets()[0].color, color);
+    }
+
+    #[test]
+    fn test_execute_operation_resize_column() {
+        let mut gc = GridController::new();
+        let sheet = &mut gc.grid_mut().sheets_mut()[0];
+        let (_, column) = sheet.get_or_create_column(0);
+        let column_id = column.id;
+        let sheet_id = sheet.id;
+        let new_size = 100.0;
+        let operation = Operation::ResizeColumn {
+            sheet_id,
+            column: column_id,
+            new_size,
+        };
+
+        assert_eq!(
+            format!("{:?}", operation),
+            format!(
+                "ResizeColumn {{ sheet_id: SheetId {{ id: {} }}, column: ColumnId {{ id: {} }}, new_size: {:.1} }}",
+                sheet_id, column_id, new_size
+            )
+        );
+
+        execute(&mut gc, operation);
+        let column_width = gc.grid.sheets()[0].offsets.column_width(0);
+        assert_eq!(column_width, new_size);
+    }
+
+    #[test]
+    fn test_execute_operation_resize_row() {
+        let mut gc = GridController::new();
+        let sheet = &mut gc.grid_mut().sheets_mut()[0];
+        let row = sheet.get_or_create_row(0);
+        let row_id = row.id;
+        let sheet_id = sheet.id;
+        let new_size = 100.0;
+        let operation = Operation::ResizeRow {
+            sheet_id,
+            row: row_id,
+            new_size,
+        };
+
+        assert_eq!(
+            format!("{:?}", operation),
+            format!(
+                "ResizeRow {{ sheet_id: SheetId {{ id: {} }}, row: RowId {{ id: {} }}, new_size: {:.1} }}",
+                sheet_id, row_id, new_size
+            )
+        );
+
+        execute(&mut gc, operation);
+        let row_height = gc.grid.sheets()[0].offsets.row_height(0);
+        assert_eq!(row_height, new_size);
     }
 }

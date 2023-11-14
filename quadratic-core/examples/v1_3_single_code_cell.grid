@@ -1,0 +1,48 @@
+{
+  "borders": [],
+  "cells": [
+    {
+      "x": 0,
+      "y": 0,
+      "type": "PYTHON",
+      "value": "0",
+      "python_code": "out = []\nfor x in range(10):\n    out.append(x)\n\n# Last line returns to the sheet\nout\n# [out] # Wrap in array to expand horizontally",
+      "evaluation_result": {
+        "success": true,
+        "std_out": "",
+        "output_value": "[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]",
+        "cells_accessed": [],
+        "array_output": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+        "formatted_code": "out = []\nfor x in range(10):\n    out.append(x)\n\n# Last line returns to the sheet\nout\n# [out] # Wrap in array to expand horizontally\n",
+        "error_span": null
+      },
+      "array_cells": [
+        [0, 0],
+        [0, 1],
+        [0, 2],
+        [0, 3],
+        [0, 4],
+        [0, 5],
+        [0, 6],
+        [0, 7],
+        [0, 8],
+        [0, 9]
+      ],
+      "last_modified": "2023-10-24T14:25:26.788Z"
+    },
+    { "x": 0, "y": 1, "type": "COMPUTED", "value": "1", "last_modified": "2023-10-24T14:25:26.788Z" },
+    { "x": 0, "y": 2, "type": "COMPUTED", "value": "2", "last_modified": "2023-10-24T14:25:26.788Z" },
+    { "x": 0, "y": 3, "type": "COMPUTED", "value": "3", "last_modified": "2023-10-24T14:25:26.788Z" },
+    { "x": 0, "y": 4, "type": "COMPUTED", "value": "4", "last_modified": "2023-10-24T14:25:26.788Z" },
+    { "x": 0, "y": 5, "type": "COMPUTED", "value": "5", "last_modified": "2023-10-24T14:25:26.788Z" },
+    { "x": 0, "y": 6, "type": "COMPUTED", "value": "6", "last_modified": "2023-10-24T14:25:26.788Z" },
+    { "x": 0, "y": 7, "type": "COMPUTED", "value": "7", "last_modified": "2023-10-24T14:25:26.788Z" },
+    { "x": 0, "y": 8, "type": "COMPUTED", "value": "8", "last_modified": "2023-10-24T14:25:26.788Z" },
+    { "x": 0, "y": 9, "type": "COMPUTED", "value": "9", "last_modified": "2023-10-24T14:25:26.788Z" }
+  ],
+  "cell_dependency": "[]",
+  "columns": [],
+  "formats": [],
+  "rows": [],
+  "version": "1.3"
+}
