@@ -1,20 +1,20 @@
-import { DotsVerticalIcon } from '@radix-ui/react-icons';
-import React, { useEffect, useState } from 'react';
-import { Link, SubmitOptions, useFetcher } from 'react-router-dom';
-import { deleteFile, downloadFile, duplicateFile, renameFile as renameFileAction } from '../../actions';
-import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
-import { ROUTES } from '../../constants/routes';
-import { Button as Btn, Button } from '../../shadcn/ui/button';
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../shadcn/ui/dialog';
+import { Button as Btn, Button } from '@/shadcn/ui/button';
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '../../shadcn/ui/dropdown-menu';
-import { Input } from '../../shadcn/ui/input';
-import { Separator } from '../../shadcn/ui/separator';
+} from '@/shadcn/ui/dropdown-menu';
+import { Input } from '@/shadcn/ui/input';
+import { Separator } from '@/shadcn/ui/separator';
+import { DotsVerticalIcon } from '@radix-ui/react-icons';
+import React, { useEffect, useState } from 'react';
+import { Link, SubmitOptions, useFetcher } from 'react-router-dom';
+import { deleteFile, downloadFile, duplicateFile, renameFile as renameFileAction } from '../../actions';
+import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
+import { ROUTES } from '../../constants/routes';
 import { Action, FilesListFile } from './FilesList';
 import { FilesListItemCore } from './FilesListItemCore';
 import { Layout, Sort, ViewPreferences } from './FilesListViewControlsDropdown';

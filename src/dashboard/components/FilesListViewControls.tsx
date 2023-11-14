@@ -1,4 +1,4 @@
-import { Input } from '../../shadcn/ui/input';
+import { Input } from '@/shadcn/ui/input';
 import { FileListViewControlsDropdown } from './FilesListViewControlsDropdown';
 
 export function FilesListViewControls({ filterValue, setFilterValue, viewPreferences, setViewPreferences }: any) {

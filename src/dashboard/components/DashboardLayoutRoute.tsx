@@ -1,6 +1,8 @@
 import { TYPE } from '@/constants/appConstants';
 import { DOCUMENTATION_URL } from '@/constants/urls';
+import { Button } from '@/shadcn/ui/button';
 import { Separator } from '@/shadcn/ui/separator';
+import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
 import { Avatar, CircularProgress, useTheme } from '@mui/material';
 import { ExternalLinkIcon, FileIcon, MixIcon, PersonIcon } from '@radix-ui/react-icons';
 import clsx from 'clsx';
@@ -8,8 +10,6 @@ import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigation } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
 import { useRootRouteLoaderData } from '../../router';
-import { Button } from '../../shadcn/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '../../shadcn/ui/sheet';
 import { colors } from '../../theme/colors';
 import { ReactComponent as QuadraticLogo } from './quadratic-logo.svg';
 import { ReactComponent as QuadraticLogotype } from './quadratic-logotype.svg';

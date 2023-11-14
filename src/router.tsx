@@ -1,3 +1,4 @@
+import { Button } from '@/shadcn/ui/button';
 import { User } from '@auth0/auth0-spa-js';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
@@ -24,7 +25,6 @@ import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
 import * as Create from './dashboard/FilesCreateRoute';
 import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
 import { action as filesAction } from './dashboard/components/FilesList';
-import { Button } from './shadcn/ui/button';
 import { initializeAnalytics } from './utils/analytics';
 // @ts-expect-error - for testing purposes
 window.lf = localforage;

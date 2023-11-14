@@ -1,6 +1,4 @@
-import { ChevronDownIcon, DashboardIcon, DropdownMenuIcon, ListBulletIcon } from '@radix-ui/react-icons';
-import { Dispatch, SetStateAction } from 'react';
-import { Button } from '../../shadcn/ui/button';
+import { Button } from '@/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +7,9 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '../../shadcn/ui/dropdown-menu';
+} from '@/shadcn/ui/dropdown-menu';
+import { ChevronDownIcon, DashboardIcon, DropdownMenuIcon, ListBulletIcon } from '@radix-ui/react-icons';
+import { Dispatch, SetStateAction } from 'react';
 
 export type ViewPreferences = {
   sort: Sort;

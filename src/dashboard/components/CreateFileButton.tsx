@@ -1,9 +1,9 @@
+import { Button } from '@/shadcn/ui/button';
 import * as React from 'react';
 import { Link, useSubmit } from 'react-router-dom';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
-import { Button } from '../../shadcn/ui/button';
 import { CreateActionRequest } from '../FilesCreateRoute';
 
 // TODO this will need props when it becomes a button that can be used

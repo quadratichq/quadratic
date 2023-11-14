@@ -1,3 +1,4 @@
+import { Button } from '@/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import {
@@ -18,7 +19,6 @@ import { grid } from '../grid/controller/Grid';
 import init, { hello } from '../quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '../schemas/compareVersions';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
-import { Button } from '../shadcn/ui/button';
 import QuadraticApp from '../ui/QuadraticApp';
 
 export type FileData = {

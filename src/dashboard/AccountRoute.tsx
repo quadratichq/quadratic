@@ -1,8 +1,8 @@
+import { Button } from '@/shadcn/ui/button';
 import { Box, Typography, useTheme } from '@mui/material';
 import { Form } from 'react-router-dom';
 import { ROUTES } from '../constants/routes';
 import { useRootRouteLoaderData } from '../router';
-import { Button } from '../shadcn/ui/button';
 import { DashboardHeader } from './components/DashboardHeader';
 // import { useColorMode } from 'shared/root/Theme';
 
