@@ -1,5 +1,5 @@
 import { InteractivePointerEvent, Point } from 'pixi.js';
-import { CELL_TEXT_MARGIN_LEFT } from '../../../constants/gridConstants';
+import { CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '../../../constants/gridConstants';
 import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
 import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
@@ -131,6 +131,10 @@ export class PointerHeading {
   }
 
   pointerMove(world: Point): boolean {
+    if (this.downTimeout) {
+      window.clearTimeout(this.downTimeout);
+      this.downTimeout = undefined;
+    }
     const { headings, gridLines, cursor } = pixiApp;
     this.cursor = undefined;
     this.clicked = false;
@@ -234,7 +238,7 @@ export class PointerHeading {
   private onDoubleClickColumn(column: number): void {
     const maxWidth = pixiApp.cellsSheets.getCellsContentMaxWidth(column);
     const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
-    const size = Math.max(contentSizePlusMargin, MINIMUM_COLUMN_SIZE);
+    const size = Math.max(contentSizePlusMargin, CELL_WIDTH);
     const sheetId = sheets.sheet.id;
     const originalSize = sheets.sheet.getCellOffsets(column, 0);
     if (originalSize.width !== size) {

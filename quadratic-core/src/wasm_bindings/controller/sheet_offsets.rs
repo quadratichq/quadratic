@@ -40,15 +40,8 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let transient_resize = match (column, row) {
-            (Some(column), None) => Some(TransientResize::column(column as i64, size)),
-            (None, Some(row)) => Some(TransientResize::row(row as i64, size)),
-            _ => None,
-        };
-        Ok(serde_wasm_bindgen::to_value(&self.commit_offsets_resize(
-            sheet_id,
-            transient_resize,
-            cursor,
+        Ok(serde_wasm_bindgen::to_value(&self.commit_single_resize(
+            sheet_id, column, row, size, cursor,
         ))?)
     }
 }

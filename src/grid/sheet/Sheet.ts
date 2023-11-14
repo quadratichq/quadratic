@@ -192,6 +192,7 @@ export class Sheet {
     for (let i = 0; i < columns.length; i += 2) {
       const index = columns[i];
       const delta = columns[i + 1];
+      console.log(index, delta);
       pixiApp.cellsSheets.adjustHeadings({ sheetId: this.id, column: index, delta });
     }
     this.offsets.free();
