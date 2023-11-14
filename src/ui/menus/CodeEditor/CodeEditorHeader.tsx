@@ -92,7 +92,6 @@ export const CodeEditorHeader = (props: Props) => {
           <IconButton
             aria-label="docs"
             size="small"
-            color="primary"
             onClick={() => {
               if (language === 'FORMULA') window.open(DOCUMENTATION_FORMULAS_URL, '_blank');
               else if (language === 'PYTHON') window.open(DOCUMENTATION_PYTHON_URL, '_blank');
