@@ -9,7 +9,7 @@ on:
 jobs:
   test-coverage:
     name: Test coverage
-    runs-on: ubuntu-latest-4-cores
+    runs-on: ubuntu-latest-64-cores
 
     steps:
       - name: Configure cache
