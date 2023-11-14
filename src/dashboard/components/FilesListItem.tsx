@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { Link, SubmitOptions, useFetcher } from 'react-router-dom';
 import { deleteFile, downloadFile, duplicateFile, renameFile as renameFileAction } from '../../actions';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
-import { FILE_AND_TEAM_NAME_MAX_LENGTH } from '../../constants/appConstants';
 import { ROUTES } from '../../constants/routes';
 import { Button as Btn, Button } from '../../shadcn/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../shadcn/ui/dialog';
@@ -108,7 +107,7 @@ export function FileListItem({
         uuid: 'duplicate-' + date,
         public_link_access: 'NOT_SHARED',
         name: name + ' (Copy)',
-        preview: null, // TODO: duplicate preview
+        preview: null, // TODO: duplicate the preview image
         updated_date: date,
         created_date: date,
       },
@@ -235,8 +234,8 @@ function RenameItemDialog({
   const [localValue, setLocalValue] = useState<string>(value);
 
   const count = localValue.length;
-  // TODO this needs to happen inside the app as well
-  const disabled = count === 0 || count > FILE_AND_TEAM_NAME_MAX_LENGTH;
+  // TODO: one day set a max length on file/team name
+  const disabled = count === 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -274,9 +273,9 @@ function RenameItemDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} id={formId}>
           <Input id={inputId} value={localValue} autoComplete="off" onChange={handleInputChange} />
-          <p className={`text-right text-sm ${disabled ? 'text-destructive' : 'text-muted-foreground'}`}>
+          {/* <p className={`text-right text-sm ${disabled ? 'text-destructive' : 'text-muted-foreground'}`}>
             {count} / {FILE_AND_TEAM_NAME_MAX_LENGTH}
-          </p>
+          </p> */}
         </form>
         <DialogFooter>
           <DialogClose asChild>

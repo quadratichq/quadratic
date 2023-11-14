@@ -1,6 +1,5 @@
 export const SUPPORT_EMAIL = 'support@quadratichq.com';
 export const DEFAULT_FILE_NAME = 'Untitled';
-export const FILE_AND_TEAM_NAME_MAX_LENGTH = 80;
 export const EXAMPLE_FILES: { [id: string]: { name: string; description: string } } = {
   'default.grid': {
     name: 'Default (example)',
