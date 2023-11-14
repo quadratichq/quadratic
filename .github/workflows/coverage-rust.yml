@@ -36,12 +36,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup Rust
-        run: |
-          rustup toolchain add nightly --component llvm-tools-preview
-          rustup override set nightly
-          cargo install grcov
-
       - name: Configure cache
         uses: actions/cache@v3
         with:
@@ -52,6 +46,12 @@ jobs:
             ~/.cargo/git/db/
             quadratic-core/target/
           key: test-${{ runner.os }}-cargo-gcc-10-clang-11-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Setup Rust
+        run: |
+          rustup toolchain add nightly --component llvm-tools-preview
+          rustup override set nightly
+          cargo install grcov
 
       - name: Build
         env:
