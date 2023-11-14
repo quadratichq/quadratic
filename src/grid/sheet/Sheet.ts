@@ -48,6 +48,13 @@ export class Sheet {
   //#region set sheet actions
   // -----------------------------------
 
+  setName(name: string): void {
+    if (name !== this.name) {
+      grid.setSheetName(this.id, name);
+      this.name = name;
+    }
+  }
+
   setCellValue(x: number, y: number, value: string): void {
     grid.setCellValue({ sheetId: this.id, x, y, value });
   }
