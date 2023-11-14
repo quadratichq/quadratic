@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shadcn/ui/dropdown-menu';
+import { cn } from '@/shadcn/utils';
 import { ChevronDownIcon, DashboardIcon, DropdownMenuIcon, ListBulletIcon } from '@radix-ui/react-icons';
 import { Dispatch, SetStateAction } from 'react';
 
@@ -126,7 +127,7 @@ export function FileListViewControlsDropdown({
 
         <div>
           <Button
-            className={`${viewPreferences.layout === Layout.Grid ? 'bg-accent' : ''} !opacity-100`}
+            className={cn(viewPreferences.layout === Layout.Grid && 'bg-accent', `!opacity-100`)}
             variant="ghost"
             size="icon"
             disabled={viewPreferences.layout === Layout.Grid}
@@ -135,7 +136,7 @@ export function FileListViewControlsDropdown({
             <DashboardIcon />
           </Button>
           <Button
-            className={`${viewPreferences.layout === Layout.List ? 'bg-accent' : ''} !opacity-100`}
+            className={cn(viewPreferences.layout === Layout.List && 'bg-accent', `!opacity-100`)}
             variant="ghost"
             size="icon"
             disabled={viewPreferences.layout === Layout.List}
@@ -167,16 +168,3 @@ export function FileListViewControlsDropdown({
     </>
   );
 }
-
-// function MenuItemChild({ label, isActive }: { label: string; isActive: boolean }) {
-//   return isActive ? (
-//     <>
-//       <ListItemIcon>
-//         <Check />
-//       </ListItemIcon>
-//       {label}
-//     </>
-//   ) : (
-//     <ListItemText inset>{label}</ListItemText>
-//   );
-// }
