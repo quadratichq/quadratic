@@ -307,6 +307,5 @@ mod tests {
         let pos = Pos::from((0, 0));
         let cell_hash = CellHash::from(pos);
         assert_eq!(cell_hash, CellHash("0,0".into()));
-        println!("{:?}", cell_hash);
     }
 }
