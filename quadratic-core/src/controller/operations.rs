@@ -294,3 +294,97 @@ impl GridController {
         operation
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn execute(gc: &mut GridController, operation: Operation) {
+        let mut cells_to_compute = IndexSet::new();
+        let mut summary = TransactionSummary::default();
+        let mut sheets_with_changed_bounds = HashSet::new();
+        gc.execute_operation(
+            operation,
+            &mut cells_to_compute,
+            &mut summary,
+            &mut sheets_with_changed_bounds,
+            false,
+        );
+    }
+
+    #[test]
+    fn test_execute_operation_set_sheet_color() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let color = Some("red".to_string());
+        let operation = Operation::SetSheetColor {
+            sheet_id,
+            color: color.clone(),
+        };
+
+        assert_eq!(
+            format!("{:?}", operation),
+            format!(
+                "SetSheetColor {{ sheet_id: SheetId {{ id: {} }}, color: Some(\"red\") }}",
+                sheet_id
+            )
+        );
+
+        execute(&mut gc, operation);
+        assert_eq!(gc.grid.sheets()[0].color, color);
+    }
+
+    #[test]
+    fn test_execute_operation_resize_column() {
+        let mut gc = GridController::new();
+        let sheet = &mut gc.grid_mut().sheets_mut()[0];
+        let (_, column) = sheet.get_or_create_column(0);
+        let column_id = column.id;
+        let sheet_id = sheet.id;
+        let new_size = 100.0;
+        let operation = Operation::ResizeColumn {
+            sheet_id,
+            column: column_id,
+            new_size,
+        };
+
+        assert_eq!(
+            format!("{:?}", operation),
+            format!(
+                "ResizeColumn {{ sheet_id: SheetId {{ id: {} }}, column: ColumnId {{ id: {} }}, new_size: {:.1} }}",
+                sheet_id, column_id, new_size
+            )
+        );
+
+        execute(&mut gc, operation);
+        let column_width = gc.grid.sheets()[0].offsets.column_width(0);
+        assert_eq!(column_width, new_size);
+    }
+
+    #[test]
+    fn test_execute_operation_resize_row() {
+        let mut gc = GridController::new();
+        let sheet = &mut gc.grid_mut().sheets_mut()[0];
+        let row = sheet.get_or_create_row(0);
+        let row_id = row.id;
+        let sheet_id = sheet.id;
+        let new_size = 100.0;
+        let operation = Operation::ResizeRow {
+            sheet_id,
+            row: row_id,
+            new_size,
+        };
+
+        assert_eq!(
+            format!("{:?}", operation),
+            format!(
+                "ResizeRow {{ sheet_id: SheetId {{ id: {} }}, row: RowId {{ id: {} }}, new_size: {:.1} }}",
+                sheet_id, row_id, new_size
+            )
+        );
+
+        execute(&mut gc, operation);
+        let row_height = gc.grid.sheets()[0].offsets.row_height(0);
+        assert_eq!(row_height, new_size);
+    }
+}

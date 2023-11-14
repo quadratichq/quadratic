@@ -1,0 +1,64 @@
+name: Rust Test Coverage
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test-coverage:
+    name: Test coverage
+    runs-on: ubuntu-latest-4-cores
+
+    steps:
+      - name: Configure cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            quadratic-core/target/
+          key: test-${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Rust
+        run: |
+          rustup toolchain add nightly --component llvm-tools-preview
+          rustup override set nightly
+          if ! which grcov; then cargo install grcov; fi
+
+      - name: Build
+        env:
+          RUSTFLAGS: -Cinstrument-coverage
+        run: |
+          cd quadratic-core
+          cargo build
+
+      - name: Test
+        env:
+          LLVM_PROFILE_FILE: grcov-%p-%m.profraw
+          RUSTFLAGS: -Cinstrument-coverage
+        run: |
+          cd quadratic-core
+          cargo test
+
+      - name: Generate coverage
+        run: |
+          grcov $(find . -name "grcov-*.profraw" -print) \
+            --branch \
+            --ignore-not-existing \
+            --binary-path ./quadratic-core/target/debug/ \
+            -s . \
+            -t lcov \
+            --ignore "/*" \
+            -o lcov.info
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
