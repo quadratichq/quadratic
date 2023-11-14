@@ -1,5 +1,8 @@
-import { Avatar, Box, CircularProgress, Typography, useTheme } from '@mui/material';
-import { FileIcon, MixIcon, PersonIcon } from '@radix-ui/react-icons';
+import { TYPE } from '@/constants/appConstants';
+import { DOCUMENTATION_URL } from '@/constants/urls';
+import { Separator } from '@/shadcn/ui/separator';
+import { Avatar, CircularProgress, useTheme } from '@mui/material';
+import { ExternalLinkIcon, FileIcon, MixIcon, PersonIcon } from '@radix-ui/react-icons';
 import clsx from 'clsx';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigation } from 'react-router-dom';
@@ -58,93 +61,68 @@ export const Component = () => {
 
 function Navbar() {
   const { user } = useRootRouteLoaderData();
-
   const theme = useTheme();
 
-  const sidebarLinkStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    color: 'inherit',
-    gap: theme.spacing(1),
-    padding: `${theme.spacing(1)} ${theme.spacing(1)}`,
-    textDecoration: 'none',
-  };
-  const SidebarLabel = ({ children }: { children: ReactNode }) => (
-    <Typography variant="overline" color="text.secondary" style={{ marginTop: theme.spacing(2) }}>
-      {children}
-    </Typography>
-  );
-
   return (
-    <Box
-      component="nav"
-      sx={{
-        px: theme.spacing(2),
-        pt: theme.spacing(1.5),
-        pb: theme.spacing(1),
-        display: 'flex',
-        justifyContent: 'space-between',
-        flexDirection: 'column',
-        height: '100%',
-
-        [theme.breakpoints.up('md')]: {
-          p: theme.spacing(2),
-        },
-      }}
-    >
+    <nav className={`flex h-full flex-col justify-between px-4 pb-2 pt-4`}>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <SidebarNavLink to="/" style={{ ...sidebarLinkStyles, paddingRight: theme.spacing(1.5) }} isLogo={true}>
+        <div className={`flex items-center justify-between`}>
+          <SidebarNavLink to="/" className={`pr-3`} isLogo={true}>
             <div style={{ width: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <QuadraticLogo />
             </div>
             <QuadraticLogotype fill={theme.palette.mode === 'light' ? colors.quadraticFifth : '#fff'} />
           </SidebarNavLink>
-        </Box>
+        </div>
 
         <div className="mt-4 grid gap-1">
-          <SidebarNavLink to={ROUTES.FILES} style={sidebarLinkStyles}>
+          <SidebarNavLink to={ROUTES.FILES}>
             <FileIcon className="h-5 w-5" />
-            <Typography variant="body2" color="text.primary">
-              My files
-            </Typography>
+            My files
           </SidebarNavLink>
-          <SidebarNavLink to={ROUTES.EXAMPLES} style={sidebarLinkStyles}>
+          <SidebarNavLink to={ROUTES.EXAMPLES}>
             <MixIcon className="h-5 w-5" />
-            <Typography variant="body2" color="text.primary">
-              Examples
-            </Typography>
+            Examples
           </SidebarNavLink>
         </div>
 
-        <SidebarLabel>Teams</SidebarLabel>
-        <SidebarNavLink to={ROUTES.TEAMS} style={sidebarLinkStyles}>
+        <p className={`${TYPE.overline} mt-6 text-muted-foreground`}>Teams</p>
+        <SidebarNavLink to={ROUTES.TEAMS}>
           <PersonIcon className="h-5 w-5" />
-          <Typography variant="body2" color="text.primary">
-            My team
-          </Typography>
+          My team
         </SidebarNavLink>
       </div>
       <div>
-        <SidebarNavLink to={ROUTES.ACCOUNT} style={sidebarLinkStyles}>
+        <SidebarNavLink to={DOCUMENTATION_URL} target="_blank" className={`text-muted-foreground`}>
+          Docs
+          <ExternalLinkIcon className="ml-auto h-5 w-5 text-inherit opacity-50" />
+        </SidebarNavLink>
+        <Separator className="my-2" />
+        <SidebarNavLink to={ROUTES.ACCOUNT}>
           <Avatar alt={user?.name} src={user?.picture} sx={{ width: 24, height: 24 }} />
-          <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <Typography variant="body2" color="text.primary">
-              {user?.name || 'You'}
-            </Typography>
-            {user?.email && (
-              <Typography noWrap variant="caption" color="text.secondary">
-                {user?.email}
-              </Typography>
-            )}
+          <div className={`flex flex-col overflow-hidden`}>
+            {user?.name || 'You'}
+            {user?.email && <p className={`truncate ${TYPE.caption} text-muted-foreground`}>{user?.email}</p>}
           </div>
         </SidebarNavLink>
       </div>
-    </Box>
+    </nav>
   );
 }
 
-function SidebarNavLink({ to, children, style, isLogo }: any) {
+function SidebarNavLink({
+  to,
+  children,
+  className,
+  isLogo,
+  target,
+}: {
+  to: string;
+  children: ReactNode;
+  className?: string;
+  isLogo?: boolean;
+  target?: string;
+}) {
   const location = useLocation();
   const navigation = useNavigation();
 
@@ -155,7 +133,16 @@ function SidebarNavLink({ to, children, style, isLogo }: any) {
     to === navigation.location?.pathname;
 
   return (
-    <NavLink to={to} style={{ ...style, position: 'relative' }} className={`${isActive && 'bg-muted'} hover:bg-accent`}>
+    <NavLink
+      {...(target ? { target } : {})}
+      to={to}
+      className={clsx(
+        isActive && 'bg-muted',
+        TYPE.body2,
+        `relative flex items-center gap-2 p-2 no-underline hover:bg-accent`,
+        className
+      )}
+    >
       {children}
       {navigation.state === 'loading' && navigation.location.pathname.includes(to) && !isLogo && (
         <CircularProgress size={18} sx={{ ml: 'auto' }} />

@@ -44,6 +44,7 @@ export const EXAMPLE_FILES: { [id: string]: { name: string; description: string 
 };
 export const CSV_IMPORT_MESSAGE = 'Drag and drop a CSV file on the grid to import it.';
 export const TYPE = {
+  body2: 'text-sm',
   caption: 'text-xs text-muted-foreground',
   overline: 'text-xs uppercase tracking-widest text-muted-foreground',
   h3: 'scroll-m-20 text-2xl font-semibold tracking-tight',
