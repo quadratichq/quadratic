@@ -9,8 +9,8 @@ import {
   FormatColorFill,
   FormatColorText,
   FormatItalic,
+  Functions,
   MoreHoriz,
-  Numbers,
   Percent,
 } from '@mui/icons-material';
 import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
@@ -30,7 +30,7 @@ import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
 import { QColorPicker } from '../../components/qColorPicker';
-import { CopyAsPNG, DecimalDecrease, DecimalIncrease } from '../../icons';
+import { CopyAsPNG, DecimalDecrease, DecimalIncrease, Icon123 } from '../../icons';
 import { MenuLineItem } from '../TopBar/MenuLineItem';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import {
@@ -44,6 +44,7 @@ import {
   textFormatDecreaseDecimalPlaces,
   textFormatIncreaseDecimalPlaces,
   textFormatSetCurrency,
+  textFormatSetExponential,
   textFormatSetPercentage,
 } from '../TopBar/SubMenus/formatCells';
 
@@ -325,21 +326,27 @@ export const FloatingContextMenu = (props: Props) => {
 
         <MenuDivider />
 
+        <TooltipHint title="Format as automatic">
+          <IconButton onClick={() => removeCellNumericFormat()} color="inherit">
+            <Icon123 fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+
         <TooltipHint title="Format as currency">
           <IconButton onClick={() => textFormatSetCurrency()} color="inherit">
             <AttachMoneyOutlined fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
-        <TooltipHint title="Format as percent">
+        <TooltipHint title="Format as percentage">
           <IconButton onClick={() => textFormatSetPercentage()} color="inherit">
             <Percent fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
-        <TooltipHint title="Format as number">
-          <IconButton onClick={() => removeCellNumericFormat()} color="inherit">
-            <Numbers fontSize={iconSize} />
+        <TooltipHint title="Format as scientific">
+          <IconButton onClick={() => textFormatSetExponential()} color="inherit">
+            <Functions fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 

@@ -1,9 +1,12 @@
+use std::collections::HashSet;
+
 use crate::Pos;
 
 use crate::controller::{
     transaction_types::{CellsForArray, JsComputeGetCells},
     GridController,
 };
+use crate::grid::CellRef;
 
 use super::TransactionInProgress;
 
@@ -59,16 +62,20 @@ impl TransactionInProgress {
 
             let rect = get_cells.rect();
             let array = sheet.cell_array(rect);
+
+            let mut cells_accessed: HashSet<CellRef> = HashSet::new();
+            while let Some(cell_ref) = self.cells_accessed.pop() {
+                cells_accessed.insert(cell_ref);
+            }
+            let sheet_id = sheet.id;
+            let sheet = grid_controller.grid_mut().sheet_mut_from_id(sheet_id);
             for y in rect.y_range() {
                 for x in rect.x_range() {
-                    if let Some(cell_ref) = sheet.try_get_cell_ref(Pos { x, y }) {
-                        // only cell_ref one time to cells_accessed
-                        if !self.cells_accessed.contains(&cell_ref) {
-                            self.cells_accessed.push(cell_ref);
-                        }
-                    }
+                    let cell_ref = sheet.get_or_create_cell_ref(Pos { x, y });
+                    cells_accessed.insert(cell_ref);
                 }
             }
+            self.cells_accessed = cells_accessed.into_iter().collect();
             Some(array)
         } else {
             // unable to find sheet by name, generate error

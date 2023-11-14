@@ -15,7 +15,6 @@ impl Sheet {
     ) -> Option<CodeCellValue> {
         let cell_ref = self.get_or_create_cell_ref(pos);
         let old = self.code_cells.remove(&cell_ref);
-
         if let Some(code_cell) = code_cell {
             if let Some(output) = code_cell.output.clone() {
                 match output.output_value() {

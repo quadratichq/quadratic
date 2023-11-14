@@ -22,8 +22,6 @@ use std::{
 };
 
 use super::CURRENT_VERSION;
-pub type ExportBorders = HashMap<String, Vec<(i64, Vec<Option<current::CellBorder>>)>>;
-
 impl From<CellRef> for current::CellRef {
     fn from(cell_ref: CellRef) -> Self {
         Self {
@@ -66,8 +64,9 @@ fn set_column_format_numeric_format(
         column_data.set(
             y,
             Some(NumericFormat {
-                kind: NumericFormatKind::from_str(&format.content.value.kind.to_string()).unwrap(),
-                symbol: format.content.value.symbol.clone(),
+                kind: NumericFormatKind::from_str(&format.content.value.kind.to_string())
+                    .unwrap_or(NumericFormatKind::Number),
+                symbol: format.content.value.symbol.to_owned(),
             }),
         );
     }
@@ -127,6 +126,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
             set_column_format::<CellWrap>(&mut col.wrap, &column.wrap)?;
             set_column_format_i16(&mut col.numeric_decimals, &column.numeric_decimals)?;
             set_column_format_numeric_format(&mut col.numeric_format, &column.numeric_format)?;
+            set_column_format_bool(&mut col.numeric_commas, &column.numeric_commas)?;
             set_column_format_bool(&mut col.bold, &column.bold)?;
             set_column_format_bool(&mut col.italic, &column.italic)?;
             set_column_format_string(&mut col.text_color, &column.text_color)?;
@@ -163,8 +163,15 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
         .iter()
         .for_each(|(column_id, cell_borders)| {
             cell_borders.iter().for_each(|(y, cell_borders)| {
-                cell_borders.iter().for_each(|border| {
+                cell_borders.iter().enumerate().for_each(|(index, border)| {
                     if let Some(border) = border {
+                        let border_selection = match index {
+                            0 => BorderSelection::Left,
+                            1 => BorderSelection::Top,
+                            2 => BorderSelection::Right,
+                            3 => BorderSelection::Bottom,
+                            _ => BorderSelection::Clear,
+                        };
                         let style = BorderStyle {
                             color: Rgba::from_str(&border.color)
                                 .unwrap_or_else(|_| Rgba::new(0, 0, 0, 255)),
@@ -172,18 +179,17 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
                                 .unwrap_or(CellBorderLine::Line1),
                         };
 
-                        if let (Ok(column_id), Some(row_id)) =
-                            (ColumnId::from_str(column_id), sheet.get_row(*y))
-                        {
+                        if let Ok(column_id) = ColumnId::from_str(column_id) {
+                            let row_id = sheet.get_or_create_row(*y);
                             let region = RegionRef {
                                 sheet: sheet.id,
                                 columns: vec![column_id],
-                                rows: vec![row_id],
+                                rows: vec![row_id.id],
                             };
                             let borders = generate_borders(
                                 sheet,
                                 &region,
-                                vec![BorderSelection::All],
+                                vec![border_selection],
                                 Some(style),
                             );
 
@@ -194,6 +200,139 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
                 });
             });
         });
+}
+
+fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<CellRef, CodeCellValue>> {
+    sheet
+        .code_cells
+        .iter()
+        .map(|(cell_ref, code_cell_value)| {
+            Ok((
+                CellRef {
+                    sheet: SheetId::from_str(&cell_ref.sheet.id)?,
+                    column: ColumnId::from_str(&cell_ref.column.id)?,
+                    row: RowId::from_str(&cell_ref.row.id)?,
+                },
+                CodeCellValue {
+                    language: CodeCellLanguage::from_str(&code_cell_value.language)?,
+                    code_string: code_cell_value.code_string.to_owned(),
+                    formatted_code_string: code_cell_value.formatted_code_string.to_owned(),
+                    last_modified: code_cell_value.last_modified.to_owned(),
+                    output: code_cell_value.output.to_owned().and_then(|output| {
+                        Some(CodeCellRunOutput {
+                            std_out: output.std_out,
+                            std_err: output.std_err,
+                            result: match output.result {
+                                current::CodeCellRunResult::Ok {
+                                    output_value,
+                                    cells_accessed,
+                                } => CodeCellRunResult::Ok {
+                                    output_value: match output_value {
+                                        current::OutputValue::Single(
+                                            current::OutputValueValue {
+                                                type_field: _type_field,
+                                                value,
+                                            },
+                                        ) => Value::Single(CellValue::from(value)),
+                                        current::OutputValue::Array(current::OutputArray {
+                                            size,
+                                            values,
+                                        }) => Value::Array(crate::Array::from(
+                                            values
+                                                .chunks(size.w as usize)
+                                                .map(|row| {
+                                                    row.iter()
+                                                        .map(|cell| {
+                                                            match cell
+                                                                .type_field
+                                                                .to_lowercase()
+                                                                .as_str()
+                                                            {
+                                                                "text" => CellValue::Text(
+                                                                    cell.value.to_owned(),
+                                                                ),
+                                                                "number" => CellValue::Number(
+                                                                    BigDecimal::from_str(
+                                                                        &cell.value,
+                                                                    )
+                                                                    .unwrap_or_default(),
+                                                                ),
+                                                                _ => CellValue::Blank,
+                                                            }
+                                                        })
+                                                        .collect::<Vec<_>>()
+                                                })
+                                                .collect::<Vec<Vec<_>>>(),
+                                        )),
+                                    },
+                                    cells_accessed: cells_accessed
+                                        .into_iter()
+                                        .map(|cell| {
+                                            Ok(CellRef {
+                                                sheet: SheetId::from_str(&cell.sheet.id)?,
+                                                column: ColumnId::from_str(&cell.column.id)?,
+                                                row: RowId::from_str(&cell.row.id)?,
+                                            })
+                                        })
+                                        .collect::<Result<_>>()
+                                        .ok()?,
+                                },
+                                current::CodeCellRunResult::Err { error } => {
+                                    CodeCellRunResult::Err {
+                                        error: Error {
+                                            span: error.span.map(|span| Span {
+                                                start: span.start,
+                                                end: span.end,
+                                            }),
+                                            // TODO(ddimaria): implement ErrorMsg
+                                            msg: ErrorMsg::UnknownError,
+                                        },
+                                    }
+                                }
+                            },
+                        })
+                    }),
+                },
+            ))
+        })
+        .collect::<Result<_>>()
+}
+
+pub fn import(file: current::GridSchema) -> Result<Grid> {
+    Ok(Grid {
+        sheets: file
+            .sheets
+            .into_iter()
+            .map(|mut sheet| {
+                let mut new_sheet = Sheet {
+                    id: SheetId::from_str(&sheet.id.id)?,
+                    name: sheet.name.to_owned(),
+                    color: sheet.color.to_owned(),
+                    order: sheet.order.to_owned(),
+                    column_ids: sheet
+                        .columns
+                        .iter()
+                        .map(|(x, column)| Ok((*x, ColumnId::from_str(&column.id.id)?)))
+                        .collect::<Result<_>>()?,
+                    row_ids: sheet
+                        .rows
+                        .iter()
+                        .map(|(x, row)| Ok((*x, RowId::from_str(&row.id)?)))
+                        .collect::<Result<_>>()?,
+                    offsets: SheetOffsets::import(&sheet.offsets),
+                    columns: import_column_builder(&sheet.columns)?,
+                    // borders set after sheet is loaded
+                    borders: SheetBorders::new(),
+                    code_cells: import_code_cell_builder(&sheet)?,
+                    data_bounds: GridBounds::Empty,
+                    format_bounds: GridBounds::Empty,
+                };
+                new_sheet.recalculate_bounds();
+                import_borders_builder(&mut new_sheet, &mut sheet);
+                Ok(new_sheet)
+            })
+            .collect::<Result<_>>()?,
+    })
 }
 
 fn export_column_data_bool(
@@ -257,7 +396,7 @@ where
         .map(|(y, value)| {
             (
                 y.to_string(),
-                (y, serde_json::to_string(&value).unwrap()).into(),
+                (y, serde_json::to_string(&value).unwrap_or_default()).into(),
             )
         })
         .collect()
@@ -278,6 +417,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                     wrap: export_column_data(&column.wrap),
                     numeric_decimals: export_column_data_i16(&column.numeric_decimals),
                     numeric_format: export_column_data_numeric_format(&column.numeric_format),
+                    numeric_commas: export_column_data_bool(&column.numeric_commas),
                     bold: export_column_data_bool(&column.bold),
                     italic: export_column_data_bool(&column.italic),
                     text_color: export_column_data_string(&column.text_color),
@@ -305,7 +445,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
         .collect()
 }
 
-fn export_borders_builder(sheet: &Sheet) -> ExportBorders {
+fn export_borders_builder(sheet: &Sheet) -> current::Borders {
     sheet
         .borders()
         .per_cell
@@ -339,129 +479,7 @@ fn export_borders_builder(sheet: &Sheet) -> ExportBorders {
         .collect()
 }
 
-pub fn import(file: current::GridSchema) -> Result<Grid> {
-    Ok(Grid {
-        sheets: file
-            .sheets
-            .into_iter()
-            .map(|sheet| {
-                let mut new_sheet = Sheet {
-                    id: SheetId::from_str(&sheet.id.id)?,
-                    name: sheet.name.to_owned(),
-                    color: sheet.color.to_owned(),
-                    order: sheet.order.to_owned(),
-                    column_ids: sheet
-                        .columns
-                        .iter()
-                        .map(|(x, column)| Ok((*x, ColumnId::from_str(&column.id.id)?)))
-                        .collect::<Result<_>>()?,
-                    row_ids: sheet
-                        .rows
-                        .iter()
-                        .map(|(x, row)| Ok((*x, RowId::from_str(&row.id)?)))
-                        .collect::<Result<_>>()?,
-                    offsets: SheetOffsets::import(&sheet.offsets),
-                    columns: import_column_builder(&sheet.columns)?,
-                    // borders set after sheet is loaded
-                    borders: SheetBorders::new(),
-                    code_cells: sheet
-                        .code_cells
-                        .iter()
-                        .map(|(cell_ref, code_cell_value)| {
-                            Ok((
-                                CellRef {
-                                    sheet: SheetId::from_str(&cell_ref.sheet.id)?,
-                                    column: ColumnId::from_str(&cell_ref.column.id)?,
-                                    row: RowId::from_str(&cell_ref.row.id)?,
-                                },
-                                CodeCellValue {
-                                    language: CodeCellLanguage::from_str(
-                                        &code_cell_value.language,
-                                    )?,
-                                    code_string: code_cell_value.code_string.to_owned(),
-                                    formatted_code_string: code_cell_value
-                                        .formatted_code_string
-                                        .to_owned(),
-                                    last_modified: code_cell_value.last_modified.to_owned(),
-                                    output: code_cell_value.output.to_owned().and_then(|output| {
-                                        Some(CodeCellRunOutput {
-                                            std_out: output.std_out,
-                                            std_err: output.std_err,
-                                            result: match output.result {
-                                                current::CodeCellRunResult::Ok {
-                                                    output_value,
-                                                    cells_accessed,
-                                                } => CodeCellRunResult::Ok {
-                                                    output_value: match output_value {
-                                                        current::OutputValue::Single(
-                                                            current::OutputValueValue {
-                                                                type_field: _type_field,
-                                                                value,
-                                                            },
-                                                        ) => Value::Single(CellValue::from(value)),
-                                                        current::OutputValue::Array(
-                                                            current::OutputArray { size, values },
-                                                        ) => Value::Array(crate::Array::from(
-                                                            values
-                                                                .chunks(size.w as usize)
-                                                                .map(|row| {
-                                                                    row.iter()
-                                                                        .map(|cell| {
-                                                                            cell.value.to_string()
-                                                                        })
-                                                                        .collect::<Vec<_>>()
-                                                                })
-                                                                .collect::<Vec<Vec<_>>>(),
-                                                        )),
-                                                    },
-                                                    cells_accessed: cells_accessed
-                                                        .into_iter()
-                                                        .map(|cell| {
-                                                            Ok(CellRef {
-                                                                sheet: SheetId::from_str(
-                                                                    &cell.sheet.id,
-                                                                )?,
-                                                                column: ColumnId::from_str(
-                                                                    &cell.column.id,
-                                                                )?,
-                                                                row: RowId::from_str(&cell.row.id)?,
-                                                            })
-                                                        })
-                                                        .collect::<Result<_>>()
-                                                        .ok()?,
-                                                },
-                                                current::CodeCellRunResult::Err { error } => {
-                                                    CodeCellRunResult::Err {
-                                                        error: Error {
-                                                            span: error.span.map(|span| Span {
-                                                                start: span.start,
-                                                                end: span.end,
-                                                            }),
-                                                            // TODO(ddimaria): implement ErrorMsg
-                                                            msg: ErrorMsg::UnknownError,
-                                                        },
-                                                    }
-                                                }
-                                            },
-                                        })
-                                    }),
-                                },
-                            ))
-                        })
-                        .collect::<Result<_>>()?,
-                    data_bounds: GridBounds::Empty,
-                    format_bounds: GridBounds::Empty,
-                };
-                new_sheet.recalculate_bounds();
-                import_borders_builder(&mut new_sheet, &mut sheet.clone());
-                Ok(new_sheet)
-            })
-            .collect::<Result<_>>()?,
-    })
-}
-
 pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
-    // println!("{:?}", export_column_builder(&grid.sheets()[0]));
     Ok(current::GridSchema {
         version: Some(CURRENT_VERSION.into()),
         sheets: grid
@@ -487,8 +505,6 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                         )
                     })
                     .collect(),
-                // TODO(ddimaria): implement
-                // borders: sheet.borders(), // TODO: serialize borders
                 borders: export_borders_builder(sheet),
                 code_cells: sheet
                     .iter_code_cells_locations()

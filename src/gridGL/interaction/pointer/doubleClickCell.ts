@@ -25,13 +25,5 @@ export function doubleClickCell(options: {
     });
   } else if (hasPermission) {
     settings.changeInput(true, cell);
-
-    // close CodeEditor if open
-    if (settings.editorInteractionState.showCodeEditor) {
-      settings.setEditorInteractionState({
-        ...settings.editorInteractionState,
-        showCodeEditor: false,
-      });
-    }
   }
 }

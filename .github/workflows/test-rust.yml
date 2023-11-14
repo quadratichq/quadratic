@@ -34,11 +34,14 @@ jobs:
           cargo --version --verbose
           rustc --version
           cargo clippy --version
+<<<<<<< HEAD
       - name: Lint
         run: |
           cd quadratic-core
           cargo clippy --all-targets --all-features -- -D warnings
       #      cargo fmt -- --check
+=======
+>>>>>>> main
       - name: Test
         run: |
           cd quadratic-core

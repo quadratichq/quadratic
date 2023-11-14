@@ -13,25 +13,25 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
 fn get_functions() -> Vec<FormulaFunction> {
     vec![
         // Comparison operators
-        formula_fn!(#[operator] #[pure_zip_map] fn "="([a]: CellValue, [b]: CellValue) { a.eq(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn "=="([a]: CellValue, [b]: CellValue) { a.eq(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn "<>"([a]: CellValue, [b]: CellValue) { !a.eq(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn "!="([a]: CellValue, [b]: CellValue) { !a.eq(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn "<"([a]: CellValue, [b]: CellValue) { a.lt(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn ">"([a]: CellValue, [b]: CellValue) { a.gt(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn "<="([a]: CellValue, [b]: CellValue) { a.lte(b)? }),
-        formula_fn!(#[operator] #[pure_zip_map] fn ">="([a]: CellValue, [b]: CellValue) { a.gte(b)? }),
+        formula_fn!(#[operator] #[zip_map] fn "="([a]: CellValue, [b]: CellValue) { a.eq(b)? }),
+        formula_fn!(#[operator] #[zip_map] fn "=="([a]: CellValue, [b]: CellValue) { a.eq(b)? }),
+        formula_fn!(#[operator] #[zip_map] fn "<>"([a]: CellValue, [b]: CellValue) { !a.eq(b)? }),
+        formula_fn!(#[operator] #[zip_map] fn "!="([a]: CellValue, [b]: CellValue) { !a.eq(b)? }),
+        formula_fn!(#[operator] #[zip_map] fn "<"([a]: CellValue, [b]: CellValue) { a.lt(b)? }),
+        formula_fn!(#[operator] #[zip_map] fn ">"([a]: CellValue, [b]: CellValue) { a.gt(b)? }),
+        formula_fn!(#[operator] #[zip_map] fn "<="([a]: CellValue, [b]: CellValue) { a.lte(b)? }),
+        formula_fn!(#[operator] #[zip_map] fn ">="([a]: CellValue, [b]: CellValue) { a.gte(b)? }),
         // Mathematical operators
         formula_fn!(
             #[operator]
-            #[pure_zip_map]
+            #[zip_map]
             fn "+"([a]: f64, [b]: (Option<f64>)) {
                 a + b.unwrap_or(0.0)
             }
         ),
         formula_fn!(
             #[operator]
-            #[pure_zip_map]
+            #[zip_map]
             fn "-"([a]: f64, [b]: (Option<f64>)) {
                 match b {
                     Some(b) => a - b,
@@ -41,28 +41,28 @@ fn get_functions() -> Vec<FormulaFunction> {
         ),
         formula_fn!(
             #[operator]
-            #[pure_zip_map]
+            #[zip_map]
             fn "*"([a]: f64, [b]: f64) {
                 a * b
             }
         ),
         formula_fn!(
             #[operator]
-            #[pure_zip_map]
+            #[zip_map]
             fn "/"(span: Span, [dividend]: f64, [divisor]: f64) {
                 util::checked_div(span, dividend, divisor)
             }
         ),
         formula_fn!(
             #[operator]
-            #[pure_zip_map]
+            #[zip_map]
             fn "^"([base]: f64, [exponent]: f64) {
                 base.powf(exponent)
             }
         ),
         formula_fn!(
             #[operator]
-            #[pure_zip_map]
+            #[zip_map]
             fn "%"([percentage]: f64) {
                 percentage / 100.0
             }
@@ -87,7 +87,7 @@ fn get_functions() -> Vec<FormulaFunction> {
         // String operators
         formula_fn!(
             #[operator]
-            #[pure_zip_map]
+            #[zip_map]
             fn "&"([a]: String, [b]: String) {
                 a + &b
             }

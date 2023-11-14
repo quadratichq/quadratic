@@ -2,13 +2,13 @@ use std::collections::HashSet;
 
 use indexmap::IndexSet;
 
-use crate::{grid::*, values::IsBlank, Array, CellValue};
+use crate::{grid::*, Array, CellValue};
 
 use super::{
     formatting::CellFmtArray,
     operation::Operation,
     transaction_summary::{CellSheetsModified, TransactionSummary},
-    update_code_cell_value::update_code_cell_value,
+    update_code_cell_value::fetch_code_cell_difference,
     GridController,
 };
 
@@ -22,9 +22,8 @@ impl GridController {
         cells_to_compute: &mut IndexSet<CellRef>,
         summary: &mut TransactionSummary,
         sheets_with_changed_bounds: &mut HashSet<SheetId>,
+        compute: bool,
     ) -> Operation {
-        let mut cells_deleted = vec![];
-
         let operation = match op {
             Operation::None => Operation::None,
             Operation::SetCellValues { region, values } => {
@@ -37,11 +36,7 @@ impl GridController {
                     .zip(values.into_cell_values_vec())
                     .map(|(cell_ref, value)| {
                         let pos = sheet.cell_ref_to_pos(cell_ref)?;
-                        if value.is_blank() {
-                            cells_deleted.push(pos);
-                        } else {
-                            cells_to_compute.insert(cell_ref);
-                        }
+                        cells_to_compute.insert(cell_ref);
                         summary
                             .cell_sheets_modified
                             .insert(CellSheetsModified::new(sheet.id, pos));
@@ -64,21 +59,51 @@ impl GridController {
                 code_cell_value,
             } => {
                 sheets_with_changed_bounds.insert(cell_ref.sheet);
-                let mut reverse_operations = vec![];
 
-                // we don't want to trigger any computation with the initial SetCodeCell, as it will be recomputed
-                let not_used_cells_to_compute = &mut IndexSet::new();
+                let sheet = self.grid.sheet_mut_from_id(cell_ref.sheet);
+                let old_code_cell_value = sheet.get_code_cell_from_ref(cell_ref).cloned();
+                let pos = if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
+                    pos
+                } else {
+                    return Operation::None;
+                };
 
-                update_code_cell_value(
-                    self,
+                // for compute, we keep the original cell output to avoid flashing of output (since values will be overridden once computation is complete)
+                if compute {
+                    if let Some(code_cell_value) = code_cell_value {
+                        let updated_code_cell_value =
+                            if let Some(old_code_cell_value) = old_code_cell_value.as_ref() {
+                                let mut updated_code_cell_value = code_cell_value.clone();
+                                updated_code_cell_value.output = old_code_cell_value.output.clone();
+                                updated_code_cell_value
+                            } else {
+                                code_cell_value
+                            };
+                        sheet.set_code_cell_value(pos, Some(updated_code_cell_value));
+                    } else {
+                        sheet.set_code_cell_value(pos, code_cell_value);
+                    }
+                    cells_to_compute.insert(cell_ref);
+                } else {
+                    // need to update summary (cells_to_compute will be ignored)
+                    fetch_code_cell_difference(
+                        sheet,
+                        pos,
+                        old_code_cell_value.clone(),
+                        code_cell_value.clone(),
+                        summary,
+                        cells_to_compute,
+                    );
+                    sheet.set_code_cell_value(pos, code_cell_value);
+                }
+                summary
+                    .cell_sheets_modified
+                    .insert(CellSheetsModified::new(sheet.id, pos));
+                summary.code_cells_modified.insert(cell_ref.sheet);
+                Operation::SetCellCode {
                     cell_ref,
-                    code_cell_value,
-                    not_used_cells_to_compute,
-                    &mut reverse_operations,
-                    summary,
-                );
-                cells_to_compute.insert(cell_ref);
-                reverse_operations[0].clone()
+                    code_cell_value: old_code_cell_value,
+                }
             }
             Operation::SetCellFormats { region, attr } => {
                 sheets_with_changed_bounds.insert(region.sheet);
@@ -114,6 +139,13 @@ impl GridController {
                         self.set_cell_formats_for_type::<NumericDecimals>(
                             &region,
                             num_decimals,
+                            Some(&mut summary.cell_sheets_modified),
+                        ),
+                    ),
+                    CellFmtArray::NumericCommas(num_commas) => CellFmtArray::NumericCommas(
+                        self.set_cell_formats_for_type::<NumericCommas>(
+                            &region,
+                            num_commas,
                             Some(&mut summary.cell_sheets_modified),
                         ),
                     ),

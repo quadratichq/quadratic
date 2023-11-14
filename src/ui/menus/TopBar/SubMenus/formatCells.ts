@@ -1,4 +1,5 @@
 import { ColorResult } from 'react-color';
+import { grid } from '../../../../grid/controller/Grid';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
 import { CellAlignment } from '../../../../schemas';
@@ -36,6 +37,11 @@ export const textFormatDecreaseDecimalPlaces = (): void => {
   sheets.sheet.changeDecimals(-1);
 };
 
+export const toggleCommas = (): void => {
+  const rectangle = sheets.sheet.cursor.getRectangle();
+  grid.toggleCommas(sheets.sheet.id, sheets.sheet.cursor.getPos(), rectangle);
+};
+
 export const textFormatSetCurrency = (): void => {
   const rectangle = sheets.sheet.cursor.getRectangle();
   sheets.sheet.setCurrency(rectangle);
@@ -51,16 +57,9 @@ export const removeCellNumericFormat = (): void => {
   sheets.sheet.removeCellNumericFormat(rectangle);
 };
 
-export const textFormatSetNumber = (): void => {
-  throw new Error('not implemented yet');
-};
-
 export const textFormatSetExponential = (): void => {
-  throw new Error('not implemented yet');
-};
-
-export const textFormatClear = (): void => {
-  throw new Error('not implemented yet');
+  const rectangle = sheets.sheet.cursor.getRectangle();
+  sheets.sheet.setExponential(rectangle);
 };
 
 export const clearFormatting = () => {

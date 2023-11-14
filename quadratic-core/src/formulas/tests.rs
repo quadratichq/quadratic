@@ -1,8 +1,9 @@
+use itertools::Itertools;
+
 pub(crate) use super::*;
 pub(crate) use crate::grid::Grid;
 pub(crate) use crate::values::*;
-use crate::SheetPos;
-pub(crate) use crate::{array, CodeResult, Error, ErrorMsg, Pos};
+pub(crate) use crate::{array, CodeResult, Error, ErrorMsg, Pos, SheetPos, Spanned};
 
 pub(crate) fn try_eval_at(grid: &Grid, pos: SheetPos, s: &str) -> CodeResult<Value> {
     println!("Evaluating formula {s:?} at {pos:?}");
@@ -251,67 +252,109 @@ fn test_formula_blank_to_string() {
 
 #[test]
 fn test_find_cell_references() {
-    use CellRefCoord::{Absolute, Relative};
+    #[track_caller]
+    fn a1(s: &str) -> CellRef {
+        CellRef::parse_a1(s, Pos::ORIGIN).expect("bad cell reference")
+    }
 
-    // Evaluate at D4.
-    let base = pos![D4];
-    let refs = find_cell_references("SUM($C$4, $A0 : nQ7, :D$n6, A0:, ZB2)", base);
-    let mut iter = refs.into_iter().map(|r| r.inner);
-
-    // $C$4
-    assert_eq!(
-        iter.next(),
-        Some(RangeRef::from(CellRef::absolute(None, pos![C4]))),
-    );
-
-    // $A0:nQ7
-    assert_eq!(
-        iter.next(),
-        Some(RangeRef::CellRange {
-            start: CellRef {
-                sheet: None,
-                x: Absolute(col![A]),
-                y: Relative(0 - base.y),
+    // Another test checks that `parse_a1()` is correct.
+    let test_cases = [
+        // Basic cell reference
+        ("$A$1", RangeRef::Cell { pos: a1("$A$1") }),
+        // Range
+        (
+            "An1:A3",
+            RangeRef::CellRange {
+                start: a1("An1"),
+                end: a1("A3"),
             },
-            end: CellRef {
-                sheet: None,
-                x: Relative(col![nQ] - base.x),
-                y: Relative(7 - base.y),
+        ),
+        // Range with spaces
+        (
+            "A$2 : Bn2",
+            RangeRef::CellRange {
+                start: a1("A$2"),
+                end: a1("Bn2"),
             },
-        }),
-    );
+        ),
+        // Unquoted sheet reference
+        (
+            "apple!A$1",
+            RangeRef::Cell {
+                pos: a1("apple!A$1"),
+            },
+        ),
+        // Unquoted sheet reference range with spaces
+        (
+            "orange ! A2: $Q9",
+            RangeRef::CellRange {
+                start: a1("orange ! A2"),
+                end: a1("$Q9"),
+            },
+        ),
+        // Quoted sheet reference range
+        (
+            "'banana'!$A1:QQ$222",
+            RangeRef::CellRange {
+                start: a1("'banana'!$A1"),
+                end: a1("QQ$222"),
+            },
+        ),
+        // Quoted sheet reference with spaces
+        (
+            "\"plum\" ! $A1",
+            RangeRef::Cell {
+                pos: a1("\"plum\"!$A1"),
+            },
+        ),
+    ];
+    let formula_string = test_cases.iter().map(|(string, _)| string).join(" + ");
+    let cell_references_found = find_cell_references(&formula_string, Pos::ORIGIN)
+        .into_iter()
+        .map(|Spanned { span, inner }| (span.of_str(&formula_string), inner))
+        .collect_vec();
+    // Assert each individual one for better error messages on test failure.
+    for i in 0..test_cases.len() {
+        assert_eq!(&cell_references_found[i], &test_cases[i]);
+    }
+    assert_eq!(cell_references_found.len(), test_cases.len());
+}
 
-    // D$n6
+#[test]
+fn test_sheet_references() {
+    let mut g = Grid::new();
+
+    let id1 = g.sheets()[0].id;
+    let name1 = "MySheet".to_string();
+    g.sheets_mut()[0].name = name1.clone();
+
+    let id2 = g.add_sheet(None).unwrap();
+    let name2 = "My Other Sheet".to_string();
+    g.sheets_mut()[1].name = name2.clone();
+
+    g.sheet_mut_from_id(id1).set_cell_value(pos![A1], 42);
+    g.sheet_mut_from_id(id1).set_cell_value(pos![A3], 6);
+    g.sheet_mut_from_id(id2).set_cell_value(pos![A3], 7);
+    g.sheet_mut_from_id(id2).set_cell_value(pos![A4], 70);
+
+    let pos1 = Pos::ORIGIN.with_sheet(id1);
+    let pos2 = Pos::ORIGIN.with_sheet(id2);
+
+    assert_eq!("426", eval_to_string_at(&g, pos1, "MySheet!A1 & A3"));
+    assert_eq!("427", eval_to_string_at(&g, pos2, "MySheet!A1 & A3"));
+
     assert_eq!(
-        iter.next(),
-        Some(RangeRef::from(CellRef {
-            sheet: None,
-            x: Relative(col![D] - base.x),
-            y: Absolute(-6),
-        })),
+        "76",
+        eval_to_string_at(&g, pos1, "'My Other Sheet'!A3 & A3"),
     );
-
-    // A0
     assert_eq!(
-        iter.next(),
-        Some(RangeRef::from(CellRef {
-            sheet: None,
-            x: Relative(col![A] - base.x),
-            y: Relative(0 - base.y),
-        })),
+        "77",
+        eval_to_string_at(&g, pos2, "\"My Other Sheet\"!A3 & A3"),
     );
-
-    // ZB2
     assert_eq!(
-        iter.next(),
-        Some(RangeRef::from(CellRef {
-            sheet: None,
-            x: Relative(col![ZB] - base.x),
-            y: Relative(2 - base.y),
-        })),
+        "{76; 706}",
+        eval_to_string_at(&g, pos1, "\"My Other Sheet\"!A3:A4 & A3"),
     );
-
-    assert_eq!(iter.next(), None);
 }
 
 #[test]

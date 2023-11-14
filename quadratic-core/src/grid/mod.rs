@@ -22,20 +22,24 @@ pub mod sheet;
 
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
 pub use borders::{
-    generate_borders, set_region_borders, BorderSelection, BorderStyle, CellBorderLine,
-    LegacyCellBorder, LegacyCellBorders, SheetBorders,
+    generate_borders, generate_borders_full, get_cell_borders_in_rect, get_region_borders,
+    set_region_borders, BorderSelection, BorderStyle, CellBorderLine, CellBorders, CellSide,
+    IdSpaceBorders, LegacyCellBorder, LegacyCellBorders, SheetBorders,
 };
 pub use bounds::GridBounds;
 pub use code::*;
 pub use column::{Column, ColumnData};
 pub use formatting::{
-    Bold, BoolSummary, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericDecimals,
-    NumericFormat, NumericFormatKind, TextColor,
+    Bold, BoolSummary, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericCommas,
+    NumericDecimals, NumericFormat, NumericFormatKind, TextColor,
 };
 pub use ids::*;
 pub use sheet::Sheet;
 
 use crate::{Array, CellValue, Pos};
+
+#[cfg(test)]
+pub use borders::print_borders;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]

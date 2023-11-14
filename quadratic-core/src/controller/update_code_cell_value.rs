@@ -59,7 +59,7 @@ pub fn update_code_cell_value(
                                     }
                                 }
                             }
-                            Value::Single(..) => {
+                            Value::Single(_) => {
                                 summary
                                     .cell_sheets_modified
                                     .insert(CellSheetsModified::new(sheet.id, pos));
@@ -78,7 +78,7 @@ pub fn update_code_cell_value(
             sheet,
             pos,
             old_code_cell_value.clone(),
-            updated_code_cell_value.clone(),
+            updated_code_cell_value,
             summary,
             cells_to_compute,
         );

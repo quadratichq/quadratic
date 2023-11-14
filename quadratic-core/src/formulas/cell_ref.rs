@@ -81,6 +81,7 @@ impl fmt::Display for CellRef {
         write!(f, "R{y}C{x}")
     }
 }
+
 impl CellRef {
     /// Constructs an absolute cell reference.
     pub fn absolute(sheet: Option<String>, pos: Pos) -> Self {
@@ -117,11 +118,13 @@ impl CellRef {
         if let Some((sheet_name_str, rest)) = s.split_once('!') {
             s = rest;
             if sheet_name_str.starts_with(['\'', '"']) {
-                sheet = crate::formulas::parse_string_literal(sheet_name_str);
+                sheet = crate::formulas::parse_string_literal(sheet_name_str.trim());
             } else {
-                sheet = Some(sheet_name_str.to_string());
+                sheet = Some(sheet_name_str.trim().to_string());
             }
         }
+
+        s = s.trim();
 
         lazy_static! {
             /// ^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)$
@@ -238,6 +241,64 @@ impl CellRefCoord {
     fn row_string(self, base: i64) -> String {
         let row = self.resolve_from(base);
         format!("{}{row}", self.prefix())
+    }
+
+    /// Returns whether the coordinate is relative (i.e., no '$' prefix).
+    #[cfg(test)]
+    fn is_relative(self) -> bool {
+        match self {
+            CellRefCoord::Relative(_) => true,
+            CellRefCoord::Absolute(_) => false,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_a1_parsing() {
+        // Resolve from some random base position.
+        let base_pos = pos![E8];
+
+        for col in ["A", "B", "C", "AE", "QR", "nA", "nB", "nQR"] {
+            for row in ["n99", "n42", "n2", "n1", "0", "1", "2", "42", "99"] {
+                for col_prefix in ["", "$"] {
+                    for row_prefix in ["", "$"] {
+                        let s = format!("{col_prefix}{col}{row_prefix}{row}");
+                        let cell_ref =
+                            CellRef::parse_a1(&s, base_pos).expect("invalid cell reference");
+                        assert_eq!(cell_ref.x.is_relative(), col_prefix.is_empty());
+                        assert_eq!(cell_ref.y.is_relative(), row_prefix.is_empty());
+                        let pos = cell_ref.resolve_from(base_pos);
+                        assert_eq!(format!("{col}{row}"), pos.a1_string());
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_a1_sheet_parsing() {
+        let pos = CellRef::parse_a1("'Sheet 2'!A0", crate::Pos::ORIGIN);
+        assert_eq!(
+            pos,
+            Some(CellRef {
+                sheet: Some("Sheet 2".to_string()),
+                x: CellRefCoord::Relative(0),
+                y: CellRefCoord::Relative(0),
+            })
+        );
+        let pos = CellRef::parse_a1("\"Sheet 2\"!A0", crate::Pos::ORIGIN);
+        assert_eq!(
+            pos,
+            Some(CellRef {
+                sheet: Some("Sheet 2".to_string()),
+                x: CellRefCoord::Relative(0),
+                y: CellRefCoord::Relative(0),
+            })
+        );
     }
 }
 

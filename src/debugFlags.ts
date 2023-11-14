@@ -1,4 +1,4 @@
-const url = new URLSearchParams(window.location.search);
+const url = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
 
 // set this in .env (if set to false then all debug flags are turned off)
 export const debug = url.has('debug') || process.env.REACT_APP_DEBUG === '1' ? true : false;
@@ -35,6 +35,9 @@ export const debugShowRunComputation = debug && false;
 
 // shows rendering time
 export const debugShowTime = debug && true;
+
+// show rust time
+export const debugShowRustTime = debug && false;
 
 // counts number of children and which are visible in the viewport
 export const debugShowCountRenderedObjects = debug && false;

@@ -112,4 +112,13 @@ impl<T> Spanned<T> {
             inner: &self.inner,
         }
     }
+
+    /// Merges two spans using `Span::merge()` and merges the inner values using
+    /// the provided function.
+    pub fn merge<U, V>(a: Spanned<U>, b: Spanned<V>, merge: impl FnOnce(U, V) -> T) -> Spanned<T> {
+        Spanned {
+            span: Span::merge(a.span, b.span),
+            inner: merge(a.inner, b.inner),
+        }
+    }
 }

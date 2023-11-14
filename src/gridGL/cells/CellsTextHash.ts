@@ -2,7 +2,6 @@ import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import { Bounds } from '../../grid/sheet/Bounds';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { JsRenderCell } from '../../quadratic-core/types';
-import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { CellsSheet } from './CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
 import { CellLabel } from './cellsLabel/CellLabel';
@@ -90,12 +89,10 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   createLabels(): void {
-    debugTimeReset();
     this.cellLabels = new Map();
     const cells = this.sheet.getRenderCells(this.AABB);
     cells.forEach((cell) => this.createLabel(cell));
     this.updateText();
-    debugTimeCheck('cellsLabels');
   }
 
   update(): boolean {

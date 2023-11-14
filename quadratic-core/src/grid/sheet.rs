@@ -183,15 +183,17 @@ impl Sheet {
         borders::set_region_borders(self, vec![region.clone()], borders)
     }
 
+    /// Gets borders in a region.
+    pub fn get_region_borders(&self, region: RegionRef) -> SheetBorders {
+        borders::get_region_borders(self, vec![region])
+    }
+
     /// Returns the value of a cell (i.e., what would be returned if code asked
     /// for it).
     pub fn get_cell_value(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
-        if let Some(value) = column.values.get(pos.y) {
-            Some(value)
-        } else {
-            self.get_code_cell_value(pos)
-        }
+        None.or_else(|| self.get_code_cell_value(pos))
+            .or_else(|| column.values.get(pos.y))
     }
 
     pub fn get_cell_value_only(&self, pos: Pos) -> Option<CellValue> {
@@ -306,6 +308,11 @@ impl Sheet {
     /// Returns all cell borders.
     pub fn borders(&self) -> &SheetBorders {
         &self.borders
+    }
+
+    /// Returns all cell borders.
+    pub fn mut_borders(&mut self) -> &mut SheetBorders {
+        &mut self.borders
     }
 
     /// Returns an iterator over each column and its X coordinate.

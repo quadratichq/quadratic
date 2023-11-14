@@ -29,6 +29,10 @@ export class HighlightedCells {
     pixiApp.cursor.dirty = true;
   }
 
+  private getSheet(cellSheet: string | undefined, sheetId: string): string {
+    return (cellSheet ? sheets.getSheetByName(cellSheet)?.id : sheetId) ?? sheetId;
+  }
+
   private fromCellRange(
     cellRange: { type: 'CellRange'; start: CellPosition; end: CellPosition },
     cell: Coordinate,
@@ -43,7 +47,7 @@ export class HighlightedCells {
       row: (relative ? cell.y : 0) + cellRange.start.y.coord,
       width: cellRange.end.x.coord - cellRange.start.x.coord,
       height: cellRange.end.y.coord - cellRange.start.y.coord,
-      sheet: cellRange.start.sheet ?? sheet,
+      sheet: this.getSheet(cellRange.start.sheet, sheet),
       span,
       index,
     });
@@ -57,7 +61,7 @@ export class HighlightedCells {
       row: cell.y.coord + (relative ? origin.y : 0),
       width: 0,
       height: 0,
-      sheet: cell.sheet ?? sheet,
+      sheet: this.getSheet(cell.sheet, sheet),
       span,
       index,
     });

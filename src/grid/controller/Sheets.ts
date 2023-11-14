@@ -99,11 +99,11 @@ class Sheets {
   }
 
   getSheetByName(name: string): Sheet | undefined {
-    this.sheets.forEach((sheet) => {
+    for (const sheet of this.sheets) {
       if (sheet.name === name) {
         return sheet;
       }
-    });
+    }
     return;
   }
 
@@ -183,16 +183,16 @@ class Sheets {
   // Sheet operations
   // ----------------
 
-  async createNew() {
-    await grid.addSheet();
+  createNew() {
+    grid.addSheet();
 
     // sets the current sheet to the new sheet
     this.current = this.sheets[this.sheets.length - 1].id;
   }
 
-  async duplicate() {
+  duplicate() {
     const oldSheetId = this.current;
-    await grid.duplicateSheet(this.current);
+    grid.duplicateSheet(this.current);
 
     // sets the current sheet to the duplicated sheet
     const currentIndex = this.sheets.findIndex((sheet) => sheet.id === oldSheetId);
@@ -203,9 +203,9 @@ class Sheets {
     this.sort();
   }
 
-  async deleteSheet(id: string) {
+  deleteSheet(id: string) {
     const order = this.sheet.order;
-    await grid.deleteSheet(id);
+    grid.deleteSheet(id);
 
     // set current to next sheet (before this.sheets is updated)
     if (this.sheets.length) {
