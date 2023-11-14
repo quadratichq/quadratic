@@ -111,7 +111,18 @@ impl GridController {
                             };
                         sheet.set_code_cell_value(pos, Some(updated_code_cell_value));
                     } else {
-                        sheet.set_code_cell_value(pos, code_cell_value);
+                        fetch_code_cell_difference(
+                            self,
+                            sheet_id,
+                            pos,
+                            old_code_cell_value.clone(),
+                            None,
+                            summary,
+                            cells_to_compute,
+                            &mut reverse_operations,
+                        );
+                        let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                        sheet.set_code_cell_value(pos, None);
                     }
                     cells_to_compute.insert(cell_ref);
                 } else {

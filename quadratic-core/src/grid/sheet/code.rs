@@ -115,31 +115,6 @@ impl Sheet {
         self.code_cells.keys().copied()
     }
 
-    /// Adds a spill error to a code_cell and removes
-    /// todo: this is wrong
-    // pub fn set_spill_error(&mut self, spill_error: CellRef) {
-    //     if let Some(pos) = self.cell_ref_to_pos(spill_error) {
-    //         if let Some(code_cell) = self.code_cells.get_mut(&spill_error) {
-    //             if let Some(output) = code_cell.output.as_mut() {
-    //                 if output.spill == false {
-    //                     output.spill = true;
-    //                     let output_size = code_cell.output_size();
-    //                     for x in pos.x..output_size.w.get() as i64 {
-    //                         let (_, column) = self.get_or_create_column(x);
-    //                         for y in pos.y..output_size.h.get() as i64 {
-    //                             if let Some(spill) = column.spills.get(y) {
-    //                                 if spill == spill_error {
-    //                                     column.spills.set(y, None);
-    //                                 }
-    //                             }
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
     /// Checks if the deletion of a cell or a code_cell released a spill error; sorted by earliest last_modified
     /// Returns the cell_ref and the code_cell_value if it did
     pub fn release_spill_error(&self, cell_ref: CellRef) -> Option<(CellRef, CodeCellValue)> {

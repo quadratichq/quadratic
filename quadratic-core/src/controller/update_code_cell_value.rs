@@ -146,6 +146,7 @@ pub fn fetch_code_cell_difference(
     reverse_operations: &mut Vec<Operation>,
 ) {
     let sheet = grid_controller.grid.sheet_mut_from_id(sheet_id);
+    let cell_ref = sheet.get_or_create_cell_ref(pos);
     let (old_w, old_h) = if let Some(old_code_cell_value) = old_code_cell_value {
         if old_code_cell_value.spill_error() {
             (1, 1)
@@ -174,8 +175,15 @@ pub fn fetch_code_cell_difference(
             let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
             let column_id = column.id;
 
-            // todo: start here...
-            // sheet.remove_spills
+            // remove any spills created by the updated code_cell
+            for y in pos.y..=pos.y + old_h as i64 {
+                if let Some(spill) = column.spills.get(y) {
+                    if spill == cell_ref {
+                        column.spills.set(y, None);
+                    }
+                }
+            }
+
             column.spills.remove_range(Range {
                 start: pos.y,
                 end: pos.y + new_h as i64 + 1,
@@ -189,14 +197,14 @@ pub fn fetch_code_cell_difference(
                 summary
                     .cell_sheets_modified
                     .insert(CellSheetsModified::new(sheet_id, pos));
-                let cell_ref = CellRef {
+                let cell_ref_entry = CellRef {
                     sheet: sheet_id,
                     column: column_id,
                     row: row_id,
                 };
-                cells_to_compute.insert(cell_ref.clone());
+                cells_to_compute.insert(cell_ref_entry.clone());
                 if y <= old_h {
-                    possible_spills.push(cell_ref);
+                    possible_spills.push(cell_ref_entry);
                 }
             }
         }
@@ -206,18 +214,15 @@ pub fn fetch_code_cell_difference(
             let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
             let column_id = column.id;
 
-            // todo: perhaps this???
-            // // only remove the spill range when cell_value = this
-            // for y in (pos.y + new_h as i64)..(pos.y + old_h as i64) {
-            //     if column.spills.get(y).is_some_and(|c| c != cell_ref) {
-            //         column.spills.remove_range(y.into());
-            //     }
-            // }
+            // remove any spills created by the updated code_cell
+            for y in pos.y + new_h as i64..=pos.y + old_h as i64 {
+                if let Some(spill) = column.spills.get(y) {
+                    if spill == cell_ref {
+                        column.spills.set(y, None);
+                    }
+                }
+            }
 
-            column.spills.remove_range(Range {
-                start: pos.y + new_h as i64,
-                end: pos.y + old_h as i64 + 1,
-            });
             for y in new_h..old_h {
                 let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
                 let pos = Pos {
