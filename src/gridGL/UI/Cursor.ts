@@ -91,7 +91,7 @@ export class Cursor extends Graphics {
     this.lineTo(x, y + height);
     this.lineTo(x, y);
 
-    if (showInput && cellEdit && sheets.sheet.id === editorInteractionState.selectedCellSheet) {
+    if (showInput && cellEdit) {
       this.lineStyle({
         width: CURSOR_THICKNESS * 1.5,
         color,
@@ -179,12 +179,10 @@ export class Cursor extends Graphics {
     const highlightedCells = pixiApp.highlightedCells.getHighlightedCells();
     const highlightedCellIndex = pixiApp.highlightedCells.highlightedCellIndex;
     if (!highlightedCells.length) return;
-    let colorIndex = 0;
     highlightedCells.forEach((cell, index) => {
-      const colorNumber = convertColorStringToTint(colors.cellHighlightColor[colorIndex % NUM_OF_CELL_REF_COLORS]);
+      const colorNumber = convertColorStringToTint(colors.cellHighlightColor[cell.index % NUM_OF_CELL_REF_COLORS]);
       const cursorCell = sheets.sheet.getScreenRectangle(cell.column, cell.row, cell.width, cell.height);
       this.drawDashedRectangle(colorNumber, highlightedCellIndex === index, cursorCell);
-      colorIndex++;
     });
   }
 
@@ -229,12 +227,12 @@ export class Cursor extends Graphics {
       this.dirty = false;
       this.clear();
       this.drawCursor();
+      this.drawCodeCursor();
+      this.drawEditorHighlightedCells();
 
       if (!pixiAppSettings.input.show) {
         this.drawMultiCursor();
-        this.drawCodeCursor();
         this.drawCursorIndicator();
-        this.drawEditorHighlightedCells();
       }
 
       pixiApp.setViewportDirty();
