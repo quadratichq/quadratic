@@ -61,6 +61,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       // Validate and upgrade file
       const file = await validateAndUpgradeGridFile(contents);
       if (!file) {
+        Sentry.captureEvent({
+          message: `Failed to validate and upgrade example file from an upload. It will likely have to be fixed manually. File name ${name}`,
+          level: 'error',
+        });
         throw new Error(`Failed to create a new file because the example file is corrupt: ${file}`);
       }
 

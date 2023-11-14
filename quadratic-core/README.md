@@ -10,6 +10,28 @@ Documentation for formula functions can be found in next to the Rust implementat
 
 Run `cargo run --bin docgen`, then copy/paste from `formula_docs_output.md` into Notion. Copying from VSCode will include formatting, so you may have to first paste it into a plaintext editor like Notepad, then copy/paste from there into Notion.
 
+## Code Coverage
+
+Code coverage tooling has been added to the npm scripts.  Before running, install dependencies:
+
+```shell
+cargo install grcov
+rustup component add llvm-tools-preview
+```
+
+To generate the LLVM profraw files, run the following from the root:
+
+```shell
+npm run coverage:wasm:gen
+```
+
+Once the profraw files are generated, you can generate and view HTML by running the following from the root:
+
+```shell
+npm run coverage:wasm:html
+npm run coverage:wasm:view
+```
+
 ## Running benchmarks
 
 ### Pure Rust benchmark

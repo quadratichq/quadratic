@@ -8,7 +8,7 @@ use crate::{
 
 use super::formatting::CellFmtArray;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Operation {
     SetCellValues {
         region: RegionRef,
