@@ -104,9 +104,7 @@ impl GridController {
                 region: region.clone(),
                 values: Array::from(CellValue::Blank),
             });
-        }
-        // todo: include other types here
-        else {
+        } else {
             let values = Array::from(CellValue::Text(value.into()));
             ops.push(Operation::SetCellValues { region, values });
         }

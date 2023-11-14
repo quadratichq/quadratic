@@ -174,7 +174,8 @@ pub fn fetch_code_cell_difference(
             let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
             let column_id = column.id;
 
-            sheet.remove_spills
+            // todo: start here...
+            // sheet.remove_spills
             column.spills.remove_range(Range {
                 start: pos.y,
                 end: pos.y + new_h as i64 + 1,
@@ -205,16 +206,17 @@ pub fn fetch_code_cell_difference(
             let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
             let column_id = column.id;
 
-            // only remove the spill range when cell_value = this
-            for y in (pos.y + new_h as i64)..(pos.y + old_h as i64) {
-                if column.spills.get(y).is_some_and(|c| c != cell_ref) {
-                    column.spills.remove_range(y.into());
-                }
-            }
-            column.spills.remove_range_cell_ref(Range {
+            // todo: perhaps this???
+            // // only remove the spill range when cell_value = this
+            // for y in (pos.y + new_h as i64)..(pos.y + old_h as i64) {
+            //     if column.spills.get(y).is_some_and(|c| c != cell_ref) {
+            //         column.spills.remove_range(y.into());
+            //     }
+            // }
+
+            column.spills.remove_range(Range {
                 start: pos.y + new_h as i64,
                 end: pos.y + old_h as i64 + 1,
-                cell_ref,
             });
             for y in new_h..old_h {
                 let row_id = sheet.get_or_create_row(pos.y + y as i64).id;

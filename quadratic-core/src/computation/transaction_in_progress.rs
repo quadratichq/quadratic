@@ -712,4 +712,33 @@ mod test {
             Some(CellValue::Number(3.into()))
         );
     }
+
+    #[test]
+    fn test_deleting_to_trigger_compute() {
+        let mut gc = GridController::new();
+        let sheet_ids = gc.sheet_ids();
+        let sheet_id = sheet_ids[0];
+
+        gc.set_cell_value(sheet_id, Pos { x: 0, y: 0 }, "10".into(), None);
+        gc.set_cell_code(
+            sheet_id,
+            Pos { x: 0, y: 1 },
+            CodeCellLanguage::Formula,
+            "A0 + 1".into(),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 1 }),
+            Some(CellValue::Number(11.into()))
+        );
+
+        gc.set_cell_value(sheet_id, Pos { x: 0, y: 0 }, "".into(), None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 1 }),
+            Some(CellValue::Number(1.into()))
+        );
+    }
 }

@@ -417,4 +417,9 @@ mod tests {
         assert_eq!(pos![nC6], crate::Pos { x: -3, y: 6 });
         assert_eq!(pos![nCn6], crate::Pos { x: -3, y: -6 });
     }
+
+    #[test]
+    fn test_date_string() {
+        assert_eq!(date_string().len(), 19);
+    }
 }
