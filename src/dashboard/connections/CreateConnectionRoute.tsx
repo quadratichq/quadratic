@@ -1,10 +1,10 @@
-import { ErrorOutline } from '@mui/icons-material';
-import { Button } from '@mui/material';
+import { Biotech, DeviceHubOutlined, ErrorOutline } from '@mui/icons-material';
+import { Avatar, Button, IconButton, List, ListItem, ListItemAvatar, ListItemText } from '@mui/material';
 import { Link, LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
 import { apiClient } from '../../api/apiClient';
 import { ApiTypes } from '../../api/types';
 import { Empty } from '../../components/Empty';
-import { SupportedConnectionsComponent } from './components/SupportedConnectionsComponent';
+import { DashboardHeader } from '../components/DashboardHeader';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   return await apiClient.getSupportedConnections();
@@ -13,7 +13,32 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 export const Component = () => {
   const connections = useLoaderData() as ApiTypes['/v0/connections/supported.GET.response'];
 
-  return <SupportedConnectionsComponent connections={connections} />;
+  return (
+    <div>
+      <DashboardHeader title="Supported connections" />
+      <List>
+        {connections.map((connection, index) => {
+          return (
+            <ListItem
+              key={index}
+              secondaryAction={
+                <IconButton edge="end" aria-label="Test Connection">
+                  <Biotech />
+                </IconButton>
+              }
+            >
+              <ListItemAvatar>
+                <Avatar>
+                  <DeviceHubOutlined />
+                </Avatar>
+              </ListItemAvatar>
+              <ListItemText primary={connection.name} secondary={connection.description} />
+            </ListItem>
+          );
+        })}
+      </List>
+    </div>
+  );
 };
 
 export const ErrorBoundary = () => {

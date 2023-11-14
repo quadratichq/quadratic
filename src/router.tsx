@@ -107,10 +107,8 @@ export const router = createBrowserRouter(
 
             <Route path="connections">
               <Route index lazy={() => import('./dashboard/connections/ConnectionsRoute')} />
-              <Route path={'create'} lazy={() => import('./dashboard/connections/SupportedConnectionsRoute')}>
-                <Route path={':type'} lazy={() => import('./dashboard/connections/SupportedConnectionsRoute')} />
-              </Route>
-              <Route path=":uuid" lazy={() => import('./dashboard/FileRoute')} />
+              <Route path={'create'} lazy={() => import('./dashboard/connections/CreateConnectionRoute')} />
+              {/* <Route path=":uuid" lazy={() => import('./dashboard/connections/ConnectionView')} /> */}
             </Route>
           </Route>
 
