@@ -3,9 +3,9 @@ import { DOCUMENTATION_URL } from '@/constants/urls';
 import { Button } from '@/shadcn/ui/button';
 import { Separator } from '@/shadcn/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
+import { cn } from '@/shadcn/utils';
 import { Avatar, CircularProgress, useTheme } from '@mui/material';
 import { ExternalLinkIcon, FileIcon, MixIcon, PersonIcon } from '@radix-ui/react-icons';
-import clsx from 'clsx';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigation } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
@@ -35,7 +35,7 @@ export const Component = () => {
         {navbar}
       </div>
       <div
-        className={clsx(
+        className={cn(
           `h-full w-full px-4 pb-10 transition-opacity lg:px-10`,
           isLoading ? 'overflow-hidden' : 'overflow-scroll',
           isLoading && 'pointer-events-none opacity-25'
@@ -136,7 +136,7 @@ function SidebarNavLink({
     <NavLink
       {...(target ? { target } : {})}
       to={to}
-      className={clsx(
+      className={cn(
         isActive && 'bg-muted',
         TYPE.body2,
         `relative flex items-center gap-2 p-2 no-underline hover:bg-accent`,

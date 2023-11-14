@@ -9,8 +9,8 @@ import {
 } from '@/shadcn/ui/dropdown-menu';
 import { Input } from '@/shadcn/ui/input';
 import { Separator } from '@/shadcn/ui/separator';
+import { cn } from '@/shadcn/utils';
 import { DotsVerticalIcon } from '@radix-ui/react-icons';
-import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 import { Link, SubmitOptions, useFetcher } from 'react-router-dom';
 import { deleteFile, downloadFile, duplicateFile, renameFile as renameFileAction } from '../../actions';
@@ -23,7 +23,7 @@ import { Layout, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
 export function FilesListItems({ children, viewPreferences }: any) {
   return (
     <ul
-      className={clsx(
+      className={cn(
         viewPreferences.layout === Layout.Grid && 'grid grid-cols-[repeat(auto-fill,minmax(272px,1fr))] gap-4 pb-2'
       )}
     >
@@ -157,7 +157,7 @@ export function FileListItem({
         key={uuid}
         to={ROUTES.FILE(uuid)}
         reloadDocument
-        className={clsx(`text-inherit no-underline`, isDisabled && `pointer-events-none opacity-50`)}
+        className={cn(`text-inherit no-underline`, isDisabled && `pointer-events-none opacity-50`)}
       >
         {viewPreferences.layout === Layout.Grid ? (
           <div className="border border-border p-2 hover:bg-accent">

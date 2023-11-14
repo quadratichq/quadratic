@@ -1,5 +1,5 @@
+import { cn } from '@/shadcn/utils';
 import { GlobeIcon } from '@radix-ui/react-icons';
-import clsx from 'clsx';
 import { ReactNode } from 'react';
 import { TYPE } from '../../constants/appConstants';
 import { Layout, ViewPreferences } from './FilesListViewControlsDropdown';
@@ -27,14 +27,13 @@ export function FilesListItemCore({
   return (
     <div className={`flex flex-row items-center gap-2`}>
       <div
-        className={clsx(
-          `flex`,
-          isGrid ? 'flex-col' : 'flex-col md:flex-row md:gap-2',
-          `relative mr-auto min-w-0 flex-grow-[2]`
+        className={cn(
+          `relative mr-auto flex min-w-0 flex-grow-[2]`,
+          isGrid ? 'flex-col' : 'flex-col md:flex-row md:gap-2'
         )}
       >
         <h2
-          className={clsx(isGrid ? 'truncate text-sm' : 'text-md flex-1 leading-tight')}
+          className={cn(isGrid ? 'truncate text-sm' : 'text-md flex-1 leading-tight')}
           dangerouslySetInnerHTML={{ __html }}
         />
 
