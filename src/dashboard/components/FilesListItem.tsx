@@ -10,6 +10,7 @@ import {
 import { Input } from '@/shadcn/ui/input';
 import { Separator } from '@/shadcn/ui/separator';
 import { DotsVerticalIcon } from '@radix-ui/react-icons';
+import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 import { Link, SubmitOptions, useFetcher } from 'react-router-dom';
 import { deleteFile, downloadFile, duplicateFile, renameFile as renameFileAction } from '../../actions';
@@ -134,7 +135,7 @@ export function FileListItem({
     actions: (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Btn variant="ghost" size="icon" className="hover:bg-background">
+          <Btn variant="ghost" size="icon" className="flex-shrink-0 hover:bg-background">
             <DotsVerticalIcon className="h-4 w-4" />
           </Btn>
         </DropdownMenuTrigger>
@@ -152,16 +153,11 @@ export function FileListItem({
 
   return (
     <li>
-      {/*viewPreferences.layout === Layout.List && <Separator />*/}
       <Link
         key={uuid}
         to={ROUTES.FILE(uuid)}
         reloadDocument
-        style={{
-          textDecoration: 'none',
-          color: 'inherit',
-          ...(isDisabled ? { pointerEvents: 'none', opacity: 0.5 } : {}),
-        }}
+        className={clsx(`text-inherit no-underline`, isDisabled && `pointer-events-none opacity-50`)}
       >
         {viewPreferences.layout === Layout.Grid ? (
           <div className="border border-border p-2 hover:bg-accent">
