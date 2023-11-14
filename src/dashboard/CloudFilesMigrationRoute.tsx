@@ -89,7 +89,11 @@ export const Component = () => {
           // Validate and upgrade it to the latest version
           const newFile = await validateAndUpgradeGridFile(JSON.stringify(oldFile));
           if (!newFile) {
-            throw new Error('Failed to upgrade file');
+            Sentry.captureEvent({
+              message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File name ${localFile.filename}, File ID: ${localFile.id}`,
+              level: 'error',
+            });
+            throw new Response('Invalid file that could not be upgraded.');
           }
 
           // Create a new file in the DB
