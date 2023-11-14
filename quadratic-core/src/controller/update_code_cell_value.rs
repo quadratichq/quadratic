@@ -74,6 +74,7 @@ pub fn update_code_cell_value(
                 };
             }
         }
+
         fetch_code_cell_difference(
             sheet,
             pos,

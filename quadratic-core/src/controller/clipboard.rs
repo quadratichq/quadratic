@@ -43,6 +43,7 @@ impl GridController {
                 html.push_str("</tr>");
             }
             html.push_str("<tr>");
+
             for x in rect.x_range() {
                 if x != rect.min.x {
                     plain_text.push('\t');
@@ -169,6 +170,7 @@ impl GridController {
                 y += 1;
             }
         });
+
         Some(array)
     }
 

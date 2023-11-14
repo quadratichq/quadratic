@@ -81,11 +81,6 @@ export const useEditorCellHighlights = (
       const modelValue = editor.getValue();
 
       const parsedFormula = (await parse_formula(modelValue, 0, 0)) as ParseFormulaReturnType;
-      pixiApp.highlightedCells.fromFormula(
-        parsedFormula,
-        editorInteractionState.selectedCell,
-        editorInteractionState.selectedCellSheet
-      );
 
       pixiApp.highlightedCells.fromFormula(
         parsedFormula,

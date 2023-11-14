@@ -91,7 +91,7 @@ export class Cursor extends Graphics {
     this.lineTo(x, y + height);
     this.lineTo(x, y);
 
-    if (showInput && cellEdit && sheets.sheet.id === editorInteractionState.selectedCellSheet) {
+    if (showInput && cellEdit) {
       this.lineStyle({
         width: CURSOR_THICKNESS * 1.5,
         color,

@@ -152,6 +152,7 @@ impl GridController {
                 values: Array::from(CellValue::Blank),
             });
         }
+
         ops.push(Operation::SetCellCode {
             cell_ref,
             code_cell_value: Some(CodeCellValue {
