@@ -50,7 +50,7 @@ export function Console({ consoleOutput, editorMode, editorContent, evaluationRe
             label="Console"
             id="console-tab-0"
             aria-controls="console-tabpanel-0"
-            icon={hasOutput ? <Circle sx={{ fontSize: 10 }}></Circle> : undefined}
+            icon={hasOutput ? <Circle sx={{ fontSize: 8 }}></Circle> : undefined}
             iconPosition="end"
           ></Tab>
           <Tab
