@@ -7,6 +7,7 @@ import { isViewerOrAbove } from '../../../actions';
 import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 // import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
+import { Circle } from '@mui/icons-material';
 import { colors } from '../../../theme/colors';
 import { CodeSnippet } from '../../components/CodeSnippet';
 import { LinkNewTab } from '../../components/LinkNewTab';
@@ -16,17 +17,17 @@ import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 // todo: fix types
 
 interface ConsoleProps {
+  consoleOutput?: { stdOut?: string; stdErr?: string };
   editorMode: EditorInteractionState['mode'];
-  consoleInput?: { stdOut?: string; stdErr?: string };
   editorContent: string | undefined;
   evaluationResult?: any;
 }
 
-export function Console({ consoleInput, editorMode, editorContent, evaluationResult }: ConsoleProps) {
+export function Console({ consoleOutput, editorMode, editorContent, evaluationResult }: ConsoleProps) {
   const { permission } = useRecoilValue(editorInteractionStateAtom);
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const theme = useTheme();
-  let hasOutput = Boolean(consoleInput?.stdErr?.length || consoleInput?.stdOut?.length);
+  let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length);
 
   // Whenever we change to a different cell, reset the active tab to the 1st
   // useEffect(() => {
@@ -49,6 +50,8 @@ export function Console({ consoleInput, editorMode, editorContent, evaluationRes
             label="Console"
             id="console-tab-0"
             aria-controls="console-tabpanel-0"
+            icon={hasOutput ? <Circle sx={{ fontSize: 8 }}></Circle> : undefined}
+            iconPosition="end"
           ></Tab>
           <Tab
             style={{ minHeight: '32px' }}
@@ -91,12 +94,12 @@ export function Console({ consoleInput, editorMode, editorContent, evaluationRes
           >
             {hasOutput ? (
               <>
-                {consoleInput?.stdErr && (
+                {consoleOutput?.stdErr && (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.error }}>
-                    ERROR: {consoleInput?.stdErr}
+                    ERROR: {consoleOutput?.stdErr}
                   </span>
                 )}
-                {consoleInput?.stdOut}
+                {consoleOutput?.stdOut}
               </>
             ) : (
               <div style={{ ...codeEditorCommentStyles, marginTop: theme.spacing(0.5) }}>
