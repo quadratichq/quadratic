@@ -99,7 +99,7 @@ export class GridHeadings extends Container {
     const showA1Notation = pixiAppSettings.showA1Notation;
     const cellWidth = CELL_WIDTH / viewport.scale.x;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
-    const gridAlpha = calculateAlphaForGridLines(viewport);
+    const gridAlpha = calculateAlphaForGridLines(viewport.scale.x);
     const bounds = viewport.getVisibleBounds();
     const offsets = sheets.sheet.offsets;
 
@@ -208,7 +208,7 @@ export class GridHeadings extends Container {
     const { viewport } = pixiApp;
     const showA1Notation = pixiAppSettings.showA1Notation;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
-    const gridAlpha = calculateAlphaForGridLines(viewport);
+    const gridAlpha = calculateAlphaForGridLines(viewport.scale.x);
     const bounds = viewport.getVisibleBounds();
     const offsets = sheets.sheet.offsets;
 
