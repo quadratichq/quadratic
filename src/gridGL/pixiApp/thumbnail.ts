@@ -1,13 +1,11 @@
-import { Matrix, Rectangle, Renderer } from 'pixi.js';
+import { Rectangle, Renderer } from 'pixi.js';
 import { apiClient } from '../../api/apiClient';
 import { debugShowFileIO } from '../../debugFlags';
 import { grid } from '../../grid/controller/Grid';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiApp } from './PixiApp';
-import { pixiAppSettings } from './PixiAppSettings';
 
-const resolution = 1;
-const imageWidth = 1024;
+const imageWidth = 1280;
 const imageHeight = imageWidth / (16 / 9);
 
 // time when renderer is not busy to perform an action
@@ -50,7 +48,6 @@ class Thumbnail {
   private async generate(): Promise<Blob | null> {
     if (!this.renderer) {
       this.renderer = new Renderer({
-        resolution,
         antialias: true,
         backgroundColor: 0xffffff,
       });
@@ -59,13 +56,11 @@ class Thumbnail {
     this.renderer.resize(imageWidth, imageHeight);
     this.renderer.view.width = imageWidth;
     this.renderer.view.height = imageHeight;
-    pixiApp.prepareForCopying({ gridLines: true, cull: new Rectangle(0, 0, imageWidth, imageHeight) });
-    pixiAppSettings.temporarilyHideCellTypeOutlines = true;
-    const transform = new Matrix();
-    pixiApp.gridLines.update();
-    this.renderer.render(pixiApp.viewportContents, { transform });
+    const rectangle = new Rectangle(0, 0, imageWidth, imageHeight);
+    pixiApp.prepareForCopying({ gridLines: true, cull: rectangle });
+    pixiApp.gridLines.update(rectangle);
+    this.renderer.render(pixiApp.viewportContents);
     pixiApp.cleanUpAfterCopying(true);
-    pixiAppSettings.temporarilyHideCellTypeOutlines = false;
     return new Promise((resolve) => {
       this.renderer!.view.toBlob((blob) => resolve(blob));
     });
