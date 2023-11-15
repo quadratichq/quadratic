@@ -128,15 +128,15 @@ impl Offsets {
         for (k, v) in &self.sizes {
             if let Some(old_v) = offsets.sizes.get(k) {
                 if *v != *old_v {
-                    changes.push((*k, *v - *old_v));
+                    changes.push((*k, *old_v - *v));
                 }
             } else {
-                changes.push((*k, *v - self.default));
+                changes.push((*k, self.default - *v));
             }
         }
         for (k, v) in &offsets.sizes {
             if !self.sizes.contains_key(k) {
-                changes.push((*k, *v - self.default));
+                changes.push((*k, self.default - *v));
             }
         }
         changes

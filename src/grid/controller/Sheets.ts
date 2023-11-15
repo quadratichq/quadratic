@@ -265,6 +265,7 @@ class Sheets {
     });
     pixiApp.headings.dirty = true;
     pixiApp.gridLines.dirty = true;
+    pixiApp.cursor.dirty = true;
   }
 }
 
