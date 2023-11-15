@@ -1,5 +1,5 @@
-import { Close } from '@mui/icons-material';
-import { Box, Dialog, DialogActions, DialogContent, IconButton, Paper, Typography, useTheme } from '@mui/material';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
+// import { Box, Dialog, DialogActions, DialogContent, IconButton, Paper, Typography, useTheme } from '@mui/material';
 import * as React from 'react';
 
 /**
@@ -28,6 +28,7 @@ interface DialogProps {
 
 interface DialogTitleProps {
   children: React.ReactNode;
+  description?: string;
 }
 
 interface DialogContentProps {
@@ -43,53 +44,32 @@ const QDialog: React.FC<DialogProps> & {
   Content: React.FC<DialogContentProps>;
   Actions: React.FC<DialogActionsProps>;
 } = ({ children, onClose }) => {
-  const theme = useTheme();
-
   return (
-    <Dialog open={true} onClose={onClose} fullWidth maxWidth={'sm'}>
-      <Paper elevation={12}>
-        {children}
-        <IconButton onClick={onClose} sx={{ position: 'absolute', top: theme.spacing(1), right: theme.spacing(3) }}>
-          <Close fontSize="small" />
-        </IconButton>
-      </Paper>
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent>{children}</DialogContent>
     </Dialog>
   );
 };
 
-const Title: React.FC<DialogTitleProps> = ({ children }) => {
-  const theme = useTheme();
+const Title: React.FC<DialogTitleProps> = ({
+  children,
 
+  description,
+}) => {
   return (
-    <Box sx={{ px: theme.spacing(3), py: theme.spacing(1.5) }}>
-      <Typography
-        variant="subtitle1"
-        sx={{
-          fontWeight: '600',
-          display: 'block',
-          textOverflow: 'ellipsis',
-          textWrap: 'nowrap',
-          overflow: 'hidden',
-          marginRight: theme.spacing(6),
-        }}
-      >
-        {children}
-      </Typography>
-    </Box>
+    <DialogHeader>
+      <DialogTitle>{children}</DialogTitle>
+      <DialogDescription>{description}</DialogDescription>
+    </DialogHeader>
   );
 };
 
 const Content: React.FC<DialogContentProps> = ({ children }) => {
-  return <DialogContent dividers>{children}</DialogContent>;
+  return <div>{children}</div>;
 };
 
 const Actions: React.FC<DialogActionsProps> = ({ children }) => {
-  const theme = useTheme();
-  return (
-    <DialogActions sx={{ alignItems: 'center', px: theme.spacing(3), py: theme.spacing(1.5) }}>
-      {children}
-    </DialogActions>
-  );
+  return <DialogFooter>{children}</DialogFooter>;
 };
 
 QDialog.Title = Title;

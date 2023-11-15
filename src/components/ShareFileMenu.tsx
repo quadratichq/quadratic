@@ -1,5 +1,7 @@
+import { TYPE } from '@/constants/appConstants';
+import { Button } from '@/shadcn/ui/button';
 import { Public } from '@mui/icons-material';
-import { Alert, Avatar, Button, Skeleton, SkeletonProps, Stack, Typography, useTheme } from '@mui/material';
+import { Alert, Avatar, Skeleton, SkeletonProps, Stack, Typography, useTheme } from '@mui/material';
 import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
 import { ActionFunctionArgs, LoaderFunctionArgs, useFetcher } from 'react-router-dom';
@@ -104,7 +106,7 @@ export function ShareFileMenu({
 
   return (
     <QDialog onClose={onClose}>
-      <QDialog.Title>Share{fileName && `: “${fileName}”`}</QDialog.Title>
+      <QDialog.Title description={'File: ' + fileName}>Share</QDialog.Title>
       <QDialog.Content>
         <Stack gap={theme.spacing(1)} direction="column">
           {showLoadingError && (
@@ -112,8 +114,6 @@ export function ShareFileMenu({
               severity="error"
               action={
                 <Button
-                  color="inherit"
-                  size="small"
                   onClick={() => {
                     fetcher.load(ROUTES.API_FILE_SHARING(uuid));
                   }}
@@ -163,14 +163,14 @@ export function ShareFileMenu({
       </QDialog.Content>
 
       <QDialog.Actions>
-        <Typography variant="caption" color="text.secondary" sx={{ mr: 'auto' }}>
+        <p className={`${TYPE.caption} mr-auto text-muted-foreground`}>
           View access also allows sharing & duplicating.
-        </Typography>
+        </p>
         <Button
-          variant="outlined"
-          size="small"
+          variant="outline"
+          size={'sm'}
           onClick={handleCopyShareLink}
-          sx={{ mt: theme.spacing(0), flexShrink: '0' }}
+          className={`flex-shrink-0`}
           disabled={isDisabledCopyShareLink}
         >
           Copy share link
