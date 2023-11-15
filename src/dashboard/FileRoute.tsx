@@ -59,6 +59,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   hello();
   grid.init();
   grid.openFromContents(file.contents);
+  grid.thumbnailDirty = !data.file.thumbnail;
 
   // If the file is newer than the app, do a (hard) reload.
   const fileVersion = file.version;
