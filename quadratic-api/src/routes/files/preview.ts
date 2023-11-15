@@ -4,16 +4,6 @@ import multer, { StorageEngine } from 'multer';
 import multerS3 from 'multer-s3';
 import { Request } from '../../types/Request';
 
-// if (
-//   process.env.AWS_S3_REGION !== undefined ||
-//   process.env.AWS_S3_ACCESS_KEY_ID !== undefined ||
-//   process.env.AWS_S3_SECRET_ACCESS_KEY !== undefined ||
-//   process.env.AWS_S3_BUCKET_NAME !== undefined
-// ) {
-//   console.log(process.env);
-//   throw new Error('Missing AWS S3 environment variables');
-// }
-
 // Initialize S3 client
 export const s3Client = new S3Client({
   region: process.env.AWS_S3_REGION,
@@ -32,7 +22,7 @@ export const uploadPreviewToS3: multer.Multer = multer({
       cb(null, { fieldName: file.fieldname });
     },
     key: (req: Request, file: Express.Multer.File, cb: (error: Error | null, key: string) => void) => {
-      cb(null, `${req.document.uuid}-${file.originalname}`);
+      cb(null, `${req.quadraticFile.uuid}-${file.originalname}`);
     },
   }) as StorageEngine,
 });

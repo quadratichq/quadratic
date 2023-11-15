@@ -61,7 +61,7 @@ files_router.get(
   userOptionalMiddleware,
   fileMiddleware,
   async (req: Request, res: Response) => {
-    if (!req.document) {
+    if (!req.quadraticFile) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
 
@@ -71,21 +71,21 @@ files_router.get(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    if (req.document.preview) {
-      req.document.preview = await generatePresignedUrl(req.document.preview);
+    if (req.quadraticFile.preview) {
+      req.quadraticFile.preview = await generatePresignedUrl(req.quadraticFile.preview);
     }
 
     return res.status(200).json({
       file: {
-        uuid: req.document.uuid,
-        name: req.document.name,
-        created_date: req.document.created_date,
-        updated_date: req.document.updated_date,
-        version: req.document.version,
-        contents: req.document.contents.toString('utf8'),
-        preview: req.document.preview,
+        uuid: req.quadraticFile.uuid,
+        name: req.quadraticFile.name,
+        created_date: req.quadraticFile.created_date,
+        updated_date: req.quadraticFile.updated_date,
+        version: req.quadraticFile.version,
+        contents: req.quadraticFile.contents.toString('utf8'),
+        preview: req.quadraticFile.preview,
       },
-      permission: getFilePermissions(req.user, req.document),
+      permission: getFilePermissions(req.user, req.quadraticFile),
     });
   }
 );
@@ -100,7 +100,7 @@ files_router.post(
   validateFileVersion().optional(),
   validateFileName().optional(),
   async (req: Request, res: Response) => {
-    if (!req.document || !req.user) {
+    if (!req.quadraticFile || !req.user) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
 
@@ -110,7 +110,7 @@ files_router.post(
     }
 
     // ensure the user has EDIT access to the file
-    const permissions = getFilePermissions(req.user, req.document);
+    const permissions = getFilePermissions(req.user, req.quadraticFile);
     if (permissions !== 'EDITOR' && permissions !== 'OWNER') {
       return res.status(403).json({ error: { message: 'Permission denied' } });
     }
@@ -162,11 +162,11 @@ files_router.post(
   uploadPreviewToS3.single('preview'),
   async (req: Request, res: Response) => {
     // update file object with S3 preview URL
-    if (!req.document || !req.user) {
+    if (!req.quadraticFile || !req.user) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
 
-    const permissions = getFilePermissions(req.user, req.document);
+    const permissions = getFilePermissions(req.user, req.quadraticFile);
 
     if (permissions !== 'OWNER') {
       return res.status(403).json({ error: { message: 'Permission denied' } });
@@ -199,11 +199,11 @@ files_router.delete(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    if (!req.document || !req.user) {
+    if (!req.quadraticFile || !req.user) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
 
-    const permissions = getFilePermissions(req.user, req.document);
+    const permissions = getFilePermissions(req.user, req.quadraticFile);
     if (permissions !== 'OWNER') {
       return res.status(403).json({ error: { message: 'Permission denied' } });
     }

@@ -27,6 +27,6 @@ export const fileMiddleware = async (req: Request, res: Response, next: NextFunc
     }
   }
 
-  req.document = file;
+  req.quadraticFile = file;
   next();
 };
