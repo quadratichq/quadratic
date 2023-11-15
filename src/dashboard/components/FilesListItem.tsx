@@ -162,7 +162,7 @@ export function FileListItem({
         className={cn(`text-inherit no-underline`, isDisabled && `pointer-events-none opacity-50`)}
       >
         {viewPreferences.layout === Layout.Grid ? (
-          <div className="border border-border p-2 hover:bg-accent">
+          <div className="border border-border p-2 lg:hover:bg-accent">
             <div className="flex aspect-video items-center justify-center bg-background">
               {preview ? (
                 <img
@@ -189,7 +189,7 @@ export function FileListItem({
             </div>
           </div>
         ) : (
-          <div className={`flex flex-row items-center gap-4 py-2 hover:bg-accent lg:px-2`}>
+          <div className={`flex flex-row items-center gap-4 py-2 lg:px-2 lg:hover:bg-accent`}>
             <div className={`hidden border border-border shadow-sm md:block`}>
               {preview ? (
                 <img
