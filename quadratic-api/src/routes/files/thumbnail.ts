@@ -14,7 +14,7 @@ export const s3Client = new S3Client({
 });
 
 // Initialize multer
-export const uploadPreviewToS3: multer.Multer = multer({
+export const uploadThumbnailToS3: multer.Multer = multer({
   storage: multerS3({
     s3: s3Client,
     bucket: process.env.AWS_S3_BUCKET_NAME,

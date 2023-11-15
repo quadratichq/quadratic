@@ -54,7 +54,7 @@ export function FileListItem({
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
 
-  const { uuid, name, created_date, updated_date, public_link_access, preview } = file;
+  const { uuid, name, created_date, updated_date, public_link_access, thumbnail } = file;
 
   const fetcherSubmitOpts: SubmitOptions = {
     method: 'POST',
@@ -110,7 +110,7 @@ export function FileListItem({
         uuid: 'duplicate-' + date,
         public_link_access: 'NOT_SHARED',
         name: name + ' (Copy)',
-        preview: null,
+        thumbnail: null,
         updated_date: date,
         created_date: date,
       },
@@ -164,11 +164,11 @@ export function FileListItem({
         {viewPreferences.layout === Layout.Grid ? (
           <div className="border border-border p-2 lg:hover:bg-accent">
             <div className="flex aspect-video items-center justify-center bg-background">
-              {preview ? (
+              {thumbnail ? (
                 <img
                   loading={lazyLoad ? 'lazy' : 'eager'}
-                  src={preview}
-                  alt="File thumbnail preview"
+                  src={thumbnail}
+                  alt="File thumbnail screenshot"
                   className="object-cover"
                 />
               ) : (
@@ -191,11 +191,11 @@ export function FileListItem({
         ) : (
           <div className={`flex flex-row items-center gap-4 py-2 lg:px-2 lg:hover:bg-accent`}>
             <div className={`hidden border border-border shadow-sm md:block`}>
-              {preview ? (
+              {thumbnail ? (
                 <img
                   loading={lazyLoad ? 'lazy' : 'eager'}
-                  src={preview}
-                  alt="File thumbnail preview"
+                  src={thumbnail}
+                  alt="File thumbnail screenshot"
                   className={`aspect-video object-fill`}
                   width="80"
                 />

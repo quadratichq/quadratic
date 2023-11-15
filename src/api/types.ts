@@ -11,7 +11,7 @@ const FileSchema = z.object({
   name: z.string(),
   created_date: z.string().datetime(),
   updated_date: z.string().datetime(),
-  preview: z.string().url().nullable(),
+  thumbnail: z.string().url().nullable(),
   // A string-ified version of `GridFile`
   contents: z.string(),
   // We could derive this to be one of the defined types for `version` from
@@ -28,7 +28,7 @@ export type Permission = z.infer<typeof PermissionSchema>;
 export const ApiSchemas = {
   // Files
   '/v0/files.GET.response': z.array(
-    FileSchema.pick({ uuid: true, name: true, created_date: true, updated_date: true, preview: true }).extend({
+    FileSchema.pick({ uuid: true, name: true, created_date: true, updated_date: true, thumbnail: true }).extend({
       public_link_access: PublicLinkAccessSchema,
     })
   ),
@@ -58,7 +58,7 @@ export const ApiSchemas = {
   '/v0/files/:uuid.POST.response': z.object({
     message: z.string(),
   }),
-  '/v0/files/:uuid/preview.POST.response': z.object({
+  '/v0/files/:uuid/thumbnail.POST.response': z.object({
     message: z.string(),
   }),
 
@@ -99,7 +99,7 @@ export type ApiTypes = {
   '/v0/files/:uuid.DELETE.response': z.infer<(typeof ApiSchemas)['/v0/files/:uuid.DELETE.response']>;
   '/v0/files/:uuid.POST.request': z.infer<(typeof ApiSchemas)['/v0/files/:uuid.POST.request']>;
   '/v0/files/:uuid.POST.response': z.infer<(typeof ApiSchemas)['/v0/files/:uuid.POST.response']>;
-  '/v0/files/:uuid/preview.POST.response': z.infer<(typeof ApiSchemas)['/v0/files/:uuid/preview.POST.response']>;
+  '/v0/files/:uuid/thumbnail.POST.response': z.infer<(typeof ApiSchemas)['/v0/files/:uuid/thumbnail.POST.response']>;
 
   '/v0/files/:uuid/sharing.GET.response': z.infer<(typeof ApiSchemas)['/v0/files/:uuid/sharing.GET.response']>;
   '/v0/files/:uuid/sharing.POST.request': z.infer<(typeof ApiSchemas)['/v0/files/:uuid/sharing.POST.request']>;

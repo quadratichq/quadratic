@@ -174,23 +174,23 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
       // Get the file we want to duplicate
       const {
-        file: { contents, version, preview },
+        file: { contents, version, thumbnail },
       } = await apiClient.getFile(uuid);
 
       // Create it on the server
       const newFile = await apiClient.createFile({ name, version, contents });
 
-      // If present, fetch the preview image of the file we just dup'd and
+      // If present, fetch the thumbnail of the file we just dup'd and
       // save it to the new file we just created
-      if (preview) {
+      if (thumbnail) {
         try {
-          const res = await fetch(preview);
+          const res = await fetch(thumbnail);
           const blob = await res.blob();
-          await apiClient.updateFilePreview(newFile.uuid, blob);
+          await apiClient.updateFileThumbnail(newFile.uuid, blob);
         } catch (err) {
           // Not a huge deal if it failed, just tell Sentry and move on
           Sentry.captureEvent({
-            message: 'Failed to duplicate the preview image when duplicating a file',
+            message: 'Failed to duplicate the thumbnail image when duplicating a file',
             level: 'info',
           });
         }

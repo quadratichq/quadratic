@@ -82,17 +82,17 @@ export const apiClient = {
     );
   },
 
-  async updateFilePreview(uuid: string, preview: Blob) {
+  async updateFileThumbnail(uuid: string, thumbnail: Blob) {
     const formData = new FormData();
-    formData.append('preview', preview, 'preview.png');
+    formData.append('thumbnail', thumbnail, 'thumbnail.png');
 
-    return fetchFromApi<ApiTypes['/v0/files/:uuid/preview.POST.response']>(
-      `/v0/files/${uuid}/preview`,
+    return fetchFromApi<ApiTypes['/v0/files/:uuid/thumbnail.POST.response']>(
+      `/v0/files/${uuid}/thumbnail`,
       {
         method: 'POST',
         body: formData,
       },
-      ApiSchemas['/v0/files/:uuid/preview.POST.response']
+      ApiSchemas['/v0/files/:uuid/thumbnail.POST.response']
     );
   },
 
