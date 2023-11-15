@@ -81,17 +81,21 @@ export class PixiApp {
     this.viewport = new Viewport({ interaction: this.renderer.plugins.interaction });
     this.stage.addChild(this.viewport);
     this.viewport
-      .drag({
-        pressDrag: true,
-        wheel: false, // handled by Wheel plugin below
-        ...(isMobile ? {} : { keyToPress: ['Space'] }),
-      })
-      .decelerate()
       .pinch()
       .clampZoom({
         minScale: 0.01,
         maxScale: 10,
       });
+      if (!isMobile) {
+        this.viewport
+        .drag({
+          pressDrag: true,
+          wheel: false, // handled by Wheel plugin below
+          keyToPress: ['Space'],
+        })
+        .decelerate()
+      }
+
     this.viewport.plugins.add(
       'wheel',
       new Wheel(this.viewport, {

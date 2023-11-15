@@ -1,5 +1,4 @@
 import { Point } from 'pixi.js';
-import { isMobile } from 'react-device-detect';
 import { sheets } from '../../../grid/controller/Sheets';
 import { CodeCellLanguage } from '../../../quadratic-core/quadratic_core';
 import { pixiApp } from '../../pixiApp/PixiApp';
@@ -22,7 +21,8 @@ export class PointerDown {
   private afterShowInput?: boolean;
 
   pointerDown(world: Point, event: PointerEvent): void {
-    if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled) return;
+    // if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled) return;
+    if (pixiAppSettings.panMode !== PanMode.Disabled) return;
     const sheet = sheets.sheet;
     const offsets = sheet.offsets;
     const cursor = sheet.cursor;
