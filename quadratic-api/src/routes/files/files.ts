@@ -7,7 +7,7 @@ import { validateOptionalAccessToken } from '../../middleware/validateOptionalAc
 import { Request } from '../../types/Request';
 import { fileMiddleware } from './fileMiddleware';
 import { getFilePermissions } from './getFilePermissions';
-import { generatePresignedUrl, uploadPreviewToS3 } from './preview';
+import { generatePresignedUrl, uploadThumbnailToS3 } from './thumbnail';
 
 export const validateUUID = () => param('uuid').isUUID(4);
 const validateFileContents = () => body('contents').isString().not().isEmpty();
@@ -30,7 +30,7 @@ files_router.get('/', validateAccessToken, userMiddleware, async (req: Request, 
     select: {
       uuid: true,
       name: true,
-      preview: true,
+      thumbnail: true,
       created_date: true,
       updated_date: true,
       public_link_access: true,
@@ -42,11 +42,11 @@ files_router.get('/', validateAccessToken, userMiddleware, async (req: Request, 
     ],
   });
 
-  // get signed images for each file preview using S3Client
+  // get signed images for each file thumbnail using S3Client
   await Promise.all(
     files.map(async (file) => {
-      if (file.preview) {
-        file.preview = await generatePresignedUrl(file.preview);
+      if (file.thumbnail) {
+        file.thumbnail = await generatePresignedUrl(file.thumbnail);
       }
     })
   );
@@ -71,8 +71,8 @@ files_router.get(
       return res.status(400).json({ errors: errors.array() });
     }
 
-    if (req.quadraticFile.preview) {
-      req.quadraticFile.preview = await generatePresignedUrl(req.quadraticFile.preview);
+    if (req.quadraticFile.thumbnail) {
+      req.quadraticFile.thumbnail = await generatePresignedUrl(req.quadraticFile.thumbnail);
     }
 
     return res.status(200).json({
@@ -83,7 +83,7 @@ files_router.get(
         updated_date: req.quadraticFile.updated_date,
         version: req.quadraticFile.version,
         contents: req.quadraticFile.contents.toString('utf8'),
-        preview: req.quadraticFile.preview,
+        thumbnail: req.quadraticFile.thumbnail,
       },
       permission: getFilePermissions(req.user, req.quadraticFile),
     });
@@ -154,14 +154,14 @@ files_router.post(
 );
 
 files_router.post(
-  '/:uuid/preview',
+  '/:uuid/thumbnail',
   validateUUID(),
   validateAccessToken,
   userMiddleware,
   fileMiddleware,
-  uploadPreviewToS3.single('preview'),
+  uploadThumbnailToS3.single('thumbnail'),
   async (req: Request, res: Response) => {
-    // update file object with S3 preview URL
+    // update file object with S3 thumbnail URL
     if (!req.quadraticFile || !req.user) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
@@ -172,13 +172,13 @@ files_router.post(
       return res.status(403).json({ error: { message: 'Permission denied' } });
     }
 
-    // update the file object with the preview URL
+    // update the file object with the thumbnail URL
     await dbClient.file.update({
       where: {
         uuid: req.params.uuid,
       },
       data: {
-        preview: req.file.key,
+        thumbnail: req.file.key,
       },
     });
 
