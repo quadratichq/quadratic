@@ -7,7 +7,6 @@ import { CellSheetsModified } from '../../quadratic-core/types';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
-import { thumbnailColumns, thumbnailRows } from '../pixiApp/thumbnail';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
 import { CellsFills } from './CellsFills';
@@ -376,11 +375,11 @@ export class CellsSheet extends Container {
       const cellsHash = this.getCellsHash(Number(update.x) * sheetHashWidth, Number(update.y) * sheetHashHeight, true);
       if (cellsHash) {
         if (
-          first &&
-          update.x >= 0 &&
-          update.x < thumbnailColumns / sheetHashWidth &&
-          update.y >= 0 &&
-          update.y <= thumbnailRows / sheetHashHeight
+          first //&&
+          // update.x >= 0 &&
+          // update.x < thumbnailColumns / sheetHashWidth &&
+          // update.y >= 0 &&
+          // update.y <= thumbnailRows / sheetHashHeight
         ) {
           grid.thumbnailDirty = true;
         }

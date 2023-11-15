@@ -1,5 +1,5 @@
 import { Viewport } from 'pixi-viewport';
-import { Container, Graphics, Renderer } from 'pixi.js';
+import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { HEADING_SIZE } from '../../constants/gridConstants';
@@ -225,23 +225,29 @@ export class PixiApp {
   };
 
   // called before and after a quadrant render
-  prepareForCopying(options?: { gridLines: boolean }): Container {
+  prepareForCopying(options?: { gridLines: boolean; cull?: Rectangle }): Container {
     this.gridLines.visible = options?.gridLines ?? false;
     this.axesLines.visible = false;
     this.cursor.visible = false;
     this.headings.visible = false;
     this.quadrants.visible = false;
     this.boxCells.visible = false;
+    if (options?.cull) {
+      this.cellsSheets.cull(options.cull);
+    }
     return this.viewportContents;
   }
 
-  cleanUpAfterCopying(): void {
+  cleanUpAfterCopying(culled?: boolean): void {
     this.gridLines.visible = true;
     this.axesLines.visible = true;
     this.cursor.visible = true;
     this.headings.visible = true;
     this.boxCells.visible = true;
     this.quadrants.visible = this.cacheIsVisible;
+    if (culled) {
+      this.cellsSheets.cull(this.viewport.getVisibleBounds());
+    }
   }
 
   // helper for playwright
