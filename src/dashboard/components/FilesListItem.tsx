@@ -108,7 +108,7 @@ export function FileListItem({
         uuid: 'duplicate-' + date,
         public_link_access: 'NOT_SHARED',
         name: name + ' (Copy)',
-        preview: null, // TODO: duplicate the preview image
+        preview,
         updated_date: date,
         created_date: date,
       },

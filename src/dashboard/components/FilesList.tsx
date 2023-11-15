@@ -1,4 +1,5 @@
 import { FileIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
+import * as Sentry from '@sentry/react';
 import { useState } from 'react';
 import { ActionFunctionArgs, useFetchers, useLocation } from 'react-router-dom';
 import { apiClient } from '../../api/apiClient';
@@ -168,10 +169,30 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
       const {
         file: { name },
       } = json as Action['request.duplicate'];
+
+      // Get the file we want to duplicate
       const {
-        file: { contents, version },
+        file: { contents, version, preview },
       } = await apiClient.getFile(uuid);
-      await apiClient.createFile({ name, version, contents });
+
+      // Create it on the server
+      const newFile = await apiClient.createFile({ name, version, contents });
+
+      // If present, fetch the preview image of the file we just dup'd and
+      // save it to the new file we just created
+      if (preview) {
+        try {
+          const res = await fetch(preview);
+          const blob = await res.blob();
+          await apiClient.updateFilePreview(newFile.uuid, blob);
+        } catch (err) {
+          // Not a huge deal if it failed, just tell Sentry and move on
+          Sentry.captureEvent({
+            message: 'Failed to duplicate the preview image when duplicating a file',
+            level: 'info',
+          });
+        }
+      }
       return { ok: true };
     } catch (error) {
       return { ok: false };
