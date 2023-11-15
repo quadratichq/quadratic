@@ -88,7 +88,6 @@ export class Grid {
   private _dirty = false;
   thumbnailDirty = false;
 
-  // todo: move thumbnailDirty code to Rust
   transactionResponse(summary: TransactionSummary) {
     if (summary.sheet_list_modified) {
       sheets.repopulate();
@@ -96,26 +95,14 @@ export class Grid {
 
     if (summary.cell_sheets_modified.length) {
       pixiApp.cellsSheets.modified(summary.cell_sheets_modified);
-
-      // thumbnail dirty setting is in CellsSheets.ts#modified
     }
 
     if (summary.fill_sheets_modified.length) {
       pixiApp.cellsSheets.updateFills(summary.fill_sheets_modified);
-
-      // todo: can make this trigger less often with more work
-      if (summary.fill_sheets_modified.find((sheetId) => sheetId.id === sheets.getFirst().id)) {
-        this.thumbnailDirty = true;
-      }
     }
 
     if (summary.offsets_modified.length) {
       sheets.updateOffsets(summary.offsets_modified);
-
-      // todo: can make this trigger less often with more work
-      if (summary.offsets_modified.find((sheetId) => sheetId.id === sheets.getFirst().id)) {
-        this.thumbnailDirty = true;
-      }
     }
 
     if (summary.code_cells_modified.length) {
@@ -124,15 +111,14 @@ export class Grid {
 
     if (summary.border_sheets_modified.length) {
       pixiApp.cellsSheets.updateBorders(summary.border_sheets_modified);
-
-      // todo: can make this trigger less often with more work
-      if (summary.border_sheets_modified.find((sheetId) => sheetId.id === sheets.getFirst().id)) {
-        this.thumbnailDirty = true;
-      }
     }
 
     if (summary.transaction_busy) {
       window.dispatchEvent(new CustomEvent('transaction-busy'));
+    }
+
+    if (summary.generate_thumbnail) {
+      this.thumbnailDirty = true;
     }
 
     const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;

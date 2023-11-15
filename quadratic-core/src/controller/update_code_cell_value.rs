@@ -9,7 +9,7 @@ use crate::{
         GridController,
     },
     grid::{CellRef, CodeCellValue, Sheet},
-    Pos, Value,
+    Pos, Rect, Value,
 };
 
 /// updates code cell value
@@ -75,6 +75,43 @@ pub fn update_code_cell_value(
             }
         }
 
+        // updates summary.thumbnail_dirty flag
+        let sheet = grid_controller.grid.sheet_from_id(cell_ref.sheet);
+        if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
+            if let Some(updated_code_cell_value) = updated_code_cell_value.as_ref() {
+                if let Some(output) = updated_code_cell_value.output.as_ref() {
+                    match output.result.output_value() {
+                        Some(output_value) => {
+                            match output_value {
+                                Value::Array(array) => {
+                                    summary.generate_thumbnail = summary.generate_thumbnail
+                                        || grid_controller.thumbnail_dirty_rect(
+                                            cell_ref.sheet,
+                                            Rect::new_span(
+                                                Pos { x: pos.x, y: pos.y },
+                                                Pos {
+                                                    x: pos.x + array.width() as i64,
+                                                    y: pos.y + array.height() as i64,
+                                                },
+                                            ),
+                                        );
+                                }
+                                Value::Single(_) => {
+                                    summary.generate_thumbnail = summary.generate_thumbnail
+                                        || grid_controller.thumbnail_dirty_pos(sheet.id, pos);
+                                }
+                            };
+                        }
+                        None => {
+                            summary.generate_thumbnail = summary.generate_thumbnail
+                                || grid_controller.thumbnail_dirty_pos(sheet.id, pos);
+                        }
+                    }
+                }
+            }
+        }
+
+        let sheet = grid_controller.grid.sheet_mut_from_id(cell_ref.sheet);
         fetch_code_cell_difference(
             sheet,
             pos,
@@ -83,6 +120,7 @@ pub fn update_code_cell_value(
             summary,
             cells_to_compute,
         );
+
         reverse_operations.push(Operation::SetCellCode {
             cell_ref,
             code_cell_value: old_code_cell_value,

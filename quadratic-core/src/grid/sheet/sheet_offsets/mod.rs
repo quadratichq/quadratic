@@ -147,4 +147,22 @@ impl SheetOffsets {
             self.row_heights.changes(&sheet_offsets.row_heights),
         )
     }
+
+    /// calculates the number of columns and rows that are visible in a given width and height starting from 0,0
+    /// (used for thumbnail generation)
+    pub fn visible_cols_rows(&self, w: u32, h: u32) -> (u32, u32) {
+        let mut x = 0;
+        let mut y = 0;
+        let mut width = 0.0;
+        let mut height = 0.0;
+        while width < w as f64 {
+            width += self.column_width(x as i64);
+            x += 1;
+        }
+        while height < h as f64 {
+            height += self.row_height(y as i64);
+            y += 1;
+        }
+        (x, y)
+    }
 }

@@ -1,7 +1,6 @@
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '../../debugFlags';
 import { grid } from '../../grid/controller/Grid';
-import { sheets } from '../../grid/controller/Sheets';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { CellSheetsModified } from '../../quadratic-core/types';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
@@ -370,20 +369,9 @@ export class CellsSheet extends Container {
 
   // update values for cells
   modified(modified: CellSheetsModified[]): void {
-    const first = this.sheet.id === sheets.getFirst().id;
     for (const update of modified) {
       const cellsHash = this.getCellsHash(Number(update.x) * sheetHashWidth, Number(update.y) * sheetHashHeight, true);
       if (cellsHash) {
-        if (
-          first //&&
-          // update.x >= 0 &&
-          // update.x < thumbnailColumns / sheetHashWidth &&
-          // update.y >= 0 &&
-          // update.y <= thumbnailRows / sheetHashHeight
-        ) {
-          grid.thumbnailDirty = true;
-        }
-
         cellsHash.dirty = true;
       }
     }

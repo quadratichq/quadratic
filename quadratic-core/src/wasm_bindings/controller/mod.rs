@@ -49,6 +49,7 @@ impl GridController {
     pub fn js_has_undo(&self) -> bool {
         self.has_undo()
     }
+
     /// Returns whether there is a transaction to redo.
     #[wasm_bindgen(js_name = "hasRedo")]
     pub fn js_has_redo(&self) -> bool {
@@ -113,6 +114,7 @@ impl GridController {
             cursor: None,
             offsets_modified: vec![],
             save: false,
+            generate_thumbnail: false,
             transaction_busy: false,
         })?)
     }

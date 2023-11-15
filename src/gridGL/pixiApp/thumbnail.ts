@@ -5,6 +5,7 @@ import { grid } from '../../grid/controller/Grid';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiApp } from './PixiApp';
 
+// This also needs to be changed in thumbnail.rs
 const imageWidth = 1280;
 const imageHeight = imageWidth / (16 / 9);
 
