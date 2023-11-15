@@ -85,6 +85,7 @@ describe('READ - GET /v0/files/ with auth and files', () => {
       uuid: '00000000-0000-4000-8000-000000000000',
       name: 'test_file_1',
       public_link_access: 'NOT_SHARED',
+      thumbnail: null,
     });
     expect(res.body[0]).toHaveProperty('created_date');
     expect(res.body[0]).toHaveProperty('updated_date');
@@ -92,6 +93,7 @@ describe('READ - GET /v0/files/ with auth and files', () => {
       uuid: '00000000-0000-4000-8000-000000000001',
       name: 'test_file_2',
       public_link_access: 'READONLY',
+      thumbnail: null,
     });
   });
 });
@@ -179,6 +181,7 @@ describe('READ - GET /v0/files/:uuid with auth and owned file', () => {
     expect(res.body).toHaveProperty('permission');
     expect(res.body.permission).toEqual('OWNER');
     expect(res.body.file.contents).toEqual('contents_0');
+    expect(res.body.file.thumbnail).toBeNull();
   });
 });
 
@@ -529,5 +532,47 @@ describe('DELETE - DELETE /v0/files/:uuid with auth and another users file', () 
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
       .expect(200); // OK
+  });
+});
+
+describe('UPDATE - POST /v0/files/:uuid/thumbnail no auth', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .post('/v0/files/00000000-0000-0000-0000-000000000000/thumbnail')
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(401); // Unauthorized
+
+    expect(res.body).toMatchObject({ error: { message: 'No authorization token was found' } });
+  });
+});
+
+describe('UPDATE - POST /v0/files/:uuid/thumbnail file not found', () => {
+  it('responds with json', async () => {
+    const res = await request(app)
+      .post('/v0/files/00000000-0000-4000-8000-000000000009/thumbnail')
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect('Content-Type', /json/)
+      .expect(404); // Not Found
+
+    expect(res.body).toMatchObject({ error: { message: 'File not found' } });
+  });
+});
+
+describe('UPDATE - POST /v0/files/:uuid/thumbnail with auth and owned file update preview', () => {
+  it('responds with json', async () => {
+    const filePath = 'test_assets/test_thumbnail.png';
+
+    // update preview
+    const res = await request(app)
+      .post('/v0/files/00000000-0000-4000-8000-000000000001/thumbnail')
+      .attach('thumbnail', filePath)
+      .set('Accept', 'application/json')
+      .set('Content-Type', 'multipart/form-data')
+      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .expect(200); // OK
+
+    expect(res.body).toMatchObject({ message: 'Preview updated' });
   });
 });
