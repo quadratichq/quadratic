@@ -68,7 +68,7 @@ function Navbar() {
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div className={`flex items-center justify-between`}>
           <SidebarNavLink to="/" className={`pr-3`} isLogo={true}>
-            <div style={{ width: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className={`flex w-5 items-center justify-center`}>
               <QuadraticLogo />
             </div>
             <QuadraticLogotype fill={theme.palette.mode === 'light' ? colors.quadraticFifth : '#fff'} />
