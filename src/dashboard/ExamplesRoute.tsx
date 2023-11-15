@@ -13,7 +13,7 @@ export const Component = () => {
           <Link
             key={id}
             to={ROUTES.CREATE_FILE + `?example=${id}`}
-            className="flex flex-col border-t border-border py-4 md:border md:px-4 md:py-4 md:hover:border-primary"
+            className="flex flex-col border-t border-border py-4 md:border md:px-4 md:py-4 lg:hover:bg-accent"
           >
             <h2 className="text-md truncate">{name}</h2>
             <p className={`${TYPE.caption} text-muted-foreground`}>{description}</p>
