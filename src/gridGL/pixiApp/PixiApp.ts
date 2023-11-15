@@ -91,8 +91,7 @@ export class PixiApp {
         minScale: 0.01,
         maxScale: 10,
       });
-      if (!isMobile) this.viewport.decelerate();
-      
+    if (!isMobile) this.viewport.decelerate();
 
     this.viewport.plugins.add(
       'wheel',
