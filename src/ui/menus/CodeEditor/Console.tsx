@@ -53,8 +53,8 @@ export function Console({ consoleOutput, editorMode, editorContent, evaluationRe
             <Tab
               style={{ minHeight: '32px' }}
               label="AI Assistant"
-              id="console-tab-4"
-              aria-controls="console-tabpanel-2"
+              id="console-tab-1"
+              aria-controls="console-tabpanel-1"
             ></Tab>
           )}
         </Tabs>
@@ -100,13 +100,13 @@ export function Console({ consoleOutput, editorMode, editorContent, evaluationRe
             )}
           </div>
         </TabPanel>
-        <TabPanel value={activeTabIndex} index={2}>
+        <TabPanel value={activeTabIndex} index={1}>
           <AITab
             // todo: fix this
             evalResult={evaluationResult}
             editorMode={editorMode}
             editorContent={editorContent}
-            isActive={activeTabIndex === 2}
+            isActive={activeTabIndex === 1}
           ></AITab>
         </TabPanel>
       </div>
