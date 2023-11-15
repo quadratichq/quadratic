@@ -159,7 +159,7 @@ export const FloatingContextMenu = (props: Props) => {
       setTimeout(updateContextMenuCSSTransform, 100);
     } else menuDiv.current.style.pointerEvents = 'auto';
     return transform;
-  }, [container, showContextMenu, editorInteractionState.permission]);
+  }, [container, showContextMenu, editorInteractionState.permission, moreMenuToggle]);
 
   useEffect(() => {
     const { viewport } = pixiApp;
