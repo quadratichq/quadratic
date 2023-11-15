@@ -1,7 +1,7 @@
 import * as muiColors from '@mui/material/colors';
 
 export const colors = {
-  gridLines: 0xcb8999,
+  gridLines: 0x471f29,
   cellFontColor: 0x000000,
   cellColorUserText: 0x8ecb89,
   cellColorUserPython: 0x3776ab,
@@ -17,6 +17,7 @@ export const colors = {
   boxCellsColor: 0x6cd4ff,
   boxCellsAlpha: 0.333,
   gridHeadingBorder: 0xcfd7de,
+  gridHeadingLabel: 0x3e474f,
   defaultBorderColor: 0,
   lightGray: '#f6f8fa',
   mediumGray: '#cfd7de',

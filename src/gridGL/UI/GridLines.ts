@@ -8,13 +8,6 @@ import { calculateAlphaForGridLines } from './gridUtils';
 export class GridLines extends Graphics {
   dirty = true;
 
-  draw(bounds: Rectangle): void {
-    this.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
-    this.drawVerticalLines(bounds);
-    this.drawHorizontalLines(bounds);
-    this.dirty = true;
-  }
-
   update() {
     if (this.dirty) {
       this.dirty = false;
