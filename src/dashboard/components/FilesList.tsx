@@ -1,6 +1,7 @@
 import { FileIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { useState } from 'react';
+import { isMobile } from 'react-device-detect';
 import { ActionFunctionArgs, useFetchers, useLocation } from 'react-router-dom';
 import { apiClient } from '../../api/apiClient';
 import { Empty } from '../../components/Empty';
@@ -47,7 +48,7 @@ export function FilesList({ files }: { files: FilesListFile[] }) {
     {
       sort: Sort.Updated,
       order: Order.Descending,
-      layout: Layout.Grid,
+      layout: isMobile ? Layout.List : Layout.Grid,
     }
   );
 
