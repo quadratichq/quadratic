@@ -1,4 +1,5 @@
 import { InteractivePointerEvent, Point } from 'pixi.js';
+import { isEditorOrAbove } from '../../../actions';
 import { CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '../../../constants/gridConstants';
 import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -58,7 +59,8 @@ export class PointerHeading {
     const intersects = headings.intersectsHeadings(world);
     if (!intersects) return false;
 
-    const headingResize = headings.intersectsHeadingGridLine(world);
+    const hasPermission = isEditorOrAbove(pixiAppSettings.editorInteractionState.permission);
+    const headingResize = !hasPermission ? undefined : headings.intersectsHeadingGridLine(world);
     if (headingResize) {
       pixiApp.setViewportDirty();
       if (this.clicked && headingResize.column !== undefined) {
@@ -140,8 +142,9 @@ export class PointerHeading {
     this.clicked = false;
 
     if (pixiAppSettings.panMode === PanMode.Disabled) {
+      const hasPermission = isEditorOrAbove(pixiAppSettings.editorInteractionState.permission);
       const headingResize = this.active ? this.resizing : headings.intersectsHeadingGridLine(world);
-      if (headingResize) {
+      if (hasPermission && headingResize) {
         this.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
       } else {
         this.cursor = headings.intersectsHeadings(world) ? 'pointer' : undefined;
