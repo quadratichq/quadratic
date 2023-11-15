@@ -65,11 +65,6 @@ export const FloatingContextMenu = (props: Props) => {
   const textColorRef = useRef<MenuInstance>(null);
   const fillColorRef = useRef<MenuInstance>(null);
 
-  // close moreMenu when context menu closes
-  useEffect(() => {
-    if (menuDiv.current?.style.visibility === 'hidden' && moreMenuProps.state === 'open') moreMenuToggle();
-  }, [menuDiv.current?.style.visibility, moreMenuProps, moreMenuToggle]);
-
   // Function used to move and scale the Input with the Grid
   const updateContextMenuCSSTransform = useCallback(() => {
     if (!container || !menuDiv.current) return '';
@@ -132,6 +127,9 @@ export const FloatingContextMenu = (props: Props) => {
       terminal_pos.y + terminal_pos.height
     );
     if (multiselect_offset.x < 0 || multiselect_offset.y < 0) visibility = 'hidden';
+
+    // Hide More menu if changing from visible to hidden
+    if (menuDiv.current.style.visibility === 'visible' && visibility === 'hidden') moreMenuToggle(false);
 
     // Apply visibility
     menuDiv.current.style.visibility = visibility;
