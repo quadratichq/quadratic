@@ -37,12 +37,14 @@ export function FileListItem({
   filterValue,
   activeShareMenuFileId,
   setActiveShareMenuFileId,
+  lazyLoad,
   viewPreferences,
 }: {
   file: FilesListFile;
   filterValue: string;
   activeShareMenuFileId: string;
   setActiveShareMenuFileId: Function;
+  lazyLoad: boolean;
   viewPreferences: ViewPreferences;
 }) {
   const fetcherDelete = useFetcher();
@@ -163,7 +165,12 @@ export function FileListItem({
           <div className="border border-border p-2 hover:bg-accent">
             <div className="flex aspect-video items-center justify-center bg-background">
               {preview ? (
-                <img src={preview} alt="Thumbnail" className="object-cover" />
+                <img
+                  loading={lazyLoad ? 'lazy' : 'eager'}
+                  src={preview}
+                  alt="File thumbnail preview"
+                  className="object-cover"
+                />
               ) : (
                 <div className="flex items-center justify-center">
                   <img
@@ -182,10 +189,16 @@ export function FileListItem({
             </div>
           </div>
         ) : (
-          <div className={`flex flex-row items-center gap-2 py-2 hover:bg-accent lg:px-2`}>
+          <div className={`flex flex-row items-center gap-4 py-2 hover:bg-accent lg:px-2`}>
             <div className={`hidden border border-border shadow-sm md:block`}>
               {preview ? (
-                <img src={preview} alt="File thumbnail preview" className={`aspect-video object-fill`} width="80" />
+                <img
+                  loading={lazyLoad ? 'lazy' : 'eager'}
+                  src={preview}
+                  alt="File thumbnail preview"
+                  className={`aspect-video object-fill`}
+                  width="80"
+                />
               ) : (
                 <div className="flex aspect-video w-20 items-center justify-center bg-background">
                   <img

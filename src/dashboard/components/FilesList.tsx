@@ -97,6 +97,7 @@ export function FilesList({ files }: { files: FilesListFile[] }) {
       <FilesListItems viewPreferences={viewPreferences}>
         {filesToRender.map((file, i) => (
           <FileListItem
+            lazyLoad={i > 12}
             key={file.uuid}
             file={file}
             filterValue={filterValue}
