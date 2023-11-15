@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Rectangle } from 'pixi.js';
 import { ClipboardEvent, useCallback, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../grid/controller/Sheets';
 import { focusGrid } from '../../helpers/focusGrid';
@@ -9,6 +9,7 @@ import { CURSOR_THICKNESS } from '../UI/Cursor';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { Coordinate } from '../types/size';
+import { isCursorAtEnd, isCursorAtStart } from './contentEditableHelper';
 
 interface CellInputProps {
   container?: HTMLDivElement;
@@ -16,7 +17,7 @@ interface CellInputProps {
 
 export const CellInput = (props: CellInputProps) => {
   const { container } = props;
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
   const viewport = pixiApp.viewport;
 
@@ -169,6 +170,22 @@ export const CellInput = (props: CellInputProps) => {
     event.preventDefault();
   };
 
+  const arrowRight = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (isCursorAtEnd(event.currentTarget)) {
+      closeInput({ x: 1, y: 0 });
+      event.stopPropagation();
+      event.preventDefault();
+    }
+  };
+
+  const arrowLeft = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (isCursorAtStart()) {
+      closeInput({ x: -1, y: 0 });
+      event.stopPropagation();
+      event.preventDefault();
+    }
+  };
+
   return (
     <div
       id="cell-edit"
@@ -196,7 +213,7 @@ export const CellInput = (props: CellInputProps) => {
         whiteSpace: 'nowrap',
       }}
       onPaste={handlePaste}
-      onInput={(event: React.FormEvent<HTMLDivElement>) => {
+      onInput={() => {
         // viewport should try to keep the input box in view
         if (!textInput) return;
         const bounds = textInput.getBoundingClientRect();
@@ -238,8 +255,20 @@ export const CellInput = (props: CellInputProps) => {
           closeInput({ x: 0, y: 1 });
           event.stopPropagation();
           event.preventDefault();
+        } else if (event.key === '=' && (!textInput || textInput.innerText.length === 0)) {
+          // Open cell type menu, close editor.
+          setEditorInteractionState({
+            ...editorInteractionState,
+            showCellTypeMenu: true,
+            showCodeEditor: false,
+            selectedCell: { x: cellLocation.x, y: cellLocation.y },
+            selectedCellSheet: sheets.sheet.id,
+            mode: 'PYTHON',
+          });
+          event.stopPropagation();
         } else if (event.key === 'Tab') {
-          closeInput({ x: 1, y: 0 });
+          if (event.shiftKey) closeInput({ x: -1, y: 0 });
+          else closeInput({ x: 1, y: 0 });
           event.stopPropagation();
           event.preventDefault();
         } else if (event.key === 'Escape') {
@@ -251,6 +280,10 @@ export const CellInput = (props: CellInputProps) => {
         } else if (event.key === 'ArrowDown') {
           closeInput({ x: 0, y: 1 });
           event.stopPropagation();
+        } else if (event.key === 'ArrowRight') {
+          arrowRight(event);
+        } else if (event.key === 'ArrowLeft') {
+          arrowLeft(event);
         } else if ((event.metaKey || event.ctrlKey) && event.key === 'p') {
           event.preventDefault();
         } else if (event.key === ' ') {
