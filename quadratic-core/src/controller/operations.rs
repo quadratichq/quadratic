@@ -47,7 +47,7 @@ impl GridController {
                     .expect("error constructing array of old values for SetCells operation");
                 CellSheetsModified::add_region(&mut summary.cell_sheets_modified, sheet, &region);
                 summary.generate_thumbnail =
-                    summary.generate_thumbnail || self.thumbnail_dirty_region(region.clone());
+                    summary.generate_thumbnail || self.thumbnail_dirty_region(&region);
                 // return reverse operation
                 Operation::SetCellValues {
                     region,
@@ -193,7 +193,7 @@ impl GridController {
                 sheets_with_changed_bounds.insert(region.sheet);
                 summary.border_sheets_modified.push(region.sheet);
                 summary.generate_thumbnail =
-                    summary.generate_thumbnail || self.thumbnail_dirty_region(region.clone());
+                    summary.generate_thumbnail || self.thumbnail_dirty_region(&region);
 
                 let sheet = self.grid.sheet_mut_from_id(region.sheet);
 

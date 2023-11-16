@@ -7,7 +7,7 @@ use super::GridController;
 
 impl GridController {
     /// whether the thumbnail needs to be updated for this region
-    pub fn thumbnail_dirty_region(&self, region: RegionRef) -> bool {
+    pub fn thumbnail_dirty_region(&self, region: &RegionRef) -> bool {
         if region.sheet != self.grid().first_sheet_id() {
             return false;
         }
