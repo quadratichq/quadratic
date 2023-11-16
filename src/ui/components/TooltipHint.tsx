@@ -11,7 +11,6 @@ interface TooltipHintProps {
 export const TooltipHint = ({ title, shortcut, children, ...rest }: TooltipHintProps) => {
   return (
     <Tooltip
-      {...rest}
       arrow
       placement="top"
       title={
@@ -20,6 +19,7 @@ export const TooltipHint = ({ title, shortcut, children, ...rest }: TooltipHintP
         </>
       }
       disableInteractive
+      {...rest}
     >
       {children}
     </Tooltip>

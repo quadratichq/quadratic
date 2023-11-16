@@ -222,7 +222,7 @@ export const CodeEditor = () => {
       >
         {(editorInteractionState.mode === 'PYTHON' || editorInteractionState.mode === 'FORMULA') && (
           <Console
-            consoleInput={out}
+            consoleOutput={out}
             editorMode={editorMode}
             editorContent={editorContent}
             evaluationResult={evaluationResult}
