@@ -17,6 +17,11 @@ export default function QuadraticApp() {
 
   // recoil tracks whether python is loaded
   useEffect(() => {
+    const loading = () =>
+      setLoadedState((prevState) => ({
+        ...prevState,
+        pythonLoadState: 'loading',
+      }));
     const loaded = () =>
       setLoadedState((prevState) => ({
         ...prevState,
@@ -27,9 +32,11 @@ export default function QuadraticApp() {
         ...prevState,
         pythonLoadState: 'error',
       }));
+    window.addEventListener('python-loading', loading);
     window.addEventListener('python-loaded', loaded);
     window.addEventListener('python-error', error);
     return () => {
+      window.removeEventListener('python-loading', loading);
       window.removeEventListener('python-loaded', loaded);
       window.removeEventListener('python-error', error);
     };

@@ -11,6 +11,7 @@ class PythonWebWorker {
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
+
       if (event.type === 'results') {
         const pythonResult = event.results;
         if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
@@ -44,7 +45,8 @@ class PythonWebWorker {
           pythonResult.std_out,
           pythonResult.output_value,
           JSON.stringify(pythonResult.array_output),
-          pythonResult.line_number
+          pythonResult.line_number,
+          pythonResult.cancel_compute
         );
         grid.calculationComplete(result);
         // triggers any CodeEditor updates (if necessary)
@@ -71,6 +73,9 @@ class PythonWebWorker {
         this.loaded = true;
       } else if (event.type === 'python-error') {
         window.dispatchEvent(new CustomEvent('python-error'));
+      } else if (event.type === 'not-loaded') {
+        console.log('*** not-loaded');
+        window.dispatchEvent(new CustomEvent('python-loading'));
       } else {
         throw new Error(`Unhandled pythonWebWorker.type ${event.type}`);
       }
@@ -78,11 +83,24 @@ class PythonWebWorker {
   }
 
   start(python: string): boolean {
+    console.log('start');
     if (!this.loaded || !this.worker) {
       return false;
     }
+
     this.worker.postMessage({ type: 'execute', python });
     return true;
+  }
+
+  stop() {
+    if (this.worker) {
+      this.worker.terminate();
+    }
+  }
+
+  restart() {
+    this.stop();
+    this.init();
   }
 
   getCells(cells: string) {

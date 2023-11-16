@@ -63,7 +63,7 @@ impl TransactionInProgress {
     }
 
     // loop compute cycle until complete or an async call is made
-    pub(super) fn loop_compute(&mut self, grid_controller: &mut GridController) {
+    pub fn loop_compute(&mut self, grid_controller: &mut GridController) {
         loop {
             self.compute(grid_controller);
             if self.waiting_for_async.is_some() {
@@ -78,6 +78,10 @@ impl TransactionInProgress {
                 break;
             }
         }
+    }
+
+    pub fn clear_cells_to_compute(&mut self) {
+        self.cells_to_compute.clear();
     }
 
     /// recalculate bounds for changed sheets
@@ -443,6 +447,7 @@ mod test {
             None,
             Some(expected.clone()),
             array_output,
+            None,
             None,
         );
 

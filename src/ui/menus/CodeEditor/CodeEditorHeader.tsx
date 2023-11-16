@@ -1,4 +1,4 @@
-import { Close, FiberManualRecord, PlayArrow, Subject } from '@mui/icons-material';
+import { Close, FiberManualRecord, PlayArrow, Stop, Subject } from '@mui/icons-material';
 import { CircularProgress, IconButton, useTheme } from '@mui/material';
 import { useRecoilValue } from 'recoil';
 import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
@@ -19,11 +19,12 @@ interface Props {
   isRunningComputation: boolean;
 
   saveAndRunCell: () => void;
+  cancelCell: () => void;
   closeEditor: () => void;
 }
 
 export const CodeEditorHeader = (props: Props) => {
-  const { cellLocation, unsaved, isRunningComputation, saveAndRunCell, closeEditor } = props;
+  const { cellLocation, unsaved, isRunningComputation, saveAndRunCell, cancelCell, closeEditor } = props;
   const { pythonLoadState } = useRecoilValue(loadedStateAtom);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const theme = useTheme();
@@ -86,6 +87,21 @@ export const CodeEditorHeader = (props: Props) => {
             Loading Python...
             <CircularProgress color="inherit" size="1.125rem" sx={{ m: '0 .5rem' }} />
           </div>
+        )}
+        {hasPermission && (
+          <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␡`}>
+            <span>
+              <IconButton
+                id="QuadraticCodeEditorCalcelButtonID"
+                size="small"
+                color="primary"
+                onClick={cancelCell}
+                disabled={!isRunningComputation && !isLoadingPython}
+              >
+                <Stop />
+              </IconButton>
+            </span>
+          </TooltipHint>
         )}
         {hasPermission && (
           <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
