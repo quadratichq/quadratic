@@ -6,7 +6,6 @@ import BottomBarItem from './BottomBarItem';
 
 const PythonState = () => {
   const { pythonLoadState } = useRecoilValue(loadedStateAtom);
-  console.log('pythonLoadState', pythonLoadState);
 
   const theme = useTheme();
   const pythonLabel = 'Python 3.9.5';

@@ -2,6 +2,7 @@ import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
 import { clearFormattingAndBorders, setBold, setItalic } from '../../../ui/menus/TopBar/SubMenus/formatCells';
+import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/python';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
 import { pixiApp } from '../../pixiApp/PixiApp';
 
@@ -34,7 +35,8 @@ export function keyboardViewport(options: {
     return true;
   }
 
-  if (event.key === 'Escape') {
+  if (!(event.metaKey || event.ctrlKey) && event.key === 'Escape') {
+    console.log('escape presentation');
     if (presentationMode) {
       setPresentationMode(false);
       return true;
@@ -103,6 +105,11 @@ export function keyboardViewport(options: {
     const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
     setItalic(!(formatPrimaryCell ? formatPrimaryCell.italic === true : true));
     return true;
+  }
+
+  // Command + Escape
+  if ((event.metaKey || event.ctrlKey) && event.key === 'Escape') {
+    pythonWebWorker.restartFromUser();
   }
 
   return false;

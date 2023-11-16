@@ -74,7 +74,6 @@ class PythonWebWorker {
       } else if (event.type === 'python-error') {
         window.dispatchEvent(new CustomEvent('python-error'));
       } else if (event.type === 'not-loaded') {
-        console.log('*** not-loaded');
         window.dispatchEvent(new CustomEvent('python-loading'));
       } else {
         throw new Error(`Unhandled pythonWebWorker.type ${event.type}`);
@@ -83,7 +82,6 @@ class PythonWebWorker {
   }
 
   start(python: string): boolean {
-    console.log('start');
     if (!this.loaded || !this.worker) {
       return false;
     }
@@ -101,6 +99,21 @@ class PythonWebWorker {
   restart() {
     this.stop();
     this.init();
+  }
+
+  restartFromUser() {
+    this.restart();
+    const result = new JsCodeResult(
+      false,
+      undefined,
+      'Python execution cancelled by user',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      true
+    );
+    grid.calculationComplete(result);
   }
 
   getCells(cells: string) {

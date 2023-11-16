@@ -51,7 +51,6 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
       getCellsMessages(event.cells);
     }
   } else if (event.type === 'execute') {
-    console.log('execute');
     // make sure loading is done
     if (!pyodide) {
       self.postMessage({ type: 'not-loaded' } as PythonMessage);

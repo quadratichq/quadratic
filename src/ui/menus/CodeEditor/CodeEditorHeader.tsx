@@ -89,7 +89,7 @@ export const CodeEditorHeader = (props: Props) => {
           </div>
         )}
         {hasPermission && (
-          <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␡`}>
+          <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`}>
             <span>
               <IconButton
                 id="QuadraticCodeEditorCalcelButtonID"

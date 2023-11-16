@@ -7,7 +7,7 @@ import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStat
 import { grid } from '../../../grid/controller/Grid';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { CodeCellLanguage, JsCodeResult } from '../../../quadratic-core/quadratic_core';
+import { CodeCellLanguage } from '../../../quadratic-core/quadratic_core';
 import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/python';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
@@ -129,18 +129,7 @@ export const CodeEditor = () => {
   const cancelCell = () => {
     if (!isRunningComputation.current) return;
 
-    pythonWebWorker.restart();
-    const result = new JsCodeResult(
-      false,
-      undefined,
-      'Python execution cancelled by user',
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      true
-    );
-    grid.calculationComplete(result);
+    pythonWebWorker.restartFromUser();
   };
 
   useEffect(() => {
@@ -179,8 +168,8 @@ export const CodeEditor = () => {
       saveAndRunCell();
     }
 
-    // Command + Delete
-    if ((event.metaKey || event.ctrlKey) && event.key === 'Delete') {
+    // Command + Escape
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
       cancelCell();
