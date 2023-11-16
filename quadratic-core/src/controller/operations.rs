@@ -54,7 +54,7 @@ impl GridController {
                     let sheet = self.grid.sheet_from_id(cell_ref.sheet);
                     if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
                         // if there is a value, check if it caused a spill
-                        if let Some(_) = sheet.get_cell_value(pos) {
+                        if sheet.get_cell_value(pos).is_some() {
                             self.check_spill(
                                 cell_ref,
                                 cells_to_compute,

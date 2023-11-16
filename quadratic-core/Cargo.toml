@@ -42,6 +42,7 @@ strum = "0.24.1"
 strum_macros = "0.24.3"
 pollster = "0.2.5"
 uuid = { version = "1.4.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde", "wasmbind"] }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
@@ -63,10 +64,6 @@ htmlescape = "0.3.1"
 bigdecimal = { version = "0.4.1", features = ["serde"] }
 csv = "1.2.2"
 indexmap = "2.0.2"
-
-[dependencies.chrono]
-version = "0.4"
-features = ["serde", "wasmbind"]
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }
