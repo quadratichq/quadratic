@@ -4,10 +4,8 @@ import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { isEditorOrAbove } from '../actions';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { loadedStateAtom } from '../atoms/loadedStateAtom';
-import { sheets } from '../grid/controller/Sheets';
-import { loadAssets } from '../gridGL/loadAssets';
 import { pixiApp } from '../gridGL/pixiApp/PixiApp';
-import { webWorkers } from '../web-workers/webWorkers';
+import { initializeWebWorkers } from '../web-workers/webWorkers';
 import QuadraticUIContext from './QuadraticUIContext';
 import { QuadraticLoading } from './loading/QuadraticLoading';
 
@@ -46,19 +44,14 @@ export default function QuadraticApp() {
     // Load python and populate web workers (if supported)
     if (!isMobile && isEditorOrAbove(permission)) {
       setLoadedState((prevState) => ({ ...prevState, pythonLoadState: 'loading' }));
-      webWorkers.init();
+      initializeWebWorkers();
     }
 
-    loadAssets().then(() => {
-      pixiApp.init();
-      sheets.create();
-      setLoading(false);
-    });
+    pixiApp.init().then(() => setLoading(false));
   }, [permission, setLoadedState]);
 
   if (loading) {
     return <QuadraticLoading />;
   }
-
   return <QuadraticUIContext />;
 }

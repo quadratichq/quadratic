@@ -51,7 +51,6 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     if (
       keyboardClipboard({
         event,
-        editorInteractionState,
         addGlobalSnackbar,
       }) ||
       keyboardUndoRedo(event) ||

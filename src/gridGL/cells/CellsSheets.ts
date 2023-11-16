@@ -1,8 +1,7 @@
 import { Container, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
-import { SheetId } from '../../quadratic-core/types';
+import { CellSheetsModified, SheetId } from '../../quadratic-core/types';
 import { pixiApp } from '../pixiApp/PixiApp';
-import { Coordinate } from '../types/size';
 import { CellsSheet } from './CellsSheet';
 
 export class CellsSheets extends Container<CellsSheet> {
@@ -11,13 +10,14 @@ export class CellsSheets extends Container<CellsSheet> {
   async create(): Promise<void> {
     this.removeChildren();
     if (!sheets.size) return;
-    sheets.forEach(async (sheet) => {
+
+    for (const sheet of sheets.sheets) {
       const child = this.addChild(new CellsSheet(sheet));
       await child.preload();
       if (sheet.id === sheets.sheet.id) {
         this.current = child;
       }
-    });
+    }
   }
 
   isReady(): boolean {
@@ -62,25 +62,8 @@ export class CellsSheets extends Container<CellsSheet> {
     this.current.show(bounds);
   }
 
-  changed(options: {
-    sheetId: string;
-    column?: number;
-    row?: number;
-    cells?: Coordinate[];
-    rectangle?: Rectangle;
-    labels: boolean;
-    background: boolean;
-  }): void {
-    const cellsSheet = this.children.find((search) => search.sheet.id === options.sheetId);
-    if (!cellsSheet) throw new Error('Expected to find cellsSheet in changed');
-    cellsSheet.changed({
-      cells: options.cells,
-      column: options.column,
-      row: options.row,
-      rectangle: options.rectangle,
-      labels: options.labels,
-      background: options.background,
-    });
+  private getById(id: string): CellsSheet | undefined {
+    return this.children.find((search) => search.sheet.id === id);
   }
 
   // this updates the first dirty CellsSheet, always starting with the current sheet
@@ -114,5 +97,52 @@ export class CellsSheets extends Container<CellsSheet> {
         cellsSheet.updateFill();
       }
     });
+  }
+
+  // adjust headings without recalculating the glyph geometries
+  adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
+    const { sheetId, delta, row, column } = options;
+    const cellsSheet = this.getById(sheetId);
+    if (!cellsSheet) throw new Error('Expected to find cellsSheet in adjustHeadings');
+    cellsSheet.adjustHeadings({ delta, row, column });
+  }
+
+  getCellsContentMaxWidth(column: number): number {
+    if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxWidth');
+    return this.current.getCellsContentMaxWidth(column);
+  }
+
+  modified(cellSheetsModified: CellSheetsModified[]): void {
+    for (const cellSheet of this.children) {
+      const modified = cellSheetsModified.filter((modified) => modified.sheet_id === cellSheet.sheet.id);
+      if (modified.length) {
+        cellSheet.modified(modified);
+      }
+    }
+  }
+
+  updateCodeCells(codeCells: SheetId[]): void {
+    this.children.forEach((cellsSheet) => {
+      if (codeCells.find((id) => id.id === cellsSheet.sheet.id)) {
+        cellsSheet.updateCellsArray();
+        if (sheets.sheet.id === cellsSheet.sheet.id) {
+          window.dispatchEvent(new CustomEvent('computation-complete'));
+        }
+      }
+    });
+  }
+
+  updateBorders(borderSheets: SheetId[]): void {
+    this.children.forEach((cellsSheet) => {
+      if (borderSheets.find((id) => id.id === cellsSheet.sheet.id)) {
+        cellsSheet.createBorders();
+      }
+    });
+  }
+
+  showLabel(x: number, y: number, sheetId: string, show: boolean) {
+    const cellsSheet = this.getById(sheetId);
+    if (!cellsSheet) throw new Error('Expected to find cellsSheet in showLabel');
+    cellsSheet.showLabel(x, y, show);
   }
 }

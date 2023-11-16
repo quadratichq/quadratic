@@ -130,6 +130,7 @@ impl Spanned<Value> {
 
     /// Iterates over an array, converting values to a particular type. If a
     /// value cannot be converted, it is ignored.
+    #[allow(clippy::should_implement_trait)]
     pub fn into_iter<T>(self) -> impl Iterator<Item = CodeResult<Spanned<T>>>
     where
         CellValue: TryInto<T, Error = ErrorMsg>,
@@ -146,7 +147,7 @@ impl Spanned<Value> {
                     inner: v,
                     span: self.span,
                 };
-                single_value = Some(v.try_coerce::<T>())
+                single_value = Some(v.try_coerce::<T>());
             }
             Value::Array(a) => array = a.into_cell_values_vec(),
         };

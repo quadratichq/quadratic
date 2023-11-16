@@ -1,10 +1,13 @@
-import { Close, FiberManualRecord, PlayArrow, Subject } from '@mui/icons-material';
+import { Close, FiberManualRecord, HelpOutline, PlayArrow, Subject } from '@mui/icons-material';
 import { CircularProgress, IconButton, useTheme } from '@mui/material';
 import { useRecoilValue } from 'recoil';
 import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
 import { Coordinate } from '../../../gridGL/types/size';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 // import { CodeCellValue } from '../../../quadratic-core/types';
+import { isEditorOrAbove } from '../../../actions';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL, DOCUMENTATION_URL } from '../../../constants/urls';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
 import { Formula, Python } from '../../icons';
@@ -12,7 +15,6 @@ import { Formula, Python } from '../../icons';
 // todo: fix types
 
 interface Props {
-  cell: any | undefined; // CodeCellValue
   cellLocation: Coordinate | undefined;
   unsaved: boolean;
   isRunningComputation: boolean;
@@ -22,12 +24,16 @@ interface Props {
 }
 
 export const CodeEditorHeader = (props: Props) => {
-  const { cell, cellLocation, unsaved, isRunningComputation, saveAndRunCell, closeEditor } = props;
+  const { cellLocation, unsaved, isRunningComputation, saveAndRunCell, closeEditor } = props;
   const { pythonLoadState } = useRecoilValue(loadedStateAtom);
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const theme = useTheme();
+  const hasPermission = isEditorOrAbove(editorInteractionState.permission);
 
-  if (!cell || !cellLocation) return null;
-  const isLoadingPython = !['loaded', 'initial'].includes(pythonLoadState) && cell.language === 'Python';
+  const language = editorInteractionState.mode;
+
+  if (!cellLocation) return null;
+  const isLoadingPython = !['loaded', 'initial'].includes(pythonLoadState) && language === 'PYTHON';
 
   return (
     <div
@@ -49,9 +55,9 @@ export const CodeEditorHeader = (props: Props) => {
           padding: '0 .5rem',
         }}
       >
-        {cell.language === 'Python' ? (
+        {language === 'PYTHON' ? (
           <Python sx={{ color: colors.languagePython }} fontSize="small" />
-        ) : cell.language === 'Formula' ? (
+        ) : language === 'FORMULA' ? (
           <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
         ) : (
           <Subject />
@@ -61,7 +67,8 @@ export const CodeEditorHeader = (props: Props) => {
             color: 'black',
           }}
         >
-          Cell ({cellLocation.x}, {cellLocation.y}) - {cell.language}
+          Cell ({cellLocation.x}, {cellLocation.y}) -{' '}
+          {language === 'PYTHON' ? 'Python' : language === 'FORMULA' ? 'Formula' : 'Unknown'}
           {unsaved && (
             <TooltipHint title="Your changes haven’t been saved or run">
               <FiberManualRecord
@@ -81,20 +88,35 @@ export const CodeEditorHeader = (props: Props) => {
             <CircularProgress color="inherit" size="1.125rem" sx={{ m: '0 .5rem' }} />
           </div>
         )}
-        <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
-          <span>
-            <IconButton
-              id="QuadraticCodeEditorRunButtonID"
-              size="small"
-              color="primary"
-              onClick={saveAndRunCell}
-              disabled={isRunningComputation || isLoadingPython}
-            >
-              <PlayArrow />
-            </IconButton>
-          </span>
+        <TooltipHint title="Read the docs" placement="bottom">
+          <IconButton
+            aria-label="docs"
+            size="small"
+            onClick={() => {
+              if (language === 'FORMULA') window.open(DOCUMENTATION_FORMULAS_URL, '_blank');
+              else if (language === 'PYTHON') window.open(DOCUMENTATION_PYTHON_URL, '_blank');
+              else window.open(DOCUMENTATION_URL, '_blank');
+            }}
+          >
+            <HelpOutline fontSize="small" />
+          </IconButton>
         </TooltipHint>
-        <TooltipHint title="Close" shortcut="ESC">
+        {hasPermission && (
+          <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
+            <span>
+              <IconButton
+                id="QuadraticCodeEditorRunButtonID"
+                size="small"
+                color="primary"
+                onClick={saveAndRunCell}
+                disabled={isRunningComputation || isLoadingPython}
+              >
+                <PlayArrow />
+              </IconButton>
+            </span>
+          </TooltipHint>
+        )}
+        <TooltipHint title="Close" shortcut="ESC" placement="bottom">
           <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={closeEditor}>
             <Close />
           </IconButton>

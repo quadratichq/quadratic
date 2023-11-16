@@ -3,7 +3,12 @@ import { Container, Graphics, Renderer } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { HEADING_SIZE } from '../../constants/gridConstants';
-import { debugAlwaysShowCache, debugShowCacheFlag } from '../../debugFlags';
+import { debugShowCacheFlag } from '../../debugFlags';
+import {
+  copyToClipboardEvent,
+  cutToClipboardEvent,
+  pasteFromClipboardEvent,
+} from '../../grid/actions/clipboard/clipboard';
 import { sheets } from '../../grid/controller/Sheets';
 import { AxesLines } from '../UI/AxesLines';
 import { Cursor } from '../UI/Cursor';
@@ -13,10 +18,12 @@ import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { CellsSheets } from '../cells/CellsSheets';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { ensureVisible } from '../interaction/viewportHelper';
+import { loadAssets } from '../loadAssets';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
 import { Quadrants } from '../quadrants/Quadrants';
 import { pixiAppSettings } from './PixiAppSettings';
 import { Update } from './Update';
+import { HighlightedCells } from './highlightedCells';
 import './pixiApp.css';
 
 export class PixiApp {
@@ -24,6 +31,7 @@ export class PixiApp {
   private update!: Update;
   private cacheIsVisible = false;
 
+  highlightedCells = new HighlightedCells();
   canvas!: HTMLCanvasElement;
   viewport!: Viewport;
   gridLines!: GridLines;
@@ -44,7 +52,19 @@ export class PixiApp {
   // for testing purposes
   debug!: Graphics;
 
-  init() {
+  async init() {
+    await loadAssets();
+    this.initCanvas();
+    await this.rebuild();
+
+    // keep a reference of app on window, used for Playwright tests
+    //@ts-expect-error
+    window.pixiapp = this;
+
+    console.log('[QuadraticGL] environment ready');
+  }
+
+  private initCanvas() {
     this.canvas = document.createElement('canvas');
     this.canvas.id = 'QuadraticCanvasID';
     this.canvas.className = 'pixi_canvas';
@@ -57,11 +77,6 @@ export class PixiApp {
       antialias: true,
       backgroundColor: 0xffffff,
     });
-
-    // keep a reference of app on window, used for Playwright tests
-
-    //@ts-expect-error
-    window.pixiapp = this;
 
     this.viewport = new Viewport({ interaction: this.renderer.plugins.interaction });
     this.stage.addChild(this.viewport);
@@ -113,25 +128,25 @@ export class PixiApp {
     this.pointer = new Pointer(this.viewport);
     this.update = new Update();
 
-    if (debugAlwaysShowCache) this.showCache();
-
+    // if (debugAlwaysShowCache) this.showCache();
+    // console.log('listeners...');
     this.setupListeners();
-    this.rebuild();
-
-    console.log('[QuadraticGL] environment ready');
-  }
-
-  create() {
-    this.cellsSheets.create();
   }
 
   private setupListeners() {
     window.addEventListener('resize', this.resize);
+    document.addEventListener('copy', copyToClipboardEvent);
+    document.addEventListener('paste', pasteFromClipboardEvent);
+    document.addEventListener('cut', cutToClipboardEvent);
   }
 
   private removeListeners() {
     window.removeEventListener('resize', this.resize);
+    document.removeEventListener('copy', copyToClipboardEvent);
+    document.removeEventListener('paste', pasteFromClipboardEvent);
+    document.removeEventListener('cut', cutToClipboardEvent);
   }
+
   private showCache(): void {
     if (debugShowCacheFlag && !this.quadrants.visible) {
       const cacheOn = document.querySelector('.debug-show-cache-on');
@@ -183,6 +198,7 @@ export class PixiApp {
     this.resize();
     this.update.start();
     this.canvas.focus();
+    this.setViewportDirty();
   }
 
   destroy(): void {
@@ -263,17 +279,10 @@ export class PixiApp {
     });
   }
 
-  clear(): void {
-    this.renderer.render(new Container());
-  }
-
-  private async loadSheets() {
-    await this.cellsSheets.create();
-    this.viewport.dirty = true;
-  }
-
   async rebuild() {
-    this.clear();
+    sheets.create();
+    await this.cellsSheets.create();
+
     this.paused = true;
     this.viewport.dirty = true;
     this.gridLines.dirty = true;
@@ -282,9 +291,10 @@ export class PixiApp {
     this.cursor.dirty = true;
     this.boxCells.reset();
 
-    await this.loadSheets();
+    this.viewport.dirty = true;
     this.paused = false;
     this.reset();
+    this.setViewportDirty();
   }
 
   loadViewport(): void {
@@ -304,14 +314,25 @@ export class PixiApp {
     }
   }
 
-  updateCursorPosition(): void {
-    pixiApp.cursor.dirty = true;
-    pixiApp.headings.dirty = true;
+  updateCursorPosition(
+    options = {
+      ensureVisible: true,
+    }
+  ): void {
+    this.cursor.dirty = true;
+    this.headings.dirty = true;
 
-    ensureVisible();
+    if (options.ensureVisible) ensureVisible();
 
     // triggers useGetBorderMenu clearSelection()
     window.dispatchEvent(new CustomEvent('cursor-position'));
+  }
+
+  adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
+    this.cellsSheets.adjustHeadings(options);
+    this.headings.dirty = true;
+    this.gridLines.dirty = true;
+    this.cursor.dirty = true;
   }
 }
 

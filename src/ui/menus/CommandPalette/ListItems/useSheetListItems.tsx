@@ -23,7 +23,7 @@ export const useSheetListItems = (): Commands[] => {
     return () => window.removeEventListener('change-sheet', updateCommands);
   }, []);
 
-  updateCommands();
+  useEffect(() => updateCommands(), []);
 
   return commands;
 };

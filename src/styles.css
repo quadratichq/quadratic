@@ -29,12 +29,6 @@ html,
   src: url('/public/fonts/opensans/OpenSans-BoldItalic.ttf');
 }
 
-/* Override default MUI dialog actions container so buttons align with content */
-.MuiDialogActions-root {
-  padding-left: 16px !important;
-  padding-right: 16px !important;
-}
-
 body {
   margin: 0;
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',

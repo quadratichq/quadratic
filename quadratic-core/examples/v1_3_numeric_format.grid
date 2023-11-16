@@ -1,0 +1,27 @@
+{
+  "borders": [],
+  "cells": [
+    {
+      "x": 0,
+      "y": 0,
+      "type": "TEXT",
+      "value": "100.12345678",
+      "last_modified": "2023-10-25T20:24:02.395Z"
+    }
+  ],
+  "cell_dependency": "[]",
+  "columns": [],
+  "formats": [
+    {
+      "x": 0,
+      "y": 0,
+      "textFormat": {
+        "type": "CURRENCY",
+        "display": "CURRENCY",
+        "symbol": "USD"
+      }
+    }
+  ],
+  "rows": [],
+  "version": "1.3"
+}

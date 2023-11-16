@@ -1,8 +1,6 @@
 use std::borrow::Cow;
 use std::collections::{HashMap, VecDeque};
 
-use futures::future::LocalBoxFuture;
-use futures::FutureExt;
 use itertools::Itertools;
 use lazy_static::lazy_static;
 
@@ -123,8 +121,7 @@ impl FormulaFnArgs {
 }
 
 /// Function pointer that represents the body of a formula function.
-pub type FormulaFn =
-    for<'a> fn(&'a mut Ctx<'_>, FormulaFnArgs) -> LocalBoxFuture<'a, CodeResult<Value>>;
+pub type FormulaFn = for<'a> fn(&'a mut Ctx<'_>, FormulaFnArgs) -> CodeResult<Value>;
 
 /// Formula function with associated metadata.
 pub struct FormulaFunction {

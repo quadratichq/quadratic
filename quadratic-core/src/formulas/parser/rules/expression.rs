@@ -133,6 +133,7 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 | Token::RangeOp
                 | Token::Percent
                 | Token::CellRangeOp
+                | Token::SheetRefOp
                 | Token::Ellipsis => false,
 
                 Token::False | Token::True => true,
@@ -140,6 +141,7 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 Token::Comment | Token::UnterminatedBlockComment => false,
 
                 Token::FunctionCall
+                | Token::UnquotedSheetReference
                 | Token::StringLiteral
                 | Token::UnterminatedStringLiteral
                 | Token::NumericLiteral
@@ -160,10 +162,10 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 p,
                 [
                     FunctionCall.map(Some),
-                    StringLiteral.map(Some),
+                    CellReferenceExpression.map(Some),
+                    StringLiteralExpression.map(Some),
                     NumericLiteral.map(Some),
                     ArrayLiteral.map(Some),
-                    CellReference.map(Some),
                     BoolExpression.map(Some),
                     ParenExpression.map(Some),
                     EmptyExpression.map(Some),
@@ -341,6 +343,21 @@ impl SyntaxRule for FunctionCall {
     }
 }
 
+/// Matches a single cell reference.
+#[derive(Debug, Copy, Clone)]
+pub struct CellReferenceExpression;
+impl_display!(for CellReferenceExpression, "cell reference, such as 'A6' or '$ZB$3'");
+impl SyntaxRule for CellReferenceExpression {
+    type Output = AstNode;
+
+    fn prefix_matches(&self, p: Parser<'_>) -> bool {
+        CellReference.prefix_matches(p)
+    }
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
+        Ok(p.parse(CellReference)?.map(ast::AstNodeContents::CellRef))
+    }
+}
+
 /// Matches a pair of parentheses containing an expression.
 #[derive(Debug, Copy, Clone)]
 pub struct ParenExpression;
@@ -406,6 +423,23 @@ impl SyntaxRule for ArrayLiteral {
             span: Span::merge(start_span, end_span),
             inner: ast::AstNodeContents::Array(rows),
         })
+    }
+}
+
+/// Matches a string literal and wraps it in an expression.
+#[derive(Debug, Copy, Clone)]
+pub struct StringLiteralExpression;
+impl_display!(for StringLiteralExpression, "string literal");
+impl SyntaxRule for StringLiteralExpression {
+    type Output = ast::AstNode;
+
+    fn prefix_matches(&self, p: Parser<'_>) -> bool {
+        StringLiteral.prefix_matches(p)
+    }
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
+        let inner = ast::AstNodeContents::String(p.parse(StringLiteral)?);
+        let span = p.span();
+        Ok(Spanned { span, inner })
     }
 }
 

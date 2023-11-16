@@ -1,30 +1,41 @@
 use super::*;
-use crate::{controller::transactions::TransactionSummary, grid::js_types::*};
+use crate::controller::transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells};
+use crate::{controller::transaction_summary::TransactionSummary, grid::js_types::*};
+use std::collections::HashSet;
 use std::str::FromStr;
 
+pub mod auto_complete;
+pub mod borders;
+pub mod bounds;
+pub mod cells;
 pub mod clipboard;
 pub mod formatting;
+pub mod import;
 pub mod render;
+pub mod sheet_offsets;
 pub mod sheets;
+pub mod summarize;
 
 #[wasm_bindgen]
 impl GridController {
     /// Imports a [`GridController`] from a JSON string.
     #[wasm_bindgen(js_name = "newFromFile")]
     pub fn js_new_from_file(file: &str) -> Result<GridController, JsValue> {
-        Ok(GridController::from_grid(file::import(file)?))
+        Ok(GridController::from_grid(
+            file::import(file).map_err(|e| e.to_string())?,
+        ))
     }
 
     /// Exports a [`GridController`] to a file. Returns a `String`.
     #[wasm_bindgen(js_name = "exportToFile")]
-    pub fn js_export_to_file(&self) -> Result<String, JsValue> {
-        Ok(file::export(&self.grid())?)
+    pub fn js_export_to_file(&mut self) -> Result<String, JsValue> {
+        Ok(file::export(self.grid_mut()).map_err(|e| e.to_string())?)
     }
 
     /// Exports a [`string`]
     #[wasm_bindgen(js_name = "getVersion")]
     pub fn js_file_version(&self) -> String {
-        file::version()
+        file::CURRENT_VERSION.into()
     }
 
     /// Constructs a new empty grid.
@@ -57,6 +68,31 @@ impl GridController {
         Ok(serde_wasm_bindgen::to_value(&self.redo(cursor))?)
     }
 
+    #[wasm_bindgen(js_name = "calculationComplete")]
+    pub fn js_calculation_complete(&mut self, result: JsCodeResult) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(
+            &self.calculation_complete(result),
+        )?)
+    }
+
+    #[wasm_bindgen(js_name = "getCalculationTransactionSummary")]
+    pub fn js_calculation_transaction_summary(&mut self) -> Result<JsValue, JsValue> {
+        self.updated_bounds_in_transaction();
+        if let Some(summary) = self.transaction_summary() {
+            Ok(serde_wasm_bindgen::to_value(&summary)?)
+        } else {
+            Err(JsValue::UNDEFINED)
+        }
+    }
+
+    #[wasm_bindgen(js_name = "calculationGetCells")]
+    pub fn js_calculation_get_cells(
+        &mut self,
+        get_cells: JsComputeGetCells,
+    ) -> Option<CellsForArray> {
+        self.calculation_get_cells(get_cells)
+    }
+
     /// Populates a portion of a sheet with random float values.
     ///
     /// Returns a [`TransactionSummary`].
@@ -69,99 +105,15 @@ impl GridController {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         self.populate_with_random_floats(sheet_id, region);
         Ok(serde_wasm_bindgen::to_value(&TransactionSummary {
-            cell_regions_modified: vec![(sheet_id, *region)],
             fill_sheets_modified: vec![],
             border_sheets_modified: vec![],
-            code_cells_modified: vec![],
+            code_cells_modified: HashSet::new(),
+            cell_sheets_modified: HashSet::new(),
             sheet_list_modified: false,
             cursor: None,
+            offsets_modified: vec![],
+            save: false,
+            transaction_busy: false,
         })?)
-    }
-
-    /// Returns a sheet's bounds.
-    #[wasm_bindgen(js_name = "getGridBounds")]
-    pub fn get_grid_bounds(
-        &self,
-        sheet_id: String,
-        ignore_formatting: bool,
-    ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-
-        Ok(serde_wasm_bindgen::to_value(
-            &self.sheet(sheet_id).bounds(ignore_formatting),
-        )?)
-    }
-
-    /// Sets a cell value given as a [`CellValue`].
-    ///
-    /// Returns a [`TransactionSummary`].
-    #[wasm_bindgen(js_name = "setCellValue")]
-    pub fn js_set_cell_value(
-        &mut self,
-        sheet_id: String,
-        pos: &Pos,
-        value: String,
-        cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_value(sheet_id, *pos, value, cursor),
-        )?)
-    }
-
-    /// changes the decimal places
-    #[wasm_bindgen(js_name = "setCellNumericDecimals")]
-    pub fn js_set_cell_numeric_decimals(
-        &mut self,
-        sheet_id: String,
-        source: Pos,
-        rect: Rect,
-        delta: isize,
-        cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(&self.change_decimal_places(
-            sheet_id, source, rect, delta, cursor,
-        ))?)
-    }
-
-    /// gets an editable string for a cell
-    ///
-    /// returns a string
-    #[wasm_bindgen(js_name = "getEditCell")]
-    pub fn js_get_cell_edit(&self, sheet_id: String, pos: Pos) -> String {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let sheet = self.grid().sheet_from_id(sheet_id);
-        if let Some(value) = sheet.get_cell_value(pos) {
-            value.to_edit()
-        } else {
-            String::from("")
-        }
-    }
-
-    /// Deletes a region of cells.
-    ///
-    /// Returns a [`TransactionSummary`].
-    #[wasm_bindgen(js_name = "deleteCellValues")]
-    pub fn js_delete_cell_values(
-        &mut self,
-        sheet_id: String,
-        region: &Rect,
-        cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(
-            &self.delete_cell_values(sheet_id, *region, cursor),
-        )?)
-    }
-
-    /// Returns a code cell as a [`CodeCellValue`].
-    #[wasm_bindgen(js_name = "getCodeCellValue")]
-    pub fn get_code_cell_value(&mut self, sheet_id: String, pos: &Pos) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        match self.sheet(sheet_id).get_code_cell(*pos) {
-            Some(code_cell) => Ok(serde_wasm_bindgen::to_value(&code_cell)?),
-            None => Ok(JsValue::UNDEFINED),
-        }
     }
 }

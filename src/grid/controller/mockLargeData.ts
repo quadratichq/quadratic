@@ -1,7 +1,7 @@
 import { grid } from './Grid';
 
 // default size for URL: &mock-large-data=
-const randomFloatSize = { x: 10, y: 3000 };
+const randomFloatSize = { x: 100, y: 1000 };
 
 export const mockLargeData = (): void => {
   const url = new URLSearchParams(window.location.search);

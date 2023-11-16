@@ -44,6 +44,7 @@ impl TryFrom<(u32, u32)> for ArraySize {
         Self::new_or_err(w, h)
     }
 }
+
 impl ArraySize {
     #[allow(unconditional_panic)]
     pub const _1X1: Self = match NonZeroU32::new(1) {
@@ -65,6 +66,7 @@ impl ArraySize {
         Self::new(w, h).ok_or(ErrorMsg::EmptyArray)
     }
     /// Returns the number of elements in the array.
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(self) -> usize {
         self.w.get() as usize * self.h.get() as usize
     }

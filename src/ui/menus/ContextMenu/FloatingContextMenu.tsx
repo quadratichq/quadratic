@@ -9,8 +9,8 @@ import {
   FormatColorFill,
   FormatColorText,
   FormatItalic,
+  Functions,
   MoreHoriz,
-  Numbers,
   Percent,
 } from '@mui/icons-material';
 import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
@@ -21,16 +21,16 @@ import { useRecoilValue } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
-import { PNG_MESSAGE } from '../../../constants/appConstants';
-import { copySelectionToPNG } from '../../../grid/actions/clipboard/clipboard';
+import { copySelectionToPNG, fullClipboardSupport } from '../../../grid/actions/clipboard/clipboard';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
+import { focusGrid } from '../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
 import { QColorPicker } from '../../components/qColorPicker';
-import { CopyAsPNG, DecimalDecrease, DecimalIncrease } from '../../icons';
+import { CopyAsPNG, DecimalDecrease, DecimalIncrease, Icon123 } from '../../icons';
 import { MenuLineItem } from '../TopBar/MenuLineItem';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import {
@@ -44,6 +44,7 @@ import {
   textFormatDecreaseDecimalPlaces,
   textFormatIncreaseDecimalPlaces,
   textFormatSetCurrency,
+  textFormatSetExponential,
   textFormatSetPercentage,
 } from '../TopBar/SubMenus/formatCells';
 
@@ -60,15 +61,9 @@ export const FloatingContextMenu = (props: Props) => {
   const menuDiv = useRef<HTMLDivElement>(null);
   const moreMenuButtonRef = useRef(null);
   const borders = useGetBorderMenu();
-  const sheet = sheets.sheet;
-  const cursor = sheet.cursor;
+
   const textColorRef = useRef<MenuInstance>(null);
   const fillColorRef = useRef<MenuInstance>(null);
-
-  // close moreMenu when context menu closes
-  useEffect(() => {
-    if (menuDiv.current?.style.visibility === 'hidden' && moreMenuProps.state === 'open') moreMenuToggle();
-  }, [menuDiv.current?.style.visibility, moreMenuProps, moreMenuToggle]);
 
   // Function used to move and scale the Input with the Grid
   const updateContextMenuCSSTransform = useCallback(() => {
@@ -76,8 +71,11 @@ export const FloatingContextMenu = (props: Props) => {
 
     const { viewport } = pixiApp;
 
+    const sheet = sheets.sheet;
+    const cursor = sheet.cursor;
+
     // Calculate position of input based on cell
-    const cell_offsets = sheet.gridOffsets.getCell(
+    const cell_offsets = sheet.getCellOffsets(
       cursor.multiCursor
         ? Math.min(cursor.cursorPosition.x, cursor.multiCursor.originPosition.x, cursor.multiCursor.terminalPosition.x)
         : cursor.cursorPosition.x,
@@ -120,7 +118,7 @@ export const FloatingContextMenu = (props: Props) => {
     if (!isEditorOrAbove(editorInteractionState.permission)) visibility = 'hidden';
 
     // Hide FloatingFormatMenu if multi cursor is off screen
-    const terminal_pos = sheet.gridOffsets.getCell(
+    const terminal_pos = sheet.getCellOffsets(
       cursor.multiCursor ? cursor.multiCursor.terminalPosition.x : cursor.cursorPosition.x,
       cursor.multiCursor ? cursor.multiCursor.terminalPosition.y : cursor.cursorPosition.y
     );
@@ -129,6 +127,9 @@ export const FloatingContextMenu = (props: Props) => {
       terminal_pos.y + terminal_pos.height
     );
     if (multiselect_offset.x < 0 || multiselect_offset.y < 0) visibility = 'hidden';
+
+    // Hide More menu if changing from visible to hidden
+    if (menuDiv.current.style.visibility === 'visible' && visibility === 'hidden') moreMenuToggle(false);
 
     // Apply visibility
     menuDiv.current.style.visibility = visibility;
@@ -158,16 +159,7 @@ export const FloatingContextMenu = (props: Props) => {
       setTimeout(updateContextMenuCSSTransform, 100);
     } else menuDiv.current.style.pointerEvents = 'auto';
     return transform;
-  }, [
-    container,
-    sheet.gridOffsets,
-    cursor.multiCursor,
-    cursor.cursorPosition.x,
-    cursor.cursorPosition.y,
-    cursor.boxCells,
-    showContextMenu,
-    editorInteractionState.permission,
-  ]);
+  }, [container, showContextMenu, editorInteractionState.permission, moreMenuToggle]);
 
   useEffect(() => {
     const { viewport } = pixiApp;
@@ -185,17 +177,14 @@ export const FloatingContextMenu = (props: Props) => {
   }, [updateContextMenuCSSTransform]);
 
   const copyAsPNG = useCallback(async () => {
-    await copySelectionToPNG();
+    await copySelectionToPNG(addGlobalSnackbar);
     moreMenuToggle();
-    addGlobalSnackbar(PNG_MESSAGE);
   }, [moreMenuToggle, addGlobalSnackbar]);
 
   // set input's initial position correctly
   const transform = updateContextMenuCSSTransform();
 
   const iconSize = 'small';
-
-  const formatPrimaryCell = sheet.getFormatPrimaryCell();
 
   return (
     <Paper
@@ -224,13 +213,27 @@ export const FloatingContextMenu = (props: Props) => {
         }}
       >
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
-          <IconButton onClick={() => setBold(!formatPrimaryCell?.bold)} color="inherit">
+          <IconButton
+            size="small"
+            onClick={() => {
+              const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
+              setBold(!formatPrimaryCell?.bold);
+            }}
+            color="inherit"
+          >
             <FormatBold fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
-          <IconButton onClick={() => setItalic(!formatPrimaryCell?.italic)} color="inherit">
+          <IconButton
+            size="small"
+            onClick={() => {
+              const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
+              setItalic(!formatPrimaryCell?.italic);
+            }}
+            color="inherit"
+          >
             <FormatItalic fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
@@ -240,7 +243,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Text color">
-                <IconButton color="inherit">
+                <IconButton size="small" color="inherit">
                   <FormatColorText fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
@@ -251,10 +254,12 @@ export const FloatingContextMenu = (props: Props) => {
             onChangeComplete={(color) => {
               textColorRef.current?.closeMenu();
               setTextColor(color);
+              focusGrid();
             }}
             onClear={() => {
               textColorRef.current?.closeMenu();
               setTextColor(undefined);
+              focusGrid();
             }}
           />
         </Menu>
@@ -285,7 +290,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Fill color">
-                <IconButton color="inherit">
+                <IconButton size="small" color="inherit">
                   <FormatColorFill fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
@@ -296,10 +301,12 @@ export const FloatingContextMenu = (props: Props) => {
             onChangeComplete={(color) => {
               fillColorRef.current?.closeMenu();
               setFillColor(color);
+              focusGrid();
             }}
             onClear={() => {
               fillColorRef.current?.closeMenu();
               setFillColor(undefined);
+              focusGrid();
             }}
           />
         </Menu>
@@ -307,7 +314,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Borders">
-                <IconButton color="inherit">
+                <IconButton size="small" color="inherit">
                   <BorderAll fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
@@ -319,48 +326,56 @@ export const FloatingContextMenu = (props: Props) => {
 
         <MenuDivider />
 
+        <TooltipHint title="Format as automatic">
+          <IconButton size="small" onClick={() => removeCellNumericFormat()} color="inherit">
+            <Icon123 fontSize={iconSize} />
+          </IconButton>
+        </TooltipHint>
+
         <TooltipHint title="Format as currency">
-          <IconButton onClick={() => textFormatSetCurrency()} color="inherit">
+          <IconButton size="small" onClick={() => textFormatSetCurrency()} color="inherit">
             <AttachMoneyOutlined fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
-        <TooltipHint title="Format as percent">
-          <IconButton onClick={() => textFormatSetPercentage()} color="inherit">
+        <TooltipHint title="Format as percentage">
+          <IconButton size="small" onClick={() => textFormatSetPercentage()} color="inherit">
             <Percent fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
-        <TooltipHint title="Format as number">
-          <IconButton onClick={() => removeCellNumericFormat()} color="inherit">
-            <Numbers fontSize={iconSize} />
+        <TooltipHint title="Format as scientific">
+          <IconButton size="small" onClick={() => textFormatSetExponential()} color="inherit">
+            <Functions fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Decrease decimal places">
-          <IconButton onClick={() => textFormatDecreaseDecimalPlaces()} color="inherit">
+          <IconButton size="small" onClick={() => textFormatDecreaseDecimalPlaces()} color="inherit">
             <DecimalDecrease fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Increase decimal places">
-          <IconButton onClick={() => textFormatIncreaseDecimalPlaces()} color="inherit">
+          <IconButton size="small" onClick={() => textFormatIncreaseDecimalPlaces()} color="inherit">
             <DecimalIncrease fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <MenuDivider />
         <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
-          <IconButton onClick={clearFormattingAndBorders} color="inherit">
+          <IconButton size="small" onClick={clearFormattingAndBorders} color="inherit">
             <FormatClear fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
-        <MenuDivider />
-        <TooltipHint title="More commands…">
-          <IconButton onClick={() => moreMenuToggle()} color="inherit" ref={moreMenuButtonRef}>
-            <MoreHoriz fontSize={iconSize} />
-          </IconButton>
-        </TooltipHint>
+        {fullClipboardSupport() && <MenuDivider />}
+        {fullClipboardSupport() && (
+          <TooltipHint title="More commands…">
+            <IconButton size="small" onClick={() => moreMenuToggle()} color="inherit" ref={moreMenuButtonRef}>
+              <MoreHoriz fontSize={iconSize} />
+            </IconButton>
+          </TooltipHint>
+        )}
         <ControlledMenu
           state={moreMenuProps.state}
           menuStyle={{ padding: '2px 0', color: 'inherit' }}

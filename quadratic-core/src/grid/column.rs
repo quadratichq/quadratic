@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::ops::Range;
 
+use crate::grid::block::{contiguous_optional_blocks, OptionBlock};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
@@ -22,6 +23,7 @@ pub struct Column {
     pub wrap: ColumnData<SameValue<CellWrap>>,
     pub numeric_format: ColumnData<SameValue<NumericFormat>>,
     pub numeric_decimals: ColumnData<SameValue<i16>>,
+    pub numeric_commas: ColumnData<SameValue<bool>>,
     pub bold: ColumnData<SameValue<bool>>,
     pub italic: ColumnData<SameValue<bool>>,
     pub text_color: ColumnData<SameValue<String>>,
@@ -42,6 +44,7 @@ impl Column {
             wrap: ColumnData::default(),
             numeric_format: ColumnData::default(),
             numeric_decimals: ColumnData::default(),
+            numeric_commas: ColumnData::default(),
             bold: ColumnData::default(),
             italic: ColumnData::default(),
             text_color: ColumnData::default(),
@@ -81,6 +84,12 @@ impl Column {
             || self.italic.get(y).is_some()
             || self.text_color.get(y).is_some()
             || self.fill_color.get(y).is_some()
+    }
+}
+
+impl Default for Column {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -158,7 +167,7 @@ impl<B: BlockContent> ColumnData<B> {
     }
     pub fn set(&mut self, y: i64, value: Option<B::Item>) -> Option<B::Item> {
         match (self.remove_block_containing(y), value) {
-            (None, None) => return None,
+            (None, None) => None,
             (None, Some(value)) => {
                 if let Some(block_above) = self.remove_block_containing(y - 1) {
                     // Push to bottom of block above.
@@ -202,8 +211,13 @@ impl<B: BlockContent> ColumnData<B> {
     }
 
     pub fn blocks(&self) -> impl Iterator<Item = &Block<B>> {
-        self.0.iter().map(|(_, block)| block)
+        self.0.values()
     }
+
+    pub fn has_blocks_in_range(&self, y_range: Range<i64>) -> bool {
+        self.blocks_covering_range(y_range).next().is_some()
+    }
+
     pub fn blocks_of_range(&self, y_range: Range<i64>) -> impl Iterator<Item = Cow<'_, Block<B>>> {
         self.blocks_covering_range(y_range.clone())
             .with_position()
@@ -238,7 +252,7 @@ impl<B: BlockContent> ColumnData<B> {
                 itertools::Position::First(block) => {
                     let [above, below] = block.split(y_range.start);
                     to_put_back.extend(above);
-                    to_return.extend(below)
+                    to_return.extend(below);
                 }
                 itertools::Position::Middle(block) => to_return.push(block),
                 itertools::Position::Last(block) => {
@@ -304,6 +318,22 @@ impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
         self.try_merge_at(y_range.start);
         self.try_merge_at(y_range.end);
         removed
+    }
+    pub fn clone_range(&mut self, source: &Self, y_range: Range<i64>) -> Vec<Block<SameValue<T>>> {
+        let mut replaced = vec![];
+
+        let value_blocks = source
+            .blocks_of_range(y_range.clone())
+            .map(|cow_block| cow_block.into_owned())
+            .collect_vec();
+        for new_block in contiguous_optional_blocks(value_blocks, y_range) {
+            let replaced_blocks = match new_block {
+                OptionBlock::None(empty) => self.remove_range(empty.range()),
+                OptionBlock::Some(block) => self.set_range(block.range(), block.content.value),
+            };
+            replaced.extend(replaced_blocks.into_iter());
+        }
+        replaced
     }
 }
 

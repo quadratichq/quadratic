@@ -46,6 +46,7 @@ pub trait SpannedIterExt: Sized {
     type In;
     type Out;
 
+    #[allow(clippy::type_complexity)]
     fn without_spans(self) -> std::iter::Map<Self, fn(Self::In) -> Self::Out>;
 }
 impl<I, T> SpannedIterExt for I

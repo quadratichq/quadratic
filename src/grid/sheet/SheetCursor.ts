@@ -2,6 +2,7 @@ import { IViewportTransformState } from 'pixi-viewport';
 import { Rectangle } from 'pixi.js';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
+import { Pos } from '../../quadratic-core/quadratic_core';
 import { Sheet } from './Sheet';
 
 type MultiCursor =
@@ -66,6 +67,7 @@ export class SheetCursor {
     multiCursor?: MultiCursor;
     cursorPosition?: Coordinate;
     keyboardMovePosition?: Coordinate;
+    ensureVisible?: boolean;
   }): void {
     this.multiCursor = options.multiCursor;
     if (options.cursorPosition) {
@@ -74,7 +76,7 @@ export class SheetCursor {
     } else if (options.keyboardMovePosition) {
       this.keyboardMovePosition = options.keyboardMovePosition;
     }
-    pixiApp.updateCursorPosition();
+    pixiApp.updateCursorPosition({ ensureVisible: options.ensureVisible ?? true });
   }
 
   changeBoxCells(boxCells: boolean) {
@@ -89,6 +91,10 @@ export class SheetCursor {
 
   get terminalPosition(): Coordinate {
     return this.multiCursor ? this.multiCursor.terminalPosition : this.cursorPosition;
+  }
+
+  getPos(): Pos {
+    return new Pos(this.cursorPosition.x, this.cursorPosition.y);
   }
 
   getRectangle(): Rectangle {

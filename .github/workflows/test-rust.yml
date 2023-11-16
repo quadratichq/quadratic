@@ -34,12 +34,6 @@ jobs:
           cargo --version --verbose
           rustc --version
           cargo clippy --version
-      # - name: Lint
-      #   run: |
-      #     cd core
-      #     cargo fmt -- --check
-      #     cargo clippy -- -D warnings
-
       - name: Test
         run: |
           cd quadratic-core

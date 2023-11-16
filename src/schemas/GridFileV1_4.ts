@@ -56,7 +56,6 @@ export const GridFileSchemaV1_4 = z.object({
           python_code: z.string().optional(),
         })
         .array(),
-      cell_dependency: z.string(),
       columns: HeadingSchema.array(),
 
       formats: z
@@ -97,13 +96,56 @@ export const GridFileSchemaV1_4 = z.object({
       rows: HeadingSchema.array(),
     })
     .array(),
+  cell_dependency: z.string(),
   version: z.literal('1.4'),
 });
 export type GridFileV1_4 = z.infer<typeof GridFileSchemaV1_4>;
 
-export function upgradeV1_3toV1_4(file: GridFileV1_3): GridFileV1_4 {
+export function upgradeV1_3toV1_4(file: GridFileV1_3, logOutput: boolean = true): GridFileV1_4 {
+  // convert cell dependencies in Rust format
+  // in v3 we map trigger_cell: updates_cells[]
+  // in v4 we map code_cell: dependencies[]
+  let old_dependencies: Map<string, [number, number][]> = new Map();
+  if (file.cell_dependency !== undefined && file.cell_dependency !== '') {
+    try {
+      old_dependencies = new Map(
+        JSON.parse(file.cell_dependency).map(({ key, value }: { key: string; value: [number, number][] }) => [
+          key,
+          value,
+        ])
+      );
+    } catch (e) {
+      if (logOutput) {
+        console.info(`[GridFileV1_4] Could not convert cell_dependency to JSON: ${e}`);
+      }
+    }
+  }
+
+  function getKey(location: [number, number]): string {
+    return `${location[0]},${location[1]}`;
+  }
+
+  function getValue(key: string): [number, number] {
+    const [x, y] = key.split(',').map((x) => parseInt(x));
+    return [x, y];
+  }
+
+  let new_dependencies: Map<string, [number, number][]> = new Map();
+  for (const [trigger_cell, updates_cells] of old_dependencies.entries()) {
+    for (const update_cell of updates_cells) {
+      // check if key exists in dependencies
+      const existing = new_dependencies.get(getKey(update_cell));
+      if (existing) {
+        new_dependencies.set(getKey(update_cell), [...existing, getValue(trigger_cell)]);
+      } else {
+        new_dependencies.set(getKey(update_cell), [getValue(trigger_cell)]);
+      }
+    }
+  }
+
   // file.render_dependency is removed
   // sheets and id added
+  // cell dependency is changed
   return {
     sheets: [
       {
@@ -112,12 +154,12 @@ export function upgradeV1_3toV1_4(file: GridFileV1_3): GridFileV1_4 {
         order: generateKeyBetween(null, null),
         borders: file.borders,
         cells: file.cells,
-        cell_dependency: file.cell_dependency,
         columns: file.columns,
         rows: file.rows,
         formats: file.formats,
       },
     ],
+    cell_dependency: JSON.stringify(Object.fromEntries(new_dependencies.entries())),
     version: '1.4',
   } as GridFileV1_4;
 }

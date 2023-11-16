@@ -17,6 +17,7 @@ import {
 import { authClient, protectedRouteLoaderWrapper } from './auth';
 import { Empty } from './components/Empty';
 import { GlobalSnackbarProvider } from './components/GlobalSnackbarProvider';
+import { action as shareFileMenuAction, loader as shareFileMenuLoader } from './components/ShareFileMenu';
 import { Theme } from './components/Theme';
 import { SUPPORT_EMAIL } from './constants/appConstants';
 import { ROUTES, ROUTE_LOADER_IDS } from './constants/routes';
@@ -66,7 +67,16 @@ export const router = createBrowserRouter(
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
           <Route element={<BrowserCompatibilityLayoutRoute />}>
             <Route index element={<Navigate to={ROUTES.FILES} replace />} />
-            <Route path=":uuid" id={ROUTE_LOADER_IDS.FILE} lazy={() => import('./dashboard/FileRoute')} />
+            <Route
+              path=":uuid"
+              id={ROUTE_LOADER_IDS.FILE}
+              lazy={() => import('./dashboard/FileRoute')}
+              shouldRevalidate={({ currentUrl }) => {
+                // We don't want to revalidate anythin in the app
+                // because we don't have any 2-way data flow setup for the app
+                return false;
+              }}
+            />
           </Route>
         </Route>
 
@@ -92,6 +102,8 @@ export const router = createBrowserRouter(
             element={<CloudFilesMigration.Component />}
             loader={CloudFilesMigration.loader}
           />
+
+          <Route path="/api/files/:uuid/sharing" action={shareFileMenuAction} loader={shareFileMenuLoader} />
         </Route>
 
         <Route

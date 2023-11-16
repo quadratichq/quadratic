@@ -72,7 +72,7 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_numeric_format(sheet_id, *rect, None, cursor),
+            &self.remove_number_formatting(sheet_id, rect, cursor),
         )?)
     }
 
@@ -87,14 +87,13 @@ impl GridController {
         symbol: String,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let currency = NumericFormat {
-            kind: NumericFormatKind::Currency,
-            symbol: Some(symbol),
-        };
-        Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_numeric_format(sheet_id, *rect, Some(currency), cursor),
-        )?)
+        let sheet = SheetId::from_str(&sheet_id).unwrap();
+        Ok(serde_wasm_bindgen::to_value(&self.set_currency(
+            sheet,
+            rect,
+            Some(symbol),
+            cursor,
+        ))?)
     }
 
     /// Sets cells numeric_format to percentage
@@ -114,6 +113,43 @@ impl GridController {
         };
         Ok(serde_wasm_bindgen::to_value(
             &self.set_cell_numeric_format(sheet_id, *rect, Some(currency), cursor),
+        )?)
+    }
+
+    /// Sets cells numeric_format to scientific notation
+    ///
+    /// Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "setCellExponential")]
+    pub fn js_set_cell_exponential(
+        &mut self,
+        sheet_id: String,
+        rect: &Rect,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        let exponential = NumericFormat {
+            kind: NumericFormatKind::Exponential,
+            symbol: None,
+        };
+        Ok(serde_wasm_bindgen::to_value(
+            &self.set_cell_numeric_format(sheet_id, *rect, Some(exponential), cursor),
+        )?)
+    }
+
+    /// Sets cells numeric_commas
+    ///
+    /// Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "toggleCommas")]
+    pub fn js_toggle_commas(
+        &mut self,
+        sheet_id: String,
+        source: Pos,
+        rect: Rect,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        Ok(serde_wasm_bindgen::to_value(
+            &self.toggle_commas(sheet_id, source, rect, cursor),
         )?)
     }
 

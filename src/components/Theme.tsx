@@ -61,6 +61,24 @@ export function Theme(props: any) {
               },
             },
           },
+          // Any command palette style menu should show up in a fixed position at the top
+          MuiDialog: {
+            styleOverrides: {
+              container: {
+                alignItems: 'flex-start',
+              },
+            },
+          },
+          MuiBackdrop: {
+            styleOverrides: {
+              root: {
+                backgroundColor: 'rgba(255,255,255,0.5)',
+              },
+              invisible: {
+                backgroundColor: 'transparent',
+              },
+            },
+          },
         },
       }),
     [mode]

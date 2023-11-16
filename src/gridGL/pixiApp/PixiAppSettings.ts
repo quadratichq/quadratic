@@ -1,8 +1,6 @@
-import {
-  EditorHighlightedCellsState,
-  editorHighlightedCellsStateDefault,
-} from '../../atoms/editorHighlightedCellsStateAtom';
+import { ApiTypes } from '../../api/types';
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
+import { sheets } from '../../grid/controller/Sheets';
 import { GridSettings, defaultGridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
 import { pixiApp } from './PixiApp';
 
@@ -12,17 +10,23 @@ export enum PanMode {
   Dragging = 'DRAGGING',
 }
 
+interface Input {
+  show: boolean;
+  initialValue?: string;
+  x?: number;
+  y?: number;
+  sheetId?: string;
+}
+
 class PixiAppSettings {
   private settings: GridSettings;
   private lastSettings: GridSettings;
   private _panMode: PanMode;
-  private _input: { show: boolean; initialValue?: string };
+  private _input: Input;
 
   temporarilyHideCellTypeOutlines = false;
   editorInteractionState = editorInteractionStateDefault;
   setEditorInteractionState?: (value: EditorInteractionState) => void;
-  editorHighlightedCellsState = editorHighlightedCellsStateDefault;
-  setEditorHighlightedCellsState?: (value: EditorHighlightedCellsState) => void;
 
   constructor() {
     const settings = localStorage.getItem('viewSettings');
@@ -59,10 +63,13 @@ class PixiAppSettings {
     ) {
       pixiApp.cellsSheets.toggleOutlines();
       pixiApp.viewport.dirty = true;
-      // pixiApp.quadrants.build();
     }
     this.lastSettings = this.settings;
   };
+
+  get permission(): ApiTypes['/v0/files/:uuid.GET.response']['permission'] {
+    return this.editorInteractionState.permission;
+  }
 
   updateEditorInteractionState(
     editorInteractionState: EditorInteractionState,
@@ -71,16 +78,6 @@ class PixiAppSettings {
     this.editorInteractionState = editorInteractionState;
     this.setEditorInteractionState = setEditorInteractionState;
     pixiApp.headings.dirty = true;
-    pixiApp.cursor.dirty = true;
-    // pixiApp.cells.dirty = true;
-  }
-
-  updateEditorHighlightedCellsState(
-    editorHighlightedCellsState: EditorHighlightedCellsState,
-    setEditorHighlightedCellsState: (value: EditorHighlightedCellsState) => void
-  ): void {
-    this.editorHighlightedCellsState = editorHighlightedCellsState;
-    this.setEditorHighlightedCellsState = setEditorHighlightedCellsState;
     pixiApp.cursor.dirty = true;
   }
 
@@ -122,8 +119,22 @@ class PixiAppSettings {
   }
 
   changeInput(input: boolean, initialValue?: string) {
-    // todo: this does not handle types other than text
-    this._input = { show: input, initialValue };
+    if (
+      this._input.show === true &&
+      this._input.x !== undefined &&
+      this._input.y !== undefined &&
+      this._input.sheetId !== undefined
+    ) {
+      pixiApp.cellsSheets.showLabel(this._input.x, this._input.y, this._input.sheetId, true);
+    }
+    if (input === true) {
+      const x = sheets.sheet.cursor.cursorPosition.x;
+      const y = sheets.sheet.cursor.cursorPosition.y;
+      this._input = { show: input, initialValue, x, y, sheetId: sheets.sheet.id };
+      pixiApp.cellsSheets.showLabel(x, y, sheets.sheet.id, false);
+    } else {
+      this._input = { show: false };
+    }
     this.setDirty({ cursor: true });
 
     // this is used by CellInput to control visibility

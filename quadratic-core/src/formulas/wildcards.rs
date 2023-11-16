@@ -11,7 +11,7 @@ pub fn wildcard_pattern_to_regex(s: &str) -> Result<Regex, Error> {
             // Escape the next character, if there is one. Otherwise ignore.
             '~' => {
                 if let Some(c) = chars.next() {
-                    regex_string.push_str(&regex::escape(&c.to_string()))
+                    regex_string.push_str(&regex::escape(&c.to_string()));
                 }
             }
 

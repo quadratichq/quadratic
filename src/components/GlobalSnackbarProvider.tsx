@@ -40,11 +40,13 @@ interface Message {
   message: string;
   // snackbarProps: SnackbarProps;
   severity?: AlertColor;
+  stayOpen?: boolean;
 }
 
 export function GlobalSnackbarProvider({ children }: { children: React.ReactElement }) {
   const [messageQueue, setMessageQueue] = React.useState<readonly Message[]>([]);
   const [open, setOpen] = React.useState(false);
+  const [stayOpen, setStayOpen] = React.useState(false);
   const [activeMessage, setActiveMessage] = React.useState<Message | undefined>(undefined);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -53,6 +55,7 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
       // Set a new snack when we don't have an active one
       setActiveMessage({ ...messageQueue[0] });
       setMessageQueue((prev) => prev.slice(1));
+      setStayOpen(!!messageQueue[0].stayOpen);
       setOpen(true);
     } else if (messageQueue.length && activeMessage && open) {
       // Close an active snack when a new one is added
@@ -62,7 +65,7 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
 
   /*
    * By default, take a message and display a snackbar that auto-hides
-   * after a certain amount of time and is dismissable
+   * after a certain amount of time and is dismissible
    *
    * Example: `showSnackbar("Copied as PNG")`
    * Example: `showSnackbar("My message here", { severity: 'error' })
@@ -132,7 +135,7 @@ export function GlobalSnackbarProvider({ children }: { children: React.ReactElem
       {children}
       <Snackbar
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        autoHideDuration={DURATION}
+        autoHideDuration={stayOpen ? 0 : DURATION}
         key={activeMessage ? activeMessage.key : undefined}
         open={open}
         onClose={handleClose}

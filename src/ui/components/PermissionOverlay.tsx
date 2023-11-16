@@ -91,7 +91,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
     <Paper
       sx={{
         position: 'fixed',
-        bottom: theme.spacing(5),
+        bottom: theme.spacing(8),
         transform: 'translateX(-50%)',
         left: '50%',
         width: '95%',

@@ -46,6 +46,9 @@ jobs:
           rustc --version
           cargo clippy --version
 
+      - name: Run Clippy
+        run: npm run lint:clippy
+
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 

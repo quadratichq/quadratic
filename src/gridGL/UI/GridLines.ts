@@ -44,8 +44,11 @@ export class GridLines extends Graphics {
   }
 
   private drawVerticalLines(bounds: Rectangle): void {
-    const { gridOffsets } = sheets.sheet;
-    const { index, position } = gridOffsets.getColumnIndex(bounds.left);
+    const offsets = sheets.sheet.offsets;
+    const columnPlacement = offsets.getXPlacement(bounds.left);
+    const index = columnPlacement.index;
+    const position = columnPlacement.position;
+
     let column = index;
     const offset = bounds.left - position;
     let size = 0;
@@ -55,14 +58,17 @@ export class GridLines extends Graphics {
         this.moveTo(x - offset, bounds.top);
         this.lineTo(x - offset, bounds.bottom);
       }
-      size = gridOffsets.getColumnWidth(column);
+      size = sheets.sheet.offsets.getColumnWidth(column);
       column++;
     }
   }
 
   private drawHorizontalLines(bounds: Rectangle): void {
-    const { gridOffsets } = sheets.sheet;
-    const { index, position } = gridOffsets.getRowIndex(bounds.top);
+    const offsets = sheets.sheet.offsets;
+    const rowPlacement = offsets.getYPlacement(bounds.top);
+    const index = rowPlacement.index;
+    const position = rowPlacement.position;
+
     let row = index;
     const offset = bounds.top - position;
     let size = 0;
@@ -72,7 +78,7 @@ export class GridLines extends Graphics {
         this.moveTo(bounds.left, y - offset);
         this.lineTo(bounds.right, y - offset);
       }
-      size = gridOffsets.getRowHeight(row);
+      size = offsets.getRowHeight(row);
       row++;
     }
   }

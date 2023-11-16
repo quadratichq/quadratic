@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Rectangle } from 'pixi.js';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import { ClipboardEvent, useCallback, useRef, useState } from 'react';
+import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../grid/controller/Sheets';
 import { focusGrid } from '../../helpers/focusGrid';
@@ -9,6 +9,7 @@ import { CURSOR_THICKNESS } from '../UI/Cursor';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { Coordinate } from '../types/size';
+import { isCursorAtEnd, isCursorAtStart } from './contentEditableHelper';
 
 interface CellInputProps {
   container?: HTMLDivElement;
@@ -16,7 +17,7 @@ interface CellInputProps {
 
 export const CellInput = (props: CellInputProps) => {
   const { container } = props;
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
   const viewport = pixiApp.viewport;
 
@@ -25,14 +26,7 @@ export const CellInput = (props: CellInputProps) => {
 
   const text = useRef('');
 
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const changeInput = (e: any) => setVisible(e.detail.showInput);
-    window.addEventListener('change-input', changeInput);
-    return () => window.removeEventListener('change-input', changeInput);
-  }, []);
-
-  const cell_offsets = sheet.gridOffsets.getCell(cellLocation.x, cellLocation.y);
+  const cellOffsets = sheet.getCellOffsets(cellLocation.x, cellLocation.y);
   const cell = sheet.getEditCell(cellLocation.x, cellLocation.y);
   const formatting = sheet.getCellFormatSummary(cellLocation.x, cellLocation.y);
 
@@ -103,7 +97,7 @@ export const CellInput = (props: CellInputProps) => {
     let worldTransform = viewport.worldTransform;
 
     // Calculate position of input based on cell (magic number via experimentation)
-    let cell_offset_scaled = viewport.toScreen(cell_offsets.x + CURSOR_THICKNESS, cell_offsets.y + CURSOR_THICKNESS);
+    let cell_offset_scaled = viewport.toScreen(cellOffsets.x + CURSOR_THICKNESS, cellOffsets.y + CURSOR_THICKNESS);
 
     // Generate transform CSS
     const transform =
@@ -123,11 +117,6 @@ export const CellInput = (props: CellInputProps) => {
 
     // return transform
     return transform;
-  }
-
-  // If the input is not shown, we can do nothing and return null
-  if (!visible) {
-    return null;
   }
 
   // need this variable to cancel second closeInput call from blur after pressing Escape (this happens before the state can update)
@@ -173,6 +162,30 @@ export const CellInput = (props: CellInputProps) => {
   // set input's initial position correctly
   const transform = updateInputCSSTransform();
 
+  const handlePaste = (event: ClipboardEvent) => {
+    const text = event.clipboardData?.getData('text') || '';
+    const parsed = new DOMParser().parseFromString(text, 'text/html');
+    const result = parsed.body.textContent || '';
+    document.execCommand('insertHTML', false, result.replace(/(\r\n|\n|\r)/gm, ''));
+    event.preventDefault();
+  };
+
+  const arrowRight = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (isCursorAtEnd(event.currentTarget)) {
+      closeInput({ x: 1, y: 0 });
+      event.stopPropagation();
+      event.preventDefault();
+    }
+  };
+
+  const arrowLeft = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (isCursorAtStart()) {
+      closeInput({ x: -1, y: 0 });
+      event.stopPropagation();
+      event.preventDefault();
+    }
+  };
+
   return (
     <div
       id="cell-edit"
@@ -185,20 +198,21 @@ export const CellInput = (props: CellInputProps) => {
         position: 'absolute',
         top: 0,
         left: 0,
-        minWidth: cell_offsets.width - CURSOR_THICKNESS * 2,
+        minWidth: cellOffsets.width - CURSOR_THICKNESS * 2,
         outline: 'none',
         color: formatting?.textColor ?? 'black',
         padding: `0 ${CURSOR_THICKNESS}px 0 0`,
         margin: 0,
-        lineHeight: `${cell_offsets.height - CURSOR_THICKNESS * 2}px`,
+        lineHeight: `${cellOffsets.height - CURSOR_THICKNESS * 2}px`,
         verticalAlign: 'text-top',
         transformOrigin: '0 0',
         transform,
         fontFamily,
         fontSize: '14px',
         backgroundColor: formatting?.fillColor ?? 'white',
-        whiteSpace: 'break-spaces',
+        whiteSpace: 'nowrap',
       }}
+      onPaste={handlePaste}
       onInput={() => {
         // viewport should try to keep the input box in view
         if (!textInput) return;
@@ -241,8 +255,20 @@ export const CellInput = (props: CellInputProps) => {
           closeInput({ x: 0, y: 1 });
           event.stopPropagation();
           event.preventDefault();
+        } else if (event.key === '=' && (!textInput || textInput.innerText.length === 0)) {
+          // Open cell type menu, close editor.
+          setEditorInteractionState({
+            ...editorInteractionState,
+            showCellTypeMenu: true,
+            showCodeEditor: false,
+            selectedCell: { x: cellLocation.x, y: cellLocation.y },
+            selectedCellSheet: sheets.sheet.id,
+            mode: 'PYTHON',
+          });
+          event.stopPropagation();
         } else if (event.key === 'Tab') {
-          closeInput({ x: 1, y: 0 });
+          if (event.shiftKey) closeInput({ x: -1, y: 0 });
+          else closeInput({ x: 1, y: 0 });
           event.stopPropagation();
           event.preventDefault();
         } else if (event.key === 'Escape') {
@@ -250,8 +276,14 @@ export const CellInput = (props: CellInputProps) => {
           event.preventDefault();
         } else if (event.key === 'ArrowUp') {
           closeInput({ x: 0, y: -1 });
+          event.stopPropagation();
         } else if (event.key === 'ArrowDown') {
           closeInput({ x: 0, y: 1 });
+          event.stopPropagation();
+        } else if (event.key === 'ArrowRight') {
+          arrowRight(event);
+        } else if (event.key === 'ArrowLeft') {
+          arrowLeft(event);
         } else if ((event.metaKey || event.ctrlKey) && event.key === 'p') {
           event.preventDefault();
         } else if (event.key === ' ') {

@@ -1,6 +1,6 @@
 import { REACT_APP_DEBUG } from './constants/env';
 
-const url = new URLSearchParams(window.location.search);
+const url = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
 
 // set this in .env (if set to false then all debug flags are turned off)
 export const debug = url.has('debug') || REACT_APP_DEBUG === '1' ? true : false;
@@ -28,10 +28,7 @@ export const debugMockLargeData = (debug && false) || url.has('mock-large-data')
 // Transactions
 // ------------
 
-// show number of transactions
-export const debugShowTransactions = debug && false;
-
-// show results of runComputation() in console
+// show results of runComputation() in console (for TS related computations)
 export const debugShowRunComputation = debug && false;
 
 // ----------
@@ -40,6 +37,9 @@ export const debugShowRunComputation = debug && false;
 
 // shows rendering time
 export const debugShowTime = debug && true;
+
+// show rust time
+export const debugShowRustTime = debug && false;
 
 // counts number of children and which are visible in the viewport
 export const debugShowCountRenderedObjects = debug && false;
@@ -54,7 +54,7 @@ export const debugShowWhyRendering = debug && false;
 export const debugShowCellsSheetCulling = debug && false;
 
 // shows CellsHash boxes
-export const debugShowCellsHashBoxes = debug && false;
+export const debugShowCellsHashBoxes = (debug && false) || url.has('cell-boxes');
 
 // shows CellsHash information
 export const debugShowCellHashesInfo = debug && false;
@@ -91,3 +91,9 @@ export const debugShowCellsForDirtyQuadrants = debug && false;
 export const debugShowFileIO = debug && true;
 
 export const debugGridSettings = debug && false;
+
+// --------
+// UI
+// --------
+
+export const debugShowUILogs = debug && false;

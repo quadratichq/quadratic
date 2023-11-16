@@ -8,12 +8,7 @@ export function zoomToFit(): void {
   const sheet = sheets.sheet;
   const gridBounds = sheet.getGridBounds(false);
   if (gridBounds) {
-    const screenRectangle = sheet.gridOffsets.getScreenRectangle(
-      gridBounds.x,
-      gridBounds.y,
-      gridBounds.width,
-      gridBounds.height
-    );
+    const screenRectangle = sheet.getScreenRectangle(gridBounds.x, gridBounds.y, gridBounds.width, gridBounds.height);
 
     // calc scale, and leave a little room on the top and sides
     let scale = viewport.findFit(screenRectangle.width * ZOOM_BUFFER, screenRectangle.height * ZOOM_BUFFER);
@@ -62,7 +57,7 @@ export function zoomToSelection(): void {
   const sheet = sheets.sheet;
   if (sheet.cursor.multiCursor) {
     const cursor = sheet.cursor.multiCursor;
-    screenRectangle = sheet.gridOffsets.getScreenRectangle(
+    screenRectangle = sheet.getScreenRectangle(
       cursor.originPosition.x,
       cursor.originPosition.y,
       cursor.terminalPosition.x - cursor.originPosition.x,
@@ -70,7 +65,7 @@ export function zoomToSelection(): void {
     );
   } else {
     const cursor = sheet.cursor.cursorPosition;
-    screenRectangle = sheet.gridOffsets.getScreenRectangle(cursor.x, cursor.y, 1, 1);
+    screenRectangle = sheet.getScreenRectangle(cursor.x, cursor.y, 1, 1);
   }
   // calc scale, and leave a little room on the top and sides
   let scale = pixiApp.viewport.findFit(screenRectangle.width * ZOOM_BUFFER, screenRectangle.height * ZOOM_BUFFER);

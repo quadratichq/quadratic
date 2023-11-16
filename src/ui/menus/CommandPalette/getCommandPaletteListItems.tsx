@@ -34,7 +34,7 @@ export const getCommandPaletteListItems = (props: {
     ...BordersListItems,
     ...TextListItems,
     ...FormatListItems,
-    ...SheetListItems,
+    ...SheetListItems(),
     ...HelpListItems,
   ];
   const { activeSearchValue, permission, ...rest } = props;

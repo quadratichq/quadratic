@@ -18,7 +18,7 @@ impl BlockContent for CellValueBlockContent {
     fn unwrap_single_value(self) -> Self::Item {
         assert!(self.len() == 1, "expected single value");
         match self {
-            CellValueBlockContent::Values(values) => values.into_iter().next().unwrap().into(),
+            CellValueBlockContent::Values(values) => values.into_iter().next().unwrap(),
         }
     }
     fn len(&self) -> usize {
@@ -29,7 +29,7 @@ impl BlockContent for CellValueBlockContent {
 
     fn get(&self, index: usize) -> Option<Self::Item> {
         (index < self.len()).then(|| match self {
-            Self::Values(array) => array[index].clone().into(),
+            Self::Values(array) => array[index].clone(),
         })
     }
     fn set(
@@ -44,7 +44,7 @@ impl BlockContent for CellValueBlockContent {
         match &mut self {
             Self::Values(array) => {
                 let old_value = std::mem::replace(&mut array[index], value);
-                Ok((smallvec![self], old_value.into()))
+                Ok((smallvec![self], old_value))
             }
         }
     }

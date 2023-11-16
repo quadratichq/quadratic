@@ -1,6 +1,7 @@
 import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { sheets } from '../../../grid/controller/Sheets';
+import { CodeCellLanguage } from '../../../quadratic-core/quadratic_core';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { doubleClickCell } from './doubleClickCell';
@@ -23,24 +24,22 @@ export class PointerDown {
   pointerDown(world: Point, event: PointerEvent): void {
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled) return;
     const sheet = sheets.sheet;
+    const offsets = sheet.offsets;
     const cursor = sheet.cursor;
 
-    // note: directly call pixiAppSettings instead of locally defining it here; otherwise it dereferences this
-
-    // this is a hack to ensure CellInput properly closes and updates before the cursor moves positions
-    if (pixiAppSettings.input.show) {
-      this.afterShowInput = true;
-      setTimeout(() => {
-        this.pointerDown(world, event);
-        this.afterShowInput = false;
-      }, 0);
-      return;
-    }
-
-    const { gridOffsets } = sheet;
+    // todo: this was an infinite loop. not sure if this is still needed.
+    // // this is a hack to ensure CellInput properly closes and updates before the cursor moves positions
+    // if (pixiAppSettings.input.show) {
+    //   this.afterShowInput = true;
+    //   setTimeout(() => {
+    //     this.pointerDown(world, event);
+    //     this.afterShowInput = false;
+    //   }, 0);
+    //   return;
+    // }
 
     this.positionRaw = world;
-    const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
+    const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
 
     const rightClick = event.button === 2 || (event.button === 0 && event.ctrlKey);
 
@@ -69,9 +68,21 @@ export class PointerDown {
         if (rightClick) {
           return;
         }
-        const code = sheet.getCodeValue(column, row);
+        const code = sheet.getCodeCell(column, row);
+        let mode: 'PYTHON' | 'FORMULA' | undefined = undefined;
+        if (code) {
+          const language = code.getLanguage();
+          if (language === CodeCellLanguage.Python) {
+            mode = 'PYTHON';
+          } else if (language === CodeCellLanguage.Formula) {
+            mode = 'FORMULA';
+          } else {
+            throw new Error('CodeEditor does not support this language');
+          }
+          code.free();
+        }
         const cell = sheet.getEditCell(column, row);
-        doubleClickCell({ column, row, code, cell });
+        doubleClickCell({ column, row, mode, cell });
         this.active = false;
         event.preventDefault();
         return;
@@ -80,7 +91,7 @@ export class PointerDown {
 
     // select cells between pressed and cursor position
     if (event.shiftKey) {
-      const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
+      const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
       const cursorPosition = cursor.cursorPosition;
       if (column !== cursorPosition.x || row !== cursorPosition.y) {
         // make origin top left, and terminal bottom right
@@ -127,7 +138,7 @@ export class PointerDown {
 
     const { viewport } = pixiApp;
     const sheet = sheets.sheet;
-    const { gridOffsets } = sheet;
+    const offsets = sheet.offsets;
 
     // for determining if double click
     if (!this.pointerMoved && this.doubleClickTimeout && this.positionRaw) {
@@ -146,7 +157,7 @@ export class PointerDown {
     }
 
     // calculate mouse move position
-    const { column, row } = gridOffsets.getRowColumnFromWorld(world.x, world.y);
+    const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
 
     // cursor start and end in the same cell
     if (column === this.position.x && row === this.position.y) {

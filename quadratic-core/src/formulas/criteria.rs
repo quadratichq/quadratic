@@ -41,7 +41,7 @@ impl TryFrom<Spanned<&CellValue>> for Criterion {
                     CellValue::Logical(true)
                 } else if rhs_string.eq_ignore_ascii_case("FALSE") {
                     CellValue::Logical(false)
-                } else if let Ok(n) = BigDecimal::from_str(&rhs_string) {
+                } else if let Ok(n) = BigDecimal::from_str(rhs_string) {
                     CellValue::Number(n)
                 } else if compare_fn == CompareFn::Eql && rhs_string.contains(['?', '*']) {
                     // If the string doesn't contain any `?` or `*`, then Excel
@@ -148,13 +148,13 @@ impl Criterion {
 
 fn strip_compare_fn_prefix(s: &str) -> Option<(CompareFn, &str)> {
     None.or_else(|| s.strip_prefix("==").map(|rest| (CompareFn::Eql, rest)))
-        .or_else(|| s.strip_prefix("=").map(|rest| (CompareFn::Eql, rest)))
+        .or_else(|| s.strip_prefix('=').map(|rest| (CompareFn::Eql, rest)))
         .or_else(|| s.strip_prefix("!=").map(|rest| (CompareFn::Neq, rest)))
         .or_else(|| s.strip_prefix("<>").map(|rest| (CompareFn::Neq, rest)))
         .or_else(|| s.strip_prefix("<=").map(|rest| (CompareFn::Lte, rest)))
         .or_else(|| s.strip_prefix(">=").map(|rest| (CompareFn::Gte, rest)))
-        .or_else(|| s.strip_prefix("<").map(|rest| (CompareFn::Lt, rest)))
-        .or_else(|| s.strip_prefix(">").map(|rest| (CompareFn::Gt, rest)))
+        .or_else(|| s.strip_prefix('<').map(|rest| (CompareFn::Lt, rest)))
+        .or_else(|| s.strip_prefix('>').map(|rest| (CompareFn::Gt, rest)))
 }
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]

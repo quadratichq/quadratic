@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use bigdecimal::{BigDecimal, ToPrimitive, Zero};
 
 use super::{CellValue, IsBlank, Value};
@@ -40,7 +38,8 @@ impl From<&str> for CellValue {
 // todo: this might be wrong for formulas
 impl From<f64> for CellValue {
     fn from(value: f64) -> Self {
-        CellValue::Number(BigDecimal::from_str(&value.to_string()).unwrap())
+        BigDecimal::try_from(value)
+            .map_or_else(|_| CellValue::Text(value.to_string()), CellValue::Number)
     }
 }
 impl From<i64> for CellValue {
@@ -292,5 +291,17 @@ impl CoerceInto for Spanned<Value> {
             Value::Single(CellValue::Error(e)) => Err(*e),
             other => Ok(other),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::CellValue;
+
+    #[test]
+    fn test_convert_from_str_to_cell_value() {
+        assert_eq!(CellValue::from("$1.22"), CellValue::Text("$1.22".into()));
+
+        assert_eq!(CellValue::from("10%"), CellValue::Text("10%".into()));
     }
 }

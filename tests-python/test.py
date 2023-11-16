@@ -1,7 +1,7 @@
 import sys
 import unittest
-from unittest import IsolatedAsyncioTestCase
 from pprint import pprint
+from unittest import IsolatedAsyncioTestCase
 
 
 #  Mock definitions
@@ -18,17 +18,23 @@ class mock_micropip:
     def install(name):
         return None
 
-
 # mock modules needed to import run_python
-sys.modules["GetCellsDB"] = mock_GetCellsDB
+sys.modules["getCellsDB"] = mock_GetCellsDB
 sys.modules["pyodide"] = mock_pyodide
 sys.modules["micropip"] = mock_micropip
 
 # add path to import run_python
 sys.path.insert(1, "src/web-workers/pythonWebWorker")
 
-from run_python import run_python, attempt_fix_await
+from run_python import (Cell, attempt_fix_await, ensure_not_cell, not_cell,
+                        run_python)
 
+
+class value_object:
+    def __init__(self, x, y, value):
+        self.x = x
+        self.y = y
+        self.value = value
 
 class TestTesting(IsolatedAsyncioTestCase):
     async def test_run_python(self):
@@ -74,6 +80,13 @@ class TestTesting(IsolatedAsyncioTestCase):
             attempt_fix_await("c(0, 0)\nc(0, 0)"), "await c(0, 0)\nawait c(0, 0)"
         )
 
+    def test_not_cell(self):
+        o = value_object(0, 0, "test")
+        c = Cell(o)
+        self.assertEqual(not_cell(c), "test")
+
+        l = [Cell(o), Cell(o), Cell(o)]
+        self.assertEqual(ensure_not_cell(l), ["test", "test", "test"])
 
 if __name__ == "__main__":
     unittest.main()

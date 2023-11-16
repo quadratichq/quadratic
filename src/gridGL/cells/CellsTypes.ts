@@ -1,5 +1,5 @@
 import { Rectangle } from 'pixi.js';
-import { CellsHash } from './CellsHash';
+import { CellsTextHash } from './CellsTextHash';
 
 export interface CellsHashBounds {
   xStart: number;
@@ -10,7 +10,7 @@ export interface CellsHashBounds {
 
 export interface CellHash {
   AABB?: Rectangle;
-  hashes: Set<CellsHash>;
+  hashes: Set<CellsTextHash>;
   visible: boolean;
 }
 

@@ -1,6 +1,5 @@
 import { Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
-import { convertColorStringToTint } from '../../helpers/convertColor';
-import { Border, BorderType, BorderTypeEnum } from '../../schemas';
+import { CellBorderLine, Rgba } from '../../quadratic-core/quadratic_core';
 import { colors } from '../../theme/colors';
 import { dashedTextures } from '../dashedTextures';
 
@@ -11,10 +10,10 @@ export interface BorderCull {
 
 export const borderLineWidth = 1;
 
-function setTexture(sprite: Sprite | TilingSprite, horizontal: boolean, borderType?: BorderType): void {
-  if (borderType === BorderTypeEnum.dashed) {
+function setTexture(sprite: Sprite | TilingSprite, horizontal: boolean, borderLine?: CellBorderLine): void {
+  if (borderLine === CellBorderLine.Dashed) {
     sprite.texture = horizontal ? dashedTextures.dashedHorizontal : dashedTextures.dashedVertical;
-  } else if (borderType === BorderTypeEnum.dotted) {
+  } else if (borderLine === CellBorderLine.Dotted) {
     sprite.texture = horizontal ? dashedTextures.dottedHorizontal : dashedTextures.dottedVertical;
   } else {
     sprite.texture = Texture.WHITE;
@@ -33,14 +32,14 @@ export function drawBorder(options: {
   left?: boolean;
   bottom?: boolean;
   right?: boolean;
-  borderType?: BorderType;
+  borderType?: CellBorderLine;
 }): BorderCull[] {
   const borderLines: BorderCull[] = [];
   const { borderType } = options;
-  const lineWidth = borderType === BorderTypeEnum.line2 ? 2 : borderType === BorderTypeEnum.line3 ? 3 : 1;
+  const lineWidth = borderType === CellBorderLine.Line2 ? 2 : borderType === CellBorderLine.Line3 ? 3 : 1;
 
-  const tiling = borderType === BorderTypeEnum.dashed || borderType === BorderTypeEnum.dotted;
-  const doubleDistance = borderType === BorderTypeEnum.double ? lineWidth * 2 : 0;
+  const tiling = borderType === CellBorderLine.Dashed || borderType === CellBorderLine.Dotted;
+  const doubleDistance = borderType === CellBorderLine.Double ? lineWidth * 2 : 0;
 
   if (options.top) {
     const top = options.getSprite(tiling);
@@ -191,27 +190,30 @@ export function drawLine(options: {
 
 export function drawCellBorder(options: {
   position: Rectangle;
-  border: Border;
+  horizontal?: { type: CellBorderLine; color?: Rgba };
+  vertical?: { type: CellBorderLine; color?: Rgba };
   getSprite: (tiling?: boolean) => Sprite;
-}): void {
-  const { position, border, getSprite } = options;
-
-  if (border.horizontal) {
-    const borderType = border.horizontal.type;
-    const lineWidth = borderType === BorderTypeEnum.line2 ? 2 : borderType === BorderTypeEnum.line3 ? 3 : 1;
-    const tiling = borderType === BorderTypeEnum.dashed || borderType === BorderTypeEnum.dotted;
-    const doubleDistance = borderType === BorderTypeEnum.double ? lineWidth * 2 : 0;
+}): BorderCull[] {
+  const { position, getSprite, horizontal, vertical } = options;
+  const borderCull: BorderCull[] = [];
+  if (horizontal) {
+    const borderType = horizontal.type;
+    const lineWidth = borderType === CellBorderLine.Line2 ? 2 : borderType === CellBorderLine.Line3 ? 3 : 1;
+    const tiling = borderType === CellBorderLine.Dashed || borderType === CellBorderLine.Dotted;
+    const doubleDistance = borderType === CellBorderLine.Double ? lineWidth * 2 : 0;
 
     const top = getSprite(tiling);
     setTexture(top, true, borderType);
-    const color = border.horizontal.color
-      ? convertColorStringToTint(border.horizontal.color)
-      : colors.defaultBorderColor;
+    const color = horizontal.color ? horizontal.color.tint() : colors.defaultBorderColor;
     top.tint = color;
+    top.alpha = horizontal.color ? horizontal.color.alpha() : 1;
     top.width = position.width + lineWidth;
     top.height = lineWidth;
     top.position.set(position.x - lineWidth / 2, position.y - lineWidth / 2);
-
+    borderCull.push({
+      sprite: top,
+      rectangle: new Rectangle(top.x, top.y, top.width, top.height),
+    });
     if (doubleDistance) {
       const top = getSprite(tiling);
       setTexture(top, true, borderType);
@@ -222,22 +224,31 @@ export function drawCellBorder(options: {
         position.x - lineWidth / 2, // todo + (options.left ? doubleDistance : 0),
         position.y + doubleDistance - lineWidth / 2
       );
+      borderCull.push({
+        sprite: top,
+        rectangle: new Rectangle(top.x, top.y, top.width, top.height),
+      });
     }
   }
 
-  if (border.vertical) {
-    const borderType = border.vertical.type;
-    const lineWidth = borderType === BorderTypeEnum.line2 ? 2 : borderType === BorderTypeEnum.line3 ? 3 : 1;
-    const tiling = borderType === BorderTypeEnum.dashed || borderType === BorderTypeEnum.dotted;
-    const doubleDistance = borderType === BorderTypeEnum.double ? lineWidth * 2 : 0;
+  if (vertical) {
+    const borderType = vertical.type;
+    const lineWidth = borderType === CellBorderLine.Line2 ? 2 : borderType === CellBorderLine.Line3 ? 3 : 1;
+    const tiling = borderType === CellBorderLine.Dashed || borderType === CellBorderLine.Dotted;
+    const doubleDistance = borderType === CellBorderLine.Double ? lineWidth * 2 : 0;
 
     const left = options.getSprite(tiling);
     setTexture(left, false, borderType);
-    const color = border.vertical.color ? convertColorStringToTint(border.vertical.color) : colors.defaultBorderColor;
+    const color = vertical.color ? vertical.color.tint() : colors.defaultBorderColor;
     left.tint = color;
+    left.alpha = vertical.color ? vertical.color.alpha() : 1;
     left.width = lineWidth;
     left.height = position.height + lineWidth;
     left.position.set(position.x - lineWidth / 2, position.y - lineWidth / 2);
+    borderCull.push({
+      sprite: left,
+      rectangle: new Rectangle(left.x, left.y, left.width, left.height),
+    });
 
     if (doubleDistance) {
       const left = options.getSprite(tiling);
@@ -249,6 +260,11 @@ export function drawCellBorder(options: {
         position.x - lineWidth / 2 + doubleDistance,
         position.y - lineWidth / 2 // todo + (options.top ? doubleDistance : 0)
       );
+      borderCull.push({
+        sprite: left,
+        rectangle: new Rectangle(left.x, left.y, left.width, left.height),
+      });
     }
   }
+  return borderCull;
 }

@@ -11,6 +11,7 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { colors } from '../../../theme/colors';
 import BottomBarItem from './BottomBarItem';
 import PythonState from './PythonState';
+import { SelectionSummary } from './SelectionSummary';
 import SyncState from './SyncState';
 
 export const BottomBar = () => {
@@ -58,7 +59,7 @@ export const BottomBar = () => {
       }}
       style={{
         backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        borderTop: `1px solid ${colors.mediumGray}`,
+        borderTop: `1px solid ${theme.palette.divider}`,
         color: colors.darkGray,
         bottom: 0,
         width: '100%',
@@ -109,11 +110,7 @@ export const BottomBar = () => {
         )}
       </Stack>
       <Stack direction="row">
-        {/*
-
-          todo: when runFormula works again...
-
-        <ActiveSelectionStats sheetController={props.sheetController}></ActiveSelectionStats> */}
+        <SelectionSummary></SelectionSummary>
         <SyncState />
 
         {showOnDesktop && <PythonState />}

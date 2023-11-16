@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { editorHighlightedCellsStateAtom } from '../atoms/editorHighlightedCellsStateAtom';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
 import { CellInput } from './interaction/CellInput';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
-import { ensureVisible } from './interaction/viewportHelper';
 import { pixiApp } from './pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from './pixiApp/PixiAppSettings';
 
@@ -26,7 +24,6 @@ export default function QuadraticGrid() {
   useEffect(() => {
     const updatePanMode = (e: any) => {
       setPanMode(e.detail);
-      ensureVisible();
     };
     window.addEventListener('pan-mode', updatePanMode);
     return () => window.removeEventListener('pan-mode', updatePanMode);
@@ -37,10 +34,12 @@ export default function QuadraticGrid() {
     pixiAppSettings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
   }, [editorInteractionState, setEditorInteractionState]);
 
-  const [editorHighlightedCellsState, setEditorHighlightedCellsState] = useRecoilState(editorHighlightedCellsStateAtom);
+  const [showInput, setShowInput] = useState(false);
   useEffect(() => {
-    pixiAppSettings.updateEditorHighlightedCellsState(editorHighlightedCellsState, setEditorHighlightedCellsState);
-  }, [editorHighlightedCellsState, setEditorHighlightedCellsState]);
+    const changeInput = (e: any) => setShowInput(e.detail.showInput);
+    window.addEventListener('change-input', changeInput);
+    return () => window.removeEventListener('change-input', changeInput);
+  }, []);
 
   // Right click menu
   const [showContextMenu, setShowContextMenu] = useState(false);
@@ -116,7 +115,7 @@ export default function QuadraticGrid() {
       }}
       onKeyUp={onKeyUp}
     >
-      <CellInput container={container} />
+      {showInput && <CellInput container={container} />}
       <FloatingContextMenu container={container} showContextMenu={showContextMenu} />
     </div>
   );

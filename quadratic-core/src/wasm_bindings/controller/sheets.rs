@@ -35,10 +35,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let to_before = match to_before {
-            Some(to_before) => Some(SheetId::from_str(&to_before).unwrap()),
-            None => None,
-        };
+        let to_before = to_before.map(|to_before| SheetId::from_str(&to_before).unwrap());
         Ok(serde_wasm_bindgen::to_value(
             &self.move_sheet(sheet_id, to_before, cursor),
         )?)

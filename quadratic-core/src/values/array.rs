@@ -7,7 +7,11 @@ use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
 use super::{ArraySize, Axis, CellValue, Spanned, Value};
-use crate::{CodeResult, ErrorMsg};
+use crate::{
+    controller::operation::Operation,
+    grid::{CellRef, Sheet},
+    CodeResult, ErrorMsg, Pos,
+};
 
 #[macro_export]
 macro_rules! array {
@@ -73,6 +77,32 @@ impl From<Value> for Array {
     }
 }
 
+impl From<Vec<Vec<String>>> for Array {
+    fn from(v: Vec<Vec<String>>) -> Self {
+        let w = v[0].len();
+        let h = v.len();
+        Array {
+            size: ArraySize::new(w as u32, h as u32).unwrap(),
+            values: v
+                .iter()
+                .flatten()
+                .map(|s| CellValue::from(s.as_ref()))
+                .collect(),
+        }
+    }
+}
+
+impl From<Vec<Vec<CellValue>>> for Array {
+    fn from(v: Vec<Vec<CellValue>>) -> Self {
+        let w = v[0].len();
+        let h = v.len();
+        Array {
+            size: ArraySize::new(w as u32, h as u32).unwrap(),
+            values: v.into_iter().flatten().collect(),
+        }
+    }
+}
+
 impl Array {
     /// Constructs an array of blank values.
     pub fn new_empty(size: ArraySize) -> Self {
@@ -129,8 +159,7 @@ impl Array {
         Self::new_row_major(
             self.size(),
             self.rows()
-                .map(|row| row.iter().rev().cloned())
-                .flatten()
+                .flat_map(|row| row.iter().rev().cloned())
                 .collect(),
         )
         .unwrap()
@@ -233,7 +262,48 @@ impl Array {
 
         Ok(NonZeroU32::new(common_len).expect("bad array size"))
     }
+
+    // todo: this is super complicated; we need to move the number formats into CellValue to simplify this
+    pub fn from_string_list(
+        start: CellRef,
+        sheet: &mut Sheet,
+        v: Vec<Vec<String>>,
+    ) -> (Option<Array>, Vec<Operation>) {
+        let size = ArraySize::new(v[0].len() as u32, v.len() as u32).unwrap();
+        let values;
+        let pos = sheet.cell_ref_to_pos(start);
+        if let Some(pos) = pos {
+            let mut ops = vec![];
+            let Pos { mut x, mut y } = pos;
+            values = v
+                .iter()
+                .flatten()
+                .map(|s| {
+                    let column_id = sheet.get_or_create_column(x).0.id;
+                    let row_id = sheet.get_or_create_row(y).id;
+                    let cell_ref = CellRef {
+                        sheet: start.sheet,
+                        column: column_id,
+                        row: row_id,
+                    };
+                    x += 1;
+                    if x == v[0].len() as i64 + pos.x {
+                        x = pos.x;
+                        y += 1;
+                    }
+                    let (value, updated_ops) = CellValue::from_string(s, cell_ref, sheet);
+                    ops.extend(updated_ops);
+                    value
+                })
+                .collect();
+            return (Some(Array { size, values }), ops);
+        }
+
+        // return nothing when pos is not defined
+        (None, vec![])
+    }
 }
+
 impl Spanned<Array> {
     /// Checks that an array is linear (width=1 or height=1), then returns which
     /// is the long axis. Returns `None` in the case of a 1x1 array.

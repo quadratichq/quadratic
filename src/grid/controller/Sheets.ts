@@ -1,12 +1,13 @@
 import { debugMockLargeData } from '../../debugFlags';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
+import { SheetId } from '../../quadratic-core/types';
 import { Sheet } from '../sheet/Sheet';
 import { grid } from './Grid';
 import { mockLargeData } from './mockLargeData';
 
 class Sheets {
-  private sheets: Sheet[];
+  sheets: Sheet[];
   private _current: string;
 
   // set up sheet information
@@ -17,7 +18,7 @@ class Sheets {
     this._current = '';
   }
 
-  create() {
+  async create() {
     if (debugMockLargeData) {
       mockLargeData();
     }
@@ -29,7 +30,6 @@ class Sheets {
     });
     this.sort();
     this.current = this.sheets[0].id;
-    pixiApp.create();
   }
 
   // ensures there's a Sheet.ts for every Sheet.rs
@@ -48,10 +48,14 @@ class Sheets {
     this.sheets.forEach((sheet, index) => {
       if (!sheetIds.includes(sheet.id)) {
         this.sheets.splice(index, 1);
-        sheets.deleteSheet(sheet.id);
+        pixiApp.cellsSheets.deleteSheet(sheet.id);
+        if (this.current === sheet.id) {
+          this.current = this.sheets[0].id;
+        }
       }
     });
-    this.sort();
+    this.sheets.forEach((sheet) => sheet.updateMetadata());
+    this.updateSheetBar();
   }
 
   // updates the SheetBar UI
@@ -92,6 +96,15 @@ class Sheets {
       pixiApp.cellsSheets.show(sheets.sheet.id);
       this.updateSheetBar();
     }
+  }
+
+  getSheetByName(name: string): Sheet | undefined {
+    for (const sheet of this.sheets) {
+      if (sheet.name === name) {
+        return sheet;
+      }
+    }
+    return;
   }
 
   get size(): number {
@@ -170,14 +183,14 @@ class Sheets {
   // Sheet operations
   // ----------------
 
-  createNew(): void {
+  createNew() {
     grid.addSheet();
 
     // sets the current sheet to the new sheet
     this.current = this.sheets[this.sheets.length - 1].id;
   }
 
-  duplicate(): void {
+  duplicate() {
     const oldSheetId = this.current;
     grid.duplicateSheet(this.current);
 
@@ -190,7 +203,7 @@ class Sheets {
     this.sort();
   }
 
-  deleteSheet(id: string): void {
+  deleteSheet(id: string) {
     const order = this.sheet.order;
     grid.deleteSheet(id);
 
@@ -241,6 +254,16 @@ class Sheets {
 
   getCursorPosition(): string {
     return JSON.stringify(this.sheet.cursor.save());
+  }
+
+  // handle changes to sheet offsets by only updating columns/rows impacted by resize
+  updateOffsets(sheetIds: SheetId[]) {
+    sheetIds.forEach((sheetId) => {
+      const sheet = this.getById(sheetId.id);
+      if (!sheet) throw new Error('Expected sheet to be defined in updateOffsets');
+      sheet.updateSheetOffsets();
+    });
+    pixiApp.gridLines.dirty = true;
   }
 }
 

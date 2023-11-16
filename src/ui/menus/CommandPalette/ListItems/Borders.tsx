@@ -11,10 +11,9 @@ import {
   BorderVertical,
 } from '@mui/icons-material';
 import { isEditorOrAbove } from '../../../../actions';
+import { BorderSelection } from '../../../../quadratic-core/quadratic_core';
 import { ChangeBorder, useBorders } from '../../TopBar/SubMenus/useBorders';
 import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
-// import { BorderType } from '../../../../core/gridDB/gridTypes';
-// import { BorderDashed, BorderDouble, BorderDotted, BorderThin, BorderThick, BorderMedium } from '../../../icons';
 
 const ListItems = [
   // Convenience to generate all the border component variations
@@ -23,42 +22,42 @@ const ListItems = [
     {
       label: 'Borders: Apply outer',
       icon: <BorderOuter />,
-      changeBordersArgs: { borderLeft: true, borderRight: true, borderTop: true, borderBottom: true },
+      changeBordersArgs: { selection: BorderSelection.Outer },
     },
     {
       label: 'Borders: Apply inner',
       icon: <BorderInner />,
-      changeBordersArgs: { borderHorizontal: true, borderVertical: true },
+      changeBordersArgs: { selection: BorderSelection.Inner },
     },
     {
       label: 'Borders: Apply vertical',
       icon: <BorderVertical />,
-      changeBordersArgs: { borderVertical: true },
+      changeBordersArgs: { selection: BorderSelection.Vertical },
     },
     {
       label: 'Borders: Apply horizontal',
       icon: <BorderHorizontal />,
-      changeBordersArgs: { borderHorizontal: true },
+      changeBordersArgs: { selection: BorderSelection.Horizontal },
     },
     {
       label: 'Borders: Apply left',
       icon: <BorderLeft />,
-      changeBordersArgs: { borderLeft: true },
+      changeBordersArgs: { selection: BorderSelection.Left },
     },
     {
       label: 'Borders: Apply right',
       icon: <BorderRight />,
-      changeBordersArgs: { borderRight: true },
+      changeBordersArgs: { selection: BorderSelection.Right },
     },
     {
       label: 'Borders: Apply top',
       icon: <BorderTop />,
-      changeBordersArgs: { borderTop: true },
+      changeBordersArgs: { selection: BorderSelection.Top },
     },
     {
       label: 'Borders: Apply bottom',
       icon: <BorderBottom />,
-      changeBordersArgs: { borderBottom: true },
+      changeBordersArgs: { selection: BorderSelection.Bottom },
     },
   ].map(generateListItem),
   {

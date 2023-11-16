@@ -73,7 +73,6 @@ export class Update {
     this.updateViewport();
 
     const rendererDirty =
-      pixiApp.viewport.dirty ||
       pixiApp.gridLines.dirty ||
       pixiApp.axesLines.dirty ||
       pixiApp.headings.dirty ||
@@ -99,14 +98,16 @@ export class Update {
     debugTimeCheck('[Update] boxCells');
     pixiApp.cursor.update();
     debugTimeCheck('[Update] cursor');
+    debugTimeReset();
+    pixiApp.cellsSheets.update();
+    debugTimeCheck('[Update] cellsSheets');
 
-    if (rendererDirty) {
-      pixiApp.viewport.dirty = false;
-
+    if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();
-      pixiApp.cellsSheets.update();
+      pixiApp.viewport.dirty = false;
       pixiApp.renderer.render(pixiApp.stage);
       debugTimeCheck('[Update] render');
+
       debugRendererLight(true);
       debugShowChildren(pixiApp.stage, 'stage');
       debugShowCachedCounts();
