@@ -13,7 +13,6 @@ const { ANONYMOUS, VIEWER, OWNER, EDITOR } = PermissionSchema.enum;
 export function PermissionOverlay() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const { permission } = useRecoilValue(editorInteractionStateAtom);
-  const theme = useTheme();
   const { name } = useFileContext();
   const theme = useTheme();
   const submit = useSubmit();
