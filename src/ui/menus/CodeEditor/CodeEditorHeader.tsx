@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { Close, FiberManualRecord, PlayArrow, Stop, Subject } from '@mui/icons-material';
-=======
-import { Close, FiberManualRecord, HelpOutline, PlayArrow, Subject } from '@mui/icons-material';
->>>>>>> origin/main
+import { Close, FiberManualRecord, HelpOutline, PlayArrow, Stop, Subject } from '@mui/icons-material';
 import { CircularProgress, IconButton, useTheme } from '@mui/material';
 import { useRecoilValue } from 'recoil';
 import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
