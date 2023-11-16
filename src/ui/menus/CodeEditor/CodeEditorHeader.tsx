@@ -96,7 +96,7 @@ export const CodeEditorHeader = (props: Props) => {
                 size="small"
                 color="primary"
                 onClick={cancelCell}
-                disabled={!isRunningComputation && !isLoadingPython}
+                disabled={!isRunningComputation}
               >
                 <Stop />
               </IconButton>
