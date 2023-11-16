@@ -86,6 +86,7 @@ export const upgradeFileRust = async (
 export class Grid {
   private gridController!: GridController;
   private _dirty = false;
+  thumbnailDirty = false;
 
   transactionResponse(summary: TransactionSummary) {
     if (summary.sheet_list_modified) {
@@ -114,6 +115,10 @@ export class Grid {
 
     if (summary.transaction_busy) {
       window.dispatchEvent(new CustomEvent('transaction-busy'));
+    }
+
+    if (summary.generate_thumbnail) {
+      this.thumbnailDirty = true;
     }
 
     const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;

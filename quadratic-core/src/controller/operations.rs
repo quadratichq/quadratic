@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use indexmap::IndexSet;
 
-use crate::{grid::*, Array, CellValue};
+use crate::{grid::*, Array, CellValue, Pos};
 
 use super::{
     formatting::CellFmtArray,
@@ -37,9 +37,6 @@ impl GridController {
                     .map(|(cell_ref, value)| {
                         let pos = sheet.cell_ref_to_pos(cell_ref)?;
                         cells_to_compute.insert(cell_ref);
-                        summary
-                            .cell_sheets_modified
-                            .insert(CellSheetsModified::new(sheet.id, pos));
                         let response = sheet.set_cell_value(pos, value)?;
                         Some(response.old_value)
                     })
@@ -48,6 +45,9 @@ impl GridController {
 
                 let old_values = Array::new_row_major(size, old_values)
                     .expect("error constructing array of old values for SetCells operation");
+                CellSheetsModified::add_region(&mut summary.cell_sheets_modified, sheet, &region);
+                summary.generate_thumbnail =
+                    summary.generate_thumbnail || self.thumbnail_dirty_region(region.clone());
                 // return reverse operation
                 Operation::SetCellValues {
                     region,
@@ -111,6 +111,11 @@ impl GridController {
                 if let CellFmtArray::FillColor(_) = attr {
                     summary.fill_sheets_modified.push(region.sheet);
                 }
+
+                // todo: this is too slow -- perhaps call this again when we have a better way of setting multiple formats within an array
+                // or when we get rid of CellRefs (which I think is the reason this is slow)
+                // summary.generate_thumbnail =
+                //     summary.generate_thumbnail || self.thumbnail_dirty_region(region.clone());
 
                 let old_attr = match attr {
                     CellFmtArray::Align(align) => {
@@ -187,6 +192,9 @@ impl GridController {
             Operation::SetBorders { region, borders } => {
                 sheets_with_changed_bounds.insert(region.sheet);
                 summary.border_sheets_modified.push(region.sheet);
+                summary.generate_thumbnail =
+                    summary.generate_thumbnail || self.thumbnail_dirty_region(region.clone());
+
                 let sheet = self.grid.sheet_mut_from_id(region.sheet);
 
                 let old_borders = sheet.set_region_borders(&region, borders);
@@ -217,10 +225,15 @@ impl GridController {
                 }
             }
             Operation::ReorderSheet { target, order } => {
+                let old_first = self.grid.first_sheet_id();
                 let sheet = self.grid.sheet_from_id(target);
                 let original_order = sheet.order.clone();
                 self.grid.move_sheet(target, order);
                 summary.sheet_list_modified = true;
+
+                if old_first != self.grid.first_sheet_id() {
+                    summary.generate_thumbnail = true;
+                }
 
                 // return reverse operation
                 Operation::ReorderSheet {
@@ -262,6 +275,8 @@ impl GridController {
                 if let Some(x) = sheet.get_column_index(column) {
                     summary.offsets_modified.push(sheet.id);
                     let old_size = sheet.offsets.set_column_width(x, new_size);
+                    summary.generate_thumbnail = summary.generate_thumbnail
+                        || self.thumbnail_dirty_pos(sheet_id, Pos { x, y: 0 });
                     Operation::ResizeColumn {
                         sheet_id,
                         column,
@@ -281,6 +296,8 @@ impl GridController {
                 if let Some(y) = sheet.get_row_index(row) {
                     let old_size = sheet.offsets.set_row_height(y, new_size);
                     summary.offsets_modified.push(sheet.id);
+                    summary.generate_thumbnail = summary.generate_thumbnail
+                        || self.thumbnail_dirty_pos(sheet_id, Pos { x: 0, y });
                     Operation::ResizeRow {
                         sheet_id,
                         row,

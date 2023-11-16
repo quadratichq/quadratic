@@ -368,7 +368,7 @@ mod test {
         code_string: String,
         cell_value: CellValue,
     ) -> GridController {
-        let mut gc = gc.unwrap_or_default();
+        let mut gc = gc.unwrap_or(GridController::new());
         let sheet_ids = gc.sheet_ids();
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
         let cell_value_pos = Pos { x: 0, y: 0 };

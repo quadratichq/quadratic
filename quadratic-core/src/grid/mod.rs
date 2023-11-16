@@ -1,4 +1,5 @@
 use anyhow::{bail, Result};
+use itertools::Itertools;
 use std::str::FromStr;
 
 use lexicon_fractional_index::key_between;
@@ -73,9 +74,15 @@ impl Grid {
     pub fn sheets(&self) -> &[Sheet] {
         &self.sheets
     }
-    // pub fn dependencies_mut(&mut self) -> &mut HashMap<SheetPos, Vec<SheetRect>> {
-    //     &mut self.dependencies
-    // }
+    pub fn first_sheet_id(&self) -> SheetId {
+        self.sheets
+            .iter()
+            .sorted_by(|a, b| b.order.cmp(&a.order))
+            .last()
+            .unwrap()
+            .clone()
+            .id
+    }
     pub fn sheet_ids(&self) -> Vec<SheetId> {
         self.sheets.iter().map(|sheet| sheet.id).collect()
     }
