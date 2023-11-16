@@ -160,6 +160,7 @@ impl JsCodeResult {
 #[wasm_bindgen]
 impl JsCodeResult {
     #[wasm_bindgen(constructor)]
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         success: bool,
         formatted_code: Option<String>,

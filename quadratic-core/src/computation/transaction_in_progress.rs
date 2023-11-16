@@ -80,6 +80,7 @@ impl TransactionInProgress {
         }
     }
 
+    /// Clear the `cells_to_compute` attribute
     pub fn clear_cells_to_compute(&mut self) {
         self.cells_to_compute.clear();
     }
@@ -577,6 +578,7 @@ mod test {
             false,
             Some(code_string),
             Some(error),
+            None,
             None,
             None,
             None,
