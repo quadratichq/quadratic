@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { Close, FiberManualRecord, PlayArrow, Stop, Subject } from '@mui/icons-material';
+=======
+import { Close, FiberManualRecord, HelpOutline, PlayArrow, Subject } from '@mui/icons-material';
+>>>>>>> origin/main
 import { CircularProgress, IconButton, useTheme } from '@mui/material';
 import { useRecoilValue } from 'recoil';
 import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
@@ -7,6 +11,7 @@ import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 // import { CodeCellValue } from '../../../quadratic-core/types';
 import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL, DOCUMENTATION_URL } from '../../../constants/urls';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
 import { Formula, Python } from '../../icons';
@@ -88,8 +93,21 @@ export const CodeEditorHeader = (props: Props) => {
             <CircularProgress color="inherit" size="1.125rem" sx={{ m: '0 .5rem' }} />
           </div>
         )}
+        <TooltipHint title="Read the docs" placement="bottom">
+          <IconButton
+            aria-label="docs"
+            size="small"
+            onClick={() => {
+              if (language === 'FORMULA') window.open(DOCUMENTATION_FORMULAS_URL, '_blank');
+              else if (language === 'PYTHON') window.open(DOCUMENTATION_PYTHON_URL, '_blank');
+              else window.open(DOCUMENTATION_URL, '_blank');
+            }}
+          >
+            <HelpOutline fontSize="small" />
+          </IconButton>
+        </TooltipHint>
         {hasPermission && (
-          <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`}>
+          <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
             <span>
               <IconButton
                 id="QuadraticCodeEditorCalcelButtonID"
@@ -104,7 +122,7 @@ export const CodeEditorHeader = (props: Props) => {
           </TooltipHint>
         )}
         {hasPermission && (
-          <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`}>
+          <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
             <span>
               <IconButton
                 id="QuadraticCodeEditorRunButtonID"
@@ -118,7 +136,7 @@ export const CodeEditorHeader = (props: Props) => {
             </span>
           </TooltipHint>
         )}
-        <TooltipHint title="Close" shortcut="ESC">
+        <TooltipHint title="Close" shortcut="ESC" placement="bottom">
           <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={closeEditor}>
             <Close />
           </IconButton>
