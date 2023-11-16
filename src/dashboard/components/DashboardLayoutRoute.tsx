@@ -60,16 +60,16 @@ export const Component = () => {
 
 function Navbar() {
   const { user } = useRootRouteLoaderData();
-  
 
   return (
     <nav className={`flex h-full flex-col justify-between px-4 pb-2 pt-4`}>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div className={`flex items-center justify-between`}>
           <SidebarNavLink to="/" className={`pr-3`} isLogo={true}>
-            <div className={`flex w-5 items-center justify-center`}><img src={QuadraticLogo} />
+            <div className={`flex w-5 items-center justify-center`}>
+              <img src={QuadraticLogo} alt="Quadratic logo glyph" />
             </div>
-            <img src={QuadraticLogotype} />
+            <img src={QuadraticLogotype} alt="Quadratic logotype" />
             {/* <QuadraticLogotype /> */}
           </SidebarNavLink>
         </div>
