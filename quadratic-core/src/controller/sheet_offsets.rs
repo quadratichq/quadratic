@@ -102,4 +102,20 @@ mod tests {
         gc.commit_offsets_resize(sheet_id, Some(transient_resize), None);
         assert_eq!(new_size, gc.grid.sheets()[0].offsets.row_height(0));
     }
+
+    #[test]
+    fn test_commit_single_resize() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.grid().sheets()[0].id;
+
+        gc.commit_single_resize(sheet_id, Some(1), None, 200f64, None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.offsets.column_width(1), 200f64);
+
+        gc.commit_single_resize(sheet_id, None, Some(1), 300f64, None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.offsets.row_height(1), 300f64);
+    }
 }
