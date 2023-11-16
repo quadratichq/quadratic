@@ -1,3 +1,4 @@
+import mixpanel from 'mixpanel-browser';
 import { grid, pointsToRect } from '../../grid/controller/Grid';
 import { JsCodeResult } from '../../quadratic-core/quadratic_core';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
@@ -102,6 +103,7 @@ class PythonWebWorker {
   }
 
   restartFromUser() {
+    mixpanel.track('[PythonWebWorker].restartFromUser');
     this.restart();
     const result = new JsCodeResult(
       false,
