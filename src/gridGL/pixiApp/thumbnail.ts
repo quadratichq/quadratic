@@ -59,7 +59,7 @@ class Thumbnail {
     this.renderer.view.height = imageHeight;
     const rectangle = new Rectangle(0, 0, imageWidth, imageHeight);
     pixiApp.prepareForCopying({ gridLines: true, cull: rectangle });
-    pixiApp.gridLines.update(rectangle);
+    pixiApp.gridLines.update(rectangle, undefined, true);
     this.renderer.render(pixiApp.viewportContents);
     pixiApp.cleanUpAfterCopying(true);
     return new Promise((resolve) => {
