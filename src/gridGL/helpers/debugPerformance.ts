@@ -13,7 +13,7 @@ export function debugTimeCheck(name: string, minimum = MINIMUM_MS_TO_DISPLAY): v
   if (!debugShowTime) return;
   const now = performance.now();
   if (now - lastTime > minimum) {
-    console.log(`${name}: ${Math.round(now - lastTime)}ms`);
+    console.log(`[Time Check] ${name}: ${Math.round(now - lastTime)}ms`);
   }
   lastTime = now;
 }

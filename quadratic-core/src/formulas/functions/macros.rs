@@ -49,7 +49,7 @@ macro_rules! see_docs_for_more_about_wildcards {
 /// formula_fn!(
 ///     /// Returns the square root of a number.
 ///     #[example("SQRT(2)")]
-///     #[pure_zip_map]
+///     #[zip_map]
 ///     fn SQRT([number]: f64) {
 ///         number.sqrt()
 ///     }
@@ -63,7 +63,7 @@ macro_rules! see_docs_for_more_about_wildcards {
 /// what to put for `eval`, start with this:
 ///
 /// ```ignore
-/// Box::new(move |ctx, args| async move { ... }.boxed_local())
+/// Box::new(move |ctx, args| ...)
 /// ```
 ///
 /// Remember to write a check that all required arguments are present and that
@@ -76,7 +76,7 @@ macro_rules! see_docs_for_more_about_wildcards {
 /// - `#[doc = "..."]` (or doc comments using `///`) - user-facing documentation
 /// - `#[operator]` - removes the function from documentation
 /// - `#[examples("EXAMPLE()", "EXAMPLE(A, B)")]` - example usages
-/// - `#[pure_zip_map]` - if certain arguments are arrays, **zip** them together
+/// - `#[zip_map]` - if certain arguments are arrays, **zip** them together
 ///                       and **map** a **pure** function over them.
 ///
 /// # Parameter syntax
@@ -111,7 +111,7 @@ macro_rules! see_docs_for_more_about_wildcards {
 /// mapped over all values in that array. If multiple parameters are surrounded
 /// by square brackets (or the parameter surrounded by square brackets is a
 /// repeating parameter) then the repeating arguments will be zipped together
-/// first. The `#[pure_zip_map]` attribute is required for this to work.
+/// first. The `#[zip_map]` attribute is required for this to work.
 macro_rules! formula_fn {
     (
         #[operator]
@@ -166,13 +166,8 @@ macro_rules! formula_fn {
 macro_rules! formula_fn_eval {
     ($($tok:tt)*) => {{
         #[allow(unused_mut)]
-        let ret: FormulaFn = |_ctx, mut _args: FormulaFnArgs| {
-            // _ctx: &'a mut Ctx
-            // return value: LocalBoxFuture<'a, CodeResult<Value>>
-            //
-            // Unfortunately, we can't annotate those types because there's no
-            // way to introduce the named lifetime `'a`.
-            async move { formula_fn_eval_inner!(_ctx, _args, $($tok)*) }.boxed_local()
+        let ret: FormulaFn = |_ctx: &mut Ctx<'_>, mut _args: FormulaFnArgs| -> CodeResult<Value> {
+            formula_fn_eval_inner!(_ctx, _args, $($tok)*)
         };
         ret
     }};
@@ -182,7 +177,7 @@ macro_rules! formula_fn_eval {
 macro_rules! formula_fn_eval_inner {
     (
         $ctx:ident, $args:ident, $body:expr;
-        #[pure_zip_map]
+        #[zip_map]
         $($params:tt)*
     ) => {{
         // Arguments that should be zip-mapped. (See `Ctx::zip_map()`.)
@@ -205,7 +200,7 @@ macro_rules! formula_fn_eval_inner {
 
     (
         $ctx:ident, $args:ident, $body:expr;
-        #[async_zip_map]
+        #[zip_map]
         $($params:tt)*
     ) => {{
         // Arguments that should be zip-mapped. (See `Ctx::zip_map()`.)
@@ -215,19 +210,15 @@ macro_rules! formula_fn_eval_inner {
         formula_fn_args!(@zip($ctx, $args, args_to_zip_map); $($params)*);
         $args.error_if_more_args()?;
 
-        $ctx.zip_map_async(
+        $ctx.zip_map(
             &args_to_zip_map,
             move |ctx, zipped_args| {
-                async move {
-                    formula_fn_args!(@unzip(ctx, zipped_args); $($params)*);
+                formula_fn_args!(@unzip(ctx, zipped_args); $($params)*);
 
-                    // Evaluate the body of the function.
-                    CodeResult::Ok(CellValue::from($body))
-                }
-                .boxed_local()
-            }
+                // Evaluate the body of the function.
+                CodeResult::Ok(CellValue::from($body))
+            },
         )
-        .await
     }};
 
     (
@@ -269,9 +260,9 @@ macro_rules! formula_fn_arg {
         formula_fn_arg!(@$instruction $data; $arg_name: $($arg_type)*)
     };
 
-    // Missing `#[pure_zip_map]` or `#[async_zip_map]` attribute
+    // Missing `#[zip_map]` attribute
     (@assign $data:tt; [$arg_name:ident]: $($arg_type:tt)*) => {
-        compile_error!("add #[pure_zip_map] or #[async_zip_map] attribute to your formula function")
+        compile_error!("add #[zip_map] attribute to your formula function")
     };
 
     // Context argument

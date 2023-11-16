@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumString};
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
@@ -20,9 +21,23 @@ pub enum BorderSelection {
     Clear,
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(
+    Serialize,
+    Deserialize,
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Display,
+    EnumString,
+)]
 #[wasm_bindgen]
 #[serde(rename_all = "lowercase")]
+#[strum(serialize_all = "lowercase")]
 pub enum CellBorderLine {
     Line1,
     Line2,

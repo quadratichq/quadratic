@@ -25,7 +25,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                             "of an angle in radians.",
                         )]
                         #[examples(concat!(stringify!($func_name), "(PI() * 2/3)"))]
-                        #[pure_zip_map]
+                        #[zip_map]
                         fn $func_name([radians]: f64) {
                             const F: fn(f64) -> f64 = $f;
                             F(radians)
@@ -38,7 +38,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                             ".",
                         )]
                         #[examples(concat!(stringify!($inv_func_name), "(A1)"))]
-                        #[pure_zip_map]
+                        #[zip_map]
                         fn $inv_func_name([number]: f64) {
                             const F: fn(f64) -> f64 = $inv_f;
                             F(number)
@@ -53,7 +53,7 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Converts radians to degrees.
             #[examples("DEGREES(PI() / 2)")]
-            #[pure_zip_map]
+            #[zip_map]
             fn DEGREES([radians]: f64) {
                 radians.to_degrees()
             }
@@ -61,7 +61,7 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Converts degrees to radians.
             #[examples("RADIANS(90)")]
-            #[pure_zip_map]
+            #[zip_map]
             fn RADIANS([degrees]: f64) {
                 degrees.to_radians()
             }
@@ -103,7 +103,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///
             /// If both arguments are zero, returns zero.
             #[examples("ATAN2(2, 1)")]
-            #[pure_zip_map]
+            #[zip_map]
             fn ATAN2(span: Span, [x]: f64, [y]: f64) {
                 if x == 0.0 && y == 0.0 {
                     return Err(ErrorMsg::DivideByZero.with_span(span));

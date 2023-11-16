@@ -1,4 +1,3 @@
-// import { PeopleOutline } from '@mui/icons-material';
 import { StopwatchIcon } from '@radix-ui/react-icons';
 import { Empty } from '../components/Empty';
 import { SUPPORT_EMAIL } from '../constants/appConstants';

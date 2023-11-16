@@ -1,0 +1,911 @@
+{
+  "version": "1.4",
+  "sheets": [
+    {
+      "id": {
+        "id": "79f556ac-13c8-41b5-b407-55c0a1435022"
+      },
+      "name": "Sheet 1",
+      "color": null,
+      "order": "a0",
+      "offsets": [
+        [
+          [
+            0,
+            34.7890625
+          ]
+        ],
+        []
+      ],
+      "columns": [
+        [
+          0,
+          {
+            "id": {
+              "id": "ad193f6e-4ec8-41ab-8329-80b88c71758e"
+            },
+            "values": {
+              "0": {
+                "y": 0,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "Quadratic"
+                    },
+                    {
+                      "type": "text",
+                      "value": "The data science spreadsheet"
+                    },
+                    {
+                      "type": "text",
+                      "value": "Read more docs.quadratichq.com"
+                    }
+                  ]
+                }
+              },
+              "5": {
+                "y": 5,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "Quick start"
+                    }
+                  ]
+                }
+              },
+              "7": {
+                "y": 7,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "1. Cells can contain code"
+                    },
+                    {
+                      "type": "text",
+                      "value": "2. Move to an empty cell and press ="
+                    },
+                    {
+                      "type": "text",
+                      "value": "    to create a new Formula or Python cell"
+                    },
+                    {
+                      "type": "text",
+                      "value": "3. Right click to access formatting menu"
+                    },
+                    {
+                      "type": "text",
+                      "value": "4. Reference other cell values in Python"
+                    },
+                    {
+                      "type": "text",
+                      "value": "5. Double click and correct this error"
+                    },
+                    {
+                      "type": "text",
+                      "value": "6. Blue cell outlines show you what cells"
+                    },
+                    {
+                      "type": "text",
+                      "value": "    contain code and purple for formulas."
+                    }
+                  ]
+                }
+              },
+              "17": {
+                "y": 17,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "Red"
+                    },
+                    {
+                      "type": "text",
+                      "value": "Bold"
+                    },
+                    {
+                      "type": "text",
+                      "value": "Right Formatting"
+                    }
+                  ]
+                }
+              }
+            },
+            "spills": {},
+            "align": {
+              "19": {
+                "y": 19,
+                "content": {
+                  "value": "right",
+                  "len": 1
+                }
+              }
+            },
+            "wrap": {},
+            "numeric_format": {},
+            "numeric_decimals": {},
+            "numeric_commas": {},
+            "bold": {
+              "0": {
+                "y": 0,
+                "content": {
+                  "value": true,
+                  "len": 1
+                }
+              },
+              "5": {
+                "y": 5,
+                "content": {
+                  "value": true,
+                  "len": 1
+                }
+              },
+              "17": {
+                "y": 17,
+                "content": {
+                  "value": false,
+                  "len": 1
+                }
+              },
+              "18": {
+                "y": 18,
+                "content": {
+                  "value": true,
+                  "len": 1
+                }
+              }
+            },
+            "italic": {
+              "1": {
+                "y": 1,
+                "content": {
+                  "value": true,
+                  "len": 2
+                }
+              }
+            },
+            "text_color": {
+              "17": {
+                "y": 17,
+                "content": {
+                  "value": "rgb(231, 76, 60)",
+                  "len": 1
+                }
+              }
+            },
+            "fill_color": {}
+          }
+        ],
+        [
+          1,
+          {
+            "id": {
+              "id": "29d5c526-efd2-4de4-a437-764cb5aee368"
+            },
+            "values": {
+              "10": {
+                "y": 10,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "Bold Me"
+                    },
+                    {
+                      "type": "text",
+                      "value": "Click Here"
+                    }
+                  ]
+                }
+              },
+              "17": {
+                "y": 17,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "White text, black background"
+                    },
+                    {
+                      "type": "text",
+                      "value": "Italic"
+                    }
+                  ]
+                }
+              }
+            },
+            "spills": {},
+            "align": {},
+            "wrap": {},
+            "numeric_format": {},
+            "numeric_decimals": {},
+            "numeric_commas": {},
+            "bold": {
+              "10": {
+                "y": 10,
+                "content": {
+                  "value": false,
+                  "len": 1
+                }
+              }
+            },
+            "italic": {
+              "18": {
+                "y": 18,
+                "content": {
+                  "value": true,
+                  "len": 1
+                }
+              }
+            },
+            "text_color": {
+              "17": {
+                "y": 17,
+                "content": {
+                  "value": "rgb(255, 255, 255)",
+                  "len": 1
+                }
+              }
+            },
+            "fill_color": {
+              "17": {
+                "y": 17,
+                "content": {
+                  "value": "rgb(0, 0, 0)",
+                  "len": 1
+                }
+              }
+            }
+          }
+        ],
+        [
+          2,
+          {
+            "id": {
+              "id": "264244c7-30a3-4b3c-9920-4d459a8ce4a1"
+            },
+            "values": {},
+            "spills": {},
+            "align": {},
+            "wrap": {},
+            "numeric_format": {},
+            "numeric_decimals": {},
+            "numeric_commas": {},
+            "bold": {},
+            "italic": {},
+            "text_color": {},
+            "fill_color": {}
+          }
+        ],
+        [
+          3,
+          {
+            "id": {
+              "id": "620b35ad-c461-4ae2-bd0c-585d5550aa6a"
+            },
+            "values": {
+              "9": {
+                "y": 9,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "Ex Data"
+                    },
+                    {
+                      "type": "text",
+                      "value": "SUM Formula"
+                    },
+                    {
+                      "type": "text",
+                      "value": "SUM Python"
+                    }
+                  ]
+                }
+              }
+            },
+            "spills": {},
+            "align": {},
+            "wrap": {},
+            "numeric_format": {},
+            "numeric_decimals": {},
+            "numeric_commas": {},
+            "bold": {
+              "9": {
+                "y": 9,
+                "content": {
+                  "value": false,
+                  "len": 1
+                }
+              }
+            },
+            "italic": {
+              "10": {
+                "y": 10,
+                "content": {
+                  "value": true,
+                  "len": 2
+                }
+              }
+            },
+            "text_color": {},
+            "fill_color": {}
+          }
+        ],
+        [
+          4,
+          {
+            "id": {
+              "id": "0f233f48-506c-432d-8eeb-c3176c5b0fa7"
+            },
+            "values": {
+              "5": {
+                "y": 5,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "Example data"
+                    }
+                  ]
+                }
+              },
+              "7": {
+                "y": 7,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "343"
+                    },
+                    {
+                      "type": "text",
+                      "value": "120"
+                    }
+                  ]
+                }
+              },
+              "11": {
+                "y": 11,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "463"
+                    }
+                  ]
+                }
+              }
+            },
+            "spills": {},
+            "align": {},
+            "wrap": {},
+            "numeric_format": {},
+            "numeric_decimals": {},
+            "numeric_commas": {},
+            "bold": {
+              "5": {
+                "y": 5,
+                "content": {
+                  "value": true,
+                  "len": 1
+                }
+              }
+            },
+            "italic": {},
+            "text_color": {},
+            "fill_color": {
+              "7": {
+                "y": 7,
+                "content": {
+                  "value": "rgb(218, 240, 255)",
+                  "len": 2
+                }
+              }
+            }
+          }
+        ],
+        [
+          5,
+          {
+            "id": {
+              "id": "a8f01e33-da8f-4696-a031-eeef68601547"
+            },
+            "values": {},
+            "spills": {},
+            "align": {},
+            "wrap": {},
+            "numeric_format": {},
+            "numeric_decimals": {},
+            "numeric_commas": {},
+            "bold": {},
+            "italic": {},
+            "text_color": {},
+            "fill_color": {}
+          }
+        ],
+        [
+          6,
+          {
+            "id": {
+              "id": "20432197-6bbd-4d97-ad84-16305defe528"
+            },
+            "values": {
+              "5": {
+                "y": 5,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "Python examples"
+                    }
+                  ]
+                }
+              },
+              "7": {
+                "y": 7,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "Make an API request"
+                    },
+                    {
+                      "type": "text",
+                      "value": "AAPL"
+                    },
+                    {
+                      "type": "text",
+                      "value": "Full Name"
+                    },
+                    {
+                      "type": "text",
+                      "value": "Apple Inc."
+                    }
+                  ]
+                }
+              },
+              "12": {
+                "y": 12,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "Use Python packages from PIP"
+                    },
+                    {
+                      "type": "text",
+                      "value": "Generate a fake person using the Python package Faker"
+                    },
+                    {
+                      "type": "text",
+                      "value": "Name"
+                    },
+                    {
+                      "type": "text",
+                      "value": "Samuel King"
+                    }
+                  ]
+                }
+              }
+            },
+            "spills": {},
+            "align": {},
+            "wrap": {},
+            "numeric_format": {},
+            "numeric_decimals": {},
+            "numeric_commas": {},
+            "bold": {
+              "5": {
+                "y": 5,
+                "content": {
+                  "value": true,
+                  "len": 1
+                }
+              },
+              "7": {
+                "y": 7,
+                "content": {
+                  "value": true,
+                  "len": 1
+                }
+              },
+              "12": {
+                "y": 12,
+                "content": {
+                  "value": true,
+                  "len": 1
+                }
+              }
+            },
+            "italic": {},
+            "text_color": {},
+            "fill_color": {
+              "8": {
+                "y": 8,
+                "content": {
+                  "value": "rgb(218, 240, 255)",
+                  "len": 1
+                }
+              }
+            }
+          }
+        ],
+        [
+          7,
+          {
+            "id": {
+              "id": "b26fd573-1581-4185-b503-f76168190730"
+            },
+            "values": {
+              "8": {
+                "y": 8,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "< - Try changing ticker"
+                    },
+                    {
+                      "type": "text",
+                      "value": "Revenue"
+                    },
+                    {
+                      "type": "text",
+                      "value": "$117,154,000,000"
+                    }
+                  ]
+                }
+              },
+              "14": {
+                "y": 14,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "Birthday"
+                    },
+                    {
+                      "type": "text",
+                      "value": "1969-01-14"
+                    }
+                  ]
+                }
+              }
+            },
+            "spills": {},
+            "align": {},
+            "wrap": {},
+            "numeric_format": {},
+            "numeric_decimals": {},
+            "numeric_commas": {},
+            "bold": {},
+            "italic": {},
+            "text_color": {},
+            "fill_color": {}
+          }
+        ],
+        [
+          8,
+          {
+            "id": {
+              "id": "69bdc32d-0de3-49c0-bd31-32f12bac4934"
+            },
+            "values": {
+              "9": {
+                "y": 9,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "Market Cap"
+                    },
+                    {
+                      "type": "text",
+                      "value": "$2.49e+12"
+                    }
+                  ]
+                }
+              },
+              "14": {
+                "y": 14,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "SSN"
+                    },
+                    {
+                      "type": "text",
+                      "value": "525-35-3815"
+                    }
+                  ]
+                }
+              }
+            },
+            "spills": {},
+            "align": {},
+            "wrap": {},
+            "numeric_format": {},
+            "numeric_decimals": {},
+            "numeric_commas": {},
+            "bold": {},
+            "italic": {},
+            "text_color": {},
+            "fill_color": {}
+          }
+        ],
+        [
+          9,
+          {
+            "id": {
+              "id": "f080a975-694b-4df5-b0fe-0d8e557e70f3"
+            },
+            "values": {
+              "9": {
+                "y": 9,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "Multiple"
+                    },
+                    {
+                      "type": "number",
+                      "value": "21.26"
+                    }
+                  ]
+                }
+              },
+              "14": {
+                "y": 14,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "Phone"
+                    },
+                    {
+                      "type": "text",
+                      "value": "950.549.2928x"
+                    }
+                  ]
+                }
+              }
+            },
+            "spills": {},
+            "align": {},
+            "wrap": {},
+            "numeric_format": {},
+            "numeric_decimals": {},
+            "numeric_commas": {},
+            "bold": {},
+            "italic": {},
+            "text_color": {},
+            "fill_color": {}
+          }
+        ],
+        [
+          10,
+          {
+            "id": {
+              "id": "7bd7205e-b8da-48ff-a787-3de820dc6e04"
+            },
+            "values": {
+              "14": {
+                "y": 14,
+                "content": {
+                  "Values": [
+                    {
+                      "type": "text",
+                      "value": "Address"
+                    },
+                    {
+                      "type": "text",
+                      "value": "975 Cynthia Turnpike\nNew John, GA 73140"
+                    }
+                  ]
+                }
+              }
+            },
+            "spills": {},
+            "align": {},
+            "wrap": {},
+            "numeric_format": {},
+            "numeric_decimals": {},
+            "numeric_commas": {},
+            "bold": {},
+            "italic": {},
+            "text_color": {},
+            "fill_color": {}
+          }
+        ],
+        [
+          11,
+          {
+            "id": {
+              "id": "0ccd6479-59ce-413f-b4c7-b6b613c61c69"
+            },
+            "values": {},
+            "spills": {},
+            "align": {},
+            "wrap": {},
+            "numeric_format": {},
+            "numeric_decimals": {},
+            "numeric_commas": {},
+            "bold": {},
+            "italic": {},
+            "text_color": {},
+            "fill_color": {}
+          }
+        ],
+        [
+          12,
+          {
+            "id": {
+              "id": "5547631f-b7e9-44ff-9c6b-46f5d15b3160"
+            },
+            "values": {},
+            "spills": {},
+            "align": {},
+            "wrap": {},
+            "numeric_format": {},
+            "numeric_decimals": {},
+            "numeric_commas": {},
+            "bold": {},
+            "italic": {},
+            "text_color": {},
+            "fill_color": {}
+          }
+        ],
+        [
+          13,
+          {
+            "id": {
+              "id": "7198686a-c4f3-43a2-b47a-82458ee5e9b5"
+            },
+            "values": {},
+            "spills": {},
+            "align": {},
+            "wrap": {},
+            "numeric_format": {},
+            "numeric_decimals": {},
+            "numeric_commas": {},
+            "bold": {},
+            "italic": {},
+            "text_color": {},
+            "fill_color": {}
+          }
+        ]
+      ],
+      "rows": [
+        [
+          0,
+          {
+            "id": "c7349336-d7f9-4d4b-9250-6a8274a4a684"
+          }
+        ],
+        [
+          1,
+          {
+            "id": "2faaa55c-9822-4765-a486-f8d3c5aa0bce"
+          }
+        ],
+        [
+          2,
+          {
+            "id": "58b11d3f-5af7-4cfb-a690-02e4e40de529"
+          }
+        ],
+        [
+          3,
+          {
+            "id": "5d56a99f-0963-471b-8181-4efe967b6c79"
+          }
+        ],
+        [
+          4,
+          {
+            "id": "b648ef13-a385-4962-be42-e0f7f81a32dc"
+          }
+        ],
+        [
+          5,
+          {
+            "id": "e74554ea-b4d2-4be8-a6db-5134924835b8"
+          }
+        ],
+        [
+          6,
+          {
+            "id": "2507a6de-0ed9-4041-b550-9baed3c8e22d"
+          }
+        ],
+        [
+          7,
+          {
+            "id": "4f2dfd78-ff94-45ac-94b4-e174e1aecfc4"
+          }
+        ],
+        [
+          8,
+          {
+            "id": "2eaa9a2f-24cd-4845-919d-f37dd968e94e"
+          }
+        ],
+        [
+          9,
+          {
+            "id": "e7dfe109-0660-4eda-bc33-742e423ffa9d"
+          }
+        ],
+        [
+          10,
+          {
+            "id": "783b06ab-91f0-4127-8d44-dbeda9bc558b"
+          }
+        ],
+        [
+          11,
+          {
+            "id": "de33e184-72f2-45b7-b8f1-b45475af9d30"
+          }
+        ],
+        [
+          12,
+          {
+            "id": "6b36ce68-c538-4b0e-b54d-1eeb99a592ac"
+          }
+        ],
+        [
+          13,
+          {
+            "id": "896ffd5f-727e-4446-96e6-d87433b0e44c"
+          }
+        ],
+        [
+          14,
+          {
+            "id": "877003c2-279a-4340-9ca3-ad927b97606a"
+          }
+        ],
+        [
+          15,
+          {
+            "id": "6d9802b7-8853-40de-aed5-c366749e3616"
+          }
+        ],
+        [
+          16,
+          {
+            "id": "4b88e6da-f048-4400-906c-c364ceac39cf"
+          }
+        ],
+        [
+          17,
+          {
+            "id": "2e566aab-a1c8-4201-9d95-14c72b0c7c94"
+          }
+        ],
+        [
+          18,
+          {
+            "id": "44b560bf-8e69-4c85-b5eb-48db0a08a3aa"
+          }
+        ],
+        [
+          19,
+          {
+            "id": "120f4588-5471-44f1-933b-4b05cca50481"
+          }
+        ]
+      ],
+      "borders": {},
+      "code_cells": []
+    }
+  ],
+  "dependencies": []
+}

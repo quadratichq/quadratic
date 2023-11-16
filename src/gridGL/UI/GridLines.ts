@@ -15,7 +15,7 @@ export class GridLines extends Graphics {
     this.dirty = true;
   }
 
-  update() {
+  update(bounds = pixiApp.viewport.getVisibleBounds(), scale = pixiApp.viewport.scale.x) {
     if (this.dirty) {
       this.dirty = false;
       this.clear();
@@ -26,7 +26,7 @@ export class GridLines extends Graphics {
         return;
       }
 
-      const gridAlpha = calculateAlphaForGridLines(pixiApp.viewport);
+      const gridAlpha = calculateAlphaForGridLines(scale);
       if (gridAlpha === 0) {
         this.alpha = 0;
         this.visible = false;
@@ -37,7 +37,6 @@ export class GridLines extends Graphics {
       this.visible = true;
 
       this.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
-      const bounds = pixiApp.viewport.getVisibleBounds();
       this.drawVerticalLines(bounds);
       this.drawHorizontalLines(bounds);
     }

@@ -3,26 +3,27 @@ import { v4 as uuid } from 'uuid';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { downloadFileInBrowser } from '../helpers/downloadFileInBrowser';
-import { GridFile, GridFileSchema } from '../schemas';
 import { generateKeyBetween } from '../utils/fractionalIndexing';
 import { fetchFromApi } from './fetchFromApi';
 import { ApiSchemas, ApiTypes } from './types';
 
-const DEFAULT_FILE: GridFile = {
+const DEFAULT_FILE: any = {
   sheets: [
     {
       name: 'Sheet 1',
-      id: uuid(),
+      id: { id: uuid() },
       order: generateKeyBetween(null, null),
       cells: [],
+      code_cells: [],
       formats: [],
       columns: [],
       rows: [],
-      borders: [],
+      offsets: [[], []],
+      borders: {},
     },
   ],
-  cell_dependency: '{}',
-  version: GridFileSchema.shape.version.value,
+  // TODO(ddimaria): make this dynamic
+  version: '1.4',
 };
 
 export const apiClient = {
@@ -81,17 +82,17 @@ export const apiClient = {
     );
   },
 
-  async updateFilePreview(uuid: string, preview: Blob) {
+  async updateFileThumbnail(uuid: string, thumbnail: Blob) {
     const formData = new FormData();
-    formData.append('preview', preview, 'preview.png');
+    formData.append('thumbnail', thumbnail, 'thumbnail.png');
 
-    return fetchFromApi<ApiTypes['/v0/files/:uuid/preview.POST.response']>(
-      `/v0/files/${uuid}/preview`,
+    return fetchFromApi<ApiTypes['/v0/files/:uuid/thumbnail.POST.response']>(
+      `/v0/files/${uuid}/thumbnail`,
       {
         method: 'POST',
         body: formData,
       },
-      ApiSchemas['/v0/files/:uuid/preview.POST.response']
+      ApiSchemas['/v0/files/:uuid/thumbnail.POST.response']
     );
   },
 
@@ -129,7 +130,7 @@ export const apiClient = {
       const message = 'VITE_QUADRATIC_API_URL env variable is not set.';
       Sentry.captureEvent({
         message,
-        level: Sentry.Severity.Fatal,
+        level: 'fatal',
       });
       throw new Error(message);
     }

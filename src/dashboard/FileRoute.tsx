@@ -1,3 +1,4 @@
+import { Button } from '@/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import {
@@ -18,7 +19,6 @@ import { grid } from '../grid/controller/Grid';
 import init, { hello } from '../quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '../schemas/compareVersions';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
-import { Button } from '../shadcn/ui/button';
 import QuadraticApp from '../ui/QuadraticApp';
 
 export type FileData = {
@@ -49,7 +49,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   if (!file) {
     Sentry.captureEvent({
       message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
-      level: Sentry.Severity.Critical,
+      level: 'error',
     });
     throw new Response('Invalid file that could not be upgraded.');
   }
@@ -59,6 +59,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   hello();
   grid.init();
   grid.openFromContents(file.contents);
+  grid.thumbnailDirty = !data.file.thumbnail;
 
   // If the file is newer than the app, do a (hard) reload.
   const fileVersion = file.version;
@@ -66,7 +67,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   if (compareVersions(fileVersion, gridVersion) === VersionComparisonResult.GreaterThan) {
     Sentry.captureEvent({
       message: `User opened a file at version ${fileVersion} but the app is at version ${gridVersion}. The app will automatically reload.`,
-      level: Sentry.Severity.Log,
+      level: 'log',
     });
     // @ts-expect-error hard reload via `true` only works in some browsers
     window.location.reload(true);

@@ -22,7 +22,7 @@ pub fn assert_cell_value(
     let cell_value = sheet
         .get_cell_value(Pos { x, y })
         .unwrap_or(CellValue::Blank);
-    let expected = if value == "" {
+    let expected = if value.is_empty() {
         CellValue::Blank
     } else {
         CellValue::to_cell_value(value)

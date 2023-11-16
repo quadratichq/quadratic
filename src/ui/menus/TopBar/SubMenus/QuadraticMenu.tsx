@@ -66,7 +66,7 @@ export const QuadraticMenu = () => {
       >
         {isViewerOrAbove(permission) && (
           <>
-            <MenuItem href={ROUTES.MY_FILES} style={{ textDecoration: 'none' }}>
+            <MenuItem href={ROUTES.FILES} style={{ textDecoration: 'none' }}>
               <MenuLineItem primary="Back to files" />
             </MenuItem>
             <MenuDivider />

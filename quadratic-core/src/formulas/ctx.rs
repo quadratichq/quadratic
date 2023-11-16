@@ -1,41 +1,9 @@
 use std::collections::HashSet;
 
-use futures::future::LocalBoxFuture;
 use smallvec::SmallVec;
 
 use super::*;
 use crate::{grid::Grid, Array, CellValue, CodeResult, ErrorMsg, SheetPos, Span, Spanned, Value};
-
-macro_rules! zip_map_impl {
-    ($arrays:ident.zip_map(|$args_buffer:ident| $eval_f:expr)) => {{
-        let size = Value::common_array_size($arrays)?;
-
-        let mut $args_buffer = Vec::with_capacity($arrays.into_iter().len());
-
-        // If the result is a single value, return that value instead of a 1x1
-        // array. This isn't just an optimization; it's important for Excel
-        // compatibility.
-        if size.len() == 1 {
-            for array in $arrays {
-                $args_buffer.push(array.cell_value()?);
-            }
-            return Ok(Value::Single($eval_f));
-        }
-
-        let mut values = SmallVec::with_capacity(size.len());
-        for (x, y) in size.iter() {
-            $args_buffer.clear();
-            for array in $arrays {
-                $args_buffer.push(array.get(x, y)?);
-            }
-
-            values.push($eval_f);
-        }
-
-        let result = Array::new_row_major(size, values)?;
-        Ok(Value::Array(result))
-    }};
-}
 
 /// Formula execution context.
 pub struct Ctx<'ctx> {
@@ -58,11 +26,7 @@ impl<'ctx> Ctx<'ctx> {
 
     /// Fetches the contents of the cell at `ref_pos` evaluated at `base_pos`,
     /// or returns an error in the case of a circular reference.
-    pub async fn get_cell(
-        &mut self,
-        ref_pos: &CellRef,
-        span: Span,
-    ) -> CodeResult<Spanned<CellValue>> {
+    pub fn get_cell(&mut self, ref_pos: &CellRef, span: Span) -> CodeResult<Spanned<CellValue>> {
         let sheet = match &ref_pos.sheet {
             Some(sheet_name) => self
                 .grid
@@ -80,19 +44,6 @@ impl<'ctx> Ctx<'ctx> {
 
         let value = sheet.get_cell_value(ref_pos).unwrap_or(CellValue::Blank);
         Ok(Spanned { inner: value, span })
-    }
-
-    /// Same as `zip_map()`, but the provided closure returns a
-    /// `LocalBoxFuture`.
-    pub async fn zip_map_async(
-        &mut self,
-        arrays: &[Spanned<Value>],
-        f: impl for<'a> Fn(
-            &'a mut Ctx<'_>,
-            &'a [Spanned<&'a CellValue>],
-        ) -> LocalBoxFuture<'a, CodeResult<CellValue>>,
-    ) -> CodeResult<Value> {
-        zip_map_impl!(arrays.zip_map(|args_buffer| f(self, &args_buffer).await?))
     }
 
     /// Evaluates a function once for each corresponding set of values from
@@ -114,6 +65,31 @@ impl<'ctx> Ctx<'ctx> {
     where
         I::IntoIter: ExactSizeIterator,
     {
-        zip_map_impl!(arrays.zip_map(|args_buffer| f(self, &args_buffer)?))
+        let size = Value::common_array_size(arrays)?;
+
+        let mut args_buffer = Vec::with_capacity(arrays.into_iter().len());
+
+        // If the result is a single value, return that value instead of a 1x1
+        // array. This isn't just an optimization; it's important for Excel
+        // compatibility.
+        if size.len() == 1 {
+            for array in arrays {
+                args_buffer.push(array.cell_value()?);
+            }
+            return Ok(Value::Single(f(self, &args_buffer)?));
+        }
+
+        let mut values = SmallVec::with_capacity(size.len());
+        for (x, y) in size.iter() {
+            args_buffer.clear();
+            for array in arrays {
+                args_buffer.push(array.get(x, y)?);
+            }
+
+            values.push(f(self, &args_buffer)?);
+        }
+
+        let result = Array::new_row_major(size, values)?;
+        Ok(Value::Array(result))
     }
 }

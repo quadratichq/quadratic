@@ -20,7 +20,7 @@ export class CellsSheetPreloader {
     this.cellsSheet = cellsSheet;
   }
 
-  // preloads one row of hashes per tick
+  // preloads hashes by creating labels, and then overflow clipping and updating buffers
   private preloadTick = (time?: number): void => {
     if (!this.hashesToCreate.length && !this.hashesToLoad.length) {
       if (!this.resolve) throw new Error('Expected resolveTick to be defined in preloadTick');
@@ -36,11 +36,11 @@ export class CellsSheetPreloader {
         hash.overflowClip();
         hash.updateBuffers(false);
       }
-      const now = performance.now();
-      if (now - time < MAXIMUM_FRAME_TIME) {
+      if (performance.now() - time < MAXIMUM_FRAME_TIME) {
         this.preloadTick(time);
       } else {
-        debugTimeCheck('preloadTick', MAXIMUM_FRAME_TIME);
+        // we expect this to run longer than MINIMUM_FRAME_TIME
+        debugTimeCheck('preloadTick', MAXIMUM_FRAME_TIME * 1.5);
         setTimeout(this.preloadTick);
       }
     }

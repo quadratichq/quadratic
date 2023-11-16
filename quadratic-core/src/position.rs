@@ -43,7 +43,7 @@ impl Pos {
         if self.y < 0 {
             format!("{col}n{}", -self.y)
         } else {
-            format!("{col}{}", self.y.to_string())
+            format!("{col}{}", self.y)
         }
     }
 
@@ -129,6 +129,14 @@ impl Rect {
     /// Returns whether a position is contained within the rectangle.
     pub fn contains(self, pos: Pos) -> bool {
         self.x_range().contains(&pos.x) && self.y_range().contains(&pos.y)
+    }
+
+    /// Returns whether a rectangle intersects with the rectangle.
+    pub fn intersects(self, other: Rect) -> bool {
+        !(other.max.x < self.min.x
+            || other.min.x > self.max.x
+            || other.max.y < self.min.y
+            || other.min.y > self.max.y)
     }
 
     /// Returns the range of X values in the rectangle.

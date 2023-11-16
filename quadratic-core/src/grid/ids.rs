@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::str::FromStr;
 
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 #[cfg(feature = "js")]
@@ -26,11 +27,11 @@ macro_rules! uuid_wrapper_struct {
         }
 
         impl FromStr for $name {
-            type Err = String;
+            type Err = anyhow::Error;
 
-            fn from_str(s: &str) -> Result<Self, String> {
+            fn from_str(s: &str) -> Result<Self> {
                 let id = Uuid::parse_str(s);
-                Ok($name { id: id.unwrap() })
+                Ok($name { id: id? })
             }
         }
 
@@ -53,6 +54,11 @@ pub struct CellRef {
     pub column: ColumnId,
     pub row: RowId,
 }
+impl Display for CellRef {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, {}, {}", self.sheet, self.column, self.row)
+    }
+}
 
 /// Reference to a set of cells which stays the same, even as columns and rows
 /// move around. It typically is constructed as a rectangle, but if columns and
@@ -72,6 +78,7 @@ impl From<CellRef> for RegionRef {
         }
     }
 }
+
 impl RegionRef {
     /// Iterates over cells in row-major order.
     pub fn iter(&self) -> impl '_ + Iterator<Item = CellRef> {

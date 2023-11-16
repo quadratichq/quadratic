@@ -6,7 +6,7 @@ use crate::grid::borders::style::BorderStyle;
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "lowercase")]
 #[repr(u8)]
-pub(super) enum CellSide {
+pub enum CellSide {
     Left = 0,
     Top = 1,
     Right = 2,
@@ -14,13 +14,12 @@ pub(super) enum CellSide {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Default, Copy)]
-pub(super) struct CellBorders {
-    borders: [Option<BorderStyle>; 4],
+pub struct CellBorders {
+    pub borders: [Option<BorderStyle>; 4],
 }
 
 impl CellBorders {
-    #[cfg(test)]
-    pub(super) fn new(borders: &[(CellSide, BorderStyle)]) -> Self {
+    pub fn new(borders: &[(CellSide, BorderStyle)]) -> Self {
         let mut as_array = [None; 4];
         for (side, style) in borders {
             as_array[*side as usize] = Some(*style);
@@ -50,7 +49,7 @@ impl CellBorders {
     }
 
     fn with_side(&self, side: CellSide, style: Option<BorderStyle>) -> Self {
-        let mut cloned = self.clone();
+        let mut cloned = *self;
         cloned.borders[side as usize] = style;
         cloned
     }

@@ -75,7 +75,10 @@ export class CellsSheets extends Container<CellsSheet> {
     }
     for (const child of this.children) {
       if (this.current !== child) {
-        if (child.update()) return;
+        if (child.update()) {
+          pixiApp.setViewportDirty();
+          return;
+        }
       }
     }
   }
@@ -135,5 +138,11 @@ export class CellsSheets extends Container<CellsSheet> {
         cellsSheet.createBorders();
       }
     });
+  }
+
+  showLabel(x: number, y: number, sheetId: string, show: boolean) {
+    const cellsSheet = this.getById(sheetId);
+    if (!cellsSheet) throw new Error('Expected to find cellsSheet in showLabel');
+    cellsSheet.showLabel(x, y, show);
   }
 }

@@ -61,6 +61,7 @@ pub struct JsRenderFill {
     pub color: String,
 }
 
+#[derive(Debug, PartialEq)]
 #[wasm_bindgen]
 pub struct JsRenderBorders {
     horizontal: Vec<JsRenderBorder>,
@@ -77,6 +78,12 @@ impl JsRenderBorders {
             index_horizontal: 0,
             index_vertical: 0,
         }
+    }
+    pub fn get_horizontal(&self) -> &[JsRenderBorder] {
+        &self.horizontal
+    }
+    pub fn get_vertical(&self) -> &[JsRenderBorder] {
+        &self.vertical
     }
 }
 #[wasm_bindgen]

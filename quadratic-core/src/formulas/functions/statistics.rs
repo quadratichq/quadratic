@@ -29,7 +29,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 "AVERAGEIF(A1:A10, \">0\")",
                 "AVERAGEIF(A1:A10, \"<>INVALID\", B1:B10)"
             )]
-            #[pure_zip_map]
+            #[zip_map]
             fn AVERAGEIF(
                 span: Span,
                 eval_range: (Spanned<Array>),
@@ -77,7 +77,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 "COUNTIF(A1:A10, \">0\")",
                 "COUNTIF(A1:A10, \"<>INVALID\")"
             )]
-            #[pure_zip_map]
+            #[zip_map]
             fn COUNTIF(range: (Spanned<Array>), [criteria]: (Spanned<CellValue>)) {
                 let criteria = Criterion::try_from(*criteria)?;
                 // Ignore error values.
@@ -250,7 +250,7 @@ mod tests {
         for y in 0..=10 {
             sheet.set_cell_value(Pos { x: 1, y }, y);
         }
-        assert_eq!("6", eval_to_string(&g, "COUNTIF(Bn5:B10, \"<=5\")"))
+        assert_eq!("6", eval_to_string(&g, "COUNTIF(Bn5:B10, \"<=5\")"));
     }
 
     #[test]

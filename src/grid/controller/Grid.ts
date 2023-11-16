@@ -34,6 +34,7 @@ import {
 } from '../../quadratic-core/types';
 import { GridFile } from '../../schemas';
 import { SheetCursorSave } from '../sheet/SheetCursor';
+import { GridPerformanceProxy } from './GridPerformanceProxy';
 import { sheets } from './Sheets';
 
 const rectangleToRect = (rectangle: Rectangle): RectInternal => {
@@ -42,6 +43,10 @@ const rectangleToRect = (rectangle: Rectangle): RectInternal => {
 
 export const pointsToRect = (x: number, y: number, width: number, height: number): RectInternal => {
   return new RectInternal(new Pos(x, y), new Pos(x + width, y + height));
+};
+
+export const posToRect = (x: number, y: number): RectInternal => {
+  return new RectInternal(new Pos(x, y), new Pos(x, y));
 };
 
 export const rectToRectangle = (rect: Rect): Rectangle => {
@@ -83,7 +88,6 @@ export class Grid {
   private _dirty = false;
   thumbnailDirty = false;
 
-  // todo: move thumbnailDirty code to Rust
   transactionResponse(summary: TransactionSummary) {
     if (summary.sheet_list_modified) {
       sheets.repopulate();
@@ -91,26 +95,14 @@ export class Grid {
 
     if (summary.cell_sheets_modified.length) {
       pixiApp.cellsSheets.modified(summary.cell_sheets_modified);
-
-      // thumbnail dirty setting is in CellsSheets.ts#modified
     }
 
     if (summary.fill_sheets_modified.length) {
       pixiApp.cellsSheets.updateFills(summary.fill_sheets_modified);
-
-      // todo: can make this trigger less often with more work
-      if (summary.fill_sheets_modified.find((sheetId) => sheetId.id === sheets.getFirst().id)) {
-        this.thumbnailDirty = true;
-      }
     }
 
     if (summary.offsets_modified.length) {
       sheets.updateOffsets(summary.offsets_modified);
-
-      // todo: can make this trigger less often with more work
-      if (summary.offsets_modified.find((sheetId) => sheetId.id === sheets.getFirst().id)) {
-        this.thumbnailDirty = true;
-      }
     }
 
     if (summary.code_cells_modified.length) {
@@ -119,11 +111,14 @@ export class Grid {
 
     if (summary.border_sheets_modified.length) {
       pixiApp.cellsSheets.updateBorders(summary.border_sheets_modified);
+    }
 
-      // todo: can make this trigger less often with more work
-      if (summary.border_sheets_modified.find((sheetId) => sheetId.id === sheets.getFirst().id)) {
-        this.thumbnailDirty = true;
-      }
+    if (summary.transaction_busy) {
+      window.dispatchEvent(new CustomEvent('transaction-busy'));
+    }
+
+    if (summary.generate_thumbnail) {
+      this.thumbnailDirty = true;
     }
 
     const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
@@ -133,6 +128,7 @@ export class Grid {
     }
     if (summary.save) {
       this.dirty = true;
+      window.dispatchEvent(new CustomEvent('transaction-complete'));
     }
     pixiApp.setViewportDirty();
   }
@@ -306,6 +302,25 @@ export class Grid {
     this.transactionResponse(summary);
   }
 
+  setCellExponential(sheetId: string, rectangle: Rectangle) {
+    const summary = this.gridController.setCellExponential(
+      sheetId,
+      rectangleToRect(rectangle),
+      sheets.getCursorPosition()
+    );
+    this.transactionResponse(summary);
+  }
+
+  toggleCommas(sheetId: string, source: Pos, rectangle: Rectangle) {
+    const summary = this.gridController.toggleCommas(
+      sheetId,
+      source,
+      rectangleToRect(rectangle),
+      sheets.getCursorPosition()
+    );
+    this.transactionResponse(summary);
+  }
+
   removeCellNumericFormat(sheetId: string, rectangle: Rectangle) {
     const summary = this.gridController.removeCellNumericFormat(
       sheetId,
@@ -398,9 +413,7 @@ export class Grid {
   }
 
   cellHasContent(sheetId: string, column: number, row: number): boolean {
-    const data = this.gridController.getRenderCells(sheetId, rectangleToRect(new Rectangle(column, row, 0, 0)));
-    const results = JSON.parse(data);
-    return results.length ? !!results[0].value : false;
+    return this.gridController.hasRenderCells(sheetId, posToRect(column, row));
   }
 
   getRenderCells(sheetId: string, rectangle: Rectangle): JsRenderCell[] {
@@ -682,7 +695,7 @@ export class Grid {
 
 //#end
 
-export const grid = new Grid();
+export const grid = GridPerformanceProxy(new Grid());
 
 // workaround so Rust can import TS functions
 declare global {

@@ -1,22 +1,21 @@
-import { Box, Stack, useTheme } from '@mui/material';
-import { DotsVerticalIcon, Share2Icon, TrashIcon } from '@radix-ui/react-icons';
-import React, { useEffect, useState } from 'react';
-import { Link, SubmitOptions, useFetcher } from 'react-router-dom';
-import { deleteFile, downloadFile, duplicateFile, renameFile as renameFileAction } from '../../actions';
-import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
-import { FILE_AND_TEAM_NAME_MAX_LENGTH } from '../../constants/appConstants';
-import { ROUTES } from '../../constants/routes';
-import { Button as Btn, Button } from '../../shadcn/ui/button';
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../shadcn/ui/dialog';
+import { Button as Btn, Button } from '@/shadcn/ui/button';
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '../../shadcn/ui/dropdown-menu';
-import { Input } from '../../shadcn/ui/input';
-import { Separator } from '../../shadcn/ui/separator';
+} from '@/shadcn/ui/dropdown-menu';
+import { Input } from '@/shadcn/ui/input';
+import { Separator } from '@/shadcn/ui/separator';
+import { cn } from '@/shadcn/utils';
+import { DotsVerticalIcon } from '@radix-ui/react-icons';
+import React, { useEffect, useState } from 'react';
+import { Link, SubmitOptions, useFetcher } from 'react-router-dom';
+import { deleteFile, downloadFile, duplicateFile, renameFile as renameFileAction } from '../../actions';
+import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
+import { ROUTES } from '../../constants/routes';
 import { Action, FilesListFile } from './FilesList';
 import { FilesListItemCore } from './FilesListItemCore';
 import { Layout, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
@@ -24,9 +23,9 @@ import { Layout, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
 export function FilesListItems({ children, viewPreferences }: any) {
   return (
     <ul
-      className={`${
-        viewPreferences.layout === Layout.Grid ? 'grid grid-cols-[repeat(auto-fill,minmax(272px,1fr))] gap-4 pb-2' : ''
-      }`}
+      className={cn(
+        viewPreferences.layout === Layout.Grid && 'grid grid-cols-[repeat(auto-fill,minmax(272px,1fr))] gap-4 pb-2'
+      )}
     >
       {children}
     </ul>
@@ -38,26 +37,24 @@ export function FileListItem({
   filterValue,
   activeShareMenuFileId,
   setActiveShareMenuFileId,
+  lazyLoad,
   viewPreferences,
 }: {
   file: FilesListFile;
   filterValue: string;
   activeShareMenuFileId: string;
   setActiveShareMenuFileId: Function;
+  lazyLoad: boolean;
   viewPreferences: ViewPreferences;
 }) {
-  const theme = useTheme();
   const fetcherDelete = useFetcher();
   const fetcherDownload = useFetcher();
   const fetcherDuplicate = useFetcher();
   const fetcherRename = useFetcher();
   const { addGlobalSnackbar } = useGlobalSnackbar();
-
   const [open, setOpen] = useState<boolean>(false);
 
-  // const isDesktop = useMediaQuery(theme.breakpoints.up('lg'));
-
-  const { uuid, name, created_date, updated_date, public_link_access, preview } = file;
+  const { uuid, name, created_date, updated_date, public_link_access, thumbnail } = file;
 
   const fetcherSubmitOpts: SubmitOptions = {
     method: 'POST',
@@ -113,7 +110,7 @@ export function FileListItem({
         uuid: 'duplicate-' + date,
         public_link_access: 'NOT_SHARED',
         name: name + ' (Copy)',
-        preview: null, // TODO: duplicate preview
+        thumbnail: null,
         updated_date: date,
         created_date: date,
       },
@@ -121,70 +118,59 @@ export function FileListItem({
     fetcherDuplicate.submit(data, fetcherSubmitOpts);
   };
 
-  // const handleRename = () => {
-  //   setIsRenaming(true);
-  // };
-
   const handleShare = () => {
     setActiveShareMenuFileId(uuid);
   };
 
   const displayName = fetcherRename.json ? (fetcherRename.json as Action['request.rename']).name : name;
-  const displayDescription =
-    viewPreferences.sort === Sort.Created ? `Created ${timeAgo(created_date)}` : `Modified ${timeAgo(updated_date)}`;
-  const hasNetworkError = Boolean(failedToDelete || failedToRename);
-  const isDisabled = uuid.startsWith('duplicate-'); // || isRenaming;
-  const isShared = public_link_access !== 'NOT_SHARED';
-  const to = ROUTES.FILE(uuid);
-
-  const MoreButton = (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Btn variant="ghost" size="icon">
-          <DotsVerticalIcon className="h-4 w-4" />
-        </Btn>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-48">
-        <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>
-        <DropdownMenuItem onClick={handleDuplicate}>{duplicateFile.label}</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>
-        <DropdownMenuItem onClick={handleDownload}>{downloadFile.label}</DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleDelete}>{deleteFile.label}</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+  const isDisabled = uuid.startsWith('duplicate-');
 
   const sharedProps = {
     key: uuid,
     filterValue,
     name: displayName,
-    description: displayDescription,
-    hasNetworkError: hasNetworkError,
-    isShared,
-
-    renameFile,
+    description:
+      viewPreferences.sort === Sort.Created ? `Created ${timeAgo(created_date)}` : `Modified ${timeAgo(updated_date)}`,
+    hasNetworkError: Boolean(failedToDelete || failedToRename),
+    isShared: public_link_access !== 'NOT_SHARED',
     viewPreferences,
+    actions: (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Btn variant="ghost" size="icon" className="flex-shrink-0 hover:bg-background">
+            <DotsVerticalIcon className="h-4 w-4" />
+          </Btn>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-48">
+          <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleDuplicate}>{duplicateFile.label}</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleDownload}>{downloadFile.label}</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleDelete}>{deleteFile.label}</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ),
   };
 
   return (
     <li>
-      {/*viewPreferences.layout === Layout.List && <Separator />*/}
       <Link
         key={uuid}
-        to={to}
+        to={ROUTES.FILE(uuid)}
         reloadDocument
-        style={{
-          textDecoration: 'none',
-          color: 'inherit',
-          ...(isDisabled ? { pointerEvents: 'none', opacity: 0.5 } : {}),
-        }}
+        className={cn(`text-inherit no-underline`, isDisabled && `pointer-events-none opacity-50`)}
       >
         {viewPreferences.layout === Layout.Grid ? (
-          <div className="border border-border hover:border-primary">
-            <div className="flex aspect-video items-center justify-center">
-              {preview ? (
-                <img src={preview} alt="Thumbnail" className="object-cover" />
+          <div className="border border-border p-2 lg:hover:bg-accent">
+            <div className="flex aspect-video items-center justify-center bg-background">
+              {thumbnail ? (
+                <img
+                  loading={lazyLoad ? 'lazy' : 'eager'}
+                  src={thumbnail}
+                  alt="File thumbnail screenshot"
+                  className="object-cover"
+                />
               ) : (
                 <div className="flex items-center justify-center">
                   <img
@@ -197,29 +183,24 @@ export function FileListItem({
                 </div>
               )}
             </div>
-            <Separator />
-            <div className="p-2">
-              <FilesListItemCore {...sharedProps} actions={MoreButton} />
+            <Separator className="border-accent" />
+            <div className="pt-2">
+              <FilesListItemCore {...sharedProps} />
             </div>
           </div>
         ) : (
-          <div
-            className={`flex flex-row items-center gap-2 border border-transparent py-2 hover:border-primary lg:px-2`}
-            // sx={{
-            //   // px: theme.spacing(1),
-            //   // py: theme.spacing(1),
-            //   [theme.breakpoints.down('md')]: {
-            //     px: 0,
-            //   },
-            //   // '&:hover': { backgroundColor: theme.palette.action.hover },
-            //   // '&:hover .additional-icons': { display: isDesktop ? 'block' : 'none' },
-            // }}
-          >
+          <div className={`flex flex-row items-center gap-4 py-2 lg:px-2 lg:hover:bg-accent`}>
             <div className={`hidden border border-border shadow-sm md:block`}>
-              {preview ? (
-                <img src={preview} alt="File thumbnail preview" className={`aspect-video object-fill`} width="80" />
+              {thumbnail ? (
+                <img
+                  loading={lazyLoad ? 'lazy' : 'eager'}
+                  src={thumbnail}
+                  alt="File thumbnail screenshot"
+                  className={`aspect-video object-fill`}
+                  width="80"
+                />
               ) : (
-                <div className="flex aspect-video w-20 items-center justify-center">
+                <div className="flex aspect-video w-20 items-center justify-center bg-background">
                   <img
                     src={'/favicon.ico'}
                     alt="File thumbnail placeholder"
@@ -231,37 +212,7 @@ export function FileListItem({
               )}
             </div>
             <div className="flex-grow">
-              <FilesListItemCore
-                {...sharedProps}
-                actions={
-                  <Stack gap={theme.spacing(1)} alignItems="center" direction="row">
-                    <Box className="additional-icons" sx={{ display: 'none' }}>
-                      <Btn
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                          e.preventDefault();
-                          handleShare();
-                        }}
-                      >
-                        <Share2Icon className="h-4 w-4" />
-                      </Btn>
-                      <Btn
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                          e.preventDefault();
-                          handleDelete();
-                        }}
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </Btn>
-                    </Box>
-
-                    {MoreButton}
-                  </Stack>
-                }
-              />
+              <FilesListItemCore {...sharedProps} />
             </div>
           </div>
         )}
@@ -292,8 +243,8 @@ function RenameItemDialog({
   const [localValue, setLocalValue] = useState<string>(value);
 
   const count = localValue.length;
-  // TODO this needs to happen inside the app as well
-  const disabled = count === 0 || count > FILE_AND_TEAM_NAME_MAX_LENGTH;
+  // TODO: one day set a max length on file/team name
+  const disabled = count === 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -331,9 +282,9 @@ function RenameItemDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit} id={formId}>
           <Input id={inputId} value={localValue} autoComplete="off" onChange={handleInputChange} />
-          <p className={`text-right text-sm ${disabled ? 'text-destructive' : 'text-muted-foreground'}`}>
+          {/* <p className={`text-right text-sm ${disabled ? 'text-destructive' : 'text-muted-foreground'}`}>
             {count} / {FILE_AND_TEAM_NAME_MAX_LENGTH}
-          </p>
+          </p> */}
         </form>
         <DialogFooter>
           <DialogClose asChild>

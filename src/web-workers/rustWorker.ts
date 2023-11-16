@@ -6,7 +6,3 @@ export const runPython = (
 ): boolean => {
   return window.startPython(python_code, getCells);
 };
-
-export const transactionSummary = async (transactionSummary: any) => {
-  return window.transactionSummary(transactionSummary);
-};

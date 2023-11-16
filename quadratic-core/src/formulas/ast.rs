@@ -1,6 +1,5 @@
 use std::fmt;
 
-use futures::future::{FutureExt, LocalBoxFuture};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::smallvec;
@@ -99,18 +98,12 @@ impl Spanned<AstNodeContents> {
 impl Formula {
     /// Evaluates a formula.
     pub fn eval(&self, ctx: &mut Ctx<'_>) -> CodeResult<Value> {
-        pollster::block_on(self.ast.eval(ctx))?.into_non_error_value()
+        self.ast.eval(ctx)?.into_non_error_value()
     }
 }
 
 impl AstNode {
-    fn eval<'ctx: 'a, 'a>(&'a self, ctx: &'a mut Ctx<'ctx>) -> LocalBoxFuture<'a, CodeResult> {
-        // See this link for why we need to box here:
-        // https://rust-lang.github.io/async-book/07_workarounds/04_recursion.html
-        async move { self.eval_inner(ctx).await }.boxed_local()
-    }
-
-    async fn eval_inner<'ctx: 'a, 'a>(&'a self, ctx: &'a mut Ctx<'ctx>) -> CodeResult {
+    fn eval<'ctx: 'a, 'a>(&'a self, ctx: &'a mut Ctx<'ctx>) -> CodeResult {
         let value = match &self.inner {
             AstNodeContents::Empty => CellValue::Blank.into(),
 
@@ -153,7 +146,7 @@ impl AstNode {
                     cell_ref.y = CellRefCoord::Absolute(y);
                     for x in x1..=x2 {
                         cell_ref.x = CellRefCoord::Absolute(x);
-                        flat_array.push(ctx.get_cell(&cell_ref, self.span).await?.inner);
+                        flat_array.push(ctx.get_cell(&cell_ref, self.span)?.inner);
                     }
                 }
 
@@ -165,20 +158,20 @@ impl AstNode {
             AstNodeContents::FunctionCall { func, args } => {
                 let mut arg_values = vec![];
                 for arg in args {
-                    arg_values.push(arg.eval(&mut *ctx).await?);
+                    arg_values.push(arg.eval(&mut *ctx)?);
                 }
 
                 let func_name = &func.inner;
                 match functions::lookup_function(func_name) {
                     Some(f) => {
                         let args = FormulaFnArgs::new(arg_values, self.span, f.name);
-                        (f.eval)(&mut *ctx, args).await?
+                        (f.eval)(&mut *ctx, args)?
                     }
                     None => return Err(ErrorMsg::BadFunctionName.with_span(func.span)),
                 }
             }
 
-            AstNodeContents::Paren(expr) => expr.eval(ctx).await?.inner,
+            AstNodeContents::Paren(expr) => expr.eval(ctx)?.inner,
 
             AstNodeContents::Array(a) => {
                 let is_empty = a.iter().flatten().next().is_none();
@@ -194,7 +187,7 @@ impl AstNode {
                         return Err(ErrorMsg::NonRectangularArray.with_span(self.span));
                     }
                     for elem_expr in row {
-                        flat_array.push(elem_expr.eval(ctx).await?.into_cell_value()?.inner);
+                        flat_array.push(elem_expr.eval(ctx)?.into_cell_value()?.inner);
                     }
                 }
 
@@ -204,7 +197,7 @@ impl AstNode {
 
             // Single cell references return 1x1 arrays for Excel compatibility.
             AstNodeContents::CellRef(cell_ref) => {
-                Array::from(ctx.get_cell(cell_ref, self.span).await?.inner).into()
+                Array::from(ctx.get_cell(cell_ref, self.span)?.inner).into()
             }
 
             AstNodeContents::String(s) => Value::from(s.to_string()),

@@ -1,4 +1,4 @@
-import { File as DBFile, User as DBUser } from '@prisma/client';
+import { File, User } from '@prisma/client';
 import { Request as JWTRequest } from 'express-jwt';
 
 export interface UploadFile extends Express.Multer.File {
@@ -15,7 +15,7 @@ export interface Request extends JWTRequest {
   auth?: {
     sub: string;
   };
-  user?: DBUser;
-  document?: DBFile;
+  user?: User;
+  quadraticFile?: File;
   file?: UploadFile;
 }

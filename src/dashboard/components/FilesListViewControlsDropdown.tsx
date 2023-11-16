@@ -1,6 +1,4 @@
-import { ChevronDownIcon, DashboardIcon, DropdownMenuIcon, ListBulletIcon } from '@radix-ui/react-icons';
-import { Dispatch, SetStateAction } from 'react';
-import { Button } from '../../shadcn/ui/button';
+import { Button } from '@/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +7,10 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '../../shadcn/ui/dropdown-menu';
+} from '@/shadcn/ui/dropdown-menu';
+import { cn } from '@/shadcn/utils';
+import { ChevronDownIcon, DashboardIcon, DropdownMenuIcon, ListBulletIcon } from '@radix-ui/react-icons';
+import { Dispatch, SetStateAction } from 'react';
 
 export type ViewPreferences = {
   sort: Sort;
@@ -53,7 +54,6 @@ export function FileListViewControlsDropdown({
   };
 
   const sortButtonLabel = sortLabelsByValue[viewPreferences.sort];
-  const orderButtonLabel = orderOptionsByValue[viewPreferences.order];
 
   const sortOptionsMenu = (
     <DropdownMenuRadioGroup
@@ -113,22 +113,21 @@ export function FileListViewControlsDropdown({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="text-muted-foreground">
-              {orderButtonLabel} <ChevronDownIcon className="ml-1" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-52">{orderOptionsMenu}</DropdownMenuContent>
-        </DropdownMenu>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-muted-foreground">
               {sortButtonLabel} <ChevronDownIcon className="ml-1" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-52">{sortOptionsMenu}</DropdownMenuContent>
+          <DropdownMenuContent className="w-52">
+            <DropdownMenuLabel>Sort</DropdownMenuLabel>
+            {sortOptionsMenu}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Order</DropdownMenuLabel>
+            {orderOptionsMenu}
+          </DropdownMenuContent>
         </DropdownMenu>
+
         <div>
           <Button
-            className={`${viewPreferences.layout === Layout.Grid ? 'bg-accent' : ''} !opacity-100`}
+            className={cn(viewPreferences.layout === Layout.Grid && 'bg-accent', `!opacity-100`)}
             variant="ghost"
             size="icon"
             disabled={viewPreferences.layout === Layout.Grid}
@@ -137,7 +136,7 @@ export function FileListViewControlsDropdown({
             <DashboardIcon />
           </Button>
           <Button
-            className={`${viewPreferences.layout === Layout.List ? 'bg-accent' : ''} !opacity-100`}
+            className={cn(viewPreferences.layout === Layout.List && 'bg-accent', `!opacity-100`)}
             variant="ghost"
             size="icon"
             disabled={viewPreferences.layout === Layout.List}
@@ -169,16 +168,3 @@ export function FileListViewControlsDropdown({
     </>
   );
 }
-
-// function MenuItemChild({ label, isActive }: { label: string; isActive: boolean }) {
-//   return isActive ? (
-//     <>
-//       <ListItemIcon>
-//         <Check />
-//       </ListItemIcon>
-//       {label}
-//     </>
-//   ) : (
-//     <ListItemText inset>{label}</ListItemText>
-//   );
-// }

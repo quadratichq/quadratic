@@ -1,10 +1,10 @@
-use crate::grid::borders::{get_render_horizontal_borders, get_render_vertical_borders};
 use crate::{
     grid::{
+        borders::{get_render_horizontal_borders, get_render_vertical_borders},
         js_types::{
             JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill,
         },
-        CodeCellRunResult, NumericFormat, NumericFormatKind,
+        CellAlign, CodeCellRunResult, NumericFormat, NumericFormatKind,
     },
     CellValue, Pos, Rect,
 };
@@ -17,7 +17,6 @@ impl Sheet {
         self.columns.range(region.x_range()).any(|(_, column)| {
             column.values.has_blocks_in_range(region.y_range())
                 || column.spills.has_blocks_in_range(region.y_range())
-                || column.fill_color.has_blocks_in_range(region.y_range())
         })
     }
 
@@ -73,20 +72,6 @@ impl Sheet {
 
         itertools::chain(ordinary_cells, code_output_cells)
             .map(|(x, y, column, value, language)| {
-                let mut numeric_format: Option<NumericFormat> = None;
-                let mut numeric_decimals: Option<i16> = None;
-
-                // only get numeric_format only if it's a CellValue::Number (although it can exist for other types)
-                if value.type_name() == "number" {
-                    numeric_format = column.numeric_format.get(y);
-                    let is_percentage = if let Some(numeric_format) = numeric_format.clone() {
-                        numeric_format.kind == NumericFormatKind::Percentage
-                    } else {
-                        false
-                    };
-                    numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
-                }
-
                 if value.type_name() == "error" {
                     JsRenderCell {
                         x,
@@ -102,14 +87,33 @@ impl Sheet {
                         text_color: Some(String::from("red")),
                     }
                 } else {
+                    let mut numeric_format: Option<NumericFormat> = None;
+                    let mut numeric_decimals: Option<i16> = None;
+                    let mut numeric_commas: Option<bool> = None;
+                    let mut align: Option<CellAlign> = column.align.get(y);
+
+                    if value.type_name() == "number" {
+                        // get numeric_format and numeric_decimal to turn number into a string
+                        numeric_format = column.numeric_format.get(y);
+                        let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
+                            numeric_format.kind == NumericFormatKind::Percentage
+                        });
+                        numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
+                        numeric_commas = column.numeric_commas.get(y);
+
+                        // if align is not set, set it to right only for numbers
+                        if align.is_none() {
+                            align = Some(CellAlign::Right);
+                        }
+                    }
                     JsRenderCell {
                         x,
                         y,
 
-                        value: value.to_display(numeric_format, numeric_decimals),
+                        value: value.to_display(numeric_format, numeric_decimals, numeric_commas),
                         language,
 
-                        align: column.align.get(y),
+                        align,
                         wrap: column.wrap.get(y),
                         bold: column.bold.get(y),
                         italic: column.italic.get(y),

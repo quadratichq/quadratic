@@ -1,0 +1,60 @@
+{
+  "borders": [],
+  "cells": [
+    {
+      "x": 0,
+      "y": 0,
+      "type": "TEXT",
+      "value": "1",
+      "last_modified": "2023-10-25T00:24:55.893Z"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "type": "TEXT",
+      "value": "2",
+      "last_modified": "2023-10-25T00:24:57.825Z"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "type": "FORMULA",
+      "value": "3",
+      "formula_code": "SUM(A0:A1)",
+      "evaluation_result": {
+        "success": true,
+        "output_value": "3",
+        "cells_accessed": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "array_output": [],
+        "formatted_code": "SUM(A0:A1)",
+        "error_span": null
+      },
+      "array_cells": [],
+      "dependent_cells": [
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          0
+        ]
+      ],
+      "last_modified": "2023-10-25T00:25:09.459Z"
+    }
+  ],
+  "cell_dependency": "[{\"key\":\"0,1\",\"value\":[[0,2]]},{\"key\":\"0,0\",\"value\":[[0,2]]}]",
+  "columns": [],
+  "formats": [],
+  "rows": [],
+  "version": "1.3"
+}

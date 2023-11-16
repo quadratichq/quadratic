@@ -1,5 +1,7 @@
 import { FileIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
+import * as Sentry from '@sentry/react';
 import { useState } from 'react';
+import { isMobile } from 'react-device-detect';
 import { ActionFunctionArgs, useFetchers, useLocation } from 'react-router-dom';
 import { apiClient } from '../../api/apiClient';
 import { Empty } from '../../components/Empty';
@@ -46,7 +48,7 @@ export function FilesList({ files }: { files: FilesListFile[] }) {
     {
       sort: Sort.Updated,
       order: Order.Descending,
-      layout: Layout.Grid,
+      layout: isMobile ? Layout.List : Layout.Grid,
     }
   );
 
@@ -96,6 +98,7 @@ export function FilesList({ files }: { files: FilesListFile[] }) {
       <FilesListItems viewPreferences={viewPreferences}>
         {filesToRender.map((file, i) => (
           <FileListItem
+            lazyLoad={i > 12}
             key={file.uuid}
             file={file}
             filterValue={filterValue}
@@ -168,10 +171,30 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
       const {
         file: { name },
       } = json as Action['request.duplicate'];
+
+      // Get the file we want to duplicate
       const {
-        file: { contents, version },
+        file: { contents, version, thumbnail },
       } = await apiClient.getFile(uuid);
-      await apiClient.createFile({ name, version, contents });
+
+      // Create it on the server
+      const newFile = await apiClient.createFile({ name, version, contents });
+
+      // If present, fetch the thumbnail of the file we just dup'd and
+      // save it to the new file we just created
+      if (thumbnail) {
+        try {
+          const res = await fetch(thumbnail);
+          const blob = await res.blob();
+          await apiClient.updateFileThumbnail(newFile.uuid, blob);
+        } catch (err) {
+          // Not a huge deal if it failed, just tell Sentry and move on
+          Sentry.captureEvent({
+            message: 'Failed to duplicate the thumbnail image when duplicating a file',
+            level: 'info',
+          });
+        }
+      }
       return { ok: true };
     } catch (error) {
       return { ok: false };

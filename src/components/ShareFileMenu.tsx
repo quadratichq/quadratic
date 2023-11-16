@@ -96,7 +96,7 @@ export function ShareFileMenu({
       .catch((e) => {
         Sentry.captureEvent({
           message: 'Failed to copy share link to user’s clipboard.',
-          level: Sentry.Severity.Info,
+          level: 'info',
         });
         addGlobalSnackbar('Failed to copy link.', { severity: 'error' });
       });

@@ -13,7 +13,7 @@ pub fn get_render_vertical_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
                 y: block.start(),
                 w: None,
                 h: Some(block.len()),
-                style: block.content().value.clone(),
+                style: block.content().value,
             })
         })
         .collect()
@@ -31,7 +31,7 @@ pub fn get_render_horizontal_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
                 y: column_index,
                 w: Some(block.len()),
                 h: None,
-                style: block.content().value.clone(),
+                style: block.content().value,
             })
         })
         .collect()

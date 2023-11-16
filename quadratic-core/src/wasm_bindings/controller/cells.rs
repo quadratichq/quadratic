@@ -101,7 +101,7 @@ impl GridController {
     pub fn js_get_cell_edit(&self, sheet_id: String, pos: Pos) -> String {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let sheet = self.grid().sheet_from_id(sheet_id);
-        if let Some(value) = sheet.get_cell_value(pos) {
+        if let Some(value) = sheet.get_cell_value_only(pos) {
             value.to_edit()
         } else {
             String::from("")

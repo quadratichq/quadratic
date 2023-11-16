@@ -33,7 +33,8 @@ export const GridFileSchemaV1_0 = z.object({
       horizontal: BorderDirectionSchema.optional(),
       vertical: BorderDirectionSchema.optional(),
     })
-    .array(),
+    .array()
+    .optional(),
   cells: z
     .object({
       x: z.number(),
@@ -58,9 +59,10 @@ export const GridFileSchemaV1_0 = z.object({
       last_modified: z.string().optional(),
       python_code: z.string().optional(),
     })
-    .array(),
-  cell_dependency: z.string(),
-  columns: HeadingSchema.array(),
+    .array()
+    .optional(),
+  cell_dependency: z.string().optional(),
+  columns: HeadingSchema.array().optional(),
   formats: z
     .object({
       x: z.number(),
@@ -94,15 +96,17 @@ export const GridFileSchemaV1_0 = z.object({
         .optional(),
       wrapping: z.enum(['wrap', 'clip']).optional(), // default is overflow
     })
-    .array(),
+    .array()
+    .optional(),
   render_dependency: z
     .object({
       location: CoordinateSchema,
       needToRender: CoordinateSchema.array(), // these are cells that must be rendered when drawing this cell
       renderThisCell: CoordinateSchema.array(), // these are cells that render this cell when drawing
     })
-    .array(),
-  rows: HeadingSchema.array(),
+    .array()
+    .optional(),
+  rows: HeadingSchema.array().optional(),
   version: z.literal('1.0'),
 });
 export type GridFileV1_0 = z.infer<typeof GridFileSchemaV1_0>;

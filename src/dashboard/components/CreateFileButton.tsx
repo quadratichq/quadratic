@@ -1,10 +1,10 @@
+import { Button } from '@/shadcn/ui/button';
 import * as React from 'react';
 import { Link, useSubmit } from 'react-router-dom';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
-import { Button } from '../../shadcn/ui/button';
-import { CreateActionRequest } from '../files/CreateRoute';
+import { CreateActionRequest } from '../FilesCreateRoute';
 
 // TODO this will need props when it becomes a button that can be used
 // on the team page as well as the user's files page
@@ -41,7 +41,7 @@ export default function CreateFileButton() {
   return (
     <div className="flex gap-2">
       <Button asChild variant="outline">
-        <label>
+        <label className="cursor-pointer">
           Import file
           <input type="file" name="content" accept=".grid" onChange={handleImport} hidden />
         </label>

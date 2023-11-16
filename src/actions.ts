@@ -69,7 +69,7 @@ export const duplicateFile = {
   run({ name, submit }: { name: string; submit: SubmitFunction }) {
     let formData = new FormData();
     formData.append('name', name + ' (Copy)');
-    formData.append('contents', JSON.stringify(grid.export()));
+    formData.append('contents', grid.export());
     formData.append('version', grid.getVersion());
     submit(formData, { method: 'POST', action: ROUTES.CREATE_FILE });
   },
@@ -79,7 +79,7 @@ export const downloadFile = {
   label: 'Download local copy',
   isAvailable: isViewerOrAbove,
   run({ name }: { name: FileContextType['name'] }) {
-    downloadFileInBrowser(name, JSON.stringify(grid.export()));
+    downloadFileInBrowser(name, grid.export());
   },
 };
 

@@ -4,8 +4,8 @@ use bigdecimal::BigDecimal;
 
 use crate::{
     grid::{
-        generate_borders, BorderSelection, CodeCellLanguage, CodeCellValue, NumericFormat,
-        NumericFormatKind, RegionRef, SheetId,
+        generate_borders, BorderSelection, CodeCellLanguage, CodeCellValue, NumericDecimals,
+        NumericFormat, NumericFormatKind, RegionRef, SheetId,
     },
     Array, CellValue, Pos, Rect, RunLengthEncoding,
 };
@@ -43,6 +43,14 @@ impl GridController {
         let region = RegionRef::from(cell_ref);
         let mut ops = vec![];
 
+        // remove any code cell that was originally over the cell
+        if sheet.get_code_cell(pos).is_some() {
+            ops.push(Operation::SetCellCode {
+                cell_ref,
+                code_cell_value: None,
+            });
+        }
+
         // check for currency
         if let Some((currency, number)) = CellValue::unpack_currency(value) {
             ops.push(Operation::SetCellValues {
@@ -60,10 +68,14 @@ impl GridController {
                     1,
                 )),
             });
-            ops.push(Operation::SetCellFormats {
-                region,
-                attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
-            });
+
+            // only change decimal places if decimals have not been set
+            if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
+                ops.push(Operation::SetCellFormats {
+                    region,
+                    attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
+                });
+            }
         } else if let Ok(bd) = BigDecimal::from_str(value) {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
@@ -131,7 +143,17 @@ impl GridController {
     ) -> TransactionSummary {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
         let cell_ref = sheet.get_or_create_cell_ref(pos);
-        let ops = vec![Operation::SetCellCode {
+        let mut ops = vec![];
+
+        // remove any values that were originally over the code cell
+        if sheet.get_cell_value(pos).is_some() {
+            ops.push(Operation::SetCellValues {
+                region: RegionRef::from(cell_ref),
+                values: Array::from(CellValue::Blank),
+            });
+        }
+
+        ops.push(Operation::SetCellCode {
             cell_ref,
             code_cell_value: Some(CodeCellValue {
                 language,
@@ -142,7 +164,7 @@ impl GridController {
                 // todo
                 last_modified: String::default(),
             }),
-        }];
+        });
         self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
 
@@ -155,37 +177,34 @@ impl GridController {
     ) -> Vec<Operation> {
         let region = self.existing_region(sheet_id, rect);
         let mut ops = vec![];
-        match region.size() {
-            Some(size) => {
-                let values = Array::new_empty(size);
-                ops.push(Operation::SetCellValues { region, values });
+        if let Some(size) = region.size() {
+            let values = Array::new_empty(size);
+            ops.push(Operation::SetCellValues { region, values });
 
-                // need to walk through the region and delete code cells
-                let sheet = self.grid.sheet_from_id(sheet_id);
-                for x in rect.x_range() {
-                    let column = sheet.get_column(x);
-                    for y in rect.y_range() {
-                        // todo: good place to check for spills here
+            // need to walk through the region and delete code cells
+            let sheet = self.grid.sheet_from_id(sheet_id);
+            for x in rect.x_range() {
+                let column = sheet.get_column(x);
+                for y in rect.y_range() {
+                    // todo: good place to check for spills here
 
-                        // skip deleting the code cell if there is a value (since you have to delete that first)
-                        if column.is_some_and(|column| column.values.get(y).is_some()) {
-                            continue;
-                        } else {
-                            // delete code cell if it exists
-                            let pos = Pos { x, y };
-                            if let Some(_) = sheet.get_code_cell(pos) {
-                                if let Some(cell_ref) = sheet.try_get_cell_ref(pos) {
-                                    ops.push(Operation::SetCellCode {
-                                        cell_ref,
-                                        code_cell_value: None,
-                                    });
-                                };
-                            }
+                    // skip deleting the code cell if there is a value (since you have to delete that first)
+                    if column.is_some_and(|column| column.values.get(y).is_some()) {
+                        continue;
+                    } else {
+                        // delete code cell if it exists
+                        let pos = Pos { x, y };
+                        if sheet.get_code_cell(pos).is_some() {
+                            if let Some(cell_ref) = sheet.try_get_cell_ref(pos) {
+                                ops.push(Operation::SetCellCode {
+                                    cell_ref,
+                                    code_cell_value: None,
+                                });
+                            };
                         }
                     }
                 }
             }
-            None => (),
         };
         ops
     }
@@ -293,8 +312,11 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use crate::{controller::GridController, CellValue, Pos};
-    use std::str::FromStr;
+    use crate::{
+        controller::{transaction_summary::CellSheetsModified, GridController},
+        CellValue, Pos,
+    };
+    use std::{collections::HashSet, str::FromStr};
 
     use bigdecimal::BigDecimal;
 
@@ -305,46 +327,28 @@ mod test {
         let pos = Pos { x: 3, y: 6 };
         let get_the_cell =
             |g: &GridController| g.sheet(sheet_id).get_cell_value(pos).unwrap_or_default();
-        // let expected_cell_regions_modified = vec![(sheet_id, Rect::single_pos(pos))];
-
+        let mut cell_sheets_modified = HashSet::new();
+        cell_sheets_modified.insert(CellSheetsModified::new(sheet_id, pos));
         assert_eq!(get_the_cell(&g), CellValue::Blank);
         g.set_cell_value(sheet_id, pos, String::from("a"), None);
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
         g.set_cell_value(sheet_id, pos, String::from("b"), None);
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
-        // assert_eq!(
-        //     g.undo(None).unwrap().cell_regions_modified,
-        //     expected_cell_regions_modified
-        // );
-        // assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
-        // assert_eq!(
-        //     g.redo(None).unwrap().cell_regions_modified,
-        //     expected_cell_regions_modified
-        // );
-        // assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
-        // assert_eq!(
-        //     g.undo(None).unwrap().cell_regions_modified,
-        //     expected_cell_regions_modified
-        // );
-        // assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
-        // assert_eq!(
-        //     g.undo(None).unwrap().cell_regions_modified,
-        //     expected_cell_regions_modified
-        // );
-        // assert_eq!(get_the_cell(&g), CellValue::Blank);
-        // assert!(g.undo(None).is_none());
-        // assert_eq!(get_the_cell(&g), CellValue::Blank);
-        // assert_eq!(
-        //     g.redo(None).unwrap().cell_regions_modified,
-        //     expected_cell_regions_modified
-        // );
-        // assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
-        // assert_eq!(
-        //     g.redo(None).unwrap().cell_regions_modified,
-        //     expected_cell_regions_modified
-        // );
+        assert_eq!(g.undo(None).cell_sheets_modified, cell_sheets_modified);
+        assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
+        assert_eq!(g.redo(None).cell_sheets_modified, cell_sheets_modified);
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
-        // assert!(g.redo(None).is_none());
+        assert_eq!(g.undo(None).cell_sheets_modified, cell_sheets_modified);
+        assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
+        assert_eq!(g.undo(None).cell_sheets_modified, cell_sheets_modified);
+        assert_eq!(get_the_cell(&g), CellValue::Blank);
+        assert_eq!(g.undo(None).cell_sheets_modified, HashSet::default());
+        assert_eq!(get_the_cell(&g), CellValue::Blank);
+        assert_eq!(g.redo(None).cell_sheets_modified, cell_sheets_modified);
+        assert_eq!(get_the_cell(&g), CellValue::Text(String::from("a")));
+        assert_eq!(g.redo(None).cell_sheets_modified, cell_sheets_modified);
+        assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
+        assert_eq!(g.redo(None).cell_sheets_modified, HashSet::default());
         assert_eq!(get_the_cell(&g), CellValue::Text(String::from("b")));
     }
 

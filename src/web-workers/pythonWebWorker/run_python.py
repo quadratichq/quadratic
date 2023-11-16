@@ -55,8 +55,6 @@ def stack_line_number():
 
 class Cell:
     def __init__(self, object):
-        self.x = object.x
-        self.y = object.y
         self.value = object.value
 
     def __str__(self):
@@ -66,11 +64,11 @@ class Cell:
         return str(self.value)
 
     def __int__(self):
-        return int(self.value)
+        return int(self.value or 0)
 
     def __float__(self):
         self_only_num = "".join(_ for _ in str(self) if _ in "+-,.1234567890")
-        return float(self_only_num)
+        return float(self_only_num or 0)
 
     def generic_overload(self, other, op):
         if type(other) is Cell:
@@ -172,7 +170,7 @@ async def run_python(code):
         x_offset = p0[0]
         y_offset = p0[1]
         for cell in cells:
-            df.at[cell.y - y_offset, cell.x - x_offset] = cell.value
+            df.at[cell.y - y_offset, cell.x - x_offset] = Cell(cell)
 
         # Move the first row to the header
         if first_row_header:
@@ -295,7 +293,10 @@ async def run_python(code):
         # return array_output if output is an array
         array_output = None
         if isinstance(output_value, list):
-            array_output = output_value
+            if len(output_value) > 0:
+                array_output = output_value
+            else:
+                output_value = ''
 
         # Convert DF to array_output
         if isinstance(output_value, pd.DataFrame):
@@ -326,9 +327,9 @@ async def run_python(code):
         except Exception:
             pass
 
-        # removes output_value if there's an array
-        if array_output:
-            output_value = None
+        # removes output_value if there's an array or None
+        if array_output or output_value is None:
+            output_value = ""
 
         return {
             "output_value": str(output_value),
