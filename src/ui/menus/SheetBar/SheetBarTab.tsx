@@ -197,7 +197,7 @@ function TabName({
             } else {
               setNameExists(false);
               setIsRenaming(false);
-              sheets.sheet.name = value;
+              sheet.setName(value);
               grid.setSheetName(sheet.id, value);
             }
           }
@@ -232,7 +232,7 @@ function TabName({
           if (value.trim() === '') return false; // Don't allow empty names
           if (value !== sheet.name) {
             if (!sheets.nameExists(value)) {
-              sheets.sheet.name = value;
+              sheet.setName(value);
             } else {
               setNameExists(true);
               setTimeout(() => setNameExists(false), 1500);
