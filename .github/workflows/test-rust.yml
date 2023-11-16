@@ -10,7 +10,7 @@ on:
 
 jobs:
   test_rust:
-    runs-on: ubuntu-latest-64-cores
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
 
