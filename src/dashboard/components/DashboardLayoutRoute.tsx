@@ -36,7 +36,7 @@ export const Component = () => {
       </div>
       <div
         className={cn(
-          `h-full w-full px-4 pb-10 transition-opacity lg:px-10`,
+          `relative h-full w-full px-4 pb-10 transition-opacity lg:px-10`,
           isLoading ? 'overflow-hidden' : 'overflow-scroll',
           isLoading && 'pointer-events-none opacity-25'
         )}
