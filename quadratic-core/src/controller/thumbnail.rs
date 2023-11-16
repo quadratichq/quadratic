@@ -5,20 +5,16 @@ use crate::{
 
 use super::GridController;
 
-const THUMBNAIL_WIDTH: u32 = 1280u32;
-const THUMBNAIL_HEIGHT: u32 = THUMBNAIL_WIDTH / (16u32 / 9u32);
-
 impl GridController {
     /// whether the thumbnail needs to be updated for this region
     pub fn thumbnail_dirty_region(&self, region: RegionRef) -> bool {
+        if region.sheet != self.grid().first_sheet_id() {
+            return false;
+        }
         let sheet = self.sheet(region.sheet);
         region.iter().any(|cell_ref| {
             if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                if self.thumbnail_dirty_pos(region.sheet, pos) {
-                    true
-                } else {
-                    false
-                }
+                self.thumbnail_dirty_pos(region.sheet, pos)
             } else {
                 false
             }
@@ -36,28 +32,13 @@ impl GridController {
             return false;
         }
         let sheet = self.sheet(sheet_id);
-        let (cols, row) = sheet
-            .offsets
-            .visible_cols_rows(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
-        rect.intersects(Rect {
-            min: Pos { x: 0, y: 0 },
-            max: Pos {
-                x: cols as i64,
-                y: row as i64,
-            },
-        })
+        rect.intersects(sheet.offsets.thumbnail())
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        controller::{
-            thumbnail::{THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH},
-            GridController,
-        },
-        Pos, Rect,
-    };
+    use crate::{controller::GridController, Pos, Rect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH};
 
     #[test]
     fn test_thumbnail_dirty_pos() {

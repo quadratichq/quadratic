@@ -114,8 +114,9 @@ impl GridController {
                     summary.fill_sheets_modified.push(region.sheet);
                 }
 
-                summary.generate_thumbnail =
-                    summary.generate_thumbnail || self.thumbnail_dirty_region(region.clone());
+                // todo: this is too slow -- perhaps call this again when formats for autocomplete are improved
+                // summary.generate_thumbnail =
+                //     summary.generate_thumbnail || self.thumbnail_dirty_region(region.clone());
 
                 let old_attr = match attr {
                     CellFmtArray::Align(align) => {
