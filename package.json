@@ -97,7 +97,6 @@
     "test:e2e:debug": "playwright test --debug",
     "test:python": "python3 tests-python/test.py",
     "test:wasm": "cd quadratic-core && cargo test --workspace",
-    "eject": "craco eject",
     "dev": "concurrently \"BROWSER=none npm start\" \"electron .\"",
     "electron": "electron .",
     "lint:ts": "tsc --noemit",
@@ -110,20 +109,6 @@
     "coverage:wasm:view": "open quadratic-core/coverage/html/index.html",
     "api:start": "cd quadratic-api && npm start"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ],
-    "rules": {
-      "no-unused-vars": "off",
-      "@typescript-eslint/no-unused-vars": "error"
-    }
-  },
-  "eslintIgnore": [
-    "node_modules/*",
-    "src/quadratic-core/*"
-  ],
   "browserslist": {
     "production": [
       "defaults and supports es6-module"
@@ -135,7 +120,6 @@
     ]
   },
   "devDependencies": {
-    "@craco/craco": "^7.1.0",
     "@playwright/test": "^1.22.2",
     "@types/common-tags": "^1.8.1",
     "@types/lodash.debounce": "^4.0.7",
@@ -145,6 +129,8 @@
     "concurrently": "^6.5.1",
     "electron": "^23.0.0",
     "electron-is-dev": "^2.0.0",
+    "eslint": "^8.53.0",
+    "eslint-config-react-app": "^7.0.1",
     "fontkit": "^2.0.2",
     "fs-extra": "^11.1.0",
     "jest-environment-jsdom": "^29.7.0",

@@ -18,6 +18,14 @@ export default defineConfig(() => {
         '@': path.resolve(__dirname, './src'),
       },
     },
-    plugins: [react(), checker({ typescript: true })],
+    plugins: [
+      react(),
+      checker({
+        typescript: true,
+        eslint: {
+          lintCommand: 'eslint --ext .ts,.tsx src"',
+        },
+      }),
+    ],
   };
 });
