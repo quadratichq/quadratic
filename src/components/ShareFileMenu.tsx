@@ -73,7 +73,7 @@ export function ShareFileMenu({
   // On the initial mount, load the data
   useEffect(() => {
     if (fetcher.state === 'idle' && !fetcher.data) {
-      fetcher.load(`/api/files/${uuid}/sharing`);
+      fetcher.load(ROUTES.API_FILE_SHARING(uuid));
     }
   }, [fetcher, uuid]);
 
@@ -115,7 +115,7 @@ export function ShareFileMenu({
                   color="inherit"
                   size="small"
                   onClick={() => {
-                    fetcher.load(`/api/files/${uuid}/sharing`);
+                    fetcher.load(ROUTES.API_FILE_SHARING(uuid));
                   }}
                 >
                   Reload
@@ -221,7 +221,7 @@ function PublicLink({
     };
     fetcher.submit(data, {
       method: 'POST',
-      action: `/api/files/${uuid}/sharing`,
+      action: ROUTES.API_FILE_SHARING(uuid),
       encType: 'application/json',
     });
   };
