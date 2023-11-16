@@ -1,4 +1,3 @@
-import { ContentCopy, ContentCut, ContentPaste, East, Redo, Undo } from '@mui/icons-material';
 import { useRecoilState } from 'recoil';
 import { copy, cut, paste, redo, undo } from '../../../../actions';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
@@ -13,7 +12,6 @@ import {
 import { grid } from '../../../../grid/controller/Grid';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { isMac } from '../../../../utils/isMac';
-import { CopyAsPNG } from '../../../icons';
 import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
 const ListItems = [
@@ -24,7 +22,6 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          icon={<Undo />}
           action={grid.undo}
           shortcut="Z"
           shortcutModifiers={[KeyboardSymbols.Command]}
@@ -39,7 +36,6 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          icon={<Redo />}
           action={grid.redo}
           shortcut={isMac ? 'Z' : 'Y'}
           shortcutModifiers={isMac ? [KeyboardSymbols.Command, KeyboardSymbols.Shift] : [KeyboardSymbols.Command]}
@@ -55,7 +51,6 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           action={cutToClipboard}
-          icon={<ContentCut />}
           shortcut="X"
           shortcutModifiers={[KeyboardSymbols.Command]}
         />
@@ -69,7 +64,6 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           action={copyToClipboard}
-          icon={<ContentCopy />}
           shortcut="C"
           shortcutModifiers={[KeyboardSymbols.Command]}
         />
@@ -84,7 +78,6 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           action={pasteFromClipboard}
-          icon={<ContentPaste />}
           shortcut="V"
           shortcutModifiers={[KeyboardSymbols.Command]}
         />
@@ -102,7 +95,6 @@ const ListItems = [
           action={() => {
             copySelectionToPNG(addGlobalSnackbar);
           }}
-          icon={<CopyAsPNG />}
           shortcut="C"
           shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
         />
@@ -123,7 +115,6 @@ const ListItems = [
               showGoToMenu: true,
             });
           }}
-          icon={<East />}
           shortcut="G"
           shortcutModifiers={[KeyboardSymbols.Command]}
         />

@@ -1,4 +1,3 @@
-import { DeleteOutline, FileCopyOutlined, FileDownloadOutlined, InsertDriveFileOutlined } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createNewFile, deleteFile, downloadFile, duplicateFile } from '../../../../actions';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
@@ -13,7 +12,7 @@ const ListItems = [
     Component: (props: CommandPaletteListItemSharedProps) => {
       const navigate = useNavigate();
       const action = () => createNewFile.run({ navigate });
-      return <CommandPaletteListItem {...props} icon={<InsertDriveFileOutlined />} action={action} />;
+      return <CommandPaletteListItem {...props} action={action} />;
     },
   },
   {
@@ -22,7 +21,7 @@ const ListItems = [
     Component: (props: CommandPaletteListItemSharedProps) => {
       const navigate = useNavigate();
       const action = () => navigate(ROUTES.CREATE_FILE);
-      return <CommandPaletteListItem {...props} icon={<FileCopyOutlined />} action={action} />;
+      return <CommandPaletteListItem {...props} action={action} />;
     },
   },
   {
@@ -30,9 +29,7 @@ const ListItems = [
     isAvailable: downloadFile.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const { name } = useFileContext();
-      return (
-        <CommandPaletteListItem {...props} icon={<FileDownloadOutlined />} action={() => downloadFile.run({ name })} />
-      );
+      return <CommandPaletteListItem {...props} action={() => downloadFile.run({ name })} />;
     },
   },
   {
@@ -42,7 +39,7 @@ const ListItems = [
       const { uuid } = useParams() as { uuid: string };
       const { addGlobalSnackbar } = useGlobalSnackbar();
       const action = () => deleteFile.run({ uuid, addGlobalSnackbar });
-      return <CommandPaletteListItem {...props} icon={<DeleteOutline />} action={action} />;
+      return <CommandPaletteListItem {...props} action={action} />;
     },
   },
 ];

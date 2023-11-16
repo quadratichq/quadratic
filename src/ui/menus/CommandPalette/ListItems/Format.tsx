@@ -1,7 +1,5 @@
-import { AttachMoney, FormatClear, Functions, ModeEditOutline, Percent } from '@mui/icons-material';
 import { isEditorOrAbove } from '../../../../actions';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { DecimalDecrease, DecimalIncrease, Icon123 } from '../../../icons';
 import {
   clearFormattingAndBorders,
   removeCellNumericFormat,
@@ -22,7 +20,6 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          icon={<FormatClear />}
           action={clearFormattingAndBorders}
           shortcut="\"
           shortcutModifiers={KeyboardSymbols.Command}
@@ -34,49 +31,49 @@ const ListItems = [
     label: 'Format: Number as automatic',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} icon={<Icon123 />} action={removeCellNumericFormat} />;
+      return <CommandPaletteListItem {...props} action={removeCellNumericFormat} />;
     },
   },
   {
     label: 'Format: Number as currency',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} icon={<AttachMoney />} action={textFormatSetCurrency} />;
+      return <CommandPaletteListItem {...props} action={textFormatSetCurrency} />;
     },
   },
   {
     label: 'Format: Number as percentage',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} icon={<Percent />} action={textFormatSetPercentage} />;
+      return <CommandPaletteListItem {...props} action={textFormatSetPercentage} />;
     },
   },
   {
     label: 'Format: Number as scientific',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} icon={<Functions />} action={textFormatSetExponential} />;
+      return <CommandPaletteListItem {...props} action={textFormatSetExponential} />;
     },
   },
   {
     label: 'Format: Number toggle commas',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} icon={<ModeEditOutline />} action={toggleCommas} />;
+      return <CommandPaletteListItem {...props} action={toggleCommas} />;
     },
   },
   {
     label: 'Format: Increase decimal place',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} icon={<DecimalIncrease />} action={textFormatIncreaseDecimalPlaces} />;
+      return <CommandPaletteListItem {...props} action={textFormatIncreaseDecimalPlaces} />;
     },
   },
   {
     label: 'Format: Decrease decimal place',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} icon={<DecimalDecrease />} action={textFormatDecreaseDecimalPlaces} />;
+      return <CommandPaletteListItem {...props} action={textFormatDecreaseDecimalPlaces} />;
     },
   },
 ];

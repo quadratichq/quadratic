@@ -1,4 +1,3 @@
-import { UploadFile } from '@mui/icons-material';
 import { isEditorOrAbove } from '../../../../actions';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE } from '../../../../constants/appConstants';
@@ -14,7 +13,6 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          icon={<UploadFile />}
           action={() => {
             addGlobalSnackbar(CSV_IMPORT_MESSAGE);
           }}

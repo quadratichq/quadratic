@@ -1,4 +1,4 @@
-import { ChatBubbleOutline, OpenInNew } from '@mui/icons-material';
+import { OpenInNew } from '@mui/icons-material';
 import { useSetRecoilState } from 'recoil';
 import { provideFeedback, viewDocs } from '../../../../actions';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
@@ -25,7 +25,6 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          icon={<ChatBubbleOutline />}
           action={() => {
             provideFeedback.run({ setEditorInteractionState });
           }}

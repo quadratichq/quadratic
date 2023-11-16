@@ -1,15 +1,3 @@
-import {
-  BorderAll,
-  BorderBottom,
-  BorderClear,
-  BorderHorizontal,
-  BorderInner,
-  BorderLeft,
-  BorderOuter,
-  BorderRight,
-  BorderTop,
-  BorderVertical,
-} from '@mui/icons-material';
 import { isEditorOrAbove } from '../../../../actions';
 import { BorderSelection } from '../../../../quadratic-core/quadratic_core';
 import { ChangeBorder, useBorders } from '../../TopBar/SubMenus/useBorders';
@@ -18,45 +6,40 @@ import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../Co
 const ListItems = [
   // Convenience to generate all the border component variations
   ...[
-    { label: 'Borders: Apply all', icon: <BorderAll />, changeBordersArgs: { borderAll: true } },
+    {
+      label: 'Borders: Apply all',
+      changeBordersArgs: { borderAll: true },
+    },
     {
       label: 'Borders: Apply outer',
-      icon: <BorderOuter />,
       changeBordersArgs: { selection: BorderSelection.Outer },
     },
     {
       label: 'Borders: Apply inner',
-      icon: <BorderInner />,
       changeBordersArgs: { selection: BorderSelection.Inner },
     },
     {
       label: 'Borders: Apply vertical',
-      icon: <BorderVertical />,
       changeBordersArgs: { selection: BorderSelection.Vertical },
     },
     {
       label: 'Borders: Apply horizontal',
-      icon: <BorderHorizontal />,
       changeBordersArgs: { selection: BorderSelection.Horizontal },
     },
     {
       label: 'Borders: Apply left',
-      icon: <BorderLeft />,
       changeBordersArgs: { selection: BorderSelection.Left },
     },
     {
       label: 'Borders: Apply right',
-      icon: <BorderRight />,
       changeBordersArgs: { selection: BorderSelection.Right },
     },
     {
       label: 'Borders: Apply top',
-      icon: <BorderTop />,
       changeBordersArgs: { selection: BorderSelection.Top },
     },
     {
       label: 'Borders: Apply bottom',
-      icon: <BorderBottom />,
       changeBordersArgs: { selection: BorderSelection.Bottom },
     },
   ].map(generateListItem),
@@ -71,7 +54,6 @@ const ListItems = [
           action={() => {
             clearBorders();
           }}
-          icon={<BorderClear />}
         />
       );
     },
