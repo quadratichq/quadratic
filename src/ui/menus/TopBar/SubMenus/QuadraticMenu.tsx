@@ -26,6 +26,7 @@ import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider
 import { ROUTES } from '../../../../constants/routes';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
 import { grid } from '../../../../grid/controller/Grid';
+import { pixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRootRouteLoaderData } from '../../../../router';
@@ -51,6 +52,7 @@ export const QuadraticMenu = () => {
   useEffect(() => {
     if (isMobile) {
       settings.setShowHeadings(false);
+      pixiApp.viewportChanged();
     }
     // eslint-disable-next-line
   }, []);
