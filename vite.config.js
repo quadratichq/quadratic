@@ -8,6 +8,7 @@ export default defineConfig(() => {
     build: {
       outDir: 'build',
     },
+    assetsInclude: ['**/*.py'],
     server: {
       port: 3000,
     },

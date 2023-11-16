@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-globals */
 
 import { PythonMessage } from './pythonTypes';
-import define_run_python from './run_python.py';
+import python_code from './run_python.py?raw';
 
 const TRY_AGAIN_TIMEOUT = 500;
 
@@ -30,7 +30,7 @@ async function pythonWebWorker() {
     pyodide = await (self as any).loadPyodide();
     await pyodide.registerJsModule('getCellsDB', getCellsDB);
     await pyodide.loadPackage(['numpy', 'pandas', 'micropip']);
-    const python_code = await (await fetch(define_run_python)).text();
+    // const python_code = await (await fetch(define_run_python)).text();
     await pyodide.runPython(python_code);
   } catch (e) {
     self.postMessage({ type: 'python-error' } as PythonMessage);

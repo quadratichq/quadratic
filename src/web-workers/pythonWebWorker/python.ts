@@ -7,7 +7,7 @@ class PythonWebWorker {
   private loaded = false;
 
   init() {
-    this.worker = new Worker(new URL('./python.worker.ts', import.meta.url));
+    this.worker = new Worker(new URL('./python.worker', import.meta.url));
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
