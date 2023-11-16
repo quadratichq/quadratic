@@ -15,8 +15,8 @@ export class GridLines extends Graphics {
     this.dirty = true;
   }
 
-  update(bounds = pixiApp.viewport.getVisibleBounds(), scale = pixiApp.viewport.scale.x) {
-    if (this.dirty) {
+  update(bounds = pixiApp.viewport.getVisibleBounds(), scale = pixiApp.viewport.scale.x, forceRefresh = false) {
+    if (this.dirty || forceRefresh) {
       this.dirty = false;
       this.clear();
 
