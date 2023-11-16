@@ -70,7 +70,6 @@ function Navbar() {
               <img src={QuadraticLogo} alt="Quadratic logo glyph" />
             </div>
             <img src={QuadraticLogotype} alt="Quadratic logotype" />
-            {/* <QuadraticLogotype /> */}
           </SidebarNavLink>
         </div>
 
