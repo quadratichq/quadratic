@@ -1,5 +1,14 @@
 import { Button as Btn, Button } from '@/shadcn/ui/button';
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/shadcn/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,7 +61,7 @@ export function FileListItem({
   const fetcherDuplicate = useFetcher();
   const fetcherRename = useFetcher();
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const [open, setOpen] = useState<boolean>(false);
+  // const [visibleDialog, setVisibleDialog] = useState<'rename' | 'delete' | ''>('');
 
   const { uuid, name, created_date, updated_date, public_link_access, thumbnail } = file;
 
@@ -144,10 +153,22 @@ export function FileListItem({
         <DropdownMenuContent className="w-48">
           <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>
           <DropdownMenuItem onClick={handleDuplicate}>{duplicateFile.label}</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>
+
+          <RenameItemDialog
+            trigger={<DropdownMenuItem>{renameFileAction.label}</DropdownMenuItem>}
+            value={displayName}
+            onSave={(newValue: string) => {
+              renameFile(newValue);
+            }}
+          />
+
           <DropdownMenuItem onClick={handleDownload}>{downloadFile.label}</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleDelete}>{deleteFile.label}</DropdownMenuItem>
+          <DeleteItemDialog
+            itemName={displayName}
+            onDelete={handleDelete}
+            trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>{deleteFile.label}</DropdownMenuItem>}
+          />
         </DropdownMenuContent>
       </DropdownMenu>
     ),
@@ -217,34 +238,48 @@ export function FileListItem({
           </div>
         )}
       </Link>
-      {open && (
-        <RenameItemDialog
-          onClose={() => setOpen(false)}
-          value={displayName}
-          onSave={(newValue: string) => {
-            renameFile(newValue);
-          }}
-        />
-      )}
     </li>
+  );
+}
+
+function DeleteItemDialog({ itemName, onDelete, trigger }: any) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Confirm delete</DialogTitle>
+          <DialogDescription>Please confirm you want to delete “{itemName}”. This cannot be undone</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="outline">Cancel</Button>
+          </DialogClose>
+
+          <Button type="submit" variant="destructive" onClick={onDelete}>
+            Delete
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 // Eventually this can be moved to another file so it can be used with "Rename team"
 function RenameItemDialog({
-  onClose,
   onSave,
   value,
+  trigger,
 }: {
-  onClose: () => void;
   onSave: (newValue: string) => void;
   value: string;
+  trigger: any;
 }) {
   const [localValue, setLocalValue] = useState<string>(value);
 
   const count = localValue.length;
   // TODO: one day set a max length on file/team name
-  const disabled = count === 0;
+  const disabled = count === 0 || localValue === value;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -256,12 +291,12 @@ function RenameItemDialog({
 
     // Don't do anything if the name didn't change
     if (localValue === value) {
-      onClose();
+      // onClose();
       return;
     }
 
     onSave(localValue);
-    onClose();
+    // onClose();
   };
 
   const handleInputChange = (e: React.FormEvent<HTMLInputElement>) => {
@@ -273,12 +308,14 @@ function RenameItemDialog({
   const inputId = 'rename-item-input';
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
+    <Dialog>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle asChild>
-            <label htmlFor={inputId}>Rename</label>
+            <label htmlFor={inputId}>Rename file</label>
           </DialogTitle>
+          <DialogDescription>{value}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} id={formId}>
           <Input id={inputId} value={localValue} autoComplete="off" onChange={handleInputChange} />
@@ -291,9 +328,11 @@ function RenameItemDialog({
             <Button variant="outline">Cancel</Button>
           </DialogClose>
 
-          <Button disabled={disabled} type="submit" formTarget={formId}>
-            Rename
-          </Button>
+          <DialogClose asChild>
+            <Button disabled={disabled} type="submit" formTarget={formId}>
+              Rename
+            </Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>
