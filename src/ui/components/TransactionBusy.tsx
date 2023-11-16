@@ -29,10 +29,12 @@ export const TransactionBusy = () => {
           color: 'white',
         },
       }}
-      message=<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-        <div style={{ marginRight: '2rem' }}>Spreadsheet busy. Try again.</div>
-        <CircularProgress size={20} sx={{ color: 'white' }} />
-      </div>
+      message={
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <div style={{ marginRight: '2rem' }}>Spreadsheet busy. Try again.</div>
+          <CircularProgress size={20} sx={{ color: 'white' }} />
+        </div>
+      }
     />
   );
 };
