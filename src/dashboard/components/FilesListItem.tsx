@@ -61,6 +61,7 @@ export function FileListItem({
   const fetcherDuplicate = useFetcher();
   const fetcherRename = useFetcher();
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   // const [visibleDialog, setVisibleDialog] = useState<'rename' | 'delete' | ''>('');
 
   const { uuid, name, created_date, updated_date, public_link_access, thumbnail } = file;
@@ -144,7 +145,7 @@ export function FileListItem({
     isShared: public_link_access !== 'NOT_SHARED',
     viewPreferences,
     actions: (
-      <DropdownMenu>
+      <DropdownMenu open={isMenuOpen} onOpenChange={(isOpen) => setIsMenuOpen(isOpen)}>
         <DropdownMenuTrigger asChild>
           <Btn variant="ghost" size="icon" className="flex-shrink-0 hover:bg-background">
             <DotsVerticalIcon className="h-4 w-4" />
@@ -155,7 +156,15 @@ export function FileListItem({
           <DropdownMenuItem onClick={handleDuplicate}>{duplicateFile.label}</DropdownMenuItem>
 
           <RenameItemDialog
-            trigger={<DropdownMenuItem>{renameFileAction.label}</DropdownMenuItem>}
+            trigger={
+              <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                }}
+              >
+                {renameFileAction.label}
+              </DropdownMenuItem>
+            }
             value={displayName}
             onSave={(newValue: string) => {
               renameFile(newValue);
@@ -176,6 +185,7 @@ export function FileListItem({
 
   return (
     <li>
+      <DropdownWithDialogItemsSolution />
       <Link
         key={uuid}
         to={ROUTES.FILE(uuid)}
@@ -336,6 +346,92 @@ function RenameItemDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// See https://github.com/radix-ui/primitives/issues/1836#issuecomment-1433597185
+const DialogItem = React.forwardRef((props: any, forwardedRef) => {
+  const { triggerChildren, children, onSelect, onOpenChange, ...itemProps } = props;
+  return (
+    <Dialog onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
+        <DropdownMenuItem
+          {...itemProps}
+          ref={forwardedRef}
+          className="DropdownMenuItem"
+          onSelect={(event) => {
+            event.preventDefault();
+            onSelect && onSelect();
+          }}
+        >
+          {triggerChildren}
+        </DropdownMenuItem>
+      </DialogTrigger>
+
+      <DialogContent className="DialogContent">
+        {children}
+        <DialogClose asChild>
+          <Button>Close</Button>
+        </DialogClose>
+      </DialogContent>
+    </Dialog>
+  );
+});
+
+function DropdownWithDialogItemsSolution() {
+  const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const [hasOpenDialog, setHasOpenDialog] = React.useState(false);
+  const dropdownTriggerRef = React.useRef(null);
+  const focusRef = React.useRef(null);
+
+  function handleDialogItemSelect() {
+    focusRef.current = dropdownTriggerRef.current;
+  }
+
+  function handleDialogItemOpenChange(open: boolean) {
+    setHasOpenDialog(open);
+    if (open === false) {
+      setDropdownOpen(false);
+    }
+  }
+
+  return (
+    <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+      <DropdownMenuTrigger asChild>
+        <Button className="Button violet" ref={dropdownTriggerRef}>
+          Actions
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        className="DropdownMenuContent"
+        hidden={hasOpenDialog}
+        onCloseAutoFocus={(event) => {
+          if (focusRef.current) {
+            // @ts-expect-error
+            focusRef.current.focus();
+            focusRef.current = null;
+            event.preventDefault();
+          }
+        }}
+      >
+        <DialogItem triggerChildren="Edit" onSelect={handleDialogItemSelect} onOpenChange={handleDialogItemOpenChange}>
+          <DialogTitle className="DialogTitle">Edit</DialogTitle>
+          <DialogDescription className="DialogDescription">Edit this record below.</DialogDescription>
+          <p>…</p>
+        </DialogItem>
+
+        <DialogItem
+          triggerChildren="Delete"
+          onSelect={handleDialogItemSelect}
+          onOpenChange={handleDialogItemOpenChange}
+        >
+          <DialogTitle className="DialogTitle">Delete</DialogTitle>
+          <DialogDescription className="DialogDescription">
+            Are you sure you want to delete this record?
+          </DialogDescription>
+        </DialogItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
