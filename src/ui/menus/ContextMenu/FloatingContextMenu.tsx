@@ -65,11 +65,6 @@ export const FloatingContextMenu = (props: Props) => {
   const textColorRef = useRef<MenuInstance>(null);
   const fillColorRef = useRef<MenuInstance>(null);
 
-  // close moreMenu when context menu closes
-  useEffect(() => {
-    if (menuDiv.current?.style.visibility === 'hidden' && moreMenuProps.state === 'open') moreMenuToggle();
-  }, [menuDiv.current?.style.visibility, moreMenuProps, moreMenuToggle]);
-
   // Function used to move and scale the Input with the Grid
   const updateContextMenuCSSTransform = useCallback(() => {
     if (!container || !menuDiv.current) return '';
@@ -133,6 +128,9 @@ export const FloatingContextMenu = (props: Props) => {
     );
     if (multiselect_offset.x < 0 || multiselect_offset.y < 0) visibility = 'hidden';
 
+    // Hide More menu if changing from visible to hidden
+    if (menuDiv.current.style.visibility === 'visible' && visibility === 'hidden') moreMenuToggle(false);
+
     // Apply visibility
     menuDiv.current.style.visibility = visibility;
 
@@ -161,7 +159,7 @@ export const FloatingContextMenu = (props: Props) => {
       setTimeout(updateContextMenuCSSTransform, 100);
     } else menuDiv.current.style.pointerEvents = 'auto';
     return transform;
-  }, [container, showContextMenu, editorInteractionState.permission]);
+  }, [container, showContextMenu, editorInteractionState.permission, moreMenuToggle]);
 
   useEffect(() => {
     const { viewport } = pixiApp;
@@ -216,6 +214,7 @@ export const FloatingContextMenu = (props: Props) => {
       >
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
           <IconButton
+            size="small"
             onClick={() => {
               const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
               setBold(!formatPrimaryCell?.bold);
@@ -228,6 +227,7 @@ export const FloatingContextMenu = (props: Props) => {
 
         <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
           <IconButton
+            size="small"
             onClick={() => {
               const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
               setItalic(!formatPrimaryCell?.italic);
@@ -243,7 +243,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Text color">
-                <IconButton color="inherit">
+                <IconButton size="small" color="inherit">
                   <FormatColorText fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
@@ -290,7 +290,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Fill color">
-                <IconButton color="inherit">
+                <IconButton size="small" color="inherit">
                   <FormatColorFill fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
@@ -314,7 +314,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Borders">
-                <IconButton color="inherit">
+                <IconButton size="small" color="inherit">
                   <BorderAll fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
@@ -327,51 +327,51 @@ export const FloatingContextMenu = (props: Props) => {
         <MenuDivider />
 
         <TooltipHint title="Format as automatic">
-          <IconButton onClick={() => removeCellNumericFormat()} color="inherit">
+          <IconButton size="small" onClick={() => removeCellNumericFormat()} color="inherit">
             <Icon123 fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Format as currency">
-          <IconButton onClick={() => textFormatSetCurrency()} color="inherit">
+          <IconButton size="small" onClick={() => textFormatSetCurrency()} color="inherit">
             <AttachMoneyOutlined fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Format as percentage">
-          <IconButton onClick={() => textFormatSetPercentage()} color="inherit">
+          <IconButton size="small" onClick={() => textFormatSetPercentage()} color="inherit">
             <Percent fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Format as scientific">
-          <IconButton onClick={() => textFormatSetExponential()} color="inherit">
+          <IconButton size="small" onClick={() => textFormatSetExponential()} color="inherit">
             <Functions fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Decrease decimal places">
-          <IconButton onClick={() => textFormatDecreaseDecimalPlaces()} color="inherit">
+          <IconButton size="small" onClick={() => textFormatDecreaseDecimalPlaces()} color="inherit">
             <DecimalDecrease fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Increase decimal places">
-          <IconButton onClick={() => textFormatIncreaseDecimalPlaces()} color="inherit">
+          <IconButton size="small" onClick={() => textFormatIncreaseDecimalPlaces()} color="inherit">
             <DecimalIncrease fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <MenuDivider />
         <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
-          <IconButton onClick={clearFormattingAndBorders} color="inherit">
+          <IconButton size="small" onClick={clearFormattingAndBorders} color="inherit">
             <FormatClear fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
         {fullClipboardSupport() && <MenuDivider />}
         {fullClipboardSupport() && (
           <TooltipHint title="More commands…">
-            <IconButton onClick={() => moreMenuToggle()} color="inherit" ref={moreMenuButtonRef}>
+            <IconButton size="small" onClick={() => moreMenuToggle()} color="inherit" ref={moreMenuButtonRef}>
               <MoreHoriz fontSize={iconSize} />
             </IconButton>
           </TooltipHint>
