@@ -165,11 +165,11 @@ impl SheetOffsets {
         let mut width = 0.0;
         let mut height = 0.0;
         while width < THUMBNAIL_WIDTH {
-            width += self.column_width(x as i64);
+            width += self.column_width(x);
             x += 1;
         }
         while height < THUMBNAIL_HEIGHT {
-            height += self.row_height(y as i64);
+            height += self.row_height(y);
             y += 1;
         }
         self.thumbnail = (x, y);
