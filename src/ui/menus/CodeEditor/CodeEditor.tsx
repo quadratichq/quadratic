@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { pythonStateAtom } from '@/atoms/pythonStateAtom';
 import mixpanel from 'mixpanel-browser';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
@@ -18,7 +19,7 @@ import { SaveChangesAlert } from './SaveChangesAlert';
 export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
-  const isRunningComputation = useRef(false);
+  const { pythonState } = useRecoilValue(pythonStateAtom);
 
   const cellLocation = useMemo(() => {
     return {
@@ -63,8 +64,8 @@ export const CodeEditor = () => {
 
   // ensures that the console is updated after the code cell is run (for async calculations, like Python)
   useEffect(() => {
-    window.addEventListener('computation-complete', updateCodeCell);
-    return () => window.removeEventListener('computation-complete', updateCodeCell);
+    window.addEventListener('python-computation-complete', updateCodeCell);
+    return () => window.removeEventListener('python-computation-complete', updateCodeCell);
   });
 
   useEffect(() => {
@@ -103,8 +104,7 @@ export const CodeEditor = () => {
   );
 
   const saveAndRunCell = async () => {
-    if (isRunningComputation.current) return;
-    isRunningComputation.current = true;
+    if (pythonState !== 'idle') return;
     const language =
       editorInteractionState.mode === 'PYTHON'
         ? CodeCellLanguage.Python
@@ -126,22 +126,21 @@ export const CodeEditor = () => {
     });
   };
 
-  const cancelCell = () => {
-    if (!isRunningComputation.current) return;
+  const cancelPython = () => {
+    if (pythonState === 'running') return;
 
     pythonWebWorker.restartFromUser();
   };
 
   useEffect(() => {
     const completeTransaction = () => {
-      if (isRunningComputation.current) {
-        isRunningComputation.current = false;
+      if (pythonState === 'running') {
         updateCodeCell();
       }
     };
     window.addEventListener('transaction-complete', completeTransaction);
     return () => window.removeEventListener('transaction-complete', completeTransaction);
-  }, [updateCodeCell]);
+  }, [updateCodeCell, pythonState]);
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // Esc
@@ -172,7 +171,7 @@ export const CodeEditor = () => {
     if ((event.metaKey || event.ctrlKey) && event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
-      cancelCell();
+      cancelPython();
     }
   };
 
@@ -216,9 +215,9 @@ export const CodeEditor = () => {
       <CodeEditorHeader
         cellLocation={cellLocation}
         unsaved={false}
-        isRunningComputation={isRunningComputation.current}
+        isRunningComputation={pythonState === 'running'}
         saveAndRunCell={saveAndRunCell}
-        cancelCell={cancelCell}
+        cancelCell={cancelPython}
         closeEditor={() => closeEditor(false)}
       />
       <CodeEditorBody editorContent={editorContent} setEditorContent={setEditorContent} closeEditor={closeEditor} />

@@ -63,7 +63,7 @@ class PythonWebWorker {
         );
         grid.calculationComplete(result);
         // triggers any CodeEditor updates (if necessary)
-        window.dispatchEvent(new CustomEvent('computation-complete'));
+        window.dispatchEvent(new CustomEvent('python-computation-finished'));
       } else if (event.type === 'get-cells') {
         const range = event.range;
         if (!range) {
@@ -79,7 +79,7 @@ class PythonWebWorker {
           this.worker.postMessage({ type: 'get-cells', cells });
         } else {
           // triggers any CodeEditor updates (if necessary)
-          window.dispatchEvent(new CustomEvent('computation-complete'));
+          window.dispatchEvent(new CustomEvent('python-computation-finished'));
         }
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
@@ -98,6 +98,7 @@ class PythonWebWorker {
     if (!this.loaded || !this.worker) {
       return false;
     }
+    window.dispatchEvent(new CustomEvent('python-computation-started'));
 
     this.worker.postMessage({ type: 'execute', python });
     return true;

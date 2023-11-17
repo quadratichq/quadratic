@@ -126,7 +126,7 @@ export class CellsSheets extends Container<CellsSheet> {
       if (codeCells.find((id) => id.id === cellsSheet.sheet.id)) {
         cellsSheet.updateCellsArray();
         if (sheets.sheet.id === cellsSheet.sheet.id) {
-          window.dispatchEvent(new CustomEvent('computation-complete'));
+          window.dispatchEvent(new CustomEvent('python-computation-complete'));
         }
       }
     });

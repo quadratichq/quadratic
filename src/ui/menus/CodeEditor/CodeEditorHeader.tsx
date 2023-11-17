@@ -1,7 +1,7 @@
 import { Close, FiberManualRecord, HelpOutline, PlayArrow, Stop, Subject } from '@mui/icons-material';
 import { CircularProgress, IconButton, useTheme } from '@mui/material';
 import { useRecoilValue } from 'recoil';
-import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
+import { pythonStateAtom } from '../../../atoms/pythonStateAtom';
 import { Coordinate } from '../../../gridGL/types/size';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 // import { CodeCellValue } from '../../../quadratic-core/types';
@@ -26,7 +26,7 @@ interface Props {
 
 export const CodeEditorHeader = (props: Props) => {
   const { cellLocation, unsaved, isRunningComputation, saveAndRunCell, cancelCell, closeEditor } = props;
-  const { pythonLoadState } = useRecoilValue(loadedStateAtom);
+  const { pythonState } = useRecoilValue(pythonStateAtom);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const theme = useTheme();
   const hasPermission = isEditorOrAbove(editorInteractionState.permission);
@@ -34,7 +34,7 @@ export const CodeEditorHeader = (props: Props) => {
   const language = editorInteractionState.mode;
 
   if (!cellLocation) return null;
-  const isLoadingPython = !['loaded', 'initial'].includes(pythonLoadState) && language === 'PYTHON';
+  const isLoadingPython = !['idle', 'initial'].includes(pythonState) && language === 'PYTHON';
 
   return (
     <div
@@ -106,7 +106,7 @@ export const CodeEditorHeader = (props: Props) => {
           <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
             <span>
               <IconButton
-                id="QuadraticCodeEditorCalcelButtonID"
+                id="QuadraticCodeEditorCancelButtonID"
                 size="small"
                 color="primary"
                 onClick={cancelCell}

@@ -36,7 +36,6 @@ export function keyboardViewport(options: {
   }
 
   if (!(event.metaKey || event.ctrlKey) && event.key === 'Escape') {
-    console.log('escape presentation');
     if (presentationMode) {
       setPresentationMode(false);
       return true;

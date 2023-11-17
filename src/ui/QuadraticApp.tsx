@@ -3,7 +3,7 @@ import { isMobile } from 'react-device-detect';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { isEditorOrAbove } from '../actions';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { loadedStateAtom } from '../atoms/loadedStateAtom';
+import { pythonStateAtom } from '../atoms/pythonStateAtom';
 import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import { initializeWebWorkers } from '../web-workers/webWorkers';
 import QuadraticUIContext from './QuadraticUIContext';
@@ -12,7 +12,7 @@ import { QuadraticLoading } from './loading/QuadraticLoading';
 export default function QuadraticApp() {
   const [loading, setLoading] = useState(true);
   const { permission } = useRecoilValue(editorInteractionStateAtom);
-  const setLoadedState = useSetRecoilState(loadedStateAtom);
+  const setLoadedState = useSetRecoilState(pythonStateAtom);
   const didMount = useRef<boolean>(false);
 
   // recoil tracks whether python is loaded
@@ -20,21 +20,33 @@ export default function QuadraticApp() {
     const loading = () =>
       setLoadedState((prevState) => ({
         ...prevState,
-        pythonLoadState: 'loading',
+        pythonState: 'loading',
       }));
     const loaded = () =>
       setLoadedState((prevState) => ({
         ...prevState,
-        pythonLoadState: 'loaded',
+        pythonState: 'idle',
       }));
     const error = () =>
       setLoadedState((prevState) => ({
         ...prevState,
-        pythonLoadState: 'error',
+        pythonState: 'error',
+      }));
+    const computationStarted = () =>
+      setLoadedState((prevState) => ({
+        ...prevState,
+        pythonState: 'running',
+      }));
+    const computationFinished = () =>
+      setLoadedState((prevState) => ({
+        ...prevState,
+        pythonState: 'idle',
       }));
     window.addEventListener('python-loading', loading);
     window.addEventListener('python-loaded', loaded);
     window.addEventListener('python-error', error);
+    window.addEventListener('python-computation-started', computationStarted);
+    window.addEventListener('python-computation-finished', computationFinished);
     return () => {
       window.removeEventListener('python-loading', loading);
       window.removeEventListener('python-loaded', loaded);
@@ -50,7 +62,7 @@ export default function QuadraticApp() {
 
     // Load python and populate web workers (if supported)
     if (!isMobile && isEditorOrAbove(permission)) {
-      setLoadedState((prevState) => ({ ...prevState, pythonLoadState: 'loading' }));
+      setLoadedState((prevState) => ({ ...prevState, pythonState: 'loading' }));
       initializeWebWorkers();
     }
 
