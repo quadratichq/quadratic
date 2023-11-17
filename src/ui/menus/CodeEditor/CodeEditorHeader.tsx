@@ -20,12 +20,12 @@ interface Props {
   isRunningComputation: boolean;
 
   saveAndRunCell: () => void;
-  cancelCell: () => void;
+  cancelPython: () => void;
   closeEditor: () => void;
 }
 
 export const CodeEditorHeader = (props: Props) => {
-  const { cellLocation, unsaved, isRunningComputation, saveAndRunCell, cancelCell, closeEditor } = props;
+  const { cellLocation, unsaved, isRunningComputation, saveAndRunCell, cancelPython, closeEditor } = props;
   const { pythonState } = useRecoilValue(pythonStateAtom);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const theme = useTheme();
@@ -34,7 +34,10 @@ export const CodeEditorHeader = (props: Props) => {
   const language = editorInteractionState.mode;
 
   if (!cellLocation) return null;
-  const isLoadingPython = !['idle', 'initial'].includes(pythonState) && language === 'PYTHON';
+  const isLoadingPython = pythonState === 'loading' && language === 'PYTHON';
+
+  console.log('pythonState', pythonState);
+  console.log('isLoadingPython', isLoadingPython);
 
   return (
     <div
@@ -84,10 +87,11 @@ export const CodeEditorHeader = (props: Props) => {
       <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
         {isRunningComputation && <CircularProgress size="1.125rem" sx={{ m: '0 .5rem' }} />}
         {isLoadingPython && (
-          <div style={{ color: theme.palette.warning.main, display: 'flex', alignItems: 'center' }}>
-            Loading Python...
-            <CircularProgress color="inherit" size="1.125rem" sx={{ m: '0 .5rem' }} />
-          </div>
+          <TooltipHint title="Python starting" placement="bottom">
+            <div style={{ color: theme.palette.success.main, display: 'flex', alignItems: 'center' }}>
+              <CircularProgress color="inherit" size="1.125rem" sx={{ m: '0 .5rem' }} />
+            </div>
+          </TooltipHint>
         )}
         <TooltipHint title="Read the docs" placement="bottom">
           <IconButton
@@ -109,7 +113,7 @@ export const CodeEditorHeader = (props: Props) => {
                 id="QuadraticCodeEditorCancelButtonID"
                 size="small"
                 color="primary"
-                onClick={cancelCell}
+                onClick={cancelPython}
                 disabled={!isRunningComputation}
               >
                 <Stop />

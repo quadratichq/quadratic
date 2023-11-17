@@ -51,6 +51,8 @@ export default function QuadraticApp() {
       window.removeEventListener('python-loading', loading);
       window.removeEventListener('python-loaded', loaded);
       window.removeEventListener('python-error', error);
+      window.removeEventListener('python-computation-started', computationStarted);
+      window.removeEventListener('python-computation-finished', computationFinished);
     };
   }, [setLoadedState]);
 

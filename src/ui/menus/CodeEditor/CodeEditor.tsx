@@ -127,7 +127,7 @@ export const CodeEditor = () => {
   };
 
   const cancelPython = () => {
-    if (pythonState === 'running') return;
+    if (pythonState !== 'running') return;
 
     pythonWebWorker.restartFromUser();
   };
@@ -217,7 +217,7 @@ export const CodeEditor = () => {
         unsaved={false}
         isRunningComputation={pythonState === 'running'}
         saveAndRunCell={saveAndRunCell}
-        cancelCell={cancelPython}
+        cancelPython={cancelPython}
         closeEditor={() => closeEditor(false)}
       />
       <CodeEditorBody editorContent={editorContent} setEditorContent={setEditorContent} closeEditor={closeEditor} />
