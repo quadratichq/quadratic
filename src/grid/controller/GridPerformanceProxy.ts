@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/browser';
+import * as Sentry from '@sentry/react';
 import { debugShowRustTime } from '../../debugFlags';
 
 export const GridPerformanceProxy = <T extends object>(object: T): T => {

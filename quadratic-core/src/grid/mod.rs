@@ -75,13 +75,16 @@ impl Grid {
         &self.sheets
     }
     pub fn first_sheet_id(&self) -> SheetId {
-        self.sheets
+        if let Some(last) = self
+            .sheets
             .iter()
             .sorted_by(|a, b| b.order.cmp(&a.order))
             .last()
-            .unwrap()
-            .clone()
-            .id
+        {
+            last.id
+        } else {
+            unreachable!("grid should always have at least one sheet");
+        }
     }
     pub fn sheet_ids(&self) -> Vec<SheetId> {
         self.sheets.iter().map(|sheet| sheet.id).collect()

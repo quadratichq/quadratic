@@ -5,6 +5,11 @@ const config = {
     './index.html',
     './src/**/*.{js,ts,jsx,tsx}',
 	],
+  future: {
+    // Only apply hover effects to devices that properly support it
+    // https://github.com/tailwindlabs/tailwindcss/pull/8394
+    hoverOnlyWhenSupported: true,
+  },
   theme: {
     container: {
       center: true,

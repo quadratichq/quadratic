@@ -37,9 +37,6 @@ impl GridController {
                     .map(|(cell_ref, value)| {
                         let pos = sheet.cell_ref_to_pos(cell_ref)?;
                         cells_to_compute.insert(cell_ref);
-                        summary
-                            .cell_sheets_modified
-                            .insert(CellSheetsModified::new(sheet.id, pos));
                         let response = sheet.set_cell_value(pos, value)?;
                         Some(response.old_value)
                     })
@@ -48,8 +45,9 @@ impl GridController {
 
                 let old_values = Array::new_row_major(size, old_values)
                     .expect("error constructing array of old values for SetCells operation");
+                CellSheetsModified::add_region(&mut summary.cell_sheets_modified, sheet, &region);
                 summary.generate_thumbnail =
-                    summary.generate_thumbnail || self.thumbnail_dirty_region(region.clone());
+                    summary.generate_thumbnail || self.thumbnail_dirty_region(&region);
                 // return reverse operation
                 Operation::SetCellValues {
                     region,
@@ -114,8 +112,10 @@ impl GridController {
                     summary.fill_sheets_modified.push(region.sheet);
                 }
 
-                summary.generate_thumbnail =
-                    summary.generate_thumbnail || self.thumbnail_dirty_region(region.clone());
+                // todo: this is too slow -- perhaps call this again when we have a better way of setting multiple formats within an array
+                // or when we get rid of CellRefs (which I think is the reason this is slow)
+                // summary.generate_thumbnail =
+                //     summary.generate_thumbnail || self.thumbnail_dirty_region(region.clone());
 
                 let old_attr = match attr {
                     CellFmtArray::Align(align) => {
@@ -193,7 +193,7 @@ impl GridController {
                 sheets_with_changed_bounds.insert(region.sheet);
                 summary.border_sheets_modified.push(region.sheet);
                 summary.generate_thumbnail =
-                    summary.generate_thumbnail || self.thumbnail_dirty_region(region.clone());
+                    summary.generate_thumbnail || self.thumbnail_dirty_region(&region);
 
                 let sheet = self.grid.sheet_mut_from_id(region.sheet);
 

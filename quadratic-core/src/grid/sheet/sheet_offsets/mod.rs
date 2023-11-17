@@ -1,5 +1,5 @@
-use crate::grid::offsets::Offsets;
-use crate::ScreenRect;
+use crate::{grid::offsets::Offsets, THUMBNAIL_WIDTH};
+use crate::{Pos, Rect, ScreenRect, THUMBNAIL_HEIGHT};
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -15,18 +15,22 @@ pub struct SheetOffsets {
     column_widths: Offsets,
     row_heights: Offsets,
 
+    thumbnail: (i64, i64),
+
     #[serde(skip_serializing, skip_deserializing)]
     transient_resize: Option<TransientResize>,
 }
 
 impl Default for SheetOffsets {
     fn default() -> Self {
-        SheetOffsets {
+        let mut offsets = SheetOffsets {
             column_widths: Offsets::new(crate::DEFAULT_COLUMN_WIDTH),
             row_heights: Offsets::new(crate::DEFAULT_ROW_HEIGHT),
-
+            thumbnail: (0, 0),
             transient_resize: None,
-        }
+        };
+        offsets.calculate_thumbnail();
+        offsets
     }
 }
 
@@ -34,11 +38,14 @@ pub type OffsetWidthHeight = (Vec<(i64, f64)>, Vec<(i64, f64)>);
 
 impl SheetOffsets {
     pub fn new(column_widths: Offsets, row_heights: Offsets) -> Self {
-        SheetOffsets {
+        let mut offsets = SheetOffsets {
             column_widths,
             row_heights,
+            thumbnail: (0, 0),
             transient_resize: None,
-        }
+        };
+        offsets.calculate_thumbnail();
+        offsets
     }
 
     /// exports offsets to a GridFile
@@ -51,14 +58,17 @@ impl SheetOffsets {
 
     /// import offsets from a GridFile
     pub fn import(offsets: &OffsetWidthHeight) -> Self {
-        SheetOffsets {
+        let mut offsets = SheetOffsets {
             column_widths: Offsets::from_iter(
                 crate::DEFAULT_COLUMN_WIDTH,
                 offsets.0.iter().copied(),
             ),
             row_heights: Offsets::from_iter(crate::DEFAULT_ROW_HEIGHT, offsets.1.iter().copied()),
+            thumbnail: (0, 0),
             transient_resize: None,
-        }
+        };
+        offsets.calculate_thumbnail();
+        offsets
     }
 
     /// Returns the widths of a range of columns.
@@ -148,21 +158,30 @@ impl SheetOffsets {
         )
     }
 
-    /// calculates the number of columns and rows that are visible in a given width and height starting from 0,0
-    /// (used for thumbnail generation)
-    pub fn visible_cols_rows(&self, w: u32, h: u32) -> (u32, u32) {
+    /// calculates thumbnail columns and rows that are visible starting from 0,0
+    pub fn calculate_thumbnail(&mut self) {
         let mut x = 0;
         let mut y = 0;
         let mut width = 0.0;
         let mut height = 0.0;
-        while width < w as f64 {
-            width += self.column_width(x as i64);
+        while width < THUMBNAIL_WIDTH {
+            width += self.column_width(x);
             x += 1;
         }
-        while height < h as f64 {
-            height += self.row_height(y as i64);
+        while height < THUMBNAIL_HEIGHT {
+            height += self.row_height(y);
             y += 1;
         }
-        (x, y)
+        self.thumbnail = (x, y);
+    }
+
+    pub fn thumbnail(&self) -> Rect {
+        Rect {
+            min: Pos { x: 0, y: 0 },
+            max: Pos {
+                x: self.thumbnail.0,
+                y: self.thumbnail.1,
+            },
+        }
     }
 }

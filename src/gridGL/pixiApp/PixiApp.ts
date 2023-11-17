@@ -225,7 +225,7 @@ export class PixiApp {
   };
 
   // called before and after a quadrant render
-  prepareForCopying(options?: { gridLines: boolean; cull?: Rectangle }): Container {
+  prepareForCopying(options?: { gridLines?: boolean; cull?: Rectangle }): Container {
     this.gridLines.visible = options?.gridLines ?? false;
     this.axesLines.visible = false;
     this.cursor.visible = false;

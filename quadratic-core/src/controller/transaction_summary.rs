@@ -7,6 +7,7 @@ use crate::{
     Pos,
 };
 
+// keep this in sync with CellsTypes.ts
 pub const CELL_SHEET_WIDTH: u32 = 20;
 pub const CELL_SHEET_HEIGHT: u32 = 40;
 
