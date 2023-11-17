@@ -29,12 +29,23 @@ export default function CreateFileButton() {
       return;
     }
 
+    let data: CreateActionRequest;
     // Upload it
-    const data: CreateActionRequest = {
-      name: file.name ? file.name.replace('.grid', '') : 'Untitled',
-      version: validFile.version,
-      contents: JSON.stringify(validFile),
-    };
+    if (validFile.version === '1.3') {
+      data = {
+        name: file.name ? file.name.replace('.grid', '') : 'Untitled',
+        version: validFile.version,
+        contents: JSON.stringify(validFile),
+      };
+    }
+    // versions > 1.3
+    else {
+      data = {
+        name: file.name ? file.name.replace('.grid', '') : 'Untitled',
+        version: validFile.version,
+        contents: validFile.contents, //JSON.stringify(validFile),
+      };
+    }
     submit(data, { method: 'POST', action: ROUTES.CREATE_FILE, encType: 'application/json' });
   };
 
