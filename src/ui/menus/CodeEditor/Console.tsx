@@ -46,7 +46,11 @@ export function Console({ consoleOutput, editorMode, editorContent, evaluationRe
             label="Console"
             id="console-tab-0"
             aria-controls="console-tabpanel-0"
-            icon={hasOutput ? <Circle sx={{ fontSize: 8 }}></Circle> : undefined}
+            icon={
+              hasOutput ? (
+                <Circle sx={{ fontSize: 8 }} color={consoleOutput?.stdErr ? 'error' : 'inherit'} />
+              ) : undefined
+            }
             iconPosition="end"
           ></Tab>
           {editorMode === 'PYTHON' && isViewerOrAbove(permission) && (
