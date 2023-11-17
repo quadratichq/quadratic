@@ -15,7 +15,7 @@ export default function QuadraticApp() {
   const setLoadedState = useSetRecoilState(pythonStateAtom);
   const didMount = useRef<boolean>(false);
 
-  // recoil tracks whether python is loaded
+  // recoil tracks python state
   useEffect(() => {
     const loading = () =>
       setLoadedState((prevState) => ({
