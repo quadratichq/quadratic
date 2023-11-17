@@ -4,7 +4,6 @@ import { Link, useSubmit } from 'react-router-dom';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
-import { CreateActionRequest } from '../FilesCreateRoute';
 
 // TODO this will need props when it becomes a button that can be used
 // on the team page as well as the user's files page
@@ -29,23 +28,12 @@ export default function CreateFileButton() {
       return;
     }
 
-    let data: CreateActionRequest;
     // Upload it
-    if (validFile.version === '1.3') {
-      data = {
-        name: file.name ? file.name.replace('.grid', '') : 'Untitled',
-        version: validFile.version,
-        contents: JSON.stringify(validFile),
-      };
-    }
-    // versions > 1.3
-    else {
-      data = {
-        name: file.name ? file.name.replace('.grid', '') : 'Untitled',
-        version: validFile.version,
-        contents: validFile.contents, //JSON.stringify(validFile),
-      };
-    }
+    const data = {
+      name: file.name ? file.name.replace('.grid', '') : 'Untitled',
+      version: validFile.version,
+      contents: validFile.version === '1.3' ? JSON.stringify(validFile) : validFile.contents,
+    };
     submit(data, { method: 'POST', action: ROUTES.CREATE_FILE, encType: 'application/json' });
   };
 
