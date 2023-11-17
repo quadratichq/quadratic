@@ -36,7 +36,7 @@ impl GridController {
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
-        raw_value: &str,
+        value: &str,
     ) -> Vec<Operation> {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
         let cell_ref = sheet.get_or_create_cell_ref(pos);
@@ -44,7 +44,7 @@ impl GridController {
         let mut ops = vec![];
 
         // strip whitespace
-        let value = raw_value.trim();
+        let value = value.trim();
 
         // remove any code cell that was originally over the cell
         if sheet.get_code_cell(pos).is_some() {
