@@ -140,7 +140,7 @@ export const CodeEditor = () => {
     // Esc
     if (!(event.metaKey || event.ctrlKey) && event.key === 'Escape') {
       event.preventDefault();
-      closeEditor(true);
+      closeEditor(false);
     }
 
     // Don't allow the shortcuts below for certain users
