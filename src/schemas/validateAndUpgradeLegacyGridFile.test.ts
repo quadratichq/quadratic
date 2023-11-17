@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import { GridFileSchema } from '.';
 import { GridFileV1_0 } from './GridFileV1_0';
 import { GridFileV1_1, upgradeV1_0toV1_1 } from './GridFileV1_1';
