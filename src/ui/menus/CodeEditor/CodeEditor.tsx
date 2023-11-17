@@ -35,6 +35,7 @@ export const CodeEditor = () => {
   const [codeString, setCodeString] = useState('');
   const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
   const [evaluationResult, setEvaluationResult] = useState<any>(undefined);
+
   const updateCodeCell = useCallback(() => {
     const codeCell = grid.getCodeCell(
       editorInteractionState.selectedCellSheet,
@@ -60,10 +61,33 @@ export const CodeEditor = () => {
     editorInteractionState.selectedCellSheet,
   ]);
 
+  const updateCodeCellAfterComputation = useCallback(() => {
+    const codeCell = grid.getCodeCell(
+      editorInteractionState.selectedCellSheet,
+      editorInteractionState.selectedCell.x,
+      editorInteractionState.selectedCell.y
+    );
+    if (codeCell) {
+      const codeString = codeCell.getCodeString();
+      setCodeString(codeString);
+      setOut({ stdOut: codeCell.getStdOut(), stdErr: codeCell.getStdErr() });
+      setEvaluationResult(codeCell.getEvaluationResult());
+      codeCell.free();
+    } else {
+      setCodeString('');
+      setEvaluationResult('');
+      setOut(undefined);
+    }
+  }, [
+    editorInteractionState.selectedCell.x,
+    editorInteractionState.selectedCell.y,
+    editorInteractionState.selectedCellSheet,
+  ]);
+
   // ensures that the console is updated after the code cell is run (for async calculations, like Python)
   useEffect(() => {
-    window.addEventListener('computation-complete', updateCodeCell);
-    return () => window.removeEventListener('computation-complete', updateCodeCell);
+    window.addEventListener('computation-complete', updateCodeCellAfterComputation);
+    return () => window.removeEventListener('computation-complete', updateCodeCellAfterComputation);
   });
 
   useEffect(() => {
@@ -129,12 +153,12 @@ export const CodeEditor = () => {
     const completeTransaction = () => {
       if (isRunningComputation.current) {
         isRunningComputation.current = false;
-        updateCodeCell();
+        updateCodeCellAfterComputation();
       }
     };
     window.addEventListener('transaction-complete', completeTransaction);
     return () => window.removeEventListener('transaction-complete', completeTransaction);
-  }, [updateCodeCell]);
+  }, [updateCodeCellAfterComputation]);
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // Esc
