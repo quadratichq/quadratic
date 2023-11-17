@@ -23,7 +23,7 @@ const ListItems = [
       const action = () => {
         duplicateFile.run({ name, submit });
       };
-      return <CommandPaletteListItem {...props} icon={<FileCopyOutlined />} action={action} />;
+      return <CommandPaletteListItem {...props} action={action} />;
     },
   },
   {
