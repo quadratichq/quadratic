@@ -10,6 +10,7 @@ pub mod borders;
 pub mod cells;
 pub mod clipboard;
 pub mod dependencies;
+pub mod export;
 pub mod formatting;
 pub mod formula;
 pub mod import;

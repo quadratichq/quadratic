@@ -1,6 +1,7 @@
 import {
   AttachMoneyOutlined,
   BorderAll,
+  Download,
   FormatAlignCenter,
   FormatAlignLeft,
   FormatAlignRight,
@@ -22,12 +23,15 @@ import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { copySelectionToPNG, fullClipboardSupport } from '../../../grid/actions/clipboard/clipboard';
+import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
+import { downloadFile } from '../../../helpers/downloadFileInBrowser';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
+import { useFileContext } from '../../components/FileProvider';
 import { TooltipHint } from '../../components/TooltipHint';
 import { QColorPicker } from '../../components/qColorPicker';
 import { CopyAsPNG, DecimalDecrease, DecimalIncrease, Icon123 } from '../../icons';
@@ -61,6 +65,7 @@ export const FloatingContextMenu = (props: Props) => {
   const menuDiv = useRef<HTMLDivElement>(null);
   const moreMenuButtonRef = useRef(null);
   const borders = useGetBorderMenu();
+  const { name: fileName } = useFileContext();
 
   const textColorRef = useRef<MenuInstance>(null);
   const fillColorRef = useRef<MenuInstance>(null);
@@ -180,6 +185,12 @@ export const FloatingContextMenu = (props: Props) => {
     await copySelectionToPNG(addGlobalSnackbar);
     moreMenuToggle();
   }, [moreMenuToggle, addGlobalSnackbar]);
+
+  const downloadAsCsv = useCallback(() => {
+    const csv = grid.exportCsvSelection();
+    downloadFile(fileName, csv, 'text/plain', 'csv');
+    moreMenuToggle();
+  }, [moreMenuToggle, fileName]);
 
   // set input's initial position correctly
   const transform = updateContextMenuCSSTransform();
@@ -386,6 +397,13 @@ export const FloatingContextMenu = (props: Props) => {
               primary="Copy selection as PNG"
               secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'C'}
               Icon={CopyAsPNG}
+            ></MenuLineItem>
+          </MenuItem>
+          <MenuItem onClick={downloadAsCsv}>
+            <MenuLineItem
+              primary="Download selection as CSV"
+              secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'D'}
+              Icon={Download}
             ></MenuLineItem>
           </MenuItem>
         </ControlledMenu>

@@ -9,6 +9,7 @@ pub mod borders;
 pub mod bounds;
 pub mod cells;
 pub mod clipboard;
+pub mod export;
 pub mod formatting;
 pub mod import;
 pub mod render;
