@@ -1,5 +1,5 @@
 import { Close, FiberManualRecord, HelpOutline, PlayArrow, Stop, Subject } from '@mui/icons-material';
-import { CircularProgress, IconButton, useTheme } from '@mui/material';
+import { CircularProgress, IconButton } from '@mui/material';
 import { useRecoilValue } from 'recoil';
 import { pythonStateAtom } from '../../../atoms/pythonStateAtom';
 import { Coordinate } from '../../../gridGL/types/size';
@@ -28,16 +28,12 @@ export const CodeEditorHeader = (props: Props) => {
   const { cellLocation, unsaved, isRunningComputation, saveAndRunCell, cancelPython, closeEditor } = props;
   const { pythonState } = useRecoilValue(pythonStateAtom);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const theme = useTheme();
   const hasPermission = isEditorOrAbove(editorInteractionState.permission);
 
   const language = editorInteractionState.mode;
 
   if (!cellLocation) return null;
   const isLoadingPython = pythonState === 'loading' && language === 'PYTHON';
-
-  console.log('pythonState', pythonState);
-  console.log('isLoadingPython', isLoadingPython);
 
   return (
     <div
@@ -85,12 +81,9 @@ export const CodeEditorHeader = (props: Props) => {
         </span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-        {isRunningComputation && <CircularProgress size="1.125rem" sx={{ m: '0 .5rem' }} />}
-        {isLoadingPython && (
-          <TooltipHint title="Python starting" placement="bottom">
-            <div style={{ color: theme.palette.success.main, display: 'flex', alignItems: 'center' }}>
-              <CircularProgress color="inherit" size="1.125rem" sx={{ m: '0 .5rem' }} />
-            </div>
+        {(isRunningComputation || isLoadingPython) && (
+          <TooltipHint title={`Python ${isLoadingPython ? 'loading' : 'executing'}…`} placement="bottom">
+            <CircularProgress size="1rem" color={isLoadingPython ? 'warning' : 'primary'} className={`mr-2`} />
           </TooltipHint>
         )}
         <TooltipHint title="Read the docs" placement="bottom">
