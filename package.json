@@ -85,7 +85,7 @@
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\"",
     "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:unit:dev": "npm run build:wasm:nodejs && npm run test:unit -- --watchAll",
-    "test:unit:ci": "node --experimental-vm-modules node_modules/jest/bin/jest.js --ci --runInBand",
+    "test:unit:ci": "npm run test:unit -- --ci --runInBand",
     "test:e2e": "playwright test --workers=1",
     "test:e2e:debug": "playwright test --debug",
     "test:python": "python3 tests-python/test.py",
