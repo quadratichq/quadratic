@@ -357,43 +357,6 @@ fn test_sheet_references() {
     );
 }
 
-#[test]
-fn test_sheet_references() {
-    let mut g = Grid::new();
-
-    let id1 = g.sheets()[0].id;
-    let name1 = "MySheet".to_string();
-    g.sheets_mut()[0].name = name1.clone();
-
-    let id2 = g.add_sheet(None).unwrap();
-    let name2 = "My Other Sheet".to_string();
-    g.sheets_mut()[1].name = name2.clone();
-
-    g.sheet_mut_from_id(id1).set_cell_value(pos![A1], 42);
-    g.sheet_mut_from_id(id1).set_cell_value(pos![A3], 6);
-    g.sheet_mut_from_id(id2).set_cell_value(pos![A3], 7);
-    g.sheet_mut_from_id(id2).set_cell_value(pos![A4], 70);
-
-    let pos1 = Pos::ORIGIN.with_sheet(id1);
-    let pos2 = Pos::ORIGIN.with_sheet(id2);
-
-    assert_eq!("426", eval_to_string_at(&g, pos1, "MySheet!A1 & A3"));
-    assert_eq!("427", eval_to_string_at(&g, pos2, "MySheet!A1 & A3"));
-
-    assert_eq!(
-        "76",
-        eval_to_string_at(&g, pos1, "'My Other Sheet'!A3 & A3"),
-    );
-    assert_eq!(
-        "77",
-        eval_to_string_at(&g, pos2, "\"My Other Sheet\"!A3 & A3"),
-    );
-    assert_eq!(
-        "{76; 706}",
-        eval_to_string_at(&g, pos1, "\"My Other Sheet\"!A3:A4 & A3"),
-    );
-}
-
 /// Regression test for quadratic#410
 #[test]
 fn test_currency_string() {

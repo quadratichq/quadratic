@@ -84,6 +84,7 @@ impl SheetBuilder {
             .entry(x)
             .or_insert_with(|| current::Column::with_id(id))
     }
+
     fn cell_ref(&mut self, (x, y): (i64, i64)) -> current::CellRef {
         current::CellRef {
             sheet: self.sheet_id.to_owned(),
@@ -114,6 +115,7 @@ impl SheetBuilder {
             );
         }
     }
+
     fn code_cell_value(
         &mut self,
         cell: &Cell,

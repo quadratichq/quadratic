@@ -1,6 +1,6 @@
+import { Button } from '@/shadcn/ui/button';
 import { User } from '@auth0/auth0-spa-js';
-import { ErrorOutline, WarningAmber } from '@mui/icons-material';
-import { Button } from '@mui/material';
+import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import localforage from 'localforage';
 import {
@@ -22,8 +22,9 @@ import { Theme } from './components/Theme';
 import { SUPPORT_EMAIL } from './constants/appConstants';
 import { ROUTES, ROUTE_LOADER_IDS } from './constants/routes';
 import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
+import * as Create from './dashboard/FilesCreateRoute';
 import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
-import * as Create from './dashboard/files/CreateRoute';
+import { action as filesAction } from './dashboard/components/FilesList';
 import { initializeAnalytics } from './utils/analytics';
 // @ts-expect-error - for testing purposes
 window.lf = localforage;
@@ -90,9 +91,8 @@ export const router = createBrowserRouter(
           />
 
           <Route lazy={() => import('./dashboard/components/DashboardLayoutRoute')}>
-            <Route path={ROUTES.FILES} element={<Navigate to={ROUTES.MY_FILES} replace />} />
-            <Route path={ROUTES.MY_FILES} lazy={() => import('./dashboard/files/MineRoute')} />
-            <Route path={ROUTES.EXAMPLES} lazy={() => import('./dashboard/files/ExamplesRoute')} />
+            <Route path={ROUTES.FILES} lazy={() => import('./dashboard/FilesRoute')} />
+            <Route path={ROUTES.EXAMPLES} lazy={() => import('./dashboard/ExamplesRoute')} />
             <Route path={ROUTES.TEAMS} lazy={() => import('./dashboard/TeamsRoute')} />
             <Route path={ROUTES.ACCOUNT} lazy={() => import('./dashboard/AccountRoute')} />
             {/* <Route path={ROUTES.CONNECTIONS} lazy={() => import('./dashboard/connections/ConnectionsRoute')} /> */}
@@ -118,6 +118,7 @@ export const router = createBrowserRouter(
             loader={CloudFilesMigration.loader}
           />
 
+          <Route path="/api/files/:uuid" action={filesAction} loader={() => null} />
           <Route path="/api/files/:uuid/sharing" action={shareFileMenuAction} loader={shareFileMenuLoader} />
         </Route>
 
@@ -131,10 +132,10 @@ export const router = createBrowserRouter(
                   Check the URL and try again. Or, contact us for help at <a href={SUPPORT_EMAIL}>{SUPPORT_EMAIL}</a>
                 </>
               }
-              Icon={WarningAmber}
+              Icon={ExclamationTriangleIcon}
               actions={
-                <Button component={Link} to="/" variant="contained" disableElevation>
-                  Go home
+                <Button asChild variant="secondary">
+                  <Link to="/">Go home</Link>
                 </Button>
               }
             />
@@ -224,7 +225,7 @@ function RootError() {
     <Empty
       title="Something went wrong"
       description="An unexpected error occurred. Try reloading the page or contact us if the error continues."
-      Icon={ErrorOutline}
+      Icon={ExclamationTriangleIcon}
     />
   );
 }

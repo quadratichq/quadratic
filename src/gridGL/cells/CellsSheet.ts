@@ -371,9 +371,12 @@ export class CellsSheet extends Container {
   modified(modified: CellSheetsModified[]): void {
     for (const update of modified) {
       const cellsHash = this.getCellsHash(Number(update.x) * sheetHashWidth, Number(update.y) * sheetHashHeight, true);
-      if (cellsHash) {
-        cellsHash.dirty = true;
+
+      // cellsHash should always exists since we createAsNeeded = true
+      if (!cellsHash) {
+        throw new Error('Expected cellsHash to be defined in modified of CellsSheet');
       }
+      cellsHash.dirty = true;
     }
   }
 }

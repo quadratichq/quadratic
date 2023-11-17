@@ -2,6 +2,18 @@ import { grid, pointsToRect } from '../../grid/controller/Grid';
 import { JsCodeResult } from '../../quadratic-core/quadratic_core';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 
+const stringOrNumber = (input: string | number | undefined): string => {
+  if (typeof input === 'undefined') {
+    return '';
+  }
+
+  if (typeof input === 'string') {
+    return input;
+  }
+
+  return input.toString();
+};
+
 class PythonWebWorker {
   private worker?: Worker;
   private loaded = false;
@@ -17,12 +29,12 @@ class PythonWebWorker {
 
         if (pythonResult.array_output) {
           if (!Array.isArray(pythonResult.array_output[0])) {
-            pythonResult.array_output = pythonResult.array_output.flatMap((entry: string | number) => [
-              [entry ? entry.toString() : ''],
+            pythonResult.array_output = pythonResult.array_output.flatMap((entry: string | number | undefined) => [
+              [stringOrNumber(entry)],
             ]);
           } else {
             pythonResult.array_output = pythonResult.array_output.map((entry: (string | number)[]) =>
-              entry.map((entry: String | number) => (entry ? entry.toString() : ''))
+              entry.map((entry: string | number | undefined) => stringOrNumber(entry))
             );
 
             // ensure that the 2d array has equally sized rows

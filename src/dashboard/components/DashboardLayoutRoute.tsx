@@ -1,5 +1,12 @@
-import { Close, ExtensionOutlined, FolderOpenOutlined, HubOutlined, Menu, PeopleOutline } from '@mui/icons-material';
-import { Avatar, Box, CircularProgress, Drawer, IconButton, Typography, useTheme } from '@mui/material';
+import { TYPE } from '@/constants/appConstants';
+import { DOCUMENTATION_URL } from '@/constants/urls';
+import { Button } from '@/shadcn/ui/button';
+import { Separator } from '@/shadcn/ui/separator';
+import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
+import { cn } from '@/shadcn/utils';
+import { HubOutlined } from '@mui/icons-material';
+import { Avatar, CircularProgress, Typography, useTheme } from '@mui/material';
+import { ExternalLinkIcon, FileIcon, MixIcon, PersonIcon } from '@radix-ui/react-icons';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigation } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
@@ -11,17 +18,12 @@ import { ReactComponent as QuadraticLogotype } from './quadratic-logotype.svg';
 const drawerWidth = 264;
 
 export const Component = () => {
-  const theme = useTheme();
   const navigation = useNavigation();
   const location = useLocation();
   const isLoading = navigation.state !== 'idle';
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
-  const handleDrawerToggle = () => {
-    setIsOpen((prev) => !prev);
-  };
-
-  const navbar = <Navbar handleDrawerToggle={handleDrawerToggle} />;
+  const navbar = <Navbar />;
 
   // When the location changes, close the menu (if it's already open)
   useEffect(() => {
@@ -29,150 +31,66 @@ export const Component = () => {
   }, [location.pathname]);
 
   return (
-    <Box
-      sx={{
-        backgroundColor: theme.palette.background.default,
-        height: '100%',
-        [theme.breakpoints.up('md')]: {
-          display: 'flex',
-          ml: drawerWidth + 'px',
-        },
-      }}
-    >
-      <Drawer
-        variant="temporary"
-        open={isOpen}
-        onClose={handleDrawerToggle}
-        anchor={'right'}
-        ModalProps={{
-          keepMounted: true, // Better open performance on mobile.
-        }}
-        sx={{
-          display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-        }}
-      >
+    <div className={`h-full lg:flex lg:flex-row`}>
+      <div className={`hidden flex-shrink-0 border-r border-r-border lg:block`} style={{ width: drawerWidth }}>
         {navbar}
-      </Drawer>
-      <Drawer
-        variant="permanent"
-        sx={{
-          display: { xs: 'none', md: 'block' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-        }}
-        open
+      </div>
+      <div
+        className={cn(
+          `relative h-full w-full px-4 pb-10 transition-opacity lg:px-10`,
+          isLoading ? 'overflow-hidden' : 'overflow-scroll',
+          isLoading && 'pointer-events-none opacity-25'
+        )}
       >
-        {navbar}
-      </Drawer>
-      <Box
-        sx={{
-          width: '100%',
-          height: '100%',
-          px: theme.spacing(2),
-          overflow: isLoading ? 'hidden' : 'scroll',
-          paddingBottom: theme.spacing(5),
-          position: 'relative',
-          transition: '.2s ease opacity',
-          ...(isLoading ? { opacity: '.25', pointerEvents: 'none' } : {}),
-
-          [theme.breakpoints.up('md')]: {
-            px: theme.spacing(5),
-          },
-        }}
-      >
-        <Box
-          sx={{
-            display: { xs: 'block', md: 'none' },
-            position: 'absolute',
-            top: theme.spacing(1.5),
-            right: theme.spacing(2),
-            zIndex: 100,
-          }}
-        >
-          <IconButton onClick={handleDrawerToggle}>
-            <Menu />
-          </IconButton>
-        </Box>
+        <div className={`absolute right-4 top-3 z-10 lg:hidden`}>
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" onClick={() => setIsOpen(true)}>
+                Menu
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="p-0" style={{ width: drawerWidth }}>
+              {navbar}
+            </SheetContent>
+          </Sheet>
+        </div>
         <Outlet />
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };
 
-function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
+function Navbar() {
   const { user } = useRootRouteLoaderData();
-
   const theme = useTheme();
 
-  const sidebarLinkStyles = {
-    display: 'flex',
-    alignItems: 'center',
-    color: 'inherit',
-    gap: theme.spacing(1),
-    padding: `${theme.spacing(1)} ${theme.spacing(1)}`,
-    borderBottom: '2px solid transparent',
-    textDecoration: 'none',
-    borderRadius: theme.shape.borderRadius,
-  };
-  const SidebarLabel = ({ children }: { children: ReactNode }) => (
-    <Typography variant="overline" color="text.secondary" style={{ marginTop: theme.spacing(2) }}>
-      {children}
-    </Typography>
-  );
-
   return (
-    <Box
-      component="nav"
-      sx={{
-        px: theme.spacing(2),
-        pt: theme.spacing(1.5),
-        pb: theme.spacing(1),
-        display: 'flex',
-        justifyContent: 'space-between',
-        flexDirection: 'column',
-        height: '100%',
-
-        [theme.breakpoints.up('md')]: {
-          p: theme.spacing(2),
-        },
-      }}
-    >
+    <nav className={`flex h-full flex-col justify-between px-4 pb-2 pt-4`}>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <SidebarNavLink to="/" style={{ ...sidebarLinkStyles, paddingRight: theme.spacing(1.5) }} isLogo={true}>
-            <div style={{ width: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className={`flex items-center justify-between`}>
+          <SidebarNavLink to="/" className={`pr-3`} isLogo={true}>
+            <div className={`flex w-5 items-center justify-center`}>
               <QuadraticLogo />
             </div>
             <QuadraticLogotype fill={theme.palette.mode === 'light' ? colors.quadraticFifth : '#fff'} />
           </SidebarNavLink>
+        </div>
 
-          <Box sx={{ marginLeft: 'auto', [theme.breakpoints.up('md')]: { display: 'none' } }}>
-            <IconButton onClick={() => handleDrawerToggle()}>
-              <Close />
-            </IconButton>
-          </Box>
-        </Box>
-
-        <SidebarLabel>Personal</SidebarLabel>
-        <SidebarNavLink to={ROUTES.MY_FILES} style={sidebarLinkStyles}>
-          <FolderOpenOutlined />
-          <Typography variant="body2" color="text.primary">
+        <div className="mt-4 grid gap-1">
+          <SidebarNavLink to={ROUTES.FILES}>
+            <FileIcon className="h-5 w-5" />
             My files
-          </Typography>
-        </SidebarNavLink>
-        <SidebarNavLink to={ROUTES.EXAMPLES} style={sidebarLinkStyles}>
-          <ExtensionOutlined />
-          <Typography variant="body2" color="text.primary">
+          </SidebarNavLink>
+          <SidebarNavLink to={ROUTES.EXAMPLES}>
+            <MixIcon className="h-5 w-5" />
             Examples
-          </Typography>
-        </SidebarNavLink>
+          </SidebarNavLink>
+        </div>
 
-        <SidebarLabel>Teams</SidebarLabel>
-        <SidebarNavLink to={ROUTES.TEAMS} style={sidebarLinkStyles}>
-          <PeopleOutline />
-          <Typography variant="body2" color="text.primary">
-            My team
-          </Typography>
+        <p className={`${TYPE.overline} mt-6 text-muted-foreground`}>Teams</p>
+        <SidebarNavLink to={ROUTES.TEAMS}>
+          <PersonIcon className="h-5 w-5" />
+          My team
         </SidebarNavLink>
 
         <SidebarLabel>Connections</SidebarLabel>
@@ -184,28 +102,38 @@ function Navbar({ handleDrawerToggle }: { handleDrawerToggle: Function }) {
         </SidebarNavLink>
       </div>
       <div>
-        <SidebarNavLink to={ROUTES.ACCOUNT} style={sidebarLinkStyles}>
+        <SidebarNavLink to={DOCUMENTATION_URL} target="_blank" className={`text-muted-foreground`}>
+          Docs
+          <ExternalLinkIcon className="ml-auto h-5 w-5 text-inherit opacity-50" />
+        </SidebarNavLink>
+        <Separator className="my-2" />
+        <SidebarNavLink to={ROUTES.ACCOUNT}>
           <Avatar alt={user?.name} src={user?.picture} sx={{ width: 24, height: 24 }} />
-          <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <Typography variant="body2" color="text.primary">
-              {user?.name || 'You'}
-            </Typography>
-            {user?.email && (
-              <Typography noWrap variant="caption" color="text.secondary">
-                {user?.email}
-              </Typography>
-            )}
+          <div className={`flex flex-col overflow-hidden`}>
+            {user?.name || 'You'}
+            {user?.email && <p className={`truncate ${TYPE.caption} text-muted-foreground`}>{user?.email}</p>}
           </div>
         </SidebarNavLink>
       </div>
-    </Box>
+    </nav>
   );
 }
 
-function SidebarNavLink({ to, children, style, isLogo }: any) {
+function SidebarNavLink({
+  to,
+  children,
+  className,
+  isLogo,
+  target,
+}: {
+  to: string;
+  children: ReactNode;
+  className?: string;
+  isLogo?: boolean;
+  target?: string;
+}) {
   const location = useLocation();
   const navigation = useNavigation();
-  const theme = useTheme();
 
   const isActive =
     // We're currently on this page and not navigating elsewhere
@@ -214,38 +142,20 @@ function SidebarNavLink({ to, children, style, isLogo }: any) {
     to === navigation.location?.pathname;
 
   return (
-    <Box
-      sx={{
-        '.MuiSvgIcon-root': {
-          fill: theme.palette.text.secondary,
-        },
-        '&:hover .MuiSvgIcon-root': {
-          fill: theme.palette.text.primary,
-        },
-      }}
+    <NavLink
+      {...(target ? { target } : {})}
+      to={to}
+      className={cn(
+        isActive && 'bg-muted',
+        TYPE.body2,
+        `relative flex items-center gap-2 p-2 no-underline hover:bg-accent`,
+        className
+      )}
     >
-      <NavLink to={to} style={{ ...style, position: 'relative' }}>
-        <Box
-          sx={[
-            {
-              position: 'absolute',
-              top: '0',
-              left: '0',
-              right: '0',
-              bottom: '0',
-              backgroundColor: isActive ? theme.palette.action.hover : 'inherit',
-
-              '&:hover': {
-                backgroundColor: theme.palette.action.hover,
-              },
-            },
-          ]}
-        />
-        {children}
-        {navigation.state === 'loading' && navigation.location.pathname.includes(to) && !isLogo && (
-          <CircularProgress size={18} sx={{ ml: 'auto' }} />
-        )}
-      </NavLink>
-    </Box>
+      {children}
+      {navigation.state === 'loading' && navigation.location.pathname.includes(to) && !isLogo && (
+        <CircularProgress size={18} sx={{ ml: 'auto' }} />
+      )}
+    </NavLink>
   );
 }
