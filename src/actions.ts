@@ -6,6 +6,7 @@ import { EditorInteractionState } from './atoms/editorInteractionStateAtom';
 import { GlobalSnackbar } from './components/GlobalSnackbarProvider';
 import { ROUTES } from './constants/routes';
 import { DOCUMENTATION_URL } from './constants/urls';
+import { CreateActionRequest } from './dashboard/FilesCreateRoute';
 import { grid } from './grid/controller/Grid';
 import { downloadFileInBrowser } from './helpers/downloadFileInBrowser';
 import { FileContextType } from './ui/components/FileProvider';
@@ -67,11 +68,13 @@ export const duplicateFile = {
   label: 'Duplicate',
   isAvailable: isViewerOrAbove,
   run({ name, submit }: { name: string; submit: SubmitFunction }) {
-    let formData = new FormData();
-    formData.append('name', name + ' (Copy)');
-    formData.append('contents', grid.export());
-    formData.append('version', grid.getVersion());
-    submit(formData, { method: 'POST', action: ROUTES.CREATE_FILE });
+    let data: CreateActionRequest = {
+      name: name + ' (Copy)',
+      contents: grid.export(),
+      version: grid.getVersion(),
+    };
+
+    submit(data, { method: 'POST', action: ROUTES.CREATE_FILE, encType: 'application/json' });
   },
 };
 
