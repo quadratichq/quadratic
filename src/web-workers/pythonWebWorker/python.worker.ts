@@ -1,7 +1,6 @@
 /* eslint-disable no-restricted-globals */
 
 import { PythonMessage } from './pythonTypes';
-import python_code from './run_python.py?raw';
 
 const TRY_AGAIN_TIMEOUT = 500;
 
@@ -9,7 +8,7 @@ self.importScripts('/pyodide/pyodide.js');
 
 let getCellsMessages: (cells: { x: number; y: number; value: string }[]) => void | undefined;
 
-export const getCellsDB = async (
+const getCellsDB = async (
   x0: number,
   y0: number,
   x1: number,
@@ -30,7 +29,7 @@ async function pythonWebWorker() {
     pyodide = await (self as any).loadPyodide();
     await pyodide.registerJsModule('getCellsDB', getCellsDB);
     await pyodide.loadPackage(['numpy', 'pandas', 'micropip']);
-    // const python_code = await (await fetch(define_run_python)).text();
+    const python_code = await (await fetch('/run_python.py')).text();
     await pyodide.runPython(python_code);
   } catch (e) {
     self.postMessage({ type: 'python-error' } as PythonMessage);
@@ -65,5 +64,3 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
 };
 
 pythonWebWorker();
-
-export {};

@@ -27,5 +27,16 @@ export default defineConfig(() => {
         },
       }),
     ],
+    worker: {
+      format: 'iife',
+      plugins: () => [
+        checker({
+          typescript: true,
+          eslint: {
+            lineCommand: 'eslint -ext .ts src"',
+          },
+        }),
+      ],
+    },
   };
 });
