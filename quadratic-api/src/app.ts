@@ -73,6 +73,7 @@ if (SENTRY_DSN) {
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   if (err.status >= 500) {
     console.error(`[${new Date().toISOString()}] ${err.message}`);
+    if (process.env.NODE_ENV !== 'production') console.log(`[${new Date().toISOString()}] ${err.message}`);
   }
   next(err);
 });

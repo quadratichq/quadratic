@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/browser';
+import * as Sentry from '@sentry/react';
 import localforage from 'localforage';
 import mixpanel from 'mixpanel-browser';
 import { isEditorOrAbove } from '../../../actions';

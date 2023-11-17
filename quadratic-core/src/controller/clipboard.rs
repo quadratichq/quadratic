@@ -104,13 +104,13 @@ impl GridController {
                     }
                     html.push_str("}>");
                 }
-                if value.is_some() {
-                    plain_text.push_str(&value.as_ref().unwrap().to_string());
-                    html.push_str(&value.as_ref().unwrap().to_string());
-                } else if spill_value.is_some() {
-                    plain_text.push_str(&spill_value.as_ref().unwrap().to_string());
-                    html.push_str(&spill_value.as_ref().unwrap().to_string());
-                }
+                if let Some(value) = value.as_ref() {
+                    plain_text.push_str(&value.to_string());
+                    html.push_str(&value.to_string());
+                } else if let Some(spill_value) = spill_value.as_ref() {
+                    plain_text.push_str(&spill_value.to_string());
+                    html.push_str(&spill_value.to_string());
+                };
                 if bold || italic {
                     html.push_str("</span>");
                 }
