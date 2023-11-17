@@ -1,123 +1,114 @@
-import { useRecoilState } from 'recoil';
-import { copy, cut, paste, redo, undo } from '../../../../actions';
-import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
+import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
+import { useGlobalSnackbar } from '@/components/GlobalSnackbarProvider';
 import {
   copySelectionToPNG,
   copyToClipboard,
   cutToClipboard,
   fullClipboardSupport,
   pasteFromClipboard,
-} from '../../../../grid/actions/clipboard/clipboard';
+} from '@/grid/actions/clipboard/clipboard';
+import { CommandItem, CommandShortcut } from '@/shadcn/ui/command';
+import { useRecoilState } from 'recoil';
+import { copy, cut, paste, redo, undo } from '../../../../actions';
 import { grid } from '../../../../grid/controller/Grid';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { isMac } from '../../../../utils/isMac';
-import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
 const ListItems = [
   {
-    label: undo.label,
     isAvailable: undo.isAvailable,
-    Component: (props: CommandPaletteListItemSharedProps) => {
+    Component: () => {
       return (
-        <CommandPaletteListItem
-          {...props}
-          action={grid.undo}
-          shortcut="Z"
-          shortcutModifiers={[KeyboardSymbols.Command]}
-        />
+        <CommandItem onSelect={grid.undo}>
+          {undo.label}
+          <CommandShortcut>{KeyboardSymbols.Command}Z</CommandShortcut>
+        </CommandItem>
       );
     },
   },
   {
-    label: redo.label,
     isAvailable: redo.isAvailable,
-    Component: (props: CommandPaletteListItemSharedProps) => {
+    Component: () => {
       return (
-        <CommandPaletteListItem
-          {...props}
-          action={grid.redo}
-          shortcut={isMac ? 'Z' : 'Y'}
-          shortcutModifiers={isMac ? [KeyboardSymbols.Command, KeyboardSymbols.Shift] : [KeyboardSymbols.Command]}
-        />
+        <CommandItem onSelect={grid.redo}>
+          {redo.label}
+          <CommandShortcut>
+            {isMac ? KeyboardSymbols.Command + KeyboardSymbols.Shift : KeyboardSymbols.Command}
+            {isMac ? 'Z' : 'Y'}
+          </CommandShortcut>
+        </CommandItem>
       );
     },
   },
+
   {
-    label: cut.label,
     isAvailable: cut.isAvailable,
-    Component: (props: CommandPaletteListItemSharedProps) => {
+    Component: () => {
       return (
-        <CommandPaletteListItem
-          {...props}
-          action={cutToClipboard}
-          shortcut="X"
-          shortcutModifiers={[KeyboardSymbols.Command]}
-        />
+        <CommandItem onSelect={cutToClipboard}>
+          {cut.label}
+          <CommandShortcut>{KeyboardSymbols.Command}X</CommandShortcut>
+        </CommandItem>
       );
     },
   },
+
   {
-    label: copy.label,
-    Component: (props: CommandPaletteListItemSharedProps) => {
+    Component: () => {
       return (
-        <CommandPaletteListItem
-          {...props}
-          action={copyToClipboard}
-          shortcut="C"
-          shortcutModifiers={[KeyboardSymbols.Command]}
-        />
+        <CommandItem onSelect={copyToClipboard}>
+          {copy.label}
+          <CommandShortcut>{KeyboardSymbols.Command}C</CommandShortcut>
+        </CommandItem>
       );
     },
   },
+
   {
-    label: paste.label,
     isAvailable: paste.isAvailable,
-    Component: (props: CommandPaletteListItemSharedProps) => {
+    Component: () => {
       return (
-        <CommandPaletteListItem
-          {...props}
-          action={pasteFromClipboard}
-          shortcut="V"
-          shortcutModifiers={[KeyboardSymbols.Command]}
-        />
+        <CommandItem onSelect={pasteFromClipboard}>
+          {paste.label}
+          <CommandShortcut>{KeyboardSymbols.Command}V</CommandShortcut>
+        </CommandItem>
       );
     },
   },
+
   {
-    label: 'Copy selection as PNG',
     isAvailable: () => fullClipboardSupport(),
-    Component: (props: CommandPaletteListItemSharedProps) => {
+    Component: () => {
       const { addGlobalSnackbar } = useGlobalSnackbar();
+
       return (
-        <CommandPaletteListItem
-          {...props}
-          action={() => {
+        <CommandItem
+          onSelect={() => {
             copySelectionToPNG(addGlobalSnackbar);
           }}
-          shortcut="C"
-          shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
-        />
+        >
+          Copy selection as PNG
+          <CommandShortcut>{KeyboardSymbols.Command + KeyboardSymbols.Shift}C</CommandShortcut>
+        </CommandItem>
       );
     },
   },
   {
     label: 'Go to',
-    Component: (props: CommandPaletteListItemSharedProps) => {
+    Component: () => {
       const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-
       return (
-        <CommandPaletteListItem
-          {...props}
-          action={() => {
+        <CommandItem
+          onSelect={() => {
             setEditorInteractionState({
               ...editorInteractionState,
               showGoToMenu: true,
             });
           }}
-          shortcut="G"
-          shortcutModifiers={[KeyboardSymbols.Command]}
-        />
+        >
+          Go to
+          <CommandShortcut>{KeyboardSymbols.Command}G</CommandShortcut>
+        </CommandItem>
       );
     },
   },

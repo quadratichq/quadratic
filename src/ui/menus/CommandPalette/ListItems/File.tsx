@@ -1,45 +1,41 @@
+import { createNewFile, deleteFile, downloadFile, duplicateFile } from '@/actions';
+import { useGlobalSnackbar } from '@/components/GlobalSnackbarProvider';
+import { ROUTES } from '@/constants/routes';
+import { CommandItem } from '@/shadcn/ui/command';
+import { useFileContext } from '@/ui/components/FileProvider';
 import { useNavigate, useParams } from 'react-router-dom';
-import { createNewFile, deleteFile, downloadFile, duplicateFile } from '../../../../actions';
-import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
-import { ROUTES } from '../../../../constants/routes';
-import { useFileContext } from '../../../components/FileProvider';
-import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
 const ListItems = [
   {
-    label: 'File: ' + createNewFile.label,
     isAvailable: createNewFile.isAvailable,
-    Component: (props: CommandPaletteListItemSharedProps) => {
+    Component: () => {
       const navigate = useNavigate();
       const action = () => createNewFile.run({ navigate });
-      return <CommandPaletteListItem {...props} action={action} />;
+      return <CommandItem onSelect={action}>{createNewFile.label}</CommandItem>;
     },
   },
   {
-    label: 'File: ' + duplicateFile.label,
     isAvailable: duplicateFile.isAvailable,
-    Component: (props: CommandPaletteListItemSharedProps) => {
+    Component: () => {
       const navigate = useNavigate();
       const action = () => navigate(ROUTES.CREATE_FILE);
-      return <CommandPaletteListItem {...props} action={action} />;
+      return <CommandItem onSelect={action}>{duplicateFile.label}</CommandItem>;
     },
   },
   {
-    label: 'File: ' + downloadFile.label,
     isAvailable: downloadFile.isAvailable,
-    Component: (props: CommandPaletteListItemSharedProps) => {
+    Component: () => {
       const { name } = useFileContext();
-      return <CommandPaletteListItem {...props} action={() => downloadFile.run({ name })} />;
+      return <CommandItem onSelect={() => downloadFile.run({ name })}>{downloadFile.label}</CommandItem>;
     },
   },
   {
-    label: 'File: ' + deleteFile.label,
     isAvailable: deleteFile.isAvailable,
-    Component: (props: CommandPaletteListItemSharedProps) => {
+    Component: () => {
       const { uuid } = useParams() as { uuid: string };
       const { addGlobalSnackbar } = useGlobalSnackbar();
       const action = () => deleteFile.run({ uuid, addGlobalSnackbar });
-      return <CommandPaletteListItem {...props} action={action} />;
+      return <CommandItem onSelect={action}>{deleteFile.label}</CommandItem>;
     },
   },
 ];

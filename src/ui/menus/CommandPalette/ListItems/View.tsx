@@ -1,25 +1,29 @@
-import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../../../gridGL/helpers/zoom';
-import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
+// import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../../../gridGL/helpers/zoom';
+// import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
+import { Checkbox } from '@/shadcn/ui/checkbox';
+import { CommandItem } from '@/shadcn/ui/command';
 import { useGridSettings } from '../../TopBar/SubMenus/useGridSettings';
-import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
-import { CommandPaletteListItemCheckbox } from '../CommandPaletteListItemCheckbox';
 
 const ListItems = [
   {
-    label: 'View: Show row and column headings',
-    Component: (props: any) => {
+    Component: () => {
       const settings = useGridSettings();
+
       return (
-        <CommandPaletteListItem
-          {...props}
-          icon={<CommandPaletteListItemCheckbox checked={settings.showHeadings} />}
-          action={() => {
+        <CommandItem
+          onSelect={(value) => {
+            console.log('Fired', value);
             settings.setShowHeadings(!settings.showHeadings);
           }}
-        />
+          className="flex items-center gap-2"
+        >
+          <Checkbox checked={settings.showHeadings} />
+          Show row and column headings
+        </CommandItem>
       );
     },
   },
+  /*
   {
     label: 'View: Show axis',
     Component: (props: any) => {
@@ -164,6 +168,7 @@ const ListItems = [
       />
     ),
   },
+  */
 ];
 
 export default ListItems;

@@ -2,15 +2,6 @@ import fuzzysort from 'fuzzysort';
 import { GenericAction } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
-import BordersListItems from './ListItems/Borders';
-import EditListItems from './ListItems/Edit';
-import FileListItems from './ListItems/File';
-import FormatListItems from './ListItems/Format';
-import HelpListItems from './ListItems/Help';
-import ImportListItems from './ListItems/Import';
-import SheetListItems from './ListItems/Sheets';
-import TextListItems from './ListItems/Text';
-import ViewListItems from './ListItems/View';
 
 export interface Commands {
   label: string;
@@ -26,17 +17,19 @@ export const getCommandPaletteListItems = (props: {
   extraItems: Commands[];
   confirmDelete: () => void;
 }): Array<JSX.Element> => {
-  const commands: Array<Commands> = [
-    ...FileListItems,
-    ...EditListItems,
-    ...ViewListItems,
-    ...ImportListItems,
-    ...BordersListItems,
-    ...TextListItems,
-    ...FormatListItems,
-    ...SheetListItems(),
-    ...HelpListItems,
-  ];
+  return [];
+  const commands = [];
+  // Array<Commands> = [
+  //   ...FileListItems,
+  //   ...EditListItems,
+  //   ...ViewListItems,
+  //   ...ImportListItems,
+  //   ...BordersListItems,
+  //   ...TextListItems,
+  //   ...FormatListItems,
+  //   ...SheetListItems(),
+  //   ...HelpListItems,
+  // ];
   const { activeSearchValue, permission, ...rest } = props;
 
   let filteredCommands = commands.filter((action) => (action.isAvailable ? action.isAvailable(permission) : true));

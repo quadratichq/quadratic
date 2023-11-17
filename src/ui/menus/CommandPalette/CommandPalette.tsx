@@ -1,24 +1,31 @@
-import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemText, Paper } from '@mui/material';
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandList,
+  CommandSeparator,
+} from '@/shadcn/ui/command';
 import mixpanel from 'mixpanel-browser';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
-import focusInput from '../../../utils/focusInput';
 import '../../styles/floating-dialog.css';
-import { useSheetListItems } from './ListItems/useSheetListItems';
-import { getCommandPaletteListItems } from './getCommandPaletteListItems';
+import editListItems from './ListItems/Edit';
+import fileListItems from './ListItems/File';
+import viewListItems from './ListItems/View';
 
 interface Props {
   confirmSheetDelete: () => void;
 }
 
 export const CommandPalette = (props: Props) => {
-  const { confirmSheetDelete } = props;
+  // const { confirmSheetDelete } = props;
 
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const [activeSearchValue, setActiveSearchValue] = React.useState<string>('');
-  const [selectedListItemIndex, setSelectedListItemIndex] = React.useState<number>(0);
+  // const [activeSearchValue, setActiveSearchValue] = React.useState<string>('');
+  // const [selectedListItemIndex, setSelectedListItemIndex] = React.useState<number>(0);
   const { permission } = editorInteractionState;
 
   // Fn that closes the command palette and gets passed down to individual ListItems
@@ -36,29 +43,53 @@ export const CommandPalette = (props: Props) => {
   }, []);
 
   // Upon keyboard navigation, scroll the element into view
-  useEffect(() => {
-    const el = document.querySelector(`[data-command-bar-list-item-index='${selectedListItemIndex}']`);
-    if (el) {
-      el.scrollIntoView({
-        block: 'nearest',
-      });
-    }
-  }, [selectedListItemIndex]);
+  // useEffect(() => {
+  //   const el = document.querySelector(`[data-command-bar-list-item-index='${selectedListItemIndex}']`);
+  //   if (el) {
+  //     el.scrollIntoView({
+  //       block: 'nearest',
+  //     });
+  //   }
+  // }, [selectedListItemIndex]);
 
-  const sheets = useSheetListItems();
+  // const sheets = useSheetListItems();
 
   // Otherwise, define vars and render the list
-  const ListItems = getCommandPaletteListItems({
-    permission,
-    closeCommandPalette,
-    activeSearchValue: activeSearchValue,
-    selectedListItemIndex: selectedListItemIndex,
-    extraItems: sheets,
-    confirmDelete: confirmSheetDelete,
-  });
+  // const ListItems = getCommandPaletteListItems({
+  //   permission,
+  //   closeCommandPalette,
+  //   activeSearchValue: activeSearchValue,
+  //   selectedListItemIndex: selectedListItemIndex,
+  //   extraItems: sheets,
+  //   confirmDelete: confirmSheetDelete,
+  // });
 
-  const searchLabel = 'Search menus and commands…';
+  // const searchLabel = 'Search menus and commands…';
 
+  const renderItems = (items: any) =>
+    items
+      .filter(({ isAvailable }: any) => (isAvailable ? isAvailable(permission) : true))
+      .map(({ Component }: any, i: number) => <Component key={i} />);
+
+  return (
+    <CommandDialog open={true} onOpenChange={closeCommandPalette}>
+      <CommandInput placeholder="Type a command or search..." />
+      <CommandList
+        onClick={() => {
+          console.log('fired');
+        }}
+      >
+        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandGroup heading="View">{renderItems(viewListItems)}</CommandGroup>
+        <CommandGroup heading="File">{renderItems(fileListItems)}</CommandGroup>
+        <CommandSeparator />
+        <CommandGroup heading="Edit">{renderItems(editListItems)}</CommandGroup>
+        <CommandSeparator />
+      </CommandList>
+    </CommandDialog>
+  );
+
+  /*
   return (
     <Dialog open={true} onClose={closeCommandPalette} fullWidth maxWidth={'xs'} BackdropProps={{ invisible: true }}>
       <Paper
@@ -119,4 +150,5 @@ export const CommandPalette = (props: Props) => {
       </Paper>
     </Dialog>
   );
+  */
 };
