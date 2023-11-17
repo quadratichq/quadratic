@@ -68,7 +68,7 @@ export const duplicateFile = {
   label: 'Duplicate',
   isAvailable: isViewerOrAbove,
   run({ name, submit }: { name: string; submit: SubmitFunction }) {
-    let data: CreateActionRequest = {
+    const data: CreateActionRequest = {
       name: name + ' (Copy)',
       contents: grid.export(),
       version: grid.getVersion(),
