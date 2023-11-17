@@ -72,7 +72,7 @@ export const CodeEditorBody = (props: Props) => {
 
       setDidMount(true);
     },
-    [didMount]
+    [didMount, closeEditor]
   );
 
   useEffect(() => {
