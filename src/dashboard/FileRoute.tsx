@@ -37,7 +37,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   // Fetch the file
   const data = await apiClient.getFile(uuid).catch((e) => {
-    console.error(e);
+    console.error(e, e.message, e.status, e.method);
     return undefined;
   });
   if (!data) {

@@ -23,13 +23,13 @@ export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z
 
   // Handle response if a server error is returned
   if (!response.ok) {
-    const error = await newHTTPError('Unsuccessful response', response, init.method);
+    const error = await createAPIError('Unsuccessful response', response, init.method);
     throw error;
   }
 
   // Handle if the response is not JSON
   const json = await response.json().catch(async () => {
-    const error = await newHTTPError('Not a JSON body', response, init.method);
+    const error = await createAPIError('Not a JSON body', response, init.method);
     throw error;
   });
 
@@ -37,17 +37,45 @@ export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z
   const result = schema.safeParse(json);
   if (!result.success) {
     console.error(result.error);
-    const error = await newHTTPError('Unexpected response schema', response, init.method);
+    const error = await createAPIError('Unexpected response schema', response, init.method);
     throw error;
   }
 
   return result.data;
 }
 
-async function newHTTPError(reason: string, response: Response, method?: string) {
-  const text = await response.text().catch(() => `Response .text() cannot be parsed.`);
-  const message = `Error fetching ${method} ${response.url} ${response.status}. ${reason}`;
-  console.error(`${message}. Response body: ${text}`);
-  Sentry.captureException({ message });
-  return new Error(message);
+interface IAPIError {
+  status: number;
+  details: string;
+  method?: string;
+}
+class APIError extends Error {
+  status: number;
+  details: string;
+  method?: string;
+
+  constructor(message: string, { status, method, details }: IAPIError) {
+    super(message);
+    this.status = status;
+    this.details = details;
+    this.method = method;
+    this.name = 'APIError';
+  }
+}
+
+async function createAPIError(reason: string, response: Response, method?: string) {
+  const status = response.status;
+  let details = '';
+
+  try {
+    const json = await response.json();
+    details = json.error && json.error.message ? json.error.message : '';
+  } catch (e) {
+    details = await response.text().catch(() => 'Response .text() cannot be parsed.');
+  }
+
+  const sentryMessage = `fetchFromApi error: ${method} ${response.url} ${response.status}. ${reason}`;
+  Sentry.captureException({ message: sentryMessage });
+
+  return new APIError(reason, { status, details, method });
 }
