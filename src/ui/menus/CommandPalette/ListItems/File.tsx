@@ -1,8 +1,7 @@
 import { DeleteOutline, FileCopyOutlined, FileDownloadOutlined, InsertDriveFileOutlined } from '@mui/icons-material';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSubmit } from 'react-router-dom';
 import { createNewFile, deleteFile, downloadFile, duplicateFile } from '../../../../actions';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
-import { ROUTES } from '../../../../constants/routes';
 import { useFileContext } from '../../../components/FileProvider';
 import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
@@ -20,8 +19,11 @@ const ListItems = [
     label: 'File: ' + duplicateFile.label,
     isAvailable: duplicateFile.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
-      const navigate = useNavigate();
-      const action = () => navigate(ROUTES.CREATE_FILE);
+      const submit = useSubmit();
+      const { name } = useFileContext();
+      const action = () => {
+        duplicateFile.run({ name, submit });
+      };
       return <CommandPaletteListItem {...props} icon={<FileCopyOutlined />} action={action} />;
     },
   },
