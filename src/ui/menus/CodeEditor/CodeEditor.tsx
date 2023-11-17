@@ -143,12 +143,6 @@ export const CodeEditor = () => {
   }, [updateCodeCell, pythonState]);
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    // Esc
-    // if (!(event.metaKey || event.ctrlKey) && event.key === 'Escape') {
-    //   event.preventDefault();
-    //   closeEditor(false);
-    // }
-
     // Don't allow the shortcuts below for certain users
     if (!isEditorOrAbove(editorInteractionState.permission)) {
       return;
