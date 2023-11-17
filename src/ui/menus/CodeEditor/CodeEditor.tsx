@@ -145,10 +145,10 @@ export const CodeEditor = () => {
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // Esc
-    if (!(event.metaKey || event.ctrlKey) && event.key === 'Escape') {
-      event.preventDefault();
-      closeEditor(false);
-    }
+    // if (!(event.metaKey || event.ctrlKey) && event.key === 'Escape') {
+    //   event.preventDefault();
+    //   closeEditor(false);
+    // }
 
     // Don't allow the shortcuts below for certain users
     if (!isEditorOrAbove(editorInteractionState.permission)) {
@@ -221,7 +221,7 @@ export const CodeEditor = () => {
         cancelCell={cancelCell}
         closeEditor={() => closeEditor(false)}
       />
-      <CodeEditorBody editorContent={editorContent} setEditorContent={setEditorContent} />
+      <CodeEditorBody editorContent={editorContent} setEditorContent={setEditorContent} closeEditor={closeEditor} />
       <ResizeControl setState={setConsoleHeight} position="TOP" />
 
       {/* Console Wrapper */}

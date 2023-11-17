@@ -17,10 +17,11 @@ import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 interface Props {
   editorContent: string | undefined;
   setEditorContent: (value: string | undefined) => void;
+  closeEditor: (skipSaveCheck: boolean) => void;
 }
 
 export const CodeEditorBody = (props: Props) => {
-  const { editorContent, setEditorContent } = props;
+  const { editorContent, setEditorContent, closeEditor } = props;
 
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const readOnly = !isEditorOrAbove(editorInteractionState.permission);
@@ -62,6 +63,12 @@ export const CodeEditorBody = (props: Props) => {
       monaco.languages.setMonarchTokensProvider('formula', FormulaTokenizerConfig);
       monaco.languages.registerCompletionItemProvider('formula', { provideCompletionItems });
       monaco.languages.registerHoverProvider('formula', { provideHover });
+
+      editor.addCommand(
+        monaco.KeyCode.Escape,
+        () => closeEditor(false),
+        '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
+      );
 
       setDidMount(true);
     },
