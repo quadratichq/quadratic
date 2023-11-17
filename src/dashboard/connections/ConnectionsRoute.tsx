@@ -1,5 +1,6 @@
-import { AddOutlined, ErrorOutline } from '@mui/icons-material';
+import { AddOutlined } from '@mui/icons-material';
 import { Button, useTheme } from '@mui/material';
+import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { Link, LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
 import { apiClient } from '../../api/apiClient';
 import { ApiTypes } from '../../api/types';
@@ -48,7 +49,7 @@ export const ErrorBoundary = () => {
     <Empty
       title="Unexpected error"
       description="Something went wrong loading this file. If the error continues, contact us."
-      Icon={ErrorOutline}
+      Icon={ExclamationTriangleIcon}
       actions={
         <Button variant="contained" disableElevation component={Link} to="/">
           Go home

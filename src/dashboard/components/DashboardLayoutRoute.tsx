@@ -93,8 +93,8 @@ function Navbar() {
           My team
         </SidebarNavLink>
 
-        <SidebarLabel>Connections</SidebarLabel>
-        <SidebarNavLink to={ROUTES.CONNECTIONS} style={sidebarLinkStyles}>
+        <p className={`${TYPE.overline} mt-6 text-muted-foreground`}>Connections</p>
+        <SidebarNavLink to={ROUTES.CONNECTIONS}>
           <HubOutlined />
           <Typography variant="body2" color="text.primary">
             My connections
