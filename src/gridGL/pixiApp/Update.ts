@@ -9,6 +9,7 @@ import {
   debugTimeReset,
 } from '../helpers/debugPerformance';
 import { pixiApp } from './PixiApp';
+import { thumbnail } from './thumbnail';
 
 export class Update {
   private raf?: number;
@@ -111,8 +112,10 @@ export class Update {
       debugRendererLight(true);
       debugShowChildren(pixiApp.stage, 'stage');
       debugShowCachedCounts();
+      thumbnail.rendererBusy();
     } else {
       debugRendererLight(false);
+      thumbnail.check();
     }
 
     this.raf = requestAnimationFrame(this.update);

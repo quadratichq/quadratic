@@ -62,13 +62,13 @@ export const QuadraticMenu = () => {
       <Menu
         menuButton={({ open }) => (
           <TopBarMenuItem title="Main menu" open={open}>
-            <img src="/favicon.ico" height="22px" alt="Quadratic Icon" />
+            <img src="/favicon.ico" width="22" height="22" alt="Quadratic Icon" />
           </TopBarMenuItem>
         )}
       >
         {isViewerOrAbove(permission) && (
           <>
-            <MenuItem href={ROUTES.MY_FILES} style={{ textDecoration: 'none' }}>
+            <MenuItem href={ROUTES.FILES} style={{ textDecoration: 'none' }}>
               <MenuLineItem primary="Back to files" />
             </MenuItem>
             <MenuDivider />

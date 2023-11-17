@@ -1,5 +1,5 @@
-import { ErrorOutline, QuestionMarkOutlined } from '@mui/icons-material';
-import { Button } from '@mui/material';
+import { Button } from '@/shadcn/ui/button';
+import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import {
   Link,
@@ -59,6 +59,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   hello();
   grid.init();
   grid.openFromContents(file.contents);
+  grid.thumbnailDirty = !data.file.thumbnail;
 
   // If the file is newer than the app, do a (hard) reload.
   const fileVersion = file.version;
@@ -118,10 +119,10 @@ export const ErrorBoundary = () => {
       <Empty
         title="404: file not found"
         description="This file may have been deleted, moved, or made unavailable. Try reaching out to the file owner."
-        Icon={QuestionMarkOutlined}
+        Icon={ExclamationTriangleIcon}
         actions={
-          <Button variant="contained" disableElevation component={Link} to="/">
-            Go home
+          <Button asChild variant="secondary">
+            <Link to="/">Go home</Link>
           </Button>
         }
       />
@@ -134,10 +135,10 @@ export const ErrorBoundary = () => {
     <Empty
       title="Unexpected error"
       description="Something went wrong loading this file. If the error continues, contact us."
-      Icon={ErrorOutline}
+      Icon={ExclamationTriangleIcon}
       actions={
-        <Button variant="contained" disableElevation component={Link} to="/">
-          Go home
+        <Button asChild variant="secondary">
+          <Link to="/">Go home</Link>
         </Button>
       }
       severity="error"

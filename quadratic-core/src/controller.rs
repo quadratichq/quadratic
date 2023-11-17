@@ -17,6 +17,7 @@ pub mod operation;
 pub mod operations;
 pub mod sheet_offsets;
 pub mod sheets;
+pub mod thumbnail;
 pub mod transaction_summary;
 pub mod transaction_types;
 pub mod transactions;
@@ -33,6 +34,7 @@ pub struct GridController {
     undo_stack: Vec<Transaction>,
     redo_stack: Vec<Transaction>,
 }
+
 impl GridController {
     pub fn new() -> Self {
         Self::from_grid(Grid::new())
