@@ -1,11 +1,5 @@
-import {
-  CloudDownloadOutlined,
-  DataObjectOutlined,
-  InsertDriveFile,
-  StorageOutlined,
-  UploadFile,
-} from '@mui/icons-material';
-import { Menu, MenuHeader, MenuItem } from '@szhsin/react-menu';
+import { DataObjectOutlined } from '@mui/icons-material';
+import { Menu, MenuDivider, MenuHeader, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE } from '../../../../constants/appConstants';
@@ -30,17 +24,18 @@ export const DataMenu = () => {
             addGlobalSnackbar(CSV_IMPORT_MESSAGE);
           }}
         >
-          <MenuLineItem primary="CSV" Icon={UploadFile} />
+          <MenuLineItem primary="CSV" />
         </MenuItem>
         <MenuItem disabled>
-          <MenuLineItem primary="Excel (coming soon)" Icon={InsertDriveFile} />
+          <MenuLineItem primary="Excel (coming soon)" />
         </MenuItem>
+        <MenuDivider />
         <MenuHeader>Connect</MenuHeader>
         <MenuItem disabled>
-          <MenuLineItem primary="SaaS (coming soon)" Icon={CloudDownloadOutlined} />
+          <MenuLineItem primary="SaaS (coming soon)" />
         </MenuItem>
         <MenuItem disabled>
-          <MenuLineItem primary="Database (coming soon)" Icon={StorageOutlined} />
+          <MenuLineItem primary="Database (coming soon)" />
         </MenuItem>
       </Menu>
     </>
