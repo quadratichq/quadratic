@@ -23,7 +23,7 @@ export default defineConfig(() => {
       checker({
         typescript: true,
         eslint: {
-          lintCommand: 'eslint --ext .ts,.tsx src"',
+          lintCommand: 'eslint --ext .ts,.tsx src',
         },
       }),
     ],
@@ -33,7 +33,7 @@ export default defineConfig(() => {
         checker({
           typescript: true,
           eslint: {
-            lineCommand: 'eslint -ext .ts src"',
+            lintCommand: 'eslint --ext .ts src',
           },
         }),
       ],
