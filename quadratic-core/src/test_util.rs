@@ -1,12 +1,19 @@
+use std::collections::HashMap;
+
 use crate::{
     controller::GridController,
-    grid::{Bold, SheetId},
+    grid::{Bold, FillColor, SheetId},
     CellValue, Pos, Rect,
 };
 
 use tabled::{
     builder::Builder,
-    settings::Color,
+    settings::{
+        object::{Columns, Object, Rows},
+        style::BorderColor,
+        themes::Colorization,
+        Color, Format, Highlight,
+    },
     settings::{Modify, Style},
 };
 
@@ -102,6 +109,7 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
     blank.extend(columns.clone());
     builder.set_header(blank);
     let mut bolds = vec![];
+    let mut fill_colors = vec![];
     let mut count_x = 0;
     let mut count_y = 0;
 
@@ -112,6 +120,10 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
 
             if sheet.get_formatting_value::<Bold>(pos).is_some() {
                 bolds.push((count_y + 1, count_x + 1));
+            }
+
+            if let Some(fill_color) = sheet.get_formatting_value::<FillColor>(pos) {
+                fill_colors.push((count_y + 1, count_x + 1, fill_color));
             }
 
             vals.push(
@@ -138,5 +150,19 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
                 .with(Color::FG_BRIGHT_RED),
         );
     });
+
+    let bg_colors = HashMap::<&str, Color>::from_iter([
+        ("white", Color::BG_WHITE),
+        ("red", Color::BG_RED),
+        ("blue", Color::BG_BLUE),
+        ("green", Color::BG_GREEN),
+        ("yellow", Color::BG_YELLOW),
+    ]);
+
+    fill_colors.iter().for_each(|(x, y, fill_color)| {
+        let color = bg_colors.get(fill_color.as_str()).unwrap();
+        table.with(Colorization::exact([color.to_owned()], (*x, *y)));
+    });
+
     println!("\nsheet: {}\n{}", sheet.id, table);
 }

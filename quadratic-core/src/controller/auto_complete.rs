@@ -108,7 +108,7 @@ impl GridController {
             let up_range = initial_up_range.map(|initial_up_range| {
                 Rect::new_span(
                     initial_up_range.min,
-                    (selection.min.x - 1, initial_up_range.max.y).into(),
+                    (selection.min.x - 1, selection.min.y - 1).into(),
                 )
             });
 
@@ -164,6 +164,7 @@ impl GridController {
         let mut format_ops = vec![];
         let mut values = vec![];
         let mut formats = vec![];
+        println!("range: {:?}", range);
         let mut ops = selection
             .y_range()
             .map(|y| {
@@ -175,7 +176,7 @@ impl GridController {
 
                 // for each column, apply the formats to a block (selection.width, y) of new cells
                 range.x_range().step_by(width).for_each(|x| {
-                    let new_x = x + width as i64 - 1;
+                    let new_x = range.max.x.min(x + width as i64 - 1);
                     let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
                     format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
                 });
@@ -238,7 +239,7 @@ impl GridController {
 
                 // for each column, apply the formats to a block (selection.width, y) of new cells
                 range.x_range().rev().step_by(width).for_each(|x| {
-                    let new_x = x - width as i64 + 1;
+                    let new_x = range.min.x.max(x - width as i64 + 1);
                     let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
                     format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
                 });
@@ -301,7 +302,7 @@ impl GridController {
 
                 // for each row, apply the formats to a block (x, selection.height) of new cells
                 range.y_range().step_by(height).for_each(|y| {
-                    let new_y = y + height as i64 - 1;
+                    let new_y = range.max.y.min(y + height as i64 - 1);
                     let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
                     format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
                 });
@@ -336,12 +337,28 @@ impl GridController {
                     Rect::new_span((x, selection.min.y).into(), (x, selection.max.y).into());
                 let target_col =
                     Rect::new_span((x, selection.min.y - 1).into(), (x, range.min.y).into());
-                let format = self.get_all_cell_formats(sheet_id, source_col);
+                let mut format = self.get_all_cell_formats(sheet_id, source_col);
                 let height = selection.height() as usize;
 
                 // for each row, apply the formats to a block (x, selection.height) of new cells
                 range.y_range().rev().step_by(height).for_each(|y| {
-                    let new_y = y - height as i64 + 1;
+                    let mut new_y = y - height as i64 + 1;
+
+                    // since the new_y is less than the range min, we need to
+                    // adjust the format since this is ine reverse order
+                    if new_y < range.min.y {
+                        let source_col = Rect::new_span(
+                            (x, selection.min.y + range.min.y - new_y).into(),
+                            (x, selection.max.y).into(),
+                        );
+                        new_y = range.min.y;
+                        println!("selection.min.y: {}", selection.min.y);
+                        println!("range.min.y: {}", range.min.y);
+                        println!("new_y: {}", new_y);
+                        println!("source_col: {:?}", source_col);
+                        format = self.get_all_cell_formats(sheet_id, source_col);
+                    }
+
                     let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
                     format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
                 });
@@ -393,15 +410,33 @@ impl GridController {
                     (format_x, selection.min.y).into(),
                     (format_x, selection.max.y).into(),
                 );
-                let format = self.get_all_cell_formats(sheet_id, format_source_rect);
+                let mut format = self.get_all_cell_formats(sheet_id, format_source_rect);
 
                 range.y_range().step_by(height as usize).for_each(|y| {
+                    println!("y: {}", y);
                     let new_y = if direction == ExpandDirection::Down {
-                        y + height - 1
+                        range.min.y.max(y - height + 1)
                     } else {
-                        y - height - 1
+                        // since the new_y is less than the range min, we need to
+                        // adjust the format since this is ine reverse order
+                        let calc_y = y + height - 1;
+                        if calc_y < range.min.y {
+                            let format_source_rect = Rect::new_span(
+                                (format_x, selection.min.y + range.min.y - calc_y).into(),
+                                (format_x, selection.max.y).into(),
+                            );
+                            println!("range.min.y: {:?}", range.min.y);
+                            println!("calc_y: {:?}", calc_y);
+                            println!("format_source_rect: {:?}", format_source_rect);
+                            format = self.get_all_cell_formats(sheet_id, format_source_rect);
+                            range.min.y
+                        } else {
+                            y + height - 1
+                        }
                     };
+                    println!("new_y: {}", new_y);
                     let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
+                    println!("format_rect: {:?}", format_rect);
                     format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
                 });
 
@@ -434,6 +469,7 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let mut format_ops = vec![];
         let height = values.len() as i64 / width;
+        println!("range: {:?}", range);
 
         let mut ops = range
             .x_range()
@@ -461,14 +497,17 @@ impl GridController {
                     (format_x, selection.min.y).into(),
                     (format_x, selection.max.y).into(),
                 );
+                println!("format_source_rect: {:?}", format_source_rect);
                 let format = self.get_all_cell_formats(sheet_id, format_source_rect);
 
                 range.y_range().step_by(height as usize).for_each(|y| {
                     let new_y = if direction == ExpandDirection::Down {
-                        y + height - 1
+                        range.max.y.min(y + height - 1)
                     } else {
-                        y - height - 1
+                        y + height - 1
                     };
+                    println!("y: {}", y);
+                    println!("new_y: {}", new_y);
                     let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
                     format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
                 });
@@ -582,7 +621,7 @@ mod tests {
         let vals = vec!["a", "h", "x", "g", "f", "z", "r", "b"];
         let bolds = vec![true, false, false, true, false, true, true, false];
 
-        test_setup(selection, &vals, &bolds)
+        test_setup(selection, &vals, &bolds, &[])
     }
 
     fn test_setup_rect_horiz_series(selection: &Rect) -> (GridController, SheetId) {
@@ -592,17 +631,22 @@ mod tests {
         ];
         let bolds = vec![];
 
-        test_setup(selection, &vals, &bolds)
+        test_setup(selection, &vals, &bolds, &[])
     }
 
     fn test_setup_rect_vert_series(selection: &Rect) -> (GridController, SheetId) {
         let vals = vec!["1", "2", "3"];
         let bolds = vec![];
 
-        test_setup(selection, &vals, &bolds)
+        test_setup(selection, &vals, &bolds, &[])
     }
 
-    fn test_setup(selection: &Rect, vals: &[&str], bolds: &[bool]) -> (GridController, SheetId) {
+    fn test_setup(
+        selection: &Rect,
+        vals: &[&str],
+        bolds: &[bool],
+        fill_colors: &[&str],
+    ) -> (GridController, SheetId) {
         let mut grid_controller = GridController::new();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let mut count = 0;
@@ -621,6 +665,15 @@ mod tests {
                             None,
                         );
                     }
+                }
+
+                if let Some(fill_color) = fill_colors.get(count) {
+                    grid_controller.set_cell_fill_color(
+                        sheet_id,
+                        Rect::single_pos(pos),
+                        Some(fill_color.to_lowercase()),
+                        None,
+                    );
                 }
 
                 count += 1;
@@ -761,6 +814,35 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, 2, 10, 10, expected);
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 2, expected_bold.clone());
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 10, expected_bold);
+    }
+
+    #[test]
+    fn test_expand_formatting_only() {
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
+        let range_down_and_right: Rect = Rect::new_span(selected.min, Pos { x: 14, y: 10 });
+        let range_up_and_right: Rect = Rect::new_span(Pos { x: 2, y: 0 }, Pos { x: 7, y: 3 });
+        let range_over: Rect = Rect::new_span(Pos { x: -2, y: -6 }, Pos { x: 18, y: 14 });
+
+        let vals = vec!["", "", "", "", "", "", "", ""];
+        let fill_colors = vec![
+            "white", "red", "blue", "green", "yellow", "white", "red", "blue",
+        ];
+        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors);
+
+        // grid.autocomplete(sheet_id, selected, range_down_and_right, None)
+        //     .unwrap();
+        grid.autocomplete(sheet_id, selected, range_up_and_right, None)
+            .unwrap();
+
+        print_table(&grid, sheet_id, range_over);
+
+        // let expected = vec!["a", "h", "x", "g", "a", "h", "x", "g", "a"];
+        // let expected_bold = vec![true, false, false, true, true, false, false, true, true];
+
+        // assert_cell_value_row(&grid, sheet_id, 2, 10, 2, expected.clone());
+        // assert_cell_value_row(&grid, sheet_id, 2, 10, 10, expected);
+        // assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 2, expected_bold.clone());
+        // assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 10, expected_bold);
     }
 
     #[test]
