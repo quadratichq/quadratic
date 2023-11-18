@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import mixpanel from 'mixpanel-browser';
+import monaco from 'monaco-editor';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
@@ -18,6 +19,7 @@ export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
   const isRunningComputation = useRef(false);
+  const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor>();
 
   const cellLocation = useMemo(() => {
     return {
@@ -100,6 +102,10 @@ export const CodeEditor = () => {
     },
     [codeString, editorContent, setEditorInteractionState]
   );
+
+  const unsaved = useMemo(() => {
+    return editorContent !== codeString;
+  }, [codeString, editorContent]);
 
   const saveAndRunCell = async () => {
     if (isRunningComputation.current) return;
@@ -187,6 +193,7 @@ export const CodeEditor = () => {
         <SaveChangesAlert
           onCancel={() => {
             setShowSaveChangesAlert(!showSaveChangesAlert);
+            editor?.focus();
           }}
           onSave={() => {
             saveAndRunCell();
@@ -201,12 +208,12 @@ export const CodeEditor = () => {
       <ResizeControl setState={setEditorWidth} position="LEFT" />
       <CodeEditorHeader
         cellLocation={cellLocation}
-        unsaved={false}
+        unsaved={unsaved}
         isRunningComputation={isRunningComputation.current}
         saveAndRunCell={saveAndRunCell}
         closeEditor={() => closeEditor(false)}
       />
-      <CodeEditorBody editorContent={editorContent} setEditorContent={setEditorContent} />
+      <CodeEditorBody editorContent={editorContent} setEditorContent={setEditorContent} setEditor={setEditor} />
       <ResizeControl setState={setConsoleHeight} position="TOP" />
 
       {/* Console Wrapper */}

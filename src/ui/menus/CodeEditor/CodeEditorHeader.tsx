@@ -74,7 +74,7 @@ export const CodeEditorHeader = (props: Props) => {
               <FiberManualRecord
                 fontSize="small"
                 color="warning"
-                sx={{ fontSize: '.75rem', position: 'relative', top: '2px', left: '6px' }}
+                sx={{ fontSize: '.75rem', position: 'relative', top: '-1px', left: '6px' }}
               />
             </TooltipHint>
           )}

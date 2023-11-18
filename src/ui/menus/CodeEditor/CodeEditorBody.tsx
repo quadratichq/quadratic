@@ -1,6 +1,6 @@
 import Editor, { Monaco } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -17,10 +17,11 @@ import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 interface Props {
   editorContent: string | undefined;
   setEditorContent: (value: string | undefined) => void;
+  setEditor: (editor: monaco.editor.IStandaloneCodeEditor) => void;
 }
 
-export const CodeEditorBody = (props: Props) => {
-  const { editorContent, setEditorContent } = props;
+export const CodeEditorBody = forwardRef((props: Props, ref) => {
+  const { editorContent, setEditorContent, setEditor } = props;
 
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const readOnly = !isEditorOrAbove(editorInteractionState.permission);
@@ -53,6 +54,8 @@ export const CodeEditorBody = (props: Props) => {
 
       monaco.editor.defineTheme('quadratic', QuadraticEditorTheme);
       monaco.editor.setTheme('quadratic');
+
+      setEditor(editor);
 
       if (didMount) return;
       // Only register language once
@@ -108,4 +111,4 @@ export const CodeEditorBody = (props: Props) => {
       )}
     </div>
   );
-};
+});
