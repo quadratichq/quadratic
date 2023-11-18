@@ -8,12 +8,7 @@ use crate::{
 
 use tabled::{
     builder::Builder,
-    settings::{
-        object::{Columns, Object, Rows},
-        style::BorderColor,
-        themes::Colorization,
-        Color, Format, Highlight,
-    },
+    settings::{themes::Colorization, Color},
     settings::{Modify, Style},
 };
 
@@ -113,6 +108,7 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
     let mut count_x = 0;
     let mut count_y = 0;
 
+    // convert the selected range in the sheet to tabled
     range.y_range().for_each(|y| {
         vals.push(y.to_string());
         range.x_range().for_each(|x| {
@@ -143,6 +139,7 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
     let mut table = builder.build();
     table.with(Style::modern());
 
+    // apply bold values to the table
     bolds.iter().for_each(|coords| {
         table.with(
             Modify::new((coords.0, coords.1))
@@ -151,17 +148,22 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
         );
     });
 
+    // limited suppported color set
     let bg_colors = HashMap::<&str, Color>::from_iter([
         ("white", Color::BG_WHITE),
         ("red", Color::BG_RED),
         ("blue", Color::BG_BLUE),
         ("green", Color::BG_GREEN),
-        ("yellow", Color::BG_YELLOW),
+        ("yellow", Color::BG_BRIGHT_YELLOW),
     ]);
 
+    // apply fill color values to the table
     fill_colors.iter().for_each(|(x, y, fill_color)| {
-        let color = bg_colors.get(fill_color.as_str()).unwrap();
-        table.with(Colorization::exact([color.to_owned()], (*x, *y)));
+        let color = bg_colors
+            .get(fill_color.as_str())
+            .unwrap_or(&Color::BG_WHITE)
+            .to_owned();
+        table.with(Colorization::exact([color], (*x, *y)));
     });
 
     println!("\nsheet: {}\n{}", sheet.id, table);

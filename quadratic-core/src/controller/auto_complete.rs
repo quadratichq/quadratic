@@ -10,6 +10,7 @@ use crate::{
         series::{find_auto_complete, SeriesOptions},
         RegionRef, Sheet, SheetId,
     },
+    util::maybe_reverse_range,
     Array, CellValue, Pos, Rect,
 };
 
@@ -164,7 +165,6 @@ impl GridController {
         let mut format_ops = vec![];
         let mut values = vec![];
         let mut formats = vec![];
-        println!("range: {:?}", range);
         let mut ops = selection
             .y_range()
             .map(|y| {
@@ -352,10 +352,6 @@ impl GridController {
                             (x, selection.max.y).into(),
                         );
                         new_y = range.min.y;
-                        println!("selection.min.y: {}", selection.min.y);
-                        println!("range.min.y: {}", range.min.y);
-                        println!("new_y: {}", new_y);
-                        println!("source_col: {:?}", source_col);
                         format = self.get_all_cell_formats(sheet_id, source_col);
                     }
 
@@ -412,33 +408,30 @@ impl GridController {
                 );
                 let mut format = self.get_all_cell_formats(sheet_id, format_source_rect);
 
-                range.y_range().step_by(height as usize).for_each(|y| {
-                    println!("y: {}", y);
-                    let new_y = if direction == ExpandDirection::Down {
-                        range.min.y.max(y - height + 1)
-                    } else {
-                        // since the new_y is less than the range min, we need to
-                        // adjust the format since this is ine reverse order
-                        let calc_y = y + height - 1;
-                        if calc_y < range.min.y {
-                            let format_source_rect = Rect::new_span(
-                                (format_x, selection.min.y + range.min.y - calc_y).into(),
-                                (format_x, selection.max.y).into(),
-                            );
-                            println!("range.min.y: {:?}", range.min.y);
-                            println!("calc_y: {:?}", calc_y);
-                            println!("format_source_rect: {:?}", format_source_rect);
-                            format = self.get_all_cell_formats(sheet_id, format_source_rect);
-                            range.min.y
+                maybe_reverse_range(range.y_range(), direction == ExpandDirection::Up)
+                    .step_by(height as usize)
+                    .for_each(|y| {
+                        let new_y = if direction == ExpandDirection::Down {
+                            range.max.y.min(y + height - 1)
                         } else {
-                            y + height - 1
-                        }
-                    };
-                    println!("new_y: {}", new_y);
-                    let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
-                    println!("format_rect: {:?}", format_rect);
-                    format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
-                });
+                            // since the new_y is less than the range min, we need to
+                            // adjust the format since this is ine reverse order
+                            let calc_y = y - height + 1;
+                            if calc_y < range.min.y {
+                                let format_source_rect = Rect::new_span(
+                                    (format_x, selection.min.y + range.min.y - calc_y).into(),
+                                    (format_x, selection.max.y).into(),
+                                );
+                                format = self.get_all_cell_formats(sheet_id, format_source_rect);
+                                range.min.y
+                            } else {
+                                y - height + 1
+                            }
+                        };
+                        let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
+                        format_ops
+                            .extend(apply_formats(self.region(sheet_id, format_rect), &format));
+                    });
 
                 let (operations, _) = self.apply_auto_complete(
                     sheet_id,
@@ -819,9 +812,10 @@ mod tests {
     #[test]
     fn test_expand_formatting_only() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
-        let range_down_and_right: Rect = Rect::new_span(selected.min, Pos { x: 14, y: 10 });
-        let range_up_and_right: Rect = Rect::new_span(Pos { x: 2, y: 0 }, Pos { x: 7, y: 3 });
-        let range_over: Rect = Rect::new_span(Pos { x: -2, y: -6 }, Pos { x: 18, y: 14 });
+        let range_down_and_right: Rect = Rect::new_span(selected.min, Pos { x: 6, y: 6 });
+        let range_up_and_right: Rect = Rect::new_span(Pos { x: 2, y: -1 }, Pos { x: 7, y: 3 });
+        // let range_over: Rect = Rect::new_span(Pos { x: 0, y: -3 }, Pos { x: 9, y: 5 });
+        let range_over: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 9, y: 12 });
 
         let vals = vec!["", "", "", "", "", "", "", ""];
         let fill_colors = vec![
@@ -829,10 +823,10 @@ mod tests {
         ];
         let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors);
 
-        // grid.autocomplete(sheet_id, selected, range_down_and_right, None)
-        //     .unwrap();
-        grid.autocomplete(sheet_id, selected, range_up_and_right, None)
+        grid.autocomplete(sheet_id, selected, range_down_and_right, None)
             .unwrap();
+        // grid.autocomplete(sheet_id, selected, range_up_and_right, None)
+        //     .unwrap();
 
         print_table(&grid, sheet_id, range_over);
 
