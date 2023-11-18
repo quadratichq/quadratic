@@ -38,6 +38,7 @@ pub enum CellValue {
     /// Error value.
     #[cfg_attr(test, proptest(skip))]
     Error(Box<Error>),
+    Html(String),
 }
 impl fmt::Display for CellValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -50,6 +51,7 @@ impl fmt::Display for CellValue {
             CellValue::Instant(i) => write!(f, "{i}"),
             CellValue::Duration(d) => write!(f, "{d}"),
             CellValue::Error(e) => write!(f, "{}", e.msg),
+            CellValue::Html(s) => write!(f, "{}", s),
         }
     }
 }
@@ -72,6 +74,7 @@ impl CellValue {
             CellValue::Instant(_) => "time instant",
             CellValue::Duration(_) => "time duration",
             CellValue::Error(_) => "error",
+            CellValue::Html(_) => "html",
         }
     }
     /// Returns a formula-source-code representation of the value.
@@ -85,6 +88,7 @@ impl CellValue {
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
+            CellValue::Html(s) => s.clone(),
         }
     }
 
@@ -127,6 +131,7 @@ impl CellValue {
         match self {
             CellValue::Blank => String::new(),
             CellValue::Text(s) => s.to_string(),
+            CellValue::Html(s) => s.to_string(),
             CellValue::Number(n) => {
                 let numeric_format = numeric_format.unwrap_or_default();
                 let use_commas = numeric_commas.is_some_and(|c| c)
@@ -198,6 +203,7 @@ impl CellValue {
         match self {
             CellValue::Blank => String::new(),
             CellValue::Text(s) => s.to_string(),
+            CellValue::Html(_) => String::new(),
             CellValue::Number(n) => n.to_string(),
             CellValue::Logical(true) => "true".to_string(),
             CellValue::Logical(false) => "false".to_string(),
@@ -290,6 +296,8 @@ impl CellValue {
             | (CellValue::Instant(_), _)
             | (CellValue::Duration(_), _)
             | (CellValue::Blank, _) => return Ok(None),
+
+            (CellValue::Html(_), _) => return Ok(None),
         }))
     }
 
@@ -309,6 +317,7 @@ impl CellValue {
                 CellValue::Instant(_) => 4,
                 CellValue::Duration(_) => 5,
                 CellValue::Blank => 6,
+                CellValue::Html(_) => 7,
             }
         }
 
@@ -427,6 +436,8 @@ impl CellValue {
                     1,
                 )),
             });
+        } else if s.to_lowercase().starts_with("<html>") {
+            value = CellValue::Html(s.to_string());
         }
         // todo: include other types here
         else {

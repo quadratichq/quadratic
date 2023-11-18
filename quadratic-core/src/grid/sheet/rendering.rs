@@ -1,4 +1,5 @@
 use crate::{
+    controller::transaction_summary::HtmlOutput,
     grid::{
         borders::{get_render_horizontal_borders, get_render_vertical_borders},
         js_types::{
@@ -86,6 +87,20 @@ impl Sheet {
                         italic: Some(true),
                         text_color: Some(String::from("red")),
                     }
+                } else if value.type_name() == "html" {
+                    JsRenderCell {
+                        x,
+                        y,
+
+                        value: " HTML".into(),
+                        language,
+
+                        align: None,
+                        wrap: None,
+                        bold: None,
+                        italic: Some(true),
+                        text_color: Some("blue".into()),
+                    }
                 } else {
                     let mut numeric_format: Option<NumericFormat> = None;
                     let mut numeric_decimals: Option<i16> = None;
@@ -119,6 +134,28 @@ impl Sheet {
                         italic: column.italic.get(y),
                         text_color: column.text_color.get(y),
                     }
+                }
+            })
+            .collect()
+    }
+
+    pub fn get_html_output(&self) -> Vec<HtmlOutput> {
+        self.code_cells
+            .iter()
+            .filter_map(|code_cell| {
+                if let Some(output) = code_cell.1.get_output_value(0, 0) {
+                    if output.type_name() != "html" {
+                        return None;
+                    }
+                    let pos = self.cell_ref_to_pos(*code_cell.0)?;
+                    Some(HtmlOutput {
+                        sheet_id: self.id.to_string(),
+                        x: pos.x as i32,
+                        y: pos.y as i32,
+                        html: output.to_display(None, None, None),
+                    })
+                } else {
+                    None
                 }
             })
             .collect()

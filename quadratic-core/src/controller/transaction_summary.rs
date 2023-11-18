@@ -43,6 +43,15 @@ impl CellSheetsModified {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct HtmlOutput {
+    pub sheet_id: String,
+    pub x: i32,
+    pub y: i32,
+    pub html: String,
+}
+
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct TransactionSummary {
@@ -75,6 +84,8 @@ pub struct TransactionSummary {
 
     // should the grid generate a thumbnail
     pub generate_thumbnail: bool,
+
+    pub html: Vec<HtmlOutput>,
 }
 
 impl TransactionSummary {
