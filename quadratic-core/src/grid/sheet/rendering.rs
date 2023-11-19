@@ -1,9 +1,9 @@
 use crate::{
-    controller::transaction_summary::HtmlOutput,
     grid::{
         borders::{get_render_horizontal_borders, get_render_vertical_borders},
         js_types::{
-            JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill,
+            JsHtmlOutput, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState,
+            JsRenderFill,
         },
         CellAlign, CodeCellRunResult, NumericFormat, NumericFormatKind,
     },
@@ -139,7 +139,7 @@ impl Sheet {
             .collect()
     }
 
-    pub fn get_html_output(&self) -> Vec<HtmlOutput> {
+    pub fn get_html_output(&self) -> Vec<JsHtmlOutput> {
         self.code_cells
             .iter()
             .filter_map(|code_cell| {
@@ -148,10 +148,10 @@ impl Sheet {
                         return None;
                     }
                     let pos = self.cell_ref_to_pos(*code_cell.0)?;
-                    Some(HtmlOutput {
+                    Some(JsHtmlOutput {
                         sheet_id: self.id.to_string(),
-                        x: pos.x as i32,
-                        y: pos.y as i32,
+                        x: pos.x,
+                        y: pos.y,
                         html: output.to_display(None, None, None),
                     })
                 } else {

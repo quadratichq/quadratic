@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    grid::{RegionRef, Sheet, SheetId},
+    grid::{js_types::JsHtmlOutput, RegionRef, Sheet, SheetId},
     Pos,
 };
 
@@ -43,15 +43,6 @@ impl CellSheetsModified {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct HtmlOutput {
-    pub sheet_id: String,
-    pub x: i32,
-    pub y: i32,
-    pub html: String,
-}
-
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct TransactionSummary {
@@ -85,7 +76,8 @@ pub struct TransactionSummary {
     // should the grid generate a thumbnail
     pub generate_thumbnail: bool,
 
-    pub html: Vec<HtmlOutput>,
+    // changes to html output
+    pub html: Vec<JsHtmlOutput>,
 }
 
 impl TransactionSummary {

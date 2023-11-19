@@ -168,6 +168,15 @@ pub struct JsRenderCodeCell {
     pub state: JsRenderCodeCellState,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct JsHtmlOutput {
+    pub sheet_id: String,
+    pub x: i64,
+    pub y: i64,
+    pub html: String,
+}
+
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[wasm_bindgen]
 pub enum JsRenderCodeCellState {

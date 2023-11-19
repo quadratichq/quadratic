@@ -27,6 +27,7 @@ import {
   CellWrap,
   FormattingSummary,
   JsClipboard,
+  JsHtmlOutput,
   JsRenderCell,
   JsRenderFill,
   Rect,
@@ -454,6 +455,11 @@ export class Grid {
 
   getRenderBorders(sheetId: string): JsRenderBorders {
     return this.gridController.getRenderBorders(sheetId);
+  }
+
+  getHtmlOutput(sheetId: string): JsHtmlOutput[] {
+    const data = this.gridController.getHtmlOutput(sheetId);
+    return JSON.parse(data);
   }
 
   //#endregion

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
+import { HtmlCells } from './htmlCells/HtmlCells';
 import { CellInput } from './interaction/CellInput';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { pixiApp } from './pixiApp/PixiApp';
@@ -117,6 +118,7 @@ export default function QuadraticGrid() {
     >
       {showInput && <CellInput container={container} />}
       <FloatingContextMenu container={container} showContextMenu={showContextMenu} />
+      <HtmlCells />
     </div>
   );
 }
