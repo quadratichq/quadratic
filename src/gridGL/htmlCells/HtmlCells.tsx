@@ -23,7 +23,7 @@ export const HtmlCells = () => {
 
       viewport.updateTransform();
       const worldTransform = viewport.worldTransform;
-      container.style.transform = `matrix(${worldTransform.a}, ${worldTransform.b}, ${worldTransform.c}, ${worldTransform.d}, ${worldTransform.tx}, ${worldTransform.ty})`;
+      container.style.transform = `matrix(${worldTransform.a},${worldTransform.b},${worldTransform.c},${worldTransform.d},${worldTransform.tx},${worldTransform.ty})`;
     };
 
     handleViewport();
@@ -66,9 +66,9 @@ export const HtmlCells = () => {
           const offset = sheets.sheet.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
           return (
             <iframe
-              sandbox="allow-scripts allow-same-origin"
+              sandbox="allow-scripts allow-same-origin allow-popups"
               srcDoc={htmlCell.html}
-              title={`html-cell-${i}`}
+              title={`HTML from ${htmlCell.x}, ${htmlCell.y}}`}
               key={i++}
               style={{
                 position: 'absolute',
