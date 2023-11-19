@@ -233,7 +233,13 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<CellRef, C
                                                 type_field: _type_field,
                                                 value,
                                             },
-                                        ) => Value::Single(CellValue::from(value)),
+                                        ) => {
+                                            if _type_field == "html" {
+                                                Value::Single(CellValue::Html(value))
+                                            } else {
+                                                Value::Single(CellValue::from(value))
+                                            }
+                                        }
                                         current::OutputValue::Array(current::OutputArray {
                                             size,
                                             values,
