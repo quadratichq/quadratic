@@ -21,19 +21,12 @@ export const HtmlCells = () => {
       if (!container) return;
       const viewport = pixiApp.viewport;
 
-      // Get world transform matrix
-      // const worldTransform = viewport.worldTransform;
-      container.childNodes.forEach((child, index) => {
-        if (!htmlOutputRef.current) return;
-        const htmlCell = htmlOutputRef.current[index];
-        const offset = sheets.sheet.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
-        const pos = viewport.toScreen(offset.x, offset.y + offset.height);
-        const div = child as HTMLDivElement;
-        div.style.scale = viewport.scale.x.toString();
-        div.style.translate = `${pos.x}px ${pos.y}px`;
-      });
+      viewport.updateTransform();
+      const worldTransform = viewport.worldTransform;
+      container.style.transform = `matrix(${worldTransform.a}, ${worldTransform.b}, ${worldTransform.c}, ${worldTransform.d}, ${worldTransform.tx}, ${worldTransform.ty})`;
     };
 
+    handleViewport();
     pixiApp.viewport.on('moved', handleViewport);
     pixiApp.viewport.on('moved-end', handleViewport);
 
@@ -51,14 +44,26 @@ export const HtmlCells = () => {
 
   let i = 0;
   return (
-    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+    <div
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        pointerEvents: 'none',
+      }}
+    >
       <div
         ref={containerRef}
-        style={{ position: 'relative', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+        style={{
+          position: 'relative',
+          top: 0,
+          left: 0,
+          pointerEvents: 'none',
+          border: '3px red solid',
+        }}
       >
         {htmlCells.map((htmlCell) => {
-          console.log(htmlCell.html);
-          // const offset = sheets.sheet.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
+          const offset = sheets.sheet.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
           return (
             <iframe
               sandbox="allow-scripts allow-same-origin"
@@ -68,15 +73,14 @@ export const HtmlCells = () => {
               style={{
                 position: 'absolute',
                 pointerEvents: 'auto',
-                // left: offset.x,
-                // top: offset.y + offset.height,
+                left: offset.x,
+                top: offset.y + offset.height,
                 width: '600px',
                 height: '400px',
                 background: 'white',
                 border: '1px solid black',
               }}
-              dangerouslySetInnerHTML={{ __html: htmlCell.html }} //'<div>HELLO!!!</div>' }}
-            ></iframe>
+            />
           );
         })}
       </div>
