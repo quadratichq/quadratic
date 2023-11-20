@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail, Result};
+use anyhow::Result;
 use csv::Writer;
 
 use super::{auto_complete::cell_values_in_rect, GridController};
@@ -10,7 +10,7 @@ impl GridController {
     /// Returns a [`String`].
     pub fn export_csv_selection(&self, sheet_id: SheetId, selection: &Rect) -> Result<String> {
         let sheet = self.sheet(sheet_id);
-        let values = cell_values_in_rect(&selection, sheet)?
+        let values = cell_values_in_rect(selection, sheet)?
             .into_cell_values_vec()
             .iter()
             .map(|record| record.to_string())
