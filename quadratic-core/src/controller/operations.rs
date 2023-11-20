@@ -19,6 +19,7 @@ impl GridController {
     pub fn execute_operation(
         &mut self,
         op: Operation,
+        cells_updated: &mut IndexSet<RegionRef>,
         cells_to_compute: &mut IndexSet<CellRef>,
         summary: &mut TransactionSummary,
         sheets_with_changed_bounds: &mut HashSet<SheetId>,
@@ -36,12 +37,12 @@ impl GridController {
                     .zip(values.into_cell_values_vec())
                     .map(|(cell_ref, value)| {
                         let pos = sheet.cell_ref_to_pos(cell_ref)?;
-                        cells_to_compute.insert(cell_ref);
                         let response = sheet.set_cell_value(pos, value)?;
                         Some(response.old_value)
                     })
                     .map(|old_value| old_value.unwrap_or(CellValue::Blank))
                     .collect();
+                cells_updated.insert(region.clone());
 
                 let old_values = Array::new_row_major(size, old_values)
                     .expect("error constructing array of old values for SetCells operation");
