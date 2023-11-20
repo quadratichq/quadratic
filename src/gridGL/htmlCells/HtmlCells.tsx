@@ -9,6 +9,32 @@ export const HtmlCells = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const htmlOutputRef = useRef<JsHtmlOutput[]>([]);
 
+  const iframeRef = useCallback((node: HTMLIFrameElement | null) => {
+    if (node) {
+      node.addEventListener('load', () => {
+        if (node.contentWindow) {
+          const style = window.getComputedStyle(node.contentWindow.document.body);
+          node.width = (
+            node.contentWindow.document.body.scrollWidth +
+            parseInt(style.marginLeft, 10) +
+            parseInt(style.marginRight, 10)
+          ).toString();
+          node.height = (
+            node.contentWindow.document.body.scrollHeight +
+            parseInt(style.marginTop, 10) +
+            parseInt(style.marginBottom, 10)
+          ).toString();
+          console.log(node.width, node.height);
+
+          // prevent mouse/touch events from zooming the html page
+          node.addEventListener('wheel', (event) => event.preventDefault());
+        } else {
+          throw new Error('Expected content window to be defined on iframe');
+        }
+      });
+    }
+  }, []);
+
   const handleHtmlCells = useCallback(() => {
     const htmlOutput = grid.getHtmlOutput(sheets.sheet.id);
     setHtmlCells(htmlOutput);
@@ -42,7 +68,6 @@ export const HtmlCells = () => {
     return () => window.removeEventListener('change-sheet', handleHtmlCells);
   }, [handleHtmlCells]);
 
-  let i = 0;
   return (
     <div
       style={{
@@ -56,29 +81,30 @@ export const HtmlCells = () => {
         ref={containerRef}
         style={{
           position: 'relative',
-          top: 0,
+          top: 3,
           left: 0,
           pointerEvents: 'none',
-          border: '3px red solid',
         }}
       >
-        {htmlCells.map((htmlCell) => {
+        {htmlCells.map((htmlCell, index) => {
           const offset = sheets.sheet.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
           return (
             <iframe
+              ref={iframeRef}
               sandbox="allow-scripts allow-same-origin allow-popups"
               srcDoc={htmlCell.html}
               title={`HTML from ${htmlCell.x}, ${htmlCell.y}}`}
-              key={i++}
+              key={index++}
               style={{
                 position: 'absolute',
                 pointerEvents: 'auto',
                 left: offset.x,
                 top: offset.y + offset.height,
-                width: '600px',
-                height: '400px',
+                minWidth: '600px',
+                minHeight: '400px',
                 background: 'white',
                 border: '1px solid black',
+                boxSizing: 'border-box',
               }}
             />
           );
