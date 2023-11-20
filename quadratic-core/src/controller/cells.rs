@@ -43,6 +43,9 @@ impl GridController {
         let region = RegionRef::from(cell_ref);
         let mut ops = vec![];
 
+        // strip whitespace
+        let value = value.trim();
+
         // remove any code cell that was originally over the cell
         if sheet.get_code_cell(pos).is_some() {
             ops.push(Operation::SetCellCode {
@@ -52,7 +55,12 @@ impl GridController {
         }
 
         // check for currency
-        if let Some((currency, number)) = CellValue::unpack_currency(value) {
+        if value.is_empty() {
+            ops.push(Operation::SetCellValues {
+                region: region.clone(),
+                values: Array::from(CellValue::Blank),
+            });
+        } else if let Some((currency, number)) = CellValue::unpack_currency(value) {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
                 values: Array::from(CellValue::Number(number)),
