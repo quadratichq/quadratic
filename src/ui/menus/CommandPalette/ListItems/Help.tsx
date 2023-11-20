@@ -1,4 +1,3 @@
-import { OpenInNew } from '@mui/icons-material';
 import { useSetRecoilState } from 'recoil';
 import { provideFeedback, viewDocs } from '../../../../actions';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
@@ -10,7 +9,7 @@ const ListItems = [
     Component: (props: CommandPaletteListItemSharedProps) => (
       <CommandPaletteListItem
         {...props}
-        icon={<OpenInNew />}
+        // icon={<OpenInNew />}
         action={() => {
           viewDocs.run();
         }}

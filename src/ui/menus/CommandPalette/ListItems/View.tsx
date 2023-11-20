@@ -1,37 +1,35 @@
-// import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../../../gridGL/helpers/zoom';
-// import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
+import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '@/gridGL/helpers/zoom';
+import { KeyboardSymbols } from '@/helpers/keyboardSymbols';
 import { Checkbox } from '@/shadcn/ui/checkbox';
-import { CommandItem } from '@/shadcn/ui/command';
+import { ZoomInIcon, ZoomOutIcon } from '@radix-ui/react-icons';
 import { useGridSettings } from '../../TopBar/SubMenus/useGridSettings';
+import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
 const ListItems = [
   {
-    Component: () => {
-      const settings = useGridSettings();
-
-      return (
-        <CommandItem
-          onSelect={(value) => {
-            console.log('Fired', value);
-            settings.setShowHeadings(!settings.showHeadings);
-          }}
-          className="flex items-center gap-2"
-        >
-          <Checkbox checked={settings.showHeadings} />
-          Show row and column headings
-        </CommandItem>
-      );
-    },
-  },
-  /*
-  {
-    label: 'View: Show axis',
-    Component: (props: any) => {
+    label: 'View: Show row and column headings',
+    Component: (props: CommandPaletteListItemSharedProps) => {
       const settings = useGridSettings();
       return (
         <CommandPaletteListItem
           {...props}
-          icon={<CommandPaletteListItemCheckbox checked={settings.showGridAxes} />}
+          Icon={<Checkbox checked={settings.showHeadings} />}
+          action={() => {
+            settings.setShowHeadings(!settings.showHeadings);
+          }}
+        />
+      );
+    },
+  },
+
+  {
+    label: 'View: Show axis',
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      const settings = useGridSettings();
+      return (
+        <CommandPaletteListItem
+          {...props}
+          Icon={<Checkbox checked={settings.showGridAxes} />}
           action={() => {
             settings.setShowGridAxes(!settings.showGridAxes);
           }}
@@ -39,14 +37,15 @@ const ListItems = [
       );
     },
   },
+
   {
     label: 'View: Show grid lines',
-    Component: (props: any) => {
+    Component: (props: CommandPaletteListItemSharedProps) => {
       const settings = useGridSettings();
       return (
         <CommandPaletteListItem
           {...props}
-          icon={<CommandPaletteListItemCheckbox checked={settings.showGridLines} />}
+          Icon={<Checkbox checked={settings.showGridLines} />}
           action={() => {
             settings.setShowGridLines(!settings.showGridLines);
           }}
@@ -56,12 +55,12 @@ const ListItems = [
   },
   {
     label: 'View: Show code cell outlines',
-    Component: (props: any) => {
+    Component: (props: CommandPaletteListItemSharedProps) => {
       const settings = useGridSettings();
       return (
         <CommandPaletteListItem
           {...props}
-          icon={<CommandPaletteListItemCheckbox checked={settings.showCellTypeOutlines} />}
+          Icon={<Checkbox checked={settings.showCellTypeOutlines} />}
           action={() => {
             settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
           }}
@@ -73,7 +72,7 @@ const ListItems = [
   // is editing a formula.
   // {
   //   label: 'View: Show A1 notation on headings',
-  //   Component: (props: any) => {
+  //   Component: (props: CommandPaletteListItemSharedProps) => {
   //     const settings = useGridSettings();
   //     return (
   //       <CommandPaletteListItem
@@ -88,12 +87,12 @@ const ListItems = [
   // },
   {
     label: 'View: Presentation mode',
-    Component: (props: any) => {
+    Component: (props: CommandPaletteListItemSharedProps) => {
       const { presentationMode, setPresentationMode } = useGridSettings();
       return (
         <CommandPaletteListItem
           {...props}
-          icon={<CommandPaletteListItemCheckbox checked={presentationMode} />}
+          Icon={<Checkbox checked={presentationMode} />}
           action={() => {
             setPresentationMode(!presentationMode);
           }}
@@ -108,6 +107,7 @@ const ListItems = [
     Component: (props: CommandPaletteListItemSharedProps) => (
       <CommandPaletteListItem
         {...props}
+        Icon={<ZoomInIcon />}
         action={() => {
           zoomIn();
         }}
@@ -121,6 +121,7 @@ const ListItems = [
     Component: (props: CommandPaletteListItemSharedProps) => (
       <CommandPaletteListItem
         {...props}
+        Icon={<ZoomOutIcon />}
         action={() => {
           zoomOut();
         }}
@@ -168,7 +169,6 @@ const ListItems = [
       />
     ),
   },
-  */
 ];
 
 export default ListItems;

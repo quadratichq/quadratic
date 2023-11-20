@@ -1,3 +1,4 @@
+import { TextNoneIcon } from '@radix-ui/react-icons';
 import { isEditorOrAbove } from '../../../../actions';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import {
@@ -12,6 +13,14 @@ import {
 } from '../../TopBar/SubMenus/formatCells';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
 
+const TextIcon = ({ children }: any) => {
+  return (
+    <div className="relative h-5 w-5 text-center text-xl">
+      <span style={{ lineHeight: 0, top: '-.333rem', position: 'relative' }}>{children}</span>
+    </div>
+  );
+};
+
 const ListItems = [
   {
     label: 'Format: Clear all',
@@ -20,6 +29,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
+          Icon={<TextNoneIcon />}
           action={clearFormattingAndBorders}
           shortcut="\"
           shortcutModifiers={KeyboardSymbols.Command}
@@ -38,21 +48,21 @@ const ListItems = [
     label: 'Format: Number as currency',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} action={textFormatSetCurrency} />;
+      return <CommandPaletteListItem Icon={<TextIcon>$</TextIcon>} {...props} action={textFormatSetCurrency} />;
     },
   },
   {
     label: 'Format: Number as percentage',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} action={textFormatSetPercentage} />;
+      return <CommandPaletteListItem Icon={<TextIcon>%</TextIcon>} {...props} action={textFormatSetPercentage} />;
     },
   },
   {
     label: 'Format: Number as scientific',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} action={textFormatSetExponential} />;
+      return <CommandPaletteListItem Icon={<TextIcon>Σ</TextIcon>} {...props} action={textFormatSetExponential} />;
     },
   },
   {

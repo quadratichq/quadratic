@@ -1,3 +1,10 @@
+import {
+  FontBoldIcon,
+  FontItalicIcon,
+  TextAlignCenterIcon,
+  TextAlignLeftIcon,
+  TextAlignRightIcon,
+} from '@radix-ui/react-icons';
 import { isEditorOrAbove } from '../../../../actions';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
@@ -12,6 +19,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
+          Icon={<FontBoldIcon />}
           action={() => {
             setBold(!sheets.sheet.getFormatPrimaryCell()?.bold);
           }}
@@ -28,6 +36,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
+          Icon={<FontItalicIcon />}
           action={() => {
             setItalic(!sheets.sheet.getFormatPrimaryCell()?.italic);
           }}
@@ -41,21 +50,21 @@ const ListItems = [
     label: 'Text: Align left',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} action={() => setAlignment('left')} />;
+      return <CommandPaletteListItem {...props} Icon={<TextAlignLeftIcon />} action={() => setAlignment('left')} />;
     },
   },
   {
     label: 'Text: Align center',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} action={() => setAlignment('center')} />;
+      return <CommandPaletteListItem {...props} Icon={<TextAlignCenterIcon />} action={() => setAlignment('center')} />;
     },
   },
   {
     label: 'Text: Align right',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} action={() => setAlignment('right')} />;
+      return <CommandPaletteListItem {...props} Icon={<TextAlignRightIcon />} action={() => setAlignment('right')} />;
     },
   },
 ];

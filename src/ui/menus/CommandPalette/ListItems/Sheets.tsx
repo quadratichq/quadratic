@@ -1,31 +1,35 @@
+import { ViewGridIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo, useState } from 'react';
 import { isEditorOrAbove } from '../../../../actions';
 import { grid } from '../../../../grid/controller/Grid';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { focusGrid } from '../../../../helpers/focusGrid';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
-import { Commands } from '../getCommandPaletteListItems';
 
 const ListItems = () => {
   // used to trigger changes in sheets
   const [trigger, setTrigger] = useState(0);
 
   const items = useMemo(() => {
-    const items: Commands[] = [
+    const items /*: Commands[]*/ = [
       {
-        label: 'Sheet: Create',
         isAvailable: isEditorOrAbove,
-        Component: (props: any) => {
-          return <CommandPaletteListItem {...props} action={() => sheets.createNew()} />;
+        Component: () => {
+          return (
+            <CommandPaletteListItem
+              Icon={<ViewGridIcon />}
+              label="Create"
+              action={() => sheets.createNew()}
+            ></CommandPaletteListItem>
+          );
         },
       },
       {
-        label: 'Sheet: Delete',
         isAvailable: isEditorOrAbove,
         Component: (props: any) => {
           return (
             <CommandPaletteListItem
-              {...props}
+              label="Delete"
               action={() => {
                 if (window.confirm(`Are you sure you want to delete ${sheets.sheet.name}?`)) {
                   sheets.deleteSheet(sheets.sheet.id);
@@ -37,22 +41,20 @@ const ListItems = () => {
         },
       },
       {
-        label: 'Sheet: Duplicate',
         isAvailable: isEditorOrAbove,
         Component: (props: any) => {
-          return <CommandPaletteListItem {...props} action={() => grid.duplicateSheet(sheets.sheet.id)} />;
+          return <CommandPaletteListItem action={() => grid.duplicateSheet(sheets.sheet.id)} label="Duplicate" />;
         },
       },
     ];
     sheets.forEach((sheet) => {
       items.push({
-        label: `Sheet: Switch to “${sheet.name}”`,
         isAvailable: () => sheets.current !== sheet.id,
         Component: (props: any) => {
           return (
             <CommandPaletteListItem
-              {...props}
-              icon={
+              label={`Switch to “${sheet.name}”`}
+              Icon={
                 sheet.color ? (
                   <div style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center' }}>
                     <div

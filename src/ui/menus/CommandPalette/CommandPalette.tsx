@@ -1,20 +1,11 @@
-import {
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandList,
-  CommandSeparator,
-} from '@/shadcn/ui/command';
+import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/shadcn/ui/command';
 import mixpanel from 'mixpanel-browser';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
 import '../../styles/floating-dialog.css';
-import editListItems from './ListItems/Edit';
-import fileListItems from './ListItems/File';
-import viewListItems from './ListItems/View';
+import { getCommandPaletteListItems } from './getCommandPaletteListItems';
 
 interface Props {
   confirmSheetDelete: () => void;
@@ -24,7 +15,7 @@ export const CommandPalette = (props: Props) => {
   // const { confirmSheetDelete } = props;
 
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  // const [activeSearchValue, setActiveSearchValue] = React.useState<string>('');
+  const [activeSearchValue, setActiveSearchValue] = useState<string>('');
   // const [selectedListItemIndex, setSelectedListItemIndex] = React.useState<number>(0);
   const { permission } = editorInteractionState;
 
@@ -55,36 +46,44 @@ export const CommandPalette = (props: Props) => {
   // const sheets = useSheetListItems();
 
   // Otherwise, define vars and render the list
-  // const ListItems = getCommandPaletteListItems({
-  //   permission,
-  //   closeCommandPalette,
-  //   activeSearchValue: activeSearchValue,
-  //   selectedListItemIndex: selectedListItemIndex,
-  //   extraItems: sheets,
-  //   confirmDelete: confirmSheetDelete,
-  // });
+  const ListItems = getCommandPaletteListItems({
+    permission,
+    closeCommandPalette,
+    activeSearchValue: activeSearchValue,
+    // selectedListItemIndex: selectedListItemIndex,
+    // extraItems: sheets,
+    // confirmDelete: confirmSheetDelete,
+  });
 
   // const searchLabel = 'Search menus and commands…';
 
-  const renderItems = (items: any) =>
-    items
-      .filter(({ isAvailable }: any) => (isAvailable ? isAvailable(permission) : true))
-      .map(({ Component }: any, i: number) => <Component key={i} />);
-
+  // const renderItems = (items: any) =>
+  //   items
+  //     .filter(({ isAvailable }: any) => (isAvailable ? isAvailable(permission) : true))
+  //     .map(({ Component }: any, i: number) => <Component key={i} />);
+  // const sheetListItems = getSheetListItems();
   return (
     <CommandDialog open={true} onOpenChange={closeCommandPalette}>
-      <CommandInput placeholder="Type a command or search..." />
+      <CommandInput
+        value={activeSearchValue}
+        onValueChange={setActiveSearchValue}
+        placeholder="Type a command or search..."
+      />
       <CommandList
         onClick={() => {
           console.log('fired');
         }}
       >
         <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup heading="View">{renderItems(viewListItems)}</CommandGroup>
-        <CommandGroup heading="File">{renderItems(fileListItems)}</CommandGroup>
+
+        <CommandGroup>{ListItems}</CommandGroup>
+        {/* <CommandGroup heading="File">{renderItems(fileListItems)}</CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Edit">{renderItems(editListItems)}</CommandGroup>
         <CommandSeparator />
+        <CommandGroup heading="View">{renderItems(viewListItems)}</CommandGroup>
+        <CommandSeparator />
+        <CommandGroup heading="Sheet">{renderItems(sheetListItems)}</CommandGroup> */}
       </CommandList>
     </CommandDialog>
   );
