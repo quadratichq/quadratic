@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shadcn/ui/dropdown-menu';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
-import { Check, ErrorOutline } from '@mui/icons-material';
+import { Check, ErrorOutline, Refresh, Stop } from '@mui/icons-material';
 import { CircularProgress, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -18,8 +18,8 @@ const uiLabelByPythonState: Record<PythonState['pythonState'], string> = {
   initial: 'Initial', // FYI: this will never really appear in the UI
   error: 'error loading',
   idle: 'idle',
-  loading: 'loading',
-  running: 'executing, please wait…',
+  loading: 'loading…',
+  running: 'executing…',
 };
 
 const PythonStateItem = () => {
@@ -50,20 +50,35 @@ const PythonStateItem = () => {
       <BottomBarItem
         onClick={() => {}}
         icon={<ErrorOutline fontSize="inherit" />}
-        style={{ color: theme.palette.error.main }}
+        style={{
+          color: theme.palette.error.main,
+          ...(open ? { backgroundColor: theme.palette.error.main, color: 'white' } : {}),
+        }}
       >
         {pythonLabel}
       </BottomBarItem>
     ) : pythonState === 'idle' ? (
-      <BottomBarItem onClick={() => {}} icon={<Check fontSize="inherit" />}>
+      <BottomBarItem
+        onClick={() => {}}
+        icon={<Check fontSize="inherit" />}
+        style={open ? { backgroundColor: theme.palette.action.hover } : {}}
+      >
         {pythonLabel}
       </BottomBarItem>
     ) : pythonState === 'loading' ? (
-      <BottomBarItem onClick={() => {}} icon={<CircularProgress size="0.5rem" color="warning" />}>
+      <BottomBarItem
+        onClick={() => {}}
+        icon={<CircularProgress size="0.5rem" color={open ? 'inherit' : 'warning'} />}
+        style={open ? { backgroundColor: theme.palette.warning.dark, color: 'white' } : {}}
+      >
         {pythonLabel}
       </BottomBarItem>
     ) : pythonState === 'running' ? (
-      <BottomBarItem onClick={() => {}} icon={<CircularProgress size="0.5rem" color="primary" />}>
+      <BottomBarItem
+        onClick={() => {}}
+        icon={<CircularProgress size="0.5rem" color={open ? 'inherit' : 'primary'} />}
+        style={open ? { backgroundColor: theme.palette.primary.dark, color: 'white' } : {}}
+      >
         {pythonLabel}
       </BottomBarItem>
     ) : (
@@ -75,7 +90,7 @@ const PythonStateItem = () => {
       <DropdownMenuTrigger asChild>{pythonStateButton}</DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuLabel className={`flexz zw-full zjustify-between`}>
-          Python:{' '}
+          <span>Status:</span>{' '}
           <span
             style={{
               color:
@@ -85,7 +100,7 @@ const PythonStateItem = () => {
                   ? theme.palette.warning.main
                   : pythonState === 'running'
                   ? theme.palette.primary.main
-                  : theme.palette.text.secondary,
+                  : theme.palette.text.primary,
             }}
           >
             {uiLabelByPythonState[pythonState]}
@@ -98,7 +113,7 @@ const PythonStateItem = () => {
             pythonWebWorker.restartFromUser();
           }}
         >
-          Stop execution
+          <Stop className="mr-2" sx={{ color: theme.palette.text.secondary }} /> Cancel execution
         </DropdownMenuItem>
         {pythonState === 'error' && (
           <DropdownMenuItem
@@ -106,7 +121,7 @@ const PythonStateItem = () => {
               window.location.reload();
             }}
           >
-            Reload app
+            <Refresh className="mr-2" sx={{ color: theme.palette.text.secondary }} /> Reload app
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>
