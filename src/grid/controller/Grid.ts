@@ -404,6 +404,16 @@ export class Grid {
     this.dirty = true;
   }
 
+  setCellOutputSize(sheetId: string, x: number, y: number, width: number, height: number) {
+    const summary = this.gridController.setCellOutputSize(
+      sheetId,
+      posToRect(x, y),
+      BigInt(Math.round(width)),
+      BigInt(Math.round(height))
+    );
+    this.transactionResponse(summary);
+  }
+
   //#endregion
 
   //#region get grid information

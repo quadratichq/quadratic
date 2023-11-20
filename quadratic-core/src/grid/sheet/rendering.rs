@@ -142,12 +142,12 @@ impl Sheet {
     pub fn get_html_output(&self) -> Vec<JsHtmlOutput> {
         self.code_cells
             .iter()
-            .filter_map(|code_cell| {
-                if let Some(output) = code_cell.1.get_output_value(0, 0) {
+            .filter_map(|(cell_ref, code_cell_value)| {
+                if let Some(output) = code_cell_value.get_output_value(0, 0) {
                     if output.type_name() != "html" {
                         return None;
                     }
-                    let pos = self.cell_ref_to_pos(*code_cell.0)?;
+                    let pos = self.cell_ref_to_pos(*cell_ref)?;
                     let output_size = self.html_output_size(pos);
                     Some(JsHtmlOutput {
                         sheet_id: self.id.to_string(),

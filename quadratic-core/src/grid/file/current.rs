@@ -114,6 +114,24 @@ fn set_column_format_bool(
     Ok(())
 }
 
+fn set_column_format_output_size(
+    column_data: &mut ColumnData<SameValue<OutputSize>>,
+    column: &HashMap<String, current::ColumnFormatType<current::OutputSize>>,
+) -> Result<()> {
+    for (y, format) in column.iter() {
+        let y =
+            i64::from_str(y).map_err(|e| anyhow!("Unable to convert {} to an i64: {}", y, e))?;
+        column_data.set(
+            y,
+            Some(OutputSize {
+                w: format.content.value.w,
+                h: format.content.value.h,
+            }),
+        );
+    }
+    Ok(())
+}
+
 fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<i64, Column>> {
     columns
         .iter()
@@ -132,6 +150,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
             set_column_format_bool(&mut col.italic, &column.italic)?;
             set_column_format_string(&mut col.text_color, &column.text_color)?;
             set_column_format_string(&mut col.fill_color, &column.fill_color)?;
+            set_column_format_output_size(&mut col.output_size, &column.output_size)?;
 
             for (y, value) in column.values.iter() {
                 for cell_value in value.content.values.iter() {

@@ -237,12 +237,14 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(&self.set_cell_output_size(
-            sheet_id,
-            *rect,
-            Some(OutputSize { w, h }),
-            cursor,
-        ))?)
+        let value = if w == 0 && h == 0 {
+            None
+        } else {
+            Some(OutputSize { w, h })
+        };
+        Ok(serde_wasm_bindgen::to_value(
+            &self.set_cell_output_size(sheet_id, *rect, value, cursor),
+        )?)
     }
 
     /// Changes cell numeric decimals.

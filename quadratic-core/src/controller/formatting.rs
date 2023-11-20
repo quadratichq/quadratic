@@ -250,7 +250,7 @@ pub enum CellFmtArray {
 mod test {
     use crate::{
         controller::GridController,
-        grid::{Grid, OutputSize, TextColor},
+        grid::{OutputSize, TextColor},
         Pos, Rect,
     };
 

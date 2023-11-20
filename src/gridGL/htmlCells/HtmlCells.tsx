@@ -1,3 +1,4 @@
+import { CELL_HEIGHT, CELL_WIDTH } from '@/constants/gridConstants';
 import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
 import { JsHtmlOutput } from '@/quadratic-core/types';
@@ -14,17 +15,29 @@ export const HtmlCells = () => {
       node.addEventListener('load', () => {
         if (node.contentWindow) {
           const style = window.getComputedStyle(node.contentWindow.document.body);
-          node.width = (
-            node.contentWindow.document.body.scrollWidth +
-            parseInt(style.marginLeft, 10) +
-            parseInt(style.marginRight, 10)
-          ).toString();
-          node.height = (
-            node.contentWindow.document.body.scrollHeight +
-            parseInt(style.marginTop, 10) +
-            parseInt(style.marginBottom, 10)
-          ).toString();
-          console.log(node.width, node.height);
+          const dataSize = node.getAttribute('data-size');
+          if (!dataSize) {
+            throw new Error('Expected data-size attribute on iframe');
+          }
+          const size = dataSize.split(',');
+          if (size[0] === '0') {
+            node.width = (
+              node.contentWindow.document.body.scrollWidth +
+              parseInt(style.marginLeft, 10) +
+              parseInt(style.marginRight, 10)
+            ).toString();
+          } else {
+            node.width = size[0];
+          }
+          if (size[1] === '0') {
+            node.height = (
+              node.contentWindow.document.body.scrollHeight +
+              parseInt(style.marginTop, 10) +
+              parseInt(style.marginBottom, 10)
+            ).toString();
+          } else {
+            node.height = size[1];
+          }
 
           // prevent mouse/touch events from zooming the html page
           node.addEventListener('wheel', (event) => event.preventDefault());
@@ -78,6 +91,7 @@ export const HtmlCells = () => {
       }}
     >
       <div
+        className="html-cells"
         ref={containerRef}
         style={{
           position: 'relative',
@@ -91,17 +105,19 @@ export const HtmlCells = () => {
           return (
             <iframe
               ref={iframeRef}
-              sandbox="allow-scripts allow-same-origin allow-popups"
+              seamless
               srcDoc={htmlCell.html}
               title={`HTML from ${htmlCell.x}, ${htmlCell.y}}`}
+              data-pos={`${htmlCell.x},${htmlCell.y}`}
+              data-size={`${htmlCell.w},${htmlCell.h}`}
               key={index++}
               style={{
                 position: 'absolute',
                 pointerEvents: 'auto',
                 left: offset.x,
                 top: offset.y + offset.height,
-                minWidth: '600px',
-                minHeight: '400px',
+                minWidth: `${CELL_WIDTH}px`,
+                minHeight: `${CELL_HEIGHT}px`,
                 background: 'white',
                 border: '1px solid black',
                 boxSizing: 'border-box',
