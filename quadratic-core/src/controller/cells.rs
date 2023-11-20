@@ -382,7 +382,7 @@ mod test {
     #[test]
     fn test_set_cell_value() {
         let mut gc = GridController::new();
-        let sheet_id = gc.grid.sheets()[0].id.clone();
+        let sheet_id = gc.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
         let get_cell_value =
             |g: &GridController| g.sheet(sheet_id).get_cell_value(pos).unwrap_or_default();
