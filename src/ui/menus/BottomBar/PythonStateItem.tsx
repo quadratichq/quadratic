@@ -75,7 +75,7 @@ const PythonStateItem = () => {
       <DropdownMenuTrigger asChild>{pythonStateButton}</DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuLabel className={`flexz zw-full zjustify-between`}>
-          Status:{' '}
+          Python:{' '}
           <span
             style={{
               color:
