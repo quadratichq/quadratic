@@ -28,6 +28,7 @@ pub struct Column {
     pub italic: ColumnData<SameValue<bool>>,
     pub text_color: ColumnData<SameValue<String>>,
     pub fill_color: ColumnData<SameValue<String>>,
+    pub output_size: ColumnData<SameValue<OutputSize>>,
 }
 impl Column {
     pub fn new() -> Self {
@@ -49,6 +50,7 @@ impl Column {
             italic: ColumnData::default(),
             text_color: ColumnData::default(),
             fill_color: ColumnData::default(),
+            output_size: ColumnData::default(),
         }
     }
 

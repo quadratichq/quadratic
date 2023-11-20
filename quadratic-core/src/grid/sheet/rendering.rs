@@ -148,11 +148,14 @@ impl Sheet {
                         return None;
                     }
                     let pos = self.cell_ref_to_pos(*code_cell.0)?;
+                    let output_size = self.html_output_size(pos);
                     Some(JsHtmlOutput {
                         sheet_id: self.id.to_string(),
                         x: pos.x,
                         y: pos.y,
                         html: output.to_display(None, None, None),
+                        w: output_size.0,
+                        h: output_size.1,
                     })
                 } else {
                     None

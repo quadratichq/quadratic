@@ -165,6 +165,9 @@ pub struct Column {
     pub text_color: HashMap<String, ColumnFormatType<String>>,
     #[serde(rename = "fill_color")]
     pub fill_color: HashMap<String, ColumnFormatType<String>>,
+    #[serde(default)]
+    #[serde(rename = "output_size")]
+    pub output_size: HashMap<String, ColumnFormatType<OutputSize>>,
 }
 impl Column {
     pub fn with_id(id: Id) -> Self {

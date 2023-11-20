@@ -1,4 +1,5 @@
 use crate::color::Rgba;
+use crate::grid::formatting::OutputSize;
 use crate::grid::{
     generate_borders, set_region_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
     CellWrap, Grid, GridBounds, NumericFormat, NumericFormatKind, RegionRef,
@@ -391,6 +392,29 @@ fn export_column_data_numeric_format(
         .collect()
 }
 
+fn export_column_data_output_size(
+    column_data: &ColumnData<SameValue<OutputSize>>,
+) -> HashMap<String, current::ColumnFormatType<current::OutputSize>> {
+    column_data
+        .values()
+        .map(|(y, value)| {
+            (
+                y.to_string(),
+                current::ColumnFormatType {
+                    y,
+                    content: current::ColumnFormatContent {
+                        value: current::OutputSize {
+                            w: value.w,
+                            h: value.h,
+                        },
+                        len: 1,
+                    },
+                },
+            )
+        })
+        .collect()
+}
+
 fn export_column_data<T>(
     column_data: &ColumnData<SameValue<T>>,
 ) -> HashMap<String, current::ColumnFormatType<String>>
@@ -428,6 +452,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                     italic: export_column_data_bool(&column.italic),
                     text_color: export_column_data_string(&column.text_color),
                     fill_color: export_column_data_string(&column.fill_color),
+                    output_size: export_column_data_output_size(&column.output_size),
                     values: column
                         .values
                         .values()

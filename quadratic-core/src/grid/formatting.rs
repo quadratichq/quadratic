@@ -103,6 +103,16 @@ impl CellFmtAttr for FillColor {
     }
 }
 
+impl CellFmtAttr for OutputSize {
+    type Value = Self;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.output_size
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.output_size
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
@@ -130,6 +140,13 @@ pub struct NumericFormat {
     #[serde(rename = "type")]
     pub kind: NumericFormatKind,
     pub symbol: Option<String>,
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct OutputSize {
+    pub w: i64,
+    pub h: i64,
 }
 
 #[derive(

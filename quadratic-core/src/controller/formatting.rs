@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::{
     grid::{
         Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericCommas, NumericDecimals,
-        NumericFormat, NumericFormatKind, RegionRef, SheetId, TextColor,
+        NumericFormat, NumericFormatKind, OutputSize, RegionRef, SheetId, TextColor,
     },
     Pos, Rect, RunLengthEncoding,
 };
@@ -191,6 +191,9 @@ impl GridController {
                     CellFmtArray::FillColor(array) => {
                         array.push(sheet.get_formatting_value::<FillColor>(pos));
                     }
+                    CellFmtArray::OutputSize(array) => {
+                        array.push(sheet.get_formatting_value::<OutputSize>(pos));
+                    }
                 });
             }
         }
@@ -226,6 +229,7 @@ impl_set_cell_fmt_method!(set_cell_bold<Bold>(CellFmtArray::Bold));
 impl_set_cell_fmt_method!(set_cell_italic<Italic>(CellFmtArray::Italic));
 impl_set_cell_fmt_method!(set_cell_text_color<TextColor>(CellFmtArray::TextColor));
 impl_set_cell_fmt_method!(set_cell_fill_color<FillColor>(CellFmtArray::FillColor));
+impl_set_cell_fmt_method!(set_cell_output_size<OutputSize>(CellFmtArray::OutputSize));
 
 /// Array of a single cell formatting attribute.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -239,11 +243,16 @@ pub enum CellFmtArray {
     Italic(RunLengthEncoding<Option<bool>>),
     TextColor(RunLengthEncoding<Option<String>>),
     FillColor(RunLengthEncoding<Option<String>>),
+    OutputSize(RunLengthEncoding<Option<OutputSize>>),
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{controller::GridController, grid::TextColor, Pos, Rect};
+    use crate::{
+        controller::GridController,
+        grid::{Grid, OutputSize, TextColor},
+        Pos, Rect,
+    };
 
     #[test]
     fn test_set_cell_text_color_undo_redo() {
@@ -435,6 +444,18 @@ mod test {
             .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }));
         assert_eq!(cells.len(), 1);
         assert_eq!(cells[0].value, "$1.12");
+    }
+
+    #[test]
+    fn test_set_output_size() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_output_size(
+            sheet_id,
+            Rect::single_pos(Pos { x: 0, y: 0 }),
+            Some(OutputSize { w: 1, h: 2 }),
+            None,
+        );
     }
 
     #[test]
