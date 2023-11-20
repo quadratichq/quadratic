@@ -24,7 +24,7 @@ impl TransactionInProgress {
     ///
     /// Description
     /// * `compute` triggers the computation cycle
-    pub fn new(
+    pub fn start_transaction(
         grid_controller: &mut GridController,
         operations: Vec<Operation>,
         cursor: Option<String>,
@@ -51,6 +51,11 @@ impl TransactionInProgress {
 
         // apply operations
         transaction.transact(grid_controller, operations, compute);
+
+        // crate::util::dbgjs(&format!(
+        //     "[CellsToCompute len] {}",
+        //     transaction.cells_to_compute.len()
+        // ));
 
         // run computations
         if compute {
@@ -172,23 +177,6 @@ impl TransactionInProgress {
         self.waiting_for_async = None;
     }
 
-    pub fn update_deps(&mut self, grid_controller: &mut GridController) {
-        let old_deps = if let Some(current_code_cell) = self.current_code_cell.as_ref() {
-            current_code_cell.cells_accessed_copy()
-        } else {
-            None
-        };
-        let deps = if !self.cells_accessed.is_empty() {
-            Some(self.cells_accessed.clone())
-        } else {
-            None
-        };
-        if deps != old_deps {
-            grid_controller.update_dependent_cells(self.current_cell_ref.unwrap(), deps, old_deps);
-        }
-        self.cells_accessed.clear();
-    }
-
     /// continues the calculate cycle after an async call
     pub fn calculation_complete(
         &mut self,
@@ -240,8 +228,8 @@ impl TransactionInProgress {
                             &mut self.reverse_operations,
                             &mut self.summary,
                         ) {
-                            // updates the dependencies only if the calculation was successful
-                            self.update_deps(grid_controller);
+                            // clear cells_accessed
+                            self.cells_accessed.clear();
                         }
                         self.waiting_for_async = None;
                     }
@@ -262,15 +250,15 @@ impl TransactionInProgress {
             // todo: this would be a good place to check for cycles
             // add all dependent cells to the cells_to_compute
             if let Some(dependent_cells) = grid_controller.get_dependent_cells(cell_ref) {
-                self.cells_to_compute.extend(dependent_cells);
+                #[cfg(feature = "show-operations")]
                 dependent_cells.iter().for_each(|cell_ref| {
                     let sheet = grid_controller.sheet(cell_ref.sheet);
-                    if cfg!(feature = "show-operations") {
-                        if let Some(pos) = sheet.cell_ref_to_pos(*cell_ref) {
-                            crate::util::dbgjs(format!("[Adding Dependent Cell] {:?}", pos));
-                        }
+                    if let Some(pos) = sheet.cell_ref_to_pos(*cell_ref) {
+                        crate::util::dbgjs(format!("[Adding Dependent Cell] {:?}", pos));
                     }
                 });
+
+                self.cells_to_compute.extend(dependent_cells);
             }
 
             let sheet = grid_controller.grid().sheet_from_id(cell_ref.sheet);

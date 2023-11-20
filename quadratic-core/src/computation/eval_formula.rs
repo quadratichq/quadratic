@@ -66,8 +66,8 @@ impl TransactionInProgress {
                             &mut self.reverse_operations,
                             &mut self.summary,
                         ) {
-                            // updates the dependencies
-                            self.update_deps(grid_controller);
+                            // clears cells_accessed
+                            self.cells_accessed.clear();
                         }
                     }
                     Err(error) => {
