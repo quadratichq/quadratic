@@ -9,7 +9,7 @@ import { sheets } from '../../../grid/controller/Sheets';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { colors } from '../../../theme/colors';
 import BottomBarItem from './BottomBarItem';
-import PythonState from './PythonState';
+import PythonStateItem from './PythonStateItem';
 import { SelectionSummary } from './SelectionSummary';
 import SyncState from './SyncState';
 
@@ -112,7 +112,7 @@ export const BottomBar = () => {
         <SelectionSummary></SelectionSummary>
         <SyncState />
 
-        {showOnDesktop && <PythonState />}
+        {showOnDesktop && <PythonStateItem />}
         {provideFeedback.isAvailable(permission) && (
           <BottomBarItem
             icon={<ChatBubbleOutline fontSize="inherit" />}
