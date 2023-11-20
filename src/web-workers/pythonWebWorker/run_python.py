@@ -170,7 +170,7 @@ async def run_python(code):
         x_offset = p0[0]
         y_offset = p0[1]
         for cell in cells:
-            df.at[cell.y - y_offset, cell.x - x_offset] = Cell(cell)
+            df.at[cell.y - y_offset, cell.x - x_offset] = cell.value
 
         # Move the first row to the header
         if first_row_header:

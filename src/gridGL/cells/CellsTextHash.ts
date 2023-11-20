@@ -2,6 +2,7 @@ import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import { Bounds } from '../../grid/sheet/Bounds';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { JsRenderCell } from '../../quadratic-core/types';
+import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
 import { CellLabel } from './cellsLabel/CellLabel';
@@ -102,6 +103,10 @@ export class CellsTextHash extends Container<LabelMeshes> {
       this.updateBuffers(false);
       this.dirty = false;
       this.dirtyBuffers = false;
+
+      // we need to test visibility in case the bounds changed
+      this.visible = this.viewBounds.intersectsRectangle(pixiApp.viewport.getVisibleBounds());
+
       return true;
     } else if (this.dirtyBuffers) {
       this.updateBuffers(true);
