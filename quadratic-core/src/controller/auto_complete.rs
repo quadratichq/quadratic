@@ -840,29 +840,47 @@ mod tests {
             "white", "red", "blue", "green", "yellow", "white", "red", "blue",
         ];
 
-        // // down + right
-        // let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors);
-        // let range: Rect = Rect::new_span(selected.min, Pos { x: 6, y: 6 });
-        // grid.autocomplete(sheet_id, selected, range, None).unwrap();
-        // let range_over: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 9, y: 8 });
-        // print_table(&grid, sheet_id, range_over);
-        // // TODO(ddimaria): create assertions
+        // down + right
+        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors);
+        let range: Rect = Rect::new_span(selected.min, Pos { x: 7, y: 6 });
+        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        let range_over: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 9, y: 8 });
+        print_table(&grid, sheet_id, range_over);
 
-        // // up + right
-        // let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors);
-        // let range: Rect = Rect::new_span(Pos { x: 2, y: -1 }, Pos { x: 7, y: 3 });
-        // grid.autocomplete(sheet_id, selected, range, None).unwrap();
-        // let range_over: Rect = Rect::new_span(Pos { x: 0, y: -3 }, Pos { x: 9, y: 5 });
-        // print_table(&grid, sheet_id, range_over);
-        // // TODO(ddimaria): create assertions
+        let expected = vec!["white", "red", "blue", "green", "white", "red"];
+        assert_cell_format_cell_fill_color_row(&grid, sheet_id, 2, 7, 4, expected);
+        let expected = vec!["yellow", "white", "red", "blue", "yellow", "white"];
+        assert_cell_format_cell_fill_color_row(&grid, sheet_id, 2, 7, 5, expected);
+        let expected = vec!["white", "red", "blue", "green", "white", "red"];
+        assert_cell_format_cell_fill_color_row(&grid, sheet_id, 2, 7, 6, expected);
 
-        // // down + left
-        // let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors);
-        // let range: Rect = Rect::new_span(Pos { x: 1, y: 6 }, selected.max);
-        // grid.autocomplete(sheet_id, selected, range, None).unwrap();
-        // let range_over: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 7, y: 8 });
-        // print_table(&grid, sheet_id, range_over);
-        // TODO(ddimaria): create assertions
+        // up + right
+        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors);
+        let range: Rect = Rect::new_span(Pos { x: 2, y: -1 }, Pos { x: 7, y: 3 });
+        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        let range_over: Rect = Rect::new_span(Pos { x: 0, y: -3 }, Pos { x: 9, y: 5 });
+        print_table(&grid, sheet_id, range_over);
+
+        let expected = vec!["yellow", "white", "red", "blue", "yellow", "white"];
+        assert_cell_format_cell_fill_color_row(&grid, sheet_id, 2, 7, 1, expected);
+        let expected = vec!["white", "red", "blue", "green", "white", "red"];
+        assert_cell_format_cell_fill_color_row(&grid, sheet_id, 2, 7, 0, expected);
+        let expected = vec!["yellow", "white", "red", "blue", "yellow", "white"];
+        assert_cell_format_cell_fill_color_row(&grid, sheet_id, 2, 7, -1, expected);
+
+        // down + left
+        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors);
+        let range: Rect = Rect::new_span(Pos { x: 1, y: 6 }, selected.max);
+        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        let range_over: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 7, y: 8 });
+        print_table(&grid, sheet_id, range_over);
+
+        let expected = vec!["green", "white", "red", "blue", "green"];
+        assert_cell_format_cell_fill_color_row(&grid, sheet_id, 1, 5, 4, expected);
+        let expected = vec!["blue", "yellow", "white", "red", "blue"];
+        assert_cell_format_cell_fill_color_row(&grid, sheet_id, 1, 5, 5, expected);
+        let expected = vec!["green", "white", "red", "blue", "green"];
+        assert_cell_format_cell_fill_color_row(&grid, sheet_id, 1, 5, 6, expected);
 
         // up + left
         let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors);
@@ -877,14 +895,6 @@ mod tests {
         assert_cell_format_cell_fill_color_row(&grid, sheet_id, 1, 5, 2, expected);
         let expected = vec!["blue", "yellow", "white", "red", "blue"];
         assert_cell_format_cell_fill_color_row(&grid, sheet_id, 1, 5, 3, expected);
-
-        // let expected = vec!["a", "h", "x", "g", "a", "h", "x", "g", "a"];
-        // let expected_bold = vec![true, false, false, true, true, false, false, true, true];
-
-        // assert_cell_value_row(&grid, sheet_id, 2, 10, 2, expected.clone());
-        // assert_cell_value_row(&grid, sheet_id, 2, 10, 10, expected);
-        // assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 2, expected_bold.clone());
-        // assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 10, expected_bold);
     }
 
     #[test]
