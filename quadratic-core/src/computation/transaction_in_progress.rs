@@ -745,4 +745,27 @@ mod test {
             Some(CellValue::Number(1.into()))
         );
     }
+
+    #[test]
+    fn test_python_cancellation() {
+        let mut gc = setup_python(None, "".into(), CellValue::Number(10.into()));
+
+        // mock the python result
+        let result = JsCodeResult::new(
+            true,
+            None,
+            None,
+            None,
+            Some("".into()),
+            None,
+            None,
+            Some(true),
+        );
+
+        gc.calculation_complete(result);
+
+        let transaction = gc.get_transaction_in_progress().unwrap();
+        assert!(transaction.complete);
+        assert_eq!(transaction.cells_to_compute.len(), 0);
+    }
 }
