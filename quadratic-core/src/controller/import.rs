@@ -122,4 +122,15 @@ Concord,NH,United States,42605
         let result = grid_controller.import_csv(sheet_id, "".as_bytes(), "smallpop.csv", pos, None);
         assert!(result.is_err());
     }
+
+    #[test]
+    fn imports_a_large_csv() {
+        let mut grid_controller = GridController::new();
+        let sheet_id = grid_controller.grid.sheets()[0].id;
+        let pos = Pos { x: 0, y: 0 };
+        let csv = include_str!("../../examples/ebola_data_db_format.csv");
+
+        let result = grid_controller.import_csv(sheet_id, csv.as_bytes(), "test.csv", pos, None);
+        // assert!(result.is_err());
+    }
 }
