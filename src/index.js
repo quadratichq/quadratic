@@ -1,3 +1,4 @@
+import '@/shadcn/styles.css';
 import * as Sentry from '@sentry/react';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
