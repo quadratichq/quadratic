@@ -26,6 +26,7 @@ import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider
 import { ROUTES } from '../../../../constants/routes';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
 import { grid } from '../../../../grid/controller/Grid';
+import { pixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRootRouteLoaderData } from '../../../../router';
@@ -51,6 +52,7 @@ export const QuadraticMenu = () => {
   useEffect(() => {
     if (isMobile) {
       settings.setShowHeadings(false);
+      pixiApp.viewportChanged();
     }
     // eslint-disable-next-line
   }, []);
@@ -60,13 +62,13 @@ export const QuadraticMenu = () => {
       <Menu
         menuButton={({ open }) => (
           <TopBarMenuItem title="Main menu" open={open}>
-            <img src="/favicon.ico" height="22px" alt="Quadratic Icon" />
+            <img src="/favicon.ico" width="22" height="22" alt="Quadratic Icon" />
           </TopBarMenuItem>
         )}
       >
         {isViewerOrAbove(permission) && (
           <>
-            <MenuItem href={ROUTES.MY_FILES} style={{ textDecoration: 'none' }}>
+            <MenuItem href={ROUTES.FILES} style={{ textDecoration: 'none' }}>
               <MenuLineItem primary="Back to files" />
             </MenuItem>
             <MenuDivider />

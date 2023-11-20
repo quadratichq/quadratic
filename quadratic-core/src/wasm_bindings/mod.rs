@@ -44,6 +44,7 @@ pub struct JsCodeResult {
     pub input_python_std_out: Option<String>,
     pub output_value: Option<String>,
     pub array_output: Option<Vec<Vec<String>>>,
+    pub cancel_compute: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, TS)]

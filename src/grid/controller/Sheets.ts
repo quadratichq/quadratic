@@ -263,7 +263,9 @@ class Sheets {
       if (!sheet) throw new Error('Expected sheet to be defined in updateOffsets');
       sheet.updateSheetOffsets();
     });
+    pixiApp.headings.dirty = true;
     pixiApp.gridLines.dirty = true;
+    pixiApp.cursor.dirty = true;
   }
 }
 

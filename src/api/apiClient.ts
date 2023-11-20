@@ -82,6 +82,20 @@ export const apiClient = {
     );
   },
 
+  async updateFileThumbnail(uuid: string, thumbnail: Blob) {
+    const formData = new FormData();
+    formData.append('thumbnail', thumbnail, 'thumbnail.png');
+
+    return fetchFromApi<ApiTypes['/v0/files/:uuid/thumbnail.POST.response']>(
+      `/v0/files/${uuid}/thumbnail`,
+      {
+        method: 'POST',
+        body: formData,
+      },
+      ApiSchemas['/v0/files/:uuid/thumbnail.POST.response']
+    );
+  },
+
   async getFileSharing(uuid: string) {
     return fetchFromApi<ApiTypes['/v0/files/:uuid/sharing.GET.response']>(
       `/v0/files/${uuid}/sharing`,

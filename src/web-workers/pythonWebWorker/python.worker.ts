@@ -27,6 +27,7 @@ let pyodide: any | undefined;
 
 async function pythonWebWorker() {
   try {
+    self.postMessage({ type: 'not-loaded' } as PythonMessage);
     pyodide = await (self as any).loadPyodide();
     await pyodide.registerJsModule('getCellsDB', getCellsDB);
     await pyodide.loadPackage(['numpy', 'pandas', 'micropip']);
@@ -53,14 +54,14 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
     // make sure loading is done
     if (!pyodide) {
       self.postMessage({ type: 'not-loaded' } as PythonMessage);
+    } else {
+      const output = await pyodide.globals.get('run_python')(event.python);
+      const results = Object.fromEntries(output.toJs());
+      return self.postMessage({
+        type: 'results',
+        results,
+      });
     }
-
-    const output = await pyodide.globals.get('run_python')(event.python);
-    const results = Object.fromEntries(output.toJs());
-    return self.postMessage({
-      type: 'results',
-      results,
-    });
   }
 };
 

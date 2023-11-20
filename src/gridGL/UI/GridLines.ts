@@ -8,8 +8,15 @@ import { calculateAlphaForGridLines } from './gridUtils';
 export class GridLines extends Graphics {
   dirty = true;
 
-  update() {
-    if (this.dirty) {
+  draw(bounds: Rectangle): void {
+    this.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
+    this.drawVerticalLines(bounds);
+    this.drawHorizontalLines(bounds);
+    this.dirty = true;
+  }
+
+  update(bounds = pixiApp.viewport.getVisibleBounds(), scale = pixiApp.viewport.scale.x, forceRefresh = false) {
+    if (this.dirty || forceRefresh) {
       this.dirty = false;
       this.clear();
 
@@ -19,7 +26,7 @@ export class GridLines extends Graphics {
         return;
       }
 
-      const gridAlpha = calculateAlphaForGridLines(pixiApp.viewport);
+      const gridAlpha = calculateAlphaForGridLines(scale);
       if (gridAlpha === 0) {
         this.alpha = 0;
         this.visible = false;
@@ -30,7 +37,6 @@ export class GridLines extends Graphics {
       this.visible = true;
 
       this.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
-      const bounds = pixiApp.viewport.getVisibleBounds();
       this.drawVerticalLines(bounds);
       this.drawHorizontalLines(bounds);
     }

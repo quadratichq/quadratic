@@ -4,18 +4,22 @@ import { authClient } from '../auth';
 import { apiClient } from './apiClient';
 
 export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z.Schema<T>): Promise<T> {
-  // Set headers
+  // We'll automatically inject additional headers to the request, starting with auth
   const isAuthenticated = await authClient.isAuthenticated();
-  const sharedInit = {
-    headers: {
-      'Content-Type': 'application/json',
-      // Only pass the auth if the user is auth'd
-      ...(isAuthenticated ? { Authorization: `Bearer ${await authClient.getToken()}` } : {}),
-    },
-  };
+  const headers = new Headers(init.headers);
+  if (isAuthenticated) {
+    headers.set('Authorization', `Bearer ${await authClient.getToken()}`);
+  }
+  // And if we're submitting `FormData`, let the browser set the content-type automatically
+  // This allows files to upload properly. Otherwise, we assume it's JSON.
+  if (!(init.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+  // And finally, we'll set the headers back on the request
+  init.headers = headers;
 
   // Make API call
-  const response = await fetch(apiClient.getApiUrl() + path, { ...sharedInit, ...init });
+  const response = await fetch(apiClient.getApiUrl() + path, init);
 
   // Handle response if a server error is returned
   if (!response.ok) {
