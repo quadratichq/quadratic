@@ -5,7 +5,7 @@ use super::{auto_complete::cell_values_in_rect, GridController};
 use crate::{grid::SheetId, Rect};
 
 impl GridController {
-    /// exports a CSV file from a selction on the grid.
+    /// exports a CSV string from a selction on the grid.
     ///
     /// Returns a [`String`].
     pub fn export_csv_selection(&self, sheet_id: SheetId, selection: &Rect) -> Result<String> {

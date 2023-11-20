@@ -1,12 +1,14 @@
+use std::collections::HashMap;
+
 use crate::{
     controller::GridController,
-    grid::{Bold, SheetId},
+    grid::{Bold, FillColor, SheetId},
     CellValue, Pos, Rect,
 };
 
 use tabled::{
     builder::Builder,
-    settings::Color,
+    settings::{themes::Colorization, Color},
     settings::{Modify, Style},
 };
 
@@ -90,6 +92,46 @@ pub fn assert_cell_format_bold(
         has_bold
     );
 }
+
+// TODO(ddimaria): refactor all format assertions into a generic function
+pub fn assert_cell_format_cell_fill_color_row(
+    grid_controller: &GridController,
+    sheet_id: SheetId,
+    x_start: i64,
+    x_end: i64,
+    y: i64,
+    value: Vec<&str>,
+) {
+    for (index, x) in (x_start..=x_end).enumerate() {
+        assert_cell_format_fill_color(
+            grid_controller,
+            sheet_id,
+            x,
+            y,
+            value.get(index).unwrap().to_owned(),
+        );
+    }
+}
+
+pub fn assert_cell_format_fill_color(
+    grid_controller: &GridController,
+    sheet_id: SheetId,
+    x: i64,
+    y: i64,
+    expect_fill_color: &str,
+) {
+    let sheet = grid_controller.grid().sheet_from_id(sheet_id);
+    let fill_color = sheet.get_formatting_value::<FillColor>(Pos { x, y });
+    assert!(
+        fill_color == Some(expect_fill_color.to_string()),
+        "Cell at ({}, {}) should be fill_color={:?}, but is actually fill_color={:?}",
+        x,
+        y,
+        expect_fill_color,
+        fill_color
+    );
+}
+
 /// Util to print a simple grid to assist in TDD
 pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: Rect) {
     let sheet = grid_controller.grid().sheet_from_id(sheet_id);
@@ -102,9 +144,11 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
     blank.extend(columns.clone());
     builder.set_header(blank);
     let mut bolds = vec![];
+    let mut fill_colors = vec![];
     let mut count_x = 0;
     let mut count_y = 0;
 
+    // convert the selected range in the sheet to tabled
     range.y_range().for_each(|y| {
         vals.push(y.to_string());
         range.x_range().for_each(|x| {
@@ -112,6 +156,10 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
 
             if sheet.get_formatting_value::<Bold>(pos).is_some() {
                 bolds.push((count_y + 1, count_x + 1));
+            }
+
+            if let Some(fill_color) = sheet.get_formatting_value::<FillColor>(pos) {
+                fill_colors.push((count_y + 1, count_x + 1, fill_color));
             }
 
             vals.push(
@@ -131,6 +179,7 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
     let mut table = builder.build();
     table.with(Style::modern());
 
+    // apply bold values to the table
     bolds.iter().for_each(|coords| {
         table.with(
             Modify::new((coords.0, coords.1))
@@ -138,5 +187,24 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
                 .with(Color::FG_BRIGHT_RED),
         );
     });
+
+    // limited suppported color set
+    let bg_colors = HashMap::<&str, Color>::from_iter([
+        ("white", Color::BG_WHITE),
+        ("red", Color::BG_RED),
+        ("blue", Color::BG_BLUE),
+        ("green", Color::BG_GREEN),
+        ("yellow", Color::BG_BRIGHT_YELLOW),
+    ]);
+
+    // apply fill color values to the table
+    fill_colors.iter().for_each(|(x, y, fill_color)| {
+        let color = bg_colors
+            .get(fill_color.as_str())
+            .unwrap_or(&Color::BG_WHITE)
+            .to_owned();
+        table.with(Colorization::exact([color], (*x, *y)));
+    });
+
     println!("\nsheet: {}\n{}", sheet.id, table);
 }

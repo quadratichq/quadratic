@@ -1,3 +1,4 @@
+import { downloadSelectionAsCSV } from '@/grid/actions/downloadSelectionAsCSV';
 import {
   AttachMoneyOutlined,
   BorderAll,
@@ -23,11 +24,9 @@ import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { copySelectionToPNG, fullClipboardSupport } from '../../../grid/actions/clipboard/clipboard';
-import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
-import { downloadFile } from '../../../helpers/downloadFileInBrowser';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
@@ -187,8 +186,7 @@ export const FloatingContextMenu = (props: Props) => {
   }, [moreMenuToggle, addGlobalSnackbar]);
 
   const downloadAsCsv = useCallback(() => {
-    const csv = grid.exportCsvSelection();
-    downloadFile(fileName, csv, 'text/plain', 'csv');
+    downloadSelectionAsCSV(fileName);
     moreMenuToggle();
   }, [moreMenuToggle, fileName]);
 
@@ -402,7 +400,7 @@ export const FloatingContextMenu = (props: Props) => {
           <MenuItem onClick={downloadAsCsv}>
             <MenuLineItem
               primary="Download selection as CSV"
-              secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'D'}
+              secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'E'}
               Icon={Download}
             ></MenuLineItem>
           </MenuItem>

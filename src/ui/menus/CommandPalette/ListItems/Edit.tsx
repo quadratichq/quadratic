@@ -1,4 +1,6 @@
-import { ContentCopy, ContentCut, ContentPaste, East, Redo, Undo } from '@mui/icons-material';
+import { downloadSelectionAsCSV } from '@/grid/actions/downloadSelectionAsCSV';
+import { useFileContext } from '@/ui/components/FileProvider';
+import { ContentCopy, ContentCut, ContentPaste, Download, East, Redo, Undo } from '@mui/icons-material';
 import { useRecoilState } from 'recoil';
 import { copy, cut, paste, redo, undo } from '../../../../actions';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
@@ -104,6 +106,24 @@ const ListItems = [
           }}
           icon={<CopyAsPNG />}
           shortcut="C"
+          shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
+        />
+      );
+    },
+  },
+  {
+    label: 'Download selection as CSV',
+    isAvailable: () => fullClipboardSupport(),
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      const { name } = useFileContext();
+      return (
+        <CommandPaletteListItem
+          {...props}
+          action={() => {
+            downloadSelectionAsCSV(name);
+          }}
+          icon={<Download />}
+          shortcut="E"
           shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
         />
       );

@@ -1,3 +1,4 @@
+import { useFileContext } from '@/ui/components/FileProvider';
 import React, { useEffect } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
@@ -22,6 +23,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   const { editorInteractionState, setEditorInteractionState } = props;
   const { presentationMode, setPresentationMode } = useGridSettings();
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const { name: fileName } = useFileContext();
 
   useEffect(() => {
     const keyDownWindow = (event: KeyboardEvent): void => {
@@ -52,6 +54,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       keyboardClipboard({
         event,
         addGlobalSnackbar,
+        fileName,
       }) ||
       keyboardUndoRedo(event) ||
       keyboardSelect(event)
