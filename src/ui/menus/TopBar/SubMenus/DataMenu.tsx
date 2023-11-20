@@ -1,10 +1,7 @@
-import {
-  CloudDownloadOutlined,
-  DataObjectOutlined,
-  InsertDriveFile,
-  StorageOutlined,
-  UploadFile,
-} from '@mui/icons-material';
+import { downloadSelectionAsCSV } from '@/grid/actions/downloadSelectionAsCSV';
+import { KeyboardSymbols } from '@/helpers/keyboardSymbols';
+import { useFileContext } from '@/ui/components/FileProvider';
+import { DataObjectOutlined, StorageOutlined, UploadFile } from '@mui/icons-material';
 import { Menu, MenuHeader, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
@@ -14,6 +11,7 @@ import { TopBarMenuItem } from '../TopBarMenuItem';
 
 export const DataMenu = () => {
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const { name: fileName } = useFileContext();
 
   return (
     <>
@@ -32,13 +30,19 @@ export const DataMenu = () => {
         >
           <MenuLineItem primary="CSV" Icon={UploadFile} />
         </MenuItem>
-        <MenuItem disabled>
-          <MenuLineItem primary="Excel (coming soon)" Icon={InsertDriveFile} />
+        <MenuHeader>Export</MenuHeader>
+        <MenuItem
+          onClick={() => {
+            downloadSelectionAsCSV(fileName);
+          }}
+        >
+          <MenuLineItem
+            primary="Selection to CSV"
+            Icon={UploadFile}
+            secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'E'}
+          />
         </MenuItem>
         <MenuHeader>Connect</MenuHeader>
-        <MenuItem disabled>
-          <MenuLineItem primary="SaaS (coming soon)" Icon={CloudDownloadOutlined} />
-        </MenuItem>
         <MenuItem disabled>
           <MenuLineItem primary="Database (coming soon)" Icon={StorageOutlined} />
         </MenuItem>
