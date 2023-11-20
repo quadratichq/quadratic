@@ -92,6 +92,46 @@ pub fn assert_cell_format_bold(
         has_bold
     );
 }
+
+// TODO(ddimaria): refactor all format assertions into a generic function
+pub fn assert_cell_format_cell_fill_color_row(
+    grid_controller: &GridController,
+    sheet_id: SheetId,
+    x_start: i64,
+    x_end: i64,
+    y: i64,
+    value: Vec<&str>,
+) {
+    for (index, x) in (x_start..=x_end).enumerate() {
+        assert_cell_format_fill_color(
+            grid_controller,
+            sheet_id,
+            x,
+            y,
+            value.get(index).unwrap().to_owned(),
+        );
+    }
+}
+
+pub fn assert_cell_format_fill_color(
+    grid_controller: &GridController,
+    sheet_id: SheetId,
+    x: i64,
+    y: i64,
+    expect_fill_color: &str,
+) {
+    let sheet = grid_controller.grid().sheet_from_id(sheet_id);
+    let fill_color = sheet.get_formatting_value::<FillColor>(Pos { x, y });
+    assert!(
+        fill_color == Some(expect_fill_color.to_string()),
+        "Cell at ({}, {}) should be fill_color={:?}, but is actually fill_color={:?}",
+        x,
+        y,
+        expect_fill_color,
+        fill_color
+    );
+}
+
 /// Util to print a simple grid to assist in TDD
 pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: Rect) {
     let sheet = grid_controller.grid().sheet_from_id(sheet_id);
