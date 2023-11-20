@@ -70,11 +70,11 @@ export const CodeEditorHeader = (props: Props) => {
           Cell ({cellLocation.x}, {cellLocation.y}) -{' '}
           {language === 'PYTHON' ? 'Python' : language === 'FORMULA' ? 'Formula' : 'Unknown'}
           {unsaved && (
-            <TooltipHint title="Your changes haven’t been saved or run">
+            <TooltipHint title="Your changes haven’t been saved or run" placement="bottom">
               <FiberManualRecord
                 fontSize="small"
                 color="warning"
-                sx={{ fontSize: '.75rem', position: 'relative', top: '2px', left: '6px' }}
+                sx={{ fontSize: '.75rem', position: 'relative', top: '-1px', left: '6px' }}
               />
             </TooltipHint>
           )}

@@ -20,6 +20,16 @@ export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
   const { pythonState } = useRecoilValue(pythonStateAtom);
+  // update code cell
+  const [codeString, setCodeString] = useState('');
+  const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
+  const [evaluationResult, setEvaluationResult] = useState<any>(undefined);
+  const [editorWidth, setEditorWidth] = useState<number>(
+    window.innerWidth * 0.35 // default to 35% of the window width
+  );
+  const [consoleHeight, setConsoleHeight] = useState<number>(200);
+  const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
+  const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
 
   const cellLocation = useMemo(() => {
     return {
@@ -33,10 +43,10 @@ export const CodeEditor = () => {
     editorInteractionState.selectedCellSheet,
   ]);
 
-  // update code cell
-  const [codeString, setCodeString] = useState('');
-  const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
-  const [evaluationResult, setEvaluationResult] = useState<any>(undefined);
+  const unsaved = useMemo(() => {
+    return editorContent !== codeString;
+  }, [codeString, editorContent]);
+
   const updateCodeCell = useCallback(() => {
     const codeCell = grid.getCodeCell(
       editorInteractionState.selectedCellSheet,
@@ -72,20 +82,19 @@ export const CodeEditor = () => {
     updateCodeCell();
   }, [updateCodeCell]);
 
-  const [editorWidth, setEditorWidth] = useState<number>(
-    window.innerWidth * 0.35 // default to 35% of the window width
-  );
-
-  // Console height state
-  const [consoleHeight, setConsoleHeight] = useState<number>(200);
-
-  // Save changes alert state
-  const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
-
-  const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
   useEffect(() => {
     mixpanel.track('[CodeEditor].opened', { type: editorMode });
   }, [editorMode]);
+
+  useEffect(() => {
+    const completeTransaction = () => {
+      if (pythonState === 'running') {
+        updateCodeCell();
+      }
+    };
+    window.addEventListener('transaction-complete', completeTransaction);
+    return () => window.removeEventListener('transaction-complete', completeTransaction);
+  }, [updateCodeCell, pythonState]);
 
   const closeEditor = useCallback(
     (skipSaveCheck: boolean) => {
@@ -131,16 +140,6 @@ export const CodeEditor = () => {
 
     pythonWebWorker.restartFromUser();
   };
-
-  useEffect(() => {
-    const completeTransaction = () => {
-      if (pythonState === 'running') {
-        updateCodeCell();
-      }
-    };
-    window.addEventListener('transaction-complete', completeTransaction);
-    return () => window.removeEventListener('transaction-complete', completeTransaction);
-  }, [updateCodeCell, pythonState]);
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // Don't allow the shortcuts below for certain users
@@ -208,7 +207,7 @@ export const CodeEditor = () => {
       <ResizeControl setState={setEditorWidth} position="LEFT" />
       <CodeEditorHeader
         cellLocation={cellLocation}
-        unsaved={false}
+        unsaved={unsaved}
         isRunningComputation={pythonState === 'running'}
         saveAndRunCell={saveAndRunCell}
         cancelPython={cancelPython}
