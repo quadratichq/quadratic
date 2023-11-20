@@ -83,17 +83,14 @@ export const BottomBar = () => {
             <div
               className="debug-show-renderer"
               style={{
-                width: '0.7rem',
-                height: '0.7rem',
+                width: '0.5rem',
+                height: '0.5rem',
                 borderRadius: '50%',
+                marginRight: 3,
               }}
             >
               &nbsp;
             </div>
-          </BottomBarItem>
-        )}
-        {debugShowFPS && (
-          <BottomBarItem>
             <span className="debug-show-FPS">--</span> FPS
           </BottomBarItem>
         )}
