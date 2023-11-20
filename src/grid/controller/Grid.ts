@@ -610,7 +610,6 @@ export class Grid {
     if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
 
     debugTimeReset();
-    console.log(rectangleToRect(sheets.sheet.cursor.getRectangle()));
     const csv = this.gridController.exportCsvSelection(
       sheets.sheet.id,
       rectangleToRect(sheets.sheet.cursor.getRectangle())
