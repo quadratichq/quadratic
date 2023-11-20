@@ -1,7 +1,7 @@
-import { Close, FiberManualRecord, HelpOutline, PlayArrow, Subject } from '@mui/icons-material';
-import { CircularProgress, IconButton, useTheme } from '@mui/material';
+import { Close, FiberManualRecord, HelpOutline, PlayArrow, Stop, Subject } from '@mui/icons-material';
+import { CircularProgress, IconButton } from '@mui/material';
 import { useRecoilValue } from 'recoil';
-import { loadedStateAtom } from '../../../atoms/loadedStateAtom';
+import { pythonStateAtom } from '../../../atoms/pythonStateAtom';
 import { Coordinate } from '../../../gridGL/types/size';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 // import { CodeCellValue } from '../../../quadratic-core/types';
@@ -20,20 +20,20 @@ interface Props {
   isRunningComputation: boolean;
 
   saveAndRunCell: () => void;
+  cancelPython: () => void;
   closeEditor: () => void;
 }
 
 export const CodeEditorHeader = (props: Props) => {
-  const { cellLocation, unsaved, isRunningComputation, saveAndRunCell, closeEditor } = props;
-  const { pythonLoadState } = useRecoilValue(loadedStateAtom);
+  const { cellLocation, unsaved, isRunningComputation, saveAndRunCell, cancelPython, closeEditor } = props;
+  const { pythonState } = useRecoilValue(pythonStateAtom);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const theme = useTheme();
   const hasPermission = isEditorOrAbove(editorInteractionState.permission);
 
   const language = editorInteractionState.mode;
 
   if (!cellLocation) return null;
-  const isLoadingPython = !['loaded', 'initial'].includes(pythonLoadState) && language === 'PYTHON';
+  const isLoadingPython = pythonState === 'loading' && language === 'PYTHON';
 
   return (
     <div
@@ -70,23 +70,21 @@ export const CodeEditorHeader = (props: Props) => {
           Cell ({cellLocation.x}, {cellLocation.y}) -{' '}
           {language === 'PYTHON' ? 'Python' : language === 'FORMULA' ? 'Formula' : 'Unknown'}
           {unsaved && (
-            <TooltipHint title="Your changes haven’t been saved or run">
+            <TooltipHint title="Your changes haven’t been saved or run" placement="bottom">
               <FiberManualRecord
                 fontSize="small"
                 color="warning"
-                sx={{ fontSize: '.75rem', position: 'relative', top: '2px', left: '6px' }}
+                sx={{ fontSize: '.75rem', position: 'relative', top: '-1px', left: '6px' }}
               />
             </TooltipHint>
           )}
         </span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-        {isRunningComputation && <CircularProgress size="1.125rem" sx={{ m: '0 .5rem' }} />}
-        {isLoadingPython && (
-          <div style={{ color: theme.palette.warning.main, display: 'flex', alignItems: 'center' }}>
-            Loading Python...
-            <CircularProgress color="inherit" size="1.125rem" sx={{ m: '0 .5rem' }} />
-          </div>
+        {(isRunningComputation || isLoadingPython) && (
+          <TooltipHint title={`Python ${isLoadingPython ? 'loading' : 'executing'}…`} placement="bottom">
+            <CircularProgress size="1rem" color={isLoadingPython ? 'warning' : 'primary'} className={`mr-2`} />
+          </TooltipHint>
         )}
         <TooltipHint title="Read the docs" placement="bottom">
           <IconButton
@@ -101,6 +99,15 @@ export const CodeEditorHeader = (props: Props) => {
             <HelpOutline fontSize="small" />
           </IconButton>
         </TooltipHint>
+        {hasPermission && (
+          <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
+            <span>
+              <IconButton size="small" color="primary" onClick={cancelPython} disabled={!isRunningComputation}>
+                <Stop />
+              </IconButton>
+            </span>
+          </TooltipHint>
+        )}
         {hasPermission && (
           <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
             <span>
