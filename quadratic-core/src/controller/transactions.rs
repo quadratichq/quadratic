@@ -101,8 +101,16 @@ impl GridController {
     pub fn calculation_complete(&mut self, result: JsCodeResult) -> TransactionSummary {
         // todo: there's probably a better way to do this
         if let Some(transaction) = &mut self.transaction_in_progress.clone() {
+            let cancel_compute = result.cancel_compute.unwrap_or(false);
+
+            if cancel_compute {
+                transaction.clear_cells_to_compute();
+                transaction.loop_compute(self);
+            }
+
             transaction.calculation_complete(self, result);
             self.transaction_in_progress = Some(transaction.to_owned());
+
             transaction.updated_bounds(self);
             if transaction.complete {
                 transaction.transaction_summary()
