@@ -126,6 +126,17 @@ impl Rect {
         ArraySize::new(self.width(), self.height()).expect("empty rectangle has no size")
     }
 
+    /// Constructs a rectangle from a top-left position and a size.
+    pub fn from_pos_and_size(top_left: Pos, size: ArraySize) -> Self {
+        Rect {
+            min: top_left,
+            max: Pos {
+                x: top_left.x + size.w.get() as i64 - 1,
+                y: top_left.y + size.h.get() as i64 - 1,
+            },
+        }
+    }
+
     /// Returns whether a position is contained within the rectangle.
     pub fn contains(self, pos: Pos) -> bool {
         self.x_range().contains(&pos.x) && self.y_range().contains(&pos.y)
