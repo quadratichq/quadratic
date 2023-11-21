@@ -46,7 +46,6 @@
     "lodash.debounce": "^4.0.8",
     "mixpanel-browser": "^2.46.0",
     "monaco-editor": "^0.40.0",
-    "node-fetch": "^2.7.0",
     "numerable": "^0.3.15",
     "pixi-viewport": "^4.37.0",
     "pixi.js": "^6.5.1",
