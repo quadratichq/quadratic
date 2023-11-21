@@ -25,7 +25,7 @@ export function Empty({
       </div>
       <h4 className={cn(TYPE.h4, `mb-1`, severity === 'error' && 'text-destructive')}>{title}</h4>
 
-      <p className={`text-sm text-muted-foreground`}>{description}</p>
+      <div className={`text-sm text-muted-foreground`}>{description}</div>
 
       {actions && <div className={`mt-6`}>{actions}</div>}
     </div>
