@@ -31,6 +31,8 @@ export const CodeEditor = () => {
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
   const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
 
+  const isRunningComputation = pythonState === 'running';
+
   const cellLocation = useMemo(() => {
     return {
       x: editorInteractionState.selectedCell.x,
@@ -43,58 +45,53 @@ export const CodeEditor = () => {
     editorInteractionState.selectedCellSheet,
   ]);
 
+  // update code cell
   const unsaved = useMemo(() => {
     return editorContent !== codeString;
   }, [codeString, editorContent]);
 
-  const updateCodeCell = useCallback(() => {
-    const codeCell = grid.getCodeCell(
-      editorInteractionState.selectedCellSheet,
+  const updateCodeCell = useCallback(
+    (updateEditorContent: boolean) => {
+      const codeCell = grid.getCodeCell(
+        editorInteractionState.selectedCellSheet,
+        editorInteractionState.selectedCell.x,
+        editorInteractionState.selectedCell.y
+      );
+      if (codeCell) {
+        const codeString = codeCell.getCodeString();
+        setCodeString(codeString);
+        setOut({ stdOut: codeCell.getStdOut(), stdErr: codeCell.getStdErr() });
+        if (updateEditorContent) setEditorContent(codeString);
+        setEvaluationResult(codeCell.getEvaluationResult());
+        codeCell.free();
+      } else {
+        setCodeString('');
+        if (updateEditorContent) setEditorContent('');
+        setEvaluationResult('');
+        setOut(undefined);
+      }
+    },
+    [
       editorInteractionState.selectedCell.x,
-      editorInteractionState.selectedCell.y
-    );
-    if (codeCell) {
-      const codeString = codeCell.getCodeString();
-      setCodeString(codeString);
-      setOut({ stdOut: codeCell.getStdOut(), stdErr: codeCell.getStdErr() });
-      setEditorContent(codeString);
-      setEvaluationResult(codeCell.getEvaluationResult());
-      codeCell.free();
-    } else {
-      setCodeString('');
-      setEditorContent('');
-      setEvaluationResult('');
-      setOut(undefined);
+      editorInteractionState.selectedCell.y,
+      editorInteractionState.selectedCellSheet,
+    ]
+  );
+
+  // update code cell after computation
+  useEffect(() => {
+    if (!isRunningComputation) {
+      updateCodeCell(false);
     }
-  }, [
-    editorInteractionState.selectedCell.x,
-    editorInteractionState.selectedCell.y,
-    editorInteractionState.selectedCellSheet,
-  ]);
-
-  // ensures that the console is updated after the code cell is run (for async calculations, like Python)
-  useEffect(() => {
-    window.addEventListener('python-computation-complete', updateCodeCell);
-    return () => window.removeEventListener('python-computation-complete', updateCodeCell);
-  });
+  }, [updateCodeCell, isRunningComputation]);
 
   useEffect(() => {
-    updateCodeCell();
+    updateCodeCell(true);
   }, [updateCodeCell]);
 
   useEffect(() => {
     mixpanel.track('[CodeEditor].opened', { type: editorMode });
   }, [editorMode]);
-
-  useEffect(() => {
-    const completeTransaction = () => {
-      if (pythonState === 'running') {
-        updateCodeCell();
-      }
-    };
-    window.addEventListener('transaction-complete', completeTransaction);
-    return () => window.removeEventListener('transaction-complete', completeTransaction);
-  }, [updateCodeCell, pythonState]);
 
   const closeEditor = useCallback(
     (skipSaveCheck: boolean) => {
@@ -208,7 +205,7 @@ export const CodeEditor = () => {
       <CodeEditorHeader
         cellLocation={cellLocation}
         unsaved={unsaved}
-        isRunningComputation={pythonState === 'running'}
+        isRunningComputation={isRunningComputation}
         saveAndRunCell={saveAndRunCell}
         cancelPython={cancelPython}
         closeEditor={() => closeEditor(false)}
