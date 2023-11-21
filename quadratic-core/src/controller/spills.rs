@@ -20,26 +20,22 @@ impl GridController {
     ) {
         // check if the addition of a cell causes a spill error
         let sheet = self.grid.sheet_from_id(cell_ref.sheet);
-        if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-            if let Some(column) = sheet.get_column(pos.x) {
-                if let Some(code_cell_ref) = column.spills.get(pos.y) {
-                    if code_cell_ref != cell_ref {
-                        if let Some(code_cell) = sheet.get_code_cell_from_ref(code_cell_ref) {
-                            if !code_cell.has_spill_error() {
-                                update_code_cell_value(
-                                    self,
-                                    code_cell_ref,
-                                    Some(code_cell.clone()),
-                                    cells_to_compute,
-                                    reverse_operations,
-                                    summary,
-                                );
-                            }
-                        }
+        if let Some(code_cell_ref) = sheet.get_spill(cell_ref) {
+            if code_cell_ref != cell_ref {
+                if let Some(code_cell) = sheet.get_code_cell_from_ref(code_cell_ref) {
+                    if !code_cell.has_spill_error() {
+                        update_code_cell_value(
+                            self,
+                            code_cell_ref,
+                            Some(code_cell.clone()),
+                            cells_to_compute,
+                            reverse_operations,
+                            summary,
+                        );
                     }
                 }
             }
-        };
+        }
     }
 
     /// sets a spill error for a code_cell
