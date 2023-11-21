@@ -26,6 +26,8 @@ export const HtmlCells = () => {
               parseInt(style.marginLeft, 10) +
               parseInt(style.marginRight, 10)
             ).toString();
+          } else {
+            node.width = size[0];
           }
           if (size[1] === '0') {
             node.height = (
@@ -33,6 +35,8 @@ export const HtmlCells = () => {
               parseInt(style.marginTop, 10) +
               parseInt(style.marginBottom, 10)
             ).toString();
+          } else {
+            node.height = size[1];
           }
 
           // prevent mouse/touch events from zooming the html page
@@ -107,9 +111,9 @@ export const HtmlCells = () => {
               data-pos={`${htmlCell.x},${htmlCell.y}`}
               data-size={`${htmlCell.w},${htmlCell.h}`}
               key={index++}
+              width={htmlCell.w ? Number(htmlCell.w) : ''}
+              height={htmlCell.h ? Number(htmlCell.h) : ''}
               style={{
-                width: htmlCell.w ? Number(htmlCell.w) : 'auto',
-                height: htmlCell.h ? Number(htmlCell.h) : 'auto',
                 position: 'absolute',
                 pointerEvents: 'auto',
                 left: offset.x,

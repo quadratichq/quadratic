@@ -75,31 +75,20 @@ export class PointerHtmlCells {
     if (!htmlCell) {
       throw new Error('Expected htmlCell to be defined in PointerHtmlCells.pointerMove');
     }
+    const boundingClientRect = htmlCell.getBoundingClientRect();
     if (this.state === 'resizing-right') {
-      const htmlCells = this.getHtmlCells();
-      for (let i = 0; i < htmlCells.length; i++) {
-        const htmlCell = htmlCells[i] as HTMLIFrameElement;
-        this.width = (e.data.global.x - htmlCell.getBoundingClientRect().left) / pixiApp.viewport.scale.x;
-        htmlCell.width = this.width.toString();
-      }
+      this.width = (e.data.global.x - boundingClientRect.left) / pixiApp.viewport.scale.x;
+      htmlCell.width = this.width.toString();
     } else if (this.state === 'resizing-bottom') {
       const canvas = pixiApp.canvas.getBoundingClientRect();
-      const htmlCells = this.getHtmlCells();
-      for (let i = 0; i < htmlCells.length; i++) {
-        const htmlCell = htmlCells[i] as HTMLIFrameElement;
-        this.height = (e.data.global.y - htmlCell.getBoundingClientRect().top + canvas.top) / pixiApp.viewport.scale.y;
-        htmlCell.height = this.height.toString();
-      }
+      this.height = (e.data.global.y - boundingClientRect.top + canvas.top) / pixiApp.viewport.scale.y;
+      htmlCell.height = this.height.toString();
     } else if (this.state === 'resizing-corner') {
       const canvas = pixiApp.canvas.getBoundingClientRect();
-      const htmlCells = this.getHtmlCells();
-      for (let i = 0; i < htmlCells.length; i++) {
-        const htmlCell = htmlCells[i] as HTMLIFrameElement;
-        this.width = (e.data.global.x - htmlCell.getBoundingClientRect().left) / pixiApp.viewport.scale.x;
-        htmlCell.width = this.width.toString();
-        this.height = (e.data.global.y - htmlCell.getBoundingClientRect().top + canvas.top) / pixiApp.viewport.scale.y;
-        htmlCell.height = this.height.toString();
-      }
+      this.width = (e.data.global.x - boundingClientRect.left) / pixiApp.viewport.scale.x;
+      this.height = (e.data.global.y - boundingClientRect.top + canvas.top) / pixiApp.viewport.scale.y;
+      htmlCell.width = this.width.toString();
+      htmlCell.height = this.height.toString();
     }
     return true;
   }
