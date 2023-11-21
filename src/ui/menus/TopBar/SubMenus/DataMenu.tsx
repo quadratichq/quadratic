@@ -1,7 +1,7 @@
 import { downloadSelectionAsCsvAction } from '@/actions';
 import { KeyboardSymbols } from '@/helpers/keyboardSymbols';
 import { useFileContext } from '@/ui/components/FileProvider';
-import { DataObjectOutlined, StorageOutlined, UploadFile } from '@mui/icons-material';
+import { DataObjectOutlined, Download, StorageOutlined, UploadFile } from '@mui/icons-material';
 import { Menu, MenuHeader, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
@@ -38,7 +38,7 @@ export const DataMenu = () => {
         >
           <MenuLineItem
             primary={downloadSelectionAsCsvAction.label}
-            Icon={UploadFile}
+            Icon={Download}
             secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'E'}
           />
         </MenuItem>
