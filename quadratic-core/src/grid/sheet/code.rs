@@ -97,7 +97,7 @@ impl Sheet {
     /// returns the output_size for a html-like cell; returns 0, 0 if not set
     pub fn html_output_size(&self, pos: Pos) -> (i64, i64) {
         if let Some(column) = self.get_column(pos.x) {
-            if let Some(output_size) = column.output_size.get(pos.y) {
+            if let Some(output_size) = column.render_size.get(pos.y) {
                 return (output_size.w, output_size.h);
             }
         }

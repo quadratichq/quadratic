@@ -106,10 +106,10 @@ impl CellFmtAttr for FillColor {
 impl CellFmtAttr for RenderSize {
     type Value = Self;
     fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
-        &column.output_size
+        &column.render_size
     }
     fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
-        &mut column.output_size
+        &mut column.render_size
     }
 }
 

@@ -126,6 +126,12 @@ pub struct OutputSize {
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct RenderSize {
+    pub w: i64,
+    pub h: i64,
+}
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct OutputValueValue {
     #[serde(rename = "type")]
     pub type_field: String,
@@ -166,8 +172,8 @@ pub struct Column {
     #[serde(rename = "fill_color")]
     pub fill_color: HashMap<String, ColumnFormatType<String>>,
     #[serde(default)]
-    #[serde(rename = "output_size")]
-    pub output_size: HashMap<String, ColumnFormatType<OutputSize>>,
+    #[serde(rename = "render_size")]
+    pub render_size: HashMap<String, ColumnFormatType<RenderSize>>,
 }
 impl Column {
     pub fn with_id(id: Id) -> Self {

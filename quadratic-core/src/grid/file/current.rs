@@ -114,9 +114,9 @@ fn set_column_format_bool(
     Ok(())
 }
 
-fn set_column_format_output_size(
+fn set_column_format_render_size(
     column_data: &mut ColumnData<SameValue<RenderSize>>,
-    column: &HashMap<String, current::ColumnFormatType<current::OutputSize>>,
+    column: &HashMap<String, current::ColumnFormatType<current::RenderSize>>,
 ) -> Result<()> {
     for (y, format) in column.iter() {
         let y =
@@ -150,7 +150,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
             set_column_format_bool(&mut col.italic, &column.italic)?;
             set_column_format_string(&mut col.text_color, &column.text_color)?;
             set_column_format_string(&mut col.fill_color, &column.fill_color)?;
-            set_column_format_output_size(&mut col.output_size, &column.output_size)?;
+            set_column_format_render_size(&mut col.render_size, &column.render_size)?;
 
             for (y, value) in column.values.iter() {
                 for cell_value in value.content.values.iter() {
@@ -411,9 +411,9 @@ fn export_column_data_numeric_format(
         .collect()
 }
 
-fn export_column_data_output_size(
+fn export_column_data_render_size(
     column_data: &ColumnData<SameValue<RenderSize>>,
-) -> HashMap<String, current::ColumnFormatType<current::OutputSize>> {
+) -> HashMap<String, current::ColumnFormatType<current::RenderSize>> {
     column_data
         .values()
         .map(|(y, value)| {
@@ -422,7 +422,7 @@ fn export_column_data_output_size(
                 current::ColumnFormatType {
                     y,
                     content: current::ColumnFormatContent {
-                        value: current::OutputSize {
+                        value: current::RenderSize {
                             w: value.w,
                             h: value.h,
                         },
@@ -471,7 +471,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                     italic: export_column_data_bool(&column.italic),
                     text_color: export_column_data_string(&column.text_color),
                     fill_color: export_column_data_string(&column.fill_color),
-                    output_size: export_column_data_output_size(&column.output_size),
+                    render_size: export_column_data_render_size(&column.render_size),
                     values: column
                         .values
                         .values()
