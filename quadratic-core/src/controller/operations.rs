@@ -239,6 +239,7 @@ impl GridController {
                     .add_sheet(Some(sheet))
                     .expect("duplicate sheet name");
                 summary.sheet_list_modified = true;
+                summary.html.insert(sheet_id);
 
                 // return reverse operation
                 Operation::DeleteSheet { sheet_id }
