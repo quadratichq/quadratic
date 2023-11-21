@@ -1,4 +1,4 @@
-export function downloadFileInBrowser(filename: string, data: string) {
+export function downloadQuadraticFile(filename: string, data: string) {
   downloadFile(filename, data, 'application/json', 'grid');
 }
 

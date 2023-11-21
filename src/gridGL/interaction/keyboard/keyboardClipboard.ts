@@ -1,4 +1,4 @@
-import { downloadSelectionAsCSV } from '@/grid/actions/downloadSelectionAsCSV';
+import { downloadSelectionAsCsvAction } from '@/actions';
 import { GlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { copySelectionToPNG, fullClipboardSupport } from '../../../grid/actions/clipboard/clipboard';
 
@@ -19,7 +19,7 @@ export function keyboardClipboard(props: {
 
   // Command + Shift + E
   if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'e') {
-    downloadSelectionAsCSV(fileName);
+    downloadSelectionAsCsvAction.run({ fileName });
     event.preventDefault();
     event.stopPropagation();
     return true;

@@ -1,4 +1,4 @@
-import { downloadSelectionAsCSV } from '@/grid/actions/downloadSelectionAsCSV';
+import { downloadSelectionAsCsvAction } from '@/actions';
 import { KeyboardSymbols } from '@/helpers/keyboardSymbols';
 import { useFileContext } from '@/ui/components/FileProvider';
 import { DataObjectOutlined, StorageOutlined, UploadFile } from '@mui/icons-material';
@@ -33,11 +33,11 @@ export const DataMenu = () => {
         <MenuHeader>Export</MenuHeader>
         <MenuItem
           onClick={() => {
-            downloadSelectionAsCSV(fileName);
+            downloadSelectionAsCsvAction.run({ fileName });
           }}
         >
           <MenuLineItem
-            primary="Selection to CSV"
+            primary={downloadSelectionAsCsvAction.label}
             Icon={UploadFile}
             secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'E'}
           />

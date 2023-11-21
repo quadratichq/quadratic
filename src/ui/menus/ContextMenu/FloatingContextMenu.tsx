@@ -1,4 +1,3 @@
-import { downloadSelectionAsCSV } from '@/grid/actions/downloadSelectionAsCSV';
 import {
   AttachMoneyOutlined,
   BorderAll,
@@ -20,7 +19,7 @@ import { ControlledMenu, Menu, MenuInstance, MenuItem, useMenuState } from '@szh
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
-import { isEditorOrAbove } from '../../../actions';
+import { downloadSelectionAsCsvAction, isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { copySelectionToPNG, fullClipboardSupport } from '../../../grid/actions/clipboard/clipboard';
@@ -179,16 +178,6 @@ export const FloatingContextMenu = (props: Props) => {
       document.removeEventListener('pointerup', updateContextMenuCSSTransform);
     };
   }, [updateContextMenuCSSTransform]);
-
-  const copyAsPNG = useCallback(async () => {
-    await copySelectionToPNG(addGlobalSnackbar);
-    moreMenuToggle();
-  }, [moreMenuToggle, addGlobalSnackbar]);
-
-  const downloadAsCsv = useCallback(() => {
-    downloadSelectionAsCSV(fileName);
-    moreMenuToggle();
-  }, [moreMenuToggle, fileName]);
 
   // set input's initial position correctly
   const transform = updateContextMenuCSSTransform();
@@ -390,16 +379,26 @@ export const FloatingContextMenu = (props: Props) => {
           menuStyle={{ padding: '2px 0', color: 'inherit' }}
           anchorRef={moreMenuButtonRef}
         >
-          <MenuItem onClick={copyAsPNG}>
+          <MenuItem
+            onClick={async () => {
+              await copySelectionToPNG(addGlobalSnackbar);
+              moreMenuToggle();
+            }}
+          >
             <MenuLineItem
               primary="Copy selection as PNG"
               secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'C'}
               Icon={CopyAsPNG}
             ></MenuLineItem>
           </MenuItem>
-          <MenuItem onClick={downloadAsCsv}>
+          <MenuItem
+            onClick={() => {
+              downloadSelectionAsCsvAction.run({ fileName });
+              moreMenuToggle();
+            }}
+          >
             <MenuLineItem
-              primary="Download selection as CSV"
+              primary={downloadSelectionAsCsvAction.label}
               secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'E'}
               Icon={Download}
             ></MenuLineItem>
