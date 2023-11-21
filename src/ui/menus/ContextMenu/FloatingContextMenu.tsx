@@ -1,6 +1,7 @@
 import {
   AttachMoneyOutlined,
   BorderAll,
+  Download,
   FormatAlignCenter,
   FormatAlignLeft,
   FormatAlignRight,
@@ -18,7 +19,7 @@ import { ControlledMenu, Menu, MenuInstance, MenuItem, useMenuState } from '@szh
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
-import { isEditorOrAbove } from '../../../actions';
+import { downloadSelectionAsCsvAction, isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { copySelectionToPNG, fullClipboardSupport } from '../../../grid/actions/clipboard/clipboard';
@@ -28,6 +29,7 @@ import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
+import { useFileContext } from '../../components/FileProvider';
 import { TooltipHint } from '../../components/TooltipHint';
 import { QColorPicker } from '../../components/qColorPicker';
 import { CopyAsPNG, DecimalDecrease, DecimalIncrease, Icon123 } from '../../icons';
@@ -61,6 +63,7 @@ export const FloatingContextMenu = (props: Props) => {
   const menuDiv = useRef<HTMLDivElement>(null);
   const moreMenuButtonRef = useRef(null);
   const borders = useGetBorderMenu();
+  const { name: fileName } = useFileContext();
 
   const textColorRef = useRef<MenuInstance>(null);
   const fillColorRef = useRef<MenuInstance>(null);
@@ -175,11 +178,6 @@ export const FloatingContextMenu = (props: Props) => {
       document.removeEventListener('pointerup', updateContextMenuCSSTransform);
     };
   }, [updateContextMenuCSSTransform]);
-
-  const copyAsPNG = useCallback(async () => {
-    await copySelectionToPNG(addGlobalSnackbar);
-    moreMenuToggle();
-  }, [moreMenuToggle, addGlobalSnackbar]);
 
   // set input's initial position correctly
   const transform = updateContextMenuCSSTransform();
@@ -381,11 +379,28 @@ export const FloatingContextMenu = (props: Props) => {
           menuStyle={{ padding: '2px 0', color: 'inherit' }}
           anchorRef={moreMenuButtonRef}
         >
-          <MenuItem onClick={copyAsPNG}>
+          <MenuItem
+            onClick={async () => {
+              await copySelectionToPNG(addGlobalSnackbar);
+              moreMenuToggle();
+            }}
+          >
             <MenuLineItem
               primary="Copy selection as PNG"
               secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'C'}
               Icon={CopyAsPNG}
+            ></MenuLineItem>
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              downloadSelectionAsCsvAction.run({ fileName });
+              moreMenuToggle();
+            }}
+          >
+            <MenuLineItem
+              primary={downloadSelectionAsCsvAction.label}
+              secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'E'}
+              Icon={Download}
             ></MenuLineItem>
           </MenuItem>
         </ControlledMenu>

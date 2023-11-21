@@ -8,7 +8,7 @@ import { ROUTES } from './constants/routes';
 import { DOCUMENTATION_URL } from './constants/urls';
 import { CreateActionRequest } from './dashboard/FilesCreateRoute';
 import { grid } from './grid/controller/Grid';
-import { downloadFileInBrowser } from './helpers/downloadFileInBrowser';
+import { downloadFile, downloadQuadraticFile } from './helpers/downloadFileInBrowser';
 import { FileContextType } from './ui/components/FileProvider';
 const { OWNER, EDITOR, VIEWER } = PermissionSchema.enum;
 
@@ -51,7 +51,7 @@ export const isOwner = (permission: Permission) => permission === OWNER;
 export const isEditorOrAbove = (permission: Permission) => permission === EDITOR || isOwner(permission);
 export const isViewerOrAbove = (permission: Permission) => permission === VIEWER || isEditorOrAbove(permission);
 
-export const createNewFile = {
+export const createNewFileAction = {
   label: 'New',
   isAvailable: isViewerOrAbove,
   run({ navigate }: { navigate: NavigateFunction }) {
@@ -59,12 +59,12 @@ export const createNewFile = {
   },
 };
 
-export const renameFile = {
+export const renameFileAction = {
   label: 'Rename',
   isAvailable: isOwner,
 };
 
-export const duplicateFile = {
+export const duplicateFileAction = {
   label: 'Duplicate',
   isAvailable: isViewerOrAbove,
   run({ name, submit }: { name: string; submit: SubmitFunction }) {
@@ -78,11 +78,11 @@ export const duplicateFile = {
   },
 };
 
-export const downloadFile = {
+export const downloadFileAction = {
   label: 'Download local copy',
   isAvailable: isViewerOrAbove,
   run({ name }: { name: FileContextType['name'] }) {
-    downloadFileInBrowser(name, grid.export());
+    downloadQuadraticFile(name, grid.export());
   },
 };
 
@@ -102,7 +102,7 @@ export const deleteFile = {
   },
 };
 
-export const provideFeedback = {
+export const provideFeedbackAction = {
   label: 'Feedback',
   isAvailable: isViewerOrAbove,
   run({ setEditorInteractionState }: { setEditorInteractionState: SetterOrUpdater<EditorInteractionState> }) {
@@ -110,33 +110,40 @@ export const provideFeedback = {
   },
 };
 
-export const viewDocs = {
+export const viewDocsAction = {
   label: 'Docs',
   run() {
     window.open(DOCUMENTATION_URL, '_blank')?.focus();
   },
 };
 
-export const cut = {
+export const cutAction = {
   label: 'Cut',
   isAvailable: isEditorOrAbove,
 };
 
-export const paste = {
+export const pasteAction = {
   label: 'Paste',
   isAvailable: isEditorOrAbove,
 };
 
-export const undo = {
+export const undoAction = {
   label: 'Undo',
   isAvailable: isEditorOrAbove,
 };
 
-export const redo = {
+export const redoAction = {
   label: 'Redo',
   isAvailable: isEditorOrAbove,
 };
 
-export const copy = {
+export const copyAction = {
   label: 'Copy',
+};
+
+export const downloadSelectionAsCsvAction = {
+  label: 'Download selection as CSV',
+  run({ fileName }: { fileName: string }) {
+    downloadFile(fileName, grid.exportCsvSelection(), 'text/plain', 'csv');
+  },
 };

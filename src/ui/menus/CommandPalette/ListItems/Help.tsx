@@ -1,25 +1,25 @@
 import { ChatBubbleOutline, OpenInNew } from '@mui/icons-material';
 import { useSetRecoilState } from 'recoil';
-import { provideFeedback, viewDocs } from '../../../../actions';
+import { provideFeedbackAction, viewDocsAction } from '../../../../actions';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
 const ListItems = [
   {
-    label: 'Help: ' + viewDocs.label,
+    label: 'Help: ' + viewDocsAction.label,
     Component: (props: CommandPaletteListItemSharedProps) => (
       <CommandPaletteListItem
         {...props}
         icon={<OpenInNew />}
         action={() => {
-          viewDocs.run();
+          viewDocsAction.run();
         }}
       />
     ),
   },
   {
-    label: 'Help: ' + provideFeedback.label,
-    isAvailable: provideFeedback.isAvailable,
+    label: 'Help: ' + provideFeedbackAction.label,
+    isAvailable: provideFeedbackAction.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
       return (
@@ -27,7 +27,7 @@ const ListItems = [
           {...props}
           icon={<ChatBubbleOutline />}
           action={() => {
-            provideFeedback.run({ setEditorInteractionState });
+            provideFeedbackAction.run({ setEditorInteractionState });
           }}
         />
       );
