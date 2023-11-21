@@ -1,3 +1,4 @@
+import mixpanel from 'mixpanel-browser';
 import { grid, pointsToRect } from '../../grid/controller/Grid';
 import { JsCodeResult } from '../../quadratic-core/quadratic_core';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
@@ -23,6 +24,7 @@ class PythonWebWorker {
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
+
       if (event.type === 'results') {
         const pythonResult = event.results;
         if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
@@ -56,11 +58,12 @@ class PythonWebWorker {
           pythonResult.std_out,
           pythonResult.output_value,
           JSON.stringify(pythonResult.array_output),
-          pythonResult.line_number
+          pythonResult.line_number,
+          pythonResult.cancel_compute
         );
         grid.calculationComplete(result);
         // triggers any CodeEditor updates (if necessary)
-        window.dispatchEvent(new CustomEvent('computation-complete'));
+        window.dispatchEvent(new CustomEvent('python-computation-finished'));
       } else if (event.type === 'get-cells') {
         const range = event.range;
         if (!range) {
@@ -76,13 +79,15 @@ class PythonWebWorker {
           this.worker.postMessage({ type: 'get-cells', cells });
         } else {
           // triggers any CodeEditor updates (if necessary)
-          window.dispatchEvent(new CustomEvent('computation-complete'));
+          window.dispatchEvent(new CustomEvent('python-computation-finished'));
         }
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
         this.loaded = true;
       } else if (event.type === 'python-error') {
         window.dispatchEvent(new CustomEvent('python-error'));
+      } else if (event.type === 'not-loaded') {
+        window.dispatchEvent(new CustomEvent('python-loading'));
       } else {
         throw new Error(`Unhandled pythonWebWorker.type ${event.type}`);
       }
@@ -93,8 +98,37 @@ class PythonWebWorker {
     if (!this.loaded || !this.worker) {
       return false;
     }
+    window.dispatchEvent(new CustomEvent('python-computation-started'));
+
     this.worker.postMessage({ type: 'execute', python });
     return true;
+  }
+
+  stop() {
+    if (this.worker) {
+      this.worker.terminate();
+    }
+  }
+
+  restart() {
+    this.stop();
+    this.init();
+  }
+
+  restartFromUser() {
+    mixpanel.track('[PythonWebWorker].restartFromUser');
+    this.restart();
+    const result = new JsCodeResult(
+      false,
+      undefined,
+      'Python execution cancelled by user',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      true
+    );
+    grid.calculationComplete(result);
   }
 
   getCells(cells: string) {

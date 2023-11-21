@@ -13,7 +13,7 @@ import { cn } from '@/shadcn/utils';
 import { DotsVerticalIcon } from '@radix-ui/react-icons';
 import React, { useEffect, useState } from 'react';
 import { Link, SubmitOptions, useFetcher } from 'react-router-dom';
-import { deleteFile, downloadFile, duplicateFile, renameFile as renameFileAction } from '../../actions';
+import { deleteFile, downloadFileAction, duplicateFileAction, renameFileAction } from '../../actions';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { Action, FilesListFile } from './FilesList';
@@ -143,9 +143,9 @@ export function FileListItem({
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-48">
           <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>
-          <DropdownMenuItem onClick={handleDuplicate}>{duplicateFile.label}</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleDuplicate}>{duplicateFileAction.label}</DropdownMenuItem>
           <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>
-          <DropdownMenuItem onClick={handleDownload}>{downloadFile.label}</DropdownMenuItem>
+          <DropdownMenuItem onClick={handleDownload}>{downloadFileAction.label}</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleDelete}>{deleteFile.label}</DropdownMenuItem>
         </DropdownMenuContent>
