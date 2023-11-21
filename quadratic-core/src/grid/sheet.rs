@@ -111,18 +111,14 @@ impl Sheet {
         }
 
         let (column_response, column) = self.get_or_create_column(pos.x);
-        let old_value = column.values.set(pos.y, value).unwrap_or_default();
+        let old_value = column.values.set(pos.y, value.clone()).unwrap_or_default();
 
-        let unspill = None;
-        // if !is_blank {
-        //     if let Some(source) = column.spills.get(pos.y) {
-        //         self.unspill(source);
-        //         unspill = Some(source);
-        //     }
-        // }
-
-        // TODO: check for new spills, if the cell was deleted
-        let spill = None;
+        // returns if there's a change in html (html cell is added or removed from sheet)
+        let html = if let Some(value) = &value {
+            old_value.is_html() != value.is_html()
+        } else {
+            old_value.is_html()
+        };
 
         let row_response = self.get_or_create_row(pos.y);
         Some(SetCellResponse {
@@ -130,8 +126,7 @@ impl Sheet {
             row: row_response,
             old_value,
 
-            spill,
-            unspill,
+            html,
         })
     }
 

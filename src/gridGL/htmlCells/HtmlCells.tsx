@@ -50,6 +50,21 @@ export const HtmlCells = () => {
   };
 
   useEffect(() => {
+    const updateHtmlCells = (e: any) => {
+      setHtmlCells((output) => {
+        const sheets = e.detail;
+        sheets.forEach((sheet: { id: string }) => {
+          output = output.filter((htmlCell) => htmlCell.sheet_id !== sheet.id);
+          output.push(...grid.getHtmlOutput(sheet.id));
+        });
+        return output;
+      });
+    };
+    window.addEventListener('html-update', updateHtmlCells);
+    return () => window.removeEventListener('html-update', updateHtmlCells);
+  }, []);
+
+  useEffect(() => {
     handleHtmlCells();
     window.addEventListener('change-sheet', changeSheet);
     return () => window.removeEventListener('change-sheet', changeSheet);

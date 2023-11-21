@@ -38,6 +38,9 @@ impl GridController {
                         let pos = sheet.cell_ref_to_pos(cell_ref)?;
                         cells_to_compute.insert(cell_ref);
                         let response = sheet.set_cell_value(pos, value)?;
+                        if response.html {
+                            summary.html.insert(cell_ref.sheet);
+                        }
                         Some(response.old_value)
                     })
                     .map(|old_value| old_value.unwrap_or(CellValue::Blank))
@@ -70,18 +73,18 @@ impl GridController {
 
                 // for compute, we keep the original cell output to avoid flashing of output (since values will be overridden once computation is complete)
                 if compute {
-                    if let Some(code_cell_value) = code_cell_value {
+                    if let Some(code_cell_value) = code_cell_value.as_ref() {
                         let updated_code_cell_value =
                             if let Some(old_code_cell_value) = old_code_cell_value.as_ref() {
                                 let mut updated_code_cell_value = code_cell_value.clone();
                                 updated_code_cell_value.output = old_code_cell_value.output.clone();
                                 updated_code_cell_value
                             } else {
-                                code_cell_value
+                                code_cell_value.clone()
                             };
-                        sheet.set_code_cell_value(pos, Some(updated_code_cell_value));
+                        sheet.set_code_cell_value(pos, &Some(updated_code_cell_value));
                     } else {
-                        sheet.set_code_cell_value(pos, code_cell_value);
+                        sheet.set_code_cell_value(pos, &code_cell_value);
                     }
                     cells_to_compute.insert(cell_ref);
                 } else {
@@ -94,12 +97,32 @@ impl GridController {
                         summary,
                         cells_to_compute,
                     );
-                    sheet.set_code_cell_value(pos, code_cell_value);
+                    sheet.set_code_cell_value(pos, &code_cell_value);
                 }
                 summary
                     .cell_sheets_modified
                     .insert(CellSheetsModified::new(sheet.id, pos));
                 summary.code_cells_modified.insert(cell_ref.sheet);
+
+                // track changes for html
+                if let Some(code_cell_value) = code_cell_value.as_ref() {
+                    if let Some(code_cell_value) = code_cell_value.get_output_value(0, 0) {
+                        if code_cell_value.is_html() {
+                            summary.html.insert(cell_ref.sheet);
+                        }
+                    }
+                } else {
+                    if let Some(old_code_cell_value) = &old_code_cell_value {
+                        if let Some(old_code_cell_value) =
+                            &old_code_cell_value.get_output_value(0, 0)
+                        {
+                            if old_code_cell_value.is_html() {
+                                summary.html.insert(cell_ref.sheet);
+                            }
+                        }
+                    }
+                }
+
                 Operation::SetCellCode {
                     cell_ref,
                     code_cell_value: old_code_cell_value,

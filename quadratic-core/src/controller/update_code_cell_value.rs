@@ -26,7 +26,14 @@ pub fn update_code_cell_value(
     summary.save = true;
     let sheet = grid_controller.grid.sheet_mut_from_id(cell_ref.sheet);
     if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-        let old_code_cell_value = sheet.set_code_cell_value(pos, updated_code_cell_value.clone());
+        let old_code_cell_value = sheet.set_code_cell_value(pos, &updated_code_cell_value.clone());
+        if old_code_cell_value.as_ref().is_some_and(|code_cell_value| {
+            code_cell_value
+                .get_output_value(0, 0)
+                .is_some_and(|cell_value| cell_value.is_html())
+        }) {
+            summary.html.insert(sheet.id.clone());
+        }
         if let Some(updated_code_cell_value) = updated_code_cell_value.clone() {
             if let Some(output) = updated_code_cell_value.output {
                 match output.result.output_value() {
@@ -59,10 +66,13 @@ pub fn update_code_cell_value(
                                     }
                                 }
                             }
-                            Value::Single(_) => {
+                            Value::Single(value) => {
                                 summary
                                     .cell_sheets_modified
                                     .insert(CellSheetsModified::new(sheet.id, pos));
+                                if value.is_html() {
+                                    summary.html.insert(sheet.id);
+                                }
                             }
                         };
                     }

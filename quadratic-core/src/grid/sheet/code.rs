@@ -11,7 +11,7 @@ impl Sheet {
     pub fn set_code_cell_value(
         &mut self,
         pos: Pos,
-        code_cell: Option<CodeCellValue>,
+        code_cell: &Option<CodeCellValue>,
     ) -> Option<CodeCellValue> {
         let cell_ref = self.get_or_create_cell_ref(pos);
         let old = self.code_cells.remove(&cell_ref);
@@ -42,7 +42,7 @@ impl Sheet {
                     }
                 }
             }
-            self.code_cells.insert(cell_ref, code_cell);
+            self.code_cells.insert(cell_ref, code_cell.clone());
         }
         old
     }

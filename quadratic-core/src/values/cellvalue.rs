@@ -447,6 +447,13 @@ impl CellValue {
         }
         (value, ops)
     }
+
+    pub fn is_html(&self) -> bool {
+        match self {
+            CellValue::Html(_) => true,
+            _ => false,
+        }
+    }
 }
 
 #[cfg(test)]

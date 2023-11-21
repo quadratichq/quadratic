@@ -122,6 +122,10 @@ export class Grid {
       this.thumbnailDirty = true;
     }
 
+    if (summary.html) {
+      window.dispatchEvent(new CustomEvent('html-update', { detail: summary.html }));
+    }
+
     const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
     if (cursor) {
       sheets.current = cursor.sheetId;

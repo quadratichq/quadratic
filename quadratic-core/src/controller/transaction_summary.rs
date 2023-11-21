@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    grid::{js_types::JsHtmlOutput, RegionRef, Sheet, SheetId},
+    grid::{RegionRef, Sheet, SheetId},
     Pos,
 };
 
@@ -77,7 +77,7 @@ pub struct TransactionSummary {
     pub generate_thumbnail: bool,
 
     // changes to html output
-    pub html: Vec<JsHtmlOutput>,
+    pub html: HashSet<SheetId>,
 }
 
 impl TransactionSummary {
