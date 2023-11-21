@@ -69,7 +69,7 @@ mod test {
         let mut gc = GridController::new();
         let cdc = gc.grid_mut();
         let sheet_id = cdc.sheet_ids()[0];
-        let sheet = cdc.sheet_mut_from_id(sheet_id.clone());
+        let sheet = cdc.sheet_mut_from_id(sheet_id);
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
         sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
         let mut cells_accessed = vec![];
