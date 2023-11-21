@@ -740,7 +740,7 @@ mod test {
             last_modified: "".into(),
             output: None,
         };
-        sheet.set_code_cell_value((2, 1).into(), Some(code_cell.clone()));
+        sheet.set_code_cell_value((2, 1).into(), &Some(code_cell.clone()));
         let value = sheet.get_code_cell((2, 1).into());
 
         assert_eq!(value, Some(&code_cell));

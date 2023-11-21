@@ -113,7 +113,7 @@ mod test {
         cells_accessed.push(cell_ref01);
         sheet.set_code_cell_value(
             Pos { x: 0, y: 2 },
-            Some(CodeCellValue {
+            &Some(CodeCellValue {
                 code_string: "1".to_string(),
                 language: crate::grid::CodeCellLanguage::Python,
                 formatted_code_string: None,

@@ -32,7 +32,7 @@ pub fn update_code_cell_value(
                 .get_output_value(0, 0)
                 .is_some_and(|cell_value| cell_value.is_html())
         }) {
-            summary.html.insert(sheet.id.clone());
+            summary.html.insert(sheet.id);
         }
         if let Some(updated_code_cell_value) = updated_code_cell_value.clone() {
             if let Some(output) = updated_code_cell_value.output {

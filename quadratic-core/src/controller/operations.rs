@@ -111,14 +111,10 @@ impl GridController {
                             summary.html.insert(cell_ref.sheet);
                         }
                     }
-                } else {
-                    if let Some(old_code_cell_value) = &old_code_cell_value {
-                        if let Some(old_code_cell_value) =
-                            &old_code_cell_value.get_output_value(0, 0)
-                        {
-                            if old_code_cell_value.is_html() {
-                                summary.html.insert(cell_ref.sheet);
-                            }
+                } else if let Some(old_code_cell_value) = &old_code_cell_value {
+                    if let Some(old_code_cell_value) = &old_code_cell_value.get_output_value(0, 0) {
+                        if old_code_cell_value.is_html() {
+                            summary.html.insert(cell_ref.sheet);
                         }
                     }
                 }

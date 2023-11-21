@@ -54,6 +54,36 @@ export class PointerHtmlCells {
     }
   }
 
+  private setWidth(width: number): void {
+    this.width = width;
+    if (!this.htmlCell) {
+      throw new Error('Expected htmlCell to be defined in PointerHtmlCells.setWidth');
+    }
+    if (this.width === undefined) {
+      throw new Error('Expected width to be defined in PointerHtmlCells.setWidth');
+    }
+    if (this.htmlCell.tagName === 'iframe') {
+      this.htmlCell.width = this.width.toString();
+    } else {
+      this.htmlCell.style.width = `${this.width}px`;
+    }
+  }
+
+  private setHeight(height: number): void {
+    this.height = height;
+    if (!this.htmlCell) {
+      throw new Error('Expected htmlCell to be defined in PointerHtmlCells.setHeight');
+    }
+    if (this.height === undefined) {
+      throw new Error('Expected height to be defined in PointerHtmlCells.setHeight');
+    }
+    if (this.htmlCell.tagName === 'iframe') {
+      this.htmlCell.height = this.height.toString();
+    } else {
+      this.htmlCell.style.height = `${this.height}px`;
+    }
+  }
+
   pointerMove(e: InteractionEvent): boolean {
     if (!this.state) {
       switch (this.intersects(e, false)) {
@@ -77,41 +107,48 @@ export class PointerHtmlCells {
     }
     const boundingClientRect = htmlCell.getBoundingClientRect();
     if (this.state === 'resizing-right') {
-      this.width = (e.data.global.x - boundingClientRect.left) / pixiApp.viewport.scale.x;
-      htmlCell.width = this.width.toString();
+      this.setWidth((e.data.global.x - boundingClientRect.left) / pixiApp.viewport.scale.x);
     } else if (this.state === 'resizing-bottom') {
       const canvas = pixiApp.canvas.getBoundingClientRect();
-      this.height = (e.data.global.y - boundingClientRect.top + canvas.top) / pixiApp.viewport.scale.y;
-      htmlCell.height = this.height.toString();
+      this.setHeight((e.data.global.y - boundingClientRect.top + canvas.top) / pixiApp.viewport.scale.y);
     } else if (this.state === 'resizing-corner') {
       const canvas = pixiApp.canvas.getBoundingClientRect();
-      this.width = (e.data.global.x - boundingClientRect.left) / pixiApp.viewport.scale.x;
-      this.height = (e.data.global.y - boundingClientRect.top + canvas.top) / pixiApp.viewport.scale.y;
-      htmlCell.width = this.width.toString();
-      htmlCell.height = this.height.toString();
+      this.setWidth((e.data.global.x - boundingClientRect.left) / pixiApp.viewport.scale.x);
+      this.setHeight((e.data.global.y - boundingClientRect.top + canvas.top) / pixiApp.viewport.scale.y);
     }
     return true;
+  }
+
+  private startResizing() {
+    if (!this.htmlCell) {
+      throw new Error('Expected htmlCell to be defined in PointerHtmlCells.pointerDown');
+    }
+    if (this.htmlCell.tagName === 'iframe') {
+      this.width = parseFloat(this.htmlCell.width);
+      this.height = parseFloat(this.htmlCell.height);
+    } else {
+      this.width = this.htmlCell.offsetWidth;
+      this.height = this.htmlCell.offsetHeight;
+    }
+    this.htmlCell!.style.pointerEvents = 'none';
   }
 
   pointerDown(e: InteractionEvent): boolean {
     switch (this.intersects(e, true)) {
       case 'right':
         this.state = 'resizing-right';
-        this.width = parseFloat(this.htmlCell!.width);
-        this.height = parseFloat(this.htmlCell!.height);
-        this.htmlCell!.style.pointerEvents = 'none';
+        this.startResizing();
         return true;
       case 'bottom':
+        if (!this.htmlCell) {
+          throw new Error('Expected htmlCell to be defined in PointerHtmlCells.pointerDown');
+        }
         this.state = 'resizing-bottom';
-        this.width = parseFloat(this.htmlCell!.width);
-        this.height = parseFloat(this.htmlCell!.height);
-        this.htmlCell!.style.pointerEvents = 'none';
+        this.startResizing();
         return true;
       case 'corner':
         this.state = 'resizing-corner';
-        this.width = parseFloat(this.htmlCell!.width);
-        this.height = parseFloat(this.htmlCell!.height);
-        this.htmlCell!.style.pointerEvents = 'none';
+        this.startResizing();
         return true;
       default:
         return false;

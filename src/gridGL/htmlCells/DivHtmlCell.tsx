@@ -1,3 +1,4 @@
+import { CELL_HEIGHT, CELL_WIDTH } from '@/constants/gridConstants';
 import { sheets } from '@/grid/controller/Sheets';
 import { JsHtmlOutput } from '@/quadratic-core/types';
 import { useCallback } from 'react';
@@ -38,11 +39,12 @@ export const DivHtmlCell = (props: Props) => {
         pointerEvents: 'auto',
         left: offset.x,
         top: offset.y + offset.height,
-        // minWidth: `${CELL_WIDTH}px`,
-        // minHeight: `${CELL_HEIGHT}px`,
+        minWidth: `${CELL_WIDTH}px`,
+        minHeight: `${CELL_HEIGHT - 2}px`,
         background: 'white',
         border: '1px solid black',
         boxSizing: 'border-box',
+        overflow: 'hidden',
       }}
     />
   );
