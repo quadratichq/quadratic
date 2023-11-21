@@ -45,7 +45,7 @@ impl CodeCellValue {
         })
     }
 
-    pub fn spill_error(&self) -> bool {
+    pub fn has_spill_error(&self) -> bool {
         self.output.as_ref().map(|out| out.spill).unwrap_or(false)
     }
 

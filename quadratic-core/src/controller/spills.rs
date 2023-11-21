@@ -25,7 +25,7 @@ impl GridController {
                 if let Some(code_cell_ref) = column.spills.get(pos.y) {
                     if code_cell_ref != cell_ref {
                         if let Some(code_cell) = sheet.get_code_cell_from_ref(code_cell_ref) {
-                            if !code_cell.spill_error() {
+                            if !code_cell.has_spill_error() {
                                 update_code_cell_value(
                                     self,
                                     code_cell_ref,
@@ -52,7 +52,7 @@ impl GridController {
     ) {
         let sheet = self.grid.sheet_from_id(cell_ref.sheet);
         if let Some(code_cell) = sheet.get_code_cell_from_ref(cell_ref) {
-            if !code_cell.spill_error() {
+            if !code_cell.has_spill_error() {
                 update_code_cell_value(
                     self,
                     cell_ref,

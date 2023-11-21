@@ -93,7 +93,7 @@ pub fn update_code_cell_value(
                 let mut updated_code_cell_value = cell_value;
                 updated_code_cell_value.output.as_mut().unwrap().spill = true;
                 Some(updated_code_cell_value)
-            } else if cell_value.spill_error() {
+            } else if cell_value.has_spill_error() {
                 let mut updated_code_cell_value = cell_value;
                 updated_code_cell_value.output.as_mut().unwrap().spill = false;
                 Some(updated_code_cell_value)
@@ -148,7 +148,7 @@ pub fn fetch_code_cell_difference(
     let sheet = grid_controller.grid.sheet_mut_from_id(sheet_id);
     let cell_ref = sheet.get_or_create_cell_ref(pos);
     let (old_w, old_h) = if let Some(old_code_cell_value) = old_code_cell_value {
-        if old_code_cell_value.spill_error() {
+        if old_code_cell_value.has_spill_error() {
             (1, 1)
         } else {
             let size = old_code_cell_value.output_size();
@@ -158,7 +158,7 @@ pub fn fetch_code_cell_difference(
         (1, 1)
     };
     let (new_w, new_h) = if let Some(new_code_cell_value) = new_code_cell_value {
-        if new_code_cell_value.spill_error() {
+        if new_code_cell_value.has_spill_error() {
             (1, 1)
         } else {
             let size = new_code_cell_value.output_size();
@@ -404,7 +404,7 @@ mod test {
 
         let sheet = gc.grid.sheet_from_id(sheet_id);
         let code_cell = sheet.get_code_cell(Pos { x: 0, y: 0 });
-        assert_eq!(code_cell.unwrap().spill_error(), true);
+        assert_eq!(code_cell.unwrap().has_spill_error(), true);
     }
 
     #[test]
@@ -474,7 +474,7 @@ mod test {
 
         let sheet = gc.grid.sheet_from_id(sheet_id);
         let code_cell = sheet.get_code_cell(Pos { x: 0, y: 0 });
-        assert_eq!(code_cell.unwrap().spill_error(), true);
+        assert_eq!(code_cell.unwrap().has_spill_error(), true);
         assert_eq!(sheet.get_column(0).unwrap().spills.get(0), Some(cell_ref));
         assert_eq!(
             sheet.get_column(0).unwrap().spills.get(1),

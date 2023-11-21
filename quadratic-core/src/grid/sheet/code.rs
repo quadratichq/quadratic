@@ -120,7 +120,7 @@ impl Sheet {
     pub fn release_spill_error(&self, cell_ref: CellRef) -> Option<(CellRef, CodeCellValue)> {
         self.code_cells
             .iter()
-            .filter(|(_, code_cell)| code_cell.spill_error())
+            .filter(|(_, code_cell)| code_cell.has_spill_error())
             .sorted_by(|a, b| a.1.last_modified.cmp(&b.1.last_modified))
             .filter_map(|(code_cell_ref, code_cell)| {
                 if let Some(mut rect) = code_cell.output_rect() {
