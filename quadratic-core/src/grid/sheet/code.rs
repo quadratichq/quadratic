@@ -115,29 +115,22 @@ impl Sheet {
         self.code_cells.keys().copied()
     }
 
-    /// Checks if the deletion of a cell or a code_cell released a spill error; sorted by earliest last_modified
+    /// Checks if the deletion of a cell or a code_cell released a spill error;
+    /// sorted by earliest last_modified.
     /// Returns the cell_ref and the code_cell_value if it did
-    pub fn release_spill_error(&self, cell_ref: CellRef) -> Option<(CellRef, CodeCellValue)> {
+    pub fn spill_error_released(&self, cell_ref: CellRef) -> Option<(CellRef, CodeCellValue)> {
         self.code_cells
             .iter()
             .filter(|(_, code_cell)| code_cell.has_spill_error())
             .sorted_by(|a, b| a.1.last_modified.cmp(&b.1.last_modified))
             .filter_map(|(code_cell_ref, code_cell)| {
-                if let Some(mut rect) = code_cell.output_rect() {
-                    if let Some(pos) = self.cell_ref_to_pos(*code_cell_ref) {
-                        rect.translate(pos.x, pos.y);
-                        let region = self.existing_region(rect);
-                        if region.contains(cell_ref) {
-                            Some((code_cell_ref.clone(), code_cell.clone()))
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
+                let pos = self.cell_ref_to_pos(*code_cell_ref)?;
+                let array_size = code_cell.output_size();
+                let rect = Rect::from_pos_and_size(pos, array_size);
+
+                self.existing_region(rect)
+                    .contains(cell_ref)
+                    .then(|| (*code_cell_ref, code_cell.to_owned()))
             })
             .find(|(cell_ref, code_cell)| {
                 let array_size = code_cell.output_size();

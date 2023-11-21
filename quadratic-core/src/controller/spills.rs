@@ -70,7 +70,7 @@ impl GridController {
         reverse_operations: &mut Vec<Operation>,
     ) {
         let sheet = self.grid.sheet_from_id(cell_ref.sheet);
-        if let Some((cell_ref, code_cell)) = sheet.release_spill_error(cell_ref) {
+        if let Some((cell_ref, code_cell)) = sheet.spill_error_released(cell_ref) {
             update_code_cell_value(
                 self,
                 cell_ref,
