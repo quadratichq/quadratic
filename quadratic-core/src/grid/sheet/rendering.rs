@@ -114,7 +114,7 @@ impl Sheet {
                     let mut numeric_commas: Option<bool> = None;
                     let mut align: Option<CellAlign> = column.align.get(y);
 
-                    if value.type_name() == "number" {
+                    if matches!(value, CellValue::Number(_)) {
                         // get numeric_format and numeric_decimal to turn number into a string
                         numeric_format = column.numeric_format.get(y);
                         let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
