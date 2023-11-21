@@ -16,7 +16,7 @@ impl GridController {
                     if let Some(cells_accessed) = output.cells_accessed() {
                         cells_accessed.iter().for_each(|cell_accessed| {
                             if *cell_accessed == cell {
-                                dependent_cells.insert(cell_ref.clone());
+                                dependent_cells.insert(*cell_ref);
                             }
                         });
                     }
@@ -24,7 +24,7 @@ impl GridController {
             });
         });
 
-        if dependent_cells.len() == 0 {
+        if dependent_cells.is_empty() {
             return None;
         }
 
@@ -40,7 +40,7 @@ impl GridController {
                     if let Some(cells_accessed) = output.cells_accessed() {
                         cells_accessed.iter().for_each(|cell_accessed| {
                             if region.contains(cell_accessed) {
-                                dependent_cells.insert(cell_ref.clone());
+                                dependent_cells.insert(*cell_ref);
                             }
                         });
                     }
@@ -48,7 +48,7 @@ impl GridController {
             });
         });
 
-        if dependent_cells.len() == 0 {
+        if dependent_cells.is_empty() {
             return None;
         }
 
