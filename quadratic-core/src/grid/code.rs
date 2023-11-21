@@ -33,16 +33,9 @@ impl CodeCellValue {
 
     /// returns a Rect for the output of the code cell if it is an array
     pub fn output_rect(&self) -> Option<Rect> {
-        self.output.as_ref().is_some().then(|| {
-            let array_size = self.output_size();
-            Rect {
-                min: Pos { x: 0, y: 0 },
-                max: Pos {
-                    x: array_size.w.get() as i64,
-                    y: array_size.h.get() as i64,
-                },
-            }
-        })
+        self.output
+            .is_some()
+            .then(|| Rect::from_pos_and_size((0, 0).into(), self.output_size()))
     }
 
     pub fn has_spill_error(&self) -> bool {
@@ -167,7 +160,7 @@ mod test {
         assert_eq!(code_cell.output_size().h.get(), 11);
         assert_eq!(
             code_cell.output_rect(),
-            Some(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 10, y: 11 }))
+            Some(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 9, y: 10 }))
         );
     }
 }
