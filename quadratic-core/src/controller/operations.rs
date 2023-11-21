@@ -318,11 +318,13 @@ mod tests {
     use super::*;
 
     fn execute(gc: &mut GridController, operation: Operation) {
+        let mut cells_updated = IndexSet::new();
         let mut cells_to_compute = IndexSet::new();
         let mut summary = TransactionSummary::default();
         let mut sheets_with_changed_bounds = HashSet::new();
         gc.execute_operation(
             operation,
+            &mut cells_updated,
             &mut cells_to_compute,
             &mut summary,
             &mut sheets_with_changed_bounds,

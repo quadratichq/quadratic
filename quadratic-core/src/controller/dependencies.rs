@@ -60,7 +60,7 @@ impl GridController {
 mod test {
     use crate::{
         controller::GridController,
-        grid::{CodeCellRunOutput, CodeCellValue, Grid},
+        grid::{CodeCellRunOutput, CodeCellValue},
         CellValue, Pos, Value,
     };
 
