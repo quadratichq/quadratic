@@ -224,11 +224,11 @@ impl GridController {
         )?)
     }
 
-    /// Sets cell OutputSize (used for Html-style cells).
+    /// Sets cell render size (used for Html-style cells).
     ///
     /// Returns a [`TransactionSummary`].
-    #[wasm_bindgen(js_name = "setCellOutputSize")]
-    pub fn js_set_cell_output_size(
+    #[wasm_bindgen(js_name = "setCellRenderSize")]
+    pub fn js_set_cell_render_size(
         &mut self,
         sheet_id: String,
         rect: &Rect,
@@ -240,10 +240,10 @@ impl GridController {
         let value = if w == 0 && h == 0 {
             None
         } else {
-            Some(OutputSize { w, h })
+            Some(RenderSize { w, h })
         };
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_output_size(sheet_id, *rect, value, cursor),
+            &self.set_cell_render_size(sheet_id, *rect, value, cursor),
         )?)
     }
 

@@ -103,7 +103,7 @@ impl CellFmtAttr for FillColor {
     }
 }
 
-impl CellFmtAttr for OutputSize {
+impl CellFmtAttr for RenderSize {
     type Value = Self;
     fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
         &column.output_size
@@ -144,7 +144,7 @@ pub struct NumericFormat {
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct OutputSize {
+pub struct RenderSize {
     pub w: i64,
     pub h: i64,
 }

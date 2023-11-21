@@ -167,7 +167,7 @@ export class PointerHtmlCells {
       if (this.width === undefined || this.height === undefined) {
         throw new Error('Expected width and height to be defined in PointerHtmlCells.pointerUp');
       }
-      grid.setCellOutputSize(sheets.sheet.id, parseInt(pos[0]), parseInt(pos[1]), this.width, this.height);
+      grid.setCellRenderSize(sheets.sheet.id, parseInt(pos[0]), parseInt(pos[1]), this.width, this.height);
       this.state = undefined;
       this.htmlCell!.style.pointerEvents = 'auto';
       this.htmlCell = undefined;

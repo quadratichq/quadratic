@@ -1,5 +1,5 @@
 use crate::color::Rgba;
-use crate::grid::formatting::OutputSize;
+use crate::grid::formatting::RenderSize;
 use crate::grid::{
     generate_borders, set_region_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
     CellWrap, Grid, GridBounds, NumericFormat, NumericFormatKind, RegionRef,
@@ -115,7 +115,7 @@ fn set_column_format_bool(
 }
 
 fn set_column_format_output_size(
-    column_data: &mut ColumnData<SameValue<OutputSize>>,
+    column_data: &mut ColumnData<SameValue<RenderSize>>,
     column: &HashMap<String, current::ColumnFormatType<current::OutputSize>>,
 ) -> Result<()> {
     for (y, format) in column.iter() {
@@ -123,7 +123,7 @@ fn set_column_format_output_size(
             i64::from_str(y).map_err(|e| anyhow!("Unable to convert {} to an i64: {}", y, e))?;
         column_data.set(
             y,
-            Some(OutputSize {
+            Some(RenderSize {
                 w: format.content.value.w,
                 h: format.content.value.h,
             }),
@@ -412,7 +412,7 @@ fn export_column_data_numeric_format(
 }
 
 fn export_column_data_output_size(
-    column_data: &ColumnData<SameValue<OutputSize>>,
+    column_data: &ColumnData<SameValue<RenderSize>>,
 ) -> HashMap<String, current::ColumnFormatType<current::OutputSize>> {
     column_data
         .values()

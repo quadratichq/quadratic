@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::{
     grid::{
         Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericCommas, NumericDecimals,
-        NumericFormat, NumericFormatKind, OutputSize, RegionRef, SheetId, TextColor,
+        NumericFormat, NumericFormatKind, RegionRef, RenderSize, SheetId, TextColor,
     },
     Pos, Rect, RunLengthEncoding,
 };
@@ -191,8 +191,8 @@ impl GridController {
                     CellFmtArray::FillColor(array) => {
                         array.push(sheet.get_formatting_value::<FillColor>(pos));
                     }
-                    CellFmtArray::OutputSize(array) => {
-                        array.push(sheet.get_formatting_value::<OutputSize>(pos));
+                    CellFmtArray::RenderSize(array) => {
+                        array.push(sheet.get_formatting_value::<RenderSize>(pos));
                     }
                 });
             }
@@ -229,7 +229,7 @@ impl_set_cell_fmt_method!(set_cell_bold<Bold>(CellFmtArray::Bold));
 impl_set_cell_fmt_method!(set_cell_italic<Italic>(CellFmtArray::Italic));
 impl_set_cell_fmt_method!(set_cell_text_color<TextColor>(CellFmtArray::TextColor));
 impl_set_cell_fmt_method!(set_cell_fill_color<FillColor>(CellFmtArray::FillColor));
-impl_set_cell_fmt_method!(set_cell_output_size<OutputSize>(CellFmtArray::OutputSize));
+impl_set_cell_fmt_method!(set_cell_render_size<RenderSize>(CellFmtArray::RenderSize));
 
 /// Array of a single cell formatting attribute.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -243,14 +243,14 @@ pub enum CellFmtArray {
     Italic(RunLengthEncoding<Option<bool>>),
     TextColor(RunLengthEncoding<Option<String>>),
     FillColor(RunLengthEncoding<Option<String>>),
-    OutputSize(RunLengthEncoding<Option<OutputSize>>),
+    RenderSize(RunLengthEncoding<Option<RenderSize>>),
 }
 
 #[cfg(test)]
 mod test {
     use crate::{
         controller::GridController,
-        grid::{OutputSize, TextColor},
+        grid::{RenderSize, TextColor},
         Pos, Rect,
     };
 
@@ -450,10 +450,10 @@ mod test {
     fn test_set_output_size() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_output_size(
+        gc.set_cell_render_size(
             sheet_id,
             Rect::single_pos(Pos { x: 0, y: 0 }),
-            Some(OutputSize { w: 1, h: 2 }),
+            Some(RenderSize { w: 1, h: 2 }),
             None,
         );
     }

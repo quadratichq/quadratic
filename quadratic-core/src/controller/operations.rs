@@ -200,10 +200,10 @@ impl GridController {
                             self.set_cell_formats_for_type::<FillColor>(&region, fill_color, None),
                         )
                     }
-                    CellFmtArray::OutputSize(output_size) => {
+                    CellFmtArray::RenderSize(output_size) => {
                         // todo: this should send the updated html to the client
                         // summary.html.push(region.sheet);
-                        CellFmtArray::OutputSize(self.set_cell_formats_for_type::<OutputSize>(
+                        CellFmtArray::RenderSize(self.set_cell_formats_for_type::<RenderSize>(
                             &region,
                             output_size,
                             None,

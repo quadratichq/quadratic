@@ -115,10 +115,10 @@ mod test {
 
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_output_size(
+        gc.set_cell_render_size(
             sheet_id,
             Rect::single_pos(Pos { x: 0, y: 0 }),
-            Some(crate::grid::OutputSize { w: 10, h: 20 }),
+            Some(crate::grid::RenderSize { w: 10, h: 20 }),
             None,
         );
 
