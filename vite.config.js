@@ -12,7 +12,6 @@ export default defineConfig(() => {
     server: {
       port: 3000,
     },
-    // TODO --fast
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
