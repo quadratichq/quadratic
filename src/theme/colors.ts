@@ -1,7 +1,9 @@
 import * as muiColors from '@mui/material/colors';
 
 export const colors = {
-  gridLines: 0xcb8999,
+  // Pulled from the CSS theme styles
+  // hsla(from var(--border) h s 20% / a) - a is set in pixi
+  gridLines: 0x233143,
   cellFontColor: 0x000000,
   cellColorUserText: 0x8ecb89,
   cellColorUserPython: 0x3776ab,
@@ -16,7 +18,7 @@ export const colors = {
   boxCellsDeleteColor: Number(`0x${muiColors.red['400'].replace('#', '')}`),
   boxCellsColor: 0x6cd4ff,
   boxCellsAlpha: 0.333,
-  gridHeadingBorder: 0xcfd7de,
+  gridHeadingLabel: 0x233143, // same as gridLines, no alpha
   defaultBorderColor: 0,
   lightGray: '#f6f8fa',
   mediumGray: '#cfd7de',
