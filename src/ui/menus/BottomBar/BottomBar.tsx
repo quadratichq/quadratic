@@ -2,7 +2,7 @@ import { ChatBubbleOutline, Commit } from '@mui/icons-material';
 import { Stack, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { provideFeedback } from '../../../actions';
+import { provideFeedbackAction } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS } from '../../../debugFlags';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -113,14 +113,14 @@ export const BottomBar = () => {
         <SyncState />
 
         {showOnDesktop && <PythonStateItem />}
-        {provideFeedback.isAvailable(permission) && (
+        {provideFeedbackAction.isAvailable(permission) && (
           <BottomBarItem
             icon={<ChatBubbleOutline fontSize="inherit" />}
             onClick={() => {
               setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
             }}
           >
-            {provideFeedback.label}
+            {provideFeedbackAction.label}
           </BottomBarItem>
         )}
         <BottomBarItem icon={<Commit fontSize="inherit" />}>

@@ -4,7 +4,13 @@ import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import { Dispatch, SetStateAction } from 'react';
 import { useParams, useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { deleteFile, downloadFile, duplicateFile, isViewerOrAbove, renameFile } from '../../../actions';
+import {
+  deleteFile,
+  downloadFileAction,
+  duplicateFileAction,
+  isViewerOrAbove,
+  renameFileAction,
+} from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { useFileContext } from '../../components/FileProvider';
@@ -54,27 +60,27 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
         </IconButton>
       )}
     >
-      {renameFile.isAvailable(permission) && (
+      {renameFileAction.isAvailable(permission) && (
         <MenuItem
           onClick={() => {
             setIsRenaming(true);
           }}
         >
-          <MenuLineItem primary={renameFile.label} />
+          <MenuLineItem primary={renameFileAction.label} />
         </MenuItem>
       )}
-      {duplicateFile.isAvailable(permission) && (
-        <MenuItem onClick={() => duplicateFile.run({ name, submit })}>
-          <MenuLineItem primary={duplicateFile.label} />
+      {duplicateFileAction.isAvailable(permission) && (
+        <MenuItem onClick={() => duplicateFileAction.run({ name, submit })}>
+          <MenuLineItem primary={duplicateFileAction.label} />
         </MenuItem>
       )}
-      {downloadFile.isAvailable(permission) && (
+      {downloadFileAction.isAvailable(permission) && (
         <MenuItem
           onClick={() => {
-            downloadFile.run({ name });
+            downloadFileAction.run({ name });
           }}
         >
-          <MenuLineItem primary={downloadFile.label} />
+          <MenuLineItem primary={downloadFileAction.label} />
         </MenuItem>
       )}
       {deleteFile.isAvailable(permission) && (
