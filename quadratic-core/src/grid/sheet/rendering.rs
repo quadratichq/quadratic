@@ -85,21 +85,16 @@ impl Sheet {
 
         itertools::chain(ordinary_cells, code_output_cells)
             .map(|(x, y, column, value, language)| {
-                if value.type_name() == "error" {
-                    let value = if let CellValue::Error(error) = value {
-                        if error.msg == ErrorMsg::Spill {
-                            String::from(" SPILL")
-                        } else {
-                            String::from(" ERROR")
-                        }
-                    } else {
-                        unreachable!()
+                if let CellValue::Error(error) = value {
+                    let value = match error.msg {
+                        ErrorMsg::Spill => " SPILL",
+                        _ => " ERROR",
                     };
                     JsRenderCell {
                         x,
                         y,
 
-                        value,
+                        value: value.into(),
                         language,
 
                         align: None,
