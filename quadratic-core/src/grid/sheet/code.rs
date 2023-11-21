@@ -19,7 +19,7 @@ impl Sheet {
         let old = self.code_cells.remove(&cell_ref);
 
         if let Some(code_cell) = code_cell {
-            if let Some(output) = code_cell.output.as_ref() {
+            if let Some(output) = &code_cell.output {
                 match output.output_value() {
                     Some(output_value) => {
                         match output_value {
@@ -141,10 +141,8 @@ impl Sheet {
             })
             .find(|(cell_ref, code_cell)| {
                 let array_size = code_cell.output_size();
-                let w = array_size.w.into();
-                let h = array_size.h.into();
-                if w > 1 || h > 1 {
-                    !self.spilled(*cell_ref, w, h)
+                if array_size.len() > 1 {
+                    !self.is_ok_to_spill_in(*cell_ref, array_size)
                 } else {
                     false
                 }

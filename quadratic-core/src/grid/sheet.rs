@@ -18,7 +18,7 @@ use super::js_types::{CellFormatSummary, FormattingSummary};
 use super::response::{GetIdResponse, SetCellResponse};
 use super::{NumericFormat, NumericFormatKind, RegionRef};
 use crate::grid::{borders, SheetBorders};
-use crate::{Array, CellValue, IsBlank, Pos, Rect};
+use crate::{Array, ArraySize, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;
 pub mod cells;
@@ -474,14 +474,15 @@ impl Sheet {
         }
     }
 
-    /// returns whether an output array would cause a spill error
-    pub fn spilled(&self, cell_ref: CellRef, w: u32, h: u32) -> bool {
+    /// Determines whether an output array would cause a spill error because it
+    /// would overlap existing cell values or spills.
+    pub fn is_ok_to_spill_in(&self, cell_ref: CellRef, size: ArraySize) -> bool {
         let pos = self.cell_ref_to_pos(cell_ref).unwrap();
         let x = pos.x;
         let y = pos.y;
         // check if the output array would cause a spill
-        for i in 0..w {
-            for j in 0..h {
+        for i in 0..size.w.into() {
+            for j in 0..size.h.into() {
                 let x = x + i as i64;
                 let y = y + j as i64;
                 if let Some(column) = self.columns.get(&x) {
