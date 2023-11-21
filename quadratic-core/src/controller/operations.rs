@@ -43,6 +43,7 @@ impl GridController {
                     .map(|old_value| old_value.unwrap_or(CellValue::Blank))
                     .collect();
                 cells_updated.insert(region.clone());
+                // crate::util::dbgjs(&format!("[region updated] {}", region.clone())); TODO: REMOVE
 
                 let old_values = Array::new_row_major(size, old_values)
                     .expect("error constructing array of old values for SetCells operation");

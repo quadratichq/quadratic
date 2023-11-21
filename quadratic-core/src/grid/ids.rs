@@ -79,6 +79,12 @@ impl From<CellRef> for RegionRef {
     }
 }
 
+impl Display for RegionRef {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, {:?}, {:?}", self.sheet, self.columns, self.rows)
+    }
+}
+
 impl RegionRef {
     /// Iterates over cells in row-major order.
     pub fn iter(&self) -> impl '_ + Iterator<Item = CellRef> {
