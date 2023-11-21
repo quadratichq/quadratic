@@ -436,7 +436,9 @@ impl CellValue {
                     1,
                 )),
             });
-        } else if s.to_lowercase().starts_with("<html>") {
+
+        // todo: probably use a crate here to detect html
+        } else if s.to_lowercase().starts_with("<html>") || s.to_lowercase().starts_with("<div>") {
             value = CellValue::Html(s.to_string());
         }
         // todo: include other types here

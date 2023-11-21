@@ -1,57 +1,21 @@
-import { CELL_HEIGHT, CELL_WIDTH } from '@/constants/gridConstants';
 import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
 import { JsHtmlOutput } from '@/quadratic-core/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { pixiApp } from '../pixiApp/PixiApp';
+import { DivHtmlCell } from './DivHtmlCell';
+import { IFrameHtmlCell } from './IFrameHtmlCell';
 
 export const HtmlCells = () => {
   const [htmlCells, setHtmlCells] = useState<JsHtmlOutput[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
-  const htmlOutputRef = useRef<JsHtmlOutput[]>([]);
-
-  const iframeRef = useCallback((node: HTMLIFrameElement | null) => {
-    if (node) {
-      node.addEventListener('load', () => {
-        if (node.contentWindow) {
-          const style = window.getComputedStyle(node.contentWindow.document.body);
-          const dataSize = node.getAttribute('data-size');
-          if (!dataSize) {
-            throw new Error('Expected data-size attribute on iframe');
-          }
-          const size = dataSize.split(',');
-          if (size[0] === '0') {
-            node.width = (
-              node.contentWindow.document.body.scrollWidth +
-              parseInt(style.marginLeft, 10) +
-              parseInt(style.marginRight, 10)
-            ).toString();
-          } else {
-            node.width = size[0];
-          }
-          if (size[1] === '0') {
-            node.height = (
-              node.contentWindow.document.body.scrollHeight +
-              parseInt(style.marginTop, 10) +
-              parseInt(style.marginBottom, 10)
-            ).toString();
-          } else {
-            node.height = size[1];
-          }
-
-          // prevent mouse/touch events from zooming the html page
-          node.addEventListener('wheel', (event) => event.preventDefault());
-        } else {
-          throw new Error('Expected content window to be defined on iframe');
-        }
-      });
-    }
-  }, []);
 
   const handleHtmlCells = useCallback(() => {
-    const htmlOutput = grid.getHtmlOutput(sheets.sheet.id);
-    setHtmlCells(htmlOutput);
-    htmlOutputRef.current = htmlOutput;
+    const output: JsHtmlOutput[] = [];
+    sheets.forEach((sheet) => {
+      output.push(...grid.getHtmlOutput(sheet.id));
+    });
+    setHtmlCells(output);
   }, []);
 
   useEffect(() => {
@@ -75,11 +39,25 @@ export const HtmlCells = () => {
     };
   }, []);
 
+  const changeSheet = () => {
+    if (containerRef.current) {
+      containerRef.current.childNodes.forEach((child) => {
+        const element = child as HTMLElement;
+        const sheetId = element.getAttribute('data-sheet');
+        element.style.display = sheets.sheet.id === sheetId ? 'block' : 'none';
+      });
+    }
+  };
+
   useEffect(() => {
     handleHtmlCells();
-    window.addEventListener('change-sheet', handleHtmlCells);
-    return () => window.removeEventListener('change-sheet', handleHtmlCells);
+    window.addEventListener('change-sheet', changeSheet);
+    return () => window.removeEventListener('change-sheet', changeSheet);
   }, [handleHtmlCells]);
+
+  useEffect(() => {
+    changeSheet();
+  }, [htmlCells]);
 
   return (
     <div
@@ -100,32 +78,14 @@ export const HtmlCells = () => {
           pointerEvents: 'none',
         }}
       >
-        {htmlCells.map((htmlCell, index) => {
-          const offset = sheets.sheet.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
-          return (
-            <iframe
-              ref={iframeRef}
-              seamless
-              srcDoc={htmlCell.html}
-              title={`HTML from ${htmlCell.x}, ${htmlCell.y}}`}
-              data-pos={`${htmlCell.x},${htmlCell.y}`}
-              data-size={`${htmlCell.w},${htmlCell.h}`}
-              key={index++}
-              width={htmlCell.w ? Number(htmlCell.w) : ''}
-              height={htmlCell.h ? Number(htmlCell.h) : ''}
-              style={{
-                position: 'absolute',
-                pointerEvents: 'auto',
-                left: offset.x,
-                top: offset.y + offset.height,
-                minWidth: `${CELL_WIDTH}px`,
-                minHeight: `${CELL_HEIGHT}px`,
-                background: 'white',
-                border: '1px solid black',
-                boxSizing: 'border-box',
-              }}
-            />
-          );
+        {htmlCells.map((htmlCell) => {
+          const key = `${htmlCell.sheet_id}!${htmlCell.x},${htmlCell.y}`;
+          const html = '<html>';
+          if (htmlCell.html.substring(0, html.length).toLowerCase() === html) {
+            return <IFrameHtmlCell htmlCell={htmlCell} key={key} />;
+          } else {
+            return <DivHtmlCell htmlCell={htmlCell} key={key} />;
+          }
         })}
       </div>
     </div>
