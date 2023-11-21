@@ -2,7 +2,7 @@ import { v4 as uuid } from 'uuid';
 
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
-import { downloadFileInBrowser } from '../helpers/downloadFileInBrowser';
+import { downloadQuadraticFile } from '../helpers/downloadFileInBrowser';
 import { generateKeyBetween } from '../utils/fractionalIndexing';
 import { fetchFromApi } from './fetchFromApi';
 import { ApiSchemas, ApiTypes } from './types';
@@ -59,7 +59,7 @@ export const apiClient = {
 
   async downloadFile(uuid: string) {
     mixpanel.track('[Files].downloadFile', { id: uuid });
-    return this.getFile(uuid).then((json) => downloadFileInBrowser(json.file.name, json.file.contents));
+    return this.getFile(uuid).then((json) => downloadQuadraticFile(json.file.name, json.file.contents));
   },
 
   async deleteFile(uuid: string) {
