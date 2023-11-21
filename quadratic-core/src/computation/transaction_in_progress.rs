@@ -248,7 +248,7 @@ impl TransactionInProgress {
     /// checks the next cell in the cells_to_compute and computes it
     /// returns true if an async call is made or the compute cycle is completed
     fn compute(&mut self, grid_controller: &mut GridController) {
-        if let Some(region) = self.cells_updated.shift_remove_index(0) {
+        while let Some(region) = self.cells_updated.shift_remove_index(0) {
             if let Some(dependent_cells) = grid_controller.get_dependent_cells_for_region(region) {
                 self.cells_to_compute.extend(dependent_cells);
             }
