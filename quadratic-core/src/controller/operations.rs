@@ -82,8 +82,8 @@ impl GridController {
                 cell_ref,
                 code_cell_value,
             } => {
-                let empty_code_cell = code_cell_value.as_ref().is_none();
-                let sheet_id = cell_ref.sheet.clone();
+                let is_code_cell_empty = code_cell_value.is_none();
+                let sheet_id = cell_ref.sheet;
 
                 sheets_with_changed_bounds.insert(sheet_id);
 
@@ -94,7 +94,7 @@ impl GridController {
                 let pos = if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
                     pos
                 } else {
-                    return reverse_operations;
+                    return vec![];
                 };
 
                 // for compute, we keep the original cell output to avoid flashing of output (since values will be overridden once computation is complete)
@@ -147,7 +147,7 @@ impl GridController {
                 summary.code_cells_modified.insert(sheet_id);
 
                 // check if a new code_cell causes a spill error in another code cell
-                if old_code_cell_value.is_none() && !empty_code_cell {
+                if old_code_cell_value.is_none() && !is_code_cell_empty {
                     if let Some(old_spill) = old_spill {
                         if old_spill != cell_ref {
                             self.set_spill_error(
@@ -161,7 +161,7 @@ impl GridController {
                 }
 
                 // check if deleting a code cell releases a spill
-                if empty_code_cell {
+                if is_code_cell_empty {
                     self.check_release_spill(
                         cell_ref,
                         cells_to_compute,
