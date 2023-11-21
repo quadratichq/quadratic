@@ -7,7 +7,7 @@ import { InteractionEvent } from 'pixi.js';
 const tolerance = 10;
 
 export class PointerHtmlCells {
-  private state: 'resizing-right' | 'resizing-bottom' | undefined;
+  private state: 'resizing-right' | 'resizing-bottom' | 'resizing-corner' | undefined;
   private htmlCell?: HTMLIFrameElement | undefined;
   cursor?: string;
   private width?: number;
@@ -21,29 +21,31 @@ export class PointerHtmlCells {
     return htmlCells.children;
   }
 
-  private intersects(e: InteractionEvent, setHtmlCell: boolean): 'right' | 'bottom' | undefined {
+  private intersects(e: InteractionEvent, setHtmlCell: boolean): 'right' | 'bottom' | 'corner' | undefined {
     const canvas = pixiApp.canvas.getBoundingClientRect();
     const htmlCells = this.getHtmlCells();
     for (let i = 0; i < htmlCells.length; i++) {
       const htmlCell = htmlCells[i] as HTMLIFrameElement;
       const rect = htmlCell.getBoundingClientRect();
 
-      if (
-        e.data.global.y > rect.top &&
-        e.data.global.y < rect.bottom &&
-        Math.abs(e.data.global.x - rect.right) < tolerance
-      ) {
+      const right = Math.abs(e.data.global.x - rect.right) < tolerance;
+      const bottom = Math.abs(e.data.global.y - rect.bottom + canvas.top) < tolerance;
+
+      if (right && bottom) {
+        if (setHtmlCell) {
+          this.htmlCell = htmlCell;
+        }
+        return 'corner';
+      }
+
+      if (e.data.global.y > rect.top && e.data.global.y < rect.bottom && right) {
         if (setHtmlCell) {
           this.htmlCell = htmlCell;
         }
         return 'right';
       }
 
-      if (
-        e.data.global.x > rect.left &&
-        e.data.global.x < rect.right &&
-        Math.abs(e.data.global.y - rect.bottom + canvas.top) < tolerance
-      ) {
+      if (e.data.global.x > rect.left && e.data.global.x < rect.right && bottom) {
         if (setHtmlCell) {
           this.htmlCell = htmlCell;
         }
@@ -61,10 +63,17 @@ export class PointerHtmlCells {
         case 'bottom':
           this.cursor = 'row-resize';
           return true;
+        case 'corner':
+          this.cursor = 'nwse-resize';
+          return true;
         default:
           this.cursor = undefined;
           return false;
       }
+    }
+    const htmlCell = this.htmlCell;
+    if (!htmlCell) {
+      throw new Error('Expected htmlCell to be defined in PointerHtmlCells.pointerMove');
     }
     if (this.state === 'resizing-right') {
       const htmlCells = this.getHtmlCells();
@@ -78,6 +87,16 @@ export class PointerHtmlCells {
       const htmlCells = this.getHtmlCells();
       for (let i = 0; i < htmlCells.length; i++) {
         const htmlCell = htmlCells[i] as HTMLIFrameElement;
+        this.height = (e.data.global.y - htmlCell.getBoundingClientRect().top + canvas.top) / pixiApp.viewport.scale.y;
+        htmlCell.height = this.height.toString();
+      }
+    } else if (this.state === 'resizing-corner') {
+      const canvas = pixiApp.canvas.getBoundingClientRect();
+      const htmlCells = this.getHtmlCells();
+      for (let i = 0; i < htmlCells.length; i++) {
+        const htmlCell = htmlCells[i] as HTMLIFrameElement;
+        this.width = (e.data.global.x - htmlCell.getBoundingClientRect().left) / pixiApp.viewport.scale.x;
+        htmlCell.width = this.width.toString();
         this.height = (e.data.global.y - htmlCell.getBoundingClientRect().top + canvas.top) / pixiApp.viewport.scale.y;
         htmlCell.height = this.height.toString();
       }
@@ -95,6 +114,12 @@ export class PointerHtmlCells {
         return true;
       case 'bottom':
         this.state = 'resizing-bottom';
+        this.width = parseFloat(this.htmlCell!.width);
+        this.height = parseFloat(this.htmlCell!.height);
+        this.htmlCell!.style.pointerEvents = 'none';
+        return true;
+      case 'corner':
+        this.state = 'resizing-corner';
         this.width = parseFloat(this.htmlCell!.width);
         this.height = parseFloat(this.htmlCell!.height);
         this.htmlCell!.style.pointerEvents = 'none';
