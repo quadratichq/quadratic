@@ -15,6 +15,19 @@ export const IFrameHtmlCell = (props: Props) => {
       if (node) {
         node.addEventListener('load', () => {
           if (node.contentWindow) {
+            // turn off zooming within the iframe
+            node.contentWindow.document.body.style.touchAction = 'none pan-x pan-y';
+
+            // turn off listener for wheel events
+            // todo: have the viewport handle this
+            node.contentWindow.document.body.addEventListener(
+              'wheel',
+              (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+              },
+              { passive: false }
+            );
             const style = window.getComputedStyle(node.contentWindow.document.body);
             if (!htmlCell.w) {
               node.width = (
@@ -34,9 +47,6 @@ export const IFrameHtmlCell = (props: Props) => {
             } else {
               node.height = htmlCell.h.toString();
             }
-
-            // prevent mouse/touch events from zooming the html page
-            node.addEventListener('wheel', (event) => event.preventDefault());
           } else {
             throw new Error('Expected content window to be defined on iframe');
           }
@@ -70,6 +80,7 @@ export const IFrameHtmlCell = (props: Props) => {
         background: 'white',
         border: '1px solid black',
         boxSizing: 'border-box',
+        touchAction: 'none pan-x pan-y',
       }}
     />
   );

@@ -16,9 +16,6 @@ export const DivHtmlCell = (props: Props) => {
         node.style.width = htmlCell.w ? Number(htmlCell.w) + 'px' : '';
         node.style.height = htmlCell.h ? Number(htmlCell.h) + 'px' : '';
         node.innerHTML = htmlCell.html;
-
-        // prevent mouse/touch events from zooming the html page
-        node.addEventListener('wheel', (event) => event.preventDefault());
       }
     },
     [htmlCell.h, htmlCell.html, htmlCell.w]

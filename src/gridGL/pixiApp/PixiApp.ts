@@ -130,8 +130,6 @@ export class PixiApp {
     this.pointer = new Pointer(this.viewport);
     this.update = new Update();
 
-    // if (debugAlwaysShowCache) this.showCache();
-    // console.log('listeners...');
     this.setupListeners();
   }
 
