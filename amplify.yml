@@ -9,6 +9,7 @@ frontend:
         - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
     build:
       commands:
+        - cd quadratic-client
         - npm run build:wasm
         - npm run build
   artifacts:
@@ -17,4 +18,4 @@ frontend:
       - '**/*'
   cache:
     paths:
-      - node_modules/**/*
+      - quadratic-client/node_modules/**/*
