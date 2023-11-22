@@ -8,7 +8,7 @@ use crate::{
         transaction_summary::{CellSheetsModified, TransactionSummary},
         GridController,
     },
-    grid::{CellRef, CodeCellValue, Sheet, SheetId},
+    grid::{CellRef, CodeCellValue, SheetId},
     Pos, Rect, Value,
 };
 
@@ -104,7 +104,7 @@ pub fn update_code_cell_value(
             None
         };
         let old_code_cell_value = sheet.set_code_cell_value(pos, updated_code_cell_value.clone());
-      
+
         // updates summary.thumbnail_dirty flag
         let sheet = grid_controller.grid.sheet_from_id(cell_ref.sheet);
         if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
@@ -141,8 +141,6 @@ pub fn update_code_cell_value(
             }
         }
 
-        let sheet = grid_controller.grid.sheet_mut_from_id(cell_ref.sheet);
-      
         fetch_code_cell_difference(
             grid_controller,
             sheet_id,

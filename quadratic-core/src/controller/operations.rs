@@ -46,8 +46,10 @@ impl GridController {
                 let old_values = Array::new_row_major(size, old_values)
                     .expect("error constructing array of old values for SetCells operation");
 
+                CellSheetsModified::add_region(&mut summary.cell_sheets_modified, sheet, &region);
+
                 // check for changes in spills
-                region.iter().for_each(|cell_ref| {
+                for cell_ref in region.iter() {
                     let sheet = self.grid.sheet_from_id(cell_ref.sheet);
                     if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
                         // if there is a value, check if it caused a spill
@@ -68,12 +70,11 @@ impl GridController {
                             )
                         }
                     }
-                });
+                }
 
-                CellSheetsModified::add_region(&mut summary.cell_sheets_modified, sheet, &region);
                 summary.generate_thumbnail =
                     summary.generate_thumbnail || self.thumbnail_dirty_region(&region);
-              
+
                 reverse_operations.push(Operation::SetCellValues {
                     region,
                     values: old_values,
@@ -297,7 +298,7 @@ impl GridController {
                 let original_order = sheet.order.clone();
                 self.grid.move_sheet(target, order);
                 summary.sheet_list_modified = true;
-                
+
                 if old_first != self.grid.first_sheet_id() {
                     summary.generate_thumbnail = true;
                 }
@@ -341,7 +342,7 @@ impl GridController {
                     let old_size = sheet.offsets.set_column_width(x, new_size);
                     summary.generate_thumbnail = summary.generate_thumbnail
                         || self.thumbnail_dirty_pos(sheet_id, Pos { x, y: 0 });
-                  
+
                     reverse_operations.push(Operation::ResizeColumn {
                         sheet_id,
                         column,
@@ -361,7 +362,7 @@ impl GridController {
                     summary.offsets_modified.push(sheet.id);
                     summary.generate_thumbnail = summary.generate_thumbnail
                         || self.thumbnail_dirty_pos(sheet_id, Pos { x: 0, y });
-                  
+
                     reverse_operations.push(Operation::ResizeRow {
                         sheet_id,
                         row,

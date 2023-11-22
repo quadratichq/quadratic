@@ -3,7 +3,7 @@ use strum_macros::{Display, EnumString};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::CellRef;
-use crate::{ArraySize, CellValue, Error, Pos, Rect, Value};
+use crate::{ArraySize, CellValue, Error, Rect, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CodeCellValue {
