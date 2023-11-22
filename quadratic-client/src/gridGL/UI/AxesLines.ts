@@ -18,7 +18,7 @@ export class AxesLines extends Graphics {
       }
 
       this.visible = true;
-      this.lineStyle(10, colors.gridLines, 0.75, 0, true);
+      this.lineStyle(10, colors.gridLines, 0.5, 0, true);
       const viewport = pixiApp.viewport;
       if (0 >= viewport.left && 0 <= viewport.right) {
         this.moveTo(0, viewport.top);
