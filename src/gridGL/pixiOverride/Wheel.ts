@@ -240,7 +240,6 @@ export class Wheel extends Plugin {
 
     if (!this.options.center) {
       oldPoint = this.parent.toLocal(point);
-      // pixiApp.debug.clear().beginFill(0xff0000).drawCircle(oldPoint.x, oldPoint.y, 100).endFill();
     }
     if (this.isAxisX()) {
       this.parent.scale.x *= change;

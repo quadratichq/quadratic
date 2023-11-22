@@ -30,7 +30,10 @@ export const IFrameHtmlCell = (props: Props) => {
                   throw new Error('Expected wheel plugin to be defined on viewport');
                 }
                 const bounding = node.getBoundingClientRect();
-                wheel.wheel(event, { x: bounding.left, y: bounding.top });
+                wheel.wheel(event, {
+                  x: bounding.left + event.clientX * viewport.scale.x - event.clientX,
+                  y: bounding.top + event.clientY * viewport.scale.y - event.clientY,
+                });
                 event.stopPropagation();
                 event.preventDefault();
               },
