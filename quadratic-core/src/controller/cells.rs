@@ -29,90 +29,76 @@ impl GridController {
         value: String,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let ops = self.set_cell_value_operations(sheet_id, pos, &value);
+        let sheet = self.grid.sheet_mut_from_id(sheet_id);
+        let cell_ref = sheet.get_or_create_cell_ref(pos);
+        let mut ops = vec![];
+
+        let cell_value = self.string_to_cell_value(sheet_id, pos, value.as_str(), &mut ops);
+
+        ops.push(Operation::SetCellValues {
+            region: RegionRef::from(cell_ref),
+            values: Array::from(cell_value),
+        });
+
         self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
-    pub fn set_cell_value_operations(
+
+    pub fn string_to_cell_value(
         &mut self,
         sheet_id: SheetId,
         pos: Pos,
         value: &str,
-    ) -> Vec<Operation> {
+        formatting_ops: &mut Vec<Operation>,
+    ) -> CellValue {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
         let cell_ref = sheet.get_or_create_cell_ref(pos);
         let region = RegionRef::from(cell_ref);
-        let mut ops = vec![];
 
         // strip whitespace
         let value = value.trim();
 
-        // remove any code cell that was originally over the cell
-        if sheet.get_code_cell(pos).is_some() {
-            ops.push(Operation::SetCellCode {
-                cell_ref,
-                code_cell_value: None,
-            });
-        }
-
-        // check for currency
         if value.is_empty() {
-            ops.push(Operation::SetCellValues {
-                region: region.clone(),
-                values: Array::from(CellValue::Blank),
-            });
+            return CellValue::Blank;
         } else if let Some((currency, number)) = CellValue::unpack_currency(value) {
-            ops.push(Operation::SetCellValues {
-                region: region.clone(),
-                values: Array::from(CellValue::Number(number)),
-            });
             let numeric_format = NumericFormat {
                 kind: NumericFormatKind::Currency,
                 symbol: Some(currency),
             };
-            ops.push(Operation::SetCellFormats {
+            formatting_ops.push(Operation::SetCellFormats {
                 region: region.clone(),
                 attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
                     Some(numeric_format),
                     1,
                 )),
             });
-
             // only change decimal places if decimals have not been set
             if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
-                ops.push(Operation::SetCellFormats {
+                formatting_ops.push(Operation::SetCellFormats {
                     region,
                     attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
                 });
             }
+            return CellValue::Number(number);
         } else if let Ok(bd) = BigDecimal::from_str(value) {
-            ops.push(Operation::SetCellValues {
-                region: region.clone(),
-                values: Array::from(CellValue::Number(bd)),
-            });
+            return CellValue::Number(bd);
         } else if let Some(percent) = CellValue::unpack_percentage(value) {
-            ops.push(Operation::SetCellValues {
-                region: region.clone(),
-                values: Array::from(CellValue::Number(percent)),
-            });
             let numeric_format = NumericFormat {
                 kind: NumericFormatKind::Percentage,
                 symbol: None,
             };
-            ops.push(Operation::SetCellFormats {
+            formatting_ops.push(Operation::SetCellFormats {
                 region,
                 attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
                     Some(numeric_format),
                     1,
                 )),
             });
+            return CellValue::Number(percent);
+        } else {
+            return CellValue::Text(value.into());
         }
-        // todo: include other types here
-        else {
-            let values = Array::from(CellValue::Text(value.into()));
-            ops.push(Operation::SetCellValues { region, values });
-        }
-        ops
     }
+
     pub fn set_cells(
         &mut self,
         sheet_id: SheetId,

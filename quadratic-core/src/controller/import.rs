@@ -3,7 +3,7 @@ use anyhow::{anyhow, bail, Result};
 use super::{
     transaction_summary::TransactionSummary, transactions::TransactionType, GridController,
 };
-use crate::{controller::operation::Operation, grid::SheetId, Pos};
+use crate::{controller::operation::Operation, grid::SheetId, Array, CellValue, Pos};
 
 impl GridController {
     /// Imports a CSV file into the grid.
@@ -28,7 +28,9 @@ impl GridController {
             .has_headers(false)
             .from_reader(file);
 
-        let ops = reader
+        let mut ops = vec![] as Vec<Operation>;
+
+        let cell_values = reader
             .records()
             .enumerate()
             .map(|(row, record)| {
@@ -38,19 +40,34 @@ impl GridController {
                     .iter()
                     .enumerate()
                     .map(|(col, value)| {
-                        Ok(self.set_cell_value_operations(
+                        Ok(self.string_to_cell_value(
                             sheet_id,
                             (insert_at.x + col as i64, insert_at.y + row as i64).into(),
                             value,
+                            &mut ops,
                         ))
                     })
-                    .collect::<Result<Vec<Vec<Operation>>>>()
+                    .collect::<Result<Vec<CellValue>>>()
             })
-            .collect::<Result<Vec<Vec<Vec<Operation>>>>>()?
             .into_iter()
             .flatten()
-            .flatten()
-            .collect::<Vec<Operation>>();
+            .collect::<Vec<Vec<CellValue>>>();
+
+        let array = Array::from(cell_values);
+
+        let rect = crate::Rect::new_span(
+            insert_at,
+            (
+                insert_at.x + array.width() as i64 - 1,
+                insert_at.y + array.height() as i64 - 1,
+            )
+                .into(),
+        );
+
+        ops.push(Operation::SetCellValues {
+            region: self.region(sheet_id, rect),
+            values: array,
+        });
 
         Ok(self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal))
     }
