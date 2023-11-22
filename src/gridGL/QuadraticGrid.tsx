@@ -17,6 +17,7 @@ export default function QuadraticGrid() {
   const containerRef = useCallback((node: HTMLDivElement | null) => {
     if (node) setContainer(node);
   }, []);
+
   useEffect(() => {
     if (container) pixiApp.attach(container);
   }, [container]);
@@ -118,8 +119,8 @@ export default function QuadraticGrid() {
       onKeyUp={onKeyUp}
     >
       {showInput && <CellInput container={container} />}
-      <FloatingContextMenu container={container} showContextMenu={showContextMenu} />
       <HtmlCells />
+      <FloatingContextMenu container={container} showContextMenu={showContextMenu} />
     </div>
   );
 }
