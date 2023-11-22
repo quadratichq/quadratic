@@ -84,6 +84,8 @@ impl Sheet {
         )
     }
 
+    /// Get the spill location for a given cell_ref.  Note that a spill is
+    /// also stored as as cell_ref.
     pub fn get_spill(&self, cell_ref: CellRef) -> Option<CellRef> {
         let pos = self.cell_ref_to_pos(cell_ref)?;
         let column = self.get_column(pos.x)?;
