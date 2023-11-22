@@ -24,7 +24,7 @@ sys.modules["pyodide"] = mock_pyodide
 sys.modules["micropip"] = mock_micropip
 
 # add path to import run_python
-sys.path.insert(1, "src/web-workers/pythonWebWorker")
+sys.path.insert(1, "public")
 
 from run_python import (Cell, attempt_fix_await, ensure_not_cell, not_cell,
                         run_python)
