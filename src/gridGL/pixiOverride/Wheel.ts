@@ -1,7 +1,6 @@
 import { IPointData, Point } from '@pixi/math';
 import { Plugin, Viewport } from 'pixi-viewport';
 import { isMac } from '../../utils/isMac';
-import { pixiApp } from '../pixiApp/PixiApp';
 
 /** Options for {@link Wheel}. */
 export interface IWheelOptions {
@@ -241,7 +240,7 @@ export class Wheel extends Plugin {
 
     if (!this.options.center) {
       oldPoint = this.parent.toLocal(point);
-      pixiApp.debug.clear().beginFill(0xff0000).drawCircle(oldPoint.x, oldPoint.y, 100).endFill();
+      // pixiApp.debug.clear().beginFill(0xff0000).drawCircle(oldPoint.x, oldPoint.y, 100).endFill();
     }
     if (this.isAxisX()) {
       this.parent.scale.x *= change;
