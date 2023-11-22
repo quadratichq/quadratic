@@ -6,6 +6,8 @@ import { pixiApp } from '../pixiApp/PixiApp';
 import { DivHtmlCell } from './DivHtmlCell';
 import { IFrameHtmlCell } from './IFrameHtmlCell';
 
+export const TOP_HTML_MARGIN = 3;
+
 export const HtmlCells = () => {
   const [htmlCells, setHtmlCells] = useState<JsHtmlOutput[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -92,7 +94,7 @@ export const HtmlCells = () => {
         ref={containerRef}
         style={{
           position: 'relative',
-          top: 3,
+          top: TOP_HTML_MARGIN,
           left: 0,
           pointerEvents: 'none',
         }}
