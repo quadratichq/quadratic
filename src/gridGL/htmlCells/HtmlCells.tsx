@@ -16,6 +16,7 @@ export const HtmlCells = () => {
       output.push(...grid.getHtmlOutput(sheet.id));
     });
     setHtmlCells(output);
+    pixiApp.htmlPlaceholders.setHtmlCells(output);
   }, []);
 
   useEffect(() => {
@@ -44,7 +45,9 @@ export const HtmlCells = () => {
       containerRef.current.childNodes.forEach((child) => {
         const element = child as HTMLElement;
         const sheetId = element.getAttribute('data-sheet');
-        element.style.display = sheets.sheet.id === sheetId ? 'block' : 'none';
+
+        // need to use visibility so HtmlPlaceholders can find the size of the element
+        element.style.visibility = sheets.sheet.id === sheetId ? 'visible' : 'hidden';
       });
     }
   };
@@ -57,6 +60,7 @@ export const HtmlCells = () => {
           output = output.filter((htmlCell) => htmlCell.sheet_id !== sheet.id);
           output.push(...grid.getHtmlOutput(sheet.id));
         });
+        pixiApp.htmlPlaceholders.setHtmlCells(output);
         return output;
       });
     };

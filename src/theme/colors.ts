@@ -14,6 +14,8 @@ export const colors = {
   headerSelectedBackgroundColor: 0xe7f7ff,
   headerCornerBackgroundColor: 0xffffff,
   boxCellsDeleteColor: Number(`0x${muiColors.red['400'].replace('#', '')}`),
+  htmlPlaceholderThumbnailColor: 0xeeeeee,
+  htmlPlaceholderThumbnailBorderColor: 0,
   boxCellsColor: 0x6cd4ff,
   boxCellsAlpha: 0.333,
   gridHeadingBorder: 0xcfd7de,
