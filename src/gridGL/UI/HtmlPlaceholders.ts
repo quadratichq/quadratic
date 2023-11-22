@@ -41,7 +41,7 @@ export class HtmlPlaceholders extends Graphics {
     const offsets = sheet.offsets.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
     this.lineStyle(BORDER_WIDTH, colors.htmlPlaceholderThumbnailBorderColor, 1);
     this.beginFill(colors.htmlPlaceholderThumbnailColor);
-    this.drawRect(offsets.x, offsets.y, w, h);
+    this.drawRect(offsets.x, offsets.y + offsets.h, w, h);
     this.endFill();
   }
 
