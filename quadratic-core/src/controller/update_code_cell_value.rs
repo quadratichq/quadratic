@@ -90,22 +90,19 @@ pub fn update_code_cell_value(
             }
         }
 
-        let updated_code_cell_value = if let Some(cell_value) = updated_code_cell_value {
+        let updated_code_cell_value = updated_code_cell_value.and_then(|mut cell_value| {
             if spill {
                 // spill can only be set if updated_code_cell value is not None
-                let mut updated_code_cell_value = cell_value;
-                updated_code_cell_value.output.as_mut().unwrap().spill = true;
-                Some(updated_code_cell_value)
+                if let Some(output) = cell_value.output.as_mut() {
+                    output.spill = true;
+                }
             } else if cell_value.has_spill_error() {
-                let mut updated_code_cell_value = cell_value;
-                updated_code_cell_value.output.as_mut().unwrap().spill = false;
-                Some(updated_code_cell_value)
-            } else {
-                Some(cell_value)
+                if let Some(output) = cell_value.output.as_mut() {
+                    output.spill = false;
+                }
             }
-        } else {
-            None
-        };
+            Some(cell_value)
+        });
         let old_code_cell_value = sheet.set_code_cell_value(pos, updated_code_cell_value.clone());
 
         // updates summary.thumbnail_dirty flag

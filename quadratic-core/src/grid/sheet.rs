@@ -2,7 +2,6 @@ use std::collections::{btree_map, BTreeMap, HashMap};
 use std::ops::Range;
 use std::str::FromStr;
 
-use anyhow::Result;
 use bigdecimal::BigDecimal;
 use itertools::Itertools;
 use rand::Rng;
