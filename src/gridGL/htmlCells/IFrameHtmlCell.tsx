@@ -2,6 +2,8 @@ import { CELL_HEIGHT, CELL_WIDTH } from '@/constants/gridConstants';
 import { sheets } from '@/grid/controller/Sheets';
 import { JsHtmlOutput } from '@/quadratic-core/types';
 import { useCallback } from 'react';
+import { pixiApp } from '../pixiApp/PixiApp';
+import { Wheel } from '../pixiOverride/Wheel';
 
 interface Props {
   htmlCell: JsHtmlOutput;
@@ -18,11 +20,17 @@ export const IFrameHtmlCell = (props: Props) => {
             // turn off zooming within the iframe
             node.contentWindow.document.body.style.touchAction = 'none pan-x pan-y';
 
-            // turn off listener for wheel events
-            // todo: have the viewport handle this
+            // forward the wheel event to the pixi viewport and adjust its position
             node.contentWindow.document.body.addEventListener(
               'wheel',
               (event) => {
+                const viewport = pixiApp.viewport;
+                const wheel = viewport.plugins.get('wheel') as Wheel | null;
+                if (!wheel) {
+                  throw new Error('Expected wheel plugin to be defined on viewport');
+                }
+                const bounding = node.getBoundingClientRect();
+                wheel.wheel(event, { x: bounding.left, y: bounding.top });
                 event.stopPropagation();
                 event.preventDefault();
               },

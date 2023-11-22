@@ -35,10 +35,12 @@ export const HtmlCells = () => {
     handleViewport();
     pixiApp.viewport.on('moved', handleViewport);
     pixiApp.viewport.on('moved-end', handleViewport);
+    pixiApp.viewport.on('zoomed', handleViewport);
 
     return () => {
       pixiApp.viewport.off('moved', handleViewport);
       pixiApp.viewport.off('moved-end', handleViewport);
+      pixiApp.viewport.on('zoomed', handleViewport);
     };
   }, []);
 

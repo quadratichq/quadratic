@@ -2,6 +2,8 @@ import { CELL_HEIGHT, CELL_WIDTH } from '@/constants/gridConstants';
 import { sheets } from '@/grid/controller/Sheets';
 import { JsHtmlOutput } from '@/quadratic-core/types';
 import { useCallback } from 'react';
+import { pixiApp } from '../pixiApp/PixiApp';
+import { Wheel } from '../pixiOverride/Wheel';
 
 interface Props {
   htmlCell: JsHtmlOutput;
@@ -16,6 +18,19 @@ export const DivHtmlCell = (props: Props) => {
         node.style.width = htmlCell.w ? Number(htmlCell.w) + 'px' : '';
         node.style.height = htmlCell.h ? Number(htmlCell.h) + 'px' : '';
         node.innerHTML = htmlCell.html;
+        node.addEventListener(
+          'wheel',
+          (event) => {
+            const wheel = pixiApp.viewport.plugins.get('wheel') as Wheel | null;
+            if (!wheel) {
+              throw new Error('Expected wheel plugin to be defined on viewport');
+            }
+            wheel.wheel(event);
+            event.stopPropagation();
+            event.preventDefault();
+          },
+          { passive: false }
+        );
       }
     },
     [htmlCell.h, htmlCell.html, htmlCell.w]
