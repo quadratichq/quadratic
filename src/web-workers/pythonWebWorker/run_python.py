@@ -313,6 +313,12 @@ async def run_python(code):
                     output_value.notnull(), None
                 ).values.tolist()
 
+        try:
+            import plotly
+            if isinstance(output_value, plotly.graph_objs._figure.Figure):
+                output_value = output_value.to_html()
+        except:
+            pass
 
         # Convert Pandas.Series to array_output
         if isinstance(output_value, pd.Series):
