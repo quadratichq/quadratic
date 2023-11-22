@@ -34,6 +34,7 @@ jobs:
         with:
           node-version: '17'
           cache: 'npm'
+          cache-dependency-path: 'quadratic-client/'
 
       - name: Update local rust toolchain
         run: |

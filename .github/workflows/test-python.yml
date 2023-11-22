@@ -15,7 +15,7 @@ jobs:
       - name: Cache npm dependencies
         uses: actions/cache@v2
         with:
-          path: node_modules
+          path: quadratic-client/node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
@@ -24,6 +24,7 @@ jobs:
         with:
           node-version: '17'
           cache: 'npm'
+          cache-dependency-path: 'quadratic-client/'
       - uses: actions/setup-python@v4
         with:
           python-version: '3.9'
