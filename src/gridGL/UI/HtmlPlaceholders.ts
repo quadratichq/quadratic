@@ -21,7 +21,9 @@ export class HtmlPlaceholders extends Graphics {
 
     // if width and height = 0 (ie, not user set), then use the size of the HTML element
     if (!w || !h) {
-      const element = document.querySelector(`${htmlCell.sheet_id}!${htmlCell.x},${htmlCell.y}`);
+      const element = document.querySelector(
+        `[data-sheet="${htmlCell.sheet_id}"][data-pos="${htmlCell.x},${htmlCell.y}"]`
+      );
       if (!element) return;
       if (element.tagName === 'iframe') {
         const iframe = element as HTMLIFrameElement;
