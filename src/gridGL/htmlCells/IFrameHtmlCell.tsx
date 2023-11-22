@@ -81,6 +81,7 @@ export const IFrameHtmlCell = (props: Props) => {
       title={`HTML from ${htmlCell.x}, ${htmlCell.y}}`}
       width={htmlCell.w ? Number(htmlCell.w) : ''}
       height={htmlCell.h ? Number(htmlCell.h) : ''}
+      className={`border border-border bg-white shadow-md`}
       style={{
         position: 'absolute',
         pointerEvents: 'auto',
@@ -88,8 +89,6 @@ export const IFrameHtmlCell = (props: Props) => {
         top: offset.y + offset.height,
         minWidth: `${CELL_WIDTH}px`,
         minHeight: `${CELL_HEIGHT}px`,
-        background: 'white',
-        border: '1px solid black',
         boxSizing: 'border-box',
         touchAction: 'none pan-x pan-y',
       }}
