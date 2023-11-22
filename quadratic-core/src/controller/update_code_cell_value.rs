@@ -90,7 +90,7 @@ pub fn update_code_cell_value(
             }
         }
 
-        let updated_code_cell_value = updated_code_cell_value.and_then(|mut cell_value| {
+        let updated_code_cell_value = updated_code_cell_value.map(|mut cell_value| {
             if spill {
                 // spill can only be set if updated_code_cell value is not None
                 if let Some(output) = cell_value.output.as_mut() {
@@ -101,8 +101,9 @@ pub fn update_code_cell_value(
                     output.spill = false;
                 }
             }
-            Some(cell_value)
+            cell_value
         });
+
         let old_code_cell_value = sheet.set_code_cell_value(pos, updated_code_cell_value.clone());
 
         // updates summary.thumbnail_dirty flag
@@ -199,11 +200,11 @@ pub fn fetch_code_cell_difference(
 
     if old_w > new_w {
         for x in new_w..old_w {
-            let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
+            let (_, column) = sheet.get_or_create_column(pos.x + x);
             let column_id = column.id;
 
             // remove any spills created by the updated code_cell
-            for y in pos.y..=pos.y + old_h as i64 {
+            for y in pos.y..=pos.y + old_h {
                 if let Some(spill) = column.spills.get(y) {
                     if spill == cell_ref {
                         column.spills.set(y, None);
@@ -213,13 +214,13 @@ pub fn fetch_code_cell_difference(
 
             column.spills.remove_range(Range {
                 start: pos.y,
-                end: pos.y + new_h as i64 + 1,
+                end: pos.y + new_h + 1,
             });
             for y in 0..new_h {
-                let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
+                let row_id = sheet.get_or_create_row(pos.y + y).id;
                 let pos = Pos {
-                    x: pos.x + x as i64,
-                    y: pos.y + y as i64,
+                    x: pos.x + x,
+                    y: pos.y + y,
                 };
                 summary
                     .cell_sheets_modified
@@ -239,11 +240,11 @@ pub fn fetch_code_cell_difference(
 
     if old_h > new_h {
         for x in 0..old_w {
-            let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
+            let (_, column) = sheet.get_or_create_column(pos.x + x);
             let column_id = column.id;
 
             // remove any spills created by the updated code_cell
-            for y in pos.y + new_h as i64..=pos.y + old_h as i64 {
+            for y in pos.y + new_h..=pos.y + old_h {
                 if let Some(spill) = column.spills.get(y) {
                     if spill == cell_ref {
                         column.spills.set(y, None);
@@ -252,10 +253,10 @@ pub fn fetch_code_cell_difference(
             }
 
             for y in new_h..old_h {
-                let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
+                let row_id = sheet.get_or_create_row(pos.y + y).id;
                 let pos = Pos {
-                    x: pos.x + x as i64,
-                    y: pos.y + y as i64,
+                    x: pos.x + x,
+                    y: pos.y + y,
                 };
                 summary
                     .cell_sheets_modified

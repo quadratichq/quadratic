@@ -13,9 +13,9 @@ pub struct ArraySize {
     /// Height (number of rows)
     pub h: NonZeroU32,
 }
-impl Into<(i64, i64)> for ArraySize {
-    fn into(self) -> (i64, i64) {
-        (self.w.get().into(), self.h.get().into())
+impl From<ArraySize> for (i64, i64) {
+    fn from(val: ArraySize) -> Self {
+        (val.w.get().into(), val.h.get().into())
     }
 }
 impl fmt::Display for ArraySize {
