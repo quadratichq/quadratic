@@ -1,15 +1,15 @@
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from 'react-router-dom';
-import { apiClient } from '../../api/apiClient';
-import { authClient } from '../../auth';
-import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '../../components/GlobalSnackbarProvider';
-import { EXAMPLE_FILES } from '../../constants/appConstants';
-import { ROUTES } from '../../constants/routes';
-import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
-import { initMixpanelAnalytics } from '../../utils/analytics';
+import { apiClient } from '../api/apiClient';
+import { authClient } from '../auth';
+import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '../components/GlobalSnackbarProvider';
+import { EXAMPLE_FILES } from '../constants/appConstants';
+import { ROUTES } from '../constants/routes';
+import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
+import { initMixpanelAnalytics } from '../utils/analytics';
 
-const getFailUrl = (path: string = ROUTES.MY_FILES) => {
+const getFailUrl = (path: string = ROUTES.FILES) => {
   let params = new URLSearchParams();
   params.append(snackbarMsgQueryParam, 'Failed to create file. Try again.');
   params.append(snackbarSeverityQueryParam, 'error');
@@ -95,11 +95,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
+export type CreateActionRequest = {
+  name: string;
+  contents: string;
+  version: string;
+};
+
 export const action = async ({ params, request }: ActionFunctionArgs) => {
-  const formData = await request.formData();
-  const name = formData.get('name') as string;
-  const contents = formData.get('contents') as string;
-  const version = formData.get('version') as string;
+  const { name, contents, version }: CreateActionRequest = await request.json();
 
   mixpanel.track('[Files].loadFileFromDisk', { fileName: name });
   try {

@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/browser';
+import * as Sentry from '@sentry/react';
 import { Point, Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
@@ -86,6 +86,7 @@ export const upgradeFileRust = async (
 export class Grid {
   private gridController!: GridController;
   private _dirty = false;
+  thumbnailDirty = false;
 
   transactionResponse(summary: TransactionSummary) {
     if (summary.sheet_list_modified) {
@@ -114,6 +115,10 @@ export class Grid {
 
     if (summary.transaction_busy) {
       window.dispatchEvent(new CustomEvent('transaction-busy'));
+    }
+
+    if (summary.generate_thumbnail) {
+      this.thumbnailDirty = true;
     }
 
     const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
@@ -595,6 +600,23 @@ export class Grid {
       Sentry.captureException(error);
     }
     debugTimeCheck(`uploading and processing csv file ${file.name}`);
+  }
+
+  //#endregion
+
+  //#region Exports
+
+  exportCsvSelection(): string {
+    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+
+    debugTimeReset();
+    const csv = this.gridController.exportCsvSelection(
+      sheets.sheet.id,
+      rectangleToRect(sheets.sheet.cursor.getRectangle())
+    );
+    debugTimeCheck(`processing and exporting csv file`);
+
+    return csv;
   }
 
   //#endregion

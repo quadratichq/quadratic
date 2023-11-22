@@ -10,6 +10,7 @@ pub mod borders;
 pub mod cells;
 pub mod clipboard;
 pub mod dependencies;
+pub mod export;
 pub mod formatting;
 pub mod formula;
 pub mod import;
@@ -18,6 +19,7 @@ pub mod operations;
 pub mod sheet_offsets;
 pub mod sheets;
 pub mod spills;
+pub mod thumbnail;
 pub mod transaction_summary;
 pub mod transaction_types;
 pub mod transactions;
@@ -34,6 +36,7 @@ pub struct GridController {
     undo_stack: Vec<Transaction>,
     redo_stack: Vec<Transaction>,
 }
+
 impl GridController {
     pub fn new() -> Self {
         Self::from_grid(Grid::new())

@@ -99,7 +99,7 @@ export class GridHeadings extends Container {
     const showA1Notation = pixiAppSettings.showA1Notation;
     const cellWidth = CELL_WIDTH / viewport.scale.x;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
-    const gridAlpha = calculateAlphaForGridLines(viewport);
+    const gridAlpha = calculateAlphaForGridLines(viewport.scale.x);
     const bounds = viewport.getVisibleBounds();
     const offsets = sheets.sheet.offsets;
 
@@ -157,7 +157,7 @@ export class GridHeadings extends Container {
     for (let x = leftOffset; x <= rightOffset; x += currentWidth) {
       currentWidth = offsets.getColumnWidth(column);
       if (gridAlpha !== 0) {
-        this.headingsGraphics.lineStyle(1, colors.gridHeadingBorder, 0.5 * gridAlpha, 0.5, true);
+        this.headingsGraphics.lineStyle(1, colors.gridLines, 0.25 * gridAlpha, 0.5, true);
         this.headingsGraphics.moveTo(x, bounds.top);
         this.headingsGraphics.lineTo(x, bounds.top + cellHeight);
         this.gridLinesColumns.push({ column: column - 1, x, width: offsets.getColumnWidth(column - 1) });
@@ -208,7 +208,7 @@ export class GridHeadings extends Container {
     const { viewport } = pixiApp;
     const showA1Notation = pixiAppSettings.showA1Notation;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
-    const gridAlpha = calculateAlphaForGridLines(viewport);
+    const gridAlpha = calculateAlphaForGridLines(viewport.scale.x);
     const bounds = viewport.getVisibleBounds();
     const offsets = sheets.sheet.offsets;
 
@@ -273,7 +273,7 @@ export class GridHeadings extends Container {
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
       currentHeight = offsets.getRowHeight(row);
       if (gridAlpha !== 0) {
-        this.headingsGraphics.lineStyle(1, colors.gridHeadingBorder, 0.5 * gridAlpha, 0.5, true);
+        this.headingsGraphics.lineStyle(1, colors.gridLines, 0.25 * gridAlpha, 0.5, true);
         this.headingsGraphics.moveTo(bounds.left, y);
         this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
         this.gridLinesRows.push({ row: row - 1, y, height: offsets.getRowHeight(row - 1) });
@@ -337,7 +337,7 @@ export class GridHeadings extends Container {
     const { viewport } = pixiApp;
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const bounds = viewport.getVisibleBounds();
-    this.headingsGraphics.lineStyle(1, colors.gridHeadingBorder, 1, 0.5, true);
+    this.headingsGraphics.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
     this.headingsGraphics.moveTo(bounds.left + this.rowWidth, viewport.top);
     this.headingsGraphics.lineTo(bounds.left + this.rowWidth, viewport.bottom);
     this.headingsGraphics.moveTo(bounds.left, bounds.top + cellHeight);

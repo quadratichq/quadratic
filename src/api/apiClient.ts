@@ -2,7 +2,7 @@ import { v4 as uuid } from 'uuid';
 
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
-import { downloadFileInBrowser } from '../helpers/downloadFileInBrowser';
+import { downloadQuadraticFile } from '../helpers/downloadFileInBrowser';
 import { generateKeyBetween } from '../utils/fractionalIndexing';
 import { fetchFromApi } from './fetchFromApi';
 import { ApiSchemas, ApiTypes } from './types';
@@ -59,7 +59,7 @@ export const apiClient = {
 
   async downloadFile(uuid: string) {
     mixpanel.track('[Files].downloadFile', { id: uuid });
-    return this.getFile(uuid).then((json) => downloadFileInBrowser(json.file.name, json.file.contents));
+    return this.getFile(uuid).then((json) => downloadQuadraticFile(json.file.name, json.file.contents));
   },
 
   async deleteFile(uuid: string) {
@@ -79,6 +79,20 @@ export const apiClient = {
         body: JSON.stringify(body),
       },
       ApiSchemas['/v0/files/:uuid.POST.response']
+    );
+  },
+
+  async updateFileThumbnail(uuid: string, thumbnail: Blob) {
+    const formData = new FormData();
+    formData.append('thumbnail', thumbnail, 'thumbnail.png');
+
+    return fetchFromApi<ApiTypes['/v0/files/:uuid/thumbnail.POST.response']>(
+      `/v0/files/${uuid}/thumbnail`,
+      {
+        method: 'POST',
+        body: formData,
+      },
+      ApiSchemas['/v0/files/:uuid/thumbnail.POST.response']
     );
   },
 

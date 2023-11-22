@@ -80,20 +80,20 @@ pub struct TransientResize {
 }
 
 impl TransientResize {
-    pub fn column(column: i64, new_size: f64) -> Self {
+    pub fn column(column: i64, old_size: f64, new_size: f64) -> Self {
         TransientResize {
             row: None,
             column: Some(column),
-            old_size: 0.0,
+            old_size,
             new_size,
         }
     }
 
-    pub fn row(row: i64, new_size: f64) -> Self {
+    pub fn row(row: i64, old_size: f64, new_size: f64) -> Self {
         TransientResize {
             row: Some(row),
             column: None,
-            old_size: 0.0,
+            old_size,
             new_size,
         }
     }

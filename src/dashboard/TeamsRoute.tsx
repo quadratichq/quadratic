@@ -1,4 +1,4 @@
-import { PeopleOutline } from '@mui/icons-material';
+import { StopwatchIcon } from '@radix-ui/react-icons';
 import { Empty } from '../components/Empty';
 import { SUPPORT_EMAIL } from '../constants/appConstants';
 import { DashboardHeader } from './components/DashboardHeader';
@@ -16,7 +16,7 @@ export const Component = () => {
             in being the first to use teams, contact us at <a href={mailto}>{SUPPORT_EMAIL}</a>
           </>
         }
-        Icon={PeopleOutline}
+        Icon={StopwatchIcon}
       />
     </>
   );

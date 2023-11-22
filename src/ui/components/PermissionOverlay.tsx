@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { Link, useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { duplicateFile } from '../../actions';
+import { duplicateFileAction } from '../../actions';
 import { PermissionSchema } from '../../api/types';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { ROUTES } from '../../constants/routes';
@@ -69,9 +69,9 @@ export function PermissionOverlay() {
               variant="outlined"
               size="small"
               disableElevation
-              onClick={() => duplicateFile.run({ name, submit })}
+              onClick={() => duplicateFileAction.run({ name, submit })}
             >
-              {duplicateFile.label}
+              {duplicateFileAction.label}
             </Button>
           }
         >

@@ -250,6 +250,17 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
     format!("{prefix} {i}")
 }
 
+pub fn maybe_reverse_range(
+    range: Range<i64>,
+    rev: bool,
+) -> itertools::Either<impl Iterator<Item = i64>, impl Iterator<Item = i64>> {
+    if !rev {
+        itertools::Either::Left(range)
+    } else {
+        itertools::Either::Right(range.rev())
+    }
+}
+
 /// For debugging both in tests and in the JS console
 pub fn dbgjs(val: impl fmt::Debug) {
     if cfg!(test) {
