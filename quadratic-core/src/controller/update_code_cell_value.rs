@@ -35,7 +35,10 @@ pub fn update_code_cell_value(
                         success = true;
                         match output_value {
                             Value::Array(array) => {
-                                if sheet.is_ok_to_spill_in(cell_ref, array.size()) {
+                                if sheet
+                                    .is_ok_to_spill_in(cell_ref, array.size())
+                                    .unwrap_or(false)
+                                {
                                     summary.cell_sheets_modified.insert(CellSheetsModified::new(
                                         sheet.id,
                                         Pos { x: pos.x, y: pos.y },

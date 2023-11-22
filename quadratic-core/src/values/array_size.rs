@@ -13,6 +13,11 @@ pub struct ArraySize {
     /// Height (number of rows)
     pub h: NonZeroU32,
 }
+impl Into<(i64, i64)> for ArraySize {
+    fn into(self) -> (i64, i64) {
+        (self.w.get().into(), self.h.get().into())
+    }
+}
 impl fmt::Display for ArraySize {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let ArraySize { w, h } = self;

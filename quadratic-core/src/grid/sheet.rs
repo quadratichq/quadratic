@@ -2,13 +2,13 @@ use std::collections::{btree_map, BTreeMap, HashMap};
 use std::ops::Range;
 use std::str::FromStr;
 
+use anyhow::Result;
 use bigdecimal::BigDecimal;
 use itertools::Itertools;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use self::sheet_offsets::SheetOffsets;
-
 use super::bounds::GridBounds;
 use super::code::CodeCellValue;
 use super::column::Column;
@@ -476,31 +476,32 @@ impl Sheet {
 
     /// Determines whether an output array would cause a spill error because it
     /// would overlap existing cell values or spills.
-    pub fn is_ok_to_spill_in(&self, cell_ref: CellRef, size: ArraySize) -> bool {
-        let pos = self.cell_ref_to_pos(cell_ref).unwrap();
-        let x = pos.x;
-        let y = pos.y;
+    pub fn is_ok_to_spill_in(&self, cell_ref: CellRef, size: ArraySize) -> Option<bool> {
+        let Pos { x, y } = self.cell_ref_to_pos(cell_ref)?;
+        let (w, h) = size.into();
+
         // check if the output array would cause a spill
-        for i in 0..size.w.into() {
-            for j in 0..size.h.into() {
-                let x = x + i as i64;
-                let y = y + j as i64;
+        for i in 0..w {
+            for j in 0..h {
+                let x = x + i;
+                let y = y + j;
+
                 if let Some(column) = self.columns.get(&x) {
                     if let Some(spill) = column.spills.get(y) {
                         if spill != cell_ref {
-                            return true;
+                            return Some(true);
                         }
                     }
                     if let Some(value) = column.values.get(y) {
                         if !value.is_blank() {
-                            return true;
+                            return Some(true);
                         }
                     }
                 }
             }
         }
 
-        false
+        Some(false)
     }
 }
 

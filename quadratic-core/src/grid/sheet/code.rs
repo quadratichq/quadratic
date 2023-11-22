@@ -136,7 +136,9 @@ impl Sheet {
             .find(|(cell_ref, code_cell)| {
                 let array_size = code_cell.output_size();
                 if array_size.len() > 1 {
-                    !self.is_ok_to_spill_in(*cell_ref, array_size)
+                    !self
+                        .is_ok_to_spill_in(*cell_ref, array_size)
+                        .unwrap_or(false)
                 } else {
                     false
                 }
