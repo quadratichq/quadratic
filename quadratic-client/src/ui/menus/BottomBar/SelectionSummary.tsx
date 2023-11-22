@@ -2,6 +2,7 @@ import { useMediaQuery } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { sheets } from '../../../grid/controller/Sheets';
 // import { getColumnA1Notation, getRowA1Notation } from '../../../gridGL/UI/gridHeadings/getA1Notation';
+import { TooltipHint } from '@/ui/components/TooltipHint';
 import { grid } from '../../../grid/controller/Grid';
 import BottomBarItem from './BottomBarItem';
 
@@ -12,6 +13,7 @@ export const SelectionSummary = () => {
   const [count, setCount] = useState<string | undefined>('');
   const [sum, setSum] = useState<string | undefined>('');
   const [avg, setAvg] = useState<string | undefined>('');
+  const [copied, setCopied] = useState(false);
 
   const runCalculationOnActiveSelection = () => {
     let result = grid.summarizeSelection();
@@ -19,7 +21,7 @@ export const SelectionSummary = () => {
     if (result) {
       setCount(result.count.toString());
       setSum(result.sum !== undefined ? result.sum.toString() : undefined);
-      setAvg(result.average !== undefined ? result.average.toString() : undefined);
+      setAvg(result.average !== undefined ? result.average.toFixed(9).toString() : undefined);
     } else {
       setCount(undefined);
       setSum(undefined);
@@ -40,12 +42,33 @@ export const SelectionSummary = () => {
     cursor.terminalPosition.y,
   ]);
 
+  const handleOnClick = (valueToCopy: string) => {
+    navigator.clipboard.writeText(valueToCopy).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const tooltipTitle = copied ? 'Copied!' : 'Copy to clipboard';
+
   if (isBigEnoughForActiveSelectionStats && cursor.multiCursor)
     return (
       <>
-        {sum && <BottomBarItem>Sum: {sum}</BottomBarItem>}
-        {avg && <BottomBarItem>Avg: {avg}</BottomBarItem>}
-        {count && <BottomBarItem>Count: {count}</BottomBarItem>}
+        {sum && (
+          <TooltipHint title={tooltipTitle}>
+            <BottomBarItem onClick={() => handleOnClick(sum)}>Sum: {sum}</BottomBarItem>
+          </TooltipHint>
+        )}
+        {avg && (
+          <TooltipHint title={tooltipTitle}>
+            <BottomBarItem onClick={() => handleOnClick(avg)}>Avg: {avg}</BottomBarItem>
+          </TooltipHint>
+        )}
+        {count && (
+          <TooltipHint title={tooltipTitle}>
+            <BottomBarItem onClick={() => handleOnClick(count)}>Count: {count}</BottomBarItem>
+          </TooltipHint>
+        )}
       </>
     );
   else return null;
