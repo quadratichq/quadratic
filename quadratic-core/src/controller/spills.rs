@@ -61,8 +61,8 @@ impl GridController {
         }
     }
 
-    /// check if the deletion of a cell released a spill error
-    pub fn check_release_spill(
+    /// update the code cell value if the deletion of a cell released a spill error
+    pub fn update_code_cell_value_if_spill_error_released(
         &mut self,
         cell_ref: CellRef,
         cells_to_compute: &mut IndexSet<CellRef>,

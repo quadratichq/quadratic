@@ -62,7 +62,7 @@ impl GridController {
                             );
                         } else {
                             // otherwise check if it released a spill
-                            self.check_release_spill(
+                            self.update_code_cell_value_if_spill_error_released(
                                 cell_ref,
                                 cells_to_compute,
                                 summary,
@@ -164,7 +164,7 @@ impl GridController {
 
                 // check if deleting a code cell releases a spill
                 if is_code_cell_empty {
-                    self.check_release_spill(
+                    self.update_code_cell_value_if_spill_error_released(
                         cell_ref,
                         cells_to_compute,
                         summary,

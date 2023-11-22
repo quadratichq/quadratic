@@ -273,7 +273,7 @@ pub fn fetch_code_cell_difference(
 
     // check for released spills
     possible_spills.iter().for_each(|cell_ref| {
-        grid_controller.check_release_spill(
+        grid_controller.update_code_cell_value_if_spill_error_released(
             *cell_ref,
             cells_to_compute,
             summary,
