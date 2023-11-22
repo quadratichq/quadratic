@@ -30,6 +30,8 @@ jobs:
           cache: 'pip'
       - run: pip install -r requirements.txt
 
+      - run: cd quadratic-client
+
       - run: npm config set registry https://registry.npmjs.cf/
       - run: npm install
 

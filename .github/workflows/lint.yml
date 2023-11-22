@@ -46,6 +46,8 @@ jobs:
           rustc --version
           cargo clippy --version
 
+      - run: cd quadratic-client
+
       - name: Run Clippy
         run: npm run lint:clippy
 

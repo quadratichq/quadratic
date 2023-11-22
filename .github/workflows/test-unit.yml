@@ -25,7 +25,7 @@ jobs:
       - name: Cache npm dependencies
         uses: actions/cache@v2
         with:
-          path: node_modules
+          path: quadratic-client/node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
@@ -45,6 +45,7 @@ jobs:
           rustc --version
           cargo clippy --version
 
+      - run: cd quadratic-client
       - run: npm config set registry https://registry.npmjs.cf/
       - run: npm install
 
