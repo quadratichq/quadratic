@@ -9,7 +9,7 @@ export class GridLines extends Graphics {
   dirty = true;
 
   draw(bounds: Rectangle): void {
-    this.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
+    this.lineStyle(1, colors.gridLines, 0.15, 0.5, true);
     this.drawVerticalLines(bounds);
     this.drawHorizontalLines(bounds);
     this.dirty = true;
@@ -36,7 +36,7 @@ export class GridLines extends Graphics {
       this.alpha = gridAlpha;
       this.visible = true;
 
-      this.lineStyle(1, colors.gridLines, 0.25, 0.5, true);
+      this.lineStyle(1, colors.gridLines, 0.15, 0.5, true);
       this.drawVerticalLines(bounds);
       this.drawHorizontalLines(bounds);
     }
