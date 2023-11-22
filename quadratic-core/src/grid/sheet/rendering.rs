@@ -59,7 +59,7 @@ impl Sheet {
                             cell_error = Some(CellValue::Error(Box::new(Error {
                                 span: None,
                                 msg: ErrorMsg::Spill,
-                            })))
+                            })));
                         }
                     }
 

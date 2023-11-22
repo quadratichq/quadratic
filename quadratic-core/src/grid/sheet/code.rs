@@ -59,7 +59,6 @@ impl Sheet {
                 column.spills.set(pos.y, Some(cell_ref));
             }
             self.code_cells.insert(cell_ref, code_cell);
-        } else {
         }
         old
     }

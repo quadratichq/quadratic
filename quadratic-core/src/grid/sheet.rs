@@ -499,7 +499,8 @@ impl Sheet {
                 }
             }
         }
-        return false;
+
+        false
     }
 }
 

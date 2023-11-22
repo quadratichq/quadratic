@@ -24,7 +24,7 @@ pub fn update_code_cell_value(
 ) -> bool {
     let mut success = false;
     summary.save = true;
-    let sheet_id = cell_ref.sheet.clone();
+    let sheet_id = cell_ref.sheet;
     let sheet = grid_controller.grid.sheet_mut_from_id(sheet_id);
     if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
         let mut spill = false;
@@ -159,18 +159,14 @@ pub fn update_code_cell_value(
 
         summary.code_cells_modified.insert(sheet_id);
 
-        grid_controller.check_spill(
-            cell_ref.into(),
-            cells_to_compute,
-            summary,
-            reverse_operations,
-        );
+        grid_controller.check_spill(cell_ref, cells_to_compute, summary, reverse_operations);
     }
 
     success
 }
 
 /// Fetches the difference between the old and new code cell values and updates the UI
+#[allow(clippy::too_many_arguments)]
 pub fn fetch_code_cell_difference(
     grid_controller: &mut GridController,
     sheet_id: SheetId,
@@ -238,7 +234,7 @@ pub fn fetch_code_cell_difference(
                     column: column_id,
                     row: row_id,
                 };
-                cells_to_compute.insert(cell_ref_entry.clone());
+                cells_to_compute.insert(cell_ref_entry);
                 if y <= old_h {
                     possible_spills.push(cell_ref_entry);
                 }
@@ -273,7 +269,7 @@ pub fn fetch_code_cell_difference(
                     column: column_id,
                     row: row_id,
                 };
-                cells_to_compute.insert(cell_ref.clone());
+                cells_to_compute.insert(cell_ref);
                 possible_spills.push(cell_ref);
             }
         }
@@ -440,7 +436,7 @@ mod test {
 
         let sheet = gc.grid.sheet_from_id(sheet_id);
         let code_cell = sheet.get_code_cell(Pos { x: 0, y: 0 });
-        assert_eq!(code_cell.unwrap().has_spill_error(), true);
+        assert!(code_cell.unwrap().has_spill_error());
     }
 
     #[test]
@@ -510,7 +506,7 @@ mod test {
 
         let sheet = gc.grid.sheet_from_id(sheet_id);
         let code_cell = sheet.get_code_cell(Pos { x: 0, y: 0 });
-        assert_eq!(code_cell.unwrap().has_spill_error(), true);
+        assert!(code_cell.unwrap().has_spill_error());
         assert_eq!(sheet.get_column(0).unwrap().spills.get(0), Some(cell_ref));
         assert_eq!(
             sheet.get_column(0).unwrap().spills.get(1),

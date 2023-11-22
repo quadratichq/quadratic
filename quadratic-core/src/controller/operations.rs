@@ -59,7 +59,7 @@ impl GridController {
                                 cells_to_compute,
                                 summary,
                                 &mut reverse_operations,
-                            )
+                            );
                         } else {
                             // otherwise check if it released a spill
                             self.check_release_spill(
@@ -67,7 +67,7 @@ impl GridController {
                                 cells_to_compute,
                                 summary,
                                 &mut reverse_operations,
-                            )
+                            );
                         }
                     }
                 }
