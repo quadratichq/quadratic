@@ -33,7 +33,7 @@ impl GridController {
         let cell_values = reader
             .records()
             .enumerate()
-            .map(|(row, record)| {
+            .flat_map(|(row, record)| {
                 // convert the record into a vector of Operations
                 record
                     .map_err(|e| error(format!("line {}: {}", row + 1, e)))?
@@ -49,8 +49,6 @@ impl GridController {
                     })
                     .collect::<Result<Vec<CellValue>>>()
             })
-            .into_iter()
-            .flatten()
             .collect::<Vec<Vec<CellValue>>>();
 
         let array = Array::from(cell_values);

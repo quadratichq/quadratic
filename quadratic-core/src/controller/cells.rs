@@ -58,7 +58,7 @@ impl GridController {
         let value = value.trim();
 
         if value.is_empty() {
-            return CellValue::Blank;
+            CellValue::Blank
         } else if let Some((currency, number)) = CellValue::unpack_currency(value) {
             let numeric_format = NumericFormat {
                 kind: NumericFormatKind::Currency,
@@ -78,9 +78,9 @@ impl GridController {
                     attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
                 });
             }
-            return CellValue::Number(number);
+            CellValue::Number(number)
         } else if let Ok(bd) = BigDecimal::from_str(value) {
-            return CellValue::Number(bd);
+            CellValue::Number(bd)
         } else if let Some(percent) = CellValue::unpack_percentage(value) {
             let numeric_format = NumericFormat {
                 kind: NumericFormatKind::Percentage,
@@ -93,9 +93,9 @@ impl GridController {
                     1,
                 )),
             });
-            return CellValue::Number(percent);
+            CellValue::Number(percent)
         } else {
-            return CellValue::Text(value.into());
+            CellValue::Text(value.into())
         }
     }
 

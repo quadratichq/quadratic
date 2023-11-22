@@ -314,7 +314,6 @@ impl GridController {
                     })
                     .collect::<Vec<CellValue>>()
             })
-            .into_iter()
             .collect::<Vec<Vec<CellValue>>>();
 
         let array = Array::from(cell_values);
