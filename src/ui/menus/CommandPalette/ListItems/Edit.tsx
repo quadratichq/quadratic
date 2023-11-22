@@ -1,6 +1,14 @@
-import { ContentCopy, ContentCut, ContentPaste, East, Redo, Undo } from '@mui/icons-material';
+import { useFileContext } from '@/ui/components/FileProvider';
+import { ContentCopy, ContentCut, ContentPaste, Download, East, Redo, Undo } from '@mui/icons-material';
 import { useRecoilState } from 'recoil';
-import { copy, cut, paste, redo, undo } from '../../../../actions';
+import {
+  copyAction,
+  cutAction,
+  downloadSelectionAsCsvAction,
+  pasteAction,
+  redoAction,
+  undoAction,
+} from '../../../../actions';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import {
@@ -18,8 +26,8 @@ import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../Co
 
 const ListItems = [
   {
-    label: undo.label,
-    isAvailable: undo.isAvailable,
+    label: undoAction.label,
+    isAvailable: undoAction.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       return (
         <CommandPaletteListItem
@@ -33,8 +41,8 @@ const ListItems = [
     },
   },
   {
-    label: redo.label,
-    isAvailable: redo.isAvailable,
+    label: redoAction.label,
+    isAvailable: redoAction.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       return (
         <CommandPaletteListItem
@@ -48,8 +56,8 @@ const ListItems = [
     },
   },
   {
-    label: cut.label,
-    isAvailable: cut.isAvailable,
+    label: cutAction.label,
+    isAvailable: cutAction.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       return (
         <CommandPaletteListItem
@@ -63,7 +71,7 @@ const ListItems = [
     },
   },
   {
-    label: copy.label,
+    label: copyAction.label,
     Component: (props: CommandPaletteListItemSharedProps) => {
       return (
         <CommandPaletteListItem
@@ -77,8 +85,8 @@ const ListItems = [
     },
   },
   {
-    label: paste.label,
-    isAvailable: paste.isAvailable,
+    label: pasteAction.label,
+    isAvailable: pasteAction.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       return (
         <CommandPaletteListItem
@@ -104,6 +112,23 @@ const ListItems = [
           }}
           icon={<CopyAsPNG />}
           shortcut="C"
+          shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
+        />
+      );
+    },
+  },
+  {
+    label: downloadSelectionAsCsvAction.label,
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      const { name: fileName } = useFileContext();
+      return (
+        <CommandPaletteListItem
+          {...props}
+          action={() => {
+            downloadSelectionAsCsvAction.run({ fileName });
+          }}
+          icon={<Download />}
+          shortcut="E"
           shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
         />
       );

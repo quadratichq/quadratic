@@ -1,13 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { pythonStateAtom } from '@/atoms/pythonStateAtom';
 import mixpanel from 'mixpanel-browser';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { CodeCellLanguage } from '../../../quadratic-core/quadratic_core';
+import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/python';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
 import { Console } from './Console';
@@ -17,7 +19,19 @@ import { SaveChangesAlert } from './SaveChangesAlert';
 export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
-  const isRunningComputation = useRef(false);
+  const { pythonState } = useRecoilValue(pythonStateAtom);
+  // update code cell
+  const [codeString, setCodeString] = useState('');
+  const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
+  const [evaluationResult, setEvaluationResult] = useState<any>(undefined);
+  const [editorWidth, setEditorWidth] = useState<number>(
+    window.innerWidth * 0.35 // default to 35% of the window width
+  );
+  const [consoleHeight, setConsoleHeight] = useState<number>(200);
+  const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
+  const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
+
+  const isRunningComputation = pythonState === 'running';
 
   const cellLocation = useMemo(() => {
     return {
@@ -32,55 +46,49 @@ export const CodeEditor = () => {
   ]);
 
   // update code cell
-  const [codeString, setCodeString] = useState('');
-  const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
-  const [evaluationResult, setEvaluationResult] = useState<any>(undefined);
-  const updateCodeCell = useCallback(() => {
-    const codeCell = grid.getCodeCell(
-      editorInteractionState.selectedCellSheet,
+  const unsaved = useMemo(() => {
+    return editorContent !== codeString;
+  }, [codeString, editorContent]);
+
+  const updateCodeCell = useCallback(
+    (updateEditorContent: boolean) => {
+      const codeCell = grid.getCodeCell(
+        editorInteractionState.selectedCellSheet,
+        editorInteractionState.selectedCell.x,
+        editorInteractionState.selectedCell.y
+      );
+      if (codeCell) {
+        const codeString = codeCell.getCodeString();
+        setCodeString(codeString);
+        setOut({ stdOut: codeCell.getStdOut(), stdErr: codeCell.getStdErr() });
+        if (updateEditorContent) setEditorContent(codeString);
+        setEvaluationResult(codeCell.getEvaluationResult());
+        codeCell.free();
+      } else {
+        setCodeString('');
+        if (updateEditorContent) setEditorContent('');
+        setEvaluationResult('');
+        setOut(undefined);
+      }
+    },
+    [
       editorInteractionState.selectedCell.x,
-      editorInteractionState.selectedCell.y
-    );
-    if (codeCell) {
-      const codeString = codeCell.getCodeString();
-      setCodeString(codeString);
-      setOut({ stdOut: codeCell.getStdOut(), stdErr: codeCell.getStdErr() });
-      setEditorContent(codeString);
-      setEvaluationResult(codeCell.getEvaluationResult());
-      codeCell.free();
-    } else {
-      setCodeString('');
-      setEditorContent('');
-      setEvaluationResult('');
-      setOut(undefined);
-    }
-  }, [
-    editorInteractionState.selectedCell.x,
-    editorInteractionState.selectedCell.y,
-    editorInteractionState.selectedCellSheet,
-  ]);
-
-  // ensures that the console is updated after the code cell is run (for async calculations, like Python)
-  useEffect(() => {
-    window.addEventListener('computation-complete', updateCodeCell);
-    return () => window.removeEventListener('computation-complete', updateCodeCell);
-  });
-
-  useEffect(() => {
-    updateCodeCell();
-  }, [updateCodeCell]);
-
-  const [editorWidth, setEditorWidth] = useState<number>(
-    window.innerWidth * 0.35 // default to 35% of the window width
+      editorInteractionState.selectedCell.y,
+      editorInteractionState.selectedCellSheet,
+    ]
   );
 
-  // Console height state
-  const [consoleHeight, setConsoleHeight] = useState<number>(200);
+  // update code cell after computation
+  useEffect(() => {
+    if (!isRunningComputation) {
+      updateCodeCell(false);
+    }
+  }, [updateCodeCell, isRunningComputation]);
 
-  // Save changes alert state
-  const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
+  useEffect(() => {
+    updateCodeCell(true);
+  }, [updateCodeCell]);
 
-  const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
   useEffect(() => {
     mixpanel.track('[CodeEditor].opened', { type: editorMode });
   }, [editorMode]);
@@ -102,8 +110,7 @@ export const CodeEditor = () => {
   );
 
   const saveAndRunCell = async () => {
-    if (isRunningComputation.current) return;
-    isRunningComputation.current = true;
+    if (pythonState !== 'idle') return;
     const language =
       editorInteractionState.mode === 'PYTHON'
         ? CodeCellLanguage.Python
@@ -125,24 +132,13 @@ export const CodeEditor = () => {
     });
   };
 
-  useEffect(() => {
-    const completeTransaction = () => {
-      if (isRunningComputation.current) {
-        isRunningComputation.current = false;
-        updateCodeCell();
-      }
-    };
-    window.addEventListener('transaction-complete', completeTransaction);
-    return () => window.removeEventListener('transaction-complete', completeTransaction);
-  }, [updateCodeCell]);
+  const cancelPython = () => {
+    if (pythonState !== 'running') return;
+
+    pythonWebWorker.restartFromUser();
+  };
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    // Esc
-    if (!(event.metaKey || event.ctrlKey) && event.key === 'Escape') {
-      event.preventDefault();
-      closeEditor(false);
-    }
-
     // Don't allow the shortcuts below for certain users
     if (!isEditorOrAbove(editorInteractionState.permission)) {
       return;
@@ -159,6 +155,13 @@ export const CodeEditor = () => {
       event.preventDefault();
       event.stopPropagation();
       saveAndRunCell();
+    }
+
+    // Command + Escape
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      cancelPython();
     }
   };
 
@@ -201,12 +204,13 @@ export const CodeEditor = () => {
       <ResizeControl setState={setEditorWidth} position="LEFT" />
       <CodeEditorHeader
         cellLocation={cellLocation}
-        unsaved={false}
-        isRunningComputation={isRunningComputation.current}
+        unsaved={unsaved}
+        isRunningComputation={isRunningComputation}
         saveAndRunCell={saveAndRunCell}
+        cancelPython={cancelPython}
         closeEditor={() => closeEditor(false)}
       />
-      <CodeEditorBody editorContent={editorContent} setEditorContent={setEditorContent} />
+      <CodeEditorBody editorContent={editorContent} setEditorContent={setEditorContent} closeEditor={closeEditor} />
       <ResizeControl setState={setConsoleHeight} position="TOP" />
 
       {/* Console Wrapper */}

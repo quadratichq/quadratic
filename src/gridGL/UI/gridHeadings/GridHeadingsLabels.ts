@@ -1,4 +1,5 @@
 import { BitmapText, Container } from 'pixi.js';
+import { colors } from '../../../theme/colors';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { GRID_HEADER_FONT_SIZE } from './GridHeadings';
 
@@ -25,7 +26,7 @@ export class GridHeadingsLabels extends Container {
       new BitmapText('', {
         fontName: 'OpenSans',
         fontSize: GRID_HEADER_FONT_SIZE,
-        tint: 0x55606b,
+        tint: colors.gridHeadingLabel,
       })
     );
     label.anchor.set(0.5);

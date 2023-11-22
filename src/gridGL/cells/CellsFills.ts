@@ -28,8 +28,8 @@ export class CellsFills extends ParticleContainer {
       sprite.tint = convertColorStringToTint(fill.color);
       const screen = this.sheet.getScreenRectangle(Number(fill.x), Number(fill.y), fill.w - 1, fill.h - 1);
       sprite.position.set(screen.x, screen.y);
-      sprite.width = screen.width + 1;
-      sprite.height = screen.height + 1;
+      sprite.width = screen.width;
+      sprite.height = screen.height;
       sprite.viewBounds = new Rectangle(screen.x, screen.y, screen.width + 1, screen.height + 1);
     });
   }

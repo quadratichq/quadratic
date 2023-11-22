@@ -1,3 +1,4 @@
+import { colors } from '@/theme/colors';
 import { Graphics } from 'pixi.js';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
@@ -17,7 +18,7 @@ export class AxesLines extends Graphics {
       }
 
       this.visible = true;
-      this.lineStyle(10, 0x000000, 0.35, 0, true);
+      this.lineStyle(10, colors.gridLines, 0.75, 0, true);
       const viewport = pixiApp.viewport;
       if (0 >= viewport.left && 0 <= viewport.right) {
         this.moveTo(0, viewport.top);

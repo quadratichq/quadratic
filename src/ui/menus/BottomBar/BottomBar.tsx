@@ -2,14 +2,14 @@ import { ChatBubbleOutline, Commit } from '@mui/icons-material';
 import { Stack, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
-import { provideFeedback } from '../../../actions';
+import { provideFeedbackAction } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS } from '../../../debugFlags';
 import { sheets } from '../../../grid/controller/Sheets';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { colors } from '../../../theme/colors';
 import BottomBarItem from './BottomBarItem';
-import PythonState from './PythonState';
+import PythonStateItem from './PythonStateItem';
 import { SelectionSummary } from './SelectionSummary';
 import SyncState from './SyncState';
 
@@ -109,15 +109,15 @@ export const BottomBar = () => {
         <SelectionSummary></SelectionSummary>
         <SyncState />
 
-        {showOnDesktop && <PythonState />}
-        {provideFeedback.isAvailable(permission) && (
+        {showOnDesktop && <PythonStateItem />}
+        {provideFeedbackAction.isAvailable(permission) && (
           <BottomBarItem
             icon={<ChatBubbleOutline fontSize="inherit" />}
             onClick={() => {
               setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
             }}
           >
-            {provideFeedback.label}
+            {provideFeedbackAction.label}
           </BottomBarItem>
         )}
         <BottomBarItem icon={<Commit fontSize="inherit" />}>

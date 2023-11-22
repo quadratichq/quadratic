@@ -34,7 +34,13 @@ export class Pointer {
     this.pointerDown.destroy();
   }
 
+  // check if more than one touch point (let the viewport handle the event)
+  private isMoreThanOneTouch(e: InteractionEvent): boolean {
+    return e.data.pointerType === 'touch' && (e.data.originalEvent as TouchEvent).touches.length > 1;
+  }
+
   private handlePointerDown = (e: InteractionEvent): void => {
+    if (this.isMoreThanOneTouch(e)) return;
     const world = pixiApp.viewport.toWorld(e.data.global);
     const event = e.data.originalEvent as PointerEvent;
     this.pointerHtmlCells.pointerDown(e) ||
@@ -44,6 +50,7 @@ export class Pointer {
   };
 
   private pointerMove = (e: InteractionEvent): void => {
+    if (this.isMoreThanOneTouch(e)) return;
     const world = pixiApp.viewport.toWorld(e.data.global);
     this.pointerHtmlCells.pointerMove(e) ||
       this.pointerHeading.pointerMove(world) ||
@@ -58,7 +65,8 @@ export class Pointer {
     pixiApp.canvas.style.cursor = cursor ?? 'unset';
   };
 
-  private pointerUp = (): void => {
+  private pointerUp = (e: InteractionEvent): void => {
+    if (this.isMoreThanOneTouch(e)) return;
     this.pointerHtmlCells.pointerUp() ||
       this.pointerHeading.pointerUp() ||
       this.pointerAutoComplete.pointerUp() ||

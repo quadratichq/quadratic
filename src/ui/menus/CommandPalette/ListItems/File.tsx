@@ -1,39 +1,43 @@
 import { DeleteOutline, FileCopyOutlined, FileDownloadOutlined, InsertDriveFileOutlined } from '@mui/icons-material';
 import { useNavigate, useParams, useSubmit } from 'react-router-dom';
-import { createNewFile, deleteFile, downloadFile, duplicateFile } from '../../../../actions';
+import { createNewFileAction, deleteFile, downloadFileAction, duplicateFileAction } from '../../../../actions';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { useFileContext } from '../../../components/FileProvider';
 import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
 const ListItems = [
   {
-    label: 'File: ' + createNewFile.label,
-    isAvailable: createNewFile.isAvailable,
+    label: 'File: ' + createNewFileAction.label,
+    isAvailable: createNewFileAction.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const navigate = useNavigate();
-      const action = () => createNewFile.run({ navigate });
+      const action = () => createNewFileAction.run({ navigate });
       return <CommandPaletteListItem {...props} icon={<InsertDriveFileOutlined />} action={action} />;
     },
   },
   {
-    label: 'File: ' + duplicateFile.label,
-    isAvailable: duplicateFile.isAvailable,
+    label: 'File: ' + duplicateFileAction.label,
+    isAvailable: duplicateFileAction.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const submit = useSubmit();
       const { name } = useFileContext();
       const action = () => {
-        duplicateFile.run({ name, submit });
+        duplicateFileAction.run({ name, submit });
       };
       return <CommandPaletteListItem {...props} icon={<FileCopyOutlined />} action={action} />;
     },
   },
   {
-    label: 'File: ' + downloadFile.label,
-    isAvailable: downloadFile.isAvailable,
+    label: 'File: ' + downloadFileAction.label,
+    isAvailable: downloadFileAction.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const { name } = useFileContext();
       return (
-        <CommandPaletteListItem {...props} icon={<FileDownloadOutlined />} action={() => downloadFile.run({ name })} />
+        <CommandPaletteListItem
+          {...props}
+          icon={<FileDownloadOutlined />}
+          action={() => downloadFileAction.run({ name })}
+        />
       );
     },
   },
