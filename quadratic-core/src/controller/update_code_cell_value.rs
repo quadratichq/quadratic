@@ -178,29 +178,24 @@ pub fn fetch_code_cell_difference(
     reverse_operations: &mut Vec<Operation>,
 ) {
     let sheet = grid_controller.grid.sheet_mut_from_id(sheet_id);
-    let cell_ref = sheet.get_or_create_cell_ref(pos);
-    let (old_w, old_h) = if let Some(old_code_cell_value) = old_code_cell_value {
-        if old_code_cell_value.has_spill_error() {
-            (1, 1)
-        } else {
-            let size = old_code_cell_value.output_size();
-            (size.w.get(), size.h.get())
-        }
-    } else {
-        (1, 1)
-    };
-    let (new_w, new_h) = if let Some(new_code_cell_value) = new_code_cell_value {
-        if new_code_cell_value.has_spill_error() {
-            (1, 1)
-        } else {
-            let size = new_code_cell_value.output_size();
-            (size.w.get(), size.h.get())
-        }
-    } else {
-        (0, 0)
-    };
-
     let mut possible_spills = vec![];
+    let cell_ref = sheet.get_or_create_cell_ref(pos);
+
+    let (old_w, old_h) = old_code_cell_value.map_or((1, 1), |code_cell_value| {
+        if code_cell_value.has_spill_error() {
+            (1, 1)
+        } else {
+            code_cell_value.output_size().into()
+        }
+    });
+
+    let (new_w, new_h) = new_code_cell_value.map_or((0, 0), |code_cell_value| {
+        if code_cell_value.has_spill_error() {
+            (1, 1)
+        } else {
+            code_cell_value.output_size().into()
+        }
+    });
 
     if old_w > new_w {
         for x in new_w..old_w {
@@ -241,6 +236,7 @@ pub fn fetch_code_cell_difference(
             }
         }
     }
+
     if old_h > new_h {
         for x in 0..old_w {
             let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
