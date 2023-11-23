@@ -5,7 +5,7 @@ use crate::{
             JsHtmlOutput, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState,
             JsRenderFill,
         },
-        CellAlign, CodeCellRunResult, NumericFormat, NumericFormatKind,
+        CellAlign, CodeCellRunResult, NumericFormatKind,
     },
     CellValue, Pos, Rect,
 };
@@ -73,67 +73,50 @@ impl Sheet {
 
         itertools::chain(ordinary_cells, code_output_cells)
             .map(|(x, y, column, value, language)| {
-                if value.type_name() == "error" {
-                    JsRenderCell {
-                        x,
-                        y,
+                // Only fetch formatting info for non-error, non-HTML, non-blank
+                // cells
+                let fmt = !matches!(
+                    value,
+                    CellValue::Blank | CellValue::Error(_) | CellValue::Html(_),
+                );
+                let mut align = if fmt { column.align.get(y) } else { None };
+                let wrap = if fmt { column.wrap.get(y) } else { None };
+                let bold = if fmt { column.bold.get(y) } else { None };
+                let italic = if fmt { column.italic.get(y) } else { None };
+                let text_color = if fmt { column.text_color.get(y) } else { None };
 
-                        value: String::from(" ERROR"),
-                        language,
-
-                        align: None,
-                        wrap: None,
-                        bold: None,
-                        italic: Some(true),
-                        text_color: Some(String::from("red")),
-                    }
-                } else if value.type_name() == "html" {
-                    JsRenderCell {
-                        x,
-                        y,
-
-                        value: " HTML".into(),
-                        language,
-
-                        align: None,
-                        wrap: None,
-                        bold: None,
-                        italic: Some(true),
-                        text_color: Some("blue".into()),
-                    }
-                } else {
-                    let mut numeric_format: Option<NumericFormat> = None;
-                    let mut numeric_decimals: Option<i16> = None;
-                    let mut numeric_commas: Option<bool> = None;
-                    let mut align: Option<CellAlign> = column.align.get(y);
-
-                    if value.type_name() == "number" {
+                let value = match value {
+                    CellValue::Error(_) => " ERROR".to_string(),
+                    CellValue::Html(_) => " HTML".to_string(),
+                    CellValue::Number(_) => {
                         // get numeric_format and numeric_decimal to turn number into a string
-                        numeric_format = column.numeric_format.get(y);
+                        let numeric_format = column.numeric_format.get(y);
                         let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
                             numeric_format.kind == NumericFormatKind::Percentage
                         });
-                        numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
-                        numeric_commas = column.numeric_commas.get(y);
+                        let numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
+                        let numeric_commas = column.numeric_commas.get(y);
 
                         // if align is not set, set it to right only for numbers
-                        if align.is_none() {
-                            align = Some(CellAlign::Right);
-                        }
-                    }
-                    JsRenderCell {
-                        x,
-                        y,
+                        align = align.or(Some(CellAlign::Right));
 
-                        value: value.to_display(numeric_format, numeric_decimals, numeric_commas),
-                        language,
-
-                        align,
-                        wrap: column.wrap.get(y),
-                        bold: column.bold.get(y),
-                        italic: column.italic.get(y),
-                        text_color: column.text_color.get(y),
+                        value.to_display(numeric_format, numeric_decimals, numeric_commas)
                     }
+                    _ => value.to_display(None, None, None),
+                };
+
+                JsRenderCell {
+                    x,
+                    y,
+
+                    value,
+                    language,
+
+                    align,
+                    wrap,
+                    bold,
+                    italic,
+                    text_color,
                 }
             })
             .collect()
