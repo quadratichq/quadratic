@@ -103,6 +103,7 @@ export class Grid {
 
     if (summary.offsets_modified.length) {
       sheets.updateOffsets(summary.offsets_modified);
+      pixiApp.cellsSheets.updateBorders(summary.offsets_modified);
     }
 
     if (summary.code_cells_modified.length) {
