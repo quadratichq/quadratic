@@ -173,30 +173,20 @@ impl GridController {
         let mut ops = vec![];
         if let Some(size) = region.size() {
             let values = Array::new_empty(size);
-            ops.push(Operation::SetCellValues { region, values });
+            ops.push(Operation::SetCellValues {
+                region: region.clone(),
+                values,
+            });
 
-            // need to walk through the region and delete code cells
             let sheet = self.grid.sheet_from_id(sheet_id);
-            for x in rect.x_range() {
-                let column = sheet.get_column(x);
-                for y in rect.y_range() {
-                    // todo: good place to check for spills here
 
-                    // skip deleting the code cell if there is a value (since you have to delete that first)
-                    if column.is_some_and(|column| column.values.get(y).is_some()) {
-                        continue;
-                    } else {
-                        // delete code cell if it exists
-                        let pos = Pos { x, y };
-                        if sheet.get_code_cell(pos).is_some() {
-                            if let Some(cell_ref) = sheet.try_get_cell_ref(pos) {
-                                ops.push(Operation::SetCellCode {
-                                    cell_ref,
-                                    code_cell_value: None,
-                                });
-                            };
-                        }
-                    }
+            // collect all the code cells in the region
+            for cell_ref in sheet.code_cells.keys() {
+                if region.contains(cell_ref) {
+                    ops.push(Operation::SetCellCode {
+                        cell_ref: *cell_ref,
+                        code_cell_value: None,
+                    });
                 }
             }
         };
