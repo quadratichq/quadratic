@@ -1,0 +1,4 @@
+{
+  "buildCommand": "cd quadratic-client && npm run build:ci",
+  "installCommand": "cd quadratic-client && npm install"
+}

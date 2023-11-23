@@ -58,7 +58,8 @@ fn main() {
         Span,
     );
 
-    if create_dir_all("../src/quadratic-core").is_ok() {
-        std::fs::write("../src/quadratic-core/types.d.ts", s).expect("failed to write types file");
+    if create_dir_all("../quadratic-client/src/quadratic-core").is_ok() {
+        std::fs::write("../quadratic-client/src/quadratic-core/types.d.ts", s)
+            .expect("failed to write types file");
     }
 }
