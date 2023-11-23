@@ -481,4 +481,22 @@ mod test {
         assert_eq!(cells.len(), 1);
         assert_eq!(cells[0].value, "1.12345678");
     }
+
+    #[test]
+    fn test_set_cell_render_size() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_render_size(
+            sheet_id,
+            Rect::single_pos(Pos { x: 0, y: 0 }),
+            Some(RenderSize { w: 1, h: 2 }),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.get_formatting_value::<RenderSize>(Pos { x: 0, y: 0 }),
+            Some(RenderSize { w: 1, h: 2 })
+        );
+    }
 }
