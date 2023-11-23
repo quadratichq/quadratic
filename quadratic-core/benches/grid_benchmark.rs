@@ -102,7 +102,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |(mut gc, sheet_id, rect)| {
                 // Test
-                gc.delete_cell_values(sheet_id, rect, None);
+                gc.delete_cells_rect(sheet_id, rect, None);
             },
             criterion::BatchSize::SmallInput,
         )
@@ -121,7 +121,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     },
                     max: Pos { x: 10000, y: 10000 },
                 };
-                gc.delete_cell_values(sheet_id, rect, None);
+                gc.delete_cells_rect(sheet_id, rect, None);
                 gc
             },
             |mut gc| {
@@ -145,7 +145,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     },
                     max: Pos { x: 10000, y: 10000 },
                 };
-                gc.delete_cell_values(sheet_id, rect, None);
+                gc.delete_cells_rect(sheet_id, rect, None);
                 gc.undo(None);
                 gc
             },

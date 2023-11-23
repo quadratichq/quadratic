@@ -99,34 +99,6 @@ impl GridController {
         }
     }
 
-    pub fn set_cells(
-        &mut self,
-        sheet_id: SheetId,
-        start_pos: Pos,
-        values: Array,
-        cursor: Option<String>,
-    ) -> TransactionSummary {
-        let ops = self.set_cells_operations(sheet_id, start_pos, values);
-        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
-    }
-    pub fn set_cells_operations(
-        &mut self,
-        sheet_id: SheetId,
-        start_pos: Pos,
-        values: Array,
-    ) -> Vec<Operation> {
-        let end_pos = Pos {
-            x: start_pos.x + values.width() as i64 - 1,
-            y: start_pos.y + values.height() as i64 - 1,
-        };
-        let rect = Rect {
-            min: start_pos,
-            max: end_pos,
-        };
-        let region = self.region(sheet_id, rect);
-        vec![Operation::SetCellValues { region, values }]
-    }
-
     pub fn set_cell_code(
         &mut self,
         sheet_id: SheetId,
@@ -162,9 +134,9 @@ impl GridController {
         self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
 
-    /// Generates and returns the set of operations to deleted the values in a given region
+    /// Generates and returns the set of operations to deleted the values and code in a given region
     /// Does not commit the operations or create a transaction.
-    pub fn delete_cell_values_operations(
+    pub fn delete_cells_rect_operations(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
@@ -193,16 +165,16 @@ impl GridController {
         ops
     }
 
-    /// Deletes the cells in a given region.
+    /// Deletes the cell values and code in a given region.
     /// Creates and runs a transaction, also updates dependent cells.
     /// Returns a [`TransactionSummary`].
-    pub fn delete_cell_values(
+    pub fn delete_cells_rect(
         &mut self,
         sheet_id: SheetId,
         rect: Rect,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let ops = self.delete_cell_values_operations(sheet_id, rect);
+        let ops = self.delete_cells_rect_operations(sheet_id, rect);
         self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
 
@@ -275,7 +247,7 @@ impl GridController {
         rect: Rect,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let mut ops = self.delete_cell_values_operations(sheet_id, rect);
+        let mut ops = self.delete_cells_rect_operations(sheet_id, rect);
         ops.extend(self.clear_formatting_operations(sheet_id, rect));
         self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
