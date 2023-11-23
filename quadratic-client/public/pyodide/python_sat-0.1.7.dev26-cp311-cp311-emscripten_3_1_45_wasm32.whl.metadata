@@ -1,0 +1,29 @@
+Metadata-Version: 2.1
+Name: python-sat
+Version: 0.1.7.dev26
+Summary: A Python library for prototyping with SAT oracles
+Home-page: https://github.com/pysathq/pysat
+Author: Alexey Ignatiev, Joao Marques-Silva, Antonio Morgado
+Author-email: alexey.ignatiev@monash.edu, joao.marques-silva@univ-toulouse.fr, ajrmorgado@gmail.com
+License: MIT
+Description-Content-Type: text/x-rst; charset=UTF-8
+License-File: LICENSE.txt
+Requires-Dist: six
+Provides-Extra: aiger
+Requires-Dist: py-aiger-cnf >=2.0.0 ; extra == 'aiger'
+Provides-Extra: pblib
+Requires-Dist: pypblib >=0.0.3 ; extra == 'pblib'
+
+
+A Python library providing a simple interface to a number of state-of-art
+Boolean satisfiability (SAT) solvers and a few types of cardinality and
+pseudo-Boolean encodings. The purpose of PySAT is to enable researchers
+working on SAT and its applications and generalizations to easily prototype
+with SAT oracles in Python while exploiting incrementally the power of the
+original low-level implementations of modern SAT solvers.
+
+With PySAT it should be easy for you to implement a MaxSAT solver, an
+MUS/MCS extractor/enumerator, or any tool solving an application problem
+with the (potentially multiple) use of a SAT oracle.
+
+Details can be found at `https://pysathq.github.io <https://pysathq.github.io>`__.
