@@ -140,6 +140,14 @@ export class CellsSheets extends Container<CellsSheet> {
     });
   }
 
+  updateBordersString(borderSheets: String[]): void {
+    this.children.forEach((cellsSheet) => {
+      if (borderSheets.find((id) => id === cellsSheet.sheet.id)) {
+        cellsSheet.createBorders();
+      }
+    });
+  }
+
   showLabel(x: number, y: number, sheetId: string, show: boolean) {
     const cellsSheet = this.getById(sheetId);
     if (!cellsSheet) throw new Error('Expected to find cellsSheet in showLabel');

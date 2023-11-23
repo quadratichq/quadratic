@@ -40,5 +40,6 @@
   "rust-analyzer.checkOnSave": true,
   "files.associations": {
     "*.grid": "json"
-  }
+  },
+  "jest.rootPath": "quadratic-client"
 }

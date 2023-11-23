@@ -119,13 +119,19 @@ export const CodeEditor = () => {
         : undefined;
     if (language === undefined)
       throw new Error(`Language ${editorInteractionState.mode} not supported in CodeEditor#saveAndRunCell`);
-    grid.setCodeCellValue({
-      sheetId: cellLocation.sheetId,
-      x: cellLocation.x,
-      y: cellLocation.y,
-      codeString: editorContent ?? '',
-      language,
-    });
+    if (
+      grid.setCodeCellValue({
+        sheetId: cellLocation.sheetId,
+        x: cellLocation.x,
+        y: cellLocation.y,
+        codeString: editorContent ?? '',
+        language,
+      })
+    ) {
+      // for formulas, the code cell may be run synchronously; in that case we update the code cell immediately
+      // if there is any async computation, then we have to wait to update the code cell
+      updateCodeCell(false);
+    }
     mixpanel.track('[CodeEditor].cellRun', {
       type: editorMode,
       code: editorContent,
