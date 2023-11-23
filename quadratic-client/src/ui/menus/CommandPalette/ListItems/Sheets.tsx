@@ -17,7 +17,7 @@ const ListItems = () => {
         Component: () => {
           return (
             <CommandPaletteListItem
-              Icon={<ViewGridIcon />}
+              icon={<ViewGridIcon />}
               label="Create"
               action={() => sheets.createNew()}
             ></CommandPaletteListItem>
@@ -54,7 +54,7 @@ const ListItems = () => {
           return (
             <CommandPaletteListItem
               label={`Switch to “${sheet.name}”`}
-              Icon={
+              icon={
                 sheet.color ? (
                   <div style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center' }}>
                     <div

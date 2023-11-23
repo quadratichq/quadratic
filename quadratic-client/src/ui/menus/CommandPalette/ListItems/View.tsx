@@ -13,7 +13,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          Icon={<Checkbox checked={settings.showHeadings} />}
+          icon={<Checkbox checked={settings.showHeadings} />}
           action={() => {
             settings.setShowHeadings(!settings.showHeadings);
           }}
@@ -29,7 +29,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          Icon={<Checkbox checked={settings.showGridAxes} />}
+          icon={<Checkbox checked={settings.showGridAxes} />}
           action={() => {
             settings.setShowGridAxes(!settings.showGridAxes);
           }}
@@ -45,7 +45,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          Icon={<Checkbox checked={settings.showGridLines} />}
+          icon={<Checkbox checked={settings.showGridLines} />}
           action={() => {
             settings.setShowGridLines(!settings.showGridLines);
           }}
@@ -60,7 +60,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          Icon={<Checkbox checked={settings.showCellTypeOutlines} />}
+          icon={<Checkbox checked={settings.showCellTypeOutlines} />}
           action={() => {
             settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
           }}
@@ -92,7 +92,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          Icon={<Checkbox checked={presentationMode} />}
+          icon={<Checkbox checked={presentationMode} />}
           action={() => {
             setPresentationMode(!presentationMode);
           }}
@@ -107,7 +107,7 @@ const ListItems = [
     Component: (props: CommandPaletteListItemSharedProps) => (
       <CommandPaletteListItem
         {...props}
-        Icon={<ZoomInIcon />}
+        icon={<ZoomInIcon />}
         action={() => {
           zoomIn();
         }}
@@ -121,7 +121,7 @@ const ListItems = [
     Component: (props: CommandPaletteListItemSharedProps) => (
       <CommandPaletteListItem
         {...props}
-        Icon={<ZoomOutIcon />}
+        icon={<ZoomOutIcon />}
         action={() => {
           zoomOut();
         }}
