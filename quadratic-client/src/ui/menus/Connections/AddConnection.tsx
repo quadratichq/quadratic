@@ -12,7 +12,8 @@ import {
   Typography,
 } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
-import { ConnectionConfiguration } from '../../../../quadratic-api/src/routes/connections/types/Base'; // TODO: fix this path
+// quadratic-api/src/routes/connections/types/Base
+import { ConnectionConfiguration } from '../../../../../quadratic-api/src/routes/connections/types/Base'; // TODO: fix this path
 import { apiClient } from '../../../api/apiClient';
 import { ApiTypes } from '../../../api/types';
 
