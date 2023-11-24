@@ -1,7 +1,7 @@
+import { BorderSelection, BorderStyle, CellBorderLine, Rgba } from '@/quadratic-core/quadratic_core';
 import { grid } from '../../../../grid/controller/Grid';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { convertColorStringToTint, convertTintToArray } from '../../../../helpers/convertColor';
-import { BorderSelection, BorderStyle, CellBorderLine, Rgba } from '../../../../quadratic-core/quadratic_core';
 import { colors } from '../../../../theme/colors';
 
 export interface ChangeBorder {
