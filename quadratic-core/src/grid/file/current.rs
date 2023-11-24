@@ -5,7 +5,7 @@ use crate::grid::{
 };
 use crate::{CellValue, Error, ErrorMsg, Span, Value};
 
-use crate::grid::file::v1_4::schema::{self as current};
+use crate::grid::file::v1_5::schema::{self as current};
 use crate::grid::{
     block::SameValue, sheet::sheet_offsets::SheetOffsets, CellRef, CodeCellLanguage,
     CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Column, ColumnData, ColumnId, RowId,
@@ -22,21 +22,6 @@ use std::{
 };
 
 use super::CURRENT_VERSION;
-impl From<CellRef> for current::CellRef {
-    fn from(cell_ref: CellRef) -> Self {
-        Self {
-            sheet: current::Id {
-                id: cell_ref.sheet.to_string(),
-            },
-            column: current::Id {
-                id: cell_ref.column.to_string(),
-            },
-            row: current::Id {
-                id: cell_ref.row.to_string(),
-            },
-        }
-    }
-}
 
 fn set_column_format<T>(
     column_data: &mut ColumnData<SameValue<T>>,
@@ -116,11 +101,8 @@ fn set_column_format_bool(
 fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<i64, Column>> {
     columns
         .iter()
-        .map(|(y, column)| {
-            let mut col = Column {
-                id: ColumnId::from_str(&column.id.id)?,
-                ..Default::default()
-            };
+        .map(|(x, column)| {
+            let mut col = Column::new();
             set_column_format::<CellRef>(&mut col.spills, &column.spills)?;
             set_column_format::<CellAlign>(&mut col.align, &column.align)?;
             set_column_format::<CellWrap>(&mut col.wrap, &column.wrap)?;

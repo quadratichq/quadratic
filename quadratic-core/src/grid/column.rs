@@ -9,13 +9,11 @@ use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
 use super::formatting::*;
-use super::{Block, BlockContent, CellRef, CellValueBlockContent, ColumnId, SameValue};
+use super::{Block, BlockContent, CellRef, CellValueBlockContent, SameValue};
 use crate::IsBlank;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Column {
-    pub id: ColumnId,
-
     pub values: ColumnData<CellValueBlockContent>,
     pub spills: ColumnData<SameValue<CellRef>>,
 
@@ -31,15 +29,9 @@ pub struct Column {
 }
 impl Column {
     pub fn new() -> Self {
-        Column::with_id(ColumnId::new())
-    }
-    pub fn with_id(id: ColumnId) -> Self {
         Column {
-            id,
-
             values: ColumnData::default(),
             spills: ColumnData::default(),
-
             align: ColumnData::default(),
             wrap: ColumnData::default(),
             numeric_format: ColumnData::default(),

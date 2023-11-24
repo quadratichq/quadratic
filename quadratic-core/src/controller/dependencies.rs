@@ -3,13 +3,14 @@ use std::{self};
 use std::collections::{HashMap, HashSet};
 
 use crate::grid::{CellRef, Grid, Sheet};
+use crate::SheetPos;
 
 use super::GridController;
 
 /// track code dependencies per cell -- this is built on load and does not need to be serialized
 #[derive(Debug, Clone, Default)]
 pub struct Dependencies {
-    dependencies: HashMap<CellRef, HashSet<CellRef>>,
+    dependencies: HashMap<SheetPos, HashSet<SheetPos>>,
 }
 
 impl Dependencies {
@@ -24,10 +25,17 @@ impl Dependencies {
                         cells_accessed.iter().for_each(|cell_accessed| {
                             // cannot depend on ourselves
                             if cell_ref != cell_accessed {
-                                deps.dependencies
-                                    .entry(*cell_accessed)
-                                    .or_default()
-                                    .insert(*cell_ref);
+                                if let Some(pos) = sheet.cell_ref_to_pos(*cell_accessed) {
+                                    let sheet_pos = SheetPos {
+                                        x: pos.x,
+                                        y: pos.y,
+                                        sheet_id: sheet.id,
+                                    };
+                                    deps.dependencies
+                                        .entry(sheet_pos)
+                                        .or_default()
+                                        .insert(sheet_pos);
+                                }
                             }
                         });
                     }
@@ -37,43 +45,43 @@ impl Dependencies {
         deps
     }
 
-    pub fn get(&self, cell: CellRef) -> Option<&HashSet<CellRef>> {
+    pub fn get(&self, cell: SheetPos) -> Option<&HashSet<SheetPos>> {
         self.dependencies.get(&cell)
     }
 
-    pub fn add(&mut self, cell: CellRef, dep: CellRef) {
+    pub fn add(&mut self, cell: SheetPos, dep: SheetPos) {
         // cannot depend on ourselves
         if cell != dep {
             self.dependencies.entry(cell).or_default().insert(dep);
         }
     }
 
-    pub fn remove(&mut self, cell: CellRef, dep: CellRef) {
+    pub fn remove(&mut self, cell: SheetPos, dep: SheetPos) {
         if let Some(deps) = self.dependencies.get_mut(&cell) {
             deps.retain(|&x| x != dep);
         }
     }
 
-    pub fn to_debug(cell_ref: CellRef, dependencies: &HashSet<CellRef>, sheet: &Sheet) -> String {
+    pub fn to_debug(cell_ref: CellRef, dependencies: &HashSet<SheetPos>, sheet: &Sheet) -> String {
         let pos = sheet.cell_ref_to_pos(cell_ref);
         let mut s = format!("[Dependent Cells] for {}: ", pos.unwrap());
         for dep in dependencies {
-            s.push_str(&format!("{}, ", sheet.cell_ref_to_pos(*dep).unwrap()));
+            s.push_str(&format!("{}, ", dep));
         }
         s
     }
 }
 
 impl GridController {
-    pub fn get_dependent_cells(&self, cell: CellRef) -> Option<&HashSet<CellRef>> {
+    pub fn get_dependent_cells(&self, cell: SheetPos) -> Option<&HashSet<SheetPos>> {
         self.dependencies.get(cell)
     }
 
     pub fn update_dependent_cells(
         &mut self,
-        cell: CellRef,
-        deps: Option<Vec<CellRef>>,
-        old_deps: Option<Vec<CellRef>>,
+        cell: SheetPos,
+        deps: Option<Vec<SheetPos>>,
+        old_deps: Option<Vec<SheetPos>>,
     ) {
         if let Some(old_deps) = old_deps {
             for old_dep in old_deps {
@@ -94,8 +102,8 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        grid::{CodeCellRunOutput, CodeCellValue, Grid},
-        CellValue, Pos, Value,
+        grid::{CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Grid},
+        CellValue, Pos, SheetPos, Value,
     };
 
     use super::Dependencies;
@@ -107,10 +115,23 @@ mod test {
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
         sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
         let mut cells_accessed = vec![];
-        let cell_ref00 = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
-        let cell_ref01 = sheet.get_or_create_cell_ref(Pos { x: 0, y: 1 });
-        cells_accessed.push(cell_ref00);
-        cells_accessed.push(cell_ref01);
+        let pos00 = SheetPos {
+            sheet_id,
+            x: 0,
+            y: 0,
+        };
+        let pos01 = SheetPos {
+            sheet_id,
+            x: 0,
+            y: 1,
+        };
+        cells_accessed.push(pos00);
+        cells_accessed.push(pos01);
+        let cells_accessed_cell_ref = cells_accessed
+            .iter()
+            .map(|pos| sheet.get_or_create_cell_ref(Pos { x: pos.x, y: pos.y }))
+            .collect::<Vec<_>>();
+
         sheet.set_code_cell_value(
             Pos { x: 0, y: 2 },
             Some(CodeCellValue {
@@ -121,27 +142,25 @@ mod test {
                 output: Some(CodeCellRunOutput {
                     std_err: None,
                     std_out: None,
-                    result: crate::grid::CodeCellRunResult::Ok {
+                    result: CodeCellRunResult::Ok {
                         output_value: Value::Single(CellValue::Text("test".to_string())),
-                        cells_accessed: cells_accessed.clone(),
+                        cells_accessed: cells_accessed_cell_ref,
                     },
                 }),
             }),
         );
-        let cell_ref02 = sheet.get_or_create_cell_ref(Pos { x: 0, y: 2 });
+        let pos02 = SheetPos {
+            sheet_id,
+            x: 0,
+            y: 2,
+        };
 
         let dependencies = Dependencies::new(&cdc);
 
         assert_eq!(dependencies.dependencies.len(), 2);
-        assert_eq!(dependencies.get(cell_ref00).unwrap().len(), 1);
-        assert_eq!(
-            dependencies.get(cell_ref00).unwrap().iter().next(),
-            Some(&cell_ref02)
-        );
-        assert_eq!(
-            dependencies.get(cell_ref01).unwrap().iter().next(),
-            Some(&cell_ref02)
-        );
-        assert_eq!(dependencies.get(cell_ref02), None);
+        assert_eq!(dependencies.get(pos00).unwrap().len(), 1);
+        assert_eq!(dependencies.get(pos00).unwrap().iter().next(), Some(&pos02));
+        assert_eq!(dependencies.get(pos01).unwrap().iter().next(), Some(&pos02));
+        assert_eq!(dependencies.get(pos02), None);
     }
 }
