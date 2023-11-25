@@ -5,9 +5,9 @@ use super::{
 use crate::{
     grid::{
         generate_borders_full, get_cell_borders_in_rect, BorderSelection, CellBorders,
-        CodeCellValue, RegionRef, SheetId,
+        CodeCellValue, SheetId,
     },
-    Array, ArraySize, CellValue, Pos, Rect,
+    Array, ArraySize, CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 use htmlescape;
 use regex::Regex;
@@ -30,22 +30,22 @@ pub struct Clipboard {
 }
 
 impl GridController {
-    pub fn copy_to_clipboard(&self, sheet_id: SheetId, rect: Rect) -> (String, String) {
+    pub fn copy_to_clipboard(&self, sheet_rect: SheetRect) -> (String, String) {
         let mut cells = vec![];
         let mut plain_text = String::new();
         let mut html = String::from("<tbody>");
         let mut code = vec![];
-        let sheet = &mut self.grid().sheet_from_id(sheet_id);
+        let sheet = &mut self.grid().sheet_from_id(sheet_rect.sheet_id);
 
-        for y in rect.y_range() {
-            if y != rect.min.y {
+        for y in sheet_rect.y_range() {
+            if y != sheet_rect.min.y {
                 plain_text.push('\n');
                 html.push_str("</tr>");
             }
             html.push_str("<tr>");
 
-            for x in rect.x_range() {
-                if x != rect.min.x {
+            for x in sheet_rect.x_range() {
+                if x != sheet_rect.min.x {
                     plain_text.push('\t');
                     html.push_str("</td>");
                 }
@@ -64,8 +64,8 @@ impl GridController {
                 if let Some(code_cell_value) = sheet.get_code_cell(pos) {
                     code.push((
                         Pos {
-                            x: x - rect.min.x,
-                            y: y - rect.min.y,
+                            x: x - sheet_rect.min.x,
+                            y: y - sheet_rect.min.y,
                         },
                         CodeCellValue {
                             language: code_cell_value.language,
@@ -117,15 +117,15 @@ impl GridController {
             }
         }
 
-        let formats = self.get_all_cell_formats(sheet_id, rect);
-        let borders = get_cell_borders_in_rect(sheet, rect);
+        let formats = self.get_all_cell_formats(sheet_rect);
+        let borders = get_cell_borders_in_rect(sheet, sheet_rect.into());
         let clipboard = Clipboard {
             cells,
             formats,
             borders,
             code,
-            w: rect.width(),
-            h: rect.height(),
+            w: sheet_rect.width() as u32,
+            h: sheet_rect.height() as u32,
         };
 
         html.push_str("</tr></tbody></table>");
@@ -140,12 +140,11 @@ impl GridController {
 
     pub fn cut_to_clipboard(
         &mut self,
-        sheet_id: SheetId,
-        rect: Rect,
+        sheet_rect: SheetRect,
         cursor: Option<String>,
     ) -> (TransactionSummary, String, String) {
-        let copy = self.copy_to_clipboard(sheet_id, rect);
-        let summary = self.delete_values_and_formatting(sheet_id, rect, cursor);
+        let copy = self.copy_to_clipboard(sheet_rect);
+        let summary = self.delete_values_and_formatting(sheet_rect, cursor);
         (summary, copy.0, copy.1)
     }
 
@@ -194,11 +193,10 @@ impl GridController {
         let code = clipboard.code.clone();
 
         let mut ops = vec![];
-        let region = self.region(sheet_id, rect);
         let values = GridController::array_from_clipboard_cells(clipboard);
         if let Some(values) = values {
             ops.push(Operation::SetCellValues {
-                region: region.clone(),
+                rect: rect.to_sheet_rect(sheet_id),
                 values,
             });
             compute = true;
@@ -207,9 +205,10 @@ impl GridController {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
 
         // remove any overlapping code cells (which will automatically set the reverse operations)
-        region.iter().for_each(|cell_ref| {
-            if let Some(_code_cell) = sheet.get_code_cell_from_ref(cell_ref) {
-                if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
+        for x in rect.x_range() {
+            for y in rect.y_range() {
+                let pos = Pos { x, y };
+                if let Some(_code_cell) = sheet.get_code_cell(pos) {
                     // no need to clear code cells that are being pasted
                     if !code.iter().any(|(code_pos, _)| {
                         Pos {
@@ -218,23 +217,24 @@ impl GridController {
                         } == pos
                     }) {
                         ops.push(Operation::SetCellCode {
-                            cell_ref,
+                            sheet_pos: pos.to_sheet_pos(sheet_id),
                             code_cell_value: None,
                         });
                         compute = true;
                     }
                 }
             }
-        });
+        }
 
         // add copied code cells to the sheet
         code.iter().for_each(|entry| {
-            let cell_ref = sheet.get_or_create_cell_ref(Pos {
+            let sheet_pos = SheetPos {
                 x: entry.0.x + start_pos.x,
                 y: entry.0.y + start_pos.y,
-            });
+                sheet_id,
+            };
             ops.push(Operation::SetCellCode {
-                cell_ref,
+                sheet_pos,
                 code_cell_value: Some(entry.1.clone()),
             });
             compute = true;
@@ -242,7 +242,7 @@ impl GridController {
 
         formats.iter().for_each(|format| {
             ops.push(Operation::SetCellFormats {
-                region: region.clone(),
+                rect: rect.to_sheet_rect(sheet_id),
                 attr: format.clone(),
             });
         });
@@ -252,13 +252,11 @@ impl GridController {
             if let Some(cell_borders) = cell_borders {
                 let mut border_selections = vec![];
                 let mut border_styles = vec![];
-                let (column, _) = sheet.get_or_create_column(*x + start_pos.x);
-                let row_id = sheet.get_or_create_row(*y + start_pos.y);
-                let region = RegionRef {
-                    sheet: sheet.id,
-                    columns: vec![column.id],
-                    rows: vec![row_id.id],
-                };
+                let rect = SheetRect::single_pos(SheetPos {
+                    sheet_id: sheet.id,
+                    x: *x + start_pos.x,
+                    y: *y + start_pos.y,
+                });
 
                 cell_borders
                     .borders
@@ -278,9 +276,13 @@ impl GridController {
                         }
                     });
 
-                let borders =
-                    generate_borders_full(sheet, &region, border_selections, border_styles);
-                ops.push(Operation::SetBorders { region, borders });
+                let borders = generate_borders_full(
+                    sheet,
+                    &vec![rect.into()],
+                    border_selections,
+                    border_styles,
+                );
+                ops.push(Operation::SetBorders { rect, borders });
             }
         });
 
@@ -376,10 +378,10 @@ mod test {
         color::Rgba,
         controller::GridController,
         grid::{
-            generate_borders, js_types::CellFormatSummary, set_region_borders, BorderSelection,
+            generate_borders, js_types::CellFormatSummary, set_rects_borders, BorderSelection,
             BorderStyle, CellBorderLine, CodeCellLanguage, Sheet,
         },
-        CellValue, Pos, Rect,
+        CellValue, Pos, Rect, SheetPos, SheetRect,
     };
 
     fn set_borders(sheet: &mut Sheet) {
@@ -389,9 +391,8 @@ mod test {
             line: CellBorderLine::Line1,
         };
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
-        let region = sheet.region(rect);
-        let borders = generate_borders(sheet, &region, selection, Some(style));
-        set_region_borders(sheet, vec![region.clone()], borders);
+        let borders = generate_borders(sheet, &vec![rect], selection, Some(style));
+        set_rects_borders(sheet, &vec![rect], borders);
     }
 
     #[test]
@@ -401,36 +402,37 @@ mod test {
 
         gc.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, String::from("1, 1"), None);
         gc.set_cell_bold(
-            sheet_id,
-            Rect {
-                min: Pos { x: 1, y: 1 },
-                max: Pos { x: 1, y: 1 },
-            },
+            SheetRect::single_pos(SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            }),
             Some(true),
             None,
         );
 
         gc.set_cell_value(sheet_id, Pos { x: 3, y: 2 }, String::from("12"), None);
         gc.set_cell_italic(
-            sheet_id,
-            Rect {
-                min: Pos { x: 3, y: 2 },
-                max: Pos { x: 3, y: 2 },
-            },
+            SheetRect::single_pos(SheetPos {
+                x: 3,
+                y: 2,
+                sheet_id,
+            }),
             Some(true),
             None,
         );
 
-        let rect = Rect {
+        let sheet_rect = SheetRect {
             min: Pos { x: 1, y: 1 },
             max: Pos { x: 3, y: 2 },
+            sheet_id,
         };
 
-        let (plain_text, _) = gc.copy_to_clipboard(sheet_id, rect);
+        let (plain_text, _) = gc.copy_to_clipboard(sheet_rect);
         assert_eq!(plain_text, String::from("1, 1\t\t\n\t\t12"));
 
-        let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 3 });
-        let clipboard = gc.copy_to_clipboard(sheet_id, rect);
+        let sheet_rect = SheetRect::new_pos_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 3 }, sheet_id);
+        let clipboard = gc.copy_to_clipboard(sheet_rect);
 
         // paste using plain_text
         let mut gc = GridController::default();
@@ -509,8 +511,19 @@ mod test {
 
         assert_eq!(gc.undo_stack.len(), 1);
 
-        let rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 1 });
-        let clipboard = gc.copy_to_clipboard(sheet_id, rect);
+        let sheet_rect = SheetRect::new_span(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+        );
+        let clipboard = gc.copy_to_clipboard(sheet_rect);
 
         // paste using html
         let mut gc = GridController::default();
@@ -570,8 +583,12 @@ mod test {
 
         set_borders(sheet);
 
-        let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
-        let clipboard = gc.copy_to_clipboard(sheet_id, rect);
+        let sheet_rect = SheetRect::single_pos(SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        });
+        let clipboard = gc.copy_to_clipboard(sheet_rect);
 
         gc.paste_from_clipboard(
             sheet_id,
@@ -608,9 +625,8 @@ mod test {
             line: CellBorderLine::Line1,
         };
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 });
-        let region = sheet.region(rect);
-        let borders = generate_borders(sheet, &region, selection, Some(style));
-        set_region_borders(sheet, vec![region.clone()], borders);
+        let borders = generate_borders(sheet, &vec![rect], selection, Some(style));
+        set_rects_borders(sheet, &vec![rect], borders);
 
         // weird: can't test them by comparing arrays since the order is seemingly random
         let render = gc.get_render_borders(sheet_id.to_string());
@@ -644,10 +660,18 @@ mod test {
                 && border.style == style
         }));
 
-        let (_, html) = gc.copy_to_clipboard(
-            sheet_id,
-            Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 }),
-        );
+        let (_, html) = gc.copy_to_clipboard(SheetRect::new_span(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            SheetPos {
+                x: 4,
+                y: 4,
+                sheet_id,
+            },
+        ));
         let _ = gc.paste_html(sheet_id, Pos { x: 0, y: 10 }, html, None);
 
         let render = gc.get_render_borders(sheet_id.to_string());

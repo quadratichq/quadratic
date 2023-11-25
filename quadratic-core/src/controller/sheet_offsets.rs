@@ -17,20 +17,17 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         if let Some(transient_resize) = transient_resize {
-            let sheet = self.grid.sheet_mut_from_id(sheet_id);
             let mut ops = vec![];
-            if let Some(column) = transient_resize.column {
-                let (column, _) = sheet.get_or_create_column(column);
+            if let Some(x) = transient_resize.column {
                 ops.push(Operation::ResizeColumn {
                     sheet_id,
-                    column: column.id,
+                    column: x,
                     new_size: transient_resize.new_size,
                 });
             } else if let Some(row) = transient_resize.row {
-                let row = sheet.get_or_create_row(row);
                 ops.push(Operation::ResizeRow {
                     sheet_id,
-                    row: row.id,
+                    row,
                     new_size: transient_resize.new_size,
                 });
             }

@@ -115,12 +115,12 @@ impl GridController {
     pub fn js_delete_cell_values(
         &mut self,
         sheet_id: String,
-        region: &Rect,
+        rect: &Rect,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.delete_cell_values(sheet_id, *region, cursor),
+            &self.delete_cell_values(rect.to_sheet_rect(sheet_id), cursor),
         )?)
     }
 

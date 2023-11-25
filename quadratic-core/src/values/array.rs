@@ -7,11 +7,7 @@ use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
 use super::{ArraySize, Axis, CellValue, Spanned, Value};
-use crate::{
-    controller::operation::Operation,
-    grid::{CellRef, Sheet},
-    CodeResult, ErrorMsg, Pos,
-};
+use crate::{controller::operation::Operation, grid::Sheet, CodeResult, ErrorMsg, SheetPos};
 
 #[macro_export]
 macro_rules! array {
@@ -265,42 +261,30 @@ impl Array {
 
     // todo: this is super complicated; we need to move the number formats into CellValue to simplify this
     pub fn from_string_list(
-        start: CellRef,
+        start: SheetPos,
         sheet: &mut Sheet,
         v: Vec<Vec<String>>,
     ) -> (Option<Array>, Vec<Operation>) {
         let size = ArraySize::new(v[0].len() as u32, v.len() as u32).unwrap();
         let values;
-        let pos = sheet.cell_ref_to_pos(start);
-        if let Some(pos) = pos {
-            let mut ops = vec![];
-            let Pos { mut x, mut y } = pos;
-            values = v
-                .iter()
-                .flatten()
-                .map(|s| {
-                    let column_id = sheet.get_or_create_column(x).0.id;
-                    let row_id = sheet.get_or_create_row(y).id;
-                    let cell_ref = CellRef {
-                        sheet: start.sheet,
-                        column: column_id,
-                        row: row_id,
-                    };
-                    x += 1;
-                    if x == v[0].len() as i64 + pos.x {
-                        x = pos.x;
-                        y += 1;
-                    }
-                    let (value, updated_ops) = CellValue::from_string(s, cell_ref, sheet);
-                    ops.extend(updated_ops);
-                    value
-                })
-                .collect();
-            return (Some(Array { size, values }), ops);
-        }
-
-        // return nothing when pos is not defined
-        (None, vec![])
+        let mut ops = vec![];
+        let mut x = start.x;
+        let mut y = start.y;
+        values = v
+            .iter()
+            .flatten()
+            .map(|s| {
+                x += 1;
+                if x == v[0].len() as i64 + start.x {
+                    x = start.x;
+                    y += 1;
+                }
+                let (value, updated_ops) = CellValue::from_string(s, start.into(), sheet);
+                ops.extend(updated_ops);
+                value
+            })
+            .collect();
+        (Some(Array { size, values }), ops)
     }
 }
 

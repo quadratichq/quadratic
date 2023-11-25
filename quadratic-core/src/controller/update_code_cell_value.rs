@@ -8,125 +8,112 @@ use crate::{
         transaction_summary::{CellSheetsModified, TransactionSummary},
         GridController,
     },
-    grid::{CellRef, CodeCellValue, Sheet},
-    Pos, Rect, Value,
+    grid::{CodeCellValue, Sheet},
+    Pos, SheetPos, SheetRect, Value,
 };
 
 /// updates code cell value
 /// returns true if the code cell was successful
 pub fn update_code_cell_value(
     grid_controller: &mut GridController,
-    cell_ref: CellRef,
+    sheet_pos: SheetPos,
     updated_code_cell_value: Option<CodeCellValue>,
-    cells_to_compute: &mut IndexSet<CellRef>,
+    cells_to_compute: &mut IndexSet<SheetPos>,
     reverse_operations: &mut Vec<Operation>,
     summary: &mut TransactionSummary,
 ) -> bool {
     let mut success = false;
     summary.save = true;
-    let sheet = grid_controller.grid.sheet_mut_from_id(cell_ref.sheet);
-    if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-        let old_code_cell_value = sheet.set_code_cell_value(pos, updated_code_cell_value.clone());
-        if let Some(updated_code_cell_value) = updated_code_cell_value.clone() {
-            if let Some(output) = updated_code_cell_value.output {
-                match output.result.output_value() {
-                    Some(output_value) => {
-                        success = true;
-                        match output_value {
-                            Value::Array(array) => {
-                                for x in 0..array.width() {
-                                    let column_id =
-                                        sheet.get_or_create_column(pos.x + x as i64).0.id;
-                                    for y in 0..array.height() {
-                                        summary.cell_sheets_modified.insert(
-                                            CellSheetsModified::new(
-                                                sheet.id,
-                                                Pos {
-                                                    x: pos.x,
-                                                    y: pos.y + y as i64,
-                                                },
-                                            ),
-                                        );
-                                        let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
-                                        // add all but the first cell to the compute cycle
-                                        if x != 0 || y != 0 {
-                                            cells_to_compute.insert(CellRef {
-                                                sheet: sheet.id,
-                                                column: column_id,
-                                                row: row_id,
-                                            });
-                                        }
+    let sheet = grid_controller.grid.sheet_mut_from_id(sheet_pos.sheet_id);
+    let old_code_cell_value =
+        sheet.set_code_cell_value(sheet_pos.into(), updated_code_cell_value.clone());
+    if let Some(updated_code_cell_value) = updated_code_cell_value.clone() {
+        if let Some(output) = updated_code_cell_value.output {
+            match output.result.output_value() {
+                Some(output_value) => {
+                    success = true;
+                    match output_value {
+                        Value::Array(array) => {
+                            for x in 0..array.width() {
+                                for y in 0..array.height() {
+                                    summary.cell_sheets_modified.insert(CellSheetsModified::new(
+                                        SheetPos {
+                                            x: sheet_pos.x,
+                                            y: sheet_pos.y + y as i64,
+                                            sheet_id: sheet.id,
+                                        },
+                                    ));
+                                    // add all but the first cell to the compute cycle
+                                    if x != 0 || y != 0 {
+                                        cells_to_compute.insert(sheet_pos);
                                     }
                                 }
                             }
-                            Value::Single(_) => {
-                                summary
-                                    .cell_sheets_modified
-                                    .insert(CellSheetsModified::new(sheet.id, pos));
-                            }
-                        };
-                    }
-                    None => {
-                        summary
-                            .cell_sheets_modified
-                            .insert(CellSheetsModified::new(sheet.id, pos));
-                    }
-                };
-            }
+                        }
+                        Value::Single(_) => {
+                            summary
+                                .cell_sheets_modified
+                                .insert(CellSheetsModified::new(sheet_pos));
+                        }
+                    };
+                }
+                None => {
+                    summary
+                        .cell_sheets_modified
+                        .insert(CellSheetsModified::new(sheet_pos));
+                }
+            };
         }
+    }
 
-        // updates summary.thumbnail_dirty flag
-        let sheet = grid_controller.grid.sheet_from_id(cell_ref.sheet);
-        if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-            if let Some(updated_code_cell_value) = updated_code_cell_value.as_ref() {
-                if let Some(output) = updated_code_cell_value.output.as_ref() {
-                    match output.result.output_value() {
-                        Some(output_value) => {
-                            match output_value {
-                                Value::Array(array) => {
-                                    summary.generate_thumbnail = summary.generate_thumbnail
-                                        || grid_controller.thumbnail_dirty_rect(
-                                            cell_ref.sheet,
-                                            Rect::new_span(
-                                                Pos { x: pos.x, y: pos.y },
-                                                Pos {
-                                                    x: pos.x + array.width() as i64,
-                                                    y: pos.y + array.height() as i64,
-                                                },
-                                            ),
-                                        );
-                                }
-                                Value::Single(_) => {
-                                    summary.generate_thumbnail = summary.generate_thumbnail
-                                        || grid_controller.thumbnail_dirty_pos(sheet.id, pos);
-                                }
-                            };
-                        }
-                        None => {
+    // updates summary.thumbnail_dirty flag
+    let sheet = grid_controller.grid.sheet_from_id(sheet_pos.sheet_id);
+    if let Some(updated_code_cell_value) = updated_code_cell_value.as_ref() {
+        if let Some(output) = updated_code_cell_value.output.as_ref() {
+            match output.result.output_value() {
+                Some(output_value) => {
+                    match output_value {
+                        Value::Array(array) => {
                             summary.generate_thumbnail = summary.generate_thumbnail
-                                || grid_controller.thumbnail_dirty_pos(sheet.id, pos);
+                                || grid_controller.thumbnail_dirty_rect(SheetRect::new_span(
+                                    sheet_pos,
+                                    SheetPos {
+                                        x: sheet_pos.x + array.width() as i64,
+                                        y: sheet_pos.y + array.height() as i64,
+                                        sheet_id: sheet.id,
+                                    },
+                                ));
                         }
-                    }
+                        Value::Single(_) => {
+                            summary.generate_thumbnail = summary.generate_thumbnail
+                                || grid_controller.thumbnail_dirty_pos(sheet_pos);
+                        }
+                    };
+                }
+                None => {
+                    summary.generate_thumbnail = summary.generate_thumbnail
+                        || grid_controller.thumbnail_dirty_pos(sheet_pos);
                 }
             }
         }
-
-        let sheet = grid_controller.grid.sheet_mut_from_id(cell_ref.sheet);
-        fetch_code_cell_difference(
-            sheet,
-            pos,
-            old_code_cell_value.clone(),
-            updated_code_cell_value,
-            summary,
-            cells_to_compute,
-        );
-
-        reverse_operations.push(Operation::SetCellCode {
-            cell_ref,
-            code_cell_value: old_code_cell_value,
-        });
-        summary.code_cells_modified.insert(sheet.id);
     }
+
+    let sheet = grid_controller.grid.sheet_mut_from_id(sheet_pos.sheet_id);
+    fetch_code_cell_difference(
+        sheet,
+        sheet_pos.into(),
+        old_code_cell_value.clone(),
+        updated_code_cell_value,
+        summary,
+        cells_to_compute,
+    );
+
+    reverse_operations.push(Operation::SetCellCode {
+        sheet_pos,
+        code_cell_value: old_code_cell_value,
+    });
+    summary.code_cells_modified.insert(sheet.id);
+
     success
 }
 
@@ -137,7 +124,7 @@ pub fn fetch_code_cell_difference(
     old_code_cell_value: Option<CodeCellValue>,
     new_code_cell_value: Option<CodeCellValue>,
     summary: &mut TransactionSummary,
-    cells_to_compute: &mut IndexSet<CellRef>,
+    cells_to_compute: &mut IndexSet<SheetPos>,
 ) {
     let (old_w, old_h) = if let Some(old_code_cell_value) = old_code_cell_value {
         let size = old_code_cell_value.output_size();
@@ -154,8 +141,7 @@ pub fn fetch_code_cell_difference(
 
     if old_w > new_w {
         for x in new_w..old_w {
-            let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
-            let column_id = column.id;
+            let column = sheet.get_or_create_column(pos.x + x as i64);
 
             // todo: temporary way of cleaning up deleted spills. There needs to be a spill checker here....
             column.spills.remove_range(Range {
@@ -163,26 +149,24 @@ pub fn fetch_code_cell_difference(
                 end: pos.y + new_h as i64 + 1,
             });
             for y in 0..new_h {
-                let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
                 let pos = Pos {
                     x: pos.x + x as i64,
                     y: pos.y + y as i64,
                 };
                 summary
                     .cell_sheets_modified
-                    .insert(CellSheetsModified::new(sheet.id, pos));
-                cells_to_compute.insert(CellRef {
-                    sheet: sheet.id,
-                    column: column_id,
-                    row: row_id,
+                    .insert(CellSheetsModified::new(pos.to_sheet_pos(sheet.id)));
+                cells_to_compute.insert(SheetPos {
+                    x: x as i64,
+                    y: y as i64,
+                    sheet_id: sheet.id,
                 });
             }
         }
     }
     if old_h > new_h {
         for x in 0..old_w {
-            let (_, column) = sheet.get_or_create_column(pos.x + x as i64);
-            let column_id = column.id;
+            let column = sheet.get_or_create_column(pos.x + x as i64);
 
             // todo: temporary way of cleaning up deleted spills. There needs to be a spill checker here....
             column.spills.remove_range(Range {
@@ -190,18 +174,17 @@ pub fn fetch_code_cell_difference(
                 end: pos.y + old_h as i64 + 1,
             });
             for y in new_h..old_h {
-                let row_id = sheet.get_or_create_row(pos.y + y as i64).id;
                 let pos = Pos {
                     x: pos.x + x as i64,
                     y: pos.y + y as i64,
                 };
                 summary
                     .cell_sheets_modified
-                    .insert(CellSheetsModified::new(sheet.id, pos));
-                cells_to_compute.insert(CellRef {
-                    sheet: sheet.id,
-                    column: column_id,
-                    row: row_id,
+                    .insert(CellSheetsModified::new(pos.to_sheet_pos(sheet.id)));
+                cells_to_compute.insert(SheetPos {
+                    x: x as i64,
+                    y: y as i64,
+                    sheet_id: sheet.id,
                 });
             }
         }
@@ -210,6 +193,8 @@ pub fn fetch_code_cell_difference(
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashSet;
+
     use indexmap::IndexSet;
 
     use crate::{
@@ -237,7 +222,7 @@ mod test {
                     output_value: Value::Array(Array::new_empty(
                         ArraySize::try_from((2, 3)).expect("failed to create array"),
                     )),
-                    cells_accessed: Vec::new(),
+                    cells_accessed: HashSet::new(),
                 },
             }),
         });
@@ -253,7 +238,7 @@ mod test {
                     output_value: Value::Array(Array::new_empty(
                         ArraySize::try_from((1, 2)).expect("failed to create array"),
                     )),
-                    cells_accessed: Vec::new(),
+                    cells_accessed: HashSet::new(),
                 },
             }),
         });
@@ -292,7 +277,7 @@ mod test {
                     output_value: Value::Array(Array::new_empty(
                         ArraySize::try_from((5, 6)).expect("failed to create array"),
                     )),
-                    cells_accessed: Vec::new(),
+                    cells_accessed: HashSet::new(),
                 },
             }),
         });

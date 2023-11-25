@@ -2,10 +2,7 @@ use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    grid::{RegionRef, Sheet, SheetId},
-    Pos,
-};
+use crate::{grid::SheetId, SheetPos, SheetRect};
 
 // keep this in sync with CellsTypes.ts
 pub const CELL_SHEET_WIDTH: u32 = 20;
@@ -20,26 +17,30 @@ pub struct CellSheetsModified {
 }
 
 impl CellSheetsModified {
-    pub fn new(sheet_id: SheetId, pos: Pos) -> Self {
-        let x = (pos.x as f64 / CELL_SHEET_WIDTH as f64).floor() as i32;
-        let y = (pos.y as f64 / CELL_SHEET_HEIGHT as f64).floor() as i32;
+    pub fn new(sheet_pos: SheetPos) -> Self {
+        let x = (sheet_pos.x as f64 / CELL_SHEET_WIDTH as f64).floor() as i32;
+        let y = (sheet_pos.y as f64 / CELL_SHEET_HEIGHT as f64).floor() as i32;
         Self {
-            sheet_id: sheet_id.to_string(),
+            sheet_id: sheet_pos.sheet_id.to_string(),
             x,
             y,
         }
     }
 
-    pub fn add_region(
+    // todo: convert to SheetRect and improve modified rectangle calculation
+    pub fn add_rect(
         cells_sheet_modified: &mut HashSet<CellSheetsModified>,
-        sheet: &Sheet,
-        region: &RegionRef,
+        sheet_rect: &SheetRect,
     ) {
-        region.iter().for_each(|cell_ref| {
-            if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                cells_sheet_modified.insert(Self::new(sheet.id, pos));
+        for y in sheet_rect.y_range() {
+            for x in sheet_rect.x_range() {
+                cells_sheet_modified.insert(Self::new(SheetPos {
+                    x,
+                    y,
+                    sheet_id: sheet_rect.sheet_id,
+                }));
             }
-        });
+        }
     }
 }
 

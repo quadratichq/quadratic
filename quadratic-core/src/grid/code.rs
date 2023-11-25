@@ -1,9 +1,10 @@
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use super::CellRef;
-use crate::{ArraySize, CellValue, Error, Value};
+use crate::{ArraySize, CellValue, Error, SheetPos, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CodeCellValue {
@@ -30,7 +31,7 @@ impl CodeCellValue {
         }
     }
 
-    pub fn cells_accessed_copy(&self) -> Option<Vec<CellRef>> {
+    pub fn cells_accessed_copy(&self) -> Option<HashSet<SheetPos>> {
         self.output.as_ref()?.cells_accessed().cloned()
     }
 
@@ -69,7 +70,7 @@ impl CodeCellRunOutput {
         self.result.output_value()
     }
 
-    pub fn cells_accessed(&self) -> Option<&Vec<CellRef>> {
+    pub fn cells_accessed(&self) -> Option<&HashSet<SheetPos>> {
         match &self.result {
             CodeCellRunResult::Ok { cells_accessed, .. } => Some(cells_accessed),
             CodeCellRunResult::Err { .. } => None,
@@ -82,7 +83,7 @@ impl CodeCellRunOutput {
 pub enum CodeCellRunResult {
     Ok {
         output_value: Value,
-        cells_accessed: Vec<CellRef>,
+        cells_accessed: HashSet<SheetPos>,
     },
     Err {
         error: Error,

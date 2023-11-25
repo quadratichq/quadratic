@@ -5,7 +5,8 @@ use std::collections::HashSet;
 
 use indexmap::IndexSet;
 
-use crate::grid::{CellRef, CodeCellLanguage, CodeCellValue, SheetId};
+use crate::grid::{CodeCellLanguage, CodeCellValue, SheetId};
+use crate::SheetPos;
 
 use crate::controller::{
     operation::Operation, transaction_summary::TransactionSummary, transactions::TransactionType,
@@ -16,9 +17,9 @@ use crate::controller::{
 #[derive(Debug, Default, Clone)]
 pub struct TransactionInProgress {
     reverse_operations: Vec<Operation>,
-    cells_to_compute: IndexSet<CellRef>,
+    cells_to_compute: IndexSet<SheetPos>,
     pub cursor: Option<String>,
-    cells_accessed: Vec<CellRef>,
+    cells_accessed: HashSet<SheetPos>,
     pub summary: TransactionSummary,
     sheets_with_changed_bounds: HashSet<SheetId>,
     pub transaction_type: TransactionType,
@@ -28,7 +29,7 @@ pub struct TransactionInProgress {
 
     // save code_cell info for async calls
     current_code_cell: Option<CodeCellValue>,
-    pub current_cell_ref: Option<CellRef>,
+    pub current_cell_pos: Option<SheetPos>,
     waiting_for_async: Option<CodeCellLanguage>,
     // true when transaction completes
     pub complete: bool,

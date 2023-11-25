@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::grid::file::v1_4::schema as v1_4;
+use crate::grid::{file::v1_4::schema as v1_4, SheetId};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -12,6 +12,12 @@ pub struct GridSchema {
 
 pub type Pos = v1_4::Pos;
 
+impl From<crate::Pos> for Pos {
+    fn from(pos: crate::Pos) -> Self {
+        Self { x: pos.x, y: pos.y }
+    }
+}
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SheetPos {
@@ -20,8 +26,19 @@ pub struct SheetPos {
     pub sheet_id: Id,
 }
 
+impl From<crate::SheetPos> for SheetPos {
+    fn from(pos: crate::SheetPos) -> Self {
+        Self {
+            x: pos.x,
+            y: pos.y,
+            sheet_id: pos.sheet_id.into(),
+        }
+    }
+}
+
 pub type Offsets = v1_4::Offsets;
-pub type Borders = v1_4::Borders;
+
+pub type Borders = HashMap<i64, Vec<(i64, Vec<Option<CellBorder>>)>>;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -34,14 +51,49 @@ pub struct Sheet {
     pub columns: Vec<(i64, Column)>,
     pub borders: Borders,
     #[serde(rename = "code_cells")]
-    pub code_cells: Vec<(SheetPos, CodeCellValue)>,
+    pub code_cells: Vec<(Pos, CodeCellValue)>,
 }
 
 pub type Id = v1_4::Id;
 
-pub type CodeCellValue = v1_4::CodeCellValue;
-pub type CodeCellRunOutput = v1_4::CodeCellRunOutput;
-pub type CodeCellRunResult = v1_4::CodeCellRunResult;
+impl From<SheetId> for Id {
+    fn from(id: SheetId) -> Self {
+        Self { id: id.to_string() }
+    }
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct CodeCellValue {
+    pub language: String,
+    pub code_string: String,
+    pub formatted_code_string: Option<String>,
+    pub last_modified: String,
+    pub output: Option<CodeCellRunOutput>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CodeCellRunOutput {
+    pub std_out: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub std_err: Option<String>,
+    pub result: CodeCellRunResult,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[serde(untagged)]
+pub enum CodeCellRunResult {
+    Ok {
+        output_value: OutputValue,
+        cells_accessed: Vec<SheetPos>,
+    },
+    Err {
+        error: Error,
+    },
+}
+
 pub type OutputValue = v1_4::OutputValue;
 pub type OutputArray = v1_4::OutputArray;
 pub type OutputSize = v1_4::OutputSize;
@@ -71,10 +123,10 @@ pub struct Column {
 }
 
 pub type ColumnValues = v1_4::ColumnValues;
-pub type ColumnContent = v1_4::ColumnContent;
+// pub type ColumnContent = v1_4::ColumnContent;
 pub type ColumnValue = v1_4::ColumnValue;
 pub type ColumnFormatType<T> = v1_4::ColumnFormatType<T>;
 pub type ColumnFormatContent<T> = v1_4::ColumnFormatContent<T>;
 pub type NumericFormat = v1_4::NumericFormat;
 pub type CellBorder = v1_4::CellBorder;
-pub type CellSide = v1_4::CellSide;
+// pub type CellSide = v1_4::CellSide;

@@ -1,9 +1,7 @@
 use crate::{
     controller::{update_code_cell_value::update_code_cell_value, GridController},
     formulas::{parse_formula, Ctx},
-    grid::{
-        CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, SheetId,
-    },
+    grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, SheetId},
     Pos, SheetPos,
 };
 
@@ -16,7 +14,6 @@ impl TransactionInProgress {
         code_string: String,
         language: CodeCellLanguage,
         pos: Pos,
-        cell_ref: CellRef,
         sheet_id: SheetId,
     ) {
         let mut ctx = Ctx::new(
@@ -31,18 +28,7 @@ impl TransactionInProgress {
             Ok(parsed) => {
                 match parsed.eval(&mut ctx) {
                     Ok(value) => {
-                        self.cells_accessed = ctx
-                            .cells_accessed
-                            .iter()
-                            .map(|sheet_pos| {
-                                let sheet = grid_controller
-                                    .grid_mut()
-                                    .sheet_mut_from_id(sheet_pos.sheet_id);
-                                let pos = (*sheet_pos).into();
-                                sheet.get_or_create_cell_ref(pos)
-                            })
-                            .collect();
-
+                        self.cells_accessed = ctx.cells_accessed.clone();
                         let updated_code_cell_value = CodeCellValue {
                             language,
                             code_string,
@@ -52,7 +38,11 @@ impl TransactionInProgress {
                                 std_err: None,
                                 result: CodeCellRunResult::Ok {
                                     output_value: value,
-                                    cells_accessed: self.cells_accessed.clone(),
+                                    cells_accessed: self
+                                        .cells_accessed
+                                        .clone()
+                                        .into_iter()
+                                        .collect(),
                                 },
                             }),
                             // todo
@@ -60,7 +50,7 @@ impl TransactionInProgress {
                         };
                         if update_code_cell_value(
                             grid_controller,
-                            cell_ref,
+                            pos.to_sheet_pos(sheet_id),
                             Some(updated_code_cell_value),
                             &mut self.cells_to_compute,
                             &mut self.reverse_operations,

@@ -9,13 +9,13 @@ use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
 use super::formatting::*;
-use super::{Block, BlockContent, CellRef, CellValueBlockContent, SameValue};
-use crate::IsBlank;
+use super::{Block, BlockContent, CellValueBlockContent, SameValue};
+use crate::{IsBlank, SheetPos};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Column {
     pub values: ColumnData<CellValueBlockContent>,
-    pub spills: ColumnData<SameValue<CellRef>>,
+    pub spills: ColumnData<SameValue<SheetPos>>,
 
     pub align: ColumnData<SameValue<CellAlign>>,
     pub wrap: ColumnData<SameValue<CellWrap>>,

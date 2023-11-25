@@ -2,8 +2,8 @@ use core::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    grid::{CellRef, CodeCellValue, ColumnId, RegionRef, RowId, Sheet, SheetBorders, SheetId},
-    Array,
+    grid::{CodeCellValue, Sheet, SheetBorders, SheetId},
+    Array, SheetPos, SheetRect,
 };
 
 use super::formatting::CellFmtArray;
@@ -12,15 +12,15 @@ use super::formatting::CellFmtArray;
 pub enum Operation {
     None,
     SetCellValues {
-        region: RegionRef,
+        rect: SheetRect,
         values: Array,
     },
     SetCellCode {
-        cell_ref: CellRef,
+        sheet_pos: SheetPos,
         code_cell_value: Option<CodeCellValue>,
     },
     SetCellFormats {
-        region: RegionRef,
+        rect: SheetRect,
         attr: CellFmtArray,
     },
     AddSheet {
@@ -30,7 +30,7 @@ pub enum Operation {
         sheet_id: SheetId,
     },
     SetBorders {
-        region: RegionRef,
+        rect: SheetRect,
         borders: SheetBorders,
     },
     SetSheetName {
@@ -47,12 +47,12 @@ pub enum Operation {
     },
     ResizeColumn {
         sheet_id: SheetId,
-        column: ColumnId,
+        column: i64,
         new_size: f64,
     },
     ResizeRow {
         sheet_id: SheetId,
-        row: RowId,
+        row: i64,
         new_size: f64,
     },
 }

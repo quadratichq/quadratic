@@ -29,6 +29,14 @@ pub struct Pos {
 impl Pos {
     pub const ORIGIN: Self = Self { x: 0, y: 0 };
 
+    pub fn to_sheet_pos(&self, sheet_id: SheetId) -> SheetPos {
+        SheetPos {
+            x: self.x,
+            y: self.y,
+            sheet_id,
+        }
+    }
+
     /// Returns which quadrant the cell position is in.
     pub fn quadrant(self) -> (i64, i64) {
         (
@@ -94,6 +102,14 @@ impl Rect {
                 x: max(pos1.x, pos2.x),
                 y: max(pos1.y, pos2.y),
             },
+        }
+    }
+
+    pub fn to_sheet_rect(&self, sheet_id: SheetId) -> SheetRect {
+        SheetRect {
+            min: self.min,
+            max: self.max,
+            sheet_id,
         }
     }
 
@@ -215,6 +231,38 @@ impl SheetRect {
             max: Pos { x: pos.x, y: pos.y },
         }
     }
+
+    pub fn new_pos_span(pos1: Pos, pos2: Pos, sheet_id: SheetId) -> SheetRect {
+        use std::cmp::{max, min};
+        SheetRect {
+            min: Pos {
+                x: min(pos1.x, pos2.x),
+                y: min(pos1.y, pos2.y),
+            },
+            max: Pos {
+                x: max(pos1.x, pos2.x),
+                y: max(pos1.y, pos2.y),
+            },
+            sheet_id,
+        }
+    }
+
+    pub fn new_span(pos1: SheetPos, pos2: SheetPos) -> SheetRect {
+        use std::cmp::{max, min};
+        assert!(pos1.sheet_id == pos2.sheet_id, "sheet mismatch");
+        SheetRect {
+            min: Pos {
+                x: min(pos1.x, pos2.x),
+                y: min(pos1.y, pos2.y),
+            },
+            max: Pos {
+                x: max(pos1.x, pos2.x),
+                y: max(pos1.y, pos2.y),
+            },
+            sheet_id: pos1.sheet_id,
+        }
+    }
+
     /// Returns whether a position is contained within the rectangle.
     pub fn contains(self, pos: SheetPos) -> bool {
         self.sheet_id == pos.sheet_id
@@ -238,6 +286,19 @@ impl SheetRect {
     pub fn y_range(self) -> Range<i64> {
         self.min.y..self.max.y + 1
     }
+    pub fn width(&self) -> usize {
+        (self.max.x - self.min.x + 1) as usize
+    }
+    pub fn height(&self) -> usize {
+        (self.max.y - self.min.y + 1) as usize
+    }
+    pub fn len(&self) -> usize {
+        self.width() * self.height()
+    }
+    pub fn size(&self) -> ArraySize {
+        ArraySize::new(self.width() as u32, self.height() as u32)
+            .expect("empty rectangle has no size")
+    }
 }
 impl fmt::Display for SheetRect {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -246,6 +307,15 @@ impl fmt::Display for SheetRect {
             "Sheet: {}, Min: {}, Max: {}",
             self.sheet_id, self.min, self.max,
         )
+    }
+}
+
+impl Into<Rect> for SheetRect {
+    fn into(self) -> Rect {
+        Rect {
+            min: self.min,
+            max: self.max,
+        }
     }
 }
 

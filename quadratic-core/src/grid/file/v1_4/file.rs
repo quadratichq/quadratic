@@ -1,10 +1,10 @@
 use crate::grid::file::v1_4::schema as v1_4;
-use crate::grid::file::v1_5::schema as v1_5;
+use crate::grid::file::v1_5::schema::{self as v1_5};
 use anyhow::Result;
 
 // todo: use Result instead of panicking
 
-fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, v1_5::Column) {
+fn upgrade_column(x: &i64, column: &v1_4::Column) -> (i64, v1_5::Column) {
     (
         x.clone(),
         v1_5::Column {
@@ -27,7 +27,7 @@ fn upgrade_columns(sheet: &v1_4::Sheet) -> Vec<(i64, v1_5::Column)> {
     sheet
         .columns
         .iter()
-        .map(|(x, column)| upgrade_column(sheet, x, column))
+        .map(|(x, column)| upgrade_column(x, column))
         .collect()
 }
 
@@ -51,14 +51,86 @@ fn cell_ref_to_sheet_pos(sheet: &v1_4::Sheet, cell_ref: &v1_4::CellRef) -> v1_5:
     }
 }
 
-fn upgrade_code_cells(sheet: &v1_4::Sheet) -> Vec<(v1_5::SheetPos, v1_5::CodeCellValue)> {
-    let code_cells = sheet.code_cells;
+fn cell_ref_to_pos(sheet: &v1_4::Sheet, cell_ref: &v1_4::CellRef) -> v1_5::Pos {
+    let x = sheet
+        .columns
+        .iter()
+        .find(|column| column.1.id == cell_ref.column)
+        .unwrap()
+        .0;
+    let y = sheet
+        .rows
+        .iter()
+        .find(|row| row.1 == cell_ref.row)
+        .unwrap()
+        .0;
+    v1_5::Pos { x, y }
+}
+
+fn column_id_to_x(sheet: &v1_4::Sheet, column_id: &String) -> i64 {
+    sheet
+        .columns
+        .iter()
+        .find(|column| column.1.id.id == *column_id)
+        .unwrap()
+        .0
+}
+
+fn upgrade_code_cells(sheet: &v1_4::Sheet) -> Vec<(v1_5::Pos, v1_5::CodeCellValue)> {
     sheet
         .code_cells
+        .clone()
         .into_iter()
         .map(|(cell_ref, code_cell_value)| {
-            let sheet_pos = cell_ref_to_sheet_pos(sheet, &cell_ref);
-            (sheet_pos, code_cell_value)
+            let pos = cell_ref_to_pos(sheet, &cell_ref);
+            (
+                pos,
+                v1_5::CodeCellValue {
+                    language: code_cell_value.language,
+                    code_string: code_cell_value.code_string,
+                    formatted_code_string: code_cell_value.formatted_code_string,
+                    last_modified: code_cell_value.last_modified,
+                    output: code_cell_value
+                        .output
+                        .map(|output| v1_5::CodeCellRunOutput {
+                            std_out: output.std_out,
+                            std_err: output.std_err,
+                            result: match output.result {
+                                v1_4::CodeCellRunResult::Ok {
+                                    output_value,
+                                    cells_accessed,
+                                } => v1_5::CodeCellRunResult::Ok {
+                                    output_value: match output_value {
+                                        v1_4::OutputValue::Single(value) => {
+                                            v1_5::OutputValue::Single(value)
+                                        }
+                                        v1_4::OutputValue::Array(array) => {
+                                            v1_5::OutputValue::Array(array)
+                                        }
+                                    },
+                                    cells_accessed: cells_accessed
+                                        .into_iter()
+                                        .map(|cell_ref| cell_ref_to_sheet_pos(sheet, &cell_ref))
+                                        .collect(),
+                                },
+                                v1_4::CodeCellRunResult::Err { error } => {
+                                    v1_5::CodeCellRunResult::Err { error }
+                                }
+                            },
+                        }),
+                },
+            )
+        })
+        .collect()
+}
+
+fn upgrade_borders(sheet: &v1_4::Sheet) -> v1_5::Borders {
+    sheet
+        .borders
+        .iter()
+        .map(|(column_id, borders)| {
+            let x = column_id_to_x(sheet, column_id);
+            (x, borders.clone())
         })
         .collect()
 }
@@ -72,7 +144,7 @@ fn upgrade_sheet(sheet: &v1_4::Sheet) -> v1_5::Sheet {
         order: sheet.order.clone(),
         offsets: sheet.offsets.clone(),
         columns,
-        borders: sheet.borders.clone(),
+        borders: upgrade_borders(sheet),
         code_cells: upgrade_code_cells(sheet),
     }
 }

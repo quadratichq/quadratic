@@ -2,7 +2,7 @@ use std::{self};
 
 use std::collections::{HashMap, HashSet};
 
-use crate::grid::{CellRef, Grid, Sheet};
+use crate::grid::Grid;
 use crate::SheetPos;
 
 use super::GridController;
@@ -19,28 +19,27 @@ impl Dependencies {
             dependencies: HashMap::new(),
         };
         grid.sheets().iter().for_each(|sheet| {
-            sheet.code_cells.iter().for_each(|(cell_ref, code_cell)| {
-                if let Some(output) = code_cell.output.as_ref() {
-                    if let Some(cells_accessed) = output.cells_accessed() {
-                        cells_accessed.iter().for_each(|cell_accessed| {
-                            // cannot depend on ourselves
-                            if cell_ref != cell_accessed {
-                                if let Some(pos) = sheet.cell_ref_to_pos(*cell_accessed) {
-                                    let sheet_pos = SheetPos {
-                                        x: pos.x,
-                                        y: pos.y,
-                                        sheet_id: sheet.id,
-                                    };
+            sheet
+                .code_cells
+                .iter()
+                .for_each(|(code_cell_pos, code_cell)| {
+                    if let Some(output) = &code_cell.output {
+                        if let Some(cells_accessed) = &output.cells_accessed() {
+                            cells_accessed.iter().for_each(|cell_accessed| {
+                                // cannot depend on ourselves
+                                if sheet.id != cell_accessed.sheet_id
+                                    || code_cell_pos.x != cell_accessed.x
+                                    || code_cell_pos.y != cell_accessed.y
+                                {
                                     deps.dependencies
-                                        .entry(sheet_pos)
+                                        .entry(*cell_accessed)
                                         .or_default()
-                                        .insert(sheet_pos);
+                                        .insert(code_cell_pos.to_sheet_pos(sheet.id));
                                 }
-                            }
-                        });
+                            });
+                        }
                     }
-                }
-            });
+                });
         });
         deps
     }
@@ -62,9 +61,8 @@ impl Dependencies {
         }
     }
 
-    pub fn to_debug(cell_ref: CellRef, dependencies: &HashSet<SheetPos>, sheet: &Sheet) -> String {
-        let pos = sheet.cell_ref_to_pos(cell_ref);
-        let mut s = format!("[Dependent Cells] for {}: ", pos.unwrap());
+    pub fn to_debug(sheet_pos: SheetPos, dependencies: &HashSet<SheetPos>) -> String {
+        let mut s = format!("[Dependent Cells] for {}: ", sheet_pos);
         for dep in dependencies {
             s.push_str(&format!("{}, ", dep));
         }
@@ -80,8 +78,8 @@ impl GridController {
     pub fn update_dependent_cells(
         &mut self,
         cell: SheetPos,
-        deps: Option<Vec<SheetPos>>,
-        old_deps: Option<Vec<SheetPos>>,
+        deps: Option<HashSet<SheetPos>>,
+        old_deps: Option<HashSet<SheetPos>>,
     ) {
         if let Some(old_deps) = old_deps {
             for old_dep in old_deps {
@@ -101,6 +99,8 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashSet;
+
     use crate::{
         grid::{CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Grid},
         CellValue, Pos, SheetPos, Value,
@@ -114,7 +114,7 @@ mod test {
         let sheet = cdc.sheet_mut_from_id(sheet_id);
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
         sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
-        let mut cells_accessed = vec![];
+        let mut cells_accessed = HashSet::new();
         let pos00 = SheetPos {
             sheet_id,
             x: 0,
@@ -125,12 +125,8 @@ mod test {
             x: 0,
             y: 1,
         };
-        cells_accessed.push(pos00);
-        cells_accessed.push(pos01);
-        let cells_accessed_cell_ref = cells_accessed
-            .iter()
-            .map(|pos| sheet.get_or_create_cell_ref(Pos { x: pos.x, y: pos.y }))
-            .collect::<Vec<_>>();
+        cells_accessed.insert(pos00);
+        cells_accessed.insert(pos01);
 
         sheet.set_code_cell_value(
             Pos { x: 0, y: 2 },
@@ -144,7 +140,69 @@ mod test {
                     std_out: None,
                     result: CodeCellRunResult::Ok {
                         output_value: Value::Single(CellValue::Text("test".to_string())),
-                        cells_accessed: cells_accessed_cell_ref,
+                        cells_accessed,
+                    },
+                }),
+            }),
+        );
+        let pos02 = SheetPos {
+            sheet_id,
+            x: 0,
+            y: 2,
+        };
+
+        let dependencies = Dependencies::new(&cdc);
+
+        assert_eq!(dependencies.dependencies.len(), 2);
+        assert_eq!(dependencies.get(pos00).unwrap().len(), 1);
+        assert_eq!(dependencies.get(pos00).unwrap().iter().next(), Some(&pos02));
+        assert_eq!(dependencies.get(pos01).unwrap().iter().next(), Some(&pos02));
+        assert_eq!(dependencies.get(pos02), None);
+    }
+
+    #[test]
+    fn test_no_self_dependency() {
+        let mut cdc = Grid::new();
+        let sheet_id = cdc.sheet_ids()[0];
+        let sheet = cdc.sheet_mut_from_id(sheet_id);
+
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
+        sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
+
+        let mut cells_accessed = HashSet::new();
+        let pos00 = SheetPos {
+            sheet_id,
+            x: 0,
+            y: 0,
+        };
+        let pos01 = SheetPos {
+            sheet_id,
+            x: 0,
+            y: 1,
+        };
+        cells_accessed.insert(pos00);
+        cells_accessed.insert(pos01);
+
+        // this should not be added as it's a self dependency
+        cells_accessed.insert(SheetPos {
+            sheet_id,
+            x: 0,
+            y: 2,
+        });
+
+        sheet.set_code_cell_value(
+            Pos { x: 0, y: 2 },
+            Some(CodeCellValue {
+                code_string: "1".to_string(),
+                language: crate::grid::CodeCellLanguage::Python,
+                formatted_code_string: None,
+                last_modified: String::default(),
+                output: Some(CodeCellRunOutput {
+                    std_err: None,
+                    std_out: None,
+                    result: CodeCellRunResult::Ok {
+                        output_value: Value::Single(CellValue::Text("test".to_string())),
+                        cells_accessed,
                     },
                 }),
             }),

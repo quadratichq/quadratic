@@ -36,13 +36,12 @@ impl Sheet {
         });
 
         // Fetch values from code cells.
-        let code_output_cells = columns_iter.flat_map(move |(x, column)| {
+        let code_output_cells = columns_iter.flat_map(move |(column_x, column)| {
             column
                 .spills
                 .blocks_of_range(region.y_range())
                 .filter_map(move |block| {
-                    let code_cell_pos = self.cell_ref_to_pos(block.content.value)?;
-                    let code_cell = self.code_cells.get(&block.content.value)?;
+                    let code_cell = self.code_cells.get(&block.content.value.into())?;
 
                     let (block_len, cell_error) = if let Some(error) = code_cell.get_error() {
                         (1, Some(CellValue::Error(Box::new(error))))
@@ -50,14 +49,14 @@ impl Sheet {
                         (block.len(), None)
                     };
 
-                    let dx = (x - code_cell_pos.x) as u32;
-                    let dy = (block.y - code_cell_pos.y) as u32;
+                    let dx = column_x as u32;
+                    let dy = block.y as u32;
 
                     Some((0..block_len).filter_map(move |y_within_block| {
                         let y = block.y + y_within_block as i64;
                         let dy = dy + y_within_block as u32;
                         Some((
-                            x,
+                            column_x,
                             y,
                             column,
                             cell_error
@@ -159,12 +158,11 @@ impl Sheet {
     /// Returns data for rendering code cells.
     pub fn get_render_code_cells(&self, rect: Rect) -> Vec<JsRenderCodeCell> {
         self.iter_code_cells_locations_in_region(rect)
-            .filter_map(|cell_ref| {
-                let pos = self.cell_ref_to_pos(cell_ref)?;
-                if !rect.contains(pos) {
+            .filter_map(|sheet_pos| {
+                if !rect.contains(sheet_pos.into()) {
                     return None;
                 }
-                let code_cell = self.code_cells.get(&cell_ref)?;
+                let code_cell = self.code_cells.get(&sheet_pos.into())?;
                 let output_size = code_cell.output_size();
                 let state = match &code_cell.output {
                     Some(output) => match output.result {
@@ -174,8 +172,8 @@ impl Sheet {
                     None => JsRenderCodeCellState::NotYetRun,
                 };
                 Some(JsRenderCodeCell {
-                    x: pos.x,
-                    y: pos.y,
+                    x: sheet_pos.x,
+                    y: sheet_pos.y,
                     w: output_size.w.get(),
                     h: output_size.h.get(),
                     language: code_cell.language,
@@ -188,9 +186,8 @@ impl Sheet {
     /// Returns data for all rendering code cells
     pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
         self.iter_code_cells_locations()
-            .filter_map(|cell_ref| {
-                let pos = self.cell_ref_to_pos(cell_ref)?;
-                let code_cell = self.code_cells.get(&cell_ref)?;
+            .filter_map(|pos| {
+                let code_cell = self.code_cells.get(&pos)?;
                 let output_size = code_cell.output_size();
                 Some(JsRenderCodeCell {
                     x: pos.x,

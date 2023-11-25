@@ -37,9 +37,11 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let value: Option<CellAlign> = serde_wasm_bindgen::from_value(align).unwrap();
-        Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_align(sheet_id, *rect, value, cursor),
-        )?)
+        Ok(serde_wasm_bindgen::to_value(&self.set_cell_align(
+            rect.to_sheet_rect(sheet_id),
+            value,
+            cursor,
+        ))?)
     }
 
     /// Sets cell wrap formatting given as an optional [`CellWrap`].
@@ -55,9 +57,11 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let value: Option<CellWrap> = serde_wasm_bindgen::from_value(wrap).unwrap();
-        Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_wrap(sheet_id, *rect, value, cursor),
-        )?)
+        Ok(serde_wasm_bindgen::to_value(&self.set_cell_wrap(
+            rect.to_sheet_rect(sheet_id),
+            value,
+            cursor,
+        ))?)
     }
 
     /// Sets cells numeric_format to normal
@@ -112,7 +116,7 @@ impl GridController {
             symbol: None,
         };
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_numeric_format(sheet_id, *rect, Some(currency), cursor),
+            &self.set_cell_numeric_format(rect.to_sheet_rect(sheet_id), Some(currency), cursor),
         )?)
     }
 
@@ -132,7 +136,7 @@ impl GridController {
             symbol: None,
         };
         Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_numeric_format(sheet_id, *rect, Some(exponential), cursor),
+            &self.set_cell_numeric_format(rect.to_sheet_rect(sheet_id), Some(exponential), cursor),
         )?)
     }
 
@@ -166,9 +170,11 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let value: Option<bool> = serde_wasm_bindgen::from_value(bold).unwrap();
-        Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_bold(sheet_id, *rect, value, cursor),
-        )?)
+        Ok(serde_wasm_bindgen::to_value(&self.set_cell_bold(
+            rect.to_sheet_rect(sheet_id),
+            value,
+            cursor,
+        ))?)
     }
     /// Sets cell italic formatting given as an optional [`bool`].
     ///
@@ -183,9 +189,11 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let value: Option<bool> = serde_wasm_bindgen::from_value(italic).unwrap();
-        Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_italic(sheet_id, *rect, value, cursor),
-        )?)
+        Ok(serde_wasm_bindgen::to_value(&self.set_cell_italic(
+            rect.to_sheet_rect(sheet_id),
+            value,
+            cursor,
+        ))?)
     }
 
     /// Sets cell text color given as an optional [`String`].
@@ -201,9 +209,11 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let value: Option<String> = serde_wasm_bindgen::from_value(text_color).unwrap();
-        Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_text_color(sheet_id, *rect, value, cursor),
-        )?)
+        Ok(serde_wasm_bindgen::to_value(&self.set_cell_text_color(
+            rect.to_sheet_rect(sheet_id),
+            value,
+            cursor,
+        ))?)
     }
     /// Sets cell fill color given as an optional [`String`].
     ///
@@ -218,9 +228,11 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let value: Option<String> = serde_wasm_bindgen::from_value(fill_color).unwrap();
-        Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_fill_color(sheet_id, *rect, value, cursor),
-        )?)
+        Ok(serde_wasm_bindgen::to_value(&self.set_cell_fill_color(
+            rect.to_sheet_rect(sheet_id),
+            value,
+            cursor,
+        ))?)
     }
 
     /// Changes cell numeric decimals.
@@ -251,7 +263,7 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.clear_formatting(sheet_id, rect, cursor),
+            &self.clear_formatting(rect.to_sheet_rect(sheet_id), cursor),
         )?)
     }
 }

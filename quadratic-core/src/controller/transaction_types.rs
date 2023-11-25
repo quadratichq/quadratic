@@ -1,9 +1,11 @@
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
-    grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Sheet},
-    Array, CellValue, Error, ErrorMsg, Pos, Rect, Span, Value,
+    grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Sheet},
+    Array, CellValue, Error, ErrorMsg, Pos, Rect, SheetPos, Span, Value,
 };
 
 use super::operation::Operation;
@@ -97,10 +99,10 @@ impl JsCodeResult {
     pub fn into_code_cell_value(
         &self,
         sheet: &mut Sheet,
-        start: CellRef,
+        start: SheetPos,
         language: CodeCellLanguage,
         code_string: String,
-        cells_accessed: &Vec<CellRef>,
+        cells_accessed: &HashSet<SheetPos>,
         reverse_operations: &mut Vec<Operation>,
     ) -> CodeCellValue {
         let result = if self.success {
@@ -113,13 +115,9 @@ impl JsCodeResult {
                     } else {
                         Value::Single("".into())
                     }
-                } else if let Some(output_value) = self.output_value.as_ref() {
-                    let cell_ref = CellRef {
-                        sheet: sheet.id,
-                        column: start.column,
-                        row: start.row,
-                    };
-                    let (cell_value, ops) = CellValue::from_string(output_value, cell_ref, sheet);
+                } else if let Some(output_value) = &self.output_value {
+                    let (cell_value, ops) =
+                        CellValue::from_string(output_value, start.into(), sheet);
                     reverse_operations.extend(ops);
                     Value::Single(cell_value)
                 } else {
@@ -227,14 +225,14 @@ impl JsComputeGetCells {
 
 #[cfg(test)]
 mod test {
-    use std::str::FromStr;
+    use std::{collections::HashSet, str::FromStr};
 
     use bigdecimal::BigDecimal;
 
     use crate::{
         controller::{operation::Operation, transaction_types::JsCodeResult, GridController},
         grid::{CodeCellLanguage, CodeCellRunOutput},
-        Array, ArraySize, CellValue, Pos, Value,
+        Array, ArraySize, CellValue, SheetPos, Value,
     };
 
     #[test]
@@ -253,16 +251,20 @@ mod test {
             cancel_compute: None,
         };
 
-        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
         let mut ops: Vec<Operation> = vec![];
         assert_eq!(
             result
                 .into_code_cell_value(
                     sheet,
-                    cell_ref,
+                    sheet_pos,
                     CodeCellLanguage::Python,
                     "".into(),
-                    &vec![],
+                    &HashSet::new(),
                     &mut ops
                 )
                 .output,
@@ -271,7 +273,7 @@ mod test {
                 std_err: None,
                 result: crate::grid::CodeCellRunResult::Ok {
                     output_value: Value::Single(CellValue::Number(12.into())),
-                    cells_accessed: vec![]
+                    cells_accessed: HashSet::new()
                 }
             }),
         );
@@ -298,7 +300,11 @@ mod test {
             cancel_compute: None,
         };
 
-        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
         let mut ops: Vec<Operation> = vec![];
         let mut array = Array::new_empty(ArraySize::new(2, 2).unwrap());
         let _ = array.set(
@@ -317,10 +323,10 @@ mod test {
             result
                 .into_code_cell_value(
                     sheet,
-                    cell_ref,
+                    sheet_pos,
                     CodeCellLanguage::Python,
                     "".into(),
-                    &vec![],
+                    &HashSet::new(),
                     &mut ops
                 )
                 .output,
@@ -329,7 +335,7 @@ mod test {
                 std_err: None,
                 result: crate::grid::CodeCellRunResult::Ok {
                     output_value: Value::Array(array),
-                    cells_accessed: vec![]
+                    cells_accessed: HashSet::new()
                 }
             }),
         );
