@@ -44,7 +44,7 @@ export default function QuadraticUI() {
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}
       {!presentationMode && <TopBar />}
-      {(true || editorInteractionState.showCommandPalette) && <CommandPalette confirmSheetDelete={() => 0} />}
+      {editorInteractionState.showCommandPalette && <CommandPalette confirmSheetDelete={() => 0} />}
       {editorInteractionState.showGoToMenu && <GoTo />}
 
       <div

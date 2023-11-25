@@ -33,16 +33,6 @@ export const CommandPalette = (props: Props) => {
     mixpanel.track('[CommandPalette].open');
   }, []);
 
-  // Upon keyboard navigation, scroll the element into view
-  // useEffect(() => {
-  //   const el = document.querySelector(`[data-command-bar-list-item-index='${selectedListItemIndex}']`);
-  //   if (el) {
-  //     el.scrollIntoView({
-  //       block: 'nearest',
-  //     });
-  //   }
-  // }, [selectedListItemIndex]);
-
   // const sheets = useSheetListItems();
 
   // Otherwise, define vars and render the list
@@ -63,7 +53,7 @@ export const CommandPalette = (props: Props) => {
   //     .map(({ Component }: any, i: number) => <Component key={i} />);
   // const sheetListItems = getSheetListItems();
   return (
-    <CommandDialog open={true} onOpenChange={closeCommandPalette}>
+    <CommandDialog open={editorInteractionState.showCommandPalette} onOpenChange={closeCommandPalette}>
       <CommandInput
         value={activeSearchValue}
         onValueChange={setActiveSearchValue}

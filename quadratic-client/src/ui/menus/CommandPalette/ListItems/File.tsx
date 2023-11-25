@@ -1,5 +1,4 @@
-import { FileCopyOutlined, FileDownloadOutlined, InsertDriveFileOutlined } from '@mui/icons-material';
-import { FileMinusIcon } from '@radix-ui/react-icons';
+import { DownloadIcon, FileIcon, FileMinusIcon, FilePlusIcon } from '@radix-ui/react-icons';
 import { useNavigate, useParams, useSubmit } from 'react-router-dom';
 import { createNewFileAction, deleteFile, downloadFileAction, duplicateFileAction } from '../../../../actions';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
@@ -13,7 +12,7 @@ const ListItems = [
     Component: (props: CommandPaletteListItemSharedProps) => {
       const navigate = useNavigate();
       const action = () => createNewFileAction.run({ navigate });
-      return <CommandPaletteListItem {...props} icon={<InsertDriveFileOutlined />} action={action} />;
+      return <CommandPaletteListItem {...props} icon={<FileIcon />} action={action} />;
     },
   },
 
@@ -26,7 +25,7 @@ const ListItems = [
       const action = () => {
         duplicateFileAction.run({ name, submit });
       };
-      return <CommandPaletteListItem {...props} icon={<FileCopyOutlined />} action={action} />;
+      return <CommandPaletteListItem {...props} icon={<FilePlusIcon />} action={action} />;
     },
   },
   {
@@ -35,11 +34,7 @@ const ListItems = [
     Component: (props: CommandPaletteListItemSharedProps) => {
       const { name } = useFileContext();
       return (
-        <CommandPaletteListItem
-          {...props}
-          icon={<FileDownloadOutlined />}
-          action={() => downloadFileAction.run({ name })}
-        />
+        <CommandPaletteListItem {...props} icon={<DownloadIcon />} action={() => downloadFileAction.run({ name })} />
       );
     },
   },
@@ -50,7 +45,7 @@ const ListItems = [
       const { uuid } = useParams() as { uuid: string };
       const { addGlobalSnackbar } = useGlobalSnackbar();
       const action = () => deleteFile.run({ uuid, addGlobalSnackbar });
-      return <CommandPaletteListItem {...props} action={action} Icon={<FileMinusIcon />} />;
+      return <CommandPaletteListItem {...props} icon={<FileMinusIcon />} action={action} />;
     },
   },
 ].map((item) => ({ ...item, label: 'File: ' + item.label }));

@@ -9,22 +9,22 @@ import { isEditorOrAbove } from '../../../../actions';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { setAlignment, setBold, setItalic } from '../../TopBar/SubMenus/formatCells';
-import { CommandPaletteListItem } from '../CommandPaletteListItem';
+import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
 const ListItems = [
   {
     label: 'Text: Bold',
     isAvailable: isEditorOrAbove,
-    Component: (props: any) => {
+    Component: (props: CommandPaletteListItemSharedProps) => {
       return (
         <CommandPaletteListItem
           {...props}
-          Icon={<FontBoldIcon />}
+          icon={<FontBoldIcon />}
           action={() => {
             setBold(!sheets.sheet.getFormatPrimaryCell()?.bold);
           }}
           shortcut="B"
-          shortcutModifiers={KeyboardSymbols.Command}
+          shortcutModifiers={[KeyboardSymbols.Command]}
         />
       );
     },
@@ -36,7 +36,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          Icon={<FontItalicIcon />}
+          icon={<FontItalicIcon />}
           action={() => {
             setItalic(!sheets.sheet.getFormatPrimaryCell()?.italic);
           }}
@@ -50,21 +50,21 @@ const ListItems = [
     label: 'Text: Align left',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} Icon={<TextAlignLeftIcon />} action={() => setAlignment('left')} />;
+      return <CommandPaletteListItem {...props} icon={<TextAlignLeftIcon />} action={() => setAlignment('left')} />;
     },
   },
   {
     label: 'Text: Align center',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} Icon={<TextAlignCenterIcon />} action={() => setAlignment('center')} />;
+      return <CommandPaletteListItem {...props} icon={<TextAlignCenterIcon />} action={() => setAlignment('center')} />;
     },
   },
   {
     label: 'Text: Align right',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem {...props} Icon={<TextAlignRightIcon />} action={() => setAlignment('right')} />;
+      return <CommandPaletteListItem {...props} icon={<TextAlignRightIcon />} action={() => setAlignment('right')} />;
     },
   },
 ];

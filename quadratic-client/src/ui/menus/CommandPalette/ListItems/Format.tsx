@@ -29,7 +29,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          Icon={<TextNoneIcon />}
+          icon={<TextNoneIcon />}
           action={clearFormattingAndBorders}
           shortcut="\"
           shortcutModifiers={KeyboardSymbols.Command}
@@ -48,21 +48,21 @@ const ListItems = [
     label: 'Format: Number as currency',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem Icon={<TextIcon>$</TextIcon>} {...props} action={textFormatSetCurrency} />;
+      return <CommandPaletteListItem icon={<TextIcon>$</TextIcon>} {...props} action={textFormatSetCurrency} />;
     },
   },
   {
     label: 'Format: Number as percentage',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem Icon={<TextIcon>%</TextIcon>} {...props} action={textFormatSetPercentage} />;
+      return <CommandPaletteListItem icon={<TextIcon>%</TextIcon>} {...props} action={textFormatSetPercentage} />;
     },
   },
   {
     label: 'Format: Number as scientific',
     isAvailable: isEditorOrAbove,
     Component: (props: any) => {
-      return <CommandPaletteListItem Icon={<TextIcon>Σ</TextIcon>} {...props} action={textFormatSetExponential} />;
+      return <CommandPaletteListItem icon={<TextIcon>Σ</TextIcon>} {...props} action={textFormatSetExponential} />;
     },
   },
   {
