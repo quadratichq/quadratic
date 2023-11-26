@@ -11,15 +11,17 @@
   "scripts": {
     "start": "npm run watch:fast:front-end",
 
-    "watch:fast:front-end": "concurrently --hide=3 -n=react,rust,rust-types \"npm:watch:javascript\" \"npm:watch:wasm:fast:javascript\" \"npm:watch:wasm:types\" \"npm run api:start\"",
+    "watch:fast:front-end": "npm run build:wasm:types && concurrently --hide=2 -n=react,rust,rust-types \"npm:watch:javascript\" \"npm:watch:wasm:fast:javascript\" \"npm run api:start\"",
     "watch:front-end": "concurrently --hide=3 -n=react,rust,rust-types \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:watch:wasm:types\" \"npm run api:start\"",
     "watch:front-end-back-end": "concurrently -n=react,rust,rust-types,api \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:watch:wasm:types\" \"npm run api:start\"",
 
     "watch:javascript": "cd quadratic-client && npm run watch:javascript",
 
     "watch:wasm:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --dev --target web --out-dir ../quadratic-client/src/quadratic-core --weak-refs'",
-    "watch:wasm:fast:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --target web --out-dir ../quadratic-client/src/quadratic-core --dev --weak-refs'",
+    "watch:wasm:fast:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --target web --out-dir ../quadratic-client/src/quadratic-core --weak-refs'",
     "watch:wasm:types": "cd quadratic-core && cargo watch -s 'cargo run --bin export_types'",
+
+    "build:wasm:types": "cd quadratic-core && cargo run --bin export_types",
 
     "api:start": "cd quadratic-api && npm start",
 

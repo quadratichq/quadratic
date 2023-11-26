@@ -36,12 +36,13 @@ impl Sheet {
         });
 
         // Fetch values from code cells.
-        let code_output_cells = columns_iter.flat_map(move |(column_x, column)| {
+        let code_output_cells = columns_iter.flat_map(move |(x, column)| {
             column
                 .spills
                 .blocks_of_range(region.y_range())
                 .filter_map(move |block| {
-                    let code_cell = self.code_cells.get(&block.content.value.into())?;
+                    let code_cell_pos = block.content.value;
+                    let code_cell = self.code_cells.get(&code_cell_pos.into())?;
 
                     let (block_len, cell_error) = if let Some(error) = code_cell.get_error() {
                         (1, Some(CellValue::Error(Box::new(error))))
@@ -49,14 +50,14 @@ impl Sheet {
                         (block.len(), None)
                     };
 
-                    let dx = column_x as u32;
-                    let dy = block.y as u32;
+                    let dx = (x - code_cell_pos.x) as u32;
+                    let dy = (block.y - code_cell_pos.y) as u32;
 
                     Some((0..block_len).filter_map(move |y_within_block| {
                         let y = block.y + y_within_block as i64;
                         let dy = dy + y_within_block as u32;
                         Some((
-                            column_x,
+                            x,
                             y,
                             column,
                             cell_error
