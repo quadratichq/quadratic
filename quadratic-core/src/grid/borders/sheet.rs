@@ -9,85 +9,64 @@ use crate::grid::borders::style::{BorderSelection, BorderStyle};
 use crate::grid::{ColumnData, Sheet};
 use crate::{Pos, Rect};
 
+use super::compute_indices;
+
 pub fn generate_borders(
     sheet: &Sheet,
-    rects: &Vec<Rect>,
+    rect: &Rect,
     selections: Vec<BorderSelection>,
     style: Option<BorderStyle>,
 ) -> SheetBorders {
-    generate_borders_full(sheet, rects, selections, vec![style])
+    generate_borders_full(sheet, rect, selections, vec![style])
 }
 
-// todo...
 pub fn generate_borders_full(
     sheet: &Sheet,
-    rects: &Vec<Rect>,
-    _selections: Vec<BorderSelection>,
-    _styles: Vec<Option<BorderStyle>>,
+    rect: &Rect,
+    selections: Vec<BorderSelection>,
+    styles: Vec<Option<BorderStyle>>,
 ) -> SheetBorders {
-    let id_space_borders = sheet.borders.per_cell.clone_rects(&rects.clone());
-    let render_borders = sheet.borders.render_lookup.clone_rects(rects.clone());
+    let mut id_space_borders = sheet.borders.per_cell.clone_rect(rect);
+    let mut render_borders = sheet.borders.render_lookup.clone_rect(rect);
 
-    // // if Clear then set style to None
-    // let styles = if selections.len() == 1 && selections[0] == BorderSelection::Clear {
-    //     vec![None]
-    // } else {
-    //     styles
-    // };
+    // if Clear then set style to None
+    let styles = if selections.len() == 1 && selections[0] == BorderSelection::Clear {
+        vec![None]
+    } else {
+        styles
+    };
 
-    // for rect in rects {
-    //     for style in styles.iter() {
-    //         let horizontal = compute_indices::horizontal(*rect, selections.clone());
-    //         let vertical = compute_indices::vertical(*rect, selections.clone());
+    for style in styles.iter() {
+        let horizontal = compute_indices::horizontal(rect, selections.clone());
+        let vertical = compute_indices::vertical(rect, selections.clone());
 
-    //         for &horizontal_border_index in &horizontal {
-    //             let above_index = horizontal_border_index - 1;
-    //             let column_ids = rect.x_range().filter_map(|x| Some(x)).collect_vec();
+        for &horizontal_border_index in &horizontal {
+            let above_index = horizontal_border_index - 1;
 
-    //             id_space_borders.set_horizontal_border(&column_ids, above_index, *style);
-    //             render_borders.set_horizontal_border(
-    //                 horizontal_border_index,
-    //                 rect.x_range(),
-    //                 *style,
-    //             );
-    //         }
+            id_space_borders.set_horizontal_border(rect.x_range(), above_index, *style);
+            render_borders.set_horizontal_border(horizontal_border_index, rect.x_range(), *style);
+        }
 
-    //         for &vertical_border in &vertical {
-    //             let column_left = vertical_border - 1;
-    //             let column_left_id = sheet.get_column(column_left).map(|column| column.id);
+        for &vertical_border in &vertical {
+            let column_left = vertical_border - 1;
 
-    //             let column_right_index = vertical_border;
-    //             let column_right_id = sheet.get_column(column_right_index).map(|column| column.id);
-
-    //             let row_indices = rect.y_range().collect_vec();
-    //             id_space_borders.set_vertical_border(
-    //                 column_left_id,
-    //                 column_right_id,
-    //                 &row_indices,
-    //                 *style,
-    //             );
-    //             render_borders.set_vertical_border(vertical_border, rect.y_range(), *style);
-    //         }
-    //     }
-    // }
+            id_space_borders.set_vertical_border(
+                Some(column_left),
+                Some(vertical_border),
+                rect.y_range(),
+                *style,
+            );
+            render_borders.set_vertical_border(vertical_border, rect.y_range(), *style);
+        }
+    }
     SheetBorders {
         per_cell: id_space_borders,
         render_lookup: render_borders,
     }
 }
 
-pub fn set_rects_borders(
-    sheet: &mut Sheet,
-    _rect: &Vec<Rect>,
-    _borders: SheetBorders,
-) -> SheetBorders {
-    let current_borders = &mut sheet.borders;
-
-    // todo...
-    // current_borders.set_rects(rect, borders)
-
-    // todo
-    current_borders.clone()
+pub fn set_rects_borders(sheet: &mut Sheet, rect: &Rect, borders: SheetBorders) -> SheetBorders {
+    sheet.borders.set_rect(rect, borders)
 }
 
 #[cfg(test)]
@@ -97,12 +76,12 @@ pub fn set_region_border_selection(
     selections: Vec<BorderSelection>,
     style: Option<BorderStyle>,
 ) -> SheetBorders {
-    let borders = generate_borders(sheet, &vec![*rect], selections, style);
-    set_rects_borders(sheet, &vec![*rect], borders)
+    let borders = generate_borders(sheet, rect, selections, style);
+    set_rects_borders(sheet, rect, borders)
 }
 
-pub fn get_rect_borders(sheet: &Sheet, rects: Vec<Rect>) -> SheetBorders {
-    sheet.borders.get_rects(rects)
+pub fn get_rect_borders(sheet: &Sheet, rect: &Rect) -> SheetBorders {
+    sheet.borders.get_rect(rect)
 }
 
 pub fn get_cell_borders_in_rect(sheet: &Sheet, rect: Rect) -> Vec<(i64, i64, Option<CellBorders>)> {
@@ -130,34 +109,29 @@ impl SheetBorders {
         Self::default()
     }
 
-    // todo...
-    // fn set_rects(&mut self, _rect: &Rect, _borders: SheetBorders) -> SheetBorders {
-    // let previous_borders = SheetBorders::default();
+    fn set_rect(&mut self, rect: &Rect, borders: SheetBorders) -> SheetBorders {
+        let mut previous_borders = SheetBorders::default();
 
-    // for region in regions {
-    //     let replaced_id_space = self.per_cell.replace_rects(&borders.per_cell, &rect);
-    //     previous_borders
-    //         .per_cell
-    //         .replace_region(&replaced_id_space, row_ids, &region);
-    // }
+        let replaced_id_space = self.per_cell.replace_rect(&borders.per_cell, rect);
+        previous_borders
+            .per_cell
+            .replace_rect(&replaced_id_space, rect);
 
-    // let replaced_grid_space = self
-    //     .render_lookup
-    //     .replace_rects(&borders.render_lookup, &rects);
-    // previous_borders
-    //     .render_lookup
-    //     .replace_rects(&replaced_grid_space, &rects);
+        let replaced_grid_space = self
+            .render_lookup
+            .replace_rect(&borders.render_lookup, rect);
+        previous_borders
+            .render_lookup
+            .replace_rect(&replaced_grid_space, rect);
 
-    //     previous_borders
-    // }
+        previous_borders
+    }
 
-    fn get_rects(&self, rects: Vec<Rect>) -> SheetBorders {
+    fn get_rect(&self, rect: &Rect) -> SheetBorders {
         let mut sheet_borders = SheetBorders::default();
 
-        let cloned_id_space = self.per_cell.clone_rects(&rects);
-        sheet_borders
-            .per_cell
-            .replace_rects(&cloned_id_space, &rects);
+        let cloned_id_space = self.per_cell.clone_rect(rect);
+        sheet_borders.per_cell.replace_rect(&cloned_id_space, rect);
 
         sheet_borders
     }
@@ -203,25 +177,23 @@ impl<'de> Deserialize<'de> for IdSpaceBorders {
 }
 
 impl IdSpaceBorders {
-    fn clone_rects(&self, rects: &Vec<Rect>) -> Self {
+    fn clone_rect(&self, rect: &Rect) -> Self {
         let mut cloned = Self::default();
-        cloned.replace_rects(self, rects);
+        cloned.replace_rect(self, rect);
         cloned
     }
 
-    fn replace_rects(&mut self, source: &Self, rects: &Vec<Rect>) -> Self {
+    fn replace_rect(&mut self, source: &Self, rect: &Rect) -> Self {
         let mut previous = Self::default();
-        for rect in rects {
-            for x in rect.x_range() {
-                let replacement = source.clone_blocks(x, rect.y_range().clone());
+        for x in rect.x_range() {
+            let replacement = source.clone_blocks(x, rect.y_range().clone());
 
-                let dest_column = self.borders.entry(x).or_default();
-                let previous_column = previous.borders.entry(x).or_default();
+            let dest_column = self.borders.entry(x).or_default();
+            let previous_column = previous.borders.entry(x).or_default();
 
-                let replaced = dest_column.clone_range(&replacement, rect.y_range());
-                for old_block in replaced {
-                    previous_column.set_range(old_block.range(), old_block.content.value);
-                }
+            let replaced = dest_column.clone_range(&replacement, rect.y_range());
+            for old_block in replaced {
+                previous_column.set_range(old_block.range(), old_block.content.value);
             }
         }
         previous
@@ -235,63 +207,63 @@ impl IdSpaceBorders {
         column
     }
 
-    // fn set_horizontal_border(
-    //     &mut self,
-    //     columns: &[i64],
-    //     row_index_above: i64,
-    //     style: Option<BorderStyle>,
-    // ) {
-    //     let row_index_below = row_index_above + 1;
-    //     for &x in columns {
-    //         self.set_cell_border(
-    //             Pos {
-    //                 x,
-    //                 y: row_index_above,
-    //             },
-    //             CellSide::Bottom,
-    //             style,
-    //         );
-    //         self.set_cell_border(
-    //             Pos {
-    //                 x,
-    //                 y: row_index_below,
-    //             },
-    //             CellSide::Top,
-    //             style,
-    //         );
-    //     }
-    // }
+    fn set_horizontal_border(
+        &mut self,
+        columns: Range<i64>,
+        row_index_above: i64,
+        style: Option<BorderStyle>,
+    ) {
+        let row_index_below = row_index_above + 1;
+        for x in columns {
+            self.set_cell_border(
+                Pos {
+                    x,
+                    y: row_index_above,
+                },
+                CellSide::Bottom,
+                style,
+            );
+            self.set_cell_border(
+                Pos {
+                    x,
+                    y: row_index_below,
+                },
+                CellSide::Top,
+                style,
+            );
+        }
+    }
 
-    // fn set_vertical_border(
-    //     &mut self,
-    //     column_left: Option<i64>,
-    //     column_right: Option<i64>,
-    //     row_indices: &[i64],
-    //     style: Option<BorderStyle>,
-    // ) {
-    //     for &row_index in row_indices {
-    //         if let Some(column_left) = column_left {
-    //             self.set_cell_border(
-    //                 Pos {
-    //                     x: column_left,
-    //                     y: row_index,
-    //                 },
-    //                 CellSide::Right,
-    //                 style,
-    //             );
-    //         }
-    //         if let Some(column_right) = column_right {
-    //             self.set_cell_border(
-    //                 Pos {
-    //                     x: column_right,
-    //                     y: row_index,
-    //                 },
-    //                 CellSide::Left,
-    //                 style,
-    //             );
-    //         }
-    //     }
-    // }
+    fn set_vertical_border(
+        &mut self,
+        column_left: Option<i64>,
+        column_right: Option<i64>,
+        rows: Range<i64>,
+        style: Option<BorderStyle>,
+    ) {
+        for row_index in rows {
+            if let Some(column_left) = column_left {
+                self.set_cell_border(
+                    Pos {
+                        x: column_left,
+                        y: row_index,
+                    },
+                    CellSide::Right,
+                    style,
+                );
+            }
+            if let Some(column_right) = column_right {
+                self.set_cell_border(
+                    Pos {
+                        x: column_right,
+                        y: row_index,
+                    },
+                    CellSide::Left,
+                    style,
+                );
+            }
+        }
+    }
 
     pub fn set_cell_border(&mut self, pos: Pos, side: CellSide, style: Option<BorderStyle>) {
         // TODO(jrice): Iterative `set` is broken. Need to use `set_range`
@@ -319,65 +291,63 @@ pub struct GridSpaceBorders {
 }
 
 impl GridSpaceBorders {
-    fn clone_rects(&self, rects: Vec<Rect>) -> GridSpaceBorders {
+    fn clone_rect(&self, rect: &Rect) -> GridSpaceBorders {
         let mut cloned = Self::default();
-        cloned.replace_rects(self, rects);
+        cloned.replace_rect(self, rect);
         cloned
     }
 
-    fn replace_rects(&mut self, source: &Self, rects: Vec<Rect>) -> Self {
+    fn replace_rect(&mut self, source: &Self, rect: &Rect) -> Self {
         let mut previous = Self::default();
 
-        for rect in rects {
-            // Vertical borders
-            for x in rect.x_range().chain([rect.x_range().end]) {
-                if let Some(source_column) = source.vertical.get(&x) {
-                    let current_column = self.vertical.entry(x).or_default();
-                    let previous_column = previous.vertical.entry(x).or_default();
+        // Vertical borders
+        for x in rect.x_range().chain([rect.x_range().end]) {
+            if let Some(source_column) = source.vertical.get(&x) {
+                let current_column = self.vertical.entry(x).or_default();
+                let previous_column = previous.vertical.entry(x).or_default();
 
-                    let replaced_styles = current_column.clone_range(source_column, rect.y_range());
-                    for old_style in replaced_styles {
-                        previous_column.set_range(old_style.range(), old_style.content.value);
-                    }
+                let replaced_styles = current_column.clone_range(source_column, rect.y_range());
+                for old_style in replaced_styles {
+                    previous_column.set_range(old_style.range(), old_style.content.value);
                 }
             }
+        }
 
-            // Horizontal
-            for y in rect.y_range().chain([rect.y_range().end]) {
-                if let Some(source_column) = source.horizontal.get(&y) {
-                    let current_column = self.horizontal.entry(y).or_default();
-                    let previous_column = previous.horizontal.entry(y).or_default();
+        // Horizontal
+        for y in rect.y_range().chain([rect.y_range().end]) {
+            if let Some(source_column) = source.horizontal.get(&y) {
+                let current_column = self.horizontal.entry(y).or_default();
+                let previous_column = previous.horizontal.entry(y).or_default();
 
-                    let replaced_styles = current_column.clone_range(source_column, rect.x_range());
-                    for old_style in replaced_styles {
-                        previous_column.set_range(old_style.range(), old_style.content.value);
-                    }
+                let replaced_styles = current_column.clone_range(source_column, rect.x_range());
+                for old_style in replaced_styles {
+                    previous_column.set_range(old_style.range(), old_style.content.value);
                 }
             }
         }
         previous
     }
 
-    // fn set_vertical_border(&mut self, index: i64, y_range: Range<i64>, style: Option<BorderStyle>) {
-    //     let column = self.vertical.entry(index).or_default();
-    //     match style {
-    //         Some(style) => column.set_range(y_range, style),
-    //         None => column.remove_range(y_range),
-    //     };
-    // }
+    fn set_vertical_border(&mut self, index: i64, y_range: Range<i64>, style: Option<BorderStyle>) {
+        let column = self.vertical.entry(index).or_default();
+        match style {
+            Some(style) => column.set_range(y_range, style),
+            None => column.remove_range(y_range),
+        };
+    }
 
-    // fn set_horizontal_border(
-    //     &mut self,
-    //     index: i64,
-    //     x_range: Range<i64>,
-    //     style: Option<BorderStyle>,
-    // ) {
-    //     let row = self.horizontal.entry(index).or_default();
-    //     match style {
-    //         Some(style) => row.set_range(x_range, style),
-    //         None => row.remove_range(x_range),
-    //     };
-    // }
+    fn set_horizontal_border(
+        &mut self,
+        index: i64,
+        x_range: Range<i64>,
+        style: Option<BorderStyle>,
+    ) {
+        let row = self.horizontal.entry(index).or_default();
+        match style {
+            Some(style) => row.set_range(x_range, style),
+            None => row.remove_range(x_range),
+        };
+    }
 }
 
 #[cfg(test)]

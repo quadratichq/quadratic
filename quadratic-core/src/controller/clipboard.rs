@@ -276,12 +276,8 @@ impl GridController {
                         }
                     });
 
-                let borders = generate_borders_full(
-                    sheet,
-                    &vec![rect.into()],
-                    border_selections,
-                    border_styles,
-                );
+                let borders =
+                    generate_borders_full(sheet, &rect.into(), border_selections, border_styles);
                 ops.push(Operation::SetBorders { rect, borders });
             }
         });
@@ -391,8 +387,8 @@ mod test {
             line: CellBorderLine::Line1,
         };
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
-        let borders = generate_borders(sheet, &vec![rect], selection, Some(style));
-        set_rects_borders(sheet, &vec![rect], borders);
+        let borders = generate_borders(sheet, &rect, selection, Some(style));
+        set_rects_borders(sheet, &rect, borders);
     }
 
     #[test]
@@ -625,8 +621,8 @@ mod test {
             line: CellBorderLine::Line1,
         };
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 });
-        let borders = generate_borders(sheet, &vec![rect], selection, Some(style));
-        set_rects_borders(sheet, &vec![rect], borders);
+        let borders = generate_borders(sheet, &rect, selection, Some(style));
+        set_rects_borders(sheet, &rect, borders);
 
         // weird: can't test them by comparing arrays since the order is seemingly random
         let render = gc.get_render_borders(sheet_id.to_string());

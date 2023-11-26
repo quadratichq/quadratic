@@ -203,7 +203,7 @@ impl GridController {
 
                 let sheet = self.grid.sheet_mut_from_id(rect.sheet_id);
 
-                let old_borders = sheet.set_region_borders(rect.into(), borders);
+                let old_borders = sheet.set_rect_borders(rect.into(), borders);
                 Operation::SetBorders {
                     rect,
                     borders: old_borders,
@@ -372,7 +372,7 @@ mod tests {
         assert_eq!(
             format!("{:?}", operation),
             format!(
-                "ResizeColumn {{ sheet_id: SheetId {{ id: {} }}, column: ColumnId {{ id: {} }}, new_size: {:.1} }}",
+                "ResizeColumn {{ sheet_id: SheetId {{ id: {} }}, column: {}, new_size: {:.1} }}",
                 sheet_id, 0, new_size
             )
         );

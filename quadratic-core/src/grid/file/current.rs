@@ -158,12 +158,12 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
                             .unwrap_or(CellBorderLine::Line1),
                     };
 
-                    let rects = vec![Rect::single_pos(Pos { x: *x, y: *y })];
+                    let rect = Rect::single_pos(Pos { x: *x, y: *y });
                     let borders =
-                        generate_borders(sheet, &rects, vec![border_selection], Some(style));
+                        generate_borders(sheet, &rect, vec![border_selection], Some(style));
 
                     // necessary to fill in render_lookup in SheetBorders
-                    set_rects_borders(sheet, &rects, borders);
+                    set_rects_borders(sheet, &rect, borders);
                 }
             });
         });

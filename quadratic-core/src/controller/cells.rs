@@ -266,7 +266,7 @@ impl GridController {
         let sheet = self.grid.sheet_from_id(sheet_rect.sheet_id);
         let borders = generate_borders(
             sheet,
-            &vec![sheet_rect.into()],
+            &sheet_rect.into(),
             vec![BorderSelection::Clear],
             None,
         );

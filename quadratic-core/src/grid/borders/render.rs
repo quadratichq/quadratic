@@ -242,7 +242,7 @@ mod tests {
             let replaced =
                 set_region_border_selection(&mut sheet, &rect_2, selection_2, Some(style));
 
-            set_rects_borders(&mut sheet, &vec![rect_2], replaced); // Undo
+            set_rects_borders(&mut sheet, &rect_2, replaced); // Undo
             let vertical_render_after_undo = get_render_vertical_borders(&sheet);
 
             assert_eq!(
@@ -278,7 +278,7 @@ mod tests {
             let replaced =
                 set_region_border_selection(&mut sheet, &rect_2, selection_2, Some(style_2));
 
-            set_rects_borders(&mut sheet, &vec![rect_2], replaced); // Undo
+            set_rects_borders(&mut sheet, &rect_2, replaced); // Undo
             let vertical_render_after_undo = get_render_vertical_borders(&sheet);
 
             assert_eq!(
@@ -456,7 +456,7 @@ mod tests {
             let replaced =
                 set_region_border_selection(&mut sheet, &rect_2, selection_2, Some(style_2));
 
-            set_rects_borders(&mut sheet, &vec![rect_2], replaced); // Undo
+            set_rects_borders(&mut sheet, &rect_2, replaced); // Undo
             let horizontal_render_after_undo = get_render_horizontal_borders(&sheet);
 
             assert_eq!(

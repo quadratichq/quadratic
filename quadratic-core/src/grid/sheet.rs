@@ -131,13 +131,13 @@ impl Sheet {
     }
 
     /// Sets or deletes borders in a region.
-    pub fn set_region_borders(&mut self, rect: Rect, borders: SheetBorders) -> SheetBorders {
-        borders::set_rects_borders(self, &vec![rect], borders)
+    pub fn set_rect_borders(&mut self, rect: Rect, borders: SheetBorders) -> SheetBorders {
+        borders::set_rects_borders(self, &rect, borders)
     }
 
     /// Gets borders in a region.
     pub fn get_region_borders(&self, sheet_rect: SheetRect) -> SheetBorders {
-        borders::get_rect_borders(self, vec![sheet_rect.into()])
+        borders::get_rect_borders(self, &sheet_rect.into())
     }
 
     /// Returns the value of a cell (i.e., what would be returned if code asked

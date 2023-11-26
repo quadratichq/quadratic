@@ -18,7 +18,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let sheet = self.sheet(sheet_id);
-        let borders = generate_borders(sheet, &vec![rect], selections, style);
+        let borders = generate_borders(sheet, &rect, selections, style);
         let ops = vec![Operation::SetBorders {
             rect: rect.to_sheet_rect(sheet_id),
             borders,
