@@ -10,10 +10,13 @@
   "private": true,
   "scripts": {
     "start": "npm run watch:front-end",
+    "fast": "npm run watch:fast:front-end",
+    "types": "npm run watch:wasm:types",
+    "fb": "npm run watch:front-end-back-end",
 
     "watch:fast:front-end": "npm run build:wasm:types && concurrently --hide=2 -n=react,rust,rust-types \"npm:watch:javascript\" \"npm:watch:wasm:fast:javascript\" \"npm run api:start\"",
     "watch:front-end": "npm run build:wasm:types && concurrently --hide=2 -n=react,rust,rust-types \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm run api:start\"",
-    "watch:front-end-back-end": "concurrently -n=react,rust,rust-types,api \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:watch:wasm:types\" \"npm run api:start\"",
+    "watch:front-end-back-end": "npm run build:wasm:types && concurrently -n=react,rust,rust-types,api \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm run api:start\"",
 
     "watch:javascript": "cd quadratic-client && npm run watch:javascript",
 
