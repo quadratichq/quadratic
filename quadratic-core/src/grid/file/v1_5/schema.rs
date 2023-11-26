@@ -37,7 +37,7 @@ impl From<crate::SheetPos> for SheetPos {
 
 pub type Offsets = v1_4::Offsets;
 
-pub type Borders = HashMap<i64, Vec<(i64, Vec<Option<CellBorder>>)>>;
+pub type Borders = HashMap<String, Vec<(i64, Vec<Option<CellBorder>>)>>;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

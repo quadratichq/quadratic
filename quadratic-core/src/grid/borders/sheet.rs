@@ -156,22 +156,20 @@ impl Serialize for IdSpaceBorders {
     }
 }
 
-// todo...
 impl<'de> Deserialize<'de> for IdSpaceBorders {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        let _map =
+        let map =
             HashMap::<&'de str, ColumnData<SameValue<CellBorders>>>::deserialize(deserializer)?;
-        let ret = IdSpaceBorders {
+        let mut ret = IdSpaceBorders {
             borders: HashMap::new(),
         };
 
-        // todo
-        // for (k, v) in map {
-        //     ret.borders.insert(ColumnId::from_str(k).unwrap(), v);
-        // }
+        for (k, v) in map {
+            ret.borders.insert(i64::from_str_radix(k, 10).unwrap(), v);
+        }
         Ok(ret)
     }
 }

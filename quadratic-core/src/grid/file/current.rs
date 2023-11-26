@@ -157,8 +157,11 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
                         line: CellBorderLine::from_str(&border.line)
                             .unwrap_or(CellBorderLine::Line1),
                     };
-
-                    let rect = Rect::single_pos(Pos { x: *x, y: *y });
+                    // todo: this should save as an i64, not string
+                    let rect = Rect::single_pos(Pos {
+                        x: i64::from_str_radix(x, 10).ok().unwrap(),
+                        y: *y,
+                    });
                     let borders =
                         generate_borders(sheet, &rect, vec![border_selection], Some(style));
 
@@ -407,7 +410,7 @@ fn export_borders_builder(sheet: &Sheet) -> current::Borders {
         .iter()
         .map(|(x, border)| {
             (
-                *x,
+                x.to_string(),
                 border
                     .values()
                     .map(|(y, cell_borders)| {

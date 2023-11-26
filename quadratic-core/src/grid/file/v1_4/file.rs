@@ -159,7 +159,7 @@ fn upgrade_borders(sheet: &v1_4::Sheet) -> v1_5::Borders {
         .iter()
         .map(|(column_id, borders)| {
             let x = column_id_to_x(sheet, column_id);
-            (x, borders.clone())
+            (x.to_string(), borders.clone())
         })
         .collect()
 }
