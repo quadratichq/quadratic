@@ -26,17 +26,14 @@ impl GridController {
         let sheet = self.grid.sheet_mut_from_id(rect.sheet_id);
         // TODO: optimize this for contiguous runs of the same value
         let mut old_values = RunLengthEncoding::new();
-        for x in rect.x_range() {
-            for y in rect.y_range() {
+        let mut i = 0;
+        for y in rect.y_range() {
+            for x in rect.x_range() {
                 let pos = Pos { x, y };
-                let old_value = sheet.set_formatting_value::<A>(
-                    pos,
-                    values
-                        .get_at((pos.y - rect.min.y) as usize)
-                        .unwrap()
-                        .clone(),
-                );
+                let old_value =
+                    sheet.set_formatting_value::<A>(pos, values.get_at(i).unwrap().clone());
                 old_values.push(old_value);
+                i += 1;
             }
         }
         if let Some(cell_sheets_modified) = cell_sheets_modified {
