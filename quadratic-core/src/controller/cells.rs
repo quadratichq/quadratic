@@ -57,12 +57,12 @@ impl GridController {
         // check for currency
         if value.is_empty() {
             ops.push(Operation::SetCellValues {
-                rect: rect.clone(),
+                rect,
                 values: Array::from(CellValue::Blank),
             });
         } else if let Some((currency, number)) = CellValue::unpack_currency(value) {
             ops.push(Operation::SetCellValues {
-                rect: rect.clone(),
+                rect,
                 values: Array::from(CellValue::Number(number)),
             });
             let numeric_format = NumericFormat {
@@ -70,7 +70,7 @@ impl GridController {
                 symbol: Some(currency),
             };
             ops.push(Operation::SetCellFormats {
-                rect: rect.clone(),
+                rect,
                 attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
                     Some(numeric_format),
                     1,
@@ -86,12 +86,12 @@ impl GridController {
             }
         } else if let Ok(bd) = BigDecimal::from_str(value) {
             ops.push(Operation::SetCellValues {
-                rect: rect.clone(),
+                rect,
                 values: Array::from(CellValue::Number(bd)),
             });
         } else if let Some(percent) = CellValue::unpack_percentage(value) {
             ops.push(Operation::SetCellValues {
-                rect: rect.clone(),
+                rect,
                 values: Array::from(CellValue::Number(percent)),
             });
             let numeric_format = NumericFormat {
@@ -224,56 +224,48 @@ impl GridController {
         self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
 
-    pub fn clear_formatting_operations(&mut self, sheet_rect: SheetRect) -> Vec<Operation> {
-        let size = sheet_rect.size();
+    pub fn clear_formatting_operations(&mut self, rect: SheetRect) -> Vec<Operation> {
+        let size = rect.size();
         let len = size.len();
         let mut ops = vec![
             Operation::SetCellFormats {
-                rect: sheet_rect.clone(),
+                rect,
                 attr: CellFmtArray::Align(RunLengthEncoding::repeat(None, len)),
             },
             Operation::SetCellFormats {
-                rect: sheet_rect.clone(),
+                rect,
                 attr: CellFmtArray::Wrap(RunLengthEncoding::repeat(None, len)),
             },
             Operation::SetCellFormats {
-                rect: sheet_rect.clone(),
+                rect,
                 attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(None, len)),
             },
             Operation::SetCellFormats {
-                rect: sheet_rect.clone(),
+                rect,
                 attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(None, len)),
             },
             Operation::SetCellFormats {
-                rect: sheet_rect.clone(),
+                rect,
                 attr: CellFmtArray::Bold(RunLengthEncoding::repeat(None, len)),
             },
             Operation::SetCellFormats {
-                rect: sheet_rect.clone(),
+                rect,
                 attr: CellFmtArray::Italic(RunLengthEncoding::repeat(None, len)),
             },
             Operation::SetCellFormats {
-                rect: sheet_rect.clone(),
+                rect,
                 attr: CellFmtArray::TextColor(RunLengthEncoding::repeat(None, len)),
             },
             Operation::SetCellFormats {
-                rect: sheet_rect.clone(),
+                rect,
                 attr: CellFmtArray::FillColor(RunLengthEncoding::repeat(None, len)),
             },
         ];
 
         // clear borders
-        let sheet = self.grid.sheet_from_id(sheet_rect.sheet_id);
-        let borders = generate_borders(
-            sheet,
-            &sheet_rect.into(),
-            vec![BorderSelection::Clear],
-            None,
-        );
-        ops.push(Operation::SetBorders {
-            rect: sheet_rect.clone(),
-            borders,
-        });
+        let sheet = self.grid.sheet_from_id(rect.sheet_id);
+        let borders = generate_borders(sheet, &rect.into(), vec![BorderSelection::Clear], None);
+        ops.push(Operation::SetBorders { rect, borders });
         ops
     }
 

@@ -35,7 +35,7 @@ fn upgrade_spills(
 
 fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, v1_5::Column) {
     (
-        x.clone(),
+        *x,
         v1_5::Column {
             values: column.values.clone(),
             spills: upgrade_spills(sheet, &column.spills),

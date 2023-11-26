@@ -295,6 +295,9 @@ impl SheetRect {
     pub fn len(&self) -> usize {
         self.width() * self.height()
     }
+    pub fn is_empty(&self) -> bool {
+        self.width() == 0 && self.height() == 0
+    }
     pub fn size(&self) -> ArraySize {
         ArraySize::new(self.width() as u32, self.height() as u32)
             .expect("empty rectangle has no size")
@@ -310,6 +313,8 @@ impl fmt::Display for SheetRect {
     }
 }
 
+// cannot go from Rect to SheetRect; need to use .to_sheet_rect(sheet_id)
+#[allow(clippy::from_over_into)]
 impl Into<Rect> for SheetRect {
     fn into(self) -> Rect {
         Rect {

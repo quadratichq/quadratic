@@ -55,7 +55,7 @@ impl Sheet {
         let column = self.get_column(pos.x)?;
         let block = column.spills.get(pos.y)?;
         let code_cell = self.code_cells.get(&block.into())?;
-        code_cell.get_output_value((pos.x - pos.x) as u32, (pos.y - pos.y) as u32)
+        code_cell.get_output_value(0, 0)
     }
 
     /// Returns an iterator over all locations containing code cells that may

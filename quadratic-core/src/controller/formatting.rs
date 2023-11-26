@@ -54,7 +54,7 @@ impl GridController {
         let sheet_rect = rect.to_sheet_rect(sheet_id);
         let ops = vec![
             Operation::SetCellFormats {
-                rect: sheet_rect.clone(),
+                rect: sheet_rect,
                 attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
                     Some(NumericFormat {
                         kind: NumericFormatKind::Currency,
@@ -64,7 +64,7 @@ impl GridController {
                 )),
             },
             Operation::SetCellFormats {
-                rect: sheet_rect.clone(),
+                rect: sheet_rect,
                 attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
                     Some(2),
                     sheet_rect.len(),
@@ -84,21 +84,21 @@ impl GridController {
         let sheet_rect = rect.to_sheet_rect(sheet_id);
         let ops = vec![
             Operation::SetCellFormats {
-                rect: sheet_rect.clone(),
+                rect: sheet_rect,
                 attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
                     None,
                     sheet_rect.len(),
                 )),
             },
             Operation::SetCellFormats {
-                rect: sheet_rect.clone(),
+                rect: sheet_rect,
                 attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
                     None,
                     sheet_rect.len(),
                 )),
             },
             Operation::SetCellFormats {
-                rect: sheet_rect.clone(),
+                rect: sheet_rect,
                 attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(
                     None,
                     sheet_rect.len(),
@@ -127,7 +127,7 @@ impl GridController {
         let sheet_rect = rect.to_sheet_rect(sheet_id);
         let numeric_decimals = Some(decimals + delta as i16);
         let ops = vec![Operation::SetCellFormats {
-            rect: sheet_rect.clone(),
+            rect: sheet_rect,
             attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
                 numeric_decimals,
                 sheet_rect.len(),
@@ -151,7 +151,7 @@ impl GridController {
         };
         let sheet_rect = rect.to_sheet_rect(sheet_id);
         let ops = vec![Operation::SetCellFormats {
-            rect: sheet_rect.clone(),
+            rect: sheet_rect,
             attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(
                 Some(commas),
                 sheet_rect.len(),

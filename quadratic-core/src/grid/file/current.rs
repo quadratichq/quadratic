@@ -159,7 +159,7 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
                     };
                     // todo: this should save as an i64, not string
                     let rect = Rect::single_pos(Pos {
-                        x: i64::from_str_radix(x, 10).ok().unwrap(),
+                        x: x.parse::<i64>().unwrap(),
                         y: *y,
                     });
                     let borders =

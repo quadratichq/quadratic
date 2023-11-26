@@ -168,7 +168,7 @@ impl<'de> Deserialize<'de> for IdSpaceBorders {
         };
 
         for (k, v) in map {
-            ret.borders.insert(i64::from_str_radix(k, 10).unwrap(), v);
+            ret.borders.insert(k.parse::<i64>().unwrap(), v);
         }
         Ok(ret)
     }
