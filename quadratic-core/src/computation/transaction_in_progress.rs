@@ -262,6 +262,13 @@ impl TransactionInProgress {
     fn compute(&mut self, grid_controller: &mut GridController) {
         if let Some(sheet_pos) = self.cells_to_compute.shift_remove_index(0) {
             // todo: this would be a good place to check for cycles
+            if cfg!(feature = "show-operations") {
+                crate::util::dbgjs(format!(
+                    "[Compute] Checking - {:?} ({} remaining)",
+                    sheet_pos,
+                    self.cells_to_compute.len()
+                ));
+            }
             // add all dependent cells to the cells_to_compute
             if let Some(dependent_cells) = grid_controller.get_dependent_cells(sheet_pos) {
                 self.cells_to_compute.extend(dependent_cells);

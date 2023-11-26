@@ -50,7 +50,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 max: Pos { x: 10, y: 10 },
             };
             let pos = Pos { x: 10000, y: 10000 };
-            let contents = gc.copy_to_clipboard(sheet_id, rect);
+            let contents = gc.copy_to_clipboard(rect.to_sheet_rect(sheet_id));
             gc.paste_from_clipboard(sheet_id, pos, Some(contents.0), Some(contents.1), None);
         });
     });
@@ -64,7 +64,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 max: Pos { x: 100, y: 100 },
             };
             let pos = Pos { x: 10000, y: 10000 };
-            let contents = gc.copy_to_clipboard(sheet_id, rect);
+            let contents = gc.copy_to_clipboard(rect.to_sheet_rect(sheet_id));
             gc.paste_from_clipboard(sheet_id, pos, Some(contents.0), Some(contents.1), None);
         });
     });
@@ -101,7 +101,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |(mut gc, sheet_id, rect)| {
                 // Test
-                gc.delete_cell_values(sheet_id, rect, None);
+                gc.delete_cell_values(rect.to_sheet_rect(sheet_id), None);
             },
             criterion::BatchSize::SmallInput,
         )
@@ -120,7 +120,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     },
                     max: Pos { x: 10000, y: 10000 },
                 };
-                gc.delete_cell_values(sheet_id, rect, None);
+                gc.delete_cell_values(rect.to_sheet_rect(sheet_id), None);
                 gc
             },
             |mut gc| {
@@ -144,7 +144,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     },
                     max: Pos { x: 10000, y: 10000 },
                 };
-                gc.delete_cell_values(sheet_id, rect, None);
+                gc.delete_cell_values(rect.to_sheet_rect(sheet_id), None);
                 gc.undo(None);
                 gc
             },
@@ -218,7 +218,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |(mut gc, sheet_id, rect)| {
                 // Test
-                gc.clear_formatting(sheet_id, rect, None);
+                gc.clear_formatting(rect.to_sheet_rect(sheet_id), None);
             },
             criterion::BatchSize::SmallInput,
         )

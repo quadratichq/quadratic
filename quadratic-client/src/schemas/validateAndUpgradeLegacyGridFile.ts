@@ -13,7 +13,8 @@ const FILES = [
 ];
 
 // all versions validated by Rust
-const rustFileVersions = ['1.3', '1.4'];
+// todo: this should be anything greater than 1.4
+const rustFileVersions = ['1.3', '1.4', '1.5'];
 
 /**
  * Given arbitrary JSON, validate whether it's a valid file format and return
