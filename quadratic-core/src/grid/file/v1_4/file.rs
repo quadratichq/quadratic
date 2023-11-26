@@ -1,15 +1,44 @@
+use std::collections::HashMap;
+
 use crate::grid::file::v1_4::schema as v1_4;
 use crate::grid::file::v1_5::schema::{self as v1_5};
 use anyhow::Result;
 
 // todo: use Result instead of panicking
 
-fn upgrade_column(x: &i64, column: &v1_4::Column) -> (i64, v1_5::Column) {
+fn upgrade_spills(
+    sheet: &v1_4::Sheet,
+    spills: &HashMap<String, v1_4::ColumnFormatType<String>>,
+) -> HashMap<String, v1_5::ColumnFormatType<String>> {
+    spills
+        .iter()
+        .map(|(_, spill)| {
+            let y = spill.y;
+            let cell_ref = serde_json::from_str::<v1_4::CellRef>(&spill.content.value).unwrap();
+            let len = spill.content.len;
+            let sheet_pos_string = serde_json::to_string(&cell_ref_to_sheet_pos(sheet, &cell_ref))
+                .ok()
+                .unwrap();
+            (
+                y.to_string(),
+                v1_5::ColumnFormatType::<String> {
+                    y,
+                    content: v1_5::ColumnFormatContent {
+                        value: sheet_pos_string,
+                        len,
+                    },
+                },
+            )
+        })
+        .collect()
+}
+
+fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, v1_5::Column) {
     (
         x.clone(),
         v1_5::Column {
             values: column.values.clone(),
-            spills: column.spills.clone(),
+            spills: upgrade_spills(sheet, &column.spills),
             align: column.align.clone(),
             wrap: column.wrap.clone(),
             numeric_format: column.numeric_format.clone(),
@@ -27,7 +56,7 @@ fn upgrade_columns(sheet: &v1_4::Sheet) -> Vec<(i64, v1_5::Column)> {
     sheet
         .columns
         .iter()
-        .map(|(x, column)| upgrade_column(x, column))
+        .map(|(x, column)| upgrade_column(sheet, x, column))
         .collect()
 }
 

@@ -19,7 +19,6 @@ impl From<crate::Pos> for Pos {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct SheetPos {
     pub x: i64,
     pub y: i64,

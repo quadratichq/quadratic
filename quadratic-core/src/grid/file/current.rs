@@ -102,6 +102,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
         .iter()
         .map(|(x, column)| {
             let mut col = Column::new();
+            // set_column_format::<SheetPos>(&mut col.spills, &column.spills)?;
             set_column_format::<SheetPos>(&mut col.spills, &column.spills)?;
             set_column_format::<CellAlign>(&mut col.align, &column.align)?;
             set_column_format::<CellWrap>(&mut col.wrap, &column.wrap)?;
