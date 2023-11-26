@@ -36,13 +36,14 @@ pub fn update_code_cell_value(
                         Value::Array(array) => {
                             for x in 0..array.width() {
                                 for y in 0..array.height() {
-                                    summary.cell_sheets_modified.insert(CellSheetsModified::new(
-                                        SheetPos {
-                                            x: sheet_pos.x,
-                                            y: sheet_pos.y + y as i64,
-                                            sheet_id: sheet.id,
-                                        },
-                                    ));
+                                    let sheet_pos = SheetPos {
+                                        x: sheet_pos.x + x as i64,
+                                        y: sheet_pos.y + y as i64,
+                                        sheet_id: sheet.id,
+                                    };
+                                    summary
+                                        .cell_sheets_modified
+                                        .insert(CellSheetsModified::new(sheet_pos));
                                     // add all but the first cell to the compute cycle
                                     if x != 0 || y != 0 {
                                         cells_to_compute.insert(sheet_pos);
@@ -149,18 +150,18 @@ pub fn fetch_code_cell_difference(
                 end: pos.y + new_h as i64 + 1,
             });
             for y in 0..new_h {
-                let pos = Pos {
+                let sheet_pos = SheetPos {
                     x: pos.x + x as i64,
                     y: pos.y + y as i64,
+                    sheet_id: sheet.id,
                 };
                 summary
                     .cell_sheets_modified
-                    .insert(CellSheetsModified::new(pos.to_sheet_pos(sheet.id)));
-                cells_to_compute.insert(SheetPos {
-                    x: x as i64,
-                    y: y as i64,
-                    sheet_id: sheet.id,
-                });
+                    .insert(CellSheetsModified::new(sheet_pos));
+
+                if x != 0 || y != 0 {
+                    cells_to_compute.insert(sheet_pos);
+                }
             }
         }
     }
@@ -174,18 +175,17 @@ pub fn fetch_code_cell_difference(
                 end: pos.y + old_h as i64 + 1,
             });
             for y in new_h..old_h {
-                let pos = Pos {
+                let sheet_pos = SheetPos {
                     x: pos.x + x as i64,
                     y: pos.y + y as i64,
+                    sheet_id: sheet.id,
                 };
                 summary
                     .cell_sheets_modified
-                    .insert(CellSheetsModified::new(pos.to_sheet_pos(sheet.id)));
-                cells_to_compute.insert(SheetPos {
-                    x: x as i64,
-                    y: y as i64,
-                    sheet_id: sheet.id,
-                });
+                    .insert(CellSheetsModified::new(sheet_pos));
+                if x != 0 || y != 0 {
+                    cells_to_compute.insert(sheet_pos);
+                }
             }
         }
     }
