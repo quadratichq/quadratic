@@ -1,5 +1,4 @@
-import { Box, Tab, Tabs } from '@mui/material';
-import { useTheme } from '@mui/system';
+import { Box, Tab, Tabs, useTheme } from '@mui/material';
 import { useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { isViewerOrAbove } from '../../../actions';

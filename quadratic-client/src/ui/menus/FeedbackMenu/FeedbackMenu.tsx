@@ -1,5 +1,4 @@
-import { Button, IconButton, Stack, TextField } from '@mui/material';
-import { useTheme } from '@mui/system';
+import { Button, IconButton, Stack, TextField, useTheme } from '@mui/material';
 import { useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { apiClient } from '../../../api/apiClient';
@@ -84,14 +83,20 @@ export const FeedbackMenu = () => {
         />
       </QDialog.Content>
       <QDialog.Actions>
-        <Stack direction="row" alignItems="center" gap={theme.spacing(1)} mr="auto">
-          <IconButton href={BUG_REPORT_URL} target="_blank" color={theme.palette.text.secondary} size="small">
+        <Stack
+          direction="row"
+          alignItems="center"
+          gap={theme.spacing(1)}
+          mr="auto"
+          color={theme.palette.text.secondary}
+        >
+          <IconButton href={BUG_REPORT_URL} target="_blank" color="inherit" size="small">
             <SocialGithub />
           </IconButton>
-          <IconButton href={TWITTER} target="_blank" color={theme.palette.text.secondary} size="small">
+          <IconButton href={TWITTER} target="_blank" color="inherit" size="small">
             <SocialTwitter />
           </IconButton>
-          <IconButton href={DISCORD} target="_blank" color={theme.palette.text.secondary} size="small">
+          <IconButton href={DISCORD} target="_blank" color="inherit" size="small">
             <SocialDiscord />
           </IconButton>
         </Stack>
