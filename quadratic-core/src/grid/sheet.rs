@@ -673,7 +673,7 @@ mod test {
     fn test_delete_cell_values() {
         let (mut grid, sheet_id, selected) = test_setup_basic();
 
-        grid.delete_cell_values(sheet_id, selected, None);
+        grid.delete_cells_rect(sheet_id, selected, None);
         let sheet = grid.grid().sheet_from_id(sheet_id);
 
         print_table(&grid, sheet_id, selected);
@@ -703,7 +703,7 @@ mod test {
         // grid.set_code_cell_value((5, 2).into(), Some(code_cell));
         print_table(&grid, sheet_id, view_rect);
 
-        grid.delete_cell_values(sheet_id, selected, None);
+        grid.delete_cells_rect(sheet_id, selected, None);
         let sheet = grid.grid().sheet_from_id(sheet_id);
 
         print_table(&grid, sheet_id, view_rect);
