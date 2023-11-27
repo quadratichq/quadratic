@@ -3,7 +3,7 @@ coverage:
     project:
       default:
         threshold: 0.02
-    quadratic:
-      ignore:
-        - "quadratic-core/src/bin"
-        - "quadratic-core/src/wasm_bindings"
+      quadratic:
+        ignore:
+          - "quadratic-core/src/bin"
+          - "quadratic-core/src/wasm_bindings"
