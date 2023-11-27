@@ -43,12 +43,46 @@ impl GridController {
                     .map(|old_value| old_value.unwrap_or(CellValue::Blank))
                     .collect();
                 cells_updated.insert(region.clone());
-                // crate::util::dbgjs(&format!("[region updated] {}", region.clone())); TODO: REMOVE
 
                 let old_values = Array::new_row_major(size, old_values)
                     .expect("error constructing array of old values for SetCells operation");
 
                 CellSheetsModified::add_region(&mut summary.cell_sheets_modified, sheet, &region);
+
+                // check if override any code cells
+                let code_cells_to_delete = sheet
+                    .code_cells
+                    .iter()
+                    .filter_map(|(cell_ref, _)| {
+                        if region.contains(&cell_ref) {
+                            let pos = sheet.cell_ref_to_pos(*cell_ref)?;
+                            Some((cell_ref.clone(), pos))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<(CellRef, Pos)>>();
+
+                // remove the code cells if so, and add to reverse operations
+                let sheet_id = sheet.id;
+                for (cell_ref, pos) in code_cells_to_delete {
+                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                    let old_value = sheet.set_code_cell_value(pos, None);
+                    fetch_code_cell_difference(
+                        self,
+                        sheet_id,
+                        pos,
+                        old_value.clone(),
+                        None,
+                        summary,
+                        cells_to_compute,
+                        &mut reverse_operations,
+                    );
+                    reverse_operations.push(Operation::SetCellCode {
+                        cell_ref: cell_ref.clone(),
+                        code_cell_value: old_value,
+                    });
+                }
 
                 // check for changes in spills
                 for cell_ref in region.iter() {
