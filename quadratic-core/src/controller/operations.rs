@@ -92,6 +92,12 @@ impl GridController {
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
                 let old_spill = sheet.get_spill(cell_ref);
 
+                // TODO(ddimaria): resolve comment from @HactarCE
+                // note: this is a non-trivial refactor, but a good one to make
+                //
+                // Use .cloned() later if the value needs to be cloned, not here.
+                // fetch_code_cell_difference() should take &Option<CodeCellValue>
+                // or possibly Option<CodeCellValue>.
                 let old_code_cell_value = sheet.get_code_cell_from_ref(cell_ref).cloned();
                 let pos = if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
                     pos
@@ -143,6 +149,12 @@ impl GridController {
                     sheet.set_code_cell_value(pos, code_cell_value.clone());
                 }
 
+                // TODO(ddimaria): resolve comment from @HactarCE:
+                //
+                // Can we use SheetPos instead of CellSheetsModified? I'd like
+                // to avoid using String for sheet IDs as much as possible. If
+                // it's needed for JS interop, then let's impl Serialize and
+                // Deserialize on SheetId to make it serialize as a string.
                 summary
                     .cell_sheets_modified
                     .insert(CellSheetsModified::new(sheet_id, pos));

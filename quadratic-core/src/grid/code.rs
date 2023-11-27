@@ -11,6 +11,7 @@ pub struct CodeCellValue {
     pub code_string: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub formatted_code_string: Option<String>,
+    // TODO(ddimaria): This should be a timestamp
     pub last_modified: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub output: Option<CodeCellRunOutput>,

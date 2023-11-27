@@ -48,6 +48,13 @@ impl Sheet {
                     let mut cell_error = None;
 
                     // check for error in code cell
+                    //
+                    // TODO(ddimaria): address comment from @HactarCE:
+                    //
+                    // I think block_len should automatically equal 1 because
+                    // an error produces a 1x1 spill? If not, then we have to
+                    // be careful to only return the error value in the first
+                    // column of the spill.
                     if let Some(error) = code_cell.get_error() {
                         block_len = 1;
                         cell_error = Some(CellValue::Error(Box::new(error)));

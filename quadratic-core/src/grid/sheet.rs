@@ -480,6 +480,14 @@ impl Sheet {
         let (w, h) = size.into();
 
         // check if the output array would cause a spill
+        //
+        // TODO(ddimaria): resolve comments from @HactarCE:
+        //
+        // If we factor the per-row loop into a method on Column we can make
+        // this method O(n) by taking advantage of the column data structures.
+        //
+        // If this method takes a Rect, then this is just a simple loop over
+        // the Positions in the Rect which is nice.
         for i in 0..w {
             for j in 0..h {
                 let x = x + i;

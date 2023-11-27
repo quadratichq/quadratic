@@ -123,7 +123,7 @@ impl Sheet {
         self.code_cells
             .iter()
             .filter(|(_, code_cell)| code_cell.has_spill_error())
-            .sorted_by(|a, b| a.1.last_modified.cmp(&b.1.last_modified))
+            .sorted_by_key(|a| &a.1.last_modified)
             .filter_map(|(code_cell_ref, code_cell)| {
                 let pos = self.cell_ref_to_pos(*code_cell_ref)?;
                 let array_size = code_cell.output_size();

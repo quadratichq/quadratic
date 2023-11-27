@@ -38,6 +38,9 @@ impl GridController {
         }
     }
 
+    // TODO(ddimaria): implement many of the below functions in TransactionInProgress
+    // then we can just reference self
+
     /// sets a spill error for a code_cell
     pub fn set_spill_error(
         &mut self,
