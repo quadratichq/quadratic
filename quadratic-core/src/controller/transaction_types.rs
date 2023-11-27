@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
     grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Sheet},
+    util::date_string,
     Array, CellValue, Error, ErrorMsg, Pos, Rect, Span, Value,
 };
 
@@ -149,10 +150,9 @@ impl JsCodeResult {
                 std_out: self.input_python_std_out.clone(),
                 std_err: self.error_msg.clone(),
                 result,
+                spill: false,
             }),
-
-            // todo: figure out how to handle modified dates in cells
-            last_modified: String::new(),
+            last_modified: date_string(),
         }
     }
 }
@@ -272,7 +272,8 @@ mod test {
                 result: crate::grid::CodeCellRunResult::Ok {
                     output_value: Value::Single(CellValue::Number(12.into())),
                     cells_accessed: vec![]
-                }
+                },
+                spill: false,
             }),
         );
         assert_eq!(ops.len(), 2);
@@ -330,7 +331,8 @@ mod test {
                 result: crate::grid::CodeCellRunResult::Ok {
                     output_value: Value::Array(array),
                     cells_accessed: vec![]
-                }
+                },
+                spill: false,
             }),
         );
         assert_eq!(ops.len(), 3);

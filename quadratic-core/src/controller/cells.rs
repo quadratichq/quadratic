@@ -105,9 +105,7 @@ impl GridController {
                     1,
                 )),
             });
-        }
-        // todo: include other types here
-        else {
+        } else {
             let values = Array::from(CellValue::Text(value.into()));
             ops.push(Operation::SetCellValues { region, values });
         }

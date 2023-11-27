@@ -1,5 +1,7 @@
 use std::{collections::HashSet, ops::Range};
 
+use itertools::Itertools;
+
 use super::Sheet;
 use crate::{
     grid::{CellRef, CodeCellValue},
@@ -15,32 +17,46 @@ impl Sheet {
     ) -> Option<CodeCellValue> {
         let cell_ref = self.get_or_create_cell_ref(pos);
         let old = self.code_cells.remove(&cell_ref);
+
         if let Some(code_cell) = code_cell {
-            if let Some(output) = code_cell.output.clone() {
+            if let Some(output) = &code_cell.output {
                 match output.output_value() {
-                    Some(output_value) => match output_value {
-                        Value::Single(_) => {
-                            let (_, column) = self.get_or_create_column(pos.x);
-                            column.spills.set(pos.y, Some(cell_ref));
-                        }
-                        Value::Array(array) => {
-                            let start = pos.x;
-                            let end = start + array.width() as i64;
-                            let range = Range {
-                                start: pos.y,
-                                end: pos.y + array.height() as i64,
-                            };
-                            for x in start..end {
-                                let (_, column) = self.get_or_create_column(x);
-                                column.spills.set_range(range.clone(), cell_ref);
+                    Some(output_value) => {
+                        match output_value {
+                            Value::Single(_) => {
+                                let (_, column) = self.get_or_create_column(pos.x);
+                                column.spills.set(pos.y, Some(cell_ref));
+                            }
+                            Value::Array(array) => {
+                                // if spilled only set the top left cell
+                                if output.spill {
+                                    let (_, column) = self.get_or_create_column(pos.x);
+                                    column.spills.set(pos.y, Some(cell_ref));
+                                }
+                                // otherwise set the whole array
+                                else {
+                                    let start = pos.x;
+                                    let end = start + array.width() as i64;
+                                    let range = Range {
+                                        start: pos.y,
+                                        end: pos.y + array.height() as i64,
+                                    };
+                                    for x in start..end {
+                                        let (_, column) = self.get_or_create_column(x);
+                                        column.spills.set_range(range.clone(), cell_ref);
+                                    }
+                                }
                             }
                         }
-                    },
+                    }
                     None => {
                         let (_, column) = self.get_or_create_column(pos.x);
                         column.spills.set(pos.y, Some(cell_ref));
                     }
                 }
+            } else {
+                let (_, column) = self.get_or_create_column(pos.x);
+                column.spills.set(pos.y, Some(cell_ref));
             }
             self.code_cells.insert(cell_ref, code_cell);
         }
@@ -68,14 +84,20 @@ impl Sheet {
         )
     }
 
+    /// Get the spill location for a given cell_ref.  Note that a spill is
+    /// also stored as as cell_ref.
+    pub fn get_spill(&self, cell_ref: CellRef) -> Option<CellRef> {
+        let pos = self.cell_ref_to_pos(cell_ref)?;
+        let column = self.get_column(pos.x)?;
+        column.spills.get(pos.y)
+    }
+
     /// Returns an iterator over all locations containing code cells that may
     /// spill into `region`.
     pub fn iter_code_cells_locations_in_region(
         &self,
         region: Rect,
     ) -> impl Iterator<Item = CellRef> {
-        // Scan spilled cells to find code cells. TODO: this won't work for
-        // unspilled code cells
         let code_cell_refs: HashSet<CellRef> = self
             .columns
             .range(region.x_range())
@@ -94,7 +116,32 @@ impl Sheet {
         self.code_cells.keys().copied()
     }
 
-    // fn unspill(&mut self, source: CellRef) {
-    //     todo!("unspill cells from {source:?}");
-    // }
+    /// Checks if the deletion of a cell or a code_cell released a spill error;
+    /// sorted by earliest last_modified.
+    /// Returns the cell_ref and the code_cell_value if it did
+    pub fn spill_error_released(&self, cell_ref: CellRef) -> Option<(CellRef, CodeCellValue)> {
+        self.code_cells
+            .iter()
+            .filter(|(_, code_cell)| code_cell.has_spill_error())
+            .sorted_by_key(|a| &a.1.last_modified)
+            .filter_map(|(code_cell_ref, code_cell)| {
+                let pos = self.cell_ref_to_pos(*code_cell_ref)?;
+                let array_size = code_cell.output_size();
+                let rect = Rect::from_pos_and_size(pos, array_size);
+
+                self.existing_region(rect)
+                    .contains(cell_ref)
+                    .then(|| (*code_cell_ref, code_cell.to_owned()))
+            })
+            .find(|(cell_ref, code_cell)| {
+                let array_size = code_cell.output_size();
+                if array_size.len() > 1 {
+                    !self
+                        .is_ok_to_spill_in(*cell_ref, array_size)
+                        .unwrap_or(false)
+                } else {
+                    false
+                }
+            })
+    }
 }

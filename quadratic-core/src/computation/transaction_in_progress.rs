@@ -6,6 +6,7 @@ use wasm_bindgen::JsValue;
 use crate::{
     controller::update_code_cell_value::update_code_cell_value,
     grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult},
+    util::date_string,
     Error, ErrorMsg, Span,
 };
 
@@ -119,7 +120,7 @@ impl TransactionInProgress {
                 &mut self.sheets_with_changed_bounds,
                 compute,
             );
-            self.reverse_operations.push(reverse_operation);
+            self.reverse_operations.extend(reverse_operation);
         }
     }
 
@@ -148,6 +149,7 @@ impl TransactionInProgress {
                 );
                 return;
             };
+        updated_code_cell_value.last_modified = date_string();
         let msg = ErrorMsg::PythonError(error_msg.clone().into());
         let span = line_number.map(|line_number| Span {
             start: line_number as u32,
@@ -159,6 +161,7 @@ impl TransactionInProgress {
             std_out: None,
             std_err: Some(error_msg),
             result,
+            spill: false,
         });
         update_code_cell_value(
             grid_controller,
