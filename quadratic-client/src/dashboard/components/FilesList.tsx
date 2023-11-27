@@ -1,8 +1,14 @@
-import { FileIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
+import { TYPE } from '@/constants/appConstants';
+import { ROUTES } from '@/constants/routes';
+import { Button } from '@/shadcn/ui/button';
+import { Separator } from '@/shadcn/ui/separator';
+import { cn } from '@/shadcn/utils';
+import { ExternalLinkIcon, FileIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
+import mixpanel from 'mixpanel-browser';
 import { useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { ActionFunctionArgs, useFetchers, useLocation } from 'react-router-dom';
+import { ActionFunctionArgs, Link, useFetchers, useLocation } from 'react-router-dom';
 import { apiClient } from '../../api/apiClient';
 import { Empty } from '../../components/Empty';
 import { ShareFileMenu } from '../../components/ShareFileMenu';
@@ -117,15 +123,101 @@ export function FilesList({ files }: { files: FilesListFile[] }) {
         />
       )}
 
-      {filesBeingDeleted.length === files.length && filesBeingDuplicated.length === 0 && (
+      {!filterValue && filesBeingDeleted.length === files.length && filesBeingDuplicated.length === 0 && (
         <Empty
+          className="max-w-xl"
           title="No files"
-          description={
-            <>
-              Using the buttons on this page, create a new file or import a <code>.grid</code> file from your computer.
-            </>
-          }
+          description={<>You don’t have any files, but you can create one below.</>}
           Icon={FileIcon}
+          actions={
+            <div className="border border-border">
+              {[
+                {
+                  title: 'Learn the basics',
+                  description: 'With an instructional walk-through',
+                  action: (
+                    <Button asChild variant="secondary">
+                      <Link
+                        to={ROUTES.CREATE_FILE}
+                        reloadDocument
+                        onClick={() => {
+                          mixpanel.track('[FilesEmptyState].clickOpenStarterFile');
+                        }}
+                      >
+                        Open starter file
+                      </Link>
+                    </Button>
+                  ),
+                  className: 'bg-yellow-50',
+                },
+                {
+                  title: 'Get started',
+                  description: 'With a fresh new file',
+                  action: (
+                    <Button asChild variant="secondary">
+                      <Link
+                        to={ROUTES.CREATE_FILE}
+                        reloadDocument
+                        onClick={() => {
+                          mixpanel.track('[FilesEmptyState].clickCreateBlankFile');
+                        }}
+                      >
+                        Create blank file
+                      </Link>
+                    </Button>
+                  ),
+                },
+                {
+                  title: 'See what’s possible',
+                  description: 'Like filtering and fetching data',
+                  action: (
+                    <Button asChild variant="secondary">
+                      <Link
+                        to={ROUTES.EXAMPLES}
+                        onClick={() => {
+                          mixpanel.track('[FilesEmptyState].clickExploreExamples');
+                        }}
+                      >
+                        Explore examples
+                      </Link>
+                    </Button>
+                  ),
+                },
+                {
+                  title: 'Deep dive',
+                  description: 'All the details of using the app',
+                  action: (
+                    <Button asChild variant="secondary">
+                      <Link
+                        to={ROUTES.CREATE_FILE}
+                        reloadDocument
+                        onClick={() => {
+                          mixpanel.track('[FilesEmptyState].clickReadDocs');
+                        }}
+                      >
+                        Read the docs
+                        <ExternalLinkIcon className="ml-2" />
+                      </Link>
+                    </Button>
+                  ),
+                },
+              ].map(({ title, description, action, className }, i) => (
+                <>
+                  {i !== 0 ? <Separator /> : null}
+                  <div
+                    className={cn(`p-3 text-center sm:flex sm:items-center sm:justify-between sm:text-left`, className)}
+                  >
+                    <div className="mb-2 flex flex-col sm:mb-0">
+                      <h2 className={`${TYPE.body2} font-semibold`}>{title}</h2>
+                      <p className={`${TYPE.body2} text-muted-foreground`}>{description}</p>
+                    </div>
+
+                    <div>{action}</div>
+                  </div>
+                </>
+              ))}
+            </div>
+          }
         />
       )}
 

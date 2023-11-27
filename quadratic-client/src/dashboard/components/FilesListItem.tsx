@@ -24,7 +24,7 @@ export function FilesListItems({ children, viewPreferences }: any) {
   return (
     <ul
       className={cn(
-        viewPreferences.layout === Layout.Grid && 'grid grid-cols-[repeat(auto-fill,minmax(272px,1fr))] gap-4 pb-2'
+        viewPreferences.layout === Layout.Grid && 'grid grid-cols-[repeat(auto-fill,minmax(272px,1fr))] gap-4'
       )}
     >
       {children}
