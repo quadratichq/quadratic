@@ -336,6 +336,7 @@ export class PixiApp {
 
   adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
     this.cellsSheets.adjustHeadings(options);
+    this.cellsSheets.updateBordersString([options.sheetId]);
     this.headings.dirty = true;
     this.gridLines.dirty = true;
     this.cursor.dirty = true;
