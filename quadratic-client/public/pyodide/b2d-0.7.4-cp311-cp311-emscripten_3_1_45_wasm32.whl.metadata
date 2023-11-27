@@ -1,0 +1,14 @@
+Metadata-Version: 2.1
+Name: b2d
+Version: 0.7.4
+Summary: A test project using pybind11
+Home-page: https://github.com/pybind/python_example
+Author: Thorsten Beier
+Author-email: derthorstenbeier@gmail.com
+Requires-Python: >=3.6
+License-File: LICENCE.txt
+Requires-Dist: numpy
+Requires-Dist: pydantic
+Provides-Extra: test
+Requires-Dist: pytest ; extra == 'test'
+
