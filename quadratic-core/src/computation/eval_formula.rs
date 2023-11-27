@@ -54,6 +54,7 @@ impl TransactionInProgress {
                                     output_value: value,
                                     cells_accessed: self.cells_accessed.clone(),
                                 },
+                                spill: false,
                             }),
                             // todo
                             last_modified: String::new(),

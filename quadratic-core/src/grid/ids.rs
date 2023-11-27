@@ -111,11 +111,11 @@ impl RegionRef {
         self.columns.len() == 0 && self.rows.len() == 0
     }
 
-    // returns if a cell is in the region
-    pub fn contains(&self, cell: &CellRef) -> bool {
-        self.sheet == cell.sheet
-            && self.columns.contains(&cell.column)
-            && self.rows.contains(&cell.row)
+    /// returns whether a RegionRef contains a CellRef
+    pub fn contains(&self, cell_ref: &CellRef) -> bool {
+        self.sheet == cell_ref.sheet
+            && self.columns.contains(&cell_ref.column)
+            && self.rows.contains(&cell_ref.row)
     }
 }
 

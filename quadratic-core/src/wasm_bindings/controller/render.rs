@@ -7,9 +7,9 @@ impl GridController {
     ///
     /// Returns a string containing a JSON array of [`JsRenderCell`].
     #[wasm_bindgen(js_name = "getRenderCells")]
-    pub fn get_render_cells(&self, sheet_id: String, &region: &Rect) -> Result<String, JsValue> {
+    pub fn get_render_cells(&self, sheet_id: String, &rect: &Rect) -> Result<String, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let output = self.sheet(sheet_id).get_render_cells(region);
+        let output = self.sheet(sheet_id).get_render_cells(rect);
         Ok(serde_json::to_string::<[JsRenderCell]>(&output).map_err(|e| e.to_string())?)
     }
 

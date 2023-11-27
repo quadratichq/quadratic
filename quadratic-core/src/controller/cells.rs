@@ -93,6 +93,7 @@ impl GridController {
                     1,
                 )),
             });
+
             CellValue::Number(percent)
         } else {
             CellValue::Text(value.into())

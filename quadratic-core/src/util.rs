@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::fmt;
 use std::ops::Range;
 
+use chrono::Utc;
 use itertools::Itertools;
 
 pub(crate) mod btreemap_serde {
@@ -269,6 +270,11 @@ pub fn dbgjs(val: impl fmt::Debug) {
     }
 }
 
+pub fn date_string() -> String {
+    let now = Utc::now();
+    now.format("%Y-%m-%d %H:%M:%S").to_string()
+}
+
 #[cfg(test)]
 pub(crate) fn assert_f64_approx_eq(expected: f64, actual: &str) {
     const EPSILON: f64 = 0.0001;
@@ -421,5 +427,10 @@ mod tests {
         assert_eq!(pos![Cn6], crate::Pos { x: 2, y: -6 });
         assert_eq!(pos![nC6], crate::Pos { x: -3, y: 6 });
         assert_eq!(pos![nCn6], crate::Pos { x: -3, y: -6 });
+    }
+
+    #[test]
+    fn test_date_string() {
+        assert_eq!(date_string().len(), 19);
     }
 }

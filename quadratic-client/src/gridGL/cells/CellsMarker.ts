@@ -47,7 +47,12 @@ export class CellsMarkers extends Container {
 
   add(x: number, y: number, type: CodeCellLanguage | string, state?: JsRenderCodeCellState | string): void {
     let error: Sprite | undefined;
-    if (state === JsRenderCodeCellState.RunError || state === 'RunError') {
+    if (
+      state === JsRenderCodeCellState.RunError ||
+      state === 'RunError' ||
+      state === JsRenderCodeCellState.SpillError ||
+      state === 'SpillError'
+    ) {
       error = this.addChild(new Sprite(this.triangle));
       error.alpha = 0.5;
       error.scale.set(0.1);
