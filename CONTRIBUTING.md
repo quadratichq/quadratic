@@ -10,7 +10,7 @@ If you have any problems getting the project to run locally, please create an is
 
 ## Setup
 
-1. Install NPM `cd quadratic-client && npm i`
+1. Install NPM
 2. Install [rustup](https://www.rust-lang.org/tools/install)
 3. Install [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
 4. `rustup target add wasm32-unknown-unknown` to install the WASM toolchain
@@ -24,9 +24,10 @@ In order to run the front-end and/or the server locally, you must have all the e
 
 ### Run front-end locally
 
-1. `npm install` to install dependencies
-2. Configure `.env.local` values
-3. (a) `npm start` to run in browser or `npm run dev` to run with Electron; or (b) `npm run watch:front-end` to run in browser with automatic wasm rebuilding
+1. `cd quadratic-client`
+2. `npm i` to install dependencies
+3. Configure `.env.local` values
+4. (a) `npm start` to run in browser or `npm run dev` to run with Electron; or (b) `npm run watch:front-end` to run in browser with automatic wasm rebuilding
 
 ### Run server locally
 
