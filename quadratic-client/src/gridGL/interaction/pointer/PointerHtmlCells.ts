@@ -105,7 +105,6 @@ export class PointerHtmlCells {
     const bottomDiv = htmlCell.childNodes[2] as HTMLDivElement;
     if (right) {
       rightDiv.classList.add('resize-control--is-dragging');
-      console.log('hi');
     } else {
       rightDiv.classList.remove('resize-control--is-dragging');
     }
