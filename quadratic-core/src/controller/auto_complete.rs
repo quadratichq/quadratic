@@ -149,7 +149,7 @@ impl GridController {
     fn shrink(&mut self, sheet_id: SheetId, delete_range: Rect) -> Vec<Operation> {
         let mut ops = vec![];
 
-        ops.extend(self.delete_cell_values_operations(sheet_id, delete_range));
+        ops.extend(self.delete_cells_rect_operations(sheet_id, delete_range));
         ops.extend(self.clear_formatting_operations(sheet_id, delete_range));
         ops
     }
@@ -570,10 +570,21 @@ impl GridController {
             negative,
         });
 
-        let array = Array::new_row_major(range.size(), series.to_owned().into())
+        let values = Array::new_row_major(range.size(), series.to_owned().into())
             .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", range.size(), e))?;
 
-        let ops = self.set_cells_operations(sheet_id, range.min, array);
+        let start_pos = range.min;
+        let end_pos = Pos {
+            x: start_pos.x + values.width() as i64 - 1,
+            y: start_pos.y + values.height() as i64 - 1,
+        };
+        let rect = Rect {
+            min: start_pos,
+            max: end_pos,
+        };
+        let region = self.region(sheet_id, rect);
+
+        let ops = vec![Operation::SetCellValues { region, values }];
 
         Ok((ops, series))
     }
