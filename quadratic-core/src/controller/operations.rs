@@ -54,9 +54,9 @@ impl GridController {
                     .code_cells
                     .iter()
                     .filter_map(|(cell_ref, _)| {
-                        if region.contains(&cell_ref) {
+                        if region.contains(cell_ref) {
                             let pos = sheet.cell_ref_to_pos(*cell_ref)?;
-                            Some((cell_ref.clone(), pos))
+                            Some((*cell_ref, pos))
                         } else {
                             None
                         }
@@ -79,7 +79,7 @@ impl GridController {
                         &mut reverse_operations,
                     );
                     reverse_operations.push(Operation::SetCellCode {
-                        cell_ref: cell_ref.clone(),
+                        cell_ref,
                         code_cell_value: old_value,
                     });
                 }
