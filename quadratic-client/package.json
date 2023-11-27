@@ -18,7 +18,6 @@
     "@emotion/react": "^11.7.0",
     "@emotion/styled": "^11.6.0",
     "@monaco-editor/react": "^4.3.1",
-    "@mui/base": "^5.0.0-beta.11",
     "@mui/icons-material": "^5.2.0",
     "@mui/material": "^5.2.2",
     "@radix-ui/react-dialog": "^1.0.5",
@@ -28,9 +27,7 @@
     "@radix-ui/react-select": "^2.0.0",
     "@radix-ui/react-separator": "^1.0.3",
     "@radix-ui/react-slot": "^1.0.2",
-    "@radix-ui/react-toggle": "^1.0.3",
     "@radix-ui/react-tooltip": "^1.0.7",
-    "@sentry/browser": "^7.76.0",
     "@sentry/react": "^7.76.0",
     "@szhsin/react-menu": "^4.0.2",
     "class-variance-authority": "^0.7.0",
@@ -39,7 +36,6 @@
     "fontfaceobserver": "^2.3.0",
     "fuzzysort": "^2.0.4",
     "localforage": "^1.10.0",
-    "lodash.debounce": "^4.0.8",
     "mixpanel-browser": "^2.46.0",
     "monaco-editor": "^0.40.0",
     "pixi-viewport": "^4.37.0",
@@ -99,13 +95,9 @@
   "devDependencies": {
     "@playwright/test": "^1.22.2",
     "@testing-library/jest-dom": "^5.11.4",
-    "@testing-library/react": "^11.1.0",
-    "@testing-library/user-event": "^12.1.10",
     "@types/color": "^3.0.3",
-    "@types/common-tags": "^1.8.1",
     "@types/fontfaceobserver": "^2.1.0",
     "@types/jest": "^27.0.2",
-    "@types/lodash.debounce": "^4.0.7",
     "@types/mixpanel-browser": "^2.38.1",
     "@types/react": "^18.2.16",
     "@types/react-color": "^3.0.6",
@@ -121,7 +113,6 @@
     "fs-extra": "^11.1.0",
     "jest-environment-jsdom": "^29.7.0",
     "msdf-bmfont-xml": "^2.7.0",
-    "nodemon": "^3.0.1",
     "postcss": "^8.4.31",
     "prettier": "2.8.3",
     "prettier-plugin-tailwindcss": "^0.4.1",
@@ -129,9 +120,7 @@
     "serve": "^14.2.0",
     "tailwindcss": "^3.3.5",
     "ts-jest": "^29.1.1",
-    "ts-node": "^10.9.1",
     "typescript": "^4.4.4",
-    "vite": "^5.0.0",
-    "wait-on": "^7.0.1"
+    "vite": "^5.0.0"
   }
 }
