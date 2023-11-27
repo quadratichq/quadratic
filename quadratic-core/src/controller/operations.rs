@@ -19,6 +19,7 @@ impl GridController {
     pub fn execute_operation(
         &mut self,
         op: Operation,
+        cells_updated: &mut IndexSet<RegionRef>,
         cells_to_compute: &mut IndexSet<CellRef>,
         summary: &mut TransactionSummary,
         sheets_with_changed_bounds: &mut HashSet<SheetId>,
@@ -36,17 +37,52 @@ impl GridController {
                     .zip(values.into_cell_values_vec())
                     .map(|(cell_ref, value)| {
                         let pos = sheet.cell_ref_to_pos(cell_ref)?;
-                        cells_to_compute.insert(cell_ref);
                         let response = sheet.set_cell_value(pos, value)?;
                         Some(response.old_value)
                     })
                     .map(|old_value| old_value.unwrap_or(CellValue::Blank))
                     .collect();
+                cells_updated.insert(region.clone());
 
                 let old_values = Array::new_row_major(size, old_values)
                     .expect("error constructing array of old values for SetCells operation");
 
                 CellSheetsModified::add_region(&mut summary.cell_sheets_modified, sheet, &region);
+
+                // check if override any code cells
+                let code_cells_to_delete = sheet
+                    .code_cells
+                    .iter()
+                    .filter_map(|(cell_ref, _)| {
+                        if region.contains(cell_ref) {
+                            let pos = sheet.cell_ref_to_pos(*cell_ref)?;
+                            Some((*cell_ref, pos))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<(CellRef, Pos)>>();
+
+                // remove the code cells if so, and add to reverse operations
+                let sheet_id = sheet.id;
+                for (cell_ref, pos) in code_cells_to_delete {
+                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                    let old_value = sheet.set_code_cell_value(pos, None);
+                    fetch_code_cell_difference(
+                        self,
+                        sheet_id,
+                        pos,
+                        old_value.clone(),
+                        None,
+                        summary,
+                        cells_to_compute,
+                        &mut reverse_operations,
+                    );
+                    reverse_operations.push(Operation::SetCellCode {
+                        cell_ref,
+                        code_cell_value: old_value,
+                    });
+                }
 
                 // check for changes in spills
                 for cell_ref in region.iter() {
@@ -392,11 +428,13 @@ mod tests {
     use super::*;
 
     fn execute(gc: &mut GridController, operation: Operation) {
+        let mut cells_updated = IndexSet::new();
         let mut cells_to_compute = IndexSet::new();
         let mut summary = TransactionSummary::default();
         let mut sheets_with_changed_bounds = HashSet::new();
         gc.execute_operation(
             operation,
+            &mut cells_updated,
             &mut cells_to_compute,
             &mut summary,
             &mut sheets_with_changed_bounds,

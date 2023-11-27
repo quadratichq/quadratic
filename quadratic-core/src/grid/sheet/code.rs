@@ -130,7 +130,7 @@ impl Sheet {
                 let rect = Rect::from_pos_and_size(pos, array_size);
 
                 self.existing_region(rect)
-                    .contains(cell_ref)
+                    .contains(&cell_ref)
                     .then(|| (*code_cell_ref, code_cell.to_owned()))
             })
             .find(|(cell_ref, code_cell)| {
