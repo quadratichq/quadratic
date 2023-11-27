@@ -45,6 +45,22 @@ export const IFrameHtmlCell = (props: Props) => {
           const style = window.getComputedStyle(iframe.contentWindow.document.body);
 
           // move margin to the div holding the iframe to avoid pinch-to-zoom issues
+          if (style.marginLeft) {
+            div.style.marginLeft = style.marginLeft;
+            iframe.contentWindow.document.body.style.marginLeft = '0';
+          }
+          if (style.marginTop) {
+            div.style.marginTop = style.marginTop;
+            iframe.contentWindow.document.body.style.marginTop = '0';
+          }
+          if (style.marginRight) {
+            div.style.marginRight = style.marginRight;
+            iframe.contentWindow.document.body.style.marginRight = '0';
+          }
+          if (style.marginBottom) {
+            div.style.marginBottom = style.marginBottom;
+            iframe.contentWindow.document.body.style.marginBottom = '0';
+          }
 
           if (!htmlCell.w) {
             iframe.width = (
