@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
     grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Sheet},
+    util::date_string,
     Array, CellValue, Error, ErrorMsg, Pos, Rect, Span, Value,
 };
 
@@ -90,6 +91,7 @@ pub struct JsCodeResult {
     output_value: Option<String>,
     array_output: Option<Vec<Vec<String>>>,
     line_number: Option<u32>,
+    pub cancel_compute: Option<bool>,
 }
 
 impl JsCodeResult {
@@ -148,10 +150,9 @@ impl JsCodeResult {
                 std_out: self.input_python_std_out.clone(),
                 std_err: self.error_msg.clone(),
                 result,
+                spill: false,
             }),
-
-            // todo: figure out how to handle modified dates in cells
-            last_modified: String::new(),
+            last_modified: date_string(),
         }
     }
 }
@@ -159,6 +160,7 @@ impl JsCodeResult {
 #[wasm_bindgen]
 impl JsCodeResult {
     #[wasm_bindgen(constructor)]
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         success: bool,
         formatted_code: Option<String>,
@@ -167,6 +169,7 @@ impl JsCodeResult {
         output_value: Option<String>,
         array_output: Option<String>,
         line_number: Option<u32>,
+        cancel_compute: Option<bool>,
     ) -> Self {
         let array_output: Option<Vec<Vec<String>>> = if let Some(output_value) = array_output {
             match serde_json::from_str(&output_value) {
@@ -186,6 +189,7 @@ impl JsCodeResult {
             output_value,
             array_output,
             line_number,
+            cancel_compute: cancel_compute.or(Some(false)),
         }
     }
 }
@@ -246,6 +250,7 @@ mod test {
             output_value: Some("$12".into()),
             array_output: None,
             line_number: None,
+            cancel_compute: None,
         };
 
         let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
@@ -267,7 +272,8 @@ mod test {
                 result: crate::grid::CodeCellRunResult::Ok {
                     output_value: Value::Single(CellValue::Number(12.into())),
                     cells_accessed: vec![]
-                }
+                },
+                spill: false,
             }),
         );
         assert_eq!(ops.len(), 2);
@@ -290,6 +296,7 @@ mod test {
             output_value: None,
             array_output: Some(array_output),
             line_number: None,
+            cancel_compute: None,
         };
 
         let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
@@ -324,7 +331,8 @@ mod test {
                 result: crate::grid::CodeCellRunResult::Ok {
                     output_value: Value::Array(array),
                     cells_accessed: vec![]
-                }
+                },
+                spill: false,
             }),
         );
         assert_eq!(ops.len(), 3);

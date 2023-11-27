@@ -104,6 +104,13 @@ impl RegionRef {
     pub fn is_empty(&self) -> bool {
         self.columns.len() == 0 && self.rows.len() == 0
     }
+
+    /// returns whether a RegionRef contains a CellRef
+    pub fn contains(&self, cell_ref: CellRef) -> bool {
+        self.sheet == cell_ref.sheet
+            && self.columns.contains(&cell_ref.column)
+            && self.rows.contains(&cell_ref.row)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

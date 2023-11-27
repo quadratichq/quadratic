@@ -43,6 +43,9 @@ impl GridController {
         let region = RegionRef::from(cell_ref);
         let mut ops = vec![];
 
+        // strip whitespace
+        let value = value.trim();
+
         // remove any code cell that was originally over the cell
         if sheet.get_code_cell(pos).is_some() {
             ops.push(Operation::SetCellCode {
@@ -52,7 +55,12 @@ impl GridController {
         }
 
         // check for currency
-        if let Some((currency, number)) = CellValue::unpack_currency(value) {
+        if value.is_empty() {
+            ops.push(Operation::SetCellValues {
+                region: region.clone(),
+                values: Array::from(CellValue::Blank),
+            });
+        } else if let Some((currency, number)) = CellValue::unpack_currency(value) {
             ops.push(Operation::SetCellValues {
                 region: region.clone(),
                 values: Array::from(CellValue::Number(number)),
@@ -97,9 +105,7 @@ impl GridController {
                     1,
                 )),
             });
-        }
-        // todo: include other types here
-        else {
+        } else {
             let values = Array::from(CellValue::Text(value.into()));
             ops.push(Operation::SetCellValues { region, values });
         }
@@ -314,6 +320,7 @@ impl GridController {
 mod test {
     use crate::{
         controller::{transaction_summary::CellSheetsModified, GridController},
+        grid::{NumericDecimals, NumericFormat},
         CellValue, Pos,
     };
     use std::{collections::HashSet, str::FromStr};
@@ -368,5 +375,66 @@ mod test {
 
         let value = String::from("$123.123abc");
         assert_eq!(CellValue::unpack_currency(&value), None);
+    }
+
+    #[test]
+    fn test_set_cell_value() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let pos = Pos { x: 0, y: 0 };
+        let get_cell_value =
+            |g: &GridController| g.sheet(sheet_id).get_cell_value(pos).unwrap_or_default();
+        let get_cell_numeric_format =
+            |g: &GridController| g.sheet(sheet_id).get_formatting_value::<NumericFormat>(pos);
+        let get_cell_numeric_decimals = |g: &GridController| {
+            g.sheet(sheet_id)
+                .get_formatting_value::<NumericDecimals>(pos)
+        };
+
+        // empty string converts to blank cell value
+        gc.set_cell_value(sheet_id, pos, " ".into(), None);
+        assert_eq!(get_cell_value(&gc), CellValue::Blank);
+
+        // currency
+        gc.set_cell_value(sheet_id, pos, "$1.22".into(), None);
+        assert_eq!(
+            get_cell_value(&gc),
+            CellValue::Number(BigDecimal::from_str("1.22").unwrap())
+        );
+        assert_eq!(
+            get_cell_numeric_format(&gc),
+            Some(NumericFormat {
+                kind: crate::grid::NumericFormatKind::Currency,
+                symbol: Some("$".into())
+            })
+        );
+        assert_eq!(get_cell_numeric_decimals(&gc), Some(2));
+
+        // number
+        gc.set_cell_value(sheet_id, pos, "1.22".into(), None);
+        assert_eq!(
+            get_cell_value(&gc),
+            CellValue::Number(BigDecimal::from_str("1.22").unwrap())
+        );
+        assert_eq!(get_cell_numeric_decimals(&gc), Some(2));
+
+        // percentage
+        gc.set_cell_value(sheet_id, pos, "10.55%".into(), None);
+        assert_eq!(
+            get_cell_value(&gc),
+            CellValue::Number(BigDecimal::from_str(".1055").unwrap())
+        );
+        assert_eq!(
+            get_cell_numeric_format(&gc),
+            Some(NumericFormat {
+                kind: crate::grid::NumericFormatKind::Percentage,
+                symbol: None
+            })
+        );
+        assert_eq!(get_cell_numeric_decimals(&gc), Some(2));
+
+        // array
+        gc.set_cell_value(sheet_id, pos, "[1,2,3]".into(), None);
+        assert_eq!(get_cell_value(&gc), CellValue::Text("[1,2,3]".into()));
     }
 }

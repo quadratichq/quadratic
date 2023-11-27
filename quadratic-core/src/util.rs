@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::fmt;
 use std::ops::Range;
 
+use chrono::Utc;
 use itertools::Itertools;
 
 pub(crate) mod btreemap_serde {
@@ -249,6 +250,17 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
     format!("{prefix} {i}")
 }
 
+pub fn maybe_reverse_range(
+    range: Range<i64>,
+    rev: bool,
+) -> itertools::Either<impl Iterator<Item = i64>, impl Iterator<Item = i64>> {
+    if !rev {
+        itertools::Either::Left(range)
+    } else {
+        itertools::Either::Right(range.rev())
+    }
+}
+
 /// For debugging both in tests and in the JS console
 pub fn dbgjs(val: impl fmt::Debug) {
     if cfg!(test) {
@@ -256,6 +268,11 @@ pub fn dbgjs(val: impl fmt::Debug) {
     } else {
         crate::wasm_bindings::js::log(&(format!("{:?}", val)));
     }
+}
+
+pub fn date_string() -> String {
+    let now = Utc::now();
+    now.format("%Y-%m-%d %H:%M:%S").to_string()
 }
 
 #[cfg(test)]
@@ -410,5 +427,10 @@ mod tests {
         assert_eq!(pos![Cn6], crate::Pos { x: 2, y: -6 });
         assert_eq!(pos![nC6], crate::Pos { x: -3, y: 6 });
         assert_eq!(pos![nCn6], crate::Pos { x: -3, y: -6 });
+    }
+
+    #[test]
+    fn test_date_string() {
+        assert_eq!(date_string().len(), 19);
     }
 }

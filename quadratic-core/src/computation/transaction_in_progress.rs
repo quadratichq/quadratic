@@ -6,6 +6,7 @@ use wasm_bindgen::JsValue;
 use crate::{
     controller::update_code_cell_value::update_code_cell_value,
     grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult},
+    util::date_string,
     Error, ErrorMsg, Span,
 };
 
@@ -63,7 +64,7 @@ impl TransactionInProgress {
     }
 
     // loop compute cycle until complete or an async call is made
-    pub(super) fn loop_compute(&mut self, grid_controller: &mut GridController) {
+    pub fn loop_compute(&mut self, grid_controller: &mut GridController) {
         loop {
             self.compute(grid_controller);
             if self.waiting_for_async.is_some() {
@@ -78,6 +79,11 @@ impl TransactionInProgress {
                 break;
             }
         }
+    }
+
+    /// Clear the `cells_to_compute` attribute
+    pub fn clear_cells_to_compute(&mut self) {
+        self.cells_to_compute.clear();
     }
 
     /// recalculate bounds for changed sheets
@@ -114,7 +120,7 @@ impl TransactionInProgress {
                 &mut self.sheets_with_changed_bounds,
                 compute,
             );
-            self.reverse_operations.push(reverse_operation);
+            self.reverse_operations.extend(reverse_operation);
         }
     }
 
@@ -143,6 +149,7 @@ impl TransactionInProgress {
                 );
                 return;
             };
+        updated_code_cell_value.last_modified = date_string();
         let msg = ErrorMsg::PythonError(error_msg.clone().into());
         let span = line_number.map(|line_number| Span {
             start: line_number as u32,
@@ -154,6 +161,7 @@ impl TransactionInProgress {
             std_out: None,
             std_err: Some(error_msg),
             result,
+            spill: false,
         });
         update_code_cell_value(
             grid_controller,
@@ -444,6 +452,7 @@ mod test {
             Some(expected.clone()),
             array_output,
             None,
+            None,
         );
 
         // complete the transaction and verify the result
@@ -572,6 +581,7 @@ mod test {
             false,
             Some(code_string),
             Some(error),
+            None,
             None,
             None,
             None,
@@ -737,5 +747,28 @@ mod test {
             sheet.get_cell_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Number(1.into()))
         );
+    }
+
+    #[test]
+    fn test_python_cancellation() {
+        let mut gc = setup_python(None, "".into(), CellValue::Number(10.into()));
+
+        // mock the python result
+        let result = JsCodeResult::new(
+            true,
+            None,
+            None,
+            None,
+            Some("".into()),
+            None,
+            None,
+            Some(true),
+        );
+
+        gc.calculation_complete(result);
+
+        let transaction = gc.get_transaction_in_progress().unwrap();
+        assert!(transaction.complete);
+        assert_eq!(transaction.cells_to_compute.len(), 0);
     }
 }
