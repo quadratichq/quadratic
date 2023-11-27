@@ -295,9 +295,8 @@ impl CellValue {
             | (CellValue::Logical(_), _)
             | (CellValue::Instant(_), _)
             | (CellValue::Duration(_), _)
+            | (CellValue::Html(_), _)
             | (CellValue::Blank, _) => return Ok(None),
-
-            (CellValue::Html(_), _) => return Ok(None),
         }))
     }
 
@@ -449,10 +448,7 @@ impl CellValue {
     }
 
     pub fn is_html(&self) -> bool {
-        match self {
-            CellValue::Html(_) => true,
-            _ => false,
-        }
+        return matches!(self, CellValue::Html(_));
     }
 }
 

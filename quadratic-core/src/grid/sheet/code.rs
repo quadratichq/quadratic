@@ -2,7 +2,7 @@ use std::{collections::HashSet, ops::Range};
 
 use super::Sheet;
 use crate::{
-    grid::{CellRef, CodeCellValue},
+    grid::{CellRef, CodeCellValue, RenderSize},
     CellValue, Pos, Rect, Value,
 };
 
@@ -94,23 +94,19 @@ impl Sheet {
         self.code_cells.keys().copied()
     }
 
-    /// returns the output_size for a html-like cell; returns 0, 0 if not set
-    pub fn html_output_size(&self, pos: Pos) -> (i64, i64) {
-        if let Some(column) = self.get_column(pos.x) {
-            if let Some(output_size) = column.render_size.get(pos.y) {
-                return (output_size.w, output_size.h);
-            }
-        }
-        (0, 0)
+    /// returns the render-size for a html-like cell
+    pub fn render_size(&self, pos: Pos) -> Option<RenderSize> {
+        let column = self.get_column(pos.x)?;
+        column.render_size.get(pos.y)
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{controller::GridController, Rect};
+    use crate::{controller::GridController, grid::RenderSize, Rect};
 
     #[test]
-    fn test_html_output_size() {
+    fn test_render_size() {
         use crate::Pos;
 
         let mut gc = GridController::new();
@@ -123,7 +119,10 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.html_output_size(Pos { x: 0, y: 0 }), (10, 20));
-        assert_eq!(sheet.html_output_size(Pos { x: 1, y: 1 }), (0, 0));
+        assert_eq!(
+            sheet.render_size(Pos { x: 0, y: 0 }),
+            Some(RenderSize { w: 10, h: 20 })
+        );
+        assert_eq!(sheet.render_size(Pos { x: 1, y: 1 }), None);
     }
 }

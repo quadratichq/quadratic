@@ -73,7 +73,7 @@ impl GridController {
 
                 // for compute, we keep the original cell output to avoid flashing of output (since values will be overridden once computation is complete)
                 if compute {
-                    if let Some(code_cell_value) = code_cell_value.as_ref() {
+                    if let Some(code_cell_value) = &code_cell_value {
                         let updated_code_cell_value =
                             if let Some(old_code_cell_value) = old_code_cell_value.as_ref() {
                                 let mut updated_code_cell_value = code_cell_value.clone();
@@ -105,17 +105,13 @@ impl GridController {
                 summary.code_cells_modified.insert(cell_ref.sheet);
 
                 // track changes for html
-                if let Some(code_cell_value) = code_cell_value.as_ref() {
-                    if let Some(code_cell_value) = code_cell_value.get_output_value(0, 0) {
-                        if code_cell_value.is_html() {
-                            summary.html.insert(cell_ref.sheet);
-                        }
+                if let Some(code_cell_value) = &code_cell_value {
+                    if code_cell_value.is_html() {
+                        summary.html.insert(cell_ref.sheet);
                     }
                 } else if let Some(old_code_cell_value) = &old_code_cell_value {
-                    if let Some(old_code_cell_value) = &old_code_cell_value.get_output_value(0, 0) {
-                        if old_code_cell_value.is_html() {
-                            summary.html.insert(cell_ref.sheet);
-                        }
+                    if old_code_cell_value.is_html() {
+                        summary.html.insert(cell_ref.sheet);
                     }
                 }
 
@@ -201,8 +197,7 @@ impl GridController {
                         )
                     }
                     CellFmtArray::RenderSize(output_size) => {
-                        // todo: this should send the updated html to the client
-                        // summary.html.push(region.sheet);
+                        summary.html.insert(region.sheet);
                         CellFmtArray::RenderSize(self.set_cell_formats_for_type::<RenderSize>(
                             &region,
                             output_size,

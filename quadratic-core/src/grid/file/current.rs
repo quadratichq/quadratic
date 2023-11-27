@@ -249,12 +249,9 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<CellRef, C
                                 } => CodeCellRunResult::Ok {
                                     output_value: match output_value {
                                         current::OutputValue::Single(
-                                            current::OutputValueValue {
-                                                type_field: _type_field,
-                                                value,
-                                            },
+                                            current::OutputValueValue { type_field, value },
                                         ) => {
-                                            if _type_field == "html" {
+                                            if type_field == "html" {
                                                 Value::Single(CellValue::Html(value))
                                             } else {
                                                 Value::Single(CellValue::from(value))

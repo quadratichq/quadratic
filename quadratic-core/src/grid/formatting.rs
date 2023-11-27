@@ -142,15 +142,16 @@ pub struct NumericFormat {
     pub symbol: Option<String>,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Copy)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
+/// Measures DOM element size in pixels.
 pub struct RenderSize {
-    pub w: i64,
-    pub h: i64,
+    pub w: u32,
+    pub h: u32,
 }
 
 #[derive(
-    Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Display, EnumString,
+    Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Display, EnumString, Copy,
 )]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "UPPERCASE")]

@@ -30,6 +30,14 @@ impl CodeCellValue {
         }
     }
 
+    pub fn is_html(&self) -> bool {
+        if let Some(code_cell_value) = self.get_output_value(0, 0) {
+            code_cell_value.is_html()
+        } else {
+            false
+        }
+    }
+
     pub fn cells_accessed_copy(&self) -> Option<Vec<CellRef>> {
         self.output.as_ref()?.cells_accessed().cloned()
     }

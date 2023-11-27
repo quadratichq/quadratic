@@ -232,8 +232,8 @@ impl GridController {
         &mut self,
         sheet_id: String,
         rect: &Rect,
-        w: i64,
-        h: i64,
+        w: u32,
+        h: u32,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
