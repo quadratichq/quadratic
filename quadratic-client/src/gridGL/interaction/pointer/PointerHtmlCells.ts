@@ -9,6 +9,7 @@ const tolerance = 10;
 export class PointerHtmlCells {
   private state: 'resizing-right' | 'resizing-bottom' | 'resizing-corner' | undefined;
   private htmlCell?: HTMLIFrameElement | undefined;
+  private htmlCellHover?: HTMLIFrameElement;
   cursor?: string;
   private width?: number;
   private height?: number;
@@ -34,6 +35,10 @@ export class PointerHtmlCells {
       if (right && bottom) {
         if (setHtmlCell) {
           this.htmlCell = htmlCell;
+          this.htmlCellHover = undefined;
+        } else {
+          this.htmlCellHover = htmlCell;
+          this.htmlCell = undefined;
         }
         return 'corner';
       }
@@ -41,6 +46,10 @@ export class PointerHtmlCells {
       if (e.data.global.y > rect.top && e.data.global.y < rect.bottom && right) {
         if (setHtmlCell) {
           this.htmlCell = htmlCell;
+          this.htmlCellHover = undefined;
+        } else {
+          this.htmlCellHover = htmlCell;
+          this.htmlCell = undefined;
         }
         return 'right';
       }
@@ -48,6 +57,10 @@ export class PointerHtmlCells {
       if (e.data.global.x > rect.left && e.data.global.x < rect.right && bottom) {
         if (setHtmlCell) {
           this.htmlCell = htmlCell;
+          this.htmlCellHover = undefined;
+        } else {
+          this.htmlCellHover = htmlCell;
+          this.htmlCell = undefined;
         }
         return 'bottom';
       }
@@ -62,8 +75,9 @@ export class PointerHtmlCells {
     if (this.width === undefined) {
       throw new Error('Expected width to be defined in PointerHtmlCells.setWidth');
     }
-    if (this.htmlCell.tagName === 'iframe') {
-      this.htmlCell.width = this.width.toString();
+    const isIframe = this.htmlCell.getAttribute('data-type') === 'iframe';
+    if (isIframe) {
+      (this.htmlCell.childNodes[1] as HTMLIFrameElement).width = this.width.toString();
     } else {
       this.htmlCell.style.width = `${this.width}px`;
     }
@@ -77,11 +91,42 @@ export class PointerHtmlCells {
     if (this.height === undefined) {
       throw new Error('Expected height to be defined in PointerHtmlCells.setHeight');
     }
-    if (this.htmlCell.tagName === 'iframe') {
-      this.htmlCell.height = this.height.toString();
+    const isIframe = this.htmlCell.getAttribute('data-type') === 'iframe';
+    if (isIframe) {
+      (this.htmlCell.childNodes[1] as HTMLIFrameElement).height = this.height.toString();
     } else {
       this.htmlCell.style.height = `${this.height}px`;
     }
+  }
+
+  private highlightEdges(htmlCell: HTMLDivElement | undefined, right: boolean, bottom: boolean) {
+    if (!htmlCell) return;
+    const rightDiv = htmlCell.childNodes[0] as HTMLDivElement;
+    const bottomDiv = htmlCell.childNodes[2] as HTMLDivElement;
+    if (right) {
+      rightDiv.classList.add('resize-control--is-dragging');
+      console.log('hi');
+    } else {
+      rightDiv.classList.remove('resize-control--is-dragging');
+    }
+    if (bottom) {
+      bottomDiv.classList.add('resize-control--is-dragging');
+    } else {
+      bottomDiv.classList.remove('resize-control--is-dragging');
+    }
+  }
+
+  clearHighlightEdges() {
+    const htmlCells = this.getHtmlCells();
+    for (let i = 0; i < htmlCells.length; i++) {
+      const htmlCell = htmlCells[i] as HTMLIFrameElement;
+      const rightDiv = htmlCell.childNodes[0] as HTMLDivElement;
+      const bottomDiv = htmlCell.childNodes[2] as HTMLDivElement;
+      rightDiv.classList.remove('resize-control--is-dragging');
+      bottomDiv.classList.remove('resize-control--is-dragging');
+    }
+    this.htmlCell = undefined;
+    this.htmlCellHover = undefined;
   }
 
   pointerMove(e: InteractionEvent): boolean {
@@ -89,14 +134,18 @@ export class PointerHtmlCells {
       switch (this.intersects(e, false)) {
         case 'right':
           this.cursor = 'col-resize';
+          this.highlightEdges(this.htmlCellHover, true, false);
           return true;
         case 'bottom':
           this.cursor = 'row-resize';
+          this.highlightEdges(this.htmlCellHover, false, true);
           return true;
         case 'corner':
           this.cursor = 'nwse-resize';
+          this.highlightEdges(this.htmlCellHover, true, true);
           return true;
         default:
+          this.clearHighlightEdges();
           this.cursor = undefined;
           return false;
       }
@@ -123,9 +172,11 @@ export class PointerHtmlCells {
     if (!this.htmlCell) {
       throw new Error('Expected htmlCell to be defined in PointerHtmlCells.pointerDown');
     }
-    if (this.htmlCell.tagName === 'iframe') {
-      this.width = parseFloat(this.htmlCell.width);
-      this.height = parseFloat(this.htmlCell.height);
+    const isIframe = this.htmlCell.getAttribute('data-type') === 'iframe';
+    if (isIframe) {
+      const iframe = this.htmlCell.childNodes[1] as HTMLIFrameElement;
+      this.width = parseFloat(iframe.width);
+      this.height = parseFloat(iframe.height);
     } else {
       this.width = this.htmlCell.offsetWidth;
       this.height = this.htmlCell.offsetHeight;

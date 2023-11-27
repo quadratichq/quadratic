@@ -4,6 +4,7 @@ import { JsHtmlOutput } from '@/quadratic-core/types';
 import { useCallback } from 'react';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { Wheel } from '../pixiOverride/Wheel';
+import { HTMLResizeControl } from './HTMLResizeControl';
 
 interface Props {
   htmlCell: JsHtmlOutput;
@@ -95,8 +96,9 @@ export const IFrameHtmlCell = (props: Props) => {
       ref={divRef}
       // this is needed by HtmlCells.tsx
       data-sheet={htmlCell.sheet_id}
-      // this is needed by PointerHtmlCells.ts
+      // these are needed by PointerHtmlCells.ts
       data-pos={`${htmlCell.x},${htmlCell.y}`}
+      data-type="iframe"
       className={`border border-border bg-white shadow-md`}
       style={{
         position: 'absolute',
@@ -106,6 +108,7 @@ export const IFrameHtmlCell = (props: Props) => {
         touchAction: 'none pan-x pan-y',
       }}
     >
+      <HTMLResizeControl position="RIGHT" />
       <iframe
         seamless
         srcDoc={htmlCell.html}
@@ -117,6 +120,7 @@ export const IFrameHtmlCell = (props: Props) => {
           minHeight: `${CELL_HEIGHT}px`,
         }}
       />
+      <HTMLResizeControl position="BOTTOM" />
     </div>
   );
 };
