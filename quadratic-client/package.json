@@ -65,12 +65,6 @@
     "build:wasm:javascript": "cd .. && cd quadratic-core && wasm-pack build --target web --out-dir ../quadratic-client/src/quadratic-core --weak-refs",
     "build:wasm:nodejs": "cd .. && cd quadratic-core && wasm-pack build --target nodejs --out-dir ../quadratic-client/src/quadratic-core/__mocks__ --weak-refs",
     "watch:javascript": "export VITE_VERSION=$(git rev-parse HEAD) && vite dev",
-    "watch:wasm:javascript": "cd .. && cd quadratic-core && cargo watch -s 'wasm-pack build --dev --target web --out-dir ../quadratic-client/src/quadratic-core --weak-refs'",
-    "watch:wasm:fast:javascript": "cd .. && cd quadratic-core && cargo watch -s 'wasm-pack build --target web --out-dir ../quadratic-client/src/quadratic-core --dev --weak-refs'",
-    "watch:wasm:types": "cd .. && cd quadratic-core && cargo watch -s 'cargo run --bin export_types'",
-    "watch:front-end": "concurrently --hide=3 -n=react,rust,rust-types \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:watch:wasm:types\" \"npm run api:start\"",
-    "watch:front-end-back-end": "concurrently -n=react,rust,rust-types,api \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:watch:wasm:types\" \"npm run api:start\"",
-    "watch:fast:front-end": "concurrently --hide=3 -n=react,rust,rust-types \"npm:watch:javascript\" \"npm:watch:wasm:fast:javascript\" \"npm:watch:wasm:types\" \"npm run api:start\"",
     "start:production": "npm run build && serve build",
     "build:ci": "../scripts/run-ci-build.sh",
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\"",
@@ -90,8 +84,7 @@
     "lint:clippy": "cd .. && cd quadratic-core && cargo clippy --all-targets --all-features -- -D warnings",
     "coverage:wasm:gen": "cd .. && cd quadratic-core && CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='coverage/cargo-test-%p-%m.profraw' cargo test",
     "coverage:wasm:html": "cd .. && cd quadratic-core && grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore 'src/wasm_bindings/*' --ignore 'src/bin/*' --ignore '../*' --ignore '/*' -o coverage/html",
-    "coverage:wasm:view": "open quadratic-core/coverage/html/index.html",
-    "api:start": "cd .. && cd quadratic-api && npm start"
+    "coverage:wasm:view": "open quadratic-core/coverage/html/index.html"
   },
   "browserslist": {
     "production": [
@@ -120,7 +113,6 @@
     "@types/uuid": "^9.0.1",
     "@vitejs/plugin-react": "^4.2.0",
     "autoprefixer": "^10.4.16",
-    "concurrently": "^6.5.1",
     "electron": "^23.0.0",
     "electron-is-dev": "^2.0.0",
     "eslint": "^8.53.0",
@@ -133,7 +125,7 @@
     "postcss": "^8.4.31",
     "prettier": "2.8.3",
     "prettier-plugin-tailwindcss": "^0.4.1",
-    "pyodide": "^0.22.0",
+    "pyodide": "^0.24.1",
     "serve": "^14.2.0",
     "tailwindcss": "^3.3.5",
     "ts-jest": "^29.1.1",
