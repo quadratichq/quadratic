@@ -71,34 +71,39 @@ impl GridController {
                     return Operation::None;
                 };
 
-                // for compute, we keep the original cell output to avoid flashing of output (since values will be overridden once computation is complete)
-                if compute {
-                    if let Some(code_cell_value) = &code_cell_value {
-                        let updated_code_cell_value =
-                            if let Some(old_code_cell_value) = old_code_cell_value.as_ref() {
+                match code_cell_value {
+                    Some(code_cell_value) => {
+                        // for compute, we keep the original cell output to avoid flashing of output (since values will be overridden once computation is complete)
+                        if compute {
+                            let updated_code_cell_value = if let Some(old_code_cell_value) =
+                                old_code_cell_value.as_ref()
+                            {
                                 let mut updated_code_cell_value = code_cell_value.clone();
                                 updated_code_cell_value.output = old_code_cell_value.output.clone();
                                 updated_code_cell_value
                             } else {
                                 code_cell_value.clone()
                             };
-                        sheet.set_code_cell_value(pos, &Some(updated_code_cell_value));
-                    } else {
-                        sheet.set_code_cell_value(pos, &code_cell_value);
+                            sheet.set_code_cell_value(pos, &Some(updated_code_cell_value));
+                            cells_to_compute.insert(cell_ref);
+                        } else {
+                            // need to update summary (cells_to_compute will be ignored)
+                            fetch_code_cell_difference(
+                                sheet,
+                                pos,
+                                old_code_cell_value.clone(),
+                                Some(code_cell_value.clone()),
+                                summary,
+                                cells_to_compute,
+                            );
+                            sheet.set_code_cell_value(pos, &Some(code_cell_value));
+                        }
                     }
-                    cells_to_compute.insert(cell_ref);
-                } else {
-                    // need to update summary (cells_to_compute will be ignored)
-                    fetch_code_cell_difference(
-                        sheet,
-                        pos,
-                        old_code_cell_value.clone(),
-                        code_cell_value.clone(),
-                        summary,
-                        cells_to_compute,
-                    );
-                    sheet.set_code_cell_value(pos, &code_cell_value);
+                    None => {
+                        sheet.set_code_cell_value(pos, &None);
+                    }
                 }
+
                 summary
                     .cell_sheets_modified
                     .insert(CellSheetsModified::new(sheet.id, pos));

@@ -244,3 +244,54 @@ impl Sheet {
         get_render_vertical_borders(self)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        controller::GridController,
+        grid::{CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
+        CellValue, Pos, Rect, Value,
+    };
+
+    #[test]
+    fn test_has_render_cells() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+
+        let rect = Rect {
+            min: Pos { x: 0, y: 0 },
+            max: Pos { x: 100, y: 100 },
+        };
+        assert!(!sheet.has_render_cells(rect));
+
+        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
+        assert!(sheet.has_render_cells(rect));
+
+        sheet.delete_cell_values(Rect::single_pos(Pos { x: 1, y: 2 }));
+        assert!(!sheet.has_render_cells(rect));
+
+        sheet.set_code_cell_value(
+            Pos { x: 2, y: 3 },
+            &Some(CodeCellValue {
+                language: crate::grid::CodeCellLanguage::Python,
+                code_string: "print('hello')".to_string(),
+                formatted_code_string: None,
+                output: Some(CodeCellRunOutput {
+                    result: CodeCellRunResult::Ok {
+                        output_value: Value::Single(CellValue::Text("hello".to_string())),
+                        cells_accessed: vec![],
+                    },
+                    std_err: None,
+                    std_out: None,
+                }),
+                last_modified: "".into(),
+            }),
+        );
+        assert!(sheet.has_render_cells(rect));
+
+        gc.delete_cell_values(sheet_id, Rect::single_pos(Pos { x: 2, y: 3 }), None);
+        let sheet = gc.sheet(sheet_id);
+        assert!(!sheet.has_render_cells(rect));
+    }
+}

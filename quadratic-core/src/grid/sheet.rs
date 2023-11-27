@@ -162,7 +162,6 @@ impl Sheet {
         }
 
         for cell_ref in self.iter_code_cells_locations_in_region(region) {
-            // TODO: unspill!
             self.code_cells.remove(&cell_ref);
         }
 
