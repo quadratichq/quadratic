@@ -1,0 +1,134 @@
+Metadata-Version: 2.1
+Name: xarray
+Version: 2023.8.0
+Summary: N-D labeled arrays and datasets in Python
+Home-page: https://github.com/pydata/xarray
+Author: xarray Developers
+Author-email: xarray@googlegroups.com
+License: Apache-2.0
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Operating System :: OS Independent
+Classifier: Intended Audience :: Science/Research
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Scientific/Engineering
+Requires-Python: >=3.9
+Description-Content-Type: text/x-rst
+License-File: LICENSE
+Requires-Dist: numpy >=1.21
+Requires-Dist: pandas >=1.4
+Requires-Dist: packaging >=21.3
+Provides-Extra: accel
+Requires-Dist: scipy ; extra == 'accel'
+Requires-Dist: bottleneck ; extra == 'accel'
+Requires-Dist: numbagg ; extra == 'accel'
+Requires-Dist: flox ; extra == 'accel'
+Provides-Extra: complete
+Requires-Dist: netCDF4 ; extra == 'complete'
+Requires-Dist: h5netcdf ; extra == 'complete'
+Requires-Dist: scipy ; extra == 'complete'
+Requires-Dist: zarr ; extra == 'complete'
+Requires-Dist: fsspec ; extra == 'complete'
+Requires-Dist: cftime ; extra == 'complete'
+Requires-Dist: pooch ; extra == 'complete'
+Requires-Dist: bottleneck ; extra == 'complete'
+Requires-Dist: numbagg ; extra == 'complete'
+Requires-Dist: flox ; extra == 'complete'
+Requires-Dist: dask[complete] ; extra == 'complete'
+Requires-Dist: matplotlib ; extra == 'complete'
+Requires-Dist: seaborn ; extra == 'complete'
+Requires-Dist: nc-time-axis ; extra == 'complete'
+Requires-Dist: pydap ; (python_version < "3.10") and extra == 'complete'
+Provides-Extra: docs
+Requires-Dist: netCDF4 ; extra == 'docs'
+Requires-Dist: h5netcdf ; extra == 'docs'
+Requires-Dist: scipy ; extra == 'docs'
+Requires-Dist: zarr ; extra == 'docs'
+Requires-Dist: fsspec ; extra == 'docs'
+Requires-Dist: cftime ; extra == 'docs'
+Requires-Dist: pooch ; extra == 'docs'
+Requires-Dist: bottleneck ; extra == 'docs'
+Requires-Dist: numbagg ; extra == 'docs'
+Requires-Dist: flox ; extra == 'docs'
+Requires-Dist: dask[complete] ; extra == 'docs'
+Requires-Dist: matplotlib ; extra == 'docs'
+Requires-Dist: seaborn ; extra == 'docs'
+Requires-Dist: nc-time-axis ; extra == 'docs'
+Requires-Dist: sphinx-autosummary-accessors ; extra == 'docs'
+Requires-Dist: sphinx-rtd-theme ; extra == 'docs'
+Requires-Dist: ipython ; extra == 'docs'
+Requires-Dist: ipykernel ; extra == 'docs'
+Requires-Dist: jupyter-client ; extra == 'docs'
+Requires-Dist: nbsphinx ; extra == 'docs'
+Requires-Dist: scanpydoc ; extra == 'docs'
+Requires-Dist: pydap ; (python_version < "3.10") and extra == 'docs'
+Provides-Extra: io
+Requires-Dist: netCDF4 ; extra == 'io'
+Requires-Dist: h5netcdf ; extra == 'io'
+Requires-Dist: scipy ; extra == 'io'
+Requires-Dist: zarr ; extra == 'io'
+Requires-Dist: fsspec ; extra == 'io'
+Requires-Dist: cftime ; extra == 'io'
+Requires-Dist: pooch ; extra == 'io'
+Requires-Dist: pydap ; (python_version < "3.10") and extra == 'io'
+Provides-Extra: parallel
+Requires-Dist: dask[complete] ; extra == 'parallel'
+Provides-Extra: viz
+Requires-Dist: matplotlib ; extra == 'viz'
+Requires-Dist: seaborn ; extra == 'viz'
+Requires-Dist: nc-time-axis ; extra == 'viz'
+
+
+**xarray** (formerly **xray**) is an open source project and Python package
+that makes working with labelled multi-dimensional arrays simple,
+efficient, and fun!
+
+xarray introduces labels in the form of dimensions, coordinates and
+attributes on top of raw NumPy_-like arrays, which allows for a more
+intuitive, more concise, and less error-prone developer experience.
+The package includes a large and growing library of domain-agnostic functions
+for advanced analytics and visualization with these data structures.
+
+xarray was inspired by and borrows heavily from pandas_, the popular data
+analysis package focused on labelled tabular data.
+It is particularly tailored to working with netCDF_ files, which were the
+source of xarray's data model, and integrates tightly with dask_ for parallel
+computing.
+
+.. _NumPy: https://www.numpy.org
+.. _pandas: https://pandas.pydata.org
+.. _dask: https://dask.org
+.. _netCDF: https://www.unidata.ucar.edu/software/netcdf
+
+Why xarray?
+-----------
+Multi-dimensional (a.k.a. N-dimensional, ND) arrays (sometimes called
+"tensors") are an essential part of computational science.
+They are encountered in a wide range of fields, including physics, astronomy,
+geoscience, bioinformatics, engineering, finance, and deep learning.
+In Python, NumPy_ provides the fundamental data structure and API for
+working with raw ND arrays.
+However, real-world datasets are usually more than just raw numbers;
+they have labels which encode information about how the array values map
+to locations in space, time, etc.
+
+xarray doesn't just keep track of labels on arrays -- it uses them to provide a
+powerful and concise interface. For example:
+
+-  Apply operations over dimensions by name: ``x.sum('time')``.
+-  Select values by label instead of integer location: ``x.loc['2014-01-01']`` or ``x.sel(time='2014-01-01')``.
+-  Mathematical operations (e.g., ``x - y``) vectorize across multiple dimensions (array broadcasting) based on dimension names, not shape.
+-  Flexible split-apply-combine operations with groupby: ``x.groupby('time.dayofyear').mean()``.
+-  Database like alignment based on coordinate labels that smoothly handles missing values: ``x, y = xr.align(x, y, join='outer')``.
+-  Keep track of arbitrary metadata in the form of a Python dictionary: ``x.attrs``.
+
+Learn more
+----------
+- Documentation: `<https://docs.xarray.dev>`_
+- Issue tracker: `<https://github.com/pydata/xarray/issues>`_
+- Source code: `<https://github.com/pydata/xarray>`_
+- SciPy2015 talk: `<https://www.youtube.com/watch?v=X0pAhJgySxk>`_

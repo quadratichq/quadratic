@@ -1,0 +1,11 @@
+Metadata-Version: 2.1
+Name: fpcast-test
+Version: 0.1.1
+Summary: Test function pointer casts.
+Author: Hood Chatham
+Author-email: roberthoodchatham@gmail.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Description-Content-Type: text/markdown
+

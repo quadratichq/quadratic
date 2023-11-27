@@ -26,7 +26,7 @@ const PythonStateItem = () => {
   let { pythonState } = useRecoilValue(pythonStateAtom);
   const [open, setOpen] = useState(false);
   const theme = useTheme();
-  const pythonLabel = 'Python 3.9.5';
+  const pythonLabel = 'Python 3.11.3';
 
   // If the user tries to edit something on the grid while Python is running,
   // we'll pop this up to let them know the sheet is busy
