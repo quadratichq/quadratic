@@ -448,7 +448,7 @@ impl CellValue {
     }
 
     pub fn is_html(&self) -> bool {
-        return matches!(self, CellValue::Html(_));
+        matches!(self, CellValue::Html(_))
     }
 }
 
