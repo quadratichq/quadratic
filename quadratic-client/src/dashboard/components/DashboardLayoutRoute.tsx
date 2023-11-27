@@ -4,7 +4,8 @@ import { Button } from '@/shadcn/ui/button';
 import { Separator } from '@/shadcn/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
 import { cn } from '@/shadcn/utils';
-import { Avatar, CircularProgress } from '@mui/material';
+import { HubOutlined } from '@mui/icons-material';
+import { Avatar, CircularProgress, Typography } from '@mui/material';
 import { ExternalLinkIcon, FileIcon, MixIcon, PersonIcon } from '@radix-ui/react-icons';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigation } from 'react-router-dom';
@@ -88,6 +89,14 @@ function Navbar() {
         <SidebarNavLink to={ROUTES.TEAMS}>
           <PersonIcon className="h-5 w-5" />
           My team
+        </SidebarNavLink>
+
+        <p className={`${TYPE.overline} mt-6 text-muted-foreground`}>Connections</p>
+        <SidebarNavLink to={ROUTES.CONNECTIONS}>
+          <HubOutlined />
+          <Typography variant="body2" color="text.primary">
+            My connections
+          </Typography>
         </SidebarNavLink>
       </div>
       <div>

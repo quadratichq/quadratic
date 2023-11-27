@@ -124,6 +124,38 @@ export const apiClient = {
     );
   },
 
+  async getSupportedConnections() {
+    return fetchFromApi<ApiTypes['/v0/connections/supported.GET.response']>(
+      `/v0/connections/supported`,
+      { method: 'GET' },
+      ApiSchemas['/v0/connections/supported.GET.response']
+    );
+  },
+
+  async getConnections() {
+    return fetchFromApi<ApiTypes['/v0/connections.GET.response']>(
+      `/v0/connections/`,
+      { method: 'GET' },
+      ApiSchemas['/v0/connections.GET.response']
+    );
+  },
+
+  async createConnection(body: ApiTypes['/v0/connections.POST.request']) {
+    return fetchFromApi(
+      `/v0/connections`,
+      { method: 'POST', body: JSON.stringify(body) },
+      ApiSchemas['/v0/connections.POST.response']
+    );
+  },
+
+  async runConnection(uuid: string, body: ApiTypes['/v0/connections/:uuid/run.POST.request']) {
+    return fetchFromApi(
+      `/v0/connections/${uuid}/run`,
+      { method: 'POST', body: JSON.stringify(body) },
+      ApiSchemas['/v0/connections.POST.response']
+    );
+  },
+
   getApiUrl() {
     const url = import.meta.env.VITE_QUADRATIC_API_URL;
     if (!url) {

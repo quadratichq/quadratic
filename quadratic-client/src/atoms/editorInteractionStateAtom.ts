@@ -4,6 +4,7 @@ import { Coordinate } from '../gridGL/types/size';
 import { CellType } from '../schemas';
 
 export interface EditorInteractionState {
+  showConnectionsMenu: boolean;
   showCellTypeMenu: boolean;
   showCodeEditor: boolean;
   showCommandPalette: boolean;
@@ -16,7 +17,9 @@ export interface EditorInteractionState {
   mode: CellType;
 }
 
+// TODO: rename to appState?
 export const editorInteractionStateDefault: EditorInteractionState = {
+  showConnectionsMenu: false,
   showCellTypeMenu: false,
   showCodeEditor: false,
   showCommandPalette: false,

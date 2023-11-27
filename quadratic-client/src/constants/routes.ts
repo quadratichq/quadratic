@@ -11,6 +11,9 @@ export const ROUTES = {
   TEAMS: '/teams',
   ACCOUNT: '/account',
   FILE: (uuid: string) => `/file/${uuid}`,
+  CONNECTIONS: '/connections',
+  CONNECTIONS_CREATE: '/connections/create',
+  CONNECTIONS_CREATE_TYPE: (type: 'postgres' | 'etc') => `/connections/create/${type}`, // TODO: Pull types from backend
 
   // API routes are client-side routes to use react-router's data APIs (e.g. fetchers)
   API_FILE: (uuid: string) => `/api/files/${uuid}`,

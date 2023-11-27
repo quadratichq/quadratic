@@ -1,9 +1,11 @@
 import { downloadSelectionAsCsvAction } from '@/actions';
 import { KeyboardSymbols } from '@/helpers/keyboardSymbols';
 import { useFileContext } from '@/ui/components/FileProvider';
-import { DataObjectOutlined, Download, StorageOutlined, UploadFile } from '@mui/icons-material';
+import { AddCircleOutline, DataObjectOutlined, Download, StorageOutlined, UploadFile } from '@mui/icons-material';
 import { Menu, MenuHeader, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
+import { useSetRecoilState } from 'recoil';
+import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE } from '../../../../constants/appConstants';
 import { MenuLineItem } from '../MenuLineItem';
@@ -12,6 +14,8 @@ import { TopBarMenuItem } from '../TopBarMenuItem';
 export const DataMenu = () => {
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { name: fileName } = useFileContext();
+
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
   return (
     <>
@@ -42,9 +46,21 @@ export const DataMenu = () => {
             secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'E'}
           />
         </MenuItem>
-        <MenuHeader>Connect</MenuHeader>
+        <MenuHeader>Connections</MenuHeader>
         <MenuItem disabled>
-          <MenuLineItem primary="Database (coming soon)" Icon={StorageOutlined} />
+          <MenuLineItem primary="Add Connection" Icon={AddCircleOutline} />
+        </MenuItem>
+        <MenuItem
+          onClick={() =>
+            setEditorInteractionState((state) => {
+              return {
+                ...state,
+                showConnectionsMenu: true,
+              };
+            })
+          }
+        >
+          <MenuLineItem primary="Manage Connections" Icon={StorageOutlined} />
         </MenuItem>
       </Menu>
     </>
