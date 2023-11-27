@@ -10,7 +10,7 @@ If you have any problems getting the project to run locally, please create an is
 
 ## Setup
 
-1. Install NPM
+1. Install NPM `cd quadratic-client && npm i`
 2. Install [rustup](https://www.rust-lang.org/tools/install)
 3. Install [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
 4. `rustup target add wasm32-unknown-unknown` to install the WASM toolchain
