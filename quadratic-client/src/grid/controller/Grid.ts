@@ -104,6 +104,7 @@ export class Grid {
 
     if (summary.offsets_modified.length) {
       sheets.updateOffsets(summary.offsets_modified);
+      pixiApp.cellsSheets.updateBorders(summary.offsets_modified);
     }
 
     if (summary.code_cells_modified.length) {
@@ -248,7 +249,14 @@ export class Grid {
     this.transactionResponse(summary);
   }
 
-  setCodeCellValue(options: { sheetId: string; x: number; y: number; language: CodeCellLanguage; codeString: string }) {
+  // returns whether the transaction completed
+  setCodeCellValue(options: {
+    sheetId: string;
+    x: number;
+    y: number;
+    language: CodeCellLanguage;
+    codeString: string;
+  }): boolean {
     const summary = this.gridController.setCellCode(
       options.sheetId,
       new Pos(options.x, options.y),
@@ -257,6 +265,7 @@ export class Grid {
       sheets.getCursorPosition()
     );
     this.transactionResponse(summary);
+    return !summary.transaction_busy;
   }
 
   deleteCellValues(sheetId: string, rectangle: Rectangle) {
