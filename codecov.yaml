@@ -1,0 +1,9 @@
+coverage:
+  status:
+    project:
+      default:
+        threshold: 0.02
+    quadratic:
+      ignore:
+        - "quadratic-core/src/bin"
+        - "quadratic-core/src/wasm_bindings"
