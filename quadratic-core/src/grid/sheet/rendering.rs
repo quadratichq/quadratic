@@ -87,7 +87,7 @@ impl Sheet {
 
                 let value = match value {
                     CellValue::Error(_) => " ERROR".to_string(),
-                    CellValue::Html(_) => " HTML".to_string(),
+                    CellValue::Html(_) => " CHART".to_string(),
                     CellValue::Number(_) => {
                         // get numeric_format and numeric_decimal to turn number into a string
                         let numeric_format = column.numeric_format.get(y);
