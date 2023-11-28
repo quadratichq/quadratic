@@ -5,7 +5,7 @@ use crate::{
             JsHtmlOutput, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState,
             JsRenderFill,
         },
-        CellAlign, CodeCellRunResult, NumericFormatKind,
+        CellAlign, CodeCellRunResult, NumericFormat, NumericFormatKind,
     },
     CellValue, Error, ErrorMsg, Pos, Rect,
 };
@@ -94,7 +94,7 @@ impl Sheet {
         itertools::chain(ordinary_cells, code_output_cells)
             .map(|(x, y, column, value, language)| {
                 if let CellValue::Html(html) = value {
-                    return Some(JsRenderCell {
+                    return JsRenderCell {
                         x,
                         y,
 
@@ -106,13 +106,13 @@ impl Sheet {
                         bold: None,
                         italic: Some(true),
                         text_color: Some(String::from("orange")),
-                    });
+                    };
                 } else if let CellValue::Error(error) = value {
                     let value = match error.msg {
                         ErrorMsg::Spill => " SPILL",
                         _ => " ERROR",
                     };
-                    return Some(JsRenderCell {
+                    return JsRenderCell {
                         x,
                         y,
 
@@ -124,13 +124,17 @@ impl Sheet {
                         bold: None,
                         italic: Some(true),
                         text_color: Some(String::from("red")),
-                    });
+                    };
                 }
 
                 let mut numeric_format: Option<NumericFormat> = None;
                 let mut numeric_decimals: Option<i16> = None;
                 let mut numeric_commas: Option<bool> = None;
                 let mut align: Option<CellAlign> = column.align.get(y);
+                let wrap = column.wrap.get(y);
+                let bold = column.bold.get(y);
+                let italic = column.italic.get(y);
+                let text_color = column.text_color.get(y);
 
                 let value = if matches!(value, CellValue::Number(_)) {
                     // get numeric_format and numeric_decimal to turn number into a string
@@ -149,7 +153,7 @@ impl Sheet {
                     value.to_display(None, None, None)
                 };
 
-                Some(JsRenderCell {
+                JsRenderCell {
                     x,
                     y,
 
@@ -161,7 +165,7 @@ impl Sheet {
                     bold,
                     italic,
                     text_color,
-                })
+                }
             })
             .collect()
     }
@@ -350,13 +354,14 @@ mod tests {
                     },
                     std_err: None,
                     std_out: None,
+                    spill: false,
                 }),
                 last_modified: "".into(),
             }),
         );
         assert!(sheet.has_render_cells(rect));
 
-        gc.delete_cell_values(sheet_id, Rect::single_pos(Pos { x: 2, y: 3 }), None);
+        gc.delete_cells_rect(sheet_id, Rect::single_pos(Pos { x: 2, y: 3 }), None);
         let sheet = gc.sheet(sheet_id);
         assert!(!sheet.has_render_cells(rect));
     }

@@ -28,7 +28,7 @@ pub fn update_code_cell_value(
     let sheet = grid_controller.grid.sheet_mut_from_id(sheet_id);
     if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
         let old_code_cell_value = sheet.set_code_cell_value(pos, &updated_code_cell_value);
-        if &old_code_cell_value.is_some_and(|code_cell_value| {
+        if old_code_cell_value.as_ref().is_some_and(|code_cell_value| {
             code_cell_value
                 .get_output_value(0, 0)
                 .is_some_and(|cell_value| cell_value.is_html())
@@ -81,7 +81,7 @@ pub fn update_code_cell_value(
                                     }
                                 }
                             }
-                            Value::Single(_) => {
+                            Value::Single(value) => {
                                 spill = false;
                                 summary
                                     .cell_sheets_modified
