@@ -1,7 +1,7 @@
 import { TYPE } from '@/constants/appConstants';
 import { ROUTES } from '@/constants/routes';
+import { DOCUMENTATION_URL } from '@/constants/urls';
 import { Button } from '@/shadcn/ui/button';
-import { Separator } from '@/shadcn/ui/separator';
 import { cn } from '@/shadcn/utils';
 import { ExternalLinkIcon, FileIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
@@ -130,91 +130,85 @@ export function FilesList({ files }: { files: FilesListFile[] }) {
           description={<>You don’t have any files, but you can create one below.</>}
           Icon={FileIcon}
           actions={
-            <div className="border border-border">
+            <div>
               {[
                 {
                   title: 'Learn the basics',
                   description: 'With an instructional walk-through',
-                  action: (
-                    <Button asChild variant="secondary">
-                      <Link
-                        to={ROUTES.CREATE_FILE}
-                        reloadDocument
-                        onClick={() => {
-                          mixpanel.track('[FilesEmptyState].clickOpenStarterFile');
-                        }}
-                      >
-                        Open starter file
-                      </Link>
-                    </Button>
+                  link: (
+                    <Link
+                      to={ROUTES.CREATE_EXAMPLE_FILE('default.grid')}
+                      reloadDocument
+                      onClick={() => {
+                        mixpanel.track('[FilesEmptyState].clickOpenStarterFile');
+                      }}
+                    >
+                      Open starter file
+                    </Link>
                   ),
-                  className: 'bg-yellow-50',
+                  className: 'border border-primary bg-yellow-5000',
                 },
                 {
                   title: 'Get started',
                   description: 'With a fresh new file',
-                  action: (
-                    <Button asChild variant="secondary">
-                      <Link
-                        to={ROUTES.CREATE_FILE}
-                        reloadDocument
-                        onClick={() => {
-                          mixpanel.track('[FilesEmptyState].clickCreateBlankFile');
-                        }}
-                      >
-                        Create blank file
-                      </Link>
-                    </Button>
+                  link: (
+                    <Link
+                      to={ROUTES.CREATE_FILE}
+                      reloadDocument
+                      onClick={() => {
+                        mixpanel.track('[FilesEmptyState].clickCreateBlankFile');
+                      }}
+                    >
+                      Create blank file
+                    </Link>
                   ),
+                  className: 'border-b border-border',
                 },
                 {
                   title: 'See what’s possible',
                   description: 'Like filtering and fetching data',
-                  action: (
-                    <Button asChild variant="secondary">
-                      <Link
-                        to={ROUTES.EXAMPLES}
-                        onClick={() => {
-                          mixpanel.track('[FilesEmptyState].clickExploreExamples');
-                        }}
-                      >
-                        Explore examples
-                      </Link>
-                    </Button>
+                  link: (
+                    <Link
+                      to={ROUTES.EXAMPLES}
+                      onClick={() => {
+                        mixpanel.track('[FilesEmptyState].clickExploreExamples');
+                      }}
+                    >
+                      Explore examples
+                    </Link>
                   ),
+                  className: 'border-b border-border',
                 },
                 {
                   title: 'Deep dive',
                   description: 'All the details of using the app',
-                  action: (
-                    <Button asChild variant="secondary">
-                      <Link
-                        to={ROUTES.CREATE_FILE}
-                        reloadDocument
-                        onClick={() => {
-                          mixpanel.track('[FilesEmptyState].clickReadDocs');
-                        }}
-                      >
-                        Read the docs
-                        <ExternalLinkIcon className="ml-2" />
-                      </Link>
-                    </Button>
+                  link: (
+                    <Link
+                      to={DOCUMENTATION_URL}
+                      target="_blank"
+                      onClick={() => {
+                        mixpanel.track('[FilesEmptyState].clickReadDocs');
+                      }}
+                    >
+                      Read the docs
+                      <ExternalLinkIcon className="ml-2" />
+                    </Link>
                   ),
                 },
-              ].map(({ title, description, action, className }, i) => (
-                <>
-                  {i !== 0 ? <Separator /> : null}
-                  <div
-                    className={cn(`p-3 text-center sm:flex sm:items-center sm:justify-between sm:text-left`, className)}
-                  >
-                    <div className="mb-2 flex flex-col sm:mb-0">
-                      <h2 className={`${TYPE.body2} font-semibold`}>{title}</h2>
-                      <p className={`${TYPE.body2} text-muted-foreground`}>{description}</p>
-                    </div>
-
-                    <div>{action}</div>
+              ].map(({ title, description, link, className }, i) => (
+                <div
+                  key={i}
+                  className={cn(`p-3 text-center sm:flex sm:items-center sm:justify-between sm:text-left`, className)}
+                >
+                  <div className="mb-2 flex flex-col sm:mb-0">
+                    <h2 className={`${TYPE.body2} font-semibold`}>{title}</h2>
+                    <p className={`${TYPE.body2} text-muted-foreground`}>{description}</p>
                   </div>
-                </>
+
+                  <Button asChild variant="secondary">
+                    {link}
+                  </Button>
+                </div>
               ))}
             </div>
           }
