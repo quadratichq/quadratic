@@ -172,7 +172,7 @@ impl Sheet {
             .iter()
             .filter_map(|(cell_ref, code_cell_value)| {
                 let output = code_cell_value.get_output_value(0, 0)?;
-                if matches!(output, CellValue::Html(_)) {
+                if !matches!(output, CellValue::Html(_)) {
                     return None;
                 }
                 let pos = self.cell_ref_to_pos(*cell_ref)?;
