@@ -1,5 +1,5 @@
 import { ApiError } from '@/api/fetchFromApi';
-import { SUPPORT_URL } from '@/constants/urls';
+import { CONTACT_URL } from '@/constants/urls';
 import { Button } from '@/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
@@ -95,7 +95,7 @@ export const ErrorBoundary = () => {
   const actions = (
     <div className={`flex justify-center gap-2`}>
       <Button asChild variant="outline">
-        <a href={SUPPORT_URL} target="_blank" rel="noreferrer">
+        <a href={CONTACT_URL} target="_blank" rel="noreferrer">
           Get help
         </a>
       </Button>
