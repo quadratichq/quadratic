@@ -115,8 +115,8 @@ export const IFrameHtmlCell = (props: Props) => {
         seamless
         srcDoc={htmlCell.html}
         title={`HTML from ${htmlCell.x}, ${htmlCell.y}}`}
-        width={htmlCell.w ? Number(htmlCell.w) : ''}
-        height={htmlCell.h ? Number(htmlCell.h) : ''}
+        width={htmlCell.w ? htmlCell.w : ''}
+        height={htmlCell.h ? htmlCell.h : ''}
         style={{
           minWidth: `${CELL_WIDTH}px`,
           minHeight: `${CELL_HEIGHT}px`,
