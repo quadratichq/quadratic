@@ -1,0 +1,55 @@
+Metadata-Version: 2.1
+Name: xgboost
+Version: 1.6.1
+Summary: XGBoost Python Package
+Home-page: https://github.com/dmlc/xgboost
+Maintainer: Hyunsu Cho
+Maintainer-email: chohyu01@cs.washington.edu
+License: Apache-2.0
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Requires-Python: >=3.7
+Description-Content-Type: text/x-rst
+Requires-Dist: numpy
+Requires-Dist: scipy
+Provides-Extra: dask
+Requires-Dist: dask ; extra == 'dask'
+Requires-Dist: pandas ; extra == 'dask'
+Requires-Dist: distributed ; extra == 'dask'
+Provides-Extra: datatable
+Requires-Dist: datatable ; extra == 'datatable'
+Provides-Extra: pandas
+Requires-Dist: pandas ; extra == 'pandas'
+Provides-Extra: plotting
+Requires-Dist: graphviz ; extra == 'plotting'
+Requires-Dist: matplotlib ; extra == 'plotting'
+Provides-Extra: scikit-learn
+Requires-Dist: scikit-learn ; extra == 'scikit-learn'
+
+======================
+XGBoost Python Package
+======================
+
+|PyPI version|
+
+Installation
+============
+
+From `PyPI <https://pypi.python.org/pypi/xgboost>`_
+---------------------------------------------------
+
+For a stable version, install using ``pip``::
+
+    pip install xgboost
+
+.. |PyPI version| image:: https://badge.fury.io/py/xgboost.svg
+   :target: http://badge.fury.io/py/xgboost
+
+For building from source, see `build <https://xgboost.readthedocs.io/en/latest/build.html>`_.

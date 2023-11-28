@@ -491,7 +491,6 @@ macro_rules! params_list {
         $(
             params_list!(@append(result, $arg_name, $arg_type));
         )*
-        println!("params_list!({:?})", result);
         result
     }};
 }

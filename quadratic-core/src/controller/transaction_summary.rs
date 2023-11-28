@@ -7,6 +7,7 @@ use crate::{
     Pos,
 };
 
+// keep this in sync with CellsTypes.ts
 pub const CELL_SHEET_WIDTH: u32 = 20;
 pub const CELL_SHEET_HEIGHT: u32 = 40;
 
@@ -71,6 +72,9 @@ pub struct TransactionSummary {
 
     // let TS know that the grid is already busy
     pub transaction_busy: bool,
+
+    // should the grid generate a thumbnail
+    pub generate_thumbnail: bool,
 }
 
 impl TransactionSummary {
@@ -90,6 +94,7 @@ impl TransactionSummary {
         self.offsets_modified.clear();
         self.cursor = None;
         self.transaction_busy = false;
+        self.generate_thumbnail = false;
         self.save = true;
     }
 }

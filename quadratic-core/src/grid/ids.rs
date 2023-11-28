@@ -79,6 +79,12 @@ impl From<CellRef> for RegionRef {
     }
 }
 
+impl Display for RegionRef {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}, {:?}, {:?}", self.sheet, self.columns, self.rows)
+    }
+}
+
 impl RegionRef {
     /// Iterates over cells in row-major order.
     pub fn iter(&self) -> impl '_ + Iterator<Item = CellRef> {
@@ -103,6 +109,13 @@ impl RegionRef {
 
     pub fn is_empty(&self) -> bool {
         self.columns.len() == 0 && self.rows.len() == 0
+    }
+
+    /// returns whether a RegionRef contains a CellRef
+    pub fn contains(&self, cell_ref: &CellRef) -> bool {
+        self.sheet == cell_ref.sheet
+            && self.columns.contains(&cell_ref.column)
+            && self.rows.contains(&cell_ref.row)
     }
 }
 

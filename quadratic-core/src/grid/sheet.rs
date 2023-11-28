@@ -8,7 +8,6 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use self::sheet_offsets::SheetOffsets;
-
 use super::bounds::GridBounds;
 use super::code::CodeCellValue;
 use super::column::Column;
@@ -18,7 +17,7 @@ use super::js_types::{CellFormatSummary, FormattingSummary};
 use super::response::{GetIdResponse, SetCellResponse};
 use super::{NumericFormat, NumericFormatKind, RegionRef};
 use crate::grid::{borders, SheetBorders};
-use crate::{Array, CellValue, IsBlank, Pos, Rect};
+use crate::{Array, ArraySize, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;
 pub mod cells;
@@ -113,25 +112,11 @@ impl Sheet {
         let (column_response, column) = self.get_or_create_column(pos.x);
         let old_value = column.values.set(pos.y, value).unwrap_or_default();
 
-        let unspill = None;
-        // if !is_blank {
-        //     if let Some(source) = column.spills.get(pos.y) {
-        //         self.unspill(source);
-        //         unspill = Some(source);
-        //     }
-        // }
-
-        // TODO: check for new spills, if the cell was deleted
-        let spill = None;
-
         let row_response = self.get_or_create_row(pos.y);
         Some(SetCellResponse {
             column: column_response,
             row: row_response,
             old_value,
-
-            spill,
-            unspill,
         })
     }
 
@@ -487,6 +472,44 @@ impl Sheet {
             None
         }
     }
+
+    /// Determines whether an output array would cause a spill error because it
+    /// would overlap existing cell values or spills.
+    pub fn is_ok_to_spill_in(&self, cell_ref: CellRef, size: ArraySize) -> Option<bool> {
+        let Pos { x, y } = self.cell_ref_to_pos(cell_ref)?;
+        let (w, h) = size.into();
+
+        // check if the output array would cause a spill
+        //
+        // TODO(ddimaria): resolve comments from @HactarCE:
+        //
+        // If we factor the per-row loop into a method on Column we can make
+        // this method O(n) by taking advantage of the column data structures.
+        //
+        // If this method takes a Rect, then this is just a simple loop over
+        // the Positions in the Rect which is nice.
+        for i in 0..w {
+            for j in 0..h {
+                let x = x + i;
+                let y = y + j;
+
+                if let Some(column) = self.columns.get(&x) {
+                    if let Some(spill) = column.spills.get(y) {
+                        if spill != cell_ref {
+                            return Some(true);
+                        }
+                    }
+                    if let Some(value) = column.values.get(y) {
+                        if !value.is_blank() {
+                            return Some(true);
+                        }
+                    }
+                }
+            }
+        }
+
+        Some(false)
+    }
 }
 
 fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {
@@ -650,7 +673,7 @@ mod test {
     fn test_delete_cell_values() {
         let (mut grid, sheet_id, selected) = test_setup_basic();
 
-        grid.delete_cell_values(sheet_id, selected, None);
+        grid.delete_cells_rect(sheet_id, selected, None);
         let sheet = grid.grid().sheet_from_id(sheet_id);
 
         print_table(&grid, sheet_id, selected);
@@ -680,7 +703,7 @@ mod test {
         // grid.set_code_cell_value((5, 2).into(), Some(code_cell));
         print_table(&grid, sheet_id, view_rect);
 
-        grid.delete_cell_values(sheet_id, selected, None);
+        grid.delete_cells_rect(sheet_id, selected, None);
         let sheet = grid.grid().sheet_from_id(sheet_id);
 
         print_table(&grid, sheet_id, view_rect);

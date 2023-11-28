@@ -50,8 +50,13 @@ impl GridController {
             // todo: add this to a queue of operations instead of setting the busy flag
             return TransactionSummary::new(true);
         }
-        let mut transaction =
-            TransactionInProgress::new(self, operations, cursor, compute, transaction_type);
+        let mut transaction = TransactionInProgress::start_transaction(
+            self,
+            operations,
+            cursor,
+            compute,
+            transaction_type,
+        );
         let mut summary = transaction.transaction_summary();
         transaction.updated_bounds(self);
 
@@ -101,8 +106,16 @@ impl GridController {
     pub fn calculation_complete(&mut self, result: JsCodeResult) -> TransactionSummary {
         // todo: there's probably a better way to do this
         if let Some(transaction) = &mut self.transaction_in_progress.clone() {
+            let cancel_compute = result.cancel_compute.unwrap_or(false);
+
+            if cancel_compute {
+                transaction.clear_cells_to_compute();
+                transaction.loop_compute(self);
+            }
+
             transaction.calculation_complete(self, result);
             self.transaction_in_progress = Some(transaction.to_owned());
+
             transaction.updated_bounds(self);
             if transaction.complete {
                 transaction.transaction_summary()
@@ -213,7 +226,7 @@ mod tests {
         let (operation, operation_undo) = get_operations(&mut gc);
 
         // TransactionType::Normal
-        let transaction_in_progress = TransactionInProgress::new(
+        let transaction_in_progress = TransactionInProgress::start_transaction(
             &mut gc,
             vec![operation.clone()],
             None,
@@ -227,8 +240,13 @@ mod tests {
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].ops);
 
         // TransactionType::Undo
-        let transaction_in_progress =
-            TransactionInProgress::new(&mut gc, vec![], None, false, TransactionType::Undo);
+        let transaction_in_progress = TransactionInProgress::start_transaction(
+            &mut gc,
+            vec![],
+            None,
+            false,
+            TransactionType::Undo,
+        );
         gc.finalize_transaction(&transaction_in_progress);
 
         assert_eq!(gc.undo_stack.len(), 1);
@@ -237,8 +255,13 @@ mod tests {
         assert_eq!(gc.redo_stack[0].ops.len(), 0);
 
         // TransactionType::Redo
-        let transaction_in_progress =
-            TransactionInProgress::new(&mut gc, vec![], None, false, TransactionType::Redo);
+        let transaction_in_progress = TransactionInProgress::start_transaction(
+            &mut gc,
+            vec![],
+            None,
+            false,
+            TransactionType::Redo,
+        );
         gc.finalize_transaction(&transaction_in_progress);
 
         assert_eq!(gc.undo_stack.len(), 2);

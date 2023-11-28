@@ -9,7 +9,8 @@ criterion_main!(benches);
 
 fn criterion_benchmark(c: &mut Criterion) {
     let airports =
-        quadratic_core::grid::file::import(include_str!("../examples/airports.grid")).unwrap();
+        quadratic_core::grid::file::import(include_str!("../examples/v1_4_airports_distance.grid"))
+            .unwrap();
 
     let inputs = vec![
         ("empty", Grid::new()), // empty file
@@ -101,7 +102,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |(mut gc, sheet_id, rect)| {
                 // Test
-                gc.delete_cell_values(sheet_id, rect, None);
+                gc.delete_cells_rect(sheet_id, rect, None);
             },
             criterion::BatchSize::SmallInput,
         )
@@ -120,7 +121,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     },
                     max: Pos { x: 10000, y: 10000 },
                 };
-                gc.delete_cell_values(sheet_id, rect, None);
+                gc.delete_cells_rect(sheet_id, rect, None);
                 gc
             },
             |mut gc| {
@@ -144,7 +145,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     },
                     max: Pos { x: 10000, y: 10000 },
                 };
-                gc.delete_cell_values(sheet_id, rect, None);
+                gc.delete_cells_rect(sheet_id, rect, None);
                 gc.undo(None);
                 gc
             },
