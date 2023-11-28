@@ -4,7 +4,7 @@ import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from 'react-router-d
 import { apiClient } from '../api/apiClient';
 import { authClient } from '../auth';
 import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '../components/GlobalSnackbarProvider';
-import { EXAMPLE_FILES } from '../constants/appConstants';
+import { EXAMPLE_FILES, ExampleFileNames } from '../constants/appConstants';
 import { ROUTES } from '../constants/routes';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
 import { initMixpanelAnalytics } from '../utils/analytics';
@@ -50,12 +50,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       return redirect(getFailUrl(ROUTES.EXAMPLES));
     }
 
-    const { name } = EXAMPLE_FILES[exampleId];
+    // Above we've ensured it's a file name we know about
+    const fileNameKey = exampleId as ExampleFileNames;
+    const { name } = EXAMPLE_FILES[fileNameKey];
     mixpanel.track('[Files].newExampleFile', { fileName: name });
 
     try {
       // Get example file's contents
-      const res = await fetch(`/examples/${exampleId}`);
+      const res = await fetch(`/examples/${fileNameKey}`);
       const contents = await res.text();
 
       // Validate and upgrade file
@@ -78,7 +80,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         message: 'Client failed to load the selected example file.',
         level: 'warning',
         extra: {
-          exampleId,
+          fileNameKey,
         },
       });
       return redirect(getFailUrl(ROUTES.EXAMPLES));
