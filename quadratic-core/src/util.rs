@@ -438,4 +438,13 @@ mod tests {
     fn test_date_string() {
         assert_eq!(date_string().len(), 19);
     }
+
+    #[test]
+    fn test_round() {
+        assert_eq!(round(1.23456789, 0), 1.0);
+        assert_eq!(round(1.23456789, 1), 1.2);
+        assert_eq!(round(1.23456789, 2), 1.23);
+        assert_eq!(round(1.23456789, 3), 1.235);
+        assert_eq!(round(1.23456789, 4), 1.2346);
+    }
 }
