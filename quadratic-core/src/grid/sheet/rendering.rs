@@ -115,7 +115,6 @@ impl Sheet {
                     let mut numeric_decimals: Option<i16> = None;
                     let mut numeric_commas: Option<bool> = None;
                     let mut align: Option<CellAlign> = column.align.get(y);
-                    crate::util::dbgjs(format!("value: {}", value));
 
                     if matches!(value, CellValue::Number(_)) {
                         // get numeric_format and numeric_decimal to turn number into a string
