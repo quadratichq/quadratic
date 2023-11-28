@@ -3,7 +3,7 @@ import { useFetcher } from 'react-router-dom';
 import { ApiTypes } from '../../api/types';
 import { QDialog } from '../../components/QDialog';
 import { ShareMenu } from '../../components/ShareMenu';
-import { Action } from '../TeamRoute';
+import { Action } from '../../routes/teams.$teamUuid';
 
 export function TeamShareMenu({
   onClose,

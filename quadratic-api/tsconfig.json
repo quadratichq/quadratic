@@ -8,8 +8,16 @@
     "moduleResolution": "node",
     "sourceMap": true,
     "outDir": "dist",
-    "typeRoots": ["./node_modules/@types", "./src/types"]
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "paths": {
+      "quadratic-types": ["../quadratic-client/src/api/types.ts"]
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.test.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.test.ts",
+    "../quadratic-client/src/api/types.ts"
+  ],
   "exclude": ["node_modules"]
 }

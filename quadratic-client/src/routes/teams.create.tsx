@@ -18,8 +18,8 @@ import { ActionFunctionArgs, redirect, useSubmit } from 'react-router-dom';
 import { apiClient } from '../api/apiClient';
 import { AvatarWithLetters } from '../components/AvatarWithLetters';
 import { ROUTES } from '../constants/routes';
-import { DashboardHeader } from './components/DashboardHeader';
-import { TeamLogoDialog, TeamLogoInput } from './components/TeamLogo';
+import { DashboardHeader } from '../dashboard/components/DashboardHeader';
+import { TeamLogoDialog, TeamLogoInput } from '../dashboard/components/TeamLogo';
 
 type ActionData = {
   name: string;

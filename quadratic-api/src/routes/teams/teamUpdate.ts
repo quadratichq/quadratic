@@ -1,7 +1,7 @@
 import express, { Response } from 'express';
 import z from 'zod';
 // TODO get this into its own project
-import { ApiSchemas, ApiTypes } from '../../../../src/api/types';
+import { /*ApiSchemas, */ ApiTypes } from 'quadratic-types';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -10,7 +10,7 @@ import { Request } from '../../types/Request';
 const router = express.Router();
 
 const ReqSchema = z.object({
-  body: ApiSchemas['/v0/teams/:uuid.POST.request'],
+  body: z.any(), // ApiSchemas['/v0/teams/:uuid.POST.request'],
   params: z.object({
     uuid: z.string().uuid(),
   }),

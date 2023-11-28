@@ -19,11 +19,11 @@ import { AvatarWithLetters } from '../components/AvatarWithLetters';
 import { Empty } from '../components/Empty';
 import { QDialogConfirmDelete } from '../components/QDialog';
 import { shareSearchParamKey, shareSearchParamValuesById } from '../components/ShareMenu';
+import { DashboardHeader } from '../dashboard/components/DashboardHeader';
+import { TeamLogoInput } from '../dashboard/components/TeamLogo';
+import { TeamShareMenu } from '../dashboard/components/TeamShareMenu';
 import { useUpdateQueryStringValueWithoutNavigation } from '../hooks/useUpdateQueryStringValueWithoutNavigation';
 import { hasAccess } from '../permissions';
-import { DashboardHeader } from './components/DashboardHeader';
-import { TeamLogoInput } from './components/TeamLogo';
-import { TeamShareMenu } from './components/TeamShareMenu';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { teamUuid } = params as { teamUuid: string };

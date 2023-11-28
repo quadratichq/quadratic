@@ -1,24 +1,30 @@
-import express, { Response } from 'express';
-import { z } from 'zod';
-import { ApiSchemas, ApiTypes } from '../../../../src/api/types';
-import dbClient from '../../dbClient';
-import { userMiddleware } from '../../middleware/user';
-import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateRequestAgainstZodSchema } from '../../middleware/validateRequestAgainstZodSchema';
-import { RequestWithAuth, RequestWithUser } from '../../types/Request';
+import express from "express";
+import { z } from "zod";
+// import {
+//   ApiSchemas,
+//   ApiTypes,
+// } from "../../../../quadratic-client/src/api/types";
+import dbClient from "../../dbClient";
+import { userMiddleware } from "../../middleware/user";
+import { validateAccessToken } from "../../middleware/validateAccessToken";
+import { validateRequestAgainstZodSchema } from "../../middleware/validateRequestAgainstZodSchema";
+import { RequestWithAuth, RequestWithUser } from "../../types/Request";
 const router = express.Router();
 
 const Schema = z.object({
   // TODO do we put a limit on the name length?
-  body: ApiSchemas['/v0/teams.POST.request'],
+  body: z.any(), // ApiSchemas["/v0/teams.POST.request"],
 });
 
 router.post(
-  '/',
+  "/",
   validateAccessToken,
   validateRequestAgainstZodSchema(Schema),
   userMiddleware,
-  async (req: RequestWithAuth & RequestWithUser, res: Response<ApiTypes['/v0/teams.POST.response']>) => {
+  async (
+    req: RequestWithAuth & RequestWithUser,
+    res: any // Response<ApiTypes["/v0/teams.POST.response"]>
+  ) => {
     const {
       body: { name, picture },
       user: { id: userId },
@@ -36,7 +42,7 @@ router.post(
         UserTeamRole: {
           create: {
             userId,
-            role: 'OWNER',
+            role: "OWNER",
           },
         },
       },

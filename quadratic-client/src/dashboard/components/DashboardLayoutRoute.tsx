@@ -103,7 +103,7 @@ function Navbar() {
           </SidebarNavLink>
         </div>
 
-        <p className={`${TYPE.overline} mt-6 text-muted-foreground`}>Teams</p>
+        <p className={`${TYPE.overline} mb-2 mt-6 text-muted-foreground`}>Teams</p>
         {teams.map(({ uuid, name }) => {
           const teamName =
             // @ts-expect-error
