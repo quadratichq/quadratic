@@ -29,6 +29,9 @@ In order to run the front-end and/or the server locally, you must have all the e
 3. Configure `.env.local` values
 4. (a) `npm start` to run in browser or `npm run dev` to run with Electron; or (b) `npm run watch:front-end` to run in browser with automatic wasm rebuilding
 
+#### Note:
+To rebuild the rust types after `npm start`, you need to either manually call `npm run build:wasm:types`, or restart the `npm start" script.
+
 ### Run server locally
 
 1. `cd quadratic-api`
