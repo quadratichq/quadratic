@@ -275,6 +275,11 @@ pub fn date_string() -> String {
     now.format("%Y-%m-%d %H:%M:%S").to_string()
 }
 
+pub fn round(number: f64, precision: i64) -> f64 {
+    let y = 10i32.pow(precision as u32) as f64;
+    (number * y).round() / y
+}
+
 #[cfg(test)]
 pub(crate) fn assert_f64_approx_eq(expected: f64, actual: &str) {
     const EPSILON: f64 = 0.0001;

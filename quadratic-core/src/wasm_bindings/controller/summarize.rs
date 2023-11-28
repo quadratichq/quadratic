@@ -1,3 +1,4 @@
+use crate::util::round;
 use crate::Pos;
 use crate::{grid::SheetId, wasm_bindings::GridController, CellValue, Rect};
 use bigdecimal::{BigDecimal, ToPrimitive, Zero};
@@ -61,8 +62,8 @@ impl GridController {
 
         Some(SummarizeSelectionResult {
             count,
-            sum: sum.round(max_decimals).to_f64(),
-            average: average.round(max_decimals).to_f64(),
+            sum: sum.to_f64().map(|num| round(num, max_decimals)),
+            average: average.to_f64().map(|num| round(num, max_decimals)),
         })
     }
 }
