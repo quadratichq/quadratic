@@ -4,7 +4,7 @@ use bigdecimal::{BigDecimal, ToPrimitive, Zero};
 use std::str::FromStr;
 use wasm_bindgen::prelude::wasm_bindgen;
 
-const MAXIMUM_SUMMARIZE_SELECTION_SIZE: u32 = 50000;
+const MAX_SUMMARIZE_SELECTION_SIZE: u32 = 50000;
 
 #[wasm_bindgen]
 pub struct SummarizeSelectionResult {
@@ -20,9 +20,10 @@ impl GridController {
         &mut self,
         sheet_id: String,
         rect: &Rect,
+        max_decimals: i64,
     ) -> Option<SummarizeSelectionResult> {
         // don't allow too large of a selection
-        if (rect.width() * rect.height()) > MAXIMUM_SUMMARIZE_SELECTION_SIZE {
+        if rect.len() > MAX_SUMMARIZE_SELECTION_SIZE {
             return None;
         }
 
@@ -60,8 +61,8 @@ impl GridController {
 
         Some(SummarizeSelectionResult {
             count,
-            sum: sum.to_f64(),
-            average: average.to_f64(),
+            sum: sum.round(max_decimals).to_f64(),
+            average: average.round(max_decimals).to_f64(),
         })
     }
 }
@@ -72,35 +73,62 @@ mod tests {
     use crate::wasm_bindings::GridController;
     use crate::{Pos, Rect};
 
+    // TODO(ddimaria): move to a shared util
+    fn set_value(gc: &mut GridController, x: i64, y: i64, value: &str) {
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(sheet_id, Pos { x, y }, String::from(value), None);
+    }
+
     #[test]
     fn test_summarize() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, String::from("12.12"), None);
-        gc.set_cell_value(sheet_id, Pos { x: 1, y: 2 }, String::from("12313"), None);
-        gc.set_cell_value(sheet_id, Pos { x: 1, y: 3 }, String::from("0"), None);
+        set_value(&mut gc, 1, 1, "12.12");
+        set_value(&mut gc, 1, 2, "12313");
+        set_value(&mut gc, 1, 3, "0");
 
+        // span of 10 cells, 3 have numeric values
         let rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 10 });
         let result = gc
-            .js_summarize_selection(sheet_id.to_string(), &rect)
+            .js_summarize_selection(sheet_id.to_string(), &rect, 9)
             .unwrap();
-
         assert_eq!(result.count, 3);
         assert_eq!(result.sum, Some(12325.12));
-        assert_eq!(result.average, Some(4108.373333333333));
+        assert_eq!(result.average, Some(4108.373333333));
 
+        // returns zeros for an empty selection
         let rect = Rect::new_span(Pos { x: 100, y: 100 }, Pos { x: 1000, y: 105 });
         let result = gc
-            .js_summarize_selection(sheet_id.to_string(), &rect)
+            .js_summarize_selection(sheet_id.to_string(), &rect, 9)
             .unwrap();
-
         assert_eq!(result.count, 0);
         assert_eq!(result.sum, Some(0.0));
         assert_eq!(result.average, Some(0.0));
 
+        // returns none if selection is too large (MAX_SUMMARIZE_SELECTION_SIZE)
         let rect = Rect::new_span(Pos { x: 100, y: 100 }, Pos { x: 10000, y: 10000 });
-        let result = gc.js_summarize_selection(sheet_id.to_string(), &rect);
+        let result = gc.js_summarize_selection(sheet_id.to_string(), &rect, 9);
         assert!(result.is_none());
+
+        // rounding
+        set_value(&mut gc, 1, 1, "9.1234567891");
+        let rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 10 });
+        let result = gc
+            .js_summarize_selection(sheet_id.to_string(), &rect, 9)
+            .unwrap();
+        assert_eq!(result.count, 3);
+        assert_eq!(result.sum, Some(12322.123456789));
+        assert_eq!(result.average, Some(4107.374485596));
+
+        // trailing zeros
+        set_value(&mut gc, -1, -1, "0.00100000000000");
+        let rect = Rect::new_span(Pos { x: -1, y: -1 }, Pos { x: -1, y: -10 });
+        let result = gc
+            .js_summarize_selection(sheet_id.to_string(), &rect, 9)
+            .unwrap();
+        assert_eq!(result.count, 1);
+        assert_eq!(result.sum, Some(0.001));
+        assert_eq!(result.average, Some(0.001));
     }
 }

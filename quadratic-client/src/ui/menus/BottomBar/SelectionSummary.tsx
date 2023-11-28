@@ -16,12 +16,12 @@ export const SelectionSummary = () => {
   const [copied, setCopied] = useState(false);
 
   const runCalculationOnActiveSelection = () => {
-    let result = grid.summarizeSelection();
+    let result = grid.summarizeSelection(9);
 
     if (result) {
       setCount(result.count.toString());
       setSum(result.sum !== undefined ? result.sum.toString() : undefined);
-      setAvg(result.average !== undefined ? result.average.toFixed(9).toString() : undefined);
+      setAvg(result.average !== undefined ? result.average.toString() : undefined);
     } else {
       setCount(undefined);
       setSum(undefined);
