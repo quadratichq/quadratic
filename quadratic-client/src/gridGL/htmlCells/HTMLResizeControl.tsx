@@ -15,7 +15,6 @@ export function HTMLResizeControl({ position }: ResizeControlProps) {
       style={{
         // @ts-expect-error typescript doesn't like us setting CSS custom properties
         '--resize-control-highlight': colors.quadraticPrimary,
-        '--resize-control-background': colors.mediumGray,
         pointerEvents: 'none',
       }}
     />

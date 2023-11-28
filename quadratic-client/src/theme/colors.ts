@@ -7,6 +7,7 @@ export const colors = {
   cellFontColor: 0x000000,
   cellColorUserText: 0x8ecb89,
   cellColorUserPython: 0x3776ab,
+  cellColorUserPythonRgba: 'rgba(55, 118, 171, 0.5)',
   cellColorUserFormula: 0x8c1a6a,
   cellColorUserAI: 0x1a8c5d,
   cellColorError: 0xf25f5c,

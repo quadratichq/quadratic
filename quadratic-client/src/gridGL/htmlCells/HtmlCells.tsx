@@ -6,7 +6,7 @@ import { pixiApp } from '../pixiApp/PixiApp';
 import { DivHtmlCell } from './DivHtmlCell';
 import { IFrameHtmlCell } from './IFrameHtmlCell';
 
-export const TOP_HTML_MARGIN = 3;
+export const TOP_HTML_MARGIN = 0;
 
 export const HtmlCells = () => {
   const [htmlCells, setHtmlCells] = useState<JsHtmlOutput[]>([]);

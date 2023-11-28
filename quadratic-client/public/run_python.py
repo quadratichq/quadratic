@@ -1,5 +1,6 @@
 import asyncio
 import operator
+import os
 import re
 import sys
 import traceback
@@ -15,7 +16,6 @@ import pyodide
 
 # todo separate this file out into a Python Package
 # https://pyodide.org/en/stable/usage/loading-custom-python-code.html
-
 
 def attempt_fix_await(code):
     # Insert a "await" keyword between known async functions to improve the UX
@@ -35,6 +35,12 @@ def attempt_fix_await(code):
 
     return code
 
+
+async def preload(code):
+    if "import plotly" in code.lower():
+        await micropip.install(
+            "plotly"
+        )
 
 def strtobool(val):
     """Convert a string representation of truth to true (1) or false (0).
@@ -261,6 +267,9 @@ async def run_python(code):
 
     sout = StringIO()
     output_value = None
+
+    # preload libraries
+    await preload(code)
 
     try:
         # Capture STDOut to sout

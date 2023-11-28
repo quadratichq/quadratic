@@ -1,6 +1,7 @@
 import { CELL_HEIGHT, CELL_WIDTH } from '@/constants/gridConstants';
 import { sheets } from '@/grid/controller/Sheets';
 import { JsHtmlOutput } from '@/quadratic-core/types';
+import { colors } from '@/theme/colors';
 import { useCallback } from 'react';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { Wheel } from '../pixiOverride/Wheel';
@@ -99,11 +100,12 @@ export const IFrameHtmlCell = (props: Props) => {
       // these are needed by PointerHtmlCells.ts
       data-pos={`${htmlCell.x},${htmlCell.y}`}
       data-type="iframe"
-      className={`border border-border bg-white shadow-md`}
+      className={`bg-white`}
       style={{
+        border: `1px solid ${colors.cellColorUserPythonRgba}`,
         position: 'absolute',
-        left: offset.x,
-        top: offset.y + offset.height,
+        left: offset.x - 0.5, // the 0.5 is adjustment for the border
+        top: offset.y + offset.height - 0.5, // the 0.5 is adjustment for the border
         boxSizing: 'border-box',
         touchAction: 'none pan-x pan-y',
       }}

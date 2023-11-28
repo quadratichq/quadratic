@@ -105,7 +105,7 @@ impl Sheet {
                         wrap: None,
                         bold: None,
                         italic: Some(true),
-                        text_color: Some(String::from("orange")),
+                        text_color: Some(String::from("rgb(155, 186, 213)")),
                     };
                 } else if let CellValue::Error(error) = value {
                     let value = match error.msg {
@@ -445,7 +445,7 @@ mod tests {
                 wrap: None,
                 bold: None,
                 italic: Some(true),
-                text_color: Some("orange".to_string()),
+                text_color: Some("rgb(155, 186, 213)".to_string()),
             },
         );
         assert_eq!(
