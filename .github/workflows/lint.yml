@@ -49,7 +49,6 @@ jobs:
 
       - name: Run Clippy
         run: |
-          cd quadratic-client
           npm run lint:clippy
 
       - name: Install wasm-pack
