@@ -121,32 +121,6 @@ impl Sheet {
         let column = self.get_column(pos.x)?;
         column.render_size.get(pos.y)
     }
-}
-
-#[cfg(test)]
-mod test {
-    use crate::{controller::GridController, grid::RenderSize, Rect};
-
-    #[test]
-    fn test_render_size() {
-        use crate::Pos;
-
-        let mut gc = GridController::new();
-        let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_render_size(
-            sheet_id,
-            Rect::single_pos(Pos { x: 0, y: 0 }),
-            Some(crate::grid::RenderSize { w: 10, h: 20 }),
-            None,
-        );
-
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.render_size(Pos { x: 0, y: 0 }),
-            Some(RenderSize { w: 10, h: 20 })
-        );
-        assert_eq!(sheet.render_size(Pos { x: 1, y: 1 }), None);
-    }
 
     /// Checks if the deletion of a cell or a code_cell released a spill error;
     /// sorted by earliest last_modified.
@@ -175,5 +149,31 @@ mod test {
                     false
                 }
             })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{controller::GridController, grid::RenderSize, Rect};
+
+    #[test]
+    fn test_render_size() {
+        use crate::Pos;
+
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_render_size(
+            sheet_id,
+            Rect::single_pos(Pos { x: 0, y: 0 }),
+            Some(crate::grid::RenderSize { w: 10, h: 20 }),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.render_size(Pos { x: 0, y: 0 }),
+            Some(RenderSize { w: 10, h: 20 })
+        );
+        assert_eq!(sheet.render_size(Pos { x: 1, y: 1 }), None);
     }
 }
