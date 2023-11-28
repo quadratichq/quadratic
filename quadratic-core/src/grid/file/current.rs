@@ -202,6 +202,14 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
         });
 }
 
+fn import_code_cell_output(type_field: &str, value: &str) -> CellValue {
+    match type_field.to_lowercase().as_str() {
+        "text" => CellValue::Text(value.to_owned()),
+        "number" => CellValue::Number(BigDecimal::from_str(value).unwrap_or_default()),
+        _ => CellValue::Blank,
+    }
+}
+
 fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<CellRef, CodeCellValue>> {
     sheet
         .code_cells
@@ -230,11 +238,11 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<CellRef, C
                                 } => CodeCellRunResult::Ok {
                                     output_value: match output_value {
                                         current::OutputValue::Single(
-                                            current::OutputValueValue {
-                                                type_field: _type_field,
-                                                value,
-                                            },
-                                        ) => Value::Single(CellValue::from(value)),
+                                            current::OutputValueValue { type_field, value },
+                                        ) => Value::Single(import_code_cell_output(
+                                            &type_field,
+                                            &value,
+                                        )),
                                         current::OutputValue::Array(current::OutputArray {
                                             size,
                                             values,
@@ -244,22 +252,10 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<CellRef, C
                                                 .map(|row| {
                                                     row.iter()
                                                         .map(|cell| {
-                                                            match cell
-                                                                .type_field
-                                                                .to_lowercase()
-                                                                .as_str()
-                                                            {
-                                                                "text" => CellValue::Text(
-                                                                    cell.value.to_owned(),
-                                                                ),
-                                                                "number" => CellValue::Number(
-                                                                    BigDecimal::from_str(
-                                                                        &cell.value,
-                                                                    )
-                                                                    .unwrap_or_default(),
-                                                                ),
-                                                                _ => CellValue::Blank,
-                                                            }
+                                                            import_code_cell_output(
+                                                                &cell.type_field,
+                                                                &cell.value,
+                                                            )
                                                         })
                                                         .collect::<Vec<_>>()
                                                 })
