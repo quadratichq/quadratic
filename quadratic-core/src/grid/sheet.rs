@@ -573,7 +573,8 @@ mod test {
         (grid_controller, sheet_id, selected)
     }
 
-    fn set_and_validate_number(
+    // assert decimal places after a set_cell_value
+    fn assert_decimal_places_for_number(
         sheet: &mut Sheet,
         x: i64,
         y: i64,
@@ -590,17 +591,17 @@ mod test {
     fn test_current_decimal_places_value() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
-        // get decimal places after a set_cell_value
-        set_and_validate_number(&mut sheet, 1, 2, "12.23", false, Some(2));
+        // validate simple decimal places
+        assert_decimal_places_for_number(&mut sheet, 1, 2, "12.23", false, Some(2));
 
         // validate percentage
-        set_and_validate_number(&mut sheet, 2, 2, "0.23", true, Some(0));
+        assert_decimal_places_for_number(&mut sheet, 2, 2, "0.23", true, Some(0));
 
         // validate rounding
-        set_and_validate_number(&mut sheet, 3, 2, "9.1234567891", false, Some(9));
+        assert_decimal_places_for_number(&mut sheet, 3, 2, "9.1234567891", false, Some(9));
 
         // validate percentage rounding
-        set_and_validate_number(&mut sheet, 3, 2, "9.1234567891", true, Some(7));
+        assert_decimal_places_for_number(&mut sheet, 3, 2, "9.1234567891", true, Some(7));
     }
 
     #[test]
