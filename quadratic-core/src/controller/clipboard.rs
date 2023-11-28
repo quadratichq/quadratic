@@ -104,13 +104,13 @@ impl GridController {
                     }
                     html.push_str("}>");
                 }
-                if value.is_some() {
-                    plain_text.push_str(&value.as_ref().unwrap().to_string());
-                    html.push_str(&value.as_ref().unwrap().to_string());
-                } else if spill_value.is_some() {
-                    plain_text.push_str(&spill_value.as_ref().unwrap().to_string());
-                    html.push_str(&spill_value.as_ref().unwrap().to_string());
-                }
+                if let Some(value) = value.as_ref() {
+                    plain_text.push_str(&value.to_string());
+                    html.push_str(&value.to_string());
+                } else if let Some(spill_value) = spill_value.as_ref() {
+                    plain_text.push_str(&spill_value.to_string());
+                    html.push_str(&spill_value.to_string());
+                };
                 if bold || italic {
                     html.push_str("</span>");
                 }
@@ -295,21 +295,43 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let lines: Vec<&str> = clipboard.split('\n').collect();
-        let rows: Vec<Vec<&str>> = lines
-            .iter()
-            .map(|line| line.split('\t').collect())
-            .collect();
+
         let mut operations = vec![];
 
-        for (y, row) in rows.iter().enumerate() {
-            for (x, value) in row.iter().enumerate() {
-                operations.extend(self.set_cell_value_operations(
-                    sheet_id,
-                    (start_pos.x + x as i64, start_pos.y + y as i64).into(),
-                    value,
-                ));
-            }
-        }
+        let cell_values = lines
+            .iter()
+            .enumerate()
+            .map(|(x, line)| {
+                line.split('\t')
+                    .enumerate()
+                    .map(|(y, value)| {
+                        self.string_to_cell_value(
+                            sheet_id,
+                            (start_pos.x + x as i64, start_pos.y + y as i64).into(),
+                            value,
+                            &mut operations,
+                        )
+                    })
+                    .collect::<Vec<CellValue>>()
+            })
+            .collect::<Vec<Vec<CellValue>>>();
+
+        let array = Array::from(cell_values);
+
+        let rect = crate::Rect::new_span(
+            start_pos,
+            (
+                start_pos.x + array.width() as i64 - 1,
+                start_pos.y + array.height() as i64 - 1,
+            )
+                .into(),
+        );
+
+        operations.push(Operation::SetCellValues {
+            region: self.region(sheet_id, rect),
+            values: array,
+        });
+
         self.set_in_progress_transaction(operations, cursor, true, TransactionType::Normal)
     }
 

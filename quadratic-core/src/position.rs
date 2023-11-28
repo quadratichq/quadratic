@@ -126,9 +126,28 @@ impl Rect {
         ArraySize::new(self.width(), self.height()).expect("empty rectangle has no size")
     }
 
+    /// Constructs a rectangle from a top-left position and a size.
+    pub fn from_pos_and_size(top_left: Pos, size: ArraySize) -> Self {
+        Rect {
+            min: top_left,
+            max: Pos {
+                x: top_left.x + size.w.get() as i64 - 1,
+                y: top_left.y + size.h.get() as i64 - 1,
+            },
+        }
+    }
+
     /// Returns whether a position is contained within the rectangle.
     pub fn contains(self, pos: Pos) -> bool {
         self.x_range().contains(&pos.x) && self.y_range().contains(&pos.y)
+    }
+
+    /// Returns whether a rectangle intersects with the rectangle.
+    pub fn intersects(self, other: Rect) -> bool {
+        !(other.max.x < self.min.x
+            || other.min.x > self.max.x
+            || other.max.y < self.min.y
+            || other.min.y > self.max.y)
     }
 
     /// Returns the range of X values in the rectangle.
@@ -156,6 +175,13 @@ impl Rect {
     pub fn is_empty(&self) -> bool {
         self.width() == 0 && self.height() == 0
     }
+
+    pub fn translate(&mut self, x: i64, y: i64) {
+        self.min.x += x;
+        self.min.y += y;
+        self.max.x += x;
+        self.max.y += y;
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone)]
@@ -178,12 +204,6 @@ pub struct SheetPos {
 impl fmt::Display for SheetPos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} ({}, {})", self.sheet_id, self.x, self.y)
-    }
-}
-impl SheetPos {
-    pub fn without_sheet(self) -> Pos {
-        let SheetPos { x, y, .. } = self;
-        Pos { x, y }
     }
 }
 
@@ -244,6 +264,10 @@ impl fmt::Display for SheetRect {
 impl SheetPos {
     pub fn new(sheet_id: SheetId, x: i64, y: i64) -> Self {
         Self { sheet_id, x, y }
+    }
+    pub fn without_sheet(self) -> Pos {
+        let SheetPos { x, y, .. } = self;
+        Pos { x, y }
     }
 }
 impl From<SheetRect> for Vec<SheetPos> {
