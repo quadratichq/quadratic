@@ -222,6 +222,15 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
         });
 }
 
+fn import_code_cell_output(type_field: &str, value: &str) -> CellValue {
+    match type_field.to_lowercase().as_str() {
+        "text" => CellValue::Text(value.to_owned()),
+        "number" => CellValue::Number(BigDecimal::from_str(value).unwrap_or_default()),
+        "html" => CellValue::Html(value.to_owned()),
+        _ => CellValue::Blank,
+    }
+}
+
 fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<CellRef, CodeCellValue>> {
     sheet
         .code_cells
@@ -242,6 +251,7 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<CellRef, C
                         Some(CodeCellRunOutput {
                             std_out: output.std_out,
                             std_err: output.std_err,
+                            spill: output.spill,
                             result: match output.result {
                                 current::CodeCellRunResult::Ok {
                                     output_value,
@@ -250,13 +260,10 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<CellRef, C
                                     output_value: match output_value {
                                         current::OutputValue::Single(
                                             current::OutputValueValue { type_field, value },
-                                        ) => {
-                                            if type_field == "html" {
-                                                Value::Single(CellValue::Html(value))
-                                            } else {
-                                                Value::Single(CellValue::from(value))
-                                            }
-                                        }
+                                        ) => Value::Single(import_code_cell_output(
+                                            &type_field,
+                                            &value,
+                                        )),
                                         current::OutputValue::Array(current::OutputArray {
                                             size,
                                             values,
@@ -266,22 +273,10 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<CellRef, C
                                                 .map(|row| {
                                                     row.iter()
                                                         .map(|cell| {
-                                                            match cell
-                                                                .type_field
-                                                                .to_lowercase()
-                                                                .as_str()
-                                                            {
-                                                                "text" => CellValue::Text(
-                                                                    cell.value.to_owned(),
-                                                                ),
-                                                                "number" => CellValue::Number(
-                                                                    BigDecimal::from_str(
-                                                                        &cell.value,
-                                                                    )
-                                                                    .unwrap_or_default(),
-                                                                ),
-                                                                _ => CellValue::Blank,
-                                                            }
+                                                            import_code_cell_output(
+                                                                &cell.type_field,
+                                                                &cell.value,
+                                                            )
                                                         })
                                                         .collect::<Vec<_>>()
                                                 })
@@ -567,6 +562,7 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                                 output: code_cell_value.output.map(|output| current::CodeCellRunOutput {
                                         std_out: output.std_out,
                                         std_err: output.std_err,
+                                        spill: output.spill,
                                         result: match output.result {
                                             CodeCellRunResult::Ok {
                                                 output_value,

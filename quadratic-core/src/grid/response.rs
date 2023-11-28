@@ -8,7 +8,6 @@ pub struct SetCellResponse<V> {
     pub column: GetIdResponse<ColumnId>,
     pub row: GetIdResponse<RowId>,
     pub old_value: V,
-
     pub html: bool,
 }
 

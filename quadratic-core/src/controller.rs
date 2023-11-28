@@ -3,7 +3,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::{computation::TransactionInProgress, grid::Grid};
 
-use self::{dependencies::Dependencies, transactions::Transaction};
+use self::transactions::Transaction;
 
 pub mod auto_complete;
 pub mod borders;
@@ -18,6 +18,7 @@ pub mod operation;
 pub mod operations;
 pub mod sheet_offsets;
 pub mod sheets;
+pub mod spills;
 pub mod thumbnail;
 pub mod transaction_summary;
 pub mod transaction_types;
@@ -28,10 +29,7 @@ pub mod update_code_cell_value;
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct GridController {
     grid: Grid,
-
-    dependencies: Dependencies,
     transaction_in_progress: Option<TransactionInProgress>,
-
     undo_stack: Vec<Transaction>,
     redo_stack: Vec<Transaction>,
 }
@@ -41,10 +39,8 @@ impl GridController {
         Self::from_grid(Grid::new())
     }
     pub fn from_grid(grid: Grid) -> Self {
-        let dependencies = Dependencies::new(&grid);
         GridController {
             grid,
-            dependencies,
             transaction_in_progress: None,
             undo_stack: vec![],
             redo_stack: vec![],

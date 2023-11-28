@@ -7,7 +7,7 @@ use crate::{
         },
         CellAlign, CodeCellRunResult, NumericFormatKind,
     },
-    CellValue, Pos, Rect,
+    CellValue, Error, ErrorMsg, Pos, Rect,
 };
 
 use super::Sheet;
@@ -23,8 +23,8 @@ impl Sheet {
 
     /// Returns cell data in a format useful for rendering. This includes only
     /// the data necessary to render raw text values.
-    pub fn get_render_cells(&self, region: Rect) -> Vec<JsRenderCell> {
-        let columns_iter = region
+    pub fn get_render_cells(&self, rect: Rect) -> Vec<JsRenderCell> {
+        let columns_iter = rect
             .x_range()
             .filter_map(|x| Some((x, self.get_column(x)?)));
 
@@ -32,7 +32,7 @@ impl Sheet {
         let ordinary_cells = columns_iter.clone().flat_map(|(x, column)| {
             column
                 .values
-                .values_in_range(region.y_range())
+                .values_in_range(rect.y_range())
                 .map(move |(y, value)| (x, y, column, value, None))
         });
 
@@ -40,16 +40,36 @@ impl Sheet {
         let code_output_cells = columns_iter.flat_map(move |(x, column)| {
             column
                 .spills
-                .blocks_of_range(region.y_range())
+                .blocks_of_range(rect.y_range())
                 .filter_map(move |block| {
                     let code_cell_pos = self.cell_ref_to_pos(block.content.value)?;
                     let code_cell = self.code_cells.get(&block.content.value)?;
 
-                    let (block_len, cell_error) = if let Some(error) = code_cell.get_error() {
-                        (1, Some(CellValue::Error(Box::new(error))))
-                    } else {
-                        (block.len(), None)
-                    };
+                    let mut block_len = block.len();
+                    let mut cell_error = None;
+
+                    // check for error in code cell
+                    //
+                    // TODO(ddimaria): address comment from @HactarCE:
+                    //
+                    // I think block_len should automatically equal 1 because
+                    // an error produces a 1x1 spill? If not, then we have to
+                    // be careful to only return the error value in the first
+                    // column of the spill.
+                    if let Some(error) = code_cell.get_error() {
+                        block_len = 1;
+                        cell_error = Some(CellValue::Error(Box::new(error)));
+                    }
+                    // check for spill in code_cell
+                    else if let Some(output) = code_cell.output.as_ref() {
+                        if output.spill {
+                            block_len = 1;
+                            cell_error = Some(CellValue::Error(Box::new(Error {
+                                span: None,
+                                msg: ErrorMsg::Spill,
+                            })));
+                        }
+                    }
 
                     let dx = (x - code_cell_pos.x) as u32;
                     let dy = (block.y - code_cell_pos.y) as u32;
@@ -73,39 +93,63 @@ impl Sheet {
 
         itertools::chain(ordinary_cells, code_output_cells)
             .map(|(x, y, column, value, language)| {
-                // Only fetch formatting info for non-error, non-HTML, non-blank
-                // cells
-                let fmt = !matches!(
-                    value,
-                    CellValue::Blank | CellValue::Error(_) | CellValue::Html(_),
-                );
-                let mut align = if fmt { column.align.get(y) } else { None };
-                let wrap = if fmt { column.wrap.get(y) } else { None };
-                let bold = if fmt { column.bold.get(y) } else { None };
-                let italic = if fmt { column.italic.get(y) } else { None };
-                let text_color = if fmt { column.text_color.get(y) } else { None };
+                if let CellValue::Html(html) = value {
+                    return Some(JsRenderCell {
+                        x,
+                        y,
 
-                let value = match value {
-                    CellValue::Error(_) => " ERROR".to_string(),
-                    CellValue::Html(_) => " CHART".to_string(),
-                    CellValue::Number(_) => {
-                        // get numeric_format and numeric_decimal to turn number into a string
-                        let numeric_format = column.numeric_format.get(y);
-                        let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
-                            numeric_format.kind == NumericFormatKind::Percentage
-                        });
-                        let numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
-                        let numeric_commas = column.numeric_commas.get(y);
+                        value: " HTML".to_string(),
+                        language,
 
-                        // if align is not set, set it to right only for numbers
-                        align = align.or(Some(CellAlign::Right));
+                        align: None,
+                        wrap: None,
+                        bold: None,
+                        italic: Some(true),
+                        text_color: Some(String::from("orange")),
+                    });
+                } else if let CellValue::Error(error) = value {
+                    let value = match error.msg {
+                        ErrorMsg::Spill => " SPILL",
+                        _ => " ERROR",
+                    };
+                    return Some(JsRenderCell {
+                        x,
+                        y,
 
-                        value.to_display(numeric_format, numeric_decimals, numeric_commas)
-                    }
-                    _ => value.to_display(None, None, None),
+                        value: value.into(),
+                        language,
+
+                        align: None,
+                        wrap: None,
+                        bold: None,
+                        italic: Some(true),
+                        text_color: Some(String::from("red")),
+                    });
+                }
+
+                let mut numeric_format: Option<NumericFormat> = None;
+                let mut numeric_decimals: Option<i16> = None;
+                let mut numeric_commas: Option<bool> = None;
+                let mut align: Option<CellAlign> = column.align.get(y);
+
+                let value = if matches!(value, CellValue::Number(_)) {
+                    // get numeric_format and numeric_decimal to turn number into a string
+                    let numeric_format = column.numeric_format.get(y);
+                    let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
+                        numeric_format.kind == NumericFormatKind::Percentage
+                    });
+                    let numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
+                    let numeric_commas = column.numeric_commas.get(y);
+
+                    // if align is not set, set it to right only for numbers
+                    align = align.or(Some(CellAlign::Right));
+
+                    value.to_display(numeric_format, numeric_decimals, numeric_commas)
+                } else {
+                    value.to_display(None, None, None)
                 };
 
-                JsRenderCell {
+                Some(JsRenderCell {
                     x,
                     y,
 
@@ -117,7 +161,7 @@ impl Sheet {
                     bold,
                     italic,
                     text_color,
-                }
+                })
             })
             .collect()
     }
@@ -190,18 +234,28 @@ impl Sheet {
                 }
                 let code_cell = self.code_cells.get(&cell_ref)?;
                 let output_size = code_cell.output_size();
-                let state = match &code_cell.output {
-                    Some(output) => match output.result {
-                        CodeCellRunResult::Ok { .. } => JsRenderCodeCellState::Success,
-                        CodeCellRunResult::Err { .. } => JsRenderCodeCellState::RunError,
+                let (state, w, h) = match &code_cell.output {
+                    Some(output) => match &output.result {
+                        CodeCellRunResult::Ok { .. } => {
+                            if output.spill {
+                                (JsRenderCodeCellState::SpillError, 1, 1)
+                            } else {
+                                (
+                                    JsRenderCodeCellState::Success,
+                                    output_size.w.get(),
+                                    output_size.h.get(),
+                                )
+                            }
+                        }
+                        CodeCellRunResult::Err { .. } => (JsRenderCodeCellState::RunError, 1, 1),
                     },
-                    None => JsRenderCodeCellState::NotYetRun,
+                    None => (JsRenderCodeCellState::NotYetRun, 1, 1),
                 };
                 Some(JsRenderCodeCell {
                     x: pos.x,
                     y: pos.y,
-                    w: output_size.w.get(),
-                    h: output_size.h.get(),
+                    w,
+                    h,
                     language: code_cell.language,
                     state,
                 })
@@ -216,19 +270,31 @@ impl Sheet {
                 let pos = self.cell_ref_to_pos(cell_ref)?;
                 let code_cell = self.code_cells.get(&cell_ref)?;
                 let output_size = code_cell.output_size();
+
+                let (state, w, h) = match &code_cell.output {
+                    Some(output) => match &output.result {
+                        CodeCellRunResult::Ok { .. } => {
+                            if output.spill {
+                                (JsRenderCodeCellState::SpillError, 1, 1)
+                            } else {
+                                (
+                                    JsRenderCodeCellState::Success,
+                                    output_size.w.get(),
+                                    output_size.h.get(),
+                                )
+                            }
+                        }
+                        CodeCellRunResult::Err { .. } => (JsRenderCodeCellState::RunError, 1, 1),
+                    },
+                    None => (JsRenderCodeCellState::NotYetRun, 1, 1),
+                };
                 Some(JsRenderCodeCell {
                     x: pos.x,
                     y: pos.y,
-                    w: output_size.w.get(),
-                    h: output_size.h.get(),
+                    w,
+                    h,
                     language: code_cell.language,
-                    state: match &code_cell.output {
-                        Some(output) => match &output.result {
-                            CodeCellRunResult::Ok { .. } => JsRenderCodeCellState::Success,
-                            CodeCellRunResult::Err { .. } => JsRenderCodeCellState::RunError,
-                        },
-                        None => JsRenderCodeCellState::NotYetRun,
-                    },
+                    state,
                 })
             })
             .collect()

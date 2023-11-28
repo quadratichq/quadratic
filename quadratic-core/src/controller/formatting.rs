@@ -305,7 +305,7 @@ mod test {
         assert_eq!(get(&gc, pos3), "red");
 
         // delete and redo
-        gc.delete_cell_values(sheet_id, rect1, None);
+        gc.delete_cells_rect(sheet_id, rect1, None);
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "red");
         assert_eq!(get(&gc, pos3), "red");

@@ -54,6 +54,7 @@ impl TransactionInProgress {
                                     output_value: value,
                                     cells_accessed: self.cells_accessed.clone(),
                                 },
+                                spill: false,
                             }),
                             // todo
                             last_modified: String::new(),
@@ -66,8 +67,8 @@ impl TransactionInProgress {
                             &mut self.reverse_operations,
                             &mut self.summary,
                         ) {
-                            // updates the dependencies
-                            self.update_deps(grid_controller);
+                            // clears cells_accessed
+                            self.cells_accessed.clear();
                         }
                     }
                     Err(error) => {

@@ -193,8 +193,27 @@
             "spills": {},
             "align": {},
             "wrap": {},
-            "numeric_format": {},
-            "numeric_decimals": {},
+            "numeric_format": {
+              "0": {
+                "y": 0,
+                "content": {
+                  "value": {
+                    "type": "Percentage",
+                    "symbol": null
+                  },
+                  "len": 1
+                }
+              }
+            },
+            "numeric_decimals": {
+              "0": {
+                "y": 0,
+                "content": {
+                  "value": 2,
+                  "len": 1
+                }
+              }
+            },
             "numeric_commas": {},
             "bold": {},
             "italic": {},

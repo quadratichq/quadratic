@@ -3,7 +3,7 @@ use strum_macros::{Display, EnumString};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::CellRef;
-use crate::{ArraySize, CellValue, Error, Value};
+use crate::{ArraySize, CellValue, Error, Rect, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CodeCellValue {
@@ -11,6 +11,7 @@ pub struct CodeCellValue {
     pub code_string: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub formatted_code_string: Option<String>,
+    // TODO(ddimaria): This should be a timestamp
     pub last_modified: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub output: Option<CodeCellRunOutput>,
@@ -23,6 +24,7 @@ impl CodeCellValue {
         }
     }
 
+    // todo: output_size outputs a 1x1 for output == None. That seems wrong
     pub fn output_size(&self) -> ArraySize {
         match self.output.as_ref().and_then(|out| out.output_value()) {
             Some(Value::Array(a)) => a.size(),
@@ -36,6 +38,17 @@ impl CodeCellValue {
         } else {
             false
         }
+    }
+
+    /// returns a Rect for the output of the code cell if it is an array
+    pub fn output_rect(&self) -> Option<Rect> {
+        self.output
+            .is_some()
+            .then(|| Rect::from_pos_and_size((0, 0).into(), self.output_size()))
+    }
+
+    pub fn has_spill_error(&self) -> bool {
+        self.output.as_ref().map(|out| out.spill).unwrap_or(false)
     }
 
     pub fn cells_accessed_copy(&self) -> Option<Vec<CellRef>> {
@@ -69,6 +82,8 @@ pub struct CodeCellRunOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub std_err: Option<String>,
     pub result: CodeCellRunResult,
+    #[serde(default)]
+    pub spill: bool,
 }
 impl CodeCellRunOutput {
     /// Returns the value (single cell or array) outputted by the code run if it
@@ -111,5 +126,50 @@ impl CodeCellRunResult {
             CodeCellRunResult::Ok { .. } => true,
             CodeCellRunResult::Err { .. } => false,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{
+        grid::{CodeCellRunOutput, CodeCellValue},
+        Array, ArraySize, Pos, Rect,
+    };
+
+    #[test]
+    fn test_output_size() {
+        let code_cell = CodeCellValue {
+            language: super::CodeCellLanguage::Python,
+            code_string: "1".to_string(),
+            formatted_code_string: None,
+            last_modified: "1".to_string(),
+            output: None,
+        };
+        assert_eq!(code_cell.output_size(), super::ArraySize::_1X1);
+        assert_eq!(code_cell.output_rect(), None);
+
+        let code_cell = CodeCellValue {
+            language: super::CodeCellLanguage::Python,
+            code_string: "1".to_string(),
+            formatted_code_string: None,
+            last_modified: "1".to_string(),
+            output: Some(CodeCellRunOutput {
+                std_out: None,
+                std_err: None,
+                result: super::CodeCellRunResult::Ok {
+                    output_value: crate::Value::Array(Array::new_empty(
+                        ArraySize::new(10, 11).unwrap(),
+                    )),
+                    cells_accessed: vec![],
+                },
+                spill: false,
+            }),
+        };
+        assert_eq!(code_cell.output_size().w.get(), 10);
+        assert_eq!(code_cell.output_size().h.get(), 11);
+        assert_eq!(
+            code_cell.output_rect(),
+            Some(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 9, y: 10 }))
+        );
     }
 }
