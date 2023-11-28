@@ -1,7 +1,8 @@
 /* Shared styles for the 1px line */
 .resize-control {
-  background-color: transparent; /*var(--resize-control-background);*/
+  background-color: transparent;
   z-index: 10;
+  pointer-events: none;
 }
 
 /* Vertical control, right side */

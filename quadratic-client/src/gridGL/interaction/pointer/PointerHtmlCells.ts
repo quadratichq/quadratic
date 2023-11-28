@@ -6,6 +6,9 @@ import { InteractionEvent } from 'pixi.js';
 // number of screen pixels to trigger the resize cursor
 const tolerance = 10;
 
+// tolerance of snapping to the grid
+const snapping = 10;
+
 export class PointerHtmlCells {
   private state: 'resizing-right' | 'resizing-bottom' | 'resizing-corner' | undefined;
   private htmlCell?: HTMLIFrameElement | undefined;
@@ -128,6 +131,28 @@ export class PointerHtmlCells {
     this.htmlCellHover = undefined;
   }
 
+  private snapX(e: InteractionEvent): number {
+    if (e.data.originalEvent.shiftKey) return e.data.global.x;
+    const x = pixiApp.viewport.toWorld(e.data.global.x, 0).x;
+    for (const line of pixiApp.gridLines.gridLinesX) {
+      if (Math.abs(line.x - x) <= snapping) {
+        return pixiApp.viewport.toScreen(line.x, 0).x - 3;
+      }
+    }
+    return e.data.global.x;
+  }
+
+  private snapY(e: InteractionEvent): number {
+    if (e.data.originalEvent.shiftKey) return e.data.global.y;
+    const y = pixiApp.viewport.toWorld(0, e.data.global.y).y;
+    for (const line of pixiApp.gridLines.gridLinesY) {
+      if (Math.abs(line.y - y) <= snapping) {
+        return pixiApp.viewport.toScreen(0, line.y).y - 4;
+      }
+    }
+    return e.data.global.y;
+  }
+
   pointerMove(e: InteractionEvent): boolean {
     if (!this.state) {
       switch (this.intersects(e, false)) {
@@ -155,14 +180,18 @@ export class PointerHtmlCells {
     }
     const boundingClientRect = htmlCell.getBoundingClientRect();
     if (this.state === 'resizing-right') {
-      this.setWidth((e.data.global.x - boundingClientRect.left) / pixiApp.viewport.scale.x);
+      const x = this.snapX(e);
+      this.setWidth((x - boundingClientRect.left) / pixiApp.viewport.scale.x);
     } else if (this.state === 'resizing-bottom') {
       const canvas = pixiApp.canvas.getBoundingClientRect();
-      this.setHeight((e.data.global.y - boundingClientRect.top + canvas.top) / pixiApp.viewport.scale.y);
+      const y = this.snapY(e);
+      this.setHeight((y - boundingClientRect.top + canvas.top) / pixiApp.viewport.scale.y);
     } else if (this.state === 'resizing-corner') {
       const canvas = pixiApp.canvas.getBoundingClientRect();
-      this.setWidth((e.data.global.x - boundingClientRect.left) / pixiApp.viewport.scale.x);
-      this.setHeight((e.data.global.y - boundingClientRect.top + canvas.top) / pixiApp.viewport.scale.y);
+      const x = this.snapX(e);
+      const y = this.snapY(e);
+      this.setWidth((x - boundingClientRect.left) / pixiApp.viewport.scale.x);
+      this.setHeight((y - boundingClientRect.top + canvas.top) / pixiApp.viewport.scale.y);
     }
     return true;
   }
