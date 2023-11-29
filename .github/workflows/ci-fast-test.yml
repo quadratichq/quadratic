@@ -33,9 +33,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Run pnpm test:ci in quadratic-client
+    - name: Run npm test:ci in quadratic-client
       run: |
         cd quadratic-client
-        pnpm install
-        pnpm install jest
-        pnpm exec -- node --experimental-vm-modules jest
+        npm install
+        npm run test:unit
