@@ -30,7 +30,6 @@ jobs:
 
   javascript-tests:
     runs-on: self-hosted
-    needs: rust-tests
     steps:
     - uses: actions/checkout@v3
 
@@ -38,4 +37,5 @@ jobs:
       run: |
         cd quadratic-client
         pnpm install
+        pnpm install jest
         pnpm exec -- node --experimental-vm-modules jest
