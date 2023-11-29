@@ -107,14 +107,14 @@ export class PointerHtmlCells {
     const rightDiv = htmlCell.childNodes[0] as HTMLDivElement;
     const bottomDiv = htmlCell.childNodes[2] as HTMLDivElement;
     if (right) {
-      rightDiv.classList.add('resize-control--is-dragging');
+      rightDiv.classList.add('html-resize-control--is-dragging');
     } else {
-      rightDiv.classList.remove('resize-control--is-dragging');
+      rightDiv.classList.remove('html-resize-control--is-dragging');
     }
     if (bottom) {
-      bottomDiv.classList.add('resize-control--is-dragging');
+      bottomDiv.classList.add('html-resize-control--is-dragging');
     } else {
-      bottomDiv.classList.remove('resize-control--is-dragging');
+      bottomDiv.classList.remove('html-resize-control--is-dragging');
     }
   }
 
@@ -124,8 +124,8 @@ export class PointerHtmlCells {
       const htmlCell = htmlCells[i] as HTMLIFrameElement;
       const rightDiv = htmlCell.childNodes[0] as HTMLDivElement;
       const bottomDiv = htmlCell.childNodes[2] as HTMLDivElement;
-      rightDiv.classList.remove('resize-control--is-dragging');
-      bottomDiv.classList.remove('resize-control--is-dragging');
+      rightDiv.classList.remove('html-resize-control--is-dragging');
+      bottomDiv.classList.remove('html-resize-control--is-dragging');
     }
     this.htmlCell = undefined;
     this.htmlCellHover = undefined;

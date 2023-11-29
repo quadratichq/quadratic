@@ -11,7 +11,7 @@ interface ResizeControlProps {
 export function HTMLResizeControl({ position }: ResizeControlProps) {
   return (
     <div
-      className={`resize-control resize-control--position-${position}`}
+      className={`html-resize-control html-resize-control--position-${position}`}
       style={{
         // @ts-expect-error typescript doesn't like us setting CSS custom properties
         '--resize-control-highlight': colors.quadraticPrimary,
