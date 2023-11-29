@@ -8,7 +8,7 @@ use super::{
     formatting::CellFmtArray,
     operation::Operation,
     transaction_summary::{CellSheetsModified, TransactionSummary},
-    update_code_cell_value::{fetch_code_cell_difference, update_code_cell_value},
+    update_code_cell_value::fetch_code_cell_difference,
     GridController,
 };
 
@@ -59,23 +59,57 @@ impl GridController {
                     .iter()
                     .filter_map(|(cell_ref, _)| {
                         if region.contains(cell_ref) {
-                            Some(*cell_ref)
+                            let pos = sheet.cell_ref_to_pos(*cell_ref)?;
+                            Some((*cell_ref, pos))
                         } else {
                             None
                         }
                     })
-                    .collect::<Vec<CellRef>>();
+                    .collect::<Vec<(CellRef, Pos)>>();
 
                 // remove the code cells
-                for cell_ref in code_cells_to_delete {
-                    update_code_cell_value(
+                let sheet_id = sheet.id;
+                for (cell_ref, pos) in code_cells_to_delete {
+                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                    let old_value = sheet.set_code_cell_value(pos, None);
+                    fetch_code_cell_difference(
                         self,
-                        cell_ref,
+                        sheet_id,
+                        pos,
+                        old_value.clone(),
                         None,
+                        summary,
                         cells_to_compute,
                         &mut reverse_operations,
-                        summary,
                     );
+                    reverse_operations.push(Operation::SetCellCode {
+                        cell_ref,
+                        code_cell_value: old_value,
+                    });
+                }
+
+                // check for changes in spills
+                for cell_ref in region.iter() {
+                    let sheet = self.grid.sheet_from_id(cell_ref.sheet);
+                    if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
+                        // if there is a value, check if it caused a spill
+                        if sheet.get_cell_value(pos).is_some() {
+                            self.check_spill(
+                                cell_ref,
+                                cells_to_compute,
+                                summary,
+                                &mut reverse_operations,
+                            );
+                        } else {
+                            // otherwise check if it released a spill
+                            self.update_code_cell_value_if_spill_error_released(
+                                cell_ref,
+                                cells_to_compute,
+                                summary,
+                                &mut reverse_operations,
+                            );
+                        }
+                    }
                 }
 
                 summary.generate_thumbnail =
@@ -121,7 +155,7 @@ impl GridController {
                                 updated_code_cell_value.output = old_code_cell_value.output.clone();
                                 updated_code_cell_value
                             } else {
-                                code_cell_value.clone()
+                                code_cell_value
                             };
                         sheet.set_code_cell_value(pos, Some(updated_code_cell_value));
                     } else {
