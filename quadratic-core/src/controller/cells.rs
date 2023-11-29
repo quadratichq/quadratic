@@ -121,15 +121,6 @@ impl GridController {
             });
         }
 
-        // // set spill for any code cell that was originally over the code value cell
-        // if let Some(spill) = sheet.get_spill(cell_ref) {
-        //     if spill != cell_ref {
-        //         if let Some(code_cell) = sheet.code_cells.get_mut(&spill) {
-        //             code_cell.set_spill(true);
-        //         }
-        //     }
-        // }
-
         ops.push(Operation::SetCellCode {
             cell_ref,
             code_cell_value: Some(CodeCellValue {
