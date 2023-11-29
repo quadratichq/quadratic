@@ -74,7 +74,11 @@ export class Pointer {
   };
 
   handleEscape(): boolean {
-    return this.pointerHeading.handleEscape() || this.pointerAutoComplete.handleEscape();
+    return (
+      this.pointerHtmlCells.handleEscape() ||
+      this.pointerHeading.handleEscape() ||
+      this.pointerAutoComplete.handleEscape()
+    );
   }
 
   getCursor(): string {

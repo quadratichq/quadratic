@@ -17,6 +17,10 @@ export class PointerHtmlCells {
   private width?: number;
   private height?: number;
 
+  // used for escaping the resize
+  private originalWidth?: number;
+  private originalHeight?: number;
+
   private getHtmlCells(): HTMLCollection {
     const htmlCells = document.querySelector('.html-cells');
     if (!htmlCells) {
@@ -203,11 +207,11 @@ export class PointerHtmlCells {
     const isIframe = this.htmlCell.getAttribute('data-type') === 'iframe';
     if (isIframe) {
       const iframe = this.htmlCell.childNodes[1] as HTMLIFrameElement;
-      this.width = parseFloat(iframe.width);
-      this.height = parseFloat(iframe.height);
+      this.originalWidth = this.width = parseFloat(iframe.width);
+      this.originalHeight = this.height = parseFloat(iframe.height);
     } else {
-      this.width = this.htmlCell.offsetWidth;
-      this.height = this.htmlCell.offsetHeight;
+      this.originalWidth = this.width = this.htmlCell.offsetWidth;
+      this.originalHeight = this.height = this.htmlCell.offsetHeight;
     }
     this.htmlCell!.style.pointerEvents = 'none';
   }
@@ -250,6 +254,20 @@ export class PointerHtmlCells {
       this.state = undefined;
       this.htmlCell!.style.pointerEvents = 'auto';
       this.htmlCell = undefined;
+      return true;
+    }
+    return false;
+  }
+
+  handleEscape(): boolean {
+    if (this.state) {
+      this.setWidth(this.originalWidth!);
+      this.setHeight(this.originalHeight!);
+      this.state = undefined;
+      this.state = undefined;
+      this.htmlCell!.style.pointerEvents = 'auto';
+      this.htmlCell = undefined;
+      this.cursor = undefined;
       return true;
     }
     return false;
