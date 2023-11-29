@@ -1,0 +1,41 @@
+name: CI Fast (test)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  rust-tests:
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        override: true
+
+    - name: Run Rust tests in quadratic-core
+      run: |
+        cd quadratic-core
+        cargo test
+
+    - name: Run cargo clippy in quadratic-core
+      run: |
+        cd quadratic-core
+        cargo clippy -- -D warnings
+
+  javascript-tests:
+    runs-on: self-hosted
+    needs: rust-tests
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Run pnpm test:ci in quadratic-client
+      run: |
+        cd quadratic-client
+        pnpm install
+        pnpm run test:unit
