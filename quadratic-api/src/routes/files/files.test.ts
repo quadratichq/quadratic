@@ -550,8 +550,8 @@ describe('UPDATE - POST /v0/files/:uuid/thumbnail with auth and owned file updat
       .attach('thumbnail', filePath)
       .set('Accept', 'application/json')
       .set('Content-Type', 'multipart/form-data')
-      .set('Authorization', `Bearer ValidToken test_user_1`)
-      // .expect(200); // OK
+      .set('Authorization', `Bearer ValidToken test_user_1`);
+    // .expect(200); // OK
 
     // expect(res.body).toMatchObject({ message: 'Preview updated' });
     // TODO fix test with mocks
