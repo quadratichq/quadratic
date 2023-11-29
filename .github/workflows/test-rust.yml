@@ -14,21 +14,21 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Cache quadratic-core build
-        uses: actions/cache@v2
-        with:
-          path: |
-            quadratic-core/target
-            quadratic-core/pkg
-          key: ${{ runner.os }}-quadratic-core-rust
-          restore-keys: |
-            ${{ runner.os }}-quadratic-core-rust
+      # - name: Cache quadratic-core build
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: |
+      #       quadratic-core/target
+      #       quadratic-core/pkg
+      #     key: ${{ runner.os }}-quadratic-core-rust
+      #     restore-keys: |
+      #       ${{ runner.os }}-quadratic-core-rust
 
-      - name: Update local toolchain
-        run: |
-          rustup update
-          rustup component add clippy
-          rustup install nightly
+      # - name: Update local toolchain
+      #   run: |
+      #     rustup update
+      #     rustup component add clippy
+      #     rustup install nightly
       - name: Toolchain info
         run: |
           cargo --version --verbose
