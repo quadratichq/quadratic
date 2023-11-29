@@ -105,7 +105,9 @@ impl Sheet {
                         wrap: None,
                         bold: None,
                         italic: Some(true),
-                        text_color: Some(String::from("rgb(155, 186, 213)")),
+
+                        // from colors.ts: colors.languagePython
+                        text_color: Some(String::from("#3776ab")),
                     };
                 } else if let CellValue::Error(error) = value {
                     let value = match error.msg {
@@ -445,7 +447,7 @@ mod tests {
                 wrap: None,
                 bold: None,
                 italic: Some(true),
-                text_color: Some("rgb(155, 186, 213)".to_string()),
+                text_color: Some("#3776ab".to_string()),
             },
         );
         assert_eq!(
