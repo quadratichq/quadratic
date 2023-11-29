@@ -194,6 +194,9 @@ pub fn fetch_code_cell_difference(
     let cell_ref = sheet.get_or_create_cell_ref(pos);
 
     let (old_w, old_h) = old_code_cell_value.map_or((1, 1), |code_cell_value| {
+        if code_cell_value.is_html() {
+            summary.html.insert(sheet_id);
+        }
         if code_cell_value.has_spill_error() {
             (1, 1)
         } else {
@@ -202,6 +205,9 @@ pub fn fetch_code_cell_difference(
     });
 
     let (new_w, new_h) = new_code_cell_value.map_or((0, 0), |code_cell_value| {
+        if code_cell_value.is_html() {
+            summary.html.insert(sheet_id);
+        }
         if code_cell_value.has_spill_error() {
             (1, 1)
         } else {
