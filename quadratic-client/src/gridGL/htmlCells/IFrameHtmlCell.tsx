@@ -17,6 +17,7 @@ export const IFrameHtmlCell = (props: Props) => {
   const divRef = useCallback(
     (div: HTMLDivElement | null) => {
       if (!div) return;
+      // the first child is the right resize control, second is iframe, third is bottom resize control
       const iframe = div.childNodes[1] as HTMLIFrameElement;
       if (!iframe) return;
 
@@ -46,21 +47,21 @@ export const IFrameHtmlCell = (props: Props) => {
           );
           const style = window.getComputedStyle(iframe.contentWindow.document.body);
 
-          // move margin to the div holding the iframe to avoid pinch-to-zoom issues
+          // move margin to the div holding the iframe to avoid pinch-to-zoom issues at the iframe margins
           if (style.marginLeft) {
-            div.style.marginLeft = style.marginLeft;
+            div.style.paddingLeft = style.marginLeft;
             iframe.contentWindow.document.body.style.marginLeft = '0';
           }
           if (style.marginTop) {
-            div.style.marginTop = style.marginTop;
+            div.style.paddingTop = style.marginTop;
             iframe.contentWindow.document.body.style.marginTop = '0';
           }
           if (style.marginRight) {
-            div.style.marginRight = style.marginRight;
+            div.style.paddingRight = style.marginRight;
             iframe.contentWindow.document.body.style.marginRight = '0';
           }
           if (style.marginBottom) {
-            div.style.marginBottom = style.marginBottom;
+            div.style.paddingBottom = style.marginBottom;
             iframe.contentWindow.document.body.style.marginBottom = '0';
           }
 
