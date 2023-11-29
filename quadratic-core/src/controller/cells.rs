@@ -114,21 +114,21 @@ impl GridController {
         let mut ops = vec![];
 
         // remove any values that were originally over the code cell
-        if sheet.get_cell_value_only(pos).is_some() {
+        if sheet.get_cell_value(pos).is_some() {
             ops.push(Operation::SetCellValues {
                 region: RegionRef::from(cell_ref),
                 values: Array::from(CellValue::Blank),
             });
         }
 
-        // set spill for any code cell that was originally over the code value cell
-        if let Some(spill) = sheet.get_spill(cell_ref) {
-            if spill != cell_ref {
-                if let Some(code_cell) = sheet.code_cells.get_mut(&spill) {
-                    code_cell.set_spill(true);
-                }
-            }
-        }
+        // // set spill for any code cell that was originally over the code value cell
+        // if let Some(spill) = sheet.get_spill(cell_ref) {
+        //     if spill != cell_ref {
+        //         if let Some(code_cell) = sheet.code_cells.get_mut(&spill) {
+        //             code_cell.set_spill(true);
+        //         }
+        //     }
+        // }
 
         ops.push(Operation::SetCellCode {
             cell_ref,

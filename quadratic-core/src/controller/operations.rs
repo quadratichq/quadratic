@@ -32,7 +32,6 @@ impl GridController {
                 let sheet = self.grid.sheet_mut_from_id(region.sheet);
 
                 let size = region.size().expect("msg: error getting size of region");
-                let mut check_spills: Vec<CellRef> = vec![];
                 let old_values = region
                     .iter()
                     .zip(values.into_cell_values_vec())
@@ -41,9 +40,6 @@ impl GridController {
                         let response = sheet.set_cell_value(pos, value)?;
                         if response.html {
                             summary.html.insert(cell_ref.sheet);
-                        }
-                        if response.is_empty {
-                            check_spills.push(cell_ref);
                         }
                         Some(response.old_value)
                     })
@@ -82,14 +78,6 @@ impl GridController {
                     );
                 }
 
-                check_spills.iter().for_each(|cell_ref| {
-                    self.update_code_cell_value_if_spill_error_released(
-                        *cell_ref,
-                        cells_to_compute,
-                        summary,
-                        &mut reverse_operations,
-                    );
-                });
                 summary.generate_thumbnail =
                     summary.generate_thumbnail || self.thumbnail_dirty_region(&region);
 
@@ -126,7 +114,7 @@ impl GridController {
                 // for compute, we keep the original cell output to avoid flashing of output (since values will be overridden once computation is complete)
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
                 if compute {
-                    if let Some(code_cell_value) = &code_cell_value {
+                    if let Some(code_cell_value) = code_cell_value {
                         let updated_code_cell_value =
                             if let Some(old_code_cell_value) = old_code_cell_value.as_ref() {
                                 let mut updated_code_cell_value = code_cell_value.clone();

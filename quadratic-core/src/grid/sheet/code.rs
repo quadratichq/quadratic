@@ -58,7 +58,7 @@ impl Sheet {
                 let (_, column) = self.get_or_create_column(pos.x);
                 column.spills.set(pos.y, Some(cell_ref));
             }
-            self.code_cells.insert(cell_ref, code_cell.clone());
+            self.code_cells.insert(cell_ref, code_cell);
         }
         old
     }
