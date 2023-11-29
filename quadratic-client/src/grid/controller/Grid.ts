@@ -732,8 +732,12 @@ export class Grid {
   //#region Summarize
   //-----------------
 
-  summarizeSelection() {
-    return this.gridController.summarizeSelection(sheets.sheet.id, rectangleToRect(sheets.sheet.cursor.getRectangle()));
+  summarizeSelection(decimal_places: number = 9) {
+    return this.gridController.summarizeSelection(
+      sheets.sheet.id,
+      rectangleToRect(sheets.sheet.cursor.getRectangle()),
+      BigInt(decimal_places)
+    );
   }
 
   //#endregion

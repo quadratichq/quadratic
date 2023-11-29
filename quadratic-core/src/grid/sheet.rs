@@ -467,10 +467,13 @@ impl Sheet {
             match value {
                 CellValue::Number(n) => {
                     let (_, exponent) = n.as_bigint_and_exponent();
+                    let max_decimals = 9;
+                    let decimals = exponent.min(max_decimals) as i16;
+
                     if is_percentage {
-                        Some(exponent as i16 - 2)
+                        Some(decimals - 2)
                     } else {
-                        Some(exponent as i16)
+                        Some(decimals)
                     }
                 }
                 _ => None,
@@ -577,22 +580,35 @@ mod test {
         (grid_controller, sheet_id, selected)
     }
 
+    // assert decimal places after a set_cell_value
+    fn assert_decimal_places_for_number(
+        sheet: &mut Sheet,
+        x: i64,
+        y: i64,
+        value: &str,
+        is_percentage: bool,
+        expected: Option<i16>,
+    ) {
+        let pos = Pos { x, y };
+        sheet.set_cell_value(pos, CellValue::Number(BigDecimal::from_str(value).unwrap()));
+        assert_eq!(sheet.decimal_places(pos, is_percentage), expected);
+    }
+
     #[test]
     fn test_current_decimal_places_value() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
-        // get decimal places after a set_cell_value
-        sheet.set_cell_value(
-            Pos { x: 1, y: 2 },
-            CellValue::Number(BigDecimal::from_str("12.23").unwrap()),
-        );
-        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), Some(2));
+        // validate simple decimal places
+        assert_decimal_places_for_number(&mut sheet, 1, 2, "12.23", false, Some(2));
 
-        sheet.set_cell_value(
-            Pos { x: 2, y: 2 },
-            CellValue::Number(BigDecimal::from_str("0.23").unwrap()),
-        );
-        assert_eq!(sheet.decimal_places(Pos { x: 2, y: 2 }, true), Some(0));
+        // validate percentage
+        assert_decimal_places_for_number(&mut sheet, 2, 2, "0.23", true, Some(0));
+
+        // validate rounding
+        assert_decimal_places_for_number(&mut sheet, 3, 2, "9.1234567891", false, Some(9));
+
+        // validate percentage rounding
+        assert_decimal_places_for_number(&mut sheet, 3, 2, "9.1234567891", true, Some(7));
     }
 
     #[test]
@@ -615,25 +631,6 @@ mod test {
         );
 
         assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), None);
-    }
-
-    #[test]
-    fn test_current_decimal_places_percent() {
-        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
-
-        sheet.set_cell_value(
-            crate::Pos { x: 1, y: 2 },
-            CellValue::Number(BigDecimal::from_str("0.24").unwrap()),
-        );
-
-        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, true), Some(0));
-
-        sheet.set_cell_value(
-            crate::Pos { x: 1, y: 2 },
-            CellValue::Number(BigDecimal::from_str("0.245").unwrap()),
-        );
-
-        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, true), Some(1));
     }
 
     #[test]
