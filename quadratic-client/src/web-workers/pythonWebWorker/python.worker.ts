@@ -29,7 +29,7 @@ async function pythonWebWorker() {
     self.postMessage({ type: 'not-loaded' } as PythonMessage);
     pyodide = await (self as any).loadPyodide();
     await pyodide.registerJsModule('getCellsDB', getCellsDB);
-    await pyodide.loadPackage(['numpy', 'pandas', 'micropip', 'pyodide-http']);
+    await pyodide.loadPackage(['numpy', 'pandas', 'micropip', 'pyodide-http', 'requests']);
     const python_code = await (await fetch('/run_python.py')).text();
     await pyodide.runPython(python_code);
   } catch (e) {
