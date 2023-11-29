@@ -12,9 +12,13 @@ import micropip
 import numpy as np
 import pandas as pd
 import pyodide
+import pyodide_http
 
 # todo separate this file out into a Python Package
 # https://pyodide.org/en/stable/usage/loading-custom-python-code.html
+
+# Patch requests https://github.com/koenvo/pyodide-http
+pyodide_http.patch_all()
 
 
 def attempt_fix_await(code):
