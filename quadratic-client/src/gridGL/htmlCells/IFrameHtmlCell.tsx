@@ -17,10 +17,10 @@ export const IFrameHtmlCell = (props: Props) => {
   const divRef = useCallback(
     (div: HTMLDivElement | null) => {
       if (!div) return;
-      const iframe = div.childNodes[0] as HTMLIFrameElement;
+      const iframe = div.childNodes[1] as HTMLIFrameElement;
       if (!iframe) return;
 
-      iframe.addEventListener('load', () => {
+      const afterLoad = () => {
         if (iframe.contentWindow) {
           // turn off zooming within the iframe
           iframe.contentWindow.document.body.style.touchAction = 'none pan-x pan-y';
@@ -85,7 +85,13 @@ export const IFrameHtmlCell = (props: Props) => {
         } else {
           throw new Error('Expected content window to be defined on iframe');
         }
-      });
+      };
+
+      if (iframe.contentWindow?.document.readyState === 'complete') {
+        afterLoad();
+      } else {
+        iframe.addEventListener('load', afterLoad);
+      }
     },
     [htmlCell.h, htmlCell.w]
   );
