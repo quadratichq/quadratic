@@ -61,7 +61,7 @@ impl Sheet {
                         cell_error = Some(CellValue::Error(Box::new(error)));
                     }
                     // check for spill in code_cell
-                    else if let Some(output) = code_cell.output.as_ref() {
+                    else if let Some(output) = &code_cell.output {
                         if output.spill {
                             block_len = 1;
                             cell_error = Some(CellValue::Error(Box::new(Error {
@@ -345,7 +345,7 @@ mod tests {
 
         sheet.set_code_cell_value(
             Pos { x: 2, y: 3 },
-            &Some(CodeCellValue {
+            Some(CodeCellValue {
                 language: crate::grid::CodeCellLanguage::Python,
                 code_string: "print('hello')".to_string(),
                 formatted_code_string: None,

@@ -24,6 +24,12 @@ impl CodeCellValue {
         }
     }
 
+    pub fn set_spill(&mut self, spill: bool) {
+        if let Some(output) = &mut self.output {
+            output.spill = spill;
+        }
+    }
+
     // todo: output_size outputs a 1x1 for output == None. That seems wrong
     pub fn output_size(&self) -> ArraySize {
         match self.output.as_ref().and_then(|out| out.output_value()) {

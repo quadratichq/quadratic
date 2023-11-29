@@ -91,6 +91,7 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{js_types::JsRenderCell, CellAlign, CodeCellLanguage},
+        test_util::print_table,
         Pos, Rect,
     };
 
@@ -240,6 +241,8 @@ mod test {
             "A0:A2".into(),
             None,
         );
+
+        print_table(&gc, sheet_id, Rect::from_numbers(0, 0, 15, 15));
 
         let sheet = gc.grid.sheet_from_id(sheet_id);
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 11, y: 9 }));

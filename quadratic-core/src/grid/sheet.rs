@@ -103,13 +103,15 @@ impl Sheet {
         value: impl Into<CellValue>,
     ) -> Option<SetCellResponse<CellValue>> {
         let value = value.into();
-        let is_blank = value.is_blank();
-        let value: Option<CellValue> = if is_blank { None } else { Some(value) };
+        let is_empty = value.is_blank();
+        let value: Option<CellValue> = if is_empty { None } else { Some(value) };
+
+        // if there's no value and the column doesn't exist, then nothing more needs to be done
         if value.is_none() && !self.columns.contains_key(&pos.x) {
             return None;
         }
 
-        let (column_response, column) = self.get_or_create_column(pos.x);
+        let (_, column) = self.get_or_create_column(pos.x);
         let old_value = column.values.set(pos.y, value.clone()).unwrap_or_default();
 
         // returns if there's a change in html (html cell is added or removed from sheet)
@@ -118,13 +120,10 @@ impl Sheet {
         } else {
             old_value.is_html()
         };
-
-        let row_response = self.get_or_create_row(pos.y);
         Some(SetCellResponse {
-            column: column_response,
-            row: row_response,
             old_value,
             html,
+            is_empty,
         })
     }
 
@@ -154,7 +153,7 @@ impl Sheet {
                     let Some(value) = block.get(y) else { continue };
                     old_cell_values_array
                         .set(array_x, array_y, value)
-                        .expect("error inserting value into array of old c`ell values");
+                        .expect("error inserting value into array of old cell values");
                 }
             }
         }
@@ -772,7 +771,7 @@ mod test {
             last_modified: "".into(),
             output: None,
         };
-        sheet.set_code_cell_value((2, 1).into(), &Some(code_cell.clone()));
+        sheet.set_code_cell_value((2, 1).into(), Some(code_cell.clone()));
         let value = sheet.get_code_cell((2, 1).into());
 
         assert_eq!(value, Some(&code_cell));

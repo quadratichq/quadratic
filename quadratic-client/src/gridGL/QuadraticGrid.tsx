@@ -92,7 +92,6 @@ export default function QuadraticGrid() {
         outline: 'none',
         overflow: 'hidden',
         WebkitTapHighlightColor: 'transparent',
-        touchAction: 'none',
         cursor: panMode === PanMode.Enabled ? 'grab' : panMode === PanMode.Dragging ? 'grabbing' : 'unset',
       }}
       onContextMenu={(event) => {

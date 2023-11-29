@@ -27,7 +27,7 @@ pub fn update_code_cell_value(
     let sheet_id = cell_ref.sheet;
     let sheet = grid_controller.grid.sheet_mut_from_id(sheet_id);
     if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-        let old_code_cell_value = sheet.set_code_cell_value(pos, &updated_code_cell_value);
+        let old_code_cell_value = sheet.set_code_cell_value(pos, updated_code_cell_value.clone());
         if old_code_cell_value.as_ref().is_some_and(|code_cell_value| {
             code_cell_value
                 .get_output_value(0, 0)
@@ -115,13 +115,13 @@ pub fn update_code_cell_value(
             cell_value
         });
 
-        let old_code_cell_value = sheet.set_code_cell_value(pos, &updated_code_cell_value);
+        let old_code_cell_value = sheet.set_code_cell_value(pos, updated_code_cell_value.clone());
 
         // updates summary.thumbnail_dirty flag
         let sheet = grid_controller.grid.sheet_from_id(cell_ref.sheet);
         if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-            if let Some(updated_code_cell_value) = updated_code_cell_value.as_ref() {
-                if let Some(output) = updated_code_cell_value.output.as_ref() {
+            if let Some(updated_code_cell_value) = &updated_code_cell_value {
+                if let Some(output) = &updated_code_cell_value.output {
                     match output.result.output_value() {
                         Some(output_value) => {
                             match output_value {
@@ -193,7 +193,7 @@ pub fn fetch_code_cell_difference(
     let mut possible_spills = vec![];
     let cell_ref = sheet.get_or_create_cell_ref(pos);
 
-    let (old_w, old_h) = old_code_cell_value.map_or((1, 1), |code_cell_value| {
+    let (old_w, old_h) = old_code_cell_value.map_or((0, 0), |code_cell_value| {
         if code_cell_value.has_spill_error() {
             (1, 1)
         } else {

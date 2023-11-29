@@ -8,7 +8,7 @@ use super::{
     formatting::CellFmtArray,
     operation::Operation,
     transaction_summary::{CellSheetsModified, TransactionSummary},
-    update_code_cell_value::fetch_code_cell_difference,
+    update_code_cell_value::{fetch_code_cell_difference, update_code_cell_value},
     GridController,
 };
 
@@ -32,6 +32,7 @@ impl GridController {
                 let sheet = self.grid.sheet_mut_from_id(region.sheet);
 
                 let size = region.size().expect("msg: error getting size of region");
+                let mut check_spills: Vec<CellRef> = vec![];
                 let old_values = region
                     .iter()
                     .zip(values.into_cell_values_vec())
@@ -40,6 +41,9 @@ impl GridController {
                         let response = sheet.set_cell_value(pos, value)?;
                         if response.html {
                             summary.html.insert(cell_ref.sheet);
+                        }
+                        if response.is_empty {
+                            check_spills.push(cell_ref);
                         }
                         Some(response.old_value)
                     })
@@ -53,64 +57,39 @@ impl GridController {
                 CellSheetsModified::add_region(&mut summary.cell_sheets_modified, sheet, &region);
 
                 // check if override any code cells
+                let sheet = self.grid.sheet_from_id(region.sheet);
                 let code_cells_to_delete = sheet
                     .code_cells
                     .iter()
                     .filter_map(|(cell_ref, _)| {
                         if region.contains(cell_ref) {
-                            let pos = sheet.cell_ref_to_pos(*cell_ref)?;
-                            Some((*cell_ref, pos))
+                            Some(*cell_ref)
                         } else {
                             None
                         }
                     })
-                    .collect::<Vec<(CellRef, Pos)>>();
+                    .collect::<Vec<CellRef>>();
 
-                // remove the code cells if so, and add to reverse operations
-                let sheet_id = sheet.id;
-                for (cell_ref, pos) in code_cells_to_delete {
-                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    let old_value = sheet.set_code_cell_value(pos, &None);
-                    fetch_code_cell_difference(
+                // remove the code cells
+                for cell_ref in code_cells_to_delete {
+                    update_code_cell_value(
                         self,
-                        sheet_id,
-                        pos,
-                        old_value.clone(),
+                        cell_ref,
                         None,
-                        summary,
                         cells_to_compute,
                         &mut reverse_operations,
+                        summary,
                     );
-                    reverse_operations.push(Operation::SetCellCode {
-                        cell_ref,
-                        code_cell_value: old_value,
-                    });
                 }
 
-                // check for changes in spills
-                for cell_ref in region.iter() {
-                    let sheet = self.grid.sheet_from_id(cell_ref.sheet);
-                    if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                        // if there is a value, check if it caused a spill
-                        if sheet.get_cell_value(pos).is_some() {
-                            self.check_spill(
-                                cell_ref,
-                                cells_to_compute,
-                                summary,
-                                &mut reverse_operations,
-                            );
-                        } else {
-                            // otherwise check if it released a spill
-                            self.update_code_cell_value_if_spill_error_released(
-                                cell_ref,
-                                cells_to_compute,
-                                summary,
-                                &mut reverse_operations,
-                            );
-                        }
-                    }
-                }
-
+                check_spills.iter().for_each(|cell_ref| {
+                    self.update_code_cell_value_if_spill_error_released(
+                        *cell_ref,
+                        cells_to_compute,
+                        summary,
+                        &mut reverse_operations,
+                    );
+                });
                 summary.generate_thumbnail =
                     summary.generate_thumbnail || self.thumbnail_dirty_region(&region);
 
@@ -156,9 +135,9 @@ impl GridController {
                             } else {
                                 code_cell_value.clone()
                             };
-                        sheet.set_code_cell_value(pos, &Some(updated_code_cell_value));
+                        sheet.set_code_cell_value(pos, Some(updated_code_cell_value));
                     } else {
-                        sheet.set_code_cell_value(pos, &code_cell_value);
+                        sheet.set_code_cell_value(pos, code_cell_value);
                         fetch_code_cell_difference(
                             self,
                             sheet_id,
@@ -170,7 +149,7 @@ impl GridController {
                             &mut reverse_operations,
                         );
                         let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                        sheet.set_code_cell_value(pos, &None);
+                        sheet.set_code_cell_value(pos, None);
                     }
                     cells_to_compute.insert(cell_ref);
                 } else {
@@ -186,7 +165,7 @@ impl GridController {
                         &mut reverse_operations,
                     );
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    sheet.set_code_cell_value(pos, &code_cell_value);
+                    sheet.set_code_cell_value(pos, code_cell_value);
                 }
 
                 // TODO(ddimaria): resolve comment from @HactarCE:
