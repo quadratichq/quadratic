@@ -72,21 +72,15 @@ jobs:
         cd quadratic-core
         cargo clippy -- -D warnings
   
-  build-core-wasm:
+  lint-client:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v3
 
-    - name: Build core
+    - name: Build wasm core
       run: |
         cd quadratic-client
         npm run build:wasm
-
-  lint-client:
-    runs-on: self-hosted
-    needs: build-core-wasm
-    steps:
-    - uses: actions/checkout@v3
 
     - name: Lint quadratic-client
       run: |
