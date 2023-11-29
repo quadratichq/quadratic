@@ -18,7 +18,7 @@ jobs:
         profile: minimal
         override: true
 
-    - name: Run Rust tests in quadratic-core
+    - name: Rust tests in quadratic-core
       run: |
         cd quadratic-core
         cargo test
