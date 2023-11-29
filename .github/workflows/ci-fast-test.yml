@@ -79,6 +79,7 @@ jobs:
 
     - name: Build core
       run: |
+        cd quadratic-client
         npm run build:wasm
 
   lint-client:
