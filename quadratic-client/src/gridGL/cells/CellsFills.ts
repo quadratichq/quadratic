@@ -12,7 +12,7 @@ export class CellsFills extends ParticleContainer {
   private cellsSheet: CellsSheet;
 
   constructor(cellsSheet: CellsSheet) {
-    super(undefined, { vertices: true, tint: true });
+    super(undefined, { vertices: true, tint: true }, undefined, true);
     this.cellsSheet = cellsSheet;
   }
 
