@@ -1,6 +1,7 @@
 import { Button } from '@/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
+import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import {
   Link,
   LoaderFunctionArgs,
@@ -11,7 +12,6 @@ import {
 } from 'react-router-dom';
 import { MutableSnapshot, RecoilRoot } from 'recoil';
 import { apiClient } from '../api/apiClient';
-import { ApiSchemas, ApiTypes } from '../api/types';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { Empty } from '../components/Empty';
 import { ROUTE_LOADER_IDS } from '../constants/routes';

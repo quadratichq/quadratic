@@ -10,14 +10,10 @@
     "outDir": "dist",
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "paths": {
-      "quadratic-types": ["../quadratic-client/src/api/types.ts"]
+      "@/*": ["./src/*"],
+      "@quadratic-shared/*": ["../quadratic-shared/*"]
     }
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.d.ts",
-    "src/**/*.test.ts",
-    "../quadratic-client/src/api/types.ts"
-  ],
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.test.ts", "../quadratic-shared/**/*.ts"],
   "exclude": ["node_modules"]
 }

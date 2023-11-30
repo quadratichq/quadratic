@@ -16,10 +16,10 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
+import { ApiTypes, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
 import React, { useEffect, useState } from 'react';
 import { useFetcher, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
-import { ApiTypes, PublicLinkAccess } from '../api/types';
 import { RoleSchema, UserRoleTeam } from '../permissions';
 import { AvatarWithLetters } from './AvatarWithLetters';
 import { getUserShareOptions } from './ShareMenu.utils';

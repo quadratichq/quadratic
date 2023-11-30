@@ -1,7 +1,7 @@
 import express, { Response } from 'express';
 import z from 'zod';
 // TODO get this into its own project
-import { /*ApiSchemas, */ ApiTypes } from 'quadratic-types';
+import { /*ApiSchemas, */ ApiTypes } from '@quadratic-shared/typesAndSchemas';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';

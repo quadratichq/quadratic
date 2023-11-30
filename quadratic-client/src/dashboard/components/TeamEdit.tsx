@@ -13,8 +13,8 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
-import { ApiTypes } from '../../api/types';
 import { AvatarWithLetters } from '../../components/AvatarWithLetters';
 import { TeamLogoDialog, TeamLogoInput } from './TeamLogo';
 

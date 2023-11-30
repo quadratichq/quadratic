@@ -1,5 +1,4 @@
 import { apiClient } from '@/api/apiClient';
-import { ApiTypes } from '@/api/types';
 import { AvatarWithLetters } from '@/components/AvatarWithLetters';
 import { TYPE } from '@/constants/appConstants';
 import { DOCUMENTATION_URL } from '@/constants/urls';
@@ -9,6 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
 import { cn } from '@/shadcn/utils';
 import { Avatar, CircularProgress } from '@mui/material';
 import { ExternalLinkIcon, FileIcon, MixIcon, PlusIcon } from '@radix-ui/react-icons';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useFetchers, useLoaderData, useLocation, useNavigation, useParams } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
@@ -107,7 +107,7 @@ function Navbar() {
 
         <p className={`${TYPE.overline} mb-2 mt-6 indent-2 text-muted-foreground`}>Teams</p>
         <div className="grid gap-1">
-          {teams.map(({ uuid, name }) => {
+          {teams.map(({ uuid, name }: any) => {
             const teamName =
               // @ts-expect-error
               teamUuid === uuid && inFlightTeamFetcher?.json?.name

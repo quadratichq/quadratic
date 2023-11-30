@@ -1,10 +1,10 @@
 import { Alert, Button, Paper, Stack, useTheme } from '@mui/material';
+import { PermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import React, { useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { Link, useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { duplicateFileAction } from '../../actions';
-import { PermissionSchema } from '../../api/types';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { ROUTES } from '../../constants/routes';
 import { useFileContext } from './FileProvider';

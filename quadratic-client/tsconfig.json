@@ -18,10 +18,11 @@
     "jsx": "react-jsx",
     "downlevelIteration": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@quadratic-shared/*": ["../quadratic-shared/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "../quadratic-shared/**/*.ts"],
   "exclude": ["node_modules/*", "src/grid/controller/runners/*", "quadratic-core/*", "quadratic-api/*"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

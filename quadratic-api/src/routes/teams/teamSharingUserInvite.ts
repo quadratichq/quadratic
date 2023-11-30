@@ -1,20 +1,15 @@
-import express, { Response } from "express";
-import { ApiTypes } from "quadratic-types";
-import { z } from "zod";
-import { getUsersByEmail } from "../../auth0/profile";
-import dbClient from "../../dbClient";
-import { teamMiddleware } from "../../middleware/team";
-import { userMiddleware } from "../../middleware/user";
-import { validateAccessToken } from "../../middleware/validateAccessToken";
-import { validateRequestAgainstZodSchema } from "../../middleware/validateRequestAgainstZodSchema";
-import {
-  Request,
-  RequestWithAuth,
-  RequestWithTeam,
-  RequestWithUser,
-} from "../../types/Request";
-import { ResponseError } from "../../types/Response";
-import { firstRoleIsHigherThanSecond } from "../../utils";
+import { ApiTypes } from '@quadratic-shared/typesAndSchemas';
+import express, { Response } from 'express';
+import { z } from 'zod';
+import { getUsersByEmail } from '../../auth0/profile';
+import dbClient from '../../dbClient';
+import { teamMiddleware } from '../../middleware/team';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { validateRequestAgainstZodSchema } from '../../middleware/validateRequestAgainstZodSchema';
+import { Request, RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
+import { ResponseError } from '../../types/Response';
+import { firstRoleIsHigherThanSecond } from '../../utils';
 
 const router = express.Router();
 
@@ -22,20 +17,18 @@ const ReqSchema = z.object({
   params: z.object({
     uuid: z.string().uuid(),
   }),
-  body: z.any()// ApiSchemas["/v0/teams/:uuid/sharing.POST.request"],
+  body: z.any(), // ApiSchemas["/v0/teams/:uuid/sharing.POST.request"],
 });
 
 router.post(
-  "/:uuid/sharing",
+  '/:uuid/sharing',
   validateAccessToken,
   validateRequestAgainstZodSchema(ReqSchema),
   userMiddleware,
   teamMiddleware,
   async (
     req: Request & RequestWithAuth & RequestWithUser & RequestWithTeam,
-    res: Response<
-      ApiTypes["/v0/teams/:uuid/sharing.POST.response"] | ResponseError
-    >
+    res: Response<ApiTypes['/v0/teams/:uuid/sharing.POST.response'] | ResponseError>
   ) => {
     const {
       body: { email, role },
@@ -48,11 +41,10 @@ router.post(
     const userMakingRequestRole = teamUser.role;
 
     // Can you even invite others?
-    if (!teamUser.access.includes("TEAM_EDIT")) {
+    if (!teamUser.access.includes('TEAM_EDIT')) {
       return res.status(403).json({
         error: {
-          message:
-            "User does not have permission to invite other users to this team.",
+          message: 'User does not have permission to invite other users to this team.',
         },
       });
     }
@@ -61,8 +53,7 @@ router.post(
     if (firstRoleIsHigherThanSecond(role, userMakingRequestRole)) {
       return res.status(403).json({
         error: {
-          message:
-            "User cannot invite someone to a role higher than their own.",
+          message: 'User cannot invite someone to a role higher than their own.',
         },
       });
     }
@@ -106,7 +97,7 @@ router.post(
       });
       if (u !== null) {
         return res.status(400).json({
-          error: { message: "User is already a member of this team" },
+          error: { message: 'User is already a member of this team' },
         });
       }
 
@@ -126,9 +117,7 @@ router.post(
     }
 
     // TODO, how should we handle duplicate email?
-    return res
-      .status(500)
-      .json({ error: { message: "Internal server error: duplicate email" } });
+    return res.status(500).json({ error: { message: 'Internal server error: duplicate email' } });
   }
 );
 

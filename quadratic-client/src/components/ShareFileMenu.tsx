@@ -1,8 +1,8 @@
 import { Button, Typography, useTheme } from '@mui/material';
 import * as Sentry from '@sentry/react';
+import { ApiTypes, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
 import { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router-dom';
 import { apiClient } from '../api/apiClient';
-import { ApiTypes, PublicLinkAccess } from '../api/types';
 import { ROUTES } from '../constants/routes';
 import { useGlobalSnackbar } from './GlobalSnackbarProvider';
 import { QDialog } from './QDialog';
