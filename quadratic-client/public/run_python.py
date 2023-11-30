@@ -19,6 +19,7 @@ import pyodide_http
 
 # Patch requests https://github.com/koenvo/pyodide-http
 pyodide_http.patch_all()
+micropip.install("requests")
 
 
 def attempt_fix_await(code):
