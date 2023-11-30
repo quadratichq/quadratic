@@ -22,6 +22,7 @@ pub(crate) enum MessageRequest {
     },
     MouseMove {
         user_id: Uuid,
+        file_id: Uuid,
         x: f64,
         y: f64,
     },
@@ -30,9 +31,15 @@ pub(crate) enum MessageRequest {
 #[derive(Serialize, Debug)]
 #[serde(tag = "type")]
 pub(crate) enum MessageResponse {
-    Empty,
-    Room { room: Room },
-    MouseMove { user_id: Uuid, x: f64, y: f64 },
+    Room {
+        room: Room,
+    },
+    MouseMove {
+        user_id: Uuid,
+        file_id: Uuid,
+        x: f64,
+        y: f64,
+    },
 }
 
 pub(crate) async fn handle_message(
@@ -43,6 +50,8 @@ pub(crate) async fn handle_message(
     tracing::trace!("Handling message {:?}", request);
 
     match request {
+        // User enters a room.  If the room doesn't exist, it is created.
+        // Users can only be added to a room once
         MessageRequest::EnterRoom {
             user_id,
             file_id,
@@ -58,27 +67,48 @@ pub(crate) async fn handle_message(
                 socket: Arc::clone(&sender),
             };
 
-            state.enter_room(file_id, user).await;
-            broadcast(file_id, Arc::clone(&state)).await?;
+            let is_new = state.enter_room(file_id, user).await;
 
-            Ok(MessageResponse::Empty)
-            // Ok(MessageResponse::Room {
-            //     room: state
-            //         .rooms
-            //         .lock()
-            //         .await
-            //         .get(&file_id)
-            //         .ok_or(anyhow!("Room {file_id} not found"))?
-            //         .clone(),
-            // })
+            let room = state
+                .rooms
+                .lock()
+                .await
+                .get(&file_id)
+                .ok_or(anyhow!("Room {file_id} not found"))?
+                .clone();
+
+            let response = MessageResponse::Room { room };
+
+            // only broadcast if the user is new to the room
+            if is_new {
+                broadcast(user_id, file_id, Arc::clone(&state), &response).await?;
+            }
+
+            Ok(response)
         }
-        MessageRequest::MouseMove { user_id, x, y } => {
-            Ok(MessageResponse::MouseMove { user_id, x, y })
+
+        // User moves their mouse
+        MessageRequest::MouseMove {
+            user_id,
+            file_id,
+            x,
+            y,
+        } => {
+            let response = MessageResponse::MouseMove { user_id, x, y };
+
+            broadcast(user_id, Uuid::nil(), Arc::clone(&state), &response).await?;
+
+            Ok(response)
         }
     }
 }
 
-pub(crate) async fn broadcast(file_id: Uuid, state: Arc<State>) -> Result<()> {
+pub(crate) async fn broadcast(
+    user_id: Uuid,
+    file_id: Uuid,
+    state: Arc<State>,
+    message: &MessageResponse,
+) -> Result<()> {
     let room = state
         .rooms
         .lock()
@@ -87,11 +117,9 @@ pub(crate) async fn broadcast(file_id: Uuid, state: Arc<State>) -> Result<()> {
         .ok_or(anyhow!("Room {file_id} not found"))?
         .clone();
 
-    let response = MessageResponse::Room { room: room.clone() };
-
-    for (_, user) in room.users.iter() {
+    for (_, user) in room.users.iter().filter(|user| user.0 != &user_id) {
         (*user.socket.lock().await)
-            .send(Message::Text(serde_json::to_string(&response)?))
+            .send(Message::Text(serde_json::to_string(&message)?))
             .await?;
     }
 

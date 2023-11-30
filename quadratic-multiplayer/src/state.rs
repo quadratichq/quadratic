@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
@@ -35,14 +35,15 @@ impl State {
         }
     }
 
-    pub(crate) async fn enter_room(&self, file_id: Uuid, user: User) {
+    pub(crate) async fn enter_room(&self, file_id: Uuid, user: User) -> bool {
         let mut rooms = self.rooms.lock().await;
         let room = rooms.entry(file_id).or_insert_with(|| Room {
             file_id,
             users: HashMap::new(),
         });
 
-        // tracing::info!("User {:?} entered room {:?}", user, room);
-        room.users.insert(user.id, user);
+        tracing::trace!("User {:?} entered room {:?}", user, room);
+
+        room.users.insert(user.id, user).is_none()
     }
 }
