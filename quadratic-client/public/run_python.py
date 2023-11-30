@@ -12,7 +12,6 @@ import micropip
 import numpy as np
 import pandas as pd
 import pyodide
-import pyodide_http
 
 # todo separate this file out into a Python Package
 # https://pyodide.org/en/stable/usage/loading-custom-python-code.html
