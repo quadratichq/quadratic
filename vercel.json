@@ -1,4 +1,4 @@
 {
-  "buildCommand": "npm run build:ci --workspace=quadratic-client",
+  "buildCommand": "./scripts/run-ci-build.sh",
   "installCommand": "npm install"
 }
