@@ -18,7 +18,14 @@ import pyodide_http
 # https://pyodide.org/en/stable/usage/loading-custom-python-code.html
 
 # Patch requests https://github.com/koenvo/pyodide-http
-pyodide_http.patch_all()
+async def patch_http():
+    await micropip.install('requests')
+    pyodide_http.patch_all()
+
+
+if "pyodide" in sys.modules:
+   # running in Pyodide
+   patch_http()
 
 
 def attempt_fix_await(code):
