@@ -8,6 +8,8 @@ authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 anyhow = "1.0.75"
 axum = { version = "0.7.1", features = ["ws"] }
 axum-extra = { version = "0.9.0", features = ["typed-header"] }
+dotenv = "0.15.0"
+envy = "0.4.2"
 futures = "0.3.29"
 futures-util = { version = "0.3.29", default-features = false, features = ["sink", "std"] }
 headers = "0.4.0"

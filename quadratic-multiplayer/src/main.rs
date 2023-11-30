@@ -1,6 +1,7 @@
 //! Quadratic Multiplayer
 //!
 
+mod config;
 mod message;
 mod server;
 mod state;

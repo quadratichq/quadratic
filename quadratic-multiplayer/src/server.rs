@@ -24,11 +24,14 @@ use futures_util::SinkExt;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{
+    config::{config, Config},
     message::{handle_message, MessageRequest, MessageResponse},
-    state::{self, State},
+    state::State,
 };
 
 pub async fn serve() -> Result<()> {
+    let Config { host, port } = config()?;
+
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -48,7 +51,7 @@ pub async fn serve() -> Result<()> {
                 .make_span_with(DefaultMakeSpan::default().include_headers(true)),
         );
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
+    let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await?;
 
     tracing::info!("listening on {}", listener.local_addr()?);
 
@@ -86,8 +89,12 @@ async fn handle_socket(socket: WebSocket, addr: SocketAddr, state: Arc<State>) {
     while let Some(Ok(msg)) = receiver.next().await {
         let response = process_message(msg, Arc::clone(&sender), Arc::clone(&state)).await;
 
-        if response.map_or(false, |response| response.is_break()) {
-            break;
+        match response {
+            Ok(ControlFlow::Continue(_)) => {}
+            Ok(ControlFlow::Break(_)) => break,
+            Err(e) => {
+                tracing::error!("Error processing message: {:?}", e);
+            }
         }
     }
 
@@ -109,13 +116,13 @@ async fn process_message(
             (*sender.lock().await).send(response).await?;
         }
         Message::Binary(d) => {
-            tracing::info!(">>> {} bytes: {:?}", d.len(), d);
+            tracing::info!("{} bytes: {:?}", d.len(), d);
         }
         Message::Close(c) => {
             if let Some(cf) = c {
-                tracing::info!(">>> close with code {} and reason `{}`", cf.code, cf.reason);
+                tracing::info!("Close with code {} and reason `{}`", cf.code, cf.reason);
             } else {
-                tracing::info!(">>> omehow sent close message without CloseFrame");
+                tracing::info!("Somehow sent close message without CloseFrame");
             }
             return Ok(ControlFlow::Break(None));
         }

@@ -12,7 +12,7 @@ pub enum MessageRequest {
     MouseMove { user_id: Uuid, x: f64, y: f64 },
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 #[serde(tag = "type")]
 pub enum MessageResponse {
     Room { name: String },
