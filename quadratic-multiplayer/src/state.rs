@@ -8,6 +8,7 @@ use uuid::Uuid;
 
 #[derive(Serialize, Debug, Clone)]
 pub(crate) struct User {
+    #[serde(skip_serializing)]
     pub(crate) id: Uuid,
     pub(crate) first_name: String,
     pub(crate) last_name: String,
