@@ -6,9 +6,6 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig(() => {
   return {
-    esbuild: {
-      exclude: ["public/pyodide/**/*"]
-    },
     build: {
       outDir: '../build',
     },
