@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
+use axum::extract::ws::{Message, WebSocket};
+use futures_util::stream::SplitSink;
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::state::{Room, State, User};
@@ -33,6 +36,7 @@ pub(crate) enum MessageResponse {
 pub(crate) async fn handle_message(
     request: MessageRequest,
     state: Arc<State>,
+    sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
 ) -> Result<MessageResponse> {
     tracing::trace!("Handling message {:?}", request);
 
@@ -49,6 +53,7 @@ pub(crate) async fn handle_message(
                 first_name,
                 last_name,
                 image,
+                socket: sender,
             };
 
             state.enter_room(file_id, user).await;

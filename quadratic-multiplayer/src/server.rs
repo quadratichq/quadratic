@@ -110,7 +110,8 @@ async fn process_message(
     match msg {
         Message::Text(text) => {
             let messsage_request = serde_json::from_str::<MessageRequest>(&text)?;
-            let message_response = handle_message(messsage_request, state).await?;
+            let message_response =
+                handle_message(messsage_request, state, Arc::clone(&sender)).await?;
             let response = Message::Text(serde_json::to_string(&message_response)?);
 
             (*sender.lock().await).send(response).await?;

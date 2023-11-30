@@ -1,18 +1,22 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
+use axum::extract::ws::{Message, WebSocket};
+use futures_util::stream::SplitSink;
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone)]
 pub(crate) struct User {
     pub(crate) id: Uuid,
     pub(crate) first_name: String,
     pub(crate) last_name: String,
     pub(crate) image: String,
+    #[serde(skip_serializing)]
+    pub(crate) socket: Arc<Mutex<SplitSink<WebSocket, Message>>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone)]
 pub(crate) struct Room {
     pub(crate) file_id: Uuid,
     pub(crate) users: HashMap<Uuid, User>,
