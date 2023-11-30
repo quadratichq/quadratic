@@ -23,4 +23,4 @@ cargo run --bin export_types
 # cd ../quadratic-client
 
 echo 'Building front-end...'
-npm run build:ci --workspace=quadratic-client
+npm run build --workspace=quadratic-client
