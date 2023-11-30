@@ -94,9 +94,14 @@ pub(crate) async fn handle_message(
             x,
             y,
         } => {
-            let response = MessageResponse::MouseMove { user_id, x, y };
+            let response = MessageResponse::MouseMove {
+                user_id,
+                file_id,
+                x,
+                y,
+            };
 
-            broadcast(user_id, Uuid::nil(), Arc::clone(&state), &response).await?;
+            broadcast(user_id, file_id, Arc::clone(&state), &response).await?;
 
             Ok(response)
         }
