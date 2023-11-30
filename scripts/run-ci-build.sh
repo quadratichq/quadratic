@@ -3,8 +3,6 @@ if [ "$VERCEL_ENV" == "preview" ]; then
   echo "On preview branch. Setting VITE_QUADRATIC_API_URL to quadratic-api-dev-pr-$VERCEL_GIT_PULL_REQUEST_ID.herokuapp.com"
 fi
 
-# cd ..
-
 echo 'Installing rustup...'
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 source "$HOME/.cargo/env"
@@ -19,8 +17,6 @@ wasm-pack build --target web --out-dir ../quadratic-client/src/quadratic-core
 
 echo 'Exporting TS/Rust types...'
 cargo run --bin export_types
-
-# cd ../quadratic-client
 
 echo 'Building front-end...'
 npm run build --workspace=quadratic-client
