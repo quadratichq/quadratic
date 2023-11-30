@@ -3,8 +3,6 @@ import { sheets } from '@/grid/controller/Sheets';
 import { JsHtmlOutput } from '@/quadratic-core/types';
 import { colors } from '@/theme/colors';
 import { useCallback } from 'react';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { Wheel } from '../pixiOverride/Wheel';
 import { HTMLResizeControl } from './HTMLResizeControl';
 
 interface Props {
@@ -30,16 +28,16 @@ export const IFrameHtmlCell = (props: Props) => {
           iframe.contentWindow.document.body.addEventListener(
             'wheel',
             (event) => {
-              const viewport = pixiApp.viewport;
-              const wheel = viewport.plugins.get('wheel') as Wheel | null;
-              if (!wheel) {
-                throw new Error('Expected wheel plugin to be defined on viewport');
-              }
-              const bounding = iframe.getBoundingClientRect();
-              wheel.wheel(event, {
-                x: bounding.left + event.clientX * viewport.scale.x - event.clientX,
-                y: bounding.top + event.clientY * viewport.scale.y - event.clientY,
-              });
+              // const viewport = pixiApp.viewport;
+              // const wheel = viewport.plugins.get('wheel') as Wheel | null;
+              // if (!wheel) {
+              //   throw new Error('Expected wheel plugin to be defined on viewport');
+              // }
+              // const bounding = iframe.getBoundingClientRect();
+              // wheel.wheel(event, {
+              //   x: bounding.left + event.clientX * viewport.scale.x - event.clientX,
+              //   y: bounding.top + event.clientY * viewport.scale.y - event.clientY,
+              // });
               event.stopPropagation();
               event.preventDefault();
             },

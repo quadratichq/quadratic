@@ -1,275 +1,228 @@
-import { grid } from '@/grid/controller/Grid';
-import { sheets } from '@/grid/controller/Sheets';
+import { HtmlCell } from '@/gridGL/htmlCells/HtmlCell';
+import { htmlCellsHandler } from '@/gridGL/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { InteractionEvent } from 'pixi.js';
 
-// number of screen pixels to trigger the resize cursor
-const tolerance = 10;
-
-// tolerance of snapping to the grid
-const snapping = 10;
-
 export class PointerHtmlCells {
-  private state: 'resizing-right' | 'resizing-bottom' | 'resizing-corner' | undefined;
-  private htmlCell?: HTMLIFrameElement | undefined;
-  private htmlCellHover?: HTMLIFrameElement;
-  cursor?: string;
-  private width?: number;
-  private height?: number;
+  private resizing: HtmlCell | undefined;
+  // private hovering: HtmlCell | undefined;
 
-  // used for escaping the resize
-  private originalWidth?: number;
-  private originalHeight?: number;
-
-  private getHtmlCells(): HTMLCollection {
-    const htmlCells = document.querySelector('.html-cells');
-    if (!htmlCells) {
-      throw new Error('Expected html-cells to be defined in the DOM');
-    }
-    return htmlCells.children;
-  }
-
-  private intersects(e: InteractionEvent, setHtmlCell: boolean): 'right' | 'bottom' | 'corner' | undefined {
-    const canvas = pixiApp.canvas.getBoundingClientRect();
-    const htmlCells = this.getHtmlCells();
-    for (let i = 0; i < htmlCells.length; i++) {
-      const htmlCell = htmlCells[i] as HTMLIFrameElement;
-      const rect = htmlCell.getBoundingClientRect();
-
-      const right = Math.abs(e.data.global.x - rect.right) < tolerance;
-      const bottom = Math.abs(e.data.global.y - rect.bottom + canvas.top) < tolerance;
-
-      if (right && bottom) {
-        if (setHtmlCell) {
-          this.htmlCell = htmlCell;
-          this.htmlCellHover = undefined;
-        } else {
-          this.htmlCellHover = htmlCell;
-          this.htmlCell = undefined;
-        }
-        return 'corner';
-      }
-
-      if (e.data.global.y > rect.top && e.data.global.y < rect.bottom && right) {
-        if (setHtmlCell) {
-          this.htmlCell = htmlCell;
-          this.htmlCellHover = undefined;
-        } else {
-          this.htmlCellHover = htmlCell;
-          this.htmlCell = undefined;
-        }
-        return 'right';
-      }
-
-      if (e.data.global.x > rect.left && e.data.global.x < rect.right && bottom) {
-        if (setHtmlCell) {
-          this.htmlCell = htmlCell;
-          this.htmlCellHover = undefined;
-        } else {
-          this.htmlCellHover = htmlCell;
-          this.htmlCell = undefined;
-        }
-        return 'bottom';
-      }
-    }
-  }
-
-  private setWidth(width: number): void {
-    this.width = width;
-    if (!this.htmlCell) {
-      throw new Error('Expected htmlCell to be defined in PointerHtmlCells.setWidth');
-    }
-    if (this.width === undefined) {
-      throw new Error('Expected width to be defined in PointerHtmlCells.setWidth');
-    }
-    const isIframe = this.htmlCell.getAttribute('data-type') === 'iframe';
-    if (isIframe) {
-      (this.htmlCell.childNodes[1] as HTMLIFrameElement).width = this.width.toString();
-    } else {
-      this.htmlCell.style.width = `${this.width}px`;
-    }
-  }
-
-  private setHeight(height: number): void {
-    this.height = height;
-    if (!this.htmlCell) {
-      throw new Error('Expected htmlCell to be defined in PointerHtmlCells.setHeight');
-    }
-    if (this.height === undefined) {
-      throw new Error('Expected height to be defined in PointerHtmlCells.setHeight');
-    }
-    const isIframe = this.htmlCell.getAttribute('data-type') === 'iframe';
-    if (isIframe) {
-      (this.htmlCell.childNodes[1] as HTMLIFrameElement).height = this.height.toString();
-    } else {
-      this.htmlCell.style.height = `${this.height}px`;
-    }
-  }
-
-  private highlightEdges(htmlCell: HTMLDivElement | undefined, right: boolean, bottom: boolean) {
-    if (!htmlCell) return;
-    const rightDiv = htmlCell.childNodes[0] as HTMLDivElement;
-    const bottomDiv = htmlCell.childNodes[2] as HTMLDivElement;
-    if (right) {
-      rightDiv.classList.add('html-resize-control--is-dragging');
-    } else {
-      rightDiv.classList.remove('html-resize-control--is-dragging');
-    }
-    if (bottom) {
-      bottomDiv.classList.add('html-resize-control--is-dragging');
-    } else {
-      bottomDiv.classList.remove('html-resize-control--is-dragging');
-    }
-  }
-
-  clearHighlightEdges() {
-    const htmlCells = this.getHtmlCells();
-    for (let i = 0; i < htmlCells.length; i++) {
-      const htmlCell = htmlCells[i] as HTMLIFrameElement;
-      const rightDiv = htmlCell.childNodes[0] as HTMLDivElement;
-      const bottomDiv = htmlCell.childNodes[2] as HTMLDivElement;
-      rightDiv.classList.remove('html-resize-control--is-dragging');
-      bottomDiv.classList.remove('html-resize-control--is-dragging');
-    }
-    this.htmlCell = undefined;
-    this.htmlCellHover = undefined;
-  }
-
-  private snapX(e: InteractionEvent): number {
-    if (e.data.originalEvent.shiftKey) return e.data.global.x;
-    const x = pixiApp.viewport.toWorld(e.data.global.x, 0).x;
-    for (const line of pixiApp.gridLines.gridLinesX) {
-      if (Math.abs(line.x - x) <= snapping) {
-        return pixiApp.viewport.toScreen(line.x, 0).x - 3;
-      }
-    }
-    return e.data.global.x;
-  }
-
-  private snapY(e: InteractionEvent): number {
-    if (e.data.originalEvent.shiftKey) return e.data.global.y;
-    const y = pixiApp.viewport.toWorld(0, e.data.global.y).y;
-    for (const line of pixiApp.gridLines.gridLinesY) {
-      if (Math.abs(line.y - y) <= snapping) {
-        return pixiApp.viewport.toScreen(0, line.y).y - 4;
-      }
-    }
-    return e.data.global.y;
-  }
+  cursor: string | undefined;
 
   pointerMove(e: InteractionEvent): boolean {
-    if (!this.state) {
-      switch (this.intersects(e, false)) {
-        case 'right':
-          this.cursor = 'col-resize';
-          this.highlightEdges(this.htmlCellHover, true, false);
-          return true;
-        case 'bottom':
-          this.cursor = 'row-resize';
-          this.highlightEdges(this.htmlCellHover, false, true);
-          return true;
-        case 'corner':
-          this.cursor = 'nwse-resize';
-          this.highlightEdges(this.htmlCellHover, true, true);
-          return true;
-        default:
-          this.clearHighlightEdges();
-          this.cursor = undefined;
-          return false;
-      }
+    if (this.resizing) {
+      this.resizing.pointerMove(e);
+      return true;
     }
-    const htmlCell = this.htmlCell;
-    if (!htmlCell) {
-      throw new Error('Expected htmlCell to be defined in PointerHtmlCells.pointerMove');
-    }
-    const boundingClientRect = htmlCell.getBoundingClientRect();
-    if (this.state === 'resizing-right') {
-      const x = this.snapX(e);
-      this.setWidth((x - boundingClientRect.left) / pixiApp.viewport.scale.x);
-    } else if (this.state === 'resizing-bottom') {
-      const canvas = pixiApp.canvas.getBoundingClientRect();
-      const y = this.snapY(e);
-      this.setHeight((y - boundingClientRect.top + canvas.top) / pixiApp.viewport.scale.y);
-    } else if (this.state === 'resizing-corner') {
-      const canvas = pixiApp.canvas.getBoundingClientRect();
-      const x = this.snapX(e);
-      const y = this.snapY(e);
-      this.setWidth((x - boundingClientRect.left) / pixiApp.viewport.scale.x);
-      this.setHeight((y - boundingClientRect.top + canvas.top) / pixiApp.viewport.scale.y);
-    }
-    return true;
-  }
-
-  private startResizing() {
-    if (!this.htmlCell) {
-      throw new Error('Expected htmlCell to be defined in PointerHtmlCells.pointerDown');
-    }
-    const isIframe = this.htmlCell.getAttribute('data-type') === 'iframe';
-    if (isIframe) {
-      const iframe = this.htmlCell.childNodes[1] as HTMLIFrameElement;
-      this.originalWidth = this.width = parseFloat(iframe.width);
-      this.originalHeight = this.height = parseFloat(iframe.height);
-    } else {
-      this.originalWidth = this.width = this.htmlCell.offsetWidth;
-      this.originalHeight = this.height = this.htmlCell.offsetHeight;
-    }
-    this.htmlCell!.style.pointerEvents = 'none';
+    // const canvas = pixiApp.canvas.getBoundingClientRect();
+    // const cells = htmlCellsHandler.getCells();
+    // for (const cell of cells) {
+    //   const side = cell.hover(e, canvas.top);
+    //   if (side) {
+    //     if (this.hovering) {
+    //       this.hovering.clearHighlightEdges();
+    //     }
+    //     this.hovering = cell;
+    //     this.cursor = side === 'corner' ? 'nwse-resize' : side === 'right' ? 'col-resize' : 'row-resize';
+    //     return true;
+    //   }
+    // }
+    // this.cursor = undefined;
+    return false;
   }
 
   pointerDown(e: InteractionEvent): boolean {
-    switch (this.intersects(e, true)) {
-      case 'right':
-        this.state = 'resizing-right';
-        this.startResizing();
+    const canvas = pixiApp.canvas.getBoundingClientRect();
+    const cells = htmlCellsHandler.getCells();
+    for (const cell of cells) {
+      const side = cell.hover(e, canvas.top);
+      if (side) {
+        this.resizing = cell;
+        this.resizing.startResizing();
+        this.cursor = side === 'corner' ? 'nwse-resize' : side === 'right' ? 'col-resize' : 'row-resize';
         return true;
-      case 'bottom':
-        if (!this.htmlCell) {
-          throw new Error('Expected htmlCell to be defined in PointerHtmlCells.pointerDown');
-        }
-        this.state = 'resizing-bottom';
-        this.startResizing();
-        return true;
-      case 'corner':
-        this.state = 'resizing-corner';
-        this.startResizing();
-        return true;
-      default:
-        return false;
+      }
     }
+    return false;
   }
 
   pointerUp(): boolean {
-    if (this.state) {
-      if (!this.htmlCell) {
-        throw new Error('Expected htmlCell to be defined in PointerHtmlCells.pointerUp');
-      }
-      const pos = this.htmlCell.getAttribute('data-pos')?.split(',');
-      if (!pos) {
-        throw new Error('Expected pos to be defined in PointerHtmlCells.pointerUp');
-      }
-      if (this.width === undefined || this.height === undefined) {
-        throw new Error('Expected width and height to be defined in PointerHtmlCells.pointerUp');
-      }
-      grid.setCellRenderSize(sheets.sheet.id, parseInt(pos[0]), parseInt(pos[1]), this.width, this.height);
-      this.state = undefined;
-      this.htmlCell!.style.pointerEvents = 'auto';
-      this.htmlCell = undefined;
+    if (this.resizing) {
+      this.resizing.completeResizing();
+      this.resizing = undefined;
       return true;
     }
     return false;
   }
 
   handleEscape(): boolean {
-    if (this.state) {
-      this.setWidth(this.originalWidth!);
-      this.setHeight(this.originalHeight!);
-      this.state = undefined;
-      this.state = undefined;
-      this.htmlCell!.style.pointerEvents = 'auto';
-      this.htmlCell = undefined;
-      this.cursor = undefined;
-      return true;
+    if (this.resizing) {
+      this.resizing.cancelResizing();
+      this.resizing = undefined;
     }
     return false;
   }
+
+  // private setWidth(width: number): void {
+  //   this.width = width;
+  //   if (!this.htmlCell) {
+  //     throw new Error('Expected htmlCell to be defined in PointerHtmlCells.setWidth');
+  //   }
+  //   if (this.width === undefined) {
+  //     throw new Error('Expected width to be defined in PointerHtmlCells.setWidth');
+  //   }
+  //   const isIframe = this.htmlCell.getAttribute('data-type') === 'iframe';
+  //   if (isIframe) {
+  //     (this.htmlCell.childNodes[1] as HTMLIFrameElement).width = (
+  //       this.width - (this.htmlCellAdjustment?.x ?? 0)
+  //     ).toString();
+  //   } else {
+  //     this.htmlCell.style.width = `${this.width}px`;
+  //   }
+  // }
+
+  // private setHeight(height: number): void {
+  //   this.height = height;
+  //   if (!this.htmlCell) {
+  //     throw new Error('Expected htmlCell to be defined in PointerHtmlCells.setHeight');
+  //   }
+  //   if (this.height === undefined) {
+  //     throw new Error('Expected height to be defined in PointerHtmlCells.setHeight');
+  //   }
+  //   const isIframe = this.htmlCell.getAttribute('data-type') === 'iframe';
+  //   if (isIframe) {
+  //     (this.htmlCell.childNodes[1] as HTMLIFrameElement).height = (
+  //       this.height - (this.htmlCellAdjustment?.y ?? 0)
+  //     ).toString();
+  //   } else {
+  //     this.htmlCell.style.height = `${this.height}px`;
+  //   }
+  // }
+
+  // private highlightEdges(htmlCell: HTMLElement | undefined, right: boolean, bottom: boolean) {
+  //   if (!htmlCell) return;
+  //   const rightDiv = htmlCell.childNodes[0] as HTMLDivElement;
+  //   const bottomDiv = htmlCell.childNodes[2] as HTMLDivElement;
+  //   if (right) {
+  //     rightDiv.classList.add('html-resize-control--is-dragging');
+  //   } else {
+  //     rightDiv.classList.remove('html-resize-control--is-dragging');
+  //   }
+  //   if (bottom) {
+  //     bottomDiv.classList.add('html-resize-control--is-dragging');
+  //   } else {
+  //     bottomDiv.classList.remove('html-resize-control--is-dragging');
+  //   }
+  // }
+
+  // clearHighlightEdges() {
+  //   htmlCellsHandler.clearHighlightEdges();
+  //   this.htmlCell = undefined;
+  //   this.htmlCellHover = undefined;
+  // }
+
+  // pointerMove(e: InteractionEvent): boolean {
+  //   if (this.htmlCell) {
+  //     this.htmlCell.pointerMove(e);
+  //     return true;
+  //   } else {
+  //     switch (this.intersects(e, false)) {
+  //       case 'right':
+  //         this.cursor = 'col-resize';
+  //         this.htmlCellHover!.highlightEdge('right');
+  //         return true;
+  //       case 'bottom':
+  //         this.cursor = 'row-resize';
+  //         this.htmlCellHover!.highlightEdge('bottom');
+  //         return true;
+  //       case 'corner':
+  //         this.cursor = 'nwse-resize';
+  //         this.htmlCellHover!.highlightEdge('corner');
+  //         return true;
+  //       default:
+  //         this.clearHighlightEdges();
+  //         this.cursor = undefined;
+  //         return false;
+  //     }
+  //   }
+  //   // const htmlCell = this.htmlCell;
+  //   // if (!htmlCell) {
+  //   //   throw new Error('Expected htmlCell to be defined in PointerHtmlCells.pointerMove');
+  //   // }
+  //   // if (this.state === 'resizing-right') {
+  //   //   const x = this.snapX(e);
+  //   //   this.htmlCell!.changeWidth(x);
+  //   // } else if (this.state === 'resizing-bottom') {
+  //   //   const canvas = pixiApp.canvas.getBoundingClientRect();
+  //   //   const y = this.snapY(e);
+  //   //   this.htmlCell!.changeHeight(y, canvas.top);
+  //   // } else if (this.state === 'resizing-corner') {
+  //   //   const canvas = pixiApp.canvas.getBoundingClientRect();
+  //   //   const x = this.snapX(e);
+  //   //   const y = this.snapY(e);
+  //   //   this.htmlCell!.changeWidth(x);
+  //   //   this.htmlCell!.changeHeight(y, canvas.top);
+  //   // }
+  //   // return true;
+  // }
+
+  // pointerDown(e: InteractionEvent, top: number): 'bottom' | 'right' | 'corner' | undefined {
+  //   for (const cell of this.cells) {
+  //     const side = cell.intersects(e, top);
+  //     if (side) {
+  //       this.resizing = cell;
+  //       return side;
+  //     }
+  //   }
+  // }
+
+  // pointerDown(e: InteractionEvent): boolean {
+  //   switch (this.intersects(e, true)) {
+  //     case 'right':
+  //       this.state = 'resizing-right';
+  //       this.startResizing();
+  //       return true;
+  //     case 'bottom':
+  //       if (!this.htmlCell) {
+  //         throw new Error('Expected htmlCell to be defined in PointerHtmlCells.pointerDown');
+  //       }
+  //       this.state = 'resizing-bottom';
+  //       this.startResizing();
+  //       return true;
+  //     case 'corner':
+  //       this.state = 'resizing-corner';
+  //       this.startResizing();
+  //       return true;
+  //     default:
+  //       return false;
+  //   }
+  // }
+
+  // pointerUp(): boolean {
+  //   if (this.state) {
+  //     if (!this.htmlCell) {
+  //       throw new Error('Expected htmlCell to be defined in PointerHtmlCells.pointerUp');
+  //     }
+  //     const pos = this.htmlCell.getAttribute('data-pos')?.split(',');
+  //     if (!pos) {
+  //       throw new Error('Expected pos to be defined in PointerHtmlCells.pointerUp');
+  //     }
+  //     if (this.width === undefined || this.height === undefined) {
+  //       throw new Error('Expected width and height to be defined in PointerHtmlCells.pointerUp');
+  //     }
+  //     grid.setCellRenderSize(
+  //       sheets.sheet.id,
+  //       parseInt(pos[0]),
+  //       parseInt(pos[1]),
+  //       this.width - (this.htmlCellAdjustment?.x ?? 0),
+  //       this.height - (this.htmlCellAdjustment?.y ?? 0)
+  //     );
+  //     console.log(this.width - (this.htmlCellAdjustment?.x ?? 0), this.height - (this.htmlCellAdjustment?.y ?? 0));
+  //     this.state = undefined;
+  //     this.htmlCell!.style.pointerEvents = 'auto';
+  //     this.htmlCell = undefined;
+  //     return true;
+  //   }
+  //   return false;
+  // }
 }

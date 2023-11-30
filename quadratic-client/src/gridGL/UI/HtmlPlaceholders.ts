@@ -2,7 +2,6 @@ import { sheets } from '@/grid/controller/Sheets';
 import { JsHtmlOutput } from '@/quadratic-core/types';
 import { colors } from '@/theme/colors';
 import { Graphics } from 'pixi.js';
-import { TOP_HTML_MARGIN } from '../htmlCells/HtmlCells';
 
 const BORDER_WIDTH = 1;
 
@@ -42,7 +41,7 @@ export class HtmlPlaceholders extends Graphics {
     const offsets = sheet.offsets.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
     this.lineStyle(BORDER_WIDTH, colors.htmlPlaceholderThumbnailBorderColor, 1);
     this.beginFill(colors.htmlPlaceholderThumbnailColor);
-    this.drawRect(offsets.x, offsets.y + offsets.h + TOP_HTML_MARGIN, w, h);
+    this.drawRect(offsets.x, offsets.y + offsets.h, w, h);
     this.endFill();
   }
 

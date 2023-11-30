@@ -35,13 +35,6 @@ def attempt_fix_await(code):
 
     return code
 
-
-async def preload(code):
-    if "import plotly" in code.lower():
-        await micropip.install(
-            "plotly"
-        )
-
 def strtobool(val):
     """Convert a string representation of truth to true (1) or false (0).
     True values are 'y', 'yes', 't', 'true', 'on', and '1'; false values
@@ -267,9 +260,6 @@ async def run_python(code):
 
     sout = StringIO()
     output_value = None
-
-    # preload libraries
-    await preload(code)
 
     try:
         # Capture STDOut to sout
