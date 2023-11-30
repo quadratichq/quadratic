@@ -1,21 +1,43 @@
+use std::collections::HashMap;
+
+use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-struct Room {
-    file_id: Uuid,
-    users: Vec<Uuid>,
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub(crate) struct User {
+    pub(crate) id: Uuid,
+    pub(crate) first_name: String,
+    pub(crate) last_name: String,
+    pub(crate) image: String,
 }
 
-struct Rooms(Vec<Room>);
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub(crate) struct Room {
+    pub(crate) file_id: Uuid,
+    pub(crate) users: HashMap<Uuid, User>,
+}
 
-pub struct State {
-    rooms: Mutex<Rooms>,
+#[derive(Debug)]
+pub(crate) struct State {
+    pub(crate) rooms: Mutex<HashMap<Uuid, Room>>,
 }
 
 impl State {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         State {
-            rooms: Mutex::new(Rooms(vec![])),
+            rooms: Mutex::new(HashMap::new()),
         }
+    }
+
+    pub(crate) async fn enter_room(&self, file_id: Uuid, user: User) {
+        let mut rooms = self.rooms.lock().await;
+        let room = rooms.entry(file_id).or_insert_with(|| Room {
+            file_id,
+            users: HashMap::new(),
+        });
+
+        // tracing::info!("User {:?} entered room {:?}", user, room);
+        room.users.insert(user.id, user);
     }
 }

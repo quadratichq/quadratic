@@ -1,31 +1,70 @@
 use std::sync::Arc;
 
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::state::State;
+use crate::state::{Room, State, User};
 
 #[derive(Deserialize, Debug)]
 #[serde(tag = "type")]
-pub enum MessageRequest {
-    NewRoom { user_id: Uuid, file_id: Uuid },
-    MouseMove { user_id: Uuid, x: f64, y: f64 },
+pub(crate) enum MessageRequest {
+    EnterRoom {
+        user_id: Uuid,
+        file_id: Uuid,
+        first_name: String,
+        last_name: String,
+        image: String,
+    },
+    MouseMove {
+        user_id: Uuid,
+        x: f64,
+        y: f64,
+    },
 }
 
 #[derive(Serialize, Debug)]
 #[serde(tag = "type")]
-pub enum MessageResponse {
-    Room { name: String },
+pub(crate) enum MessageResponse {
+    Room { room: Room },
     MouseMove { user_id: Uuid, x: f64, y: f64 },
 }
 
-pub fn handle_message(request: MessageRequest, state: Arc<State>) -> MessageResponse {
+pub(crate) async fn handle_message(
+    request: MessageRequest,
+    state: Arc<State>,
+) -> Result<MessageResponse> {
     tracing::trace!("Handling message {:?}", request);
 
     match request {
-        MessageRequest::NewRoom { user_id, file_id } => MessageResponse::Room {
-            name: format!("room-{}", user_id),
-        },
-        MessageRequest::MouseMove { user_id, x, y } => MessageResponse::MouseMove { user_id, x, y },
+        MessageRequest::EnterRoom {
+            user_id,
+            file_id,
+            first_name,
+            last_name,
+            image,
+        } => {
+            let user = User {
+                id: user_id,
+                first_name,
+                last_name,
+                image,
+            };
+
+            state.enter_room(file_id, user).await;
+
+            Ok(MessageResponse::Room {
+                room: state
+                    .rooms
+                    .lock()
+                    .await
+                    .get(&file_id)
+                    .ok_or(anyhow!("Room {file_id} not found"))?
+                    .clone(),
+            })
+        }
+        MessageRequest::MouseMove { user_id, x, y } => {
+            Ok(MessageResponse::MouseMove { user_id, x, y })
+        }
     }
 }
