@@ -53,4 +53,5 @@ export const TYPE = {
   overline: 'text-xs uppercase tracking-widest text-muted-foreground',
   h3: 'scroll-m-20 text-2xl font-semibold tracking-tight',
   h4: 'scroll-m-20 text-xl font-semibold tracking-tight',
+  code: 'relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold',
 };

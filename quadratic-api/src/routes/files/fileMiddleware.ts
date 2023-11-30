@@ -3,6 +3,7 @@ import dbClient from '../../dbClient';
 import { Request } from '../../types/Request';
 
 export const fileMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  // TODO: validate UUID
   if (req.params.uuid === undefined) {
     return res.status(400).json({ error: { message: 'Invalid file UUID' } });
   }
