@@ -2,9 +2,13 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
 import checker from 'vite-plugin-checker';
+import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig(() => {
   return {
+    esbuild: {
+      exclude: ["public/pyodide/**/*"]
+    },
     build: {
       outDir: '../build',
     },
@@ -18,6 +22,7 @@ export default defineConfig(() => {
       },
     },
     plugins: [
+      tsconfigPaths(),
       react(),
       checker({
         typescript: true,

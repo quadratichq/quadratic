@@ -1,17 +1,13 @@
-import express, { Response } from "express";
-import { ApiTypes } from "quadratic-types";
-import { z } from "zod";
-import { getAuth0Users } from "../../auth0/profile";
-import dbClient from "../../dbClient";
-import { teamMiddleware } from "../../middleware/team";
-import { userMiddleware } from "../../middleware/user";
-import { validateAccessToken } from "../../middleware/validateAccessToken";
-import { validateRequestAgainstZodSchema } from "../../middleware/validateRequestAgainstZodSchema";
-import {
-  RequestWithAuth,
-  RequestWithTeam,
-  RequestWithUser,
-} from "../../types/Request";
+import { ApiTypes } from '@quadratic-shared/typesAndSchemas';
+import express, { Response } from 'express';
+import { z } from 'zod';
+import { getAuth0Users } from '../../auth0/profile';
+import dbClient from '../../dbClient';
+import { teamMiddleware } from '../../middleware/team';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { validateRequestAgainstZodSchema } from '../../middleware/validateRequestAgainstZodSchema';
+import { RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
 const router = express.Router();
 
 const schema = z.object({
@@ -21,14 +17,14 @@ const schema = z.object({
 });
 
 router.get(
-  "/:uuid",
+  '/:uuid',
   validateAccessToken,
   validateRequestAgainstZodSchema(schema),
   userMiddleware,
   teamMiddleware,
   async (
     req: RequestWithAuth & RequestWithUser & RequestWithTeam,
-    res: Response<ApiTypes["/v0/teams/:uuid.GET.response"]>
+    res: Response<ApiTypes['/v0/teams/:uuid.GET.response']>
   ) => {
     const {
       user: { id: userId },
@@ -48,7 +44,7 @@ router.get(
         user: true,
       },
       orderBy: {
-        createdDate: "asc",
+        createdDate: 'asc',
       },
     });
     const auth0UserIds = teamUsers.map(({ user: { auth0_id } }) => auth0_id);
@@ -58,11 +54,10 @@ router.get(
     // Get auth0 users
     const auth0Users = await getAuth0Users(auth0UserIds);
     // @ts-expect-error fix types
-    const auth0UsersByAuth0Id: Record<string, (typeof auth0Users)[0]> =
-      auth0Users.reduce(
-        (acc, auth0User) => ({ ...acc, [auth0User.user_id]: auth0User }),
-        {}
-      );
+    const auth0UsersByAuth0Id: Record<string, (typeof auth0Users)[0]> = auth0Users.reduce(
+      (acc, auth0User) => ({ ...acc, [auth0User.user_id]: auth0User }),
+      {}
+    );
 
     // TODO sort users by created_date in the team
 

@@ -1,7 +1,7 @@
+import { Permission, PermissionSchema } from '@quadratic-shared/typesAndSchemas';
 import { NavigateFunction, SubmitFunction } from 'react-router-dom';
 import { SetterOrUpdater } from 'recoil';
 import { apiClient } from './api/apiClient';
-import { Permission, PermissionSchema } from './api/types';
 import { EditorInteractionState } from './atoms/editorInteractionStateAtom';
 import { GlobalSnackbar } from './components/GlobalSnackbarProvider';
 import { ROUTES } from './constants/routes';

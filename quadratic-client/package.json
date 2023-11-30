@@ -1,5 +1,5 @@
 {
-  "name": "quadratic",
+  "name": "quadratic-client",
   "version": "0.3.0",
   "author": {
     "name": "David Kircos",
@@ -54,9 +54,7 @@
     "recoil": "^0.7.7",
     "tailwind-merge": "^2.0.0",
     "tailwindcss-animate": "^1.0.7",
-    "uuid": "^9.0.0",
-    "vite-plugin-checker": "^0.6.2",
-    "zod": "^3.22.4"
+    "uuid": "^9.0.0"
   },
   "main": "public/electron.js",
   "scripts": {
@@ -68,7 +66,6 @@
     "build:wasm:nodejs": "cd .. && cd quadratic-core && wasm-pack build --target nodejs --out-dir ../quadratic-client/src/quadratic-core/__mocks__ --weak-refs",
     "watch:javascript": "export VITE_VERSION=$(git rev-parse HEAD) && vite dev",
     "start:production": "npm run build && serve build",
-    "build:ci": "../scripts/run-ci-build.sh",
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\"",
     "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:unit:dev": "npm run build:wasm:nodejs && npm run test:unit -- --watchAll",
@@ -112,20 +109,19 @@
     "autoprefixer": "^10.4.16",
     "electron": "^23.0.0",
     "electron-is-dev": "^2.0.0",
-    "eslint": "^8.53.0",
     "eslint-config-react-app": "^7.0.1",
     "fontkit": "^2.0.2",
     "fs-extra": "^11.1.0",
     "jest-environment-jsdom": "^29.7.0",
     "msdf-bmfont-xml": "^2.7.0",
     "postcss": "^8.4.31",
-    "prettier": "2.8.3",
     "prettier-plugin-tailwindcss": "^0.4.1",
     "pyodide": "^0.24.1",
+    "sass": "^1.69.5",
     "serve": "^14.2.0",
     "tailwindcss": "^3.3.5",
-    "ts-jest": "^29.1.1",
-    "typescript": "^4.4.4",
-    "vite": "^5.0.0"
+    "vite": "^5.0.0",
+    "vite-plugin-checker": "^0.6.2",
+    "vite-tsconfig-paths": "^4.2.1"
   }
 }

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ApiTypes } from '../api/types';
+import { ApiTypes } from '@quadratic-shared/typesAndSchemas';
 import { AccessSchema, RoleSchema } from '../permissions';
 
 export const data: ApiTypes['/v0/teams/:uuid.GET.response'] = {
