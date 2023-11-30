@@ -1,5 +1,9 @@
+use std::sync::Arc;
+
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use crate::state::State;
 
 #[derive(Deserialize, Debug)]
 #[serde(tag = "type")]
@@ -15,7 +19,7 @@ pub enum MessageResponse {
     MouseMove { user_id: Uuid, x: f64, y: f64 },
 }
 
-pub fn handle_message(request: MessageRequest) -> MessageResponse {
+pub fn handle_message(request: MessageRequest, state: Arc<State>) -> MessageResponse {
     tracing::trace!("Handling message {:?}", request);
 
     match request {

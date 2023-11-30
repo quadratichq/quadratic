@@ -9,7 +9,7 @@ use axum::{
     },
     response::IntoResponse,
     routing::get,
-    Router,
+    Extension, Router,
 };
 use axum_extra::TypedHeader;
 use futures_util::stream::SplitSink;
@@ -23,7 +23,10 @@ use futures::stream::StreamExt;
 use futures_util::SinkExt;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::message::{handle_message, MessageRequest, MessageResponse};
+use crate::{
+    message::{handle_message, MessageRequest, MessageResponse},
+    state::{self, State},
+};
 
 pub async fn serve() -> Result<()> {
     tracing_subscriber::registry()
@@ -37,6 +40,8 @@ pub async fn serve() -> Result<()> {
     let app = Router::new()
         // handle websockets
         .route("/ws", get(ws_handler))
+        // state
+        .layer(Extension(Arc::new(State::new())))
         // logger
         .layer(
             TraceLayer::new_for_http()
@@ -61,6 +66,7 @@ async fn ws_handler(
     ws: WebSocketUpgrade,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    Extension(state): Extension<Arc<State>>,
 ) -> impl IntoResponse {
     let user_agent = user_agent.map_or("Unknown user agent".into(), |user_agent| {
         user_agent.to_string()
@@ -69,16 +75,16 @@ async fn ws_handler(
     tracing::info!("`{user_agent}` at {addr} connected.");
 
     // upgrade the connection
-    ws.on_upgrade(move |socket| handle_socket(socket, addr))
+    ws.on_upgrade(move |socket| handle_socket(socket, addr, state))
 }
 
 // after websocket is established, handle incoming messages
-async fn handle_socket(socket: WebSocket, addr: SocketAddr) {
+async fn handle_socket(socket: WebSocket, addr: SocketAddr, state: Arc<State>) {
     let (sender, mut receiver) = socket.split();
     let sender = Arc::new(Mutex::new(sender));
 
     while let Some(Ok(msg)) = receiver.next().await {
-        let response = process_message(msg, Arc::clone(&sender)).await;
+        let response = process_message(msg, Arc::clone(&sender), Arc::clone(&state)).await;
 
         if response.map_or(false, |response| response.is_break()) {
             break;
@@ -92,11 +98,12 @@ async fn handle_socket(socket: WebSocket, addr: SocketAddr) {
 async fn process_message(
     msg: Message,
     sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
+    state: Arc<State>,
 ) -> Result<ControlFlow<Option<MessageResponse>, ()>> {
     match msg {
         Message::Text(text) => {
             let messsage_request = serde_json::from_str::<MessageRequest>(&text)?;
-            let message_response = handle_message(messsage_request);
+            let message_response = handle_message(messsage_request, state);
             let response = Message::Text(serde_json::to_string(&message_response)?);
 
             (*sender.lock().await).send(response).await?;

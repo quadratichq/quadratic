@@ -3,6 +3,7 @@
 
 mod message;
 mod server;
+mod state;
 
 use anyhow::Result;
 
