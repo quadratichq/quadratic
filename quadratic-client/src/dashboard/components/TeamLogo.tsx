@@ -1,7 +1,8 @@
-import { Button, Stack, useTheme } from '@mui/material';
+import { Button } from '@/shadcn/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
+import { Slider } from '@/shadcn/ui/slider';
 import { useRef, useState } from 'react';
 import AvatarEditor from 'react-avatar-editor';
-import { QDialog } from '../../components/QDialog';
 
 /**
  * URLs return from the logo editor will be file object URLs.
@@ -64,17 +65,18 @@ export function TeamLogoDialog({
   logoUrl: string;
 }) {
   const editorRef = useRef<AvatarEditor>(null);
-  const theme = useTheme();
   const [scaleInput, setScaleInput] = useState<number>(20);
 
   // 1 or 1.02 or 1.98 or 2
   const scale = 1 + Math.round(scaleInput * 10) / 1000;
 
   return (
-    <QDialog onClose={onClose} maxWidth="xs">
-      <QDialog.Title>Edit icon</QDialog.Title>
-      <QDialog.Content>
-        <Stack alignItems={'center'} gap={theme.spacing(1)}>
+    <Dialog onOpenChange={onClose} open={true}>
+      <DialogContent className={`max-w-sm`}>
+        <DialogHeader>
+          <DialogTitle>Edit icon</DialogTitle>
+        </DialogHeader>
+        <div className={`mb-2 flex flex-col items-center gap-6`}>
           <AvatarEditor
             ref={editorRef}
             image={logoUrl}
@@ -87,39 +89,39 @@ export function TeamLogoDialog({
             scale={scale}
             rotate={0}
           />
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={scaleInput}
-            onChange={(e) => {
-              setScaleInput(Number(e.target.value));
-            }}
-          />
-        </Stack>
-      </QDialog.Content>
-      <QDialog.Actions>
-        <Button variant="outlined" size="small" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          disableElevation
-          size="small"
-          onClick={async () => {
-            if (editorRef.current) {
-              const dataUrl = editorRef.current.getImageScaledToCanvas().toDataURL();
-              const res = await fetch(dataUrl);
-              const blob = await res.blob();
+          <div className={`w-[200px]`}>
+            <Slider
+              step={1}
+              min={0}
+              max={100}
+              value={[scaleInput]}
+              onValueChange={(value) => {
+                console.log(value);
+                setScaleInput(value[0]);
+              }}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={async () => {
+              if (editorRef.current) {
+                const dataUrl = editorRef.current.getImageScaledToCanvas().toDataURL();
+                const res = await fetch(dataUrl);
+                const blob = await res.blob();
 
-              const imageUrl = window.URL.createObjectURL(blob);
-              onSave(imageUrl);
-            }
-          }}
-        >
-          Save
-        </Button>
-      </QDialog.Actions>
-    </QDialog>
+                const imageUrl = window.URL.createObjectURL(blob);
+                onSave(imageUrl);
+              }
+            }}
+          >
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

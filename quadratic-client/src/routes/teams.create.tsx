@@ -1,20 +1,14 @@
-import {
-  Box,
-  Button,
-  Divider,
-  FormControl,
-  FormControlLabel,
-  FormHelperText,
-  FormLabel,
-  Radio,
-  RadioGroup,
-  Stack,
-  TextField,
-  Typography,
-  useTheme,
-} from '@mui/material';
+import { TYPE } from '@/constants/appConstants';
+import { Button } from '@/shadcn/ui/button';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/shadcn/ui/form';
+import { Input } from '@/shadcn/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/shadcn/ui/radio-group';
+import { cn } from '@/shadcn/utils';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { ActionFunctionArgs, redirect, useSubmit } from 'react-router-dom';
+import z from 'zod';
 import { apiClient } from '../api/apiClient';
 import { AvatarWithLetters } from '../components/AvatarWithLetters';
 import { ROUTES } from '../constants/routes';
@@ -28,166 +22,150 @@ type ActionData = {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   // TODO convert blob URL to File and upload to S3
-  console.log(request);
   const data: ActionData = await request.json();
-  console.log(data);
   const { uuid } = await apiClient.createTeam(data);
   // await new Promise((resolve) => setTimeout(resolve, 5000));
   // TODO make dialog=share a const, or maybe share=1 or share=first for extra UI
   return redirect(ROUTES.TEAM(uuid) + '?share=team-created');
 };
 
+const FormSchema = z.object({
+  name: z.string().min(2, {
+    message: 'Must be at least 2 characters.',
+  }),
+  billing: z.string(),
+});
+
+const billingOptions = [
+  { label: 'Beta trial', value: '0', price: 'Free' },
+  { label: 'Monthly', value: '1', price: '$--/usr/month', disabled: true },
+  { label: 'Yearly', value: '2', price: '$--/usr/year', disabled: true },
+];
+
 export const Component = () => {
-  const theme = useTheme();
-  const [name, setName] = useState<string>('');
   const [currentLogoUrl, setCurrentLogoUrl] = useState<string>('');
   const [userSelectedLogoUrl, setUserSelectedLogoUrl] = useState<string>('');
   const submit = useSubmit();
 
-  const handleSubmit = () => {
-    const data: ActionData = { name /* TODO picture: currentLogoUrl */ };
-    submit(data, { method: 'POST', encType: 'application/json' });
+  const form = useForm<z.infer<typeof FormSchema>>({
+    resolver: zodResolver(FormSchema),
+    defaultValues: {
+      name: '',
+      billing: billingOptions[0].value,
+    },
+  });
+
+  const onSubmit = (data: z.infer<typeof FormSchema>) => {
+    const actionData: ActionData = { name: data.name /* TODO picture: currentLogoUrl */ };
+    submit(actionData, { method: 'POST', encType: 'application/json' });
   };
 
   return (
     <>
       <DashboardHeader title="Create team" />
 
-      <Stack gap={theme.spacing(4)} mt={theme.spacing(4)} maxWidth={'30rem'}>
-        <Stack gap={theme.spacing(4)}>
-          <Typography variant="body2" color="text.secondary">
-            Teams are for collaborating on files with other people. Once you create a team, you can invite people to it.
-          </Typography>
+      <div className={`mt-4 max-w-md space-y-8`}>
+        <p className={`${TYPE.body2} text-muted-foreground`}>
+          Teams are for collaborating on files with other people. Once you create a team, you can invite people to it.
+        </p>
 
-          <Stack direction="row" gap={theme.spacing()} alignItems="center">
-            <AvatarWithLetters size="large" src={currentLogoUrl}>
-              {name}
-            </AvatarWithLetters>
-            <Box sx={{ color: 'text.secondary' }}>
-              {currentLogoUrl ? (
-                <Button
-                  color="inherit"
-                  size="small"
-                  onClick={() => {
-                    setCurrentLogoUrl('');
-                  }}
-                >
-                  Remove logo
-                </Button>
-              ) : (
-                <Button size="small" component="label" color="inherit">
+        <div className={`flex flex-row items-center gap-2`}>
+          <AvatarWithLetters size="large" src={currentLogoUrl}>
+            {form.watch('name')}
+          </AvatarWithLetters>
+          <div className={`text-muted-foreground`}>
+            {currentLogoUrl ? (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setCurrentLogoUrl('');
+                }}
+              >
+                Remove logo
+              </Button>
+            ) : (
+              <Button variant="ghost" asChild>
+                <label>
                   Add logo
                   <TeamLogoInput onChange={(logoUrl: string) => setUserSelectedLogoUrl(logoUrl)} />
-                </Button>
-              )}
-            </Box>
-            {userSelectedLogoUrl && (
-              <TeamLogoDialog
-                onClose={() => setUserSelectedLogoUrl('')}
-                logoUrl={userSelectedLogoUrl}
-                onSave={(logoUrl: string) => {
-                  setCurrentLogoUrl(logoUrl);
-                  setUserSelectedLogoUrl('');
-                  // TODO window.URL.revokeObjectURL(avatarUrl) when file uploads
-                }}
-              />
+                </label>
+              </Button>
             )}
-          </Stack>
-          <TextField
-            inputProps={{ autoComplete: 'off' }}
-            label="Name"
-            // InputLabelProps={{ sx: { fontSize: '.875rem' } }}
-            variant="outlined"
-            autoFocus
-            size="small"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-
-          <FormControl>
-            <FormLabel
-              id="pricing"
-              sx={{
-                fontSize: '.75rem',
-                textIndent: theme.spacing(1),
-                mb: theme.spacing(-1),
-                '&.Mui-focused + div': {
-                  borderColor: 'transparent',
-                  // borderWidth: '2px',
-                  boxShadow: `0 0 0 2px ${theme.palette.primary.main}`,
-                },
+          </div>
+          {userSelectedLogoUrl && (
+            <TeamLogoDialog
+              onClose={() => setUserSelectedLogoUrl('')}
+              logoUrl={userSelectedLogoUrl}
+              onSave={(logoUrl: string) => {
+                setCurrentLogoUrl(logoUrl);
+                setUserSelectedLogoUrl('');
+                // TODO window.URL.revokeObjectURL(avatarUrl) when file uploads
               }}
-            >
-              <span style={{ background: theme.palette.background.default, padding: `0 ${theme.spacing(0.5)}` }}>
-                Billing
-              </span>
-            </FormLabel>
-            <RadioGroup
-              name="pricing"
-              defaultValue="1"
-              aria-labelledby="pricing"
-              sx={{
-                border: `1px solid ${theme.palette.divider}`,
-                borderRadius: theme.shape.borderRadius,
-                '&:hover': {
-                  borderColor: theme.palette.action.active,
-                },
-              }}
-            >
-              <FormControlLabel
-                value="1"
-                control={<Radio />}
-                disableTypography
-                label={<PriceLabel primary="Beta trial" secondary="Free" />}
-                sx={{ px: theme.spacing(1.5), py: theme.spacing(0), mr: 0 }}
-              />
+            />
+          )}
+        </div>
 
-              <Divider />
-
-              <FormControlLabel
-                value="2"
-                control={<Radio disabled />}
-                disableTypography
-                label={<PriceLabel disabled primary="Monthly" secondary="$--/usr/month" />}
-                sx={{ px: theme.spacing(1.5), py: theme.spacing(0), mr: 0 }}
-              />
-
-              <Divider />
-
-              <FormControlLabel
-                value="3"
-                control={<Radio disabled />}
-                disableTypography
-                label={<PriceLabel disabled primary="Yearly" secondary="$--/usr/year" />}
-                sx={{ px: theme.spacing(1.5), py: theme.spacing(0), mr: 0 }}
-              />
-            </RadioGroup>
-            <FormHelperText>
-              [Note here about billing, beta plan termination date, free tier limits, etc.]
-            </FormHelperText>
-          </FormControl>
-
-          {/* </EditTeamRow> */}
-        </Stack>
-        <Box>
-          <Button variant="contained" disableElevation onClick={handleSubmit} disabled={!name}>
-            Create team
-          </Button>
-        </Box>
-      </Stack>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} autoFocus autoComplete="off" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="billing"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Billing</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex flex-col gap-0 border border-input shadow-sm"
+                    >
+                      {billingOptions.map(({ label, value, price, disabled }, i) => (
+                        <FormItem
+                          key={value}
+                          className={cn(`flex items-center px-2 py-3`, i !== 0 && `border-t border-input`)}
+                        >
+                          <FormControl>
+                            <RadioGroupItem value={value} disabled={disabled} className={cn(disabled && `grayscale`)} />
+                          </FormControl>
+                          <FormLabel
+                            className={cn(
+                              `!mt-0 ml-2 flex flex-1 justify-between p-0`,
+                              disabled && 'text-muted-foreground'
+                            )}
+                          >
+                            <span>{label}</span>
+                            <span className={`font-normal text-muted-foreground`}>{price}</span>
+                          </FormLabel>
+                        </FormItem>
+                      ))}
+                    </RadioGroup>
+                  </FormControl>
+                  <FormDescription>
+                    [Note here about billing, beta plan termination date, free tier limits, etc.]
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button type="submit" variant="default">
+              Submit
+            </Button>
+          </form>
+        </Form>
+      </div>
     </>
   );
 };
-
-function PriceLabel({ primary, secondary, disabled }: { primary: string; secondary: string; disabled?: boolean }) {
-  return (
-    <Stack direction="row" justifyContent="space-between" flexGrow={1}>
-      <Typography variant="body2" color={disabled ? 'text.disabled' : 'text.primary'}>
-        {primary}
-      </Typography>
-      <Typography variant="body2" color={disabled ? 'text.disabled' : 'text.secondary'}>
-        {secondary}
-      </Typography>
-    </Stack>
-  );
-}
