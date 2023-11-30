@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "dotenv -e .env -- ts-node-dev --respawn --exit-child --watch src --project ./tsconfig.json -r tsconfig-paths/register -- ./src/server.ts ",
+    "postinstall": "prisma generate",
     "prebuild": "rm -rf dist",
     "build": "tsc && tsc-alias",
     "lint": "npm run lint:eslint && npm run lint:prettier",
@@ -47,10 +48,8 @@
     "multer": "^1.4.5-lts.1",
     "multer-s3": "^3.0.1",
     "newrelic": "^10.6.2",
-    "nodemon": "^2.0.20",
     "openai": "^3.2.1",
-    "supertest": "^6.3.3",
-    "ts-jest": "^29.1.1"
+    "supertest": "^6.3.3"
   },
   "devDependencies": {
     "@aws-sdk/types": "^3.449.0",
@@ -64,15 +63,11 @@
     "@typescript-eslint/eslint-plugin": "^6.13.1",
     "@typescript-eslint/parser": "^6.13.1",
     "dotenv-cli": "^7.1.0",
-    "eslint": "^8.54.0",
-    "prettier": "^3.1.0",
     "prisma": "^4.12.0",
     "tsconfig-paths": "^4.2.0",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0",
-    "tsc-alias": "^1.8.8",
-    "typescript": "^5.3.2",
-    "zod": "^3.22.4"
+    "tsc-alias": "^1.8.8"
   },
   "engines": {
     "node": "18.x"

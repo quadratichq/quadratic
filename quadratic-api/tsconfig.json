@@ -8,12 +8,10 @@
     "moduleResolution": "node",
     "sourceMap": true,
     "outDir": "dist",
-    "typeRoots": ["./node_modules/@types", "./src/types"],
     "paths": {
       "@/*": ["./src/*"],
       "@quadratic-shared/*": ["../quadratic-shared/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.test.ts", "../quadratic-shared/**/*.ts"],
-  "exclude": ["node_modules"]
 }
