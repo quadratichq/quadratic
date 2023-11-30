@@ -1,6 +1,6 @@
 import { Button, Typography, useTheme } from '@mui/material';
+import { ApiTypes, PublicLinkAccess } from '@quadratic-shared/typesAndSchemas';
 import * as Sentry from '@sentry/react';
-import { ApiTypes, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
 import { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router-dom';
 import { apiClient } from '../api/apiClient';
 import { ROUTES } from '../constants/routes';

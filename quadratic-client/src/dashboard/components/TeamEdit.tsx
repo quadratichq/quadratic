@@ -13,7 +13,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { ApiTypes } from '@quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
 import { AvatarWithLetters } from '../../components/AvatarWithLetters';
 import { TeamLogoDialog, TeamLogoInput } from './TeamLogo';

@@ -1,5 +1,5 @@
 import { Alert, Button, Paper, Stack, useTheme } from '@mui/material';
-import { PermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import { PermissionSchema } from '@quadratic-shared/typesAndSchemas';
 import React, { useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { Link, useSubmit } from 'react-router-dom';

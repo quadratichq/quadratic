@@ -1,4 +1,4 @@
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { ApiTypes } from '@quadratic-shared/typesAndSchemas';
 import { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router-dom';
 import { QDialog } from '../../components/QDialog';
