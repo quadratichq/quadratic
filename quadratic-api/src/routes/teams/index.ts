@@ -1,11 +1,11 @@
 import express from 'express';
-import teamCreate from './teamCreate';
-import teamRead from './teamRead';
-import teamSharingDelete from './teamSharingUserDelete';
-import teamSharingInvite from './teamSharingUserInvite';
-import teamSharingUpdate from './teamSharingUserUpdate';
-import teamUpdate from './teamUpdate';
-import teamsRead from './teamsRead';
+import teamRead from './teams.$teamUuid.GET';
+import teamUpdate from './teams.$teamUuid.POST';
+import teamSharingDelete from './teams.$teamUuid.sharing.$userId.DELETE';
+import teamSharingUpdate from './teams.$teamUuid.sharing.$userId.POST';
+import teamSharingInvite from './teams.$teamUuid.sharing.POST';
+import teamsRead from './teams.GET';
+import teamCreate from './teams.POST';
 const router = express.Router();
 
 router.use('/', teamsRead);

@@ -1,4 +1,4 @@
-import { ApiTypes } from '@quadratic-shared/typesAndSchemas';
+import { ApiSchemas, ApiTypes } from '@quadratic-shared/typesAndSchemas';
 import express, { Response } from 'express';
 import { z } from 'zod';
 import { getUsersByEmail } from '../../auth0/profile';
@@ -17,7 +17,7 @@ const ReqSchema = z.object({
   params: z.object({
     uuid: z.string().uuid(),
   }),
-  body: z.any(), // ApiSchemas["/v0/teams/:uuid/sharing.POST.request"],
+  body: ApiSchemas["/v0/teams/:uuid/sharing.POST.request"],
 });
 
 router.post(

@@ -61,7 +61,7 @@ export type FileUser = z.infer<typeof FileUserSchema>;
 
 const TeamSchema = z.object({
   uuid: z.string(),
-  name: z.string(), // TODO should this have a limit?
+  name: z.string().min(1).max(140),
   picture: z.string().url().optional(),
   users: z.array(TeamUserSchema), // TODO not optional
   // files: z.any(), // TODO

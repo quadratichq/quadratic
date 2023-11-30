@@ -1,8 +1,7 @@
-import { v4 as uuid } from 'uuid';
-
 import { ApiSchemas, ApiTypes } from '@quadratic-shared/typesAndSchemas';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
+import { v4 as uuid } from 'uuid';
 import { downloadQuadraticFile } from '../helpers/downloadFileInBrowser';
 import { generateKeyBetween } from '../utils/fractionalIndexing';
 import { fetchFromApi } from './fetchFromApi';
