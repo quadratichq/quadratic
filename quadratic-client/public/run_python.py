@@ -19,7 +19,6 @@ import pyodide_http
 
 # Patch requests https://github.com/koenvo/pyodide-http
 pyodide_http.patch_all()
-micropip.install("requests")
 
 
 def attempt_fix_await(code):
@@ -270,6 +269,7 @@ async def run_python(code):
     try:
         # Capture STDOut to sout
         with redirect_stdout(sout):
+            # load packages
             output_value = await pyodide.code.eval_code_async(
                 attempt_fix_await(code),
                 globals=globals,
