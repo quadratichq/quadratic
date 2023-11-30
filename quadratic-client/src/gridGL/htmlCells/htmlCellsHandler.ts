@@ -22,15 +22,13 @@ class HTMLCellsHandler {
   };
 
   attach(parent: HTMLDivElement) {
-    console.log(1);
     if (this.div) {
-      console.log(2);
       parent.appendChild(this.div);
     }
   }
 
   init(parent: HTMLDivElement | null) {
-    this.div = document.createElement('div');
+    this.div = this.div ?? document.createElement('div');
     this.div.className = 'html-cells';
     this.updateHtmlCells();
     this.handleViewport();

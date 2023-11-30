@@ -4,11 +4,10 @@ import { JsHtmlOutput } from '@/quadratic-core/types';
 import { colors } from '@/theme/colors';
 import { InteractionEvent } from 'pixi.js';
 import { pixiApp } from '../pixiApp/PixiApp';
-import { Wheel } from '../pixiOverride/Wheel';
 import { HtmlCellResizing } from './HtmlCellResizing';
 
 // number of screen pixels to trigger the resize cursor
-const tolerance = 10;
+const tolerance = 5;
 
 export class HtmlCell {
   private right: HTMLDivElement;
@@ -45,9 +44,9 @@ export class HtmlCell {
     this.iframe.style.minWidth = `${CELL_WIDTH}px`;
     this.iframe.style.minHeight = `${CELL_HEIGHT}px`;
 
-    this.div.appendChild(this.iframe);
-    this.div.appendChild(this.right);
-    this.div.appendChild(this.bottom);
+    this.div.append(this.right);
+    this.div.append(this.iframe);
+    this.div.append(this.bottom);
 
     if (this.iframe.contentWindow?.document.readyState === 'complete') {
       this.afterLoad();
@@ -70,32 +69,23 @@ export class HtmlCell {
   }
 
   private afterLoad = () => {
+    console.log('afterload');
     if (this.iframe.contentWindow) {
+      console.log('afterload content');
       // turn off zooming within the iframe
-      this.iframe.contentWindow.document.body.style.touchAction = 'none pan-x pan-y';
 
-      // forward the wheel event to the pixi viewport and adjust its position
+      // don't handle the wheel event
       this.iframe.contentWindow.document.body.addEventListener(
         'wheel',
         (event) => {
-          const viewport = pixiApp.viewport;
-          const wheel = viewport.plugins.get('wheel') as Wheel | null;
-          if (!wheel) {
-            throw new Error('Expected wheel plugin to be defined on viewport');
-          }
-          const bounding = this.iframe.getBoundingClientRect();
-          wheel.wheel(event, {
-            x: bounding.left + event.clientX * viewport.scale.x - event.clientX,
-            y: bounding.top + event.clientY * viewport.scale.y - event.clientY,
-          });
           event.stopPropagation();
           event.preventDefault();
         },
         { passive: false }
       );
-      const style = window.getComputedStyle(this.iframe.contentWindow.document.body);
 
       // move margin to the div holding the iframe to avoid pinch-to-zoom issues at the iframe margins
+      const style = window.getComputedStyle(this.iframe.contentWindow.document.body);
       if (style.marginLeft) {
         this.div.style.paddingLeft = style.marginLeft;
         this.iframe.contentWindow.document.body.style.marginLeft = '0';
@@ -137,11 +127,20 @@ export class HtmlCell {
   };
 
   update(htmlCell: JsHtmlOutput) {
-    if (htmlCell.w !== undefined && htmlCell.h !== undefined) {
-      this.iframe.width = htmlCell.w.toString();
-      this.iframe.height = htmlCell.h.toString();
+    let dirty = false;
+    if (htmlCell.w !== this.htmlCell.w && htmlCell.h !== this.htmlCell.h) {
+      this.iframe.width = htmlCell.w !== undefined ? htmlCell.w.toString() : '';
+      this.iframe.height = htmlCell.h !== undefined ? htmlCell.h.toString() : '';
+      dirty = true;
     }
-    this.iframe.srcdoc = htmlCell.html;
+    if (htmlCell.html !== this.htmlCell.html) {
+      this.iframe.srcdoc = htmlCell.html;
+      dirty = true;
+    }
+    this.htmlCell = htmlCell;
+    if (dirty) {
+      this.afterLoad();
+    }
   }
 
   changeSheet(sheetId: string) {
@@ -158,13 +157,18 @@ export class HtmlCell {
       this.hoverSide = side;
       this.highlightEdge();
       return side;
+    } else if (this.hoverSide) {
+      this.hoverSide = undefined;
+      this.clearHighlightEdges();
     }
   }
 
   intersects(e: InteractionEvent, top: number): 'right' | 'bottom' | 'corner' | undefined {
     const rect = this.div.getBoundingClientRect();
-    const right = Math.abs(e.data.global.x - rect.right) < tolerance;
-    const bottom = Math.abs(e.data.global.y - rect.bottom + top) < tolerance;
+    const viewport = pixiApp.viewport;
+    const toleranceScaled = tolerance * viewport.scale.x;
+    const right = e.data.global.x - rect.right < toleranceScaled && e.data.global.x - rect.right > 0;
+    const bottom = Math.abs(e.data.global.y - rect.bottom + top) < toleranceScaled;
     if (right && bottom) {
       return 'corner';
     }
@@ -176,55 +180,27 @@ export class HtmlCell {
     }
   }
 
-  // private snapX(e: InteractionEvent): number {
-  //   const xScreen = e.data.global.x;
-  //   if (e.data.originalEvent.shiftKey) return xScreen;
-  //   const x = pixiApp.viewport.toWorld(xScreen - (this.htmlCellAdjustment?.x ?? 0), 0).x;
-  //   for (const line of pixiApp.gridLines.gridLinesX) {
-  //     if (Math.abs(line.x - x) <= snapping) {
-  //       return pixiApp.viewport.toScreen(line.x, 0).x;
-  //     }
-  //   }
-  //   return e.data.global.x;
-  // }
-
-  // private snapY(e: InteractionEvent): number {
-  //   const yScreen = e.data.global.y;
-  //   if (e.data.originalEvent.shiftKey) return yScreen;
-  //   const y = pixiApp.viewport.toWorld(0, yScreen).y;
-  //   for (const line of pixiApp.gridLines.gridLinesY) {
-  //     if (Math.abs(line.y - y) <= snapping) {
-  //       return pixiApp.viewport.toScreen(0, line.y).y;
-  //     }
-  //   }
-  //   return e.data.global.y;
-  // }
-
-  moveRight(e: InteractionEvent) {
-    // (x - boundingClientRect.left) / pixiApp.viewport.scale.x)
-    // this.iframe.width = width.toString();
-  }
-
-  moveBottom(e: InteractionEvent) {
-    // this.setHeight((y - boundingClientRect.top + canvas.top) / pixiApp.viewport.scale.y);
-    // this.iframe.height = height.toString();
-  }
-
-  moveCorner(e: InteractionEvent) {}
-
   clearHighlightEdges() {
-    // this.right.classList.remove('html-resize-control--is-dragging');
-    // this.bottom.classList.remove('html-resize-control--is-dragging');
+    this.right.style.backgroundColor = '';
+    this.bottom.style.backgroundColor = '';
+    this.right.classList.remove('html-resize-control-right-corner');
+    this.bottom.classList.remove('html-resize-control-bottom-corner');
   }
 
   highlightEdge() {
-    // const side = this.hoverSide;
-    // if (side === 'right' || side === 'corner') {
-    //   this.right.classList.add('html-resize-control--is-dragging');
-    // }
-    // if (side === 'bottom' || side === 'corner') {
-    //   this.bottom.classList.add('html-resize-control--is-dragging');
-    // }
+    const side = this.hoverSide;
+
+    if (side === 'right' || side === 'corner') {
+      this.right.style.backgroundColor = colors.quadraticPrimary;
+    }
+    if (side === 'bottom' || side === 'corner') {
+      this.bottom.style.backgroundColor = colors.quadraticPrimary;
+    }
+
+    if (side === 'corner') {
+      this.right.classList.add('html-resize-control-right-corner');
+      this.bottom.classList.add('html-resize-control-bottom-corner');
+    }
   }
 
   pointerMove(e: InteractionEvent) {
@@ -234,7 +210,7 @@ export class HtmlCell {
     this.resizing.pointerMove(e);
   }
 
-  startResizing() {
+  startResizing(x: number, y: number) {
     if (!this.hoverSide) {
       throw new Error('Expected hoverSide to be defined in HtmlCell.startResizing');
     }
@@ -244,7 +220,8 @@ export class HtmlCell {
       this.hoverSide,
       parseInt(this.iframe.width),
       parseInt(this.iframe.height),
-      window.getComputedStyle(this.div)
+      x,
+      y
     );
   }
 

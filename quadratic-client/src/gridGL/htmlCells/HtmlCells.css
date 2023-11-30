@@ -8,40 +8,35 @@
   background: white;
   position: absolute;
   box-sizing: border-box;
-  touch-action: none pan-x pan-y;
 }
 
 .html-resize-control-right,
 .html-resize-control-bottom {
   z-index: 200;
   transition: 0.2s ease background-color 0ms;
+  background-color: transparent;
 }
 
-/* Vertical control, right side */
 .html-resize-control-right {
+  position: absolute;
   width: 5px;
   height: calc(100% + 2px);
-  position: absolute;
   top: -1px;
   right: -6px;
-  background-color: yellow;
 }
 
-.html-resize-control-right {
-  cursor: col-resize;
+.html-resize-control-right-corner {
+  height: calc(100% + 7px);
 }
 
-/* Horizontal control, bottom side */
+.html-resize-control-bottom-corner {
+  width: calc(100% + 7px);
+}
+
 .html-resize-control-bottom {
-  position: relative;
-  width: calc(100% + 2px);
+  position: absolute;
   height: 5px;
-  cursor: row-resize;
+  width: calc(100% + 2px);
   bottom: -6px;
   left: -1px;
-  background-color: yellow;
-}
-
-.html-resize-control-show {
-  background-color: purple;
 }
