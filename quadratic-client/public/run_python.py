@@ -17,17 +17,6 @@ import pyodide_http
 # todo separate this file out into a Python Package
 # https://pyodide.org/en/stable/usage/loading-custom-python-code.html
 
-# Patch requests https://github.com/koenvo/pyodide-http
-async def patch_http():
-    await micropip.install('requests')
-    pyodide_http.patch_all()
-
-
-if "pyodide" in sys.modules:
-   # running in Pyodide
-   patch_http()
-
-
 def attempt_fix_await(code):
     # Insert a "await" keyword between known async functions to improve the UX
     code = re.sub(r"([^a-zA-Z0-9]|^)cells\(", r"\1await cells(", code)
