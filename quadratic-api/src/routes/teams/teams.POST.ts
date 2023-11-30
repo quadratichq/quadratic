@@ -4,7 +4,7 @@ import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateRequestAgainstZodSchema } from '../../middleware/validateRequestAgainstZodSchema';
+import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithAuth, RequestWithUser } from '../../types/Request';
 const router = express.Router();
 
@@ -16,7 +16,7 @@ const Schema = z.object({
 router.post(
   '/',
   validateAccessToken,
-  validateRequestAgainstZodSchema(Schema),
+  validateRequestSchema(Schema),
   userMiddleware,
   async (req: RequestWithAuth & RequestWithUser, res: Response<ApiTypes['/v0/teams.POST.response']>) => {
     const {

@@ -1,6 +1,12 @@
 import { NextFunction, Request, Response } from 'express';
-import { AnyZodObject } from 'zod';
+import { ZodObject, ZodTypeAny } from 'zod';
 import { ResponseError } from '../types/Response';
+
+type RequestSchema = ZodObject<{
+  body?: ZodTypeAny;
+  query?: ZodTypeAny;
+  params?: ZodTypeAny;
+}>;
 
 /**
  * Takes a Zod schema and validates the request `body`, `query`, and `params` against it.
@@ -19,8 +25,8 @@ import { ResponseError } from '../types/Response';
  * @param schema
  * @returns
  */
-export const validateRequestAgainstZodSchema =
-  (schema: AnyZodObject) => async (req: Request, res: Response<ResponseError>, next: NextFunction) => {
+export const validateRequestSchema =
+  (schema: RequestSchema) => async (req: Request, res: Response<ResponseError>, next: NextFunction) => {
     try {
       await schema.parseAsync({
         body: req.body,

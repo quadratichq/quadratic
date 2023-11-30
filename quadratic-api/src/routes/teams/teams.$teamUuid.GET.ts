@@ -6,7 +6,7 @@ import dbClient from '../../dbClient';
 import { teamMiddleware } from '../../middleware/team';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateRequestAgainstZodSchema } from '../../middleware/validateRequestAgainstZodSchema';
+import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
 const router = express.Router();
 
@@ -19,7 +19,7 @@ const schema = z.object({
 router.get(
   '/:uuid',
   validateAccessToken,
-  validateRequestAgainstZodSchema(schema),
+  validateRequestSchema(schema),
   userMiddleware,
   teamMiddleware,
   async (

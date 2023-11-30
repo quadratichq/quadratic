@@ -5,7 +5,7 @@ import dbClient from '../../dbClient';
 import { teamMiddleware } from '../../middleware/team';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateRequestAgainstZodSchema } from '../../middleware/validateRequestAgainstZodSchema';
+import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
 import { ResponseError } from '../../types/Response';
 import { firstRoleIsHigherThanSecond } from '../../utils';
@@ -22,7 +22,7 @@ const ReqSchema = z.object({
 router.post(
   '/:uuid/sharing/:userId',
   validateAccessToken,
-  validateRequestAgainstZodSchema(ReqSchema),
+  validateRequestSchema(ReqSchema),
   userMiddleware,
   teamMiddleware,
   async (

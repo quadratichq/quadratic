@@ -6,7 +6,7 @@ import dbClient from '../../dbClient';
 import { teamMiddleware } from '../../middleware/team';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateRequestAgainstZodSchema } from '../../middleware/validateRequestAgainstZodSchema';
+import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { Request, RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
 import { ResponseError } from '../../types/Response';
 import { firstRoleIsHigherThanSecond } from '../../utils';
@@ -17,13 +17,13 @@ const ReqSchema = z.object({
   params: z.object({
     uuid: z.string().uuid(),
   }),
-  body: ApiSchemas["/v0/teams/:uuid/sharing.POST.request"],
+  body: ApiSchemas['/v0/teams/:uuid/sharing.POST.request'],
 });
 
 router.post(
   '/:uuid/sharing',
   validateAccessToken,
-  validateRequestAgainstZodSchema(ReqSchema),
+  validateRequestSchema(ReqSchema),
   userMiddleware,
   teamMiddleware,
   async (

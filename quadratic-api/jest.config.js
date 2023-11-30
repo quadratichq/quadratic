@@ -7,4 +7,5 @@ module.exports = {
   moduleNameMapper: {
     '^@quadratic-shared/(.*)$': '<rootDir>/../quadratic-shared/$1',
   },
+  roots: ['<rootDir>', '<rootDir>/../quadratic-shared'],
 };

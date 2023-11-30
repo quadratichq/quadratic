@@ -204,9 +204,7 @@ export const ApiSchemas = {
     picture: TeamSchema.shape.picture,
     // TODO files, billing
   }),
-  '/v0/teams/:uuid.POST.response': z.object({
-    message: z.string(),
-  }),
+  '/v0/teams/:uuid.POST.response': TeamSchema.pick({ uuid: true, name: true, picture: true }),
 
   // TODO equivalent for /files/:uuid/sharing
   '/v0/teams/:uuid/sharing.POST.request': TeamUserSchema.pick({ email: true, role: true }),

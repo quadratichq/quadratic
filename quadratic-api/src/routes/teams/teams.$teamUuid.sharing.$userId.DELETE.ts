@@ -5,7 +5,7 @@ import dbClient from '../../dbClient';
 import { teamMiddleware } from '../../middleware/team';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateRequestAgainstZodSchema } from '../../middleware/validateRequestAgainstZodSchema';
+import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
 import { ResponseError } from '../../types/Response';
 
@@ -20,7 +20,7 @@ const ReqSchema = z.object({
 
 router.delete(
   '/:uuid/sharing/:userId',
-  validateRequestAgainstZodSchema(ReqSchema),
+  validateRequestSchema(ReqSchema),
   validateAccessToken,
   userMiddleware,
   teamMiddleware,

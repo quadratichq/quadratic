@@ -1,9 +1,9 @@
-import { NextFunction, Response } from "express";
-import { z } from "zod";
-import dbClient from "../dbClient";
-import { Request, RequestWithTeam, RequestWithUser } from "../types/Request";
-import { ResponseError } from "../types/Response";
-import { getTeamAccess } from "../utils";
+import { NextFunction, Response } from 'express';
+import { z } from 'zod';
+import dbClient from '../dbClient';
+import { Request, RequestWithTeam, RequestWithUser } from '../types/Request';
+import { ResponseError } from '../types/Response';
+import { getTeamAccess } from '../utils';
 
 const teamUuidSchema = z.string().uuid();
 
@@ -24,9 +24,7 @@ export const teamMiddleware = async (
   try {
     teamUuidSchema.parse(teamUuid);
   } catch (zodError) {
-    return res
-      .status(400)
-      .json({ error: { message: "Invalid team UUID", meta: zodError } });
+    return res.status(400).json({ error: { message: 'Invalid team UUID', meta: zodError } });
   }
 
   // Lookup the team
@@ -36,7 +34,7 @@ export const teamMiddleware = async (
     },
   });
   if (team === null) {
-    return res.status(404).json({ error: { message: "Team not found" } });
+    return res.status(404).json({ error: { message: 'Team not found' } });
   }
 
   // Check if the user making the request has access to the team
@@ -49,7 +47,7 @@ export const teamMiddleware = async (
     },
   });
   if (userMakingRequest === null) {
-    return res.status(404).json({ error: { message: "Team not found" } });
+    return res.status(404).json({ error: { message: 'Team not found' } });
   }
 
   // TODO if the team is deleted
@@ -59,7 +57,6 @@ export const teamMiddleware = async (
     data: team,
     user: {
       role: userMakingRequest.role,
-      // @ts-expect-error
       access: getTeamAccess(userMakingRequest.role),
     },
   };

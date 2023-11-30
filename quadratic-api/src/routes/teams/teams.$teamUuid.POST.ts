@@ -2,10 +2,12 @@ import { ApiSchemas, ApiTypes } from '@quadratic-shared/typesAndSchemas';
 import express, { Response } from 'express';
 import z from 'zod';
 import dbClient from '../../dbClient';
+import { teamMiddleware } from '../../middleware/team';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateRequestAgainstZodSchema } from '../../middleware/validateRequestAgainstZodSchema';
+import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
+import { ResponseError } from '../../types/Response';
 const router = express.Router();
 
 const reqSchema = z.object({
@@ -18,28 +20,38 @@ const reqSchema = z.object({
 router.post(
   '/:uuid',
   validateAccessToken,
+  validateRequestSchema(reqSchema),
   userMiddleware,
-  validateRequestAgainstZodSchema(reqSchema),
+  teamMiddleware,
   async (
     req: RequestWithAuth & RequestWithUser & RequestWithTeam,
-    res: Response<ApiTypes['/v0/teams/:uuid.POST.response']>
+    // TODO: why are these all optional when returned?
+    res: Response<ApiTypes['/v0/teams/:uuid.POST.response'] | ResponseError>
   ) => {
     const {
       params: { uuid },
-      body: { name },
+      team: { user },
     } = req;
+    // TODO: improve this more generically when validating?
+    const body = req.body as ApiTypes['/v0/teams/:uuid.POST.request'];
+
+    // Can the user even edit this team?
+    if (!user.access.includes('TEAM_EDIT')) {
+      return res.status(403).json({ error: { message: 'User does not have permission to edit this team.' } });
+    }
+
+    // TODO: what if it's billing info?
 
     // Update the team
-    await dbClient.team.update({
+    const newTeam = await dbClient.team.update({
       where: {
         uuid,
       },
-      data: {
-        name,
-      },
+      data: body,
     });
 
-    return res.status(200).json({ message: 'File updated.' });
+    const data = { uuid, name: newTeam.name, picture: newTeam.picture };
+    return res.status(200).json(data);
   }
 );
 
