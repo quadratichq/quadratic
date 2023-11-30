@@ -269,7 +269,6 @@ async def run_python(code):
     try:
         # Capture STDOut to sout
         with redirect_stdout(sout):
-            # load packages
             output_value = await pyodide.code.eval_code_async(
                 attempt_fix_await(code),
                 globals=globals,
