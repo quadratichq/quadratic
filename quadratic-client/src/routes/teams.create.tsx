@@ -5,6 +5,7 @@ import { Input } from '@/shadcn/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/shadcn/ui/radio-group';
 import { cn } from '@/shadcn/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { TeamSchema } from 'quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { ActionFunctionArgs, redirect, useSubmit } from 'react-router-dom';
@@ -30,9 +31,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 const FormSchema = z.object({
-  name: z.string().min(2, {
-    message: 'Must be at least 2 characters.',
-  }),
+  name: TeamSchema.shape.name,
   billing: z.string(),
 });
 

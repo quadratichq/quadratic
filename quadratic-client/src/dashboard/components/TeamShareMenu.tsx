@@ -1,9 +1,9 @@
+import { TeamAction } from '@/routes/teams.$teamUuid';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router-dom';
 import { QDialog } from '../../components/QDialog';
 import { ShareMenu } from '../../components/ShareMenu';
-import { Action } from '../../routes/teams.$teamUuid';
 
 export function TeamShareMenu({
   onClose,
@@ -108,8 +108,8 @@ function Item({
   numberOfOwners: number;
   data: ApiTypes['/v0/teams/:uuid.GET.response'];
 }) {
-  const fetcher = useFetcher<Action['response']>();
-  const json = fetcher.json as Action['request'] | undefined;
+  const fetcher = useFetcher<TeamAction['response']>();
+  const json = fetcher.json as TeamAction['request'] | undefined;
 
   // Optimistically hide when being deleted
   if (fetcher.state !== 'idle' && json?.action === 'delete-user') {
@@ -136,11 +136,11 @@ function Item({
       loggedInUser={data.user}
       user={user}
       onUpdateUser={(id, role) => {
-        const data: Action['request.update-user'] = { action: 'update-user', id, payload: { role } };
+        const data: TeamAction['request.update-user'] = { action: 'update-user', id, payload: { role } };
         fetcher.submit(data, { method: 'post', encType: 'application/json' });
       }}
       onDeleteUser={(id) => {
-        const data: Action['request.delete-user'] = { action: 'delete-user', id };
+        const data: TeamAction['request.delete-user'] = { action: 'delete-user', id };
         fetcher.submit(data, { method: 'post', encType: 'application/json' });
       }}
     />
@@ -152,7 +152,7 @@ function PendingItem({ pendingUser, onComplete }: any) {
   let { email, role } = pendingUser;
 
   useEffect(() => {
-    const data: Action['request.invite-user'] = { action: 'invite-user', payload: { email, role } };
+    const data: TeamAction['request.invite-user'] = { action: 'invite-user', payload: { email, role } };
     fetcher.submit(data, {
       method: 'POST',
       encType: 'application/json',

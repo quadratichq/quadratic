@@ -2,6 +2,7 @@ import { apiClient } from '@/api/apiClient';
 import { AvatarWithLetters } from '@/components/AvatarWithLetters';
 import { TYPE } from '@/constants/appConstants';
 import { DOCUMENTATION_URL } from '@/constants/urls';
+import { TeamAction } from '@/routes/teams.$teamUuid';
 import { Button } from '@/shadcn/ui/button';
 import { Separator } from '@/shadcn/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
@@ -11,7 +12,7 @@ import { ExternalLinkIcon, FileIcon, MixIcon, PlusIcon } from '@radix-ui/react-i
 import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ReactNode, useEffect, useState } from 'react';
-import { NavLink, Outlet, useFetchers, useLoaderData, useLocation, useNavigation, useParams } from 'react-router-dom';
+import { NavLink, Outlet, useFetchers, useLoaderData, useLocation, useNavigation } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
 import { useRootRouteLoaderData } from '../../router';
 import QuadraticLogo from './quadratic-logo.svg';
@@ -81,11 +82,7 @@ export const Component = () => {
 function Navbar() {
   const { teams, hasError } = useLoaderData() as LoaderData;
   const { user } = useRootRouteLoaderData();
-  const { teamUuid } = useParams();
-
   const fetchers = useFetchers();
-  const inFlightTeamFetcher = fetchers.find((fetcher) => fetcher.formAction?.startsWith(`/teams/${teamUuid}`));
-
   const classNameIcons = `h-5 w-5 mx-0.5`;
 
   return (
@@ -123,18 +120,24 @@ function Navbar() {
           )}
         </p>
         <div className="grid gap-1">
-          {teams.map(({ uuid, name }: any) => {
-            const teamName =
-              // @ts-expect-error
-              teamUuid === uuid && inFlightTeamFetcher?.json?.name
-                ? // @ts-expect-error
-                  inFlightTeamFetcher.json.name
-                : name;
+          {teams.map(({ uuid, name, picture }) => {
+            // See if this team has an inflight fetcher
+            const inFlightFetcher = fetchers.find(
+              (fetcher) => fetcher.state !== 'idle' && fetcher.formAction?.includes(uuid)
+            );
+            // If it does, use its data
+            if (inFlightFetcher) {
+              const data = (inFlightFetcher.json as TeamAction['request.update-team']).payload;
+              if (data.name) name = data.name;
+              if (data.picture) picture = data.picture;
+            }
 
             return (
               <SidebarNavLink key={uuid} to={ROUTES.TEAM(uuid)}>
-                <AvatarWithLetters size="small">{teamName}</AvatarWithLetters>
-                {teamName}
+                <AvatarWithLetters size="small" src={picture}>
+                  {name}
+                </AvatarWithLetters>
+                {name}
               </SidebarNavLink>
             );
           })}

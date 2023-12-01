@@ -1,5 +1,4 @@
-import { Button as Btn, Button } from '@/shadcn/ui/button';
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
+import { Button as Btn } from '@/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,15 +6,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shadcn/ui/dropdown-menu';
-import { Input } from '@/shadcn/ui/input';
 import { Separator } from '@/shadcn/ui/separator';
 import { cn } from '@/shadcn/utils';
 import { DotsVerticalIcon } from '@radix-ui/react-icons';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, SubmitOptions, useFetcher } from 'react-router-dom';
 import { deleteFile, downloadFileAction, duplicateFileAction, renameFileAction } from '../../actions';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
+import { DialogRenameItem } from './DialogRenameItem';
 import { Action, FilesListFile } from './FilesList';
 import { FilesListItemCore } from './FilesListItemCore';
 import { Layout, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
@@ -218,7 +217,8 @@ export function FileListItem({
         )}
       </Link>
       {open && (
-        <RenameItemDialog
+        <DialogRenameItem
+          itemLabel={'File'}
           onClose={() => setOpen(false)}
           value={displayName}
           onSave={(newValue: string) => {
@@ -227,76 +227,6 @@ export function FileListItem({
         />
       )}
     </li>
-  );
-}
-
-// Eventually this can be moved to another file so it can be used with "Rename team"
-function RenameItemDialog({
-  onClose,
-  onSave,
-  value,
-}: {
-  onClose: () => void;
-  onSave: (newValue: string) => void;
-  value: string;
-}) {
-  const [localValue, setLocalValue] = useState<string>(value);
-
-  const count = localValue.length;
-  // TODO: one day set a max length on file/team name
-  const disabled = count === 0;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Don't do anything if we're disabled
-    if (disabled) {
-      return;
-    }
-
-    // Don't do anything if the name didn't change
-    if (localValue === value) {
-      onClose();
-      return;
-    }
-
-    onSave(localValue);
-    onClose();
-  };
-
-  const handleInputChange = (e: React.FormEvent<HTMLInputElement>) => {
-    const newValue = e.currentTarget.value;
-    setLocalValue(newValue);
-  };
-
-  const formId = 'rename-item';
-  const inputId = 'rename-item-input';
-
-  return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle asChild>
-            <label htmlFor={inputId}>Rename</label>
-          </DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} id={formId}>
-          <Input id={inputId} value={localValue} autoComplete="off" onChange={handleInputChange} />
-          {/* <p className={`text-right text-sm ${disabled ? 'text-destructive' : 'text-muted-foreground'}`}>
-            {count} / {FILE_AND_TEAM_NAME_MAX_LENGTH}
-          </p> */}
-        </form>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </DialogClose>
-
-          <Button disabled={disabled} type="submit" formTarget={formId}>
-            Rename
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
 
