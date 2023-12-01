@@ -131,3 +131,30 @@ pub(crate) async fn broadcast(
 
     Ok(())
 }
+
+#[cfg(test)]
+pub(crate) mod tests {
+
+    use crate::test_util::add_new_user_to_room;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn broadcasting() {
+        let state = Arc::new(State::new());
+        let file_id = Uuid::new_v4();
+        let user_1 = add_new_user_to_room(file_id, state.clone()).await;
+        let _user_2 = add_new_user_to_room(file_id, state.clone()).await;
+        let message = MessageResponse::MouseMove {
+            user_id: user_1.id,
+            file_id,
+            x: 10 as f64,
+            y: 10 as f64,
+        };
+        broadcast(user_1.id, file_id, state, &message)
+            .await
+            .unwrap();
+
+        // TODO(ddimaria): mock the splitsink sender to test the actual sending
+    }
+}

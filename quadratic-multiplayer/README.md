@@ -46,7 +46,7 @@ npm run test
 RUST_LOG=info cargo watch -x 'test'
 
 // npm alternative
-npm run test::watch
+npm run test:watch
 ```
 
 ### Linting

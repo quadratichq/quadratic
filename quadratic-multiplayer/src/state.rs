@@ -38,6 +38,15 @@ pub(crate) struct Room {
     pub(crate) users: HashMap<Uuid, User>,
 }
 
+impl Room {
+    pub(crate) fn new(file_id: Uuid) -> Self {
+        Room {
+            file_id,
+            users: HashMap::new(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct State {
     pub(crate) rooms: Mutex<HashMap<Uuid, Room>>,
@@ -50,20 +59,6 @@ impl State {
         }
     }
 
-    /// Add a user to a room.  If the room doesn't exist, it is created.  Users
-    /// are only added to a room once (HashMap).
-    pub(crate) async fn enter_room(&self, file_id: Uuid, user: User) -> bool {
-        let mut rooms = self.rooms.lock().await;
-        let room = rooms.entry(file_id).or_insert_with(|| Room {
-            file_id,
-            users: HashMap::new(),
-        });
-
-        tracing::trace!("User {:?} entered room {:?}", user, room);
-
-        room.users.insert(user.id, user).is_none()
-    }
-
     /// Retrieves a copy of a room.
     pub(crate) async fn get_room(&self, file_id: &Uuid) -> Result<Room> {
         let rooms = self.rooms.lock().await;
@@ -73,6 +68,17 @@ impl State {
             .to_owned();
 
         Ok(room)
+    }
+
+    /// Add a user to a room.  If the room doesn't exist, it is created.  Users
+    /// are only added to a room once (HashMap).
+    pub(crate) async fn enter_room(&self, file_id: Uuid, user: User) -> bool {
+        let mut rooms = self.rooms.lock().await;
+        let room = rooms.entry(file_id).or_insert_with(|| Room::new(file_id));
+
+        tracing::trace!("User {:?} entered room {:?}", user, room);
+
+        room.users.insert(user.id, user).is_none()
     }
 }
 
