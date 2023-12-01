@@ -14,7 +14,12 @@ To run the server:
 
 ```shell
 RUST_LOG=info cargo run
+
+// npm alternative
+npm start
 ```
+
+Assuming the `HOST` is set to `127.0.0.1` and the `PORT` is set to `3001`, the websocket endpoint is available at `http://127.0.0.1:3001/ws` or `ws://127.0.0.1:3001/ws`.
 
 ## Development
 
@@ -22,6 +27,37 @@ To develop with the watcher enabled:
 
 ```shell
 RUST_LOG=info cargo watch -x 'run'
+
+// npm alternative
+npm run dev
+```
+
+### Testing
+
+To develop with the watcher enabled:
+
+```shell
+cargo test
+
+// npm alternative
+npm run test
+
+// watcher
+RUST_LOG=info cargo watch -x 'test'
+
+// npm alternative
+npm run test::watch
+```
+
+### Linting
+
+To develop with the watcher enabled:
+
+```shell
+cargo clippy --all-targets --all-features -- -D warnings
+
+// npm alternative
+npm run lint
 ```
 
 ## API
