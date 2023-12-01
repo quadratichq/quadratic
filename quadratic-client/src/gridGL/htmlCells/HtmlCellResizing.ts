@@ -5,7 +5,7 @@ import { pixiApp } from '../pixiApp/PixiApp';
 import { HtmlCell } from './HtmlCell';
 
 // tolerance of snapping to the grid
-const snapping = 10;
+// const snapping = 10;
 
 export class HtmlCellResizing {
   private htmlCell: HtmlCell;
