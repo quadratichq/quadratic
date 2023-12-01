@@ -88,8 +88,8 @@ export class HtmlCellResizing {
   }
 
   private moveCorner(e: InteractionEvent) {
-    this.width = this.originalWidth + (this.snapX(e) - this.startX) / pixiApp.viewport.scale.x;
-    this.height = this.originalHeight + (this.snapY(e) - this.startY) / pixiApp.viewport.scale.y;
+    this.width = Math.round(this.originalWidth + (this.snapX(e) - this.startX) / pixiApp.viewport.scale.x);
+    this.height = Math.round(this.originalHeight + (this.snapY(e) - this.startY) / pixiApp.viewport.scale.y);
     this.htmlCell.setWidth(this.width);
     this.htmlCell.setHeight(this.height);
   }

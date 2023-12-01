@@ -126,22 +126,23 @@ export class HtmlCell {
   };
 
   update(htmlCell: JsHtmlOutput) {
-    let dirty = false;
+    // let dirty = false;
     if (htmlCell.w !== this.htmlCell.w && htmlCell.h !== this.htmlCell.h) {
       this.iframe.width = htmlCell.w !== undefined ? htmlCell.w.toString() : '';
       this.iframe.height = htmlCell.h !== undefined ? htmlCell.h.toString() : '';
-      dirty = true;
+      console.log(this.iframe.width, this.iframe.height, htmlCell);
+      // dirty = true;
     }
     if (htmlCell.html !== this.htmlCell.html) {
       this.iframe.srcdoc = htmlCell.html;
-      dirty = true;
+      // dirty = true;
     }
     this.htmlCell = htmlCell;
-    if (dirty) {
-      if (this.iframe.contentWindow?.document.readyState === 'complete') {
-        this.afterLoad();
-      }
-    }
+    // if (dirty) {
+    //   if (this.iframe.contentWindow?.document.readyState === 'complete') {
+    //     this.afterLoad();
+    //   }
+    // }
   }
 
   changeSheet(sheetId: string) {
