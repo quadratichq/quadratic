@@ -150,7 +150,7 @@ impl GridController {
                 if compute {
                     if let Some(code_cell_value) = code_cell_value {
                         let updated_code_cell_value =
-                            if let Some(old_code_cell_value) = old_code_cell_value.as_ref() {
+                            if let Some(old_code_cell_value) = &old_code_cell_value {
                                 let mut updated_code_cell_value = code_cell_value.clone();
                                 updated_code_cell_value.output = old_code_cell_value.output.clone();
                                 updated_code_cell_value

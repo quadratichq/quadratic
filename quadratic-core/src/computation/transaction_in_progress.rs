@@ -278,13 +278,12 @@ impl TransactionInProgress {
                 // add the updated cells to the cells_to_compute
 
                 if let Some(code_cell) = sheet.get_code_cell(pos) {
-                    if cfg!(feature = "show-operations") {
-                        crate::util::dbgjs(format!(
-                            "[Compute] {:?} ({} remaining)",
-                            pos,
-                            self.cells_to_compute.len()
-                        ));
-                    }
+                    #[cfg(feature = "show-operations")]
+                    crate::util::dbgjs(format!(
+                        "[Compute] {:?} ({} remaining)",
+                        pos,
+                        self.cells_to_compute.len()
+                    ));
                     self.current_cell_ref = Some(cell_ref);
                     self.current_code_cell = Some(code_cell.clone());
                     let code_string = code_cell.code_string.clone();
