@@ -16,7 +16,6 @@ import pyodide
 # todo separate this file out into a Python Package
 # https://pyodide.org/en/stable/usage/loading-custom-python-code.html
 
-
 def attempt_fix_await(code):
     # Insert a "await" keyword between known async functions to improve the UX
     code = re.sub(r"([^a-zA-Z0-9]|^)cells\(", r"\1await cells(", code)
