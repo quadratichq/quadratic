@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::state::{Room, State, User};
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub(crate) enum MessageRequest {
     EnterRoom {
@@ -114,15 +114,16 @@ pub(crate) async fn broadcast(
     state: Arc<State>,
     message: &MessageResponse,
 ) -> Result<()> {
-    let room = state
+    for (_, user) in state
         .rooms
         .lock()
         .await
         .get(&file_id)
         .ok_or(anyhow!("Room {file_id} not found"))?
-        .clone();
-
-    for (_, user) in room.users.iter().filter(|user| user.0 != &user_id) {
+        .users
+        .iter()
+        .filter(|user| user.0 != &user_id)
+    {
         (*user.socket.lock().await)
             .send(Message::Text(serde_json::to_string(&message)?))
             .await?;

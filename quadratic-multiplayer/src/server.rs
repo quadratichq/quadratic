@@ -29,6 +29,19 @@ use crate::{
     state::State,
 };
 
+pub fn app() -> Router {
+    Router::new()
+        // handle websockets
+        .route("/ws", get(ws_handler))
+        // state
+        .layer(Extension(Arc::new(State::new())))
+        // logger
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::default().include_headers(true)),
+        )
+}
+
 pub async fn serve() -> Result<()> {
     let Config { host, port } = config()?;
 
@@ -40,17 +53,7 @@ pub async fn serve() -> Result<()> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let app = Router::new()
-        // handle websockets
-        .route("/ws", get(ws_handler))
-        // state
-        .layer(Extension(Arc::new(State::new())))
-        // logger
-        .layer(
-            TraceLayer::new_for_http()
-                .make_span_with(DefaultMakeSpan::default().include_headers(true)),
-        );
-
+    let app = app();
     let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await?;
 
     tracing::info!("listening on {}", listener.local_addr()?);
@@ -68,21 +71,22 @@ pub async fn serve() -> Result<()> {
 async fn ws_handler(
     ws: WebSocketUpgrade,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    addr: Option<ConnectInfo<SocketAddr>>,
     Extension(state): Extension<Arc<State>>,
 ) -> impl IntoResponse {
     let user_agent = user_agent.map_or("Unknown user agent".into(), |user_agent| {
         user_agent.to_string()
     });
+    let addr = addr.map_or("Unknown address".into(), |addr| addr.to_string());
 
     tracing::info!("`{user_agent}` at {addr} connected.");
 
     // upgrade the connection
-    ws.on_upgrade(move |socket| handle_socket(socket, addr, state))
+    ws.on_upgrade(move |socket| handle_socket(socket, state, addr))
 }
 
 // after websocket is established, handle incoming messages
-async fn handle_socket(socket: WebSocket, addr: SocketAddr, state: Arc<State>) {
+async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String) {
     let (sender, mut receiver) = socket.split();
     let sender = Arc::new(Mutex::new(sender));
 
@@ -133,4 +137,89 @@ async fn process_message(
     }
 
     Ok(ControlFlow::Continue(()))
+}
+
+#[cfg(test)]
+pub(crate) mod tests {
+
+    use super::*;
+    use std::{
+        future::IntoFuture,
+        net::{Ipv4Addr, SocketAddr},
+    };
+    use tokio_tungstenite::tungstenite;
+    use uuid::Uuid;
+
+    pub(crate) async fn integration_test(request: MessageRequest) -> String {
+        let listener = tokio::net::TcpListener::bind(SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0)))
+            .await
+            .unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(axum::serve(listener, app()).into_future());
+
+        let (mut socket, _response) = tokio_tungstenite::connect_async(format!("ws://{addr}/ws"))
+            .await
+            .unwrap();
+
+        // send the message
+        socket
+            .send(tungstenite::Message::text(
+                serde_json::to_string(&request).unwrap(),
+            ))
+            .await
+            .unwrap();
+
+        let msg = match socket.next().await.unwrap().unwrap() {
+            tungstenite::Message::Text(msg) => msg,
+            other => panic!("expected a text message but got {other:?}"),
+        };
+
+        msg
+    }
+
+    #[tokio::test]
+    async fn user_enters_a_room() {
+        let user_id = Uuid::new_v4();
+        let file_id = Uuid::new_v4();
+        let first_name = "a".to_string();
+        let last_name = "b".to_string();
+        let image = "c".to_string();
+
+        let request = MessageRequest::EnterRoom {
+            user_id,
+            file_id,
+            first_name: first_name.clone(),
+            last_name: last_name.clone(),
+            image: image.clone(),
+        };
+        let expected_response = format!(
+            r#"{{"type":"Room","room":{{"file_id":"{file_id}","users":{{"{user_id}":{{"first_name":"{first_name}","last_name":"{last_name}","image":"{image}"}}}}}}}}"#
+        );
+
+        let response = integration_test(request).await;
+
+        assert_eq!(response, expected_response);
+    }
+
+    // #[tokio::test]
+    // async fn user_moves_a_mouse() {
+    //     let user_id = Uuid::new_v4();
+    //     let file_id = Uuid::new_v4();
+    //     let x = 0 as f64;
+    //     let y = 0 as f64;
+
+    //     let request = MessageRequest::MouseMove {
+    //         user_id,
+    //         file_id,
+    //         x,
+    //         y,
+    //     };
+
+    //     let expected_response =
+    //         format!(r#"{{"type":"MouseMove", "file_id":"{file_id}","user_id":"{user_id}"}}"#);
+
+    //     let response = integration_test(request).await;
+
+    //     assert_eq!(response, expected_response);
+    // }
 }
