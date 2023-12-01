@@ -109,7 +109,7 @@ export class HtmlCell {
           parseInt(style.marginRight)
         ).toString();
       } else {
-        this.iframe.width = this.htmlCell.w.toString();
+        this.iframe.width = this.htmlCell.w;
       }
       if (!this.htmlCell.h) {
         this.iframe.height = (
@@ -118,7 +118,7 @@ export class HtmlCell {
           parseInt(style.marginBottom)
         ).toString();
       } else {
-        this.iframe.height = this.htmlCell.h.toString();
+        this.iframe.height = this.htmlCell.h;
       }
     } else {
       throw new Error('Expected content window to be defined on iframe');
@@ -126,23 +126,14 @@ export class HtmlCell {
   };
 
   update(htmlCell: JsHtmlOutput) {
-    // let dirty = false;
     if (htmlCell.w !== this.htmlCell.w && htmlCell.h !== this.htmlCell.h) {
-      this.iframe.width = htmlCell.w !== undefined ? htmlCell.w.toString() : '';
-      this.iframe.height = htmlCell.h !== undefined ? htmlCell.h.toString() : '';
-      console.log(this.iframe.width, this.iframe.height, htmlCell);
-      // dirty = true;
+      this.iframe.width = htmlCell.w ? htmlCell.w : '';
+      this.iframe.height = htmlCell.h ? htmlCell.h : '';
     }
     if (htmlCell.html !== this.htmlCell.html) {
       this.iframe.srcdoc = htmlCell.html;
-      // dirty = true;
     }
     this.htmlCell = htmlCell;
-    // if (dirty) {
-    //   if (this.iframe.contentWindow?.document.readyState === 'complete') {
-    //     this.afterLoad();
-    //   }
-    // }
   }
 
   changeSheet(sheetId: string) {

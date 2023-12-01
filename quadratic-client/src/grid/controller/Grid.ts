@@ -421,8 +421,8 @@ export class Grid {
     const summary = this.gridController.setCellRenderSize(
       sheetId,
       posToRect(x, y),
-      Math.round(width),
-      Math.round(height)
+      width.toString(),
+      height.toString()
     );
     this.transactionResponse(summary);
   }

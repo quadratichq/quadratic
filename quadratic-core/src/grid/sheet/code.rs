@@ -165,14 +165,20 @@ mod test {
         gc.set_cell_render_size(
             sheet_id,
             Rect::single_pos(Pos { x: 0, y: 0 }),
-            Some(crate::grid::RenderSize { w: 10, h: 20 }),
+            Some(crate::grid::RenderSize {
+                w: "10".to_string(),
+                h: "20".to_string(),
+            }),
             None,
         );
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.render_size(Pos { x: 0, y: 0 }),
-            Some(RenderSize { w: 10, h: 20 })
+            Some(RenderSize {
+                w: "10".to_string(),
+                h: "20".to_string()
+            })
         );
         assert_eq!(sheet.render_size(Pos { x: 1, y: 1 }), None);
     }

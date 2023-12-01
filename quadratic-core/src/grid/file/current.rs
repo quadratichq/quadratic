@@ -124,8 +124,8 @@ fn set_column_format_render_size(
         column_data.set(
             y,
             Some(RenderSize {
-                w: format.content.value.w,
-                h: format.content.value.h,
+                w: format.content.value.w.clone(),
+                h: format.content.value.h.clone(),
             }),
         );
     }

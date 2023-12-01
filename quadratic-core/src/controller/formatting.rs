@@ -454,8 +454,8 @@ mod test {
             sheet_id,
             Rect::single_pos(Pos { x: 0, y: 0 }),
             Some(RenderSize {
-                w: Some("1".to_string()),
-                h: Some("2".to_string()),
+                w: "1".to_string(),
+                h: "2".to_string(),
             }),
             None,
         );
@@ -492,14 +492,20 @@ mod test {
         gc.set_cell_render_size(
             sheet_id,
             Rect::single_pos(Pos { x: 0, y: 0 }),
-            Some(RenderSize { w: 1, h: 2 }),
+            Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            }),
             None,
         );
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.get_formatting_value::<RenderSize>(Pos { x: 0, y: 0 }),
-            Some(RenderSize { w: 1, h: 2 })
+            Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string()
+            })
         );
     }
 }

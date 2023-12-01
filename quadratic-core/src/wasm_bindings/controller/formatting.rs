@@ -237,10 +237,11 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Some(RenderSize {
-            w: Some(w.to_owned()),
-            h: Some(h.to_owned()),
-        })
+        let value = if let (Some(w), Some(h)) = (w, h) {
+            Some(RenderSize {
+                w: w.to_owned(),
+                h: h.to_owned(),
+            })
         } else {
             None
         };
