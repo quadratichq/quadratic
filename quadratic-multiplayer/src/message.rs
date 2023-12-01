@@ -35,7 +35,7 @@ pub(crate) enum MessageRequest {
     },
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type")]
 pub(crate) enum MessageResponse {
     Room {
@@ -79,7 +79,7 @@ pub(crate) async fn handle_message(
 
             // only broadcast if the user is new to the room
             if is_new {
-                broadcast(user_id, file_id, Arc::clone(&state), &response).await?;
+                broadcast(user_id, file_id, Arc::clone(&state), response.clone()).await?;
             }
 
             Ok(response)
@@ -99,7 +99,7 @@ pub(crate) async fn handle_message(
                 y,
             };
 
-            broadcast(user_id, file_id, Arc::clone(&state), &response).await?;
+            broadcast(user_id, file_id, Arc::clone(&state), response.clone()).await?;
 
             Ok(response)
         }
@@ -111,23 +111,33 @@ pub(crate) async fn broadcast(
     user_id: Uuid,
     file_id: Uuid,
     state: Arc<State>,
-    message: &MessageResponse,
+    message: MessageResponse,
 ) -> Result<()> {
-    for (_, user) in state
-        .get_room(&file_id)
-        .await?
-        .users
-        .iter()
-        .filter(|user| user.0 != &user_id)
-    {
-        if let Some(sender) = &user.socket {
-            sender
-                .lock()
-                .await
-                .send(Message::Text(serde_json::to_string(&message)?))
-                .await?;
+    tokio::spawn(async move {
+        let result = async {
+            for (_, user) in state
+                .get_room(&file_id)
+                .await?
+                .users
+                .iter()
+                .filter(|user| user.0 != &user_id)
+            {
+                if let Some(sender) = &user.socket {
+                    sender
+                        .lock()
+                        .await
+                        .send(Message::Text(serde_json::to_string(&message)?))
+                        .await?;
+                }
+            }
+
+            Ok::<_, anyhow::Error>(())
+        };
+
+        if let Err(e) = result.await {
+            tracing::error!("Error broadcasting message: {:?}", e);
         }
-    }
+    });
 
     Ok(())
 }
@@ -151,9 +161,7 @@ pub(crate) mod tests {
             x: 10 as f64,
             y: 10 as f64,
         };
-        broadcast(user_1.id, file_id, state, &message)
-            .await
-            .unwrap();
+        broadcast(user_1.id, file_id, state, message).await.unwrap();
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }
