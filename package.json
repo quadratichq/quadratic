@@ -8,15 +8,21 @@
   },
   "repository": "https://github.com/quadratichq/quadratic.git",
   "private": true,
+  "workspaces": [
+    "quadratic-api",
+    "quadratic-shared",
+    "quadratic-client"
+  ],
   "scripts": {
     "start": "npm run watch:front-end",
+    "start:api": "npm start --workspace=quadratic-api",
     "perf": "npm run watch:perf:front-end",
     "watch:javascript": "cd quadratic-client && npm run watch:javascript",
-    "watch:perf:front-end": "npm run build:wasm:types && concurrently --hide=2 -n=react,rust,rust-types \"npm:watch:javascript\" \"npm:watch:wasm:perf:javascript\" \"npm run api:start\"",
-    "watch:front-end": "npm run build:wasm:types && concurrently --hide=2 -n=react,rust,rust-types \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm run api:start\"",
-    "watch:front-end-back-end": "npm run build:wasm:types && concurrently -n=react,rust,api \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm run api:start\"",
+    "watch:perf:front-end": "npm run build:wasm:types && concurrently --hide=2 -n=react,rust,rust-types \"npm:watch:javascript\" \"npm:watch:wasm:perf:javascript\" \"npm run start:api\"",
+    "watch:front-end": "npm run build:wasm:types && concurrently --hide=2 -n=react,rust,rust-types \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm run start:api\"",
+    "watch:front-end-back-end": "npm run build:wasm:types && concurrently -n=react,rust,api \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm run start:api\"",
+    "watch:app": "npm run build:wasm:types && concurrently -n=react,api 'npm:watch:javascript' 'npm run start:api'",
     "lint:client": "cd quadratic-client && npm run lint:ts && npm run lint:eslint && lint:prettier && lint:clippy",
-    "api:start": "cd quadratic-api && npm start",
     "build:wasm:types": "cd quadratic-core && cargo run --bin export_types",
     "watch:wasm:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --dev --target web --out-dir ../quadratic-client/src/quadratic-core --weak-refs'",
     "watch:wasm:perf:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --target web --out-dir ../quadratic-client/src/quadratic-core --weak-refs'",
@@ -29,7 +35,16 @@
     "benchmark:rust": "cd quadratic-core && cargo bench",
     "lint:clippy": "cd quadratic-core && cargo clippy --all-targets --all-features -- -D warnings"
   },
+  "dependencies": {
+    "zod": "^3.22.4"
+  },
   "devDependencies": {
-    "concurrently": "^6.5.1"
+    "@types/jest": "^29.5.3",
+    "concurrently": "^6.5.1",
+    "eslint": "^8.54.0",
+    "typescript": "^5.3.2",
+    "prettier": "2.8.3",
+    "jest": "^29.6.1",
+    "ts-jest": "^29.1.1"
   }
 }

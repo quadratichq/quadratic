@@ -1,4 +1,4 @@
 {
-  "buildCommand": "cd quadratic-client && npm run build:ci",
-  "installCommand": "cd quadratic-client && npm install"
+  "buildCommand": "./scripts/run-ci-build.sh",
+  "installCommand": "npm install"
 }

@@ -1,16 +1,6 @@
-import { Close } from '@mui/icons-material';
-import {
-  Box,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogProps,
-  IconButton,
-  Paper,
-  Typography,
-  useTheme,
-} from '@mui/material';
+import { TYPE } from '@/constants/appConstants';
+import { Button } from '@/shadcn/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
 import * as React from 'react';
 
 /**
@@ -32,10 +22,13 @@ import * as React from 'react';
  * </QDialog>
  */
 
-interface QDialogProps extends Omit<DialogProps, 'open'> {
-  children: React.ReactNode;
-  onClose: () => void;
-}
+type QDialogProps = any;
+// TODO get rid of this and use the same dialog everywhere
+// interface QDialogProps extends React.FC<typeof Dialog> {
+//   children: React.ReactNode;
+//   onClose: () => void;
+//   // className?: string;
+// }
 
 interface QDialogTitleProps {
   children: React.ReactNode;
@@ -43,10 +36,12 @@ interface QDialogTitleProps {
 
 interface QDialogContentProps {
   children: React.ReactNode;
+  className?: string;
 }
 
 interface QDialogActionsProps {
   children: React.ReactNode;
+  className?: string;
 }
 
 const QDialog: React.FC<QDialogProps> & {
@@ -54,55 +49,29 @@ const QDialog: React.FC<QDialogProps> & {
   Content: React.FC<QDialogContentProps>;
   Actions: React.FC<QDialogActionsProps>;
 } = ({ children, onClose, ...rest }) => {
-  const theme = useTheme();
-
   return (
-    <Dialog onClose={onClose} fullWidth maxWidth={'sm'} {...rest} open={true}>
-      <Paper elevation={12}>
-        {children}
-        <IconButton onClick={onClose} sx={{ position: 'absolute', top: theme.spacing(1), right: theme.spacing(3) }}>
-          <Close fontSize="small" />
-        </IconButton>
-      </Paper>
+    <Dialog open={true} onOpenChange={onClose} {...rest}>
+      <DialogContent>{children}</DialogContent>
     </Dialog>
   );
 };
 
 const Title: React.FC<QDialogTitleProps> = ({ children }) => {
-  const theme = useTheme();
-
   return (
-    <Box sx={{ px: theme.spacing(3), py: theme.spacing(1.5) }}>
-      <Typography
-        variant="subtitle1"
-        sx={{
-          fontWeight: '600',
-          display: 'block',
-          textOverflow: 'ellipsis',
-          textWrap: 'nowrap',
-          overflow: 'hidden',
-          marginRight: theme.spacing(6),
-        }}
-      >
-        {children}
-      </Typography>
-    </Box>
+    <DialogHeader>
+      <DialogTitle>{children}</DialogTitle>
+    </DialogHeader>
   );
 };
 QDialog.Title = Title;
 
-const Content: React.FC<QDialogContentProps> = ({ children }) => {
-  return <DialogContent dividers>{children}</DialogContent>;
+const Content: React.FC<QDialogContentProps> = ({ children, className }) => {
+  return <div className={className ? className : ''}>{children}</div>;
 };
 QDialog.Content = Content;
 
-const Actions: React.FC<QDialogActionsProps> = ({ children }) => {
-  const theme = useTheme();
-  return (
-    <DialogActions sx={{ alignItems: 'center', px: theme.spacing(3), py: theme.spacing(1.5) }}>
-      {children}
-    </DialogActions>
-  );
+const Actions: React.FC<QDialogActionsProps> = ({ children, ...rest }) => {
+  return <DialogFooter {...rest}>{children}</DialogFooter>;
 };
 QDialog.Actions = Actions;
 
@@ -130,24 +99,24 @@ const QDialogConfirmDelete = ({
   onDelete: () => void;
 }) => {
   return (
-    <QDialog onClose={onClose} maxWidth="xs">
+    <QDialog onClose={onClose} className={`max-w-xs`}>
       <QDialog.Title>Confirm delete</QDialog.Title>
       <QDialog.Content>
-        <Typography variant="body2">
+        <p className={`${TYPE.body2}`}>
           Please confirm you want to delete the {entityNoun}: <b>“{entityName}”</b>.
-        </Typography>
+        </p>
         {children && (
           <>
             <br />
-            <Typography variant="body2">{children}</Typography>
+            <p className={`${TYPE.body2}`}>{children}</p>
           </>
         )}
       </QDialog.Content>
       <QDialog.Actions>
-        <Button variant="outlined" autoFocus onClick={onClose} size="small">
+        <Button variant="outline" autoFocus onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="contained" color="error" disableElevation onClick={onDelete} size="small">
+        <Button variant="destructive" onClick={onDelete}>
           Delete
         </Button>
       </QDialog.Actions>

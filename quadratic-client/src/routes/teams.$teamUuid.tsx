@@ -1,6 +1,7 @@
 import { KeyboardArrowDown, PeopleAltOutlined } from '@mui/icons-material';
 import { Box, Button, Divider, IconButton, InputBase, Menu, MenuItem, useTheme } from '@mui/material';
 import { SxProps } from '@mui/system';
+import { ApiTypes } from '@quadratic-shared/typesAndSchemas';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -14,7 +15,6 @@ import {
   useSearchParams,
 } from 'react-router-dom';
 import { apiClient } from '../api/apiClient';
-import { ApiSchemas, ApiTypes } from '../api/types';
 import { AvatarWithLetters } from '../components/AvatarWithLetters';
 import { Empty } from '../components/Empty';
 import { QDialogConfirmDelete } from '../components/QDialog';
@@ -27,18 +27,7 @@ import { hasAccess } from '../permissions';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { teamUuid } = params as { teamUuid: string };
-
-  // Ensure we have an UUID that matches the schema
-  if (!ApiSchemas['/v0/teams/:uuid.GET.response'].shape.team.shape.uuid.safeParse(teamUuid).success) {
-    throw new Response('Bad request. Expected a UUID string.');
-  }
-
-  const data = await apiClient.getTeam(teamUuid).catch((e) => {
-    throw new Response('Failed to fetch team' + e.message);
-  });
-
-  return data;
-  // return uuid === '2' ? data2 : data;
+  return await apiClient.getTeam(teamUuid);
 };
 
 export type Action = {
@@ -404,6 +393,7 @@ function EditDropdownMenu({ setShowDeleteDialog, onRename }: any) {
   );
 }
 
+// TODO: fix when we merge better errors PR
 export const ErrorBoundary = () => {
   const error = useRouteError();
 

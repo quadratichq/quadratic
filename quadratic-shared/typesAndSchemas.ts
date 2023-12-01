@@ -61,7 +61,7 @@ export type FileUser = z.infer<typeof FileUserSchema>;
 
 const TeamSchema = z.object({
   uuid: z.string(),
-  name: z.string(), // TODO should this have a limit?
+  name: z.string().min(1).max(140),
   picture: z.string().url().optional(),
   users: z.array(TeamUserSchema), // TODO not optional
   // files: z.any(), // TODO
@@ -204,9 +204,7 @@ export const ApiSchemas = {
     picture: TeamSchema.shape.picture,
     // TODO files, billing
   }),
-  '/v0/teams/:uuid.POST.response': z.object({
-    message: z.string(),
-  }),
+  '/v0/teams/:uuid.POST.response': TeamSchema.pick({ uuid: true, name: true, picture: true }),
 
   // TODO equivalent for /files/:uuid/sharing
   '/v0/teams/:uuid/sharing.POST.request': TeamUserSchema.pick({ email: true, role: true }),

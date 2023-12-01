@@ -1,5 +1,4 @@
 import { apiClient } from '@/api/apiClient';
-import { ApiTypes } from '@/api/types';
 import { AvatarWithLetters } from '@/components/AvatarWithLetters';
 import { TYPE } from '@/constants/appConstants';
 import { DOCUMENTATION_URL } from '@/constants/urls';
@@ -8,6 +7,7 @@ import { Separator } from '@/shadcn/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
 import { cn } from '@/shadcn/utils';
 import { Avatar, CircularProgress } from '@mui/material';
+import { ApiTypes } from '@quadratic-shared/typesAndSchemas';
 import { ExternalLinkIcon, FileIcon, MixIcon, PlusIcon } from '@radix-ui/react-icons';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useFetchers, useLoaderData, useLocation, useNavigation, useParams } from 'react-router-dom';
@@ -80,6 +80,8 @@ function Navbar() {
   const fetchers = useFetchers();
   const inFlightTeamFetcher = fetchers.find((fetcher) => fetcher.formAction?.startsWith(`/teams/${teamUuid}`));
 
+  const classNameIcons = `h-5 w-5 mx-0.5`;
+
   return (
     <nav className={`flex h-full flex-col justify-between px-4 pb-2 pt-4`}>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -94,41 +96,42 @@ function Navbar() {
 
         <div className="mt-4 grid gap-1">
           <SidebarNavLink to={ROUTES.FILES}>
-            <FileIcon className="h-5 w-5" />
+            <FileIcon className={classNameIcons} />
             My files
           </SidebarNavLink>
           <SidebarNavLink to={ROUTES.EXAMPLES}>
-            <MixIcon className="h-5 w-5" />
+            <MixIcon className={classNameIcons} />
             Examples
           </SidebarNavLink>
         </div>
 
-        <p className={`${TYPE.overline} mb-2 mt-6 text-muted-foreground`}>Teams</p>
-        {teams.map(({ uuid, name }) => {
-          const teamName =
-            // @ts-expect-error
-            teamUuid === uuid && inFlightTeamFetcher?.json?.name
-              ? // @ts-expect-error
-                inFlightTeamFetcher.json.name
-              : name;
+        <p className={`${TYPE.overline} mb-2 mt-6 indent-2 text-muted-foreground`}>Teams</p>
+        <div className="grid gap-1">
+          {teams.map(({ uuid, name }: any) => {
+            const teamName =
+              // @ts-expect-error
+              teamUuid === uuid && inFlightTeamFetcher?.json?.name
+                ? // @ts-expect-error
+                  inFlightTeamFetcher.json.name
+                : name;
 
-          return (
-            <SidebarNavLink key={uuid} to={ROUTES.TEAM(uuid)}>
-              <AvatarWithLetters size="small">{teamName}</AvatarWithLetters>
-
-              {teamName}
-            </SidebarNavLink>
-          );
-        })}
-        <SidebarNavLink to={ROUTES.CREATE_TEAM}>
-          <PlusIcon className="h-5 w-5" />
-          Create
-        </SidebarNavLink>
+            return (
+              <SidebarNavLink key={uuid} to={ROUTES.TEAM(uuid)}>
+                <AvatarWithLetters size="small">{teamName}</AvatarWithLetters>
+                {teamName}
+              </SidebarNavLink>
+            );
+          })}
+          <SidebarNavLink to={ROUTES.CREATE_TEAM}>
+            <PlusIcon className={classNameIcons} />
+            Create
+          </SidebarNavLink>
+        </div>
       </div>
       <div>
         <SidebarNavLink to={DOCUMENTATION_URL} target="_blank" className={`text-muted-foreground`}>
           Docs
-          <ExternalLinkIcon className="ml-auto h-5 w-5 text-inherit opacity-50" />
+          <ExternalLinkIcon className={cn(classNameIcons, `ml-auto text-inherit opacity-50`)} />
         </SidebarNavLink>
         <Separator className="my-2" />
         <SidebarNavLink to={ROUTES.ACCOUNT}>

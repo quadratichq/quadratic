@@ -43,6 +43,7 @@ afterAll(async () => {
 
 // We assume an authenticated request for all of these tests.
 describe('GET /v0/teams/:uuid', () => {
+  it.todo('responds with a 401 without authentication');
   it('responds with 400 for an invalid UUID', async () => {
     await request(app)
       .get('/v0/teams/foo')

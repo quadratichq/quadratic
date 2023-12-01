@@ -1,18 +1,14 @@
-import express, { Response } from "express";
-import { /* ApiSchemas, */ ApiTypes } from "quadratic-types";
-import { z } from "zod";
-import dbClient from "../../dbClient";
-import { teamMiddleware } from "../../middleware/team";
-import { userMiddleware } from "../../middleware/user";
-import { validateAccessToken } from "../../middleware/validateAccessToken";
-import { validateRequestAgainstZodSchema } from "../../middleware/validateRequestAgainstZodSchema";
-import {
-  RequestWithAuth,
-  RequestWithTeam,
-  RequestWithUser,
-} from "../../types/Request";
-import { ResponseError } from "../../types/Response";
-import { firstRoleIsHigherThanSecond } from "../../utils";
+import { /* ApiSchemas, */ ApiTypes } from '@quadratic-shared/typesAndSchemas';
+import express, { Response } from 'express';
+import { z } from 'zod';
+import dbClient from '../../dbClient';
+import { teamMiddleware } from '../../middleware/team';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import { RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
+import { ResponseError } from '../../types/Response';
+import { firstRoleIsHigherThanSecond } from '../../utils';
 const router = express.Router();
 
 const ReqSchema = z.object({
@@ -24,18 +20,16 @@ const ReqSchema = z.object({
 });
 
 router.post(
-  "/:uuid/sharing/:userId",
+  '/:uuid/sharing/:userId',
   validateAccessToken,
-  validateRequestAgainstZodSchema(ReqSchema),
+  validateRequestSchema(ReqSchema),
   userMiddleware,
   teamMiddleware,
   async (
     req: RequestWithAuth & RequestWithUser & RequestWithTeam,
     // TODO for some reason, role is considered optional in this response which it should be
     // type ReturnType = ApiTypes['/v0/teams/:uuid/sharing/:userId.POST.response']
-    res: Response<
-      ApiTypes["/v0/teams/:uuid/sharing/:userId.POST.response"] | ResponseError
-    >
+    res: Response<ApiTypes['/v0/teams/:uuid/sharing/:userId.POST.response'] | ResponseError>
   ) => {
     const {
       body: { role: newRole },
@@ -59,23 +53,21 @@ router.post(
 
       // Upgrading role
       if (firstRoleIsHigherThanSecond(newRole, currentRole)) {
-        return res
-          .status(403)
-          .json({ error: { message: "User cannot upgrade their own role" } });
+        return res.status(403).json({ error: { message: 'User cannot upgrade their own role' } });
       }
 
       // Downgrading role
       // OWNER can only downgrade if there’s one other owner on the team
-      if (currentRole === "OWNER") {
+      if (currentRole === 'OWNER') {
         const teamOwners = await dbClient.userTeamRole.findMany({
           where: {
             teamId,
-            role: "OWNER",
+            role: 'OWNER',
           },
         });
         if (teamOwners.length <= 1) {
           return res.status(403).json({
-            error: { message: "There must be at least one owner on a team." },
+            error: { message: 'There must be at least one owner on a team.' },
           });
         }
       }
@@ -98,9 +90,9 @@ router.post(
     // So we'll check and make sure they can
 
     // First, can they do this?
-    if (!teamUser.access.includes("TEAM_EDIT")) {
+    if (!teamUser.access.includes('TEAM_EDIT')) {
       return res.status(403).json({
-        error: { message: "User does not have permission to edit others" },
+        error: { message: 'User does not have permission to edit others' },
       });
     }
 
@@ -114,7 +106,7 @@ router.post(
       },
     });
     if (userBeingChanged === null) {
-      return res.status(404).json({ error: { message: "User not found" } });
+      return res.status(404).json({ error: { message: 'User not found' } });
     }
     const userBeingChangedRole = userBeingChanged.role;
     const userMakingChangeRole = teamUser.role;
@@ -125,13 +117,10 @@ router.post(
     }
 
     // Upgrading to a role higher than their own? Not so fast!
-    if (
-      firstRoleIsHigherThanSecond(userBeingChangedRole, userMakingChangeRole)
-    ) {
+    if (firstRoleIsHigherThanSecond(userBeingChangedRole, userMakingChangeRole)) {
       return res.status(403).json({
         error: {
-          message:
-            "User cannot upgrade another user’s role higher than their own",
+          message: 'User cannot upgrade another user’s role higher than their own',
         },
       });
     }

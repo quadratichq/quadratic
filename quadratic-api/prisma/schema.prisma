@@ -21,6 +21,7 @@ enum LinkPermission {
     EDIT
 }
 
+// TODO Properly configure camelCase <-> snake_case
 model File {
     id                 Int            @id @default(autoincrement())
     uuid               String         @unique @default(uuid())
@@ -46,7 +47,7 @@ model Team {
     uuid         String         @unique @default(uuid())
     name         String
     picture      String? // S3FileKey
-    createdDate  DateTime       @default(now())
+    createdDate  DateTime       @default(now()) @map("created_date")
     UserTeamRole UserTeamRole[]
     TeamInvite   TeamInvite[]
 }
@@ -59,12 +60,12 @@ enum TeamRole {
 
 model UserTeamRole {
     id          Int      @id @default(autoincrement())
-    userId      Int
-    teamId      Int
+    userId      Int      @map("user_id")
+    teamId      Int      @map("team_id")
     user        User     @relation(fields: [userId], references: [id])
     team        Team     @relation(fields: [teamId], references: [id])
     role        TeamRole
-    createdDate DateTime @default(now())
+    createdDate DateTime @default(now()) @map("created_date")
 
     @@unique([userId, teamId])
 }
@@ -72,10 +73,10 @@ model UserTeamRole {
 model TeamInvite {
     id          Int      @id @default(autoincrement())
     email       String
-    teamId      Int
+    teamId      Int      @map("team_id")
     team        Team     @relation(fields: [teamId], references: [id])
     role        TeamRole
-    createdDate DateTime @default(now())
+    createdDate DateTime @default(now()) @map("created_date")
 
     @@unique([email, teamId])
 }

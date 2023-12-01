@@ -18,7 +18,7 @@ const ai_rate_limiter = rateLimit({
   max: Number(process.env.RATE_LIMIT_AI_REQUESTS_MAX) || 25, // Limit number of requests per windowMs
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  keyGenerator: (request: Request, response) => {
+  keyGenerator: (request: Request) => {
     return request.auth?.sub || 'anonymous';
   },
 });

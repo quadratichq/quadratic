@@ -1,6 +1,6 @@
+import { ApiTypes } from '@quadratic-shared/typesAndSchemas';
 import { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router-dom';
-import { ApiTypes } from '../../api/types';
 import { QDialog } from '../../components/QDialog';
 import { ShareMenu } from '../../components/ShareMenu';
 import { Action } from '../../routes/teams.$teamUuid';
