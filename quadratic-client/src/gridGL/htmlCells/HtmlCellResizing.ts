@@ -55,25 +55,27 @@ export class HtmlCellResizing {
 
   private snapX(e: InteractionEvent): number {
     const xScreen = e.data.global.x;
-    if (e.data.originalEvent.shiftKey) return xScreen;
-    for (const line of pixiApp.gridLines.gridLinesX) {
-      const lineX = pixiApp.viewport.toScreen(line.x, 0).x;
-      if (Math.abs(lineX - xScreen) <= snapping) {
-        return lineX;
-      }
-    }
+    // todo: make this work properly
+    // if (e.data.originalEvent.shiftKey) return xScreen;
+    // for (const line of pixiApp.gridLines.gridLinesX) {
+    //   const lineX = pixiApp.viewport.toScreen(line.x, 0).x;
+    //   if (Math.abs(lineX - xScreen) <= snapping) {
+    //     return lineX;
+    //   }
+    // }
     return xScreen;
   }
 
   private snapY(e: InteractionEvent): number {
     const yScreen = e.data.global.y;
-    if (e.data.originalEvent.shiftKey) return yScreen;
-    for (const line of pixiApp.gridLines.gridLinesY) {
-      const lineY = pixiApp.viewport.toScreen(0, line.y).y;
-      if (Math.abs(lineY - yScreen) <= snapping) {
-        return lineY;
-      }
-    }
+    // todo: make this work properly
+    // if (e.data.originalEvent.shiftKey) return yScreen;
+    // for (const line of pixiApp.gridLines.gridLinesY) {
+    //   const lineY = pixiApp.viewport.toScreen(0, line.y).y;
+    //   if (Math.abs(lineY - yScreen) <= snapping) {
+    //     return lineY;
+    //   }
+    // }
     return yScreen;
   }
 
