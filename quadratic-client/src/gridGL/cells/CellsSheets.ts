@@ -83,8 +83,8 @@ export class CellsSheets extends Container<CellsSheet> {
     }
   }
 
-  toggleOutlines(): void {
-    this.current?.toggleOutlines();
+  toggleOutlines(force?: boolean): void {
+    this.current?.toggleOutlines(force);
   }
 
   createBorders(): void {
@@ -116,6 +116,7 @@ export class CellsSheets extends Container<CellsSheet> {
     for (const cellSheet of this.children) {
       const modified = cellSheetsModified.filter((modified) => modified.sheet_id === cellSheet.sheet.id);
       if (modified.length) {
+        cellSheet.updateCellsArray();
         cellSheet.modified(modified);
       }
     }
