@@ -317,10 +317,11 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
-        controller::GridController,
+        controller::{transaction_types::JsCodeResult, GridController},
         grid::{
-            js_types::JsRenderCell, Bold, CellAlign, CodeCellRunOutput, CodeCellRunResult,
-            CodeCellValue, Italic,
+            js_types::{JsHtmlOutput, JsRenderCell},
+            Bold, CellAlign, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue,
+            Italic, RenderSize,
         },
         CellValue, Error, ErrorMsg, Pos, Rect, Value,
     };
@@ -369,7 +370,7 @@ mod tests {
     }
 
     #[test]
-    fn get_get_render_cells() {
+    fn test_get_render_cells() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
 
@@ -491,6 +492,66 @@ mod tests {
                 italic: Some(true),
                 text_color: Some("red".to_string()),
             },
+        );
+    }
+
+    #[test]
+    fn test_get_html_output() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_code(
+            sheet_id,
+            Pos { x: 1, y: 2 },
+            CodeCellLanguage::Python,
+            "<html></html>".to_string(),
+            None,
+        );
+        gc.calculation_complete(JsCodeResult::new(
+            true,
+            None,
+            None,
+            None,
+            Some("<html></html>".into()),
+            None,
+            None,
+            None,
+        ));
+        let sheet = gc.sheet(sheet_id);
+        let render_cells = sheet.get_html_output();
+        assert_eq!(render_cells.len(), 1);
+        assert_eq!(
+            render_cells[0],
+            JsHtmlOutput {
+                sheet_id: sheet.id.to_string(),
+                x: 1,
+                y: 2,
+                html: "<html></html>".to_string(),
+                w: None,
+                h: None,
+            }
+        );
+        gc.set_cell_render_size(
+            sheet_id,
+            Rect::single_pos(Pos { x: 1, y: 2 }),
+            Some(RenderSize {
+                w: "1".into(),
+                h: "2".into(),
+            }),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        let render_cells = sheet.get_html_output();
+        assert_eq!(render_cells.len(), 1);
+        assert_eq!(
+            render_cells[0],
+            JsHtmlOutput {
+                sheet_id: sheet.id.to_string(),
+                x: 1,
+                y: 2,
+                html: "<html></html>".to_string(),
+                w: Some("1".into()),
+                h: Some("2".into()),
+            }
         );
     }
 }
