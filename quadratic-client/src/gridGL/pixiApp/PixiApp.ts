@@ -233,7 +233,7 @@ export class PixiApp {
     this.quadrants.visible = false;
     this.boxCells.visible = false;
     this.htmlPlaceholders.prepare();
-    this.cellsSheets.toggleOutlines(false);
+    this.cellsSheets.toggleOutlines();
     if (options?.cull) {
       this.cellsSheets.cull(options.cull);
     }
