@@ -5,7 +5,7 @@ import { pixiApp } from '../pixiApp/PixiApp';
 import { HtmlCell } from './HtmlCell';
 
 // tolerance of snapping to the grid
-// const snapping = 10;
+const snapping = 10;
 
 export class HtmlCellResizing {
   private htmlCell: HtmlCell;
@@ -53,43 +53,43 @@ export class HtmlCellResizing {
     }
   }
 
-  // private snapX(e: InteractionEvent): number {
-  //   const xScreen = e.data.global.x;
-  //   if (e.data.originalEvent.shiftKey) return xScreen;
-  //   const x = pixiApp.viewport.toWorld(xScreen - (this.htmlCellAdjustment?.x ?? 0), 0).x;
-  //   for (const line of pixiApp.gridLines.gridLinesX) {
-  //     if (Math.abs(line.x - x) <= snapping) {
-  //       return pixiApp.viewport.toScreen(line.x, 0).x;
-  //     }
-  //   }
-  //   return e.data.global.x;
-  // }
+  private snapX(e: InteractionEvent): number {
+    const xScreen = e.data.global.x;
+    if (e.data.originalEvent.shiftKey) return xScreen;
+    for (const line of pixiApp.gridLines.gridLinesX) {
+      const lineX = pixiApp.viewport.toScreen(line.x, 0).x;
+      if (Math.abs(lineX - xScreen) <= snapping) {
+        return lineX;
+      }
+    }
+    return xScreen;
+  }
 
-  // private snapY(e: InteractionEvent): number {
-  //   const yScreen = e.data.global.y;
-  //   if (e.data.originalEvent.shiftKey) return yScreen;
-  //   const y = pixiApp.viewport.toWorld(0, yScreen).y;
-  //   for (const line of pixiApp.gridLines.gridLinesY) {
-  //     if (Math.abs(line.y - y) <= snapping) {
-  //       return pixiApp.viewport.toScreen(0, line.y).y;
-  //     }
-  //   }
-  //   return e.data.global.y;
-  // }
+  private snapY(e: InteractionEvent): number {
+    const yScreen = e.data.global.y;
+    if (e.data.originalEvent.shiftKey) return yScreen;
+    for (const line of pixiApp.gridLines.gridLinesY) {
+      const lineY = pixiApp.viewport.toScreen(0, line.y).y;
+      if (Math.abs(lineY - yScreen) <= snapping) {
+        return lineY;
+      }
+    }
+    return yScreen;
+  }
 
   private moveRight(e: InteractionEvent) {
-    this.width = this.originalWidth + (e.data.global.x - this.startX) * pixiApp.viewport.scale.x;
+    this.width = this.originalWidth + (this.snapX(e) - this.startX) / pixiApp.viewport.scale.x;
     this.htmlCell.setWidth(this.width);
   }
 
   private moveBottom(e: InteractionEvent) {
-    this.height = this.originalHeight + (e.data.global.y - this.startY) * pixiApp.viewport.scale.y;
+    this.height = this.originalHeight + (this.snapY(e) - this.startY) / pixiApp.viewport.scale.y;
     this.htmlCell.setHeight(this.height);
   }
 
   private moveCorner(e: InteractionEvent) {
-    this.width = this.originalWidth + (e.data.global.x - this.startX) * pixiApp.viewport.scale.x;
-    this.height = this.originalHeight + (e.data.global.y - this.startY) * pixiApp.viewport.scale.y;
+    this.width = this.originalWidth + (this.snapX(e) - this.startX) / pixiApp.viewport.scale.x;
+    this.height = this.originalHeight + (this.snapY(e) - this.startY) / pixiApp.viewport.scale.y;
     this.htmlCell.setWidth(this.width);
     this.htmlCell.setHeight(this.height);
   }
