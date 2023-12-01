@@ -146,9 +146,8 @@ pub(crate) fn broadcast(
 #[cfg(test)]
 pub(crate) mod tests {
 
-    use crate::test_util::add_new_user_to_room;
-
     use super::*;
+    use crate::test_util::add_new_user_to_room;
 
     #[tokio::test]
     async fn broadcasting() {
