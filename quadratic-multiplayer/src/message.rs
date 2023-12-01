@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use futures_util::SinkExt;
@@ -17,7 +17,7 @@ use uuid::Uuid;
 
 use crate::state::{Room, State, User};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(tag = "type")]
 pub(crate) enum MessageRequest {
     EnterRoom {
@@ -35,7 +35,7 @@ pub(crate) enum MessageRequest {
     },
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, PartialEq)]
 #[serde(tag = "type")]
 pub(crate) enum MessageResponse {
     Room {
@@ -71,19 +71,10 @@ pub(crate) async fn handle_message(
                 first_name,
                 last_name,
                 image,
-                socket: Arc::clone(&sender),
+                socket: Some(Arc::clone(&sender)),
             };
-
             let is_new = state.enter_room(file_id, user).await;
-
-            let room = state
-                .rooms
-                .lock()
-                .await
-                .get(&file_id)
-                .ok_or(anyhow!("Room {file_id} not found"))?
-                .clone();
-
+            let room = state.get_room(&file_id).await?;
             let response = MessageResponse::Room { room };
 
             // only broadcast if the user is new to the room
@@ -123,18 +114,19 @@ pub(crate) async fn broadcast(
     message: &MessageResponse,
 ) -> Result<()> {
     for (_, user) in state
-        .rooms
-        .lock()
-        .await
-        .get(&file_id)
-        .ok_or(anyhow!("Room {file_id} not found"))?
+        .get_room(&file_id)
+        .await?
         .users
         .iter()
         .filter(|user| user.0 != &user_id)
     {
-        (*user.socket.lock().await)
-            .send(Message::Text(serde_json::to_string(&message)?))
-            .await?;
+        if let Some(sender) = &user.socket {
+            sender
+                .lock()
+                .await
+                .send(Message::Text(serde_json::to_string(&message)?))
+                .await?;
+        }
     }
 
     Ok(())

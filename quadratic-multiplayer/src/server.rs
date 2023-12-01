@@ -14,15 +14,13 @@ use axum::{
     Extension, Router,
 };
 use axum_extra::TypedHeader;
+use futures::stream::StreamExt;
 use futures_util::stream::SplitSink;
-use tokio::sync::Mutex;
-
+use futures_util::SinkExt;
 use std::ops::ControlFlow;
 use std::{net::SocketAddr, sync::Arc};
+use tokio::sync::Mutex;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
-
-use futures::stream::StreamExt;
-use futures_util::SinkExt;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{
@@ -33,12 +31,12 @@ use crate::{
 
 /// Construct the application router.  This is separated out so that it can be
 /// integration tested.
-pub(crate) fn app() -> Router {
+pub(crate) fn app(state: Arc<State>) -> Router {
     Router::new()
         // handle websockets
         .route("/ws", get(ws_handler))
         // state
-        .layer(Extension(Arc::new(State::new())))
+        .layer(Extension(state))
         // logger
         .layer(
             TraceLayer::new_for_http()
@@ -58,7 +56,8 @@ pub(crate) async fn serve() -> Result<()> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let app = app();
+    let state = Arc::new(State::new());
+    let app = app(state);
     let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await?;
 
     tracing::info!("listening on {}", listener.local_addr()?);
@@ -153,81 +152,61 @@ async fn process_message(
 pub(crate) mod tests {
 
     use super::*;
-    use std::{
-        future::IntoFuture,
-        net::{Ipv4Addr, SocketAddr},
+    use crate::{
+        state::Room,
+        test_util::{integration_test, new_user},
     };
-    use tokio_tungstenite::tungstenite;
     use uuid::Uuid;
-
-    pub(crate) async fn integration_test(request: MessageRequest) -> String {
-        let listener = tokio::net::TcpListener::bind(SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0)))
-            .await
-            .unwrap();
-        let addr = listener.local_addr().unwrap();
-        tokio::spawn(axum::serve(listener, app()).into_future());
-
-        let (mut socket, _response) = tokio_tungstenite::connect_async(format!("ws://{addr}/ws"))
-            .await
-            .unwrap();
-
-        // send the message
-        socket
-            .send(tungstenite::Message::text(
-                serde_json::to_string(&request).unwrap(),
-            ))
-            .await
-            .unwrap();
-
-        match socket.next().await.unwrap().unwrap() {
-            tungstenite::Message::Text(msg) => msg,
-            other => panic!("expected a text message but got {other:?}"),
-        }
-    }
 
     #[tokio::test]
     async fn user_enters_a_room() {
-        let user_id = Uuid::new_v4();
+        let state = Arc::new(State::new());
         let file_id = Uuid::new_v4();
-        let first_name = "a".to_string();
-        let last_name = "b".to_string();
-        let image = "c".to_string();
-
+        let user = new_user();
+        let user_id = user.id;
         let request = MessageRequest::EnterRoom {
             user_id,
             file_id,
-            first_name: first_name.clone(),
-            last_name: last_name.clone(),
-            image: image.clone(),
+            first_name: user.first_name.clone(),
+            last_name: user.last_name.clone(),
+            image: user.image.clone(),
         };
-        let expected_response = format!(
-            r#"{{"type":"Room","room":{{"file_id":"{file_id}","users":{{"{user_id}":{{"first_name":"{first_name}","last_name":"{last_name}","image":"{image}"}}}}}}}}"#
-        );
+        let expected = MessageResponse::Room {
+            room: Room {
+                file_id,
+                users: vec![(user_id, user)].into_iter().collect(),
+            },
+        };
+        let response = integration_test(state, request).await;
 
-        let response = integration_test(request).await;
-
-        assert_eq!(response, expected_response);
+        assert_eq!(response, serde_json::to_string(&expected).unwrap());
     }
 
-    // #[tokio::test]
-    // async fn user_moves_a_mouse() {
-    //     let user_id = Uuid::new_v4();
-    //     let file_id = Uuid::new_v4();
-    //     let x = 0 as f64;
-    //     let y = 0 as f64;
+    #[tokio::test]
+    async fn user_moves_a_mouse() {
+        let state = Arc::new(State::new());
+        let user = new_user();
+        let user_id = user.id;
+        let file_id = Uuid::new_v4();
+        let x = 0 as f64;
+        let y = 0 as f64;
+        let request = MessageRequest::MouseMove {
+            user_id,
+            file_id,
+            x,
+            y,
+        };
+        let expected = MessageResponse::MouseMove {
+            user_id,
+            file_id,
+            x,
+            y,
+        };
 
-    //     let request = MessageRequest::MouseMove {
-    //         user_id,
-    //         file_id,
-    //         x,
-    //         y,
-    //     };
+        state.enter_room(file_id, user).await;
 
-    //     let expected_response =
-    //         format!(r#"{{"type":"MouseMove", "file_id":"{file_id}","user_id":"{user_id}"}}"#);
+        let response = integration_test(state.clone(), request).await;
 
-    //     let response = integration_test(request).await;
-
-    //     assert_eq!(response, expected_response);
-    // }
+        assert_eq!(response, serde_json::to_string(&expected).unwrap());
+    }
 }

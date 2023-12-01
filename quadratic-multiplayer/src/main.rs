@@ -7,6 +7,8 @@ mod config;
 mod message;
 mod server;
 mod state;
+#[cfg(test)]
+mod test_util;
 
 use anyhow::Result;
 
