@@ -41,6 +41,7 @@ export class HtmlCell {
     this.iframe.title = `HTML from ${htmlCell.x}, ${htmlCell.y}}`;
     this.iframe.width = htmlCell.w ? htmlCell.w.toString() : '';
     this.iframe.height = htmlCell.h ? htmlCell.h.toString() : '';
+    this.iframe.scrolling = 'no';
     this.iframe.style.minWidth = `${CELL_WIDTH}px`;
     this.iframe.style.minHeight = `${CELL_HEIGHT}px`;
 
@@ -69,9 +70,7 @@ export class HtmlCell {
   }
 
   private afterLoad = () => {
-    console.log('afterload');
     if (this.iframe.contentWindow) {
-      console.log('afterload content');
       // turn off zooming within the iframe
 
       // don't handle the wheel event
@@ -139,7 +138,9 @@ export class HtmlCell {
     }
     this.htmlCell = htmlCell;
     if (dirty) {
-      this.afterLoad();
+      if (this.iframe.contentWindow?.document.readyState === 'complete') {
+        this.afterLoad();
+      }
     }
   }
 
@@ -214,7 +215,6 @@ export class HtmlCell {
     if (!this.hoverSide) {
       throw new Error('Expected hoverSide to be defined in HtmlCell.startResizing');
     }
-    this.div.style.pointerEvents = 'none';
     this.resizing = new HtmlCellResizing(
       this,
       this.hoverSide,
@@ -229,8 +229,9 @@ export class HtmlCell {
     if (!this.resizing) {
       throw new Error('Expected resizing to be defined in HtmlCell.endResizing');
     }
+    this.right.classList.remove('html-resize-control-right-corner');
+    this.bottom.classList.remove('html-resize-control-bottom-corner');
     this.resizing.cancelResizing();
-    this.div.style.pointerEvents = 'auto';
     this.resizing = undefined;
   }
 
@@ -239,7 +240,6 @@ export class HtmlCell {
       throw new Error('Expected resizing to be defined in HtmlCell.endResizing');
     }
     this.resizing.completeResizing();
-    this.div.style.pointerEvents = 'auto';
     this.resizing = undefined;
   }
 
