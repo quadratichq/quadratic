@@ -54,7 +54,6 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   renderer.view.width = imageWidth;
   renderer.view.height = imageHeight;
   pixiApp.prepareForCopying();
-  pixiAppSettings.temporarilyHideCellTypeOutlines = true;
 
   // todo
   // app.cells.drawCells(app.sheet, rectangle, false);

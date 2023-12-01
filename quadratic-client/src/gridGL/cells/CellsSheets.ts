@@ -83,8 +83,8 @@ export class CellsSheets extends Container<CellsSheet> {
     }
   }
 
-  toggleOutlines(): void {
-    this.current?.toggleOutlines();
+  toggleOutlines(force?: boolean): void {
+    this.current?.toggleOutlines(force);
   }
 
   createBorders(): void {

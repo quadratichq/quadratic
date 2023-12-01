@@ -91,6 +91,7 @@ class PixiAppSettings {
     return !this.settings.presentationMode && this.settings.showHeadings;
   }
   get showCellTypeOutlines(): boolean {
+    console.log('****showCellTypeOutlines');
     return (
       !this.temporarilyHideCellTypeOutlines && !this.settings.presentationMode && this.settings.showCellTypeOutlines
     );
