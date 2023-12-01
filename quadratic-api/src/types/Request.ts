@@ -25,7 +25,7 @@ export type RequestWithAuth = Request & {
   auth: { sub: string };
 };
 
-export type RequestWithUser = Request &{
+export type RequestWithUser = RequestWithAuth &{
   user: User;
 };
 
