@@ -453,7 +453,10 @@ mod test {
         gc.set_cell_render_size(
             sheet_id,
             Rect::single_pos(Pos { x: 0, y: 0 }),
-            Some(RenderSize { w: 1, h: 2 }),
+            Some(RenderSize {
+                w: Some("1".to_string()),
+                h: Some("2".to_string()),
+            }),
             None,
         );
     }

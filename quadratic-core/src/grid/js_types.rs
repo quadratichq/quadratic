@@ -175,8 +175,8 @@ pub struct JsHtmlOutput {
     pub x: i64,
     pub y: i64,
     pub html: String,
-    pub w: u32,
-    pub h: u32,
+    pub w: Option<String>,
+    pub h: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]

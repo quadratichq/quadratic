@@ -232,15 +232,17 @@ impl GridController {
         &mut self,
         sheet_id: String,
         rect: &Rect,
-        w: u32,
-        h: u32,
+        w: Option<String>,
+        h: Option<String>,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let value = if w == 0 && h == 0 {
-            None
+        Some(RenderSize {
+            w: Some(w.to_owned()),
+            h: Some(h.to_owned()),
+        })
         } else {
-            Some(RenderSize { w, h })
+            None
         };
         Ok(serde_wasm_bindgen::to_value(
             &self.set_cell_render_size(sheet_id, *rect, value, cursor),

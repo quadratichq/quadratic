@@ -178,18 +178,18 @@ impl Sheet {
                     return None;
                 }
                 let pos = self.cell_ref_to_pos(*cell_ref)?;
-                let output_size = if let Some(render_size) = self.render_size(pos) {
-                    (render_size.w, render_size.h)
+                let (w, h) = if let Some(render_size) = self.render_size(pos) {
+                    (Some(render_size.w), Some(render_size.h))
                 } else {
-                    (0, 0)
+                    (None, None)
                 };
                 Some(JsHtmlOutput {
                     sheet_id: self.id.to_string(),
                     x: pos.x,
                     y: pos.y,
                     html: output.to_display(None, None, None),
-                    w: output_size.0,
-                    h: output_size.1,
+                    w,
+                    h,
                 })
             })
             .collect()

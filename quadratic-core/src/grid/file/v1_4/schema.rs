@@ -130,8 +130,8 @@ pub struct OutputSize {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RenderSize {
-    pub w: u32,
-    pub h: u32,
+    pub w: String,
+    pub h: String,
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
