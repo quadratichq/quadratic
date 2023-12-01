@@ -79,7 +79,7 @@ pub(crate) async fn handle_message(
 
             // only broadcast if the user is new to the room
             if is_new {
-                broadcast(user_id, file_id, Arc::clone(&state), response.clone()).await?;
+                broadcast(user_id, file_id, Arc::clone(&state), response.clone())?;
             }
 
             Ok(response)
@@ -99,7 +99,7 @@ pub(crate) async fn handle_message(
                 y,
             };
 
-            broadcast(user_id, file_id, Arc::clone(&state), response.clone()).await?;
+            broadcast(user_id, file_id, Arc::clone(&state), response.clone())?;
 
             Ok(response)
         }
@@ -107,7 +107,8 @@ pub(crate) async fn handle_message(
 }
 
 /// Broadcast a message to all users in a room except the sender.
-pub(crate) async fn broadcast(
+/// All messages are sent in a separate thread.
+pub(crate) fn broadcast(
     user_id: Uuid,
     file_id: Uuid,
     state: Arc<State>,
@@ -161,7 +162,7 @@ pub(crate) mod tests {
             x: 10 as f64,
             y: 10 as f64,
         };
-        broadcast(user_1.id, file_id, state, message).await.unwrap();
+        broadcast(user_1.id, file_id, state, message).unwrap();
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }
