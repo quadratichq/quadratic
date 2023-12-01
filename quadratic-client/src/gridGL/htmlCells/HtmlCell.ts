@@ -9,6 +9,9 @@ import { HtmlCellResizing } from './HtmlCellResizing';
 // number of screen pixels to trigger the resize cursor
 const tolerance = 5;
 
+const DEFAULT_HTML_WIDTH = '600';
+const DEFAULT_HTML_HEIGHT = '460';
+
 export class HtmlCell {
   private right: HTMLDivElement;
   private iframe: HTMLIFrameElement;
@@ -39,8 +42,8 @@ export class HtmlCell {
     this.iframe = document.createElement('iframe');
     this.iframe.srcdoc = htmlCell.html;
     this.iframe.title = `HTML from ${htmlCell.x}, ${htmlCell.y}}`;
-    this.iframe.width = htmlCell.w ? htmlCell.w.toString() : '';
-    this.iframe.height = htmlCell.h ? htmlCell.h.toString() : '';
+    this.iframe.width = this.width;
+    this.iframe.height = this.height;
     this.iframe.scrolling = 'no';
     this.iframe.style.minWidth = `${CELL_WIDTH}px`;
     this.iframe.style.minHeight = `${CELL_HEIGHT}px`;
@@ -61,6 +64,13 @@ export class HtmlCell {
   }
   get y(): number {
     return Number(this.htmlCell.y);
+  }
+
+  private get width(): string {
+    return this.htmlCell.w ?? DEFAULT_HTML_WIDTH;
+  }
+  private get height(): string {
+    return this.htmlCell.h ?? DEFAULT_HTML_HEIGHT;
   }
 
   isOutputEqual(htmlCell: JsHtmlOutput): boolean {
@@ -102,24 +112,25 @@ export class HtmlCell {
         this.iframe.contentWindow.document.body.style.marginBottom = '0';
       }
 
-      if (!this.htmlCell.w) {
-        this.iframe.width = (
-          this.iframe.contentWindow.document.body.scrollWidth +
-          parseInt(style.marginLeft) +
-          parseInt(style.marginRight)
-        ).toString();
-      } else {
-        this.iframe.width = this.htmlCell.w;
-      }
-      if (!this.htmlCell.h) {
-        this.iframe.height = (
-          this.iframe.contentWindow.document.body.scrollHeight +
-          parseInt(style.marginTop) +
-          parseInt(style.marginBottom)
-        ).toString();
-      } else {
-        this.iframe.height = this.htmlCell.h;
-      }
+      // this is the automatic size calculation -- replaced for *now* with default width/height
+      // if (!this.htmlCell.w) {
+      //   this.iframe.width = (
+      //     this.iframe.contentWindow.document.body.scrollWidth +
+      //     parseInt(style.marginLeft) +
+      //     parseInt(style.marginRight)
+      //   ).toString();
+      // } else {
+      //   this.iframe.width = this.htmlCell.w;
+      // }
+      // if (!this.htmlCell.h) {
+      //   this.iframe.height = (
+      //     this.iframe.contentWindow.document.body.scrollHeight +
+      //     parseInt(style.marginTop) +
+      //     parseInt(style.marginBottom)
+      //   ).toString();
+      // } else {
+      //   this.iframe.height = this.htmlCell.h;
+      // }
     } else {
       throw new Error('Expected content window to be defined on iframe');
     }
@@ -127,8 +138,8 @@ export class HtmlCell {
 
   update(htmlCell: JsHtmlOutput) {
     if (htmlCell.w !== this.htmlCell.w && htmlCell.h !== this.htmlCell.h) {
-      this.iframe.width = htmlCell.w ? htmlCell.w : '';
-      this.iframe.height = htmlCell.h ? htmlCell.h : '';
+      this.iframe.width = htmlCell.w ?? DEFAULT_HTML_WIDTH;
+      this.iframe.height = htmlCell.h ?? DEFAULT_HTML_HEIGHT;
     }
     if (htmlCell.html !== this.htmlCell.html) {
       this.iframe.srcdoc = htmlCell.html;
