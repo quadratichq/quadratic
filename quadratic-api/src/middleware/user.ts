@@ -1,6 +1,6 @@
 import { NextFunction, Response } from 'express';
 import dbClient from '../dbClient';
-import { Request } from '../types/Request';
+import { Request, RequestWithAuth, RequestWithUser } from '../types/Request';
 
 const getOrCreateUser = async (auth0_id: string) => {
   // get user from db
@@ -22,12 +22,12 @@ const getOrCreateUser = async (auth0_id: string) => {
   return user;
 };
 
-export const userMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  if (req.auth?.sub === undefined) {
-    return res.status(401).json({ error: { message: 'Invalid authorization token' } });
-  }
+export const userMiddleware = async (req: RequestWithAuth, res: Response, next: NextFunction) => {
+  // if (req.auth?.sub === undefined) {
+  //   return res.status(401).json({ error: { message: 'Invalid authorization token' } });
+  // }
 
-  req.user = await getOrCreateUser(req.auth.sub);
+  (req as RequestWithUser).user = await getOrCreateUser(req.auth.sub);
 
   next();
 };
