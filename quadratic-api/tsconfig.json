@@ -7,11 +7,7 @@
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node",
     "sourceMap": true,
-    "outDir": "dist",
-    "paths": {
-      "@/*": ["./src/*"],
-      "@quadratic-shared/*": ["../quadratic-shared/*"]
-    }
+    "outDir": "dist"
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.test.ts", "../quadratic-shared/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.test.ts"]
 }

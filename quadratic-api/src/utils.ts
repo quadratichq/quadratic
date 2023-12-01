@@ -5,7 +5,7 @@ import {
   UserRoleFileSchema,
   UserRoleTeam,
   UserRoleTeamSchema,
-} from '@quadratic-shared/typesAndSchemas';
+} from 'quadratic-shared/typesAndSchemas';
 
 const { TEAM_EDIT, TEAM_DELETE, TEAM_BILLING_EDIT, TEAM_VIEW, FILE_VIEW, FILE_EDIT, FILE_DELETE } = AccessSchema.enum;
 

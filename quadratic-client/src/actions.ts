@@ -1,4 +1,4 @@
-import { Permission, PermissionSchema } from '@quadratic-shared/typesAndSchemas';
+import { Permission, PermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { NavigateFunction, SubmitFunction } from 'react-router-dom';
 import { SetterOrUpdater } from 'recoil';
 import { apiClient } from './api/apiClient';

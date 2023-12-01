@@ -1,8 +1,8 @@
 import { KeyboardArrowDown, PeopleAltOutlined } from '@mui/icons-material';
 import { Box, Button, Divider, IconButton, InputBase, Menu, MenuItem, useTheme } from '@mui/material';
 import { SxProps } from '@mui/system';
-import { ApiTypes } from '@quadratic-shared/typesAndSchemas';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActionFunctionArgs,

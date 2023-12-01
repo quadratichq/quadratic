@@ -16,7 +16,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { ApiTypes, PublicLinkAccess } from '@quadratic-shared/typesAndSchemas';
+import { ApiTypes, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
 import React, { useEffect, useState } from 'react';
 import { useFetcher, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
