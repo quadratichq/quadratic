@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
 import { cn } from '@/shadcn/utils';
 import { Avatar, CircularProgress } from '@mui/material';
 import { ExternalLinkIcon, FileIcon, MixIcon, PlusIcon } from '@radix-ui/react-icons';
+import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useFetchers, useLoaderData, useLocation, useNavigation, useParams } from 'react-router-dom';
@@ -18,15 +19,20 @@ import QuadraticLogotype from './quadratic-logotype.svg';
 
 const drawerWidth = 264;
 
-type LoaderData = ApiTypes['/v0/teams.GET.response'];
+type LoaderData = {
+  teams: ApiTypes['/v0/teams.GET.response'];
+  hasError: boolean;
+};
 
-export const loader = async () => {
-  // TODO what if this fails? How should we handle that for routes
+export const loader = async (): Promise<LoaderData> => {
+  let hasError = false;
   const teams = await apiClient.getTeams().catch((err) => {
-    console.log(err);
+    Sentry.captureException(err);
+
+    hasError = true;
     return [];
   });
-  return teams;
+  return { teams, hasError };
 };
 
 export const Component = () => {
@@ -73,7 +79,7 @@ export const Component = () => {
 };
 
 function Navbar() {
-  const teams = useLoaderData() as LoaderData;
+  const { teams, hasError } = useLoaderData() as LoaderData;
   const { user } = useRootRouteLoaderData();
   const { teamUuid } = useParams();
 
@@ -105,7 +111,17 @@ function Navbar() {
           </SidebarNavLink>
         </div>
 
-        <p className={`${TYPE.overline} mb-2 mt-6 indent-2 text-muted-foreground`}>Teams</p>
+        <p className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}>
+          <span className={`${TYPE.overline}`}>Teams</span>{' '}
+          {hasError && (
+            <span className="text-xs text-destructive">
+              Failed to load,{' '}
+              <a href="." className="underline">
+                refresh
+              </a>
+            </span>
+          )}
+        </p>
         <div className="grid gap-1">
           {teams.map(({ uuid, name }: any) => {
             const teamName =
