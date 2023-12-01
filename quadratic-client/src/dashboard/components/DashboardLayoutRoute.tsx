@@ -83,7 +83,7 @@ function Navbar() {
   const classNameIcons = `h-5 w-5 mx-0.5`;
 
   return (
-    <nav className={`flex h-full flex-col justify-between px-4 pb-2 pt-4`}>
+    <nav className={`flex h-full flex-col justify-between gap-4 overflow-auto px-4 pb-2 pt-4`}>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div className={`flex items-center justify-between`}>
           <SidebarNavLink to="/" className={`pr-3`} isLogo={true}>
