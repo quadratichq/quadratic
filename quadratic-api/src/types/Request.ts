@@ -25,11 +25,11 @@ export type RequestWithAuth = Request & {
   auth: { sub: string };
 };
 
-export type RequestWithUser = RequestWithAuth &{
+export type RequestWithUser = RequestWithAuth & {
   user: User;
 };
 
-export type RequestWithTeam = {
+export type RequestWithTeam = RequestWithUser & {
   team: {
     data: Team;
     user: {

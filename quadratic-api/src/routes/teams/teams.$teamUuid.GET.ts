@@ -7,7 +7,7 @@ import { teamMiddleware } from '../../middleware/team';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
+import { RequestWithTeam } from '../../types/Request';
 const router = express.Router();
 
 const schema = z.object({
@@ -23,7 +23,7 @@ router.get(
   userMiddleware,
   teamMiddleware,
   async (
-    req: RequestWithAuth & RequestWithUser & RequestWithTeam,
+    req: RequestWithTeam,
     res: Response<ApiTypes['/v0/teams/:uuid.GET.response']>
   ) => {
     const {
