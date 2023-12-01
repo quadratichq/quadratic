@@ -1,5 +1,7 @@
 //! Websocket Server
 //!
+//! Handle bootstrapping and starting the websocket server.  Adds global state
+//! to be shared across all requests and threads.  Adds tracing/logging.
 
 use anyhow::Result;
 use axum::{
@@ -29,7 +31,9 @@ use crate::{
     state::State,
 };
 
-pub fn app() -> Router {
+/// Construct the application router.  This is separated out so that it can be
+/// integration tested.
+pub(crate) fn app() -> Router {
     Router::new()
         // handle websockets
         .route("/ws", get(ws_handler))
@@ -42,7 +46,8 @@ pub fn app() -> Router {
         )
 }
 
-pub async fn serve() -> Result<()> {
+/// Start the websocket server.  This is the entrypoint for the application.
+pub(crate) async fn serve() -> Result<()> {
     let Config { host, port } = config()?;
 
     tracing_subscriber::registry()
@@ -67,7 +72,7 @@ pub async fn serve() -> Result<()> {
     Ok(())
 }
 
-// handle the websocket upgrade from http
+// Handle the websocket upgrade from http.
 async fn ws_handler(
     ws: WebSocketUpgrade,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
@@ -85,7 +90,7 @@ async fn ws_handler(
     ws.on_upgrade(move |socket| handle_socket(socket, state, addr))
 }
 
-// after websocket is established, handle incoming messages
+// After websocket is established, delegate incoming messages as they arrive.
 async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String) {
     let (sender, mut receiver) = socket.split();
     let sender = Arc::new(Mutex::new(sender));
@@ -106,6 +111,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String) {
     tracing::info!("Websocket context {addr} destroyed");
 }
 
+/// Based on the incoming message type, perform some action and return a response.
 async fn process_message(
     msg: Message,
     sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
@@ -121,7 +127,11 @@ async fn process_message(
             (*sender.lock().await).send(response).await?;
         }
         Message::Binary(d) => {
-            tracing::info!("{} bytes: {:?}", d.len(), d);
+            tracing::info!(
+                "Binary messages are not yet supported.  {} bytes: {:?}",
+                d.len(),
+                d
+            );
         }
         Message::Close(c) => {
             if let Some(cf) = c {
@@ -169,12 +179,10 @@ pub(crate) mod tests {
             .await
             .unwrap();
 
-        let msg = match socket.next().await.unwrap().unwrap() {
+        match socket.next().await.unwrap().unwrap() {
             tungstenite::Message::Text(msg) => msg,
             other => panic!("expected a text message but got {other:?}"),
-        };
-
-        msg
+        }
     }
 
     #[tokio::test]

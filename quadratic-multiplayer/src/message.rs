@@ -1,3 +1,10 @@
+//! Websocket Message Handler
+//!
+//! A central place for handling websocket messages.  This module is
+//! responsible for incoming requests and outgoing responses.  Since
+//! socket information is stored in the global state, we can broadcast
+//! to all users in a room.
+
 use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
@@ -42,6 +49,7 @@ pub(crate) enum MessageResponse {
     },
 }
 
+/// Handle incoming messages.  All requests and responses are strictly typed.
 pub(crate) async fn handle_message(
     request: MessageRequest,
     state: Arc<State>,
@@ -50,8 +58,7 @@ pub(crate) async fn handle_message(
     tracing::trace!("Handling message {:?}", request);
 
     match request {
-        // User enters a room.  If the room doesn't exist, it is created.
-        // Users can only be added to a room once
+        // User enters a room.
         MessageRequest::EnterRoom {
             user_id,
             file_id,
@@ -108,6 +115,7 @@ pub(crate) async fn handle_message(
     }
 }
 
+/// Broadcast a message to all users in a room except the sender.
 pub(crate) async fn broadcast(
     user_id: Uuid,
     file_id: Uuid,

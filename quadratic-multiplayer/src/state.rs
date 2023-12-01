@@ -1,3 +1,8 @@
+//! Shared State
+//!
+//! Store information about the state of the application in a send + sync
+//! struct.  All access and mutations to state should be performed here.
+
 use std::{collections::HashMap, sync::Arc};
 
 use axum::extract::ws::{Message, WebSocket};
@@ -35,6 +40,8 @@ impl State {
         }
     }
 
+    /// Add a user to a room.  If the room doesn't exist, it is created.  Users
+    /// are only added to a room once (HashMap).
     pub(crate) async fn enter_room(&self, file_id: Uuid, user: User) -> bool {
         let mut rooms = self.rooms.lock().await;
         let room = rooms.entry(file_id).or_insert_with(|| Room {

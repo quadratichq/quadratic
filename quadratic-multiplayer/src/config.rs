@@ -1,3 +1,10 @@
+//! Global Configuration
+//!
+//! Leveraging the `dotenv` crate, this module provides a global configuration
+//! struct. This struct is populated by the `.env` file in the root of the
+//! sub-repo.  If ANY of the environment variables are missing, the program will
+//! panic at startup.
+
 use anyhow::Result;
 use dotenv::dotenv;
 use serde::Deserialize;
@@ -8,6 +15,7 @@ pub(crate) struct Config {
     pub(crate) port: String,
 }
 
+/// Load the global configuration from the environment into Config.
 pub(crate) fn config() -> Result<Config> {
     dotenv().ok();
     Ok(envy::from_env::<Config>()?)
