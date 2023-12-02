@@ -11,12 +11,15 @@ jobs:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Rust
-      uses: actions-rs/toolchain@v1
+    - name: Set up GCC
+      uses: egor-tensin/setup-gcc@v1
       with:
-        toolchain: stable
-        profile: minimal
-        override: true
+        version: latest
+        platform: x64
+    - name: Set up Rust
+      uses: moonrepo/setup-rust@v1
+      with:
+        components: clippy
 
     - name: Rust tests in quadratic-core
       run: |
@@ -60,12 +63,15 @@ jobs:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Rust
-      uses: actions-rs/toolchain@v1
+    - name: Set up GCC
+      uses: egor-tensin/setup-gcc@v1
       with:
-        toolchain: stable
-        profile: minimal
-        override: true
+        version: latest
+        platform: x64
+    - name: Set up Rust
+      uses: moonrepo/setup-rust@v1
+      with:
+        components: clippy
 
     - name: Run cargo clippy in quadratic-core
       run: |
