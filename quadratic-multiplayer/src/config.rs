@@ -17,6 +17,8 @@ pub(crate) struct Config {
 
 /// Load the global configuration from the environment into Config.
 pub(crate) fn config() -> Result<Config> {
+    let filename = if cfg!(test) { ".env.test" } else { ".env" };
+    dotenv::from_filename(filename).ok();
     dotenv().ok();
     Ok(envy::from_env::<Config>()?)
 }
