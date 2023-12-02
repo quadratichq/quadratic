@@ -43,6 +43,10 @@ jobs:
     - uses: actions/setup-node@v4
       with:
         node-version: 18
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
 
     - name: Test python
       run: |
