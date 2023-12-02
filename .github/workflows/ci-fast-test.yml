@@ -26,6 +26,9 @@ jobs:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v3
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
 
     - name: Run npm test:ci in quadratic-client
       run: |
@@ -37,6 +40,9 @@ jobs:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v3
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
 
     - name: Test python
       run: |
@@ -48,6 +54,9 @@ jobs:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v3
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
 
     - name: Run npm test:ci in quadratic-client
       run: |
@@ -74,6 +83,13 @@ jobs:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v3
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+    - name: Set up Rust
+      uses: moonrepo/setup-rust@v1
+      with:
+        cache: false
 
     - name: Build wasm core
       run: |
