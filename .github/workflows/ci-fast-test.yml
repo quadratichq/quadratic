@@ -15,6 +15,7 @@ jobs:
       uses: moonrepo/setup-rust@v1
       with:
         components: clippy
+        cache: false
 
     - name: Rust tests in quadratic-core
       run: |
@@ -62,6 +63,7 @@ jobs:
       uses: moonrepo/setup-rust@v1
       with:
         components: clippy
+        cache: false
 
     - name: Run cargo clippy in quadratic-core
       run: |
