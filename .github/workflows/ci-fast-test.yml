@@ -90,6 +90,9 @@ jobs:
       uses: moonrepo/setup-rust@v1
       with:
         cache: false
+    - uses: jetli/wasm-pack-action@v0.4.0
+      with:
+        version: 'latest'
 
     - name: Build wasm core
       run: |
