@@ -1,6 +1,9 @@
+import { ApiError } from '@/api/fetchFromApi';
+import { CONTACT_URL } from '@/constants/urls';
 import { Button } from '@/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
+import { ReactElement } from 'react';
 import {
   Link,
   LoaderFunctionArgs,
@@ -11,7 +14,7 @@ import {
 } from 'react-router-dom';
 import { MutableSnapshot, RecoilRoot } from 'recoil';
 import { apiClient } from '../api/apiClient';
-import { ApiSchemas, ApiTypes } from '../api/types';
+import { ApiTypes } from '../api/types';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { Empty } from '../components/Empty';
 import { ROUTE_LOADER_IDS } from '../constants/routes';
@@ -30,19 +33,8 @@ export type FileData = {
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData> => {
   const { uuid } = params as { uuid: string };
 
-  // Ensure we have an UUID that matches the schema
-  if (!ApiSchemas['/v0/files/:uuid.GET.response'].shape.file.shape.uuid.safeParse(uuid).success) {
-    throw new Response('Bad request. Expected a UUID string.');
-  }
-
-  // Fetch the file
-  const data = await apiClient.getFile(uuid).catch((e) => {
-    console.error(e);
-    return undefined;
-  });
-  if (!data) {
-    throw new Response('Failed to retrieve file from server');
-  }
+  // Fetch the file & its sharing data
+  const [data, sharing] = await Promise.all([apiClient.getFile(uuid), apiClient.getFileSharing(uuid)]);
 
   // Validate and upgrade file to the latest version in TS (up to 1.4)
   const file = await validateAndUpgradeGridFile(data.file.contents);
@@ -51,7 +43,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
       message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
       level: 'error',
     });
-    throw new Response('Invalid file that could not be upgraded.');
+    throw new Response('File validation failed.');
   }
 
   // load WASM
@@ -71,15 +63,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     });
     // @ts-expect-error hard reload via `true` only works in some browsers
     window.location.reload(true);
-  }
-
-  // Fetch the file's sharing info
-  const sharing = await apiClient.getFileSharing(uuid).catch((e) => {
-    console.error(e);
-    return undefined;
-  });
-  if (!sharing) {
-    throw new Error('Failed to retrieve file sharing info from the server.');
   }
 
   return {
@@ -109,38 +92,62 @@ export const Component = () => {
 export const ErrorBoundary = () => {
   const error = useRouteError();
 
+  const actions = (
+    <div className={`flex justify-center gap-2`}>
+      <Button asChild variant="outline">
+        <a href={CONTACT_URL} target="_blank" rel="noreferrer">
+          Get help
+        </a>
+      </Button>
+      <Button asChild variant="default">
+        <Link to="/">Go home</Link>
+      </Button>
+    </div>
+  );
+
+  // Handle specific errors
+
+  let title = '';
+  let description: string | ReactElement = '';
+
+  if (error instanceof ApiError) {
+    if (error.status === 404) {
+      title = 'File not found';
+      description = 'This file may have been deleted, moved, or made unavailable. Try reaching out to the file owner.';
+    } else if (error.status >= 400 && error.status < 500) {
+      title = 'Failed to retrieve file';
+      description = (
+        <>
+          This file could not be loaded from the server. Additional details:
+          <pre className="mt-4">{error.details}</pre>
+        </>
+      );
+    }
+  }
+
   if (isRouteErrorResponse(error)) {
-    console.error(error);
-    // If the future, we can differentiate between the different kinds of file
-    // loading errors and be as granular in the message as we like.
-    // e.g. file found but didn't validate. file couldn't be found on server, etc.
-    // But for now, we'll just show a 404
-    return (
-      <Empty
-        title="404: file not found"
-        description="This file may have been deleted, moved, or made unavailable. Try reaching out to the file owner."
-        Icon={ExclamationTriangleIcon}
-        actions={
-          <Button asChild variant="secondary">
-            <Link to="/">Go home</Link>
-          </Button>
-        }
-      />
+    title = 'Failed to load file';
+    description = (
+      <>
+        The file was retrieved from the server but could not be loaded. Additional details:
+        <pre className="mt-4">{error.data}</pre>
+      </>
     );
   }
 
-  // Maybe we log this to Sentry someday...
+  if (title && description) {
+    return <Empty title={title} description={description} Icon={ExclamationTriangleIcon} actions={actions} />;
+  }
+
+  // If we reach here, it's an error we don't know how to handle.
+  // TODO: probably log this to Sentry...
   console.error(error);
   return (
     <Empty
       title="Unexpected error"
       description="Something went wrong loading this file. If the error continues, contact us."
       Icon={ExclamationTriangleIcon}
-      actions={
-        <Button asChild variant="secondary">
-          <Link to="/">Go home</Link>
-        </Button>
-      }
+      actions={actions}
       severity="error"
     />
   );

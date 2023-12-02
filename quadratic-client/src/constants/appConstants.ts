@@ -1,6 +1,6 @@
 export const SUPPORT_EMAIL = 'support@quadratichq.com';
 export const DEFAULT_FILE_NAME = 'Untitled';
-export const EXAMPLE_FILES: { [id: string]: { name: string; description: string } } = {
+export const EXAMPLE_FILES = {
   'default.grid': {
     name: 'Default (example)',
     description: 'Quick overview of basic usage of the app.',
@@ -41,6 +41,7 @@ export const EXAMPLE_FILES: { [id: string]: { name: string; description: string 
     description: 'Example with calculations from formulas and Python.',
   },
 };
+export type ExampleFileNames = keyof typeof EXAMPLE_FILES;
 export const CSV_IMPORT_MESSAGE = 'Drag and drop a CSV file on the grid to import it.';
 export const TYPE = {
   body2: 'text-sm',
@@ -48,4 +49,5 @@ export const TYPE = {
   overline: 'text-xs uppercase tracking-widest text-muted-foreground',
   h3: 'scroll-m-20 text-2xl font-semibold tracking-tight',
   h4: 'scroll-m-20 text-xl font-semibold tracking-tight',
+  code: 'relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold',
 };

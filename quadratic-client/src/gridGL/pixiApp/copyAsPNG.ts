@@ -1,7 +1,6 @@
 import { Matrix, Renderer } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from './PixiApp';
-import { pixiAppSettings } from './PixiAppSettings';
 
 const resolution = 4;
 const borderSize = 1;
@@ -54,7 +53,6 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   renderer.view.width = imageWidth;
   renderer.view.height = imageHeight;
   pixiApp.prepareForCopying();
-  pixiAppSettings.temporarilyHideCellTypeOutlines = true;
 
   // todo
   // app.cells.drawCells(app.sheet, rectangle, false);
@@ -64,7 +62,6 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   transform.scale(scale, scale);
   renderer.render(pixiApp.viewportContents, { transform });
   pixiApp.cleanUpAfterCopying();
-  pixiAppSettings.temporarilyHideCellTypeOutlines = false;
   return new Promise((resolve) => {
     renderer!.view.toBlob((blob) => resolve(blob));
   });

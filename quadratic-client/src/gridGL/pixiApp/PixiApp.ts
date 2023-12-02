@@ -232,6 +232,7 @@ export class PixiApp {
     this.headings.visible = false;
     this.quadrants.visible = false;
     this.boxCells.visible = false;
+    this.cellsSheets.toggleOutlines(false);
     if (options?.cull) {
       this.cellsSheets.cull(options.cull);
     }
@@ -245,6 +246,7 @@ export class PixiApp {
     this.headings.visible = true;
     this.boxCells.visible = true;
     this.quadrants.visible = this.cacheIsVisible;
+    this.cellsSheets.toggleOutlines(true);
     if (culled) {
       this.cellsSheets.cull(this.viewport.getVisibleBounds());
     }
