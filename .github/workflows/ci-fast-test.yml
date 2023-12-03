@@ -11,16 +11,46 @@ jobs:
     runs-on: self-hosted
     steps:
     - uses: actions/checkout@v3
+
     - name: Set up Rust
       uses: moonrepo/setup-rust@v1
       with:
         components: clippy
         cache: false
+        channel: 'nightly'
 
-    - name: Rust tests in quadratic-core
+    - name: Build Rust
+      env:
+        RUSTFLAGS: -Cinstrument-coverage
+      run: |
+        cd quadratic-core
+        cargo build
+
+    - name: Test
+      env:
+        LLVM_PROFILE_FILE: grcov-%p-%m.profraw
+        RUSTFLAGS: -Cinstrument-coverage
       run: |
         cd quadratic-core
         cargo test
+
+    - name: Generate coverage
+      run: |
+        grcov $(find . -name "grcov-*.profraw" -print) \
+          --branch \
+          --ignore-not-existing \
+          --binary-path ./quadratic-core/target/debug/ \
+          -s . \
+          -t lcov \
+          --ignore "/*" \
+          --ignore "./quadratic-core/src/wasm_bindings/*" \
+          --ignore "./quadratic-core/src/bin/*" \
+          -o lcov.info
+
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   test-client-unit:
     runs-on: self-hosted
