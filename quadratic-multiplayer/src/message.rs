@@ -33,6 +33,11 @@ pub(crate) enum MessageRequest {
         x: f64,
         y: f64,
     },
+    ChangeSelection {
+        user_id: String,
+        file_id: Uuid,
+        selection: String,
+    },
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
@@ -46,6 +51,11 @@ pub(crate) enum MessageResponse {
         file_id: Uuid,
         x: f64,
         y: f64,
+    },
+    ChangeSelection {
+        user_id: String,
+        file_id: Uuid,
+        selection: String,
     },
 }
 
@@ -99,6 +109,23 @@ pub(crate) async fn handle_message(
                 file_id,
                 x,
                 y,
+            };
+
+            broadcast(user_id, file_id, Arc::clone(&state), response.clone())?;
+
+            Ok(response)
+        }
+
+        // User changes their selection
+        MessageRequest::ChangeSelection {
+            user_id,
+            file_id,
+            selection,
+        } => {
+            let response = MessageResponse::ChangeSelection {
+                user_id: user_id.clone(),
+                file_id,
+                selection,
             };
 
             broadcast(user_id, file_id, Arc::clone(&state), response.clone())?;

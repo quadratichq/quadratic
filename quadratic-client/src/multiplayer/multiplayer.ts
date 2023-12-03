@@ -1,4 +1,8 @@
+import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
+import { Coordinate } from '@/gridGL/types/size';
 import { User } from '@auth0/auth0-spa-js';
+import { Rectangle } from 'pixi.js';
+import { MULTIPLAYER_COLORS } from './multiplayerCursor/multiplayerColors';
 
 // todo: create types for messages
 
@@ -8,7 +12,9 @@ export interface Player {
   y: number;
   name: string;
   picture: string;
+  color: number;
   visible: boolean;
+  selection?: { cursor: Coordinate; rectangle?: Rectangle };
 }
 
 class Multiplayer {
@@ -16,6 +22,9 @@ class Multiplayer {
   private ready = false;
   private room?: string;
   private uuid?: string;
+
+  // keep track of the next player's color index
+  private nextColor = 0;
 
   players: Map<string, Player> = new Map();
 
@@ -65,7 +74,7 @@ class Multiplayer {
     console.log(`[Multiplayer] Entered room.`);
   }
 
-  mouseMove(x: number, y: number) {
+  sendMouseMove(x: number, y: number) {
     if (!this.ready || !this.room || !this.uuid) return;
     if (!this.websocket) {
       throw new Error('[Multiplayer] Websocket not initialized.');
@@ -78,6 +87,22 @@ class Multiplayer {
         file_id: this.room,
         x,
         y,
+      })
+    );
+  }
+
+  sendSelection(cursor: Coordinate, rectangle?: Rectangle) {
+    if (!this.ready || !this.room || !this.uuid) return;
+    if (!this.websocket) {
+      throw new Error('[Multiplayer] Websocket not initialized.');
+    }
+    this.websocket.send(
+      JSON.stringify({
+        type: 'ChangeSelection',
+
+        user_id: this.uuid,
+        file_id: this.room,
+        selection: JSON.stringify({ cursor, rectangle }),
       })
     );
   }
@@ -99,8 +124,10 @@ class Multiplayer {
             sheetId: '',
             x: 0,
             y: 0,
+            color: this.nextColor,
             visible: false,
           });
+          this.nextColor = (this.nextColor + 1) % MULTIPLAYER_COLORS.length;
           console.log(`[Multiplayer] Player ${userId} entered room.`);
         }
       }
@@ -112,22 +139,23 @@ class Multiplayer {
         if (!player) {
           throw new Error("Expected Player to be defined before receiving a message of type 'MouseMove'");
         }
-        this.players.set(data.user_id, {
-          ...player,
-          x: data.x,
-          y: data.y,
-          visible: true,
-          // sheetId: data.sheet_id,
-        });
+        player.x = data.x;
+        player.y = data.y;
+        player.visible = true;
         window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
+      }
+    } else if (type === 'ChangeSelection') {
+      // todo: this check should not be needed (eventually)
+      if (data.user_id !== this.uuid) {
+        const player = this.players.get(data.user_id);
+        if (!player) {
+          throw new Error("Expected Player to be defined before receiving a message of type 'ChangeSelection'");
+        }
+        player.selection = JSON.parse(data.selection);
+        pixiApp.multiplayerCursor.dirty = true;
       }
     }
   };
-
-  // todo: maybe players should just be an array to instead of a map to speed up this operation?
-  getPlayers(): Player[] {
-    return Array.from(this.players.values());
-  }
 }
 
 export const multiplayer = new Multiplayer();

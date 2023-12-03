@@ -27,8 +27,9 @@ export const MultiplayerCursors = () => {
 
   return (
     <div className="multiplayer-cursors">
-      {multiplayer.getPlayers().flatMap((player, index) => {
-        const color = MULTIPLAYER_COLORS[index % MULTIPLAYER_COLORS.length];
+      const players = [];
+      {[...multiplayer.players].flatMap(([id, player]) => {
+        const color = MULTIPLAYER_COLORS[player.color];
         const bounds = pixiApp.viewport.getVisibleBounds();
         const rect = pixiApp.canvas.getBoundingClientRect();
         const offsetTop = rect.top;
@@ -51,7 +52,14 @@ export const MultiplayerCursors = () => {
             translated.y = rect.top - offsetTop;
           }
           return [
-            <MultiplayerCursor x={translated.x} y={translated.y} name={name} color={color} offscreen={offscreen} />,
+            <MultiplayerCursor
+              key={id}
+              x={translated.x}
+              y={translated.y}
+              name={name}
+              color={color}
+              offscreen={offscreen}
+            />,
           ];
         }
         return [];

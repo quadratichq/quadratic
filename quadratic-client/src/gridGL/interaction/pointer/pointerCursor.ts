@@ -6,6 +6,6 @@ export class PointerCursor {
   pointerMove(world: Point): void {
     const cursor = pixiApp.pointer.pointerHeading.cursor ?? pixiApp.pointer.pointerAutoComplete.cursor;
     pixiApp.canvas.style.cursor = cursor ?? 'unset';
-    multiplayer.mouseMove(world.x, world.y);
+    multiplayer.sendMouseMove(world.x, world.y);
   }
 }
