@@ -15,7 +15,7 @@ jobs:
     - name: Set up Rust
       uses: moonrepo/setup-rust@v1
       with:
-        components: clippy
+        components: clippy, llvm-tools-preview
         cache: false
         channel: 'nightly'
     
