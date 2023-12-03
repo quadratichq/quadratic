@@ -18,6 +18,9 @@ jobs:
         components: clippy
         cache: false
         channel: 'nightly'
+    
+    - name: install grcov
+      run: if ! which grcov; then cargo install grcov; fi
 
     - name: Build Rust
       env:
