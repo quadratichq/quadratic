@@ -163,9 +163,9 @@ pub(crate) mod tests {
         let state = Arc::new(State::new());
         let file_id = Uuid::new_v4();
         let user = new_user();
-        let user_id = user.id;
+        let user_id = user.id.clone();
         let request = MessageRequest::EnterRoom {
-            user_id,
+            user_id: user_id.clone(),
             file_id,
             first_name: user.first_name.clone(),
             last_name: user.last_name.clone(),
@@ -186,24 +186,24 @@ pub(crate) mod tests {
     async fn user_moves_a_mouse() {
         let state = Arc::new(State::new());
         let user = new_user();
-        let user_id = user.id;
+        let user_id = user.id.clone();
         let file_id = Uuid::new_v4();
         let x = 0 as f64;
         let y = 0 as f64;
         let request = MessageRequest::MouseMove {
-            user_id,
+            user_id: user_id.clone(),
             file_id,
             x,
             y,
         };
         let expected = MessageResponse::MouseMove {
-            user_id,
+            user_id: user_id.clone(),
             file_id,
             x,
             y,
         };
 
-        state.enter_room(file_id, user).await;
+        state.enter_room(file_id, &user).await;
 
         let response = integration_test(state.clone(), request).await;
 

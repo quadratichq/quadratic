@@ -1,3 +1,5 @@
+import { multiplayer } from '@/multiplayer/multiplayer';
+import { useRootRouteLoaderData } from '@/router';
 import { Button } from '@/shadcn/ui/button';
 import { ApiSchemas, ApiTypes } from '@quadratic-shared/typesAndSchemas';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
@@ -23,6 +25,7 @@ import QuadraticApp from '../ui/QuadraticApp';
 
 export type FileData = {
   name: string;
+  uuid: string;
   sharing: ApiTypes['/v0/files/:uuid/sharing.GET.response'];
   permission: ApiTypes['/v0/files/:uuid.GET.response']['permission'];
 };
@@ -84,20 +87,24 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   return {
     name: data.file.name,
+    uuid: data.file.uuid,
     permission: data.permission,
     sharing,
   };
 };
 
 export const Component = () => {
+  const { user } = useRootRouteLoaderData();
+
   // Initialize recoil with the file's permission we get from the server
-  const { permission } = useLoaderData() as FileData;
+  const { permission, uuid } = useLoaderData() as FileData;
   const initializeState = ({ set }: MutableSnapshot) => {
     set(editorInteractionStateAtom, (prevState) => ({
       ...prevState,
       permission,
     }));
   };
+  multiplayer.enterFileRoom(uuid, user);
 
   return (
     <RecoilRoot initializeState={initializeState}>

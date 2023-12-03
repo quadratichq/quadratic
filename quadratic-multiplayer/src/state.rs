@@ -15,7 +15,7 @@ use uuid::Uuid;
 #[derive(Serialize, Debug, Clone)]
 pub(crate) struct User {
     #[serde(skip_serializing)]
-    pub(crate) id: Uuid,
+    pub(crate) id: String,
     pub(crate) first_name: String,
     pub(crate) last_name: String,
     pub(crate) image: String,
@@ -35,7 +35,7 @@ impl PartialEq for User {
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct Room {
     pub(crate) file_id: Uuid,
-    pub(crate) users: HashMap<Uuid, User>,
+    pub(crate) users: HashMap<String, User>,
 }
 
 impl Room {
@@ -72,13 +72,15 @@ impl State {
 
     /// Add a user to a room.  If the room doesn't exist, it is created.  Users
     /// are only added to a room once (HashMap).
-    pub(crate) async fn enter_room(&self, file_id: Uuid, user: User) -> bool {
+    pub(crate) async fn enter_room(&self, file_id: Uuid, user: &User) -> bool {
         let mut rooms = self.rooms.lock().await;
         let room = rooms.entry(file_id).or_insert_with(|| Room::new(file_id));
 
+        let user_id = user.id.clone();
+
         tracing::trace!("User {:?} entered room {:?}", user, room);
 
-        room.users.insert(user.id, user).is_none()
+        room.users.insert(user_id, user.clone()).is_none()
     }
 }
 
@@ -94,7 +96,7 @@ mod tests {
         let file_id = Uuid::new_v4();
         let user = new_user();
 
-        let is_new = state.enter_room(file_id, user.clone()).await;
+        let is_new = state.enter_room(file_id, &user).await;
         let room = state.get_room(&file_id).await.unwrap();
         let user = room.users.get(&user.id).unwrap();
 

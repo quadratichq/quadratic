@@ -11,7 +11,8 @@
   "workspaces": [
     "quadratic-api",
     "quadratic-shared",
-    "quadratic-client"
+    "quadratic-client",
+    "quadratic-multiplayer"
   ],
   "scripts": {
     "start": "npm run watch:front-end",
@@ -22,6 +23,7 @@
     "watch:front-end": "npm run build:wasm:types && concurrently --hide=2 -n=react,rust,rust-types \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm run start:api\"",
     "watch:front-end-back-end": "npm run build:wasm:types && concurrently -n=react,rust,api \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm run start:api\"",
     "watch:app": "npm run build:wasm:types && concurrently -n=react,api 'npm:watch:javascript' 'npm run start:api'",
+    "watch:multiplayer": "npm run dev --workspace=quadratic-multiplayer",
     "lint:client": "cd quadratic-client && npm run lint:ts && npm run lint:eslint && lint:prettier && lint:clippy",
     "build:wasm:types": "cd quadratic-core && cargo run --bin export_types",
     "watch:wasm:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --dev --target web --out-dir ../quadratic-client/src/quadratic-core --weak-refs'",

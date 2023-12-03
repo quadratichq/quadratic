@@ -21,14 +21,14 @@ use crate::state::{Room, State, User};
 #[serde(tag = "type")]
 pub(crate) enum MessageRequest {
     EnterRoom {
-        user_id: Uuid,
+        user_id: String,
         file_id: Uuid,
         first_name: String,
         last_name: String,
         image: String,
     },
     MouseMove {
-        user_id: Uuid,
+        user_id: String,
         file_id: Uuid,
         x: f64,
         y: f64,
@@ -42,7 +42,7 @@ pub(crate) enum MessageResponse {
         room: Room,
     },
     MouseMove {
-        user_id: Uuid,
+        user_id: String,
         file_id: Uuid,
         x: f64,
         y: f64,
@@ -73,9 +73,11 @@ pub(crate) async fn handle_message(
                 image,
                 socket: Some(Arc::clone(&sender)),
             };
-            let is_new = state.enter_room(file_id, user).await;
+            let user_id = user.id.clone();
+            let is_new = state.enter_room(file_id, &user).await;
             let room = state.get_room(&file_id).await?;
             let response = MessageResponse::Room { room };
+            tracing::info!("user {} entered room", user.id);
 
             // only broadcast if the user is new to the room
             if is_new {
@@ -93,7 +95,7 @@ pub(crate) async fn handle_message(
             y,
         } => {
             let response = MessageResponse::MouseMove {
-                user_id,
+                user_id: user_id.clone(),
                 file_id,
                 x,
                 y,
@@ -109,7 +111,7 @@ pub(crate) async fn handle_message(
 /// Broadcast a message to all users in a room except the sender.
 /// All messages are sent in a separate thread.
 pub(crate) fn broadcast(
-    user_id: Uuid,
+    user_id: String,
     file_id: Uuid,
     state: Arc<State>,
     message: MessageResponse,
@@ -121,7 +123,8 @@ pub(crate) fn broadcast(
                 .await?
                 .users
                 .iter()
-                .filter(|user| user.0 != &user_id)
+                // todo: this is not working :(
+                .filter(|(_, user)| user_id != user.id)
             {
                 if let Some(sender) = &user.socket {
                     sender
@@ -156,12 +159,12 @@ pub(crate) mod tests {
         let user_1 = add_new_user_to_room(file_id, state.clone()).await;
         let _user_2 = add_new_user_to_room(file_id, state.clone()).await;
         let message = MessageResponse::MouseMove {
-            user_id: user_1.id,
+            user_id: user_1.id.clone(),
             file_id,
             x: 10 as f64,
             y: 10 as f64,
         };
-        broadcast(user_1.id, file_id, state, message).unwrap();
+        broadcast(user_1.id.clone(), file_id, state, message).unwrap();
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }

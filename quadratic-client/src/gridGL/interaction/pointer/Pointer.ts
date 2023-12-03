@@ -54,7 +54,7 @@ export class Pointer {
     this.pointerHeading.pointerMove(world) ||
       this.pointerAutoComplete.pointerMove(world) ||
       this.pointerDown.pointerMove(world);
-    this.pointerCursor.pointerMove();
+    this.pointerCursor.pointerMove(world);
   };
 
   private pointerUp = (e: InteractionEvent): void => {

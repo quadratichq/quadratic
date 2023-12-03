@@ -16,7 +16,7 @@ use crate::state::{State, User};
 
 pub(crate) fn new_user() -> User {
     User {
-        id: Uuid::new_v4(),
+        id: "user".to_string(),
         first_name: FirstName().fake(),
         last_name: LastName().fake(),
         image: FilePath().fake(),
@@ -25,7 +25,7 @@ pub(crate) fn new_user() -> User {
 }
 
 pub(crate) async fn add_user_to_room(file_id: Uuid, user: User, state: Arc<State>) -> User {
-    state.enter_room(file_id, user.clone()).await;
+    state.enter_room(file_id, &user).await;
     user
 }
 
