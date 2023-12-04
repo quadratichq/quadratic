@@ -7,6 +7,8 @@ import { MessageChangeSelection, MessageMouseMove, ReceiveMessages, SendEnterRoo
 
 const UPDATE_TIME = 1000 / 30;
 
+// todo: create types for messages
+
 export interface Player {
   sheetId: string;
   x?: number;
@@ -20,9 +22,10 @@ export interface Player {
 
 export class Multiplayer {
   private websocket?: WebSocket;
-  private ready = false;
+  private state: 'not connected' | 'connecting' | 'connected' = 'not connected';
   private room?: string;
   private uuid?: string;
+  private waitingForConnection: { (value: unknown): void }[] = [];
 
   // queue of items waiting to be sent to the server on the next tick
   private queue: { move?: MessageMouseMove; selection?: MessageChangeSelection } = {};
@@ -33,29 +36,38 @@ export class Multiplayer {
 
   players: Map<string, Player> = new Map();
 
-  async init() {
+  private async init() {
+    if (this.state === 'connected') return;
     return new Promise((resolve) => {
+      if (this.state === 'connecting') {
+        this.waitingForConnection.push(resolve);
+        return;
+      }
+
+      this.state = 'connecting';
       this.websocket = new WebSocket(import.meta.env.VITE_QUADRATIC_MULTIPLAYER_URL);
       this.websocket.addEventListener('message', this.handleMessage);
+
+      // todo: this is not ideal
       this.websocket.addEventListener('close', async () => {
         console.log('[Multiplayer] websocket closed. Reconnecting...');
-        this.ready = false;
+        this.state = 'not connected';
         await this.init();
         if (this.room) await this.enterFileRoom(this.room, { sub: this.uuid });
       });
+
       this.websocket.addEventListener('open', () => {
         console.log('[Multiplayer] websocket initialized.');
-        this.ready = true;
+        this.state = 'connected';
+        this.waitingForConnection.forEach((resolve) => resolve(0));
         resolve(0);
+        this.waitingForConnection = [];
       });
-      this.websocket.addEventListener('close', () => console.log('[Multiplayer] websocket closed.'));
     });
   }
 
   async enterFileRoom(uuid: string, user?: User) {
-    if (!this.ready || !this.websocket) {
-      throw new Error('[Multiplayer] Websocket not initialized.');
-    }
+    await this.init();
     if (!user?.sub) throw new Error('Expected User to be defined');
     if (this.room === uuid) return;
     this.room = uuid;
@@ -71,14 +83,12 @@ export class Multiplayer {
       last_name: user.family_name ?? '',
       image: user.picture ?? '',
     };
-    this.websocket.send(JSON.stringify(enterRoom));
+    this.websocket!.send(JSON.stringify(enterRoom));
     console.log(`[Multiplayer] Entered room.`);
   }
 
-  sendMouseMove(x?: number, y?: number) {
-    if (!this.ready || !this.websocket) {
-      throw new Error('[Multiplayer] Websocket not initialized.');
-    }
+  async sendMouseMove(x?: number, y?: number) {
+    await this.init();
     if (x === undefined || y === undefined) {
       this.queue.move = {
         type: 'MouseMove',
@@ -96,10 +106,8 @@ export class Multiplayer {
     }
   }
 
-  sendSelection(cursor: Coordinate, rectangle?: Rectangle) {
-    if (!this.ready || !this.websocket) {
-      throw new Error('[Multiplayer] Websocket not initialized.');
-    }
+  async sendSelection(cursor: Coordinate, rectangle?: Rectangle) {
+    await this.init();
     this.queue.selection = {
       type: 'ChangeSelection',
       user_id: this.uuid!,
@@ -108,19 +116,16 @@ export class Multiplayer {
     };
   }
 
-  update() {
-    if (!this.ready || !this.room || !this.uuid) return;
-    if (!this.websocket) {
-      throw new Error('[Multiplayer] Websocket not initialized.');
-    }
+  async update() {
+    await this.init();
     const now = performance.now();
     if (now - this.lastTime < UPDATE_TIME) return;
     if (this.queue.move) {
-      this.websocket.send(JSON.stringify(this.queue.move));
+      this.websocket!.send(JSON.stringify(this.queue.move));
       this.queue.move = undefined;
     }
     if (this.queue.selection) {
-      this.websocket.send(JSON.stringify(this.queue.selection));
+      this.websocket!.send(JSON.stringify(this.queue.selection));
       this.queue.selection = undefined;
     }
     this.lastTime = now;
