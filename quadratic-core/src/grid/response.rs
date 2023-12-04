@@ -1,13 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use super::ids::{ColumnId, RowId};
-
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[must_use]
 pub struct SetCellResponse<V> {
-    pub column: GetIdResponse<ColumnId>,
-    pub row: GetIdResponse<RowId>,
     pub old_value: V,
+    pub html: bool,
+    pub is_empty: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]

@@ -205,6 +205,7 @@ impl GridController {
             &self.set_cell_text_color(sheet_id, *rect, value, cursor),
         )?)
     }
+
     /// Sets cell fill color given as an optional [`String`].
     ///
     /// Returns a [`TransactionSummary`].
@@ -220,6 +221,32 @@ impl GridController {
         let value: Option<String> = serde_wasm_bindgen::from_value(fill_color).unwrap();
         Ok(serde_wasm_bindgen::to_value(
             &self.set_cell_fill_color(sheet_id, *rect, value, cursor),
+        )?)
+    }
+
+    /// Sets cell render size (used for Html-style cells).
+    ///
+    /// Returns a [`TransactionSummary`].
+    #[wasm_bindgen(js_name = "setCellRenderSize")]
+    pub fn js_set_cell_render_size(
+        &mut self,
+        sheet_id: String,
+        rect: &Rect,
+        w: Option<String>,
+        h: Option<String>,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        let value = if let (Some(w), Some(h)) = (w, h) {
+            Some(RenderSize {
+                w: w.to_owned(),
+                h: h.to_owned(),
+            })
+        } else {
+            None
+        };
+        Ok(serde_wasm_bindgen::to_value(
+            &self.set_cell_render_size(sheet_id, *rect, value, cursor),
         )?)
     }
 

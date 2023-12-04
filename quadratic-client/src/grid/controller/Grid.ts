@@ -27,6 +27,7 @@ import {
   CellWrap,
   FormattingSummary,
   JsClipboard,
+  JsHtmlOutput,
   JsRenderCell,
   JsRenderFill,
   Rect,
@@ -120,6 +121,10 @@ export class Grid {
 
     if (summary.generate_thumbnail) {
       this.thumbnailDirty = true;
+    }
+
+    if (summary.html) {
+      window.dispatchEvent(new CustomEvent('html-update', { detail: summary.html }));
     }
 
     const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
@@ -412,6 +417,16 @@ export class Grid {
     this.dirty = true;
   }
 
+  setCellRenderSize(sheetId: string, x: number, y: number, width: number, height: number) {
+    const summary = this.gridController.setCellRenderSize(
+      sheetId,
+      posToRect(x, y),
+      width.toString(),
+      height.toString()
+    );
+    this.transactionResponse(summary);
+  }
+
   //#endregion
 
   //#region get grid information
@@ -463,6 +478,11 @@ export class Grid {
 
   getRenderBorders(sheetId: string): JsRenderBorders {
     return this.gridController.getRenderBorders(sheetId);
+  }
+
+  getHtmlOutput(sheetId: string): JsHtmlOutput[] {
+    const data = this.gridController.getHtmlOutput(sheetId);
+    return JSON.parse(data);
   }
 
   //#endregion
