@@ -1,4 +1,4 @@
-name: CI Fast (test)
+name: CI
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
 
 jobs:
   test_rust:
+    name: quadratic-core [test]
     runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
@@ -56,6 +57,7 @@ jobs:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   test_unit:
+    name: quadratic-client [test]
     runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
@@ -70,6 +72,7 @@ jobs:
         npm run test:unit
 
   test_python:
+    name: quadratic-client-python [test]
     runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
@@ -88,6 +91,7 @@ jobs:
         npm run test:python
 
   test_api:
+    name: quadratic-api [test]
     runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
@@ -102,6 +106,7 @@ jobs:
         npm run docker:test:ci
 
   lint_rust:
+    name: quadratic-core [lint]
     runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
@@ -117,6 +122,7 @@ jobs:
         cargo clippy -- -D warnings
   
   lint:
+    name: quadratic-client [lint]
     runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
