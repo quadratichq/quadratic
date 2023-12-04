@@ -4,12 +4,12 @@ import { pixiApp } from '../../pixiApp/PixiApp';
 import { PointerAutoComplete } from './PointerAutoComplete/PointerAutoComplete';
 import { PointerDown } from './PointerDown';
 import { PointerHeading } from './PointerHeading';
-import { PointerCursor } from './pointerCursor';
+import { PointerHtmlCells } from './PointerHtmlCells';
 
 export class Pointer {
   pointerHeading: PointerHeading;
   pointerAutoComplete: PointerAutoComplete;
-  private pointerCursor: PointerCursor;
+  pointerHtmlCells: PointerHtmlCells;
 
   pointerDown: PointerDown;
 
@@ -17,7 +17,7 @@ export class Pointer {
     this.pointerHeading = new PointerHeading();
     this.pointerAutoComplete = new PointerAutoComplete();
     this.pointerDown = new PointerDown();
-    this.pointerCursor = new PointerCursor();
+    this.pointerHtmlCells = new PointerHtmlCells();
 
     viewport.on('pointerdown', this.handlePointerDown);
     viewport.on('pointermove', this.pointerMove);
@@ -43,7 +43,8 @@ export class Pointer {
     if (this.isMoreThanOneTouch(e)) return;
     const world = pixiApp.viewport.toWorld(e.data.global);
     const event = e.data.originalEvent as PointerEvent;
-    this.pointerHeading.pointerDown(world, event) ||
+    this.pointerHtmlCells.pointerDown(e) ||
+      this.pointerHeading.pointerDown(world, event) ||
       this.pointerAutoComplete.pointerDown(world) ||
       this.pointerDown.pointerDown(world, event);
   };
@@ -51,18 +52,36 @@ export class Pointer {
   private pointerMove = (e: InteractionEvent): void => {
     if (this.isMoreThanOneTouch(e)) return;
     const world = pixiApp.viewport.toWorld(e.data.global);
-    this.pointerHeading.pointerMove(world) ||
+    this.pointerHtmlCells.pointerMove(e) ||
+      this.pointerHeading.pointerMove(world) ||
       this.pointerAutoComplete.pointerMove(world) ||
       this.pointerDown.pointerMove(world);
-    this.pointerCursor.pointerMove();
+
+    // change the cursor based on pointer priority
+    const cursor =
+      pixiApp.pointer.pointerHtmlCells.cursor ??
+      pixiApp.pointer.pointerHeading.cursor ??
+      pixiApp.pointer.pointerAutoComplete.cursor;
+    pixiApp.canvas.style.cursor = cursor ?? 'unset';
   };
 
   private pointerUp = (e: InteractionEvent): void => {
     if (this.isMoreThanOneTouch(e)) return;
-    this.pointerHeading.pointerUp() || this.pointerAutoComplete.pointerUp() || this.pointerDown.pointerUp();
+    this.pointerHtmlCells.pointerUp() ||
+      this.pointerHeading.pointerUp() ||
+      this.pointerAutoComplete.pointerUp() ||
+      this.pointerDown.pointerUp();
   };
 
   handleEscape(): boolean {
-    return this.pointerHeading.handleEscape() || this.pointerAutoComplete.handleEscape();
+    return (
+      this.pointerHtmlCells.handleEscape() ||
+      this.pointerHeading.handleEscape() ||
+      this.pointerAutoComplete.handleEscape()
+    );
+  }
+
+  getCursor(): string {
+    return this.pointerHeading.cursor || this.pointerAutoComplete.cursor || 'default';
   }
 }

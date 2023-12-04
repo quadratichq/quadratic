@@ -7,6 +7,7 @@ use crate::{
         generate_borders, BorderSelection, CodeCellLanguage, CodeCellValue, NumericDecimals,
         NumericFormat, NumericFormatKind, RegionRef, SheetId,
     },
+    util::date_string,
     Array, CellValue, Pos, Rect, RunLengthEncoding,
 };
 
@@ -113,7 +114,7 @@ impl GridController {
         let mut ops = vec![];
 
         // remove any values that were originally over the code cell
-        if sheet.get_cell_value(pos).is_some() {
+        if sheet.get_cell_value_only(pos).is_some() {
             ops.push(Operation::SetCellValues {
                 region: RegionRef::from(cell_ref),
                 values: Array::from(CellValue::Blank),
@@ -127,9 +128,7 @@ impl GridController {
                 code_string,
                 formatted_code_string: None,
                 output: None,
-
-                // todo
-                last_modified: String::default(),
+                last_modified: date_string(),
             }),
         });
         self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)

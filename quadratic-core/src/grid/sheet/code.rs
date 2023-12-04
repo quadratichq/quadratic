@@ -4,7 +4,7 @@ use itertools::Itertools;
 
 use super::Sheet;
 use crate::{
-    grid::{CellRef, CodeCellValue},
+    grid::{CellRef, CodeCellValue, RenderSize},
     CellValue, Pos, Rect, Value,
 };
 
@@ -116,6 +116,12 @@ impl Sheet {
         self.code_cells.keys().copied()
     }
 
+    /// returns the render-size for a html-like cell
+    pub fn render_size(&self, pos: Pos) -> Option<RenderSize> {
+        let column = self.get_column(pos.x)?;
+        column.render_size.get(pos.y)
+    }
+
     /// Checks if the deletion of a cell or a code_cell released a spill error;
     /// sorted by earliest last_modified.
     /// Returns the cell_ref and the code_cell_value if it did
@@ -143,5 +149,37 @@ impl Sheet {
                     false
                 }
             })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{controller::GridController, grid::RenderSize, Rect};
+
+    #[test]
+    fn test_render_size() {
+        use crate::Pos;
+
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_render_size(
+            sheet_id,
+            Rect::single_pos(Pos { x: 0, y: 0 }),
+            Some(crate::grid::RenderSize {
+                w: "10".to_string(),
+                h: "20".to_string(),
+            }),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.render_size(Pos { x: 0, y: 0 }),
+            Some(RenderSize {
+                w: "10".to_string(),
+                h: "20".to_string()
+            })
+        );
+        assert_eq!(sheet.render_size(Pos { x: 1, y: 1 }), None);
     }
 }

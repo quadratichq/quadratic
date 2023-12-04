@@ -1,5 +1,5 @@
-import { Viewport, Plugin } from 'pixi-viewport';
 import { IPointData, Point } from '@pixi/math';
+import { Plugin, Viewport } from 'pixi-viewport';
 import { isMac } from '../../utils/isMac';
 
 /** Options for {@link Wheel}. */
@@ -216,12 +216,23 @@ export class Wheel extends Plugin {
     }
   }
 
-  private pinch(e: WheelEvent) {
+  // adjust is used to move the event for IFrames
+  private getPointerPosition(e: WheelEvent, adjust?: { x: number; y: number }) {
+    const point = new Point();
+    this.parent.options.interaction!.mapPositionToPoint(
+      point,
+      e.clientX + (adjust ? adjust.x : 0),
+      e.clientY + (adjust ? adjust.y : 0)
+    );
+    return point;
+  }
+
+  private pinch(e: WheelEvent, adjust?: { x: number; y: number }) {
     if (this.paused) {
       return;
     }
 
-    const point = this.parent.input.getPointerPosition(e);
+    const point = this.getPointerPosition(e, adjust);
     const step = (-e.deltaY * (e.deltaMode ? this.options.lineHeight : 1)) / 200;
     const change = Math.pow(2, (1 + this.options.percent) * step);
 
@@ -254,13 +265,13 @@ export class Wheel extends Plugin {
     this.parent.emit('wheel', { wheel: { dx: e.deltaX, dy: e.deltaY, dz: e.deltaZ }, event: e, viewport: this.parent });
   }
 
-  public wheel(e: WheelEvent): boolean {
+  public wheel(e: WheelEvent, adjust?: { x: number; y: number }): boolean {
     // If paused or both zoom and horizontal keys are pressed do nothing
     if (this.paused || (this.zoomKeyIsPressed && this.horizontalScrollKeyIsPressed)) {
       return false;
     }
     if (this.zoomKeyIsPressed) {
-      const point = this.parent.input.getPointerPosition(e);
+      const point = this.getPointerPosition(e);
       const sign = this.options.reverse ? -1 : 1;
       const step = (sign * -e.deltaY * (e.deltaMode ? this.options.lineHeight : 1)) / 500;
       const change = Math.pow(2, (1 + this.options.percent) * step);
@@ -312,7 +323,7 @@ export class Wheel extends Plugin {
         viewport: this.parent,
       });
     } else if (e.ctrlKey && this.options.trackpadPinch) {
-      this.pinch(e);
+      this.pinch(e, adjust);
     } else {
       const step = 1;
 

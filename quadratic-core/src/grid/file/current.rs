@@ -1,4 +1,5 @@
 use crate::color::Rgba;
+use crate::grid::formatting::RenderSize;
 use crate::grid::{
     generate_borders, set_region_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
     CellWrap, Grid, GridBounds, NumericFormat, NumericFormatKind, RegionRef,
@@ -113,6 +114,24 @@ fn set_column_format_bool(
     Ok(())
 }
 
+fn set_column_format_render_size(
+    column_data: &mut ColumnData<SameValue<RenderSize>>,
+    column: &HashMap<String, current::ColumnFormatType<current::RenderSize>>,
+) -> Result<()> {
+    for (y, format) in column.iter() {
+        let y =
+            i64::from_str(y).map_err(|e| anyhow!("Unable to convert {} to an i64: {}", y, e))?;
+        column_data.set(
+            y,
+            Some(RenderSize {
+                w: format.content.value.w.clone(),
+                h: format.content.value.h.clone(),
+            }),
+        );
+    }
+    Ok(())
+}
+
 fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<i64, Column>> {
     columns
         .iter()
@@ -131,6 +150,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
             set_column_format_bool(&mut col.italic, &column.italic)?;
             set_column_format_string(&mut col.text_color, &column.text_color)?;
             set_column_format_string(&mut col.fill_color, &column.fill_color)?;
+            set_column_format_render_size(&mut col.render_size, &column.render_size)?;
 
             for (y, value) in column.values.iter() {
                 for cell_value in value.content.values.iter() {
@@ -206,6 +226,7 @@ fn import_code_cell_output(type_field: &str, value: &str) -> CellValue {
     match type_field.to_lowercase().as_str() {
         "text" => CellValue::Text(value.to_owned()),
         "number" => CellValue::Number(BigDecimal::from_str(value).unwrap_or_default()),
+        "html" => CellValue::Html(value.to_owned()),
         _ => CellValue::Blank,
     }
 }
@@ -382,6 +403,29 @@ fn export_column_data_numeric_format(
         .collect()
 }
 
+fn export_column_data_render_size(
+    column_data: &ColumnData<SameValue<RenderSize>>,
+) -> HashMap<String, current::ColumnFormatType<current::RenderSize>> {
+    column_data
+        .values()
+        .map(|(y, value)| {
+            (
+                y.to_string(),
+                current::ColumnFormatType {
+                    y,
+                    content: current::ColumnFormatContent {
+                        value: current::RenderSize {
+                            w: value.w,
+                            h: value.h,
+                        },
+                        len: 1,
+                    },
+                },
+            )
+        })
+        .collect()
+}
+
 fn export_column_data<T>(
     column_data: &ColumnData<SameValue<T>>,
 ) -> HashMap<String, current::ColumnFormatType<String>>
@@ -419,6 +463,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                     italic: export_column_data_bool(&column.italic),
                     text_color: export_column_data_string(&column.text_color),
                     fill_color: export_column_data_string(&column.fill_color),
+                    render_size: export_column_data_render_size(&column.render_size),
                     values: column
                         .values
                         .values()

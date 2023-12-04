@@ -27,6 +27,14 @@ pub fn update_code_cell_value(
     let sheet_id = cell_ref.sheet;
     let sheet = grid_controller.grid.sheet_mut_from_id(sheet_id);
     if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
+        let old_code_cell_value = sheet.get_code_cell(pos);
+        if old_code_cell_value.is_some_and(|code_cell_value| {
+            code_cell_value
+                .get_output_value(0, 0)
+                .is_some_and(|cell_value| cell_value.is_html())
+        }) {
+            summary.html.insert(sheet.id);
+        }
         let mut spill = false;
         if let Some(updated_code_cell_value) = updated_code_cell_value.clone() {
             if let Some(output) = updated_code_cell_value.output {
@@ -73,11 +81,14 @@ pub fn update_code_cell_value(
                                     }
                                 }
                             }
-                            Value::Single(_) => {
+                            Value::Single(value) => {
                                 spill = false;
                                 summary
                                     .cell_sheets_modified
                                     .insert(CellSheetsModified::new(sheet.id, pos));
+                                if value.is_html() {
+                                    summary.html.insert(sheet.id);
+                                }
                             }
                         };
                     }
@@ -183,6 +194,9 @@ pub fn fetch_code_cell_difference(
     let cell_ref = sheet.get_or_create_cell_ref(pos);
 
     let (old_w, old_h) = old_code_cell_value.map_or((1, 1), |code_cell_value| {
+        if code_cell_value.is_html() {
+            summary.html.insert(sheet_id);
+        }
         if code_cell_value.has_spill_error() {
             (1, 1)
         } else {
@@ -191,6 +205,9 @@ pub fn fetch_code_cell_difference(
     });
 
     let (new_w, new_h) = new_code_cell_value.map_or((0, 0), |code_cell_value| {
+        if code_cell_value.is_html() {
+            summary.html.insert(sheet_id);
+        }
         if code_cell_value.has_spill_error() {
             (1, 1)
         } else {

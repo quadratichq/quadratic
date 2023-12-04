@@ -40,6 +40,10 @@ export const EXAMPLE_FILES = {
     name: 'Startup portfolio (example)',
     description: 'Example with calculations from formulas and Python.',
   },
+  'charting_example.grid': {
+    name: 'Charting (example)',
+    description: 'Example of charting data using Python and Plotly.',
+  },
 };
 export type ExampleFileNames = keyof typeof EXAMPLE_FILES;
 export const CSV_IMPORT_MESSAGE = 'Drag and drop a CSV file on the grid to import it.';

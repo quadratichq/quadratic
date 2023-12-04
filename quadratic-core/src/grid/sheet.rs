@@ -103,20 +103,27 @@ impl Sheet {
         value: impl Into<CellValue>,
     ) -> Option<SetCellResponse<CellValue>> {
         let value = value.into();
-        let is_blank = value.is_blank();
-        let value: Option<CellValue> = if is_blank { None } else { Some(value) };
+        let is_empty = value.is_blank();
+        let value: Option<CellValue> = if is_empty { None } else { Some(value) };
+
+        // if there's no value and the column doesn't exist, then nothing more needs to be done
         if value.is_none() && !self.columns.contains_key(&pos.x) {
             return None;
         }
 
-        let (column_response, column) = self.get_or_create_column(pos.x);
-        let old_value = column.values.set(pos.y, value).unwrap_or_default();
+        let (_, column) = self.get_or_create_column(pos.x);
+        let old_value = column.values.set(pos.y, value.clone()).unwrap_or_default();
 
-        let row_response = self.get_or_create_row(pos.y);
+        // returns if there's a change in html (html cell is added or removed from sheet)
+        let html = if let Some(value) = &value {
+            old_value.is_html() != value.is_html()
+        } else {
+            old_value.is_html()
+        };
         Some(SetCellResponse {
-            column: column_response,
-            row: row_response,
             old_value,
+            html,
+            is_empty,
         })
     }
 
@@ -152,7 +159,6 @@ impl Sheet {
         }
 
         for cell_ref in self.iter_code_cells_locations_in_region(region) {
-            // TODO: unspill!
             self.code_cells.remove(&cell_ref);
         }
 

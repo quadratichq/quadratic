@@ -75,6 +75,9 @@ pub struct TransactionSummary {
 
     // should the grid generate a thumbnail
     pub generate_thumbnail: bool,
+
+    // changes to html output
+    pub html: HashSet<SheetId>,
 }
 
 impl TransactionSummary {
