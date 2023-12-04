@@ -37,4 +37,11 @@ export interface SendEnterRoom {
   image: string;
 }
 
-export type ReceiveMessages = MessageMouseMove | ReceiveEnterRoom | MessageChangeSelection;
+export interface MessageTransaction {
+  type: 'Transaction';
+  user_id: string;
+  file_id: string;
+  operations: string;
+}
+
+export type ReceiveMessages = MessageMouseMove | ReceiveEnterRoom | MessageChangeSelection | MessageTransaction;

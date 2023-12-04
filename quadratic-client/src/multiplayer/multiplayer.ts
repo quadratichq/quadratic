@@ -54,9 +54,6 @@ export class Multiplayer {
   }
 
   async enterFileRoom(uuid: string, user?: User) {
-    // todo: hack to get around sharing bugged in ateam branch
-    uuid = 'ae910c17-5988-41c7-a915-af90f56d6e69';
-
     if (!user?.sub) throw new Error('Expected User to be defined');
     if (this.room === uuid) return;
     this.room = uuid;

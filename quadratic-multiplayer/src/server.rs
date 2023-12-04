@@ -233,4 +233,28 @@ pub(crate) mod tests {
 
         assert_eq!(response, serde_json::to_string(&expected).unwrap());
     }
+
+    #[tokio::test]
+    async fn user_shares_operations() {
+        let state = Arc::new(State::new());
+        let user = new_user();
+        let user_id = user.id.clone();
+        let file_id = Uuid::new_v4();
+        let request = MessageRequest::Transaction {
+            user_id: user_id.clone(),
+            file_id,
+            operations: "test".to_string(),
+        };
+        let expected = MessageResponse::Transaction {
+            user_id: user_id.clone(),
+            file_id,
+            operations: "test".to_string(),
+        };
+
+        state.enter_room(file_id, &user).await;
+
+        let response = integration_test(state.clone(), request).await;
+
+        assert_eq!(response, serde_json::to_string(&expected).unwrap());
+    }
 }

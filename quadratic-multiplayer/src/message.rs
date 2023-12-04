@@ -39,6 +39,13 @@ pub(crate) enum MessageRequest {
         file_id: Uuid,
         selection: String,
     },
+    Transaction {
+        user_id: String,
+        file_id: Uuid,
+
+        // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
+        operations: String,
+    },
 }
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
@@ -58,6 +65,13 @@ pub(crate) enum MessageResponse {
         user_id: String,
         file_id: Uuid,
         selection: String,
+    },
+    Transaction {
+        user_id: String,
+        file_id: Uuid,
+
+        // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
+        operations: String,
     },
 }
 
@@ -128,6 +142,23 @@ pub(crate) async fn handle_message(
                 user_id: user_id.clone(),
                 file_id,
                 selection,
+            };
+
+            broadcast(user_id, file_id, Arc::clone(&state), response.clone())?;
+
+            Ok(response)
+        }
+
+        // User sends transactions
+        MessageRequest::Transaction {
+            user_id,
+            file_id,
+            operations,
+        } => {
+            let response = MessageResponse::Transaction {
+                user_id: user_id.clone(),
+                file_id,
+                operations,
             };
 
             broadcast(user_id, file_id, Arc::clone(&state), response.clone())?;
@@ -208,6 +239,22 @@ pub(crate) mod tests {
             user_id: user_1.id.clone(),
             file_id: file_id,
             selection: "test".to_string(),
+        };
+        broadcast(user_1.id.clone(), file_id, state, message).unwrap();
+
+        // TODO(ddimaria): mock the splitsink sender to test the actual sending
+    }
+
+    #[tokio::test]
+    async fn test_transaction() {
+        let state = Arc::new(State::new());
+        let file_id = Uuid::new_v4();
+        let user_1 = add_new_user_to_room(file_id, state.clone()).await;
+        let _user_2 = add_new_user_to_room(file_id, state.clone()).await;
+        let message = MessageResponse::Transaction {
+            user_id: user_1.id.clone(),
+            file_id: file_id,
+            operations: "test".to_string(),
         };
         broadcast(user_1.id.clone(), file_id, state, message).unwrap();
 
