@@ -51,8 +51,6 @@ jobs:
         echo "deploy 1"
         vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
         echo "deploy 2"
-        vercel build --token=${{ secrets.VERCEL_TOKEN }}
-        echo "deploy 3"
         vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
 
     # - name: Deploy to AWS S3
