@@ -63,7 +63,7 @@ export class Pointer {
       this.pointerHeading.pointerMove(world) ||
       this.pointerAutoComplete.pointerMove(world) ||
       this.pointerDown.pointerMove(world);
-    this.pointerCursor.pointerMove(world);
+    // this.pointerCursor.pointerMove(world); TODO: verify if we need this line
 
     // change the cursor based on pointer priority
     const cursor =
