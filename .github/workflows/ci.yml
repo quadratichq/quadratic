@@ -138,7 +138,7 @@ jobs:
     - name: Build wasm core
       run: |
         cd quadratic-client
-        npm run build:wasm:javascript
+        npm run build:wasm:javascript:dev
         npm run build:wasm:types
 
     - name: Lint quadratic-client
