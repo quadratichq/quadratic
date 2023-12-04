@@ -44,14 +44,16 @@ jobs:
         VITE_AUTH0_DOMAIN: ${{ secrets.VITE_AUTH0_DOMAIN }}
 
 
-    - name: Deploy to Vercel
-      run: |
-        cd quadratic-client
-        npm install --global vercel@latest
-        echo "deploy 1"
-        vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-        echo "deploy 2"
-        vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+    - name: Setup Pages
+      uses: actions/configure-pages@v3
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v2
+      with:
+        # Upload dist repository
+        path: './dist'
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v2
 
     # - name: Deploy to AWS S3
     #   run: aws s3 sync dist s3://quadratic-preview-branches --delete
