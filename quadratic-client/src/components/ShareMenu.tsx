@@ -1,4 +1,6 @@
-import { ArrowDropDown, Check, EmailOutlined, Public, PublicOff } from '@mui/icons-material';
+import { TYPE } from '@/constants/appConstants';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shadcn/ui/select';
+import { ArrowDropDown, Check, EmailOutlined } from '@mui/icons-material';
 import {
   Alert,
   Avatar,
@@ -16,6 +18,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
+import { GlobeIcon, LockClosedIcon } from '@radix-ui/react-icons';
 import { ApiTypes, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
 import React, { useEffect, useState } from 'react';
 import { useFetcher, useSearchParams } from 'react-router-dom';
@@ -109,7 +112,7 @@ function ShareMenu({ fetcherUrl, uuid }: { fetcherUrl: string; uuid: string }) {
         </Alert>
       )}
 
-      {canEdit && (
+      {false && canEdit && (
         <ShareMenu.Invite
           onInvite={({ email, role }) => {
             // @ts-expect-error
@@ -590,28 +593,51 @@ function PublicLink({
     });
   };
 
-  const options: Option[] = [
-    { label: 'Cannot view', onClick: () => setPublicLinkAccess('NOT_SHARED') },
-    { label: 'Can view', onClick: () => setPublicLinkAccess('READONLY') },
-    { label: 'Can edit (coming soon)', onClick: () => setPublicLinkAccess('EDIT'), disabled: true },
-  ];
+  const optionsByValue: Record<PublicLinkAccess, { label: string; disabled?: boolean }> = {
+    NOT_SHARED: { label: 'Cannot view' },
+    READONLY: { label: 'Can view' },
+    EDIT: { label: 'Can edit', disabled: true },
+  };
 
-  const label =
-    public_link_access === 'NOT_SHARED' ? 'Cannot view' : public_link_access === 'READONLY' ? 'Can view' : 'Can edit';
+  const activeOptionLabel = optionsByValue[public_link_access].label;
 
   return (
     <>
-      {public_link_access === 'NOT_SHARED' ? <PublicOff /> : <Public />}
-      <Stack>
-        <Typography variant="body2">Anyone with the link</Typography>
-        {fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok && (
-          <Typography variant="caption" color="error">
-            Failed to update
-          </Typography>
+      <div className="flex items-center gap-2">
+        {public_link_access === 'NOT_SHARED' ? (
+          <LockClosedIcon className={`h-5 w-5`} />
+        ) : (
+          <GlobeIcon className={`h-5 w-5`} />
         )}
-      </Stack>
+        <div className={`flex flex-col`}>
+          <p className={`${TYPE.body2}`}>Anyone with the link</p>
+          {fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok && (
+            <Typography variant="caption" color="error">
+              Failed to update
+            </Typography>
+          )}
+        </div>
+      </div>
 
-      <UserPopoverMenu label={label} options={options} />
+      <Select
+        value={public_link_access}
+        onValueChange={(value: PublicLinkAccess) => {
+          setPublicLinkAccess(value);
+        }}
+      >
+        <SelectTrigger className="w-[180px]">
+          <SelectValue>{activeOptionLabel}</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {Object.entries(optionsByValue).map(([value, { label, disabled }]) => (
+            <SelectItem value={value} disabled={disabled} key={value}>
+              {label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {/* <UserPopoverMenu label={label} options={options} /> */}
     </>
   );
 }
