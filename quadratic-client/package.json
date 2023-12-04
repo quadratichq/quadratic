@@ -62,7 +62,6 @@
     "build:wasm:nodejs": "cd .. && cd quadratic-core && wasm-pack build --target nodejs --out-dir ../quadratic-client/src/quadratic-core/__mocks__ --weak-refs --dev",
     "watch:javascript": "export VITE_VERSION=$(git rev-parse HEAD) && vite dev",
     "start:production": "npm run build && serve build",
-    "build:ci": "../scripts/run-ci-build.sh",
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\"",
     "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:unit:dev": "npm run build:wasm:nodejs && npm run test:unit -- --watchAll",

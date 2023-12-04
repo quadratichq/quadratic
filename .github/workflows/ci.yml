@@ -1,5 +1,9 @@
 name: CI
 
+# Use runs on `ubuntu-latest-8-cores`. All of our self hosted runners use this tag.
+# Our runners pick up jobs first, and if all our runners are being used or are down
+# it will automatically back up to using GitHub hosted runners.
+
 on:
   push:
     branches:
@@ -8,9 +12,9 @@ on:
 
 jobs:
   test_rust:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: ubuntu-latest-8-cores 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up Rust
       uses: moonrepo/setup-rust@v1
@@ -58,7 +62,7 @@ jobs:
   test_unit:
     runs-on: ubuntu-latest-8-cores
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
       with:
         node-version: 18
@@ -72,7 +76,7 @@ jobs:
   test_python:
     runs-on: ubuntu-latest-8-cores
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
       with:
         node-version: 18
@@ -90,7 +94,7 @@ jobs:
   test_api:
     runs-on: ubuntu-latest-8-cores
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
       with:
         node-version: 18
@@ -104,7 +108,7 @@ jobs:
   lint_rust:
     runs-on: ubuntu-latest-8-cores
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Set up Rust
       uses: moonrepo/setup-rust@v1
       with:
@@ -119,7 +123,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest-8-cores
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
       with:
         node-version: 18
