@@ -103,7 +103,7 @@ demangle-name-section = true
 dwarf-debug-info = true
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ['-Os', '-g']  # TODO: -g seems to fix the name mangling problem
+wasm-opt = ['-O', '-g']  # TODO: -g seems to fix the name mangling problem
 
 [package.metadata.wasm-pack.profile.release.wasm-bindgen]
 debug-js-glue = false
