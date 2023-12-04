@@ -20,10 +20,15 @@ jobs:
         version: 'latest'
 
     - name: Install Dependencies
-      run: npm install
+      run:
+        cd quadratic-client 
+        npm install
 
     - name: Build
-      run: npm run build
+      run:
+        cd quadratic-client
+        npm run build:wasm 
+        npm run build
       env:
         VITE_ENVIRONMENT: preview
         VITE_QUADRATIC_API_URL: https://quadratic-api-dev-pr-${{ github.event.pull_request.number }}.herokuapp.com
