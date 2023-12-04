@@ -84,7 +84,7 @@ harness = false
 opt-level = "s"
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ['1', '-g']  # TODO: -g seems to fix the name mangling problem
+wasm-opt = ['2', '-g']  # TODO: -g seems to fix the name mangling problem
 
 
 
