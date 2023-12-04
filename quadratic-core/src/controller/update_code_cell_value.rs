@@ -361,7 +361,7 @@ mod test {
         );
         assert_eq!(summary.cell_sheets_modified.len(), 1);
 
-        summary.clear();
+        summary.clear(false);
 
         let new_larger = Some(CodeCellValue {
             language: CodeCellLanguage::Python,

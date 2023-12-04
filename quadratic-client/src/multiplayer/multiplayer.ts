@@ -74,6 +74,7 @@ export class Multiplayer {
   }
 
   async enterFileRoom(uuid: string, user?: User) {
+    uuid = 'ab96f02c-fd8c-4daa-bfb5-aec871ab9225';
     await this.init();
     if (!user?.sub) throw new Error('Expected User to be defined');
     if (this.room === uuid) return;
