@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  test-core:
+  test_rust:
     runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
@@ -55,7 +55,7 @@ jobs:
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  test-client-unit:
+  test_unit:
     runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
@@ -69,7 +69,7 @@ jobs:
         npm install
         npm run test:unit
 
-  test-client-python:
+  test_python:
     runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
@@ -87,7 +87,7 @@ jobs:
         cd quadratic-client
         npm run test:python
 
-  test-api-unit:
+  test_api:
     runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
@@ -101,7 +101,7 @@ jobs:
         npm install
         npm run docker:test:ci
 
-  lint-rust:
+  lint_rust:
     runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
@@ -116,7 +116,7 @@ jobs:
         cd quadratic-core
         cargo clippy -- -D warnings
   
-  lint-client:
+  lint:
     runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
