@@ -1,3 +1,4 @@
+import { multiplayer } from '@/multiplayer/multiplayer';
 import { Point } from 'pixi.js';
 import { debugShowFPS, debugShowWhyRendering } from '../../debugFlags';
 import { FPS } from '../helpers/Fps';
@@ -119,6 +120,8 @@ export class Update {
       debugRendererLight(false);
       thumbnail.check();
     }
+
+    multiplayer.update();
 
     this.raf = requestAnimationFrame(this.update);
     this.fps?.update();

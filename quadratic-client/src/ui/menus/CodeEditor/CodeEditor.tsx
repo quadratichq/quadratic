@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { pythonStateAtom } from '@/atoms/pythonStateAtom';
+import { multiplayer } from '@/multiplayer/multiplayer';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -191,6 +192,14 @@ export const CodeEditor = () => {
         backgroundColor: '#ffffff',
       }}
       onKeyDownCapture={onKeyDownEditor}
+      onPointerEnter={() => {
+        // todo: handle multiplayer code editor here
+        multiplayer.sendMouseMove();
+      }}
+      onPointerMove={(e) => {
+        console.log('hi');
+        e.stopPropagation();
+      }}
     >
       {showSaveChangesAlert && (
         <SaveChangesAlert

@@ -3,13 +3,16 @@ import { Coordinate } from '@/gridGL/types/size';
 import { User } from '@auth0/auth0-spa-js';
 import { Rectangle } from 'pixi.js';
 import { MULTIPLAYER_COLORS } from './multiplayerCursor/multiplayerColors';
+import { MessageChangeSelection, MessageMouseMove, ReceiveMessages, SendEnterRoom } from './multiplayerTypes';
+
+const UPDATE_TIME = 1000 / 30;
 
 // todo: create types for messages
 
 export interface Player {
   sheetId: string;
-  x: number;
-  y: number;
+  x?: number;
+  y?: number;
   name: string;
   picture: string;
   color: number;
@@ -17,11 +20,15 @@ export interface Player {
   selection?: { cursor: Coordinate; rectangle?: Rectangle };
 }
 
-class Multiplayer {
+export class Multiplayer {
   private websocket?: WebSocket;
   private ready = false;
   private room?: string;
   private uuid?: string;
+
+  // queue of items waiting to be sent to the server on the next tick
+  private queue: { move?: MessageMouseMove; selection?: MessageChangeSelection } = {};
+  private lastTime = 0;
 
   // keep track of the next player's color index
   private nextColor = 0;
@@ -50,7 +57,7 @@ class Multiplayer {
     // todo: hack to get around sharing bugged in ateam branch
     uuid = 'ae910c17-5988-41c7-a915-af90f56d6e69';
 
-    if (!user) throw new Error('Expected User to be defined');
+    if (!user?.sub) throw new Error('Expected User to be defined');
     if (this.room === uuid) return;
     this.room = uuid;
     this.uuid = user.sub;
@@ -58,65 +65,68 @@ class Multiplayer {
     if (!this.websocket) {
       throw new Error('[Multiplayer] Websocket not initialized.');
     }
-    this.websocket.send(
-      JSON.stringify({
-        type: 'EnterRoom',
+    const enterRoom: SendEnterRoom = {
+      type: 'EnterRoom',
 
-        // todo: not sure this is the correct user id
-        user_id: user.sub,
+      // todo: not sure this is the correct user id
+      user_id: user.sub,
 
-        file_id: uuid,
-        first_name: user.given_name,
-        last_name: user.family_name,
-        image: user.picture,
-      })
-    );
+      file_id: uuid,
+      first_name: user.given_name ?? '',
+      last_name: user.family_name ?? '',
+      image: user.picture ?? '',
+    };
+    this.websocket.send(JSON.stringify(enterRoom));
     console.log(`[Multiplayer] Entered room.`);
   }
 
   sendMouseMove(x?: number, y?: number) {
-    if (!this.ready || !this.room || !this.uuid) return;
-    if (!this.websocket) {
-      throw new Error('[Multiplayer] Websocket not initialized.');
-    }
     if (x === undefined || y === undefined) {
-      this.websocket.send(
-        JSON.stringify({
-          type: 'MouseMove',
-          user_id: this.uuid,
-          file_id: this.room,
-        })
-      );
+      this.queue.move = {
+        type: 'MouseMove',
+        user_id: this.uuid!,
+        file_id: this.room!,
+      };
     } else {
-      this.websocket.send(
-        JSON.stringify({
-          type: 'MouseMove',
-          user_id: this.uuid,
-          file_id: this.room,
-          x,
-          y,
-        })
-      );
+      this.queue.move = {
+        type: 'MouseMove',
+        user_id: this.uuid!,
+        file_id: this.room!,
+        x,
+        y,
+      };
     }
   }
 
   sendSelection(cursor: Coordinate, rectangle?: Rectangle) {
+    this.queue.selection = {
+      type: 'ChangeSelection',
+      user_id: this.uuid!,
+      file_id: this.room!,
+      selection: JSON.stringify({ cursor, rectangle }),
+    };
+  }
+
+  update() {
     if (!this.ready || !this.room || !this.uuid) return;
     if (!this.websocket) {
       throw new Error('[Multiplayer] Websocket not initialized.');
     }
-    this.websocket.send(
-      JSON.stringify({
-        type: 'ChangeSelection',
-        user_id: this.uuid,
-        file_id: this.room,
-        selection: JSON.stringify({ cursor, rectangle }),
-      })
-    );
+    const now = performance.now();
+    if (now - this.lastTime < UPDATE_TIME) return;
+    if (this.queue.move) {
+      this.websocket.send(JSON.stringify(this.queue.move));
+      this.queue.move = undefined;
+    }
+    if (this.queue.selection) {
+      this.websocket.send(JSON.stringify(this.queue.selection));
+      this.queue.selection = undefined;
+    }
+    this.lastTime = now;
   }
 
-  handleMessage = (e: any) => {
-    const data = JSON.parse(e.data);
+  handleMessage = (e: { data: string }) => {
+    const data = JSON.parse(e.data) as ReceiveMessages;
     const { type } = data;
     if (type === 'Room') {
       this.players.clear();

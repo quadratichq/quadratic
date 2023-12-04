@@ -17,6 +17,7 @@ use uuid::Uuid;
 
 use crate::state::{Room, State, User};
 
+// NOTE: needs to be kept in sync with multiplayerTypes.ts
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(tag = "type")]
 pub(crate) enum MessageRequest {
@@ -40,6 +41,7 @@ pub(crate) enum MessageRequest {
     },
 }
 
+// NOTE: needs to be kept in sync with multiplayerTypes.ts
 #[derive(Serialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type")]
 pub(crate) enum MessageResponse {
