@@ -65,6 +65,9 @@ impl GridController {
         if transaction.complete {
             summary.save = true;
             self.finalize_transaction(&transaction);
+            if let Ok(operations) = serde_json::to_string(&transaction.multiplayer_operations) {
+                summary.multiplayer_operations = operations;
+            }
         } else {
             self.transaction_in_progress = Some(transaction);
         }
