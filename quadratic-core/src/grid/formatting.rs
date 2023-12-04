@@ -103,6 +103,16 @@ impl CellFmtAttr for FillColor {
     }
 }
 
+impl CellFmtAttr for RenderSize {
+    type Value = Self;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.render_size
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.render_size
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
@@ -132,8 +142,16 @@ pub struct NumericFormat {
     pub symbol: Option<String>,
 }
 
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+/// Measures DOM element size in pixels.
+pub struct RenderSize {
+    pub w: String,
+    pub h: String,
+}
+
 #[derive(
-    Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Display, EnumString,
+    Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Display, EnumString, Copy,
 )]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "UPPERCASE")]

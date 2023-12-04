@@ -24,11 +24,25 @@ impl CodeCellValue {
         }
     }
 
+    pub fn set_spill(&mut self, spill: bool) {
+        if let Some(output) = &mut self.output {
+            output.spill = spill;
+        }
+    }
+
     // todo: output_size outputs a 1x1 for output == None. That seems wrong
     pub fn output_size(&self) -> ArraySize {
         match self.output.as_ref().and_then(|out| out.output_value()) {
             Some(Value::Array(a)) => a.size(),
             Some(Value::Single(_)) | None => ArraySize::_1X1,
+        }
+    }
+
+    pub fn is_html(&self) -> bool {
+        if let Some(code_cell_value) = self.get_output_value(0, 0) {
+            code_cell_value.is_html()
+        } else {
+            false
         }
     }
 

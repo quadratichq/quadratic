@@ -117,6 +117,7 @@ impl GridController {
             save: false,
             generate_thumbnail: false,
             transaction_busy: false,
+            html: HashSet::new(),
         })?)
     }
 }

@@ -11,7 +11,8 @@ frontend:
 
     build:
       commands:
-        - npm run build:wasm
+        - npm run build:wasm:javascript
+        - npm run build:wasm:types
         - npm run build
   artifacts:
     baseDirectory: build

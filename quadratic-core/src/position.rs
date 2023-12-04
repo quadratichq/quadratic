@@ -97,6 +97,16 @@ impl Rect {
         }
     }
 
+    pub fn from_numbers(x: i64, y: i64, w: i64, h: i64) -> Rect {
+        Rect {
+            min: Pos { x, y },
+            max: Pos {
+                x: x + w - 1,
+                y: y + h - 1,
+            },
+        }
+    }
+
     /// Constructs a new rectangle containing only a single cell.
     pub fn single_pos(pos: Pos) -> Rect {
         Rect { min: pos, max: pos }
