@@ -139,7 +139,7 @@ jobs:
       run: |
         cd quadratic-client
         npm run build:wasm:javascript:no-optimize
-        npm run build:wasm:types:no-optimize
+        npm run build:wasm:types
 
     - name: Lint quadratic-client
       run: |
