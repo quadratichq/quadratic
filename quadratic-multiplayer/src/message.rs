@@ -252,7 +252,7 @@ pub(crate) mod tests {
         let _user_2 = add_new_user_to_room(file_id, state.clone()).await;
         let message = MessageResponse::ChangeSelection {
             user_id: user_1.id.clone(),
-            file_id: file_id,
+            file_id,
             selection: "test".to_string(),
         };
         broadcast(user_1.id.clone(), file_id, state, message).unwrap();
@@ -268,7 +268,7 @@ pub(crate) mod tests {
         let _user_2 = add_new_user_to_room(file_id, state.clone()).await;
         let message = MessageResponse::Transaction {
             user_id: user_1.id.clone(),
-            file_id: file_id,
+            file_id,
             operations: "test".to_string(),
         };
         broadcast(user_1.id.clone(), file_id, state, message).unwrap();

@@ -89,7 +89,7 @@ impl State {
         let num_in_room = get_room!(self, file_id)?.users.len();
 
         tracing::trace!(
-            "User {:?} leaving room {}, {} left",
+            "User {:?} is leaving room {}, {} user(s) left",
             user_id,
             file_id,
             num_in_room
@@ -153,7 +153,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn enters_retrieves_and_leaves_a_room() {
+    async fn enters_retrieves_leaves_and_removes_a_room() {
         let state = State::new();
         let file_id = Uuid::new_v4();
         let user = new_user();

@@ -189,10 +189,7 @@ pub(crate) mod tests {
         let user_id = user.id.clone();
         let user2 = new_user();
         let file_id = Uuid::new_v4();
-        let request = MessageRequest::LeaveRoom {
-            user_id: user_id,
-            file_id,
-        };
+        let request = MessageRequest::LeaveRoom { user_id, file_id };
         let expected = MessageResponse::Room {
             room: Room {
                 file_id,
