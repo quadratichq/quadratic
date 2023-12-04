@@ -8,7 +8,7 @@ on:
 
 jobs:
   test-core:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
 
@@ -56,7 +56,7 @@ jobs:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   test-client-unit:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v4
@@ -70,7 +70,7 @@ jobs:
         npm run test:unit
 
   test-client-python:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v4
@@ -88,7 +88,7 @@ jobs:
         npm run test:python
 
   test-api-unit:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v4
@@ -102,7 +102,7 @@ jobs:
         npm run docker:test:ci
 
   lint-rust:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
     - name: Set up Rust
@@ -117,7 +117,7 @@ jobs:
         cargo clippy -- -D warnings
   
   lint-client:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v4
