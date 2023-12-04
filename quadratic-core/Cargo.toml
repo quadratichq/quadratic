@@ -83,8 +83,6 @@ harness = false
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
 
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = false
 
 
 
@@ -105,7 +103,7 @@ demangle-name-section = true
 dwarf-debug-info = true
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ['-O4', '-g']  # TODO: -g seems to fix the name mangling problem
+wasm-opt = ['-Os', '-g']  # TODO: -g seems to fix the name mangling problem
 
 [package.metadata.wasm-pack.profile.release.wasm-bindgen]
 debug-js-glue = false
