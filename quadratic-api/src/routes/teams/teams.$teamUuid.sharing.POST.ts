@@ -1,42 +1,36 @@
-import express, { Response } from 'express';
+import express, { Request, Response } from 'express';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { getUsersByEmail } from '../../auth0/profile';
 import dbClient from '../../dbClient';
 import { teamMiddleware } from '../../middleware/team';
-import { userMiddleware } from '../../middleware/user';
-import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { Request, RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
+import { RequestWithTeam } from '../../types/Request';
 import { ResponseError } from '../../types/Response';
 import { firstRoleIsHigherThanSecond } from '../../utils';
-
 const router = express.Router();
 
-const ReqSchema = z.object({
-  params: z.object({
-    uuid: z.string().uuid(),
-  }),
-  body: ApiSchemas['/v0/teams/:uuid/sharing.POST.request'],
-});
+const requestValidationMiddleware = validateRequestSchema(
+  z.object({
+    params: z.object({
+      uuid: z.string().uuid(),
+    }),
+    body: ApiSchemas['/v0/teams/:uuid/sharing.POST.request'],
+  })
+);
 
 router.post(
   '/:uuid/sharing',
-  validateAccessToken,
-  validateRequestSchema(ReqSchema),
-  userMiddleware,
+  requestValidationMiddleware,
   teamMiddleware,
-  async (
-    req: Request & RequestWithAuth & RequestWithUser & RequestWithTeam,
-    res: Response<ApiTypes['/v0/teams/:uuid/sharing.POST.response'] | ResponseError>
-  ) => {
+  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid/sharing.POST.response'] | ResponseError>) => {
     const {
       body: { email, role },
       team: {
         data: { id: teamId },
         user: teamUser,
       },
-    } = req;
+    } = req as RequestWithTeam;
 
     const userMakingRequestRole = teamUser.role;
 
@@ -85,6 +79,9 @@ router.post(
           auth0_id: auth0User.user_id,
         },
       });
+      if (!dbUser) {
+        return res.status(500).json({ error: { message: 'Internal server error: user not found' } });
+      }
 
       // See if they're already a member of the team
       const u = await dbClient.userTeamRole.findUnique({

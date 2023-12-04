@@ -178,7 +178,7 @@ files_router.post(
         uuid: req.params.uuid,
       },
       data: {
-        thumbnail: req.file.key,
+        thumbnail: req.file?.key,
       },
     });
 

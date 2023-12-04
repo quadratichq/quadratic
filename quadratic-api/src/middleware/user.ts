@@ -1,6 +1,6 @@
-import { NextFunction, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import dbClient from '../dbClient';
-import { Request } from '../types/Request';
+import { RequestWithAuth, RequestWithOptionalAuth, RequestWithUser } from '../types/Request';
 
 const getOrCreateUser = async (auth0_id: string) => {
   // get user from db
@@ -23,21 +23,28 @@ const getOrCreateUser = async (auth0_id: string) => {
 };
 
 export const userMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  if (req.auth?.sub === undefined) {
-    return res.status(401).json({ error: { message: 'Invalid authorization token' } });
+  const { auth } = req as RequestWithAuth;
+
+  const user = await getOrCreateUser(auth.sub);
+  if (!user) {
+    return res.status(500).json({ error: { message: 'Unable to get authenticated user' } });
   }
 
-  req.user = await getOrCreateUser(req.auth.sub);
-
+  (req as RequestWithUser).user = user;
   next();
 };
 
 export const userOptionalMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  if (req.auth?.sub === undefined) {
-    return next();
-  }
+  const { auth } = req as RequestWithOptionalAuth;
 
-  req.user = await getOrCreateUser(req.auth.sub);
+  if (auth && auth.sub) {
+    const user = await getOrCreateUser(auth.sub);
+    if (!user) {
+      return res.status(500).json({ error: { message: 'Unable to get authenticated user' } });
+    }
+    // @ts-expect-error
+    req.user = user;
+  }
 
   next();
 };

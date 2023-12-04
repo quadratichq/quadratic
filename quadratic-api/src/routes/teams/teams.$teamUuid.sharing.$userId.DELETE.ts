@@ -1,42 +1,37 @@
-import express, { Response } from 'express';
+import express, { Request, Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { teamMiddleware } from '../../middleware/team';
-import { userMiddleware } from '../../middleware/user';
-import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
+import { RequestWithTeam } from '../../types/Request';
 import { ResponseError } from '../../types/Response';
 
 const router = express.Router();
 
-const ReqSchema = z.object({
-  params: z.object({
-    uuid: z.string().uuid(),
-    userId: z.coerce.number(),
-  }),
-});
+const requestValidationMiddleware = validateRequestSchema(
+  z.object({
+    params: z.object({
+      uuid: z.string().uuid(),
+      userId: z.coerce.number(),
+    }),
+  })
+);
 
 router.delete(
   '/:uuid/sharing/:userId',
-  validateRequestSchema(ReqSchema),
-  validateAccessToken,
-  userMiddleware,
+  requestValidationMiddleware,
   teamMiddleware,
-  async (
-    req: RequestWithAuth & RequestWithUser & RequestWithTeam,
-    res: Response<ApiTypes['/v0/teams/:uuid/sharing/:userId.DELETE.response'] | ResponseError>
-  ) => {
+  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid/sharing/:userId.DELETE.response'] | ResponseError>) => {
     const resSuccess = { message: 'User deleted' };
     const userToDeleteId = Number(req.params.userId);
-    const userMakingRequestId = req.user.id;
     const {
+      user: { id: userMakingRequestId },
       team: {
         data: { id: teamId },
         user: userMakingRequest,
       },
-    } = req;
+    } = req as RequestWithTeam;
 
     // Allow the user to delete themselves from a team
     if (userMakingRequestId === userToDeleteId) {

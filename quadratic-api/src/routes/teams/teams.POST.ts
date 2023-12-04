@@ -1,11 +1,11 @@
-import express, { Response } from 'express';
+import express, { Request, Response } from 'express';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { RequestWithAuth, RequestWithUser } from '../../types/Request';
+import { RequestWithUser } from '../../types/Request';
 const router = express.Router();
 
 const Schema = z.object({
@@ -18,11 +18,12 @@ router.post(
   validateAccessToken,
   validateRequestSchema(Schema),
   userMiddleware,
-  async (req: RequestWithAuth & RequestWithUser, res: Response<ApiTypes['/v0/teams.POST.response']>) => {
+  async (req: Request, res: Response<ApiTypes['/v0/teams.POST.response']>) => {
     const {
       body: { name, picture },
       user: { id: userId },
-    } = req;
+    } = req as RequestWithUser;
+
     const select = {
       uuid: true,
       name: true,
@@ -44,7 +45,11 @@ router.post(
     });
 
     // TODO should return the same as `/teams/:uuid`
-    return res.status(201).json(team);
+    const data: ApiTypes['/v0/teams.POST.response'] = { uuid: team.uuid, name: team.name };
+    if (team.picture) {
+      data.picture = team.picture;
+    }
+    return res.status(201).json(data);
   }
 );
 
