@@ -8,6 +8,7 @@ import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../helpers/focusGrid';
 import CodeEditor from '../ui/menus/CodeEditor';
 import TopBar from '../ui/menus/TopBar';
+import { useFileContext } from './components/FileProvider';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { PermissionOverlay } from './components/PermissionOverlay';
 import PresentationModeHint from './components/PresentationModeHint';
@@ -24,6 +25,7 @@ export default function QuadraticUI() {
   const { presentationMode } = useGridSettings();
   const navigation = useNavigation();
   const { uuid } = useParams() as { uuid: string };
+  const { name } = useFileContext();
 
   // Resize the canvas when user goes in/out of presentation mode
   useEffect(() => {
@@ -77,6 +79,7 @@ export default function QuadraticUI() {
               focusGrid();
             }, 200);
           }}
+          fileName={name}
           uuid={uuid}
         />
       )}

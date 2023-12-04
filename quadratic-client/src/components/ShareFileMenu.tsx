@@ -1,11 +1,12 @@
-import { Button, Typography, useTheme } from '@mui/material';
+import { TYPE } from '@/constants/appConstants';
+import { Button } from '@/shadcn/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
 import * as Sentry from '@sentry/react';
 import { ApiTypes, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
 import { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router-dom';
 import { apiClient } from '../api/apiClient';
 import { ROUTES } from '../constants/routes';
 import { useGlobalSnackbar } from './GlobalSnackbarProvider';
-import { QDialog } from './QDialog';
 import { ShareMenu } from './ShareMenu';
 
 type LoaderData = {
@@ -63,7 +64,6 @@ export function ShareFileMenu({
   fileName?: string;
   fetcherUrl: string;
 }) {
-  const theme = useTheme();
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
   // TODO derive this from global useFetchers()
@@ -90,25 +90,30 @@ export function ShareFileMenu({
   };
 
   return (
-    <QDialog onClose={onClose}>
-      <QDialog.Title>Share{fileName && ` “${fileName}”`}</QDialog.Title>
-      <QDialog.Content>
-        <ShareMenu fetcherUrl={fetcherUrl} uuid={uuid} />
-      </QDialog.Content>
-      <QDialog.Actions>
-        <Typography variant="caption" color="text.secondary" sx={{ mr: 'auto' }}>
-          View access also allows sharing & duplicating.
-        </Typography>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={handleCopyShareLink}
-          sx={{ mt: theme.spacing(0), flexShrink: '0' }}
-          disabled={isDisabledCopyShareLink}
-        >
-          Copy share link
-        </Button>
-      </QDialog.Actions>
-    </QDialog>
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Share file</DialogTitle>
+          <DialogDescription>{fileName}</DialogDescription>
+        </DialogHeader>
+        <div>
+          <ShareMenu fetcherUrl={fetcherUrl} uuid={uuid} />
+          <div className="mt-4 flex items-center gap-4 border-t border-border pt-4">
+            {/* <Input value={window.location.href} readOnly /> */}
+            <p className={`${TYPE.caption} mr-auto text-muted-foreground`}>
+              View access also allows sharing & duplicating.
+            </p>
+            <Button
+              variant="secondary"
+              className={`flex-shrink-0`}
+              onClick={handleCopyShareLink}
+              disabled={isDisabledCopyShareLink}
+            >
+              Copy link
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
