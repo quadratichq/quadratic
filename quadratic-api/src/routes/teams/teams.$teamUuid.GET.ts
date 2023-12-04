@@ -5,27 +5,26 @@ import { getAuth0Users } from '../../auth0/profile';
 import dbClient from '../../dbClient';
 import { teamMiddleware } from '../../middleware/team';
 import { userMiddleware } from '../../middleware/user';
-import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { validateAccessToken as authMiddleware } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
+import { RequestWithTeam } from '../../types/Request';
 const router = express.Router();
 
-const schema = z.object({
-  params: z.object({
-    uuid: z.string().uuid(),
-  }),
-});
+const requestValidationMiddleware = validateRequestSchema(
+  z.object({
+    params: z.object({
+      uuid: z.string().uuid(),
+    }),
+  })
+);
 
 router.get(
   '/:uuid',
-  validateAccessToken,
-  validateRequestSchema(schema),
+  requestValidationMiddleware,
+  authMiddleware,
   userMiddleware,
   teamMiddleware,
-  async (
-    req: RequestWithAuth & RequestWithUser & RequestWithTeam,
-    res: Response<ApiTypes['/v0/teams/:uuid.GET.response']>
-  ) => {
+  async (req: RequestWithTeam, res: Response<ApiTypes['/v0/teams/:uuid.GET.response']>) => {
     const {
       user: { id: userId },
       team: {

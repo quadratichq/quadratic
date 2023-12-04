@@ -1,7 +1,7 @@
 import { NextFunction, Response } from 'express';
 import { z } from 'zod';
 import dbClient from '../dbClient';
-import { Request, RequestWithTeam, RequestWithUser } from '../types/Request';
+import { RequestWithTeam } from '../types/Request';
 import { ResponseError } from '../types/Response';
 import { getTeamAccess } from '../utils';
 
@@ -14,11 +14,7 @@ const teamUuidSchema = z.string().uuid();
  * 3. User has access to the team
  * And attaches data to the request about the team and the user's relationship to the team
  */
-export const teamMiddleware = async (
-  req: Request & RequestWithUser & RequestWithTeam,
-  res: Response<ResponseError>,
-  next: NextFunction
-) => {
+export const teamMiddleware = async (req: RequestWithTeam, res: Response<ResponseError>, next: NextFunction) => {
   // Validate the team UUID
   const teamUuid = req.params.uuid;
   try {

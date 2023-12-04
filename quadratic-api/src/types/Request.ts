@@ -3,7 +3,7 @@ import { Request as JWTRequest } from 'express-jwt';
 import { Access, UserRoleTeam } from 'quadratic-shared/typesAndSchemas';
 
 export interface UploadFile extends Express.Multer.File {
-  key: string; // Available using `S3`.
+  key?: string; // Available using `S3`.
 }
 
 // API Request that extends the express-jwt Request type
@@ -25,11 +25,15 @@ export type RequestWithAuth = JWTRequest & {
   auth: { sub: string };
 };
 
-export type RequestWithUser = {
+export type RequestWithUser = RequestWithAuth & {
   user: User;
 };
 
-export type RequestWithTeam = {
+export type RequestWithQuadraticFile = RequestWithUser & {
+  quadraticFile: File;
+};
+
+export type RequestWithTeam = RequestWithUser & {
   team: {
     data: Team;
     user: {

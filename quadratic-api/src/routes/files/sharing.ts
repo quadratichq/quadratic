@@ -34,9 +34,9 @@ sharing_router.get(
     }
 
     // Only authenticated users can view the email addresses of other users
-    let owner = await getUserProfile(req.quadraticFile.ownerUserId);
+    const owner = await getUserProfile(req.quadraticFile.ownerUserId);
     if (!req.user) {
-      owner.email = null;
+      delete owner.email;
     }
 
     return res.status(200).json({

@@ -3,10 +3,10 @@ import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { RequestWithAuth, RequestWithUser } from '../../types/Request';
+import { RequestWithTeam } from '../../types/Request';
 const router = express.Router();
 
-router.get('/', validateAccessToken, userMiddleware, async (req: RequestWithAuth & RequestWithUser, res: Response) => {
+router.get('/', validateAccessToken, userMiddleware, async (req: RequestWithTeam, res: Response) => {
   // Fetch teams the user is a part of
   const teams = await dbClient.userTeamRole.findMany({
     where: {
