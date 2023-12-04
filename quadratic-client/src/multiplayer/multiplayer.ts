@@ -48,6 +48,7 @@ export class Multiplayer {
         this.ready = true;
         resolve(0);
       });
+      this.websocket.addEventListener('close', () => console.log('[Multiplayer] websocket closed.'));
     });
   }
 

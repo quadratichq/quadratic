@@ -197,13 +197,13 @@ pub(crate) mod tests {
         let expected = MessageResponse::Room {
             room: Room {
                 file_id,
-                users: vec![(user_id, user)].into_iter().collect(),
+                users: vec![(user_id, user.clone())].into_iter().collect(),
             },
         };
 
         state.enter_room(file_id, &user).await;
         state.enter_room(file_id, &user2).await;
-        state.leave_room(file_id, &user2).await;
+        state.leave_room(file_id, &user_id2).await;
 
         let response = integration_test(state.clone(), request).await;
 
