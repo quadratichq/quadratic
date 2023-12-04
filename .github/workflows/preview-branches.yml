@@ -20,12 +20,12 @@ jobs:
         version: 'latest'
 
     - name: Install Dependencies
-      run:
-        cd quadratic-client 
+      run: |
+        cd quadratic-client
         npm install
 
     - name: Build
-      run:
+      run: |
         cd quadratic-client
         npm run build:wasm 
         npm run build
