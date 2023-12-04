@@ -55,7 +55,7 @@ export class Multiplayer {
       this.websocket = new WebSocket(import.meta.env.VITE_QUADRATIC_MULTIPLAYER_URL);
       this.websocket.addEventListener('message', this.handleMessage);
 
-      // todo: this is not ideal
+      // todo: this is not ideal. need to better handling reconnecting w/timeouts, etc.
       this.websocket.addEventListener('close', async () => {
         console.log('[Multiplayer] websocket closed. Reconnecting...');
         this.state = 'not connected';
