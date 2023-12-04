@@ -193,14 +193,38 @@ pub(crate) mod tests {
         let request = MessageRequest::MouseMove {
             user_id: user_id.clone(),
             file_id,
-            x,
-            y,
+            x: Some(x),
+            y: Some(y),
         };
         let expected = MessageResponse::MouseMove {
             user_id: user_id.clone(),
             file_id,
-            x,
-            y,
+            x: Some(x),
+            y: Some(y),
+        };
+
+        state.enter_room(file_id, &user).await;
+
+        let response = integration_test(state.clone(), request).await;
+
+        assert_eq!(response, serde_json::to_string(&expected).unwrap());
+    }
+
+    #[tokio::test]
+    async fn user_changes_selection() {
+        let state = Arc::new(State::new());
+        let user = new_user();
+        let user_id = user.id.clone();
+        let file_id = Uuid::new_v4();
+        let request = MessageRequest::ChangeSelection {
+            user_id: user_id.clone(),
+            file_id,
+            selection: "test".to_string(),
+        };
+        let expected = MessageResponse::ChangeSelection {
+            user_id: user_id.clone(),
+            file_id,
+            selection: "test".to_string(),
         };
 
         state.enter_room(file_id, &user).await;

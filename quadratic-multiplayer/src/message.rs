@@ -182,7 +182,7 @@ pub(crate) mod tests {
     use crate::test_util::add_new_user_to_room;
 
     #[tokio::test]
-    async fn broadcasting() {
+    async fn test_mouse_move() {
         let state = Arc::new(State::new());
         let file_id = Uuid::new_v4();
         let user_1 = add_new_user_to_room(file_id, state.clone()).await;
@@ -192,6 +192,22 @@ pub(crate) mod tests {
             file_id,
             x: Some(10f64),
             y: Some(10f64),
+        };
+        broadcast(user_1.id.clone(), file_id, state, message).unwrap();
+
+        // TODO(ddimaria): mock the splitsink sender to test the actual sending
+    }
+
+    #[tokio::test]
+    async fn test_change_selection() {
+        let state = Arc::new(State::new());
+        let file_id = Uuid::new_v4();
+        let user_1 = add_new_user_to_room(file_id, state.clone()).await;
+        let _user_2 = add_new_user_to_room(file_id, state.clone()).await;
+        let message = MessageResponse::ChangeSelection {
+            user_id: user_1.id.clone(),
+            file_id: file_id,
+            selection: "test".to_string(),
         };
         broadcast(user_1.id.clone(), file_id, state, message).unwrap();
 
