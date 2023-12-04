@@ -1,5 +1,5 @@
-import { ApiSchemas, ApiTypes } from '@quadratic-shared/typesAndSchemas';
 import express, { Response } from 'express';
+import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { getUsersByEmail } from '../../auth0/profile';
 import dbClient from '../../dbClient';

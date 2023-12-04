@@ -1,73 +1,44 @@
-import express from "express";
-import dbClient from "../../dbClient";
-import { userMiddleware } from "../../middleware/user";
-import { validateAccessToken } from "../../middleware/validateAccessToken";
-import { Request } from "../../types/Request";
+import express, { Response } from 'express';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import dbClient from '../../dbClient';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { RequestWithAuth, RequestWithUser } from '../../types/Request';
 const router = express.Router();
 
-router.get(
-  "/",
-  validateAccessToken,
-  userMiddleware,
-  async (req: Request, res) => {
-    if (!req.user) {
-      return res
-        .status(500)
-        .json({ error: { message: "Internal server error" } });
-    }
-
-    // Fetch teams the user is a part of
-    // const teams = await dbClient.team.findMany({
-    //   where: {
-    //     UserTeamRole: {
-    //       every: {
-    //         userId: req.user.id,
-    //       },
-    //     },
-    //   },
-    //   select: {
-    //     uuid: true,
-    //     name: true,
-    //     created_date: true,
-    //     picture: true,
-    //   },
-    //   orderBy: [
-    //     {
-    //       created_date: 'asc',
-    //     },
-    //   ],
-    // });
-    const teams = await dbClient.userTeamRole.findMany({
-      where: {
-        userId: req.user.id,
+router.get('/', validateAccessToken, userMiddleware, async (req: RequestWithAuth & RequestWithUser, res: Response) => {
+  // Fetch teams the user is a part of
+  const teams = await dbClient.userTeamRole.findMany({
+    where: {
+      userId: req.user.id,
+    },
+    select: {
+      team: {
+        select: {
+          uuid: true,
+          name: true,
+          createdDate: true,
+          picture: true,
+        },
       },
-      select: {
+    },
+    orderBy: [
+      {
         team: {
-          select: {
-            uuid: true,
-            name: true,
-            createdDate: true,
-            picture: true,
-          },
+          createdDate: 'asc',
         },
       },
-      orderBy: [
-        {
-          team: {
-            createdDate: "asc",
-          },
-        },
-      ],
-    });
+    ],
+  });
 
-    // Make picture optional when available
-    const clientTeams = teams.map(({ team: { picture, ...rest } }) => ({
-      ...rest,
-      ...(picture ? { picture } : {}),
-    }));
+  // Make picture optional when available
+  const clientTeams = teams.map(({ team: { picture, ...rest } }) => ({
+    ...rest,
+    ...(picture ? { picture } : {}),
+  }));
 
-    return res.status(200).json(clientTeams);
-  }
-);
+  const data: ApiTypes['/v0/teams.GET.response'] = clientTeams;
+  return res.status(200).json(data);
+});
 
 export default router;

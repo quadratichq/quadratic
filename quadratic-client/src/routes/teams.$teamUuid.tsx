@@ -1,9 +1,16 @@
-import { KeyboardArrowDown, PeopleAltOutlined } from '@mui/icons-material';
-import { Box, Button, Divider, IconButton, InputBase, Menu, MenuItem, useTheme } from '@mui/material';
-import { SxProps } from '@mui/system';
-import { ApiTypes } from '@quadratic-shared/typesAndSchemas';
-import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import { useEffect, useRef, useState } from 'react';
+import { DialogRenameItem } from '@/dashboard/components/DialogRenameItem';
+import { Button } from '@/shadcn/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shadcn/ui/dropdown-menu';
+import { useTheme } from '@mui/material';
+import { CaretDownIcon, ExclamationTriangleIcon, PersonIcon } from '@radix-ui/react-icons';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { useState } from 'react';
 import {
   ActionFunctionArgs,
   Link,
@@ -30,7 +37,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   return await apiClient.getTeam(teamUuid);
 };
 
-export type Action = {
+export type TeamAction = {
   'request.invite-user': {
     action: 'invite-user';
     payload: ApiTypes['/v0/teams/:uuid/sharing.POST.request'];
@@ -49,18 +56,18 @@ export type Action = {
     id: number;
   };
   request:
-    | Action['request.update-team']
-    | Action['request.invite-user']
-    | Action['request.update-user']
-    | Action['request.delete-user'];
+    | TeamAction['request.update-team']
+    | TeamAction['request.invite-user']
+    | TeamAction['request.update-user']
+    | TeamAction['request.delete-user'];
   response: {
     ok: boolean;
-    action: Action['request'][keyof Action['request']];
+    action: TeamAction['request'][keyof TeamAction['request']];
   } | null;
 };
 
-export const action = async ({ request, params }: ActionFunctionArgs): Promise<Action['response']> => {
-  const data = (await request.json()) as Action['request'];
+export const action = async ({ request, params }: ActionFunctionArgs): Promise<TeamAction['response']> => {
+  const data = (await request.json()) as TeamAction['request'];
   const { teamUuid } = params as { teamUuid: string };
   const { action } = data;
 
@@ -69,6 +76,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
       const {
         payload: { name, picture },
       } = data;
+      await new Promise((resolve) => setTimeout(resolve, 10000));
       await apiClient.updateTeam(teamUuid, { name, picture });
       return { ok: true, action };
     } catch (e) {
@@ -120,7 +128,10 @@ export const Component = () => {
   const [searchParams] = useSearchParams();
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const loaderData = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
-  const { team } = loaderData;
+  const {
+    team,
+    user: { access },
+  } = loaderData;
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const fetcher = useFetcher();
   const [shareSearchParamValue, setShareSearchParamValue] = useState<string | null>(
@@ -133,69 +144,91 @@ export const Component = () => {
 
   let name = team.name;
   if (fetcher.state !== 'idle') {
-    const optimisticData = fetcher.json as ApiTypes['/v0/teams/:uuid.POST.request'];
-    if (optimisticData.name) name = optimisticData.name;
-    // picture
+    name = (fetcher.json as TeamAction['request.update-team']).payload.name as string; // TODO fix zod types
+    // TODO: picture
   }
+
+  const handleClose = () => setIsRenaming(false);
 
   const showShareDialog = shareSearchParamValue !== null;
 
   return (
     <>
       <DashboardHeader
-        title={isRenaming ? '' : name}
+        title={name}
         titleStart={
           <AvatarWithLetters size="large" src={team.picture} sx={{ mr: theme.spacing(1.5) }}>
             {name}
           </AvatarWithLetters>
         }
         titleEnd={
-          <>
-            {isRenaming && (
-              <RenameInput
-                value={name}
-                onClose={(newName?: string) => {
-                  if (newName) {
-                    const data: Action['request.update-team'] = { action: 'update-team', payload: { name: newName } };
-                    fetcher.submit(data, { method: 'POST', encType: 'application/json' });
-                    // setTeamName(newValue);
-                    // Post update to server
-                  }
-                  setIsRenaming(false);
-                }}
-                sx={{ typography: 'h6' }}
-              />
-            )}
-            <Box sx={{ position: 'relative', top: '1px', ml: theme.spacing(0.25) }}>
-              <EditDropdownMenu
-                setShowDeleteDialog={setShowDeleteDialog}
-                onRename={() => {
-                  setIsRenaming(true);
-                }}
-              />
-            </Box>
-          </>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon-sm" className="ml-1 rounded-full">
+                <CaretDownIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setIsRenaming(true)}>Rename</DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <label>
+                  Upload logo
+                  <TeamLogoInput
+                    onChange={(url: string) => {
+                      handleClose();
+                    }}
+                  />
+                </label>
+              </DropdownMenuItem>
+              {hasAccess(access, 'TEAM_BILLING_EDIT') && (
+                <DropdownMenuItem onClick={() => {}}>Edit billing</DropdownMenuItem>
+              )}
+              {hasAccess(access, 'TEAM_DELETE') && [
+                <DropdownMenuSeparator key={1} />,
+                <DropdownMenuItem
+                  key={2}
+                  onClick={() => {
+                    setShowDeleteDialog(true);
+                  }}
+                >
+                  Delete
+                </DropdownMenuItem>,
+              ]}
+            </DropdownMenuContent>
+          </DropdownMenu>
         }
         actions={
-          <>
+          <div className={`flex items-center gap-2`}>
             <Button
-              startIcon={<PeopleAltOutlined />}
-              variant="outlined"
+              variant="outline"
               onClick={() => {
                 setShareSearchParamValue(shareSearchParamValuesById.OPEN);
               }}
             >
-              {team.users?.length /* TODO not optional */}
+              <PersonIcon className={`mr-1`} /> {team.users.length}
             </Button>
-            <Button variant="contained" disableElevation>
-              TODO Create file
-            </Button>
-          </>
+            <Button variant="outline">Import file</Button>
+            <Button>Create file</Button>
+          </div>
         }
       />
 
-      <Box sx={{ p: theme.spacing(2), textAlign: 'center' }}>Team files</Box>
+      <div className="opacity-1 border border-dashed border-border py-20 text-center">Team files</div>
 
+      {isRenaming && (
+        <DialogRenameItem
+          itemLabel="Team"
+          onClose={() => {
+            setIsRenaming(false);
+          }}
+          value={name}
+          onSave={(name: string) => {
+            setIsRenaming(false);
+            const data: TeamAction['request.update-team'] = { action: 'update-team', payload: { name } };
+            fetcher.submit(data, { method: 'POST', encType: 'application/json' });
+          }}
+        />
+      )}
       {showShareDialog && <TeamShareMenu onClose={() => setShareSearchParamValue(null)} data={loaderData} />}
       {showDeleteDialog && (
         <QDialogConfirmDelete
@@ -215,184 +248,6 @@ export const Component = () => {
   );
 };
 
-/**
- * Takes a value and displays an input that autogrows horizontally with it's
- * contents as the user types. When complete, passes the new value (if there is one).
- * @param props
- * @param props.value - The initial value of the input
- * @param props.onClose - Called when the rename is complete. Passes the new value
- *   or undefined if the rename was cancelled or invalid.
- * @param props.sx - mui sx props
- * @returns
- */
-function RenameInput({
-  value,
-  onClose,
-  sx = {},
-}: {
-  value: string;
-  onClose: (newValue?: string) => void;
-  sx?: SxProps;
-}) {
-  const theme = useTheme();
-  const inputRef = useRef<HTMLInputElement>();
-  const [localValue, setLocalValue] = useState<string>(value);
-
-  // Focus and highlight input contents on mount
-  useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.setSelectionRange(0, inputRef.current.value.length);
-      inputRef.current.focus();
-    }
-  }, []);
-
-  const componentSx = [
-    {
-      // Resizing magic
-      // Borrowed from https://css-tricks.com/auto-growing-inputs-textareas/
-      display: 'inline-grid',
-      verticalAlign: 'top',
-      alignItems: 'center',
-      position: 'relative',
-      '&::after, input': {
-        width: 'auto',
-        minWidth: '1em',
-        gridArea: '1 / 2',
-      },
-      '&::after': {
-        content: 'attr(data-value) " "',
-        visibility: 'hidden',
-        whiteSpace: 'pre-wrap',
-        // We don't want this messing with the height of the rendered input
-        height: '0px',
-      },
-
-      // Component styles
-      px: theme.spacing(0.5),
-      borderRadius: theme.shape.borderRadius,
-      '&.Mui-focused': {
-        outline: `2px solid ${theme.palette.primary.main}`,
-      },
-    },
-    // Any overrides
-    ...(Array.isArray(sx) ? sx : [sx]),
-  ];
-
-  return (
-    <InputBase
-      data-value={localValue}
-      value={localValue}
-      inputProps={{ size: 2 }}
-      inputRef={inputRef}
-      sx={componentSx}
-      onChange={(e) => setLocalValue(e.target.value)}
-      onKeyUp={(e) => {
-        if (e.key === 'Enter') {
-          inputRef.current?.blur();
-        } else if (e.key === 'Escape') {
-          onClose();
-        }
-      }}
-      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
-        const newValue = localValue.trim();
-
-        // Don't allow empty file names
-        if (newValue.length === 0) {
-          onClose();
-          return;
-        }
-
-        // Don't pass anything if the name didn't change
-        if (newValue === value) {
-          onClose();
-          return;
-        }
-
-        onClose(newValue);
-      }}
-    />
-  );
-}
-
-function EditDropdownMenu({ setShowDeleteDialog, onRename }: any) {
-  const {
-    user: { access },
-  } = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  if (!hasAccess(access, 'TEAM_EDIT')) {
-    return null;
-  }
-
-  return (
-    <>
-      <IconButton
-        aria-label="more"
-        id="long-button"
-        size="small"
-        aria-controls={open ? 'long-menu' : undefined}
-        aria-expanded={open ? 'true' : undefined}
-        aria-haspopup="true"
-        onClick={handleClick}
-      >
-        <KeyboardArrowDown fontSize="small" />
-      </IconButton>
-
-      <Menu
-        id="long-menu"
-        MenuListProps={{
-          'aria-labelledby': 'long-button',
-          dense: true,
-        }}
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-      >
-        <MenuItem
-          onClick={() => {
-            handleClose();
-            onRename();
-          }}
-        >
-          Rename
-        </MenuItem>
-        <MenuItem component="label">
-          Upload logo
-          <TeamLogoInput
-            onChange={(url: string) => {
-              handleClose();
-            }}
-          />
-        </MenuItem>
-        {hasAccess(access, 'TEAM_BILLING_EDIT') && (
-          <MenuItem key={2} onClick={handleClose}>
-            Edit billing
-          </MenuItem>
-        )}
-        {hasAccess(access, 'TEAM_DELETE') && [
-          <Divider key={1} />,
-          <MenuItem
-            key={2}
-            onClick={() => {
-              setShowDeleteDialog(true);
-              handleClose();
-            }}
-          >
-            Delete
-          </MenuItem>,
-        ]}
-      </Menu>
-    </>
-  );
-}
-
 // TODO: fix when we merge better errors PR
 export const ErrorBoundary = () => {
   const error = useRouteError();
@@ -409,8 +264,8 @@ export const ErrorBoundary = () => {
         description="This team may have been deleted, moved, or made unavailable. Try reaching out to the team owner."
         Icon={ExclamationTriangleIcon}
         actions={
-          <Button variant="contained" disableElevation component={Link} to="/">
-            Go home
+          <Button asChild>
+            <Link to="/">Go home</Link>
           </Button>
         }
       />
@@ -425,8 +280,8 @@ export const ErrorBoundary = () => {
       description="Something went wrong loading this team. If the error continues, contact us."
       Icon={ExclamationTriangleIcon}
       actions={
-        <Button variant="contained" disableElevation component={Link} to="/">
-          Go home
+        <Button asChild>
+          <Link to="/">Go home</Link>
         </Button>
       }
       severity="error"

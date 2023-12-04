@@ -2,15 +2,17 @@ import { apiClient } from '@/api/apiClient';
 import { AvatarWithLetters } from '@/components/AvatarWithLetters';
 import { TYPE } from '@/constants/appConstants';
 import { DOCUMENTATION_URL } from '@/constants/urls';
+import { TeamAction } from '@/routes/teams.$teamUuid';
 import { Button } from '@/shadcn/ui/button';
 import { Separator } from '@/shadcn/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
 import { cn } from '@/shadcn/utils';
 import { Avatar, CircularProgress } from '@mui/material';
-import { ApiTypes } from '@quadratic-shared/typesAndSchemas';
 import { ExternalLinkIcon, FileIcon, MixIcon, PlusIcon } from '@radix-ui/react-icons';
+import * as Sentry from '@sentry/react';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ReactNode, useEffect, useState } from 'react';
-import { NavLink, Outlet, useFetchers, useLoaderData, useLocation, useNavigation, useParams } from 'react-router-dom';
+import { NavLink, Outlet, useFetchers, useLoaderData, useLocation, useNavigation } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
 import { useRootRouteLoaderData } from '../../router';
 import QuadraticLogo from './quadratic-logo.svg';
@@ -18,15 +20,20 @@ import QuadraticLogotype from './quadratic-logotype.svg';
 
 const drawerWidth = 264;
 
-type LoaderData = ApiTypes['/v0/teams.GET.response'];
+type LoaderData = {
+  teams: ApiTypes['/v0/teams.GET.response'];
+  hasError: boolean;
+};
 
-export const loader = async () => {
-  // TODO what if this fails? How should we handle that for routes
+export const loader = async (): Promise<LoaderData> => {
+  let hasError = false;
   const teams = await apiClient.getTeams().catch((err) => {
-    console.log(err);
+    Sentry.captureException(err);
+
+    hasError = true;
     return [];
   });
-  return teams;
+  return { teams, hasError };
 };
 
 export const Component = () => {
@@ -73,17 +80,13 @@ export const Component = () => {
 };
 
 function Navbar() {
-  const teams = useLoaderData() as LoaderData;
+  const { teams, hasError } = useLoaderData() as LoaderData;
   const { user } = useRootRouteLoaderData();
-  const { teamUuid } = useParams();
-
   const fetchers = useFetchers();
-  const inFlightTeamFetcher = fetchers.find((fetcher) => fetcher.formAction?.startsWith(`/teams/${teamUuid}`));
-
   const classNameIcons = `h-5 w-5 mx-0.5`;
 
   return (
-    <nav className={`flex h-full flex-col justify-between px-4 pb-2 pt-4`}>
+    <nav className={`flex h-full flex-col justify-between gap-4 overflow-auto px-4 pb-2 pt-4`}>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         <div className={`flex items-center justify-between`}>
           <SidebarNavLink to="/" className={`pr-3`} isLogo={true}>
@@ -105,20 +108,36 @@ function Navbar() {
           </SidebarNavLink>
         </div>
 
-        <p className={`${TYPE.overline} mb-2 mt-6 indent-2 text-muted-foreground`}>Teams</p>
+        <p className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}>
+          <span className={`${TYPE.overline}`}>Teams</span>{' '}
+          {hasError && (
+            <span className="text-xs text-destructive">
+              Failed to load,{' '}
+              <a href="." className="underline">
+                refresh
+              </a>
+            </span>
+          )}
+        </p>
         <div className="grid gap-1">
-          {teams.map(({ uuid, name }: any) => {
-            const teamName =
-              // @ts-expect-error
-              teamUuid === uuid && inFlightTeamFetcher?.json?.name
-                ? // @ts-expect-error
-                  inFlightTeamFetcher.json.name
-                : name;
+          {teams.map(({ uuid, name, picture }) => {
+            // See if this team has an inflight fetcher
+            const inFlightFetcher = fetchers.find(
+              (fetcher) => fetcher.state !== 'idle' && fetcher.formAction?.includes(uuid)
+            );
+            // If it does, use its data
+            if (inFlightFetcher) {
+              const data = (inFlightFetcher.json as TeamAction['request.update-team']).payload;
+              if (data.name) name = data.name;
+              if (data.picture) picture = data.picture;
+            }
 
             return (
               <SidebarNavLink key={uuid} to={ROUTES.TEAM(uuid)}>
-                <AvatarWithLetters size="small">{teamName}</AvatarWithLetters>
-                {teamName}
+                <AvatarWithLetters size="small" src={picture}>
+                  {name}
+                </AvatarWithLetters>
+                {name}
               </SidebarNavLink>
             );
           })}

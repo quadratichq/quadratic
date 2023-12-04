@@ -1,5 +1,4 @@
 import react from '@vitejs/plugin-react';
-import path from 'path';
 import { defineConfig } from 'vite';
 import checker from 'vite-plugin-checker';
 import tsconfigPaths from 'vite-tsconfig-paths';
@@ -12,11 +11,6 @@ export default defineConfig(() => {
     assetsInclude: ['**/*.py'],
     server: {
       port: 3000,
-    },
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, './src'),
-      },
     },
     plugins: [
       tsconfigPaths(),

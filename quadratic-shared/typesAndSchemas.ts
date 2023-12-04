@@ -59,9 +59,12 @@ const FileUserSchema = z.object({
 });
 export type FileUser = z.infer<typeof FileUserSchema>;
 
-const TeamSchema = z.object({
+export const TeamSchema = z.object({
   uuid: z.string(),
-  name: z.string().min(1).max(140),
+  name: z
+    .string()
+    .min(1, { message: 'Must be at least 1 character.' })
+    .max(140, { message: 'Cannot be longer than 140 characters.' }),
   picture: z.string().url().optional(),
   users: z.array(TeamUserSchema), // TODO not optional
   // files: z.any(), // TODO

@@ -1,6 +1,6 @@
 import { Coordinate } from '@/gridGL/types/size';
 import { CellType } from '@/schemas';
-import { ApiTypes } from '@quadratic-shared/typesAndSchemas';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { atom } from 'recoil';
 
 export interface EditorInteractionState {

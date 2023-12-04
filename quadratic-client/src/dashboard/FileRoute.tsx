@@ -1,9 +1,9 @@
 import { multiplayer } from '@/multiplayer/multiplayer';
 import { useRootRouteLoaderData } from '@/router';
 import { Button } from '@/shadcn/ui/button';
-import { ApiSchemas, ApiTypes } from '@quadratic-shared/typesAndSchemas';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
+import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import {
   Link,
   LoaderFunctionArgs,
