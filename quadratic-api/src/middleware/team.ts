@@ -1,11 +1,15 @@
-import { NextFunction, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 import dbClient from '../dbClient';
 import { RequestWithTeam } from '../types/Request';
 import { ResponseError } from '../types/Response';
 import { getTeamAccess } from '../utils';
+import { userMiddleware } from './user';
+import { validateAccessToken } from './validateAccessToken';
 
 const teamUuidSchema = z.string().uuid();
+
+export const teamMiddleware = [validateAccessToken, userMiddleware, middleware];
 
 /**
  * Ensures that:
@@ -14,9 +18,13 @@ const teamUuidSchema = z.string().uuid();
  * 3. User has access to the team
  * And attaches data to the request about the team and the user's relationship to the team
  */
-export const teamMiddleware = async (req: RequestWithTeam, res: Response<ResponseError>, next: NextFunction) => {
+async function middleware(req: Request, res: Response<ResponseError>, next: NextFunction) {
+  const {
+    params: { uuid: teamUuid },
+    user,
+  } = req as RequestWithTeam;
+
   // Validate the team UUID
-  const teamUuid = req.params.uuid;
   try {
     teamUuidSchema.parse(teamUuid);
   } catch (zodError) {
@@ -37,7 +45,7 @@ export const teamMiddleware = async (req: RequestWithTeam, res: Response<Respons
   const userMakingRequest = await dbClient.userTeamRole.findUnique({
     where: {
       userId_teamId: {
-        userId: req.user.id,
+        userId: user.id,
         teamId: team.id,
       },
     },
@@ -49,13 +57,15 @@ export const teamMiddleware = async (req: RequestWithTeam, res: Response<Respons
   // TODO if the team is deleted
 
   // Attach info about the team and the user's access to the team on the request
-  req.team = {
+  // @ts-expect-error
+  (req.team as RequestWithTeam) = {
     data: team,
     user: {
+      // @ts-expect-error fix types
       role: userMakingRequest.role,
       access: getTeamAccess(userMakingRequest.role),
     },
   };
 
   next();
-};
+}
