@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use futures_util::SinkExt;
@@ -107,7 +107,6 @@ pub(crate) async fn handle_message(
             let is_new = state.enter_room(file_id, &user).await;
             let room = state.get_room(&file_id).await?;
             let response = MessageResponse::Room { room };
-            tracing::info!("user {} entered room", user.id);
 
             // only broadcast if the user is new to the room
             if is_new {
@@ -118,21 +117,15 @@ pub(crate) async fn handle_message(
         }
 
         MessageRequest::LeaveRoom { user_id, file_id } => {
-            if let Ok(room) = state.get_room(&file_id).await {
-                if state.leave_room(file_id, &user_id).await {
-                    let response = MessageResponse::Room { room };
-                    tracing::info!("user {} left room", user_id);
+            let is_not_empty = state.leave_room(file_id, &user_id).await?;
+            let room = state.get_room(&file_id).await?;
+            let response = MessageResponse::Room { room };
 
-                    broadcast(user_id, file_id, Arc::clone(&state), response.clone())?;
-
-                    Ok(response)
-                } else {
-                    // this is expected when the room has been deleted
-                    Err(anyhow!(""))
-                }
-            } else {
-                Err(anyhow!("Room {} not found", file_id))
+            if is_not_empty {
+                broadcast(user_id, file_id, Arc::clone(&state), response.clone())?
             }
+
+            Ok(response)
         }
 
         // User moves their mouse

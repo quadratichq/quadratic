@@ -12,6 +12,8 @@ use serde::Serialize;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
+use crate::{get_mut_room, get_or_create_room, get_room};
+
 #[derive(Serialize, Debug, Clone)]
 pub(crate) struct User {
     #[serde(skip_serializing)]
@@ -61,51 +63,87 @@ impl State {
 
     /// Retrieves a copy of a room.
     pub(crate) async fn get_room(&self, file_id: &Uuid) -> Result<Room> {
-        let rooms = self.rooms.lock().await;
-        let room = rooms
-            .get(file_id)
-            .ok_or(anyhow!("Room {file_id} not found"))?
-            .to_owned();
+        let room = get_room!(self, file_id)?.to_owned();
 
         Ok(room)
     }
 
     /// Add a user to a room.  If the room doesn't exist, it is created.  Users
-    /// are only added to a room once (HashMap).
+    /// are only added to a room once (HashMap).  Returns true if the user was
+    /// newly added.
     pub(crate) async fn enter_room(&self, file_id: Uuid, user: &User) -> bool {
-        let mut rooms = self.rooms.lock().await;
-        let room = rooms.entry(file_id).or_insert_with(|| Room::new(file_id));
+        let is_new = get_or_create_room!(self, file_id)
+            .users
+            .insert(user.id.to_owned(), user.to_owned())
+            .is_none();
 
-        let user_id = user.id.clone();
+        tracing::trace!("User {:?} entered room {:?}", user.id, file_id);
 
-        tracing::trace!("User {:?} entered room {:?}", user, room);
-
-        room.users.insert(user_id, user.clone()).is_none()
+        is_new
     }
 
     /// Removes a user from a room. If the room is empty, it deletes the room.
     /// Returns true if the room still exists after the user leaves.
-    pub(crate) async fn leave_room(&self, file_id: Uuid, user_id: &String) -> bool {
-        let mut rooms = self.rooms.lock().await;
+    pub(crate) async fn leave_room(&self, file_id: Uuid, user_id: &String) -> Result<bool> {
+        get_mut_room!(self, file_id)?.users.remove(user_id);
+        let num_in_room = get_room!(self, file_id)?.users.len();
 
-        // todo: there's probably a better way of handling the case where the room does not exist
-        let room = rooms.entry(file_id).or_insert_with(|| Room::new(file_id));
-        room.users.remove(user_id);
+        tracing::trace!(
+            "User {:?} leaving room {}, {} left",
+            user_id,
+            file_id,
+            num_in_room
+        );
 
-        // remove the room if it's empty
-        if room.users.len() == 0 {
-            rooms.remove(&file_id);
-            tracing::trace!(
-                "User {:?} left room {:?}. Room deleted because it was empty.",
-                user_id,
-                file_id
-            );
-            false
-        } else {
-            tracing::trace!("User {:?} left room {:?}", user_id, room);
-            true
+        if num_in_room == 0 {
+            self.remove_room(file_id).await;
         }
+
+        Ok(num_in_room != 0)
     }
+
+    /// Removes a room.
+    pub(crate) async fn remove_room(&self, file_id: Uuid) {
+        self.rooms.lock().await.remove(&file_id);
+
+        tracing::trace!("Room {file_id} removed");
+    }
+}
+
+#[macro_export]
+macro_rules! get_room {
+    ( $self:ident, $file_id:ident ) => {
+        $self
+            .rooms
+            .lock()
+            .await
+            .get(&$file_id)
+            .ok_or(anyhow!("Room {} not found", $file_id))
+    };
+}
+
+#[macro_export]
+macro_rules! get_mut_room {
+    ( $self:ident, $file_id:ident ) => {
+        $self
+            .rooms
+            .lock()
+            .await
+            .get_mut(&$file_id)
+            .ok_or(anyhow!("Room {} not found", $file_id))
+    };
+}
+
+#[macro_export]
+macro_rules! get_or_create_room {
+    ( $self:ident, $file_id:ident ) => {
+        $self
+            .rooms
+            .lock()
+            .await
+            .entry($file_id)
+            .or_insert_with(|| Room::new($file_id))
+    };
 }
 
 #[cfg(test)]
@@ -115,10 +153,11 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn enters_and_retrieves_a_room() {
+    async fn enters_retrieves_and_leaves_a_room() {
         let state = State::new();
         let file_id = Uuid::new_v4();
         let user = new_user();
+        let user2 = new_user();
 
         let is_new = state.enter_room(file_id, &user).await;
         let room = state.get_room(&file_id).await.unwrap();
@@ -128,5 +167,18 @@ mod tests {
         assert_eq!(state.rooms.lock().await.len(), 1);
         assert_eq!(room.users.len(), 1);
         assert_eq!(room.users.get(&user.id), Some(user));
+
+        // leave the room of 2 users
+        state.enter_room(file_id, &user2).await;
+        state.leave_room(file_id, &user.id).await.unwrap();
+        let room = state.get_room(&file_id).await.unwrap();
+
+        assert_eq!(room.users.len(), 1);
+        assert_eq!(room.users.get(&user2.id), Some(&user2));
+
+        // leave a room of 1 user
+        state.leave_room(file_id, &user2.id).await.unwrap();
+        let room = state.get_room(&file_id).await;
+        assert!(room.is_err());
     }
 }

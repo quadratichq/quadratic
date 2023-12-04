@@ -16,7 +16,7 @@ use crate::state::{State, User};
 
 pub(crate) fn new_user() -> User {
     User {
-        id: "user".to_string(),
+        id: Uuid::new_v4().to_string(),
         first_name: FirstName().fake(),
         last_name: LastName().fake(),
         image: FilePath().fake(),

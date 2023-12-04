@@ -188,22 +188,22 @@ pub(crate) mod tests {
         let user = new_user();
         let user_id = user.id.clone();
         let user2 = new_user();
-        let user_id2 = user2.id.clone();
         let file_id = Uuid::new_v4();
         let request = MessageRequest::LeaveRoom {
-            user_id: user_id.clone(),
+            user_id: user_id,
             file_id,
         };
         let expected = MessageResponse::Room {
             room: Room {
                 file_id,
-                users: vec![(user_id, user.clone())].into_iter().collect(),
+                users: vec![(user2.id.clone(), user2.clone())]
+                    .into_iter()
+                    .collect(),
             },
         };
 
         state.enter_room(file_id, &user).await;
         state.enter_room(file_id, &user2).await;
-        state.leave_room(file_id, &user_id2).await;
 
         let response = integration_test(state.clone(), request).await;
 
