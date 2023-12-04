@@ -36,6 +36,7 @@ venv/*
 # Generated Rust files
 quadratic-core/target/
 quadratic-core/tmp.txt
+quadratic-multiplayer/target/
 
 # Generated JS files
 quadratic-api/node_modules/
@@ -45,3 +46,4 @@ quadratic-api/dist
 
 # Code Coverage
 quadratic-core/coverage
+quadratic-multiplayer/coverage

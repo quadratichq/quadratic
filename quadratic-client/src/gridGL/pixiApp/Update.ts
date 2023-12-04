@@ -1,3 +1,4 @@
+import { multiplayer } from '@/multiplayer/multiplayer';
 import { Point } from 'pixi.js';
 import { debugShowFPS, debugShowWhyRendering } from '../../debugFlags';
 import { FPS } from '../helpers/Fps';
@@ -78,6 +79,7 @@ export class Update {
       pixiApp.axesLines.dirty ||
       pixiApp.headings.dirty ||
       pixiApp.boxCells.dirty ||
+      pixiApp.multiplayerCursor.dirty ||
       pixiApp.cursor.dirty;
 
     if (rendererDirty && debugShowWhyRendering) {
@@ -99,7 +101,8 @@ export class Update {
     debugTimeCheck('[Update] boxCells');
     pixiApp.cursor.update();
     debugTimeCheck('[Update] cursor');
-    debugTimeReset();
+    pixiApp.multiplayerCursor.update();
+    debugTimeCheck('[Update] multiplayerCursor');
     pixiApp.cellsSheets.update();
     debugTimeCheck('[Update] cellsSheets');
 
@@ -117,6 +120,8 @@ export class Update {
       debugRendererLight(false);
       thumbnail.check();
     }
+
+    multiplayer.update();
 
     this.raf = requestAnimationFrame(this.update);
     this.fps?.update();

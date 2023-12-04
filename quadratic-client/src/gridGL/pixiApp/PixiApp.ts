@@ -13,6 +13,7 @@ import { sheets } from '../../grid/controller/Sheets';
 import { AxesLines } from '../UI/AxesLines';
 import { Cursor } from '../UI/Cursor';
 import { GridLines } from '../UI/GridLines';
+import { UIMultiPlayerCursor } from '../UI/UIMultiplayerCursor';
 import { BoxCells } from '../UI/boxCells';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { CellsSheets } from '../cells/CellsSheets';
@@ -37,6 +38,7 @@ export class PixiApp {
   gridLines!: GridLines;
   axesLines!: AxesLines;
   cursor!: Cursor;
+  multiplayerCursor!: UIMultiPlayerCursor;
   headings!: GridHeadings;
   boxCells!: BoxCells;
   cellsSheets!: CellsSheets;
@@ -120,6 +122,7 @@ export class PixiApp {
     this.cellsSheets = this.viewportContents.addChild(new CellsSheets());
 
     this.boxCells = this.viewportContents.addChild(new BoxCells());
+    this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
     this.cursor = this.viewportContents.addChild(new Cursor());
     this.headings = this.viewportContents.addChild(new GridHeadings());
 
@@ -229,6 +232,7 @@ export class PixiApp {
     this.gridLines.visible = options?.gridLines ?? false;
     this.axesLines.visible = false;
     this.cursor.visible = false;
+    this.multiplayerCursor.visible = false;
     this.headings.visible = false;
     this.quadrants.visible = false;
     this.boxCells.visible = false;
@@ -242,6 +246,7 @@ export class PixiApp {
     this.gridLines.visible = true;
     this.axesLines.visible = true;
     this.cursor.visible = true;
+    this.multiplayerCursor.visible = true;
     this.headings.visible = true;
     this.boxCells.visible = true;
     this.quadrants.visible = this.cacheIsVisible;
@@ -295,6 +300,7 @@ export class PixiApp {
     this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
+    this.multiplayerCursor.dirty = true;
     this.boxCells.reset();
 
     this.viewport.dirty = true;
@@ -340,6 +346,7 @@ export class PixiApp {
     this.headings.dirty = true;
     this.gridLines.dirty = true;
     this.cursor.dirty = true;
+    this.multiplayerCursor.dirty = true;
   }
 }
 

@@ -4,6 +4,8 @@ import dbClient from '../dbClient';
 import { Request, RequestWithTeam, RequestWithUser } from '../types/Request';
 import { ResponseError } from '../types/Response';
 import { getTeamAccess } from '../utils';
+import { userMiddleware } from './user';
+import { validateAccessToken } from './validateAccessToken';
 
 const teamUuidSchema = z.string().uuid();
 
@@ -19,6 +21,9 @@ export const teamMiddleware = async (
   res: Response<ResponseError>,
   next: NextFunction
 ) => {
+  await validateAccessToken(req, res, () => {});
+  await userMiddleware(req, res, () => {});
+
   // Validate the team UUID
   const teamUuid = req.params.uuid;
   try {
