@@ -1,5 +1,6 @@
 import asyncio
 import operator
+import os
 import re
 import sys
 import traceback
@@ -33,7 +34,6 @@ def attempt_fix_await(code):
     code = code.replace("await await cells[", "await cells[")
 
     return code
-
 
 def strtobool(val):
     """Convert a string representation of truth to true (1) or false (0).
@@ -312,6 +312,12 @@ async def run_python(code):
                     output_value.notnull(), None
                 ).values.tolist()
 
+        try:
+            import plotly
+            if isinstance(output_value, plotly.graph_objs._figure.Figure):
+                output_value = output_value.to_html()
+        except:
+            pass
 
         # Convert Pandas.Series to array_output
         if isinstance(output_value, pd.Series):
