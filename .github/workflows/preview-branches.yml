@@ -43,18 +43,6 @@ jobs:
         VITE_AUTH0_ISSUER: ${{ secrets.VITE_AUTH0_ISSUER }}
         VITE_AUTH0_DOMAIN: ${{ secrets.VITE_AUTH0_DOMAIN }}
 
-
-    - name: Setup Pages
-      uses: actions/configure-pages@v3
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v2
-      with:
-        # Upload dist repository
-        path: './quadratic-client/dist'
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v2
-
     # - name: Deploy to AWS S3
     #   run: aws s3 sync dist s3://quadratic-preview-branches --delete
     #   env:
