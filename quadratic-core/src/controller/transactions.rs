@@ -65,9 +65,6 @@ impl GridController {
         if transaction.complete {
             summary.save = true;
             self.finalize_transaction(&transaction);
-            if let Ok(operations) = serde_json::to_string(&transaction.multiplayer_operations) {
-                summary.multiplayer_operations = operations;
-            }
         } else {
             self.transaction_in_progress = Some(transaction);
         }
@@ -147,10 +144,6 @@ impl GridController {
     /// Creates a TransactionSummary and cleans
     /// Note: it may not pass cells_sheet_modified if the transaction is not complete (to avoid redrawing cells multiple times)
     pub fn transaction_summary(&mut self) -> Option<TransactionSummary> {
-        // let skip_cell_rendering = self
-        //     .transaction_in_progress
-        //     .as_ref()
-        //     .is_some_and(|transaction| !transaction.complete);
         self.transaction_in_progress
             .as_mut()
             .map(|transaction| transaction.transaction_summary())
@@ -175,6 +168,7 @@ impl GridController {
         transaction_in_progress.updated_bounds(self);
         let mut summary = transaction_in_progress.transaction_summary();
         summary.generate_thumbnail = false;
+        summary.multiplayer_operations = None;
         summary
     }
 }

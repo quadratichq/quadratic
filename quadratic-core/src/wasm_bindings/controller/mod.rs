@@ -124,7 +124,7 @@ impl GridController {
             save: false,
             generate_thumbnail: false,
             transaction_busy: false,
-            multiplayer_operations: String::new(),
+            multiplayer_operations: None,
         })?)
     }
 }

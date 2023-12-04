@@ -81,9 +81,6 @@ impl TransactionInProgress {
             if self.cells_to_compute.is_empty() {
                 self.complete = true;
                 self.summary.save = true;
-                if let Ok(operations) = serde_json::to_string(&self.multiplayer_operations) {
-                    self.summary.multiplayer_operations = operations;
-                }
                 if self.has_async {
                     grid_controller.finalize_transaction(self);
                 }
@@ -107,8 +104,14 @@ impl TransactionInProgress {
 
     /// returns the TransactionSummary
     pub fn transaction_summary(&mut self) -> TransactionSummary {
+        if self.complete {
+            self.summary.multiplayer_operations = Some(
+                serde_json::to_string(&self.multiplayer_operations)
+                    .expect("Failed to serialize multiplayer operations"),
+            );
+        }
         let summary = self.summary.clone();
-        self.summary.clear();
+        self.summary.clear(self.complete);
         summary
     }
 
@@ -234,7 +237,7 @@ impl TransactionInProgress {
                         if update_code_cell_value(
                             grid_controller,
                             cell_ref,
-                            Some(updated_code_cell_value),
+                            Some(updated_code_cell_value.clone()),
                             &mut self.cells_to_compute,
                             &mut self.reverse_operations,
                             &mut self.summary,
@@ -243,6 +246,12 @@ impl TransactionInProgress {
                             self.cells_accessed.clear();
                         }
                         self.waiting_for_async = None;
+
+                        // need to add it to the summary since we don't run this through normal operations
+                        self.multiplayer_operations.push(Operation::SetCellCode {
+                            cell_ref,
+                            code_cell_value: Some(updated_code_cell_value),
+                        });
                     }
                     _ => {
                         crate::util::dbgjs("Transaction.complete called for an unhandled language");

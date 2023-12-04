@@ -77,7 +77,7 @@ pub struct TransactionSummary {
     pub generate_thumbnail: bool,
 
     // holds the operations to be shared via multiplayer
-    pub multiplayer_operations: String,
+    pub multiplayer_operations: Option<String>,
 }
 
 impl TransactionSummary {
@@ -88,7 +88,7 @@ impl TransactionSummary {
         }
     }
 
-    pub fn clear(&mut self) {
+    pub fn clear(&mut self, keep_multiplayer_operations: bool) {
         self.fill_sheets_modified.clear();
         self.border_sheets_modified.clear();
         self.code_cells_modified.clear();
@@ -98,6 +98,9 @@ impl TransactionSummary {
         self.cursor = None;
         self.transaction_busy = false;
         self.generate_thumbnail = false;
-        self.save = true;
+        self.save = false;
+        if !keep_multiplayer_operations {
+            self.multiplayer_operations = None;
+        }
     }
 }
