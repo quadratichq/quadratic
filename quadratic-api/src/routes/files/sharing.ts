@@ -12,7 +12,7 @@ import { validateUUID } from './files';
 import { getFilePermissions } from './getFilePermissions';
 
 const validateFileSharingPermission = () =>
-  body('public_link_access').isIn([LinkPermission.READONLY, LinkPermission.NOT_SHARED]);
+  body('public_link_access').isIn([LinkPermission.READONLY, LinkPermission.NOT_SHARED, LinkPermission.EDIT]);
 
 const sharing_router = express.Router();
 
