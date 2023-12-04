@@ -1,3 +1,4 @@
+import { multiplayer } from '@/multiplayer/multiplayer';
 import { Viewport } from 'pixi-viewport';
 import { InteractionEvent } from 'pixi.js';
 import { pixiApp } from '../../pixiApp/PixiApp';
@@ -23,7 +24,12 @@ export class Pointer {
     viewport.on('pointermove', this.pointerMove);
     viewport.on('pointerup', this.pointerUp);
     viewport.on('pointerupoutside', this.pointerUp);
+    pixiApp.canvas.addEventListener('pointerleave', this.pointerLeave);
   }
+
+  private pointerLeave = () => {
+    multiplayer.sendMouseMove();
+  };
 
   destroy() {
     const viewport = pixiApp.viewport;
@@ -31,6 +37,7 @@ export class Pointer {
     viewport.off('pointermove', this.pointerMove);
     viewport.off('pointerup', this.pointerUp);
     viewport.off('pointerupoutside', this.pointerUp);
+    pixiApp.canvas.removeEventListener('pointerleave', this.pointerLeave);
     this.pointerDown.destroy();
   }
 

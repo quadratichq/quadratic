@@ -30,8 +30,8 @@ pub(crate) enum MessageRequest {
     MouseMove {
         user_id: String,
         file_id: Uuid,
-        x: f64,
-        y: f64,
+        x: Option<f64>,
+        y: Option<f64>,
     },
     ChangeSelection {
         user_id: String,
@@ -49,8 +49,8 @@ pub(crate) enum MessageResponse {
     MouseMove {
         user_id: String,
         file_id: Uuid,
-        x: f64,
-        y: f64,
+        x: Option<f64>,
+        y: Option<f64>,
     },
     ChangeSelection {
         user_id: String,
@@ -188,8 +188,8 @@ pub(crate) mod tests {
         let message = MessageResponse::MouseMove {
             user_id: user_1.id.clone(),
             file_id,
-            x: 10 as f64,
-            y: 10 as f64,
+            x: Some(10f64),
+            y: Some(10f64),
         };
         broadcast(user_1.id.clone(), file_id, state, message).unwrap();
 

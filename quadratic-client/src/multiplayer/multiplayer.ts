@@ -74,21 +74,30 @@ class Multiplayer {
     console.log(`[Multiplayer] Entered room.`);
   }
 
-  sendMouseMove(x: number, y: number) {
+  sendMouseMove(x?: number, y?: number) {
     if (!this.ready || !this.room || !this.uuid) return;
     if (!this.websocket) {
       throw new Error('[Multiplayer] Websocket not initialized.');
     }
-    this.websocket.send(
-      JSON.stringify({
-        type: 'MouseMove',
-
-        user_id: this.uuid,
-        file_id: this.room,
-        x,
-        y,
-      })
-    );
+    if (x === undefined || y === undefined) {
+      this.websocket.send(
+        JSON.stringify({
+          type: 'MouseMove',
+          user_id: this.uuid,
+          file_id: this.room,
+        })
+      );
+    } else {
+      this.websocket.send(
+        JSON.stringify({
+          type: 'MouseMove',
+          user_id: this.uuid,
+          file_id: this.room,
+          x,
+          y,
+        })
+      );
+    }
   }
 
   sendSelection(cursor: Coordinate, rectangle?: Rectangle) {
@@ -99,7 +108,6 @@ class Multiplayer {
     this.websocket.send(
       JSON.stringify({
         type: 'ChangeSelection',
-
         user_id: this.uuid,
         file_id: this.room,
         selection: JSON.stringify({ cursor, rectangle }),
@@ -139,9 +147,13 @@ class Multiplayer {
         if (!player) {
           throw new Error("Expected Player to be defined before receiving a message of type 'MouseMove'");
         }
-        player.x = data.x;
-        player.y = data.y;
-        player.visible = true;
+        if (data.x !== null && data.y !== null) {
+          player.x = data.x;
+          player.y = data.y;
+          player.visible = true;
+        } else {
+          player.visible = false;
+        }
         window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
       }
     } else if (type === 'ChangeSelection') {
