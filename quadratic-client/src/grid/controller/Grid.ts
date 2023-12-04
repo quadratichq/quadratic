@@ -135,6 +135,7 @@ export class Grid {
 
     if (summary.multiplayer_operations) {
       multiplayer.sendTransaction(summary.multiplayer_operations);
+      console.log('sending transaction...', summary.multiplayer_operations);
     }
     pixiApp.setViewportDirty();
   }
@@ -727,6 +728,7 @@ export class Grid {
 
   multiplayerTransaction(transaction: string) {
     const summary = this.gridController.multiplayerTransaction(transaction);
+    console.log(summary);
     this.transactionResponse(summary);
   }
 
