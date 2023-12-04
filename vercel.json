@@ -1,4 +1,7 @@
 {
-  "buildCommand": "cd quadratic-client && npm run build:ci",
-  "installCommand": "cd quadratic-client && npm install"
+  "version": 2,
+  "public": false,
+  "github": {
+    "enabled": false
+  }
 }
