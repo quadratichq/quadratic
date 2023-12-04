@@ -1,3 +1,4 @@
+import { MultiplayerCursors } from '@/multiplayer/multiplayerCursor/MulitplayerCursors';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
@@ -117,6 +118,7 @@ export default function QuadraticGrid() {
     >
       {showInput && <CellInput container={container} />}
       <FloatingContextMenu container={container} showContextMenu={showContextMenu} />
+      <MultiplayerCursors />
     </div>
   );
 }

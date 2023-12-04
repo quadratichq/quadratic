@@ -1,3 +1,4 @@
+import { multiplayer } from '@/multiplayer/multiplayer';
 import { IViewportTransformState } from 'pixi-viewport';
 import { Rectangle } from 'pixi.js';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
@@ -77,6 +78,17 @@ export class SheetCursor {
       this.keyboardMovePosition = options.keyboardMovePosition;
     }
     pixiApp.updateCursorPosition({ ensureVisible: options.ensureVisible ?? true });
+    multiplayer.sendSelection(
+      this.cursorPosition,
+      this.multiCursor
+        ? new Rectangle(
+            this.multiCursor.originPosition.x,
+            this.multiCursor.originPosition.y,
+            this.multiCursor.terminalPosition.x - this.multiCursor.originPosition.x,
+            this.multiCursor.terminalPosition.y - this.multiCursor.originPosition.y
+          )
+        : undefined
+    );
   }
 
   changeBoxCells(boxCells: boolean) {

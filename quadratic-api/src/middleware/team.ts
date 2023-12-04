@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 import dbClient from '../dbClient';
-import { RequestWithTeam } from '../types/Request';
+import { RequestWithTeam, RequestWithUser } from '../types/Request';
 import { ResponseError } from '../types/Response';
 import { getTeamAccess } from '../utils';
 import { userMiddleware } from './user';
@@ -22,7 +22,7 @@ async function middleware(req: Request, res: Response<ResponseError>, next: Next
   const {
     params: { uuid: teamUuid },
     user,
-  } = req as RequestWithTeam;
+  } = req as RequestWithUser;
 
   // Validate the team UUID
   try {
