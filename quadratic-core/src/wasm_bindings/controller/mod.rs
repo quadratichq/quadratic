@@ -95,6 +95,13 @@ impl GridController {
         self.calculation_get_cells(get_cells)
     }
 
+    #[wasm_bindgen(js_name = "multiplayerTransaction")]
+    pub fn js_multiplayer_transaction(&mut self, operations: String) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(
+            &self.multiplayer_transaction(operations),
+        )?)
+    }
+
     /// Populates a portion of a sheet with random float values.
     ///
     /// Returns a [`TransactionSummary`].
@@ -117,6 +124,7 @@ impl GridController {
             save: false,
             generate_thumbnail: false,
             transaction_busy: false,
+            multiplayer_operations: String::new(),
         })?)
     }
 }

@@ -48,6 +48,8 @@ impl TransactionInProgress {
             current_cell_ref: None,
             waiting_for_async: None,
 
+            multiplayer_operations: vec![],
+
             complete: false,
         };
 
@@ -79,6 +81,9 @@ impl TransactionInProgress {
             if self.cells_to_compute.is_empty() {
                 self.complete = true;
                 self.summary.save = true;
+                if let Ok(operations) = serde_json::to_string(&self.multiplayer_operations) {
+                    self.summary.multiplayer_operations = operations;
+                }
                 if self.has_async {
                     grid_controller.finalize_transaction(self);
                 }
@@ -127,6 +132,7 @@ impl TransactionInProgress {
                 &mut self.sheets_with_changed_bounds,
                 compute,
             );
+            self.multiplayer_operations.push(op.clone());
             self.reverse_operations.extend(reverse_operation);
         }
     }

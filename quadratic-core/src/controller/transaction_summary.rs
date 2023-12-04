@@ -75,6 +75,9 @@ pub struct TransactionSummary {
 
     // should the grid generate a thumbnail
     pub generate_thumbnail: bool,
+
+    // holds the operations to be shared via multiplayer
+    pub multiplayer_operations: String,
 }
 
 impl TransactionSummary {

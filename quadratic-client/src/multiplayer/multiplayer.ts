@@ -1,9 +1,16 @@
+import { grid } from '@/grid/controller/Grid';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/gridGL/types/size';
 import { User } from '@auth0/auth0-spa-js';
 import { Rectangle } from 'pixi.js';
 import { MULTIPLAYER_COLORS } from './multiplayerCursor/multiplayerColors';
-import { MessageChangeSelection, MessageMouseMove, ReceiveMessages, SendEnterRoom } from './multiplayerTypes';
+import {
+  MessageChangeSelection,
+  MessageMouseMove,
+  MessageTransaction,
+  ReceiveMessages,
+  SendEnterRoom,
+} from './multiplayerTypes';
 
 const UPDATE_TIME = 1000 / 30;
 
@@ -116,6 +123,17 @@ export class Multiplayer {
     };
   }
 
+  async sendTransaction(operations: string) {
+    await this.init();
+    const message: MessageTransaction = {
+      type: 'Transaction',
+      user_id: this.uuid!,
+      file_id: this.room!,
+      operations,
+    };
+    this.websocket!.send(JSON.stringify(message));
+  }
+
   async update() {
     await this.init();
     const now = performance.now();
@@ -182,6 +200,13 @@ export class Multiplayer {
         player.selection = JSON.parse(data.selection);
         pixiApp.multiplayerCursor.dirty = true;
       }
+    } else if (type === 'Transaction') {
+      // todo: this check should not be needed (eventually)
+      if (data.user_id !== this.uuid) {
+        grid.multiplayerTransaction(data.operations);
+      }
+    } else {
+      console.warn(`Unknown message type: ${type}`);
     }
   };
 }

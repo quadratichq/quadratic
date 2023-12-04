@@ -1,3 +1,4 @@
+import { multiplayer } from '@/multiplayer/multiplayer';
 import * as Sentry from '@sentry/react';
 import { Point, Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
@@ -130,6 +131,10 @@ export class Grid {
     if (summary.save) {
       this.dirty = true;
       window.dispatchEvent(new CustomEvent('transaction-complete'));
+    }
+
+    if (summary.multiplayer_operations) {
+      multiplayer.sendTransaction(summary.multiplayer_operations);
     }
     pixiApp.setViewportDirty();
   }
@@ -718,6 +723,11 @@ export class Grid {
       rectangleToRect(sheets.sheet.cursor.getRectangle()),
       BigInt(decimal_places)
     );
+  }
+
+  multiplayerTransaction(transaction: string) {
+    const summary = this.gridController.multiplayerTransaction(transaction);
+    this.transactionResponse(summary);
   }
 
   //#endregion

@@ -33,4 +33,7 @@ pub struct TransactionInProgress {
     waiting_for_async: Option<CodeCellLanguage>,
     // true when transaction completes
     pub complete: bool,
+
+    // operations for multiplayer
+    pub multiplayer_operations: Vec<Operation>,
 }

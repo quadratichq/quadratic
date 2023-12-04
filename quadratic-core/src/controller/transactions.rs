@@ -16,6 +16,7 @@ pub enum TransactionType {
     Normal,
     Undo,
     Redo,
+    Multiplayer,
 }
 
 impl GridController {
@@ -32,6 +33,7 @@ impl GridController {
             TransactionType::Redo => {
                 self.undo_stack.push(transaction);
             }
+            TransactionType::Multiplayer => (),
         }
     }
 
@@ -156,6 +158,19 @@ impl GridController {
             transaction.updated_bounds(self);
             self.transaction_in_progress = Some(transaction.to_owned());
         }
+    }
+
+    pub fn multiplayer_transaction(&mut self, transaction: String) -> TransactionSummary {
+        let operations: Vec<Operation> = serde_json::from_str(&transaction).unwrap();
+        let mut transaction_in_progress = TransactionInProgress::start_transaction(
+            self,
+            operations,
+            None,
+            false,
+            TransactionType::Multiplayer,
+        );
+        transaction_in_progress.updated_bounds(self);
+        transaction_in_progress.transaction_summary()
     }
 }
 
