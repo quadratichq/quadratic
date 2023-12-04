@@ -60,8 +60,6 @@
     "build:wasm:types": "cd .. && cd quadratic-core && cargo run --bin export_types",
     "build:wasm:javascript": "cd .. && cd quadratic-core && wasm-pack build --target web --out-dir ../quadratic-client/src/quadratic-core --weak-refs",
     "build:wasm:nodejs": "cd .. && cd quadratic-core && wasm-pack build --target nodejs --out-dir ../quadratic-client/src/quadratic-core/__mocks__ --weak-refs",
-    "build:wasm:javascript:no-optimize": "cd .. && cd quadratic-core && wasm-pack build --target web --out-dir ../quadratic-client/src/quadratic-core --weak-refs --opt-level=0",
-    "build:wasm:nodejs:no-optimize": "cd .. && cd quadratic-core && wasm-pack build --target nodejs --out-dir ../quadratic-client/src/quadratic-core/__mocks__ --weak-refs --opt-level=0",
     "watch:javascript": "export VITE_VERSION=$(git rev-parse HEAD) && vite dev",
     "start:production": "npm run build && serve build",
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\"",
