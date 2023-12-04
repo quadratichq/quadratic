@@ -4,6 +4,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { ShowAfter } from './components/ShowAfter';
+import { multiplayer } from './multiplayer/multiplayer';
 import { router } from './router';
 import './styles.css';
 import { QuadraticLoading } from './ui/loading/QuadraticLoading';
@@ -21,6 +22,8 @@ if (import.meta.env.VITE_SENTRY_DSN && import.meta.env.VITE_SENTRY_DSN !== 'none
   });
 
 Sentry.addTracingExtensions();
+
+multiplayer.init();
 
 const container = document.getElementById('root');
 const root = createRoot(container as HTMLElement);

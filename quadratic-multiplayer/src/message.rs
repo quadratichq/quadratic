@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use futures_util::SinkExt;
@@ -27,6 +27,10 @@ pub(crate) enum MessageRequest {
         first_name: String,
         last_name: String,
         image: String,
+    },
+    LeaveRoom {
+        user_id: String,
+        file_id: Uuid,
     },
     MouseMove {
         user_id: String,
@@ -111,6 +115,24 @@ pub(crate) async fn handle_message(
             }
 
             Ok(response)
+        }
+
+        MessageRequest::LeaveRoom { user_id, file_id } => {
+            if let Ok(room) = state.get_room(&file_id).await {
+                if state.leave_room(file_id, &user_id).await {
+                    let response = MessageResponse::Room { room };
+                    tracing::info!("user {} left room", user_id);
+
+                    broadcast(user_id, file_id, Arc::clone(&state), response.clone())?;
+
+                    Ok(response)
+                } else {
+                    // this is expected when the room has been deleted
+                    Err(anyhow!(""))
+                }
+            } else {
+                Err(anyhow!("Room {} not found", file_id))
+            }
         }
 
         // User moves their mouse

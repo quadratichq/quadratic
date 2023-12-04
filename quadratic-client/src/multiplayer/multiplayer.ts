@@ -7,8 +7,6 @@ import { MessageChangeSelection, MessageMouseMove, ReceiveMessages, SendEnterRoo
 
 const UPDATE_TIME = 1000 / 30;
 
-// todo: create types for messages
-
 export interface Player {
   sheetId: string;
   x?: number;
@@ -35,7 +33,7 @@ export class Multiplayer {
 
   players: Map<string, Player> = new Map();
 
-  private async init() {
+  async init() {
     return new Promise((resolve) => {
       this.websocket = new WebSocket(import.meta.env.VITE_QUADRATIC_MULTIPLAYER_URL);
       this.websocket.addEventListener('message', this.handleMessage);
@@ -54,14 +52,13 @@ export class Multiplayer {
   }
 
   async enterFileRoom(uuid: string, user?: User) {
+    if (!this.ready || !this.websocket) {
+      throw new Error('[Multiplayer] Websocket not initialized.');
+    }
     if (!user?.sub) throw new Error('Expected User to be defined');
     if (this.room === uuid) return;
     this.room = uuid;
     this.uuid = user.sub;
-    if (!this.ready) await this.init();
-    if (!this.websocket) {
-      throw new Error('[Multiplayer] Websocket not initialized.');
-    }
     const enterRoom: SendEnterRoom = {
       type: 'EnterRoom',
 
@@ -78,6 +75,9 @@ export class Multiplayer {
   }
 
   sendMouseMove(x?: number, y?: number) {
+    if (!this.ready || !this.websocket) {
+      throw new Error('[Multiplayer] Websocket not initialized.');
+    }
     if (x === undefined || y === undefined) {
       this.queue.move = {
         type: 'MouseMove',
@@ -96,6 +96,9 @@ export class Multiplayer {
   }
 
   sendSelection(cursor: Coordinate, rectangle?: Rectangle) {
+    if (!this.ready || !this.websocket) {
+      throw new Error('[Multiplayer] Websocket not initialized.');
+    }
     this.queue.selection = {
       type: 'ChangeSelection',
       user_id: this.uuid!,

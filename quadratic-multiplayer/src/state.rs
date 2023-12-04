@@ -82,6 +82,30 @@ impl State {
 
         room.users.insert(user_id, user.clone()).is_none()
     }
+
+    /// Removes a user from a room. If the room is empty, it deletes the room.
+    /// Returns true if the room still exists after the user leaves.
+    pub(crate) async fn leave_room(&self, file_id: Uuid, user_id: &String) -> bool {
+        let mut rooms = self.rooms.lock().await;
+
+        // todo: there's probably a better way of handling the case where the room does not exist
+        let room = rooms.entry(file_id).or_insert_with(|| Room::new(file_id));
+        room.users.remove(user_id);
+
+        // remove the room if it's empty
+        if room.users.len() == 0 {
+            rooms.remove(&file_id);
+            tracing::trace!(
+                "User {:?} left room {:?}. Room deleted because it was empty.",
+                user_id,
+                file_id
+            );
+            false
+        } else {
+            tracing::trace!("User {:?} left room {:?}", user_id, room);
+            true
+        }
+    }
 }
 
 #[cfg(test)]
