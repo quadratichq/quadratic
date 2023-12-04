@@ -170,7 +170,9 @@ impl GridController {
             TransactionType::Multiplayer,
         );
         transaction_in_progress.updated_bounds(self);
-        transaction_in_progress.transaction_summary()
+        let mut summary = transaction_in_progress.transaction_summary();
+        summary.generate_thumbnail = false;
+        summary
     }
 }
 
