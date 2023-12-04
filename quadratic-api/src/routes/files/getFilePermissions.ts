@@ -18,4 +18,8 @@ export const getFilePermissions = (user: User | undefined, file: File): FILE_PER
   if (file.public_link_access === 'EDIT') {
     return 'EDITOR';
   }
+
+  // If we reach here, something happened we didn't expect so we'll return
+  // the lowest permission level
+  return 'ANONYMOUS';
 };

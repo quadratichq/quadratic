@@ -11,7 +11,7 @@ import dbClient from '../dbClient';
 // https://auth0.com/docs/customize/extensions/account-link-extension
 
 const auth0 = new ManagementClient({
-  domain: process.env.AUTH0_DOMAIN,
+  domain: process.env.AUTH0_DOMAIN as string,
   clientId: process.env.AUTH0_CLIENT_ID,
   clientSecret: process.env.AUTH0_CLIENT_SECRET,
   scope: 'read:users',
@@ -35,6 +35,7 @@ export const getUserProfile = async (userId: number) => {
     where: { id: userId },
   });
 
+  // @ts-expect-error TODO: fix this by handling the case where user is null
   const { name, picture, email } = await auth0.getUser({ id: user.auth0_id });
 
   return {

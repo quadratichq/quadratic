@@ -127,9 +127,6 @@ function ShareMenu({ fetcherUrl, uuid }: { fetcherUrl: string; uuid: string }) {
           <Row>
             <Loading />
           </Row>
-          <Row>
-            <Loading />
-          </Row>
         </>
       ) : (
         <>
@@ -596,7 +593,7 @@ function PublicLink({
   const optionsByValue: Record<PublicLinkAccess, { label: string; disabled?: boolean }> = {
     NOT_SHARED: { label: 'Cannot view' },
     READONLY: { label: 'Can view' },
-    EDIT: { label: 'Can edit', disabled: true },
+    EDIT: { label: 'Can edit' },
   };
 
   const activeOptionLabel = optionsByValue[public_link_access].label;
@@ -625,7 +622,7 @@ function PublicLink({
           setPublicLinkAccess(value);
         }}
       >
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className={`w-auto`}>
           <SelectValue>{activeOptionLabel}</SelectValue>
         </SelectTrigger>
         <SelectContent>

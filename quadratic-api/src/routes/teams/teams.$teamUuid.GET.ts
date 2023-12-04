@@ -1,31 +1,26 @@
-import express, { Response } from 'express';
+import express, { Request, Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { getAuth0Users } from '../../auth0/profile';
 import dbClient from '../../dbClient';
 import { teamMiddleware } from '../../middleware/team';
-import { userMiddleware } from '../../middleware/user';
-import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
+import { RequestWithTeam } from '../../types/Request';
 const router = express.Router();
 
-const schema = z.object({
-  params: z.object({
-    uuid: z.string().uuid(),
-  }),
-});
+const requestValidationMiddleware = validateRequestSchema(
+  z.object({
+    params: z.object({
+      uuid: z.string().uuid(),
+    }),
+  })
+);
 
 router.get(
   '/:uuid',
-  validateAccessToken,
-  validateRequestSchema(schema),
-  userMiddleware,
+  requestValidationMiddleware,
   teamMiddleware,
-  async (
-    req: RequestWithAuth & RequestWithUser & RequestWithTeam,
-    res: Response<ApiTypes['/v0/teams/:uuid.GET.response']>
-  ) => {
+  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET.response']>) => {
     const {
       user: { id: userId },
       team: {
@@ -33,7 +28,7 @@ router.get(
         data: { id: teamId },
         user: teamUser,
       },
-    } = req;
+    } = req as RequestWithTeam;
 
     // Get users in the team
     const teamUsers = await dbClient.userTeamRole.findMany({
@@ -55,6 +50,7 @@ router.get(
     const auth0Users = await getAuth0Users(auth0UserIds);
     // @ts-expect-error fix types
     const auth0UsersByAuth0Id: Record<string, (typeof auth0Users)[0]> = auth0Users.reduce(
+      // @ts-expect-error fix types
       (acc, auth0User) => ({ ...acc, [auth0User.user_id]: auth0User }),
       {}
     );
@@ -81,7 +77,6 @@ router.get(
           };
         }),
 
-        // @ts-expect-error TODO
         files: [],
       },
       user: {
@@ -91,6 +86,7 @@ router.get(
       },
     };
 
+    // @ts-expect-error fix types
     return res.status(200).json(response);
   }
 );
