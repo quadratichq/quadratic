@@ -1,3 +1,5 @@
+import { ExampleFileNames } from './appConstants';
+
 // Any routes referenced outside of the root router are stored here
 export const ROUTES = {
   LOGOUT: '/logout',
@@ -7,6 +9,7 @@ export const ROUTES = {
   LOGIN_RESULT: '/login-result',
   FILES: '/files',
   CREATE_FILE: '/files/create',
+  CREATE_EXAMPLE_FILE: (exampleFileName: ExampleFileNames) => `/files/create?example=${exampleFileName}`,
   EXAMPLES: '/examples',
   TEAMS: '/teams',
   ACCOUNT: '/account',
