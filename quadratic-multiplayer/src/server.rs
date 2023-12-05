@@ -22,10 +22,11 @@ use std::{ops::ControlFlow, time::Duration};
 use tokio::{sync::Mutex, time};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use uuid::Uuid;
 
 use crate::{
     config::{config, Config},
-    message::{handle_message, MessageRequest, MessageResponse},
+    message::{broadcast, handle_message, MessageRequest, MessageResponse},
     state::State,
 };
 
@@ -155,6 +156,7 @@ async fn process_message(
     Ok(ControlFlow::Continue(()))
 }
 
+/// In s separate thread, check for stale users in rooms and remove them.
 async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_timeout_s: i64) {
     tokio::spawn(async move {
         let mut interval = time::interval(Duration::from_millis(heartbeat_check_s as u64 * 1000));
@@ -162,14 +164,32 @@ async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_ti
         loop {
             let rooms = state.rooms.lock().await.clone();
 
-            for (file_id, _) in rooms.iter() {
+            for (file_id, room) in rooms.iter() {
                 tracing::info!("Checking heartbeats in room {file_id}");
 
-                if let Err(e) = state
+                match state
                     .remove_stale_users_in_room(file_id.to_owned(), heartbeat_timeout_s)
                     .await
                 {
-                    tracing::warn!("Error removing stale users from room {file_id}: {:?}", e);
+                    Ok(num_users_removed) => {
+                        if let Err(e) = broadcast(
+                            // TODO(ddimaria): use a real session_id here
+                            Uuid::new_v4(),
+                            file_id.to_owned(),
+                            Arc::clone(&state),
+                            MessageResponse::Room {
+                                room: room.to_owned(),
+                            },
+                        ) {
+                            tracing::warn!(
+                            "Error broadcasting room {file_id} after removing {num_users_removed} stale users: {:?}",
+                            e
+                        );
+                        }
+                    }
+                    Err(e) => {
+                        tracing::warn!("Error removing stale users from room {file_id}: {:?}", e);
+                    }
                 }
             }
 

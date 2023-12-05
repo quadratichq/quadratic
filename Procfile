@@ -1,3 +1,3 @@
-web: node -r newrelic quadratic-api/dist/server.js
+web: cd quadratic-api && node -r newrelic dist/server.js
 
 release: cd quadratic-api && npx prisma migrate deploy
