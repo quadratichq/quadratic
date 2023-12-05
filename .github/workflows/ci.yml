@@ -182,3 +182,42 @@ jobs:
         npm run lint:prettier
         npm run lint:eslint
         npm run lint:ts
+
+  multiplayer_preview:
+    runs-on: ubuntu-latest-8-cores 
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Rust
+      uses: moonrepo/setup-rust@v1
+      with:
+        components: clippy, llvm-tools-preview
+        cache: false
+        channel: 'nightly'
+
+    - name: Build quadratic-multiplayer
+      run: |
+        cd quadratic-multiplayer
+        cargo build --release
+
+    - name: Move build to app folder
+      run: |
+        mkdir app
+        mv ./quadratic-multiplayer/target/release/quadratic-multiplayer ./app/quadratic-multiplayer
+
+    # heroku deployment
+    - name: Deploy to Heroku
+      uses: akhileshns/heroku-deploy@v3.12.12
+      with:
+      # key from repository secrets
+        heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+        # name of the Heroku app
+        heroku_app_name: "quadratic-multiplayer"
+        # email from which the app is uploaded
+        heroku_email: "davidkircos@gmail.com"
+        # app directory
+        appdir: "./app"
+        # start command
+        procfile: "web: ./quadratic-multiplayer"
+        # buildpack is like environment used to run the app
+        buildpack: "https://github.com/ph3nx/heroku-binary-buildpack.git"
