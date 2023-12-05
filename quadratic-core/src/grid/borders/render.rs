@@ -57,7 +57,7 @@ mod tests {
     //             let mut sheet =
     //                 Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
     //             let rect = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 506, y: 515 });
-    //             let region = sheet.region(rect);
+    //             let (region, _) = sheet.region(rect);
     //
     //             let selection = vec![BorderSelection::All];
     //
@@ -86,7 +86,7 @@ mod tests {
         fn single_block() {
             let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
             let rect = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 6, y: 15 });
-            let region = sheet.region(rect);
+            let (region, _) = sheet.region(rect);
 
             let selection = vec![BorderSelection::All];
 
@@ -115,8 +115,8 @@ mod tests {
             let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 4, y: 10 });
             let rect_2 = Rect::new_span(Pos { x: 4, y: 11 }, Pos { x: 5, y: 11 });
 
-            let region_1 = sheet.region(rect_1);
-            let region_2 = sheet.region(rect_2);
+            let (region_1, _) = sheet.region(rect_1);
+            let (region_2, _) = sheet.region(rect_2);
 
             let selection_1 = vec![BorderSelection::All];
             let selection_2 = selection_1.clone();
@@ -149,8 +149,8 @@ mod tests {
             let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 6, y: 15 });
             let rect_2 = Rect::new_span(Pos { x: 3, y: 17 }, Pos { x: 9, y: 20 });
 
-            let region_1 = sheet.region(rect_1);
-            let region_2 = sheet.region(rect_2);
+            let (region_1, _) = sheet.region(rect_1);
+            let (region_2, _) = sheet.region(rect_2);
 
             let selection_1 = vec![BorderSelection::All];
             let selection_2 = selection_1.clone();
@@ -193,8 +193,8 @@ mod tests {
             let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 6, y: 15 });
             let rect_2 = Rect::new_span(Pos { x: 2, y: 11 }, Pos { x: 7, y: 14 });
 
-            let region_1 = sheet.region(rect_1);
-            let region_2 = sheet.region(rect_2);
+            let (region_1, _) = sheet.region(rect_1);
+            let (region_2, _) = sheet.region(rect_2);
 
             let selection_1 = vec![BorderSelection::All];
             let selection_2 = selection_1.clone();
@@ -238,8 +238,8 @@ mod tests {
             let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 4, y: 11 });
             let rect_2 = Rect::new_span(Pos { x: 5, y: 10 }, Pos { x: 6, y: 11 });
 
-            let region_1 = sheet.region(rect_1);
-            let region_2 = sheet.region(rect_2);
+            let (region_1, _) = sheet.region(rect_1);
+            let (region_2, _) = sheet.region(rect_2);
 
             let selection_1 = vec![BorderSelection::All];
             let selection_2 = selection_1.clone();
@@ -273,8 +273,8 @@ mod tests {
             let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 6, y: 15 });
             let rect_2 = Rect::new_span(Pos { x: 2, y: 11 }, Pos { x: 7, y: 14 });
 
-            let region_1 = sheet.region(rect_1);
-            let region_2 = sheet.region(rect_2);
+            let (region_1, _) = sheet.region(rect_1);
+            let (region_2, _) = sheet.region(rect_2);
 
             let selection_1 = vec![BorderSelection::All];
             let selection_2 = selection_1.clone();
@@ -316,7 +316,7 @@ mod tests {
         fn single_block() {
             let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
             let rect = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 6, y: 15 });
-            let region = sheet.region(rect);
+            let (region, _) = sheet.region(rect);
 
             let selection = vec![BorderSelection::All];
 
@@ -345,8 +345,8 @@ mod tests {
             let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 3, y: 11 });
             let rect_2 = Rect::new_span(Pos { x: 4, y: 11 }, Pos { x: 4, y: 12 });
 
-            let region_1 = sheet.region(rect_1);
-            let region_2 = sheet.region(rect_2);
+            let (region_1, _) = sheet.region(rect_1);
+            let (region_2, _) = sheet.region(rect_2);
 
             let selection_1 = vec![BorderSelection::All];
             let selection_2 = selection_1.clone();
@@ -379,8 +379,8 @@ mod tests {
             let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 5, y: 13 });
             let rect_2 = Rect::new_span(Pos { x: 7, y: 10 }, Pos { x: 10, y: 15 });
 
-            let region_1 = sheet.region(rect_1);
-            let region_2 = sheet.region(rect_2);
+            let (region_1, _) = sheet.region(rect_1);
+            let (region_2, _) = sheet.region(rect_2);
 
             let selection_1 = vec![BorderSelection::All];
             let selection_2 = selection_1.clone();
@@ -419,8 +419,8 @@ mod tests {
             let rect_1 = Rect::new_span(Pos { x: 2, y: 11 }, Pos { x: 7, y: 14 });
             let rect_2 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 6, y: 15 });
 
-            let region_1 = sheet.region(rect_1);
-            let region_2 = sheet.region(rect_2);
+            let (region_1, _) = sheet.region(rect_1);
+            let (region_2, _) = sheet.region(rect_2);
 
             let selection_1 = vec![BorderSelection::All];
             let selection_2 = selection_1.clone();
@@ -464,8 +464,8 @@ mod tests {
             let rect_1 = Rect::new_span(Pos { x: 2, y: 11 }, Pos { x: 7, y: 14 });
             let rect_2 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 6, y: 15 });
 
-            let region_1 = sheet.region(rect_1);
-            let region_2 = sheet.region(rect_2);
+            let (region_1, _) = sheet.region(rect_1);
+            let (region_2, _) = sheet.region(rect_2);
 
             let selection_1 = vec![BorderSelection::All];
             let selection_2 = selection_1.clone();

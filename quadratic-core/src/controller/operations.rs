@@ -24,6 +24,7 @@ impl GridController {
         summary: &mut TransactionSummary,
         sheets_with_changed_bounds: &mut HashSet<SheetId>,
         compute: bool,
+        multiplayer_operations: &mut Vec<Operation>,
     ) -> Vec<Operation> {
         let mut reverse_operations = vec![];
         match op {
@@ -37,8 +38,11 @@ impl GridController {
                     .zip(values.into_cell_values_vec())
                     .map(|(cell_ref, value)| {
                         let pos = sheet.cell_ref_to_pos(cell_ref)?;
-                        let response = sheet.set_cell_value(pos, value)?;
-                        Some(response.old_value)
+                        let (old_value, operations) = sheet.set_cell_value(pos, value);
+                        if let Some(operations) = operations {
+                            multiplayer_operations.extend(operations);
+                        }
+                        old_value
                     })
                     .map(|old_value| old_value.unwrap_or(CellValue::Blank))
                     .collect();
@@ -48,7 +52,6 @@ impl GridController {
                     .expect("error constructing array of old values for SetCells operation");
 
                 CellSheetsModified::add_region(&mut summary.cell_sheets_modified, sheet, &region);
-
                 // check if override any code cells
                 let code_cells_to_delete = sheet
                     .code_cells
@@ -67,7 +70,7 @@ impl GridController {
                 let sheet_id = sheet.id;
                 for (cell_ref, pos) in code_cells_to_delete {
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    let old_value = sheet.set_code_cell_value(pos, None);
+                    let (old_value, _) = sheet.set_code_cell_value(pos, None);
                     fetch_code_cell_difference(
                         self,
                         sheet_id,
@@ -77,6 +80,7 @@ impl GridController {
                         summary,
                         cells_to_compute,
                         &mut reverse_operations,
+                        multiplayer_operations,
                     );
                     reverse_operations.push(Operation::SetCellCode {
                         cell_ref,
@@ -103,6 +107,7 @@ impl GridController {
                                 cells_to_compute,
                                 summary,
                                 &mut reverse_operations,
+                                multiplayer_operations,
                             );
                         }
                     }
@@ -164,6 +169,7 @@ impl GridController {
                             summary,
                             cells_to_compute,
                             &mut reverse_operations,
+                            multiplayer_operations,
                         );
                         let sheet = self.grid.sheet_mut_from_id(sheet_id);
                         sheet.set_code_cell_value(pos, None);
@@ -180,6 +186,7 @@ impl GridController {
                         summary,
                         cells_to_compute,
                         &mut reverse_operations,
+                        multiplayer_operations,
                     );
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
                     sheet.set_code_cell_value(pos, code_cell_value.clone());
@@ -205,6 +212,7 @@ impl GridController {
                                 cells_to_compute,
                                 summary,
                                 &mut reverse_operations,
+                                multiplayer_operations,
                             );
                         }
                     }
@@ -217,6 +225,7 @@ impl GridController {
                         cells_to_compute,
                         summary,
                         &mut reverse_operations,
+                        multiplayer_operations,
                     );
                 }
 
@@ -418,6 +427,24 @@ impl GridController {
                     });
                 }
             }
+
+            Operation::MapColumnId {
+                sheet_id,
+                column_id,
+                index,
+            } => {
+                let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                sheet.set_column_id(column_id, index);
+            }
+
+            Operation::MapRowId {
+                sheet_id,
+                row_id,
+                index,
+            } => {
+                let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                sheet.set_row_id(row_id, index);
+            }
         };
         reverse_operations
     }
@@ -439,6 +466,7 @@ mod tests {
             &mut summary,
             &mut sheets_with_changed_bounds,
             false,
+            &mut vec![],
         );
     }
 
@@ -468,7 +496,7 @@ mod tests {
     fn test_execute_operation_resize_column() {
         let mut gc = GridController::new();
         let sheet = &mut gc.grid_mut().sheets_mut()[0];
-        let (_, column) = sheet.get_or_create_column(0);
+        let (column, _) = sheet.get_or_create_column(0);
         let column_id = column.id;
         let sheet_id = sheet.id;
         let new_size = 100.0;
@@ -495,8 +523,8 @@ mod tests {
     fn test_execute_operation_resize_row() {
         let mut gc = GridController::new();
         let sheet = &mut gc.grid_mut().sheets_mut()[0];
-        let row = sheet.get_or_create_row(0);
-        let row_id = row.id;
+        let (row, _) = sheet.get_or_create_row(0);
+        let row_id = row;
         let sheet_id = sheet.id;
         let new_size = 100.0;
         let operation = Operation::ResizeRow {

@@ -94,8 +94,8 @@ mod tests {
 
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
-        sheet.set_cell_value(Pos { x: 0, y: 1 }, "q");
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, "w");
+        let _ = sheet.set_cell_value(Pos { x: 0, y: 1 }, "q");
+        let _ = sheet.set_cell_value(Pos { x: 1, y: 1 }, "w");
         let sheet_id = sheet.id;
 
         let mut ctx = Ctx::new(&g, pos![A0].with_sheet(sheet_id));

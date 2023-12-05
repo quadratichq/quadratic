@@ -17,10 +17,14 @@ impl GridController {
         style: Option<BorderStyle>,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let region = self.region(sheet_id, rect);
+        let (region, operations) = self.region(sheet_id, rect);
+        let mut ops = vec![];
+        if let Some(operations) = operations {
+            ops.extend(operations);
+        }
         let sheet = self.sheet(sheet_id);
         let borders = generate_borders(sheet, &region, selections, style);
-        let ops = vec![Operation::SetBorders { region, borders }];
+        ops.push(Operation::SetBorders { region, borders });
         self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
 }

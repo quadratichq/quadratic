@@ -180,11 +180,11 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
                         };
 
                         if let Ok(column_id) = ColumnId::from_str(column_id) {
-                            let row_id = sheet.get_or_create_row(*y);
+                            let (row_id, _) = sheet.get_or_create_row(*y);
                             let region = RegionRef {
                                 sheet: sheet.id,
                                 columns: vec![column_id],
-                                rows: vec![row_id.id],
+                                rows: vec![row_id],
                             };
                             let borders = generate_borders(
                                 sheet,

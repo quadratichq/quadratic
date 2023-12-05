@@ -194,7 +194,10 @@ impl GridController {
         let code = clipboard.code.clone();
 
         let mut ops = vec![];
-        let region = self.region(sheet_id, rect);
+        let (region, operations) = self.region(sheet_id, rect);
+        if let Some(operations) = operations {
+            ops.extend(operations);
+        }
         let values = GridController::array_from_clipboard_cells(clipboard);
         if let Some(values) = values {
             ops.push(Operation::SetCellValues {
@@ -229,10 +232,13 @@ impl GridController {
 
         // add copied code cells to the sheet
         code.iter().for_each(|entry| {
-            let cell_ref = sheet.get_or_create_cell_ref(Pos {
+            let (cell_ref, operations) = sheet.get_or_create_cell_ref(Pos {
                 x: entry.0.x + start_pos.x,
                 y: entry.0.y + start_pos.y,
             });
+            if let Some(operations) = operations {
+                ops.extend(operations);
+            }
             ops.push(Operation::SetCellCode {
                 cell_ref,
                 code_cell_value: Some(entry.1.clone()),
@@ -252,13 +258,14 @@ impl GridController {
             if let Some(cell_borders) = cell_borders {
                 let mut border_selections = vec![];
                 let mut border_styles = vec![];
-                let (column, _) = sheet.get_or_create_column(*x + start_pos.x);
-                let row_id = sheet.get_or_create_row(*y + start_pos.y);
-                let region = RegionRef {
-                    sheet: sheet.id,
-                    columns: vec![column.id],
-                    rows: vec![row_id.id],
-                };
+                let (cell_ref, operations) = sheet.get_or_create_cell_ref(Pos {
+                    x: *x + start_pos.x,
+                    y: *y + start_pos.y,
+                });
+                if let Some(operations) = operations {
+                    ops.extend(operations);
+                }
+                let region = RegionRef::from(cell_ref);
 
                 cell_borders
                     .borders
@@ -326,9 +333,12 @@ impl GridController {
             )
                 .into(),
         );
-
+        let (region, ops) = self.region(sheet_id, rect);
+        if let Some(ops) = ops {
+            operations.extend(ops);
+        }
         operations.push(Operation::SetCellValues {
-            region: self.region(sheet_id, rect),
+            region,
             values: array,
         });
 
@@ -411,7 +421,7 @@ mod test {
             line: CellBorderLine::Line1,
         };
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
-        let region = sheet.region(rect);
+        let (region, _) = sheet.region(rect);
         let borders = generate_borders(sheet, &region, selection, Some(style));
         set_region_borders(sheet, vec![region.clone()], borders);
     }
@@ -630,7 +640,7 @@ mod test {
             line: CellBorderLine::Line1,
         };
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 });
-        let region = sheet.region(rect);
+        let (region, _) = sheet.region(rect);
         let borders = generate_borders(sheet, &region, selection, Some(style));
         set_region_borders(sheet, vec![region.clone()], borders);
 

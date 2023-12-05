@@ -32,7 +32,7 @@
     "coverage:wasm:gen": "cd quadratic-core && cd quadratic-core && CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='coverage/cargo-test-%p-%m.profraw' cargo test",
     "coverage:wasm:html": "cd quadratic-core && cd quadratic-core && grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore 'src/wasm_bindings/*' --ignore 'src/bin/*' --ignore '../*' --ignore '/*' -o coverage/html",
     "coverage:wasm:view": "open quadratic-core/coverage/html/index.html",
-    "test:wasm": "cd run test --workspace=quadratic-core",
+    "test:wasm": "cd quadratic-core && cargo test",
     "test:multiplayer": "npm run test --workspace=quadratic-multiplayer",
     "watch:test:wasm": "cd quadratic-core && cargo watch -x test",
     "benchmark:rust": "cd quadratic-core && cargo bench",

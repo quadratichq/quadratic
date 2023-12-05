@@ -30,8 +30,11 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
-        let cell_ref = sheet.get_or_create_cell_ref(pos);
+        let (cell_ref, operations) = sheet.get_or_create_cell_ref(pos);
         let mut ops = vec![];
+        if let Some(operations) = operations {
+            ops.extend(operations);
+        }
 
         let cell_value = self.string_to_cell_value(sheet_id, pos, value.as_str(), &mut ops);
 
@@ -48,10 +51,13 @@ impl GridController {
         sheet_id: SheetId,
         pos: Pos,
         value: &str,
-        formatting_ops: &mut Vec<Operation>,
+        ops: &mut Vec<Operation>,
     ) -> CellValue {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
-        let cell_ref = sheet.get_or_create_cell_ref(pos);
+        let (cell_ref, operations) = sheet.get_or_create_cell_ref(pos);
+        if let Some(operations) = operations {
+            ops.extend(operations);
+        }
         let region = RegionRef::from(cell_ref);
 
         // strip whitespace
@@ -64,7 +70,7 @@ impl GridController {
                 kind: NumericFormatKind::Currency,
                 symbol: Some(currency),
             };
-            formatting_ops.push(Operation::SetCellFormats {
+            ops.push(Operation::SetCellFormats {
                 region: region.clone(),
                 attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
                     Some(numeric_format),
@@ -73,7 +79,7 @@ impl GridController {
             });
             // only change decimal places if decimals have not been set
             if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
-                formatting_ops.push(Operation::SetCellFormats {
+                ops.push(Operation::SetCellFormats {
                     region,
                     attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
                 });
@@ -86,7 +92,7 @@ impl GridController {
                 kind: NumericFormatKind::Percentage,
                 symbol: None,
             };
-            formatting_ops.push(Operation::SetCellFormats {
+            ops.push(Operation::SetCellFormats {
                 region,
                 attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
                     Some(numeric_format),
@@ -109,8 +115,11 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
-        let cell_ref = sheet.get_or_create_cell_ref(pos);
+        let (cell_ref, operations) = sheet.get_or_create_cell_ref(pos);
         let mut ops = vec![];
+        if let Some(operations) = operations {
+            ops.extend(operations);
+        }
 
         // remove any values that were originally over the code cell
         if sheet.get_cell_value(pos).is_some() {
@@ -255,10 +264,11 @@ impl GridController {
 
     /// Returns a region of the spreadsheet, assigning IDs to columns and rows
     /// as needed.
-    pub fn region(&mut self, sheet_id: SheetId, rect: Rect) -> RegionRef {
+    pub fn region(&mut self, sheet_id: SheetId, rect: Rect) -> (RegionRef, Option<Vec<Operation>>) {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
         sheet.region(rect)
     }
+
     /// Returns a region of the spreadsheet, ignoring columns and rows which
     /// have no contents and no IDs.
     pub fn existing_region(&self, sheet_id: SheetId, rect: Rect) -> RegionRef {

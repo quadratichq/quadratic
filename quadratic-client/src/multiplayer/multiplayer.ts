@@ -74,7 +74,9 @@ export class Multiplayer {
   }
 
   async enterFileRoom(uuid: string, user?: User) {
+    // used to hack the server so everyone is in the same file even if they're not.
     uuid = 'ab96f02c-fd8c-4daa-bfb5-aec871ab9225';
+
     await this.init();
     if (!user?.sub) throw new Error('Expected User to be defined');
     if (this.room === uuid) return;

@@ -233,7 +233,7 @@ impl IdSpaceBorders {
     ) -> Self {
         let mut previous = Self::default();
         for column_id in &region.columns {
-            let row_ranges = grid::sheet::row_ranges(&region.rows, row_ids);
+            let row_ranges = grid::sheet::ids::row_ranges(&region.rows, row_ids);
             let replacement = source.clone_blocks(*column_id, row_ranges.clone());
 
             let dest_column = self.borders.entry(*column_id).or_default();
@@ -541,7 +541,7 @@ mod tests {
     fn all_borders() {
         let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
         let rect = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 6, y: 15 });
-        let region = sheet.region(rect);
+        let (region, _) = sheet.region(rect);
 
         let selection = vec![BorderSelection::All];
 
@@ -603,7 +603,7 @@ mod tests {
     fn outer_borders() {
         let mut sheet = Sheet::new(SheetId::new(), "Test Sheet".to_string(), "".to_string());
         let rect = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 5, y: 12 });
-        let region = sheet.region(rect);
+        let (region, _) = sheet.region(rect);
 
         let selection = vec![BorderSelection::Outer];
 
@@ -639,8 +639,8 @@ mod tests {
         let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 5, y: 12 });
         let rect_2 = Rect::new_span(Pos { x: 4, y: 11 }, Pos { x: 6, y: 13 });
 
-        let region_1 = sheet.region(rect_1);
-        let region_2 = sheet.region(rect_2);
+        let (region_1, _) = sheet.region(rect_1);
+        let (region_2, _) = sheet.region(rect_2);
 
         let selection_1 = vec![BorderSelection::All];
         let selection_2 = vec![BorderSelection::All];
@@ -697,8 +697,8 @@ mod tests {
         let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 5, y: 12 });
         let rect_2 = Rect::new_span(Pos { x: 4, y: 11 }, Pos { x: 6, y: 13 });
 
-        let region_1 = sheet.region(rect_1);
-        let region_2 = sheet.region(rect_2);
+        let (region_1, _) = sheet.region(rect_1);
+        let (region_2, _) = sheet.region(rect_2);
 
         let selection_1 = vec![BorderSelection::All];
         let selection_2 = vec![BorderSelection::All];
@@ -739,8 +739,8 @@ mod tests {
         let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 5, y: 12 });
         let rect_2 = Rect::new_span(Pos { x: 4, y: 11 }, Pos { x: 6, y: 13 });
 
-        let region_1 = sheet.region(rect_1);
-        let region_2 = sheet.region(rect_2);
+        let (region_1, _) = sheet.region(rect_1);
+        let (region_2, _) = sheet.region(rect_2);
 
         let selection_1 = vec![BorderSelection::All];
         let selection_2 = vec![BorderSelection::Horizontal];
@@ -815,8 +815,8 @@ mod tests {
         let rect_1 = Rect::new_span(Pos { x: 3, y: 10 }, Pos { x: 5, y: 12 });
         let rect_2 = Rect::new_span(Pos { x: 4, y: 11 }, Pos { x: 6, y: 13 });
 
-        let region_1 = sheet.region(rect_1);
-        let region_2 = sheet.region(rect_2);
+        let (region_1, _) = sheet.region(rect_1);
+        let (region_2, _) = sheet.region(rect_2);
 
         let selection_1 = vec![BorderSelection::All];
         let selection_2 = vec![BorderSelection::Horizontal];

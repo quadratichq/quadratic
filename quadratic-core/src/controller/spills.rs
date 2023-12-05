@@ -11,6 +11,9 @@ use crate::{
 use super::operation::Operation;
 
 impl GridController {
+    /// Checks whether a spill exists
+    /// Note: we are assuming the region exists as we force it to exist whenever an update_code_cell is called regardless of spill error
+    /// todo: this not ideal, but we can't add operations while executing an operation
     pub fn check_spill(
         &mut self,
         cell_ref: CellRef,
@@ -29,6 +32,8 @@ impl GridController {
                             code_cell_ref,
                             Some(code_cell.clone()),
                             cells_to_compute,
+                            // see note above
+                            &mut vec![],
                             reverse_operations,
                             summary,
                         );
@@ -48,6 +53,7 @@ impl GridController {
         cells_to_compute: &mut IndexSet<CellRef>,
         summary: &mut TransactionSummary,
         reverse_operations: &mut Vec<Operation>,
+        multiplayer_operations: &mut Vec<Operation>,
     ) {
         let sheet = self.grid.sheet_from_id(cell_ref.sheet);
         if let Some(code_cell) = sheet.get_code_cell_from_ref(cell_ref) {
@@ -57,6 +63,7 @@ impl GridController {
                     cell_ref,
                     Some(code_cell.clone()),
                     cells_to_compute,
+                    multiplayer_operations,
                     reverse_operations,
                     summary,
                 );
@@ -71,6 +78,7 @@ impl GridController {
         cells_to_compute: &mut IndexSet<CellRef>,
         summary: &mut TransactionSummary,
         reverse_operations: &mut Vec<Operation>,
+        multiplayer_operations: &mut Vec<Operation>,
     ) {
         let sheet = self.grid.sheet_from_id(cell_ref.sheet);
         if let Some((cell_ref, code_cell)) = sheet.spill_error_released(cell_ref) {
@@ -79,6 +87,7 @@ impl GridController {
                 cell_ref,
                 Some(code_cell),
                 cells_to_compute,
+                multiplayer_operations,
                 reverse_operations,
                 summary,
             );

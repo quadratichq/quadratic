@@ -390,7 +390,11 @@ impl CellValue {
                 symbol: Some(currency),
             };
             if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
+                let (_, operations) =
+                    sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
+                if let Some(operations) = operations {
+                    ops.extend(operations);
+                }
 
                 ops.push(Operation::SetCellFormats {
                     region: cell_ref.into(),
@@ -402,7 +406,11 @@ impl CellValue {
 
                 // only change decimals if it hasn't already been set
                 if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
-                    sheet.set_formatting_value::<NumericDecimals>(pos, Some(2));
+                    let (_, operations) =
+                        sheet.set_formatting_value::<NumericDecimals>(pos, Some(2));
+                    if let Some(operations) = operations {
+                        ops.extend(operations);
+                    }
                     ops.push(Operation::SetCellFormats {
                         region: cell_ref.into(),
                         attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
@@ -418,7 +426,11 @@ impl CellValue {
                 symbol: None,
             };
             if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
+                let (_, operations) =
+                    sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
+                if let Some(operations) = operations {
+                    ops.extend(operations);
+                }
             }
             ops.push(Operation::SetCellFormats {
                 region: cell_ref.into(),

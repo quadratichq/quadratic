@@ -17,7 +17,6 @@ mod formatting;
 mod ids;
 pub mod js_types;
 mod offsets;
-mod response;
 pub mod series;
 pub mod sheet;
 
@@ -37,7 +36,10 @@ pub use formatting::{
 pub use ids::*;
 pub use sheet::Sheet;
 
-use crate::{Array, CellValue, Pos};
+use crate::CellValue;
+
+#[cfg(test)]
+use crate::{Array, Pos};
 
 #[cfg(test)]
 pub use borders::print_borders;
@@ -61,13 +63,15 @@ impl Grid {
         ret.add_sheet(None).expect("error adding initial sheet");
         ret
     }
+
+    #[cfg(test)]
     pub fn from_array(base_pos: Pos, array: &Array) -> Self {
         let mut ret = Grid::new();
         let sheet = &mut ret.sheets_mut()[0];
         for ((x, y), value) in array.size().iter().zip(array.cell_values_slice()) {
             let x = base_pos.x + x as i64;
             let y = base_pos.y + y as i64;
-            sheet.set_cell_value(Pos { x, y }, value.clone());
+            let _ = sheet.set_cell_value(Pos { x, y }, value.clone());
         }
         ret
     }
