@@ -123,6 +123,30 @@ impl State {
         Ok(user)
     }
 
+    /// Remove stale users in a room
+    pub(crate) async fn remove_stale_users_in_room(
+        &self,
+        file_id: Uuid,
+        heartbeat_timeout_s: i64,
+    ) -> Result<()> {
+        let stale_users = get_room!(self, file_id)?
+            .users
+            .iter()
+            .filter(|(_, user)| {
+                user.last_heartbeat.timestamp() + heartbeat_timeout_s < Utc::now().timestamp()
+            })
+            .map(|(user_id, _)| user_id.to_owned())
+            .collect::<Vec<String>>();
+
+        for user_id in stale_users.iter() {
+            tracing::info!("Removing stale user {} from room {}", user_id, file_id);
+
+            self.leave_room(file_id, user_id).await?;
+        }
+
+        Ok(())
+    }
+
     /// Updates a user's hearbeat in a room
     pub(crate) async fn update_heartbeat(&self, file_id: Uuid, user_id: &String) -> Result<()> {
         get_mut_room!(self, file_id)?

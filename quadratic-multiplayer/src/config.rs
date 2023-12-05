@@ -13,6 +13,7 @@ use serde::Deserialize;
 pub(crate) struct Config {
     pub(crate) host: String,
     pub(crate) port: String,
+    pub(crate) heartbeat_check_s: i64,
     pub(crate) heartbeat_timeout_s: i64,
 }
 

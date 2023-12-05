@@ -49,6 +49,7 @@ pub(crate) async fn serve() -> Result<()> {
     let Config {
         host,
         port,
+        heartbeat_check_s,
         heartbeat_timeout_s,
     } = config()?;
 
@@ -66,7 +67,7 @@ pub(crate) async fn serve() -> Result<()> {
 
     tracing::info!("listening on {}", listener.local_addr()?);
 
-    check_heartbeat(Arc::clone(&state), heartbeat_timeout_s).await;
+    check_heartbeat(Arc::clone(&state), heartbeat_check_s, heartbeat_timeout_s).await;
 
     axum::serve(
         listener,
@@ -154,26 +155,25 @@ async fn process_message(
     Ok(ControlFlow::Continue(()))
 }
 
-async fn check_heartbeat(state: Arc<State>, heartbeat_timeout_s: i64) {
+async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_timeout_s: i64) {
     tokio::spawn(async move {
-        let mut rooms = state.rooms.lock().await;
-        let mut interval = time::interval(Duration::from_millis(heartbeat_timeout_s as u64 * 1000));
+        let mut interval = time::interval(Duration::from_millis(heartbeat_check_s as u64 * 1000));
 
-        for (file_id, room) in rooms.iter_mut() {
-            let mut users = room.users.clone();
+        loop {
+            let rooms = state.rooms.lock().await.clone();
 
-            for (user_id, user) in users.iter_mut() {
-                if user.last_heartbeat + chrono::Duration::seconds(heartbeat_timeout_s as i64)
-                    < chrono::Utc::now()
+            for (file_id, _) in rooms.iter() {
+                tracing::info!("Checking heartbeats in room {file_id}");
+
+                if let Err(e) = state
+                    .remove_stale_users_in_room(file_id.to_owned(), heartbeat_timeout_s)
+                    .await
                 {
-                    tracing::info!(
-                        "User {user_id} in room {file_id} timed out",
-                        user_id = user_id,
-                        file_id = file_id
-                    );
-                    room.users.remove(user_id);
+                    tracing::warn!("Error removing stale users from room {file_id}: {:?}", e);
                 }
             }
+
+            interval.tick().await;
         }
     });
 }
