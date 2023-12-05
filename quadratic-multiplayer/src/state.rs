@@ -131,12 +131,12 @@ impl State {
         Ok(user)
     }
 
-    /// Remove stale users in a room
+    /// Remove stale users in a room.  Remove the number of users removed in the room.
     pub(crate) async fn remove_stale_users_in_room(
         &self,
         file_id: Uuid,
         heartbeat_timeout_s: i64,
-    ) -> Result<()> {
+    ) -> Result<usize> {
         let stale_users = get_room!(self, file_id)?
             .users
             .iter()
@@ -152,7 +152,7 @@ impl State {
             self.leave_room(file_id, user_id).await?;
         }
 
-        Ok(())
+        Ok(stale_users.len())
     }
 
     /// Updates a user's hearbeat in a room
