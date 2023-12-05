@@ -182,10 +182,7 @@ async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_ti
 pub(crate) mod tests {
 
     use super::*;
-    use crate::{
-        state::Room,
-        test_util::{integration_test, new_user},
-    };
+    use crate::test_util::{integration_test, new_user};
     use uuid::Uuid;
 
     #[tokio::test]
@@ -203,10 +200,7 @@ pub(crate) mod tests {
             image: user.image.clone(),
         };
         let expected = MessageResponse::Room {
-            room: Room {
-                file_id,
-                users: vec![(session_id, user)].into_iter().collect(),
-            },
+            users: vec![user.into()],
         };
         let response = integration_test(state, request).await;
 
@@ -225,12 +219,7 @@ pub(crate) mod tests {
             file_id,
         };
         let expected = MessageResponse::Room {
-            room: Room {
-                file_id,
-                users: vec![(user2.session_id, user2.clone())]
-                    .into_iter()
-                    .collect(),
-            },
+            users: vec![user2.clone().into()],
         };
 
         state.enter_room(file_id, &user).await;
@@ -305,8 +294,6 @@ pub(crate) mod tests {
             operations: "test".to_string(),
         };
         let expected = MessageResponse::Transaction {
-            session_id,
-            file_id,
             operations: "test".to_string(),
         };
 

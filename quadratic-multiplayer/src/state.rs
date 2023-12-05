@@ -13,7 +13,10 @@ use serde::Serialize;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::{get_mut_room, get_or_create_room, get_room};
+use crate::{
+    get_mut_room, get_or_create_room, get_room,
+    message::{MessageResponse, SimpleUser},
+};
 
 #[derive(Serialize, Debug, Clone)]
 pub(crate) struct User {
@@ -27,6 +30,18 @@ pub(crate) struct User {
     pub(crate) socket: Option<Arc<Mutex<SplitSink<WebSocket, Message>>>>,
     #[serde(skip_serializing)]
     pub(crate) last_heartbeat: DateTime<Utc>,
+}
+
+impl From<User> for SimpleUser {
+    fn from(user: User) -> Self {
+        SimpleUser {
+            session_id: user.session_id,
+            user_id: user.user_id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            image: user.image,
+        }
+    }
 }
 
 impl PartialEq for User {
@@ -52,6 +67,16 @@ impl Room {
         Room {
             file_id,
             users: HashMap::new(),
+        }
+    }
+
+    pub fn room_message(&self) -> MessageResponse {
+        MessageResponse::Room {
+            users: self
+                .users
+                .iter()
+                .map(|user| (user.1.clone()).into())
+                .collect(),
         }
     }
 }
