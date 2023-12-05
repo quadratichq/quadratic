@@ -177,9 +177,7 @@ async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_ti
                             Uuid::new_v4(),
                             file_id.to_owned(),
                             Arc::clone(&state),
-                            MessageResponse::Room {
-                                room: room.to_owned(),
-                            },
+                            room.room_message(),
                         ) {
                             tracing::warn!(
                             "Error broadcasting room {file_id} after removing {num_users_removed} stale users: {:?}",
