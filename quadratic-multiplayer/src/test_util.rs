@@ -26,13 +26,22 @@ pub(crate) fn new_user() -> User {
     }
 }
 
-pub(crate) async fn add_user_to_room(file_id: Uuid, user: User, state: Arc<State>) -> User {
-    state.enter_room(file_id, &user).await;
+pub(crate) async fn add_user_to_room(
+    file_id: Uuid,
+    user: User,
+    state: Arc<State>,
+    internal_session_id: Uuid,
+) -> User {
+    state.enter_room(file_id, &user, internal_session_id).await;
     user
 }
 
-pub(crate) async fn add_new_user_to_room(file_id: Uuid, state: Arc<State>) -> User {
-    add_user_to_room(file_id, new_user(), state).await
+pub(crate) async fn add_new_user_to_room(
+    file_id: Uuid,
+    state: Arc<State>,
+    internal_session_id: Uuid,
+) -> User {
+    add_user_to_room(file_id, new_user(), state, internal_session_id).await
 }
 
 pub(crate) async fn integration_test(state: Arc<State>, request: MessageRequest) -> String {
