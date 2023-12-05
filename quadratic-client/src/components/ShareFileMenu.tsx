@@ -92,9 +92,9 @@ export function ShareFileMenu({
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Share file</DialogTitle>
-          <DialogDescription>{fileName}</DialogDescription>
+        <DialogHeader className={`mr-6 overflow-hidden`}>
+          <DialogTitle className={`truncate`}>Share {fileName}</DialogTitle>
+          <DialogDescription>Invite people to collaborate on this file</DialogDescription>
         </DialogHeader>
         <div>
           <ShareMenu fetcherUrl={fetcherUrl} uuid={uuid} />
