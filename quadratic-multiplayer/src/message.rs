@@ -22,6 +22,7 @@ use crate::state::{Room, State, User};
 #[serde(tag = "type")]
 pub(crate) enum MessageRequest {
     EnterRoom {
+        session_id: Uuid,
         user_id: String,
         file_id: Uuid,
         first_name: String,
@@ -29,29 +30,29 @@ pub(crate) enum MessageRequest {
         image: String,
     },
     LeaveRoom {
-        user_id: String,
+        session_id: Uuid,
         file_id: Uuid,
     },
     MouseMove {
-        user_id: String,
+        session_id: Uuid,
         file_id: Uuid,
         x: Option<f64>,
         y: Option<f64>,
     },
     ChangeSelection {
-        user_id: String,
+        session_id: Uuid,
         file_id: Uuid,
         selection: String,
     },
     Transaction {
-        user_id: String,
+        session_id: Uuid,
         file_id: Uuid,
 
         // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
         operations: String,
     },
     Heartbeat {
-        user_id: String,
+        session_id: Uuid,
         file_id: Uuid,
     },
 }
@@ -64,18 +65,18 @@ pub(crate) enum MessageResponse {
         room: Room,
     },
     MouseMove {
-        user_id: String,
+        session_id: Uuid,
         file_id: Uuid,
         x: Option<f64>,
         y: Option<f64>,
     },
     ChangeSelection {
-        user_id: String,
+        session_id: Uuid,
         file_id: Uuid,
         selection: String,
     },
     Transaction {
-        user_id: String,
+        session_id: Uuid,
         file_id: Uuid,
 
         // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
@@ -95,6 +96,7 @@ pub(crate) async fn handle_message(
     match request {
         // User enters a room.
         MessageRequest::EnterRoom {
+            session_id,
             user_id,
             file_id,
             first_name,
@@ -102,34 +104,38 @@ pub(crate) async fn handle_message(
             image,
         } => {
             let user = User {
-                id: user_id,
+                user_id,
+                session_id,
                 first_name,
                 last_name,
                 image,
                 socket: Some(Arc::clone(&sender)),
                 last_heartbeat: chrono::Utc::now(),
             };
-            let user_id = user.id.clone();
+            let session_id = user.session_id.clone();
             let is_new = state.enter_room(file_id, &user).await;
             let room = state.get_room(&file_id).await?;
             let response = MessageResponse::Room { room };
 
             // only broadcast if the user is new to the room
             if is_new {
-                broadcast(user_id, file_id, Arc::clone(&state), response.clone())?;
+                broadcast(session_id, file_id, Arc::clone(&state), response.clone())?;
             }
 
             Ok(response)
         }
 
         // User leaves a room
-        MessageRequest::LeaveRoom { user_id, file_id } => {
-            let is_not_empty = state.leave_room(file_id, &user_id).await?;
+        MessageRequest::LeaveRoom {
+            session_id,
+            file_id,
+        } => {
+            let is_not_empty = state.leave_room(file_id, &session_id).await?;
             let room = state.get_room(&file_id).await?;
             let response = MessageResponse::Room { room };
 
             if is_not_empty {
-                broadcast(user_id, file_id, Arc::clone(&state), response.clone())?
+                broadcast(session_id, file_id, Arc::clone(&state), response.clone())?
             }
 
             Ok(response)
@@ -137,60 +143,63 @@ pub(crate) async fn handle_message(
 
         // User moves their mouse
         MessageRequest::MouseMove {
-            user_id,
+            session_id,
             file_id,
             x,
             y,
         } => {
             let response = MessageResponse::MouseMove {
-                user_id: user_id.clone(),
+                session_id: session_id.clone(),
                 file_id,
                 x,
                 y,
             };
 
-            broadcast(user_id, file_id, Arc::clone(&state), response.clone())?;
+            broadcast(session_id, file_id, Arc::clone(&state), response.clone())?;
 
             Ok(response)
         }
 
         // User changes their selection
         MessageRequest::ChangeSelection {
-            user_id,
+            session_id,
             file_id,
             selection,
         } => {
             let response = MessageResponse::ChangeSelection {
-                user_id: user_id.clone(),
+                session_id: session_id.clone(),
                 file_id,
                 selection,
             };
 
-            broadcast(user_id, file_id, Arc::clone(&state), response.clone())?;
+            broadcast(session_id, file_id, Arc::clone(&state), response.clone())?;
 
             Ok(response)
         }
 
         // User sends transactions
         MessageRequest::Transaction {
-            user_id,
+            session_id,
             file_id,
             operations,
         } => {
             let response = MessageResponse::Transaction {
-                user_id: user_id.clone(),
+                session_id: session_id.clone(),
                 file_id,
                 operations,
             };
 
-            broadcast(user_id, file_id, Arc::clone(&state), response.clone())?;
+            broadcast(session_id, file_id, Arc::clone(&state), response.clone())?;
 
             Ok(response)
         }
 
         // User sends a heartbeat
-        MessageRequest::Heartbeat { user_id, file_id } => {
-            state.update_heartbeat(file_id, &user_id).await?;
+        MessageRequest::Heartbeat {
+            session_id,
+            file_id,
+        } => {
+            state.update_heartbeat(file_id, &session_id).await?;
             Ok(MessageResponse::Empty {})
         }
     }
@@ -199,7 +208,7 @@ pub(crate) async fn handle_message(
 /// Broadcast a message to all users in a room except the sender.
 /// All messages are sent in a separate thread.
 pub(crate) fn broadcast(
-    user_id: String,
+    session_id: Uuid,
     file_id: Uuid,
     state: Arc<State>,
     message: MessageResponse,
@@ -211,9 +220,9 @@ pub(crate) fn broadcast(
                 .await?
                 .users
                 .iter()
-                // todo: this is not working :(
-                .filter(|(_, user)| user_id != user.id)
+                .filter(|(user_session_id, _)| session_id != **user_session_id)
             {
+                print!("comparing {} to {}\n", session_id, user.session_id);
                 if let Some(sender) = &user.socket {
                     sender
                         .lock()
@@ -247,12 +256,12 @@ pub(crate) mod tests {
         let user_1 = add_new_user_to_room(file_id, state.clone()).await;
         let _user_2 = add_new_user_to_room(file_id, state.clone()).await;
         let message = MessageResponse::MouseMove {
-            user_id: user_1.id.clone(),
+            session_id: user_1.session_id.clone(),
             file_id,
             x: Some(10f64),
             y: Some(10f64),
         };
-        broadcast(user_1.id.clone(), file_id, state, message).unwrap();
+        broadcast(user_1.session_id.clone(), file_id, state, message).unwrap();
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }
@@ -264,11 +273,11 @@ pub(crate) mod tests {
         let user_1 = add_new_user_to_room(file_id, state.clone()).await;
         let _user_2 = add_new_user_to_room(file_id, state.clone()).await;
         let message = MessageResponse::ChangeSelection {
-            user_id: user_1.id.clone(),
+            session_id: user_1.session_id.clone(),
             file_id,
             selection: "test".to_string(),
         };
-        broadcast(user_1.id.clone(), file_id, state, message).unwrap();
+        broadcast(user_1.session_id.clone(), file_id, state, message).unwrap();
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }
@@ -280,11 +289,11 @@ pub(crate) mod tests {
         let user_1 = add_new_user_to_room(file_id, state.clone()).await;
         let _user_2 = add_new_user_to_room(file_id, state.clone()).await;
         let message = MessageResponse::Transaction {
-            user_id: user_1.id.clone(),
+            session_id: user_1.session_id.clone(),
             file_id,
             operations: "test".to_string(),
         };
-        broadcast(user_1.id.clone(), file_id, state, message).unwrap();
+        broadcast(user_1.session_id.clone(), file_id, state, message).unwrap();
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }

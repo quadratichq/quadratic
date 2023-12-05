@@ -3,6 +3,7 @@ import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/gridGL/types/size';
 import { User } from '@auth0/auth0-spa-js';
 import { Rectangle } from 'pixi.js';
+import { v4 as uuid } from 'uuid';
 import { MULTIPLAYER_COLORS } from './multiplayerCursor/multiplayerColors';
 import {
   MessageChangeSelection,
@@ -30,6 +31,7 @@ export interface Player {
 export class Multiplayer {
   private websocket?: WebSocket;
   private state: 'not connected' | 'connecting' | 'connected' = 'not connected';
+  private sessionId = uuid();
   private room?: string;
   private uuid?: string;
   private waitingForConnection: { (value: unknown): void }[] = [];
@@ -73,22 +75,20 @@ export class Multiplayer {
     });
   }
 
-  async enterFileRoom(uuid: string, user?: User) {
+  async enterFileRoom(file_id: string, user?: User) {
     // used to hack the server so everyone is in the same file even if they're not.
-    uuid = 'ab96f02c-fd8c-4daa-bfb5-aec871ab9225';
+    file_id = 'ab96f02c-fd8c-4daa-bfb5-aec871ab9225';
 
     await this.init();
     if (!user?.sub) throw new Error('Expected User to be defined');
-    if (this.room === uuid) return;
-    this.room = uuid;
-    this.uuid = user.sub;
+    if (this.room === file_id) return;
+    this.room = file_id;
     const enterRoom: SendEnterRoom = {
       type: 'EnterRoom',
-
-      // todo: not sure this is the correct user id
+      session_id: this.sessionId,
       user_id: user.sub,
 
-      file_id: uuid,
+      file_id,
       first_name: user.given_name ?? '',
       last_name: user.family_name ?? '',
       image: user.picture ?? '',
@@ -102,13 +102,13 @@ export class Multiplayer {
     if (x === undefined || y === undefined) {
       this.queue.move = {
         type: 'MouseMove',
-        user_id: this.uuid!,
+        session_id: this.sessionId,
         file_id: this.room!,
       };
     } else {
       this.queue.move = {
         type: 'MouseMove',
-        user_id: this.uuid!,
+        session_id: this.sessionId,
         file_id: this.room!,
         x,
         y,
@@ -120,7 +120,7 @@ export class Multiplayer {
     await this.init();
     this.queue.selection = {
       type: 'ChangeSelection',
-      user_id: this.uuid!,
+      session_id: this.sessionId,
       file_id: this.room!,
       selection: JSON.stringify({ cursor, rectangle }),
     };
@@ -130,7 +130,7 @@ export class Multiplayer {
     await this.init();
     const message: MessageTransaction = {
       type: 'Transaction',
-      user_id: this.uuid!,
+      session_id: this.sessionId,
       file_id: this.room!,
       operations,
     };
@@ -178,12 +178,12 @@ export class Multiplayer {
       }
     }
     if (type === 'MouseMove') {
+      const player = this.players.get(data.session_id);
+      if (!player) {
+        throw new Error("Expected Player to be defined before receiving a message of type 'MouseMove'");
+      }
       // todo: this check should not be needed (eventually)
-      if (data.user_id !== this.uuid) {
-        const player = this.players.get(data.user_id);
-        if (!player) {
-          throw new Error("Expected Player to be defined before receiving a message of type 'MouseMove'");
-        }
+      if (data.session_id !== this.sessionId) {
         if (data.x !== null && data.y !== null) {
           player.x = data.x;
           player.y = data.y;
@@ -195,8 +195,8 @@ export class Multiplayer {
       }
     } else if (type === 'ChangeSelection') {
       // todo: this check should not be needed (eventually)
-      if (data.user_id !== this.uuid) {
-        const player = this.players.get(data.user_id);
+      if (data.session_id !== this.sessionId) {
+        const player = this.players.get(data.session_id);
         if (!player) {
           throw new Error("Expected Player to be defined before receiving a message of type 'ChangeSelection'");
         }
@@ -205,7 +205,7 @@ export class Multiplayer {
       }
     } else if (type === 'Transaction') {
       // todo: this check should not be needed (eventually)
-      if (data.user_id !== this.uuid) {
+      if (data.session_id !== this.uuid) {
         grid.multiplayerTransaction(data.operations);
       }
     } else {
