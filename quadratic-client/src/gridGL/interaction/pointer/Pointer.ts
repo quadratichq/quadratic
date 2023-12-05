@@ -6,18 +6,20 @@ import { PointerAutoComplete } from './PointerAutoComplete/PointerAutoComplete';
 import { PointerDown } from './PointerDown';
 import { PointerHeading } from './PointerHeading';
 import { PointerHtmlCells } from './PointerHtmlCells';
+import { PointerCursor } from './pointerCursor';
 
 export class Pointer {
   pointerHeading: PointerHeading;
   pointerAutoComplete: PointerAutoComplete;
   pointerHtmlCells: PointerHtmlCells;
-
+  pointerCursor: PointerCursor;
   pointerDown: PointerDown;
 
   constructor(viewport: Viewport) {
     this.pointerHeading = new PointerHeading();
     this.pointerAutoComplete = new PointerAutoComplete();
     this.pointerDown = new PointerDown();
+    this.pointerCursor = new PointerCursor();
     this.pointerHtmlCells = new PointerHtmlCells();
 
     viewport.on('pointerdown', this.handlePointerDown);
@@ -62,8 +64,8 @@ export class Pointer {
     this.pointerHtmlCells.pointerMove(e) ||
       this.pointerHeading.pointerMove(world) ||
       this.pointerAutoComplete.pointerMove(world) ||
-      this.pointerDown.pointerMove(world);
-    // this.pointerCursor.pointerMove(world); TODO: verify if we need this line
+      this.pointerDown.pointerMove(world) ||
+      this.pointerCursor.pointerMove(world);
 
     // change the cursor based on pointer priority
     const cursor =
