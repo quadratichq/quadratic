@@ -134,6 +134,7 @@ impl TransactionInProgress {
                 &mut self.summary,
                 &mut self.sheets_with_changed_bounds,
                 compute,
+                &mut self.multiplayer_operations,
             );
             self.multiplayer_operations.push(op.clone());
             self.reverse_operations.extend(reverse_operation);

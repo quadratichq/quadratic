@@ -16,10 +16,6 @@ impl GridController {
     /// Executes the given operation and returns the reverse operation.
     /// The only way to modify the internal state of the grid is through this function, with an operation.
     /// Operations must always return a reverse operation that can be used to undo the operation.
-    ///
-    /// We assume that a Region and CellRef exists when the execute_operation is called.
-    /// 1. for single player that should happen when the operation was created.
-    /// 2. for multiplayer that should happen as the MapColumn/RowIds Operation should exist before this Operation is used.
     pub fn execute_operation(
         &mut self,
         op: Operation,
@@ -28,6 +24,7 @@ impl GridController {
         summary: &mut TransactionSummary,
         sheets_with_changed_bounds: &mut HashSet<SheetId>,
         compute: bool,
+        multiplayer_operations: &mut Vec<Operation>,
     ) -> Vec<Operation> {
         let mut reverse_operations = vec![];
         match op {
@@ -41,7 +38,10 @@ impl GridController {
                     .zip(values.into_cell_values_vec())
                     .map(|(cell_ref, value)| {
                         let pos = sheet.cell_ref_to_pos(cell_ref)?;
-                        let (old_value, _) = sheet.set_cell_value(pos, value);
+                        let (old_value, operations) = sheet.set_cell_value(pos, value);
+                        if let Some(operations) = operations {
+                            multiplayer_operations.extend(operations);
+                        }
                         old_value
                     })
                     .map(|old_value| old_value.unwrap_or(CellValue::Blank))
@@ -80,6 +80,7 @@ impl GridController {
                         summary,
                         cells_to_compute,
                         &mut reverse_operations,
+                        multiplayer_operations,
                     );
                     reverse_operations.push(Operation::SetCellCode {
                         cell_ref,
@@ -106,6 +107,7 @@ impl GridController {
                                 cells_to_compute,
                                 summary,
                                 &mut reverse_operations,
+                                multiplayer_operations,
                             );
                         }
                     }
@@ -167,6 +169,7 @@ impl GridController {
                             summary,
                             cells_to_compute,
                             &mut reverse_operations,
+                            multiplayer_operations,
                         );
                         let sheet = self.grid.sheet_mut_from_id(sheet_id);
                         sheet.set_code_cell_value(pos, None);
@@ -183,6 +186,7 @@ impl GridController {
                         summary,
                         cells_to_compute,
                         &mut reverse_operations,
+                        multiplayer_operations,
                     );
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
                     sheet.set_code_cell_value(pos, code_cell_value.clone());
@@ -208,6 +212,7 @@ impl GridController {
                                 cells_to_compute,
                                 summary,
                                 &mut reverse_operations,
+                                multiplayer_operations,
                             );
                         }
                     }
@@ -220,6 +225,7 @@ impl GridController {
                         cells_to_compute,
                         summary,
                         &mut reverse_operations,
+                        multiplayer_operations,
                     );
                 }
 
@@ -460,6 +466,7 @@ mod tests {
             &mut summary,
             &mut sheets_with_changed_bounds,
             false,
+            &mut vec![],
         );
     }
 

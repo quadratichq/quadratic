@@ -182,6 +182,12 @@ impl Rect {
         self.max.x += x;
         self.max.y += y;
     }
+
+    pub fn into_iter(self) -> impl Iterator<Item = Pos> {
+        let Rect { min, max } = self;
+        (min.y..=max.y).flat_map(move |y| (min.x..=max.x).map(move |x| Pos { x, y }))
+    }
+
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone)]

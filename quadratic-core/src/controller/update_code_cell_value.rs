@@ -19,7 +19,7 @@ pub fn update_code_cell_value(
     cell_ref: CellRef,
     updated_code_cell_value: Option<CodeCellValue>,
     cells_to_compute: &mut IndexSet<CellRef>,
-    operations: &mut Vec<Operation>,
+    multiplayer_operations: &mut Vec<Operation>,
     reverse_operations: &mut Vec<Operation>,
     summary: &mut TransactionSummary,
 ) -> bool {
@@ -47,7 +47,7 @@ pub fn update_code_cell_value(
                                 );
                                 let (_, ops) = sheet.region(rect);
                                 if let Some(ops) = ops {
-                                    operations.extend(ops);
+                                    multiplayer_operations.extend(ops);
                                 }
                                 if sheet
                                     .is_ok_to_spill_in(cell_ref, array.size())
@@ -118,7 +118,7 @@ pub fn update_code_cell_value(
         let (old_code_cell_value, ops) =
             sheet.set_code_cell_value(pos, updated_code_cell_value.clone());
         if let Some(ops) = ops {
-            operations.extend(ops);
+            multiplayer_operations.extend(ops);
         }
 
         // updates summary.thumbnail_dirty flag
@@ -166,6 +166,7 @@ pub fn update_code_cell_value(
             summary,
             cells_to_compute,
             reverse_operations,
+            multiplayer_operations,
         );
 
         reverse_operations.push(Operation::SetCellCode {
@@ -192,12 +193,16 @@ pub fn fetch_code_cell_difference(
     summary: &mut TransactionSummary,
     cells_to_compute: &mut IndexSet<CellRef>,
     reverse_operations: &mut Vec<Operation>,
+    multiplayer_operations: &mut Vec<Operation>,
 ) {
     let sheet = grid_controller.grid.sheet_mut_from_id(sheet_id);
     let mut possible_spills = vec![];
 
     // the cell_ref necessarily exists since this is just a diff operation
-    let (cell_ref, _) = sheet.get_or_create_cell_ref(pos);
+    let (cell_ref, operations) = sheet.get_or_create_cell_ref(pos);
+    if let Some(operations) = operations {
+        multiplayer_operations.extend(operations);
+    }
 
     let (old_w, old_h) = old_code_cell_value.map_or((1, 1), |code_cell_value| {
         if code_cell_value.has_spill_error() {
@@ -218,7 +223,10 @@ pub fn fetch_code_cell_difference(
     if old_w > new_w {
         for x in new_w..old_w {
             // the columnId necessarily exists since this is just a diff operation
-            let (column, _) = sheet.get_or_create_column(pos.x + x);
+            let (column, operation) = sheet.get_or_create_column(pos.x + x);
+            if let Some(operation) = operation {
+                multiplayer_operations.push(operation);
+            }
             let column_id = column.id;
 
             // remove any spills created by the updated code_cell
@@ -236,14 +244,10 @@ pub fn fetch_code_cell_difference(
             });
             for y in 0..new_h {
                 // the rowId necessarily exists since this is just a diff operation
-                let (row_id, _) = sheet.get_or_create_row(pos.y + y);
-                let pos = Pos {
-                    x: pos.x + x,
-                    y: pos.y + y,
-                };
-                summary
-                    .cell_sheets_modified
-                    .insert(CellSheetsModified::new(sheet_id, pos));
+                let (row_id, operation) = sheet.get_or_create_row(pos.y + y);
+                if let Some(operation) = operation {
+                    multiplayer_operations.push(operation);
+                }
                 let cell_ref_entry = CellRef {
                     sheet: sheet_id,
                     column: column_id,
@@ -260,7 +264,10 @@ pub fn fetch_code_cell_difference(
     if old_h > new_h {
         for x in 0..old_w {
             // the columnId necessarily exists since this is just a diff operation
-            let (column, _) = sheet.get_or_create_column(pos.x + x);
+            let (column, operation) = sheet.get_or_create_column(pos.x + x);
+            if let Some(operation) = operation {
+                multiplayer_operations.push(operation);
+            }
             let column_id = column.id;
 
             // remove any spills created by the updated code_cell
@@ -274,14 +281,10 @@ pub fn fetch_code_cell_difference(
 
             for y in new_h..old_h {
                 // the rowId necessarily exists since this is just a diff operation
-                let (row_id, _) = sheet.get_or_create_row(pos.y + y);
-                let pos = Pos {
-                    x: pos.x + x,
-                    y: pos.y + y,
-                };
-                summary
-                    .cell_sheets_modified
-                    .insert(CellSheetsModified::new(sheet_id, pos));
+                let (row_id, operation) = sheet.get_or_create_row(pos.y + y);
+                if let Some(operation) = operation {
+                    multiplayer_operations.push(operation);
+                }
                 let cell_ref = CellRef {
                     sheet: sheet_id,
                     column: column_id,
@@ -293,6 +296,23 @@ pub fn fetch_code_cell_difference(
         }
     }
 
+    let rect = Rect::new_span(
+        Pos { x: pos.x, y: pos.y },
+        Pos {
+            x: pos.x + new_w.max(old_w) as i64,
+            y: pos.y + new_h.max(old_h) as i64,
+        },
+    );
+    rect.into_iter().for_each(|pos| {
+        summary
+            .cell_sheets_modified
+            .insert(CellSheetsModified::new(sheet_id, pos));
+    });
+
+    summary
+        .cell_sheets_modified
+        .insert(CellSheetsModified::new(sheet_id, pos));
+
     // check for released spills
     possible_spills.iter().for_each(|cell_ref| {
         grid_controller.update_code_cell_value_if_spill_error_released(
@@ -300,6 +320,7 @@ pub fn fetch_code_cell_difference(
             cells_to_compute,
             summary,
             reverse_operations,
+            multiplayer_operations,
         );
     });
 }
@@ -379,6 +400,7 @@ mod test {
             &mut summary,
             &mut cells_to_compute,
             &mut reverse_operations,
+            &mut vec![],
         );
         assert_eq!(summary.cell_sheets_modified.len(), 1);
 
@@ -411,8 +433,9 @@ mod test {
             &mut summary,
             &mut cells_to_compute,
             &mut reverse_operations,
+            &mut vec![],
         );
-        assert_eq!(summary.cell_sheets_modified.len(), 0);
+        assert_eq!(summary.cell_sheets_modified.len(), 1);
     }
 
     #[test]
