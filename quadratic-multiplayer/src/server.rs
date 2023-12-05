@@ -17,9 +17,9 @@ use axum_extra::TypedHeader;
 use futures::stream::StreamExt;
 use futures_util::stream::SplitSink;
 use futures_util::SinkExt;
-use std::ops::ControlFlow;
 use std::{net::SocketAddr, sync::Arc};
-use tokio::sync::Mutex;
+use std::{ops::ControlFlow, time::Duration};
+use tokio::{sync::Mutex, time};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -46,7 +46,11 @@ pub(crate) fn app(state: Arc<State>) -> Router {
 
 /// Start the websocket server.  This is the entrypoint for the application.
 pub(crate) async fn serve() -> Result<()> {
-    let Config { host, port } = config()?;
+    let Config {
+        host,
+        port,
+        heartbeat_timeout_s,
+    } = config()?;
 
     tracing_subscriber::registry()
         .with(
@@ -57,10 +61,12 @@ pub(crate) async fn serve() -> Result<()> {
         .init();
 
     let state = Arc::new(State::new());
-    let app = app(state);
+    let app = app(Arc::clone(&state));
     let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await?;
 
     tracing::info!("listening on {}", listener.local_addr()?);
+
+    check_heartbeat(Arc::clone(&state), heartbeat_timeout_s).await;
 
     axum::serve(
         listener,
@@ -146,6 +152,30 @@ async fn process_message(
     }
 
     Ok(ControlFlow::Continue(()))
+}
+
+async fn check_heartbeat(state: Arc<State>, heartbeat_timeout_s: i64) {
+    tokio::spawn(async move {
+        let mut rooms = state.rooms.lock().await;
+        let mut interval = time::interval(Duration::from_millis(heartbeat_timeout_s as u64 * 1000));
+
+        for (file_id, room) in rooms.iter_mut() {
+            let mut users = room.users.clone();
+
+            for (user_id, user) in users.iter_mut() {
+                if user.last_heartbeat + chrono::Duration::seconds(heartbeat_timeout_s as i64)
+                    < chrono::Utc::now()
+                {
+                    tracing::info!(
+                        "User {user_id} in room {file_id} timed out",
+                        user_id = user_id,
+                        file_id = file_id
+                    );
+                    room.users.remove(user_id);
+                }
+            }
+        }
+    });
 }
 
 #[cfg(test)]
