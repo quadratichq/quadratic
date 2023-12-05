@@ -6,20 +6,15 @@ export interface MessageMouseMove {
   y?: number | null;
 }
 
-export interface ReceiveEnterRoom {
+export interface ReceiveRoom {
   type: 'Room';
-  room: {
-    users: Record<
-      string,
-      {
-        session_id: string;
-        user_id: string;
-        first_name: string;
-        last_name: string;
-        image: string;
-      }
-    >;
-  };
+  users: {
+    session_id: string;
+    user_id: string;
+    first_name: string;
+    last_name: string;
+    image: string;
+  }[];
 }
 
 export interface MessageChangeSelection {
@@ -46,4 +41,4 @@ export interface MessageTransaction {
   operations: string;
 }
 
-export type ReceiveMessages = MessageMouseMove | ReceiveEnterRoom | MessageChangeSelection | MessageTransaction;
+export type ReceiveMessages = MessageMouseMove | ReceiveRoom | MessageChangeSelection | MessageTransaction;

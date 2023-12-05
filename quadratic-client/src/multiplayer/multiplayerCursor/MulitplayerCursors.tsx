@@ -32,8 +32,8 @@ export const MultiplayerCursors = () => {
         const bounds = pixiApp.viewport.getVisibleBounds();
         const rect = pixiApp.canvas.getBoundingClientRect();
         const offsetTop = rect.top;
-        const { x, y, sheetId, name, visible } = player;
-        if (visible && x !== undefined && y !== undefined /*&& sheetId === currentSheetId*/) {
+        const { x, y, sheetId, firstName, lastName, visible } = player;
+        if (visible && x !== undefined && y !== undefined && sheetId === currentSheetId) {
           const translated = pixiApp.viewport.toScreen(x, y);
           let offscreen = false;
           if (x > bounds.right - OFFSCREEN_SIZE) {
@@ -55,7 +55,7 @@ export const MultiplayerCursors = () => {
               key={id}
               x={translated.x}
               y={translated.y}
-              name={name}
+              name={`${firstName} ${lastName}`}
               color={color}
               offscreen={offscreen}
             />,
