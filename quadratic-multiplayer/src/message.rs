@@ -112,7 +112,7 @@ pub(crate) async fn handle_message(
                 socket: Some(Arc::clone(&sender)),
                 last_heartbeat: chrono::Utc::now(),
             };
-            let session_id = user.session_id.clone();
+            let session_id = user.session_id;
             let is_new = state.enter_room(file_id, &user).await;
             let room = state.get_room(&file_id).await?;
             let response = MessageResponse::Room { room };
@@ -149,7 +149,7 @@ pub(crate) async fn handle_message(
             y,
         } => {
             let response = MessageResponse::MouseMove {
-                session_id: session_id.clone(),
+                session_id,
                 file_id,
                 x,
                 y,
@@ -167,7 +167,7 @@ pub(crate) async fn handle_message(
             selection,
         } => {
             let response = MessageResponse::ChangeSelection {
-                session_id: session_id.clone(),
+                session_id,
                 file_id,
                 selection,
             };
@@ -184,7 +184,7 @@ pub(crate) async fn handle_message(
             operations,
         } => {
             let response = MessageResponse::Transaction {
-                session_id: session_id.clone(),
+                session_id,
                 file_id,
                 operations,
             };
@@ -222,7 +222,6 @@ pub(crate) fn broadcast(
                 .iter()
                 .filter(|(user_session_id, _)| session_id != **user_session_id)
             {
-                print!("comparing {} to {}\n", session_id, user.session_id);
                 if let Some(sender) = &user.socket {
                     sender
                         .lock()
@@ -256,12 +255,12 @@ pub(crate) mod tests {
         let user_1 = add_new_user_to_room(file_id, state.clone()).await;
         let _user_2 = add_new_user_to_room(file_id, state.clone()).await;
         let message = MessageResponse::MouseMove {
-            session_id: user_1.session_id.clone(),
+            session_id: user_1.session_id,
             file_id,
             x: Some(10f64),
             y: Some(10f64),
         };
-        broadcast(user_1.session_id.clone(), file_id, state, message).unwrap();
+        broadcast(user_1.session_id, file_id, state, message).unwrap();
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }
@@ -273,11 +272,11 @@ pub(crate) mod tests {
         let user_1 = add_new_user_to_room(file_id, state.clone()).await;
         let _user_2 = add_new_user_to_room(file_id, state.clone()).await;
         let message = MessageResponse::ChangeSelection {
-            session_id: user_1.session_id.clone(),
+            session_id: user_1.session_id,
             file_id,
             selection: "test".to_string(),
         };
-        broadcast(user_1.session_id.clone(), file_id, state, message).unwrap();
+        broadcast(user_1.session_id, file_id, state, message).unwrap();
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }
@@ -289,11 +288,11 @@ pub(crate) mod tests {
         let user_1 = add_new_user_to_room(file_id, state.clone()).await;
         let _user_2 = add_new_user_to_room(file_id, state.clone()).await;
         let message = MessageResponse::Transaction {
-            session_id: user_1.session_id.clone(),
+            session_id: user_1.session_id,
             file_id,
             operations: "test".to_string(),
         };
-        broadcast(user_1.session_id.clone(), file_id, state, message).unwrap();
+        broadcast(user_1.session_id, file_id, state, message).unwrap();
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }

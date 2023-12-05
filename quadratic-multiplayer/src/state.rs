@@ -144,7 +144,7 @@ impl State {
                 user.last_heartbeat.timestamp() + heartbeat_timeout_s < Utc::now().timestamp()
             })
             .map(|(user_id, _)| user_id.to_owned())
-            .collect::<Vec<String>>();
+            .collect::<Vec<Uuid>>();
 
         for user_id in stale_users.iter() {
             tracing::info!("Removing stale user {} from room {}", user_id, file_id);
@@ -159,7 +159,7 @@ impl State {
     pub(crate) async fn update_heartbeat(&self, file_id: Uuid, session_id: &Uuid) -> Result<()> {
         get_mut_room!(self, file_id)?
             .users
-            .entry(session_id.clone())
+            .entry(session_id.to_owned())
             .and_modify(|user| {
                 user.last_heartbeat = Utc::now();
                 tracing::trace!("Updating heartbeat for {session_id}");
@@ -197,7 +197,7 @@ macro_rules! get_mut_room {
 macro_rules! get_or_create_room {
     ( $self:ident, $file_id:ident ) => {
         $self.rooms.lock().await.entry($file_id).or_insert_with(|| {
-            tracing::trace!("Room {} created", $file_id.clone());
+            tracing::trace!("Room {} created", $file_id);
             Room::new($file_id)
         })
     };

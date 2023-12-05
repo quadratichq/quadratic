@@ -193,9 +193,9 @@ pub(crate) mod tests {
         let state = Arc::new(State::new());
         let file_id = Uuid::new_v4();
         let user = new_user();
-        let session_id = user.session_id.clone();
+        let session_id = user.session_id;
         let request = MessageRequest::EnterRoom {
-            session_id: session_id.clone(),
+            session_id,
             user_id: user.user_id.clone(),
             file_id,
             first_name: user.first_name.clone(),
@@ -217,7 +217,7 @@ pub(crate) mod tests {
     async fn user_leaves_a_room() {
         let state = Arc::new(State::new());
         let user = new_user();
-        let session_id = user.session_id.clone();
+        let session_id = user.session_id;
         let user2 = new_user();
         let file_id = Uuid::new_v4();
         let request = MessageRequest::LeaveRoom {
@@ -227,7 +227,7 @@ pub(crate) mod tests {
         let expected = MessageResponse::Room {
             room: Room {
                 file_id,
-                users: vec![(user2.session_id.clone(), user2.clone())]
+                users: vec![(user2.session_id, user2.clone())]
                     .into_iter()
                     .collect(),
             },
@@ -245,18 +245,18 @@ pub(crate) mod tests {
     async fn user_moves_a_mouse() {
         let state = Arc::new(State::new());
         let user = new_user();
-        let session_id = user.session_id.clone();
+        let session_id = user.session_id;
         let file_id = Uuid::new_v4();
         let x = 0 as f64;
         let y = 0 as f64;
         let request = MessageRequest::MouseMove {
-            session_id: session_id.clone(),
+            session_id,
             file_id,
             x: Some(x),
             y: Some(y),
         };
         let expected = MessageResponse::MouseMove {
-            session_id: session_id.clone(),
+            session_id,
             file_id,
             x: Some(x),
             y: Some(y),
@@ -273,15 +273,15 @@ pub(crate) mod tests {
     async fn user_changes_selection() {
         let state = Arc::new(State::new());
         let user = new_user();
-        let session_id = user.session_id.clone();
+        let session_id = user.session_id;
         let file_id = Uuid::new_v4();
         let request = MessageRequest::ChangeSelection {
-            session_id: session_id.clone(),
+            session_id,
             file_id,
             selection: "test".to_string(),
         };
         let expected = MessageResponse::ChangeSelection {
-            session_id: session_id.clone(),
+            session_id,
             file_id,
             selection: "test".to_string(),
         };
@@ -297,15 +297,15 @@ pub(crate) mod tests {
     async fn user_shares_operations() {
         let state = Arc::new(State::new());
         let user = new_user();
-        let session_id = user.session_id.clone();
+        let session_id = user.session_id;
         let file_id = Uuid::new_v4();
         let request = MessageRequest::Transaction {
-            session_id: session_id.clone(),
+            session_id,
             file_id,
             operations: "test".to_string(),
         };
         let expected = MessageResponse::Transaction {
-            session_id: session_id.clone(),
+            session_id,
             file_id,
             operations: "test".to_string(),
         };
