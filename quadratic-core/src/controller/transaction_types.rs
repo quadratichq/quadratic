@@ -253,7 +253,7 @@ mod test {
             cancel_compute: None,
         };
 
-        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
+        let (cell_ref, _) = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
         let mut ops: Vec<Operation> = vec![];
         assert_eq!(
             result
@@ -299,7 +299,7 @@ mod test {
             cancel_compute: None,
         };
 
-        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
+        let (cell_ref, _) = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
         let mut ops: Vec<Operation> = vec![];
         let mut array = Array::new_empty(ArraySize::new(2, 2).unwrap());
         let _ = array.set(
@@ -335,6 +335,6 @@ mod test {
                 spill: false,
             }),
         );
-        assert_eq!(ops.len(), 3);
+        assert_eq!(ops.len(), 5);
     }
 }

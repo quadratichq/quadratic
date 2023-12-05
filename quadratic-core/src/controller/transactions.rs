@@ -157,7 +157,13 @@ impl GridController {
     }
 
     pub fn multiplayer_transaction(&mut self, transaction: String) -> TransactionSummary {
-        let operations: Vec<Operation> = serde_json::from_str(&transaction).unwrap();
+        let operations: Vec<Operation> = if let Ok(operations) = serde_json::from_str(&transaction)
+        {
+            operations
+        } else {
+            return TransactionSummary::default();
+        };
+        crate::util::dbgjs(operations.clone());
         let mut transaction_in_progress = TransactionInProgress::start_transaction(
             self,
             operations,
@@ -216,7 +222,7 @@ mod tests {
         value: CellValue,
     ) -> Operation {
         let rect = Rect::new_span(pos, pos);
-        let region = gc.region(sheet_id, rect);
+        let (region, _) = gc.region(sheet_id, rect);
 
         Operation::SetCellValues {
             region,

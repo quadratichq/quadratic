@@ -1,5 +1,4 @@
 use std::collections::{btree_map, BTreeMap, HashMap};
-use std::ops::Range;
 use std::str::FromStr;
 
 use bigdecimal::BigDecimal;
@@ -14,14 +13,15 @@ use super::column::Column;
 use super::formatting::{BoolSummary, CellFmtAttr};
 use super::ids::{CellRef, ColumnId, IdMap, RowId, SheetId};
 use super::js_types::{CellFormatSummary, FormattingSummary};
-use super::response::{GetIdResponse, SetCellResponse};
 use super::{NumericFormat, NumericFormatKind, RegionRef};
+use crate::controller::operation::Operation;
 use crate::grid::{borders, SheetBorders};
 use crate::{Array, ArraySize, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;
 pub mod cells;
 pub mod code;
+pub mod ids;
 pub mod rendering;
 pub mod sheet_offsets;
 
@@ -32,8 +32,8 @@ pub struct Sheet {
     pub color: Option<String>,
     pub order: String,
 
-    pub(super) column_ids: IdMap<ColumnId, i64>,
-    pub(super) row_ids: IdMap<RowId, i64>,
+    pub(crate) column_ids: IdMap<ColumnId, i64>,
+    pub(crate) row_ids: IdMap<RowId, i64>,
 
     pub offsets: SheetOffsets,
 
@@ -76,11 +76,12 @@ impl Sheet {
     }
 
     /// Populates the current sheet with random values
+    /// todo: this does not work with multiplayer... need to fix (or delete)
     pub fn with_random_floats(&mut self, region: &Rect) {
         self.columns.clear();
         let mut rng = rand::thread_rng();
         for x in region.x_range() {
-            let (_, column) = self.get_or_create_column(x);
+            let (column, _) = self.get_or_create_column(x);
             for y in region.y_range() {
                 let value = rng.gen_range(-10000..=10000).to_string();
                 column.values.set(
@@ -97,27 +98,39 @@ impl Sheet {
     /// and did not previously exist (so no change is needed). The reason for
     /// this is that the column and/or row may never have been generated,
     /// because there's no need.
+    ///
+    /// Returns Operation needed to create rows and/or columns
+    #[must_use]
     pub fn set_cell_value(
         &mut self,
         pos: Pos,
         value: impl Into<CellValue>,
-    ) -> Option<SetCellResponse<CellValue>> {
+    ) -> (Option<CellValue>, Option<Vec<Operation>>) {
         let value = value.into();
         let is_blank = value.is_blank();
         let value: Option<CellValue> = if is_blank { None } else { Some(value) };
         if value.is_none() && !self.columns.contains_key(&pos.x) {
-            return None;
+            return (None, None);
+        }
+        let mut ops = vec![];
+
+        let (column, operation) = self.get_or_create_column(pos.x);
+        if let Some(operation) = operation {
+            ops.push(operation);
+        }
+        let old_value = column.values.set(pos.y, value);
+
+        // todo: the row_response should be used to get the index for the values.set()
+        let (row, operation) = self.get_or_create_row(pos.y);
+        if let Some(operation) = operation {
+            ops.push(operation);
         }
 
-        let (column_response, column) = self.get_or_create_column(pos.x);
-        let old_value = column.values.set(pos.y, value).unwrap_or_default();
-
-        let row_response = self.get_or_create_row(pos.y);
-        Some(SetCellResponse {
-            column: column_response,
-            row: row_response,
-            old_value,
-        })
+        if ops.is_empty() {
+            (old_value, None)
+        } else {
+            (old_value, Some(ops))
+        }
     }
 
     /// Deletes all cell values in a region. This does not affect:
@@ -285,9 +298,9 @@ impl Sheet {
         &mut self,
         pos: Pos,
         value: Option<A::Value>,
-    ) -> Option<A::Value> {
-        let (_, column) = self.get_or_create_column(pos.x);
-        A::column_data_mut(column).set(pos.y, value)
+    ) -> (Option<A::Value>, Option<Operation>) {
+        let (column, operation) = self.get_or_create_column(pos.x);
+        (A::column_data_mut(column).set(pos.y, value), operation)
     }
 
     /// Returns all cell borders.
@@ -300,33 +313,30 @@ impl Sheet {
         &mut self.borders
     }
 
-    /// Returns an iterator over each column and its X coordinate.
-    pub fn iter_columns(&self) -> impl '_ + Iterator<Item = (i64, &Column)> {
-        self.columns.iter().map(|(&x, column)| (x, column))
-    }
-    /// Returns an iterator over each row ID and its Y coordinate.
-    pub fn iter_rows(&self) -> impl '_ + Iterator<Item = (i64, RowId)> {
-        self.row_ids.iter()
-    }
     /// Returns a column of a sheet from the column index.
     pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
         self.columns.get(&index)
     }
     /// Returns a column of a sheet from its index, or creates a new column at
     /// that index.
-    pub(crate) fn get_or_create_column(
-        &mut self,
-        index: i64,
-    ) -> (GetIdResponse<ColumnId>, &mut Column) {
+    pub(crate) fn get_or_create_column(&mut self, index: i64) -> (&mut Column, Option<Operation>) {
         match self.columns.entry(index) {
             btree_map::Entry::Vacant(e) => {
                 let column = e.insert(Column::new());
-                self.column_ids.add(column.id, index);
-                (GetIdResponse::new(column.id), column)
+                let column_id = column.id;
+                self.column_ids.add(column_id, index);
+                (
+                    column,
+                    Some(Operation::MapColumnId {
+                        sheet_id: self.id,
+                        column_id,
+                        index,
+                    }),
+                )
             }
             btree_map::Entry::Occupied(e) => {
                 let column = e.into_mut();
-                (GetIdResponse::old(column.id), column)
+                (column, None)
             }
         }
     }
@@ -336,102 +346,21 @@ impl Sheet {
     }
     /// Returns a row of a sheet from its index, or creates a new row at that
     /// index.
-    pub(crate) fn get_or_create_row(&mut self, index: i64) -> GetIdResponse<RowId> {
+    pub(crate) fn get_or_create_row(&mut self, index: i64) -> (RowId, Option<Operation>) {
         match self.row_ids.id_at(index) {
-            Some(id) => GetIdResponse::old(id),
+            Some(id) => (id, None),
             None => {
                 let id = RowId::new();
                 self.row_ids.add(id, index);
-                GetIdResponse::new(id)
+                (
+                    id,
+                    Some(Operation::MapRowId {
+                        sheet_id: self.id,
+                        row_id: id,
+                        index,
+                    }),
+                )
             }
-        }
-    }
-
-    /// Returns the position references by a `CellRef`.
-    pub(crate) fn cell_ref_to_pos(&self, cell_ref: CellRef) -> Option<Pos> {
-        Some(Pos {
-            x: self.column_ids.index_of(cell_ref.column)?,
-            y: self.row_ids.index_of(cell_ref.row)?,
-        })
-    }
-    /// Creates a `CellRef` if the column and row already exist.
-    pub(crate) fn try_get_cell_ref(&self, pos: Pos) -> Option<CellRef> {
-        Some(CellRef {
-            sheet: self.id,
-            column: self.column_ids.id_at(pos.x)?,
-            row: self.row_ids.id_at(pos.y)?,
-        })
-    }
-    /// Creates a `CellRef`, creating the column and row if they do not already
-    /// exist.
-    pub(crate) fn get_or_create_cell_ref(&mut self, pos: Pos) -> CellRef {
-        CellRef {
-            sheet: self.id,
-            column: self.get_or_create_column(pos.x).0.id,
-            row: self.get_or_create_row(pos.y).id,
-        }
-    }
-
-    /// Returns the X coordinate of a column from its ID, or `None` if no such
-    /// column exists.
-    pub(crate) fn get_column_index(&self, column_id: ColumnId) -> Option<i64> {
-        self.column_ids.index_of(column_id)
-    }
-    /// Returns the Y coordinate of a row from its ID, or `None` if no such row
-    /// exists.
-    pub(crate) fn get_row_index(&self, row_id: RowId) -> Option<i64> {
-        self.row_ids.index_of(row_id)
-    }
-
-    /// Returns contiguous ranges of X coordinates from a list of column IDs.
-    /// Ignores IDs for columns that don't exist.
-    pub(crate) fn column_ranges(&self, column_ids: &[ColumnId]) -> Vec<Range<i64>> {
-        let xs = column_ids
-            .iter()
-            .filter_map(|&id| self.get_column_index(id));
-        contiguous_ranges(xs)
-    }
-    /// Returns contiguous ranges of Y coordinates from a list of row IDs.
-    /// Ignores IDs for rows that don't exist.
-    pub(crate) fn row_ranges(&self, row_ids: &[RowId]) -> Vec<Range<i64>> {
-        row_ranges(row_ids, &self.row_ids)
-    }
-    /// Returns a list of rectangles that exactly covers a region. Ignores
-    /// IDs for columns and rows that don't exist.
-    pub(crate) fn region_rects(&self, region: &RegionRef) -> impl Iterator<Item = Rect> {
-        let x_ranges = self.column_ranges(&region.columns);
-        let y_ranges = self.row_ranges(&region.rows);
-        itertools::iproduct!(x_ranges, y_ranges).map(|(xs, ys)| Rect::from_ranges(xs, ys))
-    }
-    /// Returns a region of the sheet, assigning IDs to columns and rows as needed.
-    pub fn region(&mut self, rect: Rect) -> RegionRef {
-        let columns = rect
-            .x_range()
-            .map(|x| self.get_or_create_column(x).0.id)
-            .collect();
-        let rows = rect
-            .y_range()
-            .map(|y| self.get_or_create_row(y).id)
-            .collect();
-        RegionRef {
-            sheet: self.id,
-            columns,
-            rows,
-        }
-    }
-    /// Returns a region of the sheet, ignoring columns and rows which
-    /// have no contents and no IDs.
-    pub fn existing_region(&self, rect: Rect) -> RegionRef {
-        let columns = rect
-            .x_range()
-            .filter_map(|x| self.get_column(x))
-            .map(|col| col.id)
-            .collect();
-        let rows = rect.y_range().filter_map(|y| self.get_row(y)).collect();
-        RegionRef {
-            sheet: self.id,
-            columns,
-            rows,
         }
     }
 
@@ -515,25 +444,6 @@ impl Sheet {
     }
 }
 
-fn contiguous_ranges(values: impl IntoIterator<Item = i64>) -> Vec<Range<i64>> {
-    // Usually `values` is already sorted or nearly sorted, in which case this
-    // is `O(n)`. At worst, it's `O(n log n)`.
-    let mut ret: Vec<Range<i64>> = vec![];
-    for i in values.into_iter().sorted() {
-        match ret.last_mut() {
-            Some(range) if range.end == i => range.end += 1,
-            Some(range) if (*range).contains(&i) => continue,
-            _ => ret.push(i..i + 1),
-        }
-    }
-    ret
-}
-
-pub fn row_ranges(row_ids: &[RowId], id_map: &IdMap<RowId, i64>) -> Vec<Range<i64>> {
-    let ys = row_ids.iter().filter_map(|&id| id_map.index_of(id));
-    contiguous_ranges(ys)
-}
-
 #[cfg(test)]
 mod test {
     use std::str::FromStr;
@@ -608,8 +518,8 @@ mod test {
     fn test_current_decimal_places_numeric_format() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
-        let column = sheet.get_or_create_column(3);
-        column.1.numeric_decimals.set(3, Some(3));
+        let (column, _) = sheet.get_or_create_column(3);
+        column.numeric_decimals.set(3, Some(3));
 
         assert_eq!(sheet.decimal_places(Pos { x: 3, y: 3 }, false), Some(3));
     }
@@ -629,8 +539,8 @@ mod test {
     #[test]
     fn test_cell_numeric_format_kind() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
-        let column = sheet.get_or_create_column(0);
-        column.1.numeric_format.set(
+        let (column, _) = sheet.get_or_create_column(0);
+        column.numeric_format.set(
             0,
             Some(NumericFormat {
                 kind: NumericFormatKind::Percentage,
@@ -895,13 +805,13 @@ mod test {
 
         // existing column
         let mut sheet = sheet.clone();
-        let existing_column = sheet.get_or_create_column(2);
-        assert_eq!(column, Some(existing_column.1).as_deref());
+        let (existing_column, _) = sheet.get_or_create_column(2);
+        assert_eq!(column, Some(existing_column).as_deref());
 
         // new column
         let mut sheet = sheet.clone();
-        let new_column = sheet.get_or_create_column(1);
-        assert_eq!(new_column.1, &Column::with_id(new_column.0.id));
+        let (new_column, _) = sheet.get_or_create_column(1);
+        assert_eq!(new_column, &Column::with_id(new_column.id));
     }
 
     #[test]
@@ -919,12 +829,12 @@ mod test {
 
         // existing row
         let mut sheet = sheet.clone();
-        let existing_row = sheet.get_or_create_row(1);
-        assert_eq!(Some(rows[0].1), Some(existing_row.id));
+        let (existing_row, _) = sheet.get_or_create_row(1);
+        assert_eq!(Some(rows[0].1), Some(existing_row));
 
         // new row
         let mut sheet = sheet.clone();
-        let new_row = sheet.get_or_create_row(3);
-        rows.iter().for_each(|row| assert_ne!(row.1, new_row.id));
+        let (new_row, _) = sheet.get_or_create_row(3);
+        rows.iter().for_each(|row| assert_ne!(row.1, new_row));
     }
 }

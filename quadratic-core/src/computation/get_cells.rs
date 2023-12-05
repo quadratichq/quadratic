@@ -71,7 +71,10 @@ impl TransactionInProgress {
             let sheet = grid_controller.grid_mut().sheet_mut_from_id(sheet_id);
             for y in rect.y_range() {
                 for x in rect.x_range() {
-                    let cell_ref = sheet.get_or_create_cell_ref(Pos { x, y });
+                    let (cell_ref, operations) = sheet.get_or_create_cell_ref(Pos { x, y });
+                    if let Some(operations) = operations {
+                        self.multiplayer_operations.extend(operations);
+                    }
                     cells_accessed.insert(cell_ref);
                 }
             }

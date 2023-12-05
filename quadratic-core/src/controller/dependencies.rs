@@ -73,8 +73,8 @@ mod test {
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
         sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
         let mut cells_accessed = vec![];
-        let cell_ref00 = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
-        let cell_ref01 = sheet.get_or_create_cell_ref(Pos { x: 0, y: 1 });
+        let (cell_ref00, _) = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
+        let (cell_ref01, _) = sheet.get_or_create_cell_ref(Pos { x: 0, y: 1 });
         cells_accessed.push(cell_ref00);
         cells_accessed.push(cell_ref01);
         sheet.set_code_cell_value(
@@ -95,7 +95,7 @@ mod test {
                 }),
             }),
         );
-        let cell_ref02 = sheet.get_or_create_cell_ref(Pos { x: 0, y: 2 });
+        let (cell_ref02, _) = sheet.get_or_create_cell_ref(Pos { x: 0, y: 2 });
 
         assert_eq!(gc.get_dependent_cells(cell_ref00).unwrap().len(), 1);
         assert_eq!(

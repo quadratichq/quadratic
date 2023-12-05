@@ -19,6 +19,7 @@ pub fn update_code_cell_value(
     cell_ref: CellRef,
     updated_code_cell_value: Option<CodeCellValue>,
     cells_to_compute: &mut IndexSet<CellRef>,
+    operations: &mut Vec<Operation>,
     reverse_operations: &mut Vec<Operation>,
     summary: &mut TransactionSummary,
 ) -> bool {
@@ -26,6 +27,7 @@ pub fn update_code_cell_value(
     summary.save = true;
     let sheet_id = cell_ref.sheet;
     let sheet = grid_controller.grid.sheet_mut_from_id(sheet_id);
+
     if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
         let mut spill = false;
         if let Some(updated_code_cell_value) = updated_code_cell_value.clone() {
@@ -35,6 +37,18 @@ pub fn update_code_cell_value(
                         success = true;
                         match output_value {
                             Value::Array(array) => {
+                                // create the region
+                                let rect = Rect::new_span(
+                                    Pos { x: pos.x, y: pos.y },
+                                    Pos {
+                                        x: pos.x + array.width() as i64,
+                                        y: pos.y + array.height() as i64,
+                                    },
+                                );
+                                let (_, ops) = sheet.region(rect);
+                                if let Some(ops) = ops {
+                                    operations.extend(ops);
+                                }
                                 if sheet
                                     .is_ok_to_spill_in(cell_ref, array.size())
                                     .unwrap_or(false)
@@ -47,27 +61,24 @@ pub fn update_code_cell_value(
                                 } else {
                                     spill = false;
                                     for x in 0..array.width() {
-                                        let column_id =
-                                            sheet.get_or_create_column(pos.x + x as i64).0.id;
                                         for y in 0..array.height() {
                                             summary.cell_sheets_modified.insert(
                                                 CellSheetsModified::new(
-                                                    sheet.id,
+                                                    sheet_id,
                                                     Pos {
                                                         x: pos.x,
                                                         y: pos.y + y as i64,
                                                     },
                                                 ),
                                             );
-                                            let row_id =
-                                                sheet.get_or_create_row(pos.y + y as i64).id;
-                                            // add all but the first cell to the compute cycle
                                             if x != 0 || y != 0 {
-                                                cells_to_compute.insert(CellRef {
-                                                    sheet: sheet.id,
-                                                    column: column_id,
-                                                    row: row_id,
-                                                });
+                                                // we already created the cell_ref in the create region above
+                                                let (cell_ref, _) =
+                                                    sheet.get_or_create_cell_ref(Pos {
+                                                        x: pos.x + x as i64,
+                                                        y: pos.y + y as i64,
+                                                    });
+                                                cells_to_compute.insert(cell_ref);
                                             }
                                         }
                                     }
@@ -104,7 +115,11 @@ pub fn update_code_cell_value(
             cell_value
         });
 
-        let old_code_cell_value = sheet.set_code_cell_value(pos, updated_code_cell_value.clone());
+        let (old_code_cell_value, ops) =
+            sheet.set_code_cell_value(pos, updated_code_cell_value.clone());
+        if let Some(ops) = ops {
+            operations.extend(ops);
+        }
 
         // updates summary.thumbnail_dirty flag
         let sheet = grid_controller.grid.sheet_from_id(cell_ref.sheet);
@@ -180,7 +195,9 @@ pub fn fetch_code_cell_difference(
 ) {
     let sheet = grid_controller.grid.sheet_mut_from_id(sheet_id);
     let mut possible_spills = vec![];
-    let cell_ref = sheet.get_or_create_cell_ref(pos);
+
+    // the cell_ref necessarily exists since this is just a diff operation
+    let (cell_ref, _) = sheet.get_or_create_cell_ref(pos);
 
     let (old_w, old_h) = old_code_cell_value.map_or((1, 1), |code_cell_value| {
         if code_cell_value.has_spill_error() {
@@ -200,7 +217,8 @@ pub fn fetch_code_cell_difference(
 
     if old_w > new_w {
         for x in new_w..old_w {
-            let (_, column) = sheet.get_or_create_column(pos.x + x);
+            // the columnId necessarily exists since this is just a diff operation
+            let (column, _) = sheet.get_or_create_column(pos.x + x);
             let column_id = column.id;
 
             // remove any spills created by the updated code_cell
@@ -217,7 +235,8 @@ pub fn fetch_code_cell_difference(
                 end: pos.y + new_h + 1,
             });
             for y in 0..new_h {
-                let row_id = sheet.get_or_create_row(pos.y + y).id;
+                // the rowId necessarily exists since this is just a diff operation
+                let (row_id, _) = sheet.get_or_create_row(pos.y + y);
                 let pos = Pos {
                     x: pos.x + x,
                     y: pos.y + y,
@@ -240,7 +259,8 @@ pub fn fetch_code_cell_difference(
 
     if old_h > new_h {
         for x in 0..old_w {
-            let (_, column) = sheet.get_or_create_column(pos.x + x);
+            // the columnId necessarily exists since this is just a diff operation
+            let (column, _) = sheet.get_or_create_column(pos.x + x);
             let column_id = column.id;
 
             // remove any spills created by the updated code_cell
@@ -253,7 +273,8 @@ pub fn fetch_code_cell_difference(
             }
 
             for y in new_h..old_h {
-                let row_id = sheet.get_or_create_row(pos.y + y).id;
+                // the rowId necessarily exists since this is just a diff operation
+                let (row_id, _) = sheet.get_or_create_row(pos.y + y);
                 let pos = Pos {
                     x: pos.x + x,
                     y: pos.y + y,
@@ -420,13 +441,14 @@ mod test {
         });
 
         let sheet = gc.grid.sheet_mut_from_id(sheet_id);
-        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
+        let (cell_ref, _) = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
 
         update_code_cell_value(
             &mut gc,
             cell_ref,
             code_cell_output.clone(),
             &mut IndexSet::default(),
+            &mut vec![],
             &mut vec![],
             &mut TransactionSummary::default(),
         );
@@ -460,13 +482,14 @@ mod test {
         });
 
         let sheet = gc.grid.sheet_mut_from_id(sheet_id);
-        let original_cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 1 });
+        let (original_cell_ref, _) = sheet.get_or_create_cell_ref(Pos { x: 0, y: 1 });
 
         update_code_cell_value(
             &mut gc,
             original_cell_ref,
             code_cell_output.clone(),
             &mut IndexSet::default(),
+            &mut vec![],
             &mut vec![],
             &mut TransactionSummary::default(),
         );
@@ -490,13 +513,14 @@ mod test {
         });
 
         let sheet = gc.grid.sheet_mut_from_id(sheet_id);
-        let cell_ref = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
+        let (cell_ref, _) = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
 
         update_code_cell_value(
             &mut gc,
             cell_ref,
             code_cell_output.clone(),
             &mut IndexSet::default(),
+            &mut vec![],
             &mut vec![],
             &mut TransactionSummary::default(),
         );

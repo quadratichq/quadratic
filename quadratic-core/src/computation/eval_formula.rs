@@ -39,7 +39,11 @@ impl TransactionInProgress {
                                     .grid_mut()
                                     .sheet_mut_from_id(sheet_pos.sheet_id);
                                 let pos = (*sheet_pos).into();
-                                sheet.get_or_create_cell_ref(pos)
+                                let (cell_ref, operations) = sheet.get_or_create_cell_ref(pos);
+                                if let Some(operations) = operations {
+                                    self.multiplayer_operations.extend(operations);
+                                }
+                                cell_ref
                             })
                             .collect();
 
@@ -64,6 +68,7 @@ impl TransactionInProgress {
                             cell_ref,
                             Some(updated_code_cell_value),
                             &mut self.cells_to_compute,
+                            &mut self.multiplayer_operations,
                             &mut self.reverse_operations,
                             &mut self.summary,
                         ) {

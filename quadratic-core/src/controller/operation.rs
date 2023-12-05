@@ -54,6 +54,16 @@ pub enum Operation {
         row: RowId,
         new_size: f64,
     },
+    MapColumnId {
+        sheet_id: SheetId,
+        column_id: ColumnId,
+        index: i64,
+    },
+    MapRowId {
+        sheet_id: SheetId,
+        row_id: RowId,
+        index: i64,
+    },
 }
 
 impl fmt::Display for Operation {
@@ -110,6 +120,24 @@ impl fmt::Display for Operation {
                 sheet_id, row, new_size
             ),
             Operation::SetBorders { .. } => write!(fmt, "SetBorders {{ todo }}"),
+            Operation::MapColumnId {
+                sheet_id,
+                column_id: id,
+                index,
+            } => write!(
+                fmt,
+                "MapColumnId {{ sheet_id: {}, id: {}, index: {} }}",
+                sheet_id, id, index
+            ),
+            Operation::MapRowId {
+                sheet_id,
+                row_id: id,
+                index,
+            } => write!(
+                fmt,
+                "MapRowId {{ sheet_id: {}, id: {}, index: {} }}",
+                sheet_id, id, index
+            ),
         }
     }
 }

@@ -11,6 +11,9 @@ use crate::{
 use super::operation::Operation;
 
 impl GridController {
+    /// Checks whether a spill exists
+    /// Note: we are assuming the region exists as we force it to exist whenever an update_code_cell is called regardless of spill error
+    /// todo: this not ideal, but we can't add operations while executing an operation
     pub fn check_spill(
         &mut self,
         cell_ref: CellRef,
@@ -29,6 +32,8 @@ impl GridController {
                             code_cell_ref,
                             Some(code_cell.clone()),
                             cells_to_compute,
+                            // see note above
+                            &mut vec![],
                             reverse_operations,
                             summary,
                         );
@@ -42,6 +47,8 @@ impl GridController {
     // then we can just reference self
 
     /// sets a spill error for a code_cell
+    /// Note: we are assuming the region exists as we force it to exist whenever an update_code_cell is called regardless of spill error
+    /// todo: this not ideal, but we can't add operations while executing an operation
     pub fn set_spill_error(
         &mut self,
         cell_ref: CellRef,
@@ -57,6 +64,8 @@ impl GridController {
                     cell_ref,
                     Some(code_cell.clone()),
                     cells_to_compute,
+                    // see note above
+                    &mut vec![],
                     reverse_operations,
                     summary,
                 );
@@ -65,6 +74,8 @@ impl GridController {
     }
 
     /// update the code cell value if the deletion of a cell released a spill error
+    /// Note: we are assuming the region exists as we force it to exist whenever an update_code_cell is called regardless of spill error
+    /// todo: this not ideal, but we can't add operations while executing an operation
     pub fn update_code_cell_value_if_spill_error_released(
         &mut self,
         cell_ref: CellRef,
@@ -79,6 +90,8 @@ impl GridController {
                 cell_ref,
                 Some(code_cell),
                 cells_to_compute,
+                // see note above
+                &mut vec![],
                 reverse_operations,
                 summary,
             );

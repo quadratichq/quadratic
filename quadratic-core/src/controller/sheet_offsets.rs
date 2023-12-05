@@ -20,17 +20,23 @@ impl GridController {
             let sheet = self.grid.sheet_mut_from_id(sheet_id);
             let mut ops = vec![];
             if let Some(column) = transient_resize.column {
-                let (column, _) = sheet.get_or_create_column(column);
+                let (column, operation) = sheet.get_or_create_column(column);
+                if let Some(operation) = operation {
+                    ops.push(operation);
+                }
                 ops.push(Operation::ResizeColumn {
                     sheet_id,
                     column: column.id,
                     new_size: transient_resize.new_size,
                 });
             } else if let Some(row) = transient_resize.row {
-                let row = sheet.get_or_create_row(row);
+                let (row, operation) = sheet.get_or_create_row(row);
+                if let Some(operation) = operation {
+                    ops.push(operation);
+                }
                 ops.push(Operation::ResizeRow {
                     sheet_id,
-                    row: row.id,
+                    row,
                     new_size: transient_resize.new_size,
                 });
             }

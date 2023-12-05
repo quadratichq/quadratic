@@ -147,7 +147,7 @@ mod tests {
         let mut grid = Grid::new();
         let sheets = grid.sheets_mut();
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
-        let region = sheets[0].region(rect);
+        let (region, _) = sheets[0].region(rect);
         let selection = vec![BorderSelection::Bottom];
         let style = BorderStyle {
             color: Rgba::from_str("#000000").unwrap(),

@@ -17,6 +17,9 @@ use super::{
 };
 
 impl GridController {
+    /// Set the cell formatting for a region.
+    /// Note: this assumes the RegionRef exists as there's not a great way of adding MapRow/ColumnIds operations at this level.
+    ///       This should be fine since the region *should* be created with the proper Operation before this is called.
     pub fn set_cell_formats_for_type<A: CellFmtAttr>(
         &mut self,
         region: &RegionRef,
@@ -24,12 +27,14 @@ impl GridController {
         cell_sheets_modified: Option<&mut HashSet<CellSheetsModified>>,
     ) -> RunLengthEncoding<Option<A::Value>> {
         let sheet = self.grid.sheet_mut_from_id(region.sheet);
-        // TODO: optimize this for contiguous runs of the same value
+        // todo: optimize this for contiguous runs of the same value
         let mut old_values = RunLengthEncoding::new();
         for (cell_ref, value) in region.iter().zip(values.iter_values()) {
-            let old_value = sheet
-                .cell_ref_to_pos(cell_ref)
-                .and_then(|pos| sheet.set_formatting_value::<A>(pos, value.clone()));
+            let old_value = sheet.cell_ref_to_pos(cell_ref).and_then(|pos| {
+                // see note above re: operations returned from set_formatting_value
+                let (old_value, _) = sheet.set_formatting_value::<A>(pos, value.clone());
+                old_value
+            });
             old_values.push(old_value);
         }
         if let Some(cell_sheets_modified) = cell_sheets_modified {
@@ -47,26 +52,25 @@ impl GridController {
         symbol: Option<String>,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let region = self.grid_mut().sheet_mut_from_id(sheet_id).region(*rect);
-        let ops = vec![
-            Operation::SetCellFormats {
-                region: region.clone(),
-                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                    Some(NumericFormat {
-                        kind: NumericFormatKind::Currency,
-                        symbol,
-                    }),
-                    region.len(),
-                )),
-            },
-            Operation::SetCellFormats {
-                region: region.clone(),
-                attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
-                    Some(2),
-                    region.len(),
-                )),
-            },
-        ];
+        let (region, operations) = self.grid_mut().sheet_mut_from_id(sheet_id).region(*rect);
+        let mut ops = vec![];
+        if let Some(operations) = operations {
+            ops.extend(operations);
+        }
+        ops.push(Operation::SetCellFormats {
+            region: region.clone(),
+            attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
+                Some(NumericFormat {
+                    kind: NumericFormatKind::Currency,
+                    symbol,
+                }),
+                region.len(),
+            )),
+        });
+        ops.push(Operation::SetCellFormats {
+            region: region.clone(),
+            attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), region.len())),
+        });
         self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
 
@@ -77,21 +81,23 @@ impl GridController {
         rect: &Rect,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let region = self.grid_mut().sheet_mut_from_id(sheet_id).region(*rect);
-        let ops = vec![
-            Operation::SetCellFormats {
-                region: region.clone(),
-                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(None, region.len())),
-            },
-            Operation::SetCellFormats {
-                region: region.clone(),
-                attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(None, region.len())),
-            },
-            Operation::SetCellFormats {
-                region: region.clone(),
-                attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(None, region.len())),
-            },
-        ];
+        let (region, operations) = self.grid_mut().sheet_mut_from_id(sheet_id).region(*rect);
+        let mut ops = vec![];
+        if let Some(operations) = operations {
+            ops.extend(operations);
+        }
+        ops.push(Operation::SetCellFormats {
+            region: region.clone(),
+            attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(None, region.len())),
+        });
+        ops.push(Operation::SetCellFormats {
+            region: region.clone(),
+            attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(None, region.len())),
+        });
+        ops.push(Operation::SetCellFormats {
+            region: region.clone(),
+            attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(None, region.len())),
+        });
         self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
 
@@ -111,15 +117,19 @@ impl GridController {
         if decimals + (delta as i16) < 0 {
             return TransactionSummary::default();
         }
-        let region = self.region(sheet_id, rect);
+        let (region, operations) = self.region(sheet_id, rect);
+        let mut ops = vec![];
+        if let Some(operations) = operations {
+            ops.extend(operations);
+        }
         let numeric_decimals = Some(decimals + delta as i16);
-        let ops = vec![Operation::SetCellFormats {
+        ops.push(Operation::SetCellFormats {
             region: region.clone(),
             attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
                 numeric_decimals,
                 region.len(),
             )),
-        }];
+        });
         self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
 
@@ -136,14 +146,18 @@ impl GridController {
         } else {
             true
         };
-        let region = self.region(sheet_id, rect);
-        let ops = vec![Operation::SetCellFormats {
+        let (region, operations) = self.region(sheet_id, rect);
+        let mut ops = vec![];
+        if let Some(operations) = operations {
+            ops.extend(operations);
+        }
+        ops.push(Operation::SetCellFormats {
             region: region.clone(),
             attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(
                 Some(commas),
                 region.len(),
             )),
-        }];
+        });
         self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
 
@@ -208,10 +222,14 @@ macro_rules! impl_set_cell_fmt_method {
                 value: Option<<$cell_fmt_attr_type as CellFmtAttr>::Value>,
                 cursor: Option<String>,
             ) -> TransactionSummary {
-                let region = self.region(sheet_id, rect);
+                let (region, operations) = self.region(sheet_id, rect);
+                let mut ops = vec![];
+                if let Some(operations) = operations {
+                    ops.extend(operations);
+                }
                 let attr =
                     $cell_fmt_array_constructor(RunLengthEncoding::repeat(value, region.len()));
-                let ops = vec![Operation::SetCellFormats { region, attr }];
+                ops.push(Operation::SetCellFormats { region, attr });
                 self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
             }
         }

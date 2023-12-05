@@ -4,6 +4,7 @@ use itertools::Itertools;
 
 use super::Sheet;
 use crate::{
+    controller::operation::Operation,
     grid::{CellRef, CodeCellValue},
     CellValue, Pos, Rect, Value,
 };
@@ -14,9 +15,16 @@ impl Sheet {
         &mut self,
         pos: Pos,
         code_cell: Option<CodeCellValue>,
-    ) -> Option<CodeCellValue> {
-        let cell_ref = self.get_or_create_cell_ref(pos);
+    ) -> (Option<CodeCellValue>, Option<Vec<Operation>>) {
+        let mut ops = vec![];
+        let (cell_ref, operations) = self.get_or_create_cell_ref(pos);
+        if let Some(operations) = operations {
+            ops.extend(operations);
+        }
         let old = self.code_cells.remove(&cell_ref);
+
+        // this column has to exist since it was just created in the previous statement
+        let (code_cell_column, _) = self.get_or_create_column(pos.x);
 
         if let Some(code_cell) = code_cell {
             if let Some(output) = &code_cell.output {
@@ -24,13 +32,15 @@ impl Sheet {
                     Some(output_value) => {
                         match output_value {
                             Value::Single(_) => {
-                                let (_, column) = self.get_or_create_column(pos.x);
-                                column.spills.set(pos.y, Some(cell_ref));
+                                code_cell_column.spills.set(pos.y, Some(cell_ref));
                             }
                             Value::Array(array) => {
                                 // if spilled only set the top left cell
                                 if output.spill {
-                                    let (_, column) = self.get_or_create_column(pos.x);
+                                    let (column, operation) = self.get_or_create_column(pos.x);
+                                    if let Some(operation) = operation {
+                                        ops.push(operation);
+                                    }
                                     column.spills.set(pos.y, Some(cell_ref));
                                 }
                                 // otherwise set the whole array
@@ -42,7 +52,10 @@ impl Sheet {
                                         end: pos.y + array.height() as i64,
                                     };
                                     for x in start..end {
-                                        let (_, column) = self.get_or_create_column(x);
+                                        let (column, operation) = self.get_or_create_column(x);
+                                        if let Some(operation) = operation {
+                                            ops.push(operation);
+                                        }
                                         column.spills.set_range(range.clone(), cell_ref);
                                     }
                                 }
@@ -50,17 +63,19 @@ impl Sheet {
                         }
                     }
                     None => {
-                        let (_, column) = self.get_or_create_column(pos.x);
-                        column.spills.set(pos.y, Some(cell_ref));
+                        code_cell_column.spills.set(pos.y, Some(cell_ref));
                     }
                 }
             } else {
-                let (_, column) = self.get_or_create_column(pos.x);
-                column.spills.set(pos.y, Some(cell_ref));
+                code_cell_column.spills.set(pos.y, Some(cell_ref));
             }
             self.code_cells.insert(cell_ref, code_cell);
         }
-        old
+        if ops.is_empty() {
+            (old, None)
+        } else {
+            (old, Some(ops))
+        }
     }
 
     /// Returns a code cell value.

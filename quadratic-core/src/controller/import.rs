@@ -62,8 +62,12 @@ impl GridController {
                 .into(),
         );
 
+        let (region, operations) = self.region(sheet_id, rect);
+        if let Some(operations) = operations {
+            ops.extend(operations);
+        }
         ops.push(Operation::SetCellValues {
-            region: self.region(sheet_id, rect),
+            region,
             values: array,
         });
 

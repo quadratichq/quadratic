@@ -178,7 +178,11 @@ impl GridController {
                 range.x_range().step_by(width).for_each(|x| {
                     let new_x = range.max.x.min(x + width as i64 - 1);
                     let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
-                    format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
+                    let (region, operations) = self.region(sheet_id, format_rect);
+                    if let Some(operations) = operations {
+                        format_ops.extend(operations);
+                    }
+                    format_ops.extend(apply_formats(region, &format));
                 });
 
                 formats.push(format);
@@ -251,7 +255,11 @@ impl GridController {
                     }
 
                     let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
-                    format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
+                    let (region, operations) = self.region(sheet_id, format_rect);
+                    if let Some(operations) = operations {
+                        format_ops.extend(operations);
+                    }
+                    format_ops.extend(apply_formats(region, &format));
                 });
 
                 formats.extend(format);
@@ -314,7 +322,11 @@ impl GridController {
                 range.y_range().step_by(height).for_each(|y| {
                     let new_y = range.max.y.min(y + height as i64 - 1);
                     let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
-                    format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
+                    let (region, operations) = self.region(sheet_id, format_rect);
+                    if let Some(operations) = operations {
+                        format_ops.extend(operations);
+                    }
+                    format_ops.extend(apply_formats(region, &format));
                 });
 
                 formats.extend(format);
@@ -366,7 +378,11 @@ impl GridController {
                     }
 
                     let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
-                    format_ops.extend(apply_formats(self.region(sheet_id, format_rect), &format));
+                    let (region, operations) = self.region(sheet_id, format_rect);
+                    if let Some(operations) = operations {
+                        format_ops.extend(operations);
+                    }
+                    format_ops.extend(apply_formats(region, &format));
                 });
 
                 formats.extend(format);
@@ -439,8 +455,11 @@ impl GridController {
                             }
                         };
                         let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
-                        format_ops
-                            .extend(apply_formats(self.region(sheet_id, format_rect), &format));
+                        let (region, operations) = self.region(sheet_id, format_rect);
+                        if let Some(operations) = operations {
+                            format_ops.extend(operations);
+                        }
+                        format_ops.extend(apply_formats(region, &format));
                     });
 
                 let (operations, _) = self.apply_auto_complete(
@@ -523,8 +542,11 @@ impl GridController {
                         };
 
                         let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
-                        format_ops
-                            .extend(apply_formats(self.region(sheet_id, format_rect), &format));
+                        let (region, operations) = self.region(sheet_id, format_rect);
+                        if let Some(operations) = operations {
+                            format_ops.extend(operations);
+                        }
+                        format_ops.extend(apply_formats(region, &format));
                     });
 
                 let (operations, _) = self.apply_auto_complete(
@@ -582,9 +604,12 @@ impl GridController {
             min: start_pos,
             max: end_pos,
         };
-        let region = self.region(sheet_id, rect);
-
-        let ops = vec![Operation::SetCellValues { region, values }];
+        let mut ops = vec![];
+        let (region, operations) = self.region(sheet_id, rect);
+        if let Some(operations) = operations {
+            ops.extend(operations);
+        }
+        ops.push(Operation::SetCellValues { region, values });
 
         Ok((ops, series))
     }
