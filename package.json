@@ -38,6 +38,7 @@
     "watch:test:wasm": "cd quadratic-core && cargo watch -x test",
     "benchmark:rust": "cd quadratic-core && cargo bench",
     "lint:clippy": "cd quadratic-core && cargo clippy --all-targets --all-features -- -D warnings",
+    "heroku-prebuild": "npm install --workspace=quadratic-api",
     "heroku-postbuild": "npm run build --workspace=quadratic-api"
   },
   "dependencies": {
