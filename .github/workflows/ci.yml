@@ -200,14 +200,9 @@ jobs:
         cd quadratic-multiplayer
         cargo build --release
 
-    - name: Move build to app folder
-      run: |
-        mkdir app
-        mv ./quadratic-multiplayer/target/release/quadratic-multiplayer ./app/quadratic-multiplayer
-
     # heroku deployment
     - name: Deploy to Heroku
-      uses: akhileshns/heroku-deploy@v3.12.12
+      uses: akhileshns/heroku-deploy@v3.12.14
       with:
       # key from repository secrets
         heroku_api_key: ${{secrets.HEROKU_API_KEY}}
@@ -216,8 +211,8 @@ jobs:
         # email from which the app is uploaded
         heroku_email: "davidkircos@gmail.com"
         # app directory
-        appdir: "./app"
+        appdir: "./quadratic-multiplayer"
         # start command
-        procfile: "web: ./quadratic-multiplayer"
+        procfile: "web: ./target/release/quadratic-multiplayer"
         # buildpack is like environment used to run the app
         buildpack: "https://github.com/ph3nx/heroku-binary-buildpack.git"
