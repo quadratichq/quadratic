@@ -55,10 +55,10 @@ impl Sheet {
             column: column_id,
             row: row_id,
         };
-        if ops.len() > 0 {
-            (cell_ref, Some(ops))
-        } else {
+        if ops.is_empty() {
             (cell_ref, None)
+        } else {
+            (cell_ref, Some(ops))
         }
     }
 
