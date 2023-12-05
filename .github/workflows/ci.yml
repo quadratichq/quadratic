@@ -26,14 +26,14 @@ jobs:
     - name: install grcov
       run: if ! which grcov; then cargo install grcov; fi
 
-    - name: Build Rust
+    - name: Build quadratic-core
       env:
         RUSTFLAGS: -Cinstrument-coverage
       run: |
         cd quadratic-core
         cargo build
 
-    - name: Test
+    - name: Test quadratic-core
       env:
         LLVM_PROFILE_FILE: grcov-%p-%m.profraw
         RUSTFLAGS: -Cinstrument-coverage
@@ -41,7 +41,7 @@ jobs:
         cd quadratic-core
         cargo test
 
-    - name: Generate coverage
+    - name: Generate coverage for quadratic-core
       run: |
         grcov $(find . -name "grcov-*.profraw" -print) \
           --branch \
@@ -58,6 +58,40 @@ jobs:
       uses: codecov/codecov-action@v3
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Build quadratic-multiplayer
+      env:
+        RUSTFLAGS: -Cinstrument-coverage
+      run: |
+        cd quadratic-multiplayer
+        cargo build
+
+    - name: Test quadratic-multiplayer
+      env:
+        LLVM_PROFILE_FILE: grcov-%p-%m.profraw
+        RUSTFLAGS: -Cinstrument-coverage
+      run: |
+        cd quadratic-multiplayer
+        cargo test
+
+    - name: Generate coverage quadratic-multiplayer
+      run: |
+        grcov $(find . -name "grcov-*.profraw" -print) \
+          --branch \
+          --ignore-not-existing \
+          --binary-path ./quadratic-multiplayer/target/debug/ \
+          -s . \
+          -t lcov \
+          --ignore "/*" \
+          --ignore "./quadratic-multiplayer/src/wasm_bindings/*" \
+          --ignore "./quadratic-multiplayer/src/bin/*" \
+          -o lcov.info
+
+    - name: Upload coverage reports to Codecov quadratic-multiplayer
+      uses: codecov/codecov-action@v3
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
 
   test_unit:
     runs-on: ubuntu-latest-8-cores
