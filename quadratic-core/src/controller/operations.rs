@@ -42,7 +42,10 @@ impl GridController {
                         if let Some(operations) = operations {
                             multiplayer_operations.extend(operations);
                         }
-                        if old_value.is_some_and(|cell_value| cell_value.is_html()) {
+                        if old_value
+                            .as_ref()
+                            .is_some_and(|cell_value| cell_value.is_html())
+                        {
                             summary.html.insert(cell_ref.sheet);
                         }
                         old_value
