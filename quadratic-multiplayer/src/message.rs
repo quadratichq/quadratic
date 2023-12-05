@@ -15,7 +15,16 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::state::{Room, State, User};
+use crate::state::{State, User};
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub(crate) struct SimpleUser {
+    pub session_id: Uuid,
+    pub user_id: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub image: String,
+}
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -62,7 +71,7 @@ pub(crate) enum MessageRequest {
 #[serde(tag = "type")]
 pub(crate) enum MessageResponse {
     Room {
-        room: Room,
+        users: Vec<SimpleUser>,
     },
     MouseMove {
         session_id: Uuid,
@@ -76,9 +85,6 @@ pub(crate) enum MessageResponse {
         selection: String,
     },
     Transaction {
-        session_id: Uuid,
-        file_id: Uuid,
-
         // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
         operations: String,
     },
@@ -116,7 +122,7 @@ pub(crate) async fn handle_message(
             let session_id = user.session_id;
             let is_new = state.enter_room(file_id, &user, internal_session_id).await;
             let room = state.get_room(&file_id).await?;
-            let response = MessageResponse::Room { room };
+            let response = room.room_message();
 
             // only broadcast if the user is new to the room
             if is_new {
@@ -133,7 +139,7 @@ pub(crate) async fn handle_message(
         } => {
             let is_not_empty = state.leave_room(file_id, &session_id).await?;
             let room = state.get_room(&file_id).await?;
-            let response = MessageResponse::Room { room };
+            let response = room.room_message();
 
             if is_not_empty {
                 broadcast(session_id, file_id, Arc::clone(&state), response.clone())?
@@ -184,11 +190,7 @@ pub(crate) async fn handle_message(
             file_id,
             operations,
         } => {
-            let response = MessageResponse::Transaction {
-                session_id,
-                file_id,
-                operations,
-            };
+            let response = MessageResponse::Transaction { operations };
 
             broadcast(session_id, file_id, Arc::clone(&state), response.clone())?;
 
@@ -292,8 +294,6 @@ pub(crate) mod tests {
         let user_1 = add_new_user_to_room(file_id, state.clone(), internal_session_id).await;
         let _user_2 = add_new_user_to_room(file_id, state.clone(), internal_session_id).await;
         let message = MessageResponse::Transaction {
-            session_id: user_1.session_id,
-            file_id,
             operations: "test".to_string(),
         };
         broadcast(user_1.session_id, file_id, state, message).unwrap();

@@ -1,6 +1,7 @@
 import { grid } from '@/grid/controller/Grid';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/gridGL/types/size';
+import { SimpleMultiplayerUser } from '@/ui/menus/TopBar/useMultiplayerUsers';
 import { User } from '@auth0/auth0-spa-js';
 import { Rectangle } from 'pixi.js';
 import { v4 as uuid } from 'uuid';
@@ -10,19 +11,21 @@ import {
   MessageMouseMove,
   MessageTransaction,
   ReceiveMessages,
+  ReceiveRoom,
   SendEnterRoom,
 } from './multiplayerTypes';
 
 const UPDATE_TIME = 1000 / 30;
 
-// todo: create types for messages
-
 export interface Player {
+  firstName: string;
+  lastName: string;
+  sessionId: string;
+  userId: string;
   sheetId: string;
   x?: number;
   y?: number;
-  name: string;
-  picture: string;
+  image: string;
   color: number;
   visible: boolean;
   selection?: { cursor: Coordinate; rectangle?: Rectangle };
@@ -152,20 +155,42 @@ export class Multiplayer {
     this.lastTime = now;
   }
 
+  private updateHook() {
+    const players: SimpleMultiplayerUser[] = [];
+    this.players.forEach((player) => {
+      players.push({
+        sessionId: player.sessionId,
+        userId: player.userId,
+        firstName: player.firstName,
+        lastName: player.lastName,
+        picture: player.image,
+        color: player.color,
+      });
+    });
+    window.dispatchEvent(new CustomEvent('multiplayer-update', { detail: players }));
+  }
+
   handleMessage = (e: { data: string }) => {
     const data = JSON.parse(e.data) as ReceiveMessages;
     const { type } = data;
     if (type === 'Room') {
-      this.players.clear();
-      const users = data.room.users;
-      for (const userId in users) {
-        // todo: this check should not be needed (eventually)
-        if (userId !== this.uuid) {
-          const user = users[userId];
-          const { first_name, last_name, image } = user;
-          this.players.set(userId, {
-            name: `${first_name} ${last_name}`,
-            picture: image,
+      const room = data as ReceiveRoom;
+      const remaining = new Set(this.players.keys());
+      for (const user of room.users) {
+        const player = this.players.get(user.session_id);
+        if (player) {
+          player.firstName = user.first_name;
+          player.lastName = user.last_name;
+          player.image = user.image;
+          remaining.delete(user.session_id);
+          console.log(`[Multiplayer] Player ${user.first_name} entered room.`);
+        } else {
+          this.players.set(user.session_id, {
+            sessionId: user.session_id,
+            userId: user.user_id,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            image: user.image,
             sheetId: '',
             x: 0,
             y: 0,
@@ -173,11 +198,14 @@ export class Multiplayer {
             visible: false,
           });
           this.nextColor = (this.nextColor + 1) % MULTIPLAYER_COLORS.length;
-          console.log(`[Multiplayer] Player ${userId} entered room.`);
+          console.log(`[Multiplayer] Player ${user.first_name} entered room.`);
         }
+        remaining.forEach((sessionId) => {
+          this.players.delete(sessionId);
+        });
+        this.updateHook();
       }
-    }
-    if (type === 'MouseMove') {
+    } else if (type === 'MouseMove') {
       const player = this.players.get(data.session_id);
       if (!player) {
         throw new Error("Expected Player to be defined before receiving a message of type 'MouseMove'");
