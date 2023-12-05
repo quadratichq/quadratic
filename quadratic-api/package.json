@@ -7,7 +7,7 @@
     "start": "dotenv -e .env -- ts-node-dev --respawn --exit-child --watch src --project ./tsconfig.json -- ./src/server.ts ",
     "postinstall": "prisma generate",
     "prebuild": "rm -rf dist",
-    "build": "tsc",
+    "build": "tsc && tsc ../quadratic-shared/*.ts",
     "lint": "npm run lint:eslint && npm run lint:prettier",
     "lint:eslint": "eslint src/**/*.ts",
     "lint:eslint:write": "eslint src/**/*.ts --fix",
