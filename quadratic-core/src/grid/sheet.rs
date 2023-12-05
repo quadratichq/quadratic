@@ -107,8 +107,10 @@ impl Sheet {
         value: impl Into<CellValue>,
     ) -> (Option<CellValue>, Option<Vec<Operation>>) {
         let value = value.into();
-        let is_blank = value.is_blank();
-        let value: Option<CellValue> = if is_blank { None } else { Some(value) };
+        let is_empty = value.is_blank();
+        let value: Option<CellValue> = if is_empty { None } else { Some(value) };
+
+        // if there's no value and the column doesn't exist, then nothing more needs to be done
         if value.is_none() && !self.columns.contains_key(&pos.x) {
             return (None, None);
         }
@@ -165,7 +167,6 @@ impl Sheet {
         }
 
         for cell_ref in self.iter_code_cells_locations_in_region(region) {
-            // TODO: unspill!
             self.code_cells.remove(&cell_ref);
         }
 

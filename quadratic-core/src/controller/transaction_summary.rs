@@ -78,6 +78,9 @@ pub struct TransactionSummary {
 
     // holds the operations to be shared via multiplayer
     pub multiplayer_operations: Option<String>,
+
+    // changes to html output
+    pub html: HashSet<SheetId>,
 }
 
 impl TransactionSummary {

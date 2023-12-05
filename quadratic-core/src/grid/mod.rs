@@ -31,7 +31,7 @@ pub use code::*;
 pub use column::{Column, ColumnData};
 pub use formatting::{
     Bold, BoolSummary, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericCommas,
-    NumericDecimals, NumericFormat, NumericFormatKind, TextColor,
+    NumericDecimals, NumericFormat, NumericFormatKind, RenderSize, TextColor,
 };
 pub use ids::*;
 pub use sheet::Sheet;

@@ -40,6 +40,10 @@ export const EXAMPLE_FILES = {
     name: 'Startup portfolio (example)',
     description: 'Example with calculations from formulas and Python.',
   },
+  'charting_example.grid': {
+    name: 'Charting (example)',
+    description: 'Example of charting data using Python and Plotly.',
+  },
 };
 export type ExampleFileNames = keyof typeof EXAMPLE_FILES;
 export const CSV_IMPORT_MESSAGE = 'Drag and drop a CSV file on the grid to import it.';
@@ -49,4 +53,5 @@ export const TYPE = {
   overline: 'text-xs uppercase tracking-widest text-muted-foreground',
   h3: 'scroll-m-20 text-2xl font-semibold tracking-tight',
   h4: 'scroll-m-20 text-xl font-semibold tracking-tight',
+  code: 'relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold',
 };

@@ -8,6 +8,9 @@ export const ROUTES = {
   SIGNUP_WITH_REDIRECT: () => '/login?signup&from=' + encodeURIComponent(window.location.pathname),
   LOGIN_RESULT: '/login-result',
   FILES: '/files',
+  // TODO: rename to FILE and the current FILE to FILE_IN_APP (or something?)
+  FILES_FILE: (uuid: string) => `/files/${uuid}`,
+  FILES_SHARE: (uuid: string) => `/files/${uuid}/sharing`,
   CREATE_FILE: '/files/create',
   TEAMS: `/teams`,
   TEAM: (uuid: string) => `/teams/${uuid}`,
@@ -17,10 +20,6 @@ export const ROUTES = {
   EXAMPLES: '/examples',
   ACCOUNT: '/account',
   FILE: (uuid: string) => `/file/${uuid}`,
-
-  // API routes are client-side routes to use react-router's data APIs (e.g. fetchers)
-  API_FILE: (uuid: string) => `/api/files/${uuid}`,
-  API_FILE_SHARING: (uuid: string) => `/api/files/${uuid}/sharing`,
 };
 
 export const ROUTE_LOADER_IDS = {

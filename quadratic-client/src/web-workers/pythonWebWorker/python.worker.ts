@@ -29,7 +29,11 @@ async function pythonWebWorker() {
     self.postMessage({ type: 'not-loaded' } as PythonMessage);
     pyodide = await (self as any).loadPyodide();
     await pyodide.registerJsModule('getCellsDB', getCellsDB);
-    await pyodide.loadPackage(['numpy', 'pandas', 'micropip']);
+    await pyodide.loadPackage('micropip');
+    let micropip = await pyodide.pyimport('micropip');
+    await micropip.install(['numpy', 'pandas', 'pyodide-http', 'requests']);
+    // patch requests https://github.com/koenvo/pyodide-http
+    await pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');
     const python_code = await (await fetch('/run_python.py')).text();
     await pyodide.runPython(python_code);
   } catch (e) {
@@ -54,7 +58,12 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
     if (!pyodide) {
       self.postMessage({ type: 'not-loaded' } as PythonMessage);
     } else {
-      const output = await pyodide.globals.get('run_python')(event.python);
+      const python_code = event.python;
+
+      // auto load packages
+      await pyodide.loadPackagesFromImports(python_code);
+
+      const output = await pyodide.globals.get('run_python')(python_code);
       const results = Object.fromEntries(output.toJs());
       return self.postMessage({
         type: 'results',

@@ -42,6 +42,12 @@ impl GridController {
                         if let Some(operations) = operations {
                             multiplayer_operations.extend(operations);
                         }
+                        if old_value
+                            .as_ref()
+                            .is_some_and(|cell_value| cell_value.is_html())
+                        {
+                            summary.html.insert(cell_ref.sheet);
+                        }
                         old_value
                     })
                     .map(|old_value| old_value.unwrap_or(CellValue::Blank))
@@ -53,6 +59,7 @@ impl GridController {
 
                 CellSheetsModified::add_region(&mut summary.cell_sheets_modified, sheet, &region);
                 // check if override any code cells
+                let sheet = self.grid.sheet_from_id(region.sheet);
                 let code_cells_to_delete = sheet
                     .code_cells
                     .iter()
@@ -66,7 +73,7 @@ impl GridController {
                     })
                     .collect::<Vec<(CellRef, Pos)>>();
 
-                // remove the code cells if so, and add to reverse operations
+                // remove the code cells
                 let sheet_id = sheet.id;
                 for (cell_ref, pos) in code_cells_to_delete {
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
@@ -151,7 +158,7 @@ impl GridController {
                 if compute {
                     if let Some(code_cell_value) = code_cell_value {
                         let updated_code_cell_value =
-                            if let Some(old_code_cell_value) = old_code_cell_value.as_ref() {
+                            if let Some(old_code_cell_value) = &old_code_cell_value {
                                 let mut updated_code_cell_value = code_cell_value.clone();
                                 updated_code_cell_value.output = old_code_cell_value.output.clone();
                                 updated_code_cell_value
@@ -160,6 +167,7 @@ impl GridController {
                             };
                         sheet.set_code_cell_value(pos, Some(updated_code_cell_value));
                     } else {
+                        sheet.set_code_cell_value(pos, code_cell_value);
                         fetch_code_cell_difference(
                             self,
                             sheet_id,
@@ -189,7 +197,7 @@ impl GridController {
                         multiplayer_operations,
                     );
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    sheet.set_code_cell_value(pos, code_cell_value.clone());
+                    sheet.set_code_cell_value(pos, code_cell_value);
                 }
 
                 // TODO(ddimaria): resolve comment from @HactarCE:
@@ -310,6 +318,14 @@ impl GridController {
                             self.set_cell_formats_for_type::<FillColor>(&region, fill_color, None),
                         )
                     }
+                    CellFmtArray::RenderSize(output_size) => {
+                        summary.html.insert(region.sheet);
+                        CellFmtArray::RenderSize(self.set_cell_formats_for_type::<RenderSize>(
+                            &region,
+                            output_size,
+                            None,
+                        ))
+                    }
                 };
                 reverse_operations.push(Operation::SetCellFormats {
                     region,
@@ -338,6 +354,7 @@ impl GridController {
                     .add_sheet(Some(sheet))
                     .expect("duplicate sheet name");
                 summary.sheet_list_modified = true;
+                summary.html.insert(sheet_id);
 
                 reverse_operations.push(Operation::DeleteSheet { sheet_id });
             }

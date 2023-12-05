@@ -12,7 +12,7 @@ import { validateUUID } from './files';
 import { getFilePermissions } from './getFilePermissions';
 
 const validateFileSharingPermission = () =>
-  body('public_link_access').isIn([LinkPermission.READONLY, LinkPermission.NOT_SHARED]);
+  body('public_link_access').isIn([LinkPermission.READONLY, LinkPermission.NOT_SHARED, LinkPermission.EDIT]);
 
 const sharing_router = express.Router();
 
@@ -34,9 +34,9 @@ sharing_router.get(
     }
 
     // Only authenticated users can view the email addresses of other users
-    let owner = await getUserProfile(req.quadraticFile.ownerUserId);
+    const owner = await getUserProfile(req.quadraticFile.ownerUserId);
     if (!req.user) {
-      owner.email = null;
+      delete owner.email;
     }
 
     return res.status(200).json({

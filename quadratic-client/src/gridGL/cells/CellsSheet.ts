@@ -145,8 +145,9 @@ export class CellsSheet extends Container {
     this.visible = false;
   }
 
-  toggleOutlines() {
-    this.cellsArray.visible = pixiAppSettings.showCellTypeOutlines;
+  toggleOutlines(force?: boolean) {
+    this.cellsArray.visible = force ?? pixiAppSettings.showCellTypeOutlines;
+    this.cellsMarkers.visible = force ?? pixiAppSettings.showCellTypeOutlines;
   }
 
   createBorders() {

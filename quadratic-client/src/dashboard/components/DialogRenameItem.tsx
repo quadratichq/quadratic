@@ -61,11 +61,9 @@ export function DialogRenameItem({
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle asChild>
-            <label htmlFor={inputId}>Rename</label>
+            <label htmlFor={inputId}>Rename {itemLabel.toLowerCase()}</label>
           </DialogTitle>
-          <DialogDescription>
-            {itemLabel}: {value}
-          </DialogDescription>
+          <DialogDescription>{value}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} id={formId}>
           <Input id={inputId} value={localValue} autoComplete="off" onChange={handleInputChange} />
@@ -78,7 +76,7 @@ export function DialogRenameItem({
             <Button variant="outline">Cancel</Button>
           </DialogClose>
 
-          <Button disabled={disabled} type="submit" formTarget={formId}>
+          <Button disabled={disabled} type="submit" form={formId}>
             Rename
           </Button>
         </DialogFooter>

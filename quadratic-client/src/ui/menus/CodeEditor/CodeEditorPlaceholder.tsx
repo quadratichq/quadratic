@@ -1,7 +1,7 @@
+import monaco from 'monaco-editor';
 import { Fragment, RefObject, useEffect, useState } from 'react';
 import useLocalStorage from '../../../hooks/useLocalStorage';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
-import monaco from 'monaco-editor';
 
 export const snippets = [
   {
@@ -43,6 +43,27 @@ myCell = cell(x, y)
 
 # Or reference a range of cells (returns a Pandas DataFrame)
 cells((x1, y1), (x2, y2))`,
+  },
+  {
+    label: 'create a chart',
+    // prettier-ignore
+    code:
+`# install plotly 
+import micropip
+await micropip.install('plotly')
+
+# import plotly
+import plotly.express as px
+
+# replace this df with your data
+df = px.data.gapminder().query("country=='Canada'")
+
+# create your chart type, for more chart types: https://plotly.com/python/
+fig = px.line(df, x="year", y="lifeExp", title='Life expectancy in Canada')
+
+# display chart 
+fig
+`,
   },
   {
     label: 'return data to the sheet',
@@ -106,7 +127,7 @@ export function CodeEditorPlaceholder({
         <Fragment key={i}>
           <a
             href={`#snippet-${i}`}
-            style={{ color: 'inherit', pointerEvents: 'auto' }}
+            className={`pointer-events-auto text-inherit underline`}
             onClick={(e) => {
               e.preventDefault();
               setEditorContent(snippet.code);

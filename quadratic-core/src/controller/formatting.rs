@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::{
     grid::{
         Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericCommas, NumericDecimals,
-        NumericFormat, NumericFormatKind, RegionRef, SheetId, TextColor,
+        NumericFormat, NumericFormatKind, RegionRef, RenderSize, SheetId, TextColor,
     },
     Pos, Rect, RunLengthEncoding,
 };
@@ -205,6 +205,9 @@ impl GridController {
                     CellFmtArray::FillColor(array) => {
                         array.push(sheet.get_formatting_value::<FillColor>(pos));
                     }
+                    CellFmtArray::RenderSize(array) => {
+                        array.push(sheet.get_formatting_value::<RenderSize>(pos));
+                    }
                 });
             }
         }
@@ -244,6 +247,7 @@ impl_set_cell_fmt_method!(set_cell_bold<Bold>(CellFmtArray::Bold));
 impl_set_cell_fmt_method!(set_cell_italic<Italic>(CellFmtArray::Italic));
 impl_set_cell_fmt_method!(set_cell_text_color<TextColor>(CellFmtArray::TextColor));
 impl_set_cell_fmt_method!(set_cell_fill_color<FillColor>(CellFmtArray::FillColor));
+impl_set_cell_fmt_method!(set_cell_render_size<RenderSize>(CellFmtArray::RenderSize));
 
 /// Array of a single cell formatting attribute.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -257,11 +261,16 @@ pub enum CellFmtArray {
     Italic(RunLengthEncoding<Option<bool>>),
     TextColor(RunLengthEncoding<Option<String>>),
     FillColor(RunLengthEncoding<Option<String>>),
+    RenderSize(RunLengthEncoding<Option<RenderSize>>),
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{controller::GridController, grid::TextColor, Pos, Rect};
+    use crate::{
+        controller::GridController,
+        grid::{RenderSize, TextColor},
+        Pos, Rect,
+    };
 
     #[test]
     fn test_set_cell_text_color_undo_redo() {
@@ -456,6 +465,21 @@ mod test {
     }
 
     #[test]
+    fn test_set_output_size() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_render_size(
+            sheet_id,
+            Rect::single_pos(Pos { x: 0, y: 0 }),
+            Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            }),
+            None,
+        );
+    }
+
+    #[test]
     fn test_remove_formatting() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
@@ -477,5 +501,29 @@ mod test {
             .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }));
         assert_eq!(cells.len(), 1);
         assert_eq!(cells[0].value, "1.12345678");
+    }
+
+    #[test]
+    fn test_set_cell_render_size() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_render_size(
+            sheet_id,
+            Rect::single_pos(Pos { x: 0, y: 0 }),
+            Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            }),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.get_formatting_value::<RenderSize>(Pos { x: 0, y: 0 }),
+            Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string()
+            })
+        );
     }
 }

@@ -1,6 +1,6 @@
 export interface MessageMouseMove {
   type: 'MouseMove';
-  user_id: string;
+  session_id: string;
   file_id: string;
   x?: number | null;
   y?: number | null;
@@ -12,6 +12,7 @@ export interface ReceiveEnterRoom {
     users: Record<
       string,
       {
+        session_id: string;
         user_id: string;
         first_name: string;
         last_name: string;
@@ -23,13 +24,14 @@ export interface ReceiveEnterRoom {
 
 export interface MessageChangeSelection {
   type: 'ChangeSelection';
-  user_id: string;
+  session_id: string;
   file_id: string;
   selection: string;
 }
 
 export interface SendEnterRoom {
   type: 'EnterRoom';
+  session_id: string;
   user_id: string;
   file_id: string;
   first_name: string;
@@ -39,7 +41,7 @@ export interface SendEnterRoom {
 
 export interface MessageTransaction {
   type: 'Transaction';
-  user_id: string;
+  session_id: string;
   file_id: string;
   operations: string;
 }

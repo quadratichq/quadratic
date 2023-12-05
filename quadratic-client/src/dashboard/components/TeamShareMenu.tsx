@@ -1,8 +1,8 @@
 import { TeamAction } from '@/routes/teams.$teamUuid';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router-dom';
-import { QDialog } from '../../components/QDialog';
 import { ShareMenu } from '../../components/ShareMenu';
 
 export function TeamShareMenu({
@@ -29,39 +29,43 @@ export function TeamShareMenu({
   // }
 
   return (
-    <QDialog onClose={onClose}>
-      <QDialog.Title>Share team “{team.name}”</QDialog.Title>
-      <QDialog.Content>
-        {/* 
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader className={`mr-6 overflow-hidden`}>
+          <DialogTitle className={`truncate`}>Share {team.name}</DialogTitle>
+          <DialogDescription>Invite people to collaborate in this team</DialogDescription>
+        </DialogHeader>
+        <div>
+          {/* 
           TODO
           <ShareMenu>
             <ShareMenu.Invite />
             <ShareMenu.User />
         */}
 
-        <ShareMenu.Wrapper>
-          <ShareMenu.Invite
-            disabled={fetcher.state !== 'idle'}
-            onInvite={({ email, role }) => {
-              setPendingUsers((prev) => [...prev, { email, role }]);
-            }}
-            userEmails={userEmails}
-          />
-
-          {pendingUsers.map((pendingUser: any) => (
-            <PendingItem
-              key={pendingUser.email}
-              pendingUser={pendingUser}
-              onComplete={() => {
-                setPendingUsers((prev: any) => prev.filter((pu: any) => pu !== pendingUser));
+          <ShareMenu.Wrapper>
+            <ShareMenu.Invite
+              disabled={fetcher.state !== 'idle'}
+              onInvite={({ email, role }) => {
+                setPendingUsers((prev) => [...prev, { email, role }]);
               }}
+              userEmails={userEmails}
             />
-          ))}
-          {users.map((user) => (
-            <Item key={user.id} user={user} data={data} numberOfOwners={numberOfOwners} />
-          ))}
 
-          {/* 
+            {pendingUsers.map((pendingUser: any) => (
+              <PendingItem
+                key={pendingUser.email}
+                pendingUser={pendingUser}
+                onComplete={() => {
+                  setPendingUsers((prev: any) => prev.filter((pu: any) => pu !== pendingUser));
+                }}
+              />
+            ))}
+            {users.map((user) => (
+              <Item key={user.id} user={user} data={data} numberOfOwners={numberOfOwners} />
+            ))}
+
+            {/* 
               // avatar={
               //   user.isPending ? (
               //     <Avatar sx={{ width: 24, height: 24, fontSize: '16px' }}>
@@ -93,9 +97,10 @@ export function TeamShareMenu({
               // }
               // action={<ShareMenu.ListItemUserActions value={user.permission} setValue={() => {}} />}
         */}
-        </ShareMenu.Wrapper>
-      </QDialog.Content>
-    </QDialog>
+          </ShareMenu.Wrapper>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
