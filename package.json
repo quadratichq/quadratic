@@ -24,7 +24,7 @@
     "watch:multiplayer": "npm run dev --workspace=quadratic-multiplayer",
     "lint:client": "cd quadratic-client && npm run lint:ts && npm run lint:eslint && lint:prettier && lint:clippy",
     "watch:perf:front-end": "npm run build:wasm:types && concurrently -n=react,rust,api \"npm:watch:javascript\" \"npm:watch:wasm:perf:javascript\" \"npm run api:start\"",
-    "watch:front-end": "npm run build:wasm:types && concurrently -n=react,rust,api \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm run api:start\"",
+    "watch:front-end": "npm run build:wasm:types && concurrently -n=react,rust,api \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm run api:start\" \"npm:watch:multiplayer\"",
     "api:start": "cd quadratic-api && npm start",
     "build:wasm:types": "cd quadratic-core && cargo run --bin export_types",
     "watch:wasm:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --dev --target web --out-dir ../quadratic-client/src/quadratic-core --weak-refs'",
