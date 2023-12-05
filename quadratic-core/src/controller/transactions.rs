@@ -163,7 +163,6 @@ impl GridController {
         } else {
             return TransactionSummary::default();
         };
-        crate::util::dbgjs(operations.clone());
         let mut transaction_in_progress = TransactionInProgress::start_transaction(
             self,
             operations,
