@@ -21,6 +21,7 @@ pub(crate) fn new_user() -> User {
         last_name: LastName().fake(),
         image: FilePath().fake(),
         socket: None,
+        last_heartbeat: chrono::Utc::now(),
     }
 }
 

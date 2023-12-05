@@ -50,6 +50,10 @@ pub(crate) enum MessageRequest {
         // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
         operations: String,
     },
+    Heartbeat {
+        user_id: String,
+        file_id: Uuid,
+    },
 }
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
@@ -77,6 +81,7 @@ pub(crate) enum MessageResponse {
         // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
         operations: String,
     },
+    Empty {},
 }
 
 /// Handle incoming messages.  All requests and responses are strictly typed.
@@ -102,6 +107,7 @@ pub(crate) async fn handle_message(
                 last_name,
                 image,
                 socket: Some(Arc::clone(&sender)),
+                last_heartbeat: chrono::Utc::now(),
             };
             let user_id = user.id.clone();
             let is_new = state.enter_room(file_id, &user).await;
@@ -116,6 +122,7 @@ pub(crate) async fn handle_message(
             Ok(response)
         }
 
+        // User leaves a room
         MessageRequest::LeaveRoom { user_id, file_id } => {
             let is_not_empty = state.leave_room(file_id, &user_id).await?;
             let room = state.get_room(&file_id).await?;
@@ -179,6 +186,12 @@ pub(crate) async fn handle_message(
             broadcast(user_id, file_id, Arc::clone(&state), response.clone())?;
 
             Ok(response)
+        }
+
+        // User sends a heartbeat
+        MessageRequest::Heartbeat { user_id, file_id } => {
+            state.update_heartbeat(file_id, &user_id).await?;
+            Ok(MessageResponse::Empty {})
         }
     }
 }

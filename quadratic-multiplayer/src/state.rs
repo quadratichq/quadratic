@@ -7,6 +7,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{anyhow, Result};
 use axum::extract::ws::{Message, WebSocket};
+use chrono::{DateTime, Utc};
 use futures_util::stream::SplitSink;
 use serde::Serialize;
 use tokio::sync::Mutex;
@@ -23,6 +24,8 @@ pub(crate) struct User {
     pub(crate) image: String,
     #[serde(skip_serializing)]
     pub(crate) socket: Option<Arc<Mutex<SplitSink<WebSocket, Message>>>>,
+    #[serde(skip_serializing)]
+    pub(crate) last_heartbeat: DateTime<Utc>,
 }
 
 impl PartialEq for User {
@@ -108,6 +111,30 @@ impl State {
 
         tracing::trace!("Room {file_id} removed");
     }
+
+    /// Retrieves a copy of a user in a room
+    pub(crate) async fn _get_user_in_room(&self, file_id: &Uuid, user_id: &String) -> Result<User> {
+        let user = get_room!(self, file_id)?
+            .users
+            .get(user_id)
+            .ok_or(anyhow!("User {} not found in Room {}", user_id, file_id))?
+            .to_owned();
+
+        Ok(user)
+    }
+
+    /// Updates a user's hearbeat in a room
+    pub(crate) async fn update_heartbeat(&self, file_id: Uuid, user_id: &String) -> Result<()> {
+        get_mut_room!(self, file_id)?
+            .users
+            .entry(user_id.clone())
+            .and_modify(|user| {
+                user.last_heartbeat = Utc::now();
+                tracing::trace!("Updating heartbeat for {user_id}");
+            });
+
+        Ok(())
+    }
 }
 
 #[macro_export]
@@ -180,5 +207,28 @@ mod tests {
         state.leave_room(file_id, &user2.id).await.unwrap();
         let room = state.get_room(&file_id).await;
         assert!(room.is_err());
+    }
+
+    #[tokio::test]
+    async fn updates_a_users_heartbeat() {
+        let state = State::new();
+        let file_id = Uuid::new_v4();
+        let user = new_user();
+
+        state.enter_room(file_id, &user).await;
+        let old_heartbeat = state
+            ._get_user_in_room(&file_id, &user.id)
+            .await
+            .unwrap()
+            .last_heartbeat;
+
+        state.update_heartbeat(file_id, &user.id).await.unwrap();
+        let new_heartbeat = state
+            ._get_user_in_room(&file_id, &user.id)
+            .await
+            .unwrap()
+            .last_heartbeat;
+
+        assert!(old_heartbeat < new_heartbeat);
     }
 }
