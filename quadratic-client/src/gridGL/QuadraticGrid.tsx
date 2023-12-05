@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
+import { HtmlCells } from './htmlCells/HtmlCells';
 import { CellInput } from './interaction/CellInput';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { pixiApp } from './pixiApp/PixiApp';
@@ -17,6 +18,7 @@ export default function QuadraticGrid() {
   const containerRef = useCallback((node: HTMLDivElement | null) => {
     if (node) setContainer(node);
   }, []);
+
   useEffect(() => {
     if (container) pixiApp.attach(container);
   }, [container]);
@@ -117,6 +119,7 @@ export default function QuadraticGrid() {
       onKeyUp={onKeyUp}
     >
       {showInput && <CellInput container={container} />}
+      <HtmlCells />
       <FloatingContextMenu container={container} showContextMenu={showContextMenu} />
       <MultiplayerCursors />
     </div>

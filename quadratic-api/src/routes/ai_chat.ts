@@ -51,7 +51,6 @@ ai_chat_router.post('/chat', validateAccessToken, ai_rate_limiter, async (reques
   try {
     const result = await openai.createChatCompletion({
       model: r_json.model || 'gpt-4',
-      //@ts-expect-error
       messages: r_json.messages,
     });
 
@@ -81,7 +80,6 @@ ai_chat_router.post('/chat/stream', validateAccessToken, ai_rate_limiter, async 
       .createChatCompletion(
         {
           model: r_json.model || 'gpt-4',
-          //@ts-expect-error
           messages: r_json.messages,
           stream: true,
         },

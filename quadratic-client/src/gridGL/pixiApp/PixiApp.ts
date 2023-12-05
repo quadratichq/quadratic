@@ -13,6 +13,7 @@ import { sheets } from '../../grid/controller/Sheets';
 import { AxesLines } from '../UI/AxesLines';
 import { Cursor } from '../UI/Cursor';
 import { GridLines } from '../UI/GridLines';
+import { HtmlPlaceholders } from '../UI/HtmlPlaceholders';
 import { UIMultiPlayerCursor } from '../UI/UIMultiplayerCursor';
 import { BoxCells } from '../UI/boxCells';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
@@ -45,6 +46,7 @@ export class PixiApp {
   quadrants!: Quadrants;
   pointer!: Pointer;
   viewportContents!: Container;
+  htmlPlaceholders!: HtmlPlaceholders;
   renderer!: Renderer;
   stage = new Container();
   loading = true;
@@ -120,7 +122,7 @@ export class PixiApp {
     this.gridLines = this.viewportContents.addChild(new GridLines());
     this.axesLines = this.viewportContents.addChild(new AxesLines());
     this.cellsSheets = this.viewportContents.addChild(new CellsSheets());
-
+    this.htmlPlaceholders = this.viewportContents.addChild(new HtmlPlaceholders());
     this.boxCells = this.viewportContents.addChild(new BoxCells());
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
     this.cursor = this.viewportContents.addChild(new Cursor());
@@ -131,8 +133,6 @@ export class PixiApp {
     this.pointer = new Pointer(this.viewport);
     this.update = new Update();
 
-    // if (debugAlwaysShowCache) this.showCache();
-    // console.log('listeners...');
     this.setupListeners();
   }
 
@@ -236,6 +236,8 @@ export class PixiApp {
     this.headings.visible = false;
     this.quadrants.visible = false;
     this.boxCells.visible = false;
+    this.htmlPlaceholders.prepare();
+    this.cellsSheets.toggleOutlines(false);
     if (options?.cull) {
       this.cellsSheets.cull(options.cull);
     }
@@ -250,6 +252,8 @@ export class PixiApp {
     this.headings.visible = true;
     this.boxCells.visible = true;
     this.quadrants.visible = this.cacheIsVisible;
+    this.htmlPlaceholders.hide();
+    this.cellsSheets.toggleOutlines();
     if (culled) {
       this.cellsSheets.cull(this.viewport.getVisibleBounds());
     }

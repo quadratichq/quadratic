@@ -1,3 +1,4 @@
+import { ROUTES } from '@/constants/routes';
 import { useEffect } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState } from 'recoil';
@@ -69,7 +70,7 @@ export default function QuadraticUI() {
       {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
       {editorInteractionState.showShareFileMenu && (
         <ShareFileMenu
-          fetcherUrl={`/api/files/${uuid}/sharing`}
+          fetcherUrl={ROUTES.FILES_SHARE(uuid)}
           onClose={() => {
             setEditorInteractionState((prevState) => ({
               ...prevState,

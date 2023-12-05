@@ -1,9 +1,35 @@
+import { SheetCursor } from '@/grid/sheet/SheetCursor';
 import { Rectangle } from 'pixi.js';
 import { isEditorOrAbove } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { isAllowedFirstChar } from './keyboardCellChars';
+
+function inCodeEditor(editorInteractionState: EditorInteractionState, cursor: SheetCursor): boolean {
+  if (!editorInteractionState.showCodeEditor) return false;
+  const cursorPosition = cursor.cursorPosition;
+  const selectedX = editorInteractionState.selectedCell.x;
+  const selectedY = editorInteractionState.selectedCell.y;
+
+  // selectedCell is inside single cursor
+  if (selectedX === cursorPosition.x && selectedY === cursorPosition.y) {
+    return true;
+  }
+
+  // selectedCell is inside multi-cursor
+  if (cursor.multiCursor) {
+    if (
+      selectedX >= cursor.originPosition.x &&
+      selectedX <= cursor.terminalPosition.x &&
+      selectedY >= cursor.originPosition.y &&
+      selectedY <= cursor.terminalPosition.y
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
 
 export function keyboardCell(options: {
   event: React.KeyboardEvent<HTMLElement>;
@@ -72,15 +98,17 @@ export function keyboardCell(options: {
   }
 
   if (event.key === 'Backspace' || event.key === 'Delete') {
-    // delete a range or a single cell, depending on if MultiCursor is active
-    sheet.deleteCells(
-      new Rectangle(
-        cursor.originPosition.x,
-        cursor.originPosition.y,
-        cursor.terminalPosition.x - cursor.originPosition.x,
-        cursor.terminalPosition.y - cursor.originPosition.y
-      )
-    );
+    if (!inCodeEditor(editorInteractionState, cursor)) {
+      // delete a range or a single cell, depending on if MultiCursor is active
+      sheet.deleteCells(
+        new Rectangle(
+          cursor.originPosition.x,
+          cursor.originPosition.y,
+          cursor.terminalPosition.x - cursor.originPosition.x,
+          cursor.terminalPosition.y - cursor.originPosition.y
+        )
+      );
+    }
     event.preventDefault();
   }
 
@@ -117,7 +145,7 @@ export function keyboardCell(options: {
     event.preventDefault();
   }
 
-  if (isAllowedFirstChar(event.key)) {
+  if (isAllowedFirstChar(event.key) && !inCodeEditor(editorInteractionState, cursor)) {
     pixiAppSettings.changeInput(true, event.key);
     event.preventDefault();
   }

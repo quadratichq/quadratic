@@ -7,6 +7,7 @@ export const colors = {
   cellFontColor: 0x000000,
   cellColorUserText: 0x8ecb89,
   cellColorUserPython: 0x3776ab,
+  cellColorUserPythonRgba: 'rgba(55, 118, 171, 0.5)',
   cellColorUserFormula: 0x8c1a6a,
   cellColorUserAI: 0x1a8c5d,
   cellColorError: 0xf25f5c,
@@ -16,6 +17,8 @@ export const colors = {
   headerSelectedBackgroundColor: 0xe7f7ff,
   headerCornerBackgroundColor: 0xffffff,
   boxCellsDeleteColor: Number(`0x${muiColors.red['400'].replace('#', '')}`),
+  htmlPlaceholderThumbnailColor: 0xeeeeee,
+  htmlPlaceholderThumbnailBorderColor: 0,
   boxCellsColor: 0x6cd4ff,
   boxCellsAlpha: 0.333,
   gridHeadingLabel: 0x233143, // same as gridLines, no alpha

@@ -125,6 +125,7 @@ impl GridController {
             generate_thumbnail: false,
             transaction_busy: false,
             multiplayer_operations: None,
+            html: HashSet::new(),
         })?)
     }
 }

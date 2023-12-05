@@ -1,36 +1,29 @@
-import express, { Response } from 'express';
+import express, { Request, Response } from 'express';
 import { /* ApiSchemas, */ ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { teamMiddleware } from '../../middleware/team';
-import { userMiddleware } from '../../middleware/user';
-import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { RequestWithAuth, RequestWithTeam, RequestWithUser } from '../../types/Request';
+import { RequestWithTeam } from '../../types/Request';
 import { ResponseError } from '../../types/Response';
 import { firstRoleIsHigherThanSecond } from '../../utils';
 const router = express.Router();
 
-const ReqSchema = z.object({
-  params: z.object({
-    uuid: z.string().uuid(),
-    userId: z.coerce.number(),
-  }),
-  body: z.any(), // ApiSchemas["/v0/teams/:uuid/sharing/:userId.POST.request"],
-});
+const requestValidationMiddleware = validateRequestSchema(
+  z.object({
+    params: z.object({
+      uuid: z.string().uuid(),
+      userId: z.coerce.number(),
+    }),
+    body: z.any(), // ApiSchemas["/v0/teams/:uuid/sharing/:userId.POST.request"],
+  })
+);
 
 router.post(
   '/:uuid/sharing/:userId',
-  validateAccessToken,
-  validateRequestSchema(ReqSchema),
-  userMiddleware,
+  requestValidationMiddleware,
   teamMiddleware,
-  async (
-    req: RequestWithAuth & RequestWithUser & RequestWithTeam,
-    // TODO for some reason, role is considered optional in this response which it should be
-    // type ReturnType = ApiTypes['/v0/teams/:uuid/sharing/:userId.POST.response']
-    res: Response<ApiTypes['/v0/teams/:uuid/sharing/:userId.POST.response'] | ResponseError>
-  ) => {
+  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid/sharing/:userId.POST.response'] | ResponseError>) => {
     const {
       body: { role: newRole },
       user: { id: userMakingChangeId },
@@ -39,7 +32,7 @@ router.post(
         data: { id: teamId },
         user: teamUser,
       },
-    } = req;
+    } = req as RequestWithTeam;
     const userBeingChangedId = Number(userId);
 
     // User is trying to update their own role

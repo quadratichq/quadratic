@@ -16,7 +16,7 @@
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:migrate:create": "npx prisma migrate dev --create-only",
     "prisma:dev:reset": "npx prisma migrate reset && node scripts/seed.js",
-    "docker:up": "docker-compose up -d && sleep 1",
+    "docker:up": "docker-compose up -d && sleep 3",
     "docker:down": "docker-compose down",
     "docker:dev": "npm run docker:up && dotenv -e .env.docker -- prisma migrate deploy && dotenv -e .env.docker -- ts-node-dev --watch src --project ./tsconfig.json -- ./src/server.ts && npm run docker:down",
     "docker:test:dev": "npm run docker:up && dotenv -e .env.docker -- prisma migrate deploy && dotenv -e .env.docker -- jest --watch --detectOpenHandles && npm run docker:down",
@@ -46,7 +46,8 @@
     "multer-s3": "^3.0.1",
     "newrelic": "^10.6.2",
     "openai": "^3.2.1",
-    "supertest": "^6.3.3"
+    "supertest": "^6.3.3",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@aws-sdk/types": "^3.449.0",
