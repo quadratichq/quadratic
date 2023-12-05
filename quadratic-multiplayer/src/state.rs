@@ -18,7 +18,8 @@ use crate::{get_mut_room, get_or_create_room, get_room};
 #[derive(Serialize, Debug, Clone)]
 pub(crate) struct User {
     #[serde(skip_serializing)]
-    pub(crate) id: String,
+    pub(crate) session_id: Uuid,
+    pub(crate) user_id: String,
     pub(crate) first_name: String,
     pub(crate) last_name: String,
     pub(crate) image: String,
@@ -30,7 +31,10 @@ pub(crate) struct User {
 
 impl PartialEq for User {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
+        self.session_id == other.session_id
+
+            // todo: is this needed, or can we assume if session_id is equal, then the object is equal for most purposes
+            && self.user_id == other.user_id
             && self.first_name == other.first_name
             && self.last_name == other.last_name
             && self.image == other.image
@@ -40,7 +44,7 @@ impl PartialEq for User {
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct Room {
     pub(crate) file_id: Uuid,
-    pub(crate) users: HashMap<String, User>,
+    pub(crate) users: HashMap<Uuid, User>,
 }
 
 impl Room {
@@ -77,23 +81,23 @@ impl State {
     pub(crate) async fn enter_room(&self, file_id: Uuid, user: &User) -> bool {
         let is_new = get_or_create_room!(self, file_id)
             .users
-            .insert(user.id.to_owned(), user.to_owned())
+            .insert(user.session_id.to_owned(), user.to_owned())
             .is_none();
 
-        tracing::trace!("User {:?} entered room {:?}", user.id, file_id);
+        tracing::trace!("User {:?} entered room {:?}", user.session_id, file_id);
 
         is_new
     }
 
     /// Removes a user from a room. If the room is empty, it deletes the room.
     /// Returns true if the room still exists after the user leaves.
-    pub(crate) async fn leave_room(&self, file_id: Uuid, user_id: &String) -> Result<bool> {
-        get_mut_room!(self, file_id)?.users.remove(user_id);
+    pub(crate) async fn leave_room(&self, file_id: Uuid, session_id: &Uuid) -> Result<bool> {
+        get_mut_room!(self, file_id)?.users.remove(session_id);
         let num_in_room = get_room!(self, file_id)?.users.len();
 
         tracing::trace!(
             "User {:?} is leaving room {}, {} user(s) left",
-            user_id,
+            session_id,
             file_id,
             num_in_room
         );
@@ -113,24 +117,28 @@ impl State {
     }
 
     /// Retrieves a copy of a user in a room
-    pub(crate) async fn _get_user_in_room(&self, file_id: &Uuid, user_id: &String) -> Result<User> {
+    pub(crate) async fn _get_user_in_room(
+        &self,
+        file_id: &Uuid,
+        session_id: &Uuid,
+    ) -> Result<User> {
         let user = get_room!(self, file_id)?
             .users
-            .get(user_id)
-            .ok_or(anyhow!("User {} not found in Room {}", user_id, file_id))?
+            .get(session_id)
+            .ok_or(anyhow!("User {} not found in Room {}", session_id, file_id))?
             .to_owned();
 
         Ok(user)
     }
 
     /// Updates a user's hearbeat in a room
-    pub(crate) async fn update_heartbeat(&self, file_id: Uuid, user_id: &String) -> Result<()> {
+    pub(crate) async fn update_heartbeat(&self, file_id: Uuid, session_id: &Uuid) -> Result<()> {
         get_mut_room!(self, file_id)?
             .users
-            .entry(user_id.clone())
+            .entry(session_id.clone())
             .and_modify(|user| {
                 user.last_heartbeat = Utc::now();
-                tracing::trace!("Updating heartbeat for {user_id}");
+                tracing::trace!("Updating heartbeat for {session_id}");
             });
 
         Ok(())
@@ -164,12 +172,10 @@ macro_rules! get_mut_room {
 #[macro_export]
 macro_rules! get_or_create_room {
     ( $self:ident, $file_id:ident ) => {
-        $self
-            .rooms
-            .lock()
-            .await
-            .entry($file_id)
-            .or_insert_with(|| Room::new($file_id))
+        $self.rooms.lock().await.entry($file_id).or_insert_with(|| {
+            tracing::trace!("Room {} created", $file_id.clone());
+            Room::new($file_id)
+        })
     };
 }
 
@@ -188,23 +194,23 @@ mod tests {
 
         let is_new = state.enter_room(file_id, &user).await;
         let room = state.get_room(&file_id).await.unwrap();
-        let user = room.users.get(&user.id).unwrap();
+        let user = room.users.get(&user.session_id).unwrap();
 
         assert!(is_new);
         assert_eq!(state.rooms.lock().await.len(), 1);
         assert_eq!(room.users.len(), 1);
-        assert_eq!(room.users.get(&user.id), Some(user));
+        assert_eq!(room.users.get(&user.session_id), Some(user));
 
         // leave the room of 2 users
         state.enter_room(file_id, &user2).await;
-        state.leave_room(file_id, &user.id).await.unwrap();
+        state.leave_room(file_id, &user.session_id).await.unwrap();
         let room = state.get_room(&file_id).await.unwrap();
 
         assert_eq!(room.users.len(), 1);
-        assert_eq!(room.users.get(&user2.id), Some(&user2));
+        assert_eq!(room.users.get(&user2.session_id), Some(&user2));
 
         // leave a room of 1 user
-        state.leave_room(file_id, &user2.id).await.unwrap();
+        state.leave_room(file_id, &user2.session_id).await.unwrap();
         let room = state.get_room(&file_id).await;
         assert!(room.is_err());
     }
@@ -217,14 +223,17 @@ mod tests {
 
         state.enter_room(file_id, &user).await;
         let old_heartbeat = state
-            ._get_user_in_room(&file_id, &user.id)
+            ._get_user_in_room(&file_id, &user.session_id)
             .await
             .unwrap()
             .last_heartbeat;
 
-        state.update_heartbeat(file_id, &user.id).await.unwrap();
+        state
+            .update_heartbeat(file_id, &user.session_id)
+            .await
+            .unwrap();
         let new_heartbeat = state
-            ._get_user_in_room(&file_id, &user.id)
+            ._get_user_in_room(&file_id, &user.session_id)
             .await
             .unwrap()
             .last_heartbeat;
