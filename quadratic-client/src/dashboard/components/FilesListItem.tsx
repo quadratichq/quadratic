@@ -1,3 +1,6 @@
+import { Loader as FilesLoader } from '@/routes/files';
+import { Action as FileAction } from '@/routes/files.$uuid';
+
 import { Button as Btn } from '@/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -15,7 +18,6 @@ import { deleteFile, downloadFileAction, duplicateFileAction, renameFileAction }
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { DialogRenameItem } from './DialogRenameItem';
-import { Action, FilesListFile } from './FilesList';
 import { FilesListItemCore } from './FilesListItemCore';
 import { Layout, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
 
@@ -39,7 +41,7 @@ export function FileListItem({
   lazyLoad,
   viewPreferences,
 }: {
-  file: FilesListFile;
+  file: FilesLoader[0];
   filterValue: string;
   activeShareMenuFileId: string;
   setActiveShareMenuFileId: Function;
@@ -57,7 +59,7 @@ export function FileListItem({
 
   const fetcherSubmitOpts: SubmitOptions = {
     method: 'POST',
-    action: ROUTES.API_FILE(uuid),
+    action: ROUTES.FILES_FILE(uuid),
     encType: 'application/json',
   };
 
@@ -79,13 +81,13 @@ export function FileListItem({
 
   const renameFile = (value: string) => {
     // Update on the server and optimistically in the UI
-    const data: Action['request.rename'] = { action: 'rename', name: value };
+    const data: FileAction['request.rename'] = { action: 'rename', name: value };
     fetcherRename.submit(data, fetcherSubmitOpts);
   };
 
   const handleDelete = () => {
     if (window.confirm(`Confirm you want to delete the file: “${name}”`)) {
-      const data: Action['request.delete'] = {
+      const data: FileAction['request.delete'] = {
         action: 'delete',
       };
       fetcherDelete.submit(data, fetcherSubmitOpts);
@@ -93,7 +95,7 @@ export function FileListItem({
   };
 
   const handleDownload = () => {
-    const data: Action['request.download'] = {
+    const data: FileAction['request.download'] = {
       action: 'download',
     };
     fetcherDownload.submit(data, fetcherSubmitOpts);
@@ -101,7 +103,7 @@ export function FileListItem({
 
   const handleDuplicate = () => {
     const date = new Date().toISOString();
-    const data: Action['request.duplicate'] = {
+    const data: FileAction['request.duplicate'] = {
       action: 'duplicate',
 
       // These are the values that will optimistically render in the UI
@@ -121,7 +123,7 @@ export function FileListItem({
     setActiveShareMenuFileId(uuid);
   };
 
-  const displayName = fetcherRename.json ? (fetcherRename.json as Action['request.rename']).name : name;
+  const displayName = fetcherRename.json ? (fetcherRename.json as FileAction['request.rename']).name : name;
   const isDisabled = uuid.startsWith('duplicate-');
 
   const sharedProps = {

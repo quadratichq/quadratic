@@ -1,23 +1,23 @@
 import { Box, useTheme } from '@mui/material';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
 import { apiClient } from '../api/apiClient';
 import { Empty } from '../components/Empty';
+import CreateFileButton from '../dashboard/components/CreateFileButton';
+import { DashboardHeader } from '../dashboard/components/DashboardHeader';
+import { FilesList } from '../dashboard/components/FilesList';
 import { debugShowUILogs } from '../debugFlags';
-import CreateFileButton from './components/CreateFileButton';
-import { DashboardHeader } from './components/DashboardHeader';
-import { FilesList } from './components/FilesList';
 
-export type ListFile = Awaited<ReturnType<typeof apiClient.getFiles>>[0];
-type LoaderResponse = ListFile[];
+export type Loader = ApiTypes['/v0/files.GET.response'];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const data: LoaderResponse = await apiClient.getFiles();
+  const data = await apiClient.getFiles();
   return data;
 };
 
 export const Component = () => {
-  const files = useLoaderData() as LoaderResponse;
+  const files = useLoaderData() as Loader;
 
   return (
     <>
