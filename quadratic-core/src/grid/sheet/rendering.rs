@@ -338,7 +338,7 @@ mod tests {
         };
         assert!(!sheet.has_render_cells(rect));
 
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
+        let _ = sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
         assert!(sheet.has_render_cells(rect));
 
         sheet.delete_cell_values(Rect::single_pos(Pos { x: 1, y: 2 }));
@@ -375,21 +375,22 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
-        sheet.set_formatting_value::<Bold>(Pos { x: 1, y: 2 }, Some(true));
-        sheet.set_formatting_value::<CellAlign>(Pos { x: 1, y: 2 }, Some(CellAlign::Center));
-        sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Number(123.into()));
-        sheet.set_formatting_value::<Italic>(Pos { x: 1, y: 3 }, Some(true));
-        sheet.set_cell_value(Pos { x: 2, y: 4 }, CellValue::Html("html".to_string()));
-        sheet.set_cell_value(Pos { x: 2, y: 5 }, CellValue::Logical(true));
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
+        let _ = sheet.set_formatting_value::<Bold>(Pos { x: 1, y: 2 }, Some(true));
+        let _ =
+            sheet.set_formatting_value::<CellAlign>(Pos { x: 1, y: 2 }, Some(CellAlign::Center));
+        let _ = sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Number(123.into()));
+        let _ = sheet.set_formatting_value::<Italic>(Pos { x: 1, y: 3 }, Some(true));
+        let _ = sheet.set_cell_value(Pos { x: 2, y: 4 }, CellValue::Html("html".to_string()));
+        let _ = sheet.set_cell_value(Pos { x: 2, y: 5 }, CellValue::Logical(true));
+        let _ = sheet.set_cell_value(
             Pos { x: 2, y: 6 },
             CellValue::Error(Box::new(Error {
                 span: None,
                 msg: ErrorMsg::Spill,
             })),
         );
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             Pos { x: 3, y: 3 },
             CellValue::Error(Box::new(Error {
                 span: None,
