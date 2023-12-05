@@ -121,7 +121,7 @@ impl Sheet {
         let old_value = column.values.set(pos.y, value);
 
         // todo: the row_response should be used to get the index for the values.set()
-        let (row, operation) = self.get_or_create_row(pos.y);
+        let (_, operation) = self.get_or_create_row(pos.y);
         if let Some(operation) = operation {
             ops.push(operation);
         }
@@ -294,13 +294,27 @@ impl Sheet {
     }
 
     /// Sets a formatting property for a cell.
+    #[must_use]
     pub fn set_formatting_value<A: CellFmtAttr>(
         &mut self,
         pos: Pos,
         value: Option<A::Value>,
-    ) -> (Option<A::Value>, Option<Operation>) {
+    ) -> (Option<A::Value>, Option<Vec<Operation>>) {
+        let mut ops = vec![];
+        let (_, operation) = self.get_or_create_row(pos.y);
+        if let Some(operation) = operation {
+            ops.push(operation);
+        }
         let (column, operation) = self.get_or_create_column(pos.x);
-        (A::column_data_mut(column).set(pos.y, value), operation)
+        if let Some(operation) = operation {
+            ops.push(operation);
+        }
+
+        if ops.is_empty() {
+            (A::column_data_mut(column).set(pos.y, value), None)
+        } else {
+            (A::column_data_mut(column).set(pos.y, value), Some(ops))
+        }
     }
 
     /// Returns all cell borders.
@@ -493,7 +507,7 @@ mod test {
         expected: Option<i16>,
     ) {
         let pos = Pos { x, y };
-        sheet.set_cell_value(pos, CellValue::Number(BigDecimal::from_str(value).unwrap()));
+        let _ = sheet.set_cell_value(pos, CellValue::Number(BigDecimal::from_str(value).unwrap()));
         assert_eq!(sheet.decimal_places(pos, is_percentage), expected);
     }
 
@@ -528,7 +542,7 @@ mod test {
     fn test_current_decimal_places_text() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             crate::Pos { x: 1, y: 2 },
             CellValue::Text(String::from("abc")),
         );
@@ -658,7 +672,7 @@ mod test {
     fn test_get_set_formatting_value() {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
-        sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
+        let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
         let value = sheet.get_formatting_value::<Bold>((2, 1).into());
 
         assert_eq!(value, Some(true));
@@ -723,7 +737,7 @@ mod test {
     fn test_formatting_summary() {
         let (grid, sheet_id, selected) = test_setup_basic();
         let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
-        sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
+        let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
 
         // just set a single bold value
         let value = sheet.get_formatting_summary(selected);
@@ -740,7 +754,7 @@ mod test {
         assert_eq!(value, format_summary);
 
         // now add in a single italic value
-        sheet.set_formatting_value::<Italic>((3, 1).into(), Some(true));
+        let _ = sheet.set_formatting_value::<Italic>((3, 1).into(), Some(true));
         let value = sheet.get_formatting_summary(selected);
         format_summary.italic.is_any_true = true;
         assert_eq!(value, format_summary);
@@ -755,7 +769,7 @@ mod test {
         assert_eq!(None, existing_cell_format_summary);
 
         // just set a bold value
-        sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
+        let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
         let value = sheet.get_cell_format_summary((2, 1).into());
         let mut cell_format_summary = CellFormatSummary {
             bold: Some(true),
@@ -772,7 +786,7 @@ mod test {
         );
 
         // now set a italic value
-        sheet.set_formatting_value::<Italic>((2, 1).into(), Some(true));
+        let _ = sheet.set_formatting_value::<Italic>((2, 1).into(), Some(true));
         let value = sheet.get_cell_format_summary((2, 1).into());
         cell_format_summary.italic = Some(true);
         assert_eq!(value, cell_format_summary);
@@ -794,7 +808,7 @@ mod test {
         assert_eq!(None, columns[0].1.bold.get(1));
 
         // set a bold value, validate it's in the vec
-        sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
+        let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
         let columns = sheet.iter_columns().collect::<Vec<_>>();
         assert_eq!(Some(true), columns[0].1.bold.get(1));
 

@@ -394,7 +394,7 @@ mod test {
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
         let cell_value_pos = Pos { x: 0, y: 0 };
         let code_cell_pos = Pos { x: 1, y: 0 };
-        sheet.set_cell_value(cell_value_pos, cell_value.clone());
+        let _ = sheet.set_cell_value(cell_value_pos, cell_value.clone());
         let (cell_ref, _) = sheet.get_or_create_cell_ref(code_cell_pos);
 
         gc.set_in_progress_transaction(
@@ -622,7 +622,7 @@ mod test {
         let sheet_ids = gc.sheet_ids();
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
 
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
+        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
         let (cell_ref, _) = sheet.get_or_create_cell_ref(Pos { x: 1, y: 0 });
         gc.set_in_progress_transaction(
             vec![Operation::SetCellCode {
@@ -661,7 +661,7 @@ mod test {
         let sheet_ids = gc.sheet_ids();
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
 
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
+        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
         let (cell_ref, _) = sheet.get_or_create_cell_ref(Pos { x: 1, y: 0 });
         gc.set_in_progress_transaction(
             vec![Operation::SetCellCode {

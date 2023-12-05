@@ -109,8 +109,8 @@ mod tests {
 
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
-        sheet.set_cell_value(pos![A6], "text");
-        sheet.set_cell_value(pos![A7], "text");
+        let _ = sheet.set_cell_value(pos![A6], "text");
+        let _ = sheet.set_cell_value(pos![A7], "text");
         // One bad cell reference on its own doesn't cause an error because it's
         // a 1x1 array.
         assert_eq!("12", eval_to_string(&g, "SUM(12, A6)"));

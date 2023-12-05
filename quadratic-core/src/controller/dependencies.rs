@@ -70,8 +70,8 @@ mod test {
         let cdc = gc.grid_mut();
         let sheet_id = cdc.sheet_ids()[0];
         let sheet = cdc.sheet_mut_from_id(sheet_id);
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
-        sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
+        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
+        let _ = sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
         let mut cells_accessed = vec![];
         let (cell_ref00, _) = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
         let (cell_ref01, _) = sheet.get_or_create_cell_ref(Pos { x: 0, y: 1 });

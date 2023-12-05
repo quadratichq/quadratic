@@ -50,11 +50,11 @@ fn test_formula_cell_ref() {
 
     let mut g = Grid::new();
     let sheet = &mut g.sheets_mut()[0];
-    sheet.set_cell_value(pos![D4], 1); // $D$4 -> D4
-    sheet.set_cell_value(pos![Bn2], 10); // $B0  -> Bn2
-    sheet.set_cell_value(pos![Cn6], 100); // E$n6 -> Cn6
-    sheet.set_cell_value(pos![nAn2], 1000); // B0   -> nAn2
-    sheet.set_cell_value(pos![nD0], 10000); // nB2  -> nD0
+    let _ = sheet.set_cell_value(pos![D4], 1); // $D$4 -> D4
+    let _ = sheet.set_cell_value(pos![Bn2], 10); // $B0  -> Bn2
+    let _ = sheet.set_cell_value(pos![Cn6], 100); // E$n6 -> Cn6
+    let _ = sheet.set_cell_value(pos![nAn2], 1000); // B0   -> nAn2
+    let _ = sheet.set_cell_value(pos![nD0], 10000); // nB2  -> nD0
     let sheet_id = sheet.id;
 
     // Evaluate at D4, causing a circular reference.
@@ -119,7 +119,7 @@ fn test_formula_array_op() {
     let sheet = &mut g.sheets_mut()[0];
     for x in 1..=4 {
         for y in 1..=4 {
-            sheet.set_cell_value(Pos { x, y }, x * 10 + y);
+            let _ = sheet.set_cell_value(Pos { x, y }, x * 10 + y);
         }
     }
 
@@ -217,7 +217,7 @@ fn test_leading_equals() {
 #[test]
 fn test_hyphen_after_cell_ref() {
     let mut g = Grid::new();
-    g.sheets_mut()[0].set_cell_value(pos![Z1], 30);
+    let _ = g.sheets_mut()[0].set_cell_value(pos![Z1], 30);
     assert_eq!("25", eval_to_string(&g, "Z1 - 5"));
     assert_eq!("25", eval_to_string(&g, "Z1-5"));
 }
@@ -332,10 +332,10 @@ fn test_sheet_references() {
     let name2 = "My Other Sheet".to_string();
     g.sheets_mut()[1].name = name2.clone();
 
-    g.sheet_mut_from_id(id1).set_cell_value(pos![A1], 42);
-    g.sheet_mut_from_id(id1).set_cell_value(pos![A3], 6);
-    g.sheet_mut_from_id(id2).set_cell_value(pos![A3], 7);
-    g.sheet_mut_from_id(id2).set_cell_value(pos![A4], 70);
+    let _ = g.sheet_mut_from_id(id1).set_cell_value(pos![A1], 42);
+    let _ = g.sheet_mut_from_id(id1).set_cell_value(pos![A3], 6);
+    let _ = g.sheet_mut_from_id(id2).set_cell_value(pos![A3], 7);
+    let _ = g.sheet_mut_from_id(id2).set_cell_value(pos![A4], 70);
 
     let pos1 = Pos::ORIGIN.with_sheet(id1);
     let pos2 = Pos::ORIGIN.with_sheet(id2);

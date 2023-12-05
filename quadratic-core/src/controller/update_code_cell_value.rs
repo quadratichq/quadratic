@@ -420,7 +420,7 @@ mod test {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid.sheet_mut_from_id(sheet_id);
-        sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Text("test".into()));
+        let _ = sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Text("test".into()));
 
         let code_cell_output = Some(CodeCellValue {
             language: CodeCellLanguage::Python,

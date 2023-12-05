@@ -176,3 +176,19 @@ pub fn row_ranges(row_ids: &[RowId], id_map: &IdMap<RowId, i64>) -> Vec<Range<i6
     let ys = row_ids.iter().filter_map(|&id| id_map.index_of(id));
     contiguous_ranges(ys)
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_cell_ref_pos() {
+        let mut sheet = Sheet::test();
+        let (cell_ref, operations) = sheet.get_or_create_cell_ref(Pos { x: 5, y: -5 });
+        assert_eq!(sheet.cell_ref_to_pos(cell_ref), Some(Pos { x: 5, y: -5 }));
+        assert_eq!(operations.unwrap().len(), 2);
+
+        assert_eq!(sheet.try_get_cell_ref(Pos { x: 5, y: -5 }), Some(cell_ref));
+        assert_eq!(sheet.try_get_cell_ref(Pos { x: 1, y: 2 }), None);
+    }
+}
