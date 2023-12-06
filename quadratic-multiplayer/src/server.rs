@@ -92,7 +92,7 @@ async fn ws_handler(
     let addr = addr.map_or("Unknown address".into(), |addr| addr.to_string());
     let internal_session_id = Uuid::new_v4();
 
-    tracing::info!("`{user_agent}` at {addr} connected: {internal_session_id}");
+    tracing::info!("`{user_agent}` at {addr} connected: internal_session_id={internal_session_id}");
 
     // upgrade the connection
     ws.on_upgrade(move |socket| handle_socket(socket, state, addr, internal_session_id))
@@ -126,10 +126,12 @@ async fn handle_socket(
         }
     }
 
+    // websocket is closed, remove the user from any rooms they were in and broadcast
     if let Ok(rooms) = state.clear_internal_sessions(internal_session_id).await {
         tracing::info!("Removing stale users from rooms: {:?}", rooms);
 
         for file_id in rooms.into_iter() {
+            // only broadcast if the room still exists
             if let Ok(room) = state.get_room(&file_id).await {
                 tracing::info!("Broadcasting room {file_id} after removing stale users");
 
@@ -140,7 +142,7 @@ async fn handle_socket(
     }
 
     // returning from the handler closes the websocket connection
-    tracing::info!("Websocket context {addr} destroyed: {internal_session_id}");
+    tracing::info!("Websocket context {addr} destroyed: internal_session_id={internal_session_id}");
 }
 
 /// Based on the incoming message type, perform some action and return a response.
