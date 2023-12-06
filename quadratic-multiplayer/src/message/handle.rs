@@ -80,7 +80,7 @@ pub(crate) async fn handle_message(
             file_id,
             operations,
         } => {
-            state.update_heartbeat(file_id, &session_id).await?;
+            state.update_user_heartbeat(file_id, &session_id).await?;
             let response = MessageResponse::Transaction { operations };
 
             broadcast(session_id, file_id, Arc::clone(&state), response.clone());
@@ -93,7 +93,7 @@ pub(crate) async fn handle_message(
             session_id,
             file_id,
         } => {
-            state.update_heartbeat(file_id, &session_id).await?;
+            state.update_user_heartbeat(file_id, &session_id).await?;
             Ok(MessageResponse::Empty {})
         }
 

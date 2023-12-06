@@ -95,7 +95,11 @@ impl State {
     }
 
     /// Updates a user's heartbeat in a room
-    pub(crate) async fn update_heartbeat(&self, file_id: Uuid, session_id: &Uuid) -> Result<()> {
+    pub(crate) async fn update_user_heartbeat(
+        &self,
+        file_id: Uuid,
+        session_id: &Uuid,
+    ) -> Result<()> {
         get_mut_room!(self, file_id)?
             .users
             .entry(session_id.to_owned())
@@ -112,45 +116,15 @@ impl State {
         &self,
         file_id: &Uuid,
         session_id: &Uuid,
-        update: &UserState,
+        user_state: &UserState,
     ) -> Result<()> {
         get_mut_room!(self, file_id)?
             .users
             .entry(session_id.to_owned())
             .and_modify(|user| {
-                if let Some(sheet_id) = &update.sheet_id {
-                    user.state.sheet_id = Some(sheet_id.to_owned());
-                }
-                if let Some(selection) = &update.selection {
-                    user.state.selection = Some(selection.to_owned());
-                }
-                if let Some(x) = &update.x {
-                    user.state.x = Some(*x);
-                }
-                if let Some(y) = &update.y {
-                    user.state.y = Some(*y);
-                }
+                user.state = user_state.to_owned();
                 user.last_heartbeat = Utc::now();
                 tracing::trace!("Updating sheet_id for {session_id}");
-            });
-
-        Ok(())
-    }
-
-    /// Updates a user's selection in a room
-    pub(crate) async fn update_selection(
-        &self,
-        file_id: Uuid,
-        session_id: &Uuid,
-        selection: &String,
-    ) -> Result<()> {
-        get_mut_room!(self, file_id)?
-            .users
-            .entry(session_id.to_owned())
-            .and_modify(|user| {
-                user.state.selection = Some(selection.to_owned());
-                user.last_heartbeat = Utc::now();
-                tracing::trace!("Updating selection for {session_id}");
             });
 
         Ok(())
@@ -178,7 +152,7 @@ mod tests {
             .last_heartbeat;
 
         state
-            .update_heartbeat(file_id, &user.session_id)
+            .update_user_heartbeat(file_id, &user.session_id)
             .await
             .unwrap();
         let new_heartbeat = state

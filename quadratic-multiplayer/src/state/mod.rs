@@ -90,7 +90,7 @@ mod tests {
             .last_heartbeat;
 
         state
-            .update_heartbeat(file_id, &user.session_id)
+            .update_user_heartbeat(file_id, &user.session_id)
             .await
             .unwrap();
         let new_heartbeat = state
