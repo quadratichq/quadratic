@@ -246,9 +246,8 @@ impl State {
         for (file_id, room) in rooms.iter() {
             if let Some(user) = room.users.get(&session_id) {
                 tracing::info!("Removing internal_session_id {session_id} from room {file_id}");
-                self.leave_room(room.file_id, &user.session_id)
-                    .await
-                    .unwrap();
+
+                self.leave_room(room.file_id, &user.session_id).await?;
                 affected_rooms.push(file_id.to_owned());
             }
         }
