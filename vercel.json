@@ -1,4 +1,5 @@
 {
   "buildCommand": "./scripts/run-ci-build.sh",
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "outputDirectory": "quadratic-client/dist"
 }
