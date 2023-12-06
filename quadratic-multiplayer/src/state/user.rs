@@ -12,20 +12,37 @@ use crate::state::State;
 use crate::{get_mut_room, get_room};
 
 #[derive(Serialize, Debug, Clone)]
-pub struct User {
+pub(crate) struct User {
     pub session_id: Uuid,
     pub user_id: String,
     pub first_name: String,
     pub last_name: String,
     pub image: String,
-    pub sheet_id: Option<Uuid>,
-    pub selection: Option<String>,
-    pub x: Option<f64>,
-    pub y: Option<f64>,
+    #[serde(flatten)]
+    pub state: UserState,
     #[serde(skip_serializing)]
     pub socket: Option<Arc<Mutex<SplitSink<WebSocket, Message>>>>,
     #[serde(skip_serializing)]
     pub last_heartbeat: DateTime<Utc>,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub(crate) struct UserState {
+    pub sheet_id: Option<Uuid>,
+    pub selection: Option<String>,
+    pub x: Option<f64>,
+    pub y: Option<f64>,
+}
+
+impl Default for UserState {
+    fn default() -> Self {
+        UserState {
+            sheet_id: None,
+            selection: None,
+            x: None,
+            y: None,
+        }
+    }
 }
 
 impl PartialEq for User {
@@ -103,16 +120,16 @@ impl State {
             .entry(session_id.to_owned())
             .and_modify(|user| {
                 if let Some(sheet_id) = &update.sheet_id {
-                    user.sheet_id = Some(sheet_id.to_owned());
+                    user.state.sheet_id = Some(sheet_id.to_owned());
                 }
                 if let Some(selection) = &update.selection {
-                    user.selection = Some(selection.to_owned());
+                    user.state.selection = Some(selection.to_owned());
                 }
                 if let Some(x) = &update.x {
-                    user.x = Some(*x);
+                    user.state.x = Some(*x);
                 }
                 if let Some(y) = &update.y {
-                    user.y = Some(*y);
+                    user.state.y = Some(*y);
                 }
                 user.last_heartbeat = Utc::now();
                 tracing::trace!("Updating sheet_id for {session_id}");
@@ -132,7 +149,7 @@ impl State {
             .users
             .entry(session_id.to_owned())
             .and_modify(|user| {
-                user.selection = Some(selection.to_owned());
+                user.state.selection = Some(selection.to_owned());
                 user.last_heartbeat = Utc::now();
                 tracing::trace!("Updating selection for {session_id}");
             });

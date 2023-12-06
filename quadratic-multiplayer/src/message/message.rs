@@ -42,10 +42,7 @@ pub(crate) async fn handle_message(
                 first_name,
                 last_name,
                 image,
-                sheet_id: None,
-                x: None,
-                y: None,
-                selection: None,
+                state: Default::default(),
                 socket: Some(Arc::clone(&sender)),
                 last_heartbeat: chrono::Utc::now(),
             };
