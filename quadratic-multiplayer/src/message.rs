@@ -15,16 +15,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::state::{State, User};
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub(crate) struct SimpleUser {
-    pub session_id: Uuid,
-    pub user_id: String,
-    pub first_name: String,
-    pub last_name: String,
-    pub image: String,
-}
+use crate::state::{Room, State, User};
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -70,8 +61,8 @@ pub(crate) enum MessageRequest {
 #[derive(Serialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type")]
 pub(crate) enum MessageResponse {
-    Room {
-        users: Vec<SimpleUser>,
+    UsersInRoom {
+        users: Vec<User>,
     },
     MouseMove {
         session_id: Uuid,
@@ -89,6 +80,18 @@ pub(crate) enum MessageResponse {
         operations: String,
     },
     Empty {},
+}
+
+impl From<Room> for MessageResponse {
+    fn from(room: Room) -> Self {
+        MessageResponse::UsersInRoom {
+            users: room
+                .users
+                .into_iter()
+                .map(|user| (user.1.clone()).into())
+                .collect(),
+        }
+    }
 }
 
 /// Handle incoming messages.  All requests and responses are strictly typed.
@@ -122,7 +125,7 @@ pub(crate) async fn handle_message(
             let session_id = user.session_id;
             let is_new = state.enter_room(file_id, &user, internal_session_id).await;
             let room = state.get_room(&file_id).await?;
-            let response = room.room_message();
+            let response = MessageResponse::from(room.to_owned());
 
             // only broadcast if the user is new to the room
             if is_new {
@@ -139,7 +142,7 @@ pub(crate) async fn handle_message(
         } => {
             let is_not_empty = state.leave_room(file_id, &session_id).await?;
             let room = state.get_room(&file_id).await?;
-            let response = room.room_message();
+            let response = MessageResponse::from(room.to_owned());
 
             if is_not_empty {
                 broadcast(session_id, file_id, Arc::clone(&state), response.clone())?

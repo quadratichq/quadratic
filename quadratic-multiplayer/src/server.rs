@@ -128,11 +128,10 @@ async fn handle_socket(
 
     if let Ok(rooms) = state.clear_internal_sessions(internal_session_id).await {
         tracing::info!("Removing stale users from rooms: {:?}", rooms);
+
         for file_id in rooms.into_iter() {
             tracing::info!("Broadcasting room {file_id} after removing stale users");
-            let message = MessageResponse::Room {
-                room: state.get_room(&file_id).await.unwrap().to_owned(),
-            };
+            let message = MessageResponse::from(state.get_room(&file_id).await.unwrap().to_owned());
             broadcast(Uuid::new_v4(), file_id, Arc::clone(&state), message).unwrap();
         }
     }
@@ -206,7 +205,7 @@ async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_ti
                             Uuid::new_v4(),
                             file_id.to_owned(),
                             Arc::clone(&state),
-                            room.room_message(),
+                            MessageResponse::from(room.to_owned()),
                         ) {
                             tracing::warn!(
                             "Error broadcasting room {file_id} after removing {num_users_removed} stale users: {:?}",
@@ -246,7 +245,7 @@ pub(crate) mod tests {
             last_name: user.last_name.clone(),
             image: user.image.clone(),
         };
-        let expected = MessageResponse::Room {
+        let expected = MessageResponse::UsersInRoom {
             users: vec![user.into()],
         };
         let response = integration_test(state, request).await;
@@ -266,8 +265,8 @@ pub(crate) mod tests {
             session_id,
             file_id,
         };
-        let expected = MessageResponse::Room {
-            users: vec![user2.clone().into()],
+        let expected = MessageResponse::UsersInRoom {
+            users: vec![user2.clone()],
         };
 
         state.enter_room(file_id, &user, internal_session_id).await;
