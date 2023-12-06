@@ -155,6 +155,7 @@ mod tests {
             .update_user_heartbeat(file_id, &user.session_id)
             .await
             .unwrap();
+
         let new_heartbeat = state
             ._get_user_in_room(&file_id, &user.session_id)
             .await

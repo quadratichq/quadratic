@@ -130,7 +130,6 @@ pub(crate) mod tests {
         let socket_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let user_1 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
-        let _user_2 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
         let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
@@ -169,21 +168,6 @@ pub(crate) mod tests {
     }
 
     #[tokio::test]
-    async fn test_transaction() {
-        let state = Arc::new(State::new());
-        let socket_id = Uuid::new_v4();
-        let file_id = Uuid::new_v4();
-        let user_1 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
-        let _user_2 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
-        let message = MessageResponse::Transaction {
-            operations: "test".to_string(),
-        };
-        broadcast(user_1.session_id, file_id, state, message);
-
-        // TODO(ddimaria): mock the splitsink sender to test the actual sending
-    }
-
-    #[tokio::test]
     async fn test_change_sheet() {
         let state = Arc::new(State::new());
         let socket_id = Uuid::new_v4();
@@ -199,6 +183,21 @@ pub(crate) mod tests {
                 x: None,
                 y: None,
             },
+        };
+        broadcast(user_1.session_id, file_id, state, message);
+
+        // TODO(ddimaria): mock the splitsink sender to test the actual sending
+    }
+
+    #[tokio::test]
+    async fn test_transaction() {
+        let state = Arc::new(State::new());
+        let socket_id = Uuid::new_v4();
+        let file_id = Uuid::new_v4();
+        let user_1 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
+        let _user_2 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
+        let message = MessageResponse::Transaction {
+            operations: "test".to_string(),
         };
         broadcast(user_1.session_id, file_id, state, message);
 
