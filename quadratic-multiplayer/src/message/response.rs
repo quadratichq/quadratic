@@ -26,7 +26,7 @@ pub(crate) enum MessageResponse {
         update: UserState,
     },
 
-    // todo: this is not ideal. probably want to have the handle_message return an Option to avoid sending empty messages
+    // note: this is ignored in broadcast
     Empty {},
 }
 
