@@ -352,6 +352,7 @@ pub(crate) mod tests {
             operations: "test".to_string(),
         };
         let expected = MessageResponse::Transaction {
+            file_id,
             operations: "test".to_string(),
         };
 

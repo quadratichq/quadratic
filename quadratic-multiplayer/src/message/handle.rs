@@ -81,7 +81,10 @@ pub(crate) async fn handle_message(
             operations,
         } => {
             state.update_user_heartbeat(file_id, &session_id).await?;
-            let response = MessageResponse::Transaction { operations };
+            let response = MessageResponse::Transaction {
+                file_id,
+                operations,
+            };
 
             broadcast(session_id, file_id, Arc::clone(&state), response.clone());
 
@@ -223,6 +226,7 @@ pub(crate) mod tests {
         let user_1 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
         let _user_2 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
         let message = MessageResponse::Transaction {
+            file_id,
             operations: "test".to_string(),
         };
         broadcast(user_1.session_id, file_id, state, message);
