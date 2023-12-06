@@ -119,7 +119,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, socke
     }
 
     // websocket is closed, remove the user from any rooms they were in and broadcast
-    if let Ok(rooms) = state.clear_sockets(socket_id).await {
+    if let Ok(rooms) = state.clear_connections(socket_id).await {
         tracing::info!("Removing stale users from rooms: {:?}", rooms);
 
         for file_id in rooms.into_iter() {

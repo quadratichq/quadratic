@@ -1,7 +1,6 @@
-use std::collections::HashMap;
-
 use anyhow::{anyhow, Result};
 use serde::Serialize;
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::state::{user::User, State};
@@ -33,13 +32,16 @@ impl State {
     /// Add a user to a room.  If the room doesn't exist, it is created.  Users
     /// are only added to a room once (HashMap).  Returns true if the user was
     /// newly added.
-    pub(crate) async fn enter_room(&self, file_id: Uuid, user: &User, socket_id: Uuid) -> bool {
+    pub(crate) async fn enter_room(&self, file_id: Uuid, user: &User, connection_id: Uuid) -> bool {
         let is_new = get_or_create_room!(self, file_id)
             .users
             .insert(user.session_id.to_owned(), user.to_owned())
             .is_none();
 
-        self.sockets.lock().await.insert(socket_id, user.session_id);
+        self.connections
+            .lock()
+            .await
+            .insert(connection_id, user.session_id);
 
         tracing::trace!("User {:?} entered room {:?}", user.session_id, file_id);
 
@@ -117,12 +119,12 @@ mod tests {
     #[tokio::test]
     async fn enters_retrieves_leaves_and_removes_a_room() {
         let state = State::new();
-        let socket_id = Uuid::new_v4();
+        let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let user = new_user();
         let user2 = new_user();
 
-        let is_new = state.enter_room(file_id, &user, socket_id).await;
+        let is_new = state.enter_room(file_id, &user, connection_id).await;
         let room = state.get_room(&file_id).await.unwrap();
         let user = room.users.get(&user.session_id).unwrap();
 
@@ -132,7 +134,7 @@ mod tests {
         assert_eq!(room.users.get(&user.session_id), Some(user));
 
         // leave the room of 2 users
-        state.enter_room(file_id, &user2, socket_id).await;
+        state.enter_room(file_id, &user2, connection_id).await;
         state.leave_room(file_id, &user.session_id).await.unwrap();
         let room = state.get_room(&file_id).await.unwrap();
 
