@@ -5,7 +5,7 @@
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::message::request::UserUpdate;
+use crate::state::user::UserState;
 use crate::state::{room::Room, user::User};
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
@@ -22,7 +22,7 @@ pub(crate) enum MessageResponse {
     UserUpdate {
         session_id: Uuid,
         file_id: Uuid,
-        update: UserUpdate,
+        update: UserState,
     },
 
     // todo: this is not ideal. probably want to have the handle_message return an Option to avoid sending empty messages

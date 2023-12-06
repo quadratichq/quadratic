@@ -2,12 +2,11 @@ use anyhow::{anyhow, Result};
 use axum::extract::ws::{Message, WebSocket};
 use chrono::{DateTime, Utc};
 use futures_util::stream::SplitSink;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::message::request::UserUpdate;
 use crate::state::State;
 use crate::{get_mut_room, get_room};
 
@@ -26,7 +25,17 @@ pub(crate) struct User {
     pub last_heartbeat: DateTime<Utc>,
 }
 
-#[derive(Serialize, Debug, Clone)]
+impl PartialEq for User {
+    fn eq(&self, other: &Self) -> bool {
+        self.session_id == other.session_id
+            && self.user_id == other.user_id
+            && self.first_name == other.first_name
+            && self.last_name == other.last_name
+            && self.image == other.image
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub(crate) struct UserState {
     pub sheet_id: Option<Uuid>,
     pub selection: Option<String>,
@@ -42,16 +51,6 @@ impl Default for UserState {
             x: None,
             y: None,
         }
-    }
-}
-
-impl PartialEq for User {
-    fn eq(&self, other: &Self) -> bool {
-        self.session_id == other.session_id
-            && self.user_id == other.user_id
-            && self.first_name == other.first_name
-            && self.last_name == other.last_name
-            && self.image == other.image
     }
 }
 
@@ -113,7 +112,7 @@ impl State {
         &self,
         file_id: &Uuid,
         session_id: &Uuid,
-        update: &UserUpdate,
+        update: &UserState,
     ) -> Result<()> {
         get_mut_room!(self, file_id)?
             .users

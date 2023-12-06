@@ -27,9 +27,7 @@ use uuid::Uuid;
 use crate::{
     config::{config, Config},
     message::{
-        message::{broadcast, handle_message},
-        request::MessageRequest,
-        response::MessageResponse,
+        broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
     },
     state::State,
 };
@@ -232,7 +230,7 @@ async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_ti
 pub(crate) mod tests {
 
     use super::*;
-    use crate::message::request::UserUpdate;
+    use crate::state::user::UserState;
     use crate::test_util::{integration_test, new_user};
     use uuid::Uuid;
 
@@ -292,7 +290,7 @@ pub(crate) mod tests {
         let request = MessageRequest::UserUpdate {
             session_id,
             file_id,
-            update: UserUpdate {
+            update: UserState {
                 x: Some(x),
                 y: Some(y),
                 selection: None,
@@ -302,7 +300,7 @@ pub(crate) mod tests {
         let expected = MessageResponse::UserUpdate {
             session_id,
             file_id,
-            update: UserUpdate {
+            update: UserState {
                 x: Some(x),
                 y: Some(y),
                 selection: None,
@@ -327,7 +325,7 @@ pub(crate) mod tests {
         let request = MessageRequest::UserUpdate {
             session_id,
             file_id,
-            update: UserUpdate {
+            update: UserState {
                 selection: Some("test".to_string()),
                 sheet_id: None,
                 x: None,
@@ -337,7 +335,7 @@ pub(crate) mod tests {
         let expected = MessageResponse::UserUpdate {
             session_id,
             file_id,
-            update: UserUpdate {
+            update: UserState {
                 selection: Some("test".to_string()),
                 sheet_id: None,
                 x: None,

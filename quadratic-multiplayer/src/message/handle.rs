@@ -10,11 +10,10 @@ use std::sync::Arc;
 use anyhow::Result;
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
-use futures_util::SinkExt;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::message::{request::MessageRequest, response::MessageResponse};
+use crate::message::{broadcast, request::MessageRequest, response::MessageResponse};
 use crate::state::{user::User, State};
 
 /// Handle incoming messages.  All requests and responses are strictly typed.
@@ -118,46 +117,11 @@ pub(crate) async fn handle_message(
     }
 }
 
-/// Broadcast a message to all users in a room except the sender.
-/// All messages are sent in a separate thread.
-pub(crate) fn broadcast(
-    session_id: Uuid,
-    file_id: Uuid,
-    state: Arc<State>,
-    message: MessageResponse,
-) {
-    tokio::spawn(async move {
-        let result = async {
-            for (_, user) in state
-                .get_room(&file_id)
-                .await?
-                .users
-                .iter()
-                .filter(|(user_session_id, _)| session_id != **user_session_id)
-            {
-                if let Some(sender) = &user.socket {
-                    sender
-                        .lock()
-                        .await
-                        .send(Message::Text(serde_json::to_string(&message)?))
-                        .await?;
-                }
-            }
-
-            Ok::<_, anyhow::Error>(())
-        };
-
-        if let Err(e) = result.await {
-            tracing::error!("Error broadcasting message: {:?}", e);
-        }
-    });
-}
-
 #[cfg(test)]
 pub(crate) mod tests {
 
     use super::*;
-    use crate::message::request::UserUpdate;
+    use crate::state::user::UserState;
     use crate::test_util::add_new_user_to_room;
 
     #[tokio::test]
@@ -170,7 +134,7 @@ pub(crate) mod tests {
         let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
-            update: UserUpdate {
+            update: UserState {
                 sheet_id: Some(Uuid::new_v4()),
                 selection: Some("selection".to_string()),
                 x: Some(1.0),
@@ -192,7 +156,7 @@ pub(crate) mod tests {
         let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
-            update: UserUpdate {
+            update: UserState {
                 selection: Some("test".to_string()),
                 sheet_id: None,
                 x: None,
@@ -229,7 +193,7 @@ pub(crate) mod tests {
         let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
-            update: UserUpdate {
+            update: UserState {
                 selection: None,
                 sheet_id: Some(Uuid::new_v4()),
                 x: None,

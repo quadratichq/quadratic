@@ -5,13 +5,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub(crate) struct UserUpdate {
-    pub sheet_id: Option<Uuid>,
-    pub selection: Option<String>,
-    pub x: Option<f64>,
-    pub y: Option<f64>,
-}
+use crate::state::user::UserState;
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -32,7 +26,7 @@ pub(crate) enum MessageRequest {
     UserUpdate {
         session_id: Uuid,
         file_id: Uuid,
-        update: UserUpdate,
+        update: UserState,
     },
     Transaction {
         session_id: Uuid,
