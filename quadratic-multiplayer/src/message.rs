@@ -87,11 +87,7 @@ pub(crate) enum MessageResponse {
 impl From<Room> for MessageResponse {
     fn from(room: Room) -> Self {
         MessageResponse::UsersInRoom {
-            users: room
-                .users
-                .into_iter()
-                .map(|user| (user.1.clone()).into())
-                .collect(),
+            users: room.users.into_iter().map(|user| (user.1)).collect(),
         }
     }
 }

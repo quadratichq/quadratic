@@ -26,7 +26,7 @@ use uuid::Uuid;
 
 use crate::{
     config::{config, Config},
-    message::{self, broadcast, handle_message, MessageRequest, MessageResponse},
+    message::{broadcast, handle_message, MessageRequest, MessageResponse},
     state::State,
 };
 
@@ -245,9 +245,7 @@ pub(crate) mod tests {
             last_name: user.last_name.clone(),
             image: user.image.clone(),
         };
-        let expected = MessageResponse::UsersInRoom {
-            users: vec![user.into()],
-        };
+        let expected = MessageResponse::UsersInRoom { users: vec![user] };
         let response = integration_test(state, request).await;
 
         assert_eq!(response, serde_json::to_string(&expected).unwrap());

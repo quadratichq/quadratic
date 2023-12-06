@@ -13,7 +13,7 @@ use serde::Serialize;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::{get_mut_room, get_or_create_room, get_room, message::MessageResponse};
+use crate::{get_mut_room, get_or_create_room, get_room};
 
 #[derive(Serialize, Debug, Clone)]
 pub(crate) struct User {
