@@ -26,8 +26,11 @@ use uuid::Uuid;
 
 use crate::{
     config::{config, Config},
-    message::message::{broadcast, handle_message, MessageRequest, MessageResponse},
-    state::users::UserUpdate,
+    message::{
+        message::{broadcast, handle_message},
+        request::MessageRequest,
+        response::MessageResponse,
+    },
     state::State,
 };
 
@@ -229,6 +232,7 @@ async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_ti
 pub(crate) mod tests {
 
     use super::*;
+    use crate::message::request::UserUpdate;
     use crate::test_util::{integration_test, new_user};
     use uuid::Uuid;
 

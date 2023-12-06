@@ -11,74 +11,11 @@ use anyhow::Result;
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use futures_util::SinkExt;
-use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::state::{users::User, users::UserUpdate, Room, State};
-
-// NOTE: needs to be kept in sync with multiplayerTypes.ts
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-#[serde(tag = "type")]
-pub(crate) enum MessageRequest {
-    EnterRoom {
-        session_id: Uuid,
-        user_id: String,
-        file_id: Uuid,
-        first_name: String,
-        last_name: String,
-        image: String,
-    },
-    LeaveRoom {
-        session_id: Uuid,
-        file_id: Uuid,
-    },
-    UserUpdate {
-        session_id: Uuid,
-        file_id: Uuid,
-        update: UserUpdate,
-    },
-    Transaction {
-        session_id: Uuid,
-        file_id: Uuid,
-
-        // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
-        operations: String,
-    },
-    Heartbeat {
-        session_id: Uuid,
-        file_id: Uuid,
-    },
-}
-
-// NOTE: needs to be kept in sync with multiplayerTypes.ts
-#[derive(Serialize, Debug, Clone, PartialEq)]
-#[serde(tag = "type")]
-pub(crate) enum MessageResponse {
-    UsersInRoom {
-        users: Vec<User>,
-    },
-    Transaction {
-        // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
-        operations: String,
-    },
-    UserUpdate {
-        session_id: Uuid,
-        file_id: Uuid,
-        update: UserUpdate,
-    },
-
-    // todo: this is not ideal. probably want to have the handle_message return an Option to avoid sending empty messages
-    Empty {},
-}
-
-impl From<Room> for MessageResponse {
-    fn from(room: Room) -> Self {
-        MessageResponse::UsersInRoom {
-            users: room.users.into_iter().map(|user| (user.1)).collect(),
-        }
-    }
-}
+use crate::message::{request::MessageRequest, response::MessageResponse};
+use crate::state::{user::User, State};
 
 /// Handle incoming messages.  All requests and responses are strictly typed.
 pub(crate) async fn handle_message(
@@ -223,6 +160,7 @@ pub(crate) fn broadcast(
 pub(crate) mod tests {
 
     use super::*;
+    use crate::message::request::UserUpdate;
     use crate::test_util::add_new_user_to_room;
 
     #[tokio::test]

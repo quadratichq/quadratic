@@ -11,8 +11,8 @@ use std::{
 use tokio_tungstenite::tungstenite;
 use uuid::Uuid;
 
-use crate::message::message::MessageRequest;
-use crate::state::users::User;
+use crate::message::request::MessageRequest;
+use crate::state::user::User;
 use crate::state::State;
 
 pub(crate) fn new_user() -> User {
