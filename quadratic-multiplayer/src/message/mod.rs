@@ -26,7 +26,7 @@ pub(crate) fn broadcast(
                 .await?
                 .users
                 .iter()
-                .filter(|(user_session_id, _)| session_id != **user_session_id)
+                .filter(|(_, user)| session_id != user.session_id)
             {
                 if let Some(sender) = &user.socket {
                     sender

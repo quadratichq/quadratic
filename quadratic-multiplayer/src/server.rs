@@ -193,14 +193,16 @@ async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_ti
                     .remove_stale_users_in_room(file_id.to_owned(), heartbeat_timeout_s)
                     .await
                 {
-                    Ok(_) => {
-                        broadcast(
-                            // TODO(ddimaria): use a real session_id here
-                            Uuid::new_v4(),
-                            file_id.to_owned(),
-                            Arc::clone(&state),
-                            MessageResponse::from(room.to_owned()),
-                        );
+                    Ok(num_removed) => {
+                        if num_removed > 0 {
+                            broadcast(
+                                // TODO(ddimaria): use a real session_id here
+                                Uuid::new_v4(),
+                                file_id.to_owned(),
+                                Arc::clone(&state),
+                                MessageResponse::from(room.to_owned()),
+                            );
+                        }
                     }
                     Err(e) => {
                         tracing::warn!("Error removing stale users from room {file_id}: {:?}", e);
