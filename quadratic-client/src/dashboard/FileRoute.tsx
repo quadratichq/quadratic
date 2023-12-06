@@ -1,6 +1,5 @@
 import { ApiError } from '@/api/fetchFromApi';
 import { CONTACT_URL } from '@/constants/urls';
-import { multiplayer } from '@/multiplayer/multiplayer';
 import { useRootRouteLoaderData } from '@/router';
 import { Button } from '@/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
@@ -25,6 +24,7 @@ import init, { hello } from '../quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '../schemas/compareVersions';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
 import QuadraticApp from '../ui/QuadraticApp';
+import { multiplayer } from '@/multiplayer/multiplayer';
 
 export type FileData = {
   name: string;
