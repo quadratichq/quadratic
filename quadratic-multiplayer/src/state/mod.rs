@@ -3,7 +3,6 @@
 //! Store information about the state of the application in a send + sync
 //! struct.  All access and mutations to state should be performed here.
 
-pub mod message;
 pub mod users;
 
 use std::collections::HashMap;

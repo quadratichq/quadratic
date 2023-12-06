@@ -26,7 +26,7 @@ use uuid::Uuid;
 
 use crate::{
     config::{config, Config},
-    state::message::{broadcast, handle_message, MessageRequest, MessageResponse},
+    message::message::{broadcast, handle_message, MessageRequest, MessageResponse},
     state::users::UserUpdate,
     state::State,
 };

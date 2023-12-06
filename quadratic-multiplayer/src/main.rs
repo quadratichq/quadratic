@@ -4,6 +4,7 @@
 //! tracking for a shared file.
 
 mod config;
+mod message;
 mod server;
 mod state;
 #[cfg(test)]

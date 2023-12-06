@@ -11,7 +11,7 @@ use std::{
 use tokio_tungstenite::tungstenite;
 use uuid::Uuid;
 
-use crate::state::message::MessageRequest;
+use crate::message::message::MessageRequest;
 use crate::state::users::User;
 use crate::state::State;
 
