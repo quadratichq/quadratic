@@ -25,8 +25,6 @@ pub(crate) enum MessageResponse {
         file_id: Uuid,
         update: UserState,
     },
-
-    // note: this is ignored in broadcast
     Empty {},
 }
 

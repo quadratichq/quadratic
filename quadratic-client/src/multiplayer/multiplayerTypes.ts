@@ -47,4 +47,8 @@ export interface Heartbeat {
   file_id: string;
 }
 
-export type ReceiveMessages = ReceiveRoom | MessageUserUpdate | MessageTransaction;
+export interface ReceiveEmpty {
+  type: 'Empty';
+}
+
+export type ReceiveMessages = ReceiveRoom | MessageUserUpdate | MessageTransaction | ReceiveEmpty;

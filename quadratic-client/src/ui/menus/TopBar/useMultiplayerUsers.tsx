@@ -13,10 +13,7 @@ export const useMultiplayerUsers = (): SimpleMultiplayerUser[] => {
   const [users, setUsers] = useState<SimpleMultiplayerUser[]>([]);
 
   useEffect(() => {
-    const handleUpdate = (e: any) => {
-      const { users } = e.detail;
-      setUsers(users);
-    };
+    const handleUpdate = (e: any) => setUsers(e.detail);
     window.addEventListener('multiplayer-update', handleUpdate);
     return () => window.removeEventListener('multiplayer-update', handleUpdate);
   }, []);

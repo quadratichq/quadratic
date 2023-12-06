@@ -316,7 +316,7 @@ export class Multiplayer {
       this.receiveUserUpdate(data);
     } else if (type === 'Transaction') {
       this.receiveTransaction(data);
-    } else {
+    } else if (type !== 'Empty') {
       console.warn(`Unknown message type: ${type}`);
     }
   };
