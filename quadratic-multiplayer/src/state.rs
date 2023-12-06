@@ -84,12 +84,14 @@ impl Room {
 #[derive(Debug)]
 pub(crate) struct State {
     pub(crate) rooms: Mutex<HashMap<Uuid, Room>>,
+    pub(crate) sessions: Mutex<HashMap<Uuid, Uuid>>,
 }
 
 impl State {
     pub(crate) fn new() -> Self {
         State {
             rooms: Mutex::new(HashMap::new()),
+            sessions: Mutex::new(HashMap::new()),
         }
     }
 
@@ -103,11 +105,21 @@ impl State {
     /// Add a user to a room.  If the room doesn't exist, it is created.  Users
     /// are only added to a room once (HashMap).  Returns true if the user was
     /// newly added.
-    pub(crate) async fn enter_room(&self, file_id: Uuid, user: &User) -> bool {
+    pub(crate) async fn enter_room(
+        &self,
+        file_id: Uuid,
+        user: &User,
+        internal_session_id: Uuid,
+    ) -> bool {
         let is_new = get_or_create_room!(self, file_id)
             .users
             .insert(user.session_id.to_owned(), user.to_owned())
             .is_none();
+
+        self.sessions
+            .lock()
+            .await
+            .insert(internal_session_id, user.session_id);
 
         tracing::trace!("User {:?} entered room {:?}", user.session_id, file_id);
 
@@ -192,6 +204,46 @@ impl State {
 
         Ok(())
     }
+
+    pub(crate) async fn get_session_id(&self, internal_session_id: Uuid) -> Result<Uuid> {
+        let session_id = self
+            .sessions
+            .lock()
+            .await
+            .get(&internal_session_id)
+            .ok_or(anyhow!(
+                "Internal_session_id {} not found",
+                internal_session_id
+            ))?
+            .to_owned();
+
+        Ok(session_id)
+    }
+
+    ///
+    pub(crate) async fn clear_internal_sessions(
+        &self,
+        internal_session_id: Uuid,
+    ) -> Result<Vec<Uuid>> {
+        let mut affected_rooms = vec![];
+        let session_id = self.get_session_id(internal_session_id).await?;
+        let rooms = self.rooms.lock().await.clone();
+
+        for (file_id, room) in rooms.iter() {
+            if let Some(user) = room.users.get(&session_id) {
+                tracing::info!("Removing internal_session_id {session_id} from room {file_id}");
+                self.leave_room(room.file_id, &user.session_id)
+                    .await
+                    .unwrap();
+                affected_rooms.push(file_id.to_owned());
+            }
+        }
+
+        tracing::info!("Removing internal_session_id {}", session_id);
+
+        self.sessions.lock().await.remove(&internal_session_id);
+        Ok(affected_rooms)
+    }
 }
 
 #[macro_export]
@@ -237,11 +289,12 @@ mod tests {
     #[tokio::test]
     async fn enters_retrieves_leaves_and_removes_a_room() {
         let state = State::new();
+        let internal_session_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let user = new_user();
         let user2 = new_user();
 
-        let is_new = state.enter_room(file_id, &user).await;
+        let is_new = state.enter_room(file_id, &user, internal_session_id).await;
         let room = state.get_room(&file_id).await.unwrap();
         let user = room.users.get(&user.session_id).unwrap();
 
@@ -251,7 +304,7 @@ mod tests {
         assert_eq!(room.users.get(&user.session_id), Some(user));
 
         // leave the room of 2 users
-        state.enter_room(file_id, &user2).await;
+        state.enter_room(file_id, &user2, internal_session_id).await;
         state.leave_room(file_id, &user.session_id).await.unwrap();
         let room = state.get_room(&file_id).await.unwrap();
 
@@ -267,10 +320,11 @@ mod tests {
     #[tokio::test]
     async fn updates_a_users_heartbeat() {
         let state = State::new();
+        let internal_session_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let user = new_user();
 
-        state.enter_room(file_id, &user).await;
+        state.enter_room(file_id, &user, internal_session_id).await;
         let old_heartbeat = state
             ._get_user_in_room(&file_id, &user.session_id)
             .await
