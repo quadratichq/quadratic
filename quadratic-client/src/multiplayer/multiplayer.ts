@@ -188,7 +188,7 @@ export class Multiplayer {
   handleMessage = (e: { data: string }) => {
     const data = JSON.parse(e.data) as ReceiveMessages;
     const { type } = data;
-    if (type === 'Room') {
+    if (type === 'UsersInRoom') {
       const room = data as ReceiveRoom;
       const remaining = new Set(this.players.keys());
       console.log(room);

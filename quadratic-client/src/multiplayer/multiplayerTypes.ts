@@ -7,7 +7,7 @@ export interface MessageMouseMove {
 }
 
 export interface ReceiveRoom {
-  type: 'Room';
+  type: 'UsersInRoom';
   users: {
     session_id: string;
     user_id: string;
