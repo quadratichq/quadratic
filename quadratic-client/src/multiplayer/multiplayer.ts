@@ -18,7 +18,8 @@ import {
 } from './multiplayerTypes';
 
 const UPDATE_TIME = 1000 / 30;
-const HEARTBEAT_TIME = 1000 * 30;
+const HEARTBEAT_TIME = 1000 * 15;
+const RECONNECT_AFTER_ERROR_TIMEOUT = 1000 * 5;
 
 export interface Player {
   firstName: string;
@@ -36,7 +37,7 @@ export interface Player {
 
 export class Multiplayer {
   private websocket?: WebSocket;
-  private state: 'not connected' | 'connecting' | 'connected';
+  private state: 'not connected' | 'connecting' | 'connected' | 'waiting to reconnect';
   private sessionId;
   private room?: string;
   private uuid?: string;
@@ -59,7 +60,7 @@ export class Multiplayer {
   }
 
   private async init() {
-    if (this.state === 'connected') return;
+    if (['connected', 'waiting to reconnect'].includes(this.state)) return;
     return new Promise((resolve) => {
       if (this.state === 'connecting') {
         this.waitingForConnection.push(resolve);
@@ -70,13 +71,8 @@ export class Multiplayer {
       this.websocket = new WebSocket(import.meta.env.VITE_QUADRATIC_MULTIPLAYER_URL);
       this.websocket.addEventListener('message', this.receiveMessage);
 
-      // todo: this is not ideal. need to better handling reconnecting w/timeouts, etc.
-      this.websocket.addEventListener('close', async () => {
-        console.log('[Multiplayer] websocket closed. Reconnecting...');
-        this.state = 'not connected';
-        await this.init();
-        if (this.room) await this.enterFileRoom(this.room, { sub: this.uuid });
-      });
+      this.websocket.addEventListener('close', this.reconnect);
+      this.websocket.addEventListener('error', this.reconnect);
 
       this.websocket.addEventListener('open', () => {
         console.log('[Multiplayer] websocket connected.');
@@ -90,6 +86,16 @@ export class Multiplayer {
     });
   }
 
+  private reconnect = () => {
+    console.log('[Multiplayer] websocket closed. Reconnecting in 5s...');
+    this.state = 'waiting to reconnect';
+    setTimeout(async () => {
+      this.state = 'not connected';
+      await this.init();
+      if (this.room) await this.enterFileRoom(this.room, { sub: this.uuid });
+    }, RECONNECT_AFTER_ERROR_TIMEOUT);
+  };
+
   async enterFileRoom(file_id: string, user?: User) {
     // used to hack the server so everyone is in the same file even if they're not.
     // file_id = 'ab96f02c-fd8c-4daa-bfb5-aec871ab9225';
@@ -99,6 +105,7 @@ export class Multiplayer {
     if (!user?.sub) throw new Error('Expected User to be defined');
     if (this.room === file_id) return;
     this.room = file_id;
+    this.uuid = user.sub;
     const enterRoom: SendEnterRoom = {
       type: 'EnterRoom',
       session_id: this.sessionId,
