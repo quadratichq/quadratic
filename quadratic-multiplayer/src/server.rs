@@ -26,7 +26,9 @@ use uuid::Uuid;
 
 use crate::{
     config::{config, Config},
-    message::{broadcast, handle_message, MessageRequest, MessageResponse},
+    message::{
+        broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
+    },
     state::State,
 };
 
@@ -90,20 +92,22 @@ async fn ws_handler(
         user_agent.to_string()
     });
     let addr = addr.map_or("Unknown address".into(), |addr| addr.to_string());
+    let socket_id = Uuid::new_v4();
 
-    tracing::info!("`{user_agent}` at {addr} connected.");
+    tracing::info!("`{user_agent}` at {addr} connected: socket_id={socket_id}");
 
     // upgrade the connection
-    ws.on_upgrade(move |socket| handle_socket(socket, state, addr))
+    ws.on_upgrade(move |socket| handle_socket(socket, state, addr, socket_id))
 }
 
 // After websocket is established, delegate incoming messages as they arrive.
-async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String) {
+async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, socket_id: Uuid) {
     let (sender, mut receiver) = socket.split();
     let sender = Arc::new(Mutex::new(sender));
 
     while let Some(Ok(msg)) = receiver.next().await {
-        let response = process_message(msg, Arc::clone(&sender), Arc::clone(&state)).await;
+        let response =
+            process_message(msg, Arc::clone(&sender), Arc::clone(&state), socket_id).await;
 
         match response {
             Ok(ControlFlow::Continue(_)) => {}
@@ -114,8 +118,23 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String) {
         }
     }
 
+    // websocket is closed, remove the user from any rooms they were in and broadcast
+    if let Ok(rooms) = state.clear_connections(socket_id).await {
+        tracing::info!("Removing stale users from rooms: {:?}", rooms);
+
+        for file_id in rooms.into_iter() {
+            // only broadcast if the room still exists
+            if let Ok(room) = state.get_room(&file_id).await {
+                tracing::info!("Broadcasting room {file_id} after removing stale users");
+
+                let message = MessageResponse::from(room.to_owned());
+                broadcast(Uuid::new_v4(), file_id, Arc::clone(&state), message);
+            }
+        }
+    }
+
     // returning from the handler closes the websocket connection
-    tracing::info!("Websocket context {addr} destroyed");
+    tracing::info!("Websocket context {addr} destroyed: socket_id={socket_id}");
 }
 
 /// Based on the incoming message type, perform some action and return a response.
@@ -123,12 +142,13 @@ async fn process_message(
     msg: Message,
     sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
     state: Arc<State>,
+    socket_id: Uuid,
 ) -> Result<ControlFlow<Option<MessageResponse>, ()>> {
     match msg {
         Message::Text(text) => {
             let messsage_request = serde_json::from_str::<MessageRequest>(&text)?;
             let message_response =
-                handle_message(messsage_request, state, Arc::clone(&sender)).await?;
+                handle_message(messsage_request, state, Arc::clone(&sender), socket_id).await?;
             let response = Message::Text(serde_json::to_string(&message_response)?);
 
             (*sender.lock().await).send(response).await?;
@@ -171,19 +191,14 @@ async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_ti
                     .remove_stale_users_in_room(file_id.to_owned(), heartbeat_timeout_s)
                     .await
                 {
-                    Ok(num_users_removed) => {
-                        if let Err(e) = broadcast(
+                    Ok(_) => {
+                        broadcast(
                             // TODO(ddimaria): use a real session_id here
                             Uuid::new_v4(),
                             file_id.to_owned(),
                             Arc::clone(&state),
-                            room.room_message(),
-                        ) {
-                            tracing::warn!(
-                            "Error broadcasting room {file_id} after removing {num_users_removed} stale users: {:?}",
-                            e
+                            MessageResponse::from(room.to_owned()),
                         );
-                        }
                     }
                     Err(e) => {
                         tracing::warn!("Error removing stale users from room {file_id}: {:?}", e);
@@ -200,6 +215,7 @@ async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_ti
 pub(crate) mod tests {
 
     use super::*;
+    use crate::state::user::UserState;
     use crate::test_util::{integration_test, new_user};
     use uuid::Uuid;
 
@@ -217,9 +233,7 @@ pub(crate) mod tests {
             last_name: user.last_name.clone(),
             image: user.image.clone(),
         };
-        let expected = MessageResponse::Room {
-            users: vec![user.into()],
-        };
+        let expected = MessageResponse::UsersInRoom { users: vec![user] };
         let response = integration_test(state, request).await;
 
         assert_eq!(response, serde_json::to_string(&expected).unwrap());
@@ -228,6 +242,7 @@ pub(crate) mod tests {
     #[tokio::test]
     async fn user_leaves_a_room() {
         let state = Arc::new(State::new());
+        let socket_id = Uuid::new_v4();
         let user = new_user();
         let session_id = user.session_id;
         let user2 = new_user();
@@ -236,12 +251,12 @@ pub(crate) mod tests {
             session_id,
             file_id,
         };
-        let expected = MessageResponse::Room {
-            users: vec![user2.clone().into()],
+        let expected = MessageResponse::UsersInRoom {
+            users: vec![user2.clone()],
         };
 
-        state.enter_room(file_id, &user).await;
-        state.enter_room(file_id, &user2).await;
+        state.enter_room(file_id, &user, socket_id).await;
+        state.enter_room(file_id, &user2, socket_id).await;
 
         let response = integration_test(state.clone(), request).await;
 
@@ -251,25 +266,34 @@ pub(crate) mod tests {
     #[tokio::test]
     async fn user_moves_a_mouse() {
         let state = Arc::new(State::new());
+        let socket_id = Uuid::new_v4();
         let user = new_user();
         let session_id = user.session_id;
         let file_id = Uuid::new_v4();
         let x = 0 as f64;
         let y = 0 as f64;
-        let request = MessageRequest::MouseMove {
+        let request = MessageRequest::UserUpdate {
             session_id,
             file_id,
-            x: Some(x),
-            y: Some(y),
+            update: UserState {
+                x: Some(x),
+                y: Some(y),
+                selection: None,
+                sheet_id: None,
+            },
         };
-        let expected = MessageResponse::MouseMove {
+        let expected = MessageResponse::UserUpdate {
             session_id,
             file_id,
-            x: Some(x),
-            y: Some(y),
+            update: UserState {
+                x: Some(x),
+                y: Some(y),
+                selection: None,
+                sheet_id: None,
+            },
         };
 
-        state.enter_room(file_id, &user).await;
+        state.enter_room(file_id, &user, socket_id).await;
 
         let response = integration_test(state.clone(), request).await;
 
@@ -279,21 +303,32 @@ pub(crate) mod tests {
     #[tokio::test]
     async fn user_changes_selection() {
         let state = Arc::new(State::new());
+        let socket_id = Uuid::new_v4();
         let user = new_user();
         let session_id = user.session_id;
         let file_id = Uuid::new_v4();
-        let request = MessageRequest::ChangeSelection {
+        let request = MessageRequest::UserUpdate {
             session_id,
             file_id,
-            selection: "test".to_string(),
+            update: UserState {
+                selection: Some("test".to_string()),
+                sheet_id: None,
+                x: None,
+                y: None,
+            },
         };
-        let expected = MessageResponse::ChangeSelection {
+        let expected = MessageResponse::UserUpdate {
             session_id,
             file_id,
-            selection: "test".to_string(),
+            update: UserState {
+                selection: Some("test".to_string()),
+                sheet_id: None,
+                x: None,
+                y: None,
+            },
         };
 
-        state.enter_room(file_id, &user).await;
+        state.enter_room(file_id, &user, socket_id).await;
 
         let response = integration_test(state.clone(), request).await;
 
@@ -303,6 +338,7 @@ pub(crate) mod tests {
     #[tokio::test]
     async fn user_shares_operations() {
         let state = Arc::new(State::new());
+        let socket_id = Uuid::new_v4();
         let user = new_user();
         let session_id = user.session_id;
         let file_id = Uuid::new_v4();
@@ -315,7 +351,7 @@ pub(crate) mod tests {
             operations: "test".to_string(),
         };
 
-        state.enter_room(file_id, &user).await;
+        state.enter_room(file_id, &user, socket_id).await;
 
         let response = integration_test(state.clone(), request).await;
 
