@@ -8,7 +8,14 @@ import { User } from '@auth0/auth0-spa-js';
 import { Rectangle } from 'pixi.js';
 import { v4 as uuid } from 'uuid';
 import { MULTIPLAYER_COLORS } from './multiplayerCursor/multiplayerColors';
-import { Heartbeat, MessageTransaction, ReceiveMessages, ReceiveRoom, SendEnterRoom } from './multiplayerTypes';
+import {
+  Heartbeat,
+  MessageTransaction,
+  MessageUserUpdate,
+  ReceiveMessages,
+  ReceiveRoom,
+  SendEnterRoom,
+} from './multiplayerTypes';
 
 const UPDATE_TIME = 1000 / 30;
 const HEARTBEAT_TIME = 1000 * 30;
@@ -29,14 +36,14 @@ export interface Player {
 
 export class Multiplayer {
   private websocket?: WebSocket;
-  private state: 'not connected' | 'connecting' | 'connected' = 'not connected';
-  private sessionId = uuid();
+  private state: 'not connected' | 'connecting' | 'connected';
+  private sessionId;
   private room?: string;
   private uuid?: string;
   private waitingForConnection: { (value: unknown): void }[] = [];
 
   // queue of items waiting to be sent to the server on the next tick
-  private queue: { move?: MessageMouseMove; selection?: MessageChangeSelection } = {};
+  private userUpdate: MessageUserUpdate;
   private lastTime = 0;
   private lastHeartbeat = 0;
 
@@ -44,6 +51,12 @@ export class Multiplayer {
   private nextColor = 0;
 
   players: Map<string, Player> = new Map();
+
+  constructor() {
+    this.state = 'not connected';
+    this.sessionId = uuid();
+    this.userUpdate = { type: 'UserUpdate', session_id: this.sessionId, file_id: '', update: {} };
+  }
 
   private async init() {
     if (this.state === 'connected') return;
@@ -81,6 +94,7 @@ export class Multiplayer {
     // used to hack the server so everyone is in the same file even if they're not.
     // file_id = 'ab96f02c-fd8c-4daa-bfb5-aec871ab9225';
 
+    this.userUpdate.file_id = file_id;
     await this.init();
     if (!user?.sub) throw new Error('Expected User to be defined');
     if (this.room === file_id) return;
@@ -102,14 +116,10 @@ export class Multiplayer {
     await this.init();
     const now = performance.now();
     if (now - this.lastTime < UPDATE_TIME) return;
-    if (this.queue.move) {
-      this.websocket!.send(JSON.stringify(this.queue.move));
-      this.queue.move = undefined;
-      this.lastHeartbeat = now;
-    }
-    if (this.queue.selection) {
-      this.websocket!.send(JSON.stringify(this.queue.selection));
-      this.queue.selection = undefined;
+
+    if (Object.keys(this.userUpdate.update).length > 0) {
+      this.websocket!.send(JSON.stringify(this.userUpdate));
+      this.userUpdate.update = {};
       this.lastHeartbeat = now;
     }
     this.lastTime = now;
@@ -128,35 +138,38 @@ export class Multiplayer {
   //#region send messages
   //-------------------------
 
+  private getUserUpdate(): MessageUserUpdate {
+    if (!this.userUpdate) {
+      this.userUpdate = {
+        type: 'UserUpdate',
+        session_id: this.sessionId,
+        file_id: this.room!,
+        update: {},
+      };
+    }
+    return this.userUpdate;
+  }
+
   async sendMouseMove(x?: number, y?: number) {
-    await this.init();
+    const userUpdate = this.getUserUpdate().update;
     if (x === undefined || y === undefined) {
-      this.queue.move = {
-        type: 'MouseMove',
-        session_id: this.sessionId,
-        file_id: this.room!,
-      };
+      userUpdate.visible = false;
     } else {
-      this.queue.move = {
-        type: 'MouseMove',
-        session_id: this.sessionId,
-        file_id: this.room!,
-        sheet_id: sheets.sheet.id,
-        x,
-        y,
-      };
+      userUpdate.x = x;
+      userUpdate.y = y;
+      userUpdate.visible = true;
     }
   }
 
   async sendSelection(cursor: Coordinate, rectangle?: Rectangle) {
-    await this.init();
-    this.queue.selection = {
-      type: 'ChangeSelection',
-      session_id: this.sessionId,
-      file_id: this.room!,
-      selection: JSON.stringify({ cursor, rectangle }),
-    };
+    const userUpdate = this.getUserUpdate().update;
+    userUpdate.selection = JSON.stringify({ cursor, rectangle });
   }
+
+  sendChangeSheet = () => {
+    const userUpdate = this.getUserUpdate().update;
+    userUpdate.sheet_id = sheets.sheet.id;
+  };
 
   async sendTransaction(operations: string) {
     await this.init();
@@ -165,17 +178,6 @@ export class Multiplayer {
       session_id: this.sessionId,
       file_id: this.room!,
       operations,
-    };
-    this.websocket!.send(JSON.stringify(message));
-  }
-
-  async sendChangeSheet() {
-    await this.init();
-    const message: ChangeSheet = {
-      type: 'ChangeSheet',
-      session_id: this.sessionId,
-      file_id: this.room!,
-      sheet_id: sheets.sheet.id,
     };
     this.websocket!.send(JSON.stringify(message));
   }
@@ -245,7 +247,7 @@ export class Multiplayer {
     }
   }
 
-  private receiveMouseMove(data: MessageMouseMove) {
+  private receiveUserUpdate(data: MessageUserUpdate) {
     // ensure we're not receiving our own message
     if (data.session_id !== this.sessionId) {
       const player = this.players.get(data.session_id);
@@ -255,31 +257,36 @@ export class Multiplayer {
       if (data.file_id !== this.room) {
         throw new Error("Expected file_id to match room before receiving a message of type 'MouseMove'");
       }
-      if (data.x !== null && data.y !== null) {
-        player.x = data.x;
-        player.y = data.y;
-        player.visible = true;
-      } else {
-        player.visible = false;
-      }
-      if (player.sheetId === sheets.sheet.id) {
-        window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
-      }
-    }
-  }
+      const update = data.update;
 
-  private receiveSelection(data: MessageChangeSelection) {
-    // todo: this check should not be needed (eventually)
-    if (data.session_id !== this.sessionId) {
-      const player = this.players.get(data.session_id);
-      if (!player) {
-        throw new Error("Expected Player to be defined before receiving a message of type 'ChangeSelection'");
+      if (update.x !== null && update.y !== null) {
+        player.x = update.x;
+        player.y = update.y;
+        if (player.sheetId === sheets.sheet.id) {
+          window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
+        }
       }
-      if (data.file_id !== this.room) {
-        throw new Error("Expected file_id to match room before receiving a message of type 'ChangeSelection'");
+
+      if (update.visible !== undefined) {
+        player.visible = update.visible;
       }
-      player.selection = JSON.parse(data.selection);
-      pixiApp.multiplayerCursor.dirty = true;
+
+      if (update.sheet_id) {
+        if (player.sheetId !== update.sheet_id) {
+          player.sheetId = update.sheet_id;
+          if (player.sheetId === sheets.sheet.id) {
+            this.updateMultiplayerCursors();
+            window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
+          }
+        }
+      }
+
+      if (update.selection) {
+        player.selection = JSON.parse(update.selection);
+        if (player.sheetId === sheets.sheet.id) {
+          pixiApp.multiplayerCursor.dirty = true;
+        }
+      }
     }
   }
 
@@ -293,36 +300,15 @@ export class Multiplayer {
     }
   }
 
-  private receiveChangeSheet(data: ChangeSheet) {
-    if (data.session_id !== this.sessionId) {
-      if (data.file_id !== this.room) {
-        throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
-      }
-      const player = this.players.get(data.session_id);
-      if (!player) {
-        throw new Error("Expected Player to be defined before receiving a message of type 'ChangeSheet'");
-      }
-      player.sheetId = data.sheet_id;
-      if (data.sheet_id === sheets.sheet.id) {
-        this.updateMultiplayerCursors();
-        window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
-      }
-    }
-  }
-
   receiveMessage = (e: { data: string }) => {
     const data = JSON.parse(e.data) as ReceiveMessages;
     const { type } = data;
     if (type === 'UsersInRoom') {
       this.receiveUsersInRoom(data);
-    } else if (type === 'MouseMove') {
-      this.receiveMouseMove(data);
-    } else if (type === 'ChangeSelection') {
-      this.receiveSelection(data);
+    } else if (type === 'UserUpdate') {
+      this.receiveUserUpdate(data);
     } else if (type === 'Transaction') {
       this.receiveTransaction(data);
-    } else if (type === 'ChangeSheet') {
-      this.receiveChangeSheet(data);
     } else {
       console.warn(`Unknown message type: ${type}`);
     }

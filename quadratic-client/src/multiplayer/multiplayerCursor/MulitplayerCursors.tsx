@@ -33,6 +33,7 @@ export const MultiplayerCursors = () => {
         const rect = pixiApp.canvas.getBoundingClientRect();
         const offsetTop = rect.top;
         const { x, y, sheetId, firstName, lastName, visible } = player;
+
         if (visible && x !== undefined && y !== undefined && sheetId === currentSheetId) {
           const translated = pixiApp.viewport.toScreen(x, y);
           let offscreen = false;
