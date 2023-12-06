@@ -140,11 +140,11 @@ mod tests {
     #[tokio::test]
     async fn updates_a_users_heartbeat() {
         let state = State::new();
-        let internal_session_id = Uuid::new_v4();
+        let socket_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let user = new_user();
 
-        state.enter_room(file_id, &user, internal_session_id).await;
+        state.enter_room(file_id, &user, socket_id).await;
         let old_heartbeat = state
             ._get_user_in_room(&file_id, &user.session_id)
             .await
