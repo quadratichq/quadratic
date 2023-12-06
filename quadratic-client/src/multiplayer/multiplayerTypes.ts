@@ -1,12 +1,3 @@
-export interface MessageMouseMove {
-  type: 'MouseMove';
-  session_id: string;
-  file_id: string;
-  x?: number | null;
-  y?: number | null;
-  sheet_id?: string;
-}
-
 export interface ReceiveRoom {
   type: 'UsersInRoom';
   users: {
@@ -20,11 +11,14 @@ export interface ReceiveRoom {
   }[];
 }
 
-export interface MessageChangeSelection {
-  type: 'ChangeSelection';
+export interface MessageUpdateState {
+  type: 'UpdateState';
   session_id: string;
   file_id: string;
-  selection: string;
+  selection?: string;
+  sheet_id?: string;
+  x?: number | null;
+  y?: number | null;
 }
 
 export interface SendEnterRoom {
@@ -50,4 +44,4 @@ export interface Heartbeat {
   file_id: string;
 }
 
-export type ReceiveMessages = MessageMouseMove | ReceiveRoom | MessageChangeSelection | MessageTransaction;
+export type ReceiveMessages = ReceiveRoom | MessageUpdateState | MessageTransaction;

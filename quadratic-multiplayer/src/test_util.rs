@@ -11,8 +11,9 @@ use std::{
 use tokio_tungstenite::tungstenite;
 use uuid::Uuid;
 
-use crate::message::MessageRequest;
-use crate::state::{State, User};
+use crate::state::message::MessageRequest;
+use crate::state::users::User;
+use crate::state::State;
 
 pub(crate) fn new_user() -> User {
     User {
@@ -22,6 +23,8 @@ pub(crate) fn new_user() -> User {
         last_name: LastName().fake(),
         sheet_id: None,
         selection: None,
+        x: None,
+        y: None,
         image: FilePath().fake(),
         socket: None,
         last_heartbeat: chrono::Utc::now(),

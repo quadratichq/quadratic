@@ -3,44 +3,21 @@
 //! Store information about the state of the application in a send + sync
 //! struct.  All access and mutations to state should be performed here.
 
-use std::{collections::HashMap, sync::Arc};
+pub mod message;
+pub mod users;
+
+use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
-use axum::extract::ws::{Message, WebSocket};
-use chrono::{DateTime, Utc};
-use futures_util::stream::SplitSink;
+
+use chrono::Utc;
 use serde::Serialize;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::{get_mut_room, get_or_create_room, get_room};
 
-#[derive(Serialize, Debug, Clone)]
-pub(crate) struct User {
-    pub(crate) session_id: Uuid,
-    pub(crate) user_id: String,
-    pub(crate) first_name: String,
-    pub(crate) last_name: String,
-    pub(crate) image: String,
-    pub(crate) sheet_id: Option<Uuid>,
-    pub(crate) selection: Option<String>,
-    #[serde(skip_serializing)]
-    pub(crate) socket: Option<Arc<Mutex<SplitSink<WebSocket, Message>>>>,
-    #[serde(skip_serializing)]
-    pub(crate) last_heartbeat: DateTime<Utc>,
-}
-
-impl PartialEq for User {
-    fn eq(&self, other: &Self) -> bool {
-        self.session_id == other.session_id
-
-            // todo: is this needed, or can we assume if session_id is equal, then the object is equal for most purposes
-            && self.user_id == other.user_id
-            && self.first_name == other.first_name
-            && self.last_name == other.last_name
-            && self.image == other.image
-    }
-}
+use self::users::{User, UserUpdate};
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub(crate) struct Room {
@@ -181,18 +158,29 @@ impl State {
         Ok(())
     }
 
-    /// Updates a user's sheet_id in a room
-    pub(crate) async fn update_sheet_id(
+    /// updates a user's state in a room
+    pub(crate) async fn update_user_state(
         &self,
-        file_id: Uuid,
+        file_id: &Uuid,
         session_id: &Uuid,
-        sheet_id: &Uuid,
+        update: &UserUpdate,
     ) -> Result<()> {
         get_mut_room!(self, file_id)?
             .users
             .entry(session_id.to_owned())
             .and_modify(|user| {
-                user.sheet_id = Some(sheet_id.to_owned());
+                if let Some(sheet_id) = &update.sheet_id {
+                    user.sheet_id = Some(sheet_id.to_owned());
+                }
+                if let Some(selection) = &update.selection {
+                    user.selection = Some(selection.to_owned());
+                }
+                if let Some(x) = &update.x {
+                    user.x = Some(*x);
+                }
+                if let Some(y) = &update.y {
+                    user.y = Some(*y);
+                }
                 user.last_heartbeat = Utc::now();
                 tracing::trace!("Updating sheet_id for {session_id}");
             });
