@@ -178,6 +178,8 @@ async fn process_message(
 
 /// In s separate thread, check for stale users in rooms and remove them.
 async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_timeout_s: i64) {
+    let state = Arc::clone(&state);
+
     tokio::spawn(async move {
         let mut interval = time::interval(Duration::from_millis(heartbeat_check_s as u64 * 1000));
 
