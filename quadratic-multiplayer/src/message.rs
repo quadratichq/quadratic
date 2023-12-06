@@ -55,6 +55,11 @@ pub(crate) enum MessageRequest {
         session_id: Uuid,
         file_id: Uuid,
     },
+    ChangeSheet {
+        session_id: Uuid,
+        file_id: Uuid,
+        sheet_id: Uuid,
+    },
 }
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
@@ -78,6 +83,11 @@ pub(crate) enum MessageResponse {
     Transaction {
         // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
         operations: String,
+    },
+    ChangeSheet {
+        session_id: Uuid,
+        file_id: Uuid,
+        sheet_id: Uuid,
     },
 
     // todo: this is not ideal. probably want to have the handle_message return an Option to avoid sending empty messages
@@ -117,6 +127,8 @@ pub(crate) async fn handle_message(
                 first_name,
                 last_name,
                 image,
+                sheet_id: None,
+                selection: None,
                 socket: Some(Arc::clone(&sender)),
                 last_heartbeat: chrono::Utc::now(),
             };
@@ -162,7 +174,7 @@ pub(crate) async fn handle_message(
                 x,
                 y,
             };
-
+            state.update_heartbeat(file_id, &session_id).await?;
             broadcast(session_id, file_id, Arc::clone(&state), response.clone())?;
 
             Ok(response)
@@ -174,12 +186,14 @@ pub(crate) async fn handle_message(
             file_id,
             selection,
         } => {
+            state
+                .update_selection(file_id, &session_id, &selection)
+                .await?;
             let response = MessageResponse::ChangeSelection {
                 session_id,
                 file_id,
                 selection,
             };
-
             broadcast(session_id, file_id, Arc::clone(&state), response.clone())?;
 
             Ok(response)
@@ -191,8 +205,8 @@ pub(crate) async fn handle_message(
             file_id,
             operations,
         } => {
+            state.update_heartbeat(file_id, &session_id).await?;
             let response = MessageResponse::Transaction { operations };
-
             broadcast(session_id, file_id, Arc::clone(&state), response.clone())?;
 
             Ok(response)
@@ -205,6 +219,25 @@ pub(crate) async fn handle_message(
         } => {
             state.update_heartbeat(file_id, &session_id).await?;
             Ok(MessageResponse::Empty {})
+        }
+
+        // User changes sheet
+        MessageRequest::ChangeSheet {
+            session_id,
+            file_id,
+            sheet_id,
+        } => {
+            let response = MessageResponse::ChangeSheet {
+                session_id,
+                file_id,
+                sheet_id,
+            };
+            state
+                .update_sheet_id(file_id, &session_id, &sheet_id)
+                .await?;
+            broadcast(session_id, file_id, Arc::clone(&state), response.clone())?;
+
+            Ok(response)
         }
     }
 }
@@ -296,6 +329,23 @@ pub(crate) mod tests {
         let _user_2 = add_new_user_to_room(file_id, state.clone(), internal_session_id).await;
         let message = MessageResponse::Transaction {
             operations: "test".to_string(),
+        };
+        broadcast(user_1.session_id, file_id, state, message).unwrap();
+
+        // TODO(ddimaria): mock the splitsink sender to test the actual sending
+    }
+
+    #[tokio::test]
+    async fn test_change_sheet() {
+        let state = Arc::new(State::new());
+        let internal_session_id = Uuid::new_v4();
+        let file_id = Uuid::new_v4();
+        let user_1 = add_new_user_to_room(file_id, state.clone(), internal_session_id).await;
+        let _user_2 = add_new_user_to_room(file_id, state.clone(), internal_session_id).await;
+        let message = MessageResponse::ChangeSheet {
+            session_id: user_1.session_id,
+            file_id,
+            sheet_id: Uuid::new_v4(),
         };
         broadcast(user_1.session_id, file_id, state, message).unwrap();
 

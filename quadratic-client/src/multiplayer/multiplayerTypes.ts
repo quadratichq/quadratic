@@ -4,6 +4,7 @@ export interface MessageMouseMove {
   file_id: string;
   x?: number | null;
   y?: number | null;
+  sheet_id?: string;
 }
 
 export interface ReceiveRoom {
@@ -14,6 +15,8 @@ export interface ReceiveRoom {
     first_name: string;
     last_name: string;
     image: string;
+    sheet_id: string;
+    selection: string;
   }[];
 }
 
@@ -44,6 +47,7 @@ export interface MessageTransaction {
 export interface Heartbeat {
   type: 'Heartbeat';
   session_id: string;
+  file_id: string;
 }
 
 export type ReceiveMessages = MessageMouseMove | ReceiveRoom | MessageChangeSelection | MessageTransaction;

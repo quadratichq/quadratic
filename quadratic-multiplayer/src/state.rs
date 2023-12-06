@@ -17,12 +17,13 @@ use crate::{get_mut_room, get_or_create_room, get_room};
 
 #[derive(Serialize, Debug, Clone)]
 pub(crate) struct User {
-    #[serde(skip_serializing)]
     pub(crate) session_id: Uuid,
     pub(crate) user_id: String,
     pub(crate) first_name: String,
     pub(crate) last_name: String,
     pub(crate) image: String,
+    pub(crate) sheet_id: Option<Uuid>,
+    pub(crate) selection: Option<String>,
     #[serde(skip_serializing)]
     pub(crate) socket: Option<Arc<Mutex<SplitSink<WebSocket, Message>>>>,
     #[serde(skip_serializing)]
@@ -167,7 +168,7 @@ impl State {
         Ok(stale_users.len())
     }
 
-    /// Updates a user's hearbeat in a room
+    /// Updates a user's heartbeat in a room
     pub(crate) async fn update_heartbeat(&self, file_id: Uuid, session_id: &Uuid) -> Result<()> {
         get_mut_room!(self, file_id)?
             .users
@@ -175,6 +176,44 @@ impl State {
             .and_modify(|user| {
                 user.last_heartbeat = Utc::now();
                 tracing::trace!("Updating heartbeat for {session_id}");
+            });
+
+        Ok(())
+    }
+
+    /// Updates a user's sheet_id in a room
+    pub(crate) async fn update_sheet_id(
+        &self,
+        file_id: Uuid,
+        session_id: &Uuid,
+        sheet_id: &Uuid,
+    ) -> Result<()> {
+        get_mut_room!(self, file_id)?
+            .users
+            .entry(session_id.to_owned())
+            .and_modify(|user| {
+                user.sheet_id = Some(sheet_id.to_owned());
+                user.last_heartbeat = Utc::now();
+                tracing::trace!("Updating sheet_id for {session_id}");
+            });
+
+        Ok(())
+    }
+
+    /// Updates a user's selection in a room
+    pub(crate) async fn update_selection(
+        &self,
+        file_id: Uuid,
+        session_id: &Uuid,
+        selection: &String,
+    ) -> Result<()> {
+        get_mut_room!(self, file_id)?
+            .users
+            .entry(session_id.to_owned())
+            .and_modify(|user| {
+                user.selection = Some(selection.to_owned());
+                user.last_heartbeat = Utc::now();
+                tracing::trace!("Updating selection for {session_id}");
             });
 
         Ok(())

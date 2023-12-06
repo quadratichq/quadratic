@@ -20,6 +20,8 @@ pub(crate) fn new_user() -> User {
         user_id: Uuid::new_v4().to_string(),
         first_name: FirstName().fake(),
         last_name: LastName().fake(),
+        sheet_id: None,
+        selection: None,
         image: FilePath().fake(),
         socket: None,
         last_heartbeat: chrono::Utc::now(),
