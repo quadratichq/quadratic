@@ -1,25 +1,12 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use uuid::Uuid;
 
 use crate::state::State;
 
 impl State {
-    pub(crate) async fn get_connection_id(&self, connection_id: Uuid) -> Result<Uuid> {
-        let connection_id = self
-            .connections
-            .lock()
-            .await
-            .get(&connection_id)
-            .ok_or(anyhow!("connection_id {} not found", connection_id))?
-            .to_owned();
-
-        Ok(connection_id)
-    }
-
-    ///
+    /// Removes a connection from the state.  If the connection is in a room, leave the room.
     pub(crate) async fn clear_connections(&self, connection_id: Uuid) -> Result<Vec<Uuid>> {
         let mut affected_rooms = vec![];
-        let connection_id = self.get_connection_id(connection_id).await?;
         let rooms = self.rooms.lock().await.clone();
 
         for (file_id, room) in rooms.iter() {
