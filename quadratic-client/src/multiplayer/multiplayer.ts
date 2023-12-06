@@ -8,15 +8,7 @@ import { User } from '@auth0/auth0-spa-js';
 import { Rectangle } from 'pixi.js';
 import { v4 as uuid } from 'uuid';
 import { MULTIPLAYER_COLORS } from './multiplayerCursor/multiplayerColors';
-import {
-  Heartbeat,
-  MessageChangeSelection,
-  MessageMouseMove,
-  MessageTransaction,
-  ReceiveMessages,
-  ReceiveRoom,
-  SendEnterRoom,
-} from './multiplayerTypes';
+import { Heartbeat, MessageTransaction, ReceiveMessages, ReceiveRoom, SendEnterRoom } from './multiplayerTypes';
 
 const UPDATE_TIME = 1000 / 30;
 const HEARTBEAT_TIME = 1000 * 30;
@@ -80,6 +72,7 @@ export class Multiplayer {
         resolve(0);
         this.waitingForConnection = [];
         this.lastHeartbeat = Date.now();
+        window.addEventListener('change-sheet', this.sendChangeSheet);
       });
     });
   }
@@ -176,6 +169,17 @@ export class Multiplayer {
     this.websocket!.send(JSON.stringify(message));
   }
 
+  async sendChangeSheet() {
+    await this.init();
+    const message: ChangeSheet = {
+      type: 'ChangeSheet',
+      session_id: this.sessionId,
+      file_id: this.room!,
+      sheet_id: sheets.sheet.id,
+    };
+    this.websocket!.send(JSON.stringify(message));
+  }
+
   //#endregion
 
   //#region receive messages
@@ -231,7 +235,10 @@ export class Multiplayer {
     });
     console.log(`[Multiplayer] Room size after UsersInRoom message: ${this.players.size}`);
     window.dispatchEvent(new CustomEvent('multiplayer-update', { detail: players }));
+    this.updateMultiplayerCursors();
+  }
 
+  private updateMultiplayerCursors() {
     // multiplayer may be initiated before pixiApp is created
     if (pixiApp?.multiplayerCursor) {
       pixiApp.multiplayerCursor.dirty = true;
@@ -255,7 +262,9 @@ export class Multiplayer {
       } else {
         player.visible = false;
       }
-      window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
+      if (player.sheetId === sheets.sheet.id) {
+        window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
+      }
     }
   }
 
@@ -276,11 +285,28 @@ export class Multiplayer {
 
   private receiveTransaction(data: MessageTransaction) {
     // todo: this check should not be needed (eventually)
-    if (data.session_id !== this.uuid) {
+    if (data.session_id !== this.sessionId) {
       if (data.file_id !== this.room) {
         throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
       }
       grid.multiplayerTransaction(data.operations);
+    }
+  }
+
+  private receiveChangeSheet(data: ChangeSheet) {
+    if (data.session_id !== this.sessionId) {
+      if (data.file_id !== this.room) {
+        throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
+      }
+      const player = this.players.get(data.session_id);
+      if (!player) {
+        throw new Error("Expected Player to be defined before receiving a message of type 'ChangeSheet'");
+      }
+      player.sheetId = data.sheet_id;
+      if (data.sheet_id === sheets.sheet.id) {
+        this.updateMultiplayerCursors();
+        window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
+      }
     }
   }
 
@@ -295,6 +321,8 @@ export class Multiplayer {
       this.receiveSelection(data);
     } else if (type === 'Transaction') {
       this.receiveTransaction(data);
+    } else if (type === 'ChangeSheet') {
+      this.receiveChangeSheet(data);
     } else {
       console.warn(`Unknown message type: ${type}`);
     }

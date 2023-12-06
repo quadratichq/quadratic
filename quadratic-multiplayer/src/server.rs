@@ -26,7 +26,8 @@ use uuid::Uuid;
 
 use crate::{
     config::{config, Config},
-    message::{broadcast, handle_message, MessageRequest, MessageResponse},
+    state::message::{broadcast, handle_message, MessageRequest, MessageResponse},
+    state::users::UserUpdate,
     state::State,
 };
 
@@ -282,17 +283,25 @@ pub(crate) mod tests {
         let file_id = Uuid::new_v4();
         let x = 0 as f64;
         let y = 0 as f64;
-        let request = MessageRequest::MouseMove {
+        let request = MessageRequest::UserUpdate {
             session_id,
             file_id,
-            x: Some(x),
-            y: Some(y),
+            update: UserUpdate {
+                x: Some(x),
+                y: Some(y),
+                selection: None,
+                sheet_id: None,
+            },
         };
-        let expected = MessageResponse::MouseMove {
+        let expected = MessageResponse::UserUpdate {
             session_id,
             file_id,
-            x: Some(x),
-            y: Some(y),
+            update: UserUpdate {
+                x: Some(x),
+                y: Some(y),
+                selection: None,
+                sheet_id: None,
+            },
         };
 
         state.enter_room(file_id, &user, internal_session_id).await;
@@ -309,15 +318,25 @@ pub(crate) mod tests {
         let user = new_user();
         let session_id = user.session_id;
         let file_id = Uuid::new_v4();
-        let request = MessageRequest::ChangeSelection {
+        let request = MessageRequest::UserUpdate {
             session_id,
             file_id,
-            selection: "test".to_string(),
+            update: UserUpdate {
+                selection: Some("test".to_string()),
+                sheet_id: None,
+                x: None,
+                y: None,
+            },
         };
-        let expected = MessageResponse::ChangeSelection {
+        let expected = MessageResponse::UserUpdate {
             session_id,
             file_id,
-            selection: "test".to_string(),
+            update: UserUpdate {
+                selection: Some("test".to_string()),
+                sheet_id: None,
+                x: None,
+                y: None,
+            },
         };
 
         state.enter_room(file_id, &user, internal_session_id).await;

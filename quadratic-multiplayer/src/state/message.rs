@@ -10,12 +10,11 @@ use std::sync::Arc;
 use anyhow::Result;
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
-use futures_util::SinkExt;
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::state::{Room, State, User};
+use crate::state::{users::User, users::UserUpdate, Room, State};
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -33,16 +32,10 @@ pub(crate) enum MessageRequest {
         session_id: Uuid,
         file_id: Uuid,
     },
-    MouseMove {
+    UserUpdate {
         session_id: Uuid,
         file_id: Uuid,
-        x: Option<f64>,
-        y: Option<f64>,
-    },
-    ChangeSelection {
-        session_id: Uuid,
-        file_id: Uuid,
-        selection: String,
+        update: UserUpdate,
     },
     Transaction {
         session_id: Uuid,
@@ -55,11 +48,6 @@ pub(crate) enum MessageRequest {
         session_id: Uuid,
         file_id: Uuid,
     },
-    ChangeSheet {
-        session_id: Uuid,
-        file_id: Uuid,
-        sheet_id: Uuid,
-    },
 }
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
@@ -69,25 +57,14 @@ pub(crate) enum MessageResponse {
     UsersInRoom {
         users: Vec<User>,
     },
-    MouseMove {
-        session_id: Uuid,
-        file_id: Uuid,
-        x: Option<f64>,
-        y: Option<f64>,
-    },
-    ChangeSelection {
-        session_id: Uuid,
-        file_id: Uuid,
-        selection: String,
-    },
     Transaction {
         // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
         operations: String,
     },
-    ChangeSheet {
+    UserUpdate {
         session_id: Uuid,
         file_id: Uuid,
-        sheet_id: Uuid,
+        update: UserUpdate,
     },
 
     // todo: this is not ideal. probably want to have the handle_message return an Option to avoid sending empty messages
@@ -128,6 +105,8 @@ pub(crate) async fn handle_message(
                 last_name,
                 image,
                 sheet_id: None,
+                x: None,
+                y: None,
                 selection: None,
                 socket: Some(Arc::clone(&sender)),
                 last_heartbeat: chrono::Utc::now(),
@@ -161,45 +140,6 @@ pub(crate) async fn handle_message(
             Ok(response)
         }
 
-        // User moves their mouse
-        MessageRequest::MouseMove {
-            session_id,
-            file_id,
-            x,
-            y,
-        } => {
-            let response = MessageResponse::MouseMove {
-                session_id,
-                file_id,
-                x,
-                y,
-            };
-            state.update_heartbeat(file_id, &session_id).await?;
-            broadcast(session_id, file_id, Arc::clone(&state), response.clone());
-
-            Ok(response)
-        }
-
-        // User changes their selection
-        MessageRequest::ChangeSelection {
-            session_id,
-            file_id,
-            selection,
-        } => {
-            state
-                .update_selection(file_id, &session_id, &selection)
-                .await?;
-            let response = MessageResponse::ChangeSelection {
-                session_id,
-                file_id,
-                selection,
-            };
-
-            broadcast(session_id, file_id, Arc::clone(&state), response.clone());
-
-            Ok(response)
-        }
-
         // User sends transactions
         MessageRequest::Transaction {
             session_id,
@@ -223,20 +163,19 @@ pub(crate) async fn handle_message(
             Ok(MessageResponse::Empty {})
         }
 
-        // User changes sheet
-        MessageRequest::ChangeSheet {
+        MessageRequest::UserUpdate {
             session_id,
             file_id,
-            sheet_id,
+            update,
         } => {
-            let response = MessageResponse::ChangeSheet {
+            state
+                .update_user_state(&file_id, &session_id, &update)
+                .await?;
+            let response = MessageResponse::UserUpdate {
                 session_id,
                 file_id,
-                sheet_id,
+                update,
             };
-            state
-                .update_sheet_id(file_id, &session_id, &sheet_id)
-                .await?;
             broadcast(session_id, file_id, Arc::clone(&state), response.clone());
 
             Ok(response)
@@ -286,17 +225,21 @@ pub(crate) mod tests {
     use crate::test_util::add_new_user_to_room;
 
     #[tokio::test]
-    async fn test_mouse_move() {
+    async fn test_update_state() {
         let state = Arc::new(State::new());
         let internal_session_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let user_1 = add_new_user_to_room(file_id, state.clone(), internal_session_id).await;
         let _user_2 = add_new_user_to_room(file_id, state.clone(), internal_session_id).await;
-        let message = MessageResponse::MouseMove {
+        let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
-            x: Some(10f64),
-            y: Some(10f64),
+            update: UserUpdate {
+                sheet_id: Some(Uuid::new_v4()),
+                selection: Some("selection".to_string()),
+                x: Some(1.0),
+                y: Some(2.0),
+            },
         };
         broadcast(user_1.session_id, file_id, state, message);
 
@@ -310,10 +253,15 @@ pub(crate) mod tests {
         let file_id = Uuid::new_v4();
         let user_1 = add_new_user_to_room(file_id, state.clone(), internal_session_id).await;
         let _user_2 = add_new_user_to_room(file_id, state.clone(), internal_session_id).await;
-        let message = MessageResponse::ChangeSelection {
+        let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
-            selection: "test".to_string(),
+            update: UserUpdate {
+                selection: Some("test".to_string()),
+                sheet_id: None,
+                x: None,
+                y: None,
+            },
         };
         broadcast(user_1.session_id, file_id, state, message);
 
@@ -342,10 +290,15 @@ pub(crate) mod tests {
         let file_id = Uuid::new_v4();
         let user_1 = add_new_user_to_room(file_id, state.clone(), internal_session_id).await;
         let _user_2 = add_new_user_to_room(file_id, state.clone(), internal_session_id).await;
-        let message = MessageResponse::ChangeSheet {
+        let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
-            sheet_id: Uuid::new_v4(),
+            update: UserUpdate {
+                selection: None,
+                sheet_id: Some(Uuid::new_v4()),
+                x: None,
+                y: None,
+            },
         };
         broadcast(user_1.session_id, file_id, state, message);
 
