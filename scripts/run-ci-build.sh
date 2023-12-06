@@ -21,4 +21,5 @@ cargo run --bin export_types
 cd ../quadratic-client
 
 echo 'Building front-end...'
+npm ci
 npm run build
