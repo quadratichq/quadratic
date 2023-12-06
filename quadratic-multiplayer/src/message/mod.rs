@@ -19,6 +19,9 @@ pub(crate) fn broadcast(
     state: Arc<State>,
     message: MessageResponse,
 ) {
+    if matches!(&message, MessageResponse::Empty {}) {
+        return;
+    }
     tokio::spawn(async move {
         let result = async {
             for (_, user) in state
