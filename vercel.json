@@ -1,0 +1,4 @@
+{
+  "buildCommand": "./scripts/run-ci-build.sh",
+  "installCommand": "npm install"
+}
