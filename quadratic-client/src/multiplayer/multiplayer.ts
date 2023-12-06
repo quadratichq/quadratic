@@ -255,44 +255,43 @@ export class Multiplayer {
   }
 
   private receiveUserUpdate(data: MessageUserUpdate) {
-    // ensure we're not receiving our own message
-    if (data.session_id !== this.sessionId) {
-      const player = this.players.get(data.session_id);
-      if (!player) {
-        throw new Error("Expected Player to be defined before receiving a message of type 'MouseMove'");
-      }
-      if (data.file_id !== this.room) {
-        throw new Error("Expected file_id to match room before receiving a message of type 'MouseMove'");
-      }
-      const update = data.update;
+    // this eventually will not be necessarily
+    if (data.session_id === this.sessionId) return;
+    const player = this.players.get(data.session_id);
+    if (!player) {
+      throw new Error("Expected Player to be defined before receiving a message of type 'MouseMove'");
+    }
+    if (data.file_id !== this.room) {
+      throw new Error("Expected file_id to match room before receiving a message of type 'MouseMove'");
+    }
+    const update = data.update;
 
-      if (update.x !== null && update.y !== null) {
-        player.x = update.x;
-        player.y = update.y;
+    if (update.x !== null && update.y !== null) {
+      player.x = update.x;
+      player.y = update.y;
+      if (player.sheetId === sheets.sheet.id) {
+        window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
+      }
+    }
+
+    if (update.visible !== undefined) {
+      player.visible = update.visible;
+    }
+
+    if (update.sheet_id) {
+      if (player.sheetId !== update.sheet_id) {
+        player.sheetId = update.sheet_id;
         if (player.sheetId === sheets.sheet.id) {
+          this.updateMultiplayerCursors();
           window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
         }
       }
+    }
 
-      if (update.visible !== undefined) {
-        player.visible = update.visible;
-      }
-
-      if (update.sheet_id) {
-        if (player.sheetId !== update.sheet_id) {
-          player.sheetId = update.sheet_id;
-          if (player.sheetId === sheets.sheet.id) {
-            this.updateMultiplayerCursors();
-            window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
-          }
-        }
-      }
-
-      if (update.selection) {
-        player.selection = JSON.parse(update.selection);
-        if (player.sheetId === sheets.sheet.id) {
-          pixiApp.multiplayerCursor.dirty = true;
-        }
+    if (update.selection) {
+      player.selection = JSON.parse(update.selection);
+      if (player.sheetId === sheets.sheet.id) {
+        pixiApp.multiplayerCursor.dirty = true;
       }
     }
   }

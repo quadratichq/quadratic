@@ -1,5 +1,6 @@
 import { MULTIPLAYER_COLORS } from '@/multiplayer/multiplayerCursor/multiplayerColors';
 import { Avatar, AvatarGroup, useTheme } from '@mui/material';
+import UAParser from 'ua-parser-js';
 import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
@@ -28,12 +29,20 @@ const convertInitial = (firstName?: string, lastName?: string): string => {
   return (firstName ? firstName[0] : '') + (lastName ? lastName[0] : '');
 };
 
+const getDeviceName = (): string => {
+  let parser = new UAParser(window.navigator.userAgent);
+  let result = parser.getResult();
+  return result.device?.model || result.device?.type || '';
+}
+
 export const TopBarUsers = () => {
   const theme = useTheme();
   const { user } = useRootRouteLoaderData();
   const displayName = convertName(user?.given_name, user?.family_name, true);
   const initial = convertInitial(user?.given_name, user?.family_name);
-
+  const device = getDeviceName();
+  console.log(device)
+  console.log(window.navigator.userAgent)
   const multiplayerUsers = useMultiplayerUsers();
 
   // todo: black should be quadratic black
@@ -44,7 +53,7 @@ export const TopBarUsers = () => {
         {multiplayerUsers.map((user) => {
           return (
             <UserAvatar
-              key={user.userId}
+              key={user.sessionId}
               displayName={convertName(user.firstName, user.lastName, false)}
               initial={convertInitial(user.firstName, user.lastName)}
               picture={user.picture}
