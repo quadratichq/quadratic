@@ -174,13 +174,8 @@ pub(crate) async fn handle_message(
                 x,
                 y,
             };
-<<<<<<< HEAD
-
-            broadcast(session_id, file_id, Arc::clone(&state), response.clone());
-=======
             state.update_heartbeat(file_id, &session_id).await?;
-            broadcast(session_id, file_id, Arc::clone(&state), response.clone())?;
->>>>>>> a822db0a00b984699e7f5318b9186a7b1d66e002
+            broadcast(session_id, file_id, Arc::clone(&state), response.clone());
 
             Ok(response)
         }
@@ -199,12 +194,8 @@ pub(crate) async fn handle_message(
                 file_id,
                 selection,
             };
-<<<<<<< HEAD
 
             broadcast(session_id, file_id, Arc::clone(&state), response.clone());
-=======
-            broadcast(session_id, file_id, Arc::clone(&state), response.clone())?;
->>>>>>> a822db0a00b984699e7f5318b9186a7b1d66e002
 
             Ok(response)
         }
@@ -217,12 +208,8 @@ pub(crate) async fn handle_message(
         } => {
             state.update_heartbeat(file_id, &session_id).await?;
             let response = MessageResponse::Transaction { operations };
-<<<<<<< HEAD
 
             broadcast(session_id, file_id, Arc::clone(&state), response.clone());
-=======
-            broadcast(session_id, file_id, Arc::clone(&state), response.clone())?;
->>>>>>> a822db0a00b984699e7f5318b9186a7b1d66e002
 
             Ok(response)
         }
@@ -250,7 +237,7 @@ pub(crate) async fn handle_message(
             state
                 .update_sheet_id(file_id, &session_id, &sheet_id)
                 .await?;
-            broadcast(session_id, file_id, Arc::clone(&state), response.clone())?;
+            broadcast(session_id, file_id, Arc::clone(&state), response.clone());
 
             Ok(response)
         }
@@ -360,7 +347,7 @@ pub(crate) mod tests {
             file_id,
             sheet_id: Uuid::new_v4(),
         };
-        broadcast(user_1.session_id, file_id, state, message).unwrap();
+        broadcast(user_1.session_id, file_id, state, message);
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }
