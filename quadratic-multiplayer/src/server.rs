@@ -130,9 +130,12 @@ async fn handle_socket(
         tracing::info!("Removing stale users from rooms: {:?}", rooms);
 
         for file_id in rooms.into_iter() {
-            tracing::info!("Broadcasting room {file_id} after removing stale users");
-            let message = MessageResponse::from(state.get_room(&file_id).await.unwrap().to_owned());
-            broadcast(Uuid::new_v4(), file_id, Arc::clone(&state), message).unwrap();
+            if let Ok(room) = state.get_room(&file_id).await {
+                tracing::info!("Broadcasting room {file_id} after removing stale users");
+
+                let message = MessageResponse::from(room.to_owned());
+                broadcast(Uuid::new_v4(), file_id, Arc::clone(&state), message);
+            }
         }
     }
 
@@ -199,19 +202,14 @@ async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_ti
                     .remove_stale_users_in_room(file_id.to_owned(), heartbeat_timeout_s)
                     .await
                 {
-                    Ok(num_users_removed) => {
-                        if let Err(e) = broadcast(
+                    Ok(_) => {
+                        broadcast(
                             // TODO(ddimaria): use a real session_id here
                             Uuid::new_v4(),
                             file_id.to_owned(),
                             Arc::clone(&state),
                             MessageResponse::from(room.to_owned()),
-                        ) {
-                            tracing::warn!(
-                            "Error broadcasting room {file_id} after removing {num_users_removed} stale users: {:?}",
-                            e
                         );
-                        }
                     }
                     Err(e) => {
                         tracing::warn!("Error removing stale users from room {file_id}: {:?}", e);

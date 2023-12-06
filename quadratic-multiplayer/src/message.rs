@@ -127,7 +127,7 @@ pub(crate) async fn handle_message(
 
             // only broadcast if the user is new to the room
             if is_new {
-                broadcast(session_id, file_id, Arc::clone(&state), response.clone())?;
+                broadcast(session_id, file_id, Arc::clone(&state), response.clone());
             }
 
             Ok(response)
@@ -143,7 +143,7 @@ pub(crate) async fn handle_message(
             let response = MessageResponse::from(room.to_owned());
 
             if is_not_empty {
-                broadcast(session_id, file_id, Arc::clone(&state), response.clone())?
+                broadcast(session_id, file_id, Arc::clone(&state), response.clone());
             }
 
             Ok(response)
@@ -163,7 +163,7 @@ pub(crate) async fn handle_message(
                 y,
             };
 
-            broadcast(session_id, file_id, Arc::clone(&state), response.clone())?;
+            broadcast(session_id, file_id, Arc::clone(&state), response.clone());
 
             Ok(response)
         }
@@ -180,7 +180,7 @@ pub(crate) async fn handle_message(
                 selection,
             };
 
-            broadcast(session_id, file_id, Arc::clone(&state), response.clone())?;
+            broadcast(session_id, file_id, Arc::clone(&state), response.clone());
 
             Ok(response)
         }
@@ -193,7 +193,7 @@ pub(crate) async fn handle_message(
         } => {
             let response = MessageResponse::Transaction { operations };
 
-            broadcast(session_id, file_id, Arc::clone(&state), response.clone())?;
+            broadcast(session_id, file_id, Arc::clone(&state), response.clone());
 
             Ok(response)
         }
@@ -216,7 +216,7 @@ pub(crate) fn broadcast(
     file_id: Uuid,
     state: Arc<State>,
     message: MessageResponse,
-) -> Result<()> {
+) {
     tokio::spawn(async move {
         let result = async {
             for (_, user) in state
@@ -242,8 +242,6 @@ pub(crate) fn broadcast(
             tracing::error!("Error broadcasting message: {:?}", e);
         }
     });
-
-    Ok(())
 }
 
 #[cfg(test)]
@@ -265,7 +263,7 @@ pub(crate) mod tests {
             x: Some(10f64),
             y: Some(10f64),
         };
-        broadcast(user_1.session_id, file_id, state, message).unwrap();
+        broadcast(user_1.session_id, file_id, state, message);
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }
@@ -282,7 +280,7 @@ pub(crate) mod tests {
             file_id,
             selection: "test".to_string(),
         };
-        broadcast(user_1.session_id, file_id, state, message).unwrap();
+        broadcast(user_1.session_id, file_id, state, message);
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }
@@ -297,7 +295,7 @@ pub(crate) mod tests {
         let message = MessageResponse::Transaction {
             operations: "test".to_string(),
         };
-        broadcast(user_1.session_id, file_id, state, message).unwrap();
+        broadcast(user_1.session_id, file_id, state, message);
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }
