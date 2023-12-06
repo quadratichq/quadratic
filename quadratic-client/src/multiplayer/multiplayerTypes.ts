@@ -11,14 +11,17 @@ export interface ReceiveRoom {
   }[];
 }
 
-export interface MessageUpdateState {
-  type: 'UpdateState';
+export interface MessageUserUpdate {
+  type: 'UserUpdate';
   session_id: string;
   file_id: string;
-  selection?: string;
-  sheet_id?: string;
-  x?: number | null;
-  y?: number | null;
+  update: {
+    selection?: string;
+    sheet_id?: string;
+    x?: number | null;
+    y?: number | null;
+    visible?: boolean;
+  };
 }
 
 export interface SendEnterRoom {
@@ -44,4 +47,4 @@ export interface Heartbeat {
   file_id: string;
 }
 
-export type ReceiveMessages = ReceiveRoom | MessageUpdateState | MessageTransaction;
+export type ReceiveMessages = ReceiveRoom | MessageUserUpdate | MessageTransaction;

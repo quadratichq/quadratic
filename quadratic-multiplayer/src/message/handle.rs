@@ -139,6 +139,7 @@ pub(crate) mod tests {
                 selection: Some("selection".to_string()),
                 x: Some(1.0),
                 y: Some(2.0),
+                visible: Some(true),
             },
         };
         broadcast(user_1.session_id, file_id, state, message);
@@ -161,6 +162,30 @@ pub(crate) mod tests {
                 sheet_id: None,
                 x: None,
                 y: None,
+                visible: None,
+            },
+        };
+        broadcast(user_1.session_id, file_id, state, message);
+
+        // TODO(ddimaria): mock the splitsink sender to test the actual sending
+    }
+
+    #[tokio::test]
+    async fn test_change_visibility() {
+        let state = Arc::new(State::new());
+        let internal_session_id = Uuid::new_v4();
+        let file_id = Uuid::new_v4();
+        let user_1 = add_new_user_to_room(file_id, state.clone(), internal_session_id).await;
+        let _user_2 = add_new_user_to_room(file_id, state.clone(), internal_session_id).await;
+        let message = MessageResponse::UserUpdate {
+            session_id: user_1.session_id,
+            file_id,
+            update: UserState {
+                selection: None,
+                sheet_id: None,
+                x: None,
+                y: None,
+                visible: Some(false),
             },
         };
         broadcast(user_1.session_id, file_id, state, message);
@@ -198,6 +223,7 @@ pub(crate) mod tests {
                 sheet_id: Some(Uuid::new_v4()),
                 x: None,
                 y: None,
+                visible: None,
             },
         };
         broadcast(user_1.session_id, file_id, state, message);

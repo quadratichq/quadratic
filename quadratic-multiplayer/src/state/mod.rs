@@ -9,8 +9,6 @@ pub mod user;
 
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Result};
-
 use tokio::sync::Mutex;
 use uuid::Uuid;
 

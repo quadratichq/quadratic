@@ -41,6 +41,7 @@ pub(crate) struct UserState {
     pub selection: Option<String>,
     pub x: Option<f64>,
     pub y: Option<f64>,
+    pub visible: Option<bool>,
 }
 
 impl Default for UserState {
@@ -50,6 +51,7 @@ impl Default for UserState {
             selection: None,
             x: None,
             y: None,
+            visible: None,
         }
     }
 }

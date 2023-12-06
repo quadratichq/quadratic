@@ -27,6 +27,7 @@ export class Pointer {
     viewport.on('pointerup', this.pointerUp);
     viewport.on('pointerupoutside', this.pointerUp);
     pixiApp.canvas.addEventListener('pointerleave', this.pointerLeave);
+    window.addEventListener('blur', this.pointerLeave);
   }
 
   private pointerLeave = () => {
@@ -40,6 +41,7 @@ export class Pointer {
     viewport.off('pointerup', this.pointerUp);
     viewport.off('pointerupoutside', this.pointerUp);
     pixiApp.canvas.removeEventListener('pointerleave', this.pointerLeave);
+    window.removeEventListener('blur', this.pointerLeave);
     this.pointerDown.destroy();
   }
 
