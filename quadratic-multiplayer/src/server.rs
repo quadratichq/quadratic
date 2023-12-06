@@ -280,6 +280,7 @@ pub(crate) mod tests {
                 y: Some(y),
                 selection: None,
                 sheet_id: None,
+                visible: None,
             },
         };
         let expected = MessageResponse::UserUpdate {
@@ -290,6 +291,7 @@ pub(crate) mod tests {
                 y: Some(y),
                 selection: None,
                 sheet_id: None,
+                visible: None,
             },
         };
 
@@ -315,6 +317,7 @@ pub(crate) mod tests {
                 sheet_id: None,
                 x: None,
                 y: None,
+                visible: None,
             },
         };
         let expected = MessageResponse::UserUpdate {
@@ -325,6 +328,7 @@ pub(crate) mod tests {
                 sheet_id: None,
                 x: None,
                 y: None,
+                visible: None,
             },
         };
 
