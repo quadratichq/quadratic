@@ -41,4 +41,9 @@ export interface MessageTransaction {
   operations: string;
 }
 
+export interface Heartbeat {
+  type: 'Heartbeat';
+  session_id: string;
+}
+
 export type ReceiveMessages = MessageMouseMove | ReceiveRoom | MessageChangeSelection | MessageTransaction;
