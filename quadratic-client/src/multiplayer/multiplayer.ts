@@ -7,6 +7,7 @@ import { Rectangle } from 'pixi.js';
 import { v4 as uuid } from 'uuid';
 import { MULTIPLAYER_COLORS } from './multiplayerCursor/multiplayerColors';
 import {
+  Heartbeat,
   MessageChangeSelection,
   MessageMouseMove,
   MessageTransaction,
@@ -16,6 +17,7 @@ import {
 } from './multiplayerTypes';
 
 const UPDATE_TIME = 1000 / 30;
+const HEARTBEAT_TIME = 1000 * 30;
 
 export interface Player {
   firstName: string;
@@ -42,6 +44,7 @@ export class Multiplayer {
   // queue of items waiting to be sent to the server on the next tick
   private queue: { move?: MessageMouseMove; selection?: MessageChangeSelection } = {};
   private lastTime = 0;
+  private lastHeartbeat = 0;
 
   // keep track of the next player's color index
   private nextColor = 0;
@@ -74,6 +77,7 @@ export class Multiplayer {
         this.waitingForConnection.forEach((resolve) => resolve(0));
         resolve(0);
         this.waitingForConnection = [];
+        this.lastHeartbeat = Date.now();
       });
     });
   }
@@ -147,12 +151,23 @@ export class Multiplayer {
     if (this.queue.move) {
       this.websocket!.send(JSON.stringify(this.queue.move));
       this.queue.move = undefined;
+      this.lastHeartbeat = now;
     }
     if (this.queue.selection) {
       this.websocket!.send(JSON.stringify(this.queue.selection));
       this.queue.selection = undefined;
+      this.lastHeartbeat = now;
     }
     this.lastTime = now;
+    if (now - this.lastHeartbeat > HEARTBEAT_TIME) {
+      const heartbeat: Heartbeat = {
+        type: 'Heartbeat',
+        session_id: this.sessionId,
+      };
+      this.websocket!.send(JSON.stringify(heartbeat));
+      console.log('sending heartbeats...');
+      this.lastHeartbeat = now;
+    }
   }
 
   private updateHook() {
@@ -176,6 +191,7 @@ export class Multiplayer {
     if (type === 'Room') {
       const room = data as ReceiveRoom;
       const remaining = new Set(this.players.keys());
+      console.log(room);
       for (const user of room.users) {
         const player = this.players.get(user.session_id);
         if (player) {

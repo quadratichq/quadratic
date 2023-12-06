@@ -79,6 +79,8 @@ pub(crate) enum MessageResponse {
         // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
         operations: String,
     },
+
+    // todo: this is not ideal. probably want to have the handle_message return an Option to avoid sending empty messages
     Empty {},
 }
 
