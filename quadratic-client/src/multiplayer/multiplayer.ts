@@ -238,7 +238,6 @@ export class Multiplayer {
             color: this.nextColor,
             visible: false,
           };
-          console.log('new user:', user);
           this.users.set(user.session_id, player);
           this.nextColor = (this.nextColor + 1) % MULTIPLAYER_COLORS.length;
           if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${user.first_name} entered room.`);
