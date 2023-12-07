@@ -8,6 +8,11 @@ export interface ReceiveRoom {
     image: string;
     sheet_id: string;
     selection: string;
+    cell_edit: {
+      active: boolean;
+      text: string;
+      cursor: number;
+    };
   }[];
 }
 
@@ -16,6 +21,11 @@ export interface MessageUserUpdate {
   session_id: string;
   file_id: string;
   update: {
+    cell_edit?: {
+      active: boolean;
+      text: string;
+      cursor: number;
+    };
     selection?: string;
     sheet_id?: string;
     x?: number | null;
@@ -34,6 +44,11 @@ export interface SendEnterRoom {
   first_name: string;
   last_name: string;
   image: string;
+  cell_edit: {
+    active: boolean;
+    text: string;
+    cursor: number;
+  };
 }
 
 export interface MessageTransaction {

@@ -246,7 +246,7 @@ async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_ti
 pub(crate) mod tests {
 
     use super::*;
-    use crate::state::user::UserState;
+    use crate::state::user::{CellEdit, UserState, UserStateUpdate};
     use crate::test_util::{integration_test, new_user};
     use uuid::Uuid;
 
@@ -265,6 +265,7 @@ pub(crate) mod tests {
             first_name: user.first_name.clone(),
             last_name: user.last_name.clone(),
             image: user.image.clone(),
+            cell_edit: CellEdit::default(),
         };
         let expected = MessageResponse::UsersInRoom { users: vec![user] };
         let response = integration_test(state, request).await;
@@ -308,23 +309,25 @@ pub(crate) mod tests {
         let request = MessageRequest::UserUpdate {
             session_id,
             file_id,
-            update: UserState {
+            update: UserStateUpdate {
                 x: Some(x),
                 y: Some(y),
                 selection: None,
                 sheet_id: None,
                 visible: None,
+                cell_edit: None,
             },
         };
         let expected = MessageResponse::UserUpdate {
             session_id,
             file_id,
-            update: UserState {
+            update: UserStateUpdate {
                 x: Some(x),
                 y: Some(y),
                 selection: None,
                 sheet_id: None,
                 visible: None,
+                cell_edit: None,
             },
         };
 
@@ -345,23 +348,25 @@ pub(crate) mod tests {
         let request = MessageRequest::UserUpdate {
             session_id,
             file_id,
-            update: UserState {
+            update: UserStateUpdate {
                 selection: Some("test".to_string()),
                 sheet_id: None,
                 x: None,
                 y: None,
                 visible: None,
+                cell_edit: None,
             },
         };
         let expected = MessageResponse::UserUpdate {
             session_id,
             file_id,
-            update: UserState {
+            update: UserStateUpdate {
                 selection: Some("test".to_string()),
                 sheet_id: None,
                 x: None,
                 y: None,
                 visible: None,
+                cell_edit: None,
             },
         };
 

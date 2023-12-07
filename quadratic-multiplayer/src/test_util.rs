@@ -12,7 +12,7 @@ use tokio_tungstenite::tungstenite;
 use uuid::Uuid;
 
 use crate::message::request::MessageRequest;
-use crate::state::user::User;
+use crate::state::user::{User, UserState};
 use crate::state::State;
 
 pub(crate) fn new_user() -> User {
@@ -21,7 +21,14 @@ pub(crate) fn new_user() -> User {
         user_id: Uuid::new_v4().to_string(),
         first_name: FirstName().fake(),
         last_name: LastName().fake(),
-        state: Default::default(),
+        state: UserState {
+            sheet_id: Uuid::new_v4(),
+            selection: "".to_string(),
+            cell_edit: Default::default(),
+            x: 0.0,
+            y: 0.0,
+            visible: false,
+        },
         image: FilePath().fake(),
         socket: None,
         last_heartbeat: chrono::Utc::now(),

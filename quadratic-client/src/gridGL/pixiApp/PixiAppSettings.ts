@@ -13,6 +13,8 @@ export enum PanMode {
 interface Input {
   show: boolean;
   initialValue?: string;
+  value?: string;
+  cursor?: number;
   x?: number;
   y?: number;
   sheetId?: string;

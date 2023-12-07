@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+import { multiplayer } from '@/multiplayer/multiplayer';
 import { Rectangle } from 'pixi.js';
 import { ClipboardEvent, useCallback, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -9,7 +9,7 @@ import { CURSOR_THICKNESS } from '../UI/Cursor';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { Coordinate } from '../types/size';
-import { isCursorAtEnd, isCursorAtStart } from './contentEditableHelper';
+import { getCursorLocation, isCursorAtEnd, isCursorAtStart } from './contentEditableHelper';
 
 interface CellInputProps {
   container?: HTMLDivElement;
@@ -59,6 +59,7 @@ export const CellInput = (props: CellInputProps) => {
           selection.addRange(range);
         }
       }
+      multiplayer.sendCellEdit(div.innerText ?? '', div.innerText?.length ?? 0);
     }, 0);
   }, []);
 
@@ -153,6 +154,8 @@ export const CellInput = (props: CellInputProps) => {
     // Clean up listeners
     viewport.off('moved-end', updateInputCSSTransform);
     viewport.off('moved', updateInputCSSTransform);
+
+    multiplayer.sendEndCellEdit();
   };
 
   // Register lister for when grid moves to resize and move input with CSS
@@ -167,6 +170,9 @@ export const CellInput = (props: CellInputProps) => {
     const parsed = new DOMParser().parseFromString(text, 'text/html');
     const result = parsed.body.textContent || '';
     document.execCommand('insertHTML', false, result.replace(/(\r\n|\n|\r)/gm, ''));
+    if (textInput) {
+      multiplayer.sendCellEdit(textInput.innerText, getCursorLocation());
+    }
     event.preventDefault();
   };
 
@@ -304,6 +310,11 @@ export const CellInput = (props: CellInputProps) => {
         }
         // ensure the cell border is redrawn
         pixiApp.cursor.dirty = true;
+      }}
+      onKeyUp={() => {
+        if (textInput) {
+          multiplayer.sendCellEdit(textInput.innerText, getCursorLocation());
+        }
       }}
     >
       {text.current}

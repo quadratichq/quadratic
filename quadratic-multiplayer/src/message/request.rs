@@ -5,7 +5,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::state::user::UserState;
+use crate::state::user::{CellEdit, UserStateUpdate};
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -15,11 +15,12 @@ pub(crate) enum MessageRequest {
         session_id: Uuid,
         user_id: String,
         file_id: Uuid,
-        sheet_id: Uuid,
-        selection: String,
         first_name: String,
         last_name: String,
         image: String,
+        sheet_id: Uuid,
+        selection: String,
+        cell_edit: CellEdit,
     },
     LeaveRoom {
         session_id: Uuid,
@@ -28,7 +29,7 @@ pub(crate) enum MessageRequest {
     UserUpdate {
         session_id: Uuid,
         file_id: Uuid,
-        update: UserState,
+        update: UserStateUpdate,
     },
     Transaction {
         session_id: Uuid,

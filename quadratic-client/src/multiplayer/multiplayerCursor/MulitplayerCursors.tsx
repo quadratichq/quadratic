@@ -15,7 +15,13 @@ export const MultiplayerCursors = () => {
   useEffect(() => {
     const updatePlayersTrigger = () => setPlayersTrigger((x) => x + 1);
     window.addEventListener('multiplayer-cursor', updatePlayersTrigger);
-    return () => window.removeEventListener('multiplayer-cursor', updatePlayersTrigger);
+    pixiApp.viewport.on('moved', updatePlayersTrigger);
+    pixiApp.viewport.on('zoomed', updatePlayersTrigger);
+    return () => {
+      window.removeEventListener('multiplayer-cursor', updatePlayersTrigger);
+      pixiApp.viewport.off('moved', updatePlayersTrigger);
+      pixiApp.viewport.off('zoomed', updatePlayersTrigger);
+    };
   }, []);
 
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
