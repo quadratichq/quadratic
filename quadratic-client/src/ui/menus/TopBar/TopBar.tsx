@@ -1,3 +1,4 @@
+import { useIsEmbed } from '@/hooks/useIsEmbed';
 import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { useRecoilValue } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
@@ -18,6 +19,7 @@ export const TopBar = () => {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const isEmbed = useIsEmbed();
   const { permission } = editorInteractionState;
 
   return (
@@ -88,7 +90,7 @@ export const TopBar = () => {
           <>
             <TopBarCodeOutlinesSwitch />
             <TopBarUsers />
-            <TopBarShareButton />
+            {!isEmbed && <TopBarShareButton />}
           </>
         )}
         <TopBarZoomMenu />

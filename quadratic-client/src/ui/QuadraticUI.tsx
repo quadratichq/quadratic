@@ -1,3 +1,4 @@
+import { useIsEmbed } from '@/hooks/useIsEmbed';
 import { useEffect } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState } from 'recoil';
@@ -24,6 +25,7 @@ export default function QuadraticUI() {
   const { presentationMode } = useGridSettings();
   const navigation = useNavigation();
   const { uuid } = useParams() as { uuid: string };
+  const isEmbed = useIsEmbed();
 
   // Resize the canvas when user goes in/out of presentation mode
   useEffect(() => {
@@ -63,7 +65,7 @@ export default function QuadraticUI() {
       </div>
 
       {!presentationMode && <SheetBar />}
-      {!presentationMode && <BottomBar />}
+      {!presentationMode && !isEmbed && <BottomBar />}
       {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
       {editorInteractionState.showShareFileMenu && (
         <ShareFileMenu
@@ -81,7 +83,7 @@ export default function QuadraticUI() {
         />
       )}
       {presentationMode && <PresentationModeHint />}
-      <PermissionOverlay />
+      {!isEmbed && <PermissionOverlay />}
     </div>
   );
 }
