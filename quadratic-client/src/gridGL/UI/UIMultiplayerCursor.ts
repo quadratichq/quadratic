@@ -56,7 +56,7 @@ export class UIMultiPlayerCursor extends Graphics {
       this.dirty = false;
       this.clear();
       // const sheetId = sheets.sheet.id;
-      multiplayer.players.forEach((player) => {
+      multiplayer.users.forEach((player) => {
         const color = MULTIPLAYER_COLORS_TINT[player.color];
         if (player.selection /* && player.sheetId === sheetId */) {
           this.drawCursor(color, player.selection.cursor);

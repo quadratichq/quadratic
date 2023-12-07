@@ -42,8 +42,10 @@ export class Multiplayer {
   private state: 'not connected' | 'connecting' | 'connected' | 'waiting to reconnect';
   private sessionId;
   private room?: string;
-  private uuid?: string;
+  private user?: User;
   private jwt?: string | void;
+
+  // messages pending a reconnect
   private waitingForConnection: { (value: unknown): void }[] = [];
 
   // queue of items waiting to be sent to the server on the next tick
@@ -51,10 +53,11 @@ export class Multiplayer {
   private lastTime = 0;
   private lastHeartbeat = 0;
 
-  // keep track of the next player's color index
+  // next player's color index
   private nextColor = 0;
 
-  players: Map<string, Player> = new Map();
+  // users currently logged in to the room
+  users: Map<string, Player> = new Map();
 
   constructor() {
     this.state = 'not connected';
@@ -67,20 +70,24 @@ export class Multiplayer {
     this.jwt = await authClient.getToken();
   }
 
+  private async addJwtCookie(force: boolean = false) {
+    if (force || !this.jwt) {
+      await this.getJwt();
+     
+      if (this.jwt) {
+        document.cookie = `jwt=${this.jwt}; path=/;`;
+      }
+    }
+  }
+
 
   private async init() {
+    if (this.state === 'connected') return;
 
-    if (['connected', 'waiting to reconnect'].includes(this.state)) return;
-    return new Promise(async (resolve) => {
-      if (!this.jwt) {
-        await this.getJwt();
-       
-        if (this.jwt) {
-          document.cookie = `jwt=${this.jwt}; path=/;`;
-        }
-      }
-     
-      if (this.state === 'connecting') {
+    await this.addJwtCookie();
+
+    return new Promise((resolve) => {
+      if (this.state === 'connecting' || this.state === 'waiting to reconnect') {
         this.waitingForConnection.push(resolve);
         return;
       }
@@ -105,32 +112,31 @@ export class Multiplayer {
   }
 
   private reconnect = () => {
-    console.log('[Multiplayer] websocket closed. Reconnecting in 5s...');
+    console.log(`[Multiplayer] websocket closed. Reconnecting in ${RECONNECT_AFTER_ERROR_TIMEOUT / 1000}s...`);
     this.state = 'waiting to reconnect';
     setTimeout(async () => {
       this.state = 'not connected';
       console.log("this.room", this.room);
       await this.init();
-      if (this.room) await this.enterFileRoom(this.room, { sub: this.uuid });
+      if (this.room) await this.enterFileRoom(this.room, this.user);
     }, RECONNECT_AFTER_ERROR_TIMEOUT);
   };
 
+  // multiplayer for a file
   async enterFileRoom(file_id: string, user?: User) {
-    console.log("enterFileRoom", file_id, user?.sub);
-    // used to hack the server so everyone is in the same file even if they're not.
-    // file_id = 'ab96f02c-fd8c-4daa-bfb5-aec871ab9225';
-
+    if (!user?.sub) throw new Error('User must be defined to enter a multiplayer room.');
     this.userUpdate.file_id = file_id;
     await this.init();
-    if (!user?.sub) throw new Error('Expected User to be defined');
+    this.user = user;
     if (this.room === file_id) return;
     this.room = file_id;
-    this.uuid = user.sub;
     const enterRoom: SendEnterRoom = {
       type: 'EnterRoom',
       session_id: this.sessionId,
       user_id: user.sub,
       file_id,
+      sheet_id: sheets.sheet.id,
+      selection: sheets.getMultiplayerSelection(),
       first_name: user.given_name ?? '',
       last_name: user.family_name ?? '',
       image: user.picture ?? '',
@@ -139,6 +145,7 @@ export class Multiplayer {
     if (debugShowMultiplayer) console.log(`[Multiplayer] Joined room ${file_id}.`);
   }
 
+  // called by Update.ts
   async update() {
     await this.init();
     const now = performance.now();
@@ -160,6 +167,18 @@ export class Multiplayer {
       if (debugShowMultiplayer) console.log('[Multiplayer] Sending heartbeat...');
       this.lastHeartbeat = now;
     }
+  }
+
+  // used to pre-populate useMultiplayerUsers.tsx
+  getUsers(): SimpleMultiplayerUser[] {
+    return Array.from(this.users.values()).map((player) => ({
+      sessionId: player.sessionId,
+      userId: player.userId,
+      firstName: player.firstName,
+      lastName: player.lastName,
+      picture: player.image,
+      color: player.color,
+    }));
   }
 
   //#region send messages
@@ -188,9 +207,9 @@ export class Multiplayer {
     }
   }
 
-  async sendSelection(cursor: Coordinate, rectangle?: Rectangle) {
+  async sendSelection(selection: string) {
     const userUpdate = this.getUserUpdate().update;
-    userUpdate.selection = JSON.stringify({ cursor, rectangle });
+    userUpdate.selection = selection;
   }
 
   sendChangeSheet = () => {
@@ -217,15 +236,15 @@ export class Multiplayer {
   // updates the React hook to populate the Avatar list
   private receiveUsersInRoom(room: ReceiveRoom) {
     const players: SimpleMultiplayerUser[] = [];
-    const remaining = new Set(this.players.keys());
-    if (debugShowMultiplayer) console.log(`[Multiplayer] Room size before UsersInRoom message: ${remaining.size}`);
+    const remaining = new Set(this.users.keys());
     for (const user of room.users) {
       if (user.session_id !== this.sessionId) {
-        let player = this.players.get(user.session_id);
+        let player = this.users.get(user.session_id);
         if (player) {
           player.firstName = user.first_name;
           player.lastName = user.last_name;
           player.image = user.image;
+          player.sheetId = user.sheet_id;
           player.selection = user.selection ? JSON.parse(user.selection) : undefined;
           remaining.delete(user.session_id);
           if (debugShowMultiplayer) console.log(`[Multiplayer] Updated player ${user.first_name}.`);
@@ -243,7 +262,7 @@ export class Multiplayer {
             color: this.nextColor,
             visible: false,
           };
-          this.players.set(user.session_id, player);
+          this.users.set(user.session_id, player);
           this.nextColor = (this.nextColor + 1) % MULTIPLAYER_COLORS.length;
           if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${user.first_name} entered room.`);
         }
@@ -258,61 +277,51 @@ export class Multiplayer {
       }
     }
     remaining.forEach((sessionId) => {
-      if (debugShowMultiplayer)
-        console.log(`[Multiplayer] Player ${this.players.get(sessionId)?.firstName} left room.`);
-      this.players.delete(sessionId);
+      if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${this.users.get(sessionId)?.firstName} left room.`);
+      this.users.delete(sessionId);
     });
-    console.log(`[Multiplayer] Room size after UsersInRoom message: ${this.players.size}`);
     window.dispatchEvent(new CustomEvent('multiplayer-update', { detail: players }));
-    this.updateMultiplayerCursors();
-  }
-
-  private updateMultiplayerCursors() {
-    // multiplayer may be initiated before pixiApp is created
-    if (pixiApp?.multiplayerCursor) {
-      pixiApp.multiplayerCursor.dirty = true;
-    }
+    pixiApp.multiplayerCursor.dirty = true;
   }
 
   private receiveUserUpdate(data: MessageUserUpdate) {
-    // ensure we're not receiving our own message
-    if (data.session_id !== this.sessionId) {
-      const player = this.players.get(data.session_id);
-      if (!player) {
-        throw new Error("Expected Player to be defined before receiving a message of type 'MouseMove'");
-      }
-      if (data.file_id !== this.room) {
-        throw new Error("Expected file_id to match room before receiving a message of type 'MouseMove'");
-      }
-      const update = data.update;
+    // this eventually will not be necessarily
+    if (data.session_id === this.sessionId) return;
+    const player = this.users.get(data.session_id);
+    if (!player) {
+      throw new Error("Expected Player to be defined before receiving a message of type 'MouseMove'");
+    }
+    if (data.file_id !== this.room) {
+      throw new Error("Expected file_id to match room before receiving a message of type 'MouseMove'");
+    }
+    const update = data.update;
 
-      if (update.x !== null && update.y !== null) {
-        player.x = update.x;
-        player.y = update.y;
+    if (update.x !== null && update.y !== null) {
+      player.x = update.x;
+      player.y = update.y;
+      if (player.sheetId === sheets.sheet.id) {
+        window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
+      }
+    }
+
+    if (update.visible !== undefined) {
+      player.visible = update.visible;
+    }
+
+    if (update.sheet_id) {
+      if (player.sheetId !== update.sheet_id) {
+        player.sheetId = update.sheet_id;
         if (player.sheetId === sheets.sheet.id) {
+          pixiApp.multiplayerCursor.dirty = true;
           window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
         }
       }
+    }
 
-      if (update.visible !== undefined) {
-        player.visible = update.visible;
-      }
-
-      if (update.sheet_id) {
-        if (player.sheetId !== update.sheet_id) {
-          player.sheetId = update.sheet_id;
-          if (player.sheetId === sheets.sheet.id) {
-            this.updateMultiplayerCursors();
-            window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
-          }
-        }
-      }
-
-      if (update.selection) {
-        player.selection = JSON.parse(update.selection);
-        if (player.sheetId === sheets.sheet.id) {
-          pixiApp.multiplayerCursor.dirty = true;
-        }
+    if (update.selection) {
+      player.selection = JSON.parse(update.selection);
+      if (player.sheetId === sheets.sheet.id) {
+        pixiApp.multiplayerCursor.dirty = true;
       }
     }
   }

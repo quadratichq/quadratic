@@ -19,4 +19,5 @@ echo 'Exporting TS/Rust types...'
 cargo run --bin export_types
 
 echo 'Building front-end...'
+npm ci
 npm run build --workspace=quadratic-client

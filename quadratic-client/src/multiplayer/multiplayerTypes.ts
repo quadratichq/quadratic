@@ -29,6 +29,8 @@ export interface SendEnterRoom {
   session_id: string;
   user_id: string;
   file_id: string;
+  sheet_id: string;
+  selection: string;
   first_name: string;
   last_name: string;
   image: string;

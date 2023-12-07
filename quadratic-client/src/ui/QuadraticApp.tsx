@@ -1,3 +1,5 @@
+import { multiplayer } from '@/multiplayer/multiplayer';
+import { useRootRouteLoaderData } from '@/router';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
@@ -10,8 +12,11 @@ import QuadraticUIContext from './QuadraticUIContext';
 import { QuadraticLoading } from './loading/QuadraticLoading';
 
 export default function QuadraticApp() {
+  const { user } = useRootRouteLoaderData();
+
+
   const [loading, setLoading] = useState(true);
-  const { permission } = useRecoilValue(editorInteractionStateAtom);
+  const { permission, uuid } = useRecoilValue(editorInteractionStateAtom);
   const setLoadedState = useSetRecoilState(pythonStateAtom);
   const didMount = useRef<boolean>(false);
 
@@ -67,9 +72,16 @@ export default function QuadraticApp() {
       setLoadedState((prevState) => ({ ...prevState, pythonState: 'loading' }));
       initializeWebWorkers();
     }
-
-    pixiApp.init().then(() => setLoading(false));
   }, [permission, setLoadedState]);
+
+  useEffect(() => {
+    if (uuid && user && !pixiApp.initialized) {
+      pixiApp.init().then(() => {
+        multiplayer.enterFileRoom(uuid, user);
+        setLoading(false)
+      });
+    }
+  }, [uuid, user]);
 
   if (loading) {
     return <QuadraticLoading />;

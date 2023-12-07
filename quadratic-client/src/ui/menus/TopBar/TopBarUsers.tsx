@@ -28,12 +28,20 @@ const convertInitial = (firstName?: string, lastName?: string): string => {
   return (firstName ? firstName[0] : '') + (lastName ? lastName[0] : '');
 };
 
+// const getDeviceName = (): string => {
+//   let parser = new UAParser(window.navigator.userAgent);
+//   let result = parser.getResult();
+//   return result.device?.model || result.device?.type || '';
+// }
+
 export const TopBarUsers = () => {
   const theme = useTheme();
   const { user } = useRootRouteLoaderData();
   const displayName = convertName(user?.given_name, user?.family_name, true);
   const initial = convertInitial(user?.given_name, user?.family_name);
-
+  // const device = getDeviceName();
+  // console.log(device)
+  // console.log(window.navigator.userAgent)
   const multiplayerUsers = useMultiplayerUsers();
 
   // todo: black should be quadratic black
@@ -43,13 +51,20 @@ export const TopBarUsers = () => {
       <AvatarGroup sx={{ mr: theme.spacing(1), ml: theme.spacing(-0.5), alignSelf: 'center' }}>
         {multiplayerUsers.map((user) => {
           return (
-            <UserAvatar
-              key={user.userId}
-              displayName={convertName(user.firstName, user.lastName, false)}
-              initial={convertInitial(user.firstName, user.lastName)}
-              picture={user.picture}
-              border={MULTIPLAYER_COLORS[user.color]}
-            />
+            // <DropdownMenu>
+            //   <DropdownMenuTrigger asChild>
+                <UserAvatar
+                  key={user.sessionId}
+                  displayName={convertName(user.firstName, user.lastName, false)}
+                  initial={convertInitial(user.firstName, user.lastName)}
+                  picture={user.picture}
+                  border={MULTIPLAYER_COLORS[user.color]}
+                />
+            //   </DropdownMenuTrigger>
+            //   <DropdownMenuContent className="w-48">
+            //     <DropdownMenuItem>Follow</DropdownMenuItem>
+            //   </DropdownMenuContent>
+            // </DropdownMenu>
           );
         })}
       </AvatarGroup>

@@ -1,7 +1,5 @@
 import { ApiError } from '@/api/fetchFromApi';
 import { CONTACT_URL } from '@/constants/urls';
-import { multiplayer } from '@/multiplayer/multiplayer';
-import { useRootRouteLoaderData } from '@/router';
 import { Button } from '@/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
@@ -77,17 +75,16 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 };
 
 export const Component = () => {
-  const { user } = useRootRouteLoaderData();
-
   // Initialize recoil with the file's permission we get from the server
   const { permission, uuid } = useLoaderData() as FileData;
   const initializeState = ({ set }: MutableSnapshot) => {
     set(editorInteractionStateAtom, (prevState) => ({
       ...prevState,
+      uuid,
       permission,
     }));
   };
-  multiplayer.enterFileRoom(uuid, user);
+  // multiplayer.enterFileRoom(uuid, user);
 
   return (
     <RecoilRoot initializeState={initializeState}>

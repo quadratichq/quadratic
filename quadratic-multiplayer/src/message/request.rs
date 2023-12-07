@@ -15,6 +15,8 @@ pub(crate) enum MessageRequest {
         session_id: Uuid,
         user_id: String,
         file_id: Uuid,
+        sheet_id: Uuid,
+        selection: String,
         first_name: String,
         last_name: String,
         image: String,

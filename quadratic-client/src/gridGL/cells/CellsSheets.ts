@@ -31,7 +31,6 @@ export class CellsSheets extends Container<CellsSheet> {
     }
     const cellsSheet = this.addChild(new CellsSheet(sheet));
     await cellsSheet.preload();
-    this.show(sheet.id);
   }
 
   deleteSheet(id: string): void {
