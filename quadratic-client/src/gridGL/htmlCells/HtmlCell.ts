@@ -21,7 +21,7 @@ export class HtmlCell {
   private resizing: HtmlCellResizing | undefined;
   private hoverSide: 'right' | 'bottom' | 'corner' | undefined;
 
-  private sheet: Sheet;
+  sheet: Sheet;
 
   div: HTMLDivElement;
 
@@ -264,5 +264,13 @@ export class HtmlCell {
 
   setHeight(height: number) {
     this.iframe.height = height.toString();
+  }
+
+  updateOffsets() {
+    const offset = this.sheet.getCellOffsets(this.x, this.y);
+
+    // the 0.5 is adjustment for the border
+    this.div.style.left = `${offset.x - 0.5}px`;
+    this.div.style.top = `${offset.y + offset.height - 0.5}px`;
   }
 }
