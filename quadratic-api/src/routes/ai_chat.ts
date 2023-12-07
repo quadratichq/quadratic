@@ -33,7 +33,7 @@ const AIMessage = z.object({
 const AIAutoCompleteRequestBody = z.object({
   messages: z.array(AIMessage),
   // optional model
-  model: z.enum(['gpt-4', 'gpt-3-turbo']).optional(),
+  model: z.enum(['gpt-4', 'gpt-3-turbo', 'gpt-4-32k']).optional(),
 });
 
 type AIAutoCompleteRequestBodyType = z.infer<typeof AIAutoCompleteRequestBody>;
