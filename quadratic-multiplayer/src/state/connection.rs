@@ -4,13 +4,16 @@ use uuid::Uuid;
 use crate::state::State;
 
 impl State {
-    pub(crate) async fn get_session_id(&self, socket_id: Uuid) -> Result<Uuid> {
+    pub(crate) async fn get_session_id(&self, connection_id: Uuid) -> Result<Uuid> {
         let session_id = self
             .connections
             .lock()
             .await
-            .get(&socket_id)
-            .ok_or(anyhow!("socket_id {} not found in sockets", socket_id))?
+            .get(&connection_id)
+            .ok_or(anyhow!(
+                "connection_id {} not found in sockets",
+                connection_id
+            ))?
             .to_owned();
 
         Ok(session_id)
@@ -71,7 +74,7 @@ mod tests {
         let (state, _, connection_id) = setup().await;
         state.clear_connections(connection_id).await.unwrap();
         let result = state.get_session_id(connection_id).await;
-        let expected = format!("socket_id {connection_id} not found in sockets");
+        let expected = format!("connection_id {connection_id} not found in sockets");
 
         assert_anyhow_error(result, &expected);
     }
