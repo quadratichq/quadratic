@@ -7,6 +7,8 @@ import { SimpleMultiplayerUser } from '@/ui/menus/TopBar/useMultiplayerUsers';
 import { User } from '@auth0/auth0-spa-js';
 import { Rectangle } from 'pixi.js';
 import { v4 as uuid } from 'uuid';
+
+import { authClient } from '@/auth';
 import { MULTIPLAYER_COLORS } from './multiplayerCursor/multiplayerColors';
 import {
   Heartbeat,
@@ -41,6 +43,7 @@ export class Multiplayer {
   private sessionId;
   private room?: string;
   private uuid?: string;
+  private jwt?: string | void;
   private waitingForConnection: { (value: unknown): void }[] = [];
 
   // queue of items waiting to be sent to the server on the next tick
@@ -57,11 +60,26 @@ export class Multiplayer {
     this.state = 'not connected';
     this.sessionId = uuid();
     this.userUpdate = { type: 'UserUpdate', session_id: this.sessionId, file_id: '', update: {} };
+    
   }
 
+  private async getJwt() {
+    this.jwt = await authClient.getToken();
+  }
+
+
   private async init() {
+
     if (['connected', 'waiting to reconnect'].includes(this.state)) return;
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
+      if (!this.jwt) {
+        await this.getJwt();
+       
+        if (this.jwt) {
+          document.cookie = `jwt=${this.jwt}; path=/;`;
+        }
+      }
+     
       if (this.state === 'connecting') {
         this.waitingForConnection.push(resolve);
         return;
@@ -91,12 +109,14 @@ export class Multiplayer {
     this.state = 'waiting to reconnect';
     setTimeout(async () => {
       this.state = 'not connected';
+      console.log("this.room", this.room);
       await this.init();
       if (this.room) await this.enterFileRoom(this.room, { sub: this.uuid });
     }, RECONNECT_AFTER_ERROR_TIMEOUT);
   };
 
   async enterFileRoom(file_id: string, user?: User) {
+    console.log("enterFileRoom", file_id, user?.sub);
     // used to hack the server so everyone is in the same file even if they're not.
     // file_id = 'ab96f02c-fd8c-4daa-bfb5-aec871ab9225';
 

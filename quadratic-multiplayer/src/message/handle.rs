@@ -53,8 +53,9 @@ pub(crate) async fn handle_message(
             // only broadcast if the user is new to the room
             if is_new {
                 broadcast(session_id, file_id, Arc::clone(&state), response.clone());
+
                 tracing::info!(
-                    "New user {} joined room {} with session {}",
+                    "User {} joined room {} with session {}",
                     user.user_id,
                     file_id,
                     session_id

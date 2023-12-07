@@ -3,12 +3,13 @@
 //! Handle bootstrapping and starting the websocket server.  Adds global state
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use axum::{
     extract::{
         connect_info::ConnectInfo,
         ws::{Message, WebSocket, WebSocketUpgrade},
     },
+    http::StatusCode,
     response::IntoResponse,
     routing::get,
     Extension, Router,
@@ -25,11 +26,12 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
 
 use crate::{
+    auth::{authorize, get_jwks},
     config::{config, Config},
     message::{
         broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
     },
-    state::State,
+    state::{Settings, State},
 };
 
 /// Construct the application router.  This is separated out so that it can be
@@ -52,6 +54,7 @@ pub(crate) async fn serve() -> Result<()> {
     let Config {
         host,
         port,
+        auth0_jwks_uri,
         heartbeat_check_s,
         heartbeat_timeout_s,
     } = config()?;
@@ -64,7 +67,9 @@ pub(crate) async fn serve() -> Result<()> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let state = Arc::new(State::new());
+    let jwks = get_jwks(&auth0_jwks_uri).await?;
+    let settings = Settings { jwks: Some(jwks) };
+    let state = Arc::new(State::new().with_settings(settings));
     let app = app(Arc::clone(&state));
     let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await?;
 
@@ -87,6 +92,7 @@ async fn ws_handler(
     user_agent: Option<TypedHeader<headers::UserAgent>>,
     addr: Option<ConnectInfo<SocketAddr>>,
     Extension(state): Extension<Arc<State>>,
+    cookie: Option<TypedHeader<headers::Cookie>>,
 ) -> impl IntoResponse {
     let user_agent = user_agent.map_or("Unknown user agent".into(), |user_agent| {
         user_agent.to_string()
@@ -95,6 +101,27 @@ async fn ws_handler(
     let socket_id = Uuid::new_v4();
 
     tracing::info!("`{user_agent}` at {addr} connected: socket_id={socket_id}");
+
+    // validate the JWT
+    let result = async {
+        let cookie = cookie.ok_or_else(|| anyhow!("No cookie found"))?;
+        let token = cookie.get("jwt").ok_or_else(|| anyhow!("No JWT found"))?;
+        let jwks: jsonwebtoken::jwk::JwkSet = state
+            .settings
+            .jwks
+            .clone()
+            .ok_or_else(|| anyhow!("No JWKS found"))?;
+
+        authorize(jwks, &token)?;
+
+        Ok::<_, anyhow::Error>(())
+    }
+    .await;
+
+    if let Err(error) = result {
+        tracing::error!("Error authorizing user: {:?}", error);
+        return (StatusCode::BAD_REQUEST, "Invalid token").into_response();
+    }
 
     // upgrade the connection
     ws.on_upgrade(move |socket| handle_socket(socket, state, addr, socket_id))

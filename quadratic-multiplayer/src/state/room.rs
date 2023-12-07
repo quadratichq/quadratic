@@ -43,7 +43,7 @@ impl State {
             .await
             .insert(connection_id, user.session_id);
 
-        tracing::trace!("User {:?} entered room {:?}", user.session_id, file_id);
+        tracing::info!("User {:?} entered room {:?}", user.session_id, file_id);
 
         is_new
     }
@@ -54,7 +54,7 @@ impl State {
         get_mut_room!(self, file_id)?.users.remove(session_id);
         let num_in_room = get_room!(self, file_id)?.users.len();
 
-        tracing::trace!(
+        tracing::info!(
             "User {:?} is leaving room {}, {} user(s) left",
             session_id,
             file_id,
@@ -72,7 +72,7 @@ impl State {
     pub(crate) async fn remove_room(&self, file_id: Uuid) {
         self.rooms.lock().await.remove(&file_id);
 
-        tracing::trace!("Room {file_id} removed");
+        tracing::info!("Room {file_id} removed");
     }
 }
 
@@ -104,7 +104,7 @@ macro_rules! get_mut_room {
 macro_rules! get_or_create_room {
     ( $self:ident, $file_id:ident ) => {
         $self.rooms.lock().await.entry($file_id).or_insert_with(|| {
-            tracing::trace!("Room {} created", $file_id);
+            tracing::info!("Room {} created", $file_id);
             Room::new($file_id)
         })
     };
