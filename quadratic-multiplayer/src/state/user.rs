@@ -146,7 +146,6 @@ impl State {
                     user.state.visible = Some(visible);
                 }
                 user.last_heartbeat = Utc::now();
-                tracing::trace!("Updating sheet_id for {session_id}");
             });
 
         Ok(())
