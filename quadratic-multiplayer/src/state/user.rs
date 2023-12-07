@@ -72,17 +72,23 @@ impl State {
         Ok(user)
     }
 
-    /// Remove stale users in a room.  Remove the number of users removed in the room.
+    /// Remove stale users in a room.  Returns the number of users removed in the room, and the number left.
     pub(crate) async fn remove_stale_users_in_room(
         &self,
         file_id: Uuid,
         heartbeat_timeout_s: i64,
-    ) -> Result<usize> {
+    ) -> Result<(usize, usize)> {
+        let mut count = 0;
         let stale_users = get_room!(self, file_id)?
             .users
             .iter()
             .filter(|(_, user)| {
-                user.last_heartbeat.timestamp() + heartbeat_timeout_s < Utc::now().timestamp()
+                let no_heartbeat =
+                    user.last_heartbeat.timestamp() + heartbeat_timeout_s < Utc::now().timestamp();
+                if !no_heartbeat {
+                    count += 1;
+                }
+                no_heartbeat
             })
             .map(|(user_id, _)| user_id.to_owned())
             .collect::<Vec<Uuid>>();
@@ -93,7 +99,7 @@ impl State {
             self.leave_room(file_id, user_id).await?;
         }
 
-        Ok(stale_users.len())
+        Ok((stale_users.len(), count))
     }
 
     /// Updates a user's heartbeat in a room

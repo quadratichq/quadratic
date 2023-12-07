@@ -187,13 +187,13 @@ async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_ti
             let rooms = state.rooms.lock().await.clone();
 
             for (file_id, room) in rooms.iter() {
-                tracing::info!("Checking heartbeats in room {file_id}");
-
                 match state
                     .remove_stale_users_in_room(file_id.to_owned(), heartbeat_timeout_s)
                     .await
                 {
-                    Ok(num_removed) => {
+                    Ok((num_removed, num_remaining)) => {
+                        tracing::info!("Checking heartbeats in room {file_id} ({num_remaining} remaining in room)");
+
                         if num_removed > 0 {
                             broadcast(
                                 // TODO(ddimaria): use a real session_id here
@@ -233,6 +233,7 @@ pub(crate) mod tests {
             session_id,
             user_id: user.user_id.clone(),
             file_id,
+            sheet_id: Uuid::new_v4(),
             first_name: user.first_name.clone(),
             last_name: user.last_name.clone(),
             image: user.image.clone(),

@@ -56,7 +56,10 @@ export class PixiApp {
   // for testing purposes
   debug!: Graphics;
 
+  initialized = false;
+
   async init() {
+    this.initialized = true;
     await loadAssets();
     this.initCanvas();
     await this.rebuild();

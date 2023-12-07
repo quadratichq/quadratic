@@ -60,9 +60,9 @@ export class Multiplayer {
   }
 
   private async init() {
-    if (['connected', 'waiting to reconnect'].includes(this.state)) return;
+    if (this.state === 'connected') return;
     return new Promise((resolve) => {
-      if (this.state === 'connecting') {
+      if (this.state === 'connecting' || this.state === 'waiting to reconnect') {
         this.waitingForConnection.push(resolve);
         return;
       }
@@ -87,7 +87,7 @@ export class Multiplayer {
   }
 
   private reconnect = () => {
-    console.log('[Multiplayer] websocket closed. Reconnecting in 5s...');
+    console.log(`[Multiplayer] websocket closed. Reconnecting in ${RECONNECT_AFTER_ERROR_TIMEOUT / 1000}s...`);
     this.state = 'waiting to reconnect';
     setTimeout(async () => {
       this.state = 'not connected';
@@ -97,9 +97,6 @@ export class Multiplayer {
   };
 
   async enterFileRoom(file_id: string, user?: User) {
-    // used to hack the server so everyone is in the same file even if they're not.
-    // file_id = 'ab96f02c-fd8c-4daa-bfb5-aec871ab9225';
-
     this.userUpdate.file_id = file_id;
     await this.init();
     if (!user?.sub) throw new Error('Expected User to be defined');
@@ -111,6 +108,7 @@ export class Multiplayer {
       session_id: this.sessionId,
       user_id: user.sub,
       file_id,
+      sheet_id: sheets.sheet.id,
       first_name: user.given_name ?? '',
       last_name: user.family_name ?? '',
       image: user.picture ?? '',
@@ -140,6 +138,17 @@ export class Multiplayer {
       if (debugShowMultiplayer) console.log('[Multiplayer] Sending heartbeat...');
       this.lastHeartbeat = now;
     }
+  }
+
+  getUsers(): SimpleMultiplayerUser[] {
+    return Array.from(this.players.values()).map((player) => ({
+      sessionId: player.sessionId,
+      userId: player.userId,
+      firstName: player.firstName,
+      lastName: player.lastName,
+      picture: player.image,
+      color: player.color,
+    }));
   }
 
   //#region send messages

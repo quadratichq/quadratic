@@ -14,6 +14,7 @@ use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::message::{broadcast, request::MessageRequest, response::MessageResponse};
+use crate::state::user::UserState;
 use crate::state::{user::User, State};
 
 /// Handle incoming messages.  All requests and responses are strictly typed.
@@ -34,17 +35,19 @@ pub(crate) async fn handle_message(
             first_name,
             last_name,
             image,
+            sheet_id,
         } => {
-            let user = User {
+            let mut user = User {
                 user_id,
                 session_id,
                 first_name,
                 last_name,
                 image,
-                state: Default::default(),
+                state: UserState::default(),
                 socket: Some(Arc::clone(&sender)),
                 last_heartbeat: chrono::Utc::now(),
             };
+            user.state.sheet_id = Some(sheet_id);
             let session_id = user.session_id;
             let is_new = state.enter_room(file_id, &user, socket_id).await;
             let room = state.get_room(&file_id).await?;
@@ -143,7 +146,7 @@ pub(crate) mod tests {
             session_id: user_1.session_id,
             file_id,
             update: UserState {
-                sheet_id: Some(Uuid::new_v4()),
+                sheet_id: None,
                 selection: Some("selection".to_string()),
                 x: Some(1.0),
                 y: Some(2.0),
