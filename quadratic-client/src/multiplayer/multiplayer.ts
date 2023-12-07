@@ -40,7 +40,9 @@ export class Multiplayer {
   private state: 'not connected' | 'connecting' | 'connected' | 'waiting to reconnect';
   private sessionId;
   private room?: string;
-  private uuid?: string;
+  private user?: User;
+
+  // messages pending a reconnect
   private waitingForConnection: { (value: unknown): void }[] = [];
 
   // queue of items waiting to be sent to the server on the next tick
@@ -48,10 +50,11 @@ export class Multiplayer {
   private lastTime = 0;
   private lastHeartbeat = 0;
 
-  // keep track of the next player's color index
+  // next player's color index
   private nextColor = 0;
 
-  players: Map<string, Player> = new Map();
+  // users currently logged in to the room
+  users: Map<string, Player> = new Map();
 
   constructor() {
     this.state = 'not connected';
@@ -92,17 +95,18 @@ export class Multiplayer {
     setTimeout(async () => {
       this.state = 'not connected';
       await this.init();
-      if (this.room) await this.enterFileRoom(this.room, { sub: this.uuid });
+      if (this.room) await this.enterFileRoom(this.room, this.user);
     }, RECONNECT_AFTER_ERROR_TIMEOUT);
   };
 
+  // multiplayer for a file
   async enterFileRoom(file_id: string, user?: User) {
+    if (!user?.sub) throw new Error('User must be defined to enter a multiplayer room.');
     this.userUpdate.file_id = file_id;
     await this.init();
-    if (!user?.sub) throw new Error('Expected User to be defined');
+    this.user = user;
     if (this.room === file_id) return;
     this.room = file_id;
-    this.uuid = user.sub;
     const enterRoom: SendEnterRoom = {
       type: 'EnterRoom',
       session_id: this.sessionId,
@@ -117,6 +121,7 @@ export class Multiplayer {
     if (debugShowMultiplayer) console.log(`[Multiplayer] Joined room ${file_id}.`);
   }
 
+  // called by Update.ts
   async update() {
     await this.init();
     const now = performance.now();
@@ -140,8 +145,9 @@ export class Multiplayer {
     }
   }
 
+  // used to pre-populate useMultiplayerUsers.tsx
   getUsers(): SimpleMultiplayerUser[] {
-    return Array.from(this.players.values()).map((player) => ({
+    return Array.from(this.users.values()).map((player) => ({
       sessionId: player.sessionId,
       userId: player.userId,
       firstName: player.firstName,
@@ -206,11 +212,11 @@ export class Multiplayer {
   // updates the React hook to populate the Avatar list
   private receiveUsersInRoom(room: ReceiveRoom) {
     const players: SimpleMultiplayerUser[] = [];
-    const remaining = new Set(this.players.keys());
+    const remaining = new Set(this.users.keys());
     if (debugShowMultiplayer) console.log(`[Multiplayer] Room size before UsersInRoom message: ${remaining.size}`);
     for (const user of room.users) {
       if (user.session_id !== this.sessionId) {
-        let player = this.players.get(user.session_id);
+        let player = this.users.get(user.session_id);
         if (player) {
           player.firstName = user.first_name;
           player.lastName = user.last_name;
@@ -232,7 +238,7 @@ export class Multiplayer {
             color: this.nextColor,
             visible: false,
           };
-          this.players.set(user.session_id, player);
+          this.users.set(user.session_id, player);
           this.nextColor = (this.nextColor + 1) % MULTIPLAYER_COLORS.length;
           if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${user.first_name} entered room.`);
         }
@@ -247,11 +253,10 @@ export class Multiplayer {
       }
     }
     remaining.forEach((sessionId) => {
-      if (debugShowMultiplayer)
-        console.log(`[Multiplayer] Player ${this.players.get(sessionId)?.firstName} left room.`);
-      this.players.delete(sessionId);
+      if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${this.users.get(sessionId)?.firstName} left room.`);
+      this.users.delete(sessionId);
     });
-    console.log(`[Multiplayer] Room size after UsersInRoom message: ${this.players.size}`);
+    console.log(`[Multiplayer] Room size after UsersInRoom message: ${this.users.size}`);
     window.dispatchEvent(new CustomEvent('multiplayer-update', { detail: players }));
     this.updateMultiplayerCursors();
   }
@@ -266,7 +271,7 @@ export class Multiplayer {
   private receiveUserUpdate(data: MessageUserUpdate) {
     // this eventually will not be necessarily
     if (data.session_id === this.sessionId) return;
-    const player = this.players.get(data.session_id);
+    const player = this.users.get(data.session_id);
     if (!player) {
       throw new Error("Expected Player to be defined before receiving a message of type 'MouseMove'");
     }

@@ -27,7 +27,7 @@ export const MultiplayerCursors = () => {
 
   return (
     <div className="multiplayer-cursors">
-      {[...multiplayer.players].flatMap(([id, player]) => {
+      {[...multiplayer.users].flatMap(([id, player]) => {
         const color = MULTIPLAYER_COLORS[player.color];
         const bounds = pixiApp.viewport.getVisibleBounds();
         const rect = pixiApp.canvas.getBoundingClientRect();
