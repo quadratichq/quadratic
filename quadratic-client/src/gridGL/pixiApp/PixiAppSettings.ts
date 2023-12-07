@@ -1,3 +1,4 @@
+import { multiplayer } from '@/multiplayer/multiplayer';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../grid/controller/Sheets';
@@ -121,6 +122,9 @@ class PixiAppSettings {
   }
 
   changeInput(input: boolean, initialValue?: string) {
+    if (input === false) {
+      multiplayer.sendEndCellEdit();
+    }
     if (
       this._input.show === true &&
       this._input.x !== undefined &&
@@ -132,8 +136,13 @@ class PixiAppSettings {
     if (input === true) {
       const x = sheets.sheet.cursor.cursorPosition.x;
       const y = sheets.sheet.cursor.cursorPosition.y;
-      this._input = { show: input, initialValue, x, y, sheetId: sheets.sheet.id };
-      pixiApp.cellsSheets.showLabel(x, y, sheets.sheet.id, false);
+      console.log('checking...');
+      if (multiplayer.cellIsBeingEdited(x, y, sheets.sheet.id)) {
+        this._input = { show: false };
+      } else {
+        this._input = { show: input, initialValue, x, y, sheetId: sheets.sheet.id };
+        pixiApp.cellsSheets.showLabel(x, y, sheets.sheet.id, false);
+      }
     } else {
       this._input = { show: false };
     }

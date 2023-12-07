@@ -112,6 +112,7 @@ export class Multiplayer {
   }
 
   private reconnect = () => {
+    if (this.state === 'waiting to reconnect') return;
     console.log(`[Multiplayer] websocket closed. Reconnecting in ${RECONNECT_AFTER_ERROR_TIMEOUT / 1000}s...`);
     this.state = 'waiting to reconnect';
     setTimeout(async () => {
@@ -124,6 +125,9 @@ export class Multiplayer {
 
   // multiplayer for a file
   async enterFileRoom(file_id: string, user?: User) {
+    // hack for same file different server
+    // file_id = 'dde9887b-303c-491f-8863-0bfd047cce76';
+
     if (!user?.sub) throw new Error('User must be defined to enter a multiplayer room.');
     this.userUpdate.file_id = file_id;
     await this.init();
@@ -184,6 +188,18 @@ export class Multiplayer {
       picture: player.image,
       color: player.color,
     }));
+  }
+
+  // whether a multiplayer user is already editing a cell
+  cellIsBeingEdited(x: number, y: number, sheetId: string): boolean {
+    for (const player of this.users.values()) {
+      if (player.sheetId === sheetId && player.cellEdit.active && player.selection) {
+        if (player.selection.cursor.x === x && player.selection.cursor.y === y) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   //#region send messages

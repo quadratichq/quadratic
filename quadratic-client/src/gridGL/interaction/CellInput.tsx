@@ -154,8 +154,6 @@ export const CellInput = (props: CellInputProps) => {
     // Clean up listeners
     viewport.off('moved-end', updateInputCSSTransform);
     viewport.off('moved', updateInputCSSTransform);
-
-    multiplayer.sendEndCellEdit();
   };
 
   // Register lister for when grid moves to resize and move input with CSS
