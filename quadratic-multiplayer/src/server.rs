@@ -234,6 +234,7 @@ pub(crate) mod tests {
             user_id: user.user_id.clone(),
             file_id,
             sheet_id: Uuid::new_v4(),
+            selection: String::new(),
             first_name: user.first_name.clone(),
             last_name: user.last_name.clone(),
             image: user.image.clone(),
