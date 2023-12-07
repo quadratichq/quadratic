@@ -37,19 +37,25 @@ pub(crate) async fn handle_message(
             image,
             sheet_id,
             selection,
+            cell_edit,
         } => {
-            let mut user = User {
+            let user = User {
                 user_id,
                 session_id,
                 first_name,
                 last_name,
                 image,
-                state: UserState::default(),
+                state: UserState {
+                    sheet_id,
+                    selection,
+                    cell_edit,
+                    x: 0.0,
+                    y: 0.0,
+                    visible: false,
+                },
                 socket: Some(Arc::clone(&sender)),
                 last_heartbeat: chrono::Utc::now(),
             };
-            user.state.sheet_id = Some(sheet_id);
-            user.state.selection = Some(selection);
             let session_id = user.session_id;
             let is_new = state.enter_room(file_id, &user, connection_id).await;
             let room = state.get_room(&file_id).await?;
@@ -136,7 +142,7 @@ pub(crate) async fn handle_message(
 pub(crate) mod tests {
 
     use super::*;
-    use crate::state::user::UserState;
+    use crate::state::user::{CellEdit, UserState, UserStateUpdate};
     use crate::test_util::add_new_user_to_room;
 
     #[tokio::test]
@@ -148,12 +154,13 @@ pub(crate) mod tests {
         let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
-            update: UserState {
+            update: UserStateUpdate {
                 sheet_id: None,
                 selection: Some("selection".to_string()),
                 x: Some(1.0),
                 y: Some(2.0),
                 visible: Some(true),
+                cell_edit: None,
             },
         };
         broadcast(user_1.session_id, file_id, state, message);
@@ -171,12 +178,13 @@ pub(crate) mod tests {
         let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
-            update: UserState {
+            update: UserStateUpdate {
                 selection: Some("test".to_string()),
                 sheet_id: None,
                 x: None,
                 y: None,
                 visible: None,
+                cell_edit: None,
             },
         };
         broadcast(user_1.session_id, file_id, state, message);
@@ -194,12 +202,13 @@ pub(crate) mod tests {
         let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
-            update: UserState {
+            update: UserStateUpdate {
                 selection: None,
                 sheet_id: None,
                 x: None,
                 y: None,
                 visible: Some(false),
+                cell_edit: None,
             },
         };
         broadcast(user_1.session_id, file_id, state, message);
@@ -217,12 +226,41 @@ pub(crate) mod tests {
         let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
-            update: UserState {
+            update: UserStateUpdate {
                 selection: None,
                 sheet_id: Some(Uuid::new_v4()),
                 x: None,
                 y: None,
                 visible: None,
+                cell_edit: None,
+            },
+        };
+        broadcast(user_1.session_id, file_id, state, message);
+
+        // TODO(ddimaria): mock the splitsink sender to test the actual sending
+    }
+
+    #[tokio::test]
+    async fn test_change_cell_edit() {
+        let state = Arc::new(State::new());
+        let socket_id = Uuid::new_v4();
+        let file_id = Uuid::new_v4();
+        let user_1 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
+        let _user_2 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
+        let message = MessageResponse::UserUpdate {
+            session_id: user_1.session_id,
+            file_id,
+            update: UserStateUpdate {
+                selection: None,
+                sheet_id: None,
+                x: None,
+                y: None,
+                visible: None,
+                cell_edit: Some(CellEdit {
+                    text: "test".to_string(),
+                    cursor: 0,
+                    active: true,
+                }),
             },
         };
         broadcast(user_1.session_id, file_id, state, message);

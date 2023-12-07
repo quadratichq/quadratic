@@ -5,7 +5,7 @@
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::state::user::UserState;
+use crate::state::user::UserStateUpdate;
 use crate::state::{room::Room, user::User};
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
@@ -23,7 +23,7 @@ pub(crate) enum MessageResponse {
     UserUpdate {
         session_id: Uuid,
         file_id: Uuid,
-        update: UserState,
+        update: UserStateUpdate,
     },
     Empty {},
 }

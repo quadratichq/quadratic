@@ -2,6 +2,7 @@ import { debugShowMultiplayer } from '@/debugFlags';
 import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
 import { Coordinate } from '@/gridGL/types/size';
 import { SimpleMultiplayerUser } from '@/ui/menus/TopBar/useMultiplayerUsers';
 import { User } from '@auth0/auth0-spa-js';
@@ -29,6 +30,7 @@ export interface Player {
   sessionId: string;
   userId: string;
   sheetId?: string;
+  cellEdit: { active: boolean; text: string; cursor: number };
   x?: number;
   y?: number;
   image: string;
@@ -63,7 +65,6 @@ export class Multiplayer {
     this.state = 'not connected';
     this.sessionId = uuid();
     this.userUpdate = { type: 'UserUpdate', session_id: this.sessionId, file_id: '', update: {} };
-    
   }
 
   private async getJwt() {
@@ -73,13 +74,12 @@ export class Multiplayer {
   private async addJwtCookie(force: boolean = false) {
     if (force || !this.jwt) {
       await this.getJwt();
-     
+
       if (this.jwt) {
         document.cookie = `jwt=${this.jwt}; path=/;`;
       }
     }
   }
-
 
   private async init() {
     if (this.state === 'connected') return;
@@ -116,7 +116,7 @@ export class Multiplayer {
     this.state = 'waiting to reconnect';
     setTimeout(async () => {
       this.state = 'not connected';
-      console.log("this.room", this.room);
+      console.log('this.room', this.room);
       await this.init();
       if (this.room) await this.enterFileRoom(this.room, this.user);
     }, RECONNECT_AFTER_ERROR_TIMEOUT);
@@ -140,6 +140,11 @@ export class Multiplayer {
       first_name: user.given_name ?? '',
       last_name: user.family_name ?? '',
       image: user.picture ?? '',
+      cell_edit: {
+        active: pixiAppSettings.input.show,
+        text: pixiAppSettings.input.value ?? '',
+        cursor: pixiAppSettings.input.cursor ?? 0,
+      },
     };
     this.websocket!.send(JSON.stringify(enterRoom));
     if (debugShowMultiplayer) console.log(`[Multiplayer] Joined room ${file_id}.`);
@@ -147,7 +152,7 @@ export class Multiplayer {
 
   // called by Update.ts
   async update() {
-    await this.init();
+    if (this.state !== 'connected') return;
     const now = performance.now();
     if (now - this.lastTime < UPDATE_TIME) return;
 
@@ -217,6 +222,24 @@ export class Multiplayer {
     userUpdate.sheet_id = sheets.sheet.id;
   };
 
+  sendCellEdit(text: string, cursor: number) {
+    const userUpdate = this.getUserUpdate().update;
+    userUpdate.cell_edit = {
+      text,
+      cursor,
+      active: true,
+    };
+  }
+
+  sendEndCellEdit() {
+    const userUpdate = this.getUserUpdate().update;
+    userUpdate.cell_edit = {
+      text: '',
+      cursor: 0,
+      active: false,
+    };
+  }
+
   async sendTransaction(operations: string) {
     await this.init();
     const message: MessageTransaction = {
@@ -257,6 +280,7 @@ export class Multiplayer {
             image: user.image,
             sheetId: user.sheet_id,
             selection: user.selection ? JSON.parse(user.selection) : undefined,
+            cellEdit: user.cell_edit,
             x: 0,
             y: 0,
             color: this.nextColor,
@@ -323,6 +347,31 @@ export class Multiplayer {
       if (player.sheetId === sheets.sheet.id) {
         pixiApp.multiplayerCursor.dirty = true;
       }
+    }
+
+    if (update.cell_edit) {
+      player.cellEdit = update.cell_edit;
+      if (player.selection) {
+        // hide the label if the player is editing the cell
+        pixiApp.cellsSheets.showLabel(
+          player.selection.cursor.x,
+          player.selection.cursor.y,
+          player.sheetId!,
+          !player.cellEdit.active
+        );
+      }
+      window.dispatchEvent(
+        new CustomEvent('multiplayer-cell-edit', {
+          detail: {
+            ...update.cell_edit,
+            playerColor: MULTIPLAYER_COLORS[player.color],
+            sessionId: data.session_id,
+            sheetId: player.sheetId,
+            cell: player.selection?.cursor,
+          },
+        })
+      );
+      pixiApp.multiplayerCursor.dirty = true;
     }
   }
 

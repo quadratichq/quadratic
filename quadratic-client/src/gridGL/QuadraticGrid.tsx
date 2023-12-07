@@ -6,6 +6,7 @@ import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu
 import { HtmlCells } from './htmlCells/HtmlCells';
 import { CellInput } from './interaction/CellInput';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
+import { MultiplayerCellEdits } from './multiplayerInput/MultiplayerCellEdits';
 import { pixiApp } from './pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from './pixiApp/PixiAppSettings';
 
@@ -119,6 +120,7 @@ export default function QuadraticGrid() {
       onKeyUp={onKeyUp}
     >
       {showInput && <CellInput container={container} />}
+      <MultiplayerCellEdits container={container} />
       <HtmlCells />
       <FloatingContextMenu container={container} showContextMenu={showContextMenu} />
       <MultiplayerCursors />

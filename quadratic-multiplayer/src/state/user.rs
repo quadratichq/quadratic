@@ -36,24 +36,40 @@ impl PartialEq for User {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub(crate) struct CellEdit {
+    pub active: bool,
+    pub text: String,
+    pub cursor: u32,
+}
+
+impl Default for CellEdit {
+    fn default() -> Self {
+        Self {
+            active: false,
+            text: "".to_string(),
+            cursor: 0,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub(crate) struct UserState {
+    pub sheet_id: Uuid,
+    pub selection: String,
+    pub cell_edit: CellEdit,
+    pub x: f64,
+    pub y: f64,
+    pub visible: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub(crate) struct UserStateUpdate {
     pub sheet_id: Option<Uuid>,
     pub selection: Option<String>,
+    pub cell_edit: Option<CellEdit>,
     pub x: Option<f64>,
     pub y: Option<f64>,
     pub visible: Option<bool>,
-}
-
-impl Default for UserState {
-    fn default() -> Self {
-        UserState {
-            sheet_id: None,
-            selection: None,
-            x: None,
-            y: None,
-            visible: None,
-        }
-    }
 }
 
 impl State {
@@ -131,26 +147,29 @@ impl State {
         &self,
         file_id: &Uuid,
         session_id: &Uuid,
-        user_state: &UserState,
+        user_state: &UserStateUpdate,
     ) -> Result<()> {
         get_mut_room!(self, file_id)?
             .users
             .entry(session_id.to_owned())
             .and_modify(|user| {
                 if let Some(sheet_id) = user_state.sheet_id {
-                    user.state.sheet_id = Some(sheet_id);
+                    user.state.sheet_id = sheet_id;
                 }
-                if let Some(selection) = user_state.selection.to_owned() {
-                    user.state.selection = Some(selection);
+                if let Some(selection) = &user_state.selection {
+                    user.state.selection = selection.to_owned();
                 }
                 if let Some(x) = user_state.x {
-                    user.state.x = Some(x);
+                    user.state.x = x;
                 }
                 if let Some(y) = user_state.y {
-                    user.state.y = Some(y);
+                    user.state.y = y;
                 }
                 if let Some(visible) = user_state.visible {
-                    user.state.visible = Some(visible);
+                    user.state.visible = visible;
+                }
+                if let Some(cell_edit) = user_state.cell_edit.to_owned() {
+                    user.state.cell_edit = cell_edit;
                 }
                 user.last_heartbeat = Utc::now();
             });
