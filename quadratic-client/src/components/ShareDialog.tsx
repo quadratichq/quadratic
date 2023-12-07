@@ -1,11 +1,12 @@
 import { TYPE } from '@/constants/appConstants';
+import { TeamAction } from '@/routes/teams.$teamUuid';
 import { Button as Button2 } from '@/shadcn/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
 import { Input } from '@/shadcn/ui/input';
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/shadcn/ui/select';
 import { cn } from '@/shadcn/utils';
 import { ArrowDropDown, Check, EmailOutlined } from '@mui/icons-material';
 import {
-  Alert,
   Avatar,
   Box,
   Button,
@@ -23,8 +24,8 @@ import {
 } from '@mui/material';
 import { GlobeIcon, LockClosedIcon, PersonIcon } from '@radix-ui/react-icons';
 import { ApiTypes, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
-import React, { Children, useEffect, useRef, useState } from 'react';
-import { useFetcher, useSearchParams } from 'react-router-dom';
+import React, { Children, useRef, useState } from 'react';
+import { Form, useFetcher, useFetchers, useSearchParams, useSubmit } from 'react-router-dom';
 import { z } from 'zod';
 import { RoleSchema, UserRoleTeam } from '../permissions';
 import { AvatarWithLetters } from './AvatarWithLetters';
@@ -39,24 +40,113 @@ export const shareSearchParamValuesById = {
 
 const rowClassName = 'flex flex-row items-center gap-3 [&>:nth-child(3)]:ml-auto';
 
-/**
- * <ShareMenu> usage:
- *
- * <ShareMenu.Wrapper>
- *   <ShareMenu.Invite>
- *   <ShareMenu.Users>
- */
-ShareMenu.Wrapper = Wrapper;
-ShareMenu.Invite = Invite;
-// ShareMenu.Users = Users;
-ShareMenu.UserListItem = UserListItem;
+export function ShareTeamDialog({
+  data,
+  onClose,
+}: {
+  data: ApiTypes['/v0/teams/:uuid.GET.response'];
+  onClose: () => void;
+}) {
+  // TODO: create fetcher in state for people who get added and keep them around if they fail
+  const invitedUsers = useFetchers()
+    .filter(
+      (fetcher) =>
+        // @ts-expect-error
+        fetcher.json?.action === 'invite-user'
+    )
+    .map((fetcher) => ({
+      // @ts-expect-error gives me email, role
+      ...fetcher.json.payload,
+      id: Date.now(),
+      hasAccount: false,
+      name: undefined,
+      picture: undefined,
+    }));
 
-export function Share({ loggedInUser, context, onInviteUser, onRemoveUser, onChangeUser, users }: any) {
+  const users = data.team.users.concat(invitedUsers);
+
+  const numberOfOwners = data.team.users.filter((user) => user.role === 'OWNER').length;
+
+  console.log(invitedUsers);
+  return (
+    <ShareDialog
+      title={`Share ${data.team.name}`}
+      description="Invite people to collaborate in this team"
+      onClose={() => {}}
+    >
+      <InviteUser actionUrl={`/teams/${data.team.uuid}`} userEmails={[]} loggedInUser={data.user} />
+      {users.map((user) => (
+        <ListItemUser
+          key={user.id}
+          numberOfOwners={numberOfOwners}
+          loggedInUser={data.user}
+          user={user}
+          disabled={false}
+          error={undefined}
+          actionUrl={`/teams/${data.team.uuid}/sharing/${user.id}`}
+        />
+      ))}
+    </ShareDialog>
+  );
+}
+
+export function ShareFileDialog({ uuid, name, onClose, fetcherUrl }: any) {
+  const isLoading = false;
+
+  // TODO: get file name from fetched data
+  return (
+    <ShareDialog title={`Share ${name}`} description="Invite people to collaborate on this file" onClose={() => {}}>
+      {isLoading ? (
+        <ListItemLoading />
+      ) : (
+        <>
+          <InviteUser actionUrl={`/files/${uuid}/sharing`} userEmails={[]} loggedInUser={{}} />
+          <ListItemPublicLink fetcherUrl={fetcherUrl} publicLinkAccess={'EDIT'} />
+          <ListItemTeamMember teamName={'TODO:'} />
+        </>
+      )}
+    </ShareDialog>
+  );
+}
+
+export function ShareDialog({ onClose, title, description, children }: any) {
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader className={`mr-6 overflow-hidden`}>
+          <DialogTitle className={`truncate`}>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <div className={`flex flex-col gap-4`}>{children}</div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ListItemTeamMember({ teamName }: { teamName: string }) {
+  return (
+    <ListItem>
+      <div className={`flex h-6 w-6 items-center justify-center`}>
+        <PersonIcon className={`h-5 w-5`} />
+      </div>
+      <p className={`${TYPE.body2}`}>Everyone in {teamName} can access this file</p>
+    </ListItem>
+  );
+}
+
+type InviteUserProps = {
+  loggedInUser: any; // ApiTypes['/v0/teams/:uuid.GET.response'];
+  // onInviteUser: (user: { email: string; role: string }) => void;
+  userEmails: string[];
+  actionUrl: string;
+  // userRoles: Array<{ label: string; value: string }>;
+};
+export function InviteUser({ loggedInUser, userEmails, actionUrl }: InviteUserProps) {
   // **** INVITE
   // const [error, setError] = useState<string>('');
   // const [role, setRole] = useState<z.infer<typeof RoleSchema>>(RoleSchema.enum.EDITOR);
   const [searchParams, setSearchParams] = useSearchParams();
-
+  const submit = useSubmit();
   // TODO comma separate list someday
 
   // https://stackoverflow.com/a/9204568
@@ -80,91 +170,89 @@ export function Share({ loggedInUser, context, onInviteUser, onRemoveUser, onCha
   // **** INVITE
 
   return (
-    <div className={`flex flex-col gap-4`}>
-      <form
-        className={`flex flex-row items-start gap-2`}
-        onSubmit={(e) => {
-          e.preventDefault();
+    <form
+      className={`flex flex-row items-start gap-2`}
+      onSubmit={(e) => {
+        e.preventDefault();
 
-          const formData = new FormData(e.currentTarget);
-          const json = Object.fromEntries(formData);
-          const { email, role } = json;
+        const formData = new FormData(e.currentTarget);
+        const json = Object.fromEntries(formData) as { email: string; role: string };
+        const { email, role } = json;
 
-          // TODO: validate
+        // TODO: validate
 
-          onInviteUser({ email, role });
+        // TODO: types for different contexts
+        const data: TeamAction['request.invite-user'] = {
+          action: 'invite-user',
+          payload: {
+            email,
+            // @ts-expect-error
+            role,
+          },
+        };
+        submit(data, { method: 'POST', action: actionUrl, encType: 'application/json', navigate: false });
 
-          // Reset the input & focus
-          if (inputRef.current) {
-            inputRef.current.value = '';
-            inputRef.current.focus();
-          }
+        // Reset the input & focus
+        if (inputRef.current) {
+          inputRef.current.value = '';
+          inputRef.current.focus();
+        }
 
-          // If we have ?share=team-created, turn it into just ?share
-          if (searchParams.get(shareSearchParamKey) === shareSearchParamValuesById.TEAM_CREATED) {
-            setSearchParams((prevParams: URLSearchParams) => {
-              const newParams = new URLSearchParams(prevParams);
-              newParams.set(shareSearchParamKey, '');
-              return newParams;
-            });
-          }
-        }}
-      >
-        <Input
-          // error={Boolean(error)}
-          // helperText={error ? error : ''}
-          className="flex-grow"
-          autoComplete="off"
-          aria-label="Email"
-          placeholder="Email"
-          name="email"
-          autoFocus
-          ref={inputRef}
-          // pattern="/\S+@\S+\.\S+/"
-          // variant="outlined"
-          // size="small"
-          // inputProps={{ sx: { fontSize: '.875rem' } }}
-          // value={email}
-          // onChange={(e) => {
-          //   const newEmail = e.target.value;
-          //   setEmail(newEmail);
-          //   if (users.map((user: any) => user.email).includes(newEmail)) {
-          //     setError('User already invited');
-          //   } else if (error) {
-          //     setError('');
-          //   }
-          // }}
-        />
+        // If we have ?share=team-created, turn it into just ?share
+        if (searchParams.get(shareSearchParamKey) === shareSearchParamValuesById.TEAM_CREATED) {
+          setSearchParams((prevParams: URLSearchParams) => {
+            const newParams = new URLSearchParams(prevParams);
+            newParams.set(shareSearchParamKey, '');
+            return newParams;
+          });
+        }
+      }}
+    >
+      <Input
+        // error={Boolean(error)}
+        // helperText={error ? error : ''}
+        className="flex-grow"
+        autoComplete="off"
+        aria-label="Email"
+        placeholder="Email"
+        name="email"
+        autoFocus
+        ref={inputRef}
+        // pattern="/\S+@\S+\.\S+/"
+        // variant="outlined"
+        // size="small"
+        // inputProps={{ sx: { fontSize: '.875rem' } }}
+        // value={email}
+        // onChange={(e) => {
+        //   const newEmail = e.target.value;
+        //   setEmail(newEmail);
+        //   if (users.map((user: any) => user.email).includes(newEmail)) {
+        //     setError('User already invited');
+        //   } else if (error) {
+        //     setError('');
+        //   }
+        // }}
+      />
 
-        <div className="flex-shrink-0">
-          <Select defaultValue={options[0].value} name="role">
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {options.map(({ label, value }, key) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Button2 type="submit">Invite</Button2>
-      </form>
-
-      {/* TODO: File-specific items */}
-      <PublicLink fetcherUrl={'/files/12345'} publicLinkAccess={'EDIT'} />
-      {/* TODO: if it's a file and its part of a team, show that here */}
-      <div className={rowClassName}>
-        <div className={`flex h-6 w-6 items-center justify-center`}>
-          <PersonIcon className={`h-5 w-5`} />
-        </div>
-        <p className={`${TYPE.body2}`}>Everyone in {`{{team}}`} can access this file</p>
+      <div className="flex-shrink-0">
+        <Select defaultValue={options[0].value} name="role">
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map(({ label, value }, key) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      {users.map((user: any, i: number) => (
+      <Button2 type="submit">Invite</Button2>
+    </form>
+  );
+  /*users.map((user: any, i: number) => (
         <UserListItem2
           key={i}
           numberOfOwners={users.filter((user: any) => user.role === 'OWNER').length}
@@ -173,27 +261,24 @@ export function Share({ loggedInUser, context, onInviteUser, onRemoveUser, onCha
           onUpdateUser={onChangeUser}
           onDeleteUser={onRemoveUser}
         />
-      ))}
-    </div>
-  );
+      ))*/
 }
 
-function UserListItem2({
+// eslint-disable-next-line
+function ListItemUser({
   numberOfOwners,
   loggedInUser,
   user,
-  onUpdateUser,
-  onDeleteUser,
   disabled,
   error,
+  actionUrl,
 }: {
   numberOfOwners: number;
   loggedInUser: ApiTypes['/v0/teams/:uuid.GET.response']['user'];
   user: ApiTypes['/v0/teams/:uuid.GET.response']['team']['users'][0];
-  onUpdateUser: any; // (userId: number, role: ApiTypes['/v0/teams/:uuid.GET.response']['team']['users'][0]['role']) => void;
-  onDeleteUser: any; // (userId: number) => void;
   disabled?: boolean;
   error?: string;
+  actionUrl: string;
 }) {
   // TODO: figure out primary vs. secondary display & "resend"
   const primary = user.name ? user.name : user.email;
@@ -261,22 +346,10 @@ function UserListItem2({
     }
   });
 
-  return (
-    <form
-      className={rowClassName}
-      onChange={(e) => {
-        e.preventDefault();
+  const submit = useSubmit();
 
-        const formData = new FormData(e.currentTarget);
-        const json = Object.fromEntries(formData);
-        const { role } = json;
-        if (role === 'DELETE') {
-          onDeleteUser({ userId: user.id });
-        } else {
-          onUpdateUser({ userId: user.id, role });
-        }
-      }}
-    >
+  return (
+    <ListItem>
       {isPending ? (
         <Avatar sx={{ width: 24, height: 24, fontSize: '1rem' }}>
           <EmailOutlined fontSize="inherit" />
@@ -294,7 +367,23 @@ function UserListItem2({
           <p className={cn(TYPE.caption, error ? 'text-destructive' : 'text-muted-foreground')}>{secondary}</p>
         )}
       </div>
-      <div className={`ml-auto`}>
+      <Form
+        className={rowClassName}
+        navigate={false}
+        onChange={(e) => {
+          e.preventDefault();
+
+          const formData = new FormData(e.currentTarget);
+          const json = Object.fromEntries(formData) as { role: string };
+          const { role } = json;
+
+          submit(role === 'DELETE' ? null : { role }, {
+            method: role === 'DELETE' ? 'DELETE' : 'POST',
+            action: actionUrl,
+            encType: 'application/json',
+          });
+        }}
+      >
         <Select defaultValue={user.role} name="role" disabled={options.length < 2}>
           <SelectTrigger>
             <SelectValue />
@@ -314,109 +403,100 @@ function UserListItem2({
             })}
           </SelectContent>
         </Select>
-      </div>
-    </form>
+      </Form>
+    </ListItem>
   );
 }
 
-function Wrapper({ children }: { children: React.ReactNode }) {
-  const theme = useTheme();
+function ListItemLoading() {
   return (
-    <Stack gap={theme.spacing(1)} direction="column">
-      {children}
-    </Stack>
-  );
-}
-
-function Loading() {
-  return (
-    <>
+    <ListItem>
       <Skeleton variant="circular" animation="pulse" width={24} height={24} />
       <Skeleton width={160} />
       <Skeleton width={120} />
-    </>
+    </ListItem>
   );
 }
 
-function ShareMenu({ fetcherUrl, uuid }: { fetcherUrl: string; uuid: string }) {
-  const theme = useTheme();
-  const fetcher = useFetcher();
+// function ShareMenu({ fetcherUrl, uuid }: { fetcherUrl: string; uuid: string }) {
+//   const theme = useTheme();
+//   const fetcher = useFetcher();
 
-  const [users, setUsers] = useState([]); // TODO types
-  const isLoading = Boolean(!fetcher.data?.ok);
-  // const owner = fetcher.data?.data?.owner;
-  const publicLinkAccess = fetcher.data?.data?.public_link_access;
-  // const isShared = publicLinkAccess && publicLinkAccess !== 'NOT_SHARED';
-  // const isDisabledCopyShareLink = showSkeletons ? true : !isShared;
-  const showLoadingError = fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok;
-  // const isFile = fetcherUrl.includes('/files/');
-  const canEdit = true; // TODO fetcher.data.permission.access.includes('FILE_EDIT');;
+//   const [users, setUsers] = useState([]); // TODO types
+//   const isLoading = Boolean(!fetcher.data?.ok);
+//   // const owner = fetcher.data?.data?.owner;
+//   const publicLinkAccess = fetcher.data?.data?.public_link_access;
+//   // const isShared = publicLinkAccess && publicLinkAccess !== 'NOT_SHARED';
+//   // const isDisabledCopyShareLink = showSkeletons ? true : !isShared;
+//   const showLoadingError = fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok;
+//   // const isFile = fetcherUrl.includes('/files/');
+//   const canEdit = true; // TODO fetcher.data.permission.access.includes('FILE_EDIT');;
 
-  // On the initial mount, load the data (if it's not there already)
-  useEffect(() => {
-    if (fetcher.state === 'idle' && !fetcher.data) {
-      fetcher.load(fetcherUrl);
-    }
-  }, [fetcher, fetcherUrl]);
+//   // On the initial mount, load the data (if it's not there already)
+//   useEffect(() => {
+//     if (fetcher.state === 'idle' && !fetcher.data) {
+//       fetcher.load(fetcherUrl);
+//     }
+//   }, [fetcher, fetcherUrl]);
 
-  return (
-    <ShareMenu.Wrapper>
-      {showLoadingError && (
-        <Alert
-          severity="error"
-          action={
-            <Button
-              color="inherit"
-              size="small"
-              onClick={() => {
-                fetcher.load(fetcherUrl);
-              }}
-            >
-              Reload
-            </Button>
-          }
-          sx={{
-            // Align the alert so it's icon/button match each row item
-            px: theme.spacing(3),
-            mx: theme.spacing(-3),
-          }}
-        >
-          Failed to retrieve sharing info. Try reloading.
-        </Alert>
-      )}
+//   return (
+//     <ShareMenu.Wrapper>
+//       {showLoadingError && (
+//         <Alert
+//           severity="error"
+//           action={
+//             <Button
+//               color="inherit"
+//               size="small"
+//               onClick={() => {
+//                 fetcher.load(fetcherUrl);
+//               }}
+//             >
+//               Reload
+//             </Button>
+//           }
+//           sx={{
+//             // Align the alert so it's icon/button match each row item
+//             px: theme.spacing(3),
+//             mx: theme.spacing(-3),
+//           }}
+//         >
+//           Failed to retrieve sharing info. Try reloading.
+//         </Alert>
+//       )}
 
-      {false && canEdit && (
-        <ShareMenu.Invite
-          onInvite={({ email, role }) => {
-            // @ts-expect-error
-            setUsers((prev: any) => [...prev, { email, role }]);
-          }}
-          userEmails={users.map(({ email }) => email)}
-        />
-      )}
+//       {false && canEdit && (
+//         <ShareMenu.Invite
+//           onInvite={({ email, role }) => {
+//             // @ts-expect-error
+//             setUsers((prev: any) => [...prev, { email, role }]);
+//           }}
+//           userEmails={users.map(({ email }) => email)}
+//         />
+//       )}
 
-      {isLoading ? (
-        <>
-          <Row>
-            <Loading />
-          </Row>
-        </>
-      ) : (
-        <>
-          {canEdit && (
-            <>
-              <Row>
-                <PublicLink fetcherUrl={fetcherUrl} publicLinkAccess={publicLinkAccess} />
-              </Row>
-              {/* TODO <Row>Team</Row> */}
-            </>
-          )}
-          {/* <UserListItem users={users} user={owner} isOwner={isOwner} /> */}
-        </>
-      )}
-    </ShareMenu.Wrapper>
-  );
-}
+//       {isLoading ? (
+//         <>
+//           <Row>
+//             <Loading />
+//           </Row>
+//         </>
+//       ) : (
+//         <>
+//           {canEdit && (
+//             <>
+//               <Row>
+//                 <PublicLink fetcherUrl={fetcherUrl} publicLinkAccess={publicLinkAccess} />
+//               </Row>
+//               {/* TODO <Row>Team</Row> */}
+//             </>
+//           )}
+//           {/* <UserListItem users={users} user={owner} isOwner={isOwner} /> */}
+//         </>
+//       )}
+//     </ShareMenu.Wrapper>
+//   );
+// }
 
 // function Users({
 //   users,
@@ -480,6 +560,7 @@ function ShareMenu({ fetcherUrl, uuid }: { fetcherUrl: string; uuid: string }) {
 //   );
 // }
 
+//eslint-disable-next-line
 function UserListItem({
   numberOfOwners,
   loggedInUser,
@@ -735,6 +816,7 @@ UpdateUserOptions: file & team
 */
 
 export type ShareMenuInviteCallback = { email: string; role: UserRoleTeam /* TODO */ };
+// eslint-disable-next-line
 function Invite({
   onInvite,
   disabled,
@@ -826,7 +908,7 @@ function Invite({
   );
 }
 
-function PublicLink({
+function ListItemPublicLink({
   publicLinkAccess,
   fetcherUrl,
 }: {
@@ -866,7 +948,7 @@ function PublicLink({
   const activeOptionLabel = optionsByValue[public_link_access].label;
 
   return (
-    <Row>
+    <ListItem>
       <div className="flex h-6 w-6 items-center justify-center">
         {public_link_access === 'NOT_SHARED' ? (
           <LockClosedIcon className={`h-5 w-5`} />
@@ -901,7 +983,7 @@ function PublicLink({
           ))}
         </SelectContent>
       </Select>
-    </Row>
+    </ListItem>
   );
 }
 
@@ -913,4 +995,10 @@ function Row({ children, sx }: { children: React.ReactNode; sx?: any }) {
   return <div className={'flex flex-row items-center gap-3 [&>:last-child]:ml-auto'}>{children}</div>;
 }
 
-export { ShareMenu };
+function ListItem({ children }: { children: React.ReactNode }) {
+  if (Children.count(children) !== 3) {
+    console.warn('<ListItem> expects exactly 3 children');
+  }
+
+  return <div className={'flex flex-row items-center gap-3 [&>:nth-child(3)]:ml-auto'}>{children}</div>;
+}

@@ -121,9 +121,13 @@ function Navbar() {
         </p>
         <div className="grid gap-1">
           {teams.map(({ uuid, name, picture }) => {
-            // See if this team has an inflight fetcher
+            // TODO: can we refine this?
+            // See if this team has an inflight fetcher that's updating team info
             const inFlightFetcher = fetchers.find(
-              (fetcher) => fetcher.state !== 'idle' && fetcher.formAction?.includes(uuid)
+              (fetcher) =>
+                fetcher.state !== 'idle' &&
+                fetcher.formAction?.includes(uuid) &&
+                (fetcher.json as TeamAction['request.update-team']).action === 'update-team'
             );
             // If it does, use its data
             if (inFlightFetcher) {

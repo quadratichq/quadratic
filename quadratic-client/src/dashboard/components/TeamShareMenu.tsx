@@ -1,9 +1,9 @@
 import { TeamAction } from '@/routes/teams.$teamUuid';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useFetcher } from 'react-router-dom';
-import { ShareMenu } from '../../components/ShareMenu';
+import { Share, ShareMenu } from '../../components/ShareMenu';
 
 export function TeamShareMenu({
   onClose,
@@ -12,13 +12,15 @@ export function TeamShareMenu({
   onClose: () => void;
   data: ApiTypes['/v0/teams/:uuid.GET.response'];
 }) {
-  let [pendingUsers, setPendingUsers] = useState<{ email: string; role: string }[]>([]);
-  const fetcher = useFetcher();
+  // let [pendingUsers, setPendingUsers] = useState<{ email: string; role: string }[]>([]);
+  // const fetcher = useFetcher();
 
   const { team } = data;
   const users = team.users;
-  const userEmails = users.map(({ email }) => email).concat(pendingUsers.map(({ email }) => email));
-  const numberOfOwners = users.filter(({ role }) => role === 'OWNER').length;
+
+  // TODO users + pending users
+  // const userEmails = users.map(({ email }) => email).concat(pendingUsers.map(({ email }) => email));
+  // const numberOfOwners = users.filter(({ role }) => role === 'OWNER').length;
   // if (fetcher.state !== 'idle' && !fetcher.data) {
   //   console.log(fetcher);
   //   const {
@@ -36,12 +38,21 @@ export function TeamShareMenu({
           <DialogDescription>Invite people to collaborate in this team</DialogDescription>
         </DialogHeader>
         <div>
-          {/* 
-          TODO
-          <ShareMenu>
-            <ShareMenu.Invite />
-            <ShareMenu.User />
-        */}
+          <Share
+            context="team"
+            users={users}
+            loggedInUser={data.user}
+            onInviteUser={({ email, role }: any) => {
+              console.log('fired onInviteUser: { email: "%s", role: "%s" }', email, role);
+            }}
+            onRemoveUser={({ userId }: any) => {
+              console.log('fired onRemoveUser: { userId: "%s" }', userId);
+            }}
+            onChangeUser={({ userId, role }: any) => {
+              console.log('fired onChangeUser: { userId: "%s", role: "%s" }', userId, role);
+            }}
+          />
+          {/*
 
           <ShareMenu.Wrapper>
             <ShareMenu.Invite
@@ -63,9 +74,9 @@ export function TeamShareMenu({
             ))}
             {users.map((user) => (
               <Item key={user.id} user={user} data={data} numberOfOwners={numberOfOwners} />
-            ))}
+            ))}*/}
 
-            {/* 
+          {/* 
               // avatar={
               //   user.isPending ? (
               //     <Avatar sx={{ width: 24, height: 24, fontSize: '16px' }}>
@@ -97,13 +108,14 @@ export function TeamShareMenu({
               // }
               // action={<ShareMenu.ListItemUserActions value={user.permission} setValue={() => {}} />}
         */}
-          </ShareMenu.Wrapper>
+          {/*</ShareMenu.Wrapper>*/}
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
+// eslint-disable-next-line
 function Item({
   user,
   numberOfOwners,
@@ -152,6 +164,7 @@ function Item({
   );
 }
 
+// eslint-disable-next-line
 function PendingItem({ pendingUser, onComplete }: any) {
   const fetcher = useFetcher();
   let { email, role } = pendingUser;

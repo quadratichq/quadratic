@@ -50,14 +50,26 @@ export const apiClient = {
     );
   },
 
-  async updateUserInTeam(uuid: string, body: ApiTypes['/v0/teams/:uuid/sharing.POST.request']) {
+  async inviteUserToTeam(teamUuid: string, body: ApiTypes['/v0/teams/:uuid/sharing.POST.request']) {
     return fetchFromApi(
-      `/v0/teams/${uuid}/sharing`,
+      `/v0/teams/${teamUuid}/sharing`,
       {
         method: 'POST',
         body: JSON.stringify(body),
       },
       ApiSchemas['/v0/teams/:uuid/sharing.POST.response']
+    );
+  },
+
+  async updateUserInTeam(
+    teamUuid: string,
+    userId: string,
+    body: ApiTypes['/v0/teams/:uuid/sharing/:userId.POST.request']
+  ) {
+    return fetchFromApi(
+      `/v0/teams/${teamUuid}/sharing/${userId}`,
+      { method: 'POST', body: JSON.stringify(body) },
+      ApiSchemas['/v0/teams/:uuid/sharing/:userId.POST.response']
     );
   },
 

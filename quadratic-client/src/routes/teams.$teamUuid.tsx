@@ -1,3 +1,4 @@
+import { ShareTeamDialog } from '@/components/ShareDialog';
 import { DialogRenameItem } from '@/dashboard/components/DialogRenameItem';
 import { Button } from '@/shadcn/ui/button';
 import {
@@ -28,7 +29,6 @@ import { QDialogConfirmDelete } from '../components/QDialog';
 import { shareSearchParamKey, shareSearchParamValuesById } from '../components/ShareMenu';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { TeamLogoInput } from '../dashboard/components/TeamLogo';
-import { TeamShareMenu } from '../dashboard/components/TeamShareMenu';
 import { useUpdateQueryStringValueWithoutNavigation } from '../hooks/useUpdateQueryStringValueWithoutNavigation';
 import { hasAccess } from '../permissions';
 
@@ -86,11 +86,13 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
 
   if (action === 'invite-user') {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       const {
         payload: { email, role },
       } = data;
-      await apiClient.updateUserInTeam(teamUuid, { email, role });
+      console.log('Inviting user', data);
+      await apiClient.inviteUserToTeam(teamUuid, { email, role });
+      // TODO: why do we return the action?
       return { ok: true, action };
     } catch (e) {
       return { ok: false, action };
@@ -229,7 +231,9 @@ export const Component = () => {
           }}
         />
       )}
-      {showShareDialog && <TeamShareMenu onClose={() => setShareSearchParamValue(null)} data={loaderData} />}
+      {(true || showShareDialog) && (
+        <ShareTeamDialog onClose={() => setShareSearchParamValue(null)} data={loaderData} />
+      )}
       {showDeleteDialog && (
         <QDialogConfirmDelete
           entityName={name}

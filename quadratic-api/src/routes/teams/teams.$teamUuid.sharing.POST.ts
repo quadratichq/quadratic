@@ -57,7 +57,7 @@ router.post(
 
     // Nobody with an account by that email
     if (auth0Users.length === 0) {
-      // TODO where do we remove them from this table once they become a user?
+      // TODO: where do we remove them from this table once they become a user?
       await dbClient.teamInvite.create({
         data: {
           email,
@@ -65,7 +65,7 @@ router.post(
           teamId,
         },
       });
-      // TODO send them an invitation email
+      // TODO: send them an invitation email
       return res.status(201).json({ email, role, id: 100 });
     }
 
@@ -107,13 +107,13 @@ router.post(
         },
       });
 
-      // TODO send them an email
+      // TODO: send them an email
 
-      // TODO what to return exactly...?
+      // TODO: what to return exactly...?
       return res.status(201).json({ email, role, id: dbUser.id });
     }
 
-    // TODO, how should we handle duplicate email?
+    // TODO:, how should we handle duplicate email?
     return res.status(500).json({ error: { message: 'Internal server error: duplicate email' } });
   }
 );

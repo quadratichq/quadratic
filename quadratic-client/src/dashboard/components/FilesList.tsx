@@ -1,3 +1,4 @@
+import { ShareFileDialog } from '@/components/ShareDialog';
 import { TYPE } from '@/constants/appConstants';
 import { ROUTES } from '@/constants/routes';
 import { DOCUMENTATION_URL } from '@/constants/urls';
@@ -9,7 +10,6 @@ import { useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { Link, useFetchers, useLocation } from 'react-router-dom';
 import { Empty } from '../../components/Empty';
-import { ShareFileMenu } from '../../components/ShareFileMenu';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import { Loader as FilesLoader } from '../../routes/files';
 import { Action as FilesAction } from '../../routes/files.$uuid';
@@ -21,7 +21,7 @@ export function FilesList({ files }: { files: FilesLoader }) {
   const { pathname } = useLocation();
   const [filterValue, setFilterValue] = useState<string>('');
   const fetchers = useFetchers();
-  const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
+  const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('c46cf8ef-c5ce-46e4-99fb-6683e03e446c');
   const [viewPreferences, setViewPreferences] = useLocalStorage<ViewPreferences>(
     // Persist the layout preference across views (by URL)
     `FilesList-${pathname}`,
@@ -191,13 +191,13 @@ export function FilesList({ files }: { files: FilesLoader }) {
       )}
 
       {activeShareMenuFileId && (
-        <ShareFileMenu
+        <ShareFileDialog
           onClose={() => {
             setActiveShareMenuFileId('');
           }}
           fetcherUrl={ROUTES.FILES_SHARE(activeShareMenuFileId)}
           uuid={activeShareMenuFileId}
-          fileName={activeShareMenuFileName}
+          name={activeShareMenuFileName}
         />
       )}
     </>
