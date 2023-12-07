@@ -22,7 +22,7 @@ pub(crate) async fn handle_message(
     request: MessageRequest,
     state: Arc<State>,
     sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
-    socket_id: Uuid,
+    connection_id: Uuid,
 ) -> Result<MessageResponse> {
     tracing::trace!("Handling message {:?}", request);
 
@@ -51,7 +51,7 @@ pub(crate) async fn handle_message(
             user.state.sheet_id = Some(sheet_id);
             user.state.selection = Some(selection);
             let session_id = user.session_id;
-            let is_new = state.enter_room(file_id, &user, socket_id).await;
+            let is_new = state.enter_room(file_id, &user, connection_id).await;
             let room = state.get_room(&file_id).await?;
             let response = MessageResponse::from(room.to_owned());
 
@@ -142,9 +142,9 @@ pub(crate) mod tests {
     #[tokio::test]
     async fn test_update_state() {
         let state = Arc::new(State::new());
-        let socket_id = Uuid::new_v4();
+        let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
-        let user_1 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
+        let user_1 = add_new_user_to_room(file_id, state.clone(), connection_id).await;
         let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
@@ -164,10 +164,10 @@ pub(crate) mod tests {
     #[tokio::test]
     async fn test_change_selection() {
         let state = Arc::new(State::new());
-        let socket_id = Uuid::new_v4();
+        let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
-        let user_1 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
-        let _user_2 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
+        let user_1 = add_new_user_to_room(file_id, state.clone(), connection_id).await;
+        let _user_2 = add_new_user_to_room(file_id, state.clone(), connection_id).await;
         let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
@@ -210,10 +210,10 @@ pub(crate) mod tests {
     #[tokio::test]
     async fn test_change_sheet() {
         let state = Arc::new(State::new());
-        let socket_id = Uuid::new_v4();
+        let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
-        let user_1 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
-        let _user_2 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
+        let user_1 = add_new_user_to_room(file_id, state.clone(), connection_id).await;
+        let _user_2 = add_new_user_to_room(file_id, state.clone(), connection_id).await;
         let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
@@ -233,10 +233,10 @@ pub(crate) mod tests {
     #[tokio::test]
     async fn test_transaction() {
         let state = Arc::new(State::new());
-        let socket_id = Uuid::new_v4();
+        let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
-        let user_1 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
-        let _user_2 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
+        let user_1 = add_new_user_to_room(file_id, state.clone(), connection_id).await;
+        let _user_2 = add_new_user_to_room(file_id, state.clone(), connection_id).await;
         let message = MessageResponse::Transaction {
             file_id,
             operations: "test".to_string(),

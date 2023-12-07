@@ -85,6 +85,11 @@ impl State {
             .filter(|(_, user)| {
                 let no_heartbeat =
                     user.last_heartbeat.timestamp() + heartbeat_timeout_s < Utc::now().timestamp();
+                println!(
+                    "user.last_heartbeat.timestamp() + heartbeat_timeout_s: {:?}",
+                    user.last_heartbeat.timestamp() + heartbeat_timeout_s
+                );
+                println!("Utc::now().timestamp(): {:?}", Utc::now().timestamp());
                 if !no_heartbeat {
                     count += 1;
                 }
@@ -92,6 +97,8 @@ impl State {
             })
             .map(|(user_id, _)| user_id.to_owned())
             .collect::<Vec<Uuid>>();
+
+        println!("stale_users: {:?}", stale_users);
 
         for user_id in stale_users.iter() {
             tracing::info!("Removing stale user {} from room {}", user_id, file_id);
@@ -154,18 +161,44 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::new_user;
+    use chrono::format;
 
-    use super::*;
+    use crate::test_util::{assert_anyhow_error, new_user};
 
-    #[tokio::test]
-    async fn updates_a_users_heartbeat() {
+    async fn setup() -> (State, Uuid, Uuid, User) {
         let state = State::new();
-        let socket_id = Uuid::new_v4();
+        let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let user = new_user();
 
-        state.enter_room(file_id, &user, socket_id).await;
+        state.enter_room(file_id, &user, connection_id).await;
+
+        (state, connection_id, file_id, user)
+    }
+
+    use super::*;
+    #[tokio::test]
+    async fn removes_stale_users_in_room() {
+        let (state, connection_id, file_id, user) = setup().await;
+
+        tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+
+        let new_user = new_user();
+        state.enter_room(file_id, &new_user, connection_id).await;
+        state.remove_stale_users_in_room(file_id, 0).await.unwrap();
+        assert_eq!(get_room!(state, file_id).unwrap().users.len(), 1);
+
+        tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+
+        state.remove_stale_users_in_room(file_id, 0).await.unwrap();
+        let expected = format!("Room {file_id} not found");
+        assert_anyhow_error(get_room!(state, file_id), &expected);
+    }
+
+    #[tokio::test]
+    async fn updates_a_users_heartbeat() {
+        let (state, connection_id, file_id, user) = setup().await;
+
         let old_heartbeat = state
             ._get_user_in_room(&file_id, &user.session_id)
             .await
