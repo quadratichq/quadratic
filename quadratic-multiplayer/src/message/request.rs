@@ -42,4 +42,16 @@ pub(crate) enum MessageRequest {
         session_id: Uuid,
         file_id: Uuid,
     },
+    // UserUpdateNew {
+    //     session_id: Uuid,
+    //     file_id: Uuid,
+    //     update: UserUpdateType,
+    // },
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub(crate) enum UserUpdateType {
+    MouseMove(f64, f64),
+    Sheet(Uuid),
+    CellEdit(CellEdit),
 }
