@@ -1,3 +1,4 @@
+import { multiplayer } from '@/multiplayer/multiplayer';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../grid/controller/Sheets';
@@ -121,6 +122,9 @@ class PixiAppSettings {
   }
 
   changeInput(input: boolean, initialValue?: string) {
+    if (input === false) {
+      multiplayer.sendEndCellEdit();
+    }
     if (
       this._input.show === true &&
       this._input.x !== undefined &&

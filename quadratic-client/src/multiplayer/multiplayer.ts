@@ -112,6 +112,7 @@ export class Multiplayer {
   }
 
   private reconnect = () => {
+    if (this.state === 'waiting to reconnect') return;
     console.log(`[Multiplayer] websocket closed. Reconnecting in ${RECONNECT_AFTER_ERROR_TIMEOUT / 1000}s...`);
     this.state = 'waiting to reconnect';
     setTimeout(async () => {
@@ -124,6 +125,9 @@ export class Multiplayer {
 
   // multiplayer for a file
   async enterFileRoom(file_id: string, user?: User) {
+    // hack for same file different server
+    // file_id = 'dde9887b-303c-491f-8863-0bfd047cce76';
+
     if (!user?.sub) throw new Error('User must be defined to enter a multiplayer room.');
     this.userUpdate.file_id = file_id;
     await this.init();
