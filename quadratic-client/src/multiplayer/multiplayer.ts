@@ -213,7 +213,6 @@ export class Multiplayer {
   private receiveUsersInRoom(room: ReceiveRoom) {
     const players: SimpleMultiplayerUser[] = [];
     const remaining = new Set(this.users.keys());
-    if (debugShowMultiplayer) console.log(`[Multiplayer] Room size before UsersInRoom message: ${remaining.size}`);
     for (const user of room.users) {
       if (user.session_id !== this.sessionId) {
         let player = this.users.get(user.session_id);
@@ -221,6 +220,7 @@ export class Multiplayer {
           player.firstName = user.first_name;
           player.lastName = user.last_name;
           player.image = user.image;
+          player.sheetId = user.sheet_id;
           player.selection = user.selection ? JSON.parse(user.selection) : undefined;
           remaining.delete(user.session_id);
           if (debugShowMultiplayer) console.log(`[Multiplayer] Updated player ${user.first_name}.`);
@@ -238,6 +238,7 @@ export class Multiplayer {
             color: this.nextColor,
             visible: false,
           };
+          console.log('new user:', user);
           this.users.set(user.session_id, player);
           this.nextColor = (this.nextColor + 1) % MULTIPLAYER_COLORS.length;
           if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${user.first_name} entered room.`);
@@ -256,16 +257,8 @@ export class Multiplayer {
       if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${this.users.get(sessionId)?.firstName} left room.`);
       this.users.delete(sessionId);
     });
-    console.log(`[Multiplayer] Room size after UsersInRoom message: ${this.users.size}`);
     window.dispatchEvent(new CustomEvent('multiplayer-update', { detail: players }));
-    this.updateMultiplayerCursors();
-  }
-
-  private updateMultiplayerCursors() {
-    // multiplayer may be initiated before pixiApp is created
-    if (pixiApp?.multiplayerCursor) {
-      pixiApp.multiplayerCursor.dirty = true;
-    }
+    pixiApp.multiplayerCursor.dirty = true;
   }
 
   private receiveUserUpdate(data: MessageUserUpdate) {
@@ -296,7 +289,7 @@ export class Multiplayer {
       if (player.sheetId !== update.sheet_id) {
         player.sheetId = update.sheet_id;
         if (player.sheetId === sheets.sheet.id) {
-          this.updateMultiplayerCursors();
+          pixiApp.multiplayerCursor.dirty = true;
           window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
         }
       }

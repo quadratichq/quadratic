@@ -130,7 +130,21 @@ impl State {
             .users
             .entry(session_id.to_owned())
             .and_modify(|user| {
-                user.state = user_state.to_owned();
+                if let Some(sheet_id) = user_state.sheet_id {
+                    user.state.sheet_id = Some(sheet_id);
+                }
+                if let Some(selection) = user_state.selection.to_owned() {
+                    user.state.selection = Some(selection);
+                }
+                if let Some(x) = user_state.x {
+                    user.state.x = Some(x);
+                }
+                if let Some(y) = user_state.y {
+                    user.state.y = Some(y);
+                }
+                if let Some(visible) = user_state.visible {
+                    user.state.visible = Some(visible);
+                }
                 user.last_heartbeat = Utc::now();
                 tracing::trace!("Updating sheet_id for {session_id}");
             });

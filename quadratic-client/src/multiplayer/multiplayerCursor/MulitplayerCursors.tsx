@@ -24,7 +24,6 @@ export const MultiplayerCursors = () => {
     window.addEventListener('change-sheet', changeSheet);
     return () => window.removeEventListener('change-sheet', changeSheet);
   }, []);
-
   return (
     <div className="multiplayer-cursors">
       {[...multiplayer.users].flatMap(([id, player]) => {
