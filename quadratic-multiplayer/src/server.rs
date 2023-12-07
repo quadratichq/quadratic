@@ -57,6 +57,7 @@ pub(crate) async fn serve() -> Result<()> {
         auth0_jwks_uri,
         heartbeat_check_s,
         heartbeat_timeout_s,
+        authenticate_jwt,
     } = config()?;
 
     tracing_subscriber::registry()
@@ -68,12 +69,19 @@ pub(crate) async fn serve() -> Result<()> {
         .init();
 
     let jwks = get_jwks(&auth0_jwks_uri).await?;
-    let settings = Settings { jwks: Some(jwks) };
+    let settings = Settings {
+        jwks: Some(jwks),
+        authenticate_jwt,
+    };
     let state = Arc::new(State::new().with_settings(settings));
     let app = app(Arc::clone(&state));
     let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await?;
 
     tracing::info!("listening on {}", listener.local_addr()?);
+
+    if !authenticate_jwt {
+        tracing::warn!("JWT authentication is disabled");
+    }
 
     check_heartbeat(Arc::clone(&state), heartbeat_check_s, heartbeat_timeout_s).await;
 
@@ -102,25 +110,27 @@ async fn ws_handler(
 
     tracing::info!("`{user_agent}` at {addr} connected: connection_id={connection_id}");
 
-    // validate the JWT
-    let result = async {
-        let cookie = cookie.ok_or_else(|| anyhow!("No cookie found"))?;
-        let token = cookie.get("jwt").ok_or_else(|| anyhow!("No JWT found"))?;
-        let jwks: jsonwebtoken::jwk::JwkSet = state
-            .settings
-            .jwks
-            .clone()
-            .ok_or_else(|| anyhow!("No JWKS found"))?;
+    if state.settings.authenticate_jwt {
+        // validate the JWT
+        let result = async {
+            let cookie = cookie.ok_or_else(|| anyhow!("No cookie found"))?;
+            let token = cookie.get("jwt").ok_or_else(|| anyhow!("No JWT found"))?;
+            let jwks: jsonwebtoken::jwk::JwkSet = state
+                .settings
+                .jwks
+                .clone()
+                .ok_or_else(|| anyhow!("No JWKS found"))?;
 
-        authorize(&jwks, &token, false, true)?;
+            authorize(&jwks, &token, false, true)?;
 
-        Ok::<_, anyhow::Error>(())
-    }
-    .await;
+            Ok::<_, anyhow::Error>(())
+        }
+        .await;
 
-    if let Err(error) = result {
-        tracing::error!("Error authorizing user: {:?}", error);
-        return (StatusCode::BAD_REQUEST, "Invalid token").into_response();
+        if let Err(error) = result {
+            tracing::error!("Error authorizing user: {:?}", error);
+            return (StatusCode::BAD_REQUEST, "Invalid token").into_response();
+        }
     }
 
     // upgrade the connection

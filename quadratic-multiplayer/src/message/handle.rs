@@ -134,7 +134,23 @@ pub(crate) async fn handle_message(
             broadcast(session_id, file_id, Arc::clone(&state), response.clone());
 
             Ok(response)
-        }
+        } // MessageRequest::UserUpdateNew {
+          //     session_id,
+          //     file_id,
+          //     update,
+          // } => {
+          //     state
+          //         .update_user_state(&file_id, &session_id, &update)
+          //         .await?;
+          //     let response = MessageResponse::UserUpdate {
+          //         session_id,
+          //         file_id,
+          //         update,
+          //     };
+          //     broadcast(session_id, file_id, Arc::clone(&state), response.clone());
+
+          //     Ok(response)
+          // }
     }
 }
 

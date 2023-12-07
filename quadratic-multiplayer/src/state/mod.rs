@@ -24,6 +24,7 @@ pub(crate) struct State {
 #[derive(Debug, Default)]
 pub(crate) struct Settings {
     pub(crate) jwks: Option<JwkSet>,
+    pub(crate) authenticate_jwt: bool,
 }
 
 impl State {

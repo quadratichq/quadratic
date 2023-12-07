@@ -35,21 +35,11 @@ impl PartialEq for User {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
 pub(crate) struct CellEdit {
     pub active: bool,
     pub text: String,
     pub cursor: u32,
-}
-
-impl Default for CellEdit {
-    fn default() -> Self {
-        Self {
-            active: false,
-            text: "".to_string(),
-            cursor: 0,
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -71,6 +61,19 @@ pub(crate) struct UserStateUpdate {
     pub y: Option<f64>,
     pub visible: Option<bool>,
 }
+
+// impl From<UserStateUpdate> for UserState {
+//     fn from(update: UserStateUpdate) -> Self {
+//         UserState {
+//             sheet_id: update.sheet_id.unwrap_or_default(),
+//             selection: update.selection.unwrap_or_default(),
+//             cell_edit: update.cell_edit.unwrap_or_default(),
+//             x: update.x.unwrap_or_default(),
+//             y: update.y.unwrap_or_default(),
+//             visible: update.visible.unwrap_or_default(),
+//         }
+//     }
+// }
 
 impl State {
     /// Retrieves a copy of a user in a room
@@ -94,27 +97,22 @@ impl State {
         file_id: Uuid,
         heartbeat_timeout_s: i64,
     ) -> Result<(usize, usize)> {
-        let mut count = 0;
+        let mut active_users = 0;
         let stale_users = get_room!(self, file_id)?
             .users
             .iter()
             .filter(|(_, user)| {
                 let no_heartbeat =
                     user.last_heartbeat.timestamp() + heartbeat_timeout_s < Utc::now().timestamp();
-                println!(
-                    "user.last_heartbeat.timestamp() + heartbeat_timeout_s: {:?}",
-                    user.last_heartbeat.timestamp() + heartbeat_timeout_s
-                );
-                println!("Utc::now().timestamp(): {:?}", Utc::now().timestamp());
+
                 if !no_heartbeat {
-                    count += 1;
+                    active_users += 1;
                 }
+
                 no_heartbeat
             })
             .map(|(user_id, _)| user_id.to_owned())
             .collect::<Vec<Uuid>>();
-
-        println!("stale_users: {:?}", stale_users);
 
         for user_id in stale_users.iter() {
             tracing::info!("Removing stale user {} from room {}", user_id, file_id);
@@ -122,7 +120,7 @@ impl State {
             self.leave_room(file_id, user_id).await?;
         }
 
-        Ok((stale_users.len(), count))
+        Ok((stale_users.len(), active_users))
     }
 
     /// Updates a user's heartbeat in a room
@@ -216,7 +214,7 @@ mod tests {
 
     #[tokio::test]
     async fn updates_a_users_heartbeat() {
-        let (state, connection_id, file_id, user) = setup().await;
+        let (state, _, file_id, user) = setup().await;
 
         let old_heartbeat = state
             ._get_user_in_room(&file_id, &user.session_id)

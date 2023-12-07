@@ -16,6 +16,7 @@ pub(crate) struct Config {
     pub(crate) auth0_jwks_uri: String,
     pub(crate) heartbeat_check_s: i64,
     pub(crate) heartbeat_timeout_s: i64,
+    pub(crate) authenticate_jwt: bool,
 }
 
 /// Load the global configuration from the environment into Config.
