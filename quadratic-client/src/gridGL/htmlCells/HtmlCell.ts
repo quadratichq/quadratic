@@ -1,5 +1,6 @@
 import { CELL_HEIGHT, CELL_WIDTH } from '@/constants/gridConstants';
 import { sheets } from '@/grid/controller/Sheets';
+import { Sheet } from '@/grid/sheet/Sheet';
 import { JsHtmlOutput } from '@/quadratic-core/types';
 import { colors } from '@/theme/colors';
 import { InteractionEvent } from 'pixi.js';
@@ -20,15 +21,22 @@ export class HtmlCell {
   private resizing: HtmlCellResizing | undefined;
   private hoverSide: 'right' | 'bottom' | 'corner' | undefined;
 
+  private sheet: Sheet;
+
   div: HTMLDivElement;
 
   constructor(htmlCell: JsHtmlOutput) {
     this.htmlCell = htmlCell;
+    const sheet = sheets.getById(htmlCell.sheet_id)!;
+    if (!sheet) {
+      throw new Error(`Expected to find sheet with id ${htmlCell.sheet_id}`);
+    }
+    this.sheet = sheet;
 
     this.div = document.createElement('div');
     this.div.className = 'html-cell';
     this.div.style.border = `1px solid ${colors.cellColorUserPythonRgba}`;
-    const offset = sheets.sheet.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
+    const offset = this.sheet.getCellOffsets(Number(htmlCell.x), Number(htmlCell.y));
 
     // the 0.5 is adjustment for the border
     this.div.style.left = `${offset.x - 0.5}px`;
@@ -56,6 +64,10 @@ export class HtmlCell {
       this.afterLoad();
     } else {
       this.iframe.addEventListener('load', this.afterLoad);
+    }
+
+    if (this.sheet.id !== sheets.sheet.id) {
+      this.div.style.visibility = 'hidden';
     }
   }
 
