@@ -190,6 +190,18 @@ export class Multiplayer {
     }));
   }
 
+  // whether a multiplayer user is already editing a cell
+  cellIsBeingEdited(x: number, y: number, sheetId: string): boolean {
+    for (const player of this.users.values()) {
+      if (player.sheetId === sheetId && player.cellEdit.active && player.selection) {
+        if (player.selection.cursor.x === x && player.selection.cursor.y === y) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   //#region send messages
   //-------------------------
 
