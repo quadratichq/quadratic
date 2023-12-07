@@ -41,8 +41,6 @@ export const firstRoleIsHigherThanSecond = (
   firstRole: UserRoleTeam | UserRoleFile,
   secondRole: UserRoleTeam | UserRoleFile
 ) => {
-  return true;
-
   switch (secondRole) {
     case 'OWNER':
       return false;
