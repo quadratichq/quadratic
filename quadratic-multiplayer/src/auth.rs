@@ -5,18 +5,18 @@ use jsonwebtoken::{decode, decode_header, jwk, Algorithm, DecodingKey, Validatio
 use std::collections::HashMap;
 use std::str::FromStr;
 
-// TODO(ddimaria): get this from the autho0 jwks api
-const JWKS_REPLY: &str = r#"
-{"keys":[{"kty":"RSA","use":"sig","n":"x9i16nnQlc6oslwtEWfzzA_XKVLnE9upv2hjOEFEzAPeTcdvPZsiFRNyEI8vEq82rPWW4csxDf_zIVhuIikO7aRmfIsYzj7N2lJS-llb6UfXZ9Fqd2FNguUMUbGnUjFMfJLTBMy1nb770URJJ3qKDadyEUAPuLp5g0bOLDTBcb1R70RoKDjN_FJNvw362M5ZlceARk_NNrZPU-gjnZ0yAk1Cqy8ReiWXj26qU9qCcPToOd3ZqmRBOaUijiw3UPfcvpCtv7x8cEzVpe0FMWjVoMF88IulOnN-_-JJyl950ZS-4faScOCLC7l6jPVBIXaqjv5N34D4Xe9uM6NCzOXH9Q","e":"AQAB","kid":"1x4nzYEuDt42GOaimELXG","x5t":"iDqzuDHVsJVQxdGtY_c4Vd2Q1sI","x5c":["MIIDDTCCAfWgAwIBAgIJfWV6WgTrT/s4MA0GCSqGSIb3DQEBCwUAMCQxIjAgBgNVBAMTGWRldi1uamU3ZHc4cy51cy5hdXRoMC5jb20wHhcNMjIwNjIzMTczNjAyWhcNMzYwMzAxMTczNjAyWjAkMSIwIAYDVQQDExlkZXYtbmplN2R3OHMudXMuYXV0aDAuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAx9i16nnQlc6oslwtEWfzzA/XKVLnE9upv2hjOEFEzAPeTcdvPZsiFRNyEI8vEq82rPWW4csxDf/zIVhuIikO7aRmfIsYzj7N2lJS+llb6UfXZ9Fqd2FNguUMUbGnUjFMfJLTBMy1nb770URJJ3qKDadyEUAPuLp5g0bOLDTBcb1R70RoKDjN/FJNvw362M5ZlceARk/NNrZPU+gjnZ0yAk1Cqy8ReiWXj26qU9qCcPToOd3ZqmRBOaUijiw3UPfcvpCtv7x8cEzVpe0FMWjVoMF88IulOnN+/+JJyl950ZS+4faScOCLC7l6jPVBIXaqjv5N34D4Xe9uM6NCzOXH9QIDAQABo0IwQDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBR7BGUkLd+2X3Ame9SAiDPIA47YfTAOBgNVHQ8BAf8EBAMCAoQwDQYJKoZIhvcNAQELBQADggEBADVW1Y+pDXOl9ogJnJlpSpt6ntMHrhzSJTMJbHqkX7X9i3PVyVuK43cQfSmUKPpOVejbdYKJ6EkxRMYh9ZHUDCsz+fwM+6VvFZ8Xkb1jtHIDTkJKhQnlGk126G7fOq/ScB4Fa+fdu2aYKebpNN/12VY8r7FiEshcsIWTcRE2w/Dij9gHIBa/+DCsjo0h+vYC05cf0EBIPzQriNAFh8XgEUAbp7Lk+Hth0OHElm/3C7Ch22IBqdgLVyuvWm3J/iUbHvQ9rxL1myZnyEAVbckHuB5GHCjZa7H4CeKRGnlv/cuSE/bRbV214r3x60Hvpxo51yDLs0E5HK509D5038UD+6Y="],"alg":"RS256"},{"kty":"RSA","use":"sig","n":"qOzrg1UULl9hGpSTGSo4GMIDCBPYLIr6A2qe9SW2TNPdYUONkrA5hKS5v5_20Tu-92LVx2OnRXWjsKVgpV-0rxsVgdyOBclvK0YetY8u9xIF3SvbiUcedrUo-dZj5CVpOKIhCzsFkDuvLhU1bI2vgc_S8j7wtLUb0qboPk39cUl1iJyLQvzb8tNwbMBdKUhsMKaHVrUC0fv2lwrgLJ5UryDD4QPrBt1Ok3YwumeaWU8wfEhe2QqbvecPxvMV2ydwEBElGy4qtAOmdqf9dlaFvgMvKg38hYAfYW7bqzTX6jqgO2YQxQWVYYU6utX52QJkHRfm4iWye-ANFJIU7ZZHOw","e":"AQAB","kid":"VVwQjxFvQBBth8FgRs5sy","x5t":"BivR3N-O6YbltNcnzzbOm_F5b0E","x5c":["MIIDDTCCAfWgAwIBAgIJcK74KIw5CxDiMA0GCSqGSIb3DQEBCwUAMCQxIjAgBgNVBAMTGWRldi1uamU3ZHc4cy51cy5hdXRoMC5jb20wHhcNMjIwNjIzMTczNjAzWhcNMzYwMzAxMTczNjAzWjAkMSIwIAYDVQQDExlkZXYtbmplN2R3OHMudXMuYXV0aDAuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqOzrg1UULl9hGpSTGSo4GMIDCBPYLIr6A2qe9SW2TNPdYUONkrA5hKS5v5/20Tu+92LVx2OnRXWjsKVgpV+0rxsVgdyOBclvK0YetY8u9xIF3SvbiUcedrUo+dZj5CVpOKIhCzsFkDuvLhU1bI2vgc/S8j7wtLUb0qboPk39cUl1iJyLQvzb8tNwbMBdKUhsMKaHVrUC0fv2lwrgLJ5UryDD4QPrBt1Ok3YwumeaWU8wfEhe2QqbvecPxvMV2ydwEBElGy4qtAOmdqf9dlaFvgMvKg38hYAfYW7bqzTX6jqgO2YQxQWVYYU6utX52QJkHRfm4iWye+ANFJIU7ZZHOwIDAQABo0IwQDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBTUKSqOLEU4Kfcomksub/s3zhIT8zAOBgNVHQ8BAf8EBAMCAoQwDQYJKoZIhvcNAQELBQADggEBADVwQ9ppELkSTzoA4wFf/V1+JFvOixoYJSDuSlVm7owKdE9rQAR/NQtTVwlPGphoP+69xjvB2i7GS+NQ/BDnWSYIYcP/ZtMVI9sl6DTMgu1d2aWilY7XZy4XXNe0ywwSdFgctfagj8DUH+C+yVEfdtG3Lv8ovfRR5DESB0CFCEe38TvZ6dM8A7+CsP2rmFvJ/gl4JjtUUYvjEGqb/mcExPHgEHzT2fRLBwPEZ/q6In9ZJrMr0Cnzr0B11BN2alHs8YdmStzPRs9J6MG9WmG/Kok5rSkiQxsmEdKnFTfLU+St45WQ+XAqeWOAtad6IKlcmL4DtT5VLFlTRPRVrBEGCvA="],"alg":"RS256"}]}
-"#;
-
 pub(crate) async fn get_jwks(url: &str) -> Result<jwk::JwkSet> {
     let jwks = reqwest::get(url).await?.json::<jwk::JwkSet>().await?;
 
     Ok(jwks)
 }
 
-pub(crate) fn authorize(jwks: jwk::JwkSet, token: &str) -> Result<()> {
+pub(crate) fn authorize(
+    jwks: &jwk::JwkSet,
+    token: &str,
+    validate_aud: bool,
+    validate_exp: bool,
+) -> Result<()> {
     let header = decode_header(token)?;
     let kid = header
         .kid
@@ -31,10 +31,10 @@ pub(crate) fn authorize(jwks: jwk::JwkSet, token: &str) -> Result<()> {
                     .key_algorithm
                     .ok_or_else(|| anyhow!("Invalid key algorithm"))?
                     .to_string();
-                let mut validation = Validation::new(Algorithm::from_str(&key_algorithm)?);
 
-                // TODO(ddimaria): remove this once this domain is added to the audience
-                validation.validate_aud = false;
+                let mut validation = Validation::new(Algorithm::from_str(&key_algorithm)?);
+                validation.validate_exp = validate_exp;
+                validation.validate_aud = validate_aud;
 
                 let _decoded_token = decode::<HashMap<String, serde_json::Value>>(
                     token,
@@ -49,4 +49,31 @@ pub(crate) fn authorize(jwks: jwk::JwkSet, token: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+pub(crate) mod tests {
+    use crate::test_util::assert_anyhow_error;
+
+    use super::*;
+
+    const TOKEN: &str = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjFaNTdkX2k3VEU2S1RZNTdwS3pEeSJ9.eyJpc3MiOiJodHRwczovL2Rldi1kdXp5YXlrNC5ldS5hdXRoMC5jb20vIiwic3ViIjoiNDNxbW44c281R3VFU0U1N0Fkb3BhN09jYTZXeVNidmRAY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vZGV2LWR1enlheWs0LmV1LmF1dGgwLmNvbS9hcGkvdjIvIiwiaWF0IjoxNjIzNTg1MzAxLCJleHAiOjE2MjM2NzE3MDEsImF6cCI6IjQzcW1uOHNvNUd1RVNFNTdBZG9wYTdPY2E2V3lTYnZkIiwic2NvcGUiOiJyZWFkOnVzZXJzIiwiZ3R5IjoiY2xpZW50LWNyZWRlbnRpYWxzIn0.0MpewU1GgvRqn4F8fK_-Eu70cUgWA5JJrdbJhkCPCxXP-8WwfI-qx1ZQg2a7nbjXICYAEl-Z6z4opgy-H5fn35wGP0wywDqZpqL35IPqx6d0wRvpPMjJM75zVXuIjk7cEhDr2kaf1LOY9auWUwGzPiDB_wM-R0uvUMeRPMfrHaVN73xhAuQWVjCRBHvNscYS5-i6qBQKDMsql87dwR72DgHzMlaC8NnaGREBC-xiSamesqhKPVyGzSkFSaF3ZKpGrSDapqmHkNW9RDBE3GQ9OHM33vzUdVKOjU1g9Leb9PDt0o1U4p3NQoGJPShQ6zgWSUEaqvUZTfkbpD_DoYDRxA";
+    const JWKS: &str = r#"
+{"keys":[{"alg":"RS256","kty":"RSA","use":"sig","n":"2V31IZF-EY2GxXQPI5OaEE--sezizPamNZDW9AjBE2cCErfufM312nT2jUsCnfjsXnh6Z_b-ncOMr97zIZkq1ofU7avemv8nX7NpKmoPBpVrMPprOax2-e3wt-bSfFLIHyghjFLKpkT0LOL_Fimi7xY-J86R06WHojLo3yGzAgQCswZmD4CFf6NcBWDcb6l6kx5vk_AdzHIkVEZH4aikUL_fn3zq5qbE25oOg6pT7F7Pp4zdHOAEKnIRS8tvP8tvvVRkUCrjBxz_Kx6Ne1YOD-fkIMRk_MgIWeKZZzZOYx4VrC0vqYiM-PcKWbNdt1kNoTHOeL06XZeSE6WPZ3VB1Q","e":"AQAB","kid":"1Z57d_i7TE6KTY57pKzDy","x5t":"1gA-aTE9VglLXZnrqvzwWhHsFdk","x5c":["MIIDDTCCAfWgAwIBAgIJHwhLfcIbNvmkMA0GCSqGSIb3DQEBCwUAMCQxIjAgBgNVBAMTGWRldi1kdXp5YXlrNC5ldS5hdXRoMC5jb20wHhcNMjEwNjEzMDcxMTQ1WhcNMzUwMjIwMDcxMTQ1WjAkMSIwIAYDVQQDExlkZXYtZHV6eWF5azQuZXUuYXV0aDAuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2V31IZF+EY2GxXQPI5OaEE++sezizPamNZDW9AjBE2cCErfufM312nT2jUsCnfjsXnh6Z/b+ncOMr97zIZkq1ofU7avemv8nX7NpKmoPBpVrMPprOax2+e3wt+bSfFLIHyghjFLKpkT0LOL/Fimi7xY+J86R06WHojLo3yGzAgQCswZmD4CFf6NcBWDcb6l6kx5vk/AdzHIkVEZH4aikUL/fn3zq5qbE25oOg6pT7F7Pp4zdHOAEKnIRS8tvP8tvvVRkUCrjBxz/Kx6Ne1YOD+fkIMRk/MgIWeKZZzZOYx4VrC0vqYiM+PcKWbNdt1kNoTHOeL06XZeSE6WPZ3VB1QIDAQABo0IwQDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBRPX3shmtgajnR4ly5t9VYB66ufGDAOBgNVHQ8BAf8EBAMCAoQwDQYJKoZIhvcNAQELBQADggEBAHtKpX70WU4uXOMjbFKj0e9HMXyCrdcX6TuYiMFqqlOGWM4yghSM8Bd0HkKcirm4DUoC+1dDMzXMZ+tbntavPt1xG0eRFjeocP+kIYTMQEG2LDM5HQ+Z7bdcwlxnuYOZQfpgKAfYbQ8Cxu38sB6q82I+5NJ0w0VXuG7nUZ1RD+rkXaeMYHNoibAtKBoTWrCaFWGV0E55OM+H0ckcHKUUnNXJOyZ+zEOzPFY5iuYIUmn1LfR1P0SLgIMfiooNC5ZuR/wLdbtyKtor2vzz7niEiewz+aPvfuPnWe/vMtQrfS37/yEhCozFnbIps/+S2Ay78mNBDuOAA9fg5yrnOmjABCU="]},{"alg":"RS256","kty":"RSA","use":"sig","n":"0KDpAuJZyDwPg9CfKi0R3QwDROyH0rvd39lmAoqQNqtYPghDToxFMDLpul0QHttbofHPJMKrPfeEFEOvw7KJgelCHZmckVKaz0e4tfu_2Uvw2kFljCmJGfspUU3mXxLyEea9Ef9JqUru6L8f_0_JIDMT3dceqU5ZqbG8u6-HRgRQ5Jqc_fF29Xyw3gxNP_Q46nsp_0yE68UZE1iPy1om0mpu8mpsY1-Nbvm51C8i4_tFQHdUXbhF4cjAoR0gZFNkzr7FCrL4On0hKeLcvxIHD17SxaBsTuCBGd35g7TmXsA4hSimD9taRHA-SkXh558JG5dr-YV9x80qjeSAvTyjcQ","e":"AQAB","kid":"v2HFn4VqJB-U4vtQRJ3Ql","x5t":"AhUBZjtsFdx7C1PFtWAJ756bo5k","x5c":["MIIDDTCCAfWgAwIBAgIJSSFLkuG8uAM8MA0GCSqGSIb3DQEBCwUAMCQxIjAgBgNVBAMTGWRldi1kdXp5YXlrNC5ldS5hdXRoMC5jb20wHhcNMjEwNjEzMDcxMTQ2WhcNMzUwMjIwMDcxMTQ2WjAkMSIwIAYDVQQDExlkZXYtZHV6eWF5azQuZXUuYXV0aDAuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0KDpAuJZyDwPg9CfKi0R3QwDROyH0rvd39lmAoqQNqtYPghDToxFMDLpul0QHttbofHPJMKrPfeEFEOvw7KJgelCHZmckVKaz0e4tfu/2Uvw2kFljCmJGfspUU3mXxLyEea9Ef9JqUru6L8f/0/JIDMT3dceqU5ZqbG8u6+HRgRQ5Jqc/fF29Xyw3gxNP/Q46nsp/0yE68UZE1iPy1om0mpu8mpsY1+Nbvm51C8i4/tFQHdUXbhF4cjAoR0gZFNkzr7FCrL4On0hKeLcvxIHD17SxaBsTuCBGd35g7TmXsA4hSimD9taRHA+SkXh558JG5dr+YV9x80qjeSAvTyjcQIDAQABo0IwQDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBSEkRwvkyYzzzY/jPd1n7/1VRQNdzAOBgNVHQ8BAf8EBAMCAoQwDQYJKoZIhvcNAQELBQADggEBAGtdl7QwzpaWZjbmd6UINAIlpuWIo2v4EJD9kGan/tUZTiUdBaJVwFHOkLRsbZHc5PmBB5IryjOcrqsmKvFdo6wUZA92qTuQVZrOTea07msOKSWE6yRUh1/VCXH2+vAiB9A4DFZ23WpZikBR+DmiD8NGwVgAwWw9jM6pe7ODY+qxFXGjQdTCHcDdbqG2160nKEHCBvjR1Sc/F0pzHPv8CBJCyGAPTCXX42sKZI92pPzdKSmNNijCuIEYLsjzKVxaUuwEqIshk3mYeu6im4VmXXFj+MlyMsusVWi2py7fGFadamzyiV/bxZe+4xzzrRG1Kow/WnVEizfTdEzFXO6YikE="]}]}
+"#;
+
+    #[tokio::test]
+    async fn test_authorize() {
+        let jwks: jwk::JwkSet = serde_json::from_str(JWKS).unwrap();
+        let result = authorize(&jwks, TOKEN, false, false);
+        assert!(result.is_ok());
+
+        // invalid audience causes error
+        let result = authorize(&jwks, TOKEN, true, false);
+        assert_anyhow_error(result, "InvalidAudience");
+
+        // past expiration causes error
+        let result = authorize(&jwks, TOKEN, false, true);
+        assert_anyhow_error(result, "ExpiredSignature");
+    }
 }

@@ -37,3 +37,42 @@ impl State {
         Ok(affected_rooms)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::test_util::assert_anyhow_error;
+
+    use super::*;
+
+    async fn setup() -> (State, Uuid, Uuid) {
+        let state = State::new();
+        let session_id = Uuid::new_v4();
+        let connection_id = Uuid::new_v4();
+
+        state
+            .connections
+            .lock()
+            .await
+            .insert(connection_id, session_id);
+
+        (state, session_id, connection_id)
+    }
+
+    #[tokio::test]
+    async fn get_session_id() {
+        let (state, session_id, connection_id) = setup().await;
+        let result = state.get_session_id(connection_id).await.unwrap();
+
+        assert_eq!(result, session_id);
+    }
+
+    #[tokio::test]
+    async fn clear_connections() {
+        let (state, _, connection_id) = setup().await;
+        state.clear_connections(connection_id).await.unwrap();
+        let result = state.get_session_id(connection_id).await;
+        let expected = format!("socket_id {connection_id} not found in sockets");
+
+        assert_anyhow_error(result, &expected);
+    }
+}

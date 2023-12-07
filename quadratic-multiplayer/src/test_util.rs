@@ -5,6 +5,7 @@ use futures::stream::StreamExt;
 use futures_util::SinkExt;
 use std::sync::Arc;
 use std::{
+    fmt::Debug,
     future::IntoFuture,
     net::{Ipv4Addr, SocketAddr},
 };
@@ -14,6 +15,13 @@ use uuid::Uuid;
 use crate::message::request::MessageRequest;
 use crate::state::user::{User, UserState};
 use crate::state::State;
+
+pub(crate) fn assert_anyhow_error<T: Debug>(result: anyhow::Result<T>, message: &str) {
+    let error = result.unwrap_err();
+    let root_cause = error.root_cause();
+
+    assert_eq!(format!("{}", root_cause), message);
+}
 
 pub(crate) fn new_user() -> User {
     User {

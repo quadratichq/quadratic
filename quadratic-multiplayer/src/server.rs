@@ -112,7 +112,7 @@ async fn ws_handler(
             .clone()
             .ok_or_else(|| anyhow!("No JWKS found"))?;
 
-        authorize(jwks, &token)?;
+        authorize(&jwks, &token, false, true)?;
 
         Ok::<_, anyhow::Error>(())
     }
