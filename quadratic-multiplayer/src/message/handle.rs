@@ -36,6 +36,7 @@ pub(crate) async fn handle_message(
             last_name,
             image,
             sheet_id,
+            selection,
         } => {
             let mut user = User {
                 user_id,
@@ -48,6 +49,7 @@ pub(crate) async fn handle_message(
                 last_heartbeat: chrono::Utc::now(),
             };
             user.state.sheet_id = Some(sheet_id);
+            user.state.selection = Some(selection);
             let session_id = user.session_id;
             let is_new = state.enter_room(file_id, &user, socket_id).await;
             let room = state.get_room(&file_id).await?;

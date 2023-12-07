@@ -267,6 +267,10 @@ class Sheets {
     pixiApp.gridLines.dirty = true;
     pixiApp.cursor.dirty = true;
   }
+
+  getMultiplayerSelection(): string {
+    return this.sheet.cursor.getMultiplayerSelection();
+  }
 }
 
 export const sheets = new Sheets();

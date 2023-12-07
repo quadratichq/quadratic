@@ -113,6 +113,7 @@ export class Multiplayer {
       user_id: user.sub,
       file_id,
       sheet_id: sheets.sheet.id,
+      selection: sheets.getMultiplayerSelection(),
       first_name: user.given_name ?? '',
       last_name: user.family_name ?? '',
       image: user.picture ?? '',
@@ -183,9 +184,9 @@ export class Multiplayer {
     }
   }
 
-  async sendSelection(cursor: Coordinate, rectangle?: Rectangle) {
+  async sendSelection(selection: string) {
     const userUpdate = this.getUserUpdate().update;
-    userUpdate.selection = JSON.stringify({ cursor, rectangle });
+    userUpdate.selection = selection;
   }
 
   sendChangeSheet = () => {
