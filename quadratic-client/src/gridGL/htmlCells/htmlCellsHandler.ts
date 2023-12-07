@@ -105,6 +105,13 @@ class HTMLCellsHandler {
   getCells(): HtmlCell[] {
     return Array.from(this.cells.values());
   }
+
+  // handle changes to offsets
+  updateOffsets(sheetIds: string[]) {
+    this.cells.forEach((cell) => {
+      if (sheetIds.includes(cell.sheet.id)) cell.updateOffsets();
+    });
+  }
 }
 
 export const htmlCellsHandler = new HTMLCellsHandler();
