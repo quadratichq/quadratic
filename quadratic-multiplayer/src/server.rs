@@ -128,7 +128,7 @@ async fn ws_handler(
         .await;
 
         if let Err(error) = result {
-            tracing::error!("Error authorizing user: {:?}", error);
+            tracing::warn!("Error authorizing user: {:?}", error);
             return (StatusCode::BAD_REQUEST, "Invalid token").into_response();
         }
     }
@@ -150,7 +150,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, conne
             Ok(ControlFlow::Continue(_)) => {}
             Ok(ControlFlow::Break(_)) => break,
             Err(e) => {
-                tracing::error!("Error processing message: {:?}", e);
+                tracing::warn!("Error processing message: {:?}", e);
             }
         }
     }
@@ -186,9 +186,12 @@ async fn process_message(
             let messsage_request = serde_json::from_str::<MessageRequest>(&text)?;
             let message_response =
                 handle_message(messsage_request, state, Arc::clone(&sender), connection_id).await?;
-            let response = Message::Text(serde_json::to_string(&message_response)?);
 
-            (*sender.lock().await).send(response).await?;
+            if let Some(message_response) = message_response {
+                let response = Message::Text(serde_json::to_string(&message_response)?);
+
+                (*sender.lock().await).send(response).await?;
+            }
         }
         Message::Binary(d) => {
             tracing::info!(

@@ -42,11 +42,11 @@ pub(crate) enum MessageRequest {
         session_id: Uuid,
         file_id: Uuid,
     },
-    // UserUpdateNew {
-    //     session_id: Uuid,
-    //     file_id: Uuid,
-    //     update: UserUpdateType,
-    // },
+    UserState {
+        session_id: Uuid,
+        file_id: Uuid,
+        update: UserUpdateType,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]

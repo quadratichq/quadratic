@@ -41,7 +41,7 @@ pub(crate) fn broadcast(
         };
 
         if let Err(e) = result.await {
-            tracing::error!("Error broadcasting message: {:?}", e.to_string());
+            tracing::warn!("Error broadcasting message: {:?}", e.to_string());
         }
     });
 }

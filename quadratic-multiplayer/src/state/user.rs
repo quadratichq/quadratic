@@ -7,6 +7,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
+use crate::message::request::UserUpdateType;
 use crate::state::State;
 use crate::{get_mut_room, get_room};
 
@@ -169,6 +170,30 @@ impl State {
                 if let Some(cell_edit) = user_state.cell_edit.to_owned() {
                     user.state.cell_edit = cell_edit;
                 }
+                user.last_heartbeat = Utc::now();
+            });
+
+        Ok(())
+    }
+
+    /// updates a user's state in a room
+    pub(crate) async fn update_user_state_new(
+        &self,
+        file_id: &Uuid,
+        session_id: &Uuid,
+        user_state: &UserUpdateType,
+    ) -> Result<()> {
+        get_mut_room!(self, file_id)?
+            .users
+            .entry(session_id.to_owned())
+            .and_modify(|user| {
+                match user_state {
+                    UserUpdateType::MouseMove(x, y) => {
+                        user.state.x = *x;
+                        user.state.y = *y;
+                    }
+                    _ => {}
+                };
                 user.last_heartbeat = Utc::now();
             });
 

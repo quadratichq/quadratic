@@ -25,7 +25,6 @@ pub(crate) enum MessageResponse {
         file_id: Uuid,
         update: UserStateUpdate,
     },
-    Empty {},
 }
 
 impl From<Room> for MessageResponse {

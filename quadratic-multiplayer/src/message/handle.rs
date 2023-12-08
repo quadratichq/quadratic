@@ -23,7 +23,7 @@ pub(crate) async fn handle_message(
     state: Arc<State>,
     sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
     connection_id: Uuid,
-) -> Result<MessageResponse> {
+) -> Result<Option<MessageResponse>> {
     tracing::trace!("Handling message {:?}", request);
 
     match request {
@@ -59,10 +59,10 @@ pub(crate) async fn handle_message(
             let session_id = user.session_id;
             let is_new = state.enter_room(file_id, &user, connection_id).await;
             let room = state.get_room(&file_id).await?;
-            let response = MessageResponse::from(room.to_owned());
 
             // only broadcast if the user is new to the room
             if is_new {
+                let response = MessageResponse::from(room.to_owned());
                 broadcast(session_id, file_id, Arc::clone(&state), response.clone());
 
                 tracing::info!(
@@ -73,7 +73,7 @@ pub(crate) async fn handle_message(
                 );
             }
 
-            Ok(response)
+            Ok(None)
         }
 
         // User leaves a room
@@ -83,13 +83,13 @@ pub(crate) async fn handle_message(
         } => {
             let is_not_empty = state.leave_room(file_id, &session_id).await?;
             let room = state.get_room(&file_id).await?;
-            let response = MessageResponse::from(room.to_owned());
 
             if is_not_empty {
+                let response = MessageResponse::from(room.to_owned());
                 broadcast(session_id, file_id, Arc::clone(&state), response.clone());
             }
 
-            Ok(response)
+            Ok(None)
         }
 
         // User sends transactions
@@ -106,7 +106,7 @@ pub(crate) async fn handle_message(
 
             broadcast(session_id, file_id, Arc::clone(&state), response.clone());
 
-            Ok(response)
+            Ok(None)
         }
 
         // User sends a heartbeat
@@ -115,7 +115,7 @@ pub(crate) async fn handle_message(
             file_id,
         } => {
             state.update_user_heartbeat(file_id, &session_id).await?;
-            Ok(MessageResponse::Empty {})
+            Ok(None)
         }
 
         MessageRequest::UserUpdate {
@@ -131,26 +131,29 @@ pub(crate) async fn handle_message(
                 file_id,
                 update,
             };
+
             broadcast(session_id, file_id, Arc::clone(&state), response.clone());
 
-            Ok(response)
-        } // MessageRequest::UserUpdateNew {
-          //     session_id,
-          //     file_id,
-          //     update,
-          // } => {
-          //     state
-          //         .update_user_state(&file_id, &session_id, &update)
-          //         .await?;
-          //     let response = MessageResponse::UserUpdate {
-          //         session_id,
-          //         file_id,
-          //         update,
-          //     };
-          //     broadcast(session_id, file_id, Arc::clone(&state), response.clone());
+            Ok(None)
+        }
 
-          //     Ok(response)
-          // }
+        MessageRequest::UserState {
+            session_id,
+            file_id,
+            update,
+        } => {
+            state
+                .update_user_state_new(&file_id, &session_id, &update)
+                .await?;
+            // let response = MessageResponse::UserUpdate {
+            //     session_id,
+            //     file_id,
+            //     update,
+            // };
+            // broadcast(session_id, file_id, Arc::clone(&state), response.clone());
+
+            Ok(None)
+        }
     }
 }
 
