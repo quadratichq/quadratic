@@ -76,7 +76,7 @@ jobs:
 
     - name: Restart Application on EC2
       run: |
-        ssh -i ~/.ssh/id_rsa ${{ env.EC2_URL }} "sudo systemctl restart quadratic-multiplayer"
+        ssh -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_URL }} "sudo systemctl restart quadratic-multiplayer"
 
 
   # - name: Upload artifact
