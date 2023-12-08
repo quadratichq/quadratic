@@ -39,6 +39,8 @@ jobs:
     #     path: target/release/quadratic-multiplayer
 
     - run: cd infra && npm ci && pulumi config set aws:region us-west-2
+      env:
+        PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 
     - uses: pulumi/actions@v4
       with:
