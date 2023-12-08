@@ -10,7 +10,12 @@ import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
 import { useMultiplayerUsers } from './useMultiplayerUsers';
 
-const convertName = (firstName: string | undefined, lastName: string | undefined, you: boolean): string => {
+const convertName = (
+  firstName: string | undefined,
+  lastName: string | undefined,
+  email: string | undefined,
+  you: boolean
+): string => {
   let name = '';
   if (firstName) {
     name += firstName;
@@ -18,6 +23,9 @@ const convertName = (firstName: string | undefined, lastName: string | undefined
   if (lastName) {
     if (firstName) name += ' ';
     name += lastName;
+  }
+  if (!firstName && !lastName && email) {
+    name = email;
   }
   if (you) {
     if (name.length) {
@@ -29,7 +37,10 @@ const convertName = (firstName: string | undefined, lastName: string | undefined
   return name;
 };
 
-const convertInitial = (firstName?: string, lastName?: string): string => {
+const convertInitial = (firstName?: string, lastName?: string, email?: string): string => {
+  if (!firstName && !lastName && email) {
+    return email[0];
+  }
   return (firstName ? firstName[0] : '') + (lastName ? lastName[0] : '');
 };
 
@@ -45,7 +56,7 @@ export const TopBarUsers = () => {
 
   const theme = useTheme();
   const { user } = useRootRouteLoaderData();
-  const displayName = convertName(user?.given_name, user?.family_name, true);
+  const displayName = convertName(user?.given_name, user?.family_name, user?.email, true);
   const initial = convertInitial(user?.given_name, user?.family_name);
   // const device = getDeviceName();
   // console.log(device)
@@ -64,8 +75,8 @@ export const TopBarUsers = () => {
           return (
             <UserAvatar
               key={user.session_id}
-              displayName={convertName(user.first_name, user.last_name, false)}
-              initial={convertInitial(user.first_name, user.last_name)}
+              displayName={convertName(user.first_name, user.last_name, user.email, false)}
+              initial={convertInitial(user.first_name, user.last_name, user.email)}
               picture={user.image}
               border={MULTIPLAYER_COLORS[user.color]}
               sessionId={user.session_id}
@@ -78,8 +89,8 @@ export const TopBarUsers = () => {
       <AvatarGroup sx={{ mr: theme.spacing(1), ml: theme.spacing(-0.5), alignSelf: 'center' }}>
         {userFollow && (
           <UserAvatar
-            displayName={convertName(userFollow.first_name, userFollow.last_name, false)}
-            initial={convertInitial(userFollow.first_name, userFollow.last_name)}
+            displayName={convertName(userFollow.first_name, userFollow.last_name, userFollow.email, false)}
+            initial={convertInitial(userFollow.first_name, userFollow.last_name, userFollow.email)}
             picture={userFollow.image || ''}
             border={MULTIPLAYER_COLORS[userFollow.color]}
             sessionId={userFollow.session_id}
@@ -159,7 +170,7 @@ function UserAvatar({
 
   const name = follow ? `Following ${displayName}` : displayName;
   const avatar = (
-    <IconButton>
+    <IconButton style={{ borderRadius: 0 }}>
       <TooltipHint title={name} sx={{}}>
         <div style={{ position: 'relative' }}>
           <Avatar
@@ -193,7 +204,7 @@ function UserAvatar({
 
   return (
     <Menu menuButton={avatar}>
-      <MenuItem onClick={handleFollow}>{follow ? 'Stop following' : 'Follow'}</MenuItem>
+      <MenuItem onClick={handleFollow}>{follow ? `Stop following ${displayName}` : `Follow ${displayName}`}</MenuItem>
     </Menu>
   );
 }
