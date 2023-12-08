@@ -11,7 +11,7 @@ on:
 
 jobs:
   multiplayer_preview:
-    runs-on: ubuntu-latest-4-cores 
+    runs-on: ubuntu-latest-8-cores 
     steps:
     - uses: actions/checkout@v4
 
@@ -23,6 +23,7 @@ jobs:
         channel: 'nightly'
 
     - name: Install pkg-config
+      if: github.runner.isHosted == true
       run: |
         sudo apt-get update
         sudo apt-get install -y pkg-config
