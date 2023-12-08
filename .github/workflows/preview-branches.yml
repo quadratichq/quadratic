@@ -42,6 +42,7 @@ jobs:
       run: |
         npm ci
         
+        # Selects or inits stack for this pr
         STACK_NAME="preview-pr-${{ github.event.pull_request.number }}"
         if ! pulumi stack ls | grep -q "^$STACK_NAME "; then
           echo "Stack $STACK_NAME does not exist. Initializing..."
@@ -85,13 +86,17 @@ jobs:
         fi
         echo "EC2 instance is available"
 
+    - name: Stop Service on EC2
+      run: |
+        ssh -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_URL }} "sudo systemctl stop quadratic-multiplayer"
+
     - name: Transfer Build to EC2
       run: | 
         scp -i ~/.ssh/id_rsa quadratic-multiplayer/target/release/quadratic-multiplayer ubuntu@${{ env.EC2_URL }}:/home/ubuntu/
 
-    - name: Restart Application on EC2
+    - name: Restart Service on EC2
       run: |
-        ssh -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_URL }} "sudo systemctl restart quadratic-multiplayer"
+        ssh -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_URL }} "sudo systemctl start quadratic-multiplayer"
 
 
   # - name: Upload artifact
