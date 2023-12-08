@@ -7,7 +7,6 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::message::request::UserUpdateType;
 use crate::state::State;
 use crate::{get_mut_room, get_room};
 
@@ -169,30 +168,6 @@ impl State {
 
         Ok(())
     }
-
-    /// updates a user's state in a room
-    pub(crate) async fn update_user_state_new(
-        &self,
-        file_id: &Uuid,
-        session_id: &Uuid,
-        user_state: &UserUpdateType,
-    ) -> Result<()> {
-        get_mut_room!(self, file_id)?
-            .users
-            .entry(session_id.to_owned())
-            .and_modify(|user| {
-                match user_state {
-                    UserUpdateType::MouseMove(x, y) => {
-                        user.state.x = *x;
-                        user.state.y = *y;
-                    }
-                    _ => {}
-                };
-                user.last_heartbeat = Utc::now();
-            });
-
-        Ok(())
-    }
 }
 
 #[cfg(test)]
@@ -213,7 +188,7 @@ mod tests {
     use super::*;
     #[tokio::test]
     async fn removes_stale_users_in_room() {
-        let (state, connection_id, file_id, user) = setup().await;
+        let (state, connection_id, file_id, _) = setup().await;
 
         tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 

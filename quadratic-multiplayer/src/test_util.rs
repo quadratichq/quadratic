@@ -9,7 +9,9 @@ use std::{
     future::IntoFuture,
     net::{Ipv4Addr, SocketAddr},
 };
-use tokio_tungstenite::tungstenite;
+use tokio::net::TcpStream;
+use tokio::sync::Mutex;
+use tokio_tungstenite::{tungstenite, MaybeTlsStream, WebSocketStream};
 use uuid::Uuid;
 
 use crate::message::request::MessageRequest;
@@ -65,7 +67,9 @@ pub(crate) async fn add_new_user_to_room(
     add_user_to_room(file_id, new_user(), state, connection_id).await
 }
 
-pub(crate) async fn integration_test(state: Arc<State>, request: MessageRequest) -> String {
+pub(crate) async fn integration_test_setup(
+    state: Arc<State>,
+) -> WebSocketStream<MaybeTlsStream<TcpStream>> {
     let listener = tokio::net::TcpListener::bind(SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0)))
         .await
         .unwrap();
@@ -74,20 +78,36 @@ pub(crate) async fn integration_test(state: Arc<State>, request: MessageRequest)
     // run the server in a separate thread
     tokio::spawn(axum::serve(listener, crate::server::app(state)).into_future());
 
-    let (mut socket, _response) = tokio_tungstenite::connect_async(format!("ws://{addr}/ws"))
+    let (socket, _response) = tokio_tungstenite::connect_async(format!("ws://{addr}/ws"))
         .await
         .unwrap();
 
+    socket
+}
+
+pub(crate) async fn integration_test_send_and_receive(
+    socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
+    request: MessageRequest,
+    expect_response: bool,
+) -> Option<String> {
     // send the message
     socket
+        .lock()
+        .await
         .send(tungstenite::Message::text(
             serde_json::to_string(&request).unwrap(),
         ))
         .await
         .unwrap();
 
-    match socket.next().await.unwrap().unwrap() {
+    if !expect_response {
+        return None;
+    }
+
+    let response = match socket.lock().await.next().await.unwrap().unwrap() {
         tungstenite::Message::Text(msg) => msg,
         other => panic!("expected a text message but got {other:?}"),
-    }
+    };
+
+    Some(response)
 }

@@ -121,7 +121,7 @@ async fn ws_handler(
                 .clone()
                 .ok_or_else(|| anyhow!("No JWKS found"))?;
 
-            authorize(&jwks, &token, false, true)?;
+            authorize(&jwks, token, false, true)?;
 
             Ok::<_, anyhow::Error>(())
         }
@@ -259,191 +259,177 @@ async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_ti
 pub(crate) mod tests {
 
     use super::*;
-    use crate::state::user::{CellEdit, UserStateUpdate};
-    use crate::test_util::{integration_test, new_user};
+    use crate::state::user::{CellEdit, User, UserStateUpdate};
+    use crate::test_util::{integration_test_send_and_receive, integration_test_setup, new_user};
+    use tokio::net::TcpStream;
+    use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
     use uuid::Uuid;
 
-    #[tokio::test]
-    async fn user_enters_a_room() {
-        let state = Arc::new(State::new());
-        let file_id = Uuid::new_v4();
+    async fn add_user_via_ws(
+        file_id: Uuid,
+        socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
+    ) -> User {
         let user = new_user();
         let session_id = user.session_id;
         let request = MessageRequest::EnterRoom {
             session_id,
             user_id: user.user_id.clone(),
             file_id,
-            sheet_id: Uuid::new_v4(),
+            sheet_id: user.state.sheet_id,
             selection: String::new(),
             first_name: user.first_name.clone(),
             last_name: user.last_name.clone(),
             email: user.email.clone(),
             image: user.image.clone(),
             cell_edit: CellEdit::default(),
-            viewport: "viewport".to_string(),
+            viewport: "initial viewport".to_string(),
         };
-        let expected = MessageResponse::UsersInRoom { users: vec![user] };
-        let response = integration_test(state, request).await;
 
-        assert_eq!(response, serde_json::to_string(&expected).unwrap());
+        integration_test_send_and_receive(socket, request, true).await;
+
+        user
+    }
+
+    async fn setup() -> (
+        Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
+        Arc<State>,
+        Uuid,
+        Uuid,
+        User,
+    ) {
+        let state = Arc::new(State::new());
+        let connection_id = Uuid::new_v4();
+        let file_id = Uuid::new_v4();
+        let socket = integration_test_setup(state.clone()).await;
+        let socket = Arc::new(Mutex::new(socket));
+        let user = add_user_via_ws(file_id, socket.clone()).await;
+
+        (socket.clone(), state, connection_id, file_id, user)
+    }
+
+    async fn assert_user_changes_state(update: UserStateUpdate) {
+        let (socket, _, _, file_id, _) = setup().await;
+        let new_user = new_user();
+        let session_id = new_user.session_id;
+        let request = MessageRequest::UserUpdate {
+            session_id,
+            file_id,
+            update: update.clone(),
+        };
+        let expected = MessageResponse::UserUpdate {
+            session_id,
+            file_id,
+            update,
+        };
+
+        let response = integration_test_send_and_receive(socket, request, true).await;
+
+        assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
+    }
+
+    #[tokio::test]
+    async fn user_enters_a_room() {
+        let (socket, _, _, file_id, user) = setup().await;
+        let new_user = new_user();
+        let session_id = new_user.session_id;
+        let request = MessageRequest::EnterRoom {
+            session_id,
+            user_id: new_user.user_id.clone(),
+            file_id,
+            sheet_id: new_user.state.sheet_id,
+            selection: String::new(),
+            first_name: new_user.first_name.clone(),
+            last_name: new_user.last_name.clone(),
+            email: new_user.email.clone(),
+            image: new_user.image.clone(),
+            cell_edit: CellEdit::default(),
+            viewport: "initial viewport".to_string(),
+        };
+        let expected_1 = MessageResponse::UsersInRoom {
+            users: vec![new_user.clone(), user.clone()],
+        };
+        let expected_2 = MessageResponse::UsersInRoom {
+            users: vec![user, new_user],
+        };
+        let response = integration_test_send_and_receive(socket, request, true).await;
+
+        // order is brittle, this feels hacky
+        assert!(
+            response == Some(serde_json::to_string(&expected_1).unwrap())
+                || response == Some(serde_json::to_string(&expected_2).unwrap())
+        );
     }
 
     #[tokio::test]
     async fn user_leaves_a_room() {
-        let state = Arc::new(State::new());
-        let connection_id = Uuid::new_v4();
-        let user = new_user();
-        let session_id = user.session_id;
-        let user2 = new_user();
-        let file_id = Uuid::new_v4();
+        let (socket, state, connection_id, file_id, user) = setup().await;
+        let new_user = new_user();
+        let session_id = new_user.session_id;
         let request = MessageRequest::LeaveRoom {
             session_id,
             file_id,
         };
         let expected = MessageResponse::UsersInRoom {
-            users: vec![user2.clone()],
+            users: vec![user.clone()],
         };
 
-        state.enter_room(file_id, &user, connection_id).await;
-        state.enter_room(file_id, &user2, connection_id).await;
+        state.enter_room(file_id, &new_user, connection_id).await;
 
-        let response = integration_test(state.clone(), request).await;
+        let response = integration_test_send_and_receive(socket, request, true).await;
 
-        assert_eq!(response, serde_json::to_string(&expected).unwrap());
+        assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
     }
 
     #[tokio::test]
     async fn user_moves_a_mouse() {
-        let state = Arc::new(State::new());
-        let connection_id = Uuid::new_v4();
-        let user = new_user();
-        let session_id = user.session_id;
-        let file_id = Uuid::new_v4();
-        let x = 0 as f64;
-        let y = 0 as f64;
-        let request = MessageRequest::UserUpdate {
-            session_id,
-            file_id,
-            update: UserStateUpdate {
-                x: Some(x),
-                y: Some(y),
-                selection: None,
-                sheet_id: None,
-                visible: None,
-                cell_edit: None,
-                viewport: None,
-            },
-        };
-        let expected = MessageResponse::UserUpdate {
-            session_id,
-            file_id,
-            update: UserStateUpdate {
-                x: Some(x),
-                y: Some(y),
-                selection: None,
-                sheet_id: None,
-                visible: None,
-                cell_edit: None,
-                viewport: None,
-            },
+        let update = UserStateUpdate {
+            x: Some(1.0),
+            y: Some(2.0),
+            selection: None,
+            sheet_id: None,
+            visible: None,
+            cell_edit: None,
+            viewport: None,
         };
 
-        state.enter_room(file_id, &user, connection_id).await;
-
-        let response = integration_test(state.clone(), request).await;
-
-        assert_eq!(response, serde_json::to_string(&expected).unwrap());
+        assert_user_changes_state(update).await;
     }
 
     #[tokio::test]
     async fn user_changes_selection() {
-        let state = Arc::new(State::new());
-        let connection_id = Uuid::new_v4();
-        let user = new_user();
-        let session_id = user.session_id;
-        let file_id = Uuid::new_v4();
-        let request = MessageRequest::UserUpdate {
-            session_id,
-            file_id,
-            update: UserStateUpdate {
-                selection: Some("test".to_string()),
-                sheet_id: None,
-                x: None,
-                y: None,
-                visible: None,
-                cell_edit: None,
-                viewport: None,
-            },
-        };
-        let expected = MessageResponse::UserUpdate {
-            session_id,
-            file_id,
-            update: UserStateUpdate {
-                selection: Some("test".to_string()),
-                sheet_id: None,
-                x: None,
-                y: None,
-                visible: None,
-                cell_edit: None,
-                viewport: None,
-            },
+        let update = UserStateUpdate {
+            selection: Some("test".to_string()),
+            sheet_id: None,
+            x: None,
+            y: None,
+            visible: None,
+            cell_edit: None,
+            viewport: None,
         };
 
-        state.enter_room(file_id, &user, connection_id).await;
-
-        let response = integration_test(state.clone(), request).await;
-
-        assert_eq!(response, serde_json::to_string(&expected).unwrap());
+        assert_user_changes_state(update).await;
     }
 
     #[tokio::test]
     async fn user_changes_viewport() {
-        let state = Arc::new(State::new());
-        let connection_id = Uuid::new_v4();
-        let user = new_user();
-        let session_id = user.session_id;
-        let file_id = Uuid::new_v4();
-        let request = MessageRequest::UserUpdate {
-            session_id,
-            file_id,
-            update: UserStateUpdate {
-                selection: None,
-                sheet_id: None,
-                x: None,
-                y: None,
-                visible: None,
-                cell_edit: None,
-                viewport: Some("new_viewport".to_string()),
-            },
-        };
-        let expected = MessageResponse::UserUpdate {
-            session_id,
-            file_id,
-            update: UserStateUpdate {
-                selection: None,
-                sheet_id: None,
-                x: None,
-                y: None,
-                visible: None,
-                cell_edit: None,
-                viewport: Some("new_viewport".to_string()),
-            },
+        let update = UserStateUpdate {
+            selection: None,
+            sheet_id: None,
+            x: None,
+            y: None,
+            visible: None,
+            cell_edit: None,
+            viewport: Some("new_viewport".to_string()),
         };
 
-        state.enter_room(file_id, &user, connection_id).await;
-
-        let response = integration_test(state.clone(), request).await;
-
-        assert_eq!(response, serde_json::to_string(&expected).unwrap());
+        assert_user_changes_state(update).await;
     }
 
     #[tokio::test]
     async fn user_shares_operations() {
-        let state = Arc::new(State::new());
-        let connection_id = Uuid::new_v4();
-        let user = new_user();
-        let session_id = user.session_id;
-        let file_id = Uuid::new_v4();
+        let (socket, _, _, file_id, _) = setup().await;
+        let new_user = new_user();
+        let session_id = new_user.session_id;
         let request = MessageRequest::Transaction {
             session_id,
             file_id,
@@ -454,10 +440,8 @@ pub(crate) mod tests {
             operations: "test".to_string(),
         };
 
-        state.enter_room(file_id, &user, connection_id).await;
+        let response = integration_test_send_and_receive(socket, request, true).await;
 
-        let response = integration_test(state.clone(), request).await;
-
-        assert_eq!(response, serde_json::to_string(&expected).unwrap());
+        assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
     }
 }
