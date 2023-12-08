@@ -41,8 +41,6 @@ jobs:
       working-directory: infra
       run: |
         npm ci
-        pulumi stack select 
-
         
         STACK_NAME="preview-pr-${{ github.event.pull_request.number }}"
         if ! pulumi stack ls | grep -q "^$STACK_NAME "; then
