@@ -259,7 +259,7 @@ async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_ti
 pub(crate) mod tests {
 
     use super::*;
-    use crate::state::user::{CellEdit, UserState, UserStateUpdate};
+    use crate::state::user::{CellEdit, UserStateUpdate};
     use crate::test_util::{integration_test, new_user};
     use uuid::Uuid;
 
@@ -277,6 +277,7 @@ pub(crate) mod tests {
             selection: String::new(),
             first_name: user.first_name.clone(),
             last_name: user.last_name.clone(),
+            email: user.email.clone(),
             image: user.image.clone(),
             cell_edit: CellEdit::default(),
         };

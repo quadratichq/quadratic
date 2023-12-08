@@ -29,6 +29,9 @@ pub(crate) fn new_user() -> User {
         user_id: Uuid::new_v4().to_string(),
         first_name: FirstName().fake(),
         last_name: LastName().fake(),
+
+        // todo: get faker to work with email (DSF: couldn't get a string back :( )
+        email: "email".to_string(),
         state: UserState {
             sheet_id: Uuid::new_v4(),
             selection: "".to_string(),

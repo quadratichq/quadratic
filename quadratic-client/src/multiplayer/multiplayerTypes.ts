@@ -5,6 +5,7 @@ export interface ReceiveRoom {
     user_id: string;
     first_name: string;
     last_name: string;
+    email: string;
     image: string;
     sheet_id: string;
     selection: string;
@@ -43,6 +44,7 @@ export interface SendEnterRoom {
   selection: string;
   first_name: string;
   last_name: string;
+  email: string;
   image: string;
   cell_edit: {
     active: boolean;

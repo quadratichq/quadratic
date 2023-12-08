@@ -17,6 +17,7 @@ pub(crate) struct User {
     pub user_id: String,
     pub first_name: String,
     pub last_name: String,
+    pub email: String,
     pub image: String,
     #[serde(flatten)]
     pub state: UserState,
@@ -62,19 +63,6 @@ pub(crate) struct UserStateUpdate {
     pub y: Option<f64>,
     pub visible: Option<bool>,
 }
-
-// impl From<UserStateUpdate> for UserState {
-//     fn from(update: UserStateUpdate) -> Self {
-//         UserState {
-//             sheet_id: update.sheet_id.unwrap_or_default(),
-//             selection: update.selection.unwrap_or_default(),
-//             cell_edit: update.cell_edit.unwrap_or_default(),
-//             x: update.x.unwrap_or_default(),
-//             y: update.y.unwrap_or_default(),
-//             visible: update.visible.unwrap_or_default(),
-//         }
-//     }
-// }
 
 impl State {
     /// Retrieves a copy of a user in a room
@@ -203,8 +191,6 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use chrono::format;
-
     use crate::test_util::{assert_anyhow_error, new_user};
 
     async fn setup() -> (State, Uuid, Uuid, User) {

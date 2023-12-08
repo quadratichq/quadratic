@@ -27,6 +27,7 @@ const RECONNECT_AFTER_ERROR_TIMEOUT = 1000 * 5;
 export interface Player {
   firstName: string;
   lastName: string;
+  email: string;
   userId: string;
   sheetId?: string;
   cellEdit: { active: boolean; text: string; cursor: number };
@@ -151,6 +152,7 @@ export class Multiplayer {
       selection: sheets.getMultiplayerSelection(),
       first_name: user.given_name ?? '',
       last_name: user.family_name ?? '',
+      email: user.email ?? '',
       image: user.picture ?? '',
       cell_edit: {
         active: pixiAppSettings.input.show,
@@ -193,6 +195,7 @@ export class Multiplayer {
       userId: player.userId,
       firstName: player.firstName,
       lastName: player.lastName,
+      email: player.email,
       picture: player.image,
       color: player.color,
     }));
@@ -301,6 +304,7 @@ export class Multiplayer {
             userId: user.user_id,
             firstName: user.first_name,
             lastName: user.last_name,
+            email: user.email,
             image: user.image,
             sheetId: user.sheet_id,
             selection: user.selection ? JSON.parse(user.selection) : undefined,
@@ -322,6 +326,7 @@ export class Multiplayer {
           lastName: player.lastName,
           picture: player.image,
           color: player.color,
+          email: player.email,
         });
       }
     }

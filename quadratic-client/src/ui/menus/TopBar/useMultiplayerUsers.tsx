@@ -1,11 +1,15 @@
 import { multiplayer } from '@/multiplayer/multiplayer';
 import { useEffect, useState } from 'react';
 
+// this is needed since we extend the user object with the color (and pair it down since we don't need everything)
 export interface SimpleMultiplayerUser {
   sessionId: string;
+
+  // todo: use the userId to tie the same user together somehow in the UI
   userId: string;
   firstName: string;
   lastName: string;
+  email: string;
   picture: string;
   color: number;
 }

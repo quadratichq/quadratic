@@ -34,6 +34,7 @@ pub(crate) async fn handle_message(
             file_id,
             first_name,
             last_name,
+            email,
             image,
             sheet_id,
             selection,
@@ -44,6 +45,7 @@ pub(crate) async fn handle_message(
                 session_id,
                 first_name,
                 last_name,
+                email,
                 image,
                 state: UserState {
                     sheet_id,
