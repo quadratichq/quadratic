@@ -22,8 +22,6 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
   if (intent === 'update-user') {
     try {
       const { role } = actionData as Action['request.update-user'];
-      console.log('update user', role);
-      await new Promise((resolve, reject) => setTimeout(reject, 3000));
       await apiClient.updateUserInTeam(teamUuid, userId, { role });
       return { ok: true };
     } catch (e) {
@@ -33,8 +31,10 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
 
   if (intent === 'delete-user') {
     try {
+      // TODO: remove
       console.log('deleting user', userId);
       await new Promise((resolve, reject) => setTimeout(reject, 3000));
+
       await apiClient.deleteUserInTeam(teamUuid, userId);
 
       // TODO: if you delete yourself (e.g. leave a team), redirect to '/'

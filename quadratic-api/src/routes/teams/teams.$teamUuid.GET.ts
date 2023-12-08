@@ -55,7 +55,19 @@ router.get(
       {}
     );
 
-    // TODO sort users by created_date in the team
+    // TODO: sort users by created_date in the team
+    // TODO invited users, also can we guarantee ordering here?
+    const users = teamUsers.map(({ userId: id, role, user: { auth0_id } }) => {
+      const { email, name, picture } = auth0UsersByAuth0Id[auth0_id];
+      return {
+        id,
+        email,
+        role,
+        hasAccount: true,
+        name,
+        picture,
+      };
+    });
 
     const response = {
       team: {
@@ -64,18 +76,7 @@ router.get(
         created_date: team.createdDate,
         ...(team.picture ? { picture: team.picture } : {}),
         // TODO we could put this in /sharing and just return the userCount
-        // TODO invited users, also can we guarantee ordering here?
-        users: teamUsers.map(({ userId: id, role, user: { auth0_id } }) => {
-          const { email, name, picture } = auth0UsersByAuth0Id[auth0_id];
-          return {
-            id,
-            email,
-            role,
-            hasAccount: true,
-            name,
-            picture,
-          };
-        }),
+        users,
 
         files: [],
       },

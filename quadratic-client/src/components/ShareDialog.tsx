@@ -30,7 +30,7 @@ import { useFetcher, useFetchers, useSearchParams, useSubmit } from 'react-route
 import { z } from 'zod';
 import { RoleSchema, UserRoleTeam } from '../permissions';
 import { AvatarWithLetters } from './AvatarWithLetters';
-import { getUserShareOptions } from './ShareMenu.utils';
+import { getTeamUserOption, getUserShareOptions } from './ShareMenu.utils';
 
 // Possible values: `?share` | `?share=team-created`
 export const shareSearchParamKey = 'share';
@@ -325,52 +325,18 @@ function ListItemUser({
     );
   }
 
-  let labels = disabled
-    ? user.role === 'OWNER'
-      ? ['Owner']
-      : user.role === 'EDITOR'
-      ? ['Can edit']
-      : ['Can view']
-    : getUserShareOptions({
+  const options = disabled
+    ? [user.role]
+    : getTeamUserOption({
         user,
         loggedInUser,
         numberOfOwners,
-        canHaveMoreThanOneOwner: true, // TODO: teams? yes. files? no.
+        // TODO: teams? yes. files? no.
+        // canHaveMoreThanOneOwner: true,
       });
-  let options: Array<{ label: string; value: string; divider?: boolean }> = [];
-  labels.forEach((label) => {
-    if (label === 'Owner') {
-      options.push({
-        label,
-        value: RoleSchema.enum.OWNER,
-      });
-    }
-    if (label === 'Can edit') {
-      options.push({
-        label,
-        value: RoleSchema.enum.EDITOR,
-      });
-    }
-    if (label === 'Can view') {
-      options.push({
-        label,
-        value: RoleSchema.enum.VIEWER,
-      });
-    }
-    if (label === 'Leave' || label === 'Remove') {
-      options.push(
-        { label: '', value: '', divider: true },
-        {
-          label,
-          // TODO if 'leave' then redirect user to dashboard
-          value: 'DELETE',
-        }
-      );
-    }
-  });
 
   return (
-    <ListItem>
+    <ListItem key={user.id}>
       {isPending ? (
         <Avatar sx={{ width: 24, height: 24, fontSize: '1rem' }}>
           <EmailOutlined fontSize="inherit" />
@@ -413,16 +379,25 @@ function ListItemUser({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {options.map((option, key) => {
-              if (option.divider) {
-                return <SelectSeparator key={key} />;
-              }
-              const { label, value } = option;
+            {options.map((option, i) => {
+              const labelsByOption = {
+                OWNER: 'Owner',
+                EDITOR: 'Can edit',
+                VIEWER: 'Can view',
+                DELETE: loggedInUser.id === user.id ? 'Leave' : 'Remove',
+              };
+
+              const label = labelsByOption[option];
+              console.log(label, option);
 
               return (
-                <SelectItem key={key} value={value}>
-                  {label}
-                </SelectItem>
+                <>
+                  {option === 'DELETE' && <SelectSeparator key={i + '-divider'} />}
+
+                  <SelectItem key={i} value={option}>
+                    {label}
+                  </SelectItem>
+                </>
               );
             })}
           </SelectContent>

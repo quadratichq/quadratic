@@ -1,7 +1,66 @@
+import { UserRoleTeam, UserRoleTeamSchema } from 'quadratic-shared/typesAndSchemas';
 import { RoleSchema, hasAccess } from '../permissions';
-const { OWNER, EDITOR, VIEWER } = RoleSchema.enum;
+
+const DELETE = 'DELETE';
 
 type Label = 'Owner' | 'Can edit' | 'Can view' | 'Leave' | 'Remove';
+
+type TeamUserOption = UserRoleTeam | typeof DELETE;
+
+export function getTeamUserOption({ numberOfOwners, user, loggedInUser }: any) {
+  let options: TeamUserOption[] = [];
+  const { OWNER, EDITOR, VIEWER } = UserRoleTeamSchema.enum;
+
+  const userIsOwner = user.role === OWNER;
+  const userIsEditor = user.role === EDITOR;
+  // const userIsViewer = user.role === VIEWER;
+  const isLoggedInUser = loggedInUser.id === user.id;
+
+  if (isLoggedInUser) {
+    if (hasAccess(loggedInUser.access, 'TEAM_EDIT') || hasAccess(loggedInUser.access, 'FILE_EDIT')) {
+      if (loggedInUser.role === OWNER) {
+        if (numberOfOwners > 1) {
+          options.push(OWNER, EDITOR, VIEWER, 'DELETE');
+        } else {
+          options.push(OWNER);
+        }
+      } else if (loggedInUser.role === EDITOR) {
+        options.push(EDITOR, VIEWER, DELETE);
+      }
+    } else {
+      options.push(VIEWER, DELETE);
+    }
+    // User being displayed is some other user in the system
+  } else {
+    if (loggedInUser.role === OWNER) {
+      options.push(OWNER, EDITOR, VIEWER, DELETE);
+    } else if (loggedInUser.role === EDITOR) {
+      if (userIsOwner) {
+        options.push(OWNER);
+      } else {
+        options.push(EDITOR, VIEWER, DELETE);
+      }
+    } else if (loggedInUser.role === VIEWER) {
+      if (userIsOwner) {
+        options.push(OWNER);
+      } else if (userIsEditor) {
+        options.push(EDITOR);
+      } else {
+        options.push(VIEWER);
+      }
+    }
+  }
+
+  // We should never reach this, but if we do the user gets VIEW ONLY access and we'll tell sentry about it
+  if (options.length === 0) {
+    options.push(VIEWER);
+    // TODO log to sentry
+  }
+
+  return options;
+}
+
+const { OWNER, EDITOR, VIEWER } = RoleSchema.enum;
 
 export function getUserShareOptions({ numberOfOwners, user, loggedInUser }: /* TODO */ any) {
   let options: Label[] = [];
