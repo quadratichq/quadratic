@@ -49,6 +49,7 @@ jobs:
         else
           echo "Stack $STACK_NAME already exists."
           pulumi stack select $STACK_NAME
+        fi
 
         pulumi config set aws:region us-west-2
         pulumi up -y
