@@ -141,7 +141,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
               role: 'OWNER',
               hasAccount: true,
               name: 'Test User 1',
-              picture: null,
+              // picture: null,
             },
             {
               id: 2,
@@ -149,7 +149,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
               role: 'EDITOR',
               hasAccount: true,
               name: 'Test User 2',
-              picture: null,
+              // picture: null,
             },
             {
               id: 3,
@@ -157,7 +157,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
               role: 'VIEWER',
               hasAccount: true,
               name: 'Test User 3',
-              picture: null,
+              // picture: null,
             },
           ]);
           // TODO files

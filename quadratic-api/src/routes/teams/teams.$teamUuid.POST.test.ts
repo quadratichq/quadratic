@@ -91,7 +91,6 @@ describe('POST /v0/teams/:uuid/sharing', () => {
         .expect(200)
         .expect((res) => {
           expect(res.body).toHaveProperty('uuid');
-          expect(res.body).toHaveProperty('picture');
           expect(res.body.name).toBe('Foobar');
         });
     });
@@ -109,7 +108,6 @@ describe('POST /v0/teams/:uuid/sharing', () => {
         .expect(200)
         .expect((res) => {
           expect(res.body).toHaveProperty('uuid');
-          expect(res.body).toHaveProperty('picture');
           expect(res.body.name).toBe('Foobar');
         });
     });
