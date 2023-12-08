@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { sheets } from '@/grid/controller/Sheets';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { useEffect, useState } from 'react';
@@ -11,25 +10,22 @@ const OFFSCREEN_SIZE = 5;
 
 export const MultiplayerCursors = () => {
   // triggers a render
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, setPlayersTrigger] = useState(0);
   useEffect(() => {
     const updatePlayersTrigger = () => setPlayersTrigger((x) => x + 1);
     window.addEventListener('multiplayer-cursor', updatePlayersTrigger);
+    window.addEventListener('change-sheet', updatePlayersTrigger);
     pixiApp.viewport.on('moved', updatePlayersTrigger);
     pixiApp.viewport.on('zoomed', updatePlayersTrigger);
     return () => {
       window.removeEventListener('multiplayer-cursor', updatePlayersTrigger);
+      window.removeEventListener('change-sheet', updatePlayersTrigger);
       pixiApp.viewport.off('moved', updatePlayersTrigger);
       pixiApp.viewport.off('zoomed', updatePlayersTrigger);
     };
   }, []);
 
-  const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
-  useEffect(() => {
-    const changeSheet = () => setCurrentSheetId(sheets.sheet.id);
-    window.addEventListener('change-sheet', changeSheet);
-    return () => window.removeEventListener('change-sheet', changeSheet);
-  }, []);
   return (
     <div className="multiplayer-cursors">
       {[...multiplayer.users].flatMap(([id, player]) => {
@@ -39,7 +35,7 @@ export const MultiplayerCursors = () => {
         const offsetTop = rect.top;
         const { x, y, sheetId, firstName, lastName, visible } = player;
 
-        if (visible && x !== undefined && y !== undefined && sheetId === currentSheetId) {
+        if (visible && x !== undefined && y !== undefined && sheetId === sheets.sheet.id) {
           const translated = pixiApp.viewport.toScreen(x, y);
           let offscreen = false;
           if (x > bounds.right - OFFSCREEN_SIZE) {
