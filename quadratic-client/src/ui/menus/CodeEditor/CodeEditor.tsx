@@ -199,7 +199,6 @@ export const CodeEditor = () => {
         multiplayer.sendMouseMove();
       }}
       onPointerMove={(e) => {
-        console.log('hi');
         e.stopPropagation();
       }}
     >
