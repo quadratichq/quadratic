@@ -23,7 +23,6 @@ if (import.meta.env.VITE_SENTRY_DSN && import.meta.env.VITE_SENTRY_DSN !== 'none
 Sentry.addTracingExtensions();
 
 const container = document.getElementById('root');
-
 const root = createRoot(container as HTMLElement);
 root.render(
   <React.StrictMode>
