@@ -39,9 +39,9 @@ export const CommandPalette = (props: Props) => {
   useEffect(() => {
     const el = document.querySelector(`[data-command-bar-list-item-index='${selectedListItemIndex}']`);
     if (el) {
-      // el.scrollIntoView({
-      //   block: 'nearest',
-      // });
+      el.scrollIntoView({
+        block: 'nearest',
+      });
     }
   }, [selectedListItemIndex]);
 
