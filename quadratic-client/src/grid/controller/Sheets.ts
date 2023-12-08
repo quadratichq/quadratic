@@ -187,7 +187,7 @@ class Sheets {
     grid.addSheet();
 
     // sets the current sheet to the new sheet
-    // this.current = this.sheets[this.sheets.length - 1].id;
+    this.current = this.sheets[this.sheets.length - 1].id;
   }
 
   duplicate() {

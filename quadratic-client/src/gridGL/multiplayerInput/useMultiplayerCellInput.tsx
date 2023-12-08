@@ -1,5 +1,6 @@
 // Displays when a multiplayer user is editing a cell
 
+import { sheets } from '@/grid/controller/Sheets';
 import { useEffect, useState } from 'react';
 import { Coordinate } from '../types/size';
 
@@ -36,6 +37,15 @@ export const useMultiplayerCellInput = (): MultiplayerCell[] => {
     return () => window.removeEventListener('multiplayer-cell-edit', updateMultiplayerCellEdit);
   }, []);
 
+  // force rerender when sheet changes
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, setTrigger] = useState(0);
+  useEffect(() => {
+    const updateTrigger = () => setTrigger((prev) => prev + 1);
+    window.addEventListener('sheet-change', updateTrigger);
+    return () => window.removeEventListener('sheet-change', updateTrigger);
+  });
+
   // only return users that are actively editing (ie, text !== undefined)
-  return multiplayerCellInput.filter((cell) => cell.text !== undefined);
+  return multiplayerCellInput.filter((cell) => cell.text !== undefined && cell.sheetId === sheets.sheet.id);
 };
