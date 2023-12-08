@@ -48,12 +48,12 @@ export type TeamAction = {
   };
   'request.update-user': {
     action: 'update-user';
-    id: number;
+    userId: string;
     payload: ApiTypes['/v0/teams/:uuid/sharing/:userId.POST.request'];
   };
   'request.delete-user': {
     action: 'delete-user';
-    id: number;
+    userId: string;
   };
   request:
     | TeamAction['request.update-team']
@@ -102,8 +102,11 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   if (action === 'update-user') {
     try {
       await new Promise((resolve, reject) => setTimeout(reject, 3000));
-      // const { payload: { id, role } } = data;
-      // apiClient.updateUserInTeam(id, { role })
+      const {
+        userId,
+        payload: { role },
+      } = data;
+      await apiClient.updateUserInTeam(teamUuid, userId, { role });
       return { ok: true, action };
     } catch (e) {
       return { ok: false, action };
@@ -112,8 +115,8 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
 
   if (action === 'delete-user') {
     try {
-      const { id } = data;
-      await apiClient.deleteUserInTeam(teamUuid, id);
+      const { userId } = data;
+      await apiClient.deleteUserInTeam(teamUuid, userId);
       // console.warn('Deleting user', data);
       // await new Promise((resolve, reject) => setTimeout(reject, 3000));
       return { ok: true, action };

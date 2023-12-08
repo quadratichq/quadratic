@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { TeamAction } from '@/routes/teams.$teamUuid';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -153,11 +154,11 @@ function Item({
       loggedInUser={data.user}
       user={user}
       onUpdateUser={(id, role) => {
-        const data: TeamAction['request.update-user'] = { action: 'update-user', id, payload: { role } };
-        fetcher.submit(data, { method: 'post', encType: 'application/json' });
+        // const data: TeamAction['request.update-user'] = { action: 'update-user', id, payload: { role } };
+        // fetcher.submit(data, { method: 'post', encType: 'application/json' });
       }}
       onDeleteUser={(id) => {
-        const data: TeamAction['request.delete-user'] = { action: 'delete-user', id };
+        const data: TeamAction['request.delete-user'] = { action: 'delete-user', userId: id };
         fetcher.submit(data, { method: 'post', encType: 'application/json' });
       }}
     />

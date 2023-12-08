@@ -73,7 +73,7 @@ export const apiClient = {
     );
   },
 
-  async deleteUserInTeam(teamUuid: string, userId: number) {
+  async deleteUserInTeam(teamUuid: string, userId: string) {
     return fetchFromApi(
       `/v0/teams/${teamUuid}/sharing/${userId}`,
       { method: 'DELETE' },

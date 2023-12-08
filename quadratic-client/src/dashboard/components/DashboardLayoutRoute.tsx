@@ -127,7 +127,7 @@ function Navbar() {
               (fetcher) =>
                 fetcher.state !== 'idle' &&
                 fetcher.formAction?.includes(uuid) &&
-                (fetcher.json as TeamAction['request.update-team']).action === 'update-team'
+                (fetcher.json as TeamAction['request.update-team'])?.action === 'update-team'
             );
             // If it does, use its data
             if (inFlightFetcher) {

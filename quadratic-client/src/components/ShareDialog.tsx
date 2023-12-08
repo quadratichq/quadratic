@@ -1,5 +1,6 @@
 import { TYPE } from '@/constants/appConstants';
 import { TeamAction } from '@/routes/teams.$teamUuid';
+import { Action as TeamUserSharingAction, Action as UserSharingAction } from '@/routes/teams.$teamUuid.sharing.$userId';
 import { Button as Button2 } from '@/shadcn/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
 import { Input } from '@/shadcn/ui/input';
@@ -25,7 +26,7 @@ import {
 import { GlobeIcon, LockClosedIcon, PersonIcon } from '@radix-ui/react-icons';
 import { ApiTypes, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
 import React, { Children, useRef, useState } from 'react';
-import { Form, useFetcher, useFetchers, useSearchParams, useSubmit } from 'react-router-dom';
+import { useFetcher, useFetchers, useSearchParams, useSubmit } from 'react-router-dom';
 import { z } from 'zod';
 import { RoleSchema, UserRoleTeam } from '../permissions';
 import { AvatarWithLetters } from './AvatarWithLetters';
@@ -38,8 +39,6 @@ export const shareSearchParamValuesById = {
   TEAM_CREATED: 'team-created',
 };
 
-const rowClassName = 'flex flex-row items-center gap-3 [&>:nth-child(3)]:ml-auto';
-
 export function ShareTeamDialog({
   data,
   onClose,
@@ -47,8 +46,18 @@ export function ShareTeamDialog({
   data: ApiTypes['/v0/teams/:uuid.GET.response'];
   onClose: () => void;
 }) {
+  const inFlightFetchers = useFetchers();
+
+  const inFlightUserIdsBeingDeleted = inFlightFetchers
+    .filter(
+      (fetcher) =>
+        // @ts-expect-error
+        fetcher.json?.intent === 'delete-user'
+    )
+    .map((fetcher) => fetcher.formAction?.split('/').pop());
+  console.log(inFlightUserIdsBeingDeleted);
   // TODO: create fetcher in state for people who get added and keep them around if they fail
-  const invitedUsers = useFetchers()
+  const invitedUsers = inFlightFetchers
     .filter(
       (fetcher) =>
         // @ts-expect-error
@@ -64,10 +73,14 @@ export function ShareTeamDialog({
     }));
 
   const users = data.team.users.concat(invitedUsers);
+  // .filter((user) => {
+  //   // If any of the users represent an inflight user being deleted, dont' show them
+
+  //   return inFlightUserIdsBeingDeleted.includes(String(user.id)) ? false : true;
+  // });
 
   const numberOfOwners = data.team.users.filter((user) => user.role === 'OWNER').length;
 
-  console.log(invitedUsers);
   return (
     <ShareDialog
       title={`Share ${data.team.name}`}
@@ -286,9 +299,19 @@ function ListItemUser({
   // TODO: user.permissions.status === 'INVITE_SENT';
   const isPending = false;
 
+  const fetcher = useFetcher();
+  const fetcherJson = fetcher.json as TeamUserSharingAction['request'];
+
+  if (fetcher.state !== 'idle' && fetcherJson.intent === 'delete-user') {
+    return null;
+  }
+
+  const value = fetcher.state !== 'idle' && fetcherJson.intent === 'update-user' ? fetcherJson.role : user.role;
+  const hasError = fetcher.state !== 'submitting' && fetcher.data && !fetcher.data.ok;
+
   let secondary;
-  if (error) {
-    secondary = error;
+  if (hasError) {
+    secondary = 'Failed to sync change. Try again.';
   } else if (user.hasAccount) {
     secondary = user.email;
   } else {
@@ -346,8 +369,6 @@ function ListItemUser({
     }
   });
 
-  const submit = useSubmit();
-
   return (
     <ListItem>
       {isPending ? (
@@ -364,27 +385,30 @@ function ListItemUser({
           {primary} {loggedInUser.id === user.id && ' (You)'}
         </p>
         {secondary && (
-          <p className={cn(TYPE.caption, error ? 'text-destructive' : 'text-muted-foreground')}>{secondary}</p>
+          <p className={cn(TYPE.caption, hasError ? 'text-destructive' : 'text-muted-foreground')}>{secondary}</p>
         )}
       </div>
-      <Form
-        className={rowClassName}
-        navigate={false}
-        onChange={(e) => {
-          e.preventDefault();
 
-          const formData = new FormData(e.currentTarget);
-          const json = Object.fromEntries(formData) as { role: string };
-          const { role } = json;
-
-          submit(role === 'DELETE' ? null : { role }, {
-            method: role === 'DELETE' ? 'DELETE' : 'POST',
-            action: actionUrl,
-            encType: 'application/json',
-          });
-        }}
-      >
-        <Select defaultValue={user.role} name="role" disabled={options.length < 2}>
+      <div>
+        <Select
+          value={value}
+          onValueChange={(
+            newValue: ApiTypes['/v0/teams/:uuid.GET.response']['user']['role'] | 'DELETE'
+            // type for files
+            // | ApiTypes['/v0/files/:uuid.GET.response']['user']['role']
+          ) => {
+            const data = (
+              newValue === 'DELETE' ? { intent: 'delete-user' } : { intent: 'update-user', role: newValue }
+            ) as UserSharingAction['request'];
+            fetcher.submit(data, {
+              method: 'POST',
+              action: actionUrl,
+              encType: 'application/json',
+            });
+          }}
+          name="role"
+          disabled={options.length < 2}
+        >
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
@@ -403,7 +427,7 @@ function ListItemUser({
             })}
           </SelectContent>
         </Select>
-      </Form>
+      </div>
     </ListItem>
   );
 }
