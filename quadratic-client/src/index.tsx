@@ -23,6 +23,10 @@ if (import.meta.env.VITE_SENTRY_DSN && import.meta.env.VITE_SENTRY_DSN !== 'none
 Sentry.addTracingExtensions();
 
 const container = document.getElementById('root');
+
+// ensures that wheel events do not scroll the page
+container?.addEventListener('wheel', (e) => e.preventDefault());
+
 const root = createRoot(container as HTMLElement);
 root.render(
   <React.StrictMode>
