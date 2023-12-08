@@ -56,14 +56,20 @@ pub(crate) async fn handle_message(
                 socket: Some(Arc::clone(&sender)),
                 last_heartbeat: chrono::Utc::now(),
             };
-            let session_id = user.session_id;
+
             let is_new = state.enter_room(file_id, &user, connection_id).await;
-            let room = state.get_room(&file_id).await?;
 
             // only broadcast if the user is new to the room
             if is_new {
+                let session_id = user.session_id;
+                let room = state.get_room(&file_id).await?;
                 let response = MessageResponse::from(room.to_owned());
-                broadcast(session_id, file_id, Arc::clone(&state), response.clone());
+                broadcast(
+                    Uuid::new_v4(),
+                    file_id,
+                    Arc::clone(&state),
+                    response.clone(),
+                );
 
                 tracing::info!(
                     "User {} joined room {} with session {}",
