@@ -11,7 +11,7 @@ on:
 
 jobs:
   multiplayer_preview:
-    runs-on: ubuntu-latest-8-cores 
+    runs-on: ubuntu-latest-4-cores 
     steps:
     - uses: actions/checkout@v4
 
