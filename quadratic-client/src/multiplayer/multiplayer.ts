@@ -117,7 +117,6 @@ export class Multiplayer {
     this.state = 'waiting to reconnect';
     setTimeout(async () => {
       this.state = 'not connected';
-      console.log('this.room', this.room);
       await this.init();
       if (this.room) await this.enterFileRoom(this.room, this.user);
     }, RECONNECT_AFTER_ERROR_TIMEOUT);

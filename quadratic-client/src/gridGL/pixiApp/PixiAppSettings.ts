@@ -136,7 +136,6 @@ class PixiAppSettings {
     if (input === true) {
       const x = sheets.sheet.cursor.cursorPosition.x;
       const y = sheets.sheet.cursor.cursorPosition.y;
-      console.log('checking...');
       if (multiplayer.cellIsBeingEdited(x, y, sheets.sheet.id)) {
         this._input = { show: false };
       } else {
