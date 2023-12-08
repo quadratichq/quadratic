@@ -118,7 +118,12 @@ export class Multiplayer {
     setTimeout(async () => {
       this.state = 'not connected';
       await this.init();
-      if (this.room) await this.enterFileRoom(this.room, this.user);
+      if (this.room) {
+        // need the room to rejoin, but clear it so enterFileRoom succeeds
+        const room = this.room;
+        this.room = undefined;
+        await this.enterFileRoom(room, this.user);
+      }
     }, RECONNECT_AFTER_ERROR_TIMEOUT);
   };
 
@@ -131,6 +136,7 @@ export class Multiplayer {
     this.userUpdate.file_id = file_id;
     await this.init();
     this.user = user;
+    // ensure the user doesn't join a room twice
     if (this.room === file_id) return;
     this.room = file_id;
     const enterRoom: SendEnterRoom = {
