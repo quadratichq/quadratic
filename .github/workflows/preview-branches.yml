@@ -88,7 +88,7 @@ jobs:
 
     - name: Stop Service on EC2
       run: |
-        ssh -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_URL }} "sudo systemctl stop quadratic-multiplayer"
+        ssh -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_URL }} "sudo systemctl stop quadratic-multiplayer && rm /home/ubuntu/quadratic-multiplayer"
 
     - name: Transfer Build to EC2
       run: | 
