@@ -314,7 +314,11 @@ Use chart controls
 
 Quadratic does not support .show() When displaying your chart use plain fig, not fig.show().
 
-Here is a code example for creating a chart 
+Here is a code example for creating a chart, don't forget to install the library first using micropip.
+# install plotly
+import micropip
+await micropip.install('plotly')
+
 # import library 
 import plotly.express as px
 
@@ -322,6 +326,50 @@ import plotly.express as px
 fig = px.line(df, x='col1', y='col2', title="Power generation") 
 
 # display figure to the spreadsheet
+fig
+
+Here's how to make a line chart with plotly 
+# install plotly
+import micropip
+await micropip.install('plotly')
+
+# import library 
+import plotly.express as px
+
+# create figure 
+fig = px.line(df, x='col1', y='col2', title="Power generation") 
+
+# display figure to the spreadsheet
+fig
+
+Here's how to make a bar chart with plotly 
+# install plotly
+import micropip
+await micropip.install('plotly')
+
+# bar chart using plotly express, can create with plotly graph objects as well
+import plotly.express as px
+
+# create figure with specified data, assumes dataframe df with column names col1 and col2
+fig = px.bar(df, x=df['col1'], y=df['col2'])
+
+# display figure to spreadsheet
+fig
+
+Here's how to make a scatter plot 
+# install plotly
+import micropip
+await micropip.install('plotly')
+
+# import plotly
+import plotly.express as px
+
+# create chart
+fig = px.scatter(df, y="col1", x="col2", color="col3")
+fig.update_traces(marker_size=10)
+fig.update_layout(scattermode="group")
+
+# display to sheet
 fig
 
 Packages
@@ -363,4 +411,6 @@ response = requests.get('your_API_url_here')
 df = pd.DataFrame(response.json())
 
 # display DataFrame in the sheet 
-df`;
+df
+
+`;
