@@ -43,7 +43,7 @@ jobs:
         npm ci
         
         STACK_NAME="preview-pr-${{ env.PR_ID }}"
-        if ! pulumi stack ls | grep -q "^$STACK_NAME "; then
+        if ! pulumi stack ls | grep -q "^$STACK_NAME"; then
           echo "Stack $STACK_NAME does not exist. Initializing..."
           pulumi stack init $STACK_NAME
         else
