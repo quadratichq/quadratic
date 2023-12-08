@@ -1,4 +1,5 @@
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
+import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { MULTIPLAYER_COLORS } from '@/multiplayer/multiplayerCursor/multiplayerColors';
 import { TooltipHint } from '@/ui/components/TooltipHint';
 import VisibilityIcon from '@mui/icons-material/Visibility';
@@ -69,6 +70,7 @@ export const TopBarUsers = () => {
               border={MULTIPLAYER_COLORS[user.color]}
               sessionId={user.session_id}
               follow={false}
+              viewport={user.viewport}
             />
           );
         })}
@@ -82,6 +84,7 @@ export const TopBarUsers = () => {
             border={MULTIPLAYER_COLORS[userFollow.color]}
             sessionId={userFollow.session_id}
             follow={true}
+            viewport={userFollow.viewport}
           />
         )}
         {user && <You displayName={displayName} initial={initial} picture={user.picture || ''} border={'black'} />}
@@ -133,6 +136,7 @@ function UserAvatar({
   border,
   sessionId,
   follow,
+  viewport,
 }: {
   displayName: string;
   initial: string;
@@ -140,6 +144,7 @@ function UserAvatar({
   border: string;
   sessionId: string;
   follow: boolean;
+  viewport: string;
 }) {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const handleFollow = () => {
@@ -147,6 +152,7 @@ function UserAvatar({
       if (follow) {
         return { ...prev, follow: undefined };
       }
+      pixiApp.loadMultiplayerViewport(JSON.parse(viewport));
       return { ...prev, follow: sessionId };
     });
   };

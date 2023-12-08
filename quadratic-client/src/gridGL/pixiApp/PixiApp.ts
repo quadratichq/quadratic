@@ -28,7 +28,7 @@ import { HighlightedCells } from './highlightedCells';
 import './pixiApp.css';
 
 // todo: move viewport stuff to a viewport.ts file
-const MULTIPLAYER_VIEWPORT_EASE_TIME = 500;
+const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
 
 export class PixiApp {
   private parent?: HTMLDivElement;
@@ -289,11 +289,21 @@ export class PixiApp {
     });
   }
 
-  loadMultiplayerViewport(option: { x: number; y: number; bounds: Rectangle }): void {
+  loadMultiplayerViewport(options: { x: number; y: number; bounds: Rectangle }): void {
+    const { x, y, bounds } = options;
+    let width: number | undefined;
+    let height: number | undefined;
+
+    // ensure the entire follow-ee's bounds is visible to the current user
+    if (this.viewport.screenWidth / this.viewport.screenHeight > bounds.width / bounds.height) {
+      height = bounds.height;
+    } else {
+      width = bounds.width;
+    }
     this.viewport.animate({
-      position: new Point(option.x, option.y),
-      width: option.bounds.width,
-      height: option.bounds.height,
+      position: new Point(x, y),
+      width,
+      height,
       removeOnInterrupt: true,
       time: MULTIPLAYER_VIEWPORT_EASE_TIME,
     });
