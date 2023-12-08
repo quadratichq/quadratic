@@ -41,7 +41,7 @@ jobs:
       working-directory: infra
       run: |
         npm ci
-        pulumi stack select preview
+        pulumi stack select preview-pr-${{ env.PR_ID }}
         pulumi config set aws:region us-west-2
         pulumi up -y
         echo "EC2_URL=$(pulumi stack output publicDns)" >> $GITHUB_ENV
@@ -49,6 +49,7 @@ jobs:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        PR_ID: ${{ github.event.pull_request.number }}
 
     - name: Set up SSH Key
       env:
