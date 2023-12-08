@@ -1,9 +1,9 @@
-import { useIsEmbed } from '@/hooks/useIsEmbed';
 import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { useRecoilValue } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
+import { isEmbed } from '../../../helpers/isEmbed';
 import { isElectron } from '../../../utils/isElectron';
 import { DataMenu } from './SubMenus/DataMenu';
 import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
@@ -19,7 +19,6 @@ export const TopBar = () => {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const isEmbed = useIsEmbed();
   const { permission } = editorInteractionState;
 
   return (
