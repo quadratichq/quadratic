@@ -59,7 +59,7 @@ export const CellInput = (props: CellInputProps) => {
           selection.addRange(range);
         }
       }
-      multiplayer.sendCellEdit(div.innerText ?? '', div.innerText?.length ?? 0);
+      multiplayer.sendCellEdit(div.innerText ?? '', div.innerText?.length ?? 0, false);
     }, 0);
   }, []);
 
@@ -169,7 +169,7 @@ export const CellInput = (props: CellInputProps) => {
     const result = parsed.body.textContent || '';
     document.execCommand('insertHTML', false, result.replace(/(\r\n|\n|\r)/gm, ''));
     if (textInput) {
-      multiplayer.sendCellEdit(textInput.innerText, getCursorLocation());
+      multiplayer.sendCellEdit(textInput.innerText, getCursorLocation(), false);
     }
     event.preventDefault();
   };
@@ -311,7 +311,7 @@ export const CellInput = (props: CellInputProps) => {
       }}
       onKeyUp={() => {
         if (textInput) {
-          multiplayer.sendCellEdit(textInput.innerText, getCursorLocation());
+          multiplayer.sendCellEdit(textInput.innerText, getCursorLocation(), false);
         }
       }}
     >

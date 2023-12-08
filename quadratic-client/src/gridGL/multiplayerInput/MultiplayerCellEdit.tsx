@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { sheets } from '../../grid/controller/Sheets';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
 import { pixiApp } from '../pixiApp/PixiApp';
-import { MultiplayerCell } from './useMultiplayerCellInput';
+import { MultiplayerCell } from './useMultiplayerCellEdit';
 
 interface Props {
   container: HTMLDivElement;

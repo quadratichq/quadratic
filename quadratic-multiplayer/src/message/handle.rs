@@ -287,6 +287,7 @@ pub(crate) mod tests {
                     text: "test".to_string(),
                     cursor: 0,
                     active: true,
+                    code_editor: false,
                 }),
             },
         };

@@ -1,20 +1,39 @@
+import { Coordinate } from '@/gridGL/types/size';
+import { Rectangle } from 'pixi.js';
+
+export interface CellEdit {
+  active: boolean;
+  text: string;
+  cursor: number;
+  code_editor: boolean;
+}
+
+export interface MultiplayerUserServer {
+  session_id: string;
+  file_id: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  image: string;
+  sheet_id: string;
+  cell_edit: CellEdit;
+  visible: boolean;
+  selection?: string;
+  x?: number;
+  y?: number;
+}
+
+// extended by the client
+export interface MultiplayerUser extends MultiplayerUserServer {
+  color: number;
+  index: number;
+  parsedSelection?: { cursor: Coordinate; rectangle: Rectangle };
+}
+
 export interface ReceiveRoom {
   type: 'UsersInRoom';
-  users: {
-    session_id: string;
-    user_id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-    image: string;
-    sheet_id: string;
-    selection: string;
-    cell_edit: {
-      active: boolean;
-      text: string;
-      cursor: number;
-    };
-  }[];
+  users: MultiplayerUser[];
 }
 
 export interface MessageUserUpdate {
@@ -22,35 +41,17 @@ export interface MessageUserUpdate {
   session_id: string;
   file_id: string;
   update: {
-    cell_edit?: {
-      active: boolean;
-      text: string;
-      cursor: number;
-    };
+    cell_edit?: CellEdit;
     selection?: string;
     sheet_id?: string;
-    x?: number | null;
-    y?: number | null;
+    x?: number;
+    y?: number;
     visible?: boolean;
   };
 }
 
-export interface SendEnterRoom {
+export interface SendEnterRoom extends MultiplayerUserServer {
   type: 'EnterRoom';
-  session_id: string;
-  user_id: string;
-  file_id: string;
-  sheet_id: string;
-  selection: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  image: string;
-  cell_edit: {
-    active: boolean;
-    text: string;
-    cursor: number;
-  };
 }
 
 export interface MessageTransaction {

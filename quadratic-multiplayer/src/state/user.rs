@@ -42,6 +42,7 @@ pub(crate) struct CellEdit {
     pub active: bool,
     pub text: String,
     pub cursor: u32,
+    pub code_editor: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

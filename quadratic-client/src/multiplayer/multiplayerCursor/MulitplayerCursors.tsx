@@ -33,17 +33,17 @@ export const MultiplayerCursors = () => {
         const bounds = pixiApp.viewport.getVisibleBounds();
         const rect = pixiApp.canvas.getBoundingClientRect();
         const offsetTop = rect.top;
-        const { x, y, sheetId, firstName, lastName, email, visible, index } = player;
+        const { x, y, sheet_id, first_name, last_name, email, visible, index } = player;
         let name: string;
-        if (firstName || lastName) {
-          name = `${firstName} ${lastName}`;
+        if (first_name || last_name) {
+          name = `${first_name} ${last_name}`;
         } else if (email) {
           name = email;
         } else {
           name = `User ${index}`;
         }
 
-        if (visible && x !== undefined && y !== undefined && sheetId === sheets.sheet.id) {
+        if (visible && x !== undefined && y !== undefined && sheet_id === sheets.sheet.id) {
           const translated = pixiApp.viewport.toScreen(x, y);
           let offscreen = false;
           if (x > bounds.right - OFFSCREEN_SIZE) {

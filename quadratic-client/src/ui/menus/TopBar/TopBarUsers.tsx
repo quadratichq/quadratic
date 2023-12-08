@@ -53,13 +53,13 @@ export const TopBarUsers = () => {
           return (
             // <DropdownMenu>
             //   <DropdownMenuTrigger asChild>
-                <UserAvatar
-                  key={user.sessionId}
-                  displayName={convertName(user.firstName, user.lastName, false)}
-                  initial={convertInitial(user.firstName, user.lastName)}
-                  picture={user.picture}
-                  border={MULTIPLAYER_COLORS[user.color]}
-                />
+            <UserAvatar
+              key={user.session_id}
+              displayName={convertName(user.first_name, user.last_name, false)}
+              initial={convertInitial(user.first_name, user.last_name)}
+              picture={user.image}
+              border={MULTIPLAYER_COLORS[user.color]}
+            />
             //   </DropdownMenuTrigger>
             //   <DropdownMenuContent className="w-48">
             //     <DropdownMenuItem>Follow</DropdownMenuItem>

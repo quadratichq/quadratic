@@ -3,10 +3,7 @@ import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
-import { Coordinate } from '@/gridGL/types/size';
-import { SimpleMultiplayerUser } from '@/ui/menus/TopBar/useMultiplayerUsers';
 import { User } from '@auth0/auth0-spa-js';
-import { Rectangle } from 'pixi.js';
 import { v4 as uuid } from 'uuid';
 
 import { authClient } from '@/auth';
@@ -15,6 +12,7 @@ import {
   Heartbeat,
   MessageTransaction,
   MessageUserUpdate,
+  MultiplayerUser,
   ReceiveMessages,
   ReceiveRoom,
   SendEnterRoom,
@@ -23,25 +21,6 @@ import {
 const UPDATE_TIME = 1000 / 30;
 const HEARTBEAT_TIME = 1000 * 15;
 const RECONNECT_AFTER_ERROR_TIMEOUT = 1000 * 5;
-
-export interface Player {
-  firstName: string;
-  lastName: string;
-  email: string;
-  userId: string;
-  sheetId?: string;
-  cellEdit: { active: boolean; text: string; cursor: number };
-  x?: number;
-  y?: number;
-  image: string;
-  visible: boolean;
-  selection?: { cursor: Coordinate; rectangle?: Rectangle };
-
-  // created for this session
-  color: number;
-  sessionId: string;
-  index: number;
-}
 
 export class Multiplayer {
   private websocket?: WebSocket;
@@ -63,7 +42,7 @@ export class Multiplayer {
   private nextColor = 0;
 
   // users currently logged in to the room
-  users: Map<string, Player> = new Map();
+  users: Map<string, MultiplayerUser> = new Map();
 
   constructor() {
     this.state = 'not connected';
@@ -158,7 +137,11 @@ export class Multiplayer {
         active: pixiAppSettings.input.show,
         text: pixiAppSettings.input.value ?? '',
         cursor: pixiAppSettings.input.cursor ?? 0,
+        code_editor: pixiAppSettings.editorInteractionState.showCodeEditor,
       },
+      x: 0,
+      y: 0,
+      visible: false,
     };
     this.websocket!.send(JSON.stringify(enterRoom));
     if (debugShowMultiplayer) console.log(`[Multiplayer] Joined room ${file_id}.`);
@@ -189,23 +172,15 @@ export class Multiplayer {
   }
 
   // used to pre-populate useMultiplayerUsers.tsx
-  getUsers(): SimpleMultiplayerUser[] {
-    return Array.from(this.users.values()).map((player) => ({
-      sessionId: player.sessionId,
-      userId: player.userId,
-      firstName: player.firstName,
-      lastName: player.lastName,
-      email: player.email,
-      picture: player.image,
-      color: player.color,
-    }));
+  getUsers(): MultiplayerUser[] {
+    return Array.from(this.users.values());
   }
 
   // whether a multiplayer user is already editing a cell
   cellIsBeingEdited(x: number, y: number, sheetId: string): boolean {
     for (const player of this.users.values()) {
-      if (player.sheetId === sheetId && player.cellEdit.active && player.selection) {
-        if (player.selection.cursor.x === x && player.selection.cursor.y === y) {
+      if (player.sheet_id === sheetId && player.cell_edit.active && player.parsedSelection) {
+        if (player.parsedSelection.cursor.x === x && player.parsedSelection.cursor.y === y) {
           return true;
         }
       }
@@ -249,12 +224,13 @@ export class Multiplayer {
     userUpdate.sheet_id = sheets.sheet.id;
   };
 
-  sendCellEdit(text: string, cursor: number) {
+  sendCellEdit(text: string, cursor: number, codeEditor: boolean) {
     const userUpdate = this.getUserUpdate().update;
     userUpdate.cell_edit = {
       text,
       cursor,
       active: true,
+      code_editor: codeEditor,
     };
   }
 
@@ -264,6 +240,7 @@ export class Multiplayer {
       text: '',
       cursor: 0,
       active: false,
+      code_editor: false,
     };
   }
 
@@ -285,30 +262,32 @@ export class Multiplayer {
 
   // updates the React hook to populate the Avatar list
   private receiveUsersInRoom(room: ReceiveRoom) {
-    const players: SimpleMultiplayerUser[] = [];
     const remaining = new Set(this.users.keys());
     for (const user of room.users) {
       if (user.session_id !== this.sessionId) {
         let player = this.users.get(user.session_id);
         if (player) {
-          player.firstName = user.first_name;
-          player.lastName = user.last_name;
+          player.first_name = user.first_name;
+          player.last_name = user.last_name;
           player.image = user.image;
-          player.sheetId = user.sheet_id;
-          player.selection = user.selection ? JSON.parse(user.selection) : undefined;
+          player.sheet_id = user.sheet_id;
+          player.selection = user.selection;
+          player.parsedSelection = user.selection ? JSON.parse(user.selection) : undefined;
           remaining.delete(user.session_id);
           if (debugShowMultiplayer) console.log(`[Multiplayer] Updated player ${user.first_name}.`);
         } else {
           player = {
-            sessionId: user.session_id,
-            userId: user.user_id,
-            firstName: user.first_name,
-            lastName: user.last_name,
+            session_id: user.session_id,
+            file_id: user.file_id,
+            user_id: user.user_id,
+            first_name: user.first_name,
+            last_name: user.last_name,
             email: user.email,
             image: user.image,
-            sheetId: user.sheet_id,
-            selection: user.selection ? JSON.parse(user.selection) : undefined,
-            cellEdit: user.cell_edit,
+            sheet_id: user.sheet_id,
+            selection: user.selection,
+            parsedSelection: user.selection ? JSON.parse(user.selection) : undefined,
+            cell_edit: user.cell_edit,
             x: 0,
             y: 0,
             color: this.nextColor,
@@ -319,22 +298,13 @@ export class Multiplayer {
           this.nextColor = (this.nextColor + 1) % MULTIPLAYER_COLORS.length;
           if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${user.first_name} entered room.`);
         }
-        players.push({
-          sessionId: player.sessionId,
-          userId: player.userId,
-          firstName: player.firstName,
-          lastName: player.lastName,
-          picture: player.image,
-          color: player.color,
-          email: player.email,
-        });
       }
     }
     remaining.forEach((sessionId) => {
-      if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${this.users.get(sessionId)?.firstName} left room.`);
+      if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${this.users.get(sessionId)?.first_name} left room.`);
       this.users.delete(sessionId);
     });
-    window.dispatchEvent(new CustomEvent('multiplayer-update', { detail: players }));
+    window.dispatchEvent(new CustomEvent('multiplayer-update', { detail: this.getUsers() }));
     pixiApp.multiplayerCursor.dirty = true;
   }
 
@@ -353,7 +323,7 @@ export class Multiplayer {
     if (update.x !== null && update.y !== null) {
       player.x = update.x;
       player.y = update.y;
-      if (player.sheetId === sheets.sheet.id) {
+      if (player.sheet_id === sheets.sheet.id) {
         window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
       }
     }
@@ -363,9 +333,9 @@ export class Multiplayer {
     }
 
     if (update.sheet_id) {
-      if (player.sheetId !== update.sheet_id) {
-        player.sheetId = update.sheet_id;
-        if (player.sheetId === sheets.sheet.id) {
+      if (player.sheet_id !== update.sheet_id) {
+        player.sheet_id = update.sheet_id;
+        if (player.sheet_id === sheets.sheet.id) {
           pixiApp.multiplayerCursor.dirty = true;
           window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
         }
@@ -373,21 +343,22 @@ export class Multiplayer {
     }
 
     if (update.selection) {
-      player.selection = JSON.parse(update.selection);
-      if (player.sheetId === sheets.sheet.id) {
+      player.selection = update.selection;
+      player.parsedSelection = player.selection ? JSON.parse(player.selection) : undefined;
+      if (player.sheet_id === sheets.sheet.id) {
         pixiApp.multiplayerCursor.dirty = true;
       }
     }
 
     if (update.cell_edit) {
-      player.cellEdit = update.cell_edit;
-      if (player.selection) {
+      player.cell_edit = update.cell_edit;
+      if (player.parsedSelection) {
         // hide the label if the player is editing the cell
         pixiApp.cellsSheets.showLabel(
-          player.selection.cursor.x,
-          player.selection.cursor.y,
-          player.sheetId!,
-          !player.cellEdit.active
+          player.parsedSelection.cursor.x,
+          player.parsedSelection.cursor.y,
+          player.sheet_id,
+          !player.cell_edit.active
         );
       }
       window.dispatchEvent(
@@ -396,8 +367,8 @@ export class Multiplayer {
             ...update.cell_edit,
             playerColor: MULTIPLAYER_COLORS[player.color],
             sessionId: data.session_id,
-            sheetId: player.sheetId,
-            cell: player.selection?.cursor,
+            sheetId: player.sheet_id,
+            cell: player.parsedSelection?.cursor,
           },
         })
       );

@@ -1,5 +1,5 @@
 import { MultiplayerCellEdit } from './MultiplayerCellEdit';
-import { useMultiplayerCellInput } from './useMultiplayerCellInput';
+import { useMultiplayerCellEdit } from './useMultiplayerCellEdit';
 
 interface Props {
   container?: HTMLDivElement;
@@ -7,7 +7,7 @@ interface Props {
 
 export const MultiplayerCellEdits = (props: Props) => {
   const { container } = props;
-  const multiplayerCellInput = useMultiplayerCellInput();
+  const multiplayerCellInput = useMultiplayerCellEdit();
 
   if (!container) return;
 

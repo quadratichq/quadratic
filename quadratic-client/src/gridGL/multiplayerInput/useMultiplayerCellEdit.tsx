@@ -17,7 +17,7 @@ export interface MultiplayerCell {
   playerColor: string;
 }
 
-export const useMultiplayerCellInput = (): MultiplayerCell[] => {
+export const useMultiplayerCellEdit = (): MultiplayerCell[] => {
   const [multiplayerCellInput, setMultiplayerCellInput] = useState<MultiplayerCell[]>([]);
   useEffect(() => {
     const updateMultiplayerCellEdit = (e: any) => {
