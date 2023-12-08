@@ -1,5 +1,6 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
+import * as fs from "fs";
 
 const size = "t2.micro";
 
@@ -34,39 +35,18 @@ const group = new aws.ec2.SecurityGroup(
   }
 );
 
+// Read the content of the Bash script
+const userData = fs.readFileSync(
+  "scripts/setup-multiplayer-service.sh",
+  "utf-8"
+);
 const instance = new aws.ec2.Instance("quadratic-multiplayer", {
   instanceType: size,
   securityGroups: [group.name],
   ami: ami.id,
   keyName: "test2",
   // other configuration
-  userData: `#!/bin/bash
-# Create a systemd service
-cat <<EOF > /etc/systemd/system/quadratic-multiplayer.service
-[Unit]
-Description=Quadratic Multiplayer Service
-After=network.target
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/home/ubuntu/
-ExecStart=/home/ubuntu/quadratic-multiplayer
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Reload systemd to recognize the new service
-systemctl daemon-reload
-
-# Enable and start the servicesudo systemctl status quadratic-multiplayer.service
-sudo systemctl status quadratic-multiplayer.service
-
-
-systemctl enable quadratic-multiplayer
-systemctl start quadratic-multiplayer`,
+  userData: userData,
 });
 
 // Attach the instance to the target group
@@ -79,4 +59,4 @@ const targetGroupAttachment = new aws.lb.TargetGroupAttachment(
 );
 
 export const publicIp = instance.publicIp;
-export const publicHostName = instance.publicDns;
+export const publicDns = instance.publicDns;

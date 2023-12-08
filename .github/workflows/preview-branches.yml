@@ -32,30 +32,17 @@ jobs:
         cd quadratic-multiplayer
         cargo build --release
 
-    # - name: Upload artifact
-    #   uses: actions/upload-artifact@v2
-    #   with:
-    #     name: quadratic-multiplayer-x64
-    #     path: target/release/quadratic-multiplayer
-
-    - run: cd infra && npm ci && pulumi config set aws:region us-west-2
-      env:
-        PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-
-    - uses: pulumi/actions@v4
-      with:
-        work-dir: infra
-        command: up
-        stack-name: quadratic/quadratic-infra-test-1/preview
+    - name: Update Pulumi Infrastructure
+      working-directory: infra
+      run: |
+        npm ci
+        pulumi config set aws:region us-west-2
+        pulumi up -y
+        echo "EC2_URL=$(pulumi stack output publicDns)" >> $GITHUB_ENV
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-
-    - name: Set Pulumi Output as Output
-      id: set-output
-      run: |
-        echo "EC2_URL=$(pulumi stack output instancePublicDns)" >> $GITHUB_ENV
 
     - name: Set up SSH Key
       env:
@@ -68,12 +55,18 @@ jobs:
 
     - name: Transfer Build to EC2
       run: | 
-        scp -i ~/.ssh/id_rsa ~/devel/quadratic/quadratic-multiplayer/target/release/quadratic-multiplayer ubuntu@${{ env.EC2_URL }}:/home/ubuntu/
+        scp -i ~/.ssh/id_rsa quadratic-multiplayer/target/release/quadratic-multiplayer ubuntu@${{ env.EC2_URL }}:/home/ubuntu/
 
     - name: Restart Application on EC2
       run: |
         ssh -i ~/.ssh/id_rsa ${{ env.EC2_URL }} "sudo systemctl restart quadratic-multiplayer"
 
+
+  # - name: Upload artifact
+  #   uses: actions/upload-artifact@v2
+  #   with:
+  #     name: quadratic-multiplayer-x64
+  #     path: target/release/quadratic-multiplayer
 
   # client_preview:
   #   runs-on: ubuntu-latest-8-cores
