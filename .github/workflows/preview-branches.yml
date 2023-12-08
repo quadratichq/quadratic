@@ -54,6 +54,22 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         # Your SSH-based commands here, e.g., scp, ssh
 
+    - name: Check EC2 Instance Availability
+      run: |
+        timeout=300 # 5 minutes
+        elapsed=0
+        echo "Checking EC2 instance availability..."
+        while ! ssh -o "StrictHostKeyChecking=no" -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_URL }} "echo 'EC2 instance is up and running'" && [ $elapsed -lt $timeout ]; do
+          echo "Waiting for EC2 instance to be available..."
+          sleep 10
+          elapsed=$((elapsed + 10))
+        done
+        if [ $elapsed -ge $timeout ]; then
+          echo "Timeout waiting for EC2 instance to become available"
+          exit 1
+        fi
+        echo "EC2 instance is available"
+
     - name: Transfer Build to EC2
       run: | 
         scp -i ~/.ssh/id_rsa quadratic-multiplayer/target/release/quadratic-multiplayer ubuntu@${{ env.EC2_URL }}:/home/ubuntu/
