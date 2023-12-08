@@ -40,6 +40,7 @@ jobs:
     - name: Update Pulumi Infrastructure
       working-directory: infra
       run: |
+        npm ci
         pulumi stack select preview
         pulumi config set aws:region us-west-2
         pulumi up -y
