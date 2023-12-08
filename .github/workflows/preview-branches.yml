@@ -42,7 +42,7 @@ jobs:
       run: |
         npm ci
         
-        STACK_NAME="preview-pr-${{ github.event.pull_request.number }}"
+        STACK_NAME="preview-pr-${{ env.PR_ID }}"
         if ! pulumi stack ls | grep -q "^$STACK_NAME "; then
           echo "Stack $STACK_NAME does not exist. Initializing..."
           pulumi stack init $STACK_NAME
@@ -52,6 +52,9 @@ jobs:
         fi
 
         pulumi config set aws:region us-west-2
+        pulumi config set domain quadratic-preview.com
+        pulumi config set multiplayer:subdomain ws-preview-${{ env.PR_ID }}
+
         pulumi up -y
         echo "EC2_URL=$(pulumi stack output publicDns)" >> $GITHUB_ENV
       env:
