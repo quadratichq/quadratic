@@ -27,16 +27,19 @@ const RECONNECT_AFTER_ERROR_TIMEOUT = 1000 * 5;
 export interface Player {
   firstName: string;
   lastName: string;
-  sessionId: string;
   userId: string;
   sheetId?: string;
   cellEdit: { active: boolean; text: string; cursor: number };
   x?: number;
   y?: number;
   image: string;
-  color: number;
   visible: boolean;
   selection?: { cursor: Coordinate; rectangle?: Rectangle };
+
+  // created for this session
+  color: number;
+  sessionId: string;
+  index: number;
 }
 
 export class Multiplayer {
@@ -306,6 +309,7 @@ export class Multiplayer {
             y: 0,
             color: this.nextColor,
             visible: false,
+            index: this.users.size,
           };
           this.users.set(user.session_id, player);
           this.nextColor = (this.nextColor + 1) % MULTIPLAYER_COLORS.length;
