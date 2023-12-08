@@ -32,17 +32,17 @@ jobs:
         cd quadratic-multiplayer
         cargo build --release
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: quadratic-multiplayer-x64
-        path: target/release/quadratic-multiplayer
+    # - name: Upload artifact
+    #   uses: actions/upload-artifact@v2
+    #   with:
+    #     name: quadratic-multiplayer-x64
+    #     path: target/release/quadratic-multiplayer
 
     - uses: pulumi/actions@v4
       with:
         work-dir: infra
         command: up
-        stack-name: quadratic/quadratic-infra-test-1
+        stack-name: quadratic/quadratic-infra-test-1/preview
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
