@@ -280,6 +280,7 @@ pub(crate) mod tests {
             email: user.email.clone(),
             image: user.image.clone(),
             cell_edit: CellEdit::default(),
+            viewport: "viewport".to_string(),
         };
         let expected = MessageResponse::UsersInRoom { users: vec![user] };
         let response = integration_test(state, request).await;
@@ -330,6 +331,7 @@ pub(crate) mod tests {
                 sheet_id: None,
                 visible: None,
                 cell_edit: None,
+                viewport: None,
             },
         };
         let expected = MessageResponse::UserUpdate {
@@ -342,6 +344,7 @@ pub(crate) mod tests {
                 sheet_id: None,
                 visible: None,
                 cell_edit: None,
+                viewport: None,
             },
         };
 
@@ -369,6 +372,7 @@ pub(crate) mod tests {
                 y: None,
                 visible: None,
                 cell_edit: None,
+                viewport: None,
             },
         };
         let expected = MessageResponse::UserUpdate {
@@ -381,6 +385,48 @@ pub(crate) mod tests {
                 y: None,
                 visible: None,
                 cell_edit: None,
+                viewport: None,
+            },
+        };
+
+        state.enter_room(file_id, &user, connection_id).await;
+
+        let response = integration_test(state.clone(), request).await;
+
+        assert_eq!(response, serde_json::to_string(&expected).unwrap());
+    }
+
+    #[tokio::test]
+    async fn user_changes_viewport() {
+        let state = Arc::new(State::new());
+        let connection_id = Uuid::new_v4();
+        let user = new_user();
+        let session_id = user.session_id;
+        let file_id = Uuid::new_v4();
+        let request = MessageRequest::UserUpdate {
+            session_id,
+            file_id,
+            update: UserStateUpdate {
+                selection: None,
+                sheet_id: None,
+                x: None,
+                y: None,
+                visible: None,
+                cell_edit: None,
+                viewport: Some("new_viewport".to_string()),
+            },
+        };
+        let expected = MessageResponse::UserUpdate {
+            session_id,
+            file_id,
+            update: UserStateUpdate {
+                selection: None,
+                sheet_id: None,
+                x: None,
+                y: None,
+                visible: None,
+                cell_edit: None,
+                viewport: Some("new_viewport".to_string()),
             },
         };
 

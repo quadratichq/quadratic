@@ -53,6 +53,7 @@ pub(crate) struct UserState {
     pub x: f64,
     pub y: f64,
     pub visible: bool,
+    pub viewport: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -63,6 +64,7 @@ pub(crate) struct UserStateUpdate {
     pub x: Option<f64>,
     pub y: Option<f64>,
     pub visible: Option<bool>,
+    pub viewport: Option<String>,
 }
 
 impl State {
@@ -158,6 +160,9 @@ impl State {
                 }
                 if let Some(cell_edit) = user_state.cell_edit.to_owned() {
                     user.state.cell_edit = cell_edit;
+                }
+                if let Some(viewport) = user_state.viewport.to_owned() {
+                    user.state.viewport = viewport;
                 }
                 user.last_heartbeat = Utc::now();
             });

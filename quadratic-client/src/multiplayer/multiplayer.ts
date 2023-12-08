@@ -142,6 +142,7 @@ export class Multiplayer {
       x: 0,
       y: 0,
       visible: false,
+      viewport: pixiApp.saveMultiplayerViewport(),
     };
     this.websocket!.send(JSON.stringify(enterRoom));
     if (debugShowMultiplayer) console.log(`[Multiplayer] Joined room ${file_id}.`);
@@ -244,6 +245,11 @@ export class Multiplayer {
     };
   }
 
+  sendViewport(viewport: string) {
+    const userUpdate = this.getUserUpdate().update;
+    userUpdate.viewport = viewport;
+  }
+
   async sendTransaction(operations: string) {
     await this.init();
     const message: MessageTransaction = {
@@ -293,6 +299,7 @@ export class Multiplayer {
             color: this.nextColor,
             visible: false,
             index: this.users.size,
+            viewport: user.viewport,
           };
           this.users.set(user.session_id, player);
           this.nextColor = (this.nextColor + 1) % MULTIPLAYER_COLORS.length;
@@ -373,6 +380,13 @@ export class Multiplayer {
         })
       );
       pixiApp.multiplayerCursor.dirty = true;
+    }
+
+    if (update.viewport) {
+      player.viewport = update.viewport;
+      if (pixiAppSettings.editorInteractionState.follow === player.session_id) {
+        pixiApp.loadMultiplayerViewport(JSON.parse(player.viewport));
+      }
     }
   }
 

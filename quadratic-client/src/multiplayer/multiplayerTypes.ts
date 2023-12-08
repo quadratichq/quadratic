@@ -22,6 +22,7 @@ export interface MultiplayerUserServer {
   selection?: string;
   x?: number;
   y?: number;
+  viewport: string;
 }
 
 // extended by the client
@@ -47,6 +48,7 @@ export interface MessageUserUpdate {
     x?: number;
     y?: number;
     visible?: boolean;
+    viewport?: string;
   };
 }
 

@@ -39,6 +39,7 @@ pub(crate) fn new_user() -> User {
             x: 0.0,
             y: 0.0,
             visible: false,
+            viewport: "initial viewport".to_string(),
         },
         image: FilePath().fake(),
         socket: None,

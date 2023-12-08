@@ -59,7 +59,6 @@ class PixiAppSettings {
     pixiApp.axesLines.dirty = true;
     pixiApp.headings.dirty = true;
 
-    // only rebuild quadrants if showCellTypeOutlines change
     if (
       (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
       (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)

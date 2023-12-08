@@ -39,6 +39,7 @@ pub(crate) async fn handle_message(
             sheet_id,
             selection,
             cell_edit,
+            viewport,
         } => {
             let user = User {
                 user_id,
@@ -54,6 +55,7 @@ pub(crate) async fn handle_message(
                     x: 0.0,
                     y: 0.0,
                     visible: false,
+                    viewport,
                 },
                 socket: Some(Arc::clone(&sender)),
                 last_heartbeat: chrono::Utc::now(),
@@ -188,6 +190,7 @@ pub(crate) mod tests {
                 y: Some(2.0),
                 visible: Some(true),
                 cell_edit: None,
+                viewport: None,
             },
         };
         broadcast(user_1.session_id, file_id, state, message);
@@ -212,6 +215,7 @@ pub(crate) mod tests {
                 y: None,
                 visible: None,
                 cell_edit: None,
+                viewport: None,
             },
         };
         broadcast(user_1.session_id, file_id, state, message);
@@ -236,6 +240,7 @@ pub(crate) mod tests {
                 y: None,
                 visible: Some(false),
                 cell_edit: None,
+                viewport: None,
             },
         };
         broadcast(user_1.session_id, file_id, state, message);
@@ -260,6 +265,7 @@ pub(crate) mod tests {
                 y: None,
                 visible: None,
                 cell_edit: None,
+                viewport: None,
             },
         };
         broadcast(user_1.session_id, file_id, state, message);
@@ -289,6 +295,32 @@ pub(crate) mod tests {
                     active: true,
                     code_editor: false,
                 }),
+                viewport: None,
+            },
+        };
+        broadcast(user_1.session_id, file_id, state, message);
+
+        // TODO(ddimaria): mock the splitsink sender to test the actual sending
+    }
+
+    #[tokio::test]
+    async fn test_change_viewport() {
+        let state = Arc::new(State::new());
+        let socket_id = Uuid::new_v4();
+        let file_id = Uuid::new_v4();
+        let user_1 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
+        let _user_2 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
+        let message = MessageResponse::UserUpdate {
+            session_id: user_1.session_id,
+            file_id,
+            update: UserStateUpdate {
+                selection: None,
+                sheet_id: None,
+                x: None,
+                y: None,
+                visible: None,
+                cell_edit: None,
+                viewport: Some("viewport".to_string()),
             },
         };
         broadcast(user_1.session_id, file_id, state, message);

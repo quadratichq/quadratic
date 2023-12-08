@@ -57,31 +57,6 @@ export const debugShowCellsHashBoxes = (debug && false) || url.has('cell-boxes')
 // shows CellsHash information
 export const debugShowCellHashesInfo = debug && false;
 
-// ----------------
-// Quadrant caching
-// ----------------
-
-// shows information about subquadrant generation
-export const debugShowSubCacheInfo = debug && false;
-
-// always show cache instead of cell rendering
-export const debugAlwaysShowCache = debug && false;
-
-// shows information about quadrant generation
-export const debugShowCacheInfo = debug && false;
-
-// always show cells instead of cache rendering
-export const debugNeverShowCache = debug && false;
-
-// don't render quadrants
-export const debugSkipQuadrantRendering = debug && false;
-
-// show quadrant colored boxes around rendered range
-export const debugShowQuadrantBoxes = debug && false;
-
-// only render getCellsForDirtyQuadrants -- useful for testing the direct draw of multiple dirty quadrants
-export const debugShowCellsForDirtyQuadrants = debug && false;
-
 // --------
 // Misc.
 // --------

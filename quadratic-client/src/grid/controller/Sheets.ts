@@ -90,7 +90,6 @@ class Sheets {
       pixiApp.axesLines.dirty = true;
       pixiApp.headings.dirty = true;
       pixiApp.cursor.dirty = true;
-      // pixiApp.quadrants.changeSheet();
       pixiApp.boxCells.reset();
       pixiAppSettings.changeInput(false);
       pixiApp.cellsSheets.show(sheets.sheet.id);
