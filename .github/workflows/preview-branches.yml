@@ -42,7 +42,6 @@ jobs:
       run: |
         npm ci
         
-        # Selects or inits stack for this pr
         STACK_NAME="preview-pr-${{ github.event.pull_request.number }}"
         if ! pulumi stack ls | grep -q "^$STACK_NAME "; then
           echo "Stack $STACK_NAME does not exist. Initializing..."
