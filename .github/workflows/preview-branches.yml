@@ -41,7 +41,17 @@ jobs:
       working-directory: infra
       run: |
         npm ci
-        pulumi stack select preview-pr-${{ env.PR_ID }}
+        pulumi stack select 
+
+        
+        STACK_NAME="preview-pr-${{ github.event.pull_request.number }}"
+        if ! pulumi stack ls | grep -q "^$STACK_NAME "; then
+          echo "Stack $STACK_NAME does not exist. Initializing..."
+          pulumi stack init $STACK_NAME
+        else
+          echo "Stack $STACK_NAME already exists."
+          pulumi stack select $STACK_NAME
+
         pulumi config set aws:region us-west-2
         pulumi up -y
         echo "EC2_URL=$(pulumi stack output publicDns)" >> $GITHUB_ENV
