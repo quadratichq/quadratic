@@ -48,7 +48,6 @@ export class CellsSheets extends Container<CellsSheet> {
         if (this.current?.sheet.id !== child?.sheet.id) {
           this.current = child;
           child.show(pixiApp.viewport.getVisibleBounds());
-          pixiApp.loadViewport();
         }
       } else {
         child.hide();

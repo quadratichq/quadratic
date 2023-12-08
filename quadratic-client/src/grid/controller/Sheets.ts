@@ -95,6 +95,7 @@ class Sheets {
       pixiAppSettings.changeInput(false);
       pixiApp.cellsSheets.show(sheets.sheet.id);
       this.updateSheetBar();
+      pixiApp.loadViewport();
     }
   }
 
