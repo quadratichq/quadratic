@@ -14,6 +14,9 @@ jobs:
     runs-on: ubuntu-latest-8-cores 
     steps:
     - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
 
     - name: Set up Rust
       uses: moonrepo/setup-rust@v1
