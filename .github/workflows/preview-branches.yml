@@ -22,6 +22,8 @@ jobs:
         cache: false
         channel: 'nightly'
 
+    - run: apt install pkg-config
+
     - name: Build quadratic-multiplayer
       run: |
         cd quadratic-multiplayer
