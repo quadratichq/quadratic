@@ -36,8 +36,8 @@ jobs:
       working-directory: infra
       run: |
         npm ci
-        pulumi config set aws:region us-west-2
         pulumi stack select preview
+        pulumi config set aws:region us-west-2
         pulumi up -y
         echo "EC2_URL=$(pulumi stack output publicDns)" >> $GITHUB_ENV
       env:
