@@ -1,12 +1,19 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import * as fs from "fs";
+const config = new pulumi.Config();
 
-const size = "t2.micro";
-
-// Define the ARN of your ACM certificate
+// Configuration
+const domain = config.get("domain") || "quadratic-preview.com"; // ex quadratic-preview.com
+const multiplayerSubdomain = config.get("multiplayer:subdomain") || "wss-2"; // ex ws
 const certificateArn =
+  config.get("multiplayer:certificateArn") ||
   "arn:aws:acm:us-west-2:896845383385:certificate/e34f26e1-cb0e-49d1-b6da-5a4644cb3403";
+const instanceSize = config.get("multiplayer:instance:size") || "t2.micro";
+const instanceKeyName = config.get("multiplayer:instance:keyName") || "test2";
+const subNet1 = config.get("subnet1") || "subnet-0ae50871c8ec4e68f";
+const subNet2 = config.get("subnet1") || "subnet-0c6f318928373a253";
+const vpcId = config.get("vpcId") || "vpc-035fff213c528dbe5";
 
 const ami = pulumi.output(
   aws.ec2.getAmi({
@@ -40,10 +47,10 @@ const userData = fs.readFileSync(
   "utf-8"
 );
 const instance = new aws.ec2.Instance("multiplayer-instance", {
-  instanceType: size,
+  instanceType: instanceSize,
   vpcSecurityGroupIds: [group.id],
   ami: ami.id,
-  keyName: "test2",
+  keyName: instanceKeyName,
   // Run Setup script on instance boot
   userData: userData,
 });
@@ -52,7 +59,7 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
 const nlb = new aws.lb.LoadBalancer("multiplayer-nlb", {
   internal: false,
   loadBalancerType: "network",
-  subnets: ["subnet-0ae50871c8ec4e68f", "subnet-0c6f318928373a253"],
+  subnets: [subNet1, subNet2],
   enableCrossZoneLoadBalancing: true,
 });
 
@@ -61,12 +68,12 @@ const targetGroup = new aws.lb.TargetGroup("multiplayer-nlb-tg", {
   port: 80,
   protocol: "TCP",
   targetType: "instance",
-  vpcId: "vpc-035fff213c528dbe5",
+  vpcId: vpcId,
 });
 
 // Attach the instance to the new Target Group
 const targetGroupAttachment = new aws.lb.TargetGroupAttachment(
-  "attachInstanceToNewGroup",
+  "multiplayer-attach-instance-tg",
   {
     targetId: instance.id,
     targetGroupArn: targetGroup.arn,
@@ -92,7 +99,7 @@ const nlbListener = new aws.lb.Listener("multiplayer-nlb-listener", {
 const hostedZone = pulumi.output(
   aws.route53.getZone(
     {
-      name: "quadratic-preview.com",
+      name: domain,
     },
     { async: true }
   )
@@ -101,8 +108,8 @@ const hostedZone = pulumi.output(
 // Create a Route 53 record pointing to the NLB
 const dnsRecord = new aws.route53.Record("multiplayer-r53-record", {
   zoneId: hostedZone.id,
-  name: "wss-2.quadratic-preview.com", // subdomain you want to use
-  type: "A", // or "CNAME" if preferred
+  name: `${multiplayerSubdomain}.${domain}`, // subdomain you want to use
+  type: "A",
   aliases: [
     {
       name: nlb.dnsName,
