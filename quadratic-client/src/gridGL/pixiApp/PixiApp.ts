@@ -1,3 +1,4 @@
+import { isEmbed } from '@/helpers/isEmbed';
 import { Viewport } from 'pixi-viewport';
 import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
@@ -197,7 +198,9 @@ export class PixiApp {
     parent.appendChild(this.canvas);
     this.resize();
     this.update.start();
-    this.canvas.focus();
+    if (!isEmbed) {
+      this.canvas.focus();
+    }
     this.setViewportDirty();
   }
 

@@ -1,3 +1,4 @@
+import { htmlCellsHandler } from '@/gridGL/htmlCells/htmlCellsHandler';
 import * as Sentry from '@sentry/react';
 import { Point, Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
@@ -105,6 +106,7 @@ export class Grid {
     if (summary.offsets_modified.length) {
       sheets.updateOffsets(summary.offsets_modified);
       pixiApp.cellsSheets.updateBorders(summary.offsets_modified);
+      htmlCellsHandler.updateOffsets(summary.offsets_modified.map((offset) => offset.id));
     }
 
     if (summary.code_cells_modified.length) {
