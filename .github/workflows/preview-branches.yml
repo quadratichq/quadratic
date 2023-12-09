@@ -53,7 +53,7 @@ jobs:
 
         pulumi config set aws:region us-west-2
         pulumi config set domain quadratic-preview.com
-        pulumi config set multiplayer:subdomain ws-preview-${{ env.PR_ID }}
+        pulumi config set subdomain ws-preview-${{ env.PR_ID }}
 
         pulumi up -y
         echo "EC2_URL=$(pulumi stack output publicDns)" >> $GITHUB_ENV

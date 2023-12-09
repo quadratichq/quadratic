@@ -5,15 +5,15 @@ const config = new pulumi.Config();
 
 // Configuration
 const domain = config.get("domain") || "quadratic-preview.com"; // ex quadratic-preview.com
-const multiplayerSubdomain = config.get("multiplayer:subdomain") || "wss-2"; // ex ws
+const multiplayerSubdomain = config.get("subdomain") || "wss-2"; // ex ws
 const certificateArn =
-  config.get("multiplayer:certificateArn") ||
+  config.get("certificate-arn") ||
   "arn:aws:acm:us-west-2:896845383385:certificate/e34f26e1-cb0e-49d1-b6da-5a4644cb3403";
-const instanceSize = config.get("multiplayer:instance:size") || "t2.micro";
-const instanceKeyName = config.get("multiplayer:instance:keyName") || "test2";
+const instanceSize = config.get("instance-size") || "t2.micro";
+const instanceKeyName = config.get("instance-key-name") || "test2";
 const subNet1 = config.get("subnet1") || "subnet-0ae50871c8ec4e68f";
-const subNet2 = config.get("subnet1") || "subnet-0c6f318928373a253";
-const vpcId = config.get("vpcId") || "vpc-035fff213c528dbe5";
+const subNet2 = config.get("subnet2") || "subnet-0c6f318928373a253";
+const vpcId = config.get("vpc-id") || "vpc-035fff213c528dbe5";
 
 const ami = pulumi.output(
   aws.ec2.getAmi({
