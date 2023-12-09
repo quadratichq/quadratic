@@ -7,7 +7,8 @@ import {
 } from "./multiplayer/multiplayer";
 
 // Infra stack for the client CDN.
-import { clientPublicDns } from "./client/client";
+// Not currently functional.
+// import { clientPublicDns } from "./client/client";
 
 // Global exports
-export { clientPublicDns, multiplayerInstanceDns, multiplayerPublicDns };
+export { multiplayerInstanceDns, multiplayerPublicDns };

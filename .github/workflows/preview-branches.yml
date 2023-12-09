@@ -12,6 +12,7 @@ on:
 jobs:
 
   infra:
+    name: Create or Update Infrastructure with Pulumi
     runs-on: ubuntu-latest-8-cores 
     steps:
     - uses: actions/checkout@v4
@@ -20,9 +21,8 @@ jobs:
         node-version: 18
     - uses: pulumi/actions@v4
 
-    - run: exit 1
-
     - name: Update Pulumi Infrastructure
+      id: pulumiInfra
       working-directory: infra
       run: |
         npm ci
@@ -41,12 +41,18 @@ jobs:
         pulumi config set subdomain ws-preview-${{ env.PR_ID }}
 
         pulumi up -y
-        echo "EC2_URL=$(pulumi stack output multiplayerInstanceDns)" >> $GITHUB_ENV
+        echo "MULTIPLAYER_INSTANCE_DNS=$(pulumi stack output multiplayerInstanceDns)" >> "$GITHUB_OUTPUT"
+        echo "CLIENT_PUBLIC_DNS=$(pulumi stack output clientPublicDns)" >> "$GITHUB_OUTPUT"
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
         PR_ID: ${{ github.event.pull_request.number }}
+
+    outputs:
+      MULTIPLAYER_INSTANCE_DNS: ${{ steps.pulumiInfra.outputs.MULTIPLAYER_INSTANCE_DNS }}
+      CLIENT_PUBLIC_DNS: ${{ steps.pulumiInfra.outputs.CLIENT_PUBLIC_DNS }}
+
 
   multiplayer_preview:
     needs: infra
@@ -90,7 +96,7 @@ jobs:
         timeout=300 # 5 minutes
         elapsed=0
         echo "Checking EC2 instance availability..."
-        while ! ssh -o "StrictHostKeyChecking=no" -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_URL }} "echo 'EC2 instance is up and running'" && [ $elapsed -lt $timeout ]; do
+        while ! ssh -o "StrictHostKeyChecking=no" -i ~/.ssh/id_rsa ubuntu@${{needs.infra.outputs.MULTIPLAYER_INSTANCE_DNS}} "echo 'EC2 instance is up and running'" && [ $elapsed -lt $timeout ]; do
           echo "Waiting for EC2 instance to be available..."
           sleep 10
           elapsed=$((elapsed + 10))
@@ -103,15 +109,15 @@ jobs:
 
     - name: Stop Service on EC2
       run: |
-        ssh -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_URL }} "sudo systemctl stop quadratic-multiplayer && rm -f /home/ubuntu/quadratic-multiplayer"
+        ssh -i ~/.ssh/id_rsa ubuntu@${{needs.infra.outputs.MULTIPLAYER_INSTANCE_DNS}} "sudo systemctl stop quadratic-multiplayer && rm -f /home/ubuntu/quadratic-multiplayer"
 
     - name: Transfer Build to EC2
       run: | 
-        scp -i ~/.ssh/id_rsa quadratic-multiplayer/target/release/quadratic-multiplayer ubuntu@${{ env.EC2_URL }}:/home/ubuntu/
+        scp -i ~/.ssh/id_rsa quadratic-multiplayer/target/release/quadratic-multiplayer ubuntu@${{needs.infra.outputs.MULTIPLAYER_INSTANCE_DNS}}:/home/ubuntu/
 
     - name: Restart Service on EC2
       run: |
-        ssh -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_URL }} "sudo systemctl start quadratic-multiplayer"
+        ssh -i ~/.ssh/id_rsa ubuntu@${{needs.infra.outputs.MULTIPLAYER_INSTANCE_DNS}} "sudo systemctl start quadratic-multiplayer"
 
   client_preview:
     needs: infra
@@ -154,15 +160,15 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: your-aws-region
 
-    # Deploy to S3
-    - name: Deploy to S3
-      run: |
-        aws s3 sync ./path-to-your-static-files/ s3://your-s3-bucket-name --delete
+    # # Deploy to S3
+    # - name: Deploy to S3
+    #   run: |
+    #     aws s3 sync ./path-to-your-static-files/ s3://your-s3-bucket-name --delete
 
-    # Invalidate CloudFront distribution
-    - name: Invalidate CloudFront distribution
-      run: |
-        aws cloudfront create-invalidation --distribution-id your-distribution-id --paths "/*"
+    # # Invalidate CloudFront distribution
+    # - name: Invalidate CloudFront distribution
+    #   run: |
+    #     aws cloudfront create-invalidation --distribution-id your-distribution-id --paths "/*"
 
     # - name: Post Deployment URL to PR
     #   if: github.event_name == 'pull_request'
@@ -174,40 +180,3 @@ jobs:
     #     PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT" '.body = $body')
     #     COMMENTS_URL=$(jq -r .pull_request.comments_url < "$GITHUB_EVENT_PATH")
     #     curl -s -S -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" --data "$PAYLOAD" "$COMMENTS_URL"
-
-  # client_preview:
-  #   runs-on: ubuntu-latest-8-cores
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #   - uses: actions/setup-node@v4
-  #     with:
-  #       node-version: 18
-  #   - name: Set up Rust
-  #     uses: moonrepo/setup-rust@v1
-  #     with:
-  #       cache: false
-  #   - uses: jetli/wasm-pack-action@v0.4.0
-  #     with:
-  #       version: 'latest'
-
-  #   - name: Install Dependencies
-  #     run: |
-  #       cd quadratic-client
-  #       npm install
-
-  #   - name: Build
-  #     run: |
-  #       cd quadratic-client
-  #       npm run build:wasm:javascript
-  #       npm run build:wasm:types
-  #       npm run build
-  #     env:
-  #       VITE_ENVIRONMENT: preview
-  #       VITE_QUADRATIC_API_URL: https://quadratic-api-dev-pr-${{ github.event.pull_request.number }}.herokuapp.com
-  #       VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
-  #       VITE_AUTH0_CLIENT_ID: ${{ secrets.VITE_AUTH0_CLIENT_ID }}
-  #       VITE_AUTH0_AUDIENCE: ${{ secrets.VITE_AUTH0_AUDIENCE }}
-  #       VITE_AUTH0_ISSUER: ${{ secrets.VITE_AUTH0_ISSUER }}
-  #       VITE_AUTH0_DOMAIN: ${{ secrets.VITE_AUTH0_DOMAIN }}
-
-

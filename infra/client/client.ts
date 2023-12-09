@@ -41,8 +41,8 @@ const bucketPolicy = new aws.s3.BucketPolicy("client-bucket-policy", {
 const cdn = new aws.cloudfront.Distribution("client-cdn", {
   origins: [
     {
-      domainName: bucket.bucketRegionalDomainName,
-      originId: bucket.arn,
+      domainName: bucket.bucketDomainName,
+      originId: originAccessIdentity.id,
       s3OriginConfig: {
         originAccessIdentity: originAccessIdentity.cloudfrontAccessIdentityPath,
       },
@@ -50,7 +50,7 @@ const cdn = new aws.cloudfront.Distribution("client-cdn", {
   ],
   enabled: true,
   defaultCacheBehavior: {
-    targetOriginId: bucket.id,
+    targetOriginId: originAccessIdentity.id,
     viewerProtocolPolicy: "redirect-to-https",
     allowedMethods: ["GET", "HEAD"],
     cachedMethods: ["GET", "HEAD"],
