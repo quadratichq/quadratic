@@ -47,6 +47,9 @@ const setupMultiplayerService = fs.readFileSync(
   "utf-8"
 );
 const instance = new aws.ec2.Instance("multiplayer-instance", {
+  tags: {
+    Name: `multiplayer-instance-${multiplayerSubdomain}`,
+  },
   instanceType: instanceSize,
   vpcSecurityGroupIds: [group.id],
   ami: ami.id,
