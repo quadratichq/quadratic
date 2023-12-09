@@ -1196,6 +1196,7 @@ dependencies = [
  "futures-util",
  "headers",
  "jsonwebtoken",
+ "openssl",
  "reqwest",
  "serde",
  "serde_json",
