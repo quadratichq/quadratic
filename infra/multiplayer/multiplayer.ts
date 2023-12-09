@@ -15,20 +15,20 @@ const subNet1 = config.get("subnet1") || "subnet-0ae50871c8ec4e68f";
 const subNet2 = config.get("subnet2") || "subnet-0c6f318928373a253";
 const vpcId = config.get("vpc-id") || "vpc-035fff213c528dbe5";
 
-const ami = pulumi.output(
-  aws.ec2.getAmi({
-    owners: ["099720109477"], // Canonical ID
-    mostRecent: true,
-    filters: [
-      {
-        name: "name",
-        values: ["ubuntu/images/hvm-ssd/ubuntu-*-amd64-server-*"],
-      },
-      { name: "architecture", values: ["x86_64"] },
-      { name: "root-device-type", values: ["ebs"] },
-    ],
-  })
-);
+// const ami = pulumi.output(
+//   aws.ec2.getAmi({
+//     owners: ["099720109477"], // Canonical ID
+//     mostRecent: true,
+//     filters: [
+//       {
+//         name: "name",
+//         values: ["ubuntu/images/hvm-ssd/ubuntu-*-amd64-server-*"],
+//       },
+//       { name: "architecture", values: ["x86_64"] },
+//       { name: "root-device-type", values: ["ebs"] },
+//     ],
+//   })
+// );
 
 const group = new aws.ec2.SecurityGroup("multiplayer-sc", {
   ingress: [
@@ -52,7 +52,7 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
   },
   instanceType: instanceSize,
   vpcSecurityGroupIds: [group.id],
-  ami: ami.id,
+  ami: "ami-0efcece6bed30fd98", // ubuntu 20.04 LTS
   keyName: instanceKeyName,
   // Run Setup script on instance boot
   userData: setupMultiplayerService,
