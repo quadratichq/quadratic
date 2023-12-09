@@ -11,6 +11,7 @@ const certificateArn =
   "arn:aws:acm:us-west-2:896845383385:certificate/e34f26e1-cb0e-49d1-b6da-5a4644cb3403";
 const instanceSize = config.get("instance-size") || "t2.micro";
 const instanceKeyName = config.get("instance-key-name") || "test2";
+const instanceAmi = config.get("instance-ami") || "ami-0efcece6bed30fd98"; // ubuntu 20.04 LTS
 const subNet1 = config.get("subnet1") || "subnet-0ae50871c8ec4e68f";
 const subNet2 = config.get("subnet2") || "subnet-0c6f318928373a253";
 const vpcId = config.get("vpc-id") || "vpc-035fff213c528dbe5";
@@ -52,7 +53,7 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
   },
   instanceType: instanceSize,
   vpcSecurityGroupIds: [group.id],
-  ami: "ami-0efcece6bed30fd98", // ubuntu 20.04 LTS
+  ami: instanceAmi,
   keyName: instanceKeyName,
   // Run Setup script on instance boot
   userData: setupMultiplayerService,
