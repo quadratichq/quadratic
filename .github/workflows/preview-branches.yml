@@ -10,7 +10,46 @@ on:
 
 
 jobs:
+
+  infra:
+    runs-on: ubuntu-latest-8-cores 
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+    - uses: pulumi/actions@v4
+
+    - run: exit 1
+
+    - name: Update Pulumi Infrastructure
+      working-directory: infra
+      run: |
+        npm ci
+        
+        STACK_NAME="preview-pr-${{ env.PR_ID }}"
+        if ! pulumi stack ls | grep -q "^$STACK_NAME"; then
+          echo "Stack $STACK_NAME does not exist. Initializing..."
+          pulumi stack init $STACK_NAME
+        else
+          echo "Stack $STACK_NAME already exists."
+          pulumi stack select $STACK_NAME
+        fi
+
+        pulumi config set aws:region us-west-2
+        pulumi config set domain quadratic-preview.com
+        pulumi config set subdomain ws-preview-${{ env.PR_ID }}
+
+        pulumi up -y
+        echo "EC2_URL=$(pulumi stack output multiplayerInstanceDns)" >> $GITHUB_ENV
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        PR_ID: ${{ github.event.pull_request.number }}
+
   multiplayer_preview:
+    needs: infra
     runs-on: ubuntu-latest-8-cores 
     steps:
     - uses: actions/checkout@v4
@@ -37,32 +76,6 @@ jobs:
         cd quadratic-multiplayer
         cargo build --release
 
-    - name: Update Pulumi Infrastructure
-      working-directory: infra
-      run: |
-        npm ci
-        
-        STACK_NAME="preview-pr-${{ env.PR_ID }}"
-        if ! pulumi stack ls | grep -q "^$STACK_NAME"; then
-          echo "Stack $STACK_NAME does not exist. Initializing..."
-          pulumi stack init $STACK_NAME
-        else
-          echo "Stack $STACK_NAME already exists."
-          pulumi stack select $STACK_NAME
-        fi
-
-        pulumi config set aws:region us-west-2
-        pulumi config set domain quadratic-preview.com
-        pulumi config set subdomain ws-preview-${{ env.PR_ID }}
-
-        pulumi up -y
-        echo "EC2_URL=$(pulumi stack output publicDns)" >> $GITHUB_ENV
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-        PR_ID: ${{ github.event.pull_request.number }}
-
     - name: Set up SSH Key
       env:
         EC2_KEY_PEM: ${{ secrets.EC2_KEY_PEM }}
@@ -72,7 +85,7 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         # Your SSH-based commands here, e.g., scp, ssh
 
-    - name: Check EC2 Instance Availability
+    - name: Wait for EC2 Availability
       run: |
         timeout=300 # 5 minutes
         elapsed=0
@@ -100,12 +113,67 @@ jobs:
       run: |
         ssh -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_URL }} "sudo systemctl start quadratic-multiplayer"
 
+  client_preview:
+    needs: infra
+    runs-on: ubuntu-latest-8-cores 
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
 
-  # - name: Upload artifact
-  #   uses: actions/upload-artifact@v2
-  #   with:
-  #     name: quadratic-multiplayer-x64
-  #     path: target/release/quadratic-multiplayer
+    - name: Set up Rust
+      uses: moonrepo/setup-rust@v1
+      with:
+        cache: false
+    - uses: jetli/wasm-pack-action@v0.4.0
+      with:
+        version: 'latest'
+
+    - name: Build Client
+      working-directory: quadratic-client
+      run: |
+        npm ci
+        npm run build:wasm:javascript
+        npm run build:wasm:types
+        npm run build
+      env:
+        VITE_ENVIRONMENT: preview
+        VITE_QUADRATIC_API_URL: https://quadratic-api-dev-pr-${{ github.event.pull_request.number }}.herokuapp.com
+        VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+        VITE_AUTH0_CLIENT_ID: ${{ secrets.VITE_AUTH0_CLIENT_ID }}
+        VITE_AUTH0_AUDIENCE: ${{ secrets.VITE_AUTH0_AUDIENCE }}
+        VITE_AUTH0_ISSUER: ${{ secrets.VITE_AUTH0_ISSUER }}
+        VITE_AUTH0_DOMAIN: ${{ secrets.VITE_AUTH0_DOMAIN }}
+
+    # Set up AWS credentials
+    - name: Set up AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: your-aws-region
+
+    # Deploy to S3
+    - name: Deploy to S3
+      run: |
+        aws s3 sync ./path-to-your-static-files/ s3://your-s3-bucket-name --delete
+
+    # Invalidate CloudFront distribution
+    - name: Invalidate CloudFront distribution
+      run: |
+        aws cloudfront create-invalidation --distribution-id your-distribution-id --paths "/*"
+
+    # - name: Post Deployment URL to PR
+    #   if: github.event_name == 'pull_request'
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     DEPLOY_URL: "https://your-cloudfront-distribution-url.com/prs/${{ github.head_ref }}"
+    #   run: |
+    #     PR_COMMENT="Deployment is ready! 🚀\n\nPreview: $DEPLOY_URL"
+    #     PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT" '.body = $body')
+    #     COMMENTS_URL=$(jq -r .pull_request.comments_url < "$GITHUB_EVENT_PATH")
+    #     curl -s -S -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" --data "$PAYLOAD" "$COMMENTS_URL"
 
   # client_preview:
   #   runs-on: ubuntu-latest-8-cores
@@ -142,25 +210,4 @@ jobs:
   #       VITE_AUTH0_ISSUER: ${{ secrets.VITE_AUTH0_ISSUER }}
   #       VITE_AUTH0_DOMAIN: ${{ secrets.VITE_AUTH0_DOMAIN }}
 
-    # - name: Deploy to AWS S3
-    #   run: aws s3 sync dist s3://quadratic-preview-branches --delete
-    #   env:
-    #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-    # - name: Invalidate CloudFront Distribution
-    #   run: aws cloudfront create-invalidation --distribution-id your-distribution-id --paths "/*"
-    #   env:
-    #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-    # - name: Post Deployment URL to PR
-    #   if: github.event_name == 'pull_request'
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #     DEPLOY_URL: "https://your-cloudfront-distribution-url.com/prs/${{ github.head_ref }}"
-    #   run: |
-    #     PR_COMMENT="Deployment is ready! 🚀\n\nPreview: $DEPLOY_URL"
-    #     PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT" '.body = $body')
-    #     COMMENTS_URL=$(jq -r .pull_request.comments_url < "$GITHUB_EVENT_PATH")
-    #     curl -s -S -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" --data "$PAYLOAD" "$COMMENTS_URL"
