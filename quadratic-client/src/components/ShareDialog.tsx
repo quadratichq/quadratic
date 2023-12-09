@@ -25,7 +25,7 @@ import {
 } from '@mui/material';
 import { GlobeIcon, LockClosedIcon, PersonIcon } from '@radix-ui/react-icons';
 import { ApiTypes, PublicLinkAccess, UserRoleFileSchema } from 'quadratic-shared/typesAndSchemas';
-import React, { Children, useEffect, useRef, useState } from 'react';
+import React, { Children, ReactNode, useEffect, useRef, useState } from 'react';
 import { useFetcher, useFetchers, useSearchParams, useSubmit } from 'react-router-dom';
 import { z } from 'zod';
 import { RoleSchema, UserRoleTeam } from '../permissions';
@@ -46,68 +46,46 @@ export function ShareTeamDialog({
   data: ApiTypes['/v0/teams/:uuid.GET.response'];
   onClose: () => void;
 }) {
-  const [failedInvitedUsers, setFailedInvitedUsers] = useState<
-    Array<ApiTypes['/v0/teams/:uuid.GET.response']['team']['users'][0]>
-  >([]);
+  const [failedInvitedUsers, setFailedInvitedUsers] = useState<Record<string, string>>({});
   const loggedInUser = data.user;
-  const inFlightFetchers = useFetchers();
+  const submit = useSubmit();
 
   // TODO: create fetcher in state for people who get added and keep them around if they fail
-  const inFlightInvitedUserFetchers = inFlightFetchers.filter(
-    (fetcher) =>
+  const pendingUserInvites = useFetchers()
+    .filter((fetcher) => {
+      return (
+        // @ts-expect-error
+        fetcher.json?.intent === 'invite-user' &&
+        (fetcher.state === 'submitting' || (fetcher.state === 'loading' && fetcher.data.ok))
+      );
+    })
+    .map((fetcher) => (fetcher.json as SharingAction['request.invite-user']).payload);
+  const erroredUserSubmissions = useFetchers()
+    .filter((fetcher) => {
       // @ts-expect-error
-      fetcher.json?.intent === 'invite-user'
-  );
-  const invitedUsers = inFlightInvitedUserFetchers.map((fetcher) => ({
-    // @ts-expect-error gives me email, role
-    ...fetcher.json.payload,
-    id: Date.now(),
-    hasAccount: false,
-    name: undefined,
-    picture: undefined,
-  }));
+      return fetcher.json?.intent === 'invite-user' && fetcher.state === 'loading' && !fetcher.data.ok;
+    })
+    .map((fetcher) => (fetcher.json as SharingAction['request.invite-user']).payload);
 
   useEffect(() => {
-    const failedFetchers = inFlightInvitedUserFetchers.filter((fetcher) => {
-      return fetcher.state === 'loading' && fetcher.data && !fetcher.data.ok;
-    });
-    if (failedFetchers.length > 0) {
+    console.log('fired A');
+    const addToState = erroredUserSubmissions.filter(({ email }) => !failedInvitedUsers[email]);
+    if (addToState.length > 0) {
       setFailedInvitedUsers((prev) => {
-        const currentFailedEmails = prev.map((u) => u.email);
-        const notYetThere = failedFetchers.filter(
-          (fetcher) =>
-            !currentFailedEmails.includes(
-              // @ts-expect-error
-              fetcher.json?.payload?.email
-            )
-        );
-        console.log('currentFailedEmails', currentFailedEmails);
-        console.log('notyetthere', notYetThere);
-        return [
+        console.log('fired B');
+        return {
           ...prev,
-          ...notYetThere.map((fetcher) => {
-            // TODO: types
-            return {
-              // @ts-expect-error
-              ...fetcher.json.payload,
-              id: Date.now(),
-              hasAccount: false,
-              name: undefined,
-              picture: undefined,
-            };
-          }),
-        ];
+          ...addToState.reduce((acc, { email, role }) => ({ [email]: role }), {}),
+        };
       });
     }
-  }, [inFlightInvitedUserFetchers]);
-
-  console.log('failedInvitedUsers', failedInvitedUsers);
+  }, [erroredUserSubmissions, failedInvitedUsers]);
 
   // Sort the users how we want
+  const currentUser = data.team.users.find((user) => user.id === loggedInUser.id);
   const users = [
-    data.team.users.find((user) => user.id === loggedInUser.id),
+    ...(currentUser ? [currentUser] : []),
     ...data.team.users.filter((user) => user.id !== loggedInUser.id),
-    ...invitedUsers,
   ];
 
   const numberOfOwners = data.team.users.filter((user) => user.role === 'OWNER').length;
@@ -126,7 +104,7 @@ export function ShareTeamDialog({
       />
       {users.map((user) => (
         <ListItemUser
-          key={user.id}
+          key={user.email}
           numberOfOwners={numberOfOwners}
           loggedInUser={loggedInUser}
           user={user}
@@ -135,17 +113,67 @@ export function ShareTeamDialog({
           actionUrl={`/teams/${data.team.uuid}/sharing/${user.id}`}
         />
       ))}
-      {failedInvitedUsers.map((user) => (
-        <ListItemUser
-          key={user.id}
-          numberOfOwners={numberOfOwners}
-          loggedInUser={loggedInUser}
-          user={user}
-          disabled={true}
-          error={'Failed to invite user. Try again'}
-          actionUrl={`/teams/${data.team.uuid}/sharing/${user.id}`}
-        />
-      ))}
+      {Object.entries(failedInvitedUsers)
+        .map(([email, role]) => ({ email, role, isFailed: true }))
+        // @ts-expect-error
+        .concat(pendingUserInvites)
+        .map(({ email, role, isFailed }) => (
+          <ListItemUser
+            key={email}
+            numberOfOwners={numberOfOwners}
+            loggedInUser={loggedInUser}
+            user={{
+              email,
+              // @ts-expect-error
+              role,
+              id: Date.now(),
+              hasAccount: false,
+              name: undefined,
+              picture: undefined,
+            }}
+            disabled={true}
+            error={
+              isFailed ? (
+                <>
+                  Failed to invite user.{' '}
+                  <Button2
+                    variant="link"
+                    className="h-auto p-0 font-normal text-inherit"
+                    onClick={() => {
+                      submit(
+                        { email, role },
+                        {
+                          method: 'POST',
+                          action: `/teams/${data.team.uuid}/sharing`,
+                          encType: 'application/json',
+                          navigate: false,
+                        }
+                      );
+                    }}
+                  >
+                    Try again
+                  </Button2>{' '}
+                  or{' '}
+                  <Button2
+                    variant="link"
+                    className="h-auto p-0 font-normal text-inherit"
+                    onClick={(e) => {
+                      setFailedInvitedUsers((prev) => {
+                        const newFailedInvitedUsers = { ...prev };
+                        delete newFailedInvitedUsers[email];
+                        return newFailedInvitedUsers;
+                      });
+                    }}
+                  >
+                    delete
+                  </Button2>
+                  .
+                </>
+              ) : undefined
+            }
+            actionUrl={`/teams/${data.team.uuid}/sharing/FOO_DOES_NOT_MATTER`}
+          />
+        ))}
     </ShareDialog>
   );
 }
@@ -334,7 +362,7 @@ function ListItemUser({
   loggedInUser: ApiTypes['/v0/teams/:uuid.GET.response']['user'];
   user: ApiTypes['/v0/teams/:uuid.GET.response']['team']['users'][0];
   disabled?: boolean;
-  error?: string;
+  error?: ReactNode;
   actionUrl: string;
 }) {
   // TODO: figure out primary vs. secondary display & "resend"
@@ -368,10 +396,7 @@ function ListItemUser({
   } else {
     secondary = (
       <div className={`flex flex-row gap-1`}>
-        Invite sent.{' '}
-        <Button2 size="sm" variant="link">
-          Resend
-        </Button2>
+        Invite sent. <span className="underline">Resend</span>
       </div>
     );
   }
@@ -402,9 +427,9 @@ function ListItemUser({
           {primary} {loggedInUser.id === user.id && ' (You)'}
         </p>
         {secondary && (
-          <p className={cn(TYPE.caption, hasError || error ? 'text-destructive' : 'text-muted-foreground')}>
+          <div className={cn(TYPE.caption, hasError || error ? 'text-destructive' : 'text-muted-foreground')}>
             {secondary}
-          </p>
+          </div>
         )}
       </div>
 
