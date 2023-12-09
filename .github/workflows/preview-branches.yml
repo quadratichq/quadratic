@@ -119,64 +119,64 @@ jobs:
       run: |
         ssh -i ~/.ssh/id_rsa ubuntu@${{needs.infra.outputs.MULTIPLAYER_INSTANCE_DNS}} "sudo systemctl start quadratic-multiplayer"
 
-  client_preview:
-    needs: infra
-    runs-on: ubuntu-latest-8-cores 
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 18
+  # client_preview:
+  #   needs: infra
+  #   runs-on: ubuntu-latest-8-cores 
+  #   steps:
+  #   - uses: actions/checkout@v4
+  #   - uses: actions/setup-node@v4
+  #     with:
+  #       node-version: 18
 
-    - name: Set up Rust
-      uses: moonrepo/setup-rust@v1
-      with:
-        cache: false
-    - uses: jetli/wasm-pack-action@v0.4.0
-      with:
-        version: 'latest'
+  #   - name: Set up Rust
+  #     uses: moonrepo/setup-rust@v1
+  #     with:
+  #       cache: false
+  #   - uses: jetli/wasm-pack-action@v0.4.0
+  #     with:
+  #       version: 'latest'
 
-    - name: Build Client
-      working-directory: quadratic-client
-      run: |
-        npm ci
-        npm run build:wasm:javascript
-        npm run build:wasm:types
-        npm run build
-      env:
-        VITE_ENVIRONMENT: preview
-        VITE_QUADRATIC_API_URL: https://quadratic-api-dev-pr-${{ github.event.pull_request.number }}.herokuapp.com
-        VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
-        VITE_AUTH0_CLIENT_ID: ${{ secrets.VITE_AUTH0_CLIENT_ID }}
-        VITE_AUTH0_AUDIENCE: ${{ secrets.VITE_AUTH0_AUDIENCE }}
-        VITE_AUTH0_ISSUER: ${{ secrets.VITE_AUTH0_ISSUER }}
-        VITE_AUTH0_DOMAIN: ${{ secrets.VITE_AUTH0_DOMAIN }}
+  #   - name: Build Client
+  #     working-directory: quadratic-client
+  #     run: |
+  #       npm ci
+  #       npm run build:wasm:javascript
+  #       npm run build:wasm:types
+  #       npm run build
+  #     env:
+  #       VITE_ENVIRONMENT: preview
+  #       VITE_QUADRATIC_API_URL: https://quadratic-api-dev-pr-${{ github.event.pull_request.number }}.herokuapp.com
+  #       VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+  #       VITE_AUTH0_CLIENT_ID: ${{ secrets.VITE_AUTH0_CLIENT_ID }}
+  #       VITE_AUTH0_AUDIENCE: ${{ secrets.VITE_AUTH0_AUDIENCE }}
+  #       VITE_AUTH0_ISSUER: ${{ secrets.VITE_AUTH0_ISSUER }}
+  #       VITE_AUTH0_DOMAIN: ${{ secrets.VITE_AUTH0_DOMAIN }}
 
-    # Set up AWS credentials
-    - name: Set up AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: your-aws-region
+  #   # Set up AWS credentials
+  #   - name: Set up AWS credentials
+  #     uses: aws-actions/configure-aws-credentials@v1
+  #     with:
+  #       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #       aws-region: your-aws-region
 
-    # # Deploy to S3
-    # - name: Deploy to S3
-    #   run: |
-    #     aws s3 sync ./path-to-your-static-files/ s3://your-s3-bucket-name --delete
+  # # Deploy to S3
+  # - name: Deploy to S3
+  #   run: |
+  #     aws s3 sync ./path-to-your-static-files/ s3://your-s3-bucket-name --delete
 
-    # # Invalidate CloudFront distribution
-    # - name: Invalidate CloudFront distribution
-    #   run: |
-    #     aws cloudfront create-invalidation --distribution-id your-distribution-id --paths "/*"
+  # # Invalidate CloudFront distribution
+  # - name: Invalidate CloudFront distribution
+  #   run: |
+  #     aws cloudfront create-invalidation --distribution-id your-distribution-id --paths "/*"
 
-    # - name: Post Deployment URL to PR
-    #   if: github.event_name == 'pull_request'
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #     DEPLOY_URL: "https://your-cloudfront-distribution-url.com/prs/${{ github.head_ref }}"
-    #   run: |
-    #     PR_COMMENT="Deployment is ready! 🚀\n\nPreview: $DEPLOY_URL"
-    #     PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT" '.body = $body')
-    #     COMMENTS_URL=$(jq -r .pull_request.comments_url < "$GITHUB_EVENT_PATH")
-    #     curl -s -S -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" --data "$PAYLOAD" "$COMMENTS_URL"
+  # - name: Post Deployment URL to PR
+  #   if: github.event_name == 'pull_request'
+  #   env:
+  #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     DEPLOY_URL: "https://your-cloudfront-distribution-url.com/prs/${{ github.head_ref }}"
+  #   run: |
+  #     PR_COMMENT="Deployment is ready! 🚀\n\nPreview: $DEPLOY_URL"
+  #     PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT" '.body = $body')
+  #     COMMENTS_URL=$(jq -r .pull_request.comments_url < "$GITHUB_EVENT_PATH")
+  #     curl -s -S -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" --data "$PAYLOAD" "$COMMENTS_URL"
