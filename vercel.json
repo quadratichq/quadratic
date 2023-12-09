@@ -1,5 +1,5 @@
 {
-  "buildCommand": "./scripts/run-ci-build.sh",
+  "buildCommand": "./scripts/client-ci-vercel-build.sh",
   "installCommand": "npm install",
   "outputDirectory": "build"
 }
