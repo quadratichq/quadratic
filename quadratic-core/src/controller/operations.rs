@@ -35,12 +35,12 @@ impl GridController {
                 let size = region.size().expect("msg: error getting size of region");
                 let old_values = region
                     .iter()
-                    .zip(values.into_cell_values_vec())
+                    .zip(values.clone().into_cell_values_vec())
                     .map(|(cell_ref, value)| {
                         let pos = sheet.cell_ref_to_pos(cell_ref)?;
-                        let (old_value, operations) = sheet.set_cell_value(pos, value);
-                        if let Some(operations) = operations {
-                            multiplayer_operations.extend(operations);
+                        let (old_value, ops) = sheet.set_cell_value(pos, value);
+                        if let Some(ops) = ops {
+                            multiplayer_operations.extend(ops);
                         }
                         if old_value
                             .as_ref()
@@ -106,6 +106,7 @@ impl GridController {
                                 cells_to_compute,
                                 summary,
                                 &mut reverse_operations,
+                                multiplayer_operations,
                             );
                         } else {
                             // otherwise check if it released a spill
@@ -119,6 +120,11 @@ impl GridController {
                         }
                     }
                 }
+
+                multiplayer_operations.push(Operation::SetCellValues {
+                    region: region.clone(),
+                    values,
+                });
 
                 summary.generate_thumbnail =
                     summary.generate_thumbnail || self.thumbnail_dirty_region(&region);
@@ -153,6 +159,8 @@ impl GridController {
                     return vec![];
                 };
 
+                let final_code_cell_value;
+
                 // for compute, we keep the original cell output to avoid flashing of output (since values will be overridden once computation is complete)
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
                 if compute {
@@ -165,7 +173,8 @@ impl GridController {
                             } else {
                                 code_cell_value
                             };
-                        sheet.set_code_cell_value(pos, Some(updated_code_cell_value));
+                        sheet.set_code_cell_value(pos, Some(updated_code_cell_value.clone()));
+                        final_code_cell_value = Some(updated_code_cell_value);
                     } else {
                         sheet.set_code_cell_value(pos, code_cell_value);
                         fetch_code_cell_difference(
@@ -181,6 +190,7 @@ impl GridController {
                         );
                         let sheet = self.grid.sheet_mut_from_id(sheet_id);
                         sheet.set_code_cell_value(pos, None);
+                        final_code_cell_value = None;
                     }
                     cells_to_compute.insert(cell_ref);
                 } else {
@@ -197,7 +207,8 @@ impl GridController {
                         multiplayer_operations,
                     );
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    sheet.set_code_cell_value(pos, code_cell_value);
+                    sheet.set_code_cell_value(pos, code_cell_value.clone());
+                    final_code_cell_value = code_cell_value;
                 }
 
                 // TODO(ddimaria): resolve comment from @HactarCE:
@@ -236,7 +247,10 @@ impl GridController {
                         multiplayer_operations,
                     );
                 }
-
+                multiplayer_operations.push(Operation::SetCellCode {
+                    cell_ref,
+                    code_cell_value: final_code_cell_value,
+                });
                 reverse_operations.push(Operation::SetCellCode {
                     cell_ref,
                     code_cell_value: old_code_cell_value,
@@ -254,7 +268,7 @@ impl GridController {
                 // summary.generate_thumbnail =
                 //     summary.generate_thumbnail || self.thumbnail_dirty_region(region.clone());
 
-                let old_attr = match attr {
+                let old_attr = match attr.clone() {
                     CellFmtArray::Align(align) => {
                         CellFmtArray::Align(self.set_cell_formats_for_type::<CellAlign>(
                             &region,
@@ -327,6 +341,11 @@ impl GridController {
                         ))
                     }
                 };
+                multiplayer_operations.push(Operation::SetCellFormats {
+                    region: region.clone(),
+                    attr,
+                });
+
                 reverse_operations.push(Operation::SetCellFormats {
                     region,
                     attr: old_attr,
@@ -340,7 +359,11 @@ impl GridController {
 
                 let sheet = self.grid.sheet_mut_from_id(region.sheet);
 
-                let old_borders = sheet.set_region_borders(&region, borders);
+                let old_borders = sheet.set_region_borders(&region, borders.clone());
+                multiplayer_operations.push(Operation::SetBorders {
+                    region: region.clone(),
+                    borders,
+                });
                 reverse_operations.push(Operation::SetBorders {
                     region,
                     borders: old_borders,
@@ -351,17 +374,17 @@ impl GridController {
                 // this may happen after (1) delete a sheet; (2) MP update w/an added sheet; and (3) undo the deleted sheet
                 let sheet_id = sheet.id;
                 self.grid
-                    .add_sheet(Some(sheet))
+                    .add_sheet(Some(sheet.clone()))
                     .expect("duplicate sheet name");
                 summary.sheet_list_modified = true;
                 summary.html.insert(sheet_id);
-
+                multiplayer_operations.push(Operation::AddSheet { sheet });
                 reverse_operations.push(Operation::DeleteSheet { sheet_id });
             }
             Operation::DeleteSheet { sheet_id } => {
                 let deleted_sheet = self.grid.remove_sheet(sheet_id);
                 summary.sheet_list_modified = true;
-
+                multiplayer_operations.push(Operation::DeleteSheet { sheet_id });
                 reverse_operations.push(Operation::AddSheet {
                     sheet: deleted_sheet,
                 });
@@ -370,13 +393,13 @@ impl GridController {
                 let old_first = self.grid.first_sheet_id();
                 let sheet = self.grid.sheet_from_id(target);
                 let original_order = sheet.order.clone();
-                self.grid.move_sheet(target, order);
+                self.grid.move_sheet(target, order.clone());
                 summary.sheet_list_modified = true;
 
                 if old_first != self.grid.first_sheet_id() {
                     summary.generate_thumbnail = true;
                 }
-
+                multiplayer_operations.push(Operation::ReorderSheet { target, order });
                 reverse_operations.push(Operation::ReorderSheet {
                     target,
                     order: original_order,
@@ -385,9 +408,9 @@ impl GridController {
             Operation::SetSheetName { sheet_id, name } => {
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
                 let old_name = sheet.name.clone();
-                sheet.name = name;
+                sheet.name = name.clone();
                 summary.sheet_list_modified = true;
-
+                multiplayer_operations.push(Operation::SetSheetName { sheet_id, name });
                 reverse_operations.push(Operation::SetSheetName {
                     sheet_id,
                     name: old_name,
@@ -396,9 +419,9 @@ impl GridController {
             Operation::SetSheetColor { sheet_id, color } => {
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
                 let old_color = sheet.color.clone();
-                sheet.color = color;
+                sheet.color = color.clone();
                 summary.sheet_list_modified = true;
-
+                multiplayer_operations.push(Operation::SetSheetColor { sheet_id, color });
                 reverse_operations.push(Operation::SetSheetColor {
                     sheet_id,
                     color: old_color,
@@ -416,7 +439,11 @@ impl GridController {
                     let old_size = sheet.offsets.set_column_width(x, new_size);
                     summary.generate_thumbnail = summary.generate_thumbnail
                         || self.thumbnail_dirty_pos(sheet_id, Pos { x, y: 0 });
-
+                    multiplayer_operations.push(Operation::ResizeColumn {
+                        sheet_id,
+                        column,
+                        new_size,
+                    });
                     reverse_operations.push(Operation::ResizeColumn {
                         sheet_id,
                         column,
@@ -436,7 +463,11 @@ impl GridController {
                     summary.offsets_modified.push(sheet.id);
                     summary.generate_thumbnail = summary.generate_thumbnail
                         || self.thumbnail_dirty_pos(sheet_id, Pos { x: 0, y });
-
+                    multiplayer_operations.push(Operation::ResizeRow {
+                        sheet_id,
+                        row,
+                        new_size,
+                    });
                     reverse_operations.push(Operation::ResizeRow {
                         sheet_id,
                         row,
@@ -452,6 +483,11 @@ impl GridController {
             } => {
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
                 sheet.set_column_id(column_id, index);
+                multiplayer_operations.push(Operation::MapColumnId {
+                    sheet_id,
+                    column_id,
+                    index,
+                });
             }
 
             Operation::MapRowId {
@@ -461,6 +497,11 @@ impl GridController {
             } => {
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
                 sheet.set_row_id(row_id, index);
+                multiplayer_operations.push(Operation::MapRowId {
+                    sheet_id,
+                    row_id,
+                    index,
+                });
             }
         };
         reverse_operations

@@ -108,6 +108,8 @@ export class Grid {
       sheets.updateOffsets(summary.offsets_modified);
       pixiApp.cellsSheets.updateBorders(summary.offsets_modified);
       htmlCellsHandler.updateOffsets(summary.offsets_modified.map((offset) => offset.id));
+      pixiApp.cursor.dirty = true;
+      pixiApp.multiplayerCursor.dirty = true;
     }
 
     if (summary.code_cells_modified.length) {
@@ -142,6 +144,7 @@ export class Grid {
 
     if (summary.multiplayer_operations) {
       multiplayer.sendTransaction(summary.multiplayer_operations);
+      console.log('sending multiplayer transaction', summary.multiplayer_operations);
     }
     pixiApp.setViewportDirty();
   }

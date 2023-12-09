@@ -68,12 +68,8 @@ pub(crate) async fn handle_message(
                 let session_id = user.session_id;
                 let room = state.get_room(&file_id).await?;
                 let response = MessageResponse::from(room.to_owned());
-                broadcast(
-                    Uuid::new_v4(),
-                    file_id,
-                    Arc::clone(&state),
-                    response.clone(),
-                );
+
+                broadcast(Uuid::new_v4(), file_id, Arc::clone(&state), response);
 
                 tracing::info!(
                     "User {} joined room {} with session {}",
@@ -96,7 +92,7 @@ pub(crate) async fn handle_message(
 
             if is_not_empty {
                 let response = MessageResponse::from(room.to_owned());
-                broadcast(session_id, file_id, Arc::clone(&state), response.clone());
+                broadcast(session_id, file_id, Arc::clone(&state), response);
             }
 
             Ok(None)
@@ -114,7 +110,7 @@ pub(crate) async fn handle_message(
                 operations,
             };
 
-            broadcast(session_id, file_id, Arc::clone(&state), response.clone());
+            broadcast(session_id, file_id, Arc::clone(&state), response);
 
             Ok(None)
         }
@@ -142,25 +138,7 @@ pub(crate) async fn handle_message(
                 update,
             };
 
-            broadcast(session_id, file_id, Arc::clone(&state), response.clone());
-
-            Ok(None)
-        }
-
-        MessageRequest::UserState {
-            session_id,
-            file_id,
-            update,
-        } => {
-            state
-                .update_user_state_new(&file_id, &session_id, &update)
-                .await?;
-            // let response = MessageResponse::UserUpdate {
-            //     session_id,
-            //     file_id,
-            //     update,
-            // };
-            // broadcast(session_id, file_id, Arc::clone(&state), response.clone());
+            broadcast(session_id, file_id, Arc::clone(&state), response);
 
             Ok(None)
         }
@@ -171,7 +149,7 @@ pub(crate) async fn handle_message(
 pub(crate) mod tests {
 
     use super::*;
-    use crate::state::user::{CellEdit, UserState, UserStateUpdate};
+    use crate::state::user::{CellEdit, UserStateUpdate};
     use crate::test_util::add_new_user_to_room;
 
     #[tokio::test]
