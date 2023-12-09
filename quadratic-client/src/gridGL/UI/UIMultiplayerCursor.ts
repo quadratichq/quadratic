@@ -36,6 +36,7 @@ export class UIMultiPlayerCursor extends Graphics {
     code: boolean;
   }): void {
     const sheet = sheets.sheet;
+    if (cursor.x === undefined || cursor.y === undefined) debugger
     let { x, y, width, height } = sheet.getCellOffsets(cursor.x, cursor.y);
 
     if (editing) {

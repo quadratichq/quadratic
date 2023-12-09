@@ -136,7 +136,6 @@ impl TransactionInProgress {
                 compute,
                 &mut self.multiplayer_operations,
             );
-            self.multiplayer_operations.push(op.clone());
             self.reverse_operations.extend(reverse_operation);
         }
     }
@@ -249,12 +248,6 @@ impl TransactionInProgress {
                             self.cells_accessed.clear();
                         }
                         self.waiting_for_async = None;
-
-                        // need to add it to the summary since we don't run this through normal operations
-                        self.multiplayer_operations.push(Operation::SetCellCode {
-                            cell_ref,
-                            code_cell_value: Some(updated_code_cell_value),
-                        });
                     }
                     _ => {
                         crate::util::dbgjs("Transaction.complete called for an unhandled language");
