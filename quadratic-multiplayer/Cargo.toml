@@ -15,7 +15,6 @@ futures = "0.3.29"
 futures-util = { version = "0.3.29", default-features = false, features = ["sink", "std"] }
 headers = "0.4.0"
 jsonwebtoken = "9.2.0"
-openssl = { version = "0.10", features = ["vendored"] }
 reqwest = { version = "0.11.22", features = ["json", "serde_json"] }
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
