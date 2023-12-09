@@ -80,7 +80,6 @@ jobs:
     - name: Build quadratic-multiplayer
       working-directory: quadratic-multiplayer
       run: |
-        export OPENSSL_STATIC=1
         cargo build --release
 
     - name: Set up SSH Key
