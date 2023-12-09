@@ -1,5 +1,5 @@
 import { TYPE } from '@/constants/appConstants';
-import { TeamAction } from '@/routes/teams.$teamUuid';
+import { Action as SharingAction } from '@/routes/teams.$teamUuid.sharing';
 import { Action as TeamUserSharingAction, Action as UserSharingAction } from '@/routes/teams.$teamUuid.sharing.$userId';
 import { Button as Button2 } from '@/shadcn/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
@@ -24,8 +24,8 @@ import {
   useTheme,
 } from '@mui/material';
 import { GlobeIcon, LockClosedIcon, PersonIcon } from '@radix-ui/react-icons';
-import { ApiTypes, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
-import React, { Children, useRef, useState } from 'react';
+import { ApiTypes, PublicLinkAccess, UserRoleFileSchema } from 'quadratic-shared/typesAndSchemas';
+import React, { Children, useEffect, useRef, useState } from 'react';
 import { useFetcher, useFetchers, useSearchParams, useSubmit } from 'react-router-dom';
 import { z } from 'zod';
 import { RoleSchema, UserRoleTeam } from '../permissions';
@@ -46,38 +46,69 @@ export function ShareTeamDialog({
   data: ApiTypes['/v0/teams/:uuid.GET.response'];
   onClose: () => void;
 }) {
+  const [failedInvitedUsers, setFailedInvitedUsers] = useState<
+    Array<ApiTypes['/v0/teams/:uuid.GET.response']['team']['users'][0]>
+  >([]);
+  const loggedInUser = data.user;
   const inFlightFetchers = useFetchers();
 
-  const inFlightUserIdsBeingDeleted = inFlightFetchers
-    .filter(
-      (fetcher) =>
-        // @ts-expect-error
-        fetcher.json?.intent === 'delete-user'
-    )
-    .map((fetcher) => fetcher.formAction?.split('/').pop());
-  console.log(inFlightUserIdsBeingDeleted);
   // TODO: create fetcher in state for people who get added and keep them around if they fail
-  const invitedUsers = inFlightFetchers
-    .filter(
-      (fetcher) =>
-        // @ts-expect-error
-        fetcher.json?.action === 'invite-user'
-    )
-    .map((fetcher) => ({
-      // @ts-expect-error gives me email, role
-      ...fetcher.json.payload,
-      id: Date.now(),
-      hasAccount: false,
-      name: undefined,
-      picture: undefined,
-    }));
+  const inFlightInvitedUserFetchers = inFlightFetchers.filter(
+    (fetcher) =>
+      // @ts-expect-error
+      fetcher.json?.intent === 'invite-user'
+  );
+  const invitedUsers = inFlightInvitedUserFetchers.map((fetcher) => ({
+    // @ts-expect-error gives me email, role
+    ...fetcher.json.payload,
+    id: Date.now(),
+    hasAccount: false,
+    name: undefined,
+    picture: undefined,
+  }));
 
-  const users = data.team.users.concat(invitedUsers);
-  // .filter((user) => {
-  //   // If any of the users represent an inflight user being deleted, dont' show them
+  useEffect(() => {
+    const failedFetchers = inFlightInvitedUserFetchers.filter((fetcher) => {
+      return fetcher.state === 'loading' && fetcher.data && !fetcher.data.ok;
+    });
+    if (failedFetchers.length > 0) {
+      setFailedInvitedUsers((prev) => {
+        const currentFailedEmails = prev.map((u) => u.email);
+        const notYetThere = failedFetchers.filter(
+          (fetcher) =>
+            !currentFailedEmails.includes(
+              // @ts-expect-error
+              fetcher.json?.payload?.email
+            )
+        );
+        console.log('currentFailedEmails', currentFailedEmails);
+        console.log('notyetthere', notYetThere);
+        return [
+          ...prev,
+          ...notYetThere.map((fetcher) => {
+            // TODO: types
+            return {
+              // @ts-expect-error
+              ...fetcher.json.payload,
+              id: Date.now(),
+              hasAccount: false,
+              name: undefined,
+              picture: undefined,
+            };
+          }),
+        ];
+      });
+    }
+  }, [inFlightInvitedUserFetchers]);
 
-  //   return inFlightUserIdsBeingDeleted.includes(String(user.id)) ? false : true;
-  // });
+  console.log('failedInvitedUsers', failedInvitedUsers);
+
+  // Sort the users how we want
+  const users = [
+    data.team.users.find((user) => user.id === loggedInUser.id),
+    ...data.team.users.filter((user) => user.id !== loggedInUser.id),
+    ...invitedUsers,
+  ];
 
   const numberOfOwners = data.team.users.filter((user) => user.role === 'OWNER').length;
 
@@ -87,15 +118,31 @@ export function ShareTeamDialog({
       description="Invite people to collaborate in this team"
       onClose={() => {}}
     >
-      <InviteUser actionUrl={`/teams/${data.team.uuid}`} userEmails={[]} loggedInUser={data.user} />
+      <InviteUser
+        canInviteOwner={loggedInUser.role === 'OWNER' && numberOfOwners > 1}
+        actionUrl={`/teams/${data.team.uuid}/sharing`}
+        userEmails={[]}
+        loggedInUser={loggedInUser}
+      />
       {users.map((user) => (
         <ListItemUser
           key={user.id}
           numberOfOwners={numberOfOwners}
-          loggedInUser={data.user}
+          loggedInUser={loggedInUser}
           user={user}
           disabled={false}
           error={undefined}
+          actionUrl={`/teams/${data.team.uuid}/sharing/${user.id}`}
+        />
+      ))}
+      {failedInvitedUsers.map((user) => (
+        <ListItemUser
+          key={user.id}
+          numberOfOwners={numberOfOwners}
+          loggedInUser={loggedInUser}
+          user={user}
+          disabled={true}
+          error={'Failed to invite user. Try again'}
           actionUrl={`/teams/${data.team.uuid}/sharing/${user.id}`}
         />
       ))}
@@ -113,7 +160,7 @@ export function ShareFileDialog({ uuid, name, onClose, fetcherUrl }: any) {
         <ListItemLoading />
       ) : (
         <>
-          <InviteUser actionUrl={`/files/${uuid}/sharing`} userEmails={[]} loggedInUser={{}} />
+          <InviteUser canInviteOwner={false} actionUrl={`/files/${uuid}/sharing`} userEmails={[]} loggedInUser={{}} />
           <ListItemPublicLink fetcherUrl={fetcherUrl} publicLinkAccess={'EDIT'} />
           <ListItemTeamMember teamName={'TODO:'} />
         </>
@@ -152,9 +199,10 @@ type InviteUserProps = {
   // onInviteUser: (user: { email: string; role: string }) => void;
   userEmails: string[];
   actionUrl: string;
+  canInviteOwner: boolean;
   // userRoles: Array<{ label: string; value: string }>;
 };
-export function InviteUser({ loggedInUser, userEmails, actionUrl }: InviteUserProps) {
+export function InviteUser({ loggedInUser, userEmails, actionUrl, canInviteOwner }: InviteUserProps) {
   // **** INVITE
   // const [error, setError] = useState<string>('');
   // const [role, setRole] = useState<z.infer<typeof RoleSchema>>(RoleSchema.enum.EDITOR);
@@ -175,8 +223,9 @@ export function InviteUser({ loggedInUser, userEmails, actionUrl }: InviteUserPr
   const options = [
     // TODO: if can invite owner, allow here
     // TODO: context: team/file and proper enums
-    { label: 'Can edit', value: RoleSchema.enum.EDITOR },
-    { label: 'Can view', value: RoleSchema.enum.VIEWER },
+    { label: 'Can edit', value: UserRoleFileSchema.enum.EDITOR },
+    { label: 'Can view', value: UserRoleFileSchema.enum.VIEWER },
+    // ...(canInviteOwner ? { label: 'Owner', value: UserRoleFileSchema.enum.OWNER } : {}),
   ];
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -189,19 +238,14 @@ export function InviteUser({ loggedInUser, userEmails, actionUrl }: InviteUserPr
         e.preventDefault();
 
         const formData = new FormData(e.currentTarget);
-        const json = Object.fromEntries(formData) as { email: string; role: string };
-        const { email, role } = json;
+        const payload = Object.fromEntries(formData) as SharingAction['request.invite-user']['payload'];
 
         // TODO: validate
 
         // TODO: types for different contexts
-        const data: TeamAction['request.invite-user'] = {
-          action: 'invite-user',
-          payload: {
-            email,
-            // @ts-expect-error
-            role,
-          },
+        const data: SharingAction['request.invite-user'] = {
+          intent: 'invite-user',
+          payload,
         };
         submit(data, { method: 'POST', action: actionUrl, encType: 'application/json', navigate: false });
 
@@ -302,16 +346,23 @@ function ListItemUser({
   const fetcher = useFetcher();
   const fetcherJson = fetcher.json as TeamUserSharingAction['request'];
 
+  // If user is being deleted, hide them
   if (fetcher.state !== 'idle' && fetcherJson.intent === 'delete-user') {
     return null;
   }
 
-  const value = fetcher.state !== 'idle' && fetcherJson.intent === 'update-user' ? fetcherJson.role : user.role;
+  // Get UI values (optimistically if they're updated)
+  if (fetcher.state !== 'idle' && fetcherJson.intent === 'update-user') {
+    console.log(fetcherJson);
+  }
+  const value = fetcher.state !== 'idle' && fetcherJson.intent === 'update-user' ? fetcherJson.payload.role : user.role;
   const hasError = fetcher.state !== 'submitting' && fetcher.data && !fetcher.data.ok;
 
   let secondary;
   if (hasError) {
     secondary = 'Failed to sync change. Try again.';
+  } else if (error) {
+    secondary = error;
   } else if (user.hasAccount) {
     secondary = user.email;
   } else {
@@ -351,7 +402,9 @@ function ListItemUser({
           {primary} {loggedInUser.id === user.id && ' (You)'}
         </p>
         {secondary && (
-          <p className={cn(TYPE.caption, hasError ? 'text-destructive' : 'text-muted-foreground')}>{secondary}</p>
+          <p className={cn(TYPE.caption, hasError || error ? 'text-destructive' : 'text-muted-foreground')}>
+            {secondary}
+          </p>
         )}
       </div>
 
@@ -363,9 +416,10 @@ function ListItemUser({
             // type for files
             // | ApiTypes['/v0/files/:uuid.GET.response']['user']['role']
           ) => {
-            const data = (
-              newValue === 'DELETE' ? { intent: 'delete-user' } : { intent: 'update-user', role: newValue }
-            ) as UserSharingAction['request'];
+            const data: UserSharingAction['request'] =
+              newValue === 'DELETE'
+                ? { intent: 'delete-user' }
+                : { intent: 'update-user', payload: { role: newValue } };
             fetcher.submit(data, {
               method: 'POST',
               action: actionUrl,
@@ -388,17 +442,13 @@ function ListItemUser({
               };
 
               const label = labelsByOption[option];
-              console.log(label, option);
 
-              return (
-                <>
-                  {option === 'DELETE' && <SelectSeparator key={i + '-divider'} />}
-
-                  <SelectItem key={i} value={option}>
-                    {label}
-                  </SelectItem>
-                </>
-              );
+              return [
+                option === 'DELETE' ? <SelectSeparator key={i + '-divider'} /> : null,
+                <SelectItem key={i} value={option}>
+                  {label}
+                </SelectItem>,
+              ];
             })}
           </SelectContent>
         </Select>

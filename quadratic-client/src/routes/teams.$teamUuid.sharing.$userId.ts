@@ -5,7 +5,7 @@ import { ActionFunctionArgs } from 'react-router-dom';
 export type Action = {
   'request.update-user': {
     intent: 'update-user';
-    role: ApiTypes['/v0/teams/:uuid/sharing.POST.request']['role'];
+    payload: ApiTypes['/v0/teams/:uuid/sharing/:userId.POST.request'];
   };
   'request.delete-user': {
     intent: 'delete-user';
@@ -21,8 +21,8 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
 
   if (intent === 'update-user') {
     try {
-      const { role } = actionData as Action['request.update-user'];
-      await apiClient.updateUserInTeam(teamUuid, userId, { role });
+      const { payload } = actionData as Action['request.update-user'];
+      await apiClient.updateUserInTeam(teamUuid, userId, payload);
       return { ok: true };
     } catch (e) {
       return { ok: false };
