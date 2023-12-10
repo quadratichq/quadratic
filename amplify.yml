@@ -1,7 +1,6 @@
 version: 1
 frontend:
   phases:
-
     build:
       commands:
         - ./scripts/client-ci-vercel-build.sh
