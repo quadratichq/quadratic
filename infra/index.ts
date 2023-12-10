@@ -6,9 +6,5 @@ import {
   multiplayerPublicDns,
 } from "./multiplayer/multiplayer";
 
-// Infra stack for the client CDN.
-// Not currently functional.
-// import { clientPublicDns } from "./client/client";
-
 // Global exports
 export { multiplayerInstanceDns, multiplayerPublicDns };

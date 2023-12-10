@@ -131,18 +131,3 @@ jobs:
   #   run: |
   #     aws s3 sync ./path-to-your-static-files/ s3://your-s3-bucket-name --delete
 
-  # # Invalidate CloudFront distribution
-  # - name: Invalidate CloudFront distribution
-  #   run: |
-  #     aws cloudfront create-invalidation --distribution-id your-distribution-id --paths "/*"
-
-  # - name: Post Deployment URL to PR
-  #   if: github.event_name == 'pull_request'
-  #   env:
-  #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #     DEPLOY_URL: "https://your-cloudfront-distribution-url.com/prs/${{ github.head_ref }}"
-  #   run: |
-  #     PR_COMMENT="Deployment is ready! 🚀\n\nPreview: $DEPLOY_URL"
-  #     PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT" '.body = $body')
-  #     COMMENTS_URL=$(jq -r .pull_request.comments_url < "$GITHUB_EVENT_PATH")
-  #     curl -s -S -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" --data "$PAYLOAD" "$COMMENTS_URL"
