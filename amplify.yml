@@ -6,8 +6,9 @@ frontend:
         - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
         - source "$HOME/.cargo/env"
         - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        - npm ci
         - cd quadratic-client
-        - npm install
+        - npm ci
 
     build:
       commands:
@@ -20,5 +21,7 @@ frontend:
       - '**/*'
   cache:
     paths:
+      - node_modules/**/*
       - quadratic-client/node_modules/**/*
+      - quadratic-api/node_modules/**/*
       - quadratic-core/target/**/*
