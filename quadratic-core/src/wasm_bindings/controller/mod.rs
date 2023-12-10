@@ -18,6 +18,9 @@ pub mod sheets;
 pub mod summarize;
 
 #[wasm_bindgen]
+pub struct CalculationGetCells {}
+
+#[wasm_bindgen]
 impl GridController {
     /// Imports a [`GridController`] from a JSON string.
     #[wasm_bindgen(js_name = "newFromFile")]
@@ -77,15 +80,15 @@ impl GridController {
         )?)
     }
 
-    #[wasm_bindgen(js_name = "getCalculationTransactionSummary")]
-    pub fn js_calculation_transaction_summary(&mut self) -> Result<JsValue, JsValue> {
-        self.updated_bounds_in_transaction();
-        if let Some(summary) = self.transaction_summary() {
-            Ok(serde_wasm_bindgen::to_value(&summary)?)
-        } else {
-            Err(JsValue::UNDEFINED)
-        }
-    }
+    // #[wasm_bindgen(js_name = "getCalculationTransactionSummary")]
+    // pub fn js_calculation_transaction_summary(&mut self) -> Result<JsValue, JsValue> {
+    //     self.updated_bounds_in_transaction();
+    //     if let Some(summary) = self.prepare_transaction_summary() {
+    //         Ok(serde_wasm_bindgen::to_value(&summary)?)
+    //     } else {
+    //         Err(JsValue::UNDEFINED)
+    //     }
+    // }
 
     #[wasm_bindgen(js_name = "calculationGetCells")]
     pub fn js_calculation_get_cells(
@@ -98,7 +101,7 @@ impl GridController {
     #[wasm_bindgen(js_name = "multiplayerTransaction")]
     pub fn js_multiplayer_transaction(&mut self, operations: String) -> Result<JsValue, JsValue> {
         Ok(serde_wasm_bindgen::to_value(
-            &self.multiplayer_transaction(operations),
+            &self.received_transaction(operations),
         )?)
     }
 
@@ -124,7 +127,7 @@ impl GridController {
             save: false,
             generate_thumbnail: false,
             transaction_busy: false,
-            multiplayer_operations: None,
+            forward_operations: None,
             html: HashSet::new(),
         })?)
     }

@@ -29,18 +29,6 @@ impl CellSheetsModified {
             y,
         }
     }
-
-    pub fn add_region(
-        cells_sheet_modified: &mut HashSet<CellSheetsModified>,
-        sheet: &Sheet,
-        region: &RegionRef,
-    ) {
-        region.iter().for_each(|cell_ref| {
-            if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                cells_sheet_modified.insert(Self::new(sheet.id, pos));
-            }
-        });
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq)]
@@ -77,7 +65,7 @@ pub struct TransactionSummary {
     pub generate_thumbnail: bool,
 
     // holds the operations to be shared via multiplayer
-    pub multiplayer_operations: Option<String>,
+    pub forward_operations: Option<String>,
 
     // changes to html output
     pub html: HashSet<SheetId>,
@@ -91,7 +79,7 @@ impl TransactionSummary {
         }
     }
 
-    pub fn clear(&mut self, keep_multiplayer_operations: bool) {
+    pub fn clear(&mut self, keep_forward_operations: bool) {
         self.fill_sheets_modified.clear();
         self.border_sheets_modified.clear();
         self.code_cells_modified.clear();
@@ -102,8 +90,74 @@ impl TransactionSummary {
         self.transaction_busy = false;
         self.generate_thumbnail = false;
         self.save = false;
-        if !keep_multiplayer_operations {
-            self.multiplayer_operations = None;
+        if !keep_forward_operations {
+            self.forward_operations = None;
         }
+    }
+
+    pub fn add_cell_sheets_modified_region(&mut self, sheet: &Sheet, region: &RegionRef) {
+        region.iter().for_each(|cell_ref| {
+            if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
+                self.cell_sheets_modified
+                    .insert(CellSheetsModified::new(sheet.id, pos));
+            }
+        });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Rect;
+
+    use super::*;
+
+    #[test]
+    fn test_cell_sheets_modified() {
+        let sheet_id = SheetId::new();
+        let cell_sheets_modified = CellSheetsModified::new(sheet_id, Pos { x: 0, y: 0 });
+        assert_eq!(
+            cell_sheets_modified,
+            CellSheetsModified {
+                sheet_id: sheet_id.to_string(),
+                x: 0,
+                y: 0
+            }
+        );
+    }
+
+    #[test]
+    fn test_cell_sheets_modified_region() {
+        let sheet_id = SheetId::new();
+        let mut summary = TransactionSummary::default();
+        let mut sheet = Sheet::test();
+        let (region, _) = sheet.region(Rect::from_numbers(0, 0, 21, 41));
+        summary.add_cell_sheets_modified_region(&sheet, &region);
+        assert_eq!(
+            summary.cell_sheets_modified,
+            vec![
+                CellSheetsModified {
+                    sheet_id: sheet_id.to_string(),
+                    x: 0,
+                    y: 0
+                },
+                CellSheetsModified {
+                    sheet_id: sheet_id.to_string(),
+                    x: 0,
+                    y: 1
+                },
+                CellSheetsModified {
+                    sheet_id: sheet_id.to_string(),
+                    x: 1,
+                    y: 0
+                },
+                CellSheetsModified {
+                    sheet_id: sheet_id.to_string(),
+                    x: 1,
+                    y: 1
+                }
+            ]
+            .into_iter()
+            .collect::<HashSet<CellSheetsModified>>()
+        );
     }
 }

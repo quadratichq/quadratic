@@ -1,24 +1,14 @@
-use indexmap::IndexSet;
-
-use crate::{
-    controller::{
-        transaction_summary::TransactionSummary, update_code_cell_value::update_code_cell_value,
-        GridController,
-    },
-    grid::CellRef,
-};
-
-use super::operation::Operation;
+use crate::{controller::GridController, grid::CellRef};
 
 impl GridController {
     /// Checks whether a spill exists
     pub fn check_spill(
         &mut self,
         cell_ref: CellRef,
-        cells_to_compute: &mut IndexSet<CellRef>,
-        summary: &mut TransactionSummary,
-        reverse_operations: &mut Vec<Operation>,
-        multiplayer_operations: &mut Vec<Operation>,
+        // cells_to_compute: &mut IndexSet<CellRef>,
+        // summary: &mut TransactionSummary,
+        // reverse_operations: &mut Vec<Operation>,
+        // forward_operations: &mut Vec<Operation>,
     ) {
         // check if the addition of a cell causes a spill error
         let sheet = self.grid.sheet_from_id(cell_ref.sheet);
@@ -26,14 +16,13 @@ impl GridController {
             if code_cell_ref != cell_ref {
                 if let Some(code_cell) = sheet.get_code_cell_from_ref(code_cell_ref) {
                     if !code_cell.has_spill_error() {
-                        update_code_cell_value(
-                            self,
+                        self.update_code_cell_value(
                             code_cell_ref,
                             Some(code_cell.clone()),
-                            cells_to_compute,
-                            multiplayer_operations,
-                            reverse_operations,
-                            summary,
+                            // cells_to_compute,
+                            // forward_operations,
+                            // reverse_operations,
+                            // summary,
                         );
                     }
                 }
@@ -48,22 +37,21 @@ impl GridController {
     pub fn set_spill_error(
         &mut self,
         cell_ref: CellRef,
-        cells_to_compute: &mut IndexSet<CellRef>,
-        summary: &mut TransactionSummary,
-        reverse_operations: &mut Vec<Operation>,
-        multiplayer_operations: &mut Vec<Operation>,
+        // cells_to_compute: &mut IndexSet<CellRef>,
+        // summary: &mut TransactionSummary,
+        // reverse_operations: &mut Vec<Operation>,
+        // forward_operations: &mut Vec<Operation>,
     ) {
         let sheet = self.grid.sheet_from_id(cell_ref.sheet);
         if let Some(code_cell) = sheet.get_code_cell_from_ref(cell_ref) {
             if !code_cell.has_spill_error() {
-                update_code_cell_value(
-                    self,
+                self.update_code_cell_value(
                     cell_ref,
                     Some(code_cell.clone()),
-                    cells_to_compute,
-                    multiplayer_operations,
-                    reverse_operations,
-                    summary,
+                    // cells_to_compute,
+                    // forward_operations,
+                    // reverse_operations,
+                    // summary,
                 );
             }
         }
@@ -73,21 +61,20 @@ impl GridController {
     pub fn update_code_cell_value_if_spill_error_released(
         &mut self,
         cell_ref: CellRef,
-        cells_to_compute: &mut IndexSet<CellRef>,
-        summary: &mut TransactionSummary,
-        reverse_operations: &mut Vec<Operation>,
-        multiplayer_operations: &mut Vec<Operation>,
+        // cells_to_compute: &mut IndexSet<CellRef>,
+        // summary: &mut TransactionSummary,
+        // reverse_operations: &mut Vec<Operation>,
+        // forward_operations: &mut Vec<Operation>,
     ) {
         let sheet = self.grid.sheet_from_id(cell_ref.sheet);
         if let Some((cell_ref, code_cell)) = sheet.spill_error_released(cell_ref) {
-            update_code_cell_value(
-                self,
+            self.update_code_cell_value(
                 cell_ref,
                 Some(code_cell),
-                cells_to_compute,
-                multiplayer_operations,
-                reverse_operations,
-                summary,
+                // cells_to_compute,
+                // forward_operations,
+                // reverse_operations,
+                // summary,
             );
         }
     }

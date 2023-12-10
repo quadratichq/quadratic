@@ -1,5 +1,5 @@
 use super::operation::Operation;
-use super::transactions::TransactionType;
+use super::transaction_in_progress::TransactionType;
 use super::GridController;
 use crate::controller::transaction_summary::TransactionSummary;
 use crate::grid::generate_borders;
