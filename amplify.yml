@@ -1,20 +1,10 @@
 version: 1
 frontend:
   phases:
-    preBuild:
-      commands:
-        - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        - source "$HOME/.cargo/env"
-        - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-        - npm install
-        - cd quadratic-client
-        - npm ci
 
     build:
       commands:
-        - npm run build:wasm:javascript
-        - npm run build:wasm:types
-        - npm run build
+        - ./scripts/client-ci-vercel-build.sh
   artifacts:
     baseDirectory: build
     files:
@@ -23,5 +13,4 @@ frontend:
     paths:
       - node_modules/**/*
       - quadratic-client/node_modules/**/*
-      - quadratic-api/node_modules/**/*
       - quadratic-core/target/**/*
