@@ -42,7 +42,6 @@ jobs:
 
         pulumi up -y
         echo "MULTIPLAYER_INSTANCE_DNS=$(pulumi stack output multiplayerInstanceDns)" >> "$GITHUB_OUTPUT"
-        echo "CLIENT_PUBLIC_DNS=$(pulumi stack output clientPublicDns)" >> "$GITHUB_OUTPUT"
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -51,7 +50,6 @@ jobs:
 
     outputs:
       MULTIPLAYER_INSTANCE_DNS: ${{ steps.pulumiInfra.outputs.MULTIPLAYER_INSTANCE_DNS }}
-      CLIENT_PUBLIC_DNS: ${{ steps.pulumiInfra.outputs.CLIENT_PUBLIC_DNS }}
 
 
   multiplayer_preview:
@@ -62,7 +60,6 @@ jobs:
     - uses: actions/setup-node@v4
       with:
         node-version: 18
-    - uses: pulumi/actions@v4
 
     - name: Set up Rust
       uses: moonrepo/setup-rust@v1

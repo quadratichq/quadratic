@@ -8,7 +8,7 @@ const domain = config.get("domain") || "quadratic-preview.com"; // ex quadratic-
 const multiplayerSubdomain = config.get("subdomain") || "wss-2"; // ex ws
 const certificateArn =
   config.get("certificate-arn") ||
-  "arn:aws:acm:us-west-2:896845383385:certificate/00300c0e-4243-4296-87c1-83e86bb73a1f";
+  "arn:aws:acm:us-west-2:896845383385:certificate/00300c0e-4243-4296-87c1-83e86bb73a1f"; // ARN of the SSL certificate for quadratic-preview.com (us-west-2)
 const instanceSize = config.get("instance-size") || "t2.micro";
 const instanceKeyName = config.get("instance-key-name") || "test2";
 const instanceAmi = config.get("instance-ami") || "ami-0efcece6bed30fd98"; // ubuntu 20.04 LTS
