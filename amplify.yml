@@ -21,3 +21,4 @@ frontend:
   cache:
     paths:
       - quadratic-client/node_modules/**/*
+      - quadratic-core/target/**/*
