@@ -1,6 +1,8 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
+// This is currently not used. We build the client in Amplify.
+
 // Assume you have a domain name, e.g., "example.com"
 const domainName = "quadratic-preview.com";
 const subdomainName = "app-preview-1";
