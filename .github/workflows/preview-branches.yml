@@ -119,6 +119,10 @@ jobs:
       run: |
         ssh -i ~/.ssh/id_rsa ubuntu@${{needs.infra.outputs.MULTIPLAYER_INSTANCE_DNS}} "sudo systemctl start quadratic-multiplayer"
 
+    - name: Verify Service is running on EC2
+      run: |
+        ssh -i ~/.ssh/id_rsa ubuntu@${{needs.infra.outputs.MULTIPLAYER_INSTANCE_DNS}} "sudo systemctl is-active --quiet quadratic-multiplayer"
+
   # client_preview:
   #   needs: infra
   #   runs-on: ubuntu-latest-8-cores 
