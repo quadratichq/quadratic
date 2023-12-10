@@ -3,7 +3,7 @@ frontend:
   phases:
     build:
       commands:
-        - ./scripts/client-ci-vercel-build.sh
+        - ./infra/client/build-client-ci.sh
   artifacts:
     baseDirectory: build
     files:
