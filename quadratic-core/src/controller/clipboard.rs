@@ -408,10 +408,9 @@ mod test {
         color::Rgba,
         controller::GridController,
         grid::{
-            generate_borders, set_region_borders, BorderSelection, BorderStyle, CellBorderLine,
-            CodeCellLanguage, Sheet,
+            generate_borders, js_types::CellFormatSummary, set_region_borders, BorderSelection,
+            BorderStyle, CellBorderLine, CodeCellLanguage, Sheet,
         },
-        wasm_bindings::js_types::CellFormatSummary,
         CellValue, Pos, Rect,
     };
 

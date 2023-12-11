@@ -4,7 +4,6 @@ use wasm_bindgen::prelude::*;
 
 pub mod controller;
 pub mod js;
-pub mod js_types;
 pub mod lsp;
 pub mod pos;
 pub mod rect;

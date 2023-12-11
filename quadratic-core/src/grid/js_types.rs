@@ -3,10 +3,10 @@ use std::ops::{BitOr, BitOrAssign};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::wasm_bindgen;
 
+use super::formatting::{BoolSummary, CellAlign, CellWrap};
 use super::CodeCellLanguage;
 use crate::controller::transaction_summary::TransactionSummary;
 use crate::grid::BorderStyle;
-use crate::grid::{BoolSummary, CellAlign, CellWrap};
 use crate::Pos;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]

@@ -1,7 +1,3 @@
-use crate::wasm_bindings::js_types::{
-    JsHtmlOutput, JsRenderBorders, JsRenderCell, JsRenderCodeCell, JsRenderFill,
-};
-
 use super::*;
 
 #[wasm_bindgen]
