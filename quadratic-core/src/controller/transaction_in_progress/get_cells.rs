@@ -2,11 +2,9 @@ use std::collections::HashSet;
 
 use crate::Pos;
 
-use crate::controller::{
-    transaction_types::{CellsForArray, JsComputeGetCells},
-    GridController,
-};
+use crate::controller::GridController;
 use crate::grid::CellRef;
+use crate::wasm_bindings::transaction_types::{CellsForArray, JsComputeGetCells};
 
 impl GridController {
     /// gets cells for use in async calculations

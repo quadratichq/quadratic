@@ -1,5 +1,5 @@
 use super::*;
-use crate::controller::transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells};
+use crate::wasm_bindings::transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells};
 use crate::{controller::transaction_summary::TransactionSummary, grid::js_types::*};
 use std::collections::HashSet;
 use std::str::FromStr;

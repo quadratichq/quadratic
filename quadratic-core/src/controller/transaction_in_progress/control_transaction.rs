@@ -5,8 +5,8 @@ use crate::{
     controller::{
         operation::Operation,
         transaction_summary::{TransactionSummary, CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-        transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
     },
+    wasm_bindings::transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
     Pos,
 };
 use indexmap::IndexSet;

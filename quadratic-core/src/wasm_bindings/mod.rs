@@ -7,6 +7,7 @@ pub mod js;
 pub mod lsp;
 pub mod pos;
 pub mod rect;
+pub mod transaction_types;
 
 use crate::controller::GridController;
 use crate::grid::*;
