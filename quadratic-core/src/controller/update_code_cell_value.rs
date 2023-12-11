@@ -173,12 +173,17 @@ pub fn update_code_cell_value(
             sheet_id,
             pos,
             old_code_cell_value.clone(),
-            updated_code_cell_value,
+            updated_code_cell_value.clone(),
             summary,
             cells_to_compute,
             reverse_operations,
             multiplayer_operations,
         );
+
+        multiplayer_operations.push(Operation::SetCellCode {
+            cell_ref,
+            code_cell_value: updated_code_cell_value,
+        });
 
         reverse_operations.push(Operation::SetCellCode {
             cell_ref,
@@ -187,7 +192,13 @@ pub fn update_code_cell_value(
 
         summary.code_cells_modified.insert(sheet_id);
 
-        grid_controller.check_spill(cell_ref, cells_to_compute, summary, reverse_operations);
+        grid_controller.check_spill(
+            cell_ref,
+            cells_to_compute,
+            summary,
+            reverse_operations,
+            multiplayer_operations,
+        );
     }
 
     success

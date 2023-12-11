@@ -174,6 +174,7 @@ impl GridController {
         let mut summary = transaction_in_progress.transaction_summary();
         summary.generate_thumbnail = false;
         summary.multiplayer_operations = None;
+        summary.save = false;
         summary
     }
 }
