@@ -1,0 +1,83 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main 
+    paths:
+      - 'quadratic-multiplayer/**'
+
+# Use runs on `ubuntu-latest-8-cores`. All of our self hosted runners use this tag.
+# Our runners pick up jobs first, and if all our runners are being used or are down
+# it will automatically back up to using GitHub hosted runners.
+
+
+jobs:
+
+  infra_production:
+    name: Update Infrastructure with Pulumi
+    runs-on: ubuntu-latest-8-cores 
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+    - uses: pulumi/actions@v4
+
+    - name: Update Pulumi Infrastructure
+      working-directory: infra
+      run: |
+        npm ci
+        
+        pulumi stack select production
+
+        pulumi config set aws:region us-west-2
+        pulumi config set domain quadratichq.com
+        pulumi config set subdomain multiplayer
+        pulumi config set instanceSize c6g.large
+        pulumi config set certificate-arn $AWS_PROD_MULTIPLAYER_AMC_ARN
+
+        pulumi up -y
+        echo "MULTIPLAYER_INSTANCE_DNS=$(pulumi stack output multiplayerInstanceDns)" >> "$GITHUB_OUTPUT"
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_PROD_MULTIPLAYER_AMC_ARN: ${{ secrets.AWS_PROD_MULTIPLAYER_AMC_ARN }}
+        PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+
+    outputs:
+      MULTIPLAYER_INSTANCE_DNS: ${{ steps.pulumiInfra.outputs.MULTIPLAYER_INSTANCE_DNS }}
+
+
+  multiplayer_production:
+    needs: infra
+    runs-on: ubuntu-latest-8-cores 
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+
+    - name: Set up Rust
+      uses: moonrepo/setup-rust@v1
+      with:
+        components: clippy, llvm-tools-preview
+        cache: false
+        channel: 'nightly'
+
+    - name: Install pkg-config
+      if: github.runner.isHosted == true
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pkg-config
+
+    - name: Build quadratic-multiplayer
+      working-directory: quadratic-multiplayer
+      run: |
+        cargo build --release
+
+    - name: Deploy Multiplayer to EC2
+      run: ./infra/multiplayer/deploy-multiplayer-service.sh
+      env:
+        EC2_KEY_PEM: ${{ secrets.EC2_KEY_PEM }}
+        EC2_INSTANCE_DNS: ${{needs.infra.outputs.MULTIPLAYER_INSTANCE_DNS}}
