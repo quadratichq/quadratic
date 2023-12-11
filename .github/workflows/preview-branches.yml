@@ -38,7 +38,7 @@ jobs:
 
         pulumi config set aws:region us-west-2
         pulumi config set domain quadratic-preview.com
-        pulumi config set subdomain ws-preview-${{ env.PR_ID }}
+        pulumi config set subdomain multiplayer-pr-${{ env.PR_ID }}
 
         pulumi up -y
         echo "MULTIPLAYER_INSTANCE_DNS=$(pulumi stack output multiplayerInstanceDns)" >> "$GITHUB_OUTPUT"
