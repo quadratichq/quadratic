@@ -28,7 +28,7 @@ impl Sheet {
 
         if let Some(code_cell) = code_cell {
             if let Some(output) = &code_cell.output {
-                crate::util::dbgjs(&output.spill);
+                crate::util::dbgjs(output.spill);
                 match output.output_value() {
                     Some(output_value) => {
                         match output_value {

@@ -118,6 +118,7 @@ impl JsCodeResult {
     }
 
     #[cfg(test)]
+    #[allow(clippy::too_many_arguments)]
     pub fn new_from_rust(
         success: bool,
         formatted_code: Option<String>,

@@ -142,12 +142,7 @@ mod tests {
         cell_sheets_modified.iter().any(|modified| {
             print!(
                 "{}: ({}, {}) == {}:  ({}, {})",
-                modified.sheet_id,
-                modified.x,
-                modified.y,
-                sheet_id.to_string(),
-                x,
-                y
+                modified.sheet_id, modified.x, modified.y, sheet_id, x, y
             );
             modified.sheet_id == sheet_id.to_string() && modified.x == x && modified.y == y
         })
@@ -156,7 +151,7 @@ mod tests {
     #[test]
     fn test_cell_sheets_modified_region() {
         let mut gc = GridController::new();
-        let sheet_id = gc.grid().first_sheet_id().clone();
+        let sheet_id = gc.grid().first_sheet_id();
         let sheet = gc.grid_mut().first_sheet_mut();
         let (region, _) = sheet.region(Rect::from_numbers(0, 0, 21, 41));
         gc.add_cell_sheets_modified_region(&region);

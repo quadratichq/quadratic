@@ -321,11 +321,11 @@ impl GridController {
         let rect = Rect::new_span(
             Pos { x: pos.x, y: pos.y },
             Pos {
-                x: pos.x + new_w.max(old_w) as i64,
-                y: pos.y + new_h.max(old_h) as i64,
+                x: pos.x + new_w.max(old_w),
+                y: pos.y + new_h.max(old_h),
             },
         );
-        rect.into_iter().for_each(|pos| {
+        rect.iter().for_each(|pos| {
             self.summary
                 .cell_sheets_modified
                 .insert(CellSheetsModified::new(sheet_id, pos));

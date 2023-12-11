@@ -23,7 +23,7 @@ impl GridController {
             if let Some(dependent_cells) = self.get_dependent_cells(cell_ref) {
                 #[cfg(feature = "show-operations")]
                 dependent_cells.iter().for_each(|cell_ref| {
-                    let sheet = grid_controller.sheet(cell_ref.sheet);
+                    let sheet = self.sheet(cell_ref.sheet);
                     if let Some(pos) = sheet.cell_ref_to_pos(*cell_ref) {
                         crate::util::dbgjs(format!("[Adding Dependent Cell] {:?}", pos));
                     }
@@ -84,7 +84,7 @@ impl GridController {
     /// continues the calculate cycle after an async call
     pub fn after_calculation_async(&mut self, result: JsCodeResult) {
         assert!(
-            self.transaction_in_progress == true,
+            self.transaction_in_progress,
             "Expected transaction_in_progress in after_calculation_async"
         );
         if self.complete {
@@ -165,7 +165,6 @@ impl GridController {
                 crate::util::dbgjs(
                     "Expected current_code_cell to be defined in transaction::code_cell_error",
                 );
-                return;
             }
             Some(update_code_cell_value) => {
                 let mut code_cell_value = update_code_cell_value.clone();
