@@ -1,4 +1,4 @@
-use crate::grid::sheet::sheet_offsets::{resize_transient::TransientResize, SheetOffsets};
+use super::{resize_transient::TransientResize, SheetOffsets};
 use crate::ScreenRect;
 use js_sys::Int32Array;
 use wasm_bindgen::prelude::wasm_bindgen;

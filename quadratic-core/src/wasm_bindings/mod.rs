@@ -8,7 +8,6 @@ pub mod js_types;
 pub mod lsp;
 pub mod pos;
 pub mod rect;
-pub mod sheet_offsets_wasm;
 pub mod transaction_types;
 
 use crate::controller::GridController;
