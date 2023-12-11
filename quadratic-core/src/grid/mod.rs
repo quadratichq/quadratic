@@ -90,6 +90,14 @@ impl Grid {
             unreachable!("grid should always have at least one sheet");
         }
     }
+    pub fn first_sheet(&self) -> &Sheet {
+        let id = self.first_sheet_id();
+        self.sheet_from_id(id)
+    }
+    pub fn first_sheet_mut(&mut self) -> &mut Sheet {
+        let id = self.first_sheet_id();
+        self.sheet_mut_from_id(id)
+    }
     pub fn sheet_ids(&self) -> Vec<SheetId> {
         self.sheets.iter().map(|sheet| sheet.id).collect()
     }
@@ -197,6 +205,10 @@ impl Grid {
     pub fn sheet_from_id(&self, sheet_id: SheetId) -> &Sheet {
         let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");
         &self.sheets[sheet_index]
+    }
+    pub fn try_sheet_from_id(&self, sheet_id: SheetId) -> Option<&Sheet> {
+        let sheet_index = self.sheet_id_to_index(sheet_id)?;
+        Some(&self.sheets[sheet_index])
     }
     pub fn sheet_mut_from_id(&mut self, sheet_id: SheetId) -> &mut Sheet {
         let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");

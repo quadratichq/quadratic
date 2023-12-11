@@ -1,7 +1,8 @@
 use anyhow::{anyhow, bail, Result};
 
 use super::{
-    transaction_summary::TransactionSummary, transactions::TransactionType, GridController,
+    transaction_in_progress::TransactionType, transaction_summary::TransactionSummary,
+    GridController,
 };
 use crate::{controller::operation::Operation, grid::SheetId, Array, CellValue, Pos};
 

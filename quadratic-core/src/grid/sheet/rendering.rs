@@ -507,7 +507,7 @@ mod tests {
             "<html></html>".to_string(),
             None,
         );
-        gc.calculation_complete(JsCodeResult::new(
+        gc.after_calculation_async(JsCodeResult::new(
             true,
             None,
             None,

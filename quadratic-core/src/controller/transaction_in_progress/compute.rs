@@ -1,215 +1,108 @@
-use std::collections::HashSet;
-
-use indexmap::IndexSet;
 use wasm_bindgen::JsValue;
 
 use crate::{
-    controller::update_code_cell_value::update_code_cell_value,
-    grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult},
+    controller::{transaction_types::JsCodeResult, GridController},
+    grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
     util::date_string,
-    Error, ErrorMsg, Span,
+    Array, CellValue, Error, ErrorMsg, Span, Value,
 };
 
-use crate::controller::{
-    operation::Operation,
-    transaction_summary::TransactionSummary,
-    transaction_types::JsCodeResult,
-    transactions::{Transaction, TransactionType},
-    GridController,
-};
-
-use super::TransactionInProgress;
-
-impl TransactionInProgress {
-    /// Creates and runs a new Transaction
-    ///
-    /// Description
-    /// * `compute` triggers the computation cycle
-    pub fn start_transaction(
-        grid_controller: &mut GridController,
-        operations: Vec<Operation>,
-        cursor: Option<String>,
-        compute: bool,
-        transaction_type: TransactionType,
-    ) -> Self {
-        let mut transaction = Self {
-            reverse_operations: vec![],
-            summary: TransactionSummary::default(),
-            cursor,
-            transaction_type,
-            cells_updated: IndexSet::new(),
-            cells_to_compute: IndexSet::new(),
-            cells_accessed: vec![],
-            sheets_with_changed_bounds: HashSet::new(),
-
-            has_async: false,
-
-            current_code_cell: None,
-            current_cell_ref: None,
-            waiting_for_async: None,
-
-            multiplayer_operations: vec![],
-
-            complete: false,
-        };
-
-        // apply operations
-        transaction.transact(grid_controller, operations, compute);
-
-        // crate::util::dbgjs(&format!(
-        //     "[CellsToCompute len] {}",
-        //     transaction.cells_to_compute.len()
-        // ));
-
-        // run computations
-        if compute {
-            transaction.loop_compute(grid_controller);
-        } else {
-            transaction.complete = true;
+impl GridController {
+    /// checks the next cell in the cells_to_compute and computes it
+    /// returns true if an async call is made or the compute cycle is completed
+    pub(super) fn compute(&mut self) {
+        while let Some(region) = self.cells_updated.shift_remove_index(0) {
+            if let Some(dependent_cells) = self.get_dependent_cells_for_region(region) {
+                self.cells_to_compute.extend(dependent_cells);
+            }
         }
 
-        transaction
-    }
+        if let Some(cell_ref) = self.cells_to_compute.shift_remove_index(0) {
+            // todo: this would be a good place to check for cycles
+            // add all dependent cells to the cells_to_compute
+            if let Some(dependent_cells) = self.get_dependent_cells(cell_ref) {
+                #[cfg(feature = "show-operations")]
+                dependent_cells.iter().for_each(|cell_ref| {
+                    let sheet = self.sheet(cell_ref.sheet);
+                    if let Some(pos) = sheet.cell_ref_to_pos(*cell_ref) {
+                        crate::util::dbgjs(format!("[Adding Dependent Cell] {:?}", pos));
+                    }
+                });
 
-    // loop compute cycle until complete or an async call is made
-    pub fn loop_compute(&mut self, grid_controller: &mut GridController) {
-        loop {
-            self.compute(grid_controller);
-            if self.waiting_for_async.is_some() {
-                break;
+                self.cells_to_compute.extend(dependent_cells);
             }
-            if self.cells_to_compute.is_empty() {
-                self.complete = true;
-                self.summary.save = true;
-                if self.has_async {
-                    grid_controller.finalize_transaction(self);
+
+            // whether to save the current code_cell_ref to the GridController
+            let mut current_code_cell = false;
+
+            let sheet = self.grid().sheet_from_id(cell_ref.sheet);
+            if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
+                // find which cells have code. Run the code and update the cells.
+                // add the updated cells to the cells_to_compute
+
+                if let Some(code_cell) = sheet.get_code_cell(pos) {
+                    current_code_cell = true;
+                    let code_string = code_cell.code_string.clone();
+                    let language = code_cell.language;
+                    match language {
+                        CodeCellLanguage::Python => {
+                            // python is run async so we exit the compute cycle and wait for TS to restart the transaction
+                            if !cfg!(test) {
+                                let result = crate::wasm_bindings::js::runPython(code_string);
+
+                                // run python will return false if python is not loaded (this can be generalized if we need to return a different error)
+                                if result == JsValue::FALSE {
+                                    self.code_cell_sheet_error(
+                                        "Python interpreter not yet loaded (please run again)"
+                                            .to_string(),
+                                        None,
+                                    );
+                                    return;
+                                }
+                            }
+                            self.waiting_for_async = Some(language);
+                            self.has_async = true;
+                        }
+                        CodeCellLanguage::Formula => {
+                            self.eval_formula(code_string.clone(), language, pos, cell_ref);
+                        }
+                        _ => {
+                            crate::util::dbgjs(format!(
+                                "Compute language {} not supported in compute.rs",
+                                language
+                            ));
+                        }
+                    }
                 }
-                break;
+            }
+            if current_code_cell {
+                self.current_cell_ref = Some(cell_ref);
             }
         }
-    }
-
-    /// Clear the `cells_to_compute` attribute
-    pub fn clear_cells_to_compute(&mut self) {
-        self.cells_to_compute.clear();
-    }
-
-    /// recalculate bounds for changed sheets
-    pub fn updated_bounds(&mut self, grid_controller: &mut GridController) {
-        self.sheets_with_changed_bounds.iter().for_each(|sheet_id| {
-            let sheet = grid_controller.grid_mut().sheet_mut_from_id(*sheet_id);
-            sheet.recalculate_bounds();
-        });
-    }
-
-    /// returns the TransactionSummary
-    pub fn transaction_summary(&mut self) -> TransactionSummary {
-        if self.complete {
-            self.summary.multiplayer_operations = Some(
-                serde_json::to_string(&self.multiplayer_operations)
-                    .expect("Failed to serialize multiplayer operations"),
-            );
-        }
-        let summary = self.summary.clone();
-        self.summary.clear(self.complete);
-        summary
-    }
-
-    /// executes a set of operations
-    fn transact(
-        &mut self,
-        grid_controller: &mut GridController,
-        operations: Vec<Operation>,
-        compute: bool,
-    ) {
-        for op in operations.iter() {
-            if cfg!(feature = "show-operations") {
-                crate::util::dbgjs(&format!("[Operation] {:?}", op.to_string()));
-            }
-
-            let reverse_operation = grid_controller.execute_operation(
-                op.clone(),
-                &mut self.cells_updated,
-                &mut self.cells_to_compute,
-                &mut self.summary,
-                &mut self.sheets_with_changed_bounds,
-                compute,
-                &mut self.multiplayer_operations,
-            );
-            self.reverse_operations.extend(reverse_operation);
-        }
-    }
-
-    pub(super) fn code_cell_sheet_error(
-        &mut self,
-        grid_controller: &mut GridController,
-        error_msg: String,
-        line_number: Option<i64>,
-    ) {
-        let cell_ref = if let Some(cell_ref) = self.current_cell_ref {
-            cell_ref
-        } else {
-            // this should only happen after an internal logic error
-            crate::util::dbgjs(
-                "Expected current_sheet_pos to be defined in transaction::code_cell_error",
-            );
-            return;
-        };
-        let mut updated_code_cell_value =
-            if let Some(code_cell_value) = self.current_code_cell.clone() {
-                code_cell_value
-            } else {
-                // this should only happen after an internal logic error
-                crate::util::dbgjs(
-                    "Expected current_code_cell to be defined in transaction::code_cell_error",
-                );
-                return;
-            };
-        updated_code_cell_value.last_modified = date_string();
-        let msg = ErrorMsg::PythonError(error_msg.clone().into());
-        let span = line_number.map(|line_number| Span {
-            start: line_number as u32,
-            end: line_number as u32,
-        });
-        let error = Error { span, msg };
-        let result = CodeCellRunResult::Err { error };
-        updated_code_cell_value.output = Some(CodeCellRunOutput {
-            std_out: None,
-            std_err: Some(error_msg),
-            result,
-            spill: false,
-        });
-        update_code_cell_value(
-            grid_controller,
-            cell_ref,
-            Some(updated_code_cell_value),
-            &mut self.cells_to_compute,
-            &mut self.multiplayer_operations,
-            &mut self.reverse_operations,
-            &mut self.summary,
-        );
-        self.summary.code_cells_modified.insert(cell_ref.sheet);
-        self.waiting_for_async = None;
     }
 
     /// continues the calculate cycle after an async call
-    pub fn calculation_complete(
-        &mut self,
-        grid_controller: &mut GridController,
-        result: JsCodeResult,
-    ) {
+    pub fn after_calculation_async(&mut self, result: JsCodeResult) {
+        assert!(
+            self.transaction_in_progress,
+            "Expected transaction_in_progress in after_calculation_async"
+        );
         if self.complete {
             panic!("Transaction is already complete");
         }
-        let (language, code_string) =
-            if let Some(old_code_cell_value) = self.current_code_cell.clone() {
-                (
-                    old_code_cell_value.language,
-                    old_code_cell_value.code_string,
-                )
-            } else {
-                panic!("Expected current_code_cell to be defined in transaction::complete");
-            };
+
+        let old_code_cell_value = self.current_cell_ref.and_then(|code_cell_ref| {
+            self.grid()
+                .sheet_from_id(code_cell_ref.sheet)
+                .get_code_cell_from_ref(code_cell_ref)
+                .cloned()
+        });
+        assert!(
+            old_code_cell_value.is_some(),
+            "Expected old_code_cell_value to be defined"
+        );
+        let old_code_cell_value = old_code_cell_value.unwrap();
+
         match self.waiting_for_async {
             None => {
                 // this should only occur after an internal logic error
@@ -226,24 +119,15 @@ impl TransactionInProgress {
                                 "Expected current_sheet_pos to be defined in transaction::complete"
                             );
                         };
-                        let sheet = grid_controller.grid_mut().sheet_mut_from_id(cell_ref.sheet);
-                        let updated_code_cell_value = result.into_code_cell_value(
-                            sheet,
+                        let updated_code_cell_value = self.js_code_result_to_code_cell_value(
+                            result,
                             cell_ref,
-                            language,
-                            code_string,
-                            &self.cells_accessed,
-                            &mut self.reverse_operations,
+                            old_code_cell_value.language,
+                            old_code_cell_value.code_string,
                         );
-                        if update_code_cell_value(
-                            grid_controller,
-                            cell_ref,
-                            Some(updated_code_cell_value.clone()),
-                            &mut self.cells_to_compute,
-                            &mut self.multiplayer_operations,
-                            &mut self.reverse_operations,
-                            &mut self.summary,
-                        ) {
+                        if self
+                            .update_code_cell_value(cell_ref, Some(updated_code_cell_value.clone()))
+                        {
                             // clear cells_accessed
                             self.cells_accessed.clear();
                         }
@@ -256,106 +140,113 @@ impl TransactionInProgress {
             }
         }
         // continue the compute loop after a successful async call
-        self.loop_compute(grid_controller);
+        self.loop_compute();
     }
 
-    /// checks the next cell in the cells_to_compute and computes it
-    /// returns true if an async call is made or the compute cycle is completed
-    fn compute(&mut self, grid_controller: &mut GridController) {
-        while let Some(region) = self.cells_updated.shift_remove_index(0) {
-            if let Some(dependent_cells) = grid_controller.get_dependent_cells_for_region(region) {
-                self.cells_to_compute.extend(dependent_cells);
+    pub(super) fn code_cell_sheet_error(&mut self, error_msg: String, line_number: Option<i64>) {
+        let cell_ref = if let Some(cell_ref) = self.current_cell_ref {
+            cell_ref
+        } else {
+            // this should only happen after an internal logic error
+            crate::util::dbgjs(
+                "Expected current_sheet_pos to be defined in transaction::code_cell_error",
+            );
+            return;
+        };
+        let update_code_cell_value = self.current_cell_ref.and_then(|code_cell_ref| {
+            self.grid()
+                .sheet_from_id(code_cell_ref.sheet)
+                .get_code_cell_from_ref(code_cell_ref)
+                .cloned()
+        });
+        match update_code_cell_value {
+            None => {
+                // this should only happen after an internal logic error
+                crate::util::dbgjs(
+                    "Expected current_code_cell to be defined in transaction::code_cell_error",
+                );
             }
-        }
-
-        if let Some(cell_ref) = self.cells_to_compute.shift_remove_index(0) {
-            // todo: this would be a good place to check for cycles
-            // add all dependent cells to the cells_to_compute
-            if let Some(dependent_cells) = grid_controller.get_dependent_cells(cell_ref) {
-                #[cfg(feature = "show-operations")]
-                dependent_cells.iter().for_each(|cell_ref| {
-                    let sheet = grid_controller.sheet(cell_ref.sheet);
-                    if let Some(pos) = sheet.cell_ref_to_pos(*cell_ref) {
-                        crate::util::dbgjs(format!("[Adding Dependent Cell] {:?}", pos));
-                    }
+            Some(update_code_cell_value) => {
+                let mut code_cell_value = update_code_cell_value.clone();
+                code_cell_value.last_modified = date_string();
+                let msg = ErrorMsg::PythonError(error_msg.clone().into());
+                let span = line_number.map(|line_number| Span {
+                    start: line_number as u32,
+                    end: line_number as u32,
                 });
-
-                self.cells_to_compute.extend(dependent_cells);
+                let error = Error { span, msg };
+                let result = CodeCellRunResult::Err { error };
+                code_cell_value.output = Some(CodeCellRunOutput {
+                    std_out: None,
+                    std_err: Some(error_msg),
+                    result,
+                    spill: false,
+                });
+                self.update_code_cell_value(cell_ref, Some(code_cell_value));
+                self.summary.code_cells_modified.insert(cell_ref.sheet);
+                self.waiting_for_async = None;
             }
+        }
+    }
 
-            let sheet = grid_controller.grid().sheet_from_id(cell_ref.sheet);
-            if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                // find which cells have code. Run the code and update the cells.
-                // add the updated cells to the cells_to_compute
-
-                if let Some(code_cell) = sheet.get_code_cell(pos) {
-                    #[cfg(feature = "show-operations")]
-                    crate::util::dbgjs(format!(
-                        "[Compute] {:?} ({} remaining)",
-                        pos,
-                        self.cells_to_compute.len()
-                    ));
-                    self.current_cell_ref = Some(cell_ref);
-                    self.current_code_cell = Some(code_cell.clone());
-                    let code_string = code_cell.code_string.clone();
-                    let language = code_cell.language;
-                    match language {
-                        CodeCellLanguage::Python => {
-                            // python is run async so we exit the compute cycle and wait for TS to restart the transaction
-                            if !cfg!(test) {
-                                let result = crate::wasm_bindings::js::runPython(code_string);
-
-                                // run python will return false if python is not loaded (this can be generalized if we need to return a different error)
-                                if result == JsValue::FALSE {
-                                    self.code_cell_sheet_error(
-                                        grid_controller,
-                                        "Python interpreter not yet loaded (please run again)"
-                                            .to_string(),
-                                        None,
-                                    );
-                                    return;
-                                }
-                            }
-                            self.waiting_for_async = Some(language);
-                            self.has_async = true;
-                        }
-                        CodeCellLanguage::Formula => {
-                            self.eval_formula(
-                                grid_controller,
-                                code_string.clone(),
-                                language,
-                                pos,
-                                cell_ref,
-                                sheet.id,
-                            );
-                        }
-                        _ => {
-                            crate::util::dbgjs(format!(
-                                "Compute language {} not supported in compute.rs",
-                                language
-                            ));
-                        }
+    // Returns a CodeCellValue from a JsCodeResult.
+    // This requires access to GridController to update the grid and create operations.
+    pub(super) fn js_code_result_to_code_cell_value(
+        &mut self,
+        js_code_result: JsCodeResult,
+        start: CellRef,
+        language: CodeCellLanguage,
+        code_string: String,
+    ) -> CodeCellValue {
+        let sheet = self.grid_mut().sheet_mut_from_id(start.sheet);
+        let result = if js_code_result.success() {
+            CodeCellRunResult::Ok {
+                output_value: if let Some(array_output) = js_code_result.array_output() {
+                    let (array, ops) = Array::from_string_list(start, sheet, array_output);
+                    self.reverse_operations.extend(ops);
+                    if let Some(array) = array {
+                        Value::Array(array)
+                    } else {
+                        Value::Single("".into())
                     }
-                }
+                } else if let Some(output_value) = js_code_result.output_value() {
+                    let cell_ref = CellRef {
+                        sheet: sheet.id,
+                        column: start.column,
+                        row: start.row,
+                    };
+                    let (cell_value, ops) = CellValue::from_string(&output_value, cell_ref, sheet);
+                    self.reverse_operations.extend(ops);
+                    Value::Single(cell_value)
+                } else {
+                    unreachable!()
+                },
+                cells_accessed: self.cells_accessed.clone().into_iter().collect(),
             }
-        }
-    }
-}
-
-impl From<&TransactionInProgress> for Transaction {
-    fn from(val: &TransactionInProgress) -> Self {
-        Transaction {
-            ops: val.reverse_operations.clone().into_iter().rev().collect(),
-            cursor: val.cursor.clone(),
-        }
-    }
-}
-
-impl From<Transaction> for TransactionInProgress {
-    fn from(val: Transaction) -> Self {
-        TransactionInProgress {
-            cursor: val.cursor,
-            ..Default::default()
+        } else {
+            let error_msg = js_code_result
+                .error_msg()
+                .unwrap_or_else(|| "Unknown Python Error".into());
+            let msg = ErrorMsg::PythonError(error_msg.into());
+            let span = js_code_result.line_number().map(|line_number| Span {
+                start: line_number,
+                end: line_number,
+            });
+            CodeCellRunResult::Err {
+                error: Error { span, msg },
+            }
+        };
+        CodeCellValue {
+            language,
+            code_string,
+            formatted_code_string: js_code_result.formatted_code().clone(),
+            output: Some(CodeCellRunOutput {
+                std_out: js_code_result.input_python_std_out(),
+                std_err: js_code_result.error_msg(),
+                result,
+                spill: false,
+            }),
+            last_modified: date_string(),
         }
     }
 }
@@ -369,12 +260,12 @@ mod test {
     use crate::{
         controller::{
             operation::Operation,
+            transaction_in_progress::TransactionType,
             transaction_types::{CellForArray, JsCodeResult, JsComputeGetCells},
-            transactions::TransactionType,
             GridController,
         },
-        grid::{CodeCellLanguage, CodeCellValue},
-        CellValue, Pos,
+        grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellValue},
+        Array, ArraySize, CellValue, Pos, Value,
     };
 
     fn setup_python(
@@ -403,7 +294,7 @@ mod test {
             }],
             None,
             true,
-            crate::controller::transactions::TransactionType::Normal,
+            TransactionType::Normal,
         );
 
         // code should be at (1, 0)
@@ -414,9 +305,8 @@ mod test {
         assert_eq!(code_cell.language(), CodeCellLanguage::Python);
 
         // pending transaction
-        let transaction = gc.get_transaction_in_progress().unwrap();
-        assert!(!transaction.complete);
-        assert_eq!(transaction.cells_to_compute.len(), 0);
+        assert!(!gc.complete);
+        assert_eq!(gc.cells_to_compute.len(), 0);
 
         // pull out the code cell
         let cells_for_array = gc.calculation_get_cells(JsComputeGetCells::new(
@@ -630,9 +520,9 @@ mod test {
             }],
             None,
             true,
-            crate::controller::transactions::TransactionType::Normal,
+            TransactionType::Normal,
         );
-        assert!(gc.get_transaction_in_progress().is_none());
+        assert!(!gc.transaction_in_progress);
 
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
         assert!(sheet.get_code_cell(Pos { x: 1, y: 0 }).is_some());
@@ -669,7 +559,7 @@ mod test {
             }],
             None,
             true,
-            crate::controller::transactions::TransactionType::Normal,
+            TransactionType::Normal,
         );
 
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_ids[0]);
@@ -771,10 +661,100 @@ mod test {
             Some(true),
         );
 
-        gc.calculation_complete(result);
+        gc.after_calculation_async(result);
 
-        let transaction = gc.get_transaction_in_progress().unwrap();
-        assert!(transaction.complete);
-        assert_eq!(transaction.cells_to_compute.len(), 0);
+        assert!(gc.complete);
+        assert_eq!(gc.cells_to_compute.len(), 0);
+    }
+
+    #[test]
+    fn test_js_code_result_to_code_cell_value_single() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+        let result = JsCodeResult::new_from_rust(
+            true,
+            None,
+            None,
+            None,
+            Some("$12".into()),
+            None,
+            None,
+            None,
+        );
+
+        let (cell_ref, _) = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
+        assert_eq!(
+            gc.js_code_result_to_code_cell_value(
+                result,
+                cell_ref,
+                CodeCellLanguage::Python,
+                "".into(),
+            )
+            .output,
+            Some(CodeCellRunOutput {
+                std_out: None,
+                std_err: None,
+                result: crate::grid::CodeCellRunResult::Ok {
+                    output_value: Value::Single(CellValue::Number(12.into())),
+                    cells_accessed: vec![]
+                },
+                spill: false,
+            }),
+        );
+    }
+
+    #[test]
+    fn test_js_code_result_to_code_cell_value_array() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+        let array_output: Vec<Vec<String>> = vec![
+            vec!["$1.1".into(), "20%".into()],
+            vec!["3".into(), "Hello".into()],
+        ];
+        let result = JsCodeResult::new_from_rust(
+            true,
+            None,
+            None,
+            None,
+            None,
+            Some(array_output),
+            None,
+            None,
+        );
+
+        let (cell_ref, _) = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
+        let mut array = Array::new_empty(ArraySize::new(2, 2).unwrap());
+        let _ = array.set(
+            0,
+            0,
+            CellValue::Number(BigDecimal::from_str("1.1").unwrap()),
+        );
+        let _ = array.set(
+            1,
+            0,
+            CellValue::Number(BigDecimal::from_str("0.2").unwrap()),
+        );
+        let _ = array.set(0, 1, CellValue::Number(BigDecimal::from_str("3").unwrap()));
+        let _ = array.set(1, 1, CellValue::Text("Hello".into()));
+        assert_eq!(
+            gc.js_code_result_to_code_cell_value(
+                result,
+                cell_ref,
+                CodeCellLanguage::Python,
+                "".into(),
+            )
+            .output,
+            Some(CodeCellRunOutput {
+                std_out: None,
+                std_err: None,
+                result: crate::grid::CodeCellRunResult::Ok {
+                    output_value: Value::Array(array),
+                    cells_accessed: vec![]
+                },
+                spill: false,
+            }),
+        );
     }
 }

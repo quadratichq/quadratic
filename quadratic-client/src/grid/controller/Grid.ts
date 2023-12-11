@@ -142,9 +142,9 @@ export class Grid {
       window.dispatchEvent(new CustomEvent('transaction-complete'));
     }
 
-    if (summary.multiplayer_operations) {
-      multiplayer.sendTransaction(summary.multiplayer_operations);
-      console.log('sending multiplayer transaction', summary.multiplayer_operations);
+    if (summary.forward_operations) {
+      multiplayer.sendTransaction(summary.forward_operations);
+      console.log('sending multiplayer transaction', summary.forward_operations);
     }
     pixiApp.setViewportDirty();
   }

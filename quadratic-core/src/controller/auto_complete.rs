@@ -2,8 +2,8 @@ use anyhow::{anyhow, Result};
 use itertools::Itertools;
 
 use super::{
-    formatting::CellFmtArray, operation::Operation, transaction_summary::TransactionSummary,
-    transactions::TransactionType, GridController,
+    formatting::CellFmtArray, operation::Operation, transaction_in_progress::TransactionType,
+    transaction_summary::TransactionSummary, GridController,
 };
 use crate::{
     grid::{

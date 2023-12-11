@@ -1,26 +1,21 @@
 use crate::{
-    controller::{update_code_cell_value::update_code_cell_value, GridController},
+    controller::GridController,
     formulas::{parse_formula, Ctx},
-    grid::{
-        CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, SheetId,
-    },
+    grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
     Pos, SheetPos,
 };
 
-use super::TransactionInProgress;
-
-impl TransactionInProgress {
+impl GridController {
     pub(super) fn eval_formula(
         &mut self,
-        grid_controller: &mut GridController,
         code_string: String,
         language: CodeCellLanguage,
         pos: Pos,
         cell_ref: CellRef,
-        sheet_id: SheetId,
     ) {
+        let sheet_id = cell_ref.sheet;
         let mut ctx = Ctx::new(
-            grid_controller.grid(),
+            self.grid(),
             SheetPos {
                 sheet_id,
                 x: pos.x,
@@ -35,13 +30,11 @@ impl TransactionInProgress {
                             .cells_accessed
                             .iter()
                             .map(|sheet_pos| {
-                                let sheet = grid_controller
-                                    .grid_mut()
-                                    .sheet_mut_from_id(sheet_pos.sheet_id);
+                                let sheet = self.grid_mut().sheet_mut_from_id(sheet_pos.sheet_id);
                                 let pos = (*sheet_pos).into();
                                 let (cell_ref, operations) = sheet.get_or_create_cell_ref(pos);
                                 if let Some(operations) = operations {
-                                    self.multiplayer_operations.extend(operations);
+                                    self.forward_operations.extend(operations);
                                 }
                                 cell_ref
                             })
@@ -56,22 +49,18 @@ impl TransactionInProgress {
                                 std_err: None,
                                 result: CodeCellRunResult::Ok {
                                     output_value: value,
-                                    cells_accessed: self.cells_accessed.clone(),
+                                    cells_accessed: self
+                                        .cells_accessed
+                                        .clone()
+                                        .into_iter()
+                                        .collect(),
                                 },
                                 spill: false,
                             }),
                             // todo
                             last_modified: String::new(),
                         };
-                        if update_code_cell_value(
-                            grid_controller,
-                            cell_ref,
-                            Some(updated_code_cell_value),
-                            &mut self.cells_to_compute,
-                            &mut self.multiplayer_operations,
-                            &mut self.reverse_operations,
-                            &mut self.summary,
-                        ) {
+                        if self.update_code_cell_value(cell_ref, Some(updated_code_cell_value)) {
                             // clears cells_accessed
                             self.cells_accessed.clear();
                         }
@@ -80,7 +69,6 @@ impl TransactionInProgress {
                         let msg = error.msg.to_string();
                         let line_number = error.span.map(|span| span.start as i64);
                         self.code_cell_sheet_error(
-                            grid_controller,
                             msg,
                             // todo: span should be multiline
                             line_number,
@@ -90,7 +78,7 @@ impl TransactionInProgress {
             }
             Err(e) => {
                 let msg = e.to_string();
-                self.code_cell_sheet_error(grid_controller, msg, None);
+                self.code_cell_sheet_error(msg, None);
             }
         }
     }

@@ -1,94 +1,36 @@
-use indexmap::IndexSet;
-
-use crate::{
-    controller::{
-        transaction_summary::TransactionSummary, update_code_cell_value::update_code_cell_value,
-        GridController,
-    },
-    grid::CellRef,
-};
-
-use super::operation::Operation;
+use crate::{controller::GridController, grid::CellRef};
 
 impl GridController {
     /// Checks whether a spill exists
-    pub fn check_spill(
-        &mut self,
-        cell_ref: CellRef,
-        cells_to_compute: &mut IndexSet<CellRef>,
-        summary: &mut TransactionSummary,
-        reverse_operations: &mut Vec<Operation>,
-        multiplayer_operations: &mut Vec<Operation>,
-    ) {
+    pub fn check_spill(&mut self, cell_ref: CellRef) {
         // check if the addition of a cell causes a spill error
         let sheet = self.grid.sheet_from_id(cell_ref.sheet);
         if let Some(code_cell_ref) = sheet.get_spill(cell_ref) {
             if code_cell_ref != cell_ref {
                 if let Some(code_cell) = sheet.get_code_cell_from_ref(code_cell_ref) {
                     if !code_cell.has_spill_error() {
-                        update_code_cell_value(
-                            self,
-                            code_cell_ref,
-                            Some(code_cell.clone()),
-                            cells_to_compute,
-                            multiplayer_operations,
-                            reverse_operations,
-                            summary,
-                        );
+                        self.update_code_cell_value(code_cell_ref, Some(code_cell.clone()));
                     }
                 }
             }
         }
     }
 
-    // TODO(ddimaria): implement many of the below functions in TransactionInProgress
-    // then we can just reference self
-
     /// sets a spill error for a code_cell
-    pub fn set_spill_error(
-        &mut self,
-        cell_ref: CellRef,
-        cells_to_compute: &mut IndexSet<CellRef>,
-        summary: &mut TransactionSummary,
-        reverse_operations: &mut Vec<Operation>,
-        multiplayer_operations: &mut Vec<Operation>,
-    ) {
+    pub fn set_spill_error(&mut self, cell_ref: CellRef) {
         let sheet = self.grid.sheet_from_id(cell_ref.sheet);
         if let Some(code_cell) = sheet.get_code_cell_from_ref(cell_ref) {
             if !code_cell.has_spill_error() {
-                update_code_cell_value(
-                    self,
-                    cell_ref,
-                    Some(code_cell.clone()),
-                    cells_to_compute,
-                    multiplayer_operations,
-                    reverse_operations,
-                    summary,
-                );
+                self.update_code_cell_value(cell_ref, Some(code_cell.clone()));
             }
         }
     }
 
     /// update the code cell value if the deletion of a cell released a spill error
-    pub fn update_code_cell_value_if_spill_error_released(
-        &mut self,
-        cell_ref: CellRef,
-        cells_to_compute: &mut IndexSet<CellRef>,
-        summary: &mut TransactionSummary,
-        reverse_operations: &mut Vec<Operation>,
-        multiplayer_operations: &mut Vec<Operation>,
-    ) {
+    pub fn update_code_cell_value_if_spill_error_released(&mut self, cell_ref: CellRef) {
         let sheet = self.grid.sheet_from_id(cell_ref.sheet);
         if let Some((cell_ref, code_cell)) = sheet.spill_error_released(cell_ref) {
-            update_code_cell_value(
-                self,
-                cell_ref,
-                Some(code_cell),
-                cells_to_compute,
-                multiplayer_operations,
-                reverse_operations,
-                summary,
-            );
+            self.update_code_cell_value(cell_ref, Some(code_cell));
         }
     }
 }
