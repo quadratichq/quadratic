@@ -317,13 +317,12 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
-        controller::GridController,
+        controller::{transaction_types::JsCodeResult, GridController},
         grid::{
             js_types::{JsHtmlOutput, JsRenderCell},
             Bold, CellAlign, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue,
             Italic, RenderSize,
         },
-        wasm_bindings::transaction_types::JsCodeResult,
         CellValue, Error, ErrorMsg, Pos, Rect, Value,
     };
 

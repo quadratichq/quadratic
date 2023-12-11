@@ -1,5 +1,5 @@
 use crate::{
-    wasm_bindings::transaction_types::{CellForArray, CellsForArray},
+    controller::transaction_types::{CellForArray, CellsForArray},
     Pos, Rect,
 };
 

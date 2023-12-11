@@ -28,7 +28,7 @@ pub mod spills;
 pub mod thumbnail;
 pub mod transaction_in_progress;
 pub mod transaction_summary;
-// pub mod transaction_types;
+pub mod transaction_types;
 pub mod undo;
 pub mod update_code_cell_value;
 

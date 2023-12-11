@@ -1,10 +1,9 @@
 use wasm_bindgen::JsValue;
 
 use crate::{
-    controller::GridController,
+    controller::{transaction_types::JsCodeResult, GridController},
     grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
     util::date_string,
-    wasm_bindings::transaction_types::JsCodeResult,
     Array, CellValue, Error, ErrorMsg, Span, Value,
 };
 
@@ -260,10 +259,12 @@ mod test {
 
     use crate::{
         controller::{
-            operation::Operation, transaction_in_progress::TransactionType, GridController,
+            operation::Operation,
+            transaction_in_progress::TransactionType,
+            transaction_types::{CellForArray, JsCodeResult, JsComputeGetCells},
+            GridController,
         },
         grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellValue},
-        wasm_bindings::transaction_types::{CellForArray, JsCodeResult, JsComputeGetCells},
         Array, ArraySize, CellValue, Pos, Value,
     };
 
