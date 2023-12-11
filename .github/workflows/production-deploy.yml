@@ -36,6 +36,8 @@ jobs:
         pulumi config set subdomain multiplayer
         pulumi config set instanceSize t3.medium
         pulumi config set certificate-arn $AWS_PROD_MULTIPLAYER_AMC_ARN
+        pulumi config set data-dog-env prod
+        pulumi config set data-dog-api-key ${{ env.DD_API_KEY }}
 
         pulumi up -y
         echo "MULTIPLAYER_INSTANCE_DNS=$(pulumi stack output multiplayerInstanceDns)" >> "$GITHUB_OUTPUT"
@@ -44,6 +46,7 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         AWS_PROD_MULTIPLAYER_AMC_ARN: ${{ secrets.AWS_PROD_MULTIPLAYER_AMC_ARN }}
         PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        DD_API_KEY: ${{ secrets.DD_API_KEY }}
 
     outputs:
       MULTIPLAYER_INSTANCE_DNS: ${{ steps.pulumiInfra.outputs.MULTIPLAYER_INSTANCE_DNS }}

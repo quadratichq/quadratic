@@ -39,6 +39,8 @@ jobs:
         pulumi config set aws:region us-west-2
         pulumi config set domain quadratic-preview.com
         pulumi config set subdomain multiplayer-pr-${{ env.PR_ID }}
+        pulumi config set data-dog-env preview
+        pulumi config set data-dog-api-key ${{ env.DD_API_KEY }}
 
         pulumi up -y
         echo "MULTIPLAYER_INSTANCE_DNS=$(pulumi stack output multiplayerInstanceDns)" >> "$GITHUB_OUTPUT"
@@ -47,6 +49,7 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
         PR_ID: ${{ github.event.pull_request.number }}
+        DD_API_KEY: ${{ secrets.DD_API_KEY }}
 
     outputs:
       MULTIPLAYER_INSTANCE_DNS: ${{ steps.pulumiInfra.outputs.MULTIPLAYER_INSTANCE_DNS }}

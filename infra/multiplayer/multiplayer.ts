@@ -15,6 +15,8 @@ const instanceAmi = config.get("instance-ami") || "ami-0efcece6bed30fd98"; // ub
 const subNet1 = config.get("subnet1") || "subnet-0ae50871c8ec4e68f";
 const subNet2 = config.get("subnet2") || "subnet-0c6f318928373a253";
 const vpcId = config.get("vpc-id") || "vpc-035fff213c528dbe5";
+const dataDogEnv = config.get("data-dog-env") || "preview";
+const dataDogApiKey = config.get("data-dog-api-key") || "";
 
 // Infrastructure
 const group = new aws.ec2.SecurityGroup("multiplayer-sc", {
@@ -29,9 +31,18 @@ const group = new aws.ec2.SecurityGroup("multiplayer-sc", {
 });
 
 // Read the content of the Bash script
-const setupMultiplayerService = fs.readFileSync(
+let setupMultiplayerService = fs.readFileSync(
   "multiplayer/setup-multiplayer-service.sh",
   "utf-8"
+);
+// Set the environment variables in the Bash script
+setupMultiplayerService = setupMultiplayerService.replace(
+  "{{DD_ENV}}",
+  dataDogEnv
+);
+setupMultiplayerService = setupMultiplayerService.replace(
+  "{{DD_API_KEY}}",
+  dataDogApiKey
 );
 const instance = new aws.ec2.Instance("multiplayer-instance", {
   tags: {
