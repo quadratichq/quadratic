@@ -16,21 +16,7 @@ const subNet1 = config.get("subnet1") || "subnet-0ae50871c8ec4e68f";
 const subNet2 = config.get("subnet2") || "subnet-0c6f318928373a253";
 const vpcId = config.get("vpc-id") || "vpc-035fff213c528dbe5";
 
-// const ami = pulumi.output(
-//   aws.ec2.getAmi({
-//     owners: ["099720109477"], // Canonical ID
-//     mostRecent: true,
-//     filters: [
-//       {
-//         name: "name",
-//         values: ["ubuntu/images/hvm-ssd/ubuntu-*-amd64-server-*"],
-//       },
-//       { name: "architecture", values: ["x86_64"] },
-//       { name: "root-device-type", values: ["ebs"] },
-//     ],
-//   })
-// );
-
+// Infrastructure
 const group = new aws.ec2.SecurityGroup("multiplayer-sc", {
   ingress: [
     { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
@@ -55,7 +41,7 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
   vpcSecurityGroupIds: [group.id],
   ami: instanceAmi,
   keyName: instanceKeyName,
-  // Run Setup script on instance boot
+  // Run Setup script on instance boot to create multiplayer systemd service
   userData: setupMultiplayerService,
 });
 
@@ -99,7 +85,7 @@ const nlbListener = new aws.lb.Listener("multiplayer-nlb-listener", {
   ],
 });
 
-// Get the hosted zone ID for quadratic-preview.com
+// Get the hosted zone ID for domain
 const hostedZone = pulumi.output(
   aws.route53.getZone(
     {
