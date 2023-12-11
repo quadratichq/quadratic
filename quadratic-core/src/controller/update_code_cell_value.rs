@@ -345,7 +345,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        controller::{transaction_summary::TransactionSummary, GridController},
+        controller::GridController,
         grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellValue},
         Array, ArraySize, CellValue, Pos, SheetPos, Value,
     };
@@ -397,13 +397,11 @@ mod test {
             sheet_id: sheet.id,
         };
 
-        let mut summary = TransactionSummary::default();
-
         gc.transaction_in_progress = true;
         gc.fetch_code_cell_difference(sheet_id, sheet_pos.into(), old.clone(), new_smaller);
-        assert_eq!(summary.cell_sheets_modified.len(), 1);
+        assert_eq!(gc.summary.cell_sheets_modified.len(), 1);
 
-        summary.clear(false);
+        gc.summary.clear(false);
 
         let new_larger = Some(CodeCellValue {
             language: CodeCellLanguage::Python,
@@ -424,7 +422,7 @@ mod test {
         });
 
         gc.fetch_code_cell_difference(sheet_id, sheet_pos.into(), old, new_larger);
-        assert_eq!(summary.cell_sheets_modified.len(), 1);
+        assert_eq!(gc.summary.cell_sheets_modified.len(), 1);
     }
 
     #[test]
