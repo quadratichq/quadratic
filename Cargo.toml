@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "quadratic-core",
+    "quadratic-multiplayer",
+]
