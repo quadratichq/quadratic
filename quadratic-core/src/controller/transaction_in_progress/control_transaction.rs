@@ -14,11 +14,41 @@ use indexmap::IndexSet;
 use super::{GridController, TransactionType};
 
 impl GridController {
+    // loop compute cycle until complete or an async call is made
+    pub(super) fn loop_compute(&mut self) {
+        loop {
+            self.compute();
+            if self.waiting_for_async.is_some() {
+                break;
+            }
+            if self.cells_to_compute.is_empty() {
+                self.complete = true;
+                self.transaction_in_progress = false;
+                self.summary.save = true;
+                if self.has_async {
+                    self.finalize_transaction();
+                }
+                break;
+            }
+        }
+    }
+
+    /// executes a set of operations
+    fn transact(&mut self, operations: Vec<Operation>, compute: bool) {
+        for op in operations.iter() {
+            if cfg!(feature = "show-operations") {
+                crate::util::dbgjs(&format!("[Operation] {:?}", op.to_string()));
+            }
+
+            self.execute_operation(op.clone(), compute);
+        }
+    }
+
     /// Creates and runs a new Transaction
     ///
     /// Description
     /// * `compute` triggers the computation cycle
-    pub fn start_transaction(
+    fn start_transaction(
         &mut self,
         operations: Vec<Operation>,
         cursor: Option<String>,
@@ -55,7 +85,7 @@ impl GridController {
         }
     }
 
-    pub fn finalize_transaction(&mut self) {
+    pub(super) fn finalize_transaction(&mut self) {
         match self.transaction_type {
             TransactionType::Normal => {
                 self.undo_stack.push(self.to_transaction());
@@ -103,7 +133,7 @@ impl GridController {
             self.loop_compute();
         }
 
-        self.calculation_complete(result);
+        self.after_calculation_async(result);
 
         self.transaction_updated_bounds();
         if self.complete {
@@ -259,10 +289,12 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_transactions_transaction_summary() {
         let mut gc = GridController::new();
-        gc.prepare_transaction_summary();
+        assert_eq!(
+            gc.prepare_transaction_summary(),
+            TransactionSummary::default()
+        );
     }
 
     #[test]

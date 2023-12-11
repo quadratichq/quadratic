@@ -34,7 +34,7 @@ impl GridController {
             old_values.push(old_value);
         }
         if cell_sheets_modified {
-            self.summary.add_cell_sheets_modified_region(sheet, region);
+            self.add_cell_sheets_modified_region(region);
         }
         old_values
     }

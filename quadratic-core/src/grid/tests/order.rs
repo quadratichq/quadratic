@@ -56,3 +56,15 @@ fn test_order_move_sheet() {
     assert_eq!(grid.sheets[1].name, String::from('1'));
     assert_eq!(grid.sheets[2].name, String::from('2'));
 }
+
+#[test]
+fn test_first_sheet() {
+    let grid = setup_grid();
+    assert_eq!(grid.first_sheet().name, String::from('0'));
+}
+
+#[test]
+fn test_first_sheet_id() {
+    let grid = setup_grid();
+    assert_eq!(grid.first_sheet_id(), grid.sheets[0].id);
+}

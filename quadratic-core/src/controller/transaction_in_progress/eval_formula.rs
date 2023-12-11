@@ -1,9 +1,7 @@
 use crate::{
     controller::GridController,
     formulas::{parse_formula, Ctx},
-    grid::{
-        CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue, SheetId,
-    },
+    grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
     Pos, SheetPos,
 };
 
@@ -14,8 +12,8 @@ impl GridController {
         language: CodeCellLanguage,
         pos: Pos,
         cell_ref: CellRef,
-        sheet_id: SheetId,
     ) {
+        let sheet_id = cell_ref.sheet;
         let mut ctx = Ctx::new(
             self.grid(),
             SheetPos {

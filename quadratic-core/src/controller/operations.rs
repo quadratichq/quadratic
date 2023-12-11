@@ -39,7 +39,7 @@ impl GridController {
                 let old_values = Array::new_row_major(size, old_values)
                     .expect("error constructing array of old values for SetCells operation");
 
-                self.summary.add_cell_sheets_modified_region(sheet, &region);
+                self.add_cell_sheets_modified_region(&region);
 
                 // check if override any code cells
                 let sheet = self.grid.sheet_from_id(region.sheet);

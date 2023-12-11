@@ -3,9 +3,11 @@ use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    grid::{RegionRef, Sheet, SheetId},
+    grid::{RegionRef, SheetId},
     Pos,
 };
+
+use super::GridController;
 
 // keep this in sync with CellsTypes.ts
 pub const CELL_SHEET_WIDTH: u32 = 20;
@@ -94,20 +96,26 @@ impl TransactionSummary {
             self.forward_operations = None;
         }
     }
+}
 
-    pub fn add_cell_sheets_modified_region(&mut self, sheet: &Sheet, region: &RegionRef) {
+impl GridController {
+    pub fn add_cell_sheets_modified_region(&mut self, region: &RegionRef) {
+        let mut modified = HashSet::new();
+        let sheet = self.sheet(region.sheet);
         region.iter().for_each(|cell_ref| {
             if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                self.cell_sheets_modified
-                    .insert(CellSheetsModified::new(sheet.id, pos));
+                modified.insert(CellSheetsModified::new(sheet.id, pos));
             }
         });
+
+        let summary = &mut self.summary;
+        summary.cell_sheets_modified.extend(modified);
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::Rect;
+    use crate::{controller::GridController, Rect};
 
     use super::*;
 
@@ -125,39 +133,57 @@ mod tests {
         );
     }
 
+    fn has_cell_sheet(
+        cell_sheets_modified: &HashSet<CellSheetsModified>,
+        sheet_id: SheetId,
+        x: i32,
+        y: i32,
+    ) -> bool {
+        cell_sheets_modified.iter().any(|modified| {
+            print!(
+                "{}: ({}, {}) == {}:  ({}, {})",
+                modified.sheet_id,
+                modified.x,
+                modified.y,
+                sheet_id.to_string(),
+                x,
+                y
+            );
+            modified.sheet_id == sheet_id.to_string() && modified.x == x && modified.y == y
+        })
+    }
+
     #[test]
     fn test_cell_sheets_modified_region() {
-        let sheet_id = SheetId::new();
-        let mut summary = TransactionSummary::default();
-        let mut sheet = Sheet::test();
+        let mut gc = GridController::new();
+        let sheet_id = gc.grid().first_sheet_id().clone();
+        let sheet = gc.grid_mut().first_sheet_mut();
         let (region, _) = sheet.region(Rect::from_numbers(0, 0, 21, 41));
-        summary.add_cell_sheets_modified_region(&sheet, &region);
-        assert_eq!(
-            summary.cell_sheets_modified,
-            vec![
-                CellSheetsModified {
-                    sheet_id: sheet_id.to_string(),
-                    x: 0,
-                    y: 0
-                },
-                CellSheetsModified {
-                    sheet_id: sheet_id.to_string(),
-                    x: 0,
-                    y: 1
-                },
-                CellSheetsModified {
-                    sheet_id: sheet_id.to_string(),
-                    x: 1,
-                    y: 0
-                },
-                CellSheetsModified {
-                    sheet_id: sheet_id.to_string(),
-                    x: 1,
-                    y: 1
-                }
-            ]
-            .into_iter()
-            .collect::<HashSet<CellSheetsModified>>()
-        );
+        gc.add_cell_sheets_modified_region(&region);
+        assert_eq!(gc.summary.cell_sheets_modified.len(), 4);
+        assert!(has_cell_sheet(
+            &gc.summary.cell_sheets_modified,
+            sheet_id,
+            0,
+            0
+        ));
+        assert!(has_cell_sheet(
+            &gc.summary.cell_sheets_modified,
+            sheet_id,
+            0,
+            1
+        ));
+        assert!(has_cell_sheet(
+            &gc.summary.cell_sheets_modified,
+            sheet_id,
+            1,
+            0
+        ));
+        assert!(has_cell_sheet(
+            &gc.summary.cell_sheets_modified,
+            sheet_id,
+            1,
+            1
+        ));
     }
 }
