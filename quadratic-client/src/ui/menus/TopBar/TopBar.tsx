@@ -3,6 +3,7 @@ import { useRecoilValue } from 'recoil';
 import { isEditorOrAbove } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
+import { isEmbed } from '../../../helpers/isEmbed';
 import { isElectron } from '../../../utils/isElectron';
 import { DataMenu } from './SubMenus/DataMenu';
 import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
@@ -88,7 +89,7 @@ export const TopBar = () => {
           <>
             <TopBarCodeOutlinesSwitch />
             <TopBarUsers />
-            <TopBarShareButton />
+            {!isEmbed && <TopBarShareButton />}
           </>
         )}
         <TopBarZoomMenu />
