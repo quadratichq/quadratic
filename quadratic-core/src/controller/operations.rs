@@ -8,7 +8,6 @@ use super::{
 impl GridController {
     /// Executes the given operation.
     pub fn execute_operation(&mut self, op: Operation, compute: bool) {
-        assert!(self.transaction_in_progress);
         match op {
             Operation::SetCellValues { region, values } => {
                 self.sheets_with_changed_bounds.insert(region.sheet);
@@ -74,22 +73,10 @@ impl GridController {
                     if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
                         // if there is a value, check if it caused a spill
                         if sheet.get_cell_value(pos).is_some() {
-                            self.check_spill(
-                                cell_ref,
-                                // cells_to_compute,
-                                // summary,
-                                // &mut reverse_operations,
-                                // forward_operations,
-                            );
+                            self.check_spill(cell_ref);
                         } else {
                             // otherwise check if it released a spill
-                            self.update_code_cell_value_if_spill_error_released(
-                                cell_ref,
-                                // cells_to_compute,
-                                // summary,
-                                // &mut reverse_operations,
-                                // forward_operations,
-                            );
+                            self.update_code_cell_value_if_spill_error_released(cell_ref);
                         }
                     }
                 }
@@ -118,13 +105,6 @@ impl GridController {
 
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
                 let old_spill = sheet.get_spill(cell_ref);
-
-                // TODO(ddimaria): resolve comment from @HactarCE
-                // note: this is a non-trivial refactor, but a good one to make
-                //
-                // Use .cloned() later if the value needs to be cloned, not here.
-                // fetch_code_cell_difference() should take &Option<CodeCellValue>
-                // or possibly Option<CodeCellValue>.
                 let old_code_cell_value = sheet.get_code_cell_from_ref(cell_ref).cloned();
                 let pos = if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
                     pos
@@ -155,10 +135,6 @@ impl GridController {
                             pos,
                             old_code_cell_value.clone(),
                             None,
-                            // summary,
-                            // cells_to_compute,
-                            // &mut reverse_operations,
-                            // forward_operations,
                         );
                         let sheet = self.grid.sheet_mut_from_id(sheet_id);
                         sheet.set_code_cell_value(pos, None);
@@ -172,10 +148,6 @@ impl GridController {
                         pos,
                         old_code_cell_value.clone(),
                         code_cell_value.clone(),
-                        // summary,
-                        // cells_to_compute,
-                        // &mut reverse_operations,
-                        // forward_operations,
                     );
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
                     sheet.set_code_cell_value(pos, code_cell_value.clone());
@@ -197,26 +169,14 @@ impl GridController {
                 if old_code_cell_value.is_none() && !is_code_cell_empty {
                     if let Some(old_spill) = old_spill {
                         if old_spill != cell_ref {
-                            self.set_spill_error(
-                                old_spill,
-                                // cells_to_compute,
-                                // summary,
-                                // &mut reverse_operations,
-                                // forward_operations,
-                            );
+                            self.set_spill_error(old_spill);
                         }
                     }
                 }
 
                 // check if deleting a code cell releases a spill
                 if is_code_cell_empty {
-                    self.update_code_cell_value_if_spill_error_released(
-                        cell_ref,
-                        // cells_to_compute,
-                        // summary,
-                        // &mut reverse_operations,
-                        // forward_operations,
-                    );
+                    self.update_code_cell_value_if_spill_error_released(cell_ref);
                 }
                 self.forward_operations.push(Operation::SetCellCode {
                     cell_ref,

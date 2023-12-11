@@ -18,9 +18,6 @@ pub mod sheets;
 pub mod summarize;
 
 #[wasm_bindgen]
-pub struct CalculationGetCells {}
-
-#[wasm_bindgen]
 impl GridController {
     /// Imports a [`GridController`] from a JSON string.
     #[wasm_bindgen(js_name = "newFromFile")]

@@ -13,10 +13,6 @@ impl GridController {
         &mut self,
         cell_ref: CellRef,
         updated_code_cell_value: Option<CodeCellValue>,
-        // cells_to_compute: &mut IndexSet<CellRef>,
-        // forward_operations: &mut Vec<Operation>,
-        // reverse_operations: &mut Vec<Operation>,
-        // summary: &mut TransactionSummary,
     ) -> bool {
         assert!(self.transaction_in_progress);
         let mut success = false;
@@ -43,7 +39,7 @@ impl GridController {
                                 Value::Array(array) => {
                                     // create the region
                                     let rect = Rect::new_span(
-                                        Pos { x: pos.x, y: pos.y },
+                                        pos,
                                         Pos {
                                             x: pos.x + array.width() as i64,
                                             y: pos.y + array.height() as i64,
@@ -144,7 +140,7 @@ impl GridController {
                                                 || self.thumbnail_dirty_rect(
                                                     cell_ref.sheet,
                                                     Rect::new_span(
-                                                        Pos { x: pos.x, y: pos.y },
+                                                        pos,
                                                         Pos {
                                                             x: pos.x + array.width() as i64,
                                                             y: pos.y + array.height() as i64,
@@ -173,10 +169,6 @@ impl GridController {
                 pos,
                 old_code_cell_value.clone(),
                 updated_code_cell_value.clone(),
-                // summary,
-                // cells_to_compute,
-                // reverse_operations,
-                // forward_operations,
             );
 
             self.forward_operations.push(Operation::SetCellCode {
@@ -205,10 +197,6 @@ impl GridController {
         pos: Pos,
         old_code_cell_value: Option<CodeCellValue>,
         new_code_cell_value: Option<CodeCellValue>,
-        // summary: &mut TransactionSummary,
-        // cells_to_compute: &mut IndexSet<CellRef>,
-        // reverse_operations: &mut Vec<Operation>,
-        // forward_operations: &mut Vec<Operation>,
     ) {
         assert!(self.transaction_in_progress);
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
@@ -509,14 +497,7 @@ mod test {
         let sheet = gc.grid.sheet_mut_from_id(sheet_id);
         let (cell_ref, _) = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
 
-        gc.update_code_cell_value(
-            cell_ref,
-            code_cell_output.clone(),
-            // &mut IndexSet::default(),
-            // &mut vec![],
-            // &mut vec![],
-            // &mut TransactionSummary::default(),
-        );
+        gc.update_code_cell_value(cell_ref, code_cell_output.clone());
 
         let sheet = gc.grid.sheet_from_id(sheet_id);
         let code_cell = sheet.get_code_cell(Pos { x: 0, y: 0 });
