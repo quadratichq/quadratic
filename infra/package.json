@@ -1,5 +1,5 @@
 {
-  "name": "quadratic-infra-test-1",
+  "name": "quadratic-infra",
   "main": "index.ts",
   "devDependencies": {
     "@types/node": "^18"
