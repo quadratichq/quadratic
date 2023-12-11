@@ -12,10 +12,10 @@ use super::code::CodeCellValue;
 use super::column::Column;
 use super::formatting::{BoolSummary, CellFmtAttr};
 use super::ids::{CellRef, ColumnId, IdMap, RowId, SheetId};
-use super::js_types::{CellFormatSummary, FormattingSummary};
 use super::{NumericFormat, NumericFormatKind, RegionRef};
 use crate::controller::operation::Operation;
 use crate::grid::{borders, SheetBorders};
+use crate::wasm_bindings::js_types::{CellFormatSummary, FormattingSummary};
 use crate::{Array, ArraySize, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;

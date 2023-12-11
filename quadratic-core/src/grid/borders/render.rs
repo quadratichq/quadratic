@@ -1,5 +1,5 @@
-use crate::grid::js_types::JsRenderBorder;
 use crate::grid::Sheet;
+use crate::wasm_bindings::js_types::JsRenderBorder;
 
 pub fn get_render_vertical_borders(sheet: &Sheet) -> Vec<JsRenderBorder> {
     sheet

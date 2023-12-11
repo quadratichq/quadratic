@@ -3,7 +3,7 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::{
     controller::GridController,
-    grid::{js_types::JsClipboard, SheetId},
+    wasm_bindings::{js_types::JsClipboard, SheetId},
     Pos, Rect,
 };
 

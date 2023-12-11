@@ -1,3 +1,5 @@
+use crate::wasm_bindings::js_types::{CellFormatSummary, FormattingSummary};
+
 use super::*;
 
 #[wasm_bindgen]

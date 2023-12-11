@@ -2,7 +2,7 @@ use std::fs::create_dir_all;
 
 use quadratic_core::{
     controller::transaction_summary::{CellSheetsModified, TransactionSummary},
-    grid::js_types::JsHtmlOutput,
+    wasm_bindings::js_types::JsHtmlOutput,
     *,
 };
 use ts_rs::TS;
@@ -41,11 +41,11 @@ fn main() {
         grid::RowId,
         grid::ColumnId,
         grid::CellRef,
-        grid::js_types::JsRenderCell,
-        grid::js_types::JsRenderFill,
-        grid::js_types::FormattingSummary,
-        grid::js_types::CellFormatSummary,
-        grid::js_types::JsClipboard,
+        wasm_bindings::js_types::JsRenderCell,
+        wasm_bindings::js_types::JsRenderFill,
+        wasm_bindings::js_types::FormattingSummary,
+        wasm_bindings::js_types::CellFormatSummary,
+        wasm_bindings::js_types::JsClipboard,
         // values
         ArraySize,
         Axis,

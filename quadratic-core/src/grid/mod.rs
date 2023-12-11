@@ -15,7 +15,6 @@ mod column;
 pub mod file;
 mod formatting;
 mod ids;
-pub mod js_types;
 mod offsets;
 pub mod series;
 pub mod sheet;

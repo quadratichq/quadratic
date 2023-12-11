@@ -84,7 +84,8 @@ impl GridController {
 mod test {
     use crate::{
         controller::GridController,
-        grid::{js_types::JsRenderCell, CellAlign, CodeCellLanguage},
+        grid::{CellAlign, CodeCellLanguage},
+        wasm_bindings::js_types::JsRenderCell,
         Pos, Rect,
     };
 

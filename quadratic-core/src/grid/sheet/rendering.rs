@@ -1,11 +1,11 @@
 use crate::{
     grid::{
         borders::{get_render_horizontal_borders, get_render_vertical_borders},
-        js_types::{
-            JsHtmlOutput, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState,
-            JsRenderFill,
-        },
         CellAlign, CodeCellRunResult, NumericFormatKind,
+    },
+    wasm_bindings::js_types::{
+        JsHtmlOutput, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState,
+        JsRenderFill,
     },
     CellValue, Error, ErrorMsg, Pos, Rect,
 };
@@ -319,10 +319,10 @@ mod tests {
     use crate::{
         controller::GridController,
         grid::{
-            js_types::{JsHtmlOutput, JsRenderCell},
             Bold, CellAlign, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue,
             Italic, RenderSize,
         },
+        wasm_bindings::js_types::{JsHtmlOutput, JsRenderCell},
         wasm_bindings::transaction_types::JsCodeResult,
         CellValue, Error, ErrorMsg, Pos, Rect, Value,
     };
