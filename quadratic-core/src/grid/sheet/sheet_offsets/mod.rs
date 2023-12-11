@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 use std::ops::Range;
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use self::{resize_transient::TransientResize, sheet_offsets_wasm::OffsetsSizeChanges};
+use self::resize_transient::TransientResize;
+use crate::wasm_bindings::sheet_offsets_wasm::OffsetsSizeChanges;
 
 pub mod resize_transient;
-pub mod sheet_offsets_wasm;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
