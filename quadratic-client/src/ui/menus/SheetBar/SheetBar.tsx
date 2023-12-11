@@ -101,7 +101,7 @@ export const SheetBar = (): JSX.Element => {
         tab.style.zIndex = '';
         tab.style.transform = '';
         tab.style.order = down.current.originalOrder.toString();
-        tab.scrollIntoView();
+        // tab.scrollIntoView();
         down.current = undefined;
       }
     };
@@ -116,7 +116,7 @@ export const SheetBar = (): JSX.Element => {
       const children = [...sheetTabs.children];
       const tab = children.find((child) => child.getAttribute('data-id') === activeSheet);
       if (tab) {
-        tab.scrollIntoView();
+        // tab.scrollIntoView();
       }
     }
   }, [activeSheet, sheetTabs]);

@@ -1,5 +1,6 @@
 import { ApiError } from '@/api/fetchFromApi';
 import { CONTACT_URL } from '@/constants/urls';
+import { isEmbed } from '@/helpers/isEmbed';
 import { Button } from '@/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
@@ -81,6 +82,12 @@ export const Component = () => {
       permission,
     }));
   };
+
+  // If this is an embed, ensure that wheel events do not scroll the page
+  // otherwise we get weird double-scrolling on the iframe embed
+  if (isEmbed) {
+    document.querySelector('#root')?.addEventListener('wheel', (e) => e.preventDefault());
+  }
 
   return (
     <RecoilRoot initializeState={initializeState}>
