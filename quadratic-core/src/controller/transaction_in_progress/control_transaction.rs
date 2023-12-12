@@ -157,6 +157,10 @@ impl GridController {
             return TransactionSummary::default();
         };
 
+        self.apply_received_transaction(operations)
+    }
+
+    pub fn apply_received_transaction(&mut self, operations: Vec<Operation>) -> TransactionSummary {
         self.start_transaction(operations, None, false, TransactionType::Multiplayer);
         self.transaction_updated_bounds();
         let mut summary = self.prepare_transaction_summary();

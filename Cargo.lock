@@ -1641,6 +1641,7 @@ dependencies = [
  "futures-util",
  "headers",
  "jsonwebtoken",
+ "quadratic-core",
  "reqwest",
  "serde",
  "serde_json",
