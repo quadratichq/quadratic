@@ -88,7 +88,7 @@ export const TopBar = () => {
         {isDesktop && (
           <>
             <TopBarCodeOutlinesSwitch />
-            <TopBarUsers />
+            {!isEmbed && <TopBarUsers />}
             {!isEmbed && <TopBarShareButton />}
           </>
         )}

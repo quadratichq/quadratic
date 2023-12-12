@@ -68,7 +68,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   return {
     name: data.file.name,
-    permission: data.permission,
+    permission: isEmbed ? 'ANONYMOUS' : data.permission,
     sharing,
   };
 };
