@@ -85,7 +85,7 @@ pub fn generate_borders_full(
     }
 }
 
-pub fn set_region_borders(
+pub fn set_rect_borders(
     sheet: &mut Sheet,
     regions: Vec<RegionRef>,
     borders: SheetBorders,
@@ -106,10 +106,10 @@ pub fn set_region_border_selection(
     style: Option<BorderStyle>,
 ) -> SheetBorders {
     let borders = generate_borders(sheet, region, selections, style);
-    set_region_borders(sheet, vec![region.clone()], borders)
+    set_rect_borders(sheet, vec![region.clone()], borders)
 }
 
-pub fn get_region_borders(sheet: &Sheet, regions: Vec<RegionRef>) -> SheetBorders {
+pub fn get_rect_borders(sheet: &Sheet, regions: Vec<RegionRef>) -> SheetBorders {
     sheet.borders.get_regions(&sheet.row_ids, regions)
 }
 

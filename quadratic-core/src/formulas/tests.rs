@@ -3,19 +3,19 @@ use itertools::Itertools;
 pub(crate) use super::*;
 pub(crate) use crate::grid::Grid;
 pub(crate) use crate::values::*;
-pub(crate) use crate::{array, CodeResult, Error, ErrorMsg, Pos, SheetPos, Spanned};
+pub(crate) use crate::{array, CodeResult, Error, ErrorMsg, Pos, Pos, Spanned};
 
-pub(crate) fn try_eval_at(grid: &Grid, pos: SheetPos, s: &str) -> CodeResult<Value> {
+pub(crate) fn try_eval_at(grid: &Grid, pos: Pos, s: &str) -> CodeResult<Value> {
     println!("Evaluating formula {s:?} at {pos:?}");
     let mut ctx = Ctx::new(grid, pos);
     parse_formula(s, Pos::ORIGIN)?.eval(&mut ctx)
 }
 #[track_caller]
-pub(crate) fn eval_at(grid: &Grid, pos: SheetPos, s: &str) -> Value {
+pub(crate) fn eval_at(grid: &Grid, pos: Pos, s: &str) -> Value {
     try_eval_at(grid, pos, s).expect("error evaluating formula")
 }
 #[track_caller]
-pub(crate) fn eval_to_string_at(grid: &Grid, pos: SheetPos, s: &str) -> String {
+pub(crate) fn eval_to_string_at(grid: &Grid, pos: Pos, s: &str) -> String {
     eval_at(grid, pos, s).to_string()
 }
 

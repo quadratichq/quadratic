@@ -84,11 +84,6 @@ impl Sheet {
         self.code_cells.get(&self.try_get_cell_ref(pos)?)
     }
 
-    /// Returns a code cell value.
-    pub fn get_code_cell_from_ref(&self, cell_ref: CellRef) -> Option<&CodeCellValue> {
-        self.code_cells.get(&cell_ref)
-    }
-
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
         let block = column.spills.get(pos.y)?;

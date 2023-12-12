@@ -9,7 +9,10 @@ impl GridController {
     /// Executes the given operation.
     pub fn execute_operation(&mut self, op: Operation, compute: bool) {
         match op {
-            Operation::SetCellValues { region, values } => {
+            Operation::SetCellValues {
+                sheet_rect: region,
+                values,
+            } => {
                 self.sheets_with_changed_bounds.insert(region.sheet);
                 let sheet = self.grid.sheet_mut_from_id(region.sheet);
 
@@ -62,7 +65,7 @@ impl GridController {
                     let (old_value, _) = sheet.set_code_cell_value(pos, None);
                     self.fetch_code_cell_difference(sheet_id, pos, old_value.clone(), None);
                     self.reverse_operations.push(Operation::SetCellCode {
-                        cell_ref,
+                        sheet_pos: cell_ref,
                         code_cell_value: old_value,
                     });
                 }
@@ -82,7 +85,7 @@ impl GridController {
                 }
 
                 self.forward_operations.push(Operation::SetCellValues {
-                    region: region.clone(),
+                    sheet_rect: region.clone(),
                     values,
                 });
 
@@ -90,12 +93,12 @@ impl GridController {
                     self.summary.generate_thumbnail || self.thumbnail_dirty_region(&region);
 
                 self.reverse_operations.push(Operation::SetCellValues {
-                    region,
+                    sheet_rect: region,
                     values: old_values,
                 });
             }
             Operation::SetCellCode {
-                cell_ref,
+                sheet_pos: cell_ref,
                 code_cell_value,
             } => {
                 let is_code_cell_empty = code_cell_value.is_none();
@@ -179,15 +182,18 @@ impl GridController {
                     self.update_code_cell_value_if_spill_error_released(cell_ref);
                 }
                 self.forward_operations.push(Operation::SetCellCode {
-                    cell_ref,
+                    sheet_pos: cell_ref,
                     code_cell_value: final_code_cell_value,
                 });
                 self.reverse_operations.push(Operation::SetCellCode {
-                    cell_ref,
+                    sheet_pos: cell_ref,
                     code_cell_value: old_code_cell_value,
                 });
             }
-            Operation::SetCellFormats { region, attr } => {
+            Operation::SetCellFormats {
+                sheet_rect: region,
+                attr,
+            } => {
                 self.sheets_with_changed_bounds.insert(region.sheet);
 
                 if let CellFmtArray::FillColor(_) = attr {
@@ -244,16 +250,19 @@ impl GridController {
                     }
                 };
                 self.forward_operations.push(Operation::SetCellFormats {
-                    region: region.clone(),
+                    sheet_rect: region.clone(),
                     attr,
                 });
 
                 self.reverse_operations.push(Operation::SetCellFormats {
-                    region,
+                    sheet_rect: region,
                     attr: old_attr,
                 });
             }
-            Operation::SetBorders { region, borders } => {
+            Operation::SetBorders {
+                sheet_rect: region,
+                borders,
+            } => {
                 self.sheets_with_changed_bounds.insert(region.sheet);
                 self.summary.border_sheets_modified.push(region.sheet);
                 self.summary.generate_thumbnail =
@@ -263,11 +272,11 @@ impl GridController {
 
                 let old_borders = sheet.set_region_borders(&region, borders.clone());
                 self.forward_operations.push(Operation::SetBorders {
-                    region: region.clone(),
+                    sheet_rect: region.clone(),
                     borders,
                 });
                 self.reverse_operations.push(Operation::SetBorders {
-                    region,
+                    sheet_rect: region,
                     borders: old_borders,
                 });
             }

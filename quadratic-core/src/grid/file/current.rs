@@ -1,7 +1,7 @@
 use crate::color::Rgba;
 use crate::grid::formatting::RenderSize;
 use crate::grid::{
-    generate_borders, set_region_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
+    generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
     CellWrap, Grid, GridBounds, NumericFormat, NumericFormatKind, RegionRef,
 };
 use crate::{CellValue, Error, ErrorMsg, Span, Value};
@@ -214,7 +214,7 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
                             );
 
                             // necessary to fill in render_lookup in SheetBorders
-                            set_region_borders(sheet, vec![region], borders);
+                            set_rect_borders(sheet, vec![region], borders);
                         }
                     }
                 });

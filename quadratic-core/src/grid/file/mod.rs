@@ -57,9 +57,7 @@ mod tests {
     use super::*;
     use crate::{
         color::Rgba,
-        grid::{
-            generate_borders, set_region_borders, BorderSelection, BorderStyle, CellBorderLine,
-        },
+        grid::{generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellBorderLine},
         Pos, Rect,
     };
 
@@ -154,7 +152,7 @@ mod tests {
             line: CellBorderLine::Line1,
         };
         let borders = generate_borders(&sheets[0], &region, selection, Some(style));
-        set_region_borders(&mut sheets[0], vec![region.clone()], borders);
+        set_rect_borders(&mut sheets[0], vec![region.clone()], borders);
         // println!("{:#?}", sheets[0].borders);
 
         let _exported = export(&mut grid).unwrap();

@@ -2,7 +2,7 @@ use crate::{
     controller::GridController,
     formulas::{parse_formula, Ctx},
     grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
-    Pos, SheetPos,
+    Pos, Pos,
 };
 
 impl GridController {
@@ -16,7 +16,7 @@ impl GridController {
         let sheet_id = cell_ref.sheet;
         let mut ctx = Ctx::new(
             self.grid(),
-            SheetPos {
+            Pos {
                 sheet_id,
                 x: pos.x,
                 y: pos.y,

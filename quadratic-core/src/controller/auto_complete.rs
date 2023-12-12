@@ -609,7 +609,10 @@ impl GridController {
         if let Some(operations) = operations {
             ops.extend(operations);
         }
-        ops.push(Operation::SetCellValues { region, values });
+        ops.push(Operation::SetCellValues {
+            sheet_rect: region,
+            values,
+        });
 
         Ok((ops, series))
     }
@@ -624,7 +627,7 @@ pub fn apply_formats(region: RegionRef, formats: &[CellFmtArray]) -> Vec<Operati
     formats
         .iter()
         .map(|format| Operation::SetCellFormats {
-            region: region.clone(),
+            sheet_rect: region.clone(),
             attr: format.clone(),
         })
         .collect()

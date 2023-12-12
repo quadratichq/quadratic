@@ -68,7 +68,7 @@ impl GridController {
             ops.extend(operations);
         }
         ops.push(Operation::SetCellValues {
-            region,
+            sheet_rect: region,
             values: array,
         });
 

@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 use super::{Duration, Instant, IsBlank};
 use crate::{
     controller::{formatting::CellFmtArray, operation::Operation},
-    grid::{CellRef, NumericDecimals, NumericFormat, NumericFormatKind, Sheet},
-    CodeResult, Error, RunLengthEncoding,
+    grid::{NumericDecimals, NumericFormat, NumericFormatKind, Sheet},
+    CodeResult, Error, RunLengthEncoding, SheetPos,
 };
 
 // todo: fill this out
@@ -383,12 +383,9 @@ impl CellValue {
     }
 
     /// Converts a string to a CellValue, updates number formatting, and returns reverse Ops
-    pub fn from_string(
-        s: &String,
-        cell_ref: CellRef,
-        sheet: &mut Sheet,
-    ) -> (CellValue, Vec<Operation>) {
+    pub fn from_string(s: &String, pos: Pos, sheet: &mut Sheet) -> (CellValue, Vec<Operation>) {
         let mut ops = vec![];
+        let pos = pos.into();
         let value: CellValue;
         // check for currency
         if let Some((currency, number)) = CellValue::unpack_currency(s) {
@@ -397,33 +394,33 @@ impl CellValue {
                 kind: NumericFormatKind::Currency,
                 symbol: Some(currency),
             };
-            if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                let (_, operations) =
-                    sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
+            let (_, operations) =
+                sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
+            if let Some(operations) = operations {
+                ops.extend(operations);
+            }
+
+            ops.push(Operation::SetCellFormats {
+                sheet_rect: pos.into(),
+                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
+                    Some(numeric_format),
+                    1,
+                )),
+            });
+
+            // only change decimals if it hasn't already been set
+            if sheet
+                .get_formatting_value::<NumericDecimals>(pos.into())
+                .is_none()
+            {
+                let (_, operations) = sheet.set_formatting_value::<NumericDecimals>(pos, Some(2));
                 if let Some(operations) = operations {
                     ops.extend(operations);
                 }
-
                 ops.push(Operation::SetCellFormats {
-                    region: cell_ref.into(),
-                    attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                        Some(numeric_format),
-                        1,
-                    )),
+                    sheet_rect: pos.into(),
+                    attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
                 });
-
-                // only change decimals if it hasn't already been set
-                if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
-                    let (_, operations) =
-                        sheet.set_formatting_value::<NumericDecimals>(pos, Some(2));
-                    if let Some(operations) = operations {
-                        ops.extend(operations);
-                    }
-                    ops.push(Operation::SetCellFormats {
-                        region: cell_ref.into(),
-                        attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
-                    });
-                }
             }
         } else if let Ok(bd) = BigDecimal::from_str(s) {
             value = CellValue::Number(bd);
@@ -433,7 +430,7 @@ impl CellValue {
                 kind: NumericFormatKind::Percentage,
                 symbol: None,
             };
-            if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
+            if let Some(pos) = sheet.cell_ref_to_pos(pos) {
                 let (_, operations) =
                     sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
                 if let Some(operations) = operations {
@@ -441,7 +438,7 @@ impl CellValue {
                 }
             }
             ops.push(Operation::SetCellFormats {
-                region: cell_ref.into(),
+                sheet_rect: pos.into(),
                 attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
                     Some(numeric_format),
                     1,

@@ -2,8 +2,8 @@ use core::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    grid::{CellRef, CodeCellValue, ColumnId, RegionRef, RowId, Sheet, SheetBorders, SheetId},
-    Array,
+    grid::{CodeCellValue, Sheet, SheetBorders, SheetId},
+    Array, Pos, SheetRect,
 };
 
 use super::formatting::CellFmtArray;
@@ -11,15 +11,15 @@ use super::formatting::CellFmtArray;
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Operation {
     SetCellValues {
-        region: RegionRef,
+        sheet_rect: SheetRect,
         values: Array,
     },
     SetCellCode {
-        cell_ref: CellRef,
+        sheet_pos: Pos,
         code_cell_value: Option<CodeCellValue>,
     },
     SetCellFormats {
-        region: RegionRef,
+        sheet_rect: SheetRect,
         attr: CellFmtArray,
     },
     AddSheet {
@@ -29,7 +29,7 @@ pub enum Operation {
         sheet_id: SheetId,
     },
     SetBorders {
-        region: RegionRef,
+        sheet_rect: SheetRect,
         borders: SheetBorders,
     },
     SetSheetName {
@@ -46,23 +46,13 @@ pub enum Operation {
     },
     ResizeColumn {
         sheet_id: SheetId,
-        column: ColumnId,
+        column: i64,
         new_size: f64,
     },
     ResizeRow {
         sheet_id: SheetId,
-        row: RowId,
+        row: i64,
         new_size: f64,
-    },
-    MapColumnId {
-        sheet_id: SheetId,
-        column_id: ColumnId,
-        index: i64,
-    },
-    MapRowId {
-        sheet_id: SheetId,
-        row_id: RowId,
-        index: i64,
     },
 }
 
@@ -120,24 +110,6 @@ impl fmt::Display for Operation {
                 sheet_id, row, new_size
             ),
             Operation::SetBorders { .. } => write!(fmt, "SetBorders {{ todo }}"),
-            Operation::MapColumnId {
-                sheet_id,
-                column_id: id,
-                index,
-            } => write!(
-                fmt,
-                "MapColumnId {{ sheet_id: {}, id: {}, index: {} }}",
-                sheet_id, id, index
-            ),
-            Operation::MapRowId {
-                sheet_id,
-                row_id: id,
-                index,
-            } => write!(
-                fmt,
-                "MapRowId {{ sheet_id: {}, id: {}, index: {} }}",
-                sheet_id, id, index
-            ),
         }
     }
 }

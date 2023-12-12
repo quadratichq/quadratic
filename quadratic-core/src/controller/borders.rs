@@ -24,7 +24,10 @@ impl GridController {
         }
         let sheet = self.sheet(sheet_id);
         let borders = generate_borders(sheet, &region, selections, style);
-        ops.push(Operation::SetBorders { region, borders });
+        ops.push(Operation::SetBorders {
+            sheet_rect: region,
+            borders,
+        });
         self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
 }

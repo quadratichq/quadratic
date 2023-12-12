@@ -207,7 +207,7 @@ mod tests {
         let (region, _) = gc.region(sheet_id, rect);
 
         Operation::SetCellValues {
-            region,
+            sheet_rect: region,
             values: Array::from(value),
         }
     }

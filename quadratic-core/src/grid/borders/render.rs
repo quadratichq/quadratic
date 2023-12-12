@@ -78,7 +78,7 @@ mod tests {
     // }
 
     mod vertical {
-        use crate::grid::set_region_borders;
+        use crate::grid::set_rect_borders;
 
         use super::*;
 
@@ -255,7 +255,7 @@ mod tests {
             let replaced =
                 set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style));
 
-            set_region_borders(&mut sheet, vec![region_2], replaced); // Undo
+            set_rect_borders(&mut sheet, vec![region_2], replaced); // Undo
             let vertical_render_after_undo = get_render_vertical_borders(&sheet);
 
             assert_eq!(
@@ -294,7 +294,7 @@ mod tests {
             let replaced =
                 set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style_2));
 
-            set_region_borders(&mut sheet, vec![region_2], replaced); // Undo
+            set_rect_borders(&mut sheet, vec![region_2], replaced); // Undo
             let vertical_render_after_undo = get_render_vertical_borders(&sheet);
 
             assert_eq!(
@@ -308,7 +308,7 @@ mod tests {
     }
 
     mod horizontal {
-        use crate::grid::set_region_borders;
+        use crate::grid::set_rect_borders;
 
         use super::*;
 
@@ -485,7 +485,7 @@ mod tests {
             let replaced =
                 set_region_border_selection(&mut sheet, &region_2, selection_2, Some(style_2));
 
-            set_region_borders(&mut sheet, vec![region_2], replaced); // Undo
+            set_rect_borders(&mut sheet, vec![region_2], replaced); // Undo
             let horizontal_render_after_undo = get_render_horizontal_borders(&sheet);
 
             assert_eq!(

@@ -201,7 +201,7 @@ impl GridController {
         let values = GridController::array_from_clipboard_cells(clipboard);
         if let Some(values) = values {
             ops.push(Operation::SetCellValues {
-                region: region.clone(),
+                sheet_rect: region.clone(),
                 values,
             });
             compute = true;
@@ -221,7 +221,7 @@ impl GridController {
                         } == pos
                     }) {
                         ops.push(Operation::SetCellCode {
-                            cell_ref,
+                            sheet_pos: cell_ref,
                             code_cell_value: None,
                         });
                         compute = true;
@@ -240,7 +240,7 @@ impl GridController {
                 ops.extend(operations);
             }
             ops.push(Operation::SetCellCode {
-                cell_ref,
+                sheet_pos: cell_ref,
                 code_cell_value: Some(entry.1.clone()),
             });
             compute = true;
@@ -248,7 +248,7 @@ impl GridController {
 
         formats.iter().for_each(|format| {
             ops.push(Operation::SetCellFormats {
-                region: region.clone(),
+                sheet_rect: region.clone(),
                 attr: format.clone(),
             });
         });
@@ -287,7 +287,10 @@ impl GridController {
 
                 let borders =
                     generate_borders_full(sheet, &region, border_selections, border_styles);
-                ops.push(Operation::SetBorders { region, borders });
+                ops.push(Operation::SetBorders {
+                    sheet_rect: region,
+                    borders,
+                });
             }
         });
 
@@ -338,7 +341,7 @@ impl GridController {
             operations.extend(ops);
         }
         operations.push(Operation::SetCellValues {
-            region,
+            sheet_rect: region,
             values: array,
         });
 
@@ -408,7 +411,7 @@ mod test {
         color::Rgba,
         controller::GridController,
         grid::{
-            generate_borders, js_types::CellFormatSummary, set_region_borders, BorderSelection,
+            generate_borders, js_types::CellFormatSummary, set_rect_borders, BorderSelection,
             BorderStyle, CellBorderLine, CodeCellLanguage, Sheet,
         },
         CellValue, Pos, Rect,
@@ -423,7 +426,7 @@ mod test {
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
         let (region, _) = sheet.region(rect);
         let borders = generate_borders(sheet, &region, selection, Some(style));
-        set_region_borders(sheet, vec![region.clone()], borders);
+        set_rect_borders(sheet, vec![region.clone()], borders);
     }
 
     #[test]
@@ -642,7 +645,7 @@ mod test {
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 });
         let (region, _) = sheet.region(rect);
         let borders = generate_borders(sheet, &region, selection, Some(style));
-        set_region_borders(sheet, vec![region.clone()], borders);
+        set_rect_borders(sheet, vec![region.clone()], borders);
 
         // weird: can't test them by comparing arrays since the order is seemingly random
         let render = gc.get_render_borders(sheet_id.to_string());

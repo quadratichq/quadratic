@@ -54,7 +54,7 @@ impl GridController {
             ops.extend(operations);
         }
         ops.push(Operation::SetCellFormats {
-            region: region.clone(),
+            sheet_rect: region.clone(),
             attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
                 Some(NumericFormat {
                     kind: NumericFormatKind::Currency,
@@ -64,7 +64,7 @@ impl GridController {
             )),
         });
         ops.push(Operation::SetCellFormats {
-            region: region.clone(),
+            sheet_rect: region.clone(),
             attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), region.len())),
         });
         self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
@@ -83,15 +83,15 @@ impl GridController {
             ops.extend(operations);
         }
         ops.push(Operation::SetCellFormats {
-            region: region.clone(),
+            sheet_rect: region.clone(),
             attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(None, region.len())),
         });
         ops.push(Operation::SetCellFormats {
-            region: region.clone(),
+            sheet_rect: region.clone(),
             attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(None, region.len())),
         });
         ops.push(Operation::SetCellFormats {
-            region: region.clone(),
+            sheet_rect: region.clone(),
             attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(None, region.len())),
         });
         self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
@@ -120,7 +120,7 @@ impl GridController {
         }
         let numeric_decimals = Some(decimals + delta as i16);
         ops.push(Operation::SetCellFormats {
-            region: region.clone(),
+            sheet_rect: region.clone(),
             attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
                 numeric_decimals,
                 region.len(),
@@ -148,7 +148,7 @@ impl GridController {
             ops.extend(operations);
         }
         ops.push(Operation::SetCellFormats {
-            region: region.clone(),
+            sheet_rect: region.clone(),
             attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(
                 Some(commas),
                 region.len(),

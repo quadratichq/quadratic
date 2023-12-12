@@ -40,7 +40,7 @@ impl GridController {
         let cell_value = self.string_to_cell_value(sheet_id, pos, value.as_str(), &mut ops);
 
         ops.push(Operation::SetCellValues {
-            region: RegionRef::from(cell_ref),
+            sheet_rect: RegionRef::from(cell_ref),
             values: Array::from(cell_value),
         });
 
@@ -72,7 +72,7 @@ impl GridController {
                 symbol: Some(currency),
             };
             ops.push(Operation::SetCellFormats {
-                region: region.clone(),
+                sheet_rect: region.clone(),
                 attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
                     Some(numeric_format),
                     1,
@@ -81,7 +81,7 @@ impl GridController {
             // only change decimal places if decimals have not been set
             if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
                 ops.push(Operation::SetCellFormats {
-                    region,
+                    sheet_rect: region,
                     attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
                 });
             }
@@ -94,7 +94,7 @@ impl GridController {
                 symbol: None,
             };
             ops.push(Operation::SetCellFormats {
-                region,
+                sheet_rect: region,
                 attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
                     Some(numeric_format),
                     1,
@@ -125,13 +125,13 @@ impl GridController {
         // remove any values that were originally over the code cell
         if sheet.get_cell_value_only(pos).is_some() {
             ops.push(Operation::SetCellValues {
-                region: RegionRef::from(cell_ref),
+                sheet_rect: RegionRef::from(cell_ref),
                 values: Array::from(CellValue::Blank),
             });
         }
 
         ops.push(Operation::SetCellCode {
-            cell_ref,
+            sheet_pos: cell_ref,
             code_cell_value: Some(CodeCellValue {
                 language,
                 code_string,
@@ -155,7 +155,7 @@ impl GridController {
         if let Some(size) = region.size() {
             let values = Array::new_empty(size);
             ops.push(Operation::SetCellValues {
-                region: region.clone(),
+                sheet_rect: region.clone(),
                 values,
             });
 
@@ -165,7 +165,7 @@ impl GridController {
             for cell_ref in sheet.code_cells.keys() {
                 if region.contains(cell_ref) {
                     ops.push(Operation::SetCellCode {
-                        cell_ref: *cell_ref,
+                        sheet_pos: *cell_ref,
                         code_cell_value: None,
                     });
                 }
@@ -194,35 +194,35 @@ impl GridController {
                 let len = region.size().unwrap().len();
                 let mut ops = vec![
                     Operation::SetCellFormats {
-                        region: region.clone(),
+                        sheet_rect: region.clone(),
                         attr: CellFmtArray::Align(RunLengthEncoding::repeat(None, len)),
                     },
                     Operation::SetCellFormats {
-                        region: region.clone(),
+                        sheet_rect: region.clone(),
                         attr: CellFmtArray::Wrap(RunLengthEncoding::repeat(None, len)),
                     },
                     Operation::SetCellFormats {
-                        region: region.clone(),
+                        sheet_rect: region.clone(),
                         attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(None, len)),
                     },
                     Operation::SetCellFormats {
-                        region: region.clone(),
+                        sheet_rect: region.clone(),
                         attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(None, len)),
                     },
                     Operation::SetCellFormats {
-                        region: region.clone(),
+                        sheet_rect: region.clone(),
                         attr: CellFmtArray::Bold(RunLengthEncoding::repeat(None, len)),
                     },
                     Operation::SetCellFormats {
-                        region: region.clone(),
+                        sheet_rect: region.clone(),
                         attr: CellFmtArray::Italic(RunLengthEncoding::repeat(None, len)),
                     },
                     Operation::SetCellFormats {
-                        region: region.clone(),
+                        sheet_rect: region.clone(),
                         attr: CellFmtArray::TextColor(RunLengthEncoding::repeat(None, len)),
                     },
                     Operation::SetCellFormats {
-                        region: region.clone(),
+                        sheet_rect: region.clone(),
                         attr: CellFmtArray::FillColor(RunLengthEncoding::repeat(None, len)),
                     },
                 ];
@@ -231,7 +231,7 @@ impl GridController {
                 let sheet = self.grid.sheet_from_id(sheet_id);
                 let borders = generate_borders(sheet, &region, vec![BorderSelection::Clear], None);
                 ops.push(Operation::SetBorders {
-                    region: region.clone(),
+                    sheet_rect: region.clone(),
                     borders,
                 });
                 ops

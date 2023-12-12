@@ -3,20 +3,20 @@ use std::collections::HashSet;
 use smallvec::SmallVec;
 
 use super::*;
-use crate::{grid::Grid, Array, CellValue, CodeResult, ErrorMsg, SheetPos, Span, Spanned, Value};
+use crate::{grid::Grid, Array, CellValue, CodeResult, ErrorMsg, Pos, Span, Spanned, Value};
 
 /// Formula execution context.
 pub struct Ctx<'ctx> {
     /// Grid file to access cells from.
     pub grid: &'ctx Grid,
     /// Position in the grid from which the formula is being evaluated.
-    pub pos: SheetPos,
+    pub pos: Pos,
     /// Cells that have been accessed in evaluating the formula.
-    pub cells_accessed: HashSet<SheetPos>,
+    pub cells_accessed: HashSet<Pos>,
 }
 impl<'ctx> Ctx<'ctx> {
     /// Constructs a context for evaluating a formula at `pos` in `grid`.
-    pub fn new(grid: &'ctx Grid, pos: SheetPos) -> Self {
+    pub fn new(grid: &'ctx Grid, pos: Pos) -> Self {
         Ctx {
             grid,
             pos,

@@ -172,12 +172,12 @@ impl GridController {
             );
 
             self.forward_operations.push(Operation::SetCellCode {
-                cell_ref,
+                sheet_pos: cell_ref,
                 code_cell_value: updated_code_cell_value,
             });
 
             self.reverse_operations.push(Operation::SetCellCode {
-                cell_ref,
+                sheet_pos: cell_ref,
                 code_cell_value: old_code_cell_value,
             });
 
@@ -335,7 +335,7 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellValue},
-        Array, ArraySize, CellValue, Pos, SheetPos, Value,
+        Array, ArraySize, CellValue, Pos, Pos, Value,
     };
 
     #[test]
@@ -379,7 +379,7 @@ mod test {
             }),
         });
 
-        let sheet_pos = SheetPos {
+        let sheet_pos = Pos {
             x: 0,
             y: 0,
             sheet_id: sheet.id,

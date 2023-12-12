@@ -283,7 +283,7 @@ mod test {
 
         gc.set_in_progress_transaction(
             vec![Operation::SetCellCode {
-                cell_ref,
+                sheet_pos,
                 code_cell_value: Some(CodeCellValue {
                     language: CodeCellLanguage::Python,
                     code_string: code_string.clone(),
@@ -509,7 +509,7 @@ mod test {
         let (cell_ref, _) = sheet.get_or_create_cell_ref(Pos { x: 1, y: 0 });
         gc.set_in_progress_transaction(
             vec![Operation::SetCellCode {
-                cell_ref,
+                sheet_pos,
                 code_cell_value: Some(CodeCellValue {
                     language: CodeCellLanguage::Formula,
                     code_string: "A0 + 1".to_string(),
@@ -548,7 +548,7 @@ mod test {
         let (cell_ref, _) = sheet.get_or_create_cell_ref(Pos { x: 1, y: 0 });
         gc.set_in_progress_transaction(
             vec![Operation::SetCellCode {
-                cell_ref,
+                sheet_pos,
                 code_cell_value: Some(CodeCellValue {
                     language: CodeCellLanguage::Formula,
                     code_string: "A0 + 1".to_string(),
@@ -566,7 +566,7 @@ mod test {
         let (cell_ref, _) = sheet.get_or_create_cell_ref(Pos { x: 2, y: 0 });
         gc.set_in_progress_transaction(
             vec![Operation::SetCellCode {
-                cell_ref,
+                sheet_pos,
                 code_cell_value: Some(CodeCellValue {
                     language: CodeCellLanguage::Formula,
                     code_string: "B0 + 1".to_string(),
@@ -597,7 +597,7 @@ mod test {
         let (cell_ref, _) = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
         gc.set_in_progress_transaction(
             vec![Operation::SetCellValues {
-                region: cell_ref.into(),
+                sheet_rect: cell_ref.into(),
                 values: CellValue::Number(1.into()).into(),
             }],
             None,
