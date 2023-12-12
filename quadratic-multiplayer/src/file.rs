@@ -28,34 +28,10 @@ pub(crate) fn apply_operations(
 
 #[cfg(test)]
 mod tests {
-    use quadratic_core::{grid::SheetId, Array, CellValue, Pos, Rect};
+    use quadratic_core::test_util::grid::assert_cell_value;
+    use quadratic_core::{Array, CellValue, Rect};
 
     use super::*;
-
-    /// Run an assertion that a cell value is equal to the given value
-    pub fn assert_cell_value(
-        grid_controller: &GridController,
-        sheet_id: SheetId,
-        x: i64,
-        y: i64,
-        value: &str,
-    ) {
-        let sheet = grid_controller.grid().sheet_from_id(sheet_id);
-        let cell_value = sheet
-            .get_cell_value(Pos { x, y })
-            .unwrap_or(CellValue::Blank);
-        let expected = if value.is_empty() {
-            CellValue::Blank
-        } else {
-            CellValue::to_cell_value(value)
-        };
-
-        assert_eq!(
-            cell_value, expected,
-            "Cell at ({}, {}) does not have the value {:?}, it's actually {:?}",
-            x, y, expected, cell_value
-        );
-    }
 
     #[test]
     fn loads_a_file() {

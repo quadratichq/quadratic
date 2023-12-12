@@ -1643,6 +1643,7 @@ dependencies = [
  "jsonwebtoken",
  "quadratic-core",
  "reqwest",
+ "rust-shared",
  "serde",
  "serde_json",
  "tokio",
@@ -1820,6 +1821,14 @@ dependencies = [
  "spin",
  "untrusted",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "rust-shared"
+version = "0.1.0"
+dependencies = [
+ "quadratic-core",
+ "tabled",
 ]
 
 [[package]]
