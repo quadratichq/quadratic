@@ -91,10 +91,10 @@ afterEach(async () => {
   await dbClient.$transaction([deleteTeamUsers, deleteUsers, deleteTeams]);
 });
 
-describe('DELETE /v0/teams/:uuid/sharing/:userId - unauthenticated requests', () => {
+describe('DELETE /v0/teams/:uuid/users/:userId - unauthenticated requests', () => {
   it('responds with a 401', async () => {
     await request(app)
-      .delete('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/1')
+      .delete('/v0/teams/00000000-0000-4000-8000-000000000001/users/1')
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
       .expect(401);
@@ -102,10 +102,10 @@ describe('DELETE /v0/teams/:uuid/sharing/:userId - unauthenticated requests', ()
 });
 
 // TODO move to a teamSharing middleware?
-describe('DELETE /v0/teams/:uuid/sharing/:userId - invalid user', () => {
+describe('DELETE /v0/teams/:uuid/users/:userId - invalid user', () => {
   it('responds with a 404 for a valid user that doesn’t exist', async () => {
     await request(app)
-      .delete('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/245')
+      .delete('/v0/teams/00000000-0000-4000-8000-000000000001/users/245')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
@@ -113,7 +113,7 @@ describe('DELETE /v0/teams/:uuid/sharing/:userId - invalid user', () => {
   });
   it('responds with a 400 for an invalid user', async () => {
     await request(app)
-      .delete('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/foo')
+      .delete('/v0/teams/00000000-0000-4000-8000-000000000001/users/foo')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
@@ -121,10 +121,10 @@ describe('DELETE /v0/teams/:uuid/sharing/:userId - invalid user', () => {
   });
 });
 
-describe('DELETE /v0/teams/:uuid/sharing/:userId - deleting yourself', () => {
+describe('DELETE /v0/teams/:uuid/users/:userId - deleting yourself', () => {
   it('allows viewers to remove themselves from a team', async () => {
     await request(app)
-      .delete(`/v0/teams/00000000-0000-4000-8000-000000000001/sharing/3`)
+      .delete(`/v0/teams/00000000-0000-4000-8000-000000000001/users/3`)
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_3`)
       .expect('Content-Type', /json/)
@@ -132,7 +132,7 @@ describe('DELETE /v0/teams/:uuid/sharing/:userId - deleting yourself', () => {
   });
   it('allows editors to remove themselves from a team', async () => {
     await request(app)
-      .delete('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/2')
+      .delete('/v0/teams/00000000-0000-4000-8000-000000000001/users/2')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_2`)
       .expect('Content-Type', /json/)
@@ -140,7 +140,7 @@ describe('DELETE /v0/teams/:uuid/sharing/:userId - deleting yourself', () => {
   });
   it('allows owners to remove themselves from a team IF there’s at least one other owner', async () => {
     await request(app)
-      .delete('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/1')
+      .delete('/v0/teams/00000000-0000-4000-8000-000000000002/users/1')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
@@ -148,7 +148,7 @@ describe('DELETE /v0/teams/:uuid/sharing/:userId - deleting yourself', () => {
   });
   it('does not allow owners to remove themselves from a team IF they’re the only one', async () => {
     await request(app)
-      .delete('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/1')
+      .delete('/v0/teams/00000000-0000-4000-8000-000000000001/users/1')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
@@ -156,10 +156,10 @@ describe('DELETE /v0/teams/:uuid/sharing/:userId - deleting yourself', () => {
   });
 });
 
-describe('DELETE /v0/teams/:uuid/sharing/:userId - deleteing others as an owner', () => {
+describe('DELETE /v0/teams/:uuid/users/:userId - deleteing others as an owner', () => {
   it('allows owners to remove other owners', async () => {
     await request(app)
-      .delete('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/2')
+      .delete('/v0/teams/00000000-0000-4000-8000-000000000002/users/2')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
@@ -167,7 +167,7 @@ describe('DELETE /v0/teams/:uuid/sharing/:userId - deleteing others as an owner'
   });
   it('allows owners to remove editors', async () => {
     await request(app)
-      .delete('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/2')
+      .delete('/v0/teams/00000000-0000-4000-8000-000000000001/users/2')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
@@ -175,7 +175,7 @@ describe('DELETE /v0/teams/:uuid/sharing/:userId - deleteing others as an owner'
   });
   it('allows owners to remove viewers', async () => {
     await request(app)
-      .delete('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/3')
+      .delete('/v0/teams/00000000-0000-4000-8000-000000000001/users/3')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
@@ -183,10 +183,10 @@ describe('DELETE /v0/teams/:uuid/sharing/:userId - deleteing others as an owner'
   });
 });
 
-describe('DELETE /v0/teams/:uuid/sharing/:userId - deleteing others as an editor', () => {
+describe('DELETE /v0/teams/:uuid/users/:userId - deleteing others as an editor', () => {
   it('doesn’t allow editors to remove owners', async () => {
     await request(app)
-      .delete('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/1')
+      .delete('/v0/teams/00000000-0000-4000-8000-000000000002/users/1')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_3`)
       .expect('Content-Type', /json/)
@@ -194,7 +194,7 @@ describe('DELETE /v0/teams/:uuid/sharing/:userId - deleteing others as an editor
   });
   it('allows editors to remove other editors', async () => {
     await request(app)
-      .delete('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/4')
+      .delete('/v0/teams/00000000-0000-4000-8000-000000000002/users/4')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_3`)
       .expect('Content-Type', /json/)
@@ -202,7 +202,7 @@ describe('DELETE /v0/teams/:uuid/sharing/:userId - deleteing others as an editor
   });
   it('allows editors to remove viewers', async () => {
     await request(app)
-      .delete('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/5')
+      .delete('/v0/teams/00000000-0000-4000-8000-000000000002/users/5')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_3`)
       .expect('Content-Type', /json/)
@@ -210,10 +210,10 @@ describe('DELETE /v0/teams/:uuid/sharing/:userId - deleteing others as an editor
   });
 });
 
-describe('DELETE /v0/teams/:uuid/sharing/:userId - deleteing others as a viewer', () => {
+describe('DELETE /v0/teams/:uuid/users/:userId - deleteing others as a viewer', () => {
   it('doesn’t allow viewers to remove owners', async () => {
     await request(app)
-      .delete('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/1')
+      .delete('/v0/teams/00000000-0000-4000-8000-000000000002/users/1')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_5`)
       .expect('Content-Type', /json/)
@@ -221,7 +221,7 @@ describe('DELETE /v0/teams/:uuid/sharing/:userId - deleteing others as a viewer'
   });
   it('doesn’t allow viewers to remove editors', async () => {
     await request(app)
-      .delete('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/3')
+      .delete('/v0/teams/00000000-0000-4000-8000-000000000002/users/3')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_5`)
       .expect('Content-Type', /json/)
@@ -229,7 +229,7 @@ describe('DELETE /v0/teams/:uuid/sharing/:userId - deleteing others as a viewer'
   });
   it('doesn’t allow viewers to remove other viewers', async () => {
     await request(app)
-      .delete('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/6')
+      .delete('/v0/teams/00000000-0000-4000-8000-000000000002/users/6')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_5`)
       .expect('Content-Type', /json/)

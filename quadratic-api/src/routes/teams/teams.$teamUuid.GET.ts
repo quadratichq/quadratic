@@ -53,7 +53,7 @@ router.get(
     });
 
     const dbUsers = dbTeam?.UserTeamRole ? dbTeam.UserTeamRole : [];
-    const dbInvitedUsers = dbTeam?.TeamInvite ? dbTeam.TeamInvite : [];
+    const dbInvites = dbTeam?.TeamInvite ? dbTeam.TeamInvite : [];
 
     const auth0UserIds = dbUsers.map(({ user: { auth0_id } }) => auth0_id);
 
@@ -88,7 +88,7 @@ router.get(
         ...(team.picture ? { picture: team.picture } : {}),
         // TODO we could put this in /sharing and just return the userCount
         users,
-        invitedUsers: dbInvitedUsers.map(({ email, role }) => ({ email, role })),
+        invites: dbInvites.map(({ email, role, id }) => ({ email, role, id })),
 
         files: [],
       },

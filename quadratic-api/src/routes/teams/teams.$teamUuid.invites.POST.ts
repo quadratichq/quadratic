@@ -15,15 +15,15 @@ const requestValidationMiddleware = validateRequestSchema(
     params: z.object({
       uuid: z.string().uuid(),
     }),
-    body: ApiSchemas['/v0/teams/:uuid/sharing.POST.request'],
+    body: ApiSchemas['/v0/teams/:uuid/invites.POST.request'],
   })
 );
 
 router.post(
-  '/:uuid/sharing',
+  '/:uuid/invites',
   requestValidationMiddleware,
   teamMiddleware,
-  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid/sharing.POST.response'] | ResponseError>) => {
+  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid/invites.POST.response'] | ResponseError>) => {
     const {
       body: { email, role },
       team: {
@@ -60,26 +60,42 @@ router.post(
       // TODO: where do we remove them from this table once they become a user?
       // TODO: write tests for this
 
-      // See if this email already exists as an invite on the team
-      const existingInvite = await dbClient.teamInvite.findFirst({
+      // TODO: figure out why this crashes the server (when adding a user in the UI)
+      // const existingInvite = await dbClient.teamInvite.findFirst({
+      //   where: {
+      //     email,
+      //     teamId,
+      //   },
+      // });
+      // console.log('exisiting invite', existingInvite);
+      // if (existingInvite) {
+      //   return res.status(409).json({ error: { message: 'User has already been invited to this team' } });
+      // }
+      // console.log('creating invite', email, role, teamId);
+      // // Invite the person!
+      // const dbInvite = await dbClient.teamInvite.create({
+      //   data: {
+      //     email,
+      //     role,
+      //     teamId,
+      //   },
+      // });
+
+      // See if this email already exists as an invite on the team and invite them
+      const dbInvite = await dbClient.teamInvite.upsert({
         where: {
-          email,
-          teamId,
+          email_teamId: {
+            email,
+            teamId,
+          },
         },
-      });
-      console.log('exisiting invite', existingInvite);
-      if (existingInvite) {
-        return res.status(409).json({ error: { message: 'User has already been invited to this team' } });
-      }
-
-      console.log('creating invite', email, role, teamId);
-
-      // Invite the person!
-      const dbInvite = await dbClient.teamInvite.create({
-        data: {
+        create: {
           email,
           role,
           teamId,
+        },
+        update: {
+          role,
         },
       });
 

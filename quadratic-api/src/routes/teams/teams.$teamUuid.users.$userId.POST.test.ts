@@ -67,10 +67,10 @@ afterEach(async () => {
   await dbClient.$transaction([deleteTeamUsers, deleteUsers, deleteTeams]);
 });
 
-// describe('POST /v0/teams/:uuid/sharing/:userId - unauthenticated requests', () => {
+// describe('POST /v0/teams/:uuid/users/:userId - unauthenticated requests', () => {
 //   it('responds with a 401', async () => {
 //     await request(app)
-//       .delete('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/1')
+//       .delete('/v0/teams/00000000-0000-4000-8000-000000000001/users/1')
 //       .set('Accept', 'application/json')
 //       .expect('Content-Type', /json/)
 //       .expect(401);
@@ -79,10 +79,10 @@ afterEach(async () => {
 
 // TODO sending bad data
 
-describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as OWNER', () => {
+describe('POST /v0/teams/:uuid/users/:userId - update yourself as OWNER', () => {
   it('responds with 204 for OWNER -> OWNER', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/1')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/users/1')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .send({ role: 'OWNER' })
@@ -91,7 +91,7 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as OWNER', () =
 
   it('rejects OWNER -> EDITOR if there’s only one OWNER on the team', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/1')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/users/1')
       .send({ role: 'EDITOR' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
@@ -100,7 +100,7 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as OWNER', () =
   });
   it('changes OWNER -> EDITOR if there’s more than one OWNER on the team', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/1')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000002/users/1')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .send({ role: 'EDITOR' })
@@ -113,7 +113,7 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as OWNER', () =
 
   it('rejects OWNER -> VIEWER if there’s only one OWNER on the team', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/1')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/users/1')
       .send({ role: 'VIEWER' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
@@ -122,7 +122,7 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as OWNER', () =
   });
   it('changes OWNER -> VIEWER if there’s more than one OWNER on the team', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/1')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000002/users/1')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .send({ role: 'VIEWER' })
@@ -134,10 +134,10 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as OWNER', () =
   });
 });
 
-describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as EDITOR', () => {
+describe('POST /v0/teams/:uuid/users/:userId - update yourself as EDITOR', () => {
   it('rejects EDITOR -> OWNER', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/2')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/users/2')
       .send({
         role: 'OWNER',
       })
@@ -148,7 +148,7 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as EDITOR', () 
   });
   it('responds with 204 for EDITOR -> EDITOR', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/2')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/users/2')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_2`)
       .send({ role: 'EDITOR' })
@@ -156,7 +156,7 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as EDITOR', () 
   });
   it('changes EDITOR -> VIEWER', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/2')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/users/2')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_2`)
       .send({ role: 'VIEWER' })
@@ -168,10 +168,10 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as EDITOR', () 
   });
 });
 
-describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as VIEWER', () => {
+describe('POST /v0/teams/:uuid/users/:userId - update yourself as VIEWER', () => {
   it('rejects VIEWER -> OWNER', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/3')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/users/3')
       .send({
         role: 'OWNER',
       })
@@ -182,7 +182,7 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as VIEWER', () 
   });
   it('rejects VIEWER -> EDITOR', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/3')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/users/3')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_3`)
       .send({ role: 'EDITOR' })
@@ -190,7 +190,7 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as VIEWER', () 
   });
   it('responds with 204 for VIEWER -> VIEWER', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/3')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/users/3')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_3`)
       .send({ role: 'VIEWER' })
@@ -198,10 +198,10 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update yourself as VIEWER', () 
   });
 });
 
-describe('POST /v0/teams/:uuid/sharing/:userId - update others as OWNER', () => {
+describe('POST /v0/teams/:uuid/users/:userId - update others as OWNER', () => {
   it('responds with 204 for OWNER -> OWNER', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/2')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000002/users/2')
       .send({ role: 'OWNER' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
@@ -209,7 +209,7 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update others as OWNER', () => 
   });
   it('changes OWNER -> EDITOR', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/2')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000002/users/2')
       .send({ role: 'EDITOR' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
@@ -221,7 +221,7 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update others as OWNER', () => 
   });
   it('changes OWNER -> VIEWER', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000002/sharing/2')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000002/users/2')
       .send({ role: 'VIEWER' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
@@ -234,7 +234,7 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update others as OWNER', () => 
 
   it('changes EDITOR -> OWNER', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/2')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/users/2')
       .send({ role: 'OWNER' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
@@ -246,7 +246,7 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update others as OWNER', () => 
   });
   it('changes EDITOR -> VIEWER', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/2')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/users/2')
       .send({ role: 'VIEWER' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
@@ -258,7 +258,7 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update others as OWNER', () => 
   });
   it('responds with 204 for EDITOR -> EDITOR', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/2')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/users/2')
       .send({ role: 'EDITOR' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
@@ -267,7 +267,7 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update others as OWNER', () => 
 
   it('changes VIEWER -> OWNER', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/3')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/users/3')
       .send({ role: 'OWNER' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
@@ -279,7 +279,7 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update others as OWNER', () => 
   });
   it('changes VIEWER -> EDITOR', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/3')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/users/3')
       .send({ role: 'EDITOR' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
@@ -291,7 +291,7 @@ describe('POST /v0/teams/:uuid/sharing/:userId - update others as OWNER', () => 
   });
   it('responds with a 204 for VIEWER -> VIEWER', async () => {
     await request(app)
-      .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing/3')
+      .post('/v0/teams/00000000-0000-4000-8000-000000000001/users/3')
       .send({ role: 'VIEWER' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)

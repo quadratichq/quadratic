@@ -27,7 +27,7 @@ type LoaderData = {
 
 export const loader = async (): Promise<LoaderData> => {
   let hasError = false;
-  const teams = await apiClient.getTeams().catch((err) => {
+  const teams = await apiClient.teams.list().catch((err) => {
     Sentry.captureException(err);
 
     hasError = true;
@@ -127,7 +127,9 @@ function Navbar() {
               (fetcher) =>
                 fetcher.state !== 'idle' &&
                 fetcher.formAction?.includes(uuid) &&
-                (fetcher.json as TeamAction['request.update-team'])?.action === 'update-team'
+                fetcher.json &&
+                typeof fetcher.json === 'object' &&
+                (fetcher.json as TeamAction['request.update-team']).intent === 'update-team'
             );
             // If it does, use its data
             if (inFlightFetcher) {
