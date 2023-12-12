@@ -58,15 +58,34 @@ router.post(
     // Nobody with an account by that email
     if (auth0Users.length === 0) {
       // TODO: where do we remove them from this table once they become a user?
-      await dbClient.teamInvite.create({
+      // TODO: write tests for this
+
+      // See if this email already exists as an invite on the team
+      const existingInvite = await dbClient.teamInvite.findFirst({
+        where: {
+          email,
+          teamId,
+        },
+      });
+      console.log('exisiting invite', existingInvite);
+      if (existingInvite) {
+        return res.status(409).json({ error: { message: 'User has already been invited to this team' } });
+      }
+
+      console.log('creating invite', email, role, teamId);
+
+      // Invite the person!
+      const dbInvite = await dbClient.teamInvite.create({
         data: {
           email,
           role,
           teamId,
         },
       });
-      // TODO: send them an invitation email
-      return res.status(201).json({ email, role, id: 100 });
+
+      // TODO: send the invited person an email
+
+      return res.status(201).json({ email, role, id: dbInvite.id });
     }
 
     // Somebody with that email already has an account
@@ -114,6 +133,8 @@ router.post(
     }
 
     // TODO:, how should we handle duplicate email?
+    // TODO: don't allow people to create multiple accounts with one email in auth0
+    // TODO: talk to David K.
     return res.status(500).json({ error: { message: 'Internal server error: duplicate email' } });
   }
 );
