@@ -4,7 +4,6 @@ use serde::Serialize;
 use std::collections::HashMap;
 use uuid::Uuid;
 
-use crate::file::load_file;
 use crate::state::{user::User, State};
 use crate::{get_mut_room, get_or_create_room, get_room};
 
@@ -18,12 +17,12 @@ pub(crate) struct Room {
 
 impl Room {
     pub(crate) fn new(file_id: Uuid) -> Self {
-        let file = r#"{"sheets":[{"id":{"id":"168ac41d-3ab8-4f3b-9b0d-a906766590d3"},"name":"Sheet 1","color":null,"order":"a0","offsets":[[],[]],"columns":[[0,{"id":{"id":"f8500c57-a379-4599-9628-258248847301"},"values":{"0":{"y":0,"content":{"Values":[{"type":"text","value":"hell"}]}}},"spills":{},"align":{},"wrap":{},"numeric_format":{},"numeric_decimals":{},"numeric_commas":{},"bold":{},"italic":{},"text_color":{},"fill_color":{},"render_size":{}}]],"rows":[[0,{"id":"cdbd5e9c-232c-4d43-abbe-10de3fce6fa1"}]],"borders":{},"code_cells":[]}],"version":"1.4"}"#;
-        tracing::info!("Loading file {}", file);
         Room {
             file_id,
             users: HashMap::new(),
-            grid: GridController::from_grid(load_file(file).unwrap()),
+            grid: GridController::new(),
+            // TODO(ddimaria): load the grid from the file
+            // grid: GridController::from_grid(load_file(file).unwrap()),
         }
     }
 }

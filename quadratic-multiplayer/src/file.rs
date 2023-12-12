@@ -16,10 +16,6 @@ pub(crate) fn apply_string_operations(
 
     let operations: Vec<Operation> = serde_json::from_str(&operations)?;
 
-    for operation in operations.clone().into_iter() {
-        tracing::trace!("Applying operation: {:?}", operation);
-    }
-
     apply_operations(grid, operations)
 }
 
