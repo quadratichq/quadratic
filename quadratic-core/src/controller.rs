@@ -83,24 +83,7 @@ impl GridController {
     pub fn from_grid(grid: Grid) -> Self {
         GridController {
             grid,
-
-            transaction_in_progress: false,
-            reverse_operations: vec![],
-            cells_updated: IndexSet::new(),
-            cells_to_compute: IndexSet::new(),
-            cursor: None,
-            cells_accessed: HashSet::new(),
-            summary: TransactionSummary::default(),
-            sheets_with_changed_bounds: HashSet::new(),
-            transaction_type: TransactionType::Normal,
-            has_async: false,
-            current_cell_ref: None,
-            waiting_for_async: None,
-            complete: false,
-            forward_operations: vec![],
-
-            undo_stack: vec![],
-            redo_stack: vec![],
+            ..Default::default()
         }
     }
     pub fn grid(&self) -> &Grid {

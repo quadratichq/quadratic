@@ -33,3 +33,6 @@ sudo systemctl enable quadratic-multiplayer
 # sudo systemctl start quadratic-multiplayer
 # view logs of service
 # journalctl -u quadratic-multiplayer.service
+
+echo 'Install Data Dog Agent'
+DD_ENV={{DD_ENV}} DD_API_KEY={{DD_API_KEY}} DD_SITE="us5.datadoghq.com" DD_APM_INSTRUMENTATION_ENABLED=host bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script_agent7.sh)"

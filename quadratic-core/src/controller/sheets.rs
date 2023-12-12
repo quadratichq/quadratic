@@ -16,10 +16,6 @@ impl GridController {
         self.grid.sheet_from_id(sheet_id)
     }
 
-    pub fn try_sheet(&self, sheet_id: SheetId) -> Option<&Sheet> {
-        self.grid.try_sheet_from_id(sheet_id)
-    }
-
     pub fn set_sheet_name(
         &mut self,
         sheet_id: SheetId,

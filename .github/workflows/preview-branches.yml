@@ -10,7 +10,9 @@ on:
 
 
 jobs:
-  multiplayer_preview:
+
+  infra:
+    name: Create or Update Infrastructure with Pulumi
     runs-on: ubuntu-latest-8-cores 
     steps:
     - uses: actions/checkout@v4
@@ -18,6 +20,49 @@ jobs:
       with:
         node-version: 18
     - uses: pulumi/actions@v4
+
+    - name: Update Pulumi Infrastructure
+      id: pulumiInfra
+      working-directory: infra
+      run: |
+        npm ci
+        
+        STACK_NAME="preview-pr-${{ env.PR_ID }}"
+        if ! pulumi stack ls | grep -q "^$STACK_NAME"; then
+          echo "Stack $STACK_NAME does not exist. Initializing..."
+          pulumi stack init $STACK_NAME
+        else
+          echo "Stack $STACK_NAME already exists."
+          pulumi stack select $STACK_NAME
+        fi
+
+        pulumi config set aws:region us-west-2
+        pulumi config set domain quadratic-preview.com
+        pulumi config set subdomain multiplayer-pr-${{ env.PR_ID }}
+        pulumi config set data-dog-env preview
+        pulumi config set data-dog-api-key ${{ env.DD_API_KEY }}
+
+        pulumi up -y
+        echo "MULTIPLAYER_INSTANCE_DNS=$(pulumi stack output multiplayerInstanceDns)" >> "$GITHUB_OUTPUT"
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        PR_ID: ${{ github.event.pull_request.number }}
+        DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+    outputs:
+      MULTIPLAYER_INSTANCE_DNS: ${{ steps.pulumiInfra.outputs.MULTIPLAYER_INSTANCE_DNS }}
+
+
+  multiplayer_preview:
+    needs: infra
+    runs-on: ubuntu-latest-8-cores 
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
 
     - name: Set up Rust
       uses: moonrepo/setup-rust@v1
@@ -33,70 +78,25 @@ jobs:
         sudo apt-get install -y pkg-config
 
     - name: Build quadratic-multiplayer
+      working-directory: quadratic-multiplayer
       run: |
-        cd quadratic-multiplayer
         cargo build --release
 
-    - name: Update Pulumi Infrastructure
-      working-directory: infra
-      run: |
-        npm ci
-        pulumi stack select preview
-        pulumi config set aws:region us-west-2
-        pulumi up -y
-        echo "EC2_URL=$(pulumi stack output publicDns)" >> $GITHUB_ENV
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-
-    - name: Set up SSH Key
+    - name: Deploy Multiplayer to EC2
+      run: ./infra/multiplayer/deploy-multiplayer-service.sh
       env:
         EC2_KEY_PEM: ${{ secrets.EC2_KEY_PEM }}
-      run: |
-        mkdir -p ~/.ssh
-        echo "$EC2_KEY_PEM" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        # Your SSH-based commands here, e.g., scp, ssh
-
-    - name: Check EC2 Instance Availability
-      run: |
-        timeout=300 # 5 minutes
-        elapsed=0
-        echo "Checking EC2 instance availability..."
-        while ! ssh -o "StrictHostKeyChecking=no" -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_URL }} "echo 'EC2 instance is up and running'" && [ $elapsed -lt $timeout ]; do
-          echo "Waiting for EC2 instance to be available..."
-          sleep 10
-          elapsed=$((elapsed + 10))
-        done
-        if [ $elapsed -ge $timeout ]; then
-          echo "Timeout waiting for EC2 instance to become available"
-          exit 1
-        fi
-        echo "EC2 instance is available"
-
-    - name: Transfer Build to EC2
-      run: | 
-        scp -i ~/.ssh/id_rsa quadratic-multiplayer/target/release/quadratic-multiplayer ubuntu@${{ env.EC2_URL }}:/home/ubuntu/
-
-    - name: Restart Application on EC2
-      run: |
-        ssh -i ~/.ssh/id_rsa ubuntu@${{ env.EC2_URL }} "sudo systemctl restart quadratic-multiplayer"
-
-
-  # - name: Upload artifact
-  #   uses: actions/upload-artifact@v2
-  #   with:
-  #     name: quadratic-multiplayer-x64
-  #     path: target/release/quadratic-multiplayer
+        EC2_INSTANCE_DNS: ${{needs.infra.outputs.MULTIPLAYER_INSTANCE_DNS}}
 
   # client_preview:
-  #   runs-on: ubuntu-latest-8-cores
+  #   needs: infra
+  #   runs-on: ubuntu-latest-8-cores 
   #   steps:
   #   - uses: actions/checkout@v4
   #   - uses: actions/setup-node@v4
   #     with:
   #       node-version: 18
+
   #   - name: Set up Rust
   #     uses: moonrepo/setup-rust@v1
   #     with:
@@ -105,14 +105,10 @@ jobs:
   #     with:
   #       version: 'latest'
 
-  #   - name: Install Dependencies
+  #   - name: Build Client
+  #     working-directory: quadratic-client
   #     run: |
-  #       cd quadratic-client
-  #       npm install
-
-  #   - name: Build
-  #     run: |
-  #       cd quadratic-client
+  #       npm ci
   #       npm run build:wasm:javascript
   #       npm run build:wasm:types
   #       npm run build
@@ -125,25 +121,16 @@ jobs:
   #       VITE_AUTH0_ISSUER: ${{ secrets.VITE_AUTH0_ISSUER }}
   #       VITE_AUTH0_DOMAIN: ${{ secrets.VITE_AUTH0_DOMAIN }}
 
-    # - name: Deploy to AWS S3
-    #   run: aws s3 sync dist s3://quadratic-preview-branches --delete
-    #   env:
-    #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #   # Set up AWS credentials
+  #   - name: Set up AWS credentials
+  #     uses: aws-actions/configure-aws-credentials@v1
+  #     with:
+  #       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #       aws-region: your-aws-region
 
-    # - name: Invalidate CloudFront Distribution
-    #   run: aws cloudfront create-invalidation --distribution-id your-distribution-id --paths "/*"
-    #   env:
-    #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  # # Deploy to S3
+  # - name: Deploy to S3
+  #   run: |
+  #     aws s3 sync ./path-to-your-static-files/ s3://your-s3-bucket-name --delete
 
-    # - name: Post Deployment URL to PR
-    #   if: github.event_name == 'pull_request'
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #     DEPLOY_URL: "https://your-cloudfront-distribution-url.com/prs/${{ github.head_ref }}"
-    #   run: |
-    #     PR_COMMENT="Deployment is ready! 🚀\n\nPreview: $DEPLOY_URL"
-    #     PAYLOAD=$(echo '{}' | jq --arg body "$PR_COMMENT" '.body = $body')
-    #     COMMENTS_URL=$(jq -r .pull_request.comments_url < "$GITHUB_EVENT_PATH")
-    #     curl -s -S -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" --data "$PAYLOAD" "$COMMENTS_URL"

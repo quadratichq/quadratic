@@ -1,4 +1,5 @@
 use fake::faker::filesystem::en::FilePath;
+use fake::faker::internet::en::FreeEmail;
 use fake::faker::name::en::{FirstName, LastName};
 use fake::Fake;
 use futures::stream::StreamExt;
@@ -31,9 +32,7 @@ pub(crate) fn new_user() -> User {
         user_id: Uuid::new_v4().to_string(),
         first_name: FirstName().fake(),
         last_name: LastName().fake(),
-
-        // todo: get faker to work with email (DSF: couldn't get a string back :( )
-        email: "email".to_string(),
+        email: FreeEmail().fake(),
         state: UserState {
             sheet_id: Uuid::new_v4(),
             selection: "".to_string(),
