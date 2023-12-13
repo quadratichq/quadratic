@@ -1,28 +1,29 @@
-// TODO: incorporate team access to this modal, e.g. viewer can't invite people
-import { TYPE } from '@/constants/appConstants';
+import { ROUTES } from '@/constants/routes';
+import { Action as FileShareAction } from '@/routes/files.$uuid.sharing';
 import { TeamAction } from '@/routes/teams.$teamUuid';
-import { Button as Button2 } from '@/shadcn/ui/button';
+import { Button } from '@/shadcn/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
 import { Input } from '@/shadcn/ui/input';
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/shadcn/ui/select';
-import { cn } from '@/shadcn/utils';
-import { Avatar, Skeleton, Typography } from '@mui/material';
-import { EnvelopeClosedIcon, GlobeIcon, LockClosedIcon, PersonIcon } from '@radix-ui/react-icons';
-import { ApiTypes, PublicLinkAccess, UserRoleFileSchema } from 'quadratic-shared/typesAndSchemas';
-import React, { Children, useRef } from 'react';
-import { useFetcher, useFetchers, useParams, useSearchParams, useSubmit } from 'react-router-dom';
-import { UserRoleTeam } from '../permissions';
+import { Skeleton } from '@/shadcn/ui/skeleton';
+import { isJsonObject } from '@/utils/isJsonObject';
+import { Avatar } from '@mui/material';
+import { EnvelopeClosedIcon, GlobeIcon, LockClosedIcon } from '@radix-ui/react-icons';
+import {
+  ApiSchemas,
+  ApiTypes,
+  PublicLinkAccess,
+  UserRoleFile,
+  UserRoleTeam,
+  UserRoleTeamSchema,
+} from 'quadratic-shared/typesAndSchemas';
+import React, { Children, FormEvent, useEffect, useRef, useState } from 'react';
+import { useFetcher, useFetchers, useParams, useSubmit } from 'react-router-dom';
 import { AvatarWithLetters } from './AvatarWithLetters';
 import { getTeamUserOption } from './ShareMenu.utils';
+import { Type } from './Type';
 
-// Possible values: `?share` | `?share=team-created`
-export const shareSearchParamKey = 'share';
-export const shareSearchParamValuesById = {
-  OPEN: '',
-  TEAM_CREATED: 'team-created',
-};
-
-function getRoleLabel(role: string) {
+function getRoleLabel(role: UserRoleTeam | UserRoleFile | 'DELETE') {
   if (role === 'OWNER') {
     return 'Owner';
   } else if (role === 'EDITOR') {
@@ -39,16 +40,18 @@ function getRoleLabel(role: string) {
   return 'Can edit';
 }
 
-// Simplified type definitions
-type JsonPrimitive = string | number | boolean | null;
-type JsonArray = Array<JsonValue>;
-interface JsonObject {
-  [key: string]: JsonValue;
-}
-type JsonValue = JsonPrimitive | JsonObject | JsonArray;
-// Type guard to check if a value is a JsonObject
-function isJsonObject(value: any): value is JsonObject {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+export function ShareDialog({ onClose, title, description, children }: any) {
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader className={`mr-6 overflow-hidden`}>
+          <DialogTitle className={`truncate`}>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <div className={`-mx-4 flex flex-col gap-4 px-4`}>{children}</div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export function ShareTeamDialog({
@@ -90,24 +93,21 @@ export function ShareTeamDialog({
     });
 
   // Get all emails of users and pending invites so user can't input them
-  const currentTeamEmails = sortedUsers.map((user) => user.email).concat(pendingInvites.map((invite) => invite.email));
+  const exisitingTeamEmails = [
+    ...sortedUsers.map((user) => user.email),
+    ...invites.map((invite) => invite.email),
+    ...pendingInvites.map((invite) => invite.email),
+  ];
+
+  // TODO: combine into one list that's sorted by date added
 
   return (
-    <ShareDialog title={`Share ${name}`} description="Invite people to collaborate in this team" onClose={() => {}}>
-      <InviteUser
-        onInviteUser={({ email, role }: any) => {
-          // setPendingInvites((prev) => [...prev, { email, role }]);
-        }}
-        canInviteOwner={loggedInUser.role === 'OWNER' && numberOfOwners > 1}
-        actionUrl={`/teams/${uuid}`}
-        userEmails={currentTeamEmails}
-        loggedInUser={loggedInUser}
-      />
+    <ShareDialog title={`Share ${name}`} description="Invite people to collaborate in this team" onClose={onClose}>
+      <InviteUser formAction={`/teams/${uuid}`} exisitingTeamEmails={exisitingTeamEmails} loggedInUser={loggedInUser} />
 
       {sortedUsers.map((user, i) => (
         <ManageUser key={user.id} numberOfOwners={numberOfOwners} loggedInUser={loggedInUser} user={user} />
       ))}
-
       {invites.map((invite) => (
         <ManageInvite key={invite.id} invite={invite} loggedInUser={loggedInUser} />
       ))}
@@ -119,166 +119,165 @@ export function ShareTeamDialog({
 }
 
 export function ShareFileDialog({ uuid, name, onClose, fetcherUrl }: any) {
-  const isLoading = false;
+  const fetcher = useFetcher();
+  const isLoading = !fetcher.data;
+  let publicLinkAccess = isLoading ? '' : fetcher.data.data.public_link_access;
+
+  // const isShared = publicLinkAccess && publicLinkAccess !== 'NOT_SHARED';
+  // const isDisabledCopyShareLink = isLoading ? true : !isShared;
+  // const showLoadingError = fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok;
+  // const isFile = fetcherUrl.includes('/files/');
+  // const canEdit = true; // TODO fetcher.data.permission.access.includes('FILE_EDIT');;
+
+  // On the initial mount, load the data (if it's not there already)
+  useEffect(() => {
+    if (fetcher.state === 'idle' && !fetcher.data) {
+      fetcher.load(ROUTES.FILES_SHARE(uuid));
+    }
+  }, [fetcher, uuid]);
 
   // TODO: get file name from fetched data
   return (
-    <ShareDialog title={`Share ${name}`} description="Invite people to collaborate on this file" onClose={() => {}}>
+    <ShareDialog title={`Share ${name}`} description="Invite people to collaborate on this file" onClose={onClose}>
       {isLoading ? (
         <ListItemLoading />
       ) : (
         <>
-          <InviteUser
-            onInviteUser={() => {}}
-            canInviteOwner={false}
-            actionUrl={`/files/${uuid}/sharing`}
-            userEmails={[]}
+          {/* <InviteUser
+            formAction={`/files/${uuid}/sharing`}
+            exisitingTeamEmails={[]}
+            // @ts-expect-error fix later
             loggedInUser={{}}
-          />
-          <ListItemPublicLink fetcherUrl={fetcherUrl} publicLinkAccess={'EDIT'} />
-          <ListItemTeamMember teamName={'TODO:'} />
+          /> */}
+          <PublicLink uuid={uuid} publicLinkAccess={publicLinkAccess} />
+          {/* <ListItemTeamMember teamName={'TODO:'} /> */}
         </>
       )}
     </ShareDialog>
   );
 }
 
-export function ShareDialog({ onClose, title, description, children }: any) {
-  return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader className={`mr-6 overflow-hidden`}>
-          <DialogTitle className={`truncate`}>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <div className={`flex flex-col gap-4`}>{children}</div>
-      </DialogContent>
-    </Dialog>
-  );
-}
+// function ListItemTeamMember({ teamName }: { teamName: string }) {
+//   return (
+//     <ListItem>
+//       <div className={`flex h-6 w-6 items-center justify-center`}>
+//         <PersonIcon className={`h-5 w-5`} />
+//       </div>
+//       <Type variant="body2">Everyone in {teamName} can access this file</Type>
+//     </ListItem>
+//   );
+// }
 
-function ListItemTeamMember({ teamName }: { teamName: string }) {
-  return (
-    <ListItem>
-      <div className={`flex h-6 w-6 items-center justify-center`}>
-        <PersonIcon className={`h-5 w-5`} />
-      </div>
-      <p className={`${TYPE.body2}`}>Everyone in {teamName} can access this file</p>
-    </ListItem>
-  );
-}
-
-type InviteUserProps = {
-  loggedInUser: any; // ApiTypes['/v0/teams/:uuid.GET.response'];
-  onInviteUser: (user: { email: string; role: string }) => void;
-  userEmails: string[];
-  actionUrl: string;
-  canInviteOwner: boolean;
-
-  // userRoles: Array<{ label: string; value: string }>;
-};
-export function InviteUser({ loggedInUser, userEmails, actionUrl, canInviteOwner, onInviteUser }: InviteUserProps) {
-  // **** INVITE
-  // const [error, setError] = useState<string>('');
-  // const [role, setRole] = useState<z.infer<typeof RoleSchema>>(RoleSchema.enum.EDITOR);
-  const [searchParams, setSearchParams] = useSearchParams();
-  // const submit = useSubmit();
-  // TODO comma separate list someday
-
-  // https://stackoverflow.com/a/9204568
-  // const reg = /\S+@\S+\.\S+/;
-  // const isValidEmail = reg.test(email);
-  // let disabled = false;
-  // if (!isValidEmail || error) {
-  //   disabled = true;
-  // }
-
-  // TODO proper form validation based on schema etc
-
-  const options = [
-    // TODO: if can invite owner, allow here
-    // TODO: context: team/file and proper enums
-    { label: 'Can edit', value: UserRoleFileSchema.enum.EDITOR },
-    { label: 'Can view', value: UserRoleFileSchema.enum.VIEWER },
-    // ...(canInviteOwner ? { label: 'Owner', value: UserRoleFileSchema.enum.OWNER } : {}),
-  ];
+export function InviteUser({
+  exisitingTeamEmails,
+  formAction,
+  loggedInUser,
+}: {
+  exisitingTeamEmails: string[];
+  formAction: string;
+  loggedInUser: ApiTypes['/v0/teams/:uuid.GET.response']['user'];
+}) {
+  const [error, setError] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
   const submit = useSubmit();
+  const deleteTriggered =
+    useFetchers().filter(
+      (fetcher) =>
+        fetcher.state === 'submitting' &&
+        // @ts-expect-error
+        (fetcher.json?.intent === 'delete-team-user' || fetcher.json?.intent === 'delete-team-invite')
+    ).length > 0;
 
-  // **** INVITE
+  const { EDITOR, VIEWER } = UserRoleTeamSchema.enum;
+  const roles = [
+    // TODO:(enhancement) allow inviting owners, which requires backend support
+    EDITOR,
+    VIEWER,
+  ];
+
+  const onSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    // If there's an exisiting error, don't submit
+    if (error) {
+      return;
+    }
+
+    // Get the data from the form
+    const formData = new FormData(e.currentTarget);
+    const payload = Object.fromEntries(formData) as TeamAction['request.create-team-invite']['payload'];
+
+    // Validate email
+    try {
+      ApiSchemas['/v0/teams/:uuid/invites.POST.request'].shape.email.parse(payload.email);
+    } catch (e) {
+      setError('Invalid email');
+      return;
+    }
+
+    // Submit the data
+    const data: TeamAction['request.create-team-invite'] = {
+      intent: 'create-team-invite',
+      payload,
+    };
+    submit(data, { method: 'POST', action: formAction, encType: 'application/json', navigate: false });
+
+    // Reset the email input & focus it
+    if (inputRef.current) {
+      inputRef.current.value = '';
+      inputRef.current.focus();
+    }
+  };
+
+  // Manage focus if a delete is triggered
+  useEffect(() => {
+    if (deleteTriggered) {
+      inputRef.current?.focus();
+    }
+  }, [deleteTriggered]);
 
   return (
-    <form
-      className={`flex flex-row items-start gap-2`}
-      onSubmit={(e) => {
-        e.preventDefault();
-
-        const formData = new FormData(e.currentTarget);
-        const payload = Object.fromEntries(formData) as TeamAction['request.create-team-invite']['payload'];
-        // onInviteUser(payload);
-
-        // TODO: validate
-
-        // TODO: types for different contexts
-        const data: TeamAction['request.create-team-invite'] = {
-          intent: 'create-team-invite',
-          payload,
-        };
-        submit(data, { method: 'POST', action: actionUrl, encType: 'application/json', navigate: false });
-
-        // Reset the input & focus
-        if (inputRef.current) {
-          inputRef.current.value = '';
-          inputRef.current.focus();
-        }
-
-        // If we have ?share=team-created, turn it into just ?share
-        if (searchParams.get(shareSearchParamKey) === shareSearchParamValuesById.TEAM_CREATED) {
-          setSearchParams((prevParams: URLSearchParams) => {
-            const newParams = new URLSearchParams(prevParams);
-            newParams.set(shareSearchParamKey, '');
-            return newParams;
-          });
-        }
-      }}
-    >
-      <Input
-        // error={Boolean(error)}
-        // helperText={error ? error : ''}
-        className="flex-grow"
-        autoComplete="off"
-        aria-label="Email"
-        placeholder="Email"
-        name="email"
-        autoFocus
-        ref={inputRef}
-        // onChange={(e) => {
-        //   const newEmail = e.target.value;
-        //   setEmail(newEmail);
-        //   if (users.map((user: any) => user.email).includes(newEmail)) {
-        //     setError('User already invited');
-        //   } else if (error) {
-        //     setError('');
-        //   }
-        // }}
-      />
+    <form className={`flex flex-row items-start gap-2`} onSubmit={onSubmit}>
+      <div className="flex flex-grow flex-col">
+        <Input
+          autoComplete="off"
+          aria-label="Email"
+          placeholder="Email"
+          name="email"
+          autoFocus
+          ref={inputRef}
+          onChange={(e) => {
+            const email = e.target.value;
+            if (exisitingTeamEmails.includes(email)) {
+              setError('Email exists in team');
+            } else {
+              setError('');
+            }
+          }}
+        />
+        {error && (
+          <Type variant="formError" className="mt-1">
+            {error}
+          </Type>
+        )}
+      </div>
 
       <div className="flex-shrink-0">
-        <Select defaultValue={options[0].value} name="role">
+        <Select defaultValue={roles[0]} name="role">
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {options.map(({ label, value }, key) => (
-              <SelectItem key={value} value={value}>
-                {label}
+            {roles.map((role) => (
+              <SelectItem key={role} value={role}>
+                {getRoleLabel(role)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      <Button2 type="submit">Invite</Button2>
+      <Button type="submit">Invite</Button>
     </form>
   );
 }
@@ -355,11 +354,13 @@ function UserBase({ avatar, primary, secondary, action, hasError, isLoggedInUser
     <ListItem>
       <div>{avatar}</div>
       <div className={`flex flex-col`}>
-        <div className={`${TYPE.body2}`}>
+        <Type variant="body2">
           {primary} {isLoggedInUser && ' (You)'}
-        </div>
+        </Type>
         {secondary && (
-          <div className={cn(TYPE.caption, hasError ? 'text-destructive' : 'text-muted-foreground')}>{secondary}</div>
+          <Type variant="caption" className={hasError ? 'text-destructive' : 'text-muted-foreground'}>
+            {secondary}
+          </Type>
         )}
       </div>
 
@@ -483,212 +484,27 @@ function ManageUser({
 function ListItemLoading() {
   return (
     <ListItem>
-      <Skeleton variant="circular" animation="pulse" width={24} height={24} />
-      <Skeleton width={160} />
-      <Skeleton width={120} />
+      <Skeleton className={`h-6 w-6 rounded-full`} />
+      <Skeleton className={`h-4 w-40 rounded-sm`} />
+      <Skeleton className={`rounded- h-4 w-28 rounded-sm`} />
     </ListItem>
   );
 }
 
-// function ShareMenu({ fetcherUrl, uuid }: { fetcherUrl: string; uuid: string }) {
-//   const theme = useTheme();
-//   const fetcher = useFetcher();
-
-//   const [users, setUsers] = useState([]); // TODO types
-//   const isLoading = Boolean(!fetcher.data?.ok);
-//   // const owner = fetcher.data?.data?.owner;
-//   const publicLinkAccess = fetcher.data?.data?.public_link_access;
-//   // const isShared = publicLinkAccess && publicLinkAccess !== 'NOT_SHARED';
-//   // const isDisabledCopyShareLink = showSkeletons ? true : !isShared;
-//   const showLoadingError = fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok;
-//   // const isFile = fetcherUrl.includes('/files/');
-//   const canEdit = true; // TODO fetcher.data.permission.access.includes('FILE_EDIT');;
-
-//   // On the initial mount, load the data (if it's not there already)
-//   useEffect(() => {
-//     if (fetcher.state === 'idle' && !fetcher.data) {
-//       fetcher.load(fetcherUrl);
-//     }
-//   }, [fetcher, fetcherUrl]);
-
-//   return (
-//     <ShareMenu.Wrapper>
-//       {showLoadingError && (
-//         <Alert
-//           severity="error"
-//           action={
-//             <Button
-//               color="inherit"
-//               size="small"
-//               onClick={() => {
-//                 fetcher.load(fetcherUrl);
-//               }}
-//             >
-//               Reload
-//             </Button>
-//           }
-//           sx={{
-//             // Align the alert so it's icon/button match each row item
-//             px: theme.spacing(3),
-//             mx: theme.spacing(-3),
-//           }}
-//         >
-//           Failed to retrieve sharing info. Try reloading.
-//         </Alert>
-//       )}
-
-//       {false && canEdit && (
-//         <ShareMenu.Invite
-//           onInvite={({ email, role }) => {
-//             // @ts-expect-error
-//             setUsers((prev: any) => [...prev, { email, role }]);
-//           }}
-//           userEmails={users.map(({ email }) => email)}
-//         />
-//       )}
-
-//       {isLoading ? (
-//         <>
-//           <Row>
-//             <Loading />
-//           </Row>
-//         </>
-//       ) : (
-//         <>
-//           {canEdit && (
-//             <>
-//               <Row>
-//                 <PublicLink fetcherUrl={fetcherUrl} publicLinkAccess={publicLinkAccess} />
-//               </Row>
-//               {/* TODO <Row>Team</Row> */}
-//             </>
-//           )}
-//           {/* <UserListItem users={users} user={owner} isOwner={isOwner} /> */}
-//         </>
-//       )}
-//     </ShareMenu.Wrapper>
-//   );
-// }
-
-// function Users({
-//   users,
-//   loggedInUser,
-//   onUpdateUser,
-//   onDeleteUser,
-// }: {
-//   users: any /* TODO */;
-//   loggedInUser: { email: string; role: Role; access: Access[] };
-//   onUpdateUser: (user: any /* TODO UserShare */) => void;
-//   onDeleteUser: (user: any /* TODO UserShare */) => void;
-// }) {
-//   const [searchParams] = useSearchParams();
-//   const shareValue = searchParams.get(shareSearchParamKey);
-//   const showTeamCreatedMessage = shareValue === shareSearchParamValuesById.TEAM_CREATED;
-
-//   const theme = useTheme();
-
-//   // TODO export search param values
-//   // TODO make the query param disappear when you add things
-
-//   return (
-//     <>
-//       {users.map((user: any, i: number) => {
-//         return (
-//           <UserListItem
-//             key={user.email}
-//             users={users}
-//             loggedInUser={loggedInUser}
-//             user={user}
-//             onUpdateUser={onUpdateUser}
-//             onDeleteUser={onDeleteUser}
-//           />
-//         );
-//       })}
-
-//       {showTeamCreatedMessage && (
-//         <Stack
-//           sx={{
-//             p: '1rem',
-//             position: 'relative',
-//             alignItems: 'center',
-//             borderTop: `1px dotted ${theme.palette.divider}`,
-//             // background: 'lightyellow',
-//             // mt: '.5rem',
-//           }}
-//         >
-//           <CelebrationOutlined sx={{ color: 'text.disabled', my: '.5rem' }} />
-//           <Typography variant="body1" color="text.secondary">
-//             Team created
-//           </Typography>
-//           <Typography variant="body2" color="text.secondary">
-//             Invite people to your team to collaborate on files.
-//           </Typography>
-//           {/* <IconButton sx={{ position: 'absolute', top: '.25rem', right: '.25rem', fontSize: '.875rem' }}>
-//           <Close fontSize={'inherit'} />
-//         </IconButton> */}
-//         </Stack>
-//       )}
-//     </>
-//   );
-// }
-
-/*
-function InviteOptions({ includeOwner, includeEditor, includeViewer, includeRemove, value, setValue }: { includeOwner:boolean, includeEditor: boolean, includeViewer: boolean; includeRemove: boolean; }) {
-  let options = [];
-  if (includeOwner) {
-    options.push({ label: 'Owner', value: PermissionSchema.enum.OWNER });
-  }
-  if (includeEditor) {}
-  return <ShareFileMenuPopover></ShareFileMenuPopover>
-}
-
-
-AddUserOptions: file & team
-  userPermission: isOwner -  Can edit, Can view
-  userPermission: isEditor - Can edit, Can view
-  userPermission: isViewer - Can view
-
-UpdateUserOptions: file & team
-  userPermission: isOwner - Owner??, Can edit, Can view, Remove, Resend
-  userPermission: isEditor - Can edit, Can view, Remove, Resend
-  userPermission: isViewer - Can view
-
-<ShareItem.Wrapper>
-  <ShareItem.AddUser>
-  <ShareItem.FilePublicLink>
-  <ShareItem.Team>
-  <ShareItem.User user={User}>
-
-<ShareMenu.Invite>
-  <ShareMenu.InviteOptionEditor onClick={}>
-  <ShareMenu.InviteOptionEditor>
-*/
-
-export type ShareMenuInviteCallback = { email: string; role: UserRoleTeam /* TODO */ };
-
-function ListItemPublicLink({
-  publicLinkAccess,
-  fetcherUrl,
-}: {
-  publicLinkAccess: PublicLinkAccess | undefined;
-  fetcherUrl: string;
-}) {
+function PublicLink({ uuid, publicLinkAccess }: { uuid: string; publicLinkAccess: PublicLinkAccess }) {
   const fetcher = useFetcher();
+  const fetcherUrl = ROUTES.FILES_SHARE(uuid);
 
-  // If we don’t have the value, assume 'not shared' by default because we need
-  // _some_ value for the popover
-  let public_link_access = publicLinkAccess ? publicLinkAccess : 'NOT_SHARED';
   // If we're updating, optimistically show the next value
-  if (fetcher.json) {
-    // @ts-expect-error
-    public_link_access = fetcher.json.public_link_access;
-    // public_link_access = fetcher.json /*TODO as Action['request.update-public-link-access'] */.public_link_access;
+  if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
+    const data = fetcher.json as FileShareAction['request.update-public-link-access'];
+    publicLinkAccess = data.payload.public_link_access;
   }
 
   const setPublicLinkAccess = async (newValue: PublicLinkAccess) => {
-    const data /*TODO : Action['request.update-public-link-access'] */ = {
-      action: 'update-public-link-access',
-      public_link_access: newValue,
+    const data: FileShareAction['request.update-public-link-access'] = {
+      intent: 'update-public-link-access',
+      payload: { public_link_access: newValue },
     };
     fetcher.submit(data, {
       method: 'POST',
@@ -697,35 +513,31 @@ function ListItemPublicLink({
     });
   };
 
-  const optionsByValue: Record<PublicLinkAccess, { label: string; disabled?: boolean }> = {
-    NOT_SHARED: { label: 'Cannot view' },
-    READONLY: { label: 'Can view' },
-    EDIT: { label: 'Can edit' },
+  const optionsByValue: Record<PublicLinkAccess, string> = {
+    NOT_SHARED: 'Cannot view',
+    READONLY: 'Can view',
+    EDIT: 'Can edit',
   };
 
-  const activeOptionLabel = optionsByValue[public_link_access].label;
+  const activeOptionLabel = optionsByValue[publicLinkAccess];
 
   return (
     <ListItem>
       <div className="flex h-6 w-6 items-center justify-center">
-        {public_link_access === 'NOT_SHARED' ? (
-          <LockClosedIcon className={`h-5 w-5`} />
-        ) : (
-          <GlobeIcon className={`h-5 w-5`} />
-        )}
+        {publicLinkAccess === 'NOT_SHARED' ? <LockClosedIcon /> : <GlobeIcon />}
       </div>
 
       <div className={`flex flex-col`}>
-        <p className={`${TYPE.body2}`}>Anyone with the link</p>
+        <Type variant="body2">Anyone with the link</Type>
         {fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok && (
-          <Typography variant="caption" color="error">
+          <Type variant="caption" className="text-destructive">
             Failed to update
-          </Typography>
+          </Type>
         )}
       </div>
 
       <Select
-        value={public_link_access}
+        value={publicLinkAccess}
         onValueChange={(value: PublicLinkAccess) => {
           setPublicLinkAccess(value);
         }}
@@ -734,8 +546,8 @@ function ListItemPublicLink({
           <SelectValue>{activeOptionLabel}</SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {Object.entries(optionsByValue).map(([value, { label, disabled }]) => (
-            <SelectItem value={value} disabled={disabled} key={value}>
+          {Object.entries(optionsByValue).map(([value, label]) => (
+            <SelectItem value={value} key={value}>
               {label}
             </SelectItem>
           ))}

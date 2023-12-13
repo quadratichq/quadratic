@@ -26,11 +26,9 @@ import { apiClient } from '../api/apiClient';
 import { AvatarWithLetters } from '../components/AvatarWithLetters';
 import { Empty } from '../components/Empty';
 import { QDialogConfirmDelete } from '../components/QDialog';
-import { shareSearchParamKey, shareSearchParamValuesById } from '../components/ShareMenu';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { TeamLogoInput } from '../dashboard/components/TeamLogo';
 import { useUpdateQueryStringValueWithoutNavigation } from '../hooks/useUpdateQueryStringValueWithoutNavigation';
-import { hasAccess } from '../permissions';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { teamUuid } = params as { teamUuid: string };
@@ -150,10 +148,8 @@ export const Component = () => {
   } = loaderData;
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const fetcher = useFetcher();
-  const [shareSearchParamValue, setShareSearchParamValue] = useState<string | null>(
-    searchParams.get(shareSearchParamKey)
-  );
-  useUpdateQueryStringValueWithoutNavigation(shareSearchParamKey, shareSearchParamValue);
+  const [shareSearchParamValue, setShareSearchParamValue] = useState<string | null>(searchParams.get('share'));
+  useUpdateQueryStringValueWithoutNavigation('share', shareSearchParamValue);
 
   // const [shareQueryValue, setShareQueryValue] = useState<string>('');
   // useUpdateQueryStringValueWithoutNavigation("share", queryValue);
@@ -196,10 +192,10 @@ export const Component = () => {
                   />
                 </label>
               </DropdownMenuItem>
-              {hasAccess(access, 'TEAM_BILLING_EDIT') && (
+              {access.includes('TEAM_BILLING_EDIT') && (
                 <DropdownMenuItem onClick={() => {}}>Edit billing</DropdownMenuItem>
               )}
-              {hasAccess(access, 'TEAM_DELETE') && [
+              {access.includes('TEAM_DELETE') && [
                 <DropdownMenuSeparator key={1} />,
                 <DropdownMenuItem
                   key={2}
@@ -214,18 +210,20 @@ export const Component = () => {
           </DropdownMenu>
         }
         actions={
-          <div className={`flex items-center gap-2`}>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShareSearchParamValue(shareSearchParamValuesById.OPEN);
-              }}
-            >
-              <PersonIcon className={`mr-1`} /> {team.users.length}
-            </Button>
-            <Button variant="outline">Import file</Button>
-            <Button>Create file</Button>
-          </div>
+          access.includes('TEAM_EDIT') ? (
+            <div className={`flex items-center gap-2`}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShareSearchParamValue('');
+                }}
+              >
+                <PersonIcon className={`mr-1`} /> {team.users.length}
+              </Button>
+              <Button variant="outline">Import file</Button>
+              <Button>Create file</Button>
+            </div>
+          ) : null
         }
       />
 

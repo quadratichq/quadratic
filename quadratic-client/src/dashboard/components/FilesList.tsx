@@ -21,7 +21,7 @@ export function FilesList({ files }: { files: FilesLoader }) {
   const { pathname } = useLocation();
   const [filterValue, setFilterValue] = useState<string>('');
   const fetchers = useFetchers();
-  const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('c46cf8ef-c5ce-46e4-99fb-6683e03e446c');
+  const [activeShareMenuFileId, setActiveShareMenuFileId] = useState<string>('');
   const [viewPreferences, setViewPreferences] = useLocalStorage<ViewPreferences>(
     // Persist the layout preference across views (by URL)
     `FilesList-${pathname}`,
@@ -195,7 +195,6 @@ export function FilesList({ files }: { files: FilesLoader }) {
           onClose={() => {
             setActiveShareMenuFileId('');
           }}
-          fetcherUrl={ROUTES.FILES_SHARE(activeShareMenuFileId)}
           uuid={activeShareMenuFileId}
           name={activeShareMenuFileName}
         />
