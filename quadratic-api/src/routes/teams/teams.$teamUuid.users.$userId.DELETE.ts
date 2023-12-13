@@ -19,10 +19,10 @@ const requestValidationMiddleware = validateRequestSchema(
 );
 
 router.delete(
-  '/:uuid/sharing/:userId',
+  '/:uuid/users/:userId',
   requestValidationMiddleware,
   teamMiddleware,
-  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid/sharing/:userId.DELETE.response'] | ResponseError>) => {
+  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid/users/:userId.DELETE.response'] | ResponseError>) => {
     const resSuccess = { message: 'User deleted' };
     const userToDeleteId = Number(req.params.userId);
     const {

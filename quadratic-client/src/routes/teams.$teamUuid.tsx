@@ -1,3 +1,4 @@
+import { ShareTeamDialog } from '@/components/ShareDialog';
 import { DialogRenameItem } from '@/dashboard/components/DialogRenameItem';
 import { Button } from '@/shadcn/ui/button';
 import {
@@ -25,102 +26,115 @@ import { apiClient } from '../api/apiClient';
 import { AvatarWithLetters } from '../components/AvatarWithLetters';
 import { Empty } from '../components/Empty';
 import { QDialogConfirmDelete } from '../components/QDialog';
-import { shareSearchParamKey, shareSearchParamValuesById } from '../components/ShareMenu';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { TeamLogoInput } from '../dashboard/components/TeamLogo';
-import { TeamShareMenu } from '../dashboard/components/TeamShareMenu';
 import { useUpdateQueryStringValueWithoutNavigation } from '../hooks/useUpdateQueryStringValueWithoutNavigation';
-import { hasAccess } from '../permissions';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { teamUuid } = params as { teamUuid: string };
-  return await apiClient.getTeam(teamUuid);
+  return await apiClient.teams.get(teamUuid);
 };
 
 export type TeamAction = {
-  'request.invite-user': {
-    action: 'invite-user';
-    payload: ApiTypes['/v0/teams/:uuid/sharing.POST.request'];
-  };
   'request.update-team': {
-    action: 'update-team';
+    intent: 'update-team';
     payload: ApiTypes['/v0/teams/:uuid.POST.request'];
   };
-  'request.update-user': {
-    action: 'update-user';
-    id: number;
-    payload: ApiTypes['/v0/teams/:uuid/sharing/:userId.POST.request'];
+  'request.create-team-invite': {
+    intent: 'create-team-invite';
+    payload: ApiTypes['/v0/teams/:uuid/invites.POST.request'];
   };
-  'request.delete-user': {
-    action: 'delete-user';
-    id: number;
+  'request.delete-team-invite': {
+    intent: 'delete-team-invite';
+    inviteId: string;
+  };
+  'request.update-team-user': {
+    intent: 'update-team-user';
+    userId: string;
+    payload: ApiTypes['/v0/teams/:uuid/users/:userId.POST.request'];
+  };
+  'request.delete-team-user': {
+    intent: 'delete-team-user';
+    userId: string;
   };
   request:
     | TeamAction['request.update-team']
-    | TeamAction['request.invite-user']
-    | TeamAction['request.update-user']
-    | TeamAction['request.delete-user'];
+    | TeamAction['request.create-team-invite']
+    | TeamAction['request.delete-team-invite']
+    | TeamAction['request.update-team-user']
+    | TeamAction['request.delete-team-user'];
   response: {
     ok: boolean;
-    action: TeamAction['request'][keyof TeamAction['request']];
-  } | null;
+  };
 };
 
 export const action = async ({ request, params }: ActionFunctionArgs): Promise<TeamAction['response']> => {
   const data = (await request.json()) as TeamAction['request'];
   const { teamUuid } = params as { teamUuid: string };
-  const { action } = data;
+  const { intent } = data;
 
-  if (action === 'update-team') {
+  await new Promise((resolve, reject) => setTimeout(resolve, 1000));
+
+  if (intent === 'update-team') {
     try {
+      // TODO: uploading picture vs. name
       const {
         payload: { name, picture },
       } = data;
-      await new Promise((resolve) => setTimeout(resolve, 10000));
-      await apiClient.updateTeam(teamUuid, { name, picture });
-      return { ok: true, action };
+      await apiClient.teams.update(teamUuid, { name, picture });
+      return { ok: true };
     } catch (e) {
-      return { ok: false, action };
+      return { ok: false };
     }
   }
 
-  if (action === 'invite-user') {
+  if (intent === 'create-team-invite') {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const { payload } = data;
+      await apiClient.teams.invites.create(teamUuid, payload);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false };
+    }
+  }
+
+  if (intent === 'delete-team-invite') {
+    try {
+      const { inviteId } = data;
+      await apiClient.teams.invites.delete(teamUuid, inviteId);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false };
+    }
+  }
+
+  if (intent === 'update-team-user') {
+    try {
       const {
-        payload: { email, role },
+        userId,
+        payload: { role },
       } = data;
-      await apiClient.updateUserInTeam(teamUuid, { email, role });
-      return { ok: true, action };
+      await apiClient.teams.users.update(teamUuid, userId, { role });
+      return { ok: true };
     } catch (e) {
-      return { ok: false, action };
+      return { ok: false };
     }
   }
 
-  if (action === 'update-user') {
+  if (intent === 'delete-team-user') {
     try {
-      await new Promise((resolve, reject) => setTimeout(reject, 3000));
-      // const { payload: { id, role } } = data;
-      // apiClient.updateUserInTeam(id, { role })
-      return { ok: true, action };
-    } catch (e) {
-      return { ok: false, action };
-    }
-  }
-
-  if (action === 'delete-user') {
-    try {
-      const { id } = data;
-      await apiClient.deleteUserInTeam(teamUuid, id);
+      const { userId } = data;
+      await apiClient.teams.users.delete(teamUuid, userId);
       // console.warn('Deleting user', data);
       // await new Promise((resolve, reject) => setTimeout(reject, 3000));
-      return { ok: true, action };
+      return { ok: true };
     } catch (e) {
-      return { ok: false, action };
+      return { ok: false };
     }
   }
 
-  return null;
+  console.error('Unknown action');
+  return { ok: false };
 };
 
 export const Component = () => {
@@ -134,10 +148,8 @@ export const Component = () => {
   } = loaderData;
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const fetcher = useFetcher();
-  const [shareSearchParamValue, setShareSearchParamValue] = useState<string | null>(
-    searchParams.get(shareSearchParamKey)
-  );
-  useUpdateQueryStringValueWithoutNavigation(shareSearchParamKey, shareSearchParamValue);
+  const [shareSearchParamValue, setShareSearchParamValue] = useState<string | null>(searchParams.get('share'));
+  useUpdateQueryStringValueWithoutNavigation('share', shareSearchParamValue);
 
   // const [shareQueryValue, setShareQueryValue] = useState<string>('');
   // useUpdateQueryStringValueWithoutNavigation("share", queryValue);
@@ -180,10 +192,10 @@ export const Component = () => {
                   />
                 </label>
               </DropdownMenuItem>
-              {hasAccess(access, 'TEAM_BILLING_EDIT') && (
+              {access.includes('TEAM_BILLING_EDIT') && (
                 <DropdownMenuItem onClick={() => {}}>Edit billing</DropdownMenuItem>
               )}
-              {hasAccess(access, 'TEAM_DELETE') && [
+              {access.includes('TEAM_DELETE') && [
                 <DropdownMenuSeparator key={1} />,
                 <DropdownMenuItem
                   key={2}
@@ -198,18 +210,20 @@ export const Component = () => {
           </DropdownMenu>
         }
         actions={
-          <div className={`flex items-center gap-2`}>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShareSearchParamValue(shareSearchParamValuesById.OPEN);
-              }}
-            >
-              <PersonIcon className={`mr-1`} /> {team.users.length}
-            </Button>
-            <Button variant="outline">Import file</Button>
-            <Button>Create file</Button>
-          </div>
+          access.includes('TEAM_EDIT') ? (
+            <div className={`flex items-center gap-2`}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShareSearchParamValue('');
+                }}
+              >
+                <PersonIcon className={`mr-1`} /> {team.users.length}
+              </Button>
+              <Button variant="outline">Import file</Button>
+              <Button>Create file</Button>
+            </div>
+          ) : null
         }
       />
 
@@ -224,12 +238,14 @@ export const Component = () => {
           value={name}
           onSave={(name: string) => {
             setIsRenaming(false);
-            const data: TeamAction['request.update-team'] = { action: 'update-team', payload: { name } };
+            const data: TeamAction['request.update-team'] = { intent: 'update-team', payload: { name } };
             fetcher.submit(data, { method: 'POST', encType: 'application/json' });
           }}
         />
       )}
-      {showShareDialog && <TeamShareMenu onClose={() => setShareSearchParamValue(null)} data={loaderData} />}
+      {(true || showShareDialog) && (
+        <ShareTeamDialog onClose={() => setShareSearchParamValue(null)} data={loaderData} />
+      )}
       {showDeleteDialog && (
         <QDialogConfirmDelete
           entityName={name}

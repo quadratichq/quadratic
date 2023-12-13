@@ -114,11 +114,11 @@ jest.mock('auth0', () => {
   };
 });
 
-describe('POST /v0/teams/:uuid/sharing', () => {
+describe('POST /v0/teams/:uuid/invites', () => {
   describe('sending a bad request', () => {
     it('responds with a 401 without authentication', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ role: 'OWNER', email: 'test@example.com' })
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
@@ -127,7 +127,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     });
     it('responds with a 404 for requesting a team that doesn’t exist', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000000/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000000/invites')
         .send({ email: 'test@example.com', role: 'OWNER' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
@@ -137,7 +137,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     });
     it('responds with a 400 for failing schema validation on the team UUID', async () => {
       await request(app)
-        .post('/v0/teams/foo/sharing')
+        .post('/v0/teams/foo/invites')
         .send({ email: 'test@example.com', role: 'OWNER' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
@@ -147,7 +147,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     });
     it('responds with a 400 for failing schema validation on the payload', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ role: 'OWNER' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
@@ -160,7 +160,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
   describe('inviting yourself to a team', () => {
     it('responds with 400 for owners', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email: 'team_1_owner@example.com', role: 'EDITOR' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
@@ -170,7 +170,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     });
     it('responds with 400 for editors', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email: 'team_1_editor@example.com', role: 'EDITOR' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_editor`)
@@ -183,7 +183,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
   describe('inviting someone to a team who is already a member', () => {
     it('responds with 400', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email: 'team_1_editor@example.com', role: 'EDITOR' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
@@ -193,10 +193,14 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     });
   });
 
+  describe('adding users who already have a Quadratic account but aren’t yet in the database', () => {
+    it.todo("adds a user who exists in auth0 but doesn't exist yet in the database");
+  });
+
   describe('adding users who already have a Quadratic account', () => {
     it('adds OWNER invited by OWNER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email: 'user_without_team@example.com', role: 'OWNER' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
@@ -210,7 +214,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     });
     it('adds EDITOR invited by OWNER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email: 'user_without_team@example.com', role: 'EDITOR' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
@@ -224,7 +228,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     });
     it('adds VIEWER invited by OWNER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email: 'user_without_team@example.com', role: 'VIEWER' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
@@ -239,7 +243,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
 
     it('rejects OWNER invited by EDITOR', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email: 'user_without_team@example.com', role: 'OWNER' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_editor`)
@@ -249,7 +253,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     });
     it('adds EDITOR invited by EDITOR', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email: 'user_without_team@example.com', role: 'EDITOR' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_editor`)
@@ -263,7 +267,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     });
     it('adds VIEWER invited by EDITOR', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email: 'user_without_team@example.com', role: 'VIEWER' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_editor`)
@@ -278,7 +282,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
 
     it('rejects OWNER invited by VIEWER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email: 'user_without_team@example.com', role: 'OWNER' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_viewer`)
@@ -288,7 +292,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     });
     it('rejects EDITOR invited by VIEWER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email: 'user_without_team@example.com', role: 'EDITOR' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_viewer`)
@@ -298,7 +302,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     });
     it('rejects VIEWER invited by VIEWER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email: 'user_without_team@example.com', role: 'VIEWER' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_viewer`)
@@ -312,7 +316,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     const email = 'jane_doe@example.com';
     it('adds OWNER invited by OWNER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'OWNER' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
@@ -321,7 +325,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     });
     it('adds EDITOR invited by OWNER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'EDITOR' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
@@ -330,7 +334,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     });
     it('adds VIEWER invited by OWNER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'VIEWER' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
@@ -340,7 +344,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
 
     it('rejects OWNER invited by EDITOR', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'OWNER' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_editor`)
@@ -350,7 +354,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     });
     it('adds EDITOR invited by EDITOR', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'EDITOR' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_editor`)
@@ -359,7 +363,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     });
     it('adds VIEWER invited by EDITOR', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'VIEWER' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_editor`)
@@ -369,7 +373,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
 
     it('rejects OWNER invited by VIEWER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'OWNER' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_viewer`)
@@ -379,7 +383,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     });
     it('rejects EDITOR invited by VIEWER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'EDITOR' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_viewer`)
@@ -389,7 +393,7 @@ describe('POST /v0/teams/:uuid/sharing', () => {
     });
     it('rejects VIEWER invited by VIEWER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/sharing')
+        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'VIEWER' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_viewer`)

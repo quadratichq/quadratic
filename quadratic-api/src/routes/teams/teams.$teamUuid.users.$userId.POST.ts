@@ -20,10 +20,10 @@ const requestValidationMiddleware = validateRequestSchema(
 );
 
 router.post(
-  '/:uuid/sharing/:userId',
+  '/:uuid/users/:userId',
   requestValidationMiddleware,
   teamMiddleware,
-  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid/sharing/:userId.POST.response'] | ResponseError>) => {
+  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid/users/:userId.POST.response'] | ResponseError>) => {
     const {
       body: { role: newRole },
       user: { id: userMakingChangeId },

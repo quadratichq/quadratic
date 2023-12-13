@@ -27,7 +27,7 @@ type LoaderData = {
 
 export const loader = async (): Promise<LoaderData> => {
   let hasError = false;
-  const teams = await apiClient.getTeams().catch((err) => {
+  const teams = await apiClient.teams.list().catch((err) => {
     Sentry.captureException(err);
 
     hasError = true;
@@ -121,9 +121,15 @@ function Navbar() {
         </p>
         <div className="grid gap-1">
           {teams.map(({ uuid, name, picture }) => {
-            // See if this team has an inflight fetcher
+            // TODO: can we refine this?
+            // See if this team has an inflight fetcher that's updating team info
             const inFlightFetcher = fetchers.find(
-              (fetcher) => fetcher.state !== 'idle' && fetcher.formAction?.includes(uuid)
+              (fetcher) =>
+                fetcher.state !== 'idle' &&
+                fetcher.formAction?.includes(uuid) &&
+                fetcher.json &&
+                typeof fetcher.json === 'object' &&
+                (fetcher.json as TeamAction['request.update-team']).intent === 'update-team'
             );
             // If it does, use its data
             if (inFlightFetcher) {

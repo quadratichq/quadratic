@@ -1,9 +1,8 @@
-import { ROUTES } from '@/constants/routes';
+import { ShareFileDialog } from '@/components/ShareDialog';
 import { useEffect } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { ShareFileMenu } from '../components/ShareFileMenu';
 import QuadraticGrid from '../gridGL/QuadraticGrid';
 import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../helpers/focusGrid';
@@ -69,8 +68,7 @@ export default function QuadraticUI() {
       {!presentationMode && <BottomBar />}
       {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
       {editorInteractionState.showShareFileMenu && (
-        <ShareFileMenu
-          fetcherUrl={ROUTES.FILES_SHARE(uuid)}
+        <ShareFileDialog
           onClose={() => {
             setEditorInteractionState((prevState) => ({
               ...prevState,
@@ -80,7 +78,7 @@ export default function QuadraticUI() {
               focusGrid();
             }, 200);
           }}
-          fileName={name}
+          name={name}
           uuid={uuid}
         />
       )}
