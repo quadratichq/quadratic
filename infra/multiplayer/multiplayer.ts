@@ -19,7 +19,7 @@ const dataDogEnv = config.get("data-dog-env") || "preview";
 const dataDogApiKey = config.get("data-dog-api-key") || "";
 
 // Infrastructure
-const group = new aws.ec2.SecurityGroup("multiplayer-sc", {
+const group = new aws.ec2.SecurityGroup("multiplayer-sg", {
   ingress: [
     { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
     { protocol: "tcp", fromPort: 80, toPort: 80, cidrBlocks: ["0.0.0.0/0"] },
