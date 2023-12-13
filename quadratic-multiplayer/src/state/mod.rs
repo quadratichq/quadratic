@@ -34,12 +34,10 @@ pub(crate) struct Settings {
 impl State {
     pub(crate) fn new() -> Self {
         // TODO(ddimaria): seed transaction_queue with the sequence from the database for each file
-        let sequence = 0;
-
         State {
             rooms: Mutex::new(HashMap::new()),
             connections: Mutex::new(HashMap::new()),
-            transaction_queue: Mutex::new(TransactionQueue::new(sequence)),
+            transaction_queue: Mutex::new(TransactionQueue::new()),
             settings: Settings::default(),
         }
     }

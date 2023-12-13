@@ -19,6 +19,7 @@ pub(crate) enum MessageResponse {
         file_id: Uuid,
         // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
         operations: String,
+        sequence: u64,
     },
     UserUpdate {
         session_id: Uuid,

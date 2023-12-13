@@ -7,14 +7,12 @@
 
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::file::apply_string_operations;
-use crate::get_mut_room;
 use crate::message::{broadcast, request::MessageRequest, response::MessageResponse};
 use crate::state::user::UserState;
 use crate::state::{user::User, State};
@@ -106,18 +104,21 @@ pub(crate) async fn handle_message(
             file_id,
             operations,
         } => {
+            // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
-            if let Err(error) = apply_string_operations(
-                &mut get_mut_room!(state, file_id)?.grid,
-                operations.to_owned(),
-            ) {
-                tracing::error!("Error applying operations: {:?}", error);
-            }
+            // add the transaction to the transaction queue
+            let sequence = state
+                .transaction_queue
+                .lock()
+                .await
+                .push(file_id, serde_json::from_str(&operations)?)
+                .await;
 
             let response = MessageResponse::Transaction {
                 file_id,
                 operations,
+                sequence,
             };
 
             broadcast(session_id, file_id, Arc::clone(&state), response);
@@ -326,6 +327,7 @@ pub(crate) mod tests {
         let message = MessageResponse::Transaction {
             file_id,
             operations: "test".to_string(),
+            sequence: 1,
         };
         broadcast(user_1.session_id, file_id, state, message);
 

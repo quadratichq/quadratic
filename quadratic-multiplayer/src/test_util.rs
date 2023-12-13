@@ -4,6 +4,11 @@ use fake::faker::name::en::{FirstName, LastName};
 use fake::Fake;
 use futures::stream::StreamExt;
 use futures_util::SinkExt;
+use quadratic_core::controller::operation::Operation;
+use quadratic_core::controller::GridController;
+use quadratic_core::grid::SheetId;
+use quadratic_core::test_util::assert_cell_value;
+use quadratic_core::{Array, CellValue, Rect};
 use std::sync::Arc;
 use std::{
     fmt::Debug,
@@ -66,6 +71,22 @@ pub(crate) async fn add_new_user_to_room(
     add_user_to_room(file_id, new_user(), state, connection_id).await
 }
 
+pub(crate) fn grid_setup() -> GridController {
+    let grid = GridController::new();
+
+    grid
+}
+
+pub(crate) fn operation(grid: &mut GridController, x: i64, y: i64, value: &str) -> Operation {
+    let sheet_id = grid.sheet_ids().first().unwrap().to_owned();
+    let rect = Rect::js_single_pos((x, y).into());
+    let (region, _) = grid.region(sheet_id, rect);
+    let value = CellValue::Text(value.into());
+    let values = Array::from(value);
+
+    Operation::SetCellValues { region, values }
+}
+
 pub(crate) async fn integration_test_setup(
     state: Arc<State>,
 ) -> WebSocketStream<MaybeTlsStream<TcpStream>> {
@@ -98,7 +119,6 @@ pub(crate) async fn integration_test_send_and_receive(
         ))
         .await
         .unwrap();
-
     if !expect_response {
         return None;
     }
