@@ -9,15 +9,15 @@ use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
 use super::formatting::*;
-use super::{Block, BlockContent, CellRef, CellValueBlockContent, ColumnId, SameValue};
-use crate::IsBlank;
+use super::{Block, BlockContent, CellValueBlockContent, SameValue};
+use crate::{IsBlank, Pos};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
 pub struct Column {
-    pub id: ColumnId,
+    pub x: i64,
 
     pub values: ColumnData<CellValueBlockContent>,
-    pub spills: ColumnData<SameValue<CellRef>>,
+    pub spills: ColumnData<SameValue<Pos>>,
 
     pub align: ColumnData<SameValue<CellAlign>>,
     pub wrap: ColumnData<SameValue<CellWrap>>,
@@ -31,26 +31,10 @@ pub struct Column {
     pub render_size: ColumnData<SameValue<RenderSize>>,
 }
 impl Column {
-    pub fn new() -> Self {
-        Column::with_id(ColumnId::new())
-    }
-    pub fn with_id(id: ColumnId) -> Self {
-        Column {
-            id,
-
-            values: ColumnData::default(),
-            spills: ColumnData::default(),
-
-            align: ColumnData::default(),
-            wrap: ColumnData::default(),
-            numeric_format: ColumnData::default(),
-            numeric_decimals: ColumnData::default(),
-            numeric_commas: ColumnData::default(),
-            bold: ColumnData::default(),
-            italic: ColumnData::default(),
-            text_color: ColumnData::default(),
-            fill_color: ColumnData::default(),
-            render_size: ColumnData::default(),
+    pub fn new(x: i64) -> Self {
+        Self {
+            x,
+            ..Default::default()
         }
     }
 
@@ -86,12 +70,6 @@ impl Column {
             || self.italic.get(y).is_some()
             || self.text_color.get(y).is_some()
             || self.fill_color.get(y).is_some()
-    }
-}
-
-impl Default for Column {
-    fn default() -> Self {
-        Self::new()
     }
 }
 

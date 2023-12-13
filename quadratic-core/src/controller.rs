@@ -6,7 +6,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::{
     grid::{CodeCellLanguage, Grid, SheetId},
-    Pos, SheetRect,
+    SheetPos, SheetRect,
 };
 
 use self::{
@@ -54,11 +54,11 @@ pub struct GridController {
     transaction_type: TransactionType,
 
     // queue of cells to compute
-    cells_to_compute: IndexSet<Pos>,
+    cells_to_compute: IndexSet<SheetPos>,
 
     // track changes
     cells_updated: IndexSet<SheetRect>,
-    cells_accessed: HashSet<Pos>,
+    cells_accessed: HashSet<SheetPos>,
     summary: TransactionSummary,
     sheets_with_changed_bounds: HashSet<SheetId>,
 
@@ -66,7 +66,7 @@ pub struct GridController {
     has_async: bool,
 
     // save code_cell info for async calls
-    current_cell_ref: Option<Pos>,
+    current_sheet_pos: Option<SheetPos>,
     waiting_for_async: Option<CodeCellLanguage>,
 
     // true when transaction completes

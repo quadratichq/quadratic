@@ -236,6 +236,12 @@ impl fmt::Display for SheetPos {
     }
 }
 
+impl From<(i64, i64, SheetId)> for SheetPos {
+    fn from((x, y, sheet_id): (i64, i64, SheetId)) -> Self {
+        Self { x, y, sheet_id }
+    }
+}
+
 /// Used for referencing a range during computation.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct SheetRect {
@@ -248,6 +254,22 @@ pub struct SheetRect {
 }
 
 impl SheetRect {
+    pub fn single_sheet_pos(sheet_pos: SheetPos) -> SheetRect {
+        SheetRect {
+            min: sheet_pos.into(),
+            max: sheet_pos.into(),
+            sheet_id: sheet_pos.sheet_id,
+        }
+    }
+
+    pub fn single_pos(pos: Pos, sheet_id: SheetId) -> SheetRect {
+        SheetRect {
+            min: pos,
+            max: pos,
+            sheet_id,
+        }
+    }
+
     /// Constructs a new SheetRect from two positions and a sheet id.
     pub fn new_pos_span(pos1: Pos, pos2: Pos, sheet_id: SheetId) -> SheetRect {
         use std::cmp::{max, min};
@@ -317,6 +339,16 @@ impl SheetRect {
     pub fn size(&self) -> ArraySize {
         ArraySize::new(self.width() as u32, self.height() as u32)
             .expect("empty rectangle has no size")
+    }
+    pub fn iter(self) -> impl Iterator<Item = SheetPos> {
+        let SheetRect { min, max, .. } = self;
+        (min.y..=max.y).flat_map(move |y| {
+            (min.x..=max.x).map(move |x| SheetPos {
+                x,
+                y,
+                sheet_id: self.sheet_id,
+            })
+        })
     }
 }
 impl fmt::Display for SheetRect {

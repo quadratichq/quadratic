@@ -4,8 +4,7 @@ use itertools::Itertools;
 
 use super::Sheet;
 use crate::{
-    controller::operation::Operation,
-    grid::{CellRef, CodeCellValue, RenderSize},
+    grid::{CodeCellValue, RenderSize},
     CellValue, Pos, Rect, Value,
 };
 
@@ -15,16 +14,11 @@ impl Sheet {
         &mut self,
         pos: Pos,
         code_cell: Option<CodeCellValue>,
-    ) -> (Option<CodeCellValue>, Option<Vec<Operation>>) {
-        let mut ops = vec![];
-        let (cell_ref, operations) = self.get_or_create_cell_ref(pos);
-        if let Some(operations) = operations {
-            ops.extend(operations);
-        }
-        let old = self.code_cells.remove(&cell_ref);
+    ) -> Option<CodeCellValue> {
+        let old = self.code_cells.remove(&pos);
 
         // this column has to exist since it was just created in the previous statement
-        let (code_cell_column, _) = self.get_or_create_column(pos.x);
+        let code_cell_column = self.get_or_create_column(pos.x);
 
         if let Some(code_cell) = code_cell {
             if let Some(output) = &code_cell.output {
@@ -33,16 +27,13 @@ impl Sheet {
                     Some(output_value) => {
                         match output_value {
                             Value::Single(_) => {
-                                code_cell_column.spills.set(pos.y, Some(cell_ref));
+                                code_cell_column.spills.set(pos.y, Some(pos));
                             }
                             Value::Array(array) => {
                                 // if spilled only set the top left cell
                                 if output.spill {
-                                    let (column, operation) = self.get_or_create_column(pos.x);
-                                    if let Some(operation) = operation {
-                                        ops.push(operation);
-                                    }
-                                    column.spills.set(pos.y, Some(cell_ref));
+                                    let column = self.get_or_create_column(pos.x);
+                                    column.spills.set(pos.y, Some(pos));
                                 }
                                 // otherwise set the whole array
                                 else {
@@ -53,42 +44,34 @@ impl Sheet {
                                         end: pos.y + array.height() as i64,
                                     };
                                     for x in start..end {
-                                        let (column, operation) = self.get_or_create_column(x);
-                                        if let Some(operation) = operation {
-                                            ops.push(operation);
-                                        }
-                                        column.spills.set_range(range.clone(), cell_ref);
+                                        let column = self.get_or_create_column(x);
+                                        column.spills.set_range(range.clone(), pos);
                                     }
                                 }
                             }
                         }
                     }
                     None => {
-                        code_cell_column.spills.set(pos.y, Some(cell_ref));
+                        code_cell_column.spills.set(pos.y, Some(pos));
                     }
                 }
             } else {
-                code_cell_column.spills.set(pos.y, Some(cell_ref));
+                code_cell_column.spills.set(pos.y, Some(pos));
             }
-            self.code_cells.insert(cell_ref, code_cell);
+            self.code_cells.insert(pos, code_cell);
         }
-        if ops.is_empty() {
-            (old, None)
-        } else {
-            (old, Some(ops))
-        }
+        old
     }
 
     /// Returns a code cell value.
     pub fn get_code_cell(&self, pos: Pos) -> Option<&CodeCellValue> {
-        self.code_cells.get(&self.try_get_cell_ref(pos)?)
+        self.code_cells.get(&pos)
     }
 
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
-        let block = column.spills.get(pos.y)?;
-        let code_cell_pos = self.cell_ref_to_pos(block)?;
-        let code_cell = self.code_cells.get(&block)?;
+        let code_cell_pos = column.spills.get(pos.y)?;
+        let code_cell = self.code_cells.get(&code_cell_pos)?;
         code_cell.get_output_value(
             (pos.x - code_cell_pos.x) as u32,
             (pos.y - code_cell_pos.y) as u32,
@@ -97,33 +80,29 @@ impl Sheet {
 
     /// Get the spill location for a given cell_ref.  Note that a spill is
     /// also stored as as cell_ref.
-    pub fn get_spill(&self, cell_ref: CellRef) -> Option<CellRef> {
-        let pos = self.cell_ref_to_pos(cell_ref)?;
+    pub fn get_spill(&self, pos: Pos) -> Option<Pos> {
         let column = self.get_column(pos.x)?;
         column.spills.get(pos.y)
     }
 
     /// Returns an iterator over all locations containing code cells that may
     /// spill into `region`.
-    pub fn iter_code_cells_locations_in_region(
-        &self,
-        region: Rect,
-    ) -> impl Iterator<Item = CellRef> {
-        let code_cell_refs: HashSet<CellRef> = self
+    pub fn iter_code_cells_in_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
+        let code_cell_positions: HashSet<Pos> = self
             .columns
-            .range(region.x_range())
+            .range(rect.x_range())
             .flat_map(|(_x, column)| {
                 column
                     .spills
-                    .blocks_covering_range(region.y_range())
+                    .blocks_covering_range(rect.y_range())
                     .map(|block| block.content().value)
             })
             .collect();
 
-        code_cell_refs.into_iter()
+        code_cell_positions.into_iter()
     }
 
-    pub fn iter_code_cells_locations(&self) -> impl '_ + Iterator<Item = CellRef> {
+    pub fn iter_code_cells_locations(&self) -> impl '_ + Iterator<Item = Pos> {
         self.code_cells.keys().copied()
     }
 
@@ -136,26 +115,21 @@ impl Sheet {
     /// Checks if the deletion of a cell or a code_cell released a spill error;
     /// sorted by earliest last_modified.
     /// Returns the cell_ref and the code_cell_value if it did
-    pub fn spill_error_released(&self, cell_ref: CellRef) -> Option<(CellRef, CodeCellValue)> {
+    pub fn spill_error_released(&self, pos: Pos) -> Option<(Pos, CodeCellValue)> {
         self.code_cells
             .iter()
             .filter(|(_, code_cell)| code_cell.has_spill_error())
             .sorted_by_key(|a| &a.1.last_modified)
-            .filter_map(|(code_cell_ref, code_cell)| {
-                let pos = self.cell_ref_to_pos(*code_cell_ref)?;
+            .filter_map(|(code_cell_pos, code_cell)| {
                 let array_size = code_cell.output_size();
                 let rect = Rect::from_pos_and_size(pos, array_size);
-
-                self.existing_region(rect)
-                    .contains(&cell_ref)
-                    .then(|| (*code_cell_ref, code_cell.to_owned()))
+                rect.contains(pos)
+                    .then(|| (*code_cell_pos, code_cell.to_owned()))
             })
             .find(|(cell_ref, code_cell)| {
                 let array_size = code_cell.output_size();
                 if array_size.len() > 1 {
-                    !self
-                        .is_ok_to_spill_in(*cell_ref, array_size)
-                        .unwrap_or(false)
+                    !self.is_ok_to_spill_in(*cell_ref, array_size)
                 } else {
                     false
                 }
@@ -165,7 +139,7 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use crate::{controller::GridController, grid::RenderSize, Rect};
+    use crate::{controller::GridController, grid::RenderSize, SheetPos};
 
     #[test]
     fn test_render_size() {
@@ -174,8 +148,12 @@ mod test {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_render_size(
-            sheet_id,
-            Rect::single_pos(Pos { x: 0, y: 0 }),
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            }
+            .into(),
             Some(crate::grid::RenderSize {
                 w: "10".to_string(),
                 h: "20".to_string(),

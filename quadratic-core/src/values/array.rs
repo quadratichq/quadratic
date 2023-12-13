@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
 use super::{ArraySize, Axis, CellValue, Spanned, Value};
-use crate::{controller::operation::Operation, grid::Sheet, CodeResult, ErrorMsg, Pos, Pos};
+use crate::{controller::operation::Operation, grid::Sheet, CodeResult, ErrorMsg, Pos};
 
 #[macro_export]
 macro_rules! array {
@@ -259,7 +259,6 @@ impl Array {
         Ok(NonZeroU32::new(common_len).expect("bad array size"))
     }
 
-    // todo: this is super complicated; we need to move the number formats into CellValue to simplify this
     pub fn from_string_list(
         start: Pos,
         sheet: &mut Sheet,
@@ -273,16 +272,12 @@ impl Array {
             .iter()
             .flatten()
             .map(|s| {
-                let (cell_ref, operations) = sheet.get_or_create_cell_ref(Pos { x, y });
-                if let Some(operations) = operations {
-                    ops.extend(operations);
-                }
                 x += 1;
                 if x == v[0].len() as i64 + start.x {
                     x = start.x;
                     y += 1;
                 }
-                let (value, updated_ops) = CellValue::from_string(s, cell_ref, sheet);
+                let (value, updated_ops) = CellValue::from_string(s, start, sheet);
                 ops.extend(updated_ops);
                 value
             })

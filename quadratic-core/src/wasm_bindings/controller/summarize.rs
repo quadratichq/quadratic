@@ -72,12 +72,12 @@ impl GridController {
 mod tests {
     // create a test grid and test that the summarize function works
     use crate::wasm_bindings::GridController;
-    use crate::{Pos, Rect};
+    use crate::{Pos, Rect, SheetPos};
 
     // TODO(ddimaria): move to a shared util
     fn set_value(gc: &mut GridController, x: i64, y: i64, value: &str) {
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value(sheet_id, Pos { x, y }, String::from(value), None);
+        gc.set_cell_value(SheetPos { x, y, sheet_id }, String::from(value), None);
     }
 
     #[test]

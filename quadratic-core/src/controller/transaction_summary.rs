@@ -2,10 +2,7 @@ use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    grid::{RegionRef, SheetId},
-    Pos,
-};
+use crate::{grid::SheetId, SheetPos, SheetRect};
 
 use super::GridController;
 
@@ -22,11 +19,11 @@ pub struct CellSheetsModified {
 }
 
 impl CellSheetsModified {
-    pub fn new(sheet_id: SheetId, pos: Pos) -> Self {
-        let x = (pos.x as f64 / CELL_SHEET_WIDTH as f64).floor() as i32;
-        let y = (pos.y as f64 / CELL_SHEET_HEIGHT as f64).floor() as i32;
+    pub fn new(sheet_pos: SheetPos) -> Self {
+        let x = (sheet_pos.x as f64 / CELL_SHEET_WIDTH as f64).floor() as i32;
+        let y = (sheet_pos.y as f64 / CELL_SHEET_HEIGHT as f64).floor() as i32;
         Self {
-            sheet_id: sheet_id.to_string(),
+            sheet_id: sheet_pos.sheet_id.to_string(),
             x,
             y,
         }
@@ -99,14 +96,18 @@ impl TransactionSummary {
 }
 
 impl GridController {
-    pub fn add_cell_sheets_modified_region(&mut self, region: &RegionRef) {
+    pub fn add_cell_sheets_modified_rect(&mut self, sheet_rect: &SheetRect) {
         let mut modified = HashSet::new();
-        let sheet = self.sheet(region.sheet);
-        region.iter().for_each(|cell_ref| {
-            if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                modified.insert(CellSheetsModified::new(sheet.id, pos));
+        for y in sheet_rect.y_range() {
+            for x in sheet_rect.x_range() {
+                let sheet_pos = SheetPos {
+                    x,
+                    y,
+                    sheet_id: sheet_rect.sheet_id,
+                };
+                modified.insert(CellSheetsModified::new(sheet_pos));
             }
-        });
+        }
 
         let summary = &mut self.summary;
         summary.cell_sheets_modified.extend(modified);
@@ -122,7 +123,11 @@ mod tests {
     #[test]
     fn test_cell_sheets_modified() {
         let sheet_id = SheetId::new();
-        let cell_sheets_modified = CellSheetsModified::new(sheet_id, Pos { x: 0, y: 0 });
+        let cell_sheets_modified = CellSheetsModified::new(SheetPos {
+            sheet_id,
+            x: 0,
+            y: 0,
+        });
         assert_eq!(
             cell_sheets_modified,
             CellSheetsModified {
@@ -153,8 +158,8 @@ mod tests {
         let mut gc = GridController::new();
         let sheet_id = gc.grid().first_sheet_id();
         let sheet = gc.grid_mut().first_sheet_mut();
-        let (region, _) = sheet.region(Rect::from_numbers(0, 0, 21, 41));
-        gc.add_cell_sheets_modified_region(&region);
+        let sheet_rect = Rect::from_numbers(0, 0, 21, 41).to_sheet_rect(sheet_id);
+        gc.add_cell_sheets_modified_rect(&sheet_rect);
         assert_eq!(gc.summary.cell_sheets_modified.len(), 4);
         assert!(has_cell_sheet(
             &gc.summary.cell_sheets_modified,

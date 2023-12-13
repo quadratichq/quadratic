@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     grid::{CodeCellValue, Sheet, SheetBorders, SheetId},
-    Array, Pos, SheetRect,
+    Array, SheetPos, SheetRect,
 };
 
 use super::formatting::CellFmtArray;
@@ -15,7 +15,7 @@ pub enum Operation {
         values: Array,
     },
     SetCellCode {
-        sheet_pos: Pos,
+        sheet_pos: SheetPos,
         code_cell_value: Option<CodeCellValue>,
     },
     SetCellFormats {
