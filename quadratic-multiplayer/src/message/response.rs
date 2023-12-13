@@ -16,6 +16,7 @@ pub(crate) enum MessageResponse {
         users: Vec<User>,
     },
     Transaction {
+        id: Uuid,
         file_id: Uuid,
         // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
         operations: String,

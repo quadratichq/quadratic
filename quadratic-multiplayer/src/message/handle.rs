@@ -100,6 +100,7 @@ pub(crate) async fn handle_message(
 
         // User sends transactions
         MessageRequest::Transaction {
+            id,
             session_id,
             file_id,
             operations,
@@ -112,10 +113,11 @@ pub(crate) async fn handle_message(
                 .transaction_queue
                 .lock()
                 .await
-                .push(file_id, serde_json::from_str(&operations)?)
+                .push(id, file_id, serde_json::from_str(&operations)?)
                 .await;
 
             let response = MessageResponse::Transaction {
+                id,
                 file_id,
                 operations,
                 sequence,
@@ -320,11 +322,13 @@ pub(crate) mod tests {
     #[tokio::test]
     async fn test_transaction() {
         let state = Arc::new(State::new());
+        let id = Uuid::new_v4();
         let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let user_1 = add_new_user_to_room(file_id, state.clone(), connection_id).await;
         let _user_2 = add_new_user_to_room(file_id, state.clone(), connection_id).await;
         let message = MessageResponse::Transaction {
+            id,
             file_id,
             operations: "test".to_string(),
             sequence: 1,

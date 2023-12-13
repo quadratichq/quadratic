@@ -34,6 +34,7 @@ pub(crate) enum MessageRequest {
         update: UserStateUpdate,
     },
     Transaction {
+        id: Uuid,
         session_id: Uuid,
         file_id: Uuid,
 

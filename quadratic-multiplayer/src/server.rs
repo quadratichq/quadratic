@@ -432,12 +432,15 @@ pub(crate) mod tests {
         let new_user = new_user();
         let session_id = new_user.session_id;
         let operations = serde_json::to_string::<Vec<Operation>>(&vec![]).unwrap();
+        let id = Uuid::new_v4();
         let request = MessageRequest::Transaction {
+            id,
             session_id,
             file_id,
             operations: operations.clone(),
         };
         let expected = MessageResponse::Transaction {
+            id,
             file_id,
             operations: operations.clone(),
             sequence: 1,

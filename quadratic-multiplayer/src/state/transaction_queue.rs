@@ -6,14 +6,16 @@ use uuid::Uuid;
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct Transaction {
+    pub(crate) id: Uuid,
     pub(crate) file_id: Uuid,
     pub(crate) operations: Vec<Operation>,
     pub(crate) sequence: u64,
 }
 
 impl Transaction {
-    pub(crate) fn new(file_id: Uuid, operations: Vec<Operation>, sequence: u64) -> Self {
+    pub(crate) fn new(id: Uuid, file_id: Uuid, operations: Vec<Operation>, sequence: u64) -> Self {
         Transaction {
+            id,
             file_id,
             operations,
             sequence,
@@ -32,9 +34,14 @@ impl TransactionQueue {
         Default::default()
     }
 
-    pub(crate) async fn push(&mut self, file_id: Uuid, operations: Vec<Operation>) -> u64 {
+    pub(crate) async fn push(
+        &mut self,
+        id: Uuid,
+        file_id: Uuid,
+        operations: Vec<Operation>,
+    ) -> u64 {
         let sequence = self.increment_sequence(file_id).await;
-        let transaction = Transaction::new(file_id, operations, sequence);
+        let transaction = Transaction::new(id, file_id, operations, sequence);
         self.queue.push_back(transaction);
         sequence
     }
@@ -84,14 +91,16 @@ mod tests {
     async fn transaction_queue() {
         let (state, file_id) = setup();
         let mut grid = grid_setup();
+        let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
+        let transaction_id_2 = Uuid::new_v4();
         let operations_2 = operation(&mut grid, 1, 0, "2");
 
         state
             .transaction_queue
             .lock()
             .await
-            .push(file_id, vec![operations_1.clone()])
+            .push(transaction_id_1, file_id, vec![operations_1.clone()])
             .await;
 
         let mut transaction_queue = state.transaction_queue.lock().await;
@@ -109,7 +118,7 @@ mod tests {
             .transaction_queue
             .lock()
             .await
-            .push(file_id, vec![operations_2.clone()])
+            .push(transaction_id_2, file_id, vec![operations_2.clone()])
             .await;
 
         let mut transaction_queue = state.transaction_queue.lock().await;
