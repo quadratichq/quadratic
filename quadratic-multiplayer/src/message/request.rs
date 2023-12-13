@@ -41,6 +41,11 @@ pub(crate) enum MessageRequest {
         // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
         operations: String,
     },
+    GetTransactions {
+        file_id: Uuid,
+        session_id: Uuid,
+        min_sequence_num: u64,
+    },
     Heartbeat {
         session_id: Uuid,
         file_id: Uuid,

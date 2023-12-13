@@ -18,15 +18,16 @@ use axum_extra::TypedHeader;
 use futures::stream::StreamExt;
 use futures_util::stream::SplitSink;
 use futures_util::SinkExt;
+use std::ops::ControlFlow;
 use std::{net::SocketAddr, sync::Arc};
-use std::{ops::ControlFlow, time::Duration};
-use tokio::{sync::Mutex, time};
+use tokio::sync::Mutex;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
 
 use crate::{
     auth::{authorize, get_jwks},
+    background_worker,
     config::{config, Config},
     message::{
         broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
@@ -83,7 +84,7 @@ pub(crate) async fn serve() -> Result<()> {
         tracing::warn!("JWT authentication is disabled");
     }
 
-    check_heartbeat(Arc::clone(&state), heartbeat_check_s, heartbeat_timeout_s).await;
+    background_worker::work(Arc::clone(&state), heartbeat_check_s, heartbeat_timeout_s).await;
 
     axum::serve(
         listener,
@@ -214,45 +215,6 @@ async fn process_message(
     }
 
     Ok(ControlFlow::Continue(()))
-}
-
-/// In s separate thread, check for stale users in rooms and remove them.
-async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_timeout_s: i64) {
-    let state = Arc::clone(&state);
-
-    tokio::spawn(async move {
-        let mut interval = time::interval(Duration::from_millis(heartbeat_check_s as u64 * 1000));
-
-        loop {
-            let rooms = state.rooms.lock().await.clone();
-
-            for (file_id, room) in rooms.iter() {
-                match state
-                    .remove_stale_users_in_room(file_id.to_owned(), heartbeat_timeout_s)
-                    .await
-                {
-                    Ok((num_removed, num_remaining)) => {
-                        tracing::info!("Checking heartbeats in room {file_id} ({num_remaining} remaining in room)");
-
-                        if num_removed > 0 {
-                            broadcast(
-                                // TODO(ddimaria): use a real session_id here
-                                Uuid::new_v4(),
-                                file_id.to_owned(),
-                                Arc::clone(&state),
-                                MessageResponse::from(room.to_owned()),
-                            );
-                        }
-                    }
-                    Err(e) => {
-                        tracing::warn!("Error removing stale users from room {file_id}: {:?}", e);
-                    }
-                }
-            }
-
-            interval.tick().await;
-        }
-    });
 }
 
 #[cfg(test)]
@@ -443,7 +405,7 @@ pub(crate) mod tests {
             id,
             file_id,
             operations: operations.clone(),
-            sequence: 1,
+            sequence_num: 1,
         };
 
         let response = integration_test_send_and_receive(socket, request, true).await;

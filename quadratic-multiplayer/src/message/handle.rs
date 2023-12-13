@@ -109,18 +109,60 @@ pub(crate) async fn handle_message(
             state.update_user_heartbeat(file_id, &session_id).await?;
 
             // add the transaction to the transaction queue
-            let sequence = state
-                .transaction_queue
-                .lock()
-                .await
-                .push(id, file_id, serde_json::from_str(&operations)?)
-                .await;
+            let sequence_num = state.transaction_queue.lock().await.push(
+                id,
+                file_id,
+                serde_json::from_str(&operations)?,
+            );
 
             let response = MessageResponse::Transaction {
                 id,
                 file_id,
                 operations,
-                sequence,
+                sequence_num,
+            };
+
+            broadcast(session_id, file_id, Arc::clone(&state), response);
+
+            Ok(None)
+        }
+
+        // User sends transactions
+        MessageRequest::GetTransactions {
+            file_id,
+            session_id,
+            min_sequence_num,
+        } => {
+            // update the heartbeat
+            state.update_user_heartbeat(file_id, &session_id).await?;
+
+            // get transactions from the transaction queue
+            let transactions = state
+                .transaction_queue
+                .lock()
+                .await
+                .get_transactions_min_sequence_num(file_id, min_sequence_num)?;
+
+            let response = MessageResponse::Transactions { transactions };
+
+            Ok(Some(response))
+        }
+
+        MessageRequest::UserUpdate {
+            session_id,
+            file_id,
+            update,
+        } => {
+            // update the heartbeat
+            state.update_user_heartbeat(file_id, &session_id).await?;
+
+            state
+                .update_user_state(&file_id, &session_id, &update)
+                .await?;
+            let response = MessageResponse::UserUpdate {
+                session_id,
+                file_id,
+                update,
             };
 
             broadcast(session_id, file_id, Arc::clone(&state), response);
@@ -134,25 +176,6 @@ pub(crate) async fn handle_message(
             file_id,
         } => {
             state.update_user_heartbeat(file_id, &session_id).await?;
-            Ok(None)
-        }
-
-        MessageRequest::UserUpdate {
-            session_id,
-            file_id,
-            update,
-        } => {
-            state
-                .update_user_state(&file_id, &session_id, &update)
-                .await?;
-            let response = MessageResponse::UserUpdate {
-                session_id,
-                file_id,
-                update,
-            };
-
-            broadcast(session_id, file_id, Arc::clone(&state), response);
-
             Ok(None)
         }
     }
@@ -331,7 +354,7 @@ pub(crate) mod tests {
             id,
             file_id,
             operations: "test".to_string(),
-            sequence: 1,
+            sequence_num: 1,
         };
         broadcast(user_1.session_id, file_id, state, message);
 

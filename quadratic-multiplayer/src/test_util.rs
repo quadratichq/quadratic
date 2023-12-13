@@ -6,8 +6,6 @@ use futures::stream::StreamExt;
 use futures_util::SinkExt;
 use quadratic_core::controller::operation::Operation;
 use quadratic_core::controller::GridController;
-use quadratic_core::grid::SheetId;
-use quadratic_core::test_util::assert_cell_value;
 use quadratic_core::{Array, CellValue, Rect};
 use std::sync::Arc;
 use std::{

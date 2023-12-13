@@ -33,7 +33,7 @@ pub(crate) struct Settings {
 
 impl State {
     pub(crate) fn new() -> Self {
-        // TODO(ddimaria): seed transaction_queue with the sequence from the database for each file
+        // TODO(ddimaria): seed transaction_queue with the sequence_num from the database for each file
         State {
             rooms: Mutex::new(HashMap::new()),
             connections: Mutex::new(HashMap::new()),
