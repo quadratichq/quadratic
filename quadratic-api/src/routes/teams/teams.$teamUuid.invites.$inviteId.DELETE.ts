@@ -13,7 +13,7 @@ const requestValidationMiddleware = validateRequestSchema(
   z.object({
     params: z.object({
       uuid: z.string().uuid(),
-      userId: z.coerce.number(),
+      inviteId: z.coerce.number(),
     }),
   })
 );
@@ -26,7 +26,6 @@ router.delete(
     req: Request,
     res: Response<ApiTypes['/v0/teams/:uuid/invites/:inviteId.DELETE.response'] | ResponseError>
   ) => {
-    console.log(req.params);
     const inviteToDelete = Number(req.params.inviteId);
     const {
       team: { user: userMakingRequest },

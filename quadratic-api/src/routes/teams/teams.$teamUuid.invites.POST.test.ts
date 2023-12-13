@@ -193,6 +193,10 @@ describe('POST /v0/teams/:uuid/invites', () => {
     });
   });
 
+  describe('adding users who already have a Quadratic account but aren’t yet in the database', () => {
+    it.todo("adds a user who exists in auth0 but doesn't exist yet in the database");
+  });
+
   describe('adding users who already have a Quadratic account', () => {
     it('adds OWNER invited by OWNER', async () => {
       await request(app)

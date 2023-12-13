@@ -75,12 +75,14 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   const { teamUuid } = params as { teamUuid: string };
   const { intent } = data;
 
+  await new Promise((resolve, reject) => setTimeout(resolve, 1000));
+
   if (intent === 'update-team') {
     try {
+      // TODO: uploading picture vs. name
       const {
         payload: { name, picture },
       } = data;
-      await new Promise((resolve) => setTimeout(resolve, 10000));
       await apiClient.teams.update(teamUuid, { name, picture });
       return { ok: true };
     } catch (e) {
@@ -110,7 +112,6 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
 
   if (intent === 'update-team-user') {
     try {
-      await new Promise((resolve, reject) => setTimeout(reject, 3000));
       const {
         userId,
         payload: { role },

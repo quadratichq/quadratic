@@ -108,15 +108,24 @@ router.post(
     if (auth0Users.length === 1) {
       const auth0User = auth0Users[0];
 
-      // Lookup the user in our database
-      const dbUser = await dbClient.user.findUnique({
+      // Auth0 says this could be undefined. If that's the case (even though,
+      // we found a user) we'll throw an error
+      if (!auth0User.user_id) {
+        return res
+          .status(500)
+          .json({ error: { message: 'Internal server error: user found but expected `user_id` is not present' } });
+      }
+
+      // Lookup the user in our database (create if they don't exist)
+      const dbUser = await dbClient.user.upsert({
         where: {
           auth0_id: auth0User.user_id,
         },
+        create: {
+          auth0_id: auth0User.user_id,
+        },
+        update: {},
       });
-      if (!dbUser) {
-        return res.status(500).json({ error: { message: 'Internal server error: user not found' } });
-      }
 
       // See if they're already a member of the team
       const u = await dbClient.userTeamRole.findUnique({
