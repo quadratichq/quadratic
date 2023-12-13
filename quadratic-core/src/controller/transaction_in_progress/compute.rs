@@ -22,11 +22,8 @@ impl GridController {
             // add all dependent cells to the cells_to_compute
             if let Some(dependent_cells) = self.get_dependent_cells(sheet_pos) {
                 #[cfg(feature = "show-operations")]
-                dependent_cells.iter().for_each(|cell_ref| {
-                    let sheet = self.sheet(sheet_pos.sheet);
-                    if let Some(pos) = sheet.cell_ref_to_pos(*sheet_pos) {
-                        crate::util::dbgjs(format!("[Adding Dependent Cell] {:?}", pos));
-                    }
+                dependent_cells.iter().for_each(|sheet_pos| {
+                    crate::util::dbgjs(format!("[Adding Dependent Cell] {:?}", sheet_pos));
                 });
 
                 self.cells_to_compute.extend(dependent_cells);

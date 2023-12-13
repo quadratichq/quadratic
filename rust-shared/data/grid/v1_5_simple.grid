@@ -15,6 +15,7 @@
         [
           0,
           {
+            "x": 0,
             "values": {
               "0": {
                 "y": 0,
@@ -37,12 +38,13 @@
             "bold": {},
             "italic": {},
             "text_color": {},
-            "fill_color": {}
+            "fill_color": {},"render_size": {}
           }
         ],
         [
           1,
           {
+            "x": 1,
             "values": {},
             "spills": {},
             "align": {},
@@ -53,12 +55,13 @@
             "bold": {},
             "italic": {},
             "text_color": {},
-            "fill_color": {}
+            "fill_color": {},"render_size": {}
           }
         ],
         [
           4,
           {
+            "x": 4,
             "values": {},
             "spills": {
               "7": {
@@ -140,12 +143,14 @@
             "bold": {},
             "italic": {},
             "text_color": {},
-            "fill_color": {}
+            "fill_color": {},
+            "render_size": {}
           }
         ],
         [
           5,
           {
+            "x": 5,
             "values": {},
             "spills": {},
             "align": {},
@@ -156,12 +161,14 @@
             "bold": {},
             "italic": {},
             "text_color": {},
-            "fill_color": {}
+            "fill_color": {},
+            "render_size": {}
           }
         ],
         [
           6,
           {
+            "x": 6,
             "values": {
               "4": {
                 "y": 4,
@@ -184,7 +191,8 @@
             "bold": {},
             "italic": {},
             "text_color": {},
-            "fill_color": {}
+            "fill_color": {},
+            "render_size": {}
           }
         ]
       ],
@@ -255,7 +263,8 @@
                   ]
                 },
                 "cells_accessed": []
-              }
+              },
+              "spill": false
             }
           }
         ]

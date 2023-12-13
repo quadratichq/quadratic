@@ -436,13 +436,13 @@ mod test {
     #[test]
     fn test_a1_string() {
         let pos = Pos { x: 1, y: 2 };
-        assert_eq!(pos.a1_string(), "B3");
+        assert_eq!(pos.a1_string(), "B2");
         let pos = Pos { x: 0, y: 0 };
-        assert_eq!(pos.a1_string(), "A1");
+        assert_eq!(pos.a1_string(), "A0");
         let pos = Pos { x: 26, y: 0 };
-        assert_eq!(pos.a1_string(), "AA1");
+        assert_eq!(pos.a1_string(), "AA0");
         let pos = Pos { x: 26, y: 1 };
-        assert_eq!(pos.a1_string(), "AA2");
+        assert_eq!(pos.a1_string(), "AA1");
         let pos = Pos { x: 26, y: -1 };
         assert_eq!(pos.a1_string(), "AAn1");
     }

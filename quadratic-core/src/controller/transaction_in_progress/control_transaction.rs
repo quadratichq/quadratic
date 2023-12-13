@@ -137,6 +137,7 @@ impl GridController {
 
         self.transaction_updated_bounds();
         if self.complete {
+            self.summary.save = true;
             self.prepare_transaction_summary()
         } else {
             TransactionSummary::default()
