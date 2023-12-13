@@ -63,17 +63,20 @@ mod tests {
         Pos, Rect,
     };
 
-    const V1_3_FILE: &str = include_str!("../../../examples/v1_3.grid");
-    const V1_3_PYTHON_FILE: &str = include_str!("../../../examples/v1_3_python.grid");
+    const V1_3_FILE: &str = include_str!("../../../../rust-shared/data/grid/v1_3.grid");
+    const V1_3_PYTHON_FILE: &str =
+        include_str!("../../../../rust-shared/data/grid/v1_3_python.grid");
     const V1_3_TEXT_ONLY_CODE_CELL_FILE: &str =
-        include_str!("../../../examples/c1_3_python_text_only.grid");
+        include_str!("../../../../rust-shared/data/grid/v1_3_python_text_only.grid");
     const V1_3_SINGLE_FORMULS_CODE_CELL_FILE: &str =
-        include_str!("../../../examples/v1_3_single_formula.grid");
-    const V1_3_NPM_DOWNLOADS_FILE: &str = include_str!("../../../examples/v1_3_fill_color.grid");
-    const V1_3_BORDERS_FILE: &str = include_str!("../../../examples/v1_3_borders.grid");
-    const V1_4_FILE: &str = include_str!("../../../examples/v1_4_simple.grid");
+        include_str!("../../../../rust-shared/data/grid/v1_3_single_formula.grid");
+    const V1_3_NPM_DOWNLOADS_FILE: &str =
+        include_str!("../../../../rust-shared/data/grid/v1_3_fill_color.grid");
+    const V1_3_BORDERS_FILE: &str =
+        include_str!("../../../../rust-shared/data/grid/v1_3_borders.grid");
+    const V1_4_FILE: &str = include_str!("../../../../rust-shared/data/grid/v1_4_simple.grid");
     const V1_4_AIRPORTS_DISTANCE_FILE: &str =
-        include_str!("../../../examples/v1_4_airports_distance.grid");
+        include_str!("../../../../rust-shared/data/grid/v1_4_airports_distance.grid");
 
     #[test]
     fn process_a_v1_3_file() {

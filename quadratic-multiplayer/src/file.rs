@@ -28,14 +28,14 @@ pub(crate) fn apply_operations(
 
 #[cfg(test)]
 mod tests {
-    use quadratic_core::test_util::grid::assert_cell_value;
+    use quadratic_core::test_util::assert_cell_value;
     use quadratic_core::{Array, CellValue, Rect};
 
     use super::*;
 
     #[test]
     fn loads_a_file() {
-        let file = load_file(include_str!("../examples/data/v1_4_simple.grid")).unwrap();
+        let file = load_file(include_str!("../../rust-shared/data/grid/v1_4_simple.grid")).unwrap();
 
         let mut grid = GridController::from_grid(file);
         let sheet_id = grid.sheet_ids().first().unwrap().to_owned();
