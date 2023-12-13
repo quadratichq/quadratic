@@ -37,14 +37,6 @@ impl GridController {
                         success = true;
                         match output_value {
                             Value::Array(array) => {
-                                // create the region
-                                let rect = Rect::new_span(
-                                    pos,
-                                    Pos {
-                                        x: pos.x + array.width() as i64,
-                                        y: pos.y + array.height() as i64,
-                                    },
-                                );
                                 if sheet.is_ok_to_spill_in(pos, array.size()) {
                                     self.summary.cell_sheets_modified.insert(
                                         CellSheetsModified::new(SheetPos {
@@ -113,7 +105,6 @@ impl GridController {
         let old_code_cell_value = sheet.set_code_cell_value(pos, updated_code_cell_value.clone());
 
         // updates summary.thumbnail_dirty flag
-        let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
         if let Some(updated_code_cell_value) = updated_code_cell_value.as_ref() {
             if let Some(output) = updated_code_cell_value.output.as_ref() {
                 match output.result.output_value() {

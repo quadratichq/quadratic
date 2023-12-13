@@ -571,7 +571,6 @@ mod test {
             TransactionType::Normal,
         );
 
-        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
         let sheet_pos = SheetPos {
             x: 2,
             y: 0,
@@ -606,7 +605,6 @@ mod test {
             Some(CellValue::Number(12.into()))
         );
 
-        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
         let sheet_pos = SheetPos {
             x: 0,
             y: 0,
@@ -706,7 +704,6 @@ mod test {
     fn test_js_code_result_to_code_cell_value_single() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
         let result = JsCodeResult::new_from_rust(
             true,
             None,
@@ -747,7 +744,6 @@ mod test {
     fn test_js_code_result_to_code_cell_value_array() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
         let array_output: Vec<Vec<String>> = vec![
             vec!["$1.1".into(), "20%".into()],
             vec!["3".into(), "Hello".into()],

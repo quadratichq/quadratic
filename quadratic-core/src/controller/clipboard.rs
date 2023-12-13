@@ -252,12 +252,12 @@ impl GridController {
             if let Some(cell_borders) = cell_borders {
                 let mut border_selections = vec![];
                 let mut border_styles = vec![];
-                let sheet_pos = SheetPos {
+                let sheet_rect: SheetRect = SheetPos {
+                    sheet_id: sheet.id,
                     x: *x + start_pos.x,
                     y: *y + start_pos.y,
-                    sheet_id: start_pos.sheet_id,
-                };
-                let rect = SheetRect::from(sheet_pos);
+                }
+                .into();
 
                 cell_borders
                     .borders
@@ -473,7 +473,7 @@ mod test {
         let (plain_text, _) = gc.copy_to_clipboard(sheet_rect);
         assert_eq!(plain_text, String::from("1, 1\t\t\n\t\t12"));
 
-        let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 3 });
+        let sheet_rect = SheetRect::new_pos_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 3 }, sheet_id);
         let clipboard = gc.copy_to_clipboard(sheet_rect);
 
         // paste using plain_text

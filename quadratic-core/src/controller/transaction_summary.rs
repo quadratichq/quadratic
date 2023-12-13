@@ -157,7 +157,6 @@ mod tests {
     fn test_cell_sheets_modified_region() {
         let mut gc = GridController::new();
         let sheet_id = gc.grid().first_sheet_id();
-        let sheet = gc.grid_mut().first_sheet_mut();
         let sheet_rect = Rect::from_numbers(0, 0, 21, 41).to_sheet_rect(sheet_id);
         gc.add_cell_sheets_modified_rect(&sheet_rect);
         assert_eq!(gc.summary.cell_sheets_modified.len(), 4);

@@ -29,7 +29,6 @@ impl GridController {
         value: String,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let sheet = self.grid.sheet_mut_from_id(sheet_pos.sheet_id);
         let mut ops = vec![];
         let cell_value = self.string_to_cell_value(sheet_pos, value.as_str(), &mut ops);
 
@@ -243,7 +242,7 @@ mod test {
     use crate::{
         controller::{transaction_summary::CellSheetsModified, GridController},
         grid::{NumericDecimals, NumericFormat},
-        CellValue, Pos, SheetPos,
+        CellValue, SheetPos,
     };
     use std::{collections::HashSet, str::FromStr};
 

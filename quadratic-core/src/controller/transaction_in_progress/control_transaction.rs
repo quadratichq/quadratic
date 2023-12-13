@@ -198,7 +198,7 @@ mod tests {
 
     use super::*;
 
-    fn add_cell_value(gc: &mut GridController, sheet_pos: SheetPos, value: CellValue) -> Operation {
+    fn add_cell_value(sheet_pos: SheetPos, value: CellValue) -> Operation {
         let sheet_rect = SheetRect::single_sheet_pos(sheet_pos);
 
         Operation::SetCellValues {
@@ -211,8 +211,8 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos::from((0, 0, sheet_id));
         let value = CellValue::Text("test".into());
-        let operation = add_cell_value(gc, sheet_pos, value);
-        let operation_undo = add_cell_value(gc, sheet_pos, CellValue::Blank);
+        let operation = add_cell_value(sheet_pos, value);
+        let operation_undo = add_cell_value(sheet_pos, CellValue::Blank);
 
         (operation, operation_undo)
     }

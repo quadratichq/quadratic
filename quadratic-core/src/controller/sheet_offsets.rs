@@ -17,7 +17,6 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         if let Some(transient_resize) = transient_resize {
-            let sheet = self.grid.sheet_mut_from_id(sheet_id);
             let mut ops = vec![];
             if let Some(column) = transient_resize.column {
                 ops.push(Operation::ResizeColumn {

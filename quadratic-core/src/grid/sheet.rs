@@ -250,7 +250,6 @@ impl Sheet {
     }
 
     /// Sets a formatting property for a cell.
-    #[must_use]
     pub fn set_formatting_value<A: CellFmtAttr>(
         &mut self,
         pos: Pos,

@@ -45,9 +45,7 @@ impl GridController {
             let rect = get_cells.rect();
             let array = sheet.cell_array(rect);
             let mut cells_accessed: HashSet<SheetPos> = HashSet::new();
-            let mut forward_operations = vec![];
             let sheet_id = sheet.id;
-            let sheet = self.grid_mut().sheet_mut_from_id(sheet_id);
             for y in rect.y_range() {
                 for x in rect.x_range() {
                     cells_accessed.insert(SheetPos { x, y, sheet_id });
@@ -56,7 +54,6 @@ impl GridController {
             cells_accessed.iter().for_each(|sheet_pos| {
                 self.cells_accessed.insert(*sheet_pos);
             });
-            self.forward_operations.extend(forward_operations);
             Some(array)
         } else {
             // unable to find sheet by name, generate error

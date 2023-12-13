@@ -1,11 +1,9 @@
-use std::collections::HashSet;
-
 use crate::{
     grid::{
         Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericCommas, NumericDecimals,
-        NumericFormat, NumericFormatKind, RenderSize, SheetId, TextColor,
+        NumericFormat, NumericFormatKind, RenderSize, TextColor,
     },
-    Pos, Rect, RunLengthEncoding, SheetPos, SheetRect,
+    Pos, RunLengthEncoding, SheetPos, SheetRect,
 };
 use serde::{Deserialize, Serialize};
 
