@@ -86,17 +86,6 @@ export function ShareTeamDialog({
         ...data.payload,
       };
     });
-  const pendingInviteIdsToDelete = useFetchers()
-    .filter(
-      (fetcher) =>
-        fetcherJsonIsOfType<TeamAction['request.delete-team-invite']>(fetcher.json, ['intent']) &&
-        fetcher.json.intent === 'delete-team-invite' &&
-        fetcher.state !== 'idle'
-    )
-    .map((fetcher) => {
-      const data = fetcher.json as TeamAction['request.delete-team-invite'];
-      return data.inviteId;
-    });
 
   // Get all emails of users and pending invites so user can't input them
   const currentTeamEmails = sortedUsers.map((user) => user.email).concat(pendingInvites.map((invite) => invite.email));
