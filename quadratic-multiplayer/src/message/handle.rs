@@ -7,12 +7,14 @@
 
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
+use crate::file::apply_string_operations;
+use crate::get_mut_room;
 use crate::message::{broadcast, request::MessageRequest, response::MessageResponse};
 use crate::state::user::UserState;
 use crate::state::{user::User, State};
@@ -105,6 +107,14 @@ pub(crate) async fn handle_message(
             operations,
         } => {
             state.update_user_heartbeat(file_id, &session_id).await?;
+
+            if let Err(error) = apply_string_operations(
+                &mut get_mut_room!(state, file_id)?.grid,
+                operations.to_owned(),
+            ) {
+                tracing::error!("Error applying operations: {:?}", error);
+            }
+
             let response = MessageResponse::Transaction {
                 file_id,
                 operations,

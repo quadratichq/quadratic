@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "quadratic-core",
+    "quadratic-multiplayer",
+    "rust-shared",
+]
+
+[workspace.package]
+authors = ["Quadratic"]
+edition = "2021"
+description = "Infinite data grid with Python, JavaScript, and SQL built-in"
+repository = "https://github.com/quadratichq/quadratic"
+license-file = "LICENSE"
