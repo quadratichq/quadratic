@@ -39,12 +39,16 @@ function getRoleLabel(role: string) {
   return 'Can edit';
 }
 
-function fetcherJsonIsOfType<T>(obj: any, properties: (keyof T)[]): obj is T {
-  if (!(obj && typeof obj === 'object')) {
-    return false;
-  }
-
-  return properties.every((prop) => prop in obj);
+// Simplified type definitions
+type JsonPrimitive = string | number | boolean | null;
+type JsonArray = Array<JsonValue>;
+interface JsonObject {
+  [key: string]: JsonValue;
+}
+type JsonValue = JsonPrimitive | JsonObject | JsonArray;
+// Type guard to check if a value is a JsonObject
+function isJsonObject(value: any): value is JsonObject {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 export function ShareTeamDialog({
@@ -75,9 +79,7 @@ export function ShareTeamDialog({
   const pendingInvites = useFetchers()
     .filter(
       (fetcher) =>
-        fetcherJsonIsOfType<TeamAction['request.create-team-invite']>(fetcher.json, ['intent']) &&
-        fetcher.json.intent === 'create-team-invite' &&
-        fetcher.state !== 'idle'
+        isJsonObject(fetcher.json) && fetcher.json.intent === 'create-team-invite' && fetcher.state !== 'idle'
     )
     .map((fetcher, i) => {
       const data = fetcher.json as TeamAction['request.create-team-invite'];
