@@ -34,7 +34,7 @@ jobs:
         pulumi config set aws:region us-west-2
         pulumi config set domain quadratichq.com
         pulumi config set subdomain multiplayer
-        pulumi config set instanceSize c6g.large
+        pulumi config set instanceSize t3.medium
         pulumi config set certificate-arn $AWS_PROD_MULTIPLAYER_AMC_ARN
         pulumi config set data-dog-env prod
         pulumi config set data-dog-api-key ${{ env.DD_API_KEY }}

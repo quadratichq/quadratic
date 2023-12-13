@@ -13,8 +13,7 @@ pub mod grid;
 mod position;
 mod rle;
 mod span;
-#[cfg(test)]
-mod test_util;
+pub mod test_util;
 mod values;
 #[cfg(feature = "js")]
 pub mod wasm_bindings;

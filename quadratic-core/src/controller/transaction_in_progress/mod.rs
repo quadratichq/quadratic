@@ -8,7 +8,7 @@ use crate::controller::{transaction_summary::TransactionSummary, GridController}
 
 use super::Transaction;
 
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum TransactionType {
     #[default]
     Unset,

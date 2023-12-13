@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use quadratic_core::controller::GridController;
 use serde::Serialize;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -10,6 +11,8 @@ use crate::{get_mut_room, get_or_create_room, get_room};
 pub(crate) struct Room {
     pub(crate) file_id: Uuid,
     pub(crate) users: HashMap<Uuid, User>,
+    #[serde(skip_serializing)]
+    pub(crate) grid: GridController,
 }
 
 impl Room {
@@ -17,6 +20,9 @@ impl Room {
         Room {
             file_id,
             users: HashMap::new(),
+            grid: GridController::new(),
+            // TODO(ddimaria): load the grid from the file
+            // grid: GridController::from_grid(load_file(file).unwrap()),
         }
     }
 }

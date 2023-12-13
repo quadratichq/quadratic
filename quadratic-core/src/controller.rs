@@ -35,13 +35,13 @@ pub mod transaction_types;
 pub mod undo;
 pub mod update_code_cell_value;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct Transaction {
     operations: Vec<Operation>,
     cursor: Option<String>,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct GridController {
     grid: Grid,

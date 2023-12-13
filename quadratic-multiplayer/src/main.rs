@@ -5,6 +5,7 @@
 
 mod auth;
 mod config;
+mod file;
 mod message;
 mod server;
 mod state;

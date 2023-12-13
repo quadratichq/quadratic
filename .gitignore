@@ -35,6 +35,7 @@ venv/*
 .env.local
 
 # Generated Rust files
+/target
 quadratic-core/target/
 quadratic-core/tmp.txt
 quadratic-multiplayer/target/

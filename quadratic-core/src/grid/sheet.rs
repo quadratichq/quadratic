@@ -360,9 +360,8 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use std::str::FromStr;
-
     use bigdecimal::BigDecimal;
+    use std::str::FromStr;
 
     use super::*;
     use crate::{

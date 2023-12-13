@@ -375,7 +375,7 @@ mod tests {
     use super::*;
     use anyhow::anyhow;
 
-    const V1_3_FILE: &str = include_str!("../../../../examples/v1_3.grid");
+    const V1_3_FILE: &str = include_str!("../../../../../rust-shared/data/grid/v1_3.grid");
 
     fn import(file_contents: &str) -> Result<GridSchema> {
         serde_json::from_str::<GridSchema>(file_contents)
