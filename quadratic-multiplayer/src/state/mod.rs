@@ -5,6 +5,7 @@
 
 pub mod connection;
 pub mod room;
+pub mod transaction_queue;
 pub mod user;
 
 use jsonwebtoken::jwk::JwkSet;
@@ -14,10 +15,13 @@ use uuid::Uuid;
 
 use crate::state::room::Room;
 
+use self::transaction_queue::TransactionQueue;
+
 #[derive(Debug)]
 pub(crate) struct State {
     pub(crate) rooms: Mutex<HashMap<Uuid, Room>>,
     pub(crate) connections: Mutex<HashMap<Uuid, Uuid>>,
+    pub(crate) transaction_queue: Mutex<TransactionQueue>,
     pub(crate) settings: Settings,
 }
 
@@ -29,9 +33,13 @@ pub(crate) struct Settings {
 
 impl State {
     pub(crate) fn new() -> Self {
+        // TODO(ddimaria): seed transaction_queue with the sequence from the database for each file
+        let sequence = 0;
+
         State {
             rooms: Mutex::new(HashMap::new()),
             connections: Mutex::new(HashMap::new()),
+            transaction_queue: Mutex::new(TransactionQueue::new(sequence)),
             settings: Settings::default(),
         }
     }
