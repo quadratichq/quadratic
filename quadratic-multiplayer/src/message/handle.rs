@@ -18,6 +18,7 @@ use crate::state::user::UserState;
 use crate::state::{user::User, State};
 
 /// Handle incoming messages.  All requests and responses are strictly typed.
+#[tracing::instrument]
 pub(crate) async fn handle_message(
     request: MessageRequest,
     state: Arc<State>,

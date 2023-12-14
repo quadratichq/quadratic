@@ -14,8 +14,6 @@ pub(crate) fn _apply_string_operations(
     grid: &mut GridController,
     operations: String,
 ) -> Result<TransactionSummary> {
-    tracing::info!("Applying operations: {}", operations);
-
     let operations: Vec<Operation> = serde_json::from_str(&operations)?;
 
     _apply_operations(grid, operations)

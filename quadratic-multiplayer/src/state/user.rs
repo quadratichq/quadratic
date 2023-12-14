@@ -83,6 +83,7 @@ impl State {
     }
 
     /// Remove stale users in a room.  Returns the number of users removed in the room, and the number left.
+    #[tracing::instrument]
     pub(crate) async fn remove_stale_users_in_room(
         &self,
         file_id: Uuid,
@@ -115,6 +116,7 @@ impl State {
     }
 
     /// Updates a user's heartbeat in a room
+    #[tracing::instrument]
     pub(crate) async fn update_user_heartbeat(
         &self,
         file_id: Uuid,

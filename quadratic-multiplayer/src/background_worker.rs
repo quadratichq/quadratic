@@ -11,6 +11,7 @@ use crate::{
 /// In a separate thread:
 ///   * Broadcast sequence number to all users in the room
 ///   * Check for stale users in rooms and remove them.
+#[tracing::instrument]
 pub(crate) async fn work(state: Arc<State>, heartbeat_check_s: i64, heartbeat_timeout_s: i64) {
     let state = Arc::clone(&state);
 
@@ -66,6 +67,7 @@ async fn broadcast_sequence_num(state: Arc<State>, file_id: Uuid) -> Result<Join
 }
 
 // remove stale users in the room
+#[tracing::instrument]
 async fn remove_stale_users_in_room(
     state: Arc<State>,
     file_id: &Uuid,

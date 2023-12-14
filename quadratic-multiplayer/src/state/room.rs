@@ -38,6 +38,7 @@ impl State {
     /// Add a user to a room.  If the room doesn't exist, it is created.  Users
     /// are only added to a room once (HashMap).  Returns true if the user was
     /// newly added.
+    #[tracing::instrument]
     pub(crate) async fn enter_room(&self, file_id: Uuid, user: &User, connection_id: Uuid) -> bool {
         let is_new = get_or_create_room!(self, file_id)
             .users
@@ -56,6 +57,7 @@ impl State {
 
     /// Removes a user from a room. If the room is empty, it deletes the room.
     /// Returns true if the room still exists after the user leaves.
+    #[tracing::instrument]
     pub(crate) async fn leave_room(&self, file_id: Uuid, session_id: &Uuid) -> Result<bool> {
         get_mut_room!(self, file_id)?.users.remove(session_id);
         let num_in_room = get_room!(self, file_id)?.users.len();
