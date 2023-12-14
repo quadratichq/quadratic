@@ -133,7 +133,7 @@ function Navbar() {
             );
             // If it does, use its data
             if (inFlightFetcher) {
-              const data = (inFlightFetcher.json as TeamAction['request.update-team']).payload;
+              const data = inFlightFetcher.json as TeamAction['request.update-team'];
               if (data.name) name = data.name;
               if (data.picture) picture = data.picture;
             }

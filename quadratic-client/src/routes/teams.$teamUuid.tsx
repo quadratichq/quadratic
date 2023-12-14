@@ -36,22 +36,19 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 };
 
 export type TeamAction = {
-  'request.update-team': {
+  'request.update-team': ApiTypes['/v0/teams/:uuid.POST.request'] & {
     intent: 'update-team';
-    payload: ApiTypes['/v0/teams/:uuid.POST.request'];
   };
-  'request.create-team-invite': {
+  'request.create-team-invite': ApiTypes['/v0/teams/:uuid/invites.POST.request'] & {
     intent: 'create-team-invite';
-    payload: ApiTypes['/v0/teams/:uuid/invites.POST.request'];
   };
   'request.delete-team-invite': {
     intent: 'delete-team-invite';
     inviteId: string;
   };
-  'request.update-team-user': {
+  'request.update-team-user': ApiTypes['/v0/teams/:uuid/users/:userId.POST.request'] & {
     intent: 'update-team-user';
     userId: string;
-    payload: ApiTypes['/v0/teams/:uuid/users/:userId.POST.request'];
   };
   'request.delete-team-user': {
     intent: 'delete-team-user';
@@ -78,9 +75,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   if (intent === 'update-team') {
     try {
       // TODO: uploading picture vs. name
-      const {
-        payload: { name, picture },
-      } = data;
+      const { name, picture } = data;
       await apiClient.teams.update(teamUuid, { name, picture });
       return { ok: true };
     } catch (e) {
@@ -90,8 +85,8 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
 
   if (intent === 'create-team-invite') {
     try {
-      const { payload } = data;
-      await apiClient.teams.invites.create(teamUuid, payload);
+      const { email, role } = data;
+      await apiClient.teams.invites.create(teamUuid, { email, role });
       return { ok: true };
     } catch (e) {
       return { ok: false };
@@ -110,10 +105,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
 
   if (intent === 'update-team-user') {
     try {
-      const {
-        userId,
-        payload: { role },
-      } = data;
+      const { userId, role } = data;
       await apiClient.teams.users.update(teamUuid, userId, { role });
       return { ok: true };
     } catch (e) {
@@ -156,7 +148,7 @@ export const Component = () => {
 
   let name = team.name;
   if (fetcher.state !== 'idle') {
-    name = (fetcher.json as TeamAction['request.update-team']).payload.name as string; // TODO fix zod types
+    name = (fetcher.json as TeamAction['request.update-team']).name as string; // TODO fix zod types
     // TODO: picture
   }
 
@@ -238,7 +230,7 @@ export const Component = () => {
           value={name}
           onSave={(name: string) => {
             setIsRenaming(false);
-            const data: TeamAction['request.update-team'] = { intent: 'update-team', payload: { name } };
+            const data: TeamAction['request.update-team'] = { intent: 'update-team', name };
             fetcher.submit(data, { method: 'POST', encType: 'application/json' });
           }}
         />

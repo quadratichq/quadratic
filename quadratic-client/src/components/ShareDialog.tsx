@@ -10,12 +10,13 @@ import { isJsonObject } from '@/utils/isJsonObject';
 import { Avatar } from '@mui/material';
 import { EnvelopeClosedIcon, GlobeIcon, LockClosedIcon } from '@radix-ui/react-icons';
 import {
-  ApiSchemas,
   ApiTypes,
   PublicLinkAccess,
   UserRoleFile,
+  UserRoleFileSchema,
   UserRoleTeam,
   UserRoleTeamSchema,
+  emailSchema,
 } from 'quadratic-shared/typesAndSchemas';
 import React, { Children, FormEvent, useEffect, useRef, useState } from 'react';
 import { useFetcher, useFetchers, useParams, useSubmit } from 'react-router-dom';
@@ -24,20 +25,13 @@ import { getTeamUserOption } from './ShareMenu.utils';
 import { Type } from './Type';
 
 function getRoleLabel(role: UserRoleTeam | UserRoleFile | 'DELETE') {
-  if (role === 'OWNER') {
-    return 'Owner';
-  } else if (role === 'EDITOR') {
-    return 'Can edit';
-  } else if (role === 'VIEWER') {
-    return 'Can view';
-  } else if (role === 'DELETE') {
-    return 'Remove';
-    // return isLoggedInUser ? 'Leave' : 'Remove';
-  }
-
-  // We should never reach here
-  // TODO: add types so we don't
-  return 'Can edit';
+  // prettier-ignore
+  return (
+    role === 'OWNER' ? 'Owner' :
+    role === 'EDITOR' ? 'Can edit' :
+    role === 'VIEWER' ? 'Can view' :
+    'Remove'
+  );
 }
 
 export function ShareDialog({ onClose, title, description, children }: any) {
@@ -48,7 +42,7 @@ export function ShareDialog({ onClose, title, description, children }: any) {
           <DialogTitle className={`truncate`}>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <div className={`-mx-4 flex flex-col gap-4 px-4`}>{children}</div>
+        <div className={`flex flex-col gap-4`}>{children}</div>
       </DialogContent>
     </Dialog>
   );
@@ -85,10 +79,11 @@ export function ShareTeamDialog({
         isJsonObject(fetcher.json) && fetcher.json.intent === 'create-team-invite' && fetcher.state !== 'idle'
     )
     .map((fetcher, i) => {
-      const data = fetcher.json as TeamAction['request.create-team-invite'];
+      const { email, role } = fetcher.json as TeamAction['request.create-team-invite'];
       return {
         id: i,
-        ...data.payload,
+        email,
+        role,
       };
     });
 
@@ -103,7 +98,12 @@ export function ShareTeamDialog({
 
   return (
     <ShareDialog title={`Share ${name}`} description="Invite people to collaborate in this team" onClose={onClose}>
-      <InviteUser formAction={`/teams/${uuid}`} exisitingTeamEmails={exisitingTeamEmails} loggedInUser={loggedInUser} />
+      <InviteForm
+        action={`/teams/${uuid}`}
+        intent="create-team-invite"
+        disallowedEmails={exisitingTeamEmails}
+        roles={[UserRoleTeamSchema.enum.EDITOR, UserRoleTeamSchema.enum.VIEWER]}
+      />
 
       {sortedUsers.map((user, i) => (
         <ManageUser key={user.id} numberOfOwners={numberOfOwners} loggedInUser={loggedInUser} user={user} />
@@ -143,12 +143,13 @@ export function ShareFileDialog({ uuid, name, onClose, fetcherUrl }: any) {
         <ListItemLoading />
       ) : (
         <>
-          {/* <InviteUser
-            formAction={`/files/${uuid}/sharing`}
-            exisitingTeamEmails={[]}
-            // @ts-expect-error fix later
-            loggedInUser={{}}
-          /> */}
+          <InviteForm
+            action={`/files/${uuid}/sharing`}
+            // @ts-expect-error
+            intent=""
+            disallowedEmails={[]}
+            roles={[UserRoleFileSchema.enum.EDITOR, UserRoleFileSchema.enum.VIEWER]}
+          />
           <PublicLink uuid={uuid} publicLinkAccess={publicLinkAccess} />
           {/* <ListItemTeamMember teamName={'TODO:'} /> */}
         </>
@@ -168,14 +169,17 @@ export function ShareFileDialog({ uuid, name, onClose, fetcherUrl }: any) {
 //   );
 // }
 
-export function InviteUser({
-  exisitingTeamEmails,
-  formAction,
-  loggedInUser,
+export function InviteForm({
+  disallowedEmails,
+  action,
+  intent,
+  // TODO:(enhancement) allow inviting owners, which requires backend support
+  roles,
 }: {
-  exisitingTeamEmails: string[];
-  formAction: string;
-  loggedInUser: ApiTypes['/v0/teams/:uuid.GET.response']['user'];
+  disallowedEmails: string[];
+  intent: TeamAction['request.create-team-invite']['intent'];
+  action: string;
+  roles: (UserRoleTeam | UserRoleFile)[];
 }) {
   const [error, setError] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -184,16 +188,10 @@ export function InviteUser({
     useFetchers().filter(
       (fetcher) =>
         fetcher.state === 'submitting' &&
-        // @ts-expect-error
-        (fetcher.json?.intent === 'delete-team-user' || fetcher.json?.intent === 'delete-team-invite')
+        isJsonObject(fetcher.json) &&
+        typeof fetcher.json.intent === 'string' &&
+        fetcher.json.intent.includes('delete')
     ).length > 0;
-
-  const { EDITOR, VIEWER } = UserRoleTeamSchema.enum;
-  const roles = [
-    // TODO:(enhancement) allow inviting owners, which requires backend support
-    EDITOR,
-    VIEWER,
-  ];
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -205,22 +203,18 @@ export function InviteUser({
 
     // Get the data from the form
     const formData = new FormData(e.currentTarget);
-    const payload = Object.fromEntries(formData) as TeamAction['request.create-team-invite']['payload'];
+    const data = Object.fromEntries(formData) as TeamAction['request.create-team-invite']; // TODO: other type for files
 
     // Validate email
     try {
-      ApiSchemas['/v0/teams/:uuid/invites.POST.request'].shape.email.parse(payload.email);
+      emailSchema.parse(data.email);
     } catch (e) {
       setError('Invalid email');
       return;
     }
 
     // Submit the data
-    const data: TeamAction['request.create-team-invite'] = {
-      intent: 'create-team-invite',
-      payload,
-    };
-    submit(data, { method: 'POST', action: formAction, encType: 'application/json', navigate: false });
+    submit(data, { method: 'POST', action, encType: 'application/json', navigate: false });
 
     // Reset the email input & focus it
     if (inputRef.current) {
@@ -248,7 +242,7 @@ export function InviteUser({
           ref={inputRef}
           onChange={(e) => {
             const email = e.target.value;
-            if (exisitingTeamEmails.includes(email)) {
+            if (disallowedEmails.includes(email)) {
               setError('Email exists in team');
             } else {
               setError('');
@@ -277,6 +271,7 @@ export function InviteUser({
         </Select>
       </div>
 
+      <input type="hidden" name="intent" value={intent} />
       <Button type="submit">Invite</Button>
     </form>
   );
@@ -394,7 +389,7 @@ function ManageUser({
 
   // If the user's role is being updated, show the optimistic value
   if (fetcher.state !== 'idle' && fetcherJson.intent === 'update-team-user') {
-    value = fetcherJson.payload.role;
+    value = fetcherJson.role;
   }
 
   // If there was an error, show it
@@ -441,7 +436,7 @@ function ManageUser({
               const data: TeamAction['request.update-team-user'] = {
                 intent: 'update-team-user',
                 userId,
-                payload: { role: newValue },
+                role: newValue,
               };
               fetcher.submit(data, {
                 method: 'POST',
@@ -498,13 +493,13 @@ function PublicLink({ uuid, publicLinkAccess }: { uuid: string; publicLinkAccess
   // If we're updating, optimistically show the next value
   if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
     const data = fetcher.json as FileShareAction['request.update-public-link-access'];
-    publicLinkAccess = data.payload.public_link_access;
+    publicLinkAccess = data.public_link_access;
   }
 
   const setPublicLinkAccess = async (newValue: PublicLinkAccess) => {
     const data: FileShareAction['request.update-public-link-access'] = {
       intent: 'update-public-link-access',
-      payload: { public_link_access: newValue },
+      public_link_access: newValue,
     };
     fetcher.submit(data, {
       method: 'POST',

@@ -21,7 +21,7 @@ export const loader = async ({ params }: LoaderFunctionArgs): Promise<Loader> =>
 export type Action = {
   'request.update-public-link-access': {
     intent: 'update-public-link-access';
-    payload: { public_link_access: PublicLinkAccess };
+    public_link_access: PublicLinkAccess;
   };
   // In the future, we'll have other updates here like updating an individual
   // user's permissions for the file
@@ -35,9 +35,9 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
   const { intent } = json;
 
   if (intent === 'update-public-link-access') {
-    const { payload } = json as Action['request.update-public-link-access'];
+    const { public_link_access } = json as Action['request.update-public-link-access'];
     try {
-      await apiClient.updateFileSharing(uuid, payload);
+      await apiClient.updateFileSharing(uuid, { public_link_access });
       return { ok: true };
     } catch (e) {
       return { ok: false };

@@ -40,9 +40,11 @@ export const hasAccess = (userAccess: Access[], accessType: Access) => userAcces
 // =============================================================================
 // TODO share these with the API
 
+export const emailSchema = z.string().email();
+
 const user = {
   id: z.number(),
-  email: z.string().email(),
+  email: emailSchema,
   hasAccount: z.boolean(),
   name: z.string().optional(),
   picture: z.string().url().optional(),
@@ -67,7 +69,7 @@ export const TeamSchema = z.object({
     .max(140, { message: 'Cannot be longer than 140 characters.' }),
   picture: z.string().url().optional(),
   users: z.array(TeamUserSchema), // TODO not optional
-  invites: z.array(z.object({ email: z.string().email(), role: UserRoleTeamSchema, id: z.number() })),
+  invites: z.array(z.object({ email: emailSchema, role: UserRoleTeamSchema, id: z.number() })),
   // files: z.any(), // TODO
   // TODO billing
 });
