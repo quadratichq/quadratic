@@ -113,6 +113,8 @@ export class PixiApp {
       })
     );
 
+    this.viewport.on('moved', () => {});
+
     // hack to ensure pointermove works outside of canvas
     this.viewport.off('pointerout');
 
