@@ -1,5 +1,5 @@
 import { isEmbed } from '@/helpers/isEmbed';
-import { Viewport } from 'pixi-viewport';
+import { Drag, Viewport } from 'pixi-viewport';
 import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
@@ -102,6 +102,14 @@ export class PixiApp {
         wheelZoom: true,
         percent: 1.5,
         keyToPress: [...ZOOM_KEY, ...HORIZONTAL_SCROLL_KEY],
+      })
+    );
+    this.viewport.plugins.add(
+      'drag-middle-mouse',
+      new Drag(this.viewport, {
+        pressToDrag: true,
+        mouseButtons: 'middle',
+        wheel: 'false',
       })
     );
 
