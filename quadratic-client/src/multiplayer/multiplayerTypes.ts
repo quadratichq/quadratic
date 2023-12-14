@@ -64,6 +64,13 @@ export interface MessageTransaction {
   operations: string;
 }
 
+export interface SendGetTransactions {
+  type: 'GetTransactions';
+  session_id: string;
+  file_id: string;
+  min_sequence_num: number;
+}
+
 export interface Heartbeat {
   type: 'Heartbeat';
   session_id: string;
