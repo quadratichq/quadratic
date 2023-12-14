@@ -86,7 +86,6 @@ impl Sheet {
 
     /// Sets a cell value and returns the old cell value. Returns `None` if the cell was deleted
     /// and did not previously exist (so no change is needed).
-    #[must_use]
     pub fn set_cell_value(&mut self, pos: Pos, value: impl Into<CellValue>) -> Option<CellValue> {
         let value = value.into();
         let is_empty = value.is_blank();

@@ -138,10 +138,9 @@ impl GridController {
         self.transaction_updated_bounds();
         if self.complete {
             self.summary.save = true;
-            self.prepare_transaction_summary()
-        } else {
-            TransactionSummary::default()
+            self.finalize_transaction();
         }
+        self.prepare_transaction_summary()
     }
 
     /// This is used to get cells during a TS-controlled async calculation

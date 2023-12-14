@@ -12,6 +12,8 @@ impl GridController {
     /// returns true if an async call is made or the compute cycle is completed
     pub(super) fn compute(&mut self) {
         while let Some(sheet_rect) = self.cells_updated.shift_remove_index(0) {
+            #[cfg(feature = "show-operations")]
+            crate::util::dbgjs(format!("[Computing Cells] Checking: {:?}", sheet_rect));
             if let Some(dependent_cells) = self.get_dependent_cells_for_sheet_rect(&sheet_rect) {
                 self.cells_to_compute.extend(dependent_cells);
             }
@@ -107,7 +109,7 @@ impl GridController {
             Some(waiting_for_async) => {
                 match waiting_for_async {
                     CodeCellLanguage::Python => {
-                        let cell_ref = if let Some(sheet_pos) = self.current_sheet_pos {
+                        let sheet_pos = if let Some(sheet_pos) = self.current_sheet_pos {
                             sheet_pos
                         } else {
                             panic!(
@@ -116,13 +118,14 @@ impl GridController {
                         };
                         let updated_code_cell_value = self.js_code_result_to_code_cell_value(
                             result,
-                            cell_ref,
+                            sheet_pos,
                             old_code_cell_value.language,
                             old_code_cell_value.code_string,
                         );
-                        if self
-                            .update_code_cell_value(cell_ref, Some(updated_code_cell_value.clone()))
-                        {
+                        if self.update_code_cell_value(
+                            sheet_pos,
+                            Some(updated_code_cell_value.clone()),
+                        ) {
                             // clear cells_accessed
                             self.cells_accessed.clear();
                         }
@@ -273,7 +276,7 @@ mod test {
             y: 0,
             sheet_id,
         };
-        let _ = sheet.set_cell_value(cell_value_pos, cell_value.clone());
+        sheet.set_cell_value(cell_value_pos, cell_value.clone());
 
         gc.set_in_progress_transaction(
             vec![Operation::SetCellCode {
@@ -463,6 +466,7 @@ mod test {
         let code_string = "asdf".to_string();
         let error = "NameError on line 1: name 'asdf' is not defined".to_string();
         let cell_value = CellValue::Blank;
+
         let mut gc = setup_python(Some(gc), code_string.clone(), cell_value);
         let sheet_id = gc.sheet_ids()[0];
 
