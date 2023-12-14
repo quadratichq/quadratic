@@ -32,14 +32,14 @@ model File {
     deleted            Boolean          @default(false)
     deleted_date       DateTime?
     // Binary file contents
-    contents           Bytes
+    contents           Bytes // unused to delete
     // Permissions
     owner              User             @relation(fields: [ownerUserId], references: [id])
     ownerUserId        Int
     public_link_access LinkPermission   @default(NOT_SHARED)
     // analytics fields
-    times_updated      Int              @default(1)
-    version            String?
+    times_updated      Int              @default(1) // unused to delete
+    version            String? // unused to delete
     FileCheckpoint     FileCheckpoint[]
 }
 
