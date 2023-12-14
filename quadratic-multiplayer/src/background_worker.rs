@@ -134,6 +134,7 @@ mod tests {
             .await
             .unwrap();
 
+        // user was removed from the room and the room was closed
         let room = state.get_room(&file_id).await;
         assert!(room.is_err());
     }

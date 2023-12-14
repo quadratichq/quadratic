@@ -1,4 +1,3 @@
-use anyhow::Result;
 use axum::extract::ws::Message;
 use futures_util::SinkExt;
 use std::sync::Arc;
@@ -21,34 +20,28 @@ pub(crate) fn broadcast(
     message: MessageResponse,
 ) -> JoinHandle<()> {
     tokio::spawn(async move {
-        if let Err(e) = broadcast_to_all_users(session_id, file_id, state, message).await {
+        let result = async {
+            for (_, user) in state
+                .get_room(&file_id)
+                .await?
+                .users
+                .iter()
+                .filter(|(_, user)| session_id != user.session_id)
+            {
+                println!("broadcasting to user: {:?}", user);
+                if let Some(sender) = &user.socket {
+                    sender
+                        .lock()
+                        .await
+                        .send(Message::Text(serde_json::to_string(&message)?))
+                        .await?;
+                }
+            }
+
+            Ok::<_, anyhow::Error>(())
+        };
+        if let Err(e) = result.await {
             tracing::warn!("Error broadcasting message: {:?}", e.to_string());
         }
     })
-}
-
-pub(crate) async fn broadcast_to_all_users(
-    session_id: Uuid,
-    file_id: Uuid,
-    state: Arc<State>,
-    message: MessageResponse,
-) -> Result<()> {
-    for (_, user) in state
-        .get_room(&file_id)
-        .await?
-        .users
-        .iter()
-        .filter(|(_, user)| session_id != user.session_id)
-    {
-        println!("broadcasting to user: {:?}", user);
-        if let Some(sender) = &user.socket {
-            sender
-                .lock()
-                .await
-                .send(Message::Text(serde_json::to_string(&message)?))
-                .await?;
-        }
-    }
-
-    Ok(())
 }
