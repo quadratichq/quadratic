@@ -1,11 +1,11 @@
+use anyhow::{anyhow, Result};
 use std::{sync::Arc, time::Duration};
-
-use tokio::time;
+use tokio::{task::JoinHandle, time};
 use uuid::Uuid;
 
 use crate::{
     message::{broadcast, response::MessageResponse},
-    state::State,
+    state::{room::Room, State},
 };
 
 /// In a separate thread:
@@ -18,50 +18,123 @@ pub(crate) async fn work(state: Arc<State>, heartbeat_check_s: i64, heartbeat_ti
         let mut interval = time::interval(Duration::from_millis(heartbeat_check_s as u64 * 1000));
 
         loop {
-            let rooms = state.rooms.lock().await.clone();
+            // let rooms = state.rooms.lock().await.clone();
 
-            for (file_id, room) in rooms.iter() {
+            for (file_id, room) in state.rooms.lock().await.iter() {
                 // broadcast sequence number to all users in the room
-                let sequence_num = state
-                    .transaction_queue
-                    .lock()
-                    .await
-                    .get_sequence_num(file_id.to_owned());
-
-                if let Ok(sequence_num) = sequence_num {
-                    broadcast(
-                        Uuid::new_v4(),
-                        file_id.to_owned(),
-                        Arc::clone(&state),
-                        MessageResponse::CurrentTransaction { sequence_num },
-                    );
+                if let Err(error) =
+                    broadcast_sequence_num(Arc::clone(&state), file_id.to_owned()).await
+                {
+                    tracing::warn!("Error broadcasting sequence number: {:?}", error);
                 }
 
                 // remove stale users in the room
-                match state
-                    .remove_stale_users_in_room(file_id.to_owned(), heartbeat_timeout_s)
-                    .await
+                if let Err(error) = remove_stale_users_in_room(
+                    Arc::clone(&state),
+                    file_id,
+                    room,
+                    heartbeat_timeout_s,
+                )
+                .await
                 {
-                    Ok((num_removed, num_remaining)) => {
-                        tracing::info!("Checking heartbeats in room {file_id} ({num_remaining} remaining in room)");
-
-                        if num_removed > 0 {
-                            broadcast(
-                                // TODO(ddimaria): use a real session_id here
-                                Uuid::new_v4(),
-                                file_id.to_owned(),
-                                Arc::clone(&state),
-                                MessageResponse::from(room.to_owned()),
-                            );
-                        }
-                    }
-                    Err(e) => {
-                        tracing::warn!("Error removing stale users from room {file_id}: {:?}", e);
-                    }
+                    tracing::warn!(
+                        "Error removing stale users from room {file_id}: {:?}",
+                        error
+                    );
                 }
             }
 
             interval.tick().await;
         }
     });
+}
+
+// broadcast sequence number to all users in the room
+async fn broadcast_sequence_num(state: Arc<State>, file_id: Uuid) -> Result<JoinHandle<()>> {
+    let sequence_num = state
+        .transaction_queue
+        .lock()
+        .await
+        .get_sequence_num(file_id.to_owned())?;
+
+    Ok(broadcast(
+        Uuid::new_v4(),
+        file_id.to_owned(),
+        Arc::clone(&state),
+        MessageResponse::CurrentTransaction { sequence_num },
+    ))
+}
+
+// remove stale users in the room
+async fn remove_stale_users_in_room(
+    state: Arc<State>,
+    file_id: &Uuid,
+    room: &Room,
+    heartbeat_timeout_s: i64,
+) -> Result<JoinHandle<()>> {
+    let (num_removed, num_remaining) = state
+        .remove_stale_users_in_room(file_id.to_owned(), heartbeat_timeout_s)
+        .await?;
+
+    tracing::info!("Checking heartbeats in room {file_id} ({num_remaining} remaining in room)");
+
+    if num_removed > 0 {
+        return Ok(broadcast(
+            // TODO(ddimaria): use a real session_id here
+            Uuid::new_v4(),
+            file_id.to_owned(),
+            Arc::clone(&state),
+            MessageResponse::from(room.to_owned()),
+        ));
+    }
+
+    Err(anyhow!("Error removing stale users from room {file_id}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::test_util::{add_new_user_to_room, grid_setup, operation};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn broadcast_sequence_num() {
+        let state = Arc::new(State::new());
+        let file_id = Uuid::new_v4();
+        let mut grid = grid_setup();
+        let transaction_id_1 = Uuid::new_v4();
+        let operations_1 = operation(&mut grid, 0, 0, "1");
+
+        state.transaction_queue.lock().await.push(
+            transaction_id_1,
+            file_id,
+            vec![operations_1.clone()],
+        );
+
+        super::broadcast_sequence_num(state, file_id)
+            .await
+            .unwrap()
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn remove_stale_users_in_room() {
+        let state = Arc::new(State::new());
+        let file_id = Uuid::new_v4();
+        let connection_id = Uuid::new_v4();
+        let user = add_new_user_to_room(file_id, state.clone(), connection_id).await;
+
+        let room = state.get_room(&file_id).await.unwrap();
+        assert_eq!(room.users.get(&user.session_id), Some(&user));
+
+        super::remove_stale_users_in_room(state.clone(), &file_id, &room, -1)
+            .await
+            .unwrap()
+            .await
+            .unwrap();
+
+        let room = state.get_room(&file_id).await;
+        assert!(room.is_err());
+    }
 }
