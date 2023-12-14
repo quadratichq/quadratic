@@ -15,7 +15,9 @@ import {
   MultiplayerUser,
   ReceiveMessages,
   ReceiveRoom,
+  ReceiveTransactions,
   SendEnterRoom,
+  SendGetTransactions
 } from './multiplayerTypes';
 
 const UPDATE_TIME = 1000 / 30;
@@ -252,11 +254,24 @@ export class Multiplayer {
 
   async sendTransaction(operations: string) {
     await this.init();
+    // TODO(ddimaria): this ID should be stored somewhere
+    let id = uuid(); 
     const message: MessageTransaction = {
       type: 'Transaction',
+      id,
       session_id: this.sessionId,
       file_id: this.room!,
       operations,
+    };
+    this.websocket!.send(JSON.stringify(message));
+  }
+
+  sendGetTransactions(min_sequence_num: number) {
+    const message: SendGetTransactions = {
+      type: 'GetTransactions',
+      session_id: this.sessionId,
+      file_id: this.room!,
+      min_sequence_num,
     };
     this.websocket!.send(JSON.stringify(message));
   }
@@ -400,15 +415,22 @@ export class Multiplayer {
     }
   }
 
+  private receiveTransactions(data: ReceiveTransactions) {
+    console.log(data.transactions);
+  }
+
   receiveMessage = (e: { data: string }) => {
     const data = JSON.parse(e.data) as ReceiveMessages;
+    console.log(`[Multiplayer] Received receiveMessage ${data.type}`);
     const { type } = data;
     if (type === 'UsersInRoom') {
       this.receiveUsersInRoom(data);
     } else if (type === 'UserUpdate') {
       this.receiveUserUpdate(data);
     } else if (type === 'Transaction') {
-      this.receiveTransaction(data);
+    this.receiveTransaction(data);
+    } else if (type === 'Transactions') {
+      this.receiveTransactions(data);
     } else if (type !== 'Empty') {
       console.warn(`Unknown message type: ${type}`);
     }

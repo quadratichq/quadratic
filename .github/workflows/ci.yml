@@ -26,6 +26,9 @@ jobs:
       - name: Install grcov
         run: if ! which grcov; then cargo install grcov; fi
 
+      - name: Install llvm-tools-preview
+        run: if ! which llvm-tools-preview; then rustup component add llvm-tools-preview; fi
+
       - name: Install pkg-config
         if: github.runner.isHosted == true
         run: |
@@ -52,12 +55,12 @@ jobs:
           grcov $(find . -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
-            --binary-path ./quadratic-core/target/debug/ \
+            --binary-path ./target/debug/ \
             -s . \
             -t lcov \
             --ignore "/*" \
-            --ignore "./quadratic-core/src/wasm_bindings/*" \
-            --ignore "./quadratic-core/src/bin/*" \
+            --ignore "./src/wasm_bindings/*" \
+            --ignore "./src/bin/*" \
             -o lcov.info
 
       - name: Upload coverage reports to Codecov
@@ -85,12 +88,12 @@ jobs:
           grcov $(find . -name "grcov-*.profraw" -print) \
             --branch \
             --ignore-not-existing \
-            --binary-path ./quadratic-multiplayer/target/debug/ \
+            --binary-path ./target/debug/ \
             -s . \
             -t lcov \
             --ignore "/*" \
-            --ignore "./quadratic-multiplayer/src/wasm_bindings/*" \
-            --ignore "./quadratic-multiplayer/src/bin/*" \
+            --ignore "./src/wasm_bindings/*" \
+            --ignore "./src/bin/*" \
             -o lcov.info
 
       - name: Upload coverage reports to Codecov quadratic-multiplayer
