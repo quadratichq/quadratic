@@ -8,12 +8,11 @@ datasource db {
 }
 
 model User {
-    id             Int              @id @default(autoincrement())
-    auth0_id       String           @unique
-    files          File[]
-    QFeedback      QFeedback[]
-    UserTeamRole   UserTeamRole[]
-    FileCheckpoint FileCheckpoint[]
+    id           Int            @id @default(autoincrement())
+    auth0_id     String         @unique
+    files        File[]
+    QFeedback    QFeedback[]
+    UserTeamRole UserTeamRole[]
 }
 
 enum LinkPermission {
@@ -46,17 +45,15 @@ model File {
 
 model FileCheckpoint {
     // Unique Identifiers
-    id              Int      @id @default(autoincrement())
-    file            File     @relation(fields: [fileId], references: [id])
-    fileId          Int      @map("file_id")
-    sequenceNumber  Int      @map("sequence_number")
+    id             Int      @id @default(autoincrement())
+    file           File     @relation(fields: [fileId], references: [id])
+    fileId         Int      @map("file_id")
+    sequenceNumber Int      @map("sequence_number")
     // Checkpoint Data
-    data            String // S3FileKey
-    version         String // Quadratic file version
+    data           String // S3FileKey
+    version        String // Quadratic file version
     // Metadata
-    createdDate     DateTime @default(now()) @map("created_date")
-    createdBy       User     @relation(fields: [createdByUserId], references: [id])
-    createdByUserId Int      @map("created_by")
+    timestamp      DateTime @default(now())
 
     @@unique([fileId, sequenceNumber])
 }
