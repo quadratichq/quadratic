@@ -85,7 +85,7 @@ pub(crate) async fn serve() -> Result<()> {
         tracing::warn!("JWT authentication is disabled");
     }
 
-    background_worker::work(Arc::clone(&state), heartbeat_check_s, heartbeat_timeout_s).await;
+    background_worker::start(Arc::clone(&state), heartbeat_check_s, heartbeat_timeout_s).await;
 
     axum::serve(
         listener,

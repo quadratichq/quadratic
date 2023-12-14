@@ -124,7 +124,8 @@ pub(crate) async fn handle_message(
                 sequence_num,
             };
 
-            broadcast(vec![session_id], file_id, Arc::clone(&state), response);
+            // the user who sent the transaction should receive the transaction response
+            broadcast(vec![], file_id, Arc::clone(&state), response);
 
             Ok(None)
         }
