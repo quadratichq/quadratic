@@ -169,7 +169,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, conne
                 tracing::info!("Broadcasting room {file_id} after removing stale users");
 
                 let message = MessageResponse::from(room.to_owned());
-                broadcast(Uuid::new_v4(), file_id, Arc::clone(&state), message);
+                broadcast(vec![], file_id, Arc::clone(&state), message);
             }
         }
     }

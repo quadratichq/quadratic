@@ -71,7 +71,7 @@ pub(crate) async fn handle_message(
                 let room = state.get_room(&file_id).await?;
                 let response = MessageResponse::from(room.to_owned());
 
-                broadcast(Uuid::new_v4(), file_id, Arc::clone(&state), response);
+                broadcast(vec![], file_id, Arc::clone(&state), response);
 
                 tracing::info!(
                     "User {} joined room {} with session {}",
@@ -94,7 +94,7 @@ pub(crate) async fn handle_message(
 
             if is_not_empty {
                 let response = MessageResponse::from(room.to_owned());
-                broadcast(session_id, file_id, Arc::clone(&state), response);
+                broadcast(vec![session_id], file_id, Arc::clone(&state), response);
             }
 
             Ok(None)
@@ -124,7 +124,7 @@ pub(crate) async fn handle_message(
                 sequence_num,
             };
 
-            broadcast(session_id, file_id, Arc::clone(&state), response);
+            broadcast(vec![session_id], file_id, Arc::clone(&state), response);
 
             Ok(None)
         }
@@ -168,7 +168,7 @@ pub(crate) async fn handle_message(
                 update,
             };
 
-            broadcast(session_id, file_id, Arc::clone(&state), response);
+            broadcast(vec![session_id], file_id, Arc::clone(&state), response);
 
             Ok(None)
         }
@@ -217,7 +217,7 @@ pub(crate) mod tests {
                 viewport: None,
             },
         };
-        broadcast(user_1.session_id, file_id, state, message)
+        broadcast(vec![user_1.session_id], file_id, state, message)
             .await
             .unwrap();
 
@@ -240,7 +240,7 @@ pub(crate) mod tests {
                 viewport: None,
             },
         };
-        broadcast(user_1.session_id, file_id, state, message)
+        broadcast(vec![user_1.session_id], file_id, state, message)
             .await
             .unwrap();
 
@@ -263,7 +263,7 @@ pub(crate) mod tests {
                 viewport: None,
             },
         };
-        broadcast(user_1.session_id, file_id, state, message)
+        broadcast(vec![user_1.session_id], file_id, state, message)
             .await
             .unwrap();
 
@@ -286,7 +286,7 @@ pub(crate) mod tests {
                 viewport: None,
             },
         };
-        broadcast(user_1.session_id, file_id, state, message)
+        broadcast(vec![user_1.session_id], file_id, state, message)
             .await
             .unwrap();
 
@@ -314,7 +314,7 @@ pub(crate) mod tests {
                 viewport: None,
             },
         };
-        broadcast(user_1.session_id, file_id, state, message)
+        broadcast(vec![user_1.session_id], file_id, state, message)
             .await
             .unwrap();
 
@@ -337,7 +337,7 @@ pub(crate) mod tests {
                 viewport: Some("viewport".to_string()),
             },
         };
-        broadcast(user_1.session_id, file_id, state, message)
+        broadcast(vec![user_1.session_id], file_id, state, message)
             .await
             .unwrap();
 
@@ -354,7 +354,7 @@ pub(crate) mod tests {
             operations: "test".to_string(),
             sequence_num: 1,
         };
-        broadcast(user_1.session_id, file_id, state, message)
+        broadcast(vec![user_1.session_id], file_id, state, message)
             .await
             .unwrap();
 

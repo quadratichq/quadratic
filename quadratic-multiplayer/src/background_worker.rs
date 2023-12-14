@@ -57,7 +57,7 @@ async fn broadcast_sequence_num(state: Arc<State>, file_id: Uuid) -> Result<Join
         .get_sequence_num(file_id.to_owned())?;
 
     Ok(broadcast(
-        Uuid::new_v4(),
+        vec![],
         file_id.to_owned(),
         Arc::clone(&state),
         MessageResponse::CurrentTransaction { sequence_num },
@@ -80,8 +80,7 @@ async fn remove_stale_users_in_room(
 
     if num_removed > 0 {
         return Ok(broadcast(
-            // TODO(ddimaria): use a real session_id here
-            Uuid::new_v4(),
+            vec![],
             file_id.to_owned(),
             Arc::clone(&state),
             MessageResponse::from(room.to_owned()),
