@@ -8,11 +8,12 @@ datasource db {
 }
 
 model User {
-    id           Int            @id @default(autoincrement())
-    auth0_id     String         @unique
-    files        File[]
-    QFeedback    QFeedback[]
-    UserTeamRole UserTeamRole[]
+    id             Int              @id @default(autoincrement())
+    auth0_id       String           @unique
+    files          File[]
+    QFeedback      QFeedback[]
+    UserTeamRole   UserTeamRole[]
+    FileCheckpoint FileCheckpoint[]
 }
 
 enum LinkPermission {
@@ -23,23 +24,41 @@ enum LinkPermission {
 
 // TODO Properly configure camelCase <-> snake_case
 model File {
-    id                 Int            @id @default(autoincrement())
-    uuid               String         @unique @default(uuid())
+    id                 Int              @id @default(autoincrement())
+    uuid               String           @unique @default(uuid())
     name               String
     thumbnail          String? // S3FileKey
-    created_date       DateTime       @default(now())
-    updated_date       DateTime       @default(now())
-    deleted            Boolean        @default(false)
+    created_date       DateTime         @default(now())
+    updated_date       DateTime         @default(now())
+    deleted            Boolean          @default(false)
     deleted_date       DateTime?
     // Binary file contents
     contents           Bytes
     // Permissions
-    owner              User           @relation(fields: [ownerUserId], references: [id])
+    owner              User             @relation(fields: [ownerUserId], references: [id])
     ownerUserId        Int
-    public_link_access LinkPermission @default(NOT_SHARED)
+    public_link_access LinkPermission   @default(NOT_SHARED)
     // analytics fields
-    times_updated      Int            @default(1)
+    times_updated      Int              @default(1)
     version            String?
+    FileCheckpoint     FileCheckpoint[]
+}
+
+model FileCheckpoint {
+    // Unique Identifiers
+    id              Int      @id @default(autoincrement())
+    file            File     @relation(fields: [fileId], references: [id])
+    fileId          Int      @map("file_id")
+    sequenceNumber  Int      @map("sequence_number")
+    // Checkpoint Data
+    data            String // S3FileKey
+    version         String // Quadratic file version
+    // Metadata
+    createdDate     DateTime @default(now()) @map("created_date")
+    createdBy       User     @relation(fields: [createdByUserId], references: [id])
+    createdByUserId Int      @map("created_by")
+
+    @@unique([fileId, sequenceNumber])
 }
 
 model Team {

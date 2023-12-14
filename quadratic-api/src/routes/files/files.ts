@@ -75,6 +75,16 @@ files_router.get(
       req.quadraticFile.thumbnail = await generatePresignedUrl(req.quadraticFile.thumbnail);
     }
 
+    // Get the most recent checkpoint for the file
+    const checkpoint = await dbClient.fileCheckpoint.findFirst({
+      where: {
+        fileId: req.quadraticFile.id,
+      },
+      orderBy: {
+        sequenceNumber: 'desc',
+      },
+    });
+
     return res.status(200).json({
       file: {
         uuid: req.quadraticFile.uuid,
@@ -83,6 +93,7 @@ files_router.get(
         updated_date: req.quadraticFile.updated_date,
         version: req.quadraticFile.version,
         contents: req.quadraticFile.contents.toString('utf8'),
+        last_checkpoint: checkpoint,
         thumbnail: req.quadraticFile.thumbnail,
       },
       permission: getFilePermissions(req.user, req.quadraticFile),
@@ -96,8 +107,8 @@ files_router.post(
   validateAccessToken,
   userMiddleware,
   fileMiddleware,
-  validateFileContents().optional(),
-  validateFileVersion().optional(),
+  // validateFileContents().optional(),
+  // validateFileVersion().optional(),
   validateFileName().optional(),
   async (req: Request, res: Response) => {
     if (!req.quadraticFile || !req.user) {
@@ -116,26 +127,26 @@ files_router.post(
     }
 
     // Update the contents
-    if (req.body.contents !== undefined) {
-      if (req.body.version === undefined) {
-        return res.status(400).json({ error: { message: 'Updating `contents` requires `version` in body' } });
-      }
+    // if (req.body.contents !== undefined) {
+    //   if (req.body.version === undefined) {
+    //     return res.status(400).json({ error: { message: 'Updating `contents` requires `version` in body' } });
+    //   }
 
-      const contents = Buffer.from(req.body.contents, 'utf-8');
-      await dbClient.file.update({
-        where: {
-          uuid: req.params.uuid,
-        },
-        data: {
-          contents,
-          updated_date: new Date(),
-          version: req.body.version,
-          times_updated: {
-            increment: 1,
-          },
-        },
-      });
-    }
+    //   const contents = Buffer.from(req.body.contents, 'utf-8');
+    //   await dbClient.file.update({
+    //     where: {
+    //       uuid: req.params.uuid,
+    //     },
+    //     data: {
+    //       contents,
+    //       updated_date: new Date(),
+    //       version: req.body.version,
+    //       times_updated: {
+    //         increment: 1,
+    //       },
+    //     },
+    //   });
+    // }
 
     // update the file name
     if (req.body.name !== undefined) {
@@ -241,6 +252,8 @@ files_router.post(
     if (!req.user) {
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
+
+    // TODO: save file to S3 instead of database
 
     const contents = Buffer.from(req.body.contents, 'utf8');
 
