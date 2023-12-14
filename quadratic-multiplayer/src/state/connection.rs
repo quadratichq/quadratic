@@ -21,7 +21,7 @@ impl State {
     }
 
     /// Removes a connection from the state.  If the connection is in a room, leave the room.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub(crate) async fn clear_connections(&self, connection_id: Uuid) -> Result<Vec<Uuid>> {
         let mut affected_rooms = vec![];
         let rooms = self.rooms.lock().await.clone();
