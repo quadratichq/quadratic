@@ -7,14 +7,12 @@
 
 use std::sync::Arc;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::file::apply_string_operations;
-use crate::get_mut_room;
 use crate::message::{broadcast, request::MessageRequest, response::MessageResponse};
 use crate::state::user::UserState;
 use crate::state::{user::User, State};

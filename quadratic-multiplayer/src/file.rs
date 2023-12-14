@@ -8,7 +8,7 @@ pub(crate) fn _load_file(file: &str) -> Result<Grid> {
     import(file)
 }
 
-pub(crate) fn apply_string_operations(
+pub(crate) fn _apply_string_operations(
     grid: &mut GridController,
     operations: String,
 ) -> Result<TransactionSummary> {
@@ -16,10 +16,10 @@ pub(crate) fn apply_string_operations(
 
     let operations: Vec<Operation> = serde_json::from_str(&operations)?;
 
-    apply_operations(grid, operations)
+    _apply_operations(grid, operations)
 }
 
-pub(crate) fn apply_operations(
+pub(crate) fn _apply_operations(
     grid: &mut GridController,
     operations: Vec<Operation>,
 ) -> Result<TransactionSummary> {
@@ -50,7 +50,7 @@ mod tests {
         let values = Array::from(value);
         let operation = Operation::SetCellValues { sheet_rect, values };
 
-        let _ = apply_operations(&mut grid, vec![operation]);
+        let _ = _apply_operations(&mut grid, vec![operation]);
 
         assert_cell_value(&grid, sheet_id, 0, 0, "hello");
     }
