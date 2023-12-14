@@ -2,11 +2,9 @@ use core::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    grid::{CodeCellValue, Sheet, SheetBorders, SheetId},
+    grid::{formatting::CellFmtArray, CodeCellValue, Sheet, SheetBorders, SheetId},
     Array, SheetPos, SheetRect,
 };
-
-use super::formatting::CellFmtArray;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Operation {

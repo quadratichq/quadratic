@@ -3,7 +3,7 @@ use std::collections::HashSet;
 
 use crate::{
     controller::{
-        operation::Operation,
+        operations::operation::Operation,
         transaction_summary::{TransactionSummary, CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
         transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
     },

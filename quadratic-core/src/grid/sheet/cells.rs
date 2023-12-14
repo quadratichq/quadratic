@@ -1,6 +1,8 @@
+use anyhow::{anyhow, Result};
+
 use crate::{
     controller::transaction_types::{CellForArray, CellsForArray},
-    Pos, Rect,
+    Array, CellValue, Pos, Rect,
 };
 
 use super::Sheet;
@@ -18,5 +20,31 @@ impl Sheet {
             }
         }
         CellsForArray::new(array, false)
+    }
+
+    /// In a given rect, collect all cell values into an array.
+    ///
+    /// TODO(ddimaria): is this necessary as it's more performant to just pluck the data from the sheet direclty
+    pub fn cell_values_in_rect(&self, &selection: &Rect) -> Result<Array> {
+        let values = selection
+            .y_range()
+            .flat_map(|y| {
+                selection
+                    .x_range()
+                    .map(|x| {
+                        self.get_cell_value(Pos { x, y })
+                            .unwrap_or_else(|| CellValue::Blank)
+                    })
+                    .collect::<Vec<CellValue>>()
+            })
+            .collect();
+
+        Array::new_row_major(selection.size(), values).map_err(|e| {
+            anyhow!(
+                "Could not create array of size {:?}: {:?}",
+                selection.size(),
+                e
+            )
+        })
     }
 }

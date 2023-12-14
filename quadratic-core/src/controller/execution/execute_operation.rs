@@ -1,6 +1,8 @@
+use crate::grid::formatting::CellFmtArray;
 use crate::{grid::*, Array, CellValue, SheetPos};
 
-use super::{formatting::CellFmtArray, operation::Operation, GridController};
+use super::super::operations::operation::Operation;
+use super::super::GridController;
 
 impl GridController {
     /// Executes the given operation.

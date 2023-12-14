@@ -1,11 +1,11 @@
 use super::{
-    formatting::CellFmtArray, operation::Operation, transaction_in_progress::TransactionType,
+    operations::operation::Operation, transaction_in_progress::TransactionType,
     transaction_summary::TransactionSummary, GridController,
 };
 use crate::{
     grid::{
-        generate_borders_full, get_cell_borders_in_rect, BorderSelection, CellBorders,
-        CodeCellValue,
+        formatting::CellFmtArray, generate_borders_full, get_cell_borders_in_rect, BorderSelection,
+        CellBorders, CodeCellValue,
     },
     Array, ArraySize, CellValue, Pos, SheetPos, SheetRect,
 };

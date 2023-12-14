@@ -1,4 +1,4 @@
-use super::{
+use super::super::{
     transaction_in_progress::TransactionType, transaction_summary::TransactionSummary,
     GridController,
 };

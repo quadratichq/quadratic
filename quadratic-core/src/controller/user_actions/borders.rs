@@ -1,8 +1,6 @@
-use super::operation::Operation;
-use super::transaction_in_progress::TransactionType;
-use super::GridController;
+use super::super::transaction_in_progress::TransactionType;
+use super::super::GridController;
 use crate::controller::transaction_summary::TransactionSummary;
-use crate::grid::generate_borders;
 use crate::grid::{BorderSelection, BorderStyle};
 use crate::SheetRect;
 
@@ -14,12 +12,7 @@ impl GridController {
         style: Option<BorderStyle>,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let sheet = self.sheet(sheet_rect.sheet_id);
-        let borders = generate_borders(sheet, &sheet_rect.into(), selections, style);
-        let ops = vec![Operation::SetBorders {
-            sheet_rect,
-            borders,
-        }];
+        let ops = self.set_borders_operations(sheet_rect, selections, style);
         self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
 }

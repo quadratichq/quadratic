@@ -253,7 +253,7 @@ mod test {
 
     use crate::{
         controller::{
-            operation::Operation,
+            operations::operation::Operation,
             transaction_in_progress::TransactionType,
             transaction_types::{CellForArray, JsCodeResult, JsComputeGetCells},
             GridController,
