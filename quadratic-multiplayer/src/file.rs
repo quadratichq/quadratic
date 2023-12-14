@@ -4,7 +4,7 @@ use quadratic_core::{
     grid::{file::import, Grid},
 };
 
-pub(crate) fn load_file(file: &str) -> Result<Grid> {
+pub(crate) fn _load_file(file: &str) -> Result<Grid> {
     import(file)
 }
 
@@ -35,7 +35,8 @@ mod tests {
 
     #[test]
     fn loads_a_file() {
-        let file = load_file(include_str!("../../rust-shared/data/grid/v1_4_simple.grid")).unwrap();
+        let file =
+            _load_file(include_str!("../../rust-shared/data/grid/v1_4_simple.grid")).unwrap();
 
         let mut grid = GridController::from_grid(file);
         let sheet_id = grid.sheet_ids().first().unwrap().to_owned();
