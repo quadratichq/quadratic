@@ -13,7 +13,7 @@ pub mod response;
 
 /// Broadcast a message to all users in a room except the sender.
 /// All messages are sent in a separate thread.
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub(crate) fn broadcast(
     exclude: Vec<Uuid>,
     file_id: Uuid,

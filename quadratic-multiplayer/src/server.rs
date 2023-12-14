@@ -51,7 +51,7 @@ pub(crate) fn app(state: Arc<State>) -> Router {
 }
 
 /// Start the websocket server.  This is the entrypoint for the application.
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub(crate) async fn serve() -> Result<()> {
     let Config {
         host,
@@ -97,7 +97,7 @@ pub(crate) async fn serve() -> Result<()> {
 }
 
 // Handle the websocket upgrade from http.
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 async fn ws_handler(
     ws: WebSocketUpgrade,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
@@ -141,7 +141,7 @@ async fn ws_handler(
 }
 
 // After websocket is established, delegate incoming messages as they arrive.
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, connection_id: Uuid) {
     let (sender, mut receiver) = socket.split();
     let sender = Arc::new(Mutex::new(sender));
@@ -179,7 +179,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, conne
 }
 
 /// Based on the incoming message type, perform some action and return a response.
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 async fn process_message(
     msg: Message,
     sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
