@@ -108,12 +108,13 @@ pub(crate) async fn handle_message(
         } => {
             state.update_user_heartbeat(file_id, &session_id).await?;
 
-            if let Err(error) = apply_string_operations(
-                &mut get_mut_room!(state, file_id)?.grid,
-                operations.to_owned(),
-            ) {
-                tracing::error!("Error applying operations: {:?}", error);
-            }
+            // this caused an error (I think because the file was not loaded yet)
+            // if let Err(error) = apply_string_operations(
+            //     &mut get_mut_room!(state, file_id)?.grid,
+            //     operations.to_owned(),
+            // ) {
+            //     tracing::error!("Error applying operations: {:?}", error);
+            // }
 
             let response = MessageResponse::Transaction {
                 file_id,
