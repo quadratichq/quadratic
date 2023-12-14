@@ -70,9 +70,7 @@ pub(crate) async fn add_new_user_to_room(
 }
 
 pub(crate) fn grid_setup() -> GridController {
-    let grid = GridController::new();
-
-    grid
+    GridController::new()
 }
 
 pub(crate) fn operation(grid: &mut GridController, x: i64, y: i64, value: &str) -> Operation {

@@ -28,7 +28,6 @@ pub(crate) fn broadcast(
                 .iter()
                 .filter(|(_, user)| session_id != user.session_id)
             {
-                println!("broadcasting to user: {:?}", user);
                 if let Some(sender) = &user.socket {
                     sender
                         .lock()
@@ -40,6 +39,7 @@ pub(crate) fn broadcast(
 
             Ok::<_, anyhow::Error>(())
         };
+
         if let Err(e) = result.await {
             tracing::warn!("Error broadcasting message: {:?}", e.to_string());
         }

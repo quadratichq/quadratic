@@ -1,27 +1,30 @@
 use anyhow::{anyhow, bail, Result};
-
 use jsonwebtoken::jwk::AlgorithmParameters;
-use jsonwebtoken::{decode, decode_header, jwk, Algorithm, DecodingKey, Validation};
+use jsonwebtoken::{decode, decode_header, jwk, Algorithm, DecodingKey, TokenData, Validation};
 use std::collections::HashMap;
 use std::str::FromStr;
 
+/// Get the JWK set from a given URL.
 pub(crate) async fn get_jwks(url: &str) -> Result<jwk::JwkSet> {
     let jwks = reqwest::get(url).await?.json::<jwk::JwkSet>().await?;
 
     Ok(jwks)
 }
 
+/// Authorize a JWT token using a given JWK set.
 pub(crate) fn authorize(
     jwks: &jwk::JwkSet,
     token: &str,
     validate_aud: bool,
     validate_exp: bool,
-) -> Result<()> {
+) -> Result<TokenData<HashMap<String, serde_json::Value>>> {
     let header = decode_header(token)?;
+    let decoded_token;
     let kid = header
         .kid
         .ok_or_else(|| anyhow!("Token doesn't have a `kid` header field"))?;
 
+    // Validate the JWT using an algorithm.  The algorithm needs to be RSA.
     if let Some(jwk) = jwks.find(&kid) {
         match &jwk.algorithm {
             AlgorithmParameters::RSA(rsa) => {
@@ -36,7 +39,7 @@ pub(crate) fn authorize(
                 validation.validate_exp = validate_exp;
                 validation.validate_aud = validate_aud;
 
-                let _decoded_token = decode::<HashMap<String, serde_json::Value>>(
+                decoded_token = decode::<HashMap<String, serde_json::Value>>(
                     token,
                     &decoding_key,
                     &validation,
@@ -48,7 +51,7 @@ pub(crate) fn authorize(
         bail!("No matching JWK found for the given kid");
     }
 
-    Ok(())
+    Ok(decoded_token)
 }
 
 #[cfg(test)]

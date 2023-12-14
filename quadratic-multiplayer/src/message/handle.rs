@@ -41,6 +41,16 @@ pub(crate) async fn handle_message(
             cell_edit,
             viewport,
         } => {
+            let user_state = UserState {
+                sheet_id,
+                selection,
+                cell_edit,
+                x: 0.0,
+                y: 0.0,
+                visible: false,
+                viewport,
+            };
+
             let user = User {
                 user_id,
                 session_id,
@@ -48,15 +58,7 @@ pub(crate) async fn handle_message(
                 last_name,
                 email,
                 image,
-                state: UserState {
-                    sheet_id,
-                    selection,
-                    cell_edit,
-                    x: 0.0,
-                    y: 0.0,
-                    visible: false,
-                    viewport,
-                },
+                state: user_state,
                 socket: Some(Arc::clone(&sender)),
                 last_heartbeat: chrono::Utc::now(),
             };
@@ -156,6 +158,7 @@ pub(crate) async fn handle_message(
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
+            // update user state
             state
                 .update_user_state(&file_id, &session_id, &update)
                 .await?;
@@ -175,6 +178,7 @@ pub(crate) async fn handle_message(
             session_id,
             file_id,
         } => {
+            // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
             Ok(None)
         }
@@ -188,12 +192,18 @@ pub(crate) mod tests {
     use crate::state::user::{CellEdit, UserStateUpdate};
     use crate::test_util::add_new_user_to_room;
 
-    #[tokio::test]
-    async fn test_update_state() {
+    async fn setup() -> (Arc<State>, Uuid, User) {
         let state = Arc::new(State::new());
         let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let user_1 = add_new_user_to_room(file_id, state.clone(), connection_id).await;
+
+        (state, file_id, user_1)
+    }
+
+    #[tokio::test]
+    async fn test_update_state() {
+        let (state, file_id, user_1) = setup().await;
         let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
@@ -207,18 +217,16 @@ pub(crate) mod tests {
                 viewport: None,
             },
         };
-        broadcast(user_1.session_id, file_id, state, message);
+        broadcast(user_1.session_id, file_id, state, message)
+            .await
+            .unwrap();
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }
 
     #[tokio::test]
     async fn test_change_selection() {
-        let state = Arc::new(State::new());
-        let connection_id = Uuid::new_v4();
-        let file_id = Uuid::new_v4();
-        let user_1 = add_new_user_to_room(file_id, state.clone(), connection_id).await;
-        let _user_2 = add_new_user_to_room(file_id, state.clone(), connection_id).await;
+        let (state, file_id, user_1) = setup().await;
         let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
@@ -232,18 +240,16 @@ pub(crate) mod tests {
                 viewport: None,
             },
         };
-        broadcast(user_1.session_id, file_id, state, message);
+        broadcast(user_1.session_id, file_id, state, message)
+            .await
+            .unwrap();
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }
 
     #[tokio::test]
     async fn test_change_visibility() {
-        let state = Arc::new(State::new());
-        let internal_session_id = Uuid::new_v4();
-        let file_id = Uuid::new_v4();
-        let user_1 = add_new_user_to_room(file_id, state.clone(), internal_session_id).await;
-        let _user_2 = add_new_user_to_room(file_id, state.clone(), internal_session_id).await;
+        let (state, file_id, user_1) = setup().await;
         let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
@@ -257,18 +263,16 @@ pub(crate) mod tests {
                 viewport: None,
             },
         };
-        broadcast(user_1.session_id, file_id, state, message);
+        broadcast(user_1.session_id, file_id, state, message)
+            .await
+            .unwrap();
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }
 
     #[tokio::test]
     async fn test_change_sheet() {
-        let state = Arc::new(State::new());
-        let connection_id = Uuid::new_v4();
-        let file_id = Uuid::new_v4();
-        let user_1 = add_new_user_to_room(file_id, state.clone(), connection_id).await;
-        let _user_2 = add_new_user_to_room(file_id, state.clone(), connection_id).await;
+        let (state, file_id, user_1) = setup().await;
         let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
@@ -282,18 +286,16 @@ pub(crate) mod tests {
                 viewport: None,
             },
         };
-        broadcast(user_1.session_id, file_id, state, message);
+        broadcast(user_1.session_id, file_id, state, message)
+            .await
+            .unwrap();
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }
 
     #[tokio::test]
     async fn test_change_cell_edit() {
-        let state = Arc::new(State::new());
-        let socket_id = Uuid::new_v4();
-        let file_id = Uuid::new_v4();
-        let user_1 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
-        let _user_2 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
+        let (state, file_id, user_1) = setup().await;
         let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
@@ -312,18 +314,16 @@ pub(crate) mod tests {
                 viewport: None,
             },
         };
-        broadcast(user_1.session_id, file_id, state, message);
+        broadcast(user_1.session_id, file_id, state, message)
+            .await
+            .unwrap();
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }
 
     #[tokio::test]
     async fn test_change_viewport() {
-        let state = Arc::new(State::new());
-        let socket_id = Uuid::new_v4();
-        let file_id = Uuid::new_v4();
-        let user_1 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
-        let _user_2 = add_new_user_to_room(file_id, state.clone(), socket_id).await;
+        let (state, file_id, user_1) = setup().await;
         let message = MessageResponse::UserUpdate {
             session_id: user_1.session_id,
             file_id,
@@ -337,26 +337,26 @@ pub(crate) mod tests {
                 viewport: Some("viewport".to_string()),
             },
         };
-        broadcast(user_1.session_id, file_id, state, message);
+        broadcast(user_1.session_id, file_id, state, message)
+            .await
+            .unwrap();
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }
 
     #[tokio::test]
     async fn test_transaction() {
-        let state = Arc::new(State::new());
+        let (state, file_id, user_1) = setup().await;
         let id = Uuid::new_v4();
-        let connection_id = Uuid::new_v4();
-        let file_id = Uuid::new_v4();
-        let user_1 = add_new_user_to_room(file_id, state.clone(), connection_id).await;
-        let _user_2 = add_new_user_to_room(file_id, state.clone(), connection_id).await;
         let message = MessageResponse::Transaction {
             id,
             file_id,
             operations: "test".to_string(),
             sequence_num: 1,
         };
-        broadcast(user_1.session_id, file_id, state, message);
+        broadcast(user_1.session_id, file_id, state, message)
+            .await
+            .unwrap();
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }

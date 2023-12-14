@@ -163,6 +163,7 @@ impl State {
                 if let Some(viewport) = user_state.viewport.to_owned() {
                     user.state.viewport = viewport;
                 }
+
                 user.last_heartbeat = Utc::now();
             });
 

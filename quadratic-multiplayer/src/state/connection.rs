@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::state::State;
 
 impl State {
+    /// Retrieve the session_id from connections
     pub(crate) async fn get_session_id(&self, connection_id: Uuid) -> Result<Uuid> {
         let session_id = self
             .connections
