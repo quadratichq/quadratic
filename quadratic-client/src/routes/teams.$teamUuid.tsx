@@ -117,8 +117,6 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
     try {
       const { userId } = data;
       await apiClient.teams.users.delete(teamUuid, userId);
-      // console.warn('Deleting user', data);
-      // await new Promise((resolve, reject) => setTimeout(reject, 3000));
       return { ok: true };
     } catch (e) {
       return { ok: false };
@@ -202,20 +200,18 @@ export const Component = () => {
           </DropdownMenu>
         }
         actions={
-          access.includes('TEAM_EDIT') ? (
-            <div className={`flex items-center gap-2`}>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShareSearchParamValue('');
-                }}
-              >
-                <PersonIcon className={`mr-1`} /> {team.users.length}
-              </Button>
-              <Button variant="outline">Import file</Button>
-              <Button>Create file</Button>
-            </div>
-          ) : null
+          <div className={`flex items-center gap-2`}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShareSearchParamValue('');
+              }}
+            >
+              <PersonIcon className={`mr-1`} /> {team.users.length}
+            </Button>
+            <Button variant="outline">Import file</Button>
+            <Button>Create file</Button>
+          </div>
         }
       />
 
@@ -235,9 +231,7 @@ export const Component = () => {
           }}
         />
       )}
-      {(true || showShareDialog) && (
-        <ShareTeamDialog onClose={() => setShareSearchParamValue(null)} data={loaderData} />
-      )}
+      {showShareDialog && <ShareTeamDialog onClose={() => setShareSearchParamValue(null)} data={loaderData} />}
       {showDeleteDialog && (
         <QDialogConfirmDelete
           entityName={name}

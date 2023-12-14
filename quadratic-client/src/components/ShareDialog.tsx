@@ -3,13 +3,23 @@ import { Action as FileShareAction } from '@/routes/files.$uuid.sharing';
 import { TeamAction } from '@/routes/teams.$teamUuid';
 import { Button } from '@/shadcn/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shadcn/ui/dropdown-menu';
 import { Input } from '@/shadcn/ui/input';
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/shadcn/ui/select';
 import { Skeleton } from '@/shadcn/ui/skeleton';
 import { isJsonObject } from '@/utils/isJsonObject';
 import { Avatar } from '@mui/material';
-import { EnvelopeClosedIcon, GlobeIcon, LockClosedIcon } from '@radix-ui/react-icons';
+import { CaretDownIcon, EnvelopeClosedIcon, GlobeIcon, LockClosedIcon } from '@radix-ui/react-icons';
 import {
+  Access,
   ApiTypes,
   PublicLinkAccess,
   UserRoleFile,
@@ -21,7 +31,6 @@ import {
 import React, { Children, FormEvent, useEffect, useRef, useState } from 'react';
 import { useFetcher, useFetchers, useParams, useSubmit } from 'react-router-dom';
 import { AvatarWithLetters } from './AvatarWithLetters';
-import { getTeamUserOption } from './ShareMenu.utils';
 import { Type } from './Type';
 
 function getRoleLabel(role: UserRoleTeam | UserRoleFile | 'DELETE') {
@@ -59,6 +68,7 @@ export function ShareTeamDialog({
     user: loggedInUser,
     team: { users, invites, name, uuid },
   } = data;
+  const action = `/teams/${uuid}`;
   const numberOfOwners = users.filter((user) => user.role === 'OWNER').length;
 
   // Sort the users how we want
@@ -88,26 +98,46 @@ export function ShareTeamDialog({
     });
 
   // Get all emails of users and pending invites so user can't input them
-  const exisitingTeamEmails = [
-    ...sortedUsers.map((user) => user.email),
+  const exisitingTeamEmails: string[] = [
+    ...users.map((user) => user.email),
     ...invites.map((invite) => invite.email),
     ...pendingInvites.map((invite) => invite.email),
   ];
 
-  // TODO: combine into one list that's sorted by date added
-
   return (
     <ShareDialog title={`Share ${name}`} description="Invite people to collaborate in this team" onClose={onClose}>
-      <InviteForm
-        action={`/teams/${uuid}`}
-        intent="create-team-invite"
-        disallowedEmails={exisitingTeamEmails}
-        roles={[UserRoleTeamSchema.enum.EDITOR, UserRoleTeamSchema.enum.VIEWER]}
-      />
+      {loggedInUser.access.includes('TEAM_EDIT') && (
+        <InviteForm
+          action={action}
+          intent="create-team-invite"
+          disallowedEmails={exisitingTeamEmails}
+          roles={[UserRoleTeamSchema.enum.EDITOR, UserRoleTeamSchema.enum.VIEWER]}
+        />
+      )}
 
-      {sortedUsers.map((user, i) => (
-        <ManageUser key={user.id} numberOfOwners={numberOfOwners} loggedInUser={loggedInUser} user={user} />
-      ))}
+      {sortedUsers.map((user, i) => {
+        const isLoggedInUser = i === 0;
+        const canDelete = isLoggedInUser
+          ? canDeleteLoggedInUserInTeam({ role: user.role, numberOfOwners })
+          : canDeleteUserInTeam({
+              access: loggedInUser.access,
+              loggedInUserRole: loggedInUser.role,
+              userRole: user.role,
+            });
+        const roles = isLoggedInUser
+          ? getAvailableRolesForLoggedInUserInTeam({ role: user.role, numberOfOwners })
+          : getAvailableRolesForUserInTeam({ loggedInUserRole: loggedInUser.role, userRole: user.role });
+        return (
+          <ManageUser
+            key={user.id}
+            action={action}
+            isLoggedInUser={isLoggedInUser}
+            user={user}
+            canDelete={canDelete}
+            roles={roles}
+          />
+        );
+      })}
       {invites.map((invite) => (
         <ManageInvite key={invite.id} invite={invite} loggedInUser={loggedInUser} />
       ))}
@@ -118,16 +148,26 @@ export function ShareTeamDialog({
   );
 }
 
+function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0/files/:uuid/sharing.GET.response'] }) {
+  const { public_link_access } = data;
+  return (
+    <>
+      <InviteForm
+        action={`/files/${uuid}/sharing`}
+        // @ts-expect-error
+        intent=""
+        disallowedEmails={[]}
+        roles={[UserRoleFileSchema.enum.EDITOR, UserRoleFileSchema.enum.VIEWER]}
+      />
+      <PublicLink uuid={uuid} publicLinkAccess={public_link_access} />
+    </>
+  );
+}
+
 export function ShareFileDialog({ uuid, name, onClose, fetcherUrl }: any) {
   const fetcher = useFetcher();
   const isLoading = !fetcher.data;
-  let publicLinkAccess = isLoading ? '' : fetcher.data.data.public_link_access;
-
-  // const isShared = publicLinkAccess && publicLinkAccess !== 'NOT_SHARED';
-  // const isDisabledCopyShareLink = isLoading ? true : !isShared;
-  // const showLoadingError = fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok;
-  // const isFile = fetcherUrl.includes('/files/');
-  // const canEdit = true; // TODO fetcher.data.permission.access.includes('FILE_EDIT');;
+  const failedToLoad = fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok;
 
   // On the initial mount, load the data (if it's not there already)
   useEffect(() => {
@@ -136,23 +176,18 @@ export function ShareFileDialog({ uuid, name, onClose, fetcherUrl }: any) {
     }
   }, [fetcher, uuid]);
 
-  // TODO: get file name from fetched data
   return (
     <ShareDialog title={`Share ${name}`} description="Invite people to collaborate on this file" onClose={onClose}>
-      {isLoading ? (
-        <ListItemLoading />
+      {failedToLoad ? (
+        <div>TODO: Failed to load</div>
+      ) : isLoading ? (
+        <ListItem>
+          <Skeleton className={`h-6 w-6 rounded-full`} />
+          <Skeleton className={`h-4 w-40 rounded-sm`} />
+          <Skeleton className={`rounded- h-4 w-28 rounded-sm`} />
+        </ListItem>
       ) : (
-        <>
-          <InviteForm
-            action={`/files/${uuid}/sharing`}
-            // @ts-expect-error
-            intent=""
-            disallowedEmails={[]}
-            roles={[UserRoleFileSchema.enum.EDITOR, UserRoleFileSchema.enum.VIEWER]}
-          />
-          <PublicLink uuid={uuid} publicLinkAccess={publicLinkAccess} />
-          {/* <ListItemTeamMember teamName={'TODO:'} /> */}
-        </>
+        <ShareFileDialogBody uuid={uuid} data={fetcher.data.data} />
       )}
     </ShareDialog>
   );
@@ -169,11 +204,15 @@ export function ShareFileDialog({ uuid, name, onClose, fetcherUrl }: any) {
 //   );
 // }
 
+/**
+ * Form that accepts an email and a role and invites the person to a team or file
+ *
+ * TODO:(enhancement) allow inviting owners, which requires backend support
+ */
 export function InviteForm({
   disallowedEmails,
   action,
   intent,
-  // TODO:(enhancement) allow inviting owners, which requires backend support
   roles,
 }: {
   disallowedEmails: string[];
@@ -277,6 +316,115 @@ export function InviteForm({
   );
 }
 
+function ManageUser({
+  action,
+  isLoggedInUser,
+  user,
+  roles,
+  canDelete,
+}: {
+  action: string;
+  canDelete: boolean;
+  isLoggedInUser: boolean;
+  user: ApiTypes['/v0/teams/:uuid.GET.response']['team']['users'][0];
+  roles: (UserRoleTeam | UserRoleFile)[];
+}) {
+  const fetcher = useFetcher();
+
+  const disabled = roles.length === 1 && !canDelete;
+  const userId = String(user.id);
+  const primary = (user.name ? user.name : user.email) + (isLoggedInUser ? ' (You)' : '');
+  let secondary = user.name ? user.email : '';
+  let value = user.role;
+  let hasError = false;
+
+  // If user is being deleted, hide them
+  if (fetcher.state !== 'idle' && isJsonObject(fetcher.json) && fetcher.json.intent === 'delete-team-user') {
+    return null;
+  }
+
+  // If the user's role is being updated, show the optimistic value
+  if (fetcher.state !== 'idle' && isJsonObject(fetcher.json) && fetcher.json.intent === 'update-team-user') {
+    // @ts-expect-error TODO: fix type here
+    value = fetcher.json.role;
+  }
+
+  // If there was an error, show it
+  if (fetcher.state !== 'submitting' && fetcher.data && !fetcher.data.ok) {
+    hasError = true;
+    secondary = 'Failed to update. Try again.';
+  }
+
+  return (
+    <UserBase
+      avatar={
+        <AvatarWithLetters src={user.picture} size="small">
+          {user.name ? user.name : user.email}
+        </AvatarWithLetters>
+      }
+      primary={primary}
+      secondary={secondary}
+      hasError={hasError}
+      action={
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild disabled={false || disabled}>
+            <Button variant="outline" className="px-3 font-normal hover:bg-inherit">
+              {getRoleLabel(value)} <CaretDownIcon className="ml-0 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuRadioGroup
+              value={value}
+              onValueChange={(newValue: string) => {
+                const data: TeamAction['request.update-team-user'] = {
+                  intent: 'update-team-user',
+                  userId,
+                  // @ts-expect-error
+                  role: newValue,
+                };
+
+                fetcher.submit(data, {
+                  method: 'POST',
+                  action,
+                  encType: 'application/json',
+                });
+              }}
+            >
+              {roles.map((role, i) => (
+                <DropdownMenuRadioItem key={i} value={role}>
+                  {getRoleLabel(role)}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+
+            {canDelete && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => {
+                    const data: TeamAction['request.delete-team-user'] = {
+                      intent: 'delete-team-user',
+                      userId,
+                    };
+
+                    fetcher.submit(data, {
+                      method: 'POST',
+                      action,
+                      encType: 'application/json',
+                    });
+                  }}
+                >
+                  {isLoggedInUser ? 'Leave' : 'Remove'}
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
+    />
+  );
+}
+
 function ManageInvite({
   invite,
   loggedInUser,
@@ -328,7 +476,9 @@ function ManageInvite({
             });
           }}
         >
-          <SelectTrigger disabled={disabled}>{getRoleLabel(role)}</SelectTrigger>
+          <SelectTrigger disabled={disabled || !loggedInUser.access.includes('TEAM_EDIT')}>
+            {getRoleLabel(role)}
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value={role}>{getRoleLabel(role)}</SelectItem>
             {loggedInUser.access.includes('TEAM_EDIT') && (
@@ -360,128 +510,6 @@ function UserBase({ avatar, primary, secondary, action, hasError, isLoggedInUser
       </div>
 
       {action && <div>{action}</div>}
-    </ListItem>
-  );
-}
-
-function ManageUser({
-  numberOfOwners,
-  loggedInUser,
-  user,
-}: {
-  numberOfOwners: number;
-  loggedInUser: ApiTypes['/v0/teams/:uuid.GET.response']['user'];
-  user: ApiTypes['/v0/teams/:uuid.GET.response']['team']['users'][0];
-}) {
-  const { teamUuid } = useParams() as { teamUuid: string };
-  const fetcher = useFetcher();
-  const fetcherJson = fetcher.json as TeamAction['request.update-team-user'] | TeamAction['request.delete-team-user'];
-  const actionUrl = `/teams/${teamUuid}`;
-  const primary = (user.name ? user.name : user.email) + (loggedInUser.id === user.id ? ' (You)' : '');
-  let secondary = user.name ? user.email : '';
-  let value = user.role;
-  let hasError = false;
-
-  // If user is being deleted, hide them
-  if (fetcher.state !== 'idle' && fetcherJson.intent === 'delete-team-user') {
-    return null;
-  }
-
-  // If the user's role is being updated, show the optimistic value
-  if (fetcher.state !== 'idle' && fetcherJson.intent === 'update-team-user') {
-    value = fetcherJson.role;
-  }
-
-  // If there was an error, show it
-  if (fetcher.state !== 'submitting' && fetcher.data && !fetcher.data.ok) {
-    hasError = true;
-    secondary = 'Failed to update. Try again.';
-  }
-
-  const options = getTeamUserOption({
-    user,
-    loggedInUser,
-    numberOfOwners,
-    // TODO: teams? yes. files? no.
-    // canHaveMoreThanOneOwner: true,
-  });
-
-  return (
-    <UserBase
-      avatar={
-        <AvatarWithLetters src={user.picture} size="small">
-          {user.name ? user.name : user.email}
-        </AvatarWithLetters>
-      }
-      primary={primary}
-      secondary={secondary}
-      hasError={hasError}
-      action={
-        <Select
-          value={value}
-          onValueChange={(
-            newValue: ApiTypes['/v0/teams/:uuid.GET.response']['user']['role'] | 'DELETE'
-            // type for files
-            // | ApiTypes['/v0/files/:uuid.GET.response']['user']['role']
-          ) => {
-            const userId = String(user.id);
-            if (newValue === 'DELETE') {
-              const data: TeamAction['request.delete-team-user'] = { intent: 'delete-team-user', userId };
-              fetcher.submit(data, {
-                method: 'POST',
-                action: actionUrl,
-                encType: 'application/json',
-              });
-            } else {
-              const data: TeamAction['request.update-team-user'] = {
-                intent: 'update-team-user',
-                userId,
-                role: newValue,
-              };
-              fetcher.submit(data, {
-                method: 'POST',
-                action: actionUrl,
-                encType: 'application/json',
-              });
-            }
-          }}
-          name="role"
-          disabled={options.length < 2}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {options.map((option, i) => {
-              const labelsByOption = {
-                OWNER: 'Owner',
-                EDITOR: 'Can edit',
-                VIEWER: 'Can view',
-                DELETE: loggedInUser.id === user.id ? 'Leave' : 'Remove',
-              };
-
-              const label = labelsByOption[option];
-
-              return [
-                option === 'DELETE' ? <SelectSeparator key={i + '-divider'} /> : null,
-                <SelectItem key={i} value={option}>
-                  {label}
-                </SelectItem>,
-              ];
-            })}
-          </SelectContent>
-        </Select>
-      }
-    />
-  );
-}
-
-function ListItemLoading() {
-  return (
-    <ListItem>
-      <Skeleton className={`h-6 w-6 rounded-full`} />
-      <Skeleton className={`h-4 w-40 rounded-sm`} />
-      <Skeleton className={`rounded- h-4 w-28 rounded-sm`} />
     </ListItem>
   );
 }
@@ -552,19 +580,100 @@ function PublicLink({ uuid, publicLinkAccess }: { uuid: string; publicLinkAccess
   );
 }
 
-// eslint-disable-next-line
-function Row({ children, sx }: { children: React.ReactNode; sx?: any }) {
-  if (Children.count(children) !== 3) {
-    console.warn('<Row> expects exactly 3 children');
-  }
-
-  return <div className={'flex flex-row items-center gap-3 [&>:last-child]:ml-auto'}>{children}</div>;
-}
-
 function ListItem({ children }: { children: React.ReactNode }) {
   if (Children.count(children) !== 3) {
     console.warn('<ListItem> expects exactly 3 children');
   }
 
   return <div className={'flex flex-row items-center gap-3 [&>:nth-child(3)]:ml-auto'}>{children}</div>;
+}
+
+// TODO: write tests for these
+function canDeleteLoggedInUserInTeam({ role, numberOfOwners }: { role: UserRoleTeam; numberOfOwners: number }) {
+  if (role === 'OWNER') {
+    if (numberOfOwners < 2) {
+      return false;
+    }
+  }
+
+  return true;
+}
+function canDeleteUserInTeam({
+  access,
+  loggedInUserRole,
+  userRole,
+}: {
+  access: Access[];
+  loggedInUserRole: UserRoleTeam;
+  userRole: UserRoleTeam;
+}) {
+  // TODO: can a user who is an editor remove a member who has a higher role than themselves?
+  const { OWNER, EDITOR } = UserRoleTeamSchema.enum;
+  if (access.includes('TEAM_EDIT')) {
+    if (loggedInUserRole === EDITOR && userRole === OWNER) {
+      return false;
+    }
+    return true;
+  }
+
+  return false;
+}
+
+function getAvailableRolesForLoggedInUserInTeam({
+  role,
+  numberOfOwners,
+}: {
+  role: UserRoleTeam;
+  numberOfOwners: number;
+}) {
+  const { OWNER, EDITOR, VIEWER } = UserRoleTeamSchema.enum;
+
+  if (role === OWNER) {
+    if (numberOfOwners > 1) {
+      return [OWNER, EDITOR, VIEWER];
+    } else {
+      return [OWNER];
+    }
+  }
+
+  if (role === EDITOR) {
+    return [EDITOR, VIEWER];
+  }
+
+  return [VIEWER];
+}
+
+function getAvailableRolesForUserInTeam({
+  loggedInUserRole,
+  userRole,
+}: {
+  loggedInUserRole: UserRoleTeam;
+  userRole: UserRoleTeam;
+}) {
+  const { OWNER, EDITOR, VIEWER } = UserRoleTeamSchema.enum;
+
+  if (loggedInUserRole === OWNER) {
+    return [OWNER, EDITOR, VIEWER];
+  }
+
+  if (loggedInUserRole === EDITOR) {
+    if (userRole === OWNER) {
+      return [OWNER];
+    } else {
+      return [EDITOR, VIEWER];
+    }
+  }
+
+  if (loggedInUserRole === VIEWER) {
+    if (userRole === OWNER) {
+      return [OWNER];
+    } else if (userRole === EDITOR) {
+      return [EDITOR];
+    } else {
+      return [VIEWER];
+    }
+  }
+
+  console.error('Unexpected code path reached');
+  return [VIEWER];
 }

@@ -7,6 +7,64 @@ type Label = 'Owner' | 'Can edit' | 'Can view' | 'Leave' | 'Remove';
 
 type TeamUserOption = UserRoleTeam | typeof DELETE;
 
+// function canDeleteInviteInTeam({ }) {
+
+// }
+// function canDeleteUserInTeam({ loggedInUser, user }) {
+//   if (loggedInUser.hasAccess('TEAM_EDIT') || loggedInUser.hasAccess('FILE_EDIT') && ) {
+//     if (loggedInUser.role === 'OWNER') {
+
+//     }
+//     if (loggedInUser.role === )
+//   }
+
+//   return false;
+// }
+
+export function getAvailableRolesForLoggedInUserInTeam({ role, numberOfOwners }: any) {
+  const { OWNER, EDITOR, VIEWER } = UserRoleTeamSchema.enum;
+
+  if (role === OWNER) {
+    if (numberOfOwners > 1) {
+      return [OWNER, EDITOR, VIEWER];
+    } else {
+      return [OWNER];
+    }
+  }
+  if (role === EDITOR) {
+    return [EDITOR, VIEWER];
+  }
+  return [VIEWER];
+}
+export function getAvailableRolesForUserInTeam({ loggedInUserRole, userRole }: any) {
+  const { OWNER, EDITOR, VIEWER } = UserRoleTeamSchema.enum;
+
+  if (loggedInUserRole === OWNER) {
+    return [OWNER, EDITOR, VIEWER];
+  }
+
+  if (loggedInUserRole === EDITOR) {
+    if (userRole === OWNER) {
+      return [OWNER];
+    } else {
+      return [EDITOR, VIEWER];
+    }
+  }
+
+  if (loggedInUserRole === VIEWER) {
+    if (loggedInUserRole === OWNER) {
+      return [OWNER];
+    } else if (loggedInUserRole === EDITOR) {
+      return [EDITOR];
+    } else {
+      return [VIEWER];
+    }
+  }
+
+  console.error('Unexpected code path reached');
+  return [VIEWER];
+}
+
 export function getTeamUserOption({ numberOfOwners, user, loggedInUser }: any) {
   let options: TeamUserOption[] = [];
   const { OWNER, EDITOR, VIEWER } = UserRoleTeamSchema.enum;
