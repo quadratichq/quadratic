@@ -17,9 +17,10 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
 
     tokio::spawn(async move {
         let mut interval = time::interval(Duration::from_millis(heartbeat_check_s as u64 * 1000));
+        let rooms = state.rooms.lock().await.clone();
 
         loop {
-            for (file_id, room) in state.rooms.lock().await.iter() {
+            for (file_id, room) in rooms.iter() {
                 // broadcast sequence number to all users in the room
                 if let Err(error) =
                     broadcast_sequence_num(Arc::clone(&state), file_id.to_owned()).await

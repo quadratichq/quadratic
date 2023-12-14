@@ -67,18 +67,10 @@ pub(crate) async fn handle_message(
 
             // only broadcast if the user is new to the room
             if is_new {
-                let session_id = user.session_id;
                 let room = state.get_room(&file_id).await?;
                 let response = MessageResponse::from(room.to_owned());
 
                 broadcast(vec![], file_id, Arc::clone(&state), response);
-
-                tracing::info!(
-                    "User {} joined room {} with session {}",
-                    user.user_id,
-                    file_id,
-                    session_id
-                );
             }
 
             Ok(None)

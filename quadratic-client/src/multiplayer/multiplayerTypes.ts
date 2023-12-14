@@ -58,6 +58,7 @@ export interface SendEnterRoom extends MultiplayerUserServer {
 
 export interface MessageTransaction {
   type: 'Transaction';
+  id: string;
   session_id: string;
   file_id: string;
   operations: string;

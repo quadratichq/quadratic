@@ -20,6 +20,7 @@ pub(crate) fn broadcast(
     state: Arc<State>,
     message: MessageResponse,
 ) -> JoinHandle<()> {
+    // println!("message: {:?}", message);
     tokio::spawn(async move {
         let result = async {
             for (_, user) in state

@@ -252,8 +252,11 @@ export class Multiplayer {
 
   async sendTransaction(operations: string) {
     await this.init();
+    // TODO(ddimaria): this ID should be stored somewhere
+    let id = uuid(); 
     const message: MessageTransaction = {
       type: 'Transaction',
+      id,
       session_id: this.sessionId,
       file_id: this.room!,
       operations,
