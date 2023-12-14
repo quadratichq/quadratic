@@ -111,10 +111,10 @@ impl SheetBorders {
     fn set_rect(&mut self, rect: &Rect, borders: SheetBorders) -> SheetBorders {
         let mut previous_borders = SheetBorders::default();
 
-        let replaced_id_space = self.per_cell.replace_rect(&borders.per_cell, &rect);
+        let replaced_id_space = self.per_cell.replace_rect(&borders.per_cell, rect);
         previous_borders
             .per_cell
-            .replace_rect(&replaced_id_space, &rect);
+            .replace_rect(&replaced_id_space, rect);
 
         let replaced_grid_space = self
             .render_lookup
@@ -129,7 +129,7 @@ impl SheetBorders {
     fn get_rect(&self, rect: &Rect) -> SheetBorders {
         let mut sheet_borders = SheetBorders::default();
         let cloned_id_space = self.per_cell.clone_rect(rect);
-        sheet_borders.per_cell.replace_rect(&cloned_id_space, &rect);
+        sheet_borders.per_cell.replace_rect(&cloned_id_space, rect);
         sheet_borders
     }
 }

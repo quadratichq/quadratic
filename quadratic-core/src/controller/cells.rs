@@ -60,7 +60,7 @@ impl GridController {
                 symbol: Some(currency),
             };
             ops.push(Operation::SetCellFormats {
-                sheet_rect: sheet_rect.clone(),
+                sheet_rect,
                 attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
                     Some(numeric_format),
                     1,
@@ -134,10 +134,7 @@ impl GridController {
     pub fn delete_cells_rect_operations(&mut self, sheet_rect: SheetRect) -> Vec<Operation> {
         let mut ops = vec![];
         let values = Array::new_empty(sheet_rect.size());
-        ops.push(Operation::SetCellValues {
-            sheet_rect: sheet_rect.clone(),
-            values,
-        });
+        ops.push(Operation::SetCellValues { sheet_rect, values });
 
         let sheet = self.grid.sheet_from_id(sheet_rect.sheet_id);
 
@@ -169,35 +166,35 @@ impl GridController {
         let len = sheet_rect.size().len();
         let mut ops = vec![
             Operation::SetCellFormats {
-                sheet_rect: sheet_rect.clone(),
+                sheet_rect,
                 attr: CellFmtArray::Align(RunLengthEncoding::repeat(None, len)),
             },
             Operation::SetCellFormats {
-                sheet_rect: sheet_rect.clone(),
+                sheet_rect,
                 attr: CellFmtArray::Wrap(RunLengthEncoding::repeat(None, len)),
             },
             Operation::SetCellFormats {
-                sheet_rect: sheet_rect.clone(),
+                sheet_rect,
                 attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(None, len)),
             },
             Operation::SetCellFormats {
-                sheet_rect: sheet_rect.clone(),
+                sheet_rect,
                 attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(None, len)),
             },
             Operation::SetCellFormats {
-                sheet_rect: sheet_rect.clone(),
+                sheet_rect,
                 attr: CellFmtArray::Bold(RunLengthEncoding::repeat(None, len)),
             },
             Operation::SetCellFormats {
-                sheet_rect: sheet_rect.clone(),
+                sheet_rect,
                 attr: CellFmtArray::Italic(RunLengthEncoding::repeat(None, len)),
             },
             Operation::SetCellFormats {
-                sheet_rect: sheet_rect.clone(),
+                sheet_rect,
                 attr: CellFmtArray::TextColor(RunLengthEncoding::repeat(None, len)),
             },
             Operation::SetCellFormats {
-                sheet_rect: sheet_rect.clone(),
+                sheet_rect,
                 attr: CellFmtArray::FillColor(RunLengthEncoding::repeat(None, len)),
             },
         ];

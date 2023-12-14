@@ -133,7 +133,7 @@ impl Sheet {
 
     /// Sets or deletes borders in a region.
     pub fn set_region_borders(&mut self, rect: &Rect, borders: SheetBorders) -> SheetBorders {
-        borders::set_rect_borders(self, &rect, borders)
+        borders::set_rect_borders(self, rect, borders)
     }
 
     /// Gets borders in a region.

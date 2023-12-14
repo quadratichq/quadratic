@@ -267,7 +267,7 @@ impl Array {
         let size = ArraySize::new(v[0].len() as u32, v.len() as u32).unwrap();
         let values;
         let mut ops = vec![];
-        let Pos { mut x, mut y } = start.into();
+        let Pos { mut x, mut y } = start;
         values = v
             .iter()
             .flatten()
@@ -282,7 +282,7 @@ impl Array {
                 value
             })
             .collect();
-        return (Some(Array { size, values }), ops);
+        (Some(Array { size, values }), ops)
     }
 }
 

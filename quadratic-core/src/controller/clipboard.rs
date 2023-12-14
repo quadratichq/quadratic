@@ -195,10 +195,7 @@ impl GridController {
         let mut ops = vec![];
         let values = GridController::array_from_clipboard_cells(clipboard);
         if let Some(values) = values {
-            ops.push(Operation::SetCellValues {
-                sheet_rect: sheet_rect.clone(),
-                values,
-            });
+            ops.push(Operation::SetCellValues { sheet_rect, values });
             compute = true;
         }
 
@@ -242,7 +239,7 @@ impl GridController {
 
         formats.iter().for_each(|format| {
             ops.push(Operation::SetCellFormats {
-                sheet_rect: sheet_rect.clone(),
+                sheet_rect,
                 attr: format.clone(),
             });
         });

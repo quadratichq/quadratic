@@ -407,10 +407,7 @@ impl CellValue {
             });
 
             // only change decimals if it hasn't already been set
-            if sheet
-                .get_formatting_value::<NumericDecimals>(pos.into())
-                .is_none()
-            {
+            if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
                 sheet.set_formatting_value::<NumericDecimals>(pos, Some(2));
                 ops.push(Operation::SetCellFormats {
                     sheet_rect,

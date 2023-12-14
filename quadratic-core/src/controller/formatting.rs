@@ -50,24 +50,25 @@ impl GridController {
         symbol: Option<String>,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let mut ops = vec![];
-        ops.push(Operation::SetCellFormats {
-            sheet_rect: sheet_rect.clone(),
-            attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                Some(NumericFormat {
-                    kind: NumericFormatKind::Currency,
-                    symbol,
-                }),
-                sheet_rect.len(),
-            )),
-        });
-        ops.push(Operation::SetCellFormats {
-            sheet_rect: sheet_rect.clone(),
-            attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
-                Some(2),
-                sheet_rect.len(),
-            )),
-        });
+        let ops = vec![
+            Operation::SetCellFormats {
+                sheet_rect: *sheet_rect,
+                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
+                    Some(NumericFormat {
+                        kind: NumericFormatKind::Currency,
+                        symbol,
+                    }),
+                    sheet_rect.len(),
+                )),
+            },
+            Operation::SetCellFormats {
+                sheet_rect: *sheet_rect,
+                attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
+                    Some(2),
+                    sheet_rect.len(),
+                )),
+            },
+        ];
         self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
 
@@ -77,19 +78,29 @@ impl GridController {
         sheet_rect: &SheetRect,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let mut ops = vec![];
-        ops.push(Operation::SetCellFormats {
-            sheet_rect: sheet_rect.clone(),
-            attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(None, sheet_rect.len())),
-        });
-        ops.push(Operation::SetCellFormats {
-            sheet_rect: sheet_rect.clone(),
-            attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(None, sheet_rect.len())),
-        });
-        ops.push(Operation::SetCellFormats {
-            sheet_rect: *sheet_rect,
-            attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(None, sheet_rect.len())),
-        });
+        let ops = vec![
+            Operation::SetCellFormats {
+                sheet_rect: *sheet_rect,
+                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
+                    None,
+                    sheet_rect.len(),
+                )),
+            },
+            Operation::SetCellFormats {
+                sheet_rect: *sheet_rect,
+                attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
+                    None,
+                    sheet_rect.len(),
+                )),
+            },
+            Operation::SetCellFormats {
+                sheet_rect: *sheet_rect,
+                attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(
+                    None,
+                    sheet_rect.len(),
+                )),
+            },
+        ];
         self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
 

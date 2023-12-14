@@ -642,7 +642,7 @@ pub fn apply_formats(sheet_rect: SheetRect, formats: &[CellFmtArray]) -> Vec<Ope
     formats
         .iter()
         .map(|format| Operation::SetCellFormats {
-            sheet_rect: sheet_rect.clone(),
+            sheet_rect,
             attr: format.clone(),
         })
         .collect()

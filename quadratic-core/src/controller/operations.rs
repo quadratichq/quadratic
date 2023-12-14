@@ -26,7 +26,7 @@ impl GridController {
                     })
                     .map(|old_value| old_value.unwrap_or(CellValue::Blank))
                     .collect();
-                self.cells_updated.insert(sheet_rect.clone());
+                self.cells_updated.insert(sheet_rect);
 
                 let old_values = Array::new_row_major(size, old_values)
                     .expect("error constructing array of old values for SetCells operation");
@@ -72,10 +72,8 @@ impl GridController {
                     }
                 }
 
-                self.forward_operations.push(Operation::SetCellValues {
-                    sheet_rect: sheet_rect.clone(),
-                    values,
-                });
+                self.forward_operations
+                    .push(Operation::SetCellValues { sheet_rect, values });
 
                 self.summary.generate_thumbnail =
                     self.summary.generate_thumbnail || self.thumbnail_dirty_sheet_rect(sheet_rect);
@@ -233,10 +231,8 @@ impl GridController {
                         ))
                     }
                 };
-                self.forward_operations.push(Operation::SetCellFormats {
-                    sheet_rect: sheet_rect.clone(),
-                    attr,
-                });
+                self.forward_operations
+                    .push(Operation::SetCellFormats { sheet_rect, attr });
 
                 self.reverse_operations.push(Operation::SetCellFormats {
                     sheet_rect,
@@ -258,7 +254,7 @@ impl GridController {
 
                 let old_borders = sheet.set_region_borders(&sheet_rect.into(), borders.clone());
                 self.forward_operations.push(Operation::SetBorders {
-                    sheet_rect: sheet_rect.clone(),
+                    sheet_rect,
                     borders,
                 });
                 self.reverse_operations.push(Operation::SetBorders {
