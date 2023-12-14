@@ -15,7 +15,7 @@ pub mod response;
 /// All messages are sent in a separate thread.
 #[tracing::instrument]
 pub(crate) fn broadcast(
-    session_id: Uuid,
+    exclude: Vec<Uuid>,
     file_id: Uuid,
     state: Arc<State>,
     message: MessageResponse,

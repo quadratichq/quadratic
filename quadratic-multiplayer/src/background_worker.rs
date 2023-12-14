@@ -19,8 +19,6 @@ pub(crate) async fn work(state: Arc<State>, heartbeat_check_s: i64, heartbeat_ti
         let mut interval = time::interval(Duration::from_millis(heartbeat_check_s as u64 * 1000));
 
         loop {
-            // let rooms = state.rooms.lock().await.clone();
-
             for (file_id, room) in state.rooms.lock().await.iter() {
                 // broadcast sequence number to all users in the room
                 if let Err(error) =
