@@ -94,7 +94,6 @@ impl GridController {
         &mut self,
         source: SheetPos,
         sheet_rect: SheetRect,
-        cursor: Option<String>,
     ) -> Vec<Operation> {
         let sheet = self.sheet(source.sheet_id);
         let commas =

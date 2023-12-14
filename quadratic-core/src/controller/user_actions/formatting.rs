@@ -65,7 +65,7 @@ impl GridController {
         sheet_rect: SheetRect,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let ops = self.toggle_commas_operations(source, sheet_rect, cursor);
+        let ops = self.toggle_commas_operations(source, sheet_rect);
         self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
 

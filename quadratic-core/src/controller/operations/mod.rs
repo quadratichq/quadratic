@@ -5,6 +5,7 @@ pub mod autocomplete;
 ///
 pub mod borders;
 pub mod cells;
+pub mod clipboard;
 pub mod formatting;
 pub mod import;
 pub mod operation;

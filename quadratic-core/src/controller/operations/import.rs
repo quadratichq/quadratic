@@ -36,11 +36,12 @@ impl GridController {
                     .iter()
                     .enumerate()
                     .map(|(col, value)| {
-                        Ok(self.string_to_cell_value(
+                        let (operations, cell_value) = self.string_to_cell_value(
                             (insert_at.x + col as i64, insert_at.y + row as i64, sheet_id).into(),
                             value,
-                            &mut ops,
-                        ))
+                        );
+                        ops.extend(operations);
+                        Ok(cell_value)
                     })
                     .collect::<Result<Vec<CellValue>>>()
             })

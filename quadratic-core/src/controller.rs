@@ -14,7 +14,6 @@ use self::{
     transaction_summary::TransactionSummary,
 };
 
-pub mod clipboard;
 pub mod dependencies;
 pub mod execution;
 pub mod export;

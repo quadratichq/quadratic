@@ -61,8 +61,7 @@ impl GridController {
         sheet_rect: SheetRect,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let mut ops = self.delete_cells_rect_operations(sheet_rect);
-        ops.extend(self.clear_formatting_operations(sheet_rect));
+        let ops = self.delete_values_and_formatting_operations(sheet_rect);
         self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
 }
