@@ -10,7 +10,7 @@ use crate::{
 };
 
 use self::{
-    operations::operation::Operation, transaction_in_progress::TransactionType,
+    execution::TransactionType, operations::operation::Operation,
     transaction_summary::TransactionSummary,
 };
 
@@ -23,7 +23,6 @@ pub mod sheet_offsets;
 pub mod sheets;
 pub mod spills;
 pub mod thumbnail;
-pub mod transaction_in_progress;
 pub mod transaction_summary;
 pub mod transaction_types;
 pub mod update_code_cell_value;

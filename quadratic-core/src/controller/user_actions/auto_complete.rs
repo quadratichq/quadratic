@@ -1,8 +1,5 @@
-use super::super::{
-    transaction_in_progress::TransactionType, transaction_summary::TransactionSummary,
-    GridController,
-};
-use crate::{grid::SheetId, Rect};
+use super::super::{transaction_summary::TransactionSummary, GridController};
+use crate::{controller::execution::TransactionType, grid::SheetId, Rect};
 use anyhow::Result;
 
 impl GridController {

@@ -1,14 +1,13 @@
+use super::super::{
+    operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
+};
+use crate::controller::execution::TransactionType;
 use crate::{
     grid::{
         formatting::CellFmtArray, Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic,
         NumericCommas, NumericDecimals, NumericFormat, RenderSize, TextColor,
     },
     Pos, RunLengthEncoding, SheetPos, SheetRect,
-};
-
-use super::super::{
-    operations::operation::Operation, transaction_in_progress::TransactionType,
-    transaction_summary::TransactionSummary, GridController,
 };
 
 impl GridController {

@@ -1,5 +1,5 @@
-use super::super::transaction_in_progress::TransactionType;
 use super::super::GridController;
+use crate::controller::execution::TransactionType;
 use crate::controller::transaction_summary::TransactionSummary;
 use crate::grid::{BorderSelection, BorderStyle};
 use crate::SheetRect;

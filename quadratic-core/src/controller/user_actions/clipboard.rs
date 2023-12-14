@@ -1,7 +1,5 @@
-use super::super::{
-    transaction_in_progress::TransactionType, transaction_summary::TransactionSummary,
-    GridController,
-};
+use super::super::{transaction_summary::TransactionSummary, GridController};
+use crate::controller::execution::TransactionType;
 use crate::{
     controller::operations::clipboard::{Clipboard, ClipboardCell},
     grid::{get_cell_borders_in_rect, CodeCellValue},

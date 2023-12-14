@@ -4,9 +4,9 @@ use lexicon_fractional_index::key_between;
 use crate::grid::{Sheet, SheetId};
 
 use super::{
-    operations::operation::Operation, transaction_in_progress::TransactionType,
-    transaction_summary::TransactionSummary, GridController,
+    operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
 };
+use crate::controller::execution::TransactionType;
 
 impl GridController {
     pub fn sheet_ids(&self) -> Vec<SheetId> {

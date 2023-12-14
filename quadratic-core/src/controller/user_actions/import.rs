@@ -1,9 +1,7 @@
 use anyhow::Result;
 
-use super::super::{
-    transaction_in_progress::TransactionType, transaction_summary::TransactionSummary,
-    GridController,
-};
+use super::super::{transaction_summary::TransactionSummary, GridController};
+use crate::controller::execution::TransactionType;
 use crate::{grid::SheetId, Pos};
 
 impl GridController {
