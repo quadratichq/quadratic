@@ -8,10 +8,10 @@ use super::{
 use crate::{
     grid::{
         series::{find_auto_complete, SeriesOptions},
-        RegionRef, Sheet, SheetId,
+        Sheet, SheetId,
     },
     util::maybe_reverse_range,
-    Array, CellValue, Pos, Rect,
+    Array, CellValue, Pos, Rect, SheetRect,
 };
 
 #[derive(PartialEq)]
@@ -51,22 +51,24 @@ impl GridController {
 
         // shrink width, from right to left
         if should_shrink_width {
-            let delete_range = Rect::new_span(
+            let delete_range = SheetRect::new_pos_span(
                 (range.max.x + 1, range.min.y).into(),
                 (selection.max.x, selection.max.y).into(),
+                sheet_id,
             );
-            let ops = self.shrink(sheet_id, delete_range);
+            let ops = self.shrink(delete_range);
             operations.extend(ops);
             selection.max.x = range.max.x;
         }
 
         // shrink height, from bottom to top
         if should_shrink_height {
-            let delete_range = Rect::new_span(
+            let delete_range = SheetRect::new_pos_span(
                 (selection.min.x, range.max.y + 1).into(),
                 (range.max.x, selection.max.y).into(),
+                sheet_id,
             );
-            let ops = self.shrink(sheet_id, delete_range);
+            let ops = self.shrink(delete_range);
             operations.extend(ops);
             selection.max.y = range.max.y;
         }
@@ -146,11 +148,11 @@ impl GridController {
     }
 
     /// Delete cell values and formats in a given range.
-    fn shrink(&mut self, sheet_id: SheetId, delete_range: Rect) -> Vec<Operation> {
+    fn shrink(&mut self, delete_range: SheetRect) -> Vec<Operation> {
         let mut ops = vec![];
 
-        ops.extend(self.delete_cells_rect_operations(sheet_id, delete_range));
-        ops.extend(self.clear_formatting_operations(sheet_id, delete_range));
+        ops.extend(self.delete_cells_rect_operations(delete_range));
+        ops.extend(self.clear_formatting_operations(delete_range));
         ops
     }
 
@@ -168,26 +170,31 @@ impl GridController {
         let mut ops = selection
             .y_range()
             .map(|y| {
-                let source_row =
-                    Rect::new_span((selection.min.x, y).into(), (selection.max.x, y).into());
+                let source_row = SheetRect::new_pos_span(
+                    (selection.min.x, y).into(),
+                    (selection.max.x, y).into(),
+                    sheet_id,
+                );
                 let target_row = Rect::new_span((range.min.x, y).into(), (range.max.x, y).into());
-                let format = self.get_all_cell_formats(sheet_id, source_row);
+                let format = self.get_all_cell_formats(source_row);
                 let width = selection.width() as usize;
 
                 // for each column, apply the formats to a block (selection.width, y) of new cells
                 range.x_range().step_by(width).for_each(|x| {
                     let new_x = range.max.x.min(x + width as i64 - 1);
-                    let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
-                    let (region, operations) = self.region(sheet_id, format_rect);
-                    if let Some(operations) = operations {
-                        format_ops.extend(operations);
-                    }
-                    format_ops.extend(apply_formats(region, &format));
+                    let format_rect =
+                        SheetRect::new_pos_span((x, y).into(), (new_x, y).into(), sheet_id);
+                    format_ops.extend(apply_formats(format_rect, &format));
                 });
 
                 formats.push(format);
-                let (operations, cell_values) =
-                    self.apply_auto_complete(sheet_id, false, &source_row, &target_row, None)?;
+                let (operations, cell_values) = self.apply_auto_complete(
+                    sheet_id,
+                    false,
+                    &source_row.into(),
+                    &target_row,
+                    None,
+                )?;
                 values.extend(cell_values);
 
                 Ok(operations)
@@ -235,10 +242,13 @@ impl GridController {
         let mut ops = selection
             .y_range()
             .map(|y| {
-                let source_row =
-                    Rect::new_span((selection.min.x, y).into(), (selection.max.x, y).into());
+                let source_row = SheetRect::new_pos_span(
+                    (selection.min.x, y).into(),
+                    (selection.max.x, y).into(),
+                    sheet_id,
+                );
                 let target_row = Rect::new_span((range.min.x, y).into(), (range.max.x, y).into());
-                let mut format = self.get_all_cell_formats(sheet_id, source_row);
+                let mut format = self.get_all_cell_formats(source_row);
                 let width = selection.width() as usize;
 
                 // for each column, apply the formats to a block (selection.width, y) of new cells
@@ -246,25 +256,28 @@ impl GridController {
                     let mut new_x = x - width as i64 + 1;
 
                     if new_x < range.min.x {
-                        let source_col = Rect::new_span(
+                        let source_col = SheetRect::new_pos_span(
                             (selection.min.x + range.min.x - new_x, y).into(),
                             (selection.max.x, y).into(),
+                            sheet_id,
                         );
                         new_x = range.min.x;
-                        format = self.get_all_cell_formats(sheet_id, source_col);
+                        format = self.get_all_cell_formats(source_col);
                     }
 
-                    let format_rect = Rect::new_span((x, y).into(), (new_x, y).into());
-                    let (region, operations) = self.region(sheet_id, format_rect);
-                    if let Some(operations) = operations {
-                        format_ops.extend(operations);
-                    }
-                    format_ops.extend(apply_formats(region, &format));
+                    let format_rect =
+                        SheetRect::new_pos_span((x, y).into(), (new_x, y).into(), sheet_id);
+                    format_ops.extend(apply_formats(format_rect, &format));
                 });
 
                 formats.extend(format);
-                let (operations, cell_values) =
-                    self.apply_auto_complete(sheet_id, true, &source_row, &target_row, None)?;
+                let (operations, cell_values) = self.apply_auto_complete(
+                    sheet_id,
+                    true,
+                    &source_row.into(),
+                    &target_row,
+                    None,
+                )?;
                 values.extend(cell_values);
 
                 Ok(operations)
@@ -311,27 +324,32 @@ impl GridController {
             .x_range()
             .rev()
             .map(|x| {
-                let source_col =
-                    Rect::new_span((x, selection.min.y).into(), (x, selection.max.y).into());
+                let source_col = SheetRect::new_pos_span(
+                    (x, selection.min.y).into(),
+                    (x, selection.max.y).into(),
+                    sheet_id,
+                );
                 let target_col =
                     Rect::new_span((x, selection.max.y + 1).into(), (x, range.max.y).into());
-                let format = self.get_all_cell_formats(sheet_id, source_col);
+                let format = self.get_all_cell_formats(source_col);
                 let height = selection.height() as usize;
 
                 // for each row, apply the formats to a block (x, selection.height) of new cells
                 range.y_range().step_by(height).for_each(|y| {
                     let new_y = range.max.y.min(y + height as i64 - 1);
-                    let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
-                    let (region, operations) = self.region(sheet_id, format_rect);
-                    if let Some(operations) = operations {
-                        format_ops.extend(operations);
-                    }
-                    format_ops.extend(apply_formats(region, &format));
+                    let format_rect =
+                        SheetRect::new_pos_span((x, y).into(), (x, new_y).into(), sheet_id);
+                    format_ops.extend(apply_formats(format_rect, &format));
                 });
 
                 formats.extend(format);
-                let (operations, cell_values) =
-                    self.apply_auto_complete(sheet_id, false, &source_col, &target_col, None)?;
+                let (operations, cell_values) = self.apply_auto_complete(
+                    sheet_id,
+                    false,
+                    &source_col.into(),
+                    &target_col,
+                    None,
+                )?;
                 values.extend(cell_values);
 
                 Ok(operations)
@@ -355,11 +373,14 @@ impl GridController {
         let mut ops = selection
             .x_range()
             .map(|x| {
-                let source_col =
-                    Rect::new_span((x, selection.min.y).into(), (x, selection.max.y).into());
+                let source_col = SheetRect::new_pos_span(
+                    (x, selection.min.y).into(),
+                    (x, selection.max.y).into(),
+                    sheet_id,
+                );
                 let target_col =
                     Rect::new_span((x, selection.min.y - 1).into(), (x, range.min.y).into());
-                let mut format = self.get_all_cell_formats(sheet_id, source_col);
+                let mut format = self.get_all_cell_formats(source_col);
                 let height = selection.height() as usize;
 
                 // for each row, apply the formats to a block (x, selection.height) of new cells
@@ -369,25 +390,28 @@ impl GridController {
                     // since the new_y is less than the range min, we need to
                     // adjust the format since this is ine reverse order
                     if new_y < range.min.y {
-                        let source_col = Rect::new_span(
+                        let source_col = SheetRect::new_pos_span(
                             (x, selection.min.y + range.min.y - new_y).into(),
                             (x, selection.max.y).into(),
+                            sheet_id,
                         );
                         new_y = range.min.y;
-                        format = self.get_all_cell_formats(sheet_id, source_col);
+                        format = self.get_all_cell_formats(source_col);
                     }
 
-                    let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
-                    let (region, operations) = self.region(sheet_id, format_rect);
-                    if let Some(operations) = operations {
-                        format_ops.extend(operations);
-                    }
-                    format_ops.extend(apply_formats(region, &format));
+                    let format_rect =
+                        SheetRect::new_pos_span((x, y).into(), (x, new_y).into(), sheet_id);
+                    format_ops.extend(apply_formats(format_rect, &format));
                 });
 
                 formats.extend(format);
-                let (operations, cell_values) =
-                    self.apply_auto_complete(sheet_id, true, &source_col, &target_col, None)?;
+                let (operations, cell_values) = self.apply_auto_complete(
+                    sheet_id,
+                    true,
+                    &source_col.into(),
+                    &target_col,
+                    None,
+                )?;
                 values.extend(cell_values);
 
                 Ok(operations)
@@ -428,11 +452,12 @@ impl GridController {
                     .collect::<Vec<_>>();
 
                 let format_x = selection.min.x + (x - selection.min.x) % selection.width() as i64;
-                let format_source_rect = Rect::new_span(
+                let format_source_rect = SheetRect::new_pos_span(
                     (format_x, selection.min.y).into(),
                     (format_x, selection.max.y).into(),
+                    sheet_id,
                 );
-                let mut format = self.get_all_cell_formats(sheet_id, format_source_rect);
+                let mut format = self.get_all_cell_formats(format_source_rect);
 
                 maybe_reverse_range(range.y_range(), direction == ExpandDirection::Up)
                     .step_by(height as usize)
@@ -444,22 +469,20 @@ impl GridController {
                             // adjust the format since this is ine reverse order
                             let calc_y = y - height + 1;
                             if calc_y < range.min.y {
-                                let format_source_rect = Rect::new_span(
+                                let format_source_rect = SheetRect::new_pos_span(
                                     (format_x, selection.min.y + range.min.y - calc_y).into(),
                                     (format_x, selection.max.y).into(),
+                                    sheet_id,
                                 );
-                                format = self.get_all_cell_formats(sheet_id, format_source_rect);
+                                format = self.get_all_cell_formats(format_source_rect);
                                 range.min.y
                             } else {
                                 y - height + 1
                             }
                         };
-                        let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
-                        let (region, operations) = self.region(sheet_id, format_rect);
-                        if let Some(operations) = operations {
-                            format_ops.extend(operations);
-                        }
-                        format_ops.extend(apply_formats(region, &format));
+                        let format_rect =
+                            SheetRect::new_pos_span((x, y).into(), (x, new_y).into(), sheet_id);
+                        format_ops.extend(apply_formats(format_rect, &format));
                     });
 
                 let (operations, _) = self.apply_auto_complete(
@@ -514,11 +537,12 @@ impl GridController {
                     .collect::<Vec<_>>();
 
                 let format_x = selection.max.x - (index as i64 % selection.width() as i64);
-                let format_source_rect = Rect::new_span(
+                let format_source_rect = SheetRect::new_pos_span(
                     (format_x, selection.min.y).into(),
                     (format_x, selection.max.y).into(),
+                    sheet_id,
                 );
-                let mut format = self.get_all_cell_formats(sheet_id, format_source_rect);
+                let mut format = self.get_all_cell_formats(format_source_rect);
 
                 maybe_reverse_range(range.y_range(), direction == ExpandDirection::Up)
                     .step_by(height as usize)
@@ -530,23 +554,21 @@ impl GridController {
                             // adjust the format since this is ine reverse order
                             let calc_y = y - height + 1;
                             if calc_y < range.min.y {
-                                let format_source_rect = Rect::new_span(
+                                let format_source_rect = SheetRect::new_pos_span(
                                     (format_x, selection.min.y + range.min.y - calc_y).into(),
                                     (format_x, selection.max.y).into(),
+                                    sheet_id,
                                 );
-                                format = self.get_all_cell_formats(sheet_id, format_source_rect);
+                                format = self.get_all_cell_formats(format_source_rect);
                                 range.min.y
                             } else {
                                 y - height + 1
                             }
                         };
 
-                        let format_rect = Rect::new_span((x, y).into(), (x, new_y).into());
-                        let (region, operations) = self.region(sheet_id, format_rect);
-                        if let Some(operations) = operations {
-                            format_ops.extend(operations);
-                        }
-                        format_ops.extend(apply_formats(region, &format));
+                        let format_rect =
+                            SheetRect::new_pos_span((x, y).into(), (x, new_y).into(), sheet_id);
+                        format_ops.extend(apply_formats(format_rect, &format));
                     });
 
                 let (operations, _) = self.apply_auto_complete(
@@ -600,16 +622,12 @@ impl GridController {
             x: start_pos.x + values.width() as i64 - 1,
             y: start_pos.y + values.height() as i64 - 1,
         };
-        let rect = Rect {
+        let sheet_rect = SheetRect {
             min: start_pos,
             max: end_pos,
+            sheet_id,
         };
-        let mut ops = vec![];
-        let (region, operations) = self.region(sheet_id, rect);
-        if let Some(operations) = operations {
-            ops.extend(operations);
-        }
-        ops.push(Operation::SetCellValues { region, values });
+        let ops = vec![Operation::SetCellValues { sheet_rect, values }];
 
         Ok((ops, series))
     }
@@ -620,11 +638,11 @@ impl GridController {
 /// TODO(ddimaria): this funcion is sufficiently generic that it could be moved
 /// TODO(ddimaria): we could remove the clones below by modifying the Operation
 /// calls to accept references since they don't mutate the region.
-pub fn apply_formats(region: RegionRef, formats: &[CellFmtArray]) -> Vec<Operation> {
+pub fn apply_formats(sheet_rect: SheetRect, formats: &[CellFmtArray]) -> Vec<Operation> {
     formats
         .iter()
         .map(|format| Operation::SetCellFormats {
-            region: region.clone(),
+            sheet_rect,
             attr: format.clone(),
         })
         .collect()
@@ -667,6 +685,7 @@ mod tests {
             assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row, assert_cell_value,
             assert_cell_value_row, print_table,
         },
+        SheetPos,
     };
 
     fn test_setup_rect(selection: &Rect) -> (GridController, SheetId) {
@@ -705,24 +724,18 @@ mod tests {
 
         for y in selection.y_range() {
             for x in selection.x_range() {
-                let pos = Pos { x, y };
-                grid_controller.set_cell_value(sheet_id, pos, vals[count].to_string(), None);
+                let sheet_pos = SheetPos { x, y, sheet_id };
+                grid_controller.set_cell_value(sheet_pos, vals[count].to_string(), None);
 
                 if let Some(is_bold) = bolds.get(count) {
                     if *is_bold {
-                        grid_controller.set_cell_bold(
-                            sheet_id,
-                            Rect::single_pos(pos),
-                            Some(true),
-                            None,
-                        );
+                        grid_controller.set_cell_bold(sheet_pos.into(), Some(true), None);
                     }
                 }
 
                 if let Some(fill_color) = fill_colors.get(count) {
                     grid_controller.set_cell_fill_color(
-                        sheet_id,
-                        Rect::single_pos(pos),
+                        SheetRect::single_sheet_pos(sheet_pos),
                         Some(fill_color.to_lowercase()),
                         None,
                     );

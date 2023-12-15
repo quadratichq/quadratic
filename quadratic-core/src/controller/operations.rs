@@ -1,117 +1,100 @@
-use crate::{grid::*, Array, CellValue, Pos};
+use crate::{grid::*, Array, CellValue, SheetPos};
 
-use super::{
-    formatting::CellFmtArray, operation::Operation, transaction_summary::CellSheetsModified,
-    GridController,
-};
+use super::{formatting::CellFmtArray, operation::Operation, GridController};
 
 impl GridController {
     /// Executes the given operation.
     pub fn execute_operation(&mut self, op: Operation, compute: bool) {
         match op {
-            Operation::SetCellValues { region, values } => {
-                self.sheets_with_changed_bounds.insert(region.sheet);
-                let sheet = self.grid.sheet_mut_from_id(region.sheet);
+            Operation::SetCellValues { sheet_rect, values } => {
+                self.sheets_with_changed_bounds.insert(sheet_rect.sheet_id);
+                let sheet = self.grid.sheet_mut_from_id(sheet_rect.sheet_id);
 
-                let size = region.size().expect("msg: error getting size of region");
-                let old_values = region
+                let size = sheet_rect.size();
+                let old_values = sheet_rect
                     .iter()
                     .zip(values.clone().into_cell_values_vec())
-                    .map(|(cell_ref, value)| {
-                        let pos = sheet.cell_ref_to_pos(cell_ref)?;
-                        let (old_value, ops) = sheet.set_cell_value(pos, value);
-                        if let Some(ops) = ops {
-                            self.forward_operations.extend(ops);
-                        }
+                    .map(|(sheet_pos, value)| {
+                        let old_value = sheet.set_cell_value(sheet_pos.into(), value);
                         if old_value
                             .as_ref()
                             .is_some_and(|cell_value| cell_value.is_html())
                         {
-                            self.summary.html.insert(cell_ref.sheet);
+                            self.summary.html.insert(sheet_pos.sheet_id);
                         }
                         old_value
                     })
                     .map(|old_value| old_value.unwrap_or(CellValue::Blank))
                     .collect();
-                self.cells_updated.insert(region.clone());
+                self.cells_updated.insert(sheet_rect);
 
                 let old_values = Array::new_row_major(size, old_values)
                     .expect("error constructing array of old values for SetCells operation");
 
-                self.add_cell_sheets_modified_region(&region);
+                self.add_cell_sheets_modified_rect(&sheet_rect);
 
                 // check if override any code cells
-                let sheet = self.grid.sheet_from_id(region.sheet);
+                let sheet = self.grid.sheet_from_id(sheet_rect.sheet_id);
                 let code_cells_to_delete = sheet
                     .code_cells
                     .iter()
-                    .filter_map(|(cell_ref, _)| {
-                        if region.contains(cell_ref) {
-                            let pos = sheet.cell_ref_to_pos(*cell_ref)?;
-                            Some((*cell_ref, pos))
+                    .filter_map(|(pos, _)| {
+                        let possible_delete = pos.to_sheet_pos(sheet.id);
+                        if sheet_rect.contains(possible_delete) {
+                            Some(possible_delete)
                         } else {
                             None
                         }
                     })
-                    .collect::<Vec<(CellRef, Pos)>>();
+                    .collect::<Vec<SheetPos>>();
 
                 // remove the code cells
                 let sheet_id = sheet.id;
-                for (cell_ref, pos) in code_cells_to_delete {
+                for sheet_pos in code_cells_to_delete {
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    let (old_value, _) = sheet.set_code_cell_value(pos, None);
-                    self.fetch_code_cell_difference(sheet_id, pos, old_value.clone(), None);
+                    let old_value = sheet.set_code_cell_value(sheet_pos.into(), None);
+                    self.fetch_code_cell_difference(sheet_pos, old_value.clone(), None);
                     self.reverse_operations.push(Operation::SetCellCode {
-                        cell_ref,
+                        sheet_pos,
                         code_cell_value: old_value,
                     });
                 }
 
                 // check for changes in spills
-                for cell_ref in region.iter() {
-                    let sheet = self.grid.sheet_from_id(cell_ref.sheet);
-                    if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                        // if there is a value, check if it caused a spill
-                        if sheet.get_cell_value(pos).is_some() {
-                            self.check_spill(cell_ref);
-                        } else {
-                            // otherwise check if it released a spill
-                            self.update_code_cell_value_if_spill_error_released(cell_ref);
-                        }
+                for sheet_pos in sheet_rect.iter() {
+                    let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
+                    // if there is a value, check if it caused a spill
+                    if sheet.get_cell_value(sheet_pos.into()).is_some() {
+                        self.check_spill(sheet_pos);
+                    } else {
+                        // otherwise check if it released a spill
+                        self.update_code_cell_value_if_spill_error_released(sheet_pos);
                     }
                 }
 
-                self.forward_operations.push(Operation::SetCellValues {
-                    region: region.clone(),
-                    values,
-                });
+                self.forward_operations
+                    .push(Operation::SetCellValues { sheet_rect, values });
 
                 self.summary.generate_thumbnail =
-                    self.summary.generate_thumbnail || self.thumbnail_dirty_region(&region);
+                    self.summary.generate_thumbnail || self.thumbnail_dirty_sheet_rect(sheet_rect);
 
                 self.reverse_operations.push(Operation::SetCellValues {
-                    region,
+                    sheet_rect,
                     values: old_values,
                 });
             }
             Operation::SetCellCode {
-                cell_ref,
+                sheet_pos,
                 code_cell_value,
             } => {
                 let is_code_cell_empty = code_cell_value.is_none();
-                let sheet_id = cell_ref.sheet;
+                let sheet_id = sheet_pos.sheet_id;
 
                 self.sheets_with_changed_bounds.insert(sheet_id);
 
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                let old_spill = sheet.get_spill(cell_ref);
-                let old_code_cell_value = sheet.get_code_cell_from_ref(cell_ref).cloned();
-                let pos = if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                    pos
-                } else {
-                    return;
-                };
-
+                let old_spill = sheet.get_spill(sheet_pos.into());
+                let old_code_cell_value = sheet.get_code_cell(sheet_pos.into()).cloned();
                 let final_code_cell_value;
 
                 // for compute, we keep the original cell output to avoid flashing of output (since values will be overridden once computation is complete)
@@ -126,31 +109,32 @@ impl GridController {
                             } else {
                                 code_cell_value
                             };
-                        sheet.set_code_cell_value(pos, Some(updated_code_cell_value.clone()));
+                        sheet.set_code_cell_value(
+                            sheet_pos.into(),
+                            Some(updated_code_cell_value.clone()),
+                        );
                         final_code_cell_value = Some(updated_code_cell_value);
                     } else {
-                        sheet.set_code_cell_value(pos, code_cell_value);
+                        sheet.set_code_cell_value(sheet_pos.into(), code_cell_value);
                         self.fetch_code_cell_difference(
-                            sheet_id,
-                            pos,
+                            sheet_pos,
                             old_code_cell_value.clone(),
                             None,
                         );
                         let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                        sheet.set_code_cell_value(pos, None);
+                        sheet.set_code_cell_value(sheet_pos.into(), None);
                         final_code_cell_value = None;
                     }
-                    self.cells_to_compute.insert(cell_ref);
+                    self.cells_to_compute.insert(sheet_pos);
                 } else {
                     // need to update summary (cells_to_compute will be ignored)
                     self.fetch_code_cell_difference(
-                        sheet_id,
-                        pos,
+                        sheet_pos,
                         old_code_cell_value.clone(),
                         code_cell_value.clone(),
                     );
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    sheet.set_code_cell_value(pos, code_cell_value.clone());
+                    sheet.set_code_cell_value(sheet_pos.into(), code_cell_value.clone());
                     final_code_cell_value = code_cell_value;
                 }
 
@@ -160,38 +144,36 @@ impl GridController {
                 // to avoid using String for sheet IDs as much as possible. If
                 // it's needed for JS interop, then let's impl Serialize and
                 // Deserialize on SheetId to make it serialize as a string.
-                self.summary
-                    .cell_sheets_modified
-                    .insert(CellSheetsModified::new(sheet_id, pos));
+                self.add_cell_sheets_modified_rect(&sheet_pos.into());
                 self.summary.code_cells_modified.insert(sheet_id);
 
                 // check if a new code_cell causes a spill error in another code cell
                 if old_code_cell_value.is_none() && !is_code_cell_empty {
                     if let Some(old_spill) = old_spill {
-                        if old_spill != cell_ref {
-                            self.set_spill_error(old_spill);
+                        if old_spill.to_sheet_pos(sheet_id) != sheet_pos {
+                            self.set_spill_error(old_spill.to_sheet_pos(sheet_id));
                         }
                     }
                 }
 
                 // check if deleting a code cell releases a spill
                 if is_code_cell_empty {
-                    self.update_code_cell_value_if_spill_error_released(cell_ref);
+                    self.update_code_cell_value_if_spill_error_released(sheet_pos);
                 }
                 self.forward_operations.push(Operation::SetCellCode {
-                    cell_ref,
+                    sheet_pos,
                     code_cell_value: final_code_cell_value,
                 });
                 self.reverse_operations.push(Operation::SetCellCode {
-                    cell_ref,
+                    sheet_pos,
                     code_cell_value: old_code_cell_value,
                 });
             }
-            Operation::SetCellFormats { region, attr } => {
-                self.sheets_with_changed_bounds.insert(region.sheet);
+            Operation::SetCellFormats { sheet_rect, attr } => {
+                self.sheets_with_changed_bounds.insert(sheet_rect.sheet_id);
 
                 if let CellFmtArray::FillColor(_) = attr {
-                    self.summary.fill_sheets_modified.push(region.sheet);
+                    self.summary.fill_sheets_modified.push(sheet_rect.sheet_id);
                 }
 
                 // todo: this is too slow -- perhaps call this again when we have a better way of setting multiple formats within an array
@@ -201,73 +183,82 @@ impl GridController {
 
                 let old_attr = match attr.clone() {
                     CellFmtArray::Align(align) => CellFmtArray::Align(
-                        self.set_cell_formats_for_type::<CellAlign>(&region, align, true),
+                        self.set_cell_formats_for_type::<CellAlign>(&sheet_rect, align, true),
                     ),
                     CellFmtArray::Wrap(wrap) => CellFmtArray::Wrap(
-                        self.set_cell_formats_for_type::<CellWrap>(&region, wrap, true),
+                        self.set_cell_formats_for_type::<CellWrap>(&sheet_rect, wrap, true),
                     ),
                     CellFmtArray::NumericFormat(num_fmt) => CellFmtArray::NumericFormat(
-                        self.set_cell_formats_for_type::<NumericFormat>(&region, num_fmt, true),
+                        self.set_cell_formats_for_type::<NumericFormat>(&sheet_rect, num_fmt, true),
                     ),
                     CellFmtArray::NumericDecimals(num_decimals) => CellFmtArray::NumericDecimals(
                         self.set_cell_formats_for_type::<NumericDecimals>(
-                            &region,
+                            &sheet_rect,
                             num_decimals,
                             true,
                         ),
                     ),
                     CellFmtArray::NumericCommas(num_commas) => CellFmtArray::NumericCommas(
-                        self.set_cell_formats_for_type::<NumericCommas>(&region, num_commas, true),
+                        self.set_cell_formats_for_type::<NumericCommas>(
+                            &sheet_rect,
+                            num_commas,
+                            true,
+                        ),
                     ),
                     CellFmtArray::Bold(bold) => CellFmtArray::Bold(
-                        self.set_cell_formats_for_type::<Bold>(&region, bold, true),
+                        self.set_cell_formats_for_type::<Bold>(&sheet_rect, bold, true),
                     ),
                     CellFmtArray::Italic(italic) => CellFmtArray::Italic(
-                        self.set_cell_formats_for_type::<Italic>(&region, italic, true),
+                        self.set_cell_formats_for_type::<Italic>(&sheet_rect, italic, true),
                     ),
                     CellFmtArray::TextColor(text_color) => CellFmtArray::TextColor(
-                        self.set_cell_formats_for_type::<TextColor>(&region, text_color, true),
+                        self.set_cell_formats_for_type::<TextColor>(&sheet_rect, text_color, true),
                     ),
                     CellFmtArray::FillColor(fill_color) => {
-                        self.summary.fill_sheets_modified.push(region.sheet);
-                        CellFmtArray::FillColor(
-                            self.set_cell_formats_for_type::<FillColor>(&region, fill_color, false),
-                        )
+                        self.summary.fill_sheets_modified.push(sheet_rect.sheet_id);
+                        CellFmtArray::FillColor(self.set_cell_formats_for_type::<FillColor>(
+                            &sheet_rect,
+                            fill_color,
+                            false,
+                        ))
                     }
                     CellFmtArray::RenderSize(output_size) => {
-                        self.summary.html.insert(region.sheet);
+                        self.summary.html.insert(sheet_rect.sheet_id);
                         CellFmtArray::RenderSize(self.set_cell_formats_for_type::<RenderSize>(
-                            &region,
+                            &sheet_rect,
                             output_size,
                             false,
                         ))
                     }
                 };
-                self.forward_operations.push(Operation::SetCellFormats {
-                    region: region.clone(),
-                    attr,
-                });
+                self.forward_operations
+                    .push(Operation::SetCellFormats { sheet_rect, attr });
 
                 self.reverse_operations.push(Operation::SetCellFormats {
-                    region,
+                    sheet_rect,
                     attr: old_attr,
                 });
             }
-            Operation::SetBorders { region, borders } => {
-                self.sheets_with_changed_bounds.insert(region.sheet);
-                self.summary.border_sheets_modified.push(region.sheet);
+            Operation::SetBorders {
+                sheet_rect,
+                borders,
+            } => {
+                self.sheets_with_changed_bounds.insert(sheet_rect.sheet_id);
+                self.summary
+                    .border_sheets_modified
+                    .push(sheet_rect.sheet_id);
                 self.summary.generate_thumbnail =
-                    self.summary.generate_thumbnail || self.thumbnail_dirty_region(&region);
+                    self.summary.generate_thumbnail || self.thumbnail_dirty_sheet_rect(sheet_rect);
 
-                let sheet = self.grid.sheet_mut_from_id(region.sheet);
+                let sheet = self.grid.sheet_mut_from_id(sheet_rect.sheet_id);
 
-                let old_borders = sheet.set_region_borders(&region, borders.clone());
+                let old_borders = sheet.set_region_borders(&sheet_rect.into(), borders.clone());
                 self.forward_operations.push(Operation::SetBorders {
-                    region: region.clone(),
+                    sheet_rect,
                     borders,
                 });
                 self.reverse_operations.push(Operation::SetBorders {
-                    region,
+                    sheet_rect,
                     borders: old_borders,
                 });
             }
@@ -341,22 +332,24 @@ impl GridController {
                 new_size,
             } => {
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                if let Some(x) = sheet.get_column_index(column) {
-                    self.summary.offsets_modified.push(sheet.id);
-                    let old_size = sheet.offsets.set_column_width(x, new_size);
-                    self.summary.generate_thumbnail = self.summary.generate_thumbnail
-                        || self.thumbnail_dirty_pos(sheet_id, Pos { x, y: 0 });
-                    self.forward_operations.push(Operation::ResizeColumn {
+                self.summary.offsets_modified.push(sheet.id);
+                let old_size = sheet.offsets.set_column_width(column, new_size);
+                self.summary.generate_thumbnail = self.summary.generate_thumbnail
+                    || self.thumbnail_dirty_sheet_pos(SheetPos {
+                        x: column,
+                        y: 0,
                         sheet_id,
-                        column,
-                        new_size,
                     });
-                    self.reverse_operations.push(Operation::ResizeColumn {
-                        sheet_id,
-                        column,
-                        new_size: old_size,
-                    });
-                }
+                self.forward_operations.push(Operation::ResizeColumn {
+                    sheet_id,
+                    column,
+                    new_size,
+                });
+                self.reverse_operations.push(Operation::ResizeColumn {
+                    sheet_id,
+                    column,
+                    new_size: old_size,
+                });
             }
 
             Operation::ResizeRow {
@@ -365,49 +358,23 @@ impl GridController {
                 new_size,
             } => {
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                if let Some(y) = sheet.get_row_index(row) {
-                    let old_size = sheet.offsets.set_row_height(y, new_size);
-                    self.summary.offsets_modified.push(sheet.id);
-                    self.summary.generate_thumbnail = self.summary.generate_thumbnail
-                        || self.thumbnail_dirty_pos(sheet_id, Pos { x: 0, y });
-                    self.forward_operations.push(Operation::ResizeRow {
+                let old_size = sheet.offsets.set_row_height(row, new_size);
+                self.summary.offsets_modified.push(sheet.id);
+                self.summary.generate_thumbnail = self.summary.generate_thumbnail
+                    || self.thumbnail_dirty_sheet_pos(SheetPos {
+                        x: 0,
+                        y: row,
                         sheet_id,
-                        row,
-                        new_size,
                     });
-                    self.reverse_operations.push(Operation::ResizeRow {
-                        sheet_id,
-                        row,
-                        new_size: old_size,
-                    });
-                }
-            }
-
-            Operation::MapColumnId {
-                sheet_id,
-                column_id,
-                index,
-            } => {
-                let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                sheet.set_column_id(column_id, index);
-                self.forward_operations.push(Operation::MapColumnId {
+                self.forward_operations.push(Operation::ResizeRow {
                     sheet_id,
-                    column_id,
-                    index,
+                    row,
+                    new_size,
                 });
-            }
-
-            Operation::MapRowId {
-                sheet_id,
-                row_id,
-                index,
-            } => {
-                let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                sheet.set_row_id(row_id, index);
-                self.forward_operations.push(Operation::MapRowId {
+                self.reverse_operations.push(Operation::ResizeRow {
                     sheet_id,
-                    row_id,
-                    index,
+                    row,
+                    new_size: old_size,
                 });
             }
         };
@@ -448,27 +415,25 @@ mod tests {
     #[test]
     fn test_execute_operation_resize_column() {
         let mut gc = GridController::new();
-        let sheet = &mut gc.grid_mut().sheets_mut()[0];
-        let (column, _) = sheet.get_or_create_column(0);
-        let column_id = column.id;
-        let sheet_id = sheet.id;
+        let sheet_id = gc.sheet_ids()[0];
+        let x = 0;
         let new_size = 100.0;
         let operation = Operation::ResizeColumn {
             sheet_id,
-            column: column_id,
+            column: x,
             new_size,
         };
 
         assert_eq!(
             format!("{:?}", operation),
             format!(
-                "ResizeColumn {{ sheet_id: SheetId {{ id: {} }}, column: ColumnId {{ id: {} }}, new_size: {:.1} }}",
-                sheet_id, column_id, new_size
+                "ResizeColumn {{ sheet_id: SheetId {{ id: {} }}, column: {}, new_size: {:.1} }}",
+                sheet_id, x, new_size
             )
         );
 
         execute(&mut gc, operation);
-        let column_width = gc.grid.sheets()[0].offsets.column_width(0);
+        let column_width = gc.grid.sheet_from_id(sheet_id).offsets.column_width(x);
         assert_eq!(column_width, new_size);
     }
 
@@ -476,26 +441,25 @@ mod tests {
     fn test_execute_operation_resize_row() {
         let mut gc = GridController::new();
         let sheet = &mut gc.grid_mut().sheets_mut()[0];
-        let (row, _) = sheet.get_or_create_row(0);
-        let row_id = row;
         let sheet_id = sheet.id;
+        let row = 0;
         let new_size = 100.0;
         let operation = Operation::ResizeRow {
             sheet_id,
-            row: row_id,
+            row,
             new_size,
         };
 
         assert_eq!(
             format!("{:?}", operation),
             format!(
-                "ResizeRow {{ sheet_id: SheetId {{ id: {} }}, row: RowId {{ id: {} }}, new_size: {:.1} }}",
-                sheet_id, row_id, new_size
+                "ResizeRow {{ sheet_id: SheetId {{ id: {} }}, row: {}, new_size: {:.1} }}",
+                sheet_id, row, new_size
             )
         );
 
         execute(&mut gc, operation);
-        let row_height = gc.grid.sheets()[0].offsets.row_height(0);
+        let row_height = gc.grid.sheets()[0].offsets.row_height(row);
         assert_eq!(row_height, new_size);
     }
 }

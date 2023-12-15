@@ -314,6 +314,8 @@ pub(crate) mod tests {
                     cursor: 0,
                     active: true,
                     code_editor: false,
+                    bold: None,
+                    italic: None,
                 }),
                 viewport: None,
             },

@@ -45,23 +45,32 @@ export const CellInput = (props: CellInputProps) => {
   }
 
   // moves the cursor to the end of the input (since we're placing a single character that caused the input to open)
-  const handleFocus = useCallback((e: any) => {
-    const div = e.target;
-    window.setTimeout(() => {
-      if (!document.hasFocus() || !div.contains(document.activeElement)) return;
-      if (div.innerText?.length) {
-        const selection = document.getSelection();
-        const range = document.createRange();
-        if (selection) {
-          range.setStart(div.childNodes[0], div.innerText.length);
-          range.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(range);
+  const handleFocus = useCallback(
+    (e: any) => {
+      const div = e.target;
+      window.setTimeout(() => {
+        if (!document.hasFocus() || !div.contains(document.activeElement)) return;
+        if (div.innerText?.length) {
+          const selection = document.getSelection();
+          const range = document.createRange();
+          if (selection) {
+            range.setStart(div.childNodes[0], div.innerText.length);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
         }
-      }
-      multiplayer.sendCellEdit(div.innerText ?? '', div.innerText?.length ?? 0, false);
-    }, 0);
-  }, []);
+        multiplayer.sendCellEdit(
+          div.innerText ?? '',
+          div.innerText?.length ?? 0,
+          false,
+          temporaryBold,
+          temporaryItalic
+        );
+      }, 0);
+    },
+    [temporaryBold, temporaryItalic]
+  );
 
   // Effect for sizing the input width to the length of the value
   const [textInput, setTextInput] = useState<HTMLDivElement>();
@@ -169,7 +178,7 @@ export const CellInput = (props: CellInputProps) => {
     const result = parsed.body.textContent || '';
     document.execCommand('insertHTML', false, result.replace(/(\r\n|\n|\r)/gm, ''));
     if (textInput) {
-      multiplayer.sendCellEdit(textInput.innerText, getCursorLocation(), false);
+      multiplayer.sendCellEdit(textInput.innerText, getCursorLocation(), false, temporaryBold, temporaryItalic);
     }
     event.preventDefault();
   };
@@ -311,7 +320,7 @@ export const CellInput = (props: CellInputProps) => {
       }}
       onKeyUp={() => {
         if (textInput) {
-          multiplayer.sendCellEdit(textInput.innerText, getCursorLocation(), false);
+          multiplayer.sendCellEdit(textInput.innerText, getCursorLocation(), false, temporaryBold, temporaryItalic);
         }
       }}
     >

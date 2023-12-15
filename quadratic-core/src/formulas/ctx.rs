@@ -10,16 +10,16 @@ pub struct Ctx<'ctx> {
     /// Grid file to access cells from.
     pub grid: &'ctx Grid,
     /// Position in the grid from which the formula is being evaluated.
-    pub pos: SheetPos,
+    pub sheet_pos: SheetPos,
     /// Cells that have been accessed in evaluating the formula.
     pub cells_accessed: HashSet<SheetPos>,
 }
 impl<'ctx> Ctx<'ctx> {
     /// Constructs a context for evaluating a formula at `pos` in `grid`.
-    pub fn new(grid: &'ctx Grid, pos: SheetPos) -> Self {
+    pub fn new(grid: &'ctx Grid, sheet_pos: SheetPos) -> Self {
         Ctx {
             grid,
-            pos,
+            sheet_pos,
             cells_accessed: HashSet::new(),
         }
     }
@@ -32,11 +32,11 @@ impl<'ctx> Ctx<'ctx> {
                 .grid
                 .sheet_from_name(sheet_name.clone()) // TODO: should not need clone
                 .ok_or(ErrorMsg::BadCellReference.with_span(span))?,
-            None => self.grid.sheet_from_id(self.pos.sheet_id),
+            None => self.grid.sheet_from_id(self.sheet_pos.sheet_id),
         };
-        let ref_pos = ref_pos.resolve_from(self.pos.without_sheet());
-        let ref_pos_with_sheet = ref_pos.with_sheet(sheet.id);
-        if ref_pos_with_sheet == self.pos {
+        let ref_pos = ref_pos.resolve_from(self.sheet_pos.into());
+        let ref_pos_with_sheet = ref_pos.to_sheet_pos(sheet.id);
+        if ref_pos_with_sheet == self.sheet_pos {
             return Err(ErrorMsg::CircularReference.with_span(span));
         }
 

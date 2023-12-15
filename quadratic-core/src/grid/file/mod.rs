@@ -7,12 +7,18 @@ use super::Grid;
 pub mod current;
 mod v1_3;
 mod v1_4;
+mod v1_5;
 
-pub static CURRENT_VERSION: &str = "1.4";
+pub static CURRENT_VERSION: &str = "1.5";
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
 enum GridFile {
+    #[serde(rename = "1.5")]
+    V1_5 {
+        #[serde(flatten)]
+        grid: v1_5::schema::GridSchema,
+    },
     #[serde(rename = "1.4")]
     V1_4 {
         #[serde(flatten)]
@@ -26,10 +32,19 @@ enum GridFile {
 }
 
 impl GridFile {
-    fn into_latest(self) -> Result<v1_4::schema::GridSchema> {
+    fn into_latest(self) -> Result<v1_5::schema::GridSchema> {
         match self {
-            GridFile::V1_4 { grid } => Ok(grid),
-            GridFile::V1_3 { grid } => v1_3::file::upgrade(grid),
+            GridFile::V1_5 { grid } => Ok(grid),
+            GridFile::V1_4 { grid } => v1_4::file::upgrade(grid),
+            GridFile::V1_3 { grid } => {
+                if let Ok(v1_4) = v1_3::file::upgrade(grid) {
+                    v1_4::file::upgrade(v1_4)
+                } else {
+                    Err(anyhow!(
+                        "Failed to upgrade from v1.3 to v1.4 (on the way to v1.5"
+                    ))
+                }
+            }
         }
     }
 }
@@ -57,9 +72,7 @@ mod tests {
     use super::*;
     use crate::{
         color::Rgba,
-        grid::{
-            generate_borders, set_region_borders, BorderSelection, BorderStyle, CellBorderLine,
-        },
+        grid::{generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellBorderLine},
         Pos, Rect,
     };
 
@@ -150,14 +163,13 @@ mod tests {
         let mut grid = Grid::new();
         let sheets = grid.sheets_mut();
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
-        let (region, _) = sheets[0].region(rect);
         let selection = vec![BorderSelection::Bottom];
         let style = BorderStyle {
             color: Rgba::from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
-        let borders = generate_borders(&sheets[0], &region, selection, Some(style));
-        set_region_borders(&mut sheets[0], vec![region.clone()], borders);
+        let borders = generate_borders(&sheets[0], &rect, selection, Some(style));
+        set_rect_borders(&mut sheets[0], &rect, borders);
         // println!("{:#?}", sheets[0].borders);
 
         let _exported = export(&mut grid).unwrap();

@@ -144,7 +144,6 @@ export class Grid {
 
     if (summary.forward_operations) {
       multiplayer.sendTransaction(summary.forward_operations);
-      console.log('sending multiplayer transaction', summary.forward_operations);
     }
     pixiApp.setViewportDirty();
   }

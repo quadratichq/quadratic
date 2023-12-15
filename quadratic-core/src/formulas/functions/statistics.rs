@@ -122,7 +122,7 @@ fn get_functions() -> Vec<FormulaFunction> {
 
 #[cfg(test)]
 mod tests {
-    use crate::formulas::tests::*;
+    use crate::{formulas::tests::*, Pos};
 
     #[test]
     fn test_formula_average() {
@@ -137,7 +137,7 @@ mod tests {
         }
         let sheet_id = sheet.id;
 
-        let mut ctx = Ctx::new(&g, pos![nAn1].with_sheet(sheet_id));
+        let mut ctx = Ctx::new(&g, pos![nAn1].to_sheet_pos(sheet_id));
         assert_eq!("7.5".to_string(), form.eval(&mut ctx).unwrap().to_string(),);
 
         assert_eq!(

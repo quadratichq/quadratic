@@ -68,7 +68,7 @@ impl GridController {
         self.sheets_with_changed_bounds = HashSet::new();
         self.transaction_type = transaction_type;
         self.has_async = false;
-        self.current_cell_ref = None;
+        self.current_sheet_pos = None;
         self.waiting_for_async = None;
         self.complete = false;
         self.forward_operations = vec![];
@@ -137,10 +137,10 @@ impl GridController {
 
         self.transaction_updated_bounds();
         if self.complete {
-            self.prepare_transaction_summary()
-        } else {
-            TransactionSummary::default()
+            self.summary.save = true;
+            self.finalize_transaction();
         }
+        self.prepare_transaction_summary()
     }
 
     /// This is used to get cells during a TS-controlled async calculation
@@ -194,34 +194,25 @@ impl From<Pos> for CellHash {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        grid::{GridBounds, SheetId},
-        Array, CellValue, Pos, Rect,
-    };
+    use crate::{grid::GridBounds, Array, CellValue, Pos, Rect, SheetPos, SheetRect};
 
     use super::*;
 
-    fn add_cell_value(
-        gc: &mut GridController,
-        sheet_id: SheetId,
-        pos: Pos,
-        value: CellValue,
-    ) -> Operation {
-        let rect = Rect::new_span(pos, pos);
-        let (region, _) = gc.region(sheet_id, rect);
+    fn add_cell_value(sheet_pos: SheetPos, value: CellValue) -> Operation {
+        let sheet_rect = SheetRect::single_sheet_pos(sheet_pos);
 
         Operation::SetCellValues {
-            region,
+            sheet_rect,
             values: Array::from(value),
         }
     }
 
     fn get_operations(gc: &mut GridController) -> (Operation, Operation) {
         let sheet_id = gc.sheet_ids()[0];
-        let pos = Pos::from((0, 0));
+        let sheet_pos = SheetPos::from((0, 0, sheet_id));
         let value = CellValue::Text("test".into());
-        let operation = add_cell_value(gc, sheet_id, pos, value);
-        let operation_undo = add_cell_value(gc, sheet_id, pos, CellValue::Blank);
+        let operation = add_cell_value(sheet_pos, value);
+        let operation_undo = add_cell_value(sheet_pos, CellValue::Blank);
 
         (operation, operation_undo)
     }

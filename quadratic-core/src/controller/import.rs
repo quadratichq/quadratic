@@ -4,7 +4,7 @@ use super::{
     transaction_in_progress::TransactionType, transaction_summary::TransactionSummary,
     GridController,
 };
-use crate::{controller::operation::Operation, grid::SheetId, Array, CellValue, Pos};
+use crate::{controller::operation::Operation, grid::SheetId, Array, CellValue, Pos, SheetRect};
 
 impl GridController {
     /// Imports a CSV file into the grid.
@@ -42,8 +42,7 @@ impl GridController {
                     .enumerate()
                     .map(|(col, value)| {
                         Ok(self.string_to_cell_value(
-                            sheet_id,
-                            (insert_at.x + col as i64, insert_at.y + row as i64).into(),
+                            (insert_at.x + col as i64, insert_at.y + row as i64, sheet_id).into(),
                             value,
                             &mut ops,
                         ))
@@ -54,21 +53,18 @@ impl GridController {
 
         let array = Array::from(cell_values);
 
-        let rect = crate::Rect::new_span(
+        let sheet_rect = SheetRect::new_pos_span(
             insert_at,
             (
                 insert_at.x + array.width() as i64 - 1,
                 insert_at.y + array.height() as i64 - 1,
             )
                 .into(),
+            sheet_id,
         );
 
-        let (region, operations) = self.region(sheet_id, rect);
-        if let Some(operations) = operations {
-            ops.extend(operations);
-        }
         ops.push(Operation::SetCellValues {
-            region,
+            sheet_rect,
             values: array,
         });
 

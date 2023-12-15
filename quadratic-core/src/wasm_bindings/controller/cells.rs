@@ -72,10 +72,15 @@ impl GridController {
         value: String,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_value(sheet_id, *pos, value, cursor),
-        )?)
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+            Ok(serde_wasm_bindgen::to_value(&self.set_cell_value(
+                pos.to_sheet_pos(sheet_id),
+                value,
+                cursor,
+            ))?)
+        } else {
+            Err(JsValue::from_str("Invalid sheet id"))
+        }
     }
 
     /// changes the decimal places
@@ -88,10 +93,16 @@ impl GridController {
         delta: isize,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(&self.change_decimal_places(
-            sheet_id, source, rect, delta, cursor,
-        ))?)
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+            Ok(serde_wasm_bindgen::to_value(&self.change_decimal_places(
+                source.to_sheet_pos(sheet_id),
+                rect.to_sheet_rect(sheet_id),
+                delta,
+                cursor,
+            ))?)
+        } else {
+            Err(JsValue::from_str("Invalid sheet id"))
+        }
     }
 
     /// gets an editable string for a cell
@@ -115,12 +126,12 @@ impl GridController {
     pub fn js_delete_cell_values(
         &mut self,
         sheet_id: String,
-        region: &Rect,
+        rect: &Rect,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.delete_cells_rect(sheet_id, *region, cursor),
+            &self.delete_cells_rect(rect.to_sheet_rect(sheet_id), cursor),
         )?)
     }
 
@@ -171,8 +182,7 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(&self.set_cell_code(
-            sheet_id,
-            pos,
+            pos.to_sheet_pos(sheet_id),
             language,
             code_string,
             cursor,

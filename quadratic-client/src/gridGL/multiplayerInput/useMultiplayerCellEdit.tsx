@@ -9,8 +9,6 @@ export interface MultiplayerCell {
   sheetId: string;
   cell: Coordinate;
   text?: string;
-  color: string;
-  fillColor?: string;
   bold: boolean;
   italic: boolean;
   cursor: number;
