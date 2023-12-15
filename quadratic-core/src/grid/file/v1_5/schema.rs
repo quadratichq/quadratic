@@ -127,10 +127,8 @@ pub struct Column {
 }
 
 pub type ColumnValues = v1_4::ColumnValues;
-// pub type ColumnContent = v1_4::ColumnContent;
 pub type ColumnValue = v1_4::ColumnValue;
 pub type ColumnFormatType<T> = v1_4::ColumnFormatType<T>;
 pub type ColumnFormatContent<T> = v1_4::ColumnFormatContent<T>;
 pub type NumericFormat = v1_4::NumericFormat;
 pub type CellBorder = v1_4::CellBorder;
-// pub type CellSide = v1_4::CellSide;

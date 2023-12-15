@@ -72,12 +72,15 @@ impl GridController {
         value: String,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(&self.set_cell_value(
-            pos.to_sheet_pos(sheet_id),
-            value,
-            cursor,
-        ))?)
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+            Ok(serde_wasm_bindgen::to_value(&self.set_cell_value(
+                pos.to_sheet_pos(sheet_id),
+                value,
+                cursor,
+            ))?)
+        } else {
+            Err(JsValue::from_str("Invalid sheet id"))
+        }
     }
 
     /// changes the decimal places
@@ -90,13 +93,16 @@ impl GridController {
         delta: isize,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(&self.change_decimal_places(
-            source.to_sheet_pos(sheet_id),
-            rect.to_sheet_rect(sheet_id),
-            delta,
-            cursor,
-        ))?)
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+            Ok(serde_wasm_bindgen::to_value(&self.change_decimal_places(
+                source.to_sheet_pos(sheet_id),
+                rect.to_sheet_rect(sheet_id),
+                delta,
+                cursor,
+            ))?)
+        } else {
+            Err(JsValue::from_str("Invalid sheet id"))
+        }
     }
 
     /// gets an editable string for a cell
