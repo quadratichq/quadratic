@@ -104,14 +104,16 @@ export class PixiApp {
         keyToPress: [...ZOOM_KEY, ...HORIZONTAL_SCROLL_KEY],
       })
     );
-    this.viewport.plugins.add(
-      'drag-middle-mouse',
-      new Drag(this.viewport, {
-        pressToDrag: true,
-        mouseButtons: 'middle',
-        wheel: 'false',
-      })
-    );
+    if (!isMobile) {
+      this.viewport.plugins.add(
+        'drag-middle-mouse',
+        new Drag(this.viewport, {
+          pressToDrag: true,
+          mouseButtons: 'middle',
+          wheel: 'false',
+        })
+      );
+    }
 
     this.viewport.on('moved', () => {});
 
