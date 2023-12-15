@@ -5,17 +5,10 @@
 use serde::Serialize;
 use uuid::Uuid;
 
+use crate::error::MpError;
 use crate::state::transaction_queue::Transaction;
 use crate::state::user::UserStateUpdate;
 use crate::state::{room::Room, user::User};
-
-#[derive(Debug, Serialize, PartialEq, Clone)]
-#[serde(rename_all = "lowercase")]
-pub(crate) enum ErrorType {
-    Authentication(String),
-    FilePermissions(String),
-    Unknown(String),
-}
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
 #[derive(Serialize, Debug, Clone, PartialEq)]
@@ -43,7 +36,7 @@ pub(crate) enum MessageResponse {
         sequence_num: u64,
     },
     Error {
-        error: ErrorType,
+        error: MpError,
     },
 }
 

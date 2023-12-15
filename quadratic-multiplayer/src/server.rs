@@ -30,10 +30,7 @@ use crate::{
     config::{config, Config},
     error::{MpError, Result},
     message::{
-        broadcast,
-        handle::handle_message,
-        request::MessageRequest,
-        response::{ErrorType, MessageResponse},
+        broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
     },
     state::{connection::Connection, Settings, State},
 };
@@ -124,8 +121,9 @@ async fn ws_handler(
     let addr = addr.map_or("Unknown address".into(), |addr| addr.to_string());
     let mut jwt = None;
 
-    if cfg!(test) {
-        jwt = Some(crate::auth::tests::TOKEN.to_string());
+    #[cfg(test)]
+    {
+        jwt = Some(crate::test_util::TOKEN.to_string());
     }
 
     if state.settings.authenticate_jwt {
@@ -141,7 +139,7 @@ async fn ws_handler(
 
             authorize(&jwks, token, false, true)?;
 
-            jwt = Some(token.to_owned());
+            // jwt = Some(token.to_owned());
 
             Ok::<_, anyhow::Error>(())
         }
@@ -181,7 +179,35 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, conne
             Err(e) => {
                 tracing::warn!("Error processing message: {:?}", e);
 
-                println!("Error processing message: {:?}", e);
+                match e {
+                    MpError::Authentication(e) | MpError::FilePermissions(e) => {
+                        sender
+                            .lock()
+                            .await
+                            .send(Message::Text(
+                                serde_json::to_string(&MessageResponse::Error {
+                                    error: MpError::Authentication(e),
+                                })
+                                .unwrap(),
+                            ))
+                            .await
+                            .unwrap();
+                        break;
+                    }
+                    _ => {
+                        // sender
+                        //     .lock()
+                        //     .await
+                        //     .send(Message::Text(
+                        //         serde_json::to_string(&MessageResponse::Error {
+                        //             error: MpError::Unknown(e.to_string()),
+                        //         })
+                        //         .unwrap(),
+                        //     ))
+                        //     .await
+                        //     .unwrap();
+                    }
+                };
                 // // TODO(ddimaria): hack, change me
                 // sender
                 //     .lock()

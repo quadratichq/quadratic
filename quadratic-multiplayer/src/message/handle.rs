@@ -5,13 +5,14 @@
 //! socket information is stored in the global state, we can broadcast
 //! to all users in a room.
 
-use anyhow::{anyhow, Result};
+use anyhow::anyhow;
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use crate::auth::get_file_perms;
+use crate::error::{MpError, Result};
 use crate::message::{broadcast, request::MessageRequest, response::MessageResponse};
 use crate::state::connection::Connection;
 use crate::state::user::UserState;
@@ -44,10 +45,9 @@ pub(crate) async fn handle_message(
         } => {
             // validate that the user has permission to access the file
             let base_url = &state.settings.quadratic_api_uri;
-            let jwt = connection
-                .jwt
-                .to_owned()
-                .ok_or_else(|| anyhow!("A JWT is required to validate file permissions"))?;
+            let jwt = connection.jwt.to_owned().ok_or_else(|| {
+                MpError::FilePermissions("A JWT is required to validate file permissions".into())
+            })?;
 
             let permission;
 

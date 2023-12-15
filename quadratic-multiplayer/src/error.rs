@@ -5,13 +5,12 @@
 //! Convert third party crate errors to application errors.
 //! Convert errors to responses.
 
-use quadratic_core::wasm_bindings::js;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 pub(crate) type Result<T> = std::result::Result<T, MpError>;
 
-#[derive(Error, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub(crate) enum MpError {
     #[error("Authentication error: {0}")]
     Authentication(String),
