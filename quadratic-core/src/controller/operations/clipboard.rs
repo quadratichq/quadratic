@@ -7,6 +7,7 @@ use crate::{
     },
     Array, ArraySize, CellValue, Pos, SheetPos, SheetRect,
 };
+use anyhow::{Error, Result};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
@@ -226,26 +227,26 @@ impl GridController {
         &mut self,
         sheet_pos: SheetPos,
         html: String,
-    ) -> Result<Vec<Operation>, ()> {
+    ) -> Result<Vec<Operation>> {
         // use regex to find data-quadratic
         match Regex::new(r#"data-quadratic="(.*)"><tbody"#) {
-            Err(_) => Err(()),
+            Err(_) => Err(Error::msg("Regex creation error")),
             Ok(re) => {
                 let Some(data) = re.captures(&html) else {
-                    return Err(());
+                    return Err(Error::msg("Regex capture error"));
                 };
                 let result = &data.get(1).map_or("", |m| m.as_str());
 
                 // decode html in attribute
                 let unencoded = htmlescape::decode_html(result);
                 if unencoded.is_err() {
-                    return Err(());
+                    return Err(Error::msg("Html decode error"));
                 }
 
                 // parse into Clipboard
                 let parsed = serde_json::from_str::<Clipboard>(&unencoded.unwrap());
                 if parsed.is_err() {
-                    return Err(());
+                    return Err(Error::msg("Clipboard parse error"));
                 }
                 let clipboard = parsed.unwrap();
                 Ok(self.set_clipboard_cells(sheet_pos, clipboard))

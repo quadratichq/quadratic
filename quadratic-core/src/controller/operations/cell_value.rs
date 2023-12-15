@@ -4,11 +4,7 @@ use bigdecimal::BigDecimal;
 
 use crate::{
     controller::GridController,
-    grid::{
-        formatting::CellFmtArray, generate_borders, BorderSelection, CodeCellLanguage,
-        CodeCellValue, NumericDecimals, NumericFormat, NumericFormatKind,
-    },
-    util::date_string,
+    grid::{formatting::CellFmtArray, NumericDecimals, NumericFormat, NumericFormatKind},
     Array, CellValue, RunLengthEncoding, SheetPos, SheetRect,
 };
 
@@ -90,37 +86,6 @@ impl GridController {
         ops
     }
 
-    pub fn set_cell_code_operations(
-        &mut self,
-        sheet_pos: SheetPos,
-        language: CodeCellLanguage,
-        code_string: String,
-    ) -> Vec<Operation> {
-        let sheet = self.grid.sheet_mut_from_id(sheet_pos.sheet_id);
-        let mut ops = vec![];
-
-        // remove any values that were originally over the code cell
-        if sheet.get_cell_value_only(sheet_pos.into()).is_some() {
-            ops.push(Operation::SetCellValues {
-                sheet_rect: SheetRect::from(sheet_pos),
-                values: Array::from(CellValue::Blank),
-            });
-        }
-
-        ops.push(Operation::SetCellCode {
-            sheet_pos,
-            code_cell_value: Some(CodeCellValue {
-                language,
-                code_string,
-                formatted_code_string: None,
-                output: None,
-                last_modified: date_string(),
-            }),
-        });
-
-        ops
-    }
-
     /// Generates and returns the set of operations to deleted the values and code in a given region
     /// Does not commit the operations or create a transaction.
     pub fn delete_cells_rect_operations(&mut self, sheet_rect: SheetRect) -> Vec<Operation> {
@@ -139,58 +104,6 @@ impl GridController {
                 });
             }
         }
-        ops
-    }
-
-    pub fn clear_formatting_operations(&mut self, sheet_rect: SheetRect) -> Vec<Operation> {
-        let len = sheet_rect.size().len();
-        let mut ops = vec![
-            Operation::SetCellFormats {
-                sheet_rect,
-                attr: CellFmtArray::Align(RunLengthEncoding::repeat(None, len)),
-            },
-            Operation::SetCellFormats {
-                sheet_rect,
-                attr: CellFmtArray::Wrap(RunLengthEncoding::repeat(None, len)),
-            },
-            Operation::SetCellFormats {
-                sheet_rect,
-                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(None, len)),
-            },
-            Operation::SetCellFormats {
-                sheet_rect,
-                attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(None, len)),
-            },
-            Operation::SetCellFormats {
-                sheet_rect,
-                attr: CellFmtArray::Bold(RunLengthEncoding::repeat(None, len)),
-            },
-            Operation::SetCellFormats {
-                sheet_rect,
-                attr: CellFmtArray::Italic(RunLengthEncoding::repeat(None, len)),
-            },
-            Operation::SetCellFormats {
-                sheet_rect,
-                attr: CellFmtArray::TextColor(RunLengthEncoding::repeat(None, len)),
-            },
-            Operation::SetCellFormats {
-                sheet_rect,
-                attr: CellFmtArray::FillColor(RunLengthEncoding::repeat(None, len)),
-            },
-        ];
-
-        // clear borders
-        let sheet = self.grid.sheet_from_id(sheet_rect.sheet_id);
-        let borders = generate_borders(
-            sheet,
-            &sheet_rect.into(),
-            vec![BorderSelection::Clear],
-            None,
-        );
-        ops.push(Operation::SetBorders {
-            sheet_rect,
-            borders,
-        });
         ops
     }
 

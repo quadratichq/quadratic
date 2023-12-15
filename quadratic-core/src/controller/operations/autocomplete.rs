@@ -36,7 +36,7 @@ impl GridController {
         selection: Rect,
         range: Rect,
     ) -> Result<Vec<Operation>> {
-        let mut selection = selection.clone();
+        let mut selection = selection;
         let mut operations = vec![];
         let mut initial_down_range: Option<Rect> = None;
         let mut initial_up_range: Option<Rect> = None;
