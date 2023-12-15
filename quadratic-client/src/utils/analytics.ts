@@ -12,16 +12,17 @@ type Options = {
 
 // This runs in the root loader, so analytics calls can run inside loaders.
 export function initializeAnalytics({ isAuthenticated, user }: Options) {
-  loadGoogleAnalytics();
+  loadGoogleAnalytics(user);
   initAmplitudeAnalytics(user);
   initMixpanelAnalytics(user);
   configureSentry({ isAuthenticated, user });
 }
 
-function loadGoogleAnalytics() {
+function loadGoogleAnalytics(user: Options['user']) {
   if (!import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG && import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG !== 'none') {
     return;
   }
+  const email = user?.email || 'none';
 
   // set up Google Analytics
   const script_1 = document.createElement('script');
@@ -31,7 +32,18 @@ function loadGoogleAnalytics() {
   const script_2 = document.createElement('script');
   script_2.innerText = `
         window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
+        function gtag(){
+          dataLayer.push(arguments);
+          const email = '${email}';
+          if (email) {
+            dataLayer.push({
+              'event': 'Pageview',
+              'userData': {
+                'email': email
+              }
+            });
+          }
+        }
         gtag('js', new Date());
         gtag('config', '${import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG}');
       `;
