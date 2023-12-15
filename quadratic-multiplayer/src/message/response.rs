@@ -5,6 +5,7 @@
 use serde::Serialize;
 use uuid::Uuid;
 
+use crate::state::transaction_queue::Transaction;
 use crate::state::user::UserStateUpdate;
 use crate::state::{room::Room, user::User};
 
@@ -15,15 +16,23 @@ pub(crate) enum MessageResponse {
     UsersInRoom {
         users: Vec<User>,
     },
-    Transaction {
-        file_id: Uuid,
-        // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
-        operations: String,
-    },
     UserUpdate {
         session_id: Uuid,
         file_id: Uuid,
         update: UserStateUpdate,
+    },
+    Transaction {
+        id: Uuid,
+        file_id: Uuid,
+        // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
+        operations: String,
+        sequence_num: u64,
+    },
+    Transactions {
+        transactions: Vec<Transaction>,
+    },
+    CurrentTransaction {
+        sequence_num: u64,
     },
 }
 

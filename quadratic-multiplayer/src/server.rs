@@ -18,15 +18,16 @@ use axum_extra::TypedHeader;
 use futures::stream::StreamExt;
 use futures_util::stream::SplitSink;
 use futures_util::SinkExt;
+use std::ops::ControlFlow;
 use std::{net::SocketAddr, sync::Arc};
-use std::{ops::ControlFlow, time::Duration};
-use tokio::{sync::Mutex, time};
+use tokio::sync::Mutex;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
 
 use crate::{
     auth::{authorize, get_jwks},
+    background_worker,
     config::{config, Config},
     message::{
         broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
@@ -50,6 +51,7 @@ pub(crate) fn app(state: Arc<State>) -> Router {
 }
 
 /// Start the websocket server.  This is the entrypoint for the application.
+#[tracing::instrument(level = "trace")]
 pub(crate) async fn serve() -> Result<()> {
     let Config {
         host,
@@ -83,7 +85,7 @@ pub(crate) async fn serve() -> Result<()> {
         tracing::warn!("JWT authentication is disabled");
     }
 
-    check_heartbeat(Arc::clone(&state), heartbeat_check_s, heartbeat_timeout_s).await;
+    background_worker::start(Arc::clone(&state), heartbeat_check_s, heartbeat_timeout_s).await;
 
     axum::serve(
         listener,
@@ -95,6 +97,7 @@ pub(crate) async fn serve() -> Result<()> {
 }
 
 // Handle the websocket upgrade from http.
+#[tracing::instrument(level = "trace")]
 async fn ws_handler(
     ws: WebSocketUpgrade,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
@@ -138,6 +141,7 @@ async fn ws_handler(
 }
 
 // After websocket is established, delegate incoming messages as they arrive.
+#[tracing::instrument(level = "trace")]
 async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, connection_id: Uuid) {
     let (sender, mut receiver) = socket.split();
     let sender = Arc::new(Mutex::new(sender));
@@ -165,7 +169,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, conne
                 tracing::info!("Broadcasting room {file_id} after removing stale users");
 
                 let message = MessageResponse::from(room.to_owned());
-                broadcast(Uuid::new_v4(), file_id, Arc::clone(&state), message);
+                broadcast(vec![], file_id, Arc::clone(&state), message);
             }
         }
     }
@@ -175,6 +179,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, conne
 }
 
 /// Based on the incoming message type, perform some action and return a response.
+#[tracing::instrument(level = "trace")]
 async fn process_message(
     msg: Message,
     sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
@@ -216,51 +221,13 @@ async fn process_message(
     Ok(ControlFlow::Continue(()))
 }
 
-/// In s separate thread, check for stale users in rooms and remove them.
-async fn check_heartbeat(state: Arc<State>, heartbeat_check_s: i64, heartbeat_timeout_s: i64) {
-    let state = Arc::clone(&state);
-
-    tokio::spawn(async move {
-        let mut interval = time::interval(Duration::from_millis(heartbeat_check_s as u64 * 1000));
-
-        loop {
-            let rooms = state.rooms.lock().await.clone();
-
-            for (file_id, room) in rooms.iter() {
-                match state
-                    .remove_stale_users_in_room(file_id.to_owned(), heartbeat_timeout_s)
-                    .await
-                {
-                    Ok((num_removed, num_remaining)) => {
-                        tracing::info!("Checking heartbeats in room {file_id} ({num_remaining} remaining in room)");
-
-                        if num_removed > 0 {
-                            broadcast(
-                                // TODO(ddimaria): use a real session_id here
-                                Uuid::new_v4(),
-                                file_id.to_owned(),
-                                Arc::clone(&state),
-                                MessageResponse::from(room.to_owned()),
-                            );
-                        }
-                    }
-                    Err(e) => {
-                        tracing::warn!("Error removing stale users from room {file_id}: {:?}", e);
-                    }
-                }
-            }
-
-            interval.tick().await;
-        }
-    });
-}
-
 #[cfg(test)]
 pub(crate) mod tests {
 
     use super::*;
     use crate::state::user::{CellEdit, User, UserStateUpdate};
     use crate::test_util::{integration_test_send_and_receive, integration_test_setup, new_user};
+    use quadratic_core::controller::operation::Operation;
     use tokio::net::TcpStream;
     use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
     use uuid::Uuid;
@@ -430,14 +397,19 @@ pub(crate) mod tests {
         let (socket, _, _, file_id, _) = setup().await;
         let new_user = new_user();
         let session_id = new_user.session_id;
+        let operations = serde_json::to_string::<Vec<Operation>>(&vec![]).unwrap();
+        let id = Uuid::new_v4();
         let request = MessageRequest::Transaction {
+            id,
             session_id,
             file_id,
-            operations: "test".to_string(),
+            operations: operations.clone(),
         };
         let expected = MessageResponse::Transaction {
+            id,
             file_id,
-            operations: "test".to_string(),
+            operations: operations.clone(),
+            sequence_num: 1,
         };
 
         let response = integration_test_send_and_receive(socket, request, true).await;
