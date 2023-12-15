@@ -39,7 +39,7 @@ impl GridController {
                         success = true;
                         match output_value {
                             Value::Array(array) => {
-                                if sheet.is_ok_to_spill_in(pos, array.size()) {
+                                if sheet.has_spill_error(pos, array.size(), None) {
                                     self.summary.cell_sheets_modified.insert(
                                         CellSheetsModified::new(SheetPos {
                                             sheet_id: sheet.id,
@@ -143,12 +143,12 @@ impl GridController {
             updated_code_cell_value.clone(),
         );
 
-        self.forward_operations.push(Operation::SetCellCode {
+        self.forward_operations.push(Operation::SetCodeCell {
             sheet_pos,
             code_cell_value: updated_code_cell_value,
         });
 
-        self.reverse_operations.push(Operation::SetCellCode {
+        self.reverse_operations.push(Operation::SetCodeCell {
             sheet_pos,
             code_cell_value: old_code_cell_value,
         });

@@ -333,7 +333,13 @@ impl Sheet {
 
     /// Determines whether an output array would cause a spill error because it
     /// would overlap existing cell values or spills.
-    pub fn is_ok_to_spill_in(&self, pos: Pos, size: ArraySize) -> bool {
+    /// * cell_value_to_delete ignores this cell_value in this check (this allows operations to be created before the position is vacated)
+    pub fn has_spill_error(
+        &self,
+        pos: Pos,
+        size: ArraySize,
+        cell_value_to_delete: Option<Pos>,
+    ) -> bool {
         let Pos { x, y } = pos;
         let (w, h) = size.into();
 
@@ -350,7 +356,7 @@ impl Sheet {
                         }
                     }
                     if let Some(value) = column.values.get(y) {
-                        if !value.is_blank() {
+                        if !value.is_blank() && Some(Pos { x, y }) != cell_value_to_delete {
                             return true;
                         }
                     }

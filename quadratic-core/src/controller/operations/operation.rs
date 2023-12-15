@@ -12,9 +12,13 @@ pub enum Operation {
         sheet_rect: SheetRect,
         values: Array,
     },
-    SetCellCode {
+    SetCodeCell {
         sheet_pos: SheetPos,
         code_cell_value: Option<CodeCellValue>,
+    },
+    SetSpill {
+        spill_rect: SheetRect,
+        code_cell_sheet_pos: Option<SheetPos>,
     },
     SetCellFormats {
         sheet_rect: SheetRect,
@@ -60,12 +64,20 @@ impl fmt::Display for Operation {
             Operation::SetCellValues { values, .. } => {
                 write!(fmt, "SetCellValues {{ value count: {} }}", values.size())
             }
-            Operation::SetCellCode {
+            Operation::SetCodeCell {
                 code_cell_value, ..
             } => write!(
                 fmt,
                 "SetCellCode {{ code_cell_value: {:?} }}",
                 code_cell_value
+            ),
+            Operation::SetSpill {
+                spill_rect,
+                code_cell_sheet_pos,
+            } => write!(
+                fmt,
+                "SetSpill {{ pos: {:?}, code_cell_sheet_pos: {:?} }}",
+                spill_rect, code_cell_sheet_pos
             ),
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),
             Operation::AddSheet { sheet } => write!(fmt, "AddSheet {{ sheet: {} }}", sheet.name),

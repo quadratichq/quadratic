@@ -8,13 +8,13 @@ use crate::{
 use super::operation::Operation;
 
 impl GridController {
-    pub fn set_cell_code_operations(
-        &mut self,
+    pub fn set_code_cell_operations(
+        &self,
         sheet_pos: SheetPos,
         language: CodeCellLanguage,
         code_string: String,
     ) -> Vec<Operation> {
-        let sheet = self.grid.sheet_mut_from_id(sheet_pos.sheet_id);
+        let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
         let mut ops = vec![];
 
         // remove any values that were originally over the code cell
@@ -25,7 +25,7 @@ impl GridController {
             });
         }
 
-        ops.push(Operation::SetCellCode {
+        ops.push(Operation::SetCodeCell {
             sheet_pos,
             code_cell_value: Some(CodeCellValue {
                 language,
@@ -35,6 +35,23 @@ impl GridController {
                 last_modified: date_string(),
             }),
         });
+
+        ops
+    }
+
+    pub fn delete_code_cell_operations(&self, sheet_pos: SheetPos) -> Vec<Operation> {
+        let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
+        let mut ops = vec![];
+
+        // add remove code cell operation if there is a code cell
+        if let Some(_) = sheet.get_code_cell(sheet_pos.into()) {
+            ops.push(Operation::SetCodeCell {
+                sheet_pos,
+                code_cell_value: None,
+            });
+
+            // todo: remove spills
+        }
 
         ops
     }

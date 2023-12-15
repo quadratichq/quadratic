@@ -286,6 +286,17 @@ impl SheetRect {
         }
     }
 
+    pub fn from_numbers(x: i64, y: i64, w: i64, h: i64, sheet_id: SheetId) -> SheetRect {
+        SheetRect {
+            min: Pos { x, y },
+            max: Pos {
+                x: x + w - 1,
+                y: y + h - 1,
+            },
+            sheet_id,
+        }
+    }
+
     pub fn new_span(pos1: SheetPos, pos2: SheetPos) -> SheetRect {
         SheetRect::new_pos_span(pos1.into(), pos2.into(), pos1.sheet_id)
     }
@@ -614,5 +625,12 @@ mod test {
         let rect = SheetRect::new_span(pos1, pos2);
         assert_eq!(rect.min, Pos { x: 1, y: 2 });
         assert_eq!(rect.max, Pos { x: 3, y: 4 });
+    }
+
+    #[test]
+    fn test_sheet_rect_from_numbers() {
+        let rect = SheetRect::from_numbers(1, 2, 3, 4, SheetId::new());
+        assert_eq!(rect.min, Pos { x: 1, y: 2 });
+        assert_eq!(rect.max, Pos { x: 3, y: 5 });
     }
 }

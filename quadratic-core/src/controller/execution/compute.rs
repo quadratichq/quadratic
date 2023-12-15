@@ -279,7 +279,7 @@ mod test {
         sheet.set_cell_value(cell_value_pos, cell_value.clone());
 
         gc.set_in_progress_transaction(
-            vec![Operation::SetCellCode {
+            vec![Operation::SetCodeCell {
                 sheet_pos: code_cell_pos,
                 code_cell_value: Some(CodeCellValue {
                     language: CodeCellLanguage::Python,
@@ -510,7 +510,7 @@ mod test {
             sheet_id,
         };
         gc.set_in_progress_transaction(
-            vec![Operation::SetCellCode {
+            vec![Operation::SetCodeCell {
                 sheet_pos,
                 code_cell_value: Some(CodeCellValue {
                     language: CodeCellLanguage::Formula,
@@ -557,7 +557,7 @@ mod test {
             sheet_id,
         };
         gc.set_in_progress_transaction(
-            vec![Operation::SetCellCode {
+            vec![Operation::SetCodeCell {
                 sheet_pos,
                 code_cell_value: Some(CodeCellValue {
                     language: CodeCellLanguage::Formula,
@@ -578,7 +578,7 @@ mod test {
             sheet_id,
         };
         gc.set_in_progress_transaction(
-            vec![Operation::SetCellCode {
+            vec![Operation::SetCodeCell {
                 sheet_pos,
                 code_cell_value: Some(CodeCellValue {
                     language: CodeCellLanguage::Formula,

@@ -77,11 +77,16 @@ impl Sheet {
         )
     }
 
-    /// Get the spill location for a given cell_ref.  Note that a spill is
-    /// also stored as as cell_ref.
+    /// Get the spill location for a given position.
     pub fn get_spill(&self, pos: Pos) -> Option<Pos> {
         let column = self.get_column(pos.x)?;
         column.spills.get(pos.y)
+    }
+
+    /// Sets the spill for a given position
+    pub fn set_spill(&mut self, pos: Pos, spill: Option<Pos>) -> Option<Pos> {
+        let column = self.get_or_create_column(pos.x);
+        column.spills.set(pos.y, spill)
     }
 
     /// Returns an iterator over all locations containing code cells that may
@@ -125,10 +130,10 @@ impl Sheet {
                 rect.contains(pos)
                     .then(|| (*code_cell_pos, code_cell.to_owned()))
             })
-            .find(|(cell_ref, code_cell)| {
+            .find(|(code_cell_pos, code_cell)| {
                 let array_size = code_cell.output_size();
                 if array_size.len() > 1 {
-                    !self.is_ok_to_spill_in(*cell_ref, array_size)
+                    !self.has_spill_error(*code_cell_pos, array_size, Some(pos))
                 } else {
                     false
                 }

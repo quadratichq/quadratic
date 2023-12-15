@@ -30,7 +30,7 @@ impl GridController {
         code_string: String,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let ops = self.set_cell_code_operations(sheet_pos, language, code_string);
+        let ops = self.set_code_cell_operations(sheet_pos, language, code_string);
         self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
     }
 

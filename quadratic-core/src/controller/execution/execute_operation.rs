@@ -1,5 +1,5 @@
 use crate::grid::formatting::CellFmtArray;
-use crate::{grid::*, Array, CellValue, SheetPos};
+use crate::{grid::*, Array, CellValue, SheetPos, SheetRect};
 
 use super::super::operations::operation::Operation;
 use super::super::GridController;
@@ -37,48 +37,6 @@ impl GridController {
 
                 self.add_cell_sheets_modified_rect(&sheet_rect);
 
-                // todo: this should be moved to the code_cell operations function
-                // check if override any code cells
-                let sheet = self.grid.sheet_from_id(sheet_rect.sheet_id);
-                let code_cells_to_delete = sheet
-                    .code_cells
-                    .iter()
-                    .filter_map(|(pos, _)| {
-                        let possible_delete = pos.to_sheet_pos(sheet.id);
-                        if sheet_rect.contains(possible_delete) {
-                            Some(possible_delete)
-                        } else {
-                            None
-                        }
-                    })
-                    .collect::<Vec<SheetPos>>();
-
-                // todo: this should be moved to the code_cell operations function
-                // remove the code cells
-                let sheet_id = sheet.id;
-                for sheet_pos in code_cells_to_delete {
-                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    let old_value = sheet.set_code_cell_value(sheet_pos.into(), None);
-                    self.fetch_code_cell_difference(sheet_pos, old_value.clone(), None);
-                    self.reverse_operations.push(Operation::SetCellCode {
-                        sheet_pos,
-                        code_cell_value: old_value,
-                    });
-                }
-
-                // todo: this should be moved to the spills operations function
-                // check for changes in spills
-                for sheet_pos in sheet_rect.iter() {
-                    let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
-                    // if there is a value, check if it caused a spill
-                    if sheet.get_cell_value(sheet_pos.into()).is_some() {
-                        self.check_spill(sheet_pos);
-                    } else {
-                        // otherwise check if it released a spill
-                        self.update_code_cell_value_if_spill_error_released(sheet_pos);
-                    }
-                }
-
                 // todo: this should be removed (forward operations should be generically added in the execute_operations function)
                 self.forward_operations
                     .push(Operation::SetCellValues { sheet_rect, values });
@@ -91,7 +49,7 @@ impl GridController {
                     values: old_values,
                 });
             }
-            Operation::SetCellCode {
+            Operation::SetCodeCell {
                 sheet_pos,
                 code_cell_value,
             } => {
@@ -170,13 +128,36 @@ impl GridController {
                 if is_code_cell_empty {
                     self.update_code_cell_value_if_spill_error_released(sheet_pos);
                 }
-                self.forward_operations.push(Operation::SetCellCode {
+                self.forward_operations.push(Operation::SetCodeCell {
                     sheet_pos,
                     code_cell_value: final_code_cell_value,
                 });
-                self.reverse_operations.push(Operation::SetCellCode {
+                self.reverse_operations.push(Operation::SetCodeCell {
                     sheet_pos,
                     code_cell_value: old_code_cell_value,
+                });
+            }
+
+            Operation::SetSpill {
+                spill_rect,
+                code_cell_sheet_pos,
+            } => {
+                let sheet_id = spill_rect.sheet_id;
+                assert!(
+                    sheet_id == code_cell_sheet_pos.map(|p| p.sheet_id).unwrap_or(sheet_id),
+                    "Expected spill_rect and code_cell_sheet_pos to have the same sheet_id in SetSpill operation"
+                );
+
+                let sheet = self.grid.sheet_mut_from_id(sheet_id);
+
+                // remove all spills in rect and add reverse operation if needed
+                spill_rect.iter().for_each(|sheet_pos| {
+                    let old_spill =
+                        sheet.set_spill(sheet_pos.into(), code_cell_sheet_pos.map(|p| p.into()));
+                    self.reverse_operations.push(Operation::SetSpill {
+                        spill_rect: SheetRect::single_sheet_pos(sheet_pos),
+                        code_cell_sheet_pos: old_spill.map(|p| p.to_sheet_pos(sheet_id)),
+                    });
                 });
             }
 

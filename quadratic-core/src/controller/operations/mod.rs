@@ -11,3 +11,4 @@ pub mod formatting;
 pub mod import;
 pub mod operation;
 pub mod sheets;
+pub mod spills;

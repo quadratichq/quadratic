@@ -75,6 +75,15 @@ impl GridController {
         // strip whitespace
         let value = value.trim();
 
+        // check if any code cells need to be deleted
+        let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
+        sheet.code_cells.iter().for_each(|(pos, _)| {
+            let possible_delete = pos.to_sheet_pos(sheet.id);
+            if sheet_pos == possible_delete {
+                ops.extend(self.delete_code_cell_operations(possible_delete));
+            }
+        });
+
         // convert the string to a cell value and generate necessary operations
         let (operations, cell_value) = self.string_to_cell_value(sheet_pos, value);
         ops.extend(operations);
@@ -98,7 +107,7 @@ impl GridController {
         // collect all the code cells in the region
         for pos in sheet.code_cells.keys() {
             if sheet_rect.contains(pos.to_sheet_pos(sheet_rect.sheet_id)) {
-                ops.push(Operation::SetCellCode {
+                ops.push(Operation::SetCodeCell {
                     sheet_pos: pos.to_sheet_pos(sheet_rect.sheet_id),
                     code_cell_value: None,
                 });
