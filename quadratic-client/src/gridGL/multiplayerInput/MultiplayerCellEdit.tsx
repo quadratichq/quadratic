@@ -14,18 +14,20 @@ const CURSOR_WIDTH = 2;
 export const MultiplayerCellEdit = (props: Props) => {
   const { container } = props;
 
-  const { cell, italic, color, fillColor, bold, text, cursor, playerColor, sessionId } = props.multiplayerCellInput;
+  const { cell, italic, bold, text, cursor, playerColor, sessionId } = props.multiplayerCellInput;
   const viewport = pixiApp.viewport;
   const sheet = sheets.sheet;
-
   const cellOffsets = sheet.getCellOffsets(cell.x, cell.y);
 
-  let fontFamily = 'OpenSans';
-  if (italic && bold) {
+  const formatting = sheet.getCellFormatSummary(cell.x, cell.y);
+  const displayItalic = italic === null ? formatting?.italic : italic;
+  const displayBold = bold === null ? formatting?.bold : bold;
+  let fontFamily: string = 'OpenSans';
+  if (displayItalic && displayBold) {
     fontFamily = 'OpenSans-BoldItalic';
-  } else if (italic) {
+  } else if (displayItalic) {
     fontFamily = 'OpenSans-Italic';
-  } else if (bold) {
+  } else if (displayBold) {
     fontFamily = 'OpenSans-Bold';
   }
 
@@ -96,7 +98,7 @@ export const MultiplayerCellEdit = (props: Props) => {
           left: 0,
           minWidth: cellOffsets.width - CURSOR_THICKNESS * 2,
           outline: 'none',
-          color: color ?? 'black',
+          color: formatting.textColor ?? 'black',
           padding: `0 ${CURSOR_THICKNESS}px 0 0`,
           margin: 0,
           lineHeight: `${cellOffsets.height - CURSOR_THICKNESS * 2}px`,
@@ -105,7 +107,7 @@ export const MultiplayerCellEdit = (props: Props) => {
           transform,
           fontFamily,
           fontSize: '14px',
-          backgroundColor: fillColor ?? 'white',
+          backgroundColor: formatting.fillColor ?? 'white',
           whiteSpace: 'nowrap',
         }}
       >
