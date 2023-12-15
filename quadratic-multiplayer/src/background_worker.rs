@@ -1,9 +1,9 @@
-use anyhow::{anyhow, Result};
 use std::{sync::Arc, time::Duration};
 use tokio::{task::JoinHandle, time};
 use uuid::Uuid;
 
 use crate::{
+    error::{MpError, Result},
     message::{broadcast, response::MessageResponse},
     state::{room::Room, State},
 };
@@ -88,7 +88,9 @@ async fn remove_stale_users_in_room(
         ));
     }
 
-    Err(anyhow!("Error removing stale users from room {file_id}"))
+    Err(MpError::BackgroundService(
+        "Error removing stale users from room {file_id}".into(),
+    ))
 }
 
 #[cfg(test)]

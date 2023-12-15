@@ -3,7 +3,7 @@
 //! Handle bootstrapping and starting the websocket server.  Adds global state
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
-use anyhow::{anyhow, Result};
+use anyhow::anyhow;
 use axum::{
     extract::{
         connect_info::ConnectInfo,
@@ -28,6 +28,7 @@ use crate::{
     auth::{authorize, get_jwks},
     background_worker,
     config::{config, Config},
+    error::{MpError, Result},
     message::{
         broadcast,
         handle::handle_message,
@@ -82,9 +83,14 @@ pub(crate) async fn serve() -> Result<()> {
     };
     let state = Arc::new(State::new().with_settings(settings));
     let app = app(Arc::clone(&state));
-    let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await?;
+    let listener = tokio::net::TcpListener::bind(format!("{host}:{port}"))
+        .await
+        .map_err(|e| MpError::InternalServer(e.to_string()))?;
+    let local_addr = listener
+        .local_addr()
+        .map_err(|e| MpError::InternalServer(e.to_string()))?;
 
-    tracing::info!("listening on {}", listener.local_addr()?);
+    tracing::info!("listening on {local_addr}");
 
     if !authenticate_jwt {
         tracing::warn!("JWT authentication is disabled");
@@ -97,7 +103,8 @@ pub(crate) async fn serve() -> Result<()> {
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
-    .await?;
+    .await
+    .map_err(|e| MpError::InternalServer(e.to_string()))?;
 
     Ok(())
 }
@@ -116,6 +123,10 @@ async fn ws_handler(
     });
     let addr = addr.map_or("Unknown address".into(), |addr| addr.to_string());
     let mut jwt = None;
+
+    if cfg!(test) {
+        jwt = Some(crate::auth::tests::TOKEN.to_string());
+    }
 
     if state.settings.authenticate_jwt {
         // validate the JWT
@@ -170,19 +181,20 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, conne
             Err(e) => {
                 tracing::warn!("Error processing message: {:?}", e);
 
-                // TODO(ddimaria): hack, change me
-                sender
-                    .lock()
-                    .await
-                    .send(Message::Text(
-                        serde_json::to_string(&MessageResponse::Error {
-                            error: ErrorType::Unknown(e.to_string()),
-                        })
-                        .unwrap(),
-                    ))
-                    .await
-                    .unwrap();
-                break;
+                println!("Error processing message: {:?}", e);
+                // // TODO(ddimaria): hack, change me
+                // sender
+                //     .lock()
+                //     .await
+                //     .send(Message::Text(
+                //         serde_json::to_string(&MessageResponse::Error {
+                //             error: ErrorType::Unknown(e.to_string()),
+                //         })
+                //         .unwrap(),
+                //     ))
+                //     .await
+                //     .unwrap();
+                // break;
             }
         }
     }
@@ -223,7 +235,10 @@ async fn process_message(
             if let Some(message_response) = message_response {
                 let response = Message::Text(serde_json::to_string(&message_response)?);
 
-                (*sender.lock().await).send(response).await?;
+                (*sender.lock().await)
+                    .send(response)
+                    .await
+                    .map_err(|e| MpError::SendingMessage(e.to_string()))?;
             }
         }
         Message::Binary(d) => {

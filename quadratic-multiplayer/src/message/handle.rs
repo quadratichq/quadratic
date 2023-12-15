@@ -48,7 +48,14 @@ pub(crate) async fn handle_message(
                 .jwt
                 .to_owned()
                 .ok_or_else(|| anyhow!("A JWT is required to validate file permissions"))?;
-            let permission = get_file_perms(base_url, jwt, file_id).await?;
+
+            let permission;
+
+            if cfg!(test) {
+                permission = crate::auth::FilePermRole::Owner;
+            } else {
+                permission = get_file_perms(base_url, jwt, file_id).await?;
+            }
 
             let user_state = UserState {
                 sheet_id,

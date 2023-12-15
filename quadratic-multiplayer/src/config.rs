@@ -5,7 +5,7 @@
 //! sub-repo.  If ANY of the environment variables are missing, the program will
 //! panic at startup.
 
-use anyhow::Result;
+use crate::error::{MpError, Result};
 use dotenv::dotenv;
 use serde::Deserialize;
 
@@ -23,9 +23,12 @@ pub(crate) struct Config {
 /// Load the global configuration from the environment into Config.
 pub(crate) fn config() -> Result<Config> {
     let filename = if cfg!(test) { ".env.test" } else { ".env" };
+
     dotenv::from_filename(filename).ok();
     dotenv().ok();
-    Ok(envy::from_env::<Config>()?)
+
+    let config = envy::from_env::<Config>().map_err(|e| MpError::Config(e.to_string()))?;
+    Ok(config)
 }
 
 #[cfg(test)]

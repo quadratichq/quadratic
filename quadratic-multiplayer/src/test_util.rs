@@ -116,6 +116,7 @@ pub(crate) async fn integration_test_send_and_receive(
         ))
         .await
         .unwrap();
+
     if !expect_response {
         return None;
     }
