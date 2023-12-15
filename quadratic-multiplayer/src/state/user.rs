@@ -7,6 +7,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
+use crate::auth::FilePermRole;
 use crate::state::State;
 use crate::{get_mut_room, get_room};
 
@@ -18,6 +19,7 @@ pub(crate) struct User {
     pub last_name: String,
     pub email: String,
     pub image: String,
+    pub permission: FilePermRole,
     #[serde(flatten)]
     pub state: UserState,
     #[serde(skip_serializing)]

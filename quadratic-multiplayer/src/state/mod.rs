@@ -29,6 +29,7 @@ pub(crate) struct State {
 pub(crate) struct Settings {
     pub(crate) jwks: Option<JwkSet>,
     pub(crate) authenticate_jwt: bool,
+    pub(crate) quadratic_api_uri: String,
 }
 
 impl State {

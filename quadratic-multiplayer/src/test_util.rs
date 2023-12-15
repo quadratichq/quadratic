@@ -18,6 +18,7 @@ use tokio::sync::Mutex;
 use tokio_tungstenite::{tungstenite, MaybeTlsStream, WebSocketStream};
 use uuid::Uuid;
 
+use crate::auth::FilePermRole;
 use crate::message::request::MessageRequest;
 use crate::state::user::{User, UserState};
 use crate::state::State;
@@ -46,6 +47,7 @@ pub(crate) fn new_user() -> User {
             viewport: "initial viewport".to_string(),
         },
         image: FilePath().fake(),
+        permission: FilePermRole::Owner,
         socket: None,
         last_heartbeat: chrono::Utc::now(),
     }

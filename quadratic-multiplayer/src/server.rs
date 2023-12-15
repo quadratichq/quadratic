@@ -23,16 +23,18 @@ use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::Mutex;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use uuid::Uuid;
 
 use crate::{
     auth::{authorize, get_jwks},
     background_worker,
     config::{config, Config},
     message::{
-        broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
+        broadcast,
+        handle::handle_message,
+        request::MessageRequest,
+        response::{ErrorType, MessageResponse},
     },
-    state::{Settings, State},
+    state::{connection::Connection, Settings, State},
 };
 
 /// Construct the application router.  This is separated out so that it can be
@@ -57,9 +59,10 @@ pub(crate) async fn serve() -> Result<()> {
         host,
         port,
         auth0_jwks_uri,
+        authenticate_jwt,
+        quadratic_api_uri,
         heartbeat_check_s,
         heartbeat_timeout_s,
-        authenticate_jwt,
     } = config()?;
 
     tracing_subscriber::registry()
@@ -70,10 +73,12 @@ pub(crate) async fn serve() -> Result<()> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
+    // pull down the JWKS from Auth0 and add to state
     let jwks = get_jwks(&auth0_jwks_uri).await?;
     let settings = Settings {
         jwks: Some(jwks),
         authenticate_jwt,
+        quadratic_api_uri,
     };
     let state = Arc::new(State::new().with_settings(settings));
     let app = app(Arc::clone(&state));
@@ -85,6 +90,7 @@ pub(crate) async fn serve() -> Result<()> {
         tracing::warn!("JWT authentication is disabled");
     }
 
+    // perform various activities in a separate thread
     background_worker::start(Arc::clone(&state), heartbeat_check_s, heartbeat_timeout_s).await;
 
     axum::serve(
@@ -109,9 +115,7 @@ async fn ws_handler(
         user_agent.to_string()
     });
     let addr = addr.map_or("Unknown address".into(), |addr| addr.to_string());
-    let connection_id = Uuid::new_v4();
-
-    tracing::info!("`{user_agent}` at {addr} connected: connection_id={connection_id}");
+    let mut jwt = None;
 
     if state.settings.authenticate_jwt {
         // validate the JWT
@@ -126,6 +130,8 @@ async fn ws_handler(
 
             authorize(&jwks, token, false, true)?;
 
+            jwt = Some(token.to_owned());
+
             Ok::<_, anyhow::Error>(())
         }
         .await;
@@ -136,31 +142,53 @@ async fn ws_handler(
         }
     }
 
+    let connection = Connection::new(jwt);
+
+    tracing::info!(
+        "`{user_agent}` at {addr} connected: connection_id={}",
+        connection.id
+    );
+
     // upgrade the connection
-    ws.on_upgrade(move |socket| handle_socket(socket, state, addr, connection_id))
+    ws.on_upgrade(move |socket| handle_socket(socket, state, addr, connection))
 }
 
 // After websocket is established, delegate incoming messages as they arrive.
 #[tracing::instrument(level = "trace")]
-async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, connection_id: Uuid) {
+async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, connection: Connection) {
     let (sender, mut receiver) = socket.split();
     let sender = Arc::new(Mutex::new(sender));
+    let connection_id = connection.id;
 
     while let Some(Ok(msg)) = receiver.next().await {
         let response =
-            process_message(msg, Arc::clone(&sender), Arc::clone(&state), connection_id).await;
+            process_message(msg, Arc::clone(&sender), Arc::clone(&state), &connection).await;
 
         match response {
             Ok(ControlFlow::Continue(_)) => {}
             Ok(ControlFlow::Break(_)) => break,
             Err(e) => {
                 tracing::warn!("Error processing message: {:?}", e);
+
+                // TODO(ddimaria): hack, change me
+                sender
+                    .lock()
+                    .await
+                    .send(Message::Text(
+                        serde_json::to_string(&MessageResponse::Error {
+                            error: ErrorType::Unknown(e.to_string()),
+                        })
+                        .unwrap(),
+                    ))
+                    .await
+                    .unwrap();
+                break;
             }
         }
     }
 
     // websocket is closed, remove the user from any rooms they were in and broadcast
-    if let Ok(rooms) = state.clear_connections(connection_id).await {
+    if let Ok(rooms) = state.clear_connections(&connection).await {
         tracing::info!("Removing stale users from rooms: {:?}", rooms);
 
         for file_id in rooms.into_iter() {
@@ -184,13 +212,13 @@ async fn process_message(
     msg: Message,
     sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
     state: Arc<State>,
-    connection_id: Uuid,
+    connection: &Connection,
 ) -> Result<ControlFlow<Option<MessageResponse>, ()>> {
     match msg {
         Message::Text(text) => {
             let messsage_request = serde_json::from_str::<MessageRequest>(&text)?;
             let message_response =
-                handle_message(messsage_request, state, Arc::clone(&sender), connection_id).await?;
+                handle_message(messsage_request, state, Arc::clone(&sender), connection).await?;
 
             if let Some(message_response) = message_response {
                 let response = Message::Text(serde_json::to_string(&message_response)?);

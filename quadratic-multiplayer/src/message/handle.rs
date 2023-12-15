@@ -5,14 +5,15 @@
 //! socket information is stored in the global state, we can broadcast
 //! to all users in a room.
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use uuid::Uuid;
 
+use crate::auth::get_file_perms;
 use crate::message::{broadcast, request::MessageRequest, response::MessageResponse};
+use crate::state::connection::Connection;
 use crate::state::user::UserState;
 use crate::state::{user::User, State};
 
@@ -22,7 +23,7 @@ pub(crate) async fn handle_message(
     request: MessageRequest,
     state: Arc<State>,
     sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
-    connection_id: Uuid,
+    connection: &Connection,
 ) -> Result<Option<MessageResponse>> {
     tracing::trace!("Handling message {:?}", request);
 
@@ -41,6 +42,14 @@ pub(crate) async fn handle_message(
             cell_edit,
             viewport,
         } => {
+            // validate that the user has permission to access the file
+            let base_url = &state.settings.quadratic_api_uri;
+            let jwt = connection
+                .jwt
+                .to_owned()
+                .ok_or_else(|| anyhow!("A JWT is required to validate file permissions"))?;
+            let permission = get_file_perms(base_url, jwt, file_id).await?;
+
             let user_state = UserState {
                 sheet_id,
                 selection,
@@ -58,12 +67,13 @@ pub(crate) async fn handle_message(
                 last_name,
                 email,
                 image,
+                permission,
                 state: user_state,
                 socket: Some(Arc::clone(&sender)),
                 last_heartbeat: chrono::Utc::now(),
             };
 
-            let is_new = state.enter_room(file_id, &user, connection_id).await;
+            let is_new = state.enter_room(file_id, &user, connection.id).await;
 
             // only broadcast if the user is new to the room
             if is_new {
@@ -184,6 +194,7 @@ pub(crate) mod tests {
     use super::*;
     use crate::state::user::{CellEdit, UserStateUpdate};
     use crate::test_util::add_new_user_to_room;
+    use uuid::Uuid;
 
     async fn setup() -> (Arc<State>, Uuid, User) {
         let state = Arc::new(State::new());
