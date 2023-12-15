@@ -31,7 +31,7 @@ impl GridController {
                 let pos = Pos { x, y };
                 // see note above re: operations returned from set_formatting_value
                 let old_value =
-                    sheet.set_formatting_value::<A>(pos, values.get_at(i).unwrap().clone());
+                    sheet.set_formatting_value::<A>(pos, values.get_at(i).unwrap_or(&None).clone());
                 old_values.push(old_value);
                 i += 1;
             }

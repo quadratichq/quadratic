@@ -4,31 +4,29 @@ use crate::grid::file::v1_4::schema as v1_4;
 use crate::grid::file::v1_5::schema::{self as v1_5};
 use anyhow::Result;
 
-// todo: use Result instead of panicking
-
 fn upgrade_spills(
     sheet: &v1_4::Sheet,
     spills: &HashMap<String, v1_4::ColumnFormatType<String>>,
 ) -> HashMap<String, v1_5::ColumnFormatType<String>> {
     spills
         .iter()
-        .map(|(_, spill)| {
+        .flat_map(|(_, spill)| {
             let y = spill.y;
             let cell_ref = serde_json::from_str::<v1_4::CellRef>(&spill.content.value).unwrap();
             let len = spill.content.len;
-            let sheet_pos_string = serde_json::to_string(&cell_ref_to_sheet_pos(sheet, &cell_ref))
-                .ok()
-                .unwrap();
-            (
-                y.to_string(),
-                v1_5::ColumnFormatType::<String> {
-                    y,
-                    content: v1_5::ColumnFormatContent {
-                        value: sheet_pos_string,
-                        len,
+            match serde_json::to_string(&cell_ref_to_sheet_pos(sheet, &cell_ref)) {
+                Ok(sheet_pos_string) => Some((
+                    y.to_string(),
+                    v1_5::ColumnFormatType::<String> {
+                        y,
+                        content: v1_5::ColumnFormatContent {
+                            value: sheet_pos_string,
+                            len,
+                        },
                     },
-                },
-            )
+                )),
+                Err(_) => None,
+            }
         })
         .collect()
 }

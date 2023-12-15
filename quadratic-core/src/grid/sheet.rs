@@ -131,6 +131,10 @@ impl Sheet {
         old_cell_values_array
     }
 
+    pub fn iter_columns(&self) -> impl Iterator<Item = (&i64, &Column)> {
+        self.columns.iter()
+    }
+
     /// Sets or deletes borders in a region.
     pub fn set_region_borders(&mut self, rect: &Rect, borders: SheetBorders) -> SheetBorders {
         borders::set_rect_borders(self, rect, borders)
@@ -677,33 +681,32 @@ mod test {
         );
     }
 
-    // todo....
     #[test]
     fn test_columns() {
-        // let (grid, sheet_id, _) = test_setup_basic();
-        // let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+        let (grid, sheet_id, _) = test_setup_basic();
+        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
 
-        // let column = sheet.get_column(0);
-        // assert_eq!(None, column.unwrap().bold.get(1));
+        let column = sheet.get_column(2);
+        assert_eq!(None, column.unwrap().bold.get(1));
 
-        // // set a bold value, validate it's in the vec
-        // let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
-        // let columns = sheet.iter_columns().collect::<Vec<_>>();
-        // assert_eq!(Some(true), columns[0].1.bold.get(1));
+        // set a bold value, validate it's in the vec
+        let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
+        let columns = sheet.iter_columns().collect::<Vec<_>>();
+        assert_eq!(Some(true), columns[0].1.bold.get(1));
 
-        // // assert that get_column matches the column in the vec
-        // let index = columns[0].0;
-        // let column = sheet.get_column(index);
-        // assert_eq!(Some(true), column.unwrap().bold.get(1));
+        // assert that get_column matches the column in the vec
+        let index = columns[0].0;
+        let column = sheet.get_column(*index);
+        assert_eq!(Some(true), column.unwrap().bold.get(1));
 
-        // // existing column
-        // let mut sheet = sheet.clone();
-        // let existing_column = sheet.get_or_create_column(2);
-        // assert_eq!(column, Some(existing_column).as_deref());
+        // existing column
+        let mut sheet = sheet.clone();
+        let existing_column = sheet.get_or_create_column(2);
+        assert_eq!(column, Some(existing_column).as_deref());
 
-        // // new column
-        // let mut sheet = sheet.clone();
-        // let new_column = sheet.get_or_create_column(1);
-        // assert_eq!(new_column, &Column::new(new_column.x));
+        // new column
+        let mut sheet = sheet.clone();
+        let new_column = sheet.get_or_create_column(1);
+        assert_eq!(new_column, &Column::new(new_column.x));
     }
 }
