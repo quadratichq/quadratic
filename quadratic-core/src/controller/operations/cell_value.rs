@@ -11,7 +11,7 @@ use crate::{
 use super::operation::Operation;
 
 impl GridController {
-    pub fn string_to_cell_value(
+    pub(super) fn string_to_cell_value(
         &mut self,
         sheet_pos: SheetPos,
         value: &str,

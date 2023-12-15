@@ -51,9 +51,15 @@ pub struct GridController {
 
     // track changes
     cells_updated: IndexSet<SheetRect>,
+
+    // used by Code Cell execution to track dependencies
     cells_accessed: HashSet<SheetPos>,
+
+    // returned to the TS client for (mostly) rendering updates
     summary: TransactionSummary,
-    sheets_with_changed_bounds: HashSet<SheetId>,
+
+    // tracks sheets that will need updated bounds
+    sheets_with_dirty_bounds: HashSet<SheetId>,
 
     // tracks whether there are any async calls (which changes how the transaction is finalized)
     has_async: bool,

@@ -29,7 +29,7 @@ impl GridController {
 
     /// recalculate bounds for changed sheets
     pub fn transaction_updated_bounds(&mut self) {
-        self.sheets_with_changed_bounds
+        self.sheets_with_dirty_bounds
             .clone()
             .iter()
             .for_each(|sheet_id| {

@@ -34,13 +34,13 @@ impl GridController {
     }
 
     /// executes a set of operations
-    fn transact(&mut self, operations: Vec<Operation>, compute: bool) {
+    fn transact(&mut self, operations: Vec<Operation>) {
         for op in operations.iter() {
             if cfg!(feature = "show-operations") {
                 crate::util::dbgjs(&format!("[Operation] {:?}", op.to_string()));
             }
 
-            self.execute_operation(op.clone(), compute);
+            self.execute_operation(op.clone());
         }
     }
 
@@ -65,7 +65,7 @@ impl GridController {
         self.cursor = cursor;
         self.cells_accessed = HashSet::new();
         self.summary = TransactionSummary::default();
-        self.sheets_with_changed_bounds = HashSet::new();
+        self.sheets_with_dirty_bounds = HashSet::new();
         self.transaction_type = transaction_type;
         self.has_async = false;
         self.current_sheet_pos = None;
@@ -74,7 +74,7 @@ impl GridController {
         self.forward_operations = vec![];
 
         // apply operations
-        self.transact(operations, compute);
+        self.transact(operations);
 
         // run computations
         if compute {
