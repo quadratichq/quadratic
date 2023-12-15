@@ -13,6 +13,8 @@ model User {
     files        File[]
     QFeedback    QFeedback[]
     UserTeamRole UserTeamRole[]
+
+    @@index([auth0_id])
 }
 
 enum LinkPermission {
@@ -32,8 +34,8 @@ model File {
     deleted            Boolean          @default(false)
     deleted_date       DateTime?
     // Binary file contents
-    contents           Bytes // unused to delete
-    // Permissions
+    contents           Bytes? // unused to delete
+    // Role
     owner              User             @relation(fields: [ownerUserId], references: [id])
     ownerUserId        Int
     public_link_access LinkPermission   @default(NOT_SHARED)
@@ -41,6 +43,8 @@ model File {
     times_updated      Int              @default(1) // unused to delete
     version            String? // unused to delete
     FileCheckpoint     FileCheckpoint[]
+
+    @@index([uuid])
 }
 
 model FileCheckpoint {
@@ -50,12 +54,14 @@ model FileCheckpoint {
     fileId         Int      @map("file_id")
     sequenceNumber Int      @map("sequence_number")
     // Checkpoint Data
-    data           String // S3FileKey
+    s3Bucket       String   @map("s3_bucket")
+    s3Key          String   @map("s3_key")
     version        String // Quadratic file version
     // Metadata
     timestamp      DateTime @default(now())
 
     @@unique([fileId, sequenceNumber])
+    @@index([fileId, sequenceNumber])
 }
 
 model Team {
@@ -66,6 +72,8 @@ model Team {
     createdDate  DateTime       @default(now()) @map("created_date")
     UserTeamRole UserTeamRole[]
     TeamInvite   TeamInvite[]
+
+    @@index([uuid])
 }
 
 enum TeamRole {
@@ -102,7 +110,7 @@ model TeamInvite {
 //     EDIT
 // }
 
-// model UserFileAccess {
+// model UserFileRole {
 //   id Int
 //   userId    Int
 //   fileId    Int
@@ -112,6 +120,8 @@ model TeamInvite {
 
 //   @@unique([userId, fileId])
 // }
+
+// model FileInvite { ... }
 
 // model TeamFileAccess {
 //   id Int
