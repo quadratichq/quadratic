@@ -17,7 +17,7 @@ import {
   ReceiveRoom,
   ReceiveTransactions,
   SendEnterRoom,
-  SendGetTransactions
+  SendGetTransactions,
 } from './multiplayerTypes';
 
 const UPDATE_TIME = 1000 / 30;
@@ -227,13 +227,15 @@ export class Multiplayer {
     userUpdate.sheet_id = sheets.sheet.id;
   };
 
-  sendCellEdit(text: string, cursor: number, codeEditor: boolean) {
+  sendCellEdit(text: string, cursor: number, codeEditor: boolean, bold?: boolean, italic?: boolean) {
     const userUpdate = this.getUserUpdate().update;
     userUpdate.cell_edit = {
       text,
       cursor,
       active: true,
       code_editor: codeEditor,
+      bold,
+      italic,
     };
   }
 
@@ -255,7 +257,7 @@ export class Multiplayer {
   async sendTransaction(operations: string) {
     await this.init();
     // TODO(ddimaria): this ID should be stored somewhere
-    let id = uuid(); 
+    let id = uuid();
     const message: MessageTransaction = {
       type: 'Transaction',
       id,
@@ -428,7 +430,7 @@ export class Multiplayer {
     } else if (type === 'UserUpdate') {
       this.receiveUserUpdate(data);
     } else if (type === 'Transaction') {
-    this.receiveTransaction(data);
+      this.receiveTransaction(data);
     } else if (type === 'Transactions') {
       this.receiveTransactions(data);
     } else if (type !== 'Empty') {

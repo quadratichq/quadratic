@@ -6,6 +6,8 @@ export interface CellEdit {
   text: string;
   cursor: number;
   code_editor: boolean;
+  bold?: boolean;
+  italic?: boolean;
 }
 
 export interface MultiplayerUserServer {
