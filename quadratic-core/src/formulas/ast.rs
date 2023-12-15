@@ -115,8 +115,8 @@ impl AstNode {
                 let ref1 = args[0].to_cell_ref()?;
                 let ref2 = args[1].to_cell_ref()?;
                 let sheet_name = ref1.sheet.clone();
-                let corner1 = ref1.resolve_from(ctx.pos.without_sheet());
-                let corner2 = ref2.resolve_from(ctx.pos.without_sheet());
+                let corner1 = ref1.resolve_from(ctx.sheet_pos.into());
+                let corner2 = ref2.resolve_from(ctx.sheet_pos.into());
 
                 let x1 = std::cmp::min(corner1.x, corner2.x);
                 let y1 = std::cmp::min(corner1.y, corner2.y);

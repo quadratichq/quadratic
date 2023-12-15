@@ -1,16 +1,15 @@
 use crate::color::Rgba;
 use crate::grid::formatting::RenderSize;
 use crate::grid::{
-    generate_borders, set_region_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
-    CellWrap, Grid, GridBounds, NumericFormat, NumericFormatKind, RegionRef,
+    generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
+    CellWrap, Grid, GridBounds, NumericFormat, NumericFormatKind,
 };
-use crate::{CellValue, Error, ErrorMsg, Span, Value};
+use crate::{CellValue, Error, ErrorMsg, Pos, Rect, SheetPos, Span, Value};
 
-use crate::grid::file::v1_4::schema::{self as current};
+use crate::grid::file::v1_5::schema::{self as current};
 use crate::grid::{
-    block::SameValue, sheet::sheet_offsets::SheetOffsets, CellRef, CodeCellLanguage,
-    CodeCellRunOutput, CodeCellRunResult, CodeCellValue, Column, ColumnData, ColumnId, RowId,
-    Sheet, SheetBorders, SheetId,
+    block::SameValue, sheet::sheet_offsets::SheetOffsets, CodeCellLanguage, CodeCellRunOutput,
+    CodeCellRunResult, CodeCellValue, Column, ColumnData, Sheet, SheetBorders, SheetId,
 };
 use anyhow::{anyhow, Result};
 use bigdecimal::BigDecimal;
@@ -23,21 +22,6 @@ use std::{
 };
 
 use super::CURRENT_VERSION;
-impl From<CellRef> for current::CellRef {
-    fn from(cell_ref: CellRef) -> Self {
-        Self {
-            sheet: current::Id {
-                id: cell_ref.sheet.to_string(),
-            },
-            column: current::Id {
-                id: cell_ref.column.to_string(),
-            },
-            row: current::Id {
-                id: cell_ref.row.to_string(),
-            },
-        }
-    }
-}
 
 fn set_column_format<T>(
     column_data: &mut ColumnData<SameValue<T>>,
@@ -135,12 +119,9 @@ fn set_column_format_render_size(
 fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<i64, Column>> {
     columns
         .iter()
-        .map(|(y, column)| {
-            let mut col = Column {
-                id: ColumnId::from_str(&column.id.id)?,
-                ..Default::default()
-            };
-            set_column_format::<CellRef>(&mut col.spills, &column.spills)?;
+        .map(|(x, column)| {
+            let mut col = Column::new(*x);
+            set_column_format::<Pos>(&mut col.spills, &column.spills)?;
             set_column_format::<CellAlign>(&mut col.align, &column.align)?;
             set_column_format::<CellWrap>(&mut col.wrap, &column.wrap)?;
             set_column_format_i16(&mut col.numeric_decimals, &column.numeric_decimals)?;
@@ -172,54 +153,44 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
                 }
             }
 
-            Ok((*y, col))
+            Ok((*x, col))
         })
         .collect::<Result<BTreeMap<i64, Column>>>()
 }
 
 fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet) {
-    current_sheet
-        .borders
-        .iter()
-        .for_each(|(column_id, cell_borders)| {
-            cell_borders.iter().for_each(|(y, cell_borders)| {
-                cell_borders.iter().enumerate().for_each(|(index, border)| {
-                    if let Some(border) = border {
-                        let border_selection = match index {
-                            0 => BorderSelection::Left,
-                            1 => BorderSelection::Top,
-                            2 => BorderSelection::Right,
-                            3 => BorderSelection::Bottom,
-                            _ => BorderSelection::Clear,
-                        };
-                        let style = BorderStyle {
-                            color: Rgba::from_str(&border.color)
-                                .unwrap_or_else(|_| Rgba::new(0, 0, 0, 255)),
-                            line: CellBorderLine::from_str(&border.line)
-                                .unwrap_or(CellBorderLine::Line1),
-                        };
+    current_sheet.borders.iter().for_each(|(x, cell_borders)| {
+        cell_borders.iter().for_each(|(y, cell_borders)| {
+            cell_borders.iter().enumerate().for_each(|(index, border)| {
+                if let Some(border) = border {
+                    let border_selection = match index {
+                        0 => BorderSelection::Left,
+                        1 => BorderSelection::Top,
+                        2 => BorderSelection::Right,
+                        3 => BorderSelection::Bottom,
+                        _ => BorderSelection::Clear,
+                    };
+                    let style = BorderStyle {
+                        color: Rgba::from_str(&border.color)
+                            .unwrap_or_else(|_| Rgba::new(0, 0, 0, 255)),
+                        line: CellBorderLine::from_str(&border.line)
+                            .unwrap_or(CellBorderLine::Line1),
+                    };
 
-                        if let Ok(column_id) = ColumnId::from_str(column_id) {
-                            let (row_id, _) = sheet.get_or_create_row(*y);
-                            let region = RegionRef {
-                                sheet: sheet.id,
-                                columns: vec![column_id],
-                                rows: vec![row_id],
-                            };
-                            let borders = generate_borders(
-                                sheet,
-                                &region,
-                                vec![border_selection],
-                                Some(style),
-                            );
+                    // todo: this should save as an i64, not string
+                    let rect = Rect::single_pos(Pos {
+                        x: x.parse::<i64>().unwrap(),
+                        y: *y,
+                    });
+                    let borders =
+                        generate_borders(sheet, &rect, vec![border_selection], Some(style));
 
-                            // necessary to fill in render_lookup in SheetBorders
-                            set_region_borders(sheet, vec![region], borders);
-                        }
-                    }
-                });
+                    // necessary to fill in render_lookup in SheetBorders
+                    set_rect_borders(sheet, &rect, borders);
+                }
             });
         });
+    });
 }
 
 fn import_code_cell_output(type_field: &str, value: &str) -> CellValue {
@@ -231,17 +202,13 @@ fn import_code_cell_output(type_field: &str, value: &str) -> CellValue {
     }
 }
 
-fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<CellRef, CodeCellValue>> {
+fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<Pos, CodeCellValue>> {
     sheet
         .code_cells
         .iter()
-        .map(|(cell_ref, code_cell_value)| {
+        .map(|(pos, code_cell_value)| {
             Ok((
-                CellRef {
-                    sheet: SheetId::from_str(&cell_ref.sheet.id)?,
-                    column: ColumnId::from_str(&cell_ref.column.id)?,
-                    row: RowId::from_str(&cell_ref.row.id)?,
-                },
+                Pos { x: pos.x, y: pos.y },
                 CodeCellValue {
                     language: CodeCellLanguage::from_str(&code_cell_value.language)?,
                     code_string: code_cell_value.code_string.to_owned(),
@@ -286,10 +253,10 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<CellRef, C
                                     cells_accessed: cells_accessed
                                         .into_iter()
                                         .map(|cell| {
-                                            Ok(CellRef {
-                                                sheet: SheetId::from_str(&cell.sheet.id)?,
-                                                column: ColumnId::from_str(&cell.column.id)?,
-                                                row: RowId::from_str(&cell.row.id)?,
+                                            Ok(SheetPos {
+                                                sheet_id: SheetId::from_str(&cell.sheet_id.id)?,
+                                                x: cell.x,
+                                                y: cell.y,
                                             })
                                         })
                                         .collect::<Result<_>>()
@@ -327,16 +294,6 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                     name: sheet.name.to_owned(),
                     color: sheet.color.to_owned(),
                     order: sheet.order.to_owned(),
-                    column_ids: sheet
-                        .columns
-                        .iter()
-                        .map(|(x, column)| Ok((*x, ColumnId::from_str(&column.id.id)?)))
-                        .collect::<Result<_>>()?,
-                    row_ids: sheet
-                        .rows
-                        .iter()
-                        .map(|(x, row)| Ok((*x, RowId::from_str(&row.id)?)))
-                        .collect::<Result<_>>()?,
                     offsets: SheetOffsets::import(&sheet.offsets),
                     columns: import_column_builder(&sheet.columns)?,
                     // borders set after sheet is loaded
@@ -445,14 +402,13 @@ where
 
 fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
     sheet
-        .iter_columns()
+        .columns
+        .iter()
         .map(|(x, column)| {
             (
-                x,
+                *x,
                 current::Column {
-                    id: current::Id {
-                        id: column.id.to_string(),
-                    },
+                    x: *x,
                     spills: export_column_data(&column.spills),
                     align: export_column_data(&column.align),
                     wrap: export_column_data(&column.wrap),
@@ -493,9 +449,10 @@ fn export_borders_builder(sheet: &Sheet) -> current::Borders {
         .per_cell
         .borders
         .iter()
-        .map(|(column_id, border)| {
+        .map(|(x, border)| {
             (
-                column_id.to_string(),
+                // todo: this should be i64
+                x.to_string(),
                 border
                     .values()
                     .map(|(y, cell_borders)| {
@@ -536,24 +493,13 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                 order: sheet.order.to_owned(),
                 offsets: sheet.offsets.export(),
                 columns: export_column_builder(sheet),
-                rows: sheet
-                    .iter_rows()
-                    .map(|(x, row_id)| {
-                        (
-                            x,
-                            current::Id {
-                                id: row_id.to_string(),
-                            },
-                        )
-                    })
-                    .collect(),
                 borders: export_borders_builder(sheet),
                 code_cells: sheet
                     .iter_code_cells_locations()
-                    .map(|cell_ref| {
-                        let code_cell_value = sheet.get_code_cell_from_ref(cell_ref).unwrap().clone();
+                    .map(|pos| {
+                        let code_cell_value = sheet.get_code_cell(pos).unwrap().clone();
                         (
-                            cell_ref.into(),
+                            pos.into(),
                             current::CodeCellValue {
                                 language: code_cell_value.language.to_string(),
                                 code_string: code_cell_value.code_string,
@@ -631,13 +577,13 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
 mod tests {
     use super::*;
 
-    const V1_4_FILE: &str = include_str!("../../../../rust-shared/data/grid/v1_4_simple.grid");
+    const V1_5_FILE: &str = include_str!("../../../../rust-shared/data/grid/v1_5_simple.grid");
 
     #[test]
     fn imports_and_exports_a_current_grid() {
-        let file = serde_json::from_str::<current::GridSchema>(V1_4_FILE).unwrap();
+        let file = serde_json::from_str::<current::GridSchema>(V1_5_FILE).unwrap();
         let mut imported = import(file).unwrap();
-        let exported = export(&mut imported).unwrap();
-        println!("{:?}", exported);
+        let _exported = export(&mut imported).unwrap();
+        // println!("{:?}", exported);
     }
 }

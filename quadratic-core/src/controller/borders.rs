@@ -3,35 +3,30 @@ use super::transaction_in_progress::TransactionType;
 use super::GridController;
 use crate::controller::transaction_summary::TransactionSummary;
 use crate::grid::generate_borders;
-use crate::{
-    grid::{BorderSelection, BorderStyle, SheetId},
-    Rect,
-};
+use crate::grid::{BorderSelection, BorderStyle};
+use crate::SheetRect;
 
 impl GridController {
     pub async fn set_borders(
         &mut self,
-        sheet_id: SheetId,
-        rect: Rect,
+        sheet_rect: SheetRect,
         selections: Vec<BorderSelection>,
         style: Option<BorderStyle>,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let (region, operations) = self.region(sheet_id, rect);
-        let mut ops = vec![];
-        if let Some(operations) = operations {
-            ops.extend(operations);
-        }
-        let sheet = self.sheet(sheet_id);
-        let borders = generate_borders(sheet, &region, selections, style);
-        ops.push(Operation::SetBorders { region, borders });
+        let sheet = self.sheet(sheet_rect.sheet_id);
+        let borders = generate_borders(sheet, &sheet_rect.into(), selections, style);
+        let ops = vec![Operation::SetBorders {
+            sheet_rect,
+            borders,
+        }];
         self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{color::Rgba, grid::CellBorderLine};
+    use crate::{color::Rgba, grid::CellBorderLine, Pos};
 
     use super::*;
 
@@ -39,14 +34,14 @@ mod tests {
     fn test_set_borders() {
         let mut grid_controller = GridController::new();
         let sheet_id = grid_controller.grid.sheets()[0].id;
-        let rect = Rect::single_pos((0, 0).into());
+        let sheet_rect = SheetRect::single_pos(Pos { x: 0, y: 0 }, sheet_id);
         let selections = vec![BorderSelection::Top, BorderSelection::Left];
         let style = Some(BorderStyle {
             color: Rgba::default(),
             line: CellBorderLine::Line1,
         });
 
-        tokio_test::block_on(grid_controller.set_borders(sheet_id, rect, selections, style, None));
+        tokio_test::block_on(grid_controller.set_borders(sheet_rect, selections, style, None));
 
         let borders = grid_controller.grid.sheets()[0]
             .borders()

@@ -30,7 +30,7 @@ pub(crate) fn _apply_operations(
 #[cfg(test)]
 mod tests {
     use quadratic_core::test_util::assert_cell_value;
-    use quadratic_core::{Array, CellValue, Rect};
+    use quadratic_core::{Array, CellValue, SheetPos};
 
     use super::*;
 
@@ -41,11 +41,15 @@ mod tests {
 
         let mut grid = GridController::from_grid(file);
         let sheet_id = grid.sheet_ids().first().unwrap().to_owned();
-        let rect = Rect::js_single_pos((0, 0).into());
-        let (region, _) = grid.region(sheet_id, rect);
+        let sheet_rect = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        }
+        .into();
         let value = CellValue::Text("hello".to_string());
         let values = Array::from(value);
-        let operation = Operation::SetCellValues { region, values };
+        let operation = Operation::SetCellValues { sheet_rect, values };
 
         let _ = _apply_operations(&mut grid, vec![operation]);
 

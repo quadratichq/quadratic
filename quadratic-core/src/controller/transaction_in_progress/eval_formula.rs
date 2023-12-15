@@ -1,8 +1,8 @@
 use crate::{
     controller::GridController,
     formulas::{parse_formula, Ctx},
-    grid::{CellRef, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
-    Pos, SheetPos,
+    grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
+    SheetPos,
 };
 
 impl GridController {
@@ -10,36 +10,14 @@ impl GridController {
         &mut self,
         code_string: String,
         language: CodeCellLanguage,
-        pos: Pos,
-        cell_ref: CellRef,
+        sheet_pos: SheetPos,
     ) {
-        let sheet_id = cell_ref.sheet;
-        let mut ctx = Ctx::new(
-            self.grid(),
-            SheetPos {
-                sheet_id,
-                x: pos.x,
-                y: pos.y,
-            },
-        );
-        match parse_formula(&code_string, pos) {
+        let mut ctx = Ctx::new(self.grid(), sheet_pos);
+        match parse_formula(&code_string, sheet_pos.into()) {
             Ok(parsed) => {
                 match parsed.eval(&mut ctx) {
                     Ok(value) => {
-                        self.cells_accessed = ctx
-                            .cells_accessed
-                            .iter()
-                            .map(|sheet_pos| {
-                                let sheet = self.grid_mut().sheet_mut_from_id(sheet_pos.sheet_id);
-                                let pos = (*sheet_pos).into();
-                                let (cell_ref, operations) = sheet.get_or_create_cell_ref(pos);
-                                if let Some(operations) = operations {
-                                    self.forward_operations.extend(operations);
-                                }
-                                cell_ref
-                            })
-                            .collect();
-
+                        self.cells_accessed = ctx.cells_accessed;
                         let updated_code_cell_value = CodeCellValue {
                             language,
                             code_string,
@@ -60,7 +38,7 @@ impl GridController {
                             // todo
                             last_modified: String::new(),
                         };
-                        if self.update_code_cell_value(cell_ref, Some(updated_code_cell_value)) {
+                        if self.update_code_cell_value(sheet_pos, Some(updated_code_cell_value)) {
                             // clears cells_accessed
                             self.cells_accessed.clear();
                         }

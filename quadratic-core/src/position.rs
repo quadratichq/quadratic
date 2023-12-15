@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
-use crate::{grid::SheetId, ArraySize};
+use crate::{grid::SheetId, ArraySize, QUADRANT_SIZE};
 
 /// Cell position {x, y}.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -29,11 +29,19 @@ pub struct Pos {
 impl Pos {
     pub const ORIGIN: Self = Self { x: 0, y: 0 };
 
+    pub fn to_sheet_pos(&self, sheet_id: SheetId) -> SheetPos {
+        SheetPos {
+            x: self.x,
+            y: self.y,
+            sheet_id,
+        }
+    }
+
     /// Returns which quadrant the cell position is in.
     pub fn quadrant(self) -> (i64, i64) {
         (
-            self.x.div_euclid(crate::QUADRANT_SIZE as _),
-            self.y.div_euclid(crate::QUADRANT_SIZE as _),
+            self.x.div_euclid(QUADRANT_SIZE as _),
+            self.y.div_euclid(QUADRANT_SIZE as _),
         )
     }
 
@@ -46,12 +54,6 @@ impl Pos {
             format!("{col}{}", self.y)
         }
     }
-
-    /// Adds information about which sheet the position is in.
-    pub fn with_sheet(self, sheet_id: SheetId) -> SheetPos {
-        let Pos { x, y } = self;
-        SheetPos { x, y, sheet_id }
-    }
 }
 impl From<(i64, i64)> for Pos {
     fn from(pos: (i64, i64)) -> Self {
@@ -59,8 +61,11 @@ impl From<(i64, i64)> for Pos {
     }
 }
 impl From<SheetPos> for Pos {
-    fn from(pos: SheetPos) -> Self {
-        Pos { x: pos.x, y: pos.y }
+    fn from(sheet_pos: SheetPos) -> Self {
+        Pos {
+            x: sheet_pos.x,
+            y: sheet_pos.y,
+        }
     }
 }
 impl fmt::Display for Pos {
@@ -94,6 +99,14 @@ impl Rect {
                 x: max(pos1.x, pos2.x),
                 y: max(pos1.y, pos2.y),
             },
+        }
+    }
+
+    pub fn to_sheet_rect(&self, sheet_id: SheetId) -> SheetRect {
+        SheetRect {
+            min: self.min,
+            max: self.max,
+            sheet_id,
         }
     }
 
@@ -183,7 +196,7 @@ impl Rect {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.width() == 0 && self.height() == 0
+        self.width() == 0 || self.height() == 0
     }
 
     pub fn translate(&mut self, x: i64, y: i64) {
@@ -216,9 +229,16 @@ pub struct SheetPos {
     pub y: i64,
     pub sheet_id: SheetId,
 }
+
 impl fmt::Display for SheetPos {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} ({}, {})", self.sheet_id, self.x, self.y)
+    }
+}
+
+impl From<(i64, i64, SheetId)> for SheetPos {
+    fn from((x, y, sheet_id): (i64, i64, SheetId)) -> Self {
+        Self { x, y, sheet_id }
     }
 }
 
@@ -234,19 +254,46 @@ pub struct SheetRect {
 }
 
 impl SheetRect {
-    /// Constructs a new rectangle containing only a single cell.
-    pub fn single_pos(pos: SheetPos) -> SheetRect {
+    pub fn single_sheet_pos(sheet_pos: SheetPos) -> SheetRect {
         SheetRect {
-            sheet_id: pos.sheet_id,
-            min: Pos { x: pos.x, y: pos.y },
-            max: Pos { x: pos.x, y: pos.y },
+            min: sheet_pos.into(),
+            max: sheet_pos.into(),
+            sheet_id: sheet_pos.sheet_id,
         }
     }
+
+    pub fn single_pos(pos: Pos, sheet_id: SheetId) -> SheetRect {
+        SheetRect {
+            min: pos,
+            max: pos,
+            sheet_id,
+        }
+    }
+
+    /// Constructs a new SheetRect from two positions and a sheet id.
+    pub fn new_pos_span(pos1: Pos, pos2: Pos, sheet_id: SheetId) -> SheetRect {
+        use std::cmp::{max, min};
+        SheetRect {
+            min: Pos {
+                x: min(pos1.x, pos2.x),
+                y: min(pos1.y, pos2.y),
+            },
+            max: Pos {
+                x: max(pos1.x, pos2.x),
+                y: max(pos1.y, pos2.y),
+            },
+            sheet_id,
+        }
+    }
+
+    pub fn new_span(pos1: SheetPos, pos2: SheetPos) -> SheetRect {
+        SheetRect::new_pos_span(pos1.into(), pos2.into(), pos1.sheet_id)
+    }
     /// Returns whether a position is contained within the rectangle.
-    pub fn contains(self, pos: SheetPos) -> bool {
-        self.sheet_id == pos.sheet_id
-            && self.x_range().contains(&pos.x)
-            && self.y_range().contains(&pos.y)
+    pub fn contains(self, sheet_pos: SheetPos) -> bool {
+        self.sheet_id == sheet_pos.sheet_id
+            && self.x_range().contains(&sheet_pos.x)
+            && self.y_range().contains(&sheet_pos.y)
     }
     /// Returns whether a rectangle intersects with the rectangle.
     pub fn intersects(self, other: SheetRect) -> bool {
@@ -265,6 +312,32 @@ impl SheetRect {
     pub fn y_range(self) -> Range<i64> {
         self.min.y..self.max.y + 1
     }
+    pub fn width(&self) -> usize {
+        (self.max.x - self.min.x + 1) as usize
+    }
+    pub fn height(&self) -> usize {
+        (self.max.y - self.min.y + 1) as usize
+    }
+    pub fn len(&self) -> usize {
+        self.width() * self.height()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.width() == 0 && self.height() == 0
+    }
+    pub fn size(&self) -> ArraySize {
+        ArraySize::new(self.width() as u32, self.height() as u32)
+            .expect("empty rectangle has no size")
+    }
+    pub fn iter(self) -> impl Iterator<Item = SheetPos> {
+        let SheetRect { min, max, .. } = self;
+        (min.y..=max.y).flat_map(move |y| {
+            (min.x..=max.x).map(move |x| SheetPos {
+                x,
+                y,
+                sheet_id: self.sheet_id,
+            })
+        })
+    }
 }
 impl fmt::Display for SheetRect {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -276,27 +349,270 @@ impl fmt::Display for SheetRect {
     }
 }
 
+impl From<SheetPos> for SheetRect {
+    fn from(sheet_pos: SheetPos) -> Self {
+        SheetRect {
+            min: sheet_pos.into(),
+            max: sheet_pos.into(),
+            sheet_id: sheet_pos.sheet_id,
+        }
+    }
+}
+
+// cannot go from Rect to SheetRect; need to use Rect.to_sheet_rect(sheet_id)
+#[allow(clippy::from_over_into)]
+impl Into<Rect> for SheetRect {
+    fn into(self) -> Rect {
+        Rect {
+            min: self.min,
+            max: self.max,
+        }
+    }
+}
+
 impl SheetPos {
     pub fn new(sheet_id: SheetId, x: i64, y: i64) -> Self {
         Self { sheet_id, x, y }
     }
-    pub fn without_sheet(self) -> Pos {
-        let SheetPos { x, y, .. } = self;
-        Pos { x, y }
-    }
 }
-impl From<SheetRect> for Vec<SheetPos> {
-    fn from(rect: SheetRect) -> Vec<SheetPos> {
-        let mut sheet_pos = vec![];
-        for x in rect.min.x..=rect.max.x {
-            for y in rect.min.y..=rect.max.y {
-                sheet_pos.push(SheetPos {
-                    sheet_id: rect.sheet_id,
-                    x,
-                    y,
-                });
+
+#[cfg(test)]
+mod test {
+    use crate::{grid::SheetId, Pos, Rect, SheetPos, SheetRect, QUADRANT_SIZE};
+
+    #[test]
+    fn test_to_sheet_pos() {
+        let pos = Pos { x: 1, y: 2 };
+        let sheet_id = SheetId::new();
+        assert_eq!(
+            pos.to_sheet_pos(sheet_id),
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id
             }
-        }
-        sheet_pos
+        );
+    }
+
+    #[test]
+    fn test_quadrant_size() {
+        let pos = Pos { x: 1, y: 2 };
+        assert_eq!(pos.quadrant(), (0, 0));
+        let quadrant_size = QUADRANT_SIZE as i64;
+        let pos = Pos {
+            x: quadrant_size + 1,
+            y: quadrant_size + 1,
+        };
+        assert_eq!(pos.quadrant(), (1, 1));
+    }
+
+    #[test]
+    fn test_a1_string() {
+        let pos = Pos { x: 1, y: 2 };
+        assert_eq!(pos.a1_string(), "B2");
+        let pos = Pos { x: 0, y: 0 };
+        assert_eq!(pos.a1_string(), "A0");
+        let pos = Pos { x: 26, y: 0 };
+        assert_eq!(pos.a1_string(), "AA0");
+        let pos = Pos { x: 26, y: 1 };
+        assert_eq!(pos.a1_string(), "AA1");
+        let pos = Pos { x: 26, y: -1 };
+        assert_eq!(pos.a1_string(), "AAn1");
+    }
+
+    #[test]
+    fn test_pos_into() {
+        let pos: Pos = (1, 2).into();
+        assert_eq!(pos, Pos { x: 1, y: 2 });
+
+        let sheet_id = SheetId::new();
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id,
+        };
+        let check_pos: Pos = sheet_pos.into();
+        assert_eq!(check_pos, Pos { x: 1, y: 2 });
+
+        let pos: Pos = (1, 2).into();
+        assert_eq!(pos, Pos { x: 1, y: 2 });
+
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id,
+        };
+        let pos: Pos = sheet_pos.into();
+        assert_eq!(pos, Pos { x: 1, y: 2 });
+    }
+
+    #[test]
+    fn test_rect_new_span() {
+        let pos1 = Pos { x: 1, y: 2 };
+        let pos2 = Pos { x: 3, y: 4 };
+        let rect = Rect::new_span(pos1, pos2);
+        assert_eq!(rect.min, Pos { x: 1, y: 2 });
+        assert_eq!(rect.max, Pos { x: 3, y: 4 });
+    }
+
+    #[test]
+    fn test_to_sheet_rect() {
+        let pos1 = Pos { x: 1, y: 2 };
+        let pos2 = Pos { x: 3, y: 4 };
+        let sheet_id = SheetId::new();
+        let rect = Rect::new_span(pos1, pos2).to_sheet_rect(sheet_id);
+        assert_eq!(rect.min, Pos { x: 1, y: 2 });
+        assert_eq!(rect.max, Pos { x: 3, y: 4 });
+        assert_eq!(rect.sheet_id, sheet_id);
+    }
+
+    #[test]
+    fn test_from_numbers() {
+        let rect = Rect::from_numbers(1, 2, 3, 4);
+        assert_eq!(rect.min, Pos { x: 1, y: 2 });
+        assert_eq!(rect.max, Pos { x: 3, y: 5 });
+    }
+
+    #[test]
+    fn test_single_pos() {
+        let rect = Rect::single_pos(Pos { x: 1, y: 2 });
+        assert_eq!(rect.min, Pos { x: 1, y: 2 });
+        assert_eq!(rect.max, Pos { x: 1, y: 2 });
+    }
+
+    #[test]
+    fn test_extend_to() {
+        let mut rect = Rect::single_pos(Pos { x: 1, y: 2 });
+        rect.extend_to(Pos { x: 3, y: 4 });
+        assert_eq!(rect.min, Pos { x: 1, y: 2 });
+        assert_eq!(rect.max, Pos { x: 3, y: 4 });
+    }
+
+    #[test]
+    fn test_from_ranges() {
+        let rect = Rect::from_ranges(1..4, 2..5);
+        assert_eq!(rect.min, Pos { x: 1, y: 2 });
+        assert_eq!(rect.max, Pos { x: 3, y: 4 });
+    }
+
+    #[test]
+    fn test_size() {
+        let rect = Rect::from_ranges(1..4, 2..5);
+        assert_eq!(rect.size(), crate::ArraySize::new(3, 3).unwrap());
+    }
+
+    #[test]
+    fn test_from_pos_and_size() {
+        let rect =
+            Rect::from_pos_and_size(Pos { x: 1, y: 2 }, crate::ArraySize::new(3, 4).unwrap());
+        assert_eq!(rect.min, Pos { x: 1, y: 2 });
+        assert_eq!(rect.max, Pos { x: 3, y: 5 });
+    }
+
+    #[test]
+    fn test_contains() {
+        let rect = Rect::from_ranges(1..4, 2..5);
+        assert!(rect.contains(Pos { x: 1, y: 2 }));
+        assert!(rect.contains(Pos { x: 3, y: 4 }));
+        assert!(!rect.contains(Pos { x: 0, y: 2 }));
+        assert!(!rect.contains(Pos { x: 1, y: 1 }));
+        assert!(!rect.contains(Pos { x: 4, y: 2 }));
+        assert!(!rect.contains(Pos { x: 1, y: 5 }));
+    }
+
+    #[test]
+    fn test_intersects() {
+        let rect = Rect::from_ranges(1..5, 2..6);
+        assert!(rect.intersects(Rect::from_ranges(1..4, 2..5)));
+        assert!(rect.intersects(Rect::from_ranges(2..5, 3..6)));
+        assert!(rect.intersects(Rect::from_ranges(0..2, 2..5)));
+        assert!(rect.intersects(Rect::from_ranges(1..4, 0..3)));
+        assert!(rect.intersects(Rect::from_ranges(4..6, 2..5)));
+        assert!(rect.intersects(Rect::from_ranges(1..4, 5..7)));
+        assert!(!rect.intersects(Rect::from_ranges(0..1, 2..5)));
+        assert!(!rect.intersects(Rect::from_ranges(1..4, 0..1)));
+        assert!(!rect.intersects(Rect::from_ranges(5..6, 2..5)));
+        assert!(!rect.intersects(Rect::from_ranges(1..4, 6..7)));
+    }
+
+    #[test]
+    fn test_x_range() {
+        let rect = Rect::from_ranges(1..4, 2..5);
+        assert_eq!(rect.x_range(), 1..4);
+    }
+
+    #[test]
+    fn test_y_range() {
+        let rect = Rect::from_ranges(1..4, 2..5);
+        assert_eq!(rect.y_range(), 2..5);
+    }
+
+    #[test]
+    fn test_width() {
+        let rect = Rect::from_ranges(1..4, 2..5);
+        assert_eq!(rect.width(), 3);
+    }
+
+    #[test]
+    fn test_height() {
+        let rect = Rect::from_ranges(1..4, 2..5);
+        assert_eq!(rect.height(), 3);
+    }
+
+    #[test]
+    fn test_len() {
+        let rect = Rect::from_ranges(1..4, 2..5);
+        assert_eq!(rect.len(), 9);
+    }
+
+    #[test]
+    fn test_is_empty() {
+        let rect = Rect::from_ranges(1..4, 2..5);
+        assert!(!rect.is_empty());
+        let rect = Rect::from_numbers(0, 1, 1, 0);
+        assert!(rect.is_empty());
+        let rect = Rect::from_numbers(0, 1, 0, 1);
+        assert!(rect.is_empty());
+    }
+
+    #[test]
+    fn test_translate() {
+        let mut rect = Rect::from_ranges(1..4, 2..5);
+        rect.translate(1, 2);
+        assert_eq!(rect.min, Pos { x: 2, y: 4 });
+        assert_eq!(rect.max, Pos { x: 4, y: 6 });
+    }
+
+    #[test]
+    fn test_iter() {
+        let rect = Rect::from_ranges(1..4, 2..5);
+        let mut iter = rect.iter();
+        assert_eq!(iter.next(), Some(Pos { x: 1, y: 2 }));
+        assert_eq!(iter.next(), Some(Pos { x: 2, y: 2 }));
+        assert_eq!(iter.next(), Some(Pos { x: 3, y: 2 }));
+        assert_eq!(iter.next(), Some(Pos { x: 1, y: 3 }));
+        assert_eq!(iter.next(), Some(Pos { x: 2, y: 3 }));
+        assert_eq!(iter.next(), Some(Pos { x: 3, y: 3 }));
+        assert_eq!(iter.next(), Some(Pos { x: 1, y: 4 }));
+        assert_eq!(iter.next(), Some(Pos { x: 2, y: 4 }));
+        assert_eq!(iter.next(), Some(Pos { x: 3, y: 4 }));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_sheet_rect_new_pos_span() {
+        let pos1 = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id: SheetId::new(),
+        };
+        let pos2 = SheetPos {
+            x: 3,
+            y: 4,
+            sheet_id: SheetId::new(),
+        };
+        let rect = SheetRect::new_span(pos1, pos2);
+        assert_eq!(rect.min, Pos { x: 1, y: 2 });
+        assert_eq!(rect.max, Pos { x: 3, y: 4 });
     }
 }

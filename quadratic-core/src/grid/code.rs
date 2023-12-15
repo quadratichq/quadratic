@@ -1,9 +1,10 @@
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use super::CellRef;
-use crate::{ArraySize, CellValue, Error, Rect, Value};
+use crate::{ArraySize, CellValue, Error, Rect, SheetPos, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CodeCellValue {
@@ -57,7 +58,7 @@ impl CodeCellValue {
         self.output.as_ref().map(|out| out.spill).unwrap_or(false)
     }
 
-    pub fn cells_accessed_copy(&self) -> Option<Vec<CellRef>> {
+    pub fn cells_accessed_copy(&self) -> Option<HashSet<SheetPos>> {
         self.output.as_ref()?.cells_accessed().cloned()
     }
 
@@ -98,7 +99,7 @@ impl CodeCellRunOutput {
         self.result.output_value()
     }
 
-    pub fn cells_accessed(&self) -> Option<&Vec<CellRef>> {
+    pub fn cells_accessed(&self) -> Option<&HashSet<SheetPos>> {
         match &self.result {
             CodeCellRunResult::Ok { cells_accessed, .. } => Some(cells_accessed),
             CodeCellRunResult::Err { .. } => None,
@@ -111,7 +112,7 @@ impl CodeCellRunOutput {
 pub enum CodeCellRunResult {
     Ok {
         output_value: Value,
-        cells_accessed: Vec<CellRef>,
+        cells_accessed: HashSet<SheetPos>,
     },
     Err {
         error: Error,
@@ -137,10 +138,8 @@ impl CodeCellRunResult {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        grid::{CodeCellRunOutput, CodeCellValue},
-        Array, ArraySize, Pos, Rect,
-    };
+    use super::*;
+    use crate::{Array, Pos};
 
     #[test]
     fn test_output_size() {
@@ -166,7 +165,7 @@ mod test {
                     output_value: crate::Value::Array(Array::new_empty(
                         ArraySize::new(10, 11).unwrap(),
                     )),
-                    cells_accessed: vec![],
+                    cells_accessed: HashSet::new(),
                 },
                 spill: false,
             }),

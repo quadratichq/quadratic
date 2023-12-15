@@ -86,7 +86,7 @@ fn get_functions() -> Vec<FormulaFunction> {
 
 #[cfg(test)]
 mod tests {
-    use crate::formulas::tests::*;
+    use crate::{formulas::tests::*, Pos};
 
     #[test]
     fn test_formula_if() {
@@ -98,9 +98,9 @@ mod tests {
         let _ = sheet.set_cell_value(Pos { x: 1, y: 1 }, "w");
         let sheet_id = sheet.id;
 
-        let mut ctx = Ctx::new(&g, pos![A0].with_sheet(sheet_id));
+        let mut ctx = Ctx::new(&g, pos![A0].to_sheet_pos(sheet_id));
         assert_eq!("yep".to_string(), form.eval(&mut ctx).unwrap().to_string());
-        let mut ctx = Ctx::new(&g, pos![B0].with_sheet(sheet_id));
+        let mut ctx = Ctx::new(&g, pos![B0].to_sheet_pos(sheet_id));
         assert_eq!("nope".to_string(), form.eval(&mut ctx).unwrap().to_string());
     }
 }
