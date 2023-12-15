@@ -3,7 +3,7 @@ import { z } from 'zod';
 import dbClient from '../dbClient';
 import { RequestWithTeam, RequestWithUser } from '../types/Request';
 import { ResponseError } from '../types/Response';
-import { getTeamAccess } from '../utils';
+import { getTeamAccess } from '../utils/access';
 import { userMiddleware } from './user';
 import { validateAccessToken } from './validateAccessToken';
 

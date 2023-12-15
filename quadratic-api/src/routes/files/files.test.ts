@@ -17,7 +17,7 @@ beforeAll(async () => {
       name: 'test_file_2',
       contents: Buffer.from('contents_1'),
       uuid: '00000000-0000-4000-8000-000000000001',
-      public_link_access: 'READONLY',
+      publicLinkAccess: 'READONLY',
     },
   });
 
@@ -27,7 +27,7 @@ beforeAll(async () => {
       name: 'test_file_1',
       contents: Buffer.from('contents_0'),
       uuid: '00000000-0000-4000-8000-000000000000',
-      public_link_access: 'NOT_SHARED',
+      publicLinkAccess: 'NOT_SHARED',
     },
   });
 });
@@ -64,7 +64,7 @@ describe('READ - GET /v0/files/ with auth and files', () => {
     expect(res.body[0]).toMatchObject({
       uuid: '00000000-0000-4000-8000-000000000000',
       name: 'test_file_1',
-      public_link_access: 'NOT_SHARED',
+      publicLinkAccess: 'NOT_SHARED',
       thumbnail: null,
     });
     expect(res.body[0]).toHaveProperty('created_date');
@@ -72,7 +72,7 @@ describe('READ - GET /v0/files/ with auth and files', () => {
     expect(res.body[1]).toMatchObject({
       uuid: '00000000-0000-4000-8000-000000000001',
       name: 'test_file_2',
-      public_link_access: 'READONLY',
+      publicLinkAccess: 'READONLY',
       thumbnail: null,
     });
   });

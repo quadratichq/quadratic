@@ -12,7 +12,7 @@ import { validateUUID } from './files';
 import { getFilePermissions } from './getFilePermissions';
 
 const validateFileSharingPermission = () =>
-  body('public_link_access').isIn([LinkPermission.READONLY, LinkPermission.NOT_SHARED, LinkPermission.EDIT]);
+  body('publicLinkAccess').isIn([LinkPermission.READONLY, LinkPermission.NOT_SHARED, LinkPermission.EDIT]);
 
 const sharing_router = express.Router();
 
@@ -40,8 +40,13 @@ sharing_router.get(
     }
 
     return res.status(200).json({
-      owner: owner,
-      public_link_access: req.quadraticFile.public_link_access,
+      file: {
+        owner: owner,
+        publicLinkAccess: req.quadraticFile.publicLinkAccess,
+      },
+      user: {},
+      team: {},
+
       // users: [],
       // teams: [],
     });
@@ -66,7 +71,7 @@ sharing_router.post(
     }
 
     // update the link sharing permissions
-    if (req.body.public_link_access !== undefined) {
+    if (req.body.publicLinkAccess !== undefined) {
       // only the OWNER of the file can modify the link sharing permissions
       const permissions = getFilePermissions(req.user, req.quadraticFile);
       if (permissions !== 'OWNER') {
@@ -74,7 +79,7 @@ sharing_router.post(
       }
       await dbClient.file.update({
         where: { uuid: req.params.uuid },
-        data: { public_link_access: req.body.public_link_access },
+        data: { publicLinkAccess: req.body.publicLinkAccess },
       });
     }
 

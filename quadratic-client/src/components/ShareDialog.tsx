@@ -149,7 +149,7 @@ export function ShareTeamDialog({
 }
 
 function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0/files/:uuid/sharing.GET.response'] }) {
-  const { public_link_access } = data;
+  const { publicLinkAccess } = data;
   return (
     <>
       <InviteForm
@@ -159,7 +159,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
         disallowedEmails={[]}
         roles={[UserRoleFileSchema.enum.EDITOR, UserRoleFileSchema.enum.VIEWER]}
       />
-      <PublicLink uuid={uuid} publicLinkAccess={public_link_access} />
+      <PublicLink uuid={uuid} publicLinkAccess={publicLinkAccess} />
     </>
   );
 }
@@ -521,13 +521,13 @@ function PublicLink({ uuid, publicLinkAccess }: { uuid: string; publicLinkAccess
   // If we're updating, optimistically show the next value
   if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
     const data = fetcher.json as FileShareAction['request.update-public-link-access'];
-    publicLinkAccess = data.public_link_access;
+    publicLinkAccess = data.publicLinkAccess;
   }
 
   const setPublicLinkAccess = async (newValue: PublicLinkAccess) => {
     const data: FileShareAction['request.update-public-link-access'] = {
       intent: 'update-public-link-access',
-      public_link_access: newValue,
+      publicLinkAccess: newValue,
     };
     fetcher.submit(data, {
       method: 'POST',

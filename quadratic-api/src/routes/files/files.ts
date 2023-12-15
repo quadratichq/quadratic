@@ -33,7 +33,7 @@ files_router.get('/', validateAccessToken, userMiddleware, async (req: Request, 
       thumbnail: true,
       created_date: true,
       updated_date: true,
-      public_link_access: true,
+      publicLinkAccess: true,
     },
     orderBy: [
       {

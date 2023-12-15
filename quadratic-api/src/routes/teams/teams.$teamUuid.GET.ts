@@ -74,7 +74,6 @@ router.get(
         id,
         email,
         role,
-        hasAccount: true,
         name,
         picture,
       };

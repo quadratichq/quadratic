@@ -11,11 +11,11 @@ export const getFilePermissions = (user: User | undefined, file: File): FILE_PER
     return 'OWNER';
   }
 
-  if (file.public_link_access === 'READONLY') {
+  if (file.publicLinkAccess === 'READONLY') {
     return 'VIEWER';
   }
 
-  if (file.public_link_access === 'EDIT') {
+  if (file.publicLinkAccess === 'EDIT') {
     return 'EDITOR';
   }
 

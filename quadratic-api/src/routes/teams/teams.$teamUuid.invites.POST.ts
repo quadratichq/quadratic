@@ -7,7 +7,7 @@ import { teamMiddleware } from '../../middleware/team';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithTeam } from '../../types/Request';
 import { ResponseError } from '../../types/Response';
-import { firstRoleIsHigherThanSecond } from '../../utils';
+import { firstRoleIsHigherThanSecond } from '../../utils/access';
 const router = express.Router();
 
 const requestValidationMiddleware = validateRequestSchema(

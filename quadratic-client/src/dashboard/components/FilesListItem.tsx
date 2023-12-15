@@ -55,7 +55,7 @@ export function FileListItem({
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
 
-  const { uuid, name, created_date, updated_date, public_link_access, thumbnail } = file;
+  const { uuid, name, created_date, updated_date, publicLinkAccess, thumbnail } = file;
 
   const fetcherSubmitOpts: SubmitOptions = {
     method: 'POST',
@@ -109,7 +109,7 @@ export function FileListItem({
       // These are the values that will optimistically render in the UI
       file: {
         uuid: 'duplicate-' + date,
-        public_link_access: 'NOT_SHARED',
+        publicLinkAccess: 'NOT_SHARED',
         name: name + ' (Copy)',
         thumbnail: null,
         updated_date: date,
@@ -133,7 +133,7 @@ export function FileListItem({
     description:
       viewPreferences.sort === Sort.Created ? `Created ${timeAgo(created_date)}` : `Modified ${timeAgo(updated_date)}`,
     hasNetworkError: Boolean(failedToDelete || failedToRename),
-    isShared: public_link_access !== 'NOT_SHARED',
+    isShared: publicLinkAccess !== 'NOT_SHARED',
     viewPreferences,
     actions: (
       <DropdownMenu>

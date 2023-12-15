@@ -3,20 +3,16 @@ import z from 'zod';
 // =============================================================================
 // Previously: src/permissions.ts
 
-export const RoleSchema = z.enum(['OWNER', 'EDITOR', 'VIEWER']);
-export type Role = z.infer<typeof RoleSchema>;
-
 export const UserRoleFileSchema = z.enum(['OWNER', 'EDITOR', 'VIEWER']);
 export type UserRoleFile = z.infer<typeof UserRoleFileSchema>;
 
 export const UserRoleTeamSchema = z.enum(['OWNER', /*'ADMIN',*/ 'EDITOR', 'VIEWER']);
 export type UserRoleTeam = z.infer<typeof UserRoleTeamSchema>;
 
-export const AccessSchema = z.enum([
-  'FILE_VIEW',
-  'FILE_EDIT',
-  'FILE_DELETE',
+export const FileAccessSchema = z.enum(['FILE_VIEW', 'FILE_EDIT', 'FILE_DELETE']);
+export type FileAccess = z.infer<typeof FileAccessSchema>;
 
+export const TeamAccessSchema = z.enum([
   // View a team, including its members and files
   'TEAM_VIEW',
   // Edit attributes of a team, like name/picture, as well as its members and files
@@ -26,16 +22,7 @@ export const AccessSchema = z.enum([
   // Edit the billing info on a team
   'TEAM_BILLING_EDIT',
 ]);
-export type Access = z.infer<typeof AccessSchema>;
-
-export const hasAccess = (userAccess: Access[], accessType: Access) => userAccess.includes(accessType);
-
-// export const hasFileEditAccess(access: z.infer<typeof FileAccessSchema>[]): boolean {
-//   return access.includes(FileAccessSchema.enum.EDIT);
-// }
-// export const hasFileViewAccess(access: z.infer<typeof FileAccessSchema>[]): boolean {
-//   return access.includes(FileAccessSchema.enum.VIEW);
-// }
+export type TeamAccess = z.infer<typeof TeamAccessSchema>;
 
 // =============================================================================
 // TODO share these with the API
@@ -45,13 +32,11 @@ export const emailSchema = z.string().email();
 const user = {
   id: z.number(),
   email: emailSchema,
-  hasAccount: z.boolean(),
   name: z.string().optional(),
   picture: z.string().url().optional(),
 };
 const TeamUserSchema = z.object({
   ...user,
-  // TODO bring these directly into this file?
   role: UserRoleTeamSchema,
 });
 export type TeamUser = z.infer<typeof TeamUserSchema>;
@@ -93,6 +78,7 @@ const FileSchema = z.object({
   version: z.string(),
 });
 
+// TODO: remove this entirely, which means removing it from the API and changing client code
 export const PermissionSchema = z.enum(['OWNER', 'EDITOR', 'VIEWER', 'ANONYMOUS']);
 export type Permission = z.infer<typeof PermissionSchema>;
 
@@ -105,7 +91,7 @@ export const ApiSchemas = {
    */
   '/v0/files.GET.response': z.array(
     FileSchema.pick({ uuid: true, name: true, created_date: true, updated_date: true, thumbnail: true }).extend({
-      public_link_access: PublicLinkAccessSchema,
+      publicLinkAccess: PublicLinkAccessSchema,
     })
   ),
   '/v0/files.POST.request': z
@@ -123,7 +109,14 @@ export const ApiSchemas = {
    *
    */
   '/v0/files/:uuid.GET.response': z.object({
-    file: FileSchema,
+    file: FileSchema.extend({
+      publicLinkAccess: PublicLinkAccessSchema,
+    }),
+    user: z.object({
+      role: UserRoleFileSchema.optional(),
+      access: z.array(FileAccessSchema),
+      id: FileUserSchema.shape.id,
+    }),
     permission: PermissionSchema,
   }),
   '/v0/files/:uuid.DELETE.response': z.object({
@@ -144,22 +137,22 @@ export const ApiSchemas = {
 
   // File sharing
   '/v0/files/:uuid/sharing.GET.response': z.object({
-    owner: z.object({
-      name: z.string(),
-      picture: z.string().url(),
-      // This will give back an email if logged in but null if not.
-      // For now we don't need it so we ignore it
-      // email: z.string().email() | z.null()
+    file: z.object({
+      // TODO: how, if at all, do we want to handle email visibility in the UI?
+      // e.g. should this not return emails if you're not logged in?
+      users: z.array(FileUserSchema),
+      invites: z.array(z.object({ email: emailSchema, role: UserRoleFileSchema, id: z.number() })),
+      publicLinkAccess: PublicLinkAccessSchema,
     }),
-    public_link_access: PublicLinkAccessSchema,
-    // These come, but we'll leave them off for now because we don't care about them
-    // users: z.array(z.any()),
-    // teams: z.array(z.any()),
-
-    // TODO needs to return current user's role/access to determine whether these can be modified
+    user: z.object({
+      access: z.array(FileAccessSchema),
+      id: FileUserSchema.shape.id.optional(),
+      role: UserRoleFileSchema.optional(),
+    }),
+    team: TeamSchema.pick({ uuid: true, name: true }).optional(),
   }),
   '/v0/files/:uuid/sharing.POST.request': z.object({
-    public_link_access: PublicLinkAccessSchema,
+    publicLinkAccess: PublicLinkAccessSchema,
     // newUser: z.object({}), TODO
   }),
   '/v0/files/:uuid/sharing.POST.response': z.object({ message: z.string() }),
@@ -195,8 +188,8 @@ export const ApiSchemas = {
   '/v0/teams/:uuid.GET.response': z.object({
     team: TeamSchema,
     user: z.object({
-      role: RoleSchema,
-      access: AccessSchema.array(),
+      role: UserRoleTeamSchema,
+      access: TeamAccessSchema.array(),
       id: z.number(),
     }),
 

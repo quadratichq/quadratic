@@ -345,7 +345,7 @@ function ShareMenu({ fetcherUrl, uuid }: { fetcherUrl: string; uuid: string }) {
   const [users, setUsers] = useState([]); // TODO types
   const isLoading = Boolean(!fetcher.data?.ok);
   // const owner = fetcher.data?.data?.owner;
-  const publicLinkAccess = fetcher.data?.data?.public_link_access;
+  const publicLinkAccess = fetcher.data?.data?.publicLinkAccess;
   // const isShared = publicLinkAccess && publicLinkAccess !== 'NOT_SHARED';
   // const isDisabledCopyShareLink = showSkeletons ? true : !isShared;
   const showLoadingError = fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok;
@@ -837,18 +837,18 @@ function PublicLink({
 
   // If we don’t have the value, assume 'not shared' by default because we need
   // _some_ value for the popover
-  let public_link_access = publicLinkAccess ? publicLinkAccess : 'NOT_SHARED';
+  let publicLinkAccess = publicLinkAccess ? publicLinkAccess : 'NOT_SHARED';
   // If we're updating, optimistically show the next value
   if (fetcher.json) {
     // @ts-expect-error
-    public_link_access = fetcher.json.public_link_access;
-    // public_link_access = fetcher.json /*TODO as Action['request.update-public-link-access'] */.public_link_access;
+    publicLinkAccess = fetcher.json.publicLinkAccess;
+    // publicLinkAccess = fetcher.json /*TODO as Action['request.update-public-link-access'] */.publicLinkAccess;
   }
 
   const setPublicLinkAccess = async (newValue: PublicLinkAccess) => {
     const data /*TODO : Action['request.update-public-link-access'] */ = {
       action: 'update-public-link-access',
-      public_link_access: newValue,
+      publicLinkAccess: newValue,
     };
     fetcher.submit(data, {
       method: 'POST',
@@ -863,12 +863,12 @@ function PublicLink({
     EDIT: { label: 'Can edit' },
   };
 
-  const activeOptionLabel = optionsByValue[public_link_access].label;
+  const activeOptionLabel = optionsByValue[publicLinkAccess].label;
 
   return (
     <Row>
       <div className="flex h-6 w-6 items-center justify-center">
-        {public_link_access === 'NOT_SHARED' ? (
+        {publicLinkAccess === 'NOT_SHARED' ? (
           <LockClosedIcon className={`h-5 w-5`} />
         ) : (
           <GlobeIcon className={`h-5 w-5`} />
@@ -885,7 +885,7 @@ function PublicLink({
       </div>
 
       <Select
-        value={public_link_access}
+        value={publicLinkAccess}
         onValueChange={(value: PublicLinkAccess) => {
           setPublicLinkAccess(value);
         }}

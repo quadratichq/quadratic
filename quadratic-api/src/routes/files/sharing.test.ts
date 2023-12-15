@@ -17,7 +17,7 @@ beforeAll(async () => {
       name: 'test_file_1',
       contents: Buffer.from('contents_0'),
       uuid: '00000000-0000-4000-8000-000000000000',
-      public_link_access: 'NOT_SHARED',
+      publicLinkAccess: 'NOT_SHARED',
     },
   });
 });
@@ -51,7 +51,7 @@ describe('UPDATE - POST /v0/files/:uuid/sharing with auth and owned file update 
     // change file link permissions to READONLY
     const res = await request(app)
       .post('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
-      .send({ public_link_access: 'READONLY' })
+      .send({ publicLinkAccess: 'READONLY' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
@@ -67,8 +67,8 @@ describe('UPDATE - POST /v0/files/:uuid/sharing with auth and owned file update 
       .expect('Content-Type', /json/)
       .expect(200); // OK
 
-    expect(res2.body).toHaveProperty('public_link_access');
-    expect(res2.body.public_link_access).toEqual('READONLY');
+    expect(res2.body).toHaveProperty('publicLinkAccess');
+    expect(res2.body.publicLinkAccess).toEqual('READONLY');
 
     // check file permission from another user
     const res3 = await request(app)
@@ -78,13 +78,13 @@ describe('UPDATE - POST /v0/files/:uuid/sharing with auth and owned file update 
       .expect('Content-Type', /json/)
       .expect(200); // OK
 
-    expect(res3.body).toHaveProperty('public_link_access');
-    expect(res3.body.public_link_access).toEqual('READONLY');
+    expect(res3.body).toHaveProperty('publicLinkAccess');
+    expect(res3.body.publicLinkAccess).toEqual('READONLY');
 
     // change file link permissions to NOT_SHARED
     const res4 = await request(app)
       .post('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
-      .send({ public_link_access: 'NOT_SHARED' })
+      .send({ publicLinkAccess: 'NOT_SHARED' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
@@ -100,8 +100,8 @@ describe('UPDATE - POST /v0/files/:uuid/sharing with auth and owned file update 
       .expect('Content-Type', /json/)
       .expect(200); // OK
 
-    expect(res5.body).toHaveProperty('public_link_access');
-    expect(res5.body.public_link_access).toEqual('NOT_SHARED');
+    expect(res5.body).toHaveProperty('publicLinkAccess');
+    expect(res5.body.publicLinkAccess).toEqual('NOT_SHARED');
 
     // check file permission from another user not shared
     const res6 = await request(app)
@@ -114,10 +114,10 @@ describe('UPDATE - POST /v0/files/:uuid/sharing with auth and owned file update 
     expect(res6.body).toMatchObject({ error: { message: 'Permission denied' } });
   });
 
-  it('fails with invalid public_link_access', async () => {
+  it('fails with invalid publicLinkAccess', async () => {
     const res = await request(app)
       .post('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
-      .send({ public_link_access: 'INVALID' })
+      .send({ publicLinkAccess: 'INVALID' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
@@ -128,14 +128,14 @@ describe('UPDATE - POST /v0/files/:uuid/sharing with auth and owned file update 
     expect(res.body.errors[0]).toMatchObject({
       location: 'body',
       msg: 'Invalid value',
-      path: 'public_link_access',
+      path: 'publicLinkAccess',
       type: 'field',
       value: 'INVALID',
     });
 
     const res1 = await request(app)
       .post('/v0/files/00000000-0000-4000-8000-000000000000/sharing')
-      .send({ public_link_access: null })
+      .send({ publicLinkAccess: null })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
@@ -146,7 +146,7 @@ describe('UPDATE - POST /v0/files/:uuid/sharing with auth and owned file update 
     expect(res1.body.errors[0]).toMatchObject({
       location: 'body',
       msg: 'Invalid value',
-      path: 'public_link_access',
+      path: 'publicLinkAccess',
       type: 'field',
       value: null,
     });

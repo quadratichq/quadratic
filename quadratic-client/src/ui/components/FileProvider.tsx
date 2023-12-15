@@ -37,7 +37,7 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   const { uuid } = useParams() as { uuid: string };
   const initialFileData = useFileRouteLoaderData();
   const [name, setName] = useState<FileContextType['name']>(initialFileData.name);
-  const [publicLinkAccess] = useState(initialFileData.sharing.public_link_access);
+  const [publicLinkAccess] = useState(initialFileData.sharing.publicLinkAccess);
   let isFirstUpdate = useRef(true);
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
@@ -96,7 +96,7 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
             version: grid.getVersion(),
           })
         );
-        apiClient.updateFileSharing(uuid, { public_link_access: publicLinkAccess });
+        apiClient.updateFileSharing(uuid, { publicLinkAccess: publicLinkAccess });
         grid.dirty = false;
       } else if (grid.dirty) {
         const now = performance.now();
