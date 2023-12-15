@@ -4,9 +4,9 @@ use fake::faker::name::en::{FirstName, LastName};
 use fake::Fake;
 use futures::stream::StreamExt;
 use futures_util::SinkExt;
-use quadratic_core::controller::operation::Operation;
+use quadratic_core::controller::operations::operation::Operation;
 use quadratic_core::controller::GridController;
-use quadratic_core::{Array, CellValue, Rect};
+use quadratic_core::{Array, CellValue, SheetRect};
 use std::sync::Arc;
 use std::{
     fmt::Debug,
@@ -75,12 +75,11 @@ pub(crate) fn grid_setup() -> GridController {
 
 pub(crate) fn operation(grid: &mut GridController, x: i64, y: i64, value: &str) -> Operation {
     let sheet_id = grid.sheet_ids().first().unwrap().to_owned();
-    let rect = Rect::js_single_pos((x, y).into());
-    let (region, _) = grid.region(sheet_id, rect);
+    let sheet_rect = SheetRect::single_pos((x, y).into(), sheet_id);
     let value = CellValue::Text(value.into());
     let values = Array::from(value);
 
-    Operation::SetCellValues { region, values }
+    Operation::SetCellValues { sheet_rect, values }
 }
 
 pub(crate) async fn integration_test_setup(
