@@ -22,7 +22,7 @@ function loadGoogleAnalytics(user: Options['user']) {
   if (!import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG && import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG !== 'none') {
     return;
   }
-  const email = user?.email || 'none';
+  const email = user?.email || '';
 
   // set up Google Analytics
   const script_1 = document.createElement('script');
