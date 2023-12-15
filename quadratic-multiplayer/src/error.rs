@@ -40,8 +40,6 @@ pub(crate) enum MpError {
     Unknown(String),
 }
 
-// impl From<thiserror::
-
 impl From<anyhow::Error> for MpError {
     fn from(error: anyhow::Error) -> Self {
         MpError::Unknown(error.to_string())

@@ -139,7 +139,7 @@ async fn ws_handler(
 
             authorize(&jwks, token, false, true)?;
 
-            // jwt = Some(token.to_owned());
+            jwt = Some(token.to_owned());
 
             Ok::<_, anyhow::Error>(())
         }
@@ -176,51 +176,28 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, conne
         match response {
             Ok(ControlFlow::Continue(_)) => {}
             Ok(ControlFlow::Break(_)) => break,
-            Err(e) => {
-                tracing::warn!("Error processing message: {:?}", e);
+            Err(error) => {
+                tracing::warn!("Error processing message: {:?}", &error);
 
-                match e {
-                    MpError::Authentication(e) | MpError::FilePermissions(e) => {
-                        sender
-                            .lock()
-                            .await
-                            .send(Message::Text(
-                                serde_json::to_string(&MessageResponse::Error {
-                                    error: MpError::Authentication(e),
-                                })
-                                .unwrap(),
-                            ))
-                            .await
-                            .unwrap();
+                if let Ok(message) = serde_json::to_string(&MessageResponse::Error {
+                    error: error.to_owned(),
+                }) {
+                    // send error message to the client
+                    let sent = sender.lock().await.send(Message::Text(message)).await;
+
+                    if let Err(sent) = sent {
+                        tracing::warn!("Error sending error message: {:?}", sent);
+                    }
+                }
+
+                match error {
+                    // kill the ws connection for auth/file permission errors
+                    MpError::Authentication(_) | MpError::FilePermissions(_) => {
                         break;
                     }
-                    _ => {
-                        // sender
-                        //     .lock()
-                        //     .await
-                        //     .send(Message::Text(
-                        //         serde_json::to_string(&MessageResponse::Error {
-                        //             error: MpError::Unknown(e.to_string()),
-                        //         })
-                        //         .unwrap(),
-                        //     ))
-                        //     .await
-                        //     .unwrap();
-                    }
+                    // noop
+                    _ => {}
                 };
-                // // TODO(ddimaria): hack, change me
-                // sender
-                //     .lock()
-                //     .await
-                //     .send(Message::Text(
-                //         serde_json::to_string(&MessageResponse::Error {
-                //             error: ErrorType::Unknown(e.to_string()),
-                //         })
-                //         .unwrap(),
-                //     ))
-                //     .await
-                //     .unwrap();
-                // break;
             }
         }
     }

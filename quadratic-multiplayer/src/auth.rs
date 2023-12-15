@@ -37,7 +37,6 @@ pub(crate) async fn get_file_perms(
     jwt: String,
     file_id: Uuid,
 ) -> Result<FilePermRole> {
-    let file_id = Uuid::from_str("fe888a01-80f7-4603-a8e2-dadb076beb6a").unwrap();
     let url = format!("{base_url}/v0/files/{file_id}");
     let response = reqwest::Client::new()
         .get(url)

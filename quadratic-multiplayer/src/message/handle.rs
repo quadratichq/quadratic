@@ -5,7 +5,6 @@
 //! socket information is stored in the global state, we can broadcast
 //! to all users in a room.
 
-use anyhow::anyhow;
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use std::sync::Arc;
