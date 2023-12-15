@@ -4,21 +4,22 @@ use quadratic_core::{
     grid::{file::import, Grid},
 };
 
+/// Load a .grid file
 pub(crate) fn _load_file(file: &str) -> Result<Grid> {
     import(file)
 }
 
+/// Apply a stringified vec of operations to the grid
 pub(crate) fn _apply_string_operations(
     grid: &mut GridController,
     operations: String,
 ) -> Result<TransactionSummary> {
-    tracing::info!("Applying operations: {}", operations);
-
     let operations: Vec<Operation> = serde_json::from_str(&operations)?;
 
     _apply_operations(grid, operations)
 }
 
+/// Apply a vec of operations to the grid
 pub(crate) fn _apply_operations(
     grid: &mut GridController,
     operations: Vec<Operation>,

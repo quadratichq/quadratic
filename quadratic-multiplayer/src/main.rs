@@ -4,6 +4,7 @@
 //! tracking for a shared file.
 
 mod auth;
+mod background_worker;
 mod config;
 mod file;
 mod message;
