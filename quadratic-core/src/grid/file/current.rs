@@ -8,8 +8,8 @@ use crate::{CellValue, Error, ErrorMsg, Pos, Rect, SheetPos, Span, Value};
 
 use crate::grid::file::v1_5::schema::{self as current};
 use crate::grid::{
-    block::SameValue, sheet::sheet_offsets::SheetOffsets, CodeCellLanguage, CodeCellRunOutput,
-    CodeCellRunResult, CodeCellValue, Column, ColumnData, Sheet, SheetBorders, SheetId,
+    block::SameValue, sheet::sheet_offsets::SheetOffsets, CodeCell, CodeCellLanguage, CodeCellRun,
+    CodeCellRunResult, Column, ColumnData, Sheet, SheetBorders, SheetId,
 };
 use anyhow::{anyhow, Result};
 use bigdecimal::BigDecimal;
@@ -202,23 +202,23 @@ fn import_code_cell_output(type_field: &str, value: &str) -> CellValue {
     }
 }
 
-fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<Pos, CodeCellValue>> {
+fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<Pos, CodeCell>> {
     sheet
         .code_cells
         .iter()
         .map(|(pos, code_cell_value)| {
             Ok((
                 Pos { x: pos.x, y: pos.y },
-                CodeCellValue {
+                CodeCell {
                     language: CodeCellLanguage::from_str(&code_cell_value.language)?,
                     code_string: code_cell_value.code_string.to_owned(),
                     formatted_code_string: code_cell_value.formatted_code_string.to_owned(),
                     last_modified: code_cell_value.last_modified.to_owned(),
                     output: code_cell_value.output.to_owned().and_then(|output| {
-                        Some(CodeCellRunOutput {
+                        Some(CodeCellRun {
                             std_out: output.std_out,
                             std_err: output.std_err,
-                            spill: output.spill,
+                            spill_error: output.spill,
                             result: match output.result {
                                 current::CodeCellRunResult::Ok {
                                     output_value,

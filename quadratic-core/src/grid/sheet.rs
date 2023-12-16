@@ -7,12 +7,12 @@ use serde::{Deserialize, Serialize};
 
 use self::sheet_offsets::SheetOffsets;
 use super::bounds::GridBounds;
-use super::code::CodeCellValue;
+use super::code::CodeCell;
 use super::column::Column;
 use super::formatting::{BoolSummary, CellFmtAttr};
 use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, FormattingSummary};
-use super::{NumericFormat, NumericFormatKind};
+use super::{CodeCellRun, NumericFormat, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
 use crate::{Array, ArraySize, CellValue, IsBlank, Pos, Rect};
 
@@ -35,8 +35,12 @@ pub struct Sheet {
     #[serde(with = "crate::util::btreemap_serde")]
     pub(super) columns: BTreeMap<i64, Column>,
     pub(super) borders: SheetBorders,
+
     #[serde(with = "crate::util::hashmap_serde")]
-    pub code_cells: HashMap<Pos, CodeCellValue>,
+    pub code_cells: HashMap<Pos, CodeCell>,
+
+    #[serde(with = "crate::util::hashmap_serde")]
+    pub code_cell_runs: HashMap<Pos, CodeCellRun>,
 
     pub(super) data_bounds: GridBounds,
     pub(super) format_bounds: GridBounds,
@@ -52,7 +56,9 @@ impl Sheet {
 
             columns: BTreeMap::new(),
             borders: SheetBorders::new(),
+
             code_cells: HashMap::new(),
+            code_cell_runs: HashMap::new(),
 
             data_bounds: GridBounds::Empty,
             format_bounds: GridBounds::Empty,
@@ -150,7 +156,7 @@ impl Sheet {
     /// for it).
     pub fn get_cell_value(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
-        None.or_else(|| self.get_code_cell_value(pos))
+        None.or_else(|| self.get_code_cell_run_output_at(pos))
             .or_else(|| column.values.get(pos.y))
     }
 
@@ -522,12 +528,11 @@ mod test {
         let (mut grid, sheet_id, selected) = test_setup_basic();
 
         let view_rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 4 });
-        let _code_cell = crate::grid::CodeCellValue {
+        let _code_cell = crate::grid::CodeCell {
             language: crate::grid::CodeCellLanguage::Formula,
             code_string: "=SUM(A1:B2)".into(),
             formatted_code_string: None,
             last_modified: "".into(),
-            output: None,
         };
 
         // grid.set_code_cell_value((5, 2).into(), Some(code_cell));
@@ -591,12 +596,11 @@ mod test {
     fn test_get_set_code_cell_value() {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
-        let code_cell = crate::grid::CodeCellValue {
+        let code_cell = crate::grid::CodeCell {
             language: crate::grid::CodeCellLanguage::Formula,
             code_string: "=SUM(A1:B2)".into(),
             formatted_code_string: None,
             last_modified: "".into(),
-            output: None,
         };
         sheet.set_code_cell_value((2, 1).into(), Some(code_cell.clone()));
         let value = sheet.get_code_cell((2, 1).into());

@@ -1,6 +1,6 @@
 use crate::{
     controller::GridController,
-    grid::{CodeCellLanguage, CodeCellValue},
+    grid::{CodeCell, CodeCellLanguage},
     util::date_string,
     Array, CellValue, SheetPos, SheetRect,
 };
@@ -27,7 +27,7 @@ impl GridController {
 
         ops.push(Operation::SetCodeCell {
             sheet_pos,
-            code_cell_value: Some(CodeCellValue {
+            code_cell_value: Some(CodeCell {
                 language,
                 code_string,
                 formatted_code_string: None,

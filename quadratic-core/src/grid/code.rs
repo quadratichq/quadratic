@@ -6,72 +6,17 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{ArraySize, CellValue, Error, Rect, SheetPos, Value};
 
+/// Code and language of a code cell
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CodeCellValue {
+pub struct CodeCell {
     pub language: CodeCellLanguage,
     pub code_string: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub formatted_code_string: Option<String>,
+
     // TODO(ddimaria): This should be a timestamp
     pub last_modified: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub output: Option<CodeCellRunOutput>,
 }
-impl CodeCellValue {
-    pub fn get_output_value(&self, x: u32, y: u32) -> Option<CellValue> {
-        match &self.output.as_ref()?.output_value()? {
-            Value::Single(v) => Some(v.clone()),
-            Value::Array(a) => Some(a.get(x, y).ok()?.clone()),
-        }
-    }
-
-    pub fn set_spill(&mut self, spill: bool) {
-        if let Some(output) = &mut self.output {
-            output.spill = spill;
-        }
-    }
-
-    // todo: output_size outputs a 1x1 for output == None. That seems wrong
-    pub fn output_size(&self) -> ArraySize {
-        match self.output.as_ref().and_then(|out| out.output_value()) {
-            Some(Value::Array(a)) => a.size(),
-            Some(Value::Single(_)) | None => ArraySize::_1X1,
-        }
-    }
-
-    pub fn is_html(&self) -> bool {
-        if let Some(code_cell_value) = self.get_output_value(0, 0) {
-            code_cell_value.is_html()
-        } else {
-            false
-        }
-    }
-
-    /// returns a Rect for the output of the code cell if it is an array
-    pub fn output_rect(&self) -> Option<Rect> {
-        self.output
-            .is_some()
-            .then(|| Rect::from_pos_and_size((0, 0).into(), self.output_size()))
-    }
-
-    pub fn has_spill_error(&self) -> bool {
-        self.output.as_ref().map(|out| out.spill).unwrap_or(false)
-    }
-
-    pub fn cells_accessed_copy(&self) -> Option<HashSet<SheetPos>> {
-        self.output.as_ref()?.cells_accessed().cloned()
-    }
-
-    pub fn get_error(&self) -> Option<Error> {
-        let error = &self.output.as_ref()?.result;
-        if let CodeCellRunResult::Err { error } = error {
-            Some(error.clone())
-        } else {
-            None
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Display, Debug, Copy, Clone, PartialEq, Eq, Hash, EnumString)]
 #[wasm_bindgen]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -82,17 +27,21 @@ pub enum CodeCellLanguage {
     Sql,
 }
 
+/// The result of running a code cell
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CodeCellRunOutput {
+pub struct CodeCellRun {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub std_out: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub std_err: Option<String>,
     pub result: CodeCellRunResult,
-    #[serde(default)]
-    pub spill: bool,
+    pub spill_error: bool,
+
+    // stored in Unix timestamp
+    pub last_code_run: u32,
 }
-impl CodeCellRunOutput {
+impl CodeCellRun {
     /// Returns the value (single cell or array) outputted by the code run if it
     /// succeeded, or `None` if it failed or has never been run.
     pub fn output_value(&self) -> Option<&Value> {
@@ -103,6 +52,50 @@ impl CodeCellRunOutput {
         match &self.result {
             CodeCellRunResult::Ok { cells_accessed, .. } => Some(cells_accessed),
             CodeCellRunResult::Err { .. } => None,
+        }
+    }
+
+    /// Returns the output at a given (x, y) within the output array
+    pub fn get_at(&self, x: u32, y: u32) -> Option<CellValue> {
+        match &self.output_value()? {
+            Value::Single(v) => Some(v.clone()),
+            Value::Array(a) => Some(a.get(x, y).ok()?.clone()),
+        }
+    }
+
+    /// Returns the size of the output array.
+    pub fn output_size(&self) -> Option<ArraySize> {
+        match self.output_value() {
+            Some(Value::Array(a)) => Some(a.size()),
+            Some(Value::Single(_)) => Some(ArraySize::_1X1),
+            None => None,
+        }
+    }
+
+    /// returns a Rect w/0,0 origin for the output of the code cell
+    pub fn output_origin_rect(&self) -> Option<Rect> {
+        self.output_size()
+            .map(|size| Rect::from_pos_and_size((0, 0).into(), size))
+    }
+
+    pub fn is_html(&self) -> bool {
+        if let Some(code_cell_value) = self.get_at(0, 0) {
+            code_cell_value.is_html()
+        } else {
+            false
+        }
+    }
+
+    pub fn cells_accessed_copy(&self) -> Option<HashSet<SheetPos>> {
+        self.cells_accessed().cloned()
+    }
+
+    pub fn get_error(&self) -> Option<Error> {
+        let error = &self.result;
+        if let CodeCellRunResult::Err { error } = error {
+            Some(error.clone())
+        } else {
+            None
         }
     }
 }
@@ -142,38 +135,38 @@ mod test {
     use crate::{Array, Pos};
 
     #[test]
-    fn test_output_size() {
-        let code_cell = CodeCellValue {
-            language: super::CodeCellLanguage::Python,
-            code_string: "1".to_string(),
-            formatted_code_string: None,
-            last_modified: "1".to_string(),
-            output: None,
+    fn test_code_cell_run_output() {
+        let run = CodeCellRun {
+            std_out: None,
+            std_err: None,
+            result: CodeCellRunResult::Ok {
+                output_value: crate::Value::Array(Array::new_empty(
+                    ArraySize::new(10, 11).unwrap(),
+                )),
+                cells_accessed: HashSet::new(),
+            },
+            spill_error: false,
+            last_code_run: 0,
         };
-        assert_eq!(code_cell.output_size(), super::ArraySize::_1X1);
-        assert_eq!(code_cell.output_rect(), None);
+        assert_eq!(run.output_size(), None);
+        assert_eq!(run.output_origin_rect(), None);
 
-        let code_cell = CodeCellValue {
-            language: super::CodeCellLanguage::Python,
-            code_string: "1".to_string(),
-            formatted_code_string: None,
-            last_modified: "1".to_string(),
-            output: Some(CodeCellRunOutput {
-                std_out: None,
-                std_err: None,
-                result: super::CodeCellRunResult::Ok {
-                    output_value: crate::Value::Array(Array::new_empty(
-                        ArraySize::new(10, 11).unwrap(),
-                    )),
-                    cells_accessed: HashSet::new(),
-                },
-                spill: false,
-            }),
+        let run = CodeCellRun {
+            std_out: None,
+            std_err: None,
+            result: super::CodeCellRunResult::Ok {
+                output_value: crate::Value::Array(Array::new_empty(
+                    ArraySize::new(10, 11).unwrap(),
+                )),
+                cells_accessed: HashSet::new(),
+            },
+            spill_error: false,
+            last_code_run: 0,
         };
-        assert_eq!(code_cell.output_size().w.get(), 10);
-        assert_eq!(code_cell.output_size().h.get(), 11);
+        assert_eq!(run.output_size().unwrap().w.get(), 10);
+        assert_eq!(run.output_size().unwrap().h.get(), 11);
         assert_eq!(
-            code_cell.output_rect(),
+            run.output_origin_rect(),
             Some(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 9, y: 10 }))
         );
     }

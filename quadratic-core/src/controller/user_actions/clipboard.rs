@@ -2,7 +2,7 @@ use super::super::{transaction_summary::TransactionSummary, GridController};
 use crate::controller::execution::TransactionType;
 use crate::{
     controller::operations::clipboard::{Clipboard, ClipboardCell},
-    grid::{get_cell_borders_in_rect, CodeCellValue},
+    grid::{get_cell_borders_in_rect, CodeCell},
     Pos, SheetPos, SheetRect,
 };
 use htmlescape;
@@ -33,7 +33,7 @@ impl GridController {
 
                 // spill_value is only needed if there is no cell_value
                 let spill_value = if value.is_none() {
-                    sheet.get_code_cell_value(pos)
+                    sheet.get_code_cell_run_output_at(pos)
                 } else {
                     None
                 };
@@ -45,7 +45,7 @@ impl GridController {
                             x: x - sheet_rect.min.x,
                             y: y - sheet_rect.min.y,
                         },
-                        CodeCellValue {
+                        CodeCell {
                             language: code_cell_value.language,
                             code_string: code_cell_value.code_string.clone(),
                             formatted_code_string: None,

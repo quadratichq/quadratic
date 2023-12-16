@@ -2,8 +2,7 @@ use super::operation::Operation;
 use crate::{
     controller::GridController,
     grid::{
-        formatting::CellFmtArray, generate_borders_full, BorderSelection, CellBorders,
-        CodeCellValue,
+        formatting::CellFmtArray, generate_borders_full, BorderSelection, CellBorders, CodeCell,
     },
     Array, ArraySize, CellValue, Pos, SheetPos, SheetRect,
 };
@@ -24,7 +23,7 @@ pub struct Clipboard {
     pub cells: Vec<ClipboardCell>,
     pub formats: Vec<CellFmtArray>,
     pub borders: Vec<(i64, i64, Option<CellBorders>)>,
-    pub code: Vec<(Pos, CodeCellValue)>,
+    pub code: Vec<(Pos, CodeCell)>,
 }
 
 impl GridController {

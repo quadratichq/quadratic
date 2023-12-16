@@ -319,8 +319,8 @@ mod tests {
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
             js_types::{JsHtmlOutput, JsRenderCell},
-            Bold, CellAlign, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue,
-            Italic, RenderSize,
+            Bold, CellAlign, CodeCell, CodeCellLanguage, CodeCellRun, CodeCellRunResult, Italic,
+            RenderSize,
         },
         CellValue, Error, ErrorMsg, Pos, Rect, SheetPos, Value,
     };
@@ -345,18 +345,18 @@ mod tests {
 
         sheet.set_code_cell_value(
             Pos { x: 2, y: 3 },
-            Some(CodeCellValue {
+            Some(CodeCell {
                 language: crate::grid::CodeCellLanguage::Python,
                 code_string: "print('hello')".to_string(),
                 formatted_code_string: None,
-                output: Some(CodeCellRunOutput {
+                output: Some(CodeCellRun {
                     result: CodeCellRunResult::Ok {
                         output_value: Value::Single(CellValue::Text("hello".to_string())),
                         cells_accessed: HashSet::new(),
                     },
                     std_err: None,
                     std_out: None,
-                    spill: false,
+                    spill_error: false,
                 }),
                 last_modified: "".into(),
             }),

@@ -1,8 +1,9 @@
+use chrono::expect;
 use wasm_bindgen::JsValue;
 
 use crate::{
     controller::{transaction_types::JsCodeResult, GridController},
-    grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
+    grid::{CodeCell, CodeCellLanguage, CodeCellRun, CodeCellRunResult},
     util::date_string,
     Array, CellValue, Error, ErrorMsg, SheetPos, Span, Value,
 };
@@ -151,19 +152,19 @@ impl GridController {
             );
             return;
         };
-        let update_code_cell_value = self.current_sheet_pos.and_then(|code_cell_sheet_pos| {
-            self.grid()
-                .sheet_from_id(code_cell_sheet_pos.sheet_id)
-                .get_code_cell(code_cell_sheet_pos.into())
-                .cloned()
-        });
-        match update_code_cell_value {
-            None => {
-                // this should only happen after an internal logic error
-                crate::util::dbgjs(
-                    "Expected current_code_cell to be defined in transaction::code_cell_error",
-                );
-            }
+        expect!(
+            self.current_sheet_pos,
+            "Expected current_sheet_pos to be defined in code_cell_sheet_error"
+        );
+        let current_sheet_pos = self.current_sheet_pos.unwrap();
+
+        let update_code_cell_run = self
+            .grid()
+            .sheet_from_id(current_sheet_pos.sheet_id)
+            .get_code_cell_run(current_sheet_pos.into())
+            .cloned();
+        match update_code_cell_run {
+            None => {}
             Some(update_code_cell_value) => {
                 let mut code_cell_value = update_code_cell_value.clone();
                 code_cell_value.last_modified = date_string();
@@ -174,11 +175,11 @@ impl GridController {
                 });
                 let error = Error { span, msg };
                 let result = CodeCellRunResult::Err { error };
-                code_cell_value.output = Some(CodeCellRunOutput {
+                code_cell_value.output = Some(CodeCellRun {
                     std_out: None,
                     std_err: Some(error_msg),
                     result,
-                    spill: false,
+                    spill_error: false,
                 });
                 self.update_code_cell_value(sheet_pos, Some(code_cell_value));
                 self.summary.code_cells_modified.insert(sheet_pos.sheet_id);
@@ -195,7 +196,7 @@ impl GridController {
         start: SheetPos,
         language: CodeCellLanguage,
         code_string: String,
-    ) -> CodeCellValue {
+    ) -> CodeCell {
         let sheet = self.grid_mut().sheet_mut_from_id(start.sheet_id);
         let result = if js_code_result.success() {
             CodeCellRunResult::Ok {
@@ -230,15 +231,15 @@ impl GridController {
                 error: Error { span, msg },
             }
         };
-        CodeCellValue {
+        CodeCell {
             language,
             code_string,
             formatted_code_string: js_code_result.formatted_code().clone(),
-            output: Some(CodeCellRunOutput {
+            output: Some(CodeCellRun {
                 std_out: js_code_result.input_python_std_out(),
                 std_err: js_code_result.error_msg(),
                 result,
-                spill: false,
+                spill_error: false,
             }),
             last_modified: date_string(),
         }
@@ -258,7 +259,7 @@ mod test {
             transaction_types::{CellForArray, JsCodeResult, JsComputeGetCells},
             GridController,
         },
-        grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellValue},
+        grid::{CodeCell, CodeCellLanguage, CodeCellRun},
         Array, ArraySize, CellValue, Pos, SheetPos, Value,
     };
 
@@ -281,7 +282,7 @@ mod test {
         gc.set_in_progress_transaction(
             vec![Operation::SetCodeCell {
                 sheet_pos: code_cell_pos,
-                code_cell_value: Some(CodeCellValue {
+                code_cell_value: Some(CodeCell {
                     language: CodeCellLanguage::Python,
                     code_string: code_string.clone(),
                     formatted_code_string: None,
@@ -332,7 +333,7 @@ mod test {
         cell_value: CellValue,
         expected: String,
         array_output: Option<String>,
-    ) -> (GridController, CodeCellValue) {
+    ) -> (GridController, CodeCell) {
         let mut gc = setup_python(gc, code_string, cell_value);
         let sheet_id = gc.sheet_ids()[0];
 
@@ -366,7 +367,7 @@ mod test {
         gc: GridController,
         array: Vec<i32>,
         start_x: u32,
-    ) -> (GridController, CodeCellValue) {
+    ) -> (GridController, CodeCell) {
         let cell_value = CellValue::Blank;
         let numbers = array
             .iter()
@@ -512,7 +513,7 @@ mod test {
         gc.set_in_progress_transaction(
             vec![Operation::SetCodeCell {
                 sheet_pos,
-                code_cell_value: Some(CodeCellValue {
+                code_cell_value: Some(CodeCell {
                     language: CodeCellLanguage::Formula,
                     code_string: "A0 + 1".to_string(),
                     formatted_code_string: None,
@@ -559,7 +560,7 @@ mod test {
         gc.set_in_progress_transaction(
             vec![Operation::SetCodeCell {
                 sheet_pos,
-                code_cell_value: Some(CodeCellValue {
+                code_cell_value: Some(CodeCell {
                     language: CodeCellLanguage::Formula,
                     code_string: "A0 + 1".to_string(),
                     formatted_code_string: None,
@@ -580,7 +581,7 @@ mod test {
         gc.set_in_progress_transaction(
             vec![Operation::SetCodeCell {
                 sheet_pos,
-                code_cell_value: Some(CodeCellValue {
+                code_cell_value: Some(CodeCell {
                     language: CodeCellLanguage::Formula,
                     code_string: "B0 + 1".to_string(),
                     formatted_code_string: None,
@@ -729,14 +730,14 @@ mod test {
                 "".into(),
             )
             .output,
-            Some(CodeCellRunOutput {
+            Some(CodeCellRun {
                 std_out: None,
                 std_err: None,
                 result: crate::grid::CodeCellRunResult::Ok {
                     output_value: Value::Single(CellValue::Number(12.into())),
                     cells_accessed: HashSet::new()
                 },
-                spill: false,
+                spill_error: false,
             }),
         );
     }
@@ -786,14 +787,14 @@ mod test {
                 "".into(),
             )
             .output,
-            Some(CodeCellRunOutput {
+            Some(CodeCellRun {
                 std_out: None,
                 std_err: None,
                 result: crate::grid::CodeCellRunResult::Ok {
                     output_value: Value::Array(array),
                     cells_accessed: HashSet::new()
                 },
-                spill: false,
+                spill_error: false,
             }),
         );
     }

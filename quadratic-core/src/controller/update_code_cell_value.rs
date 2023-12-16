@@ -4,7 +4,7 @@ use crate::{
     controller::{
         operations::operation::Operation, transaction_summary::CellSheetsModified, GridController,
     },
-    grid::CodeCellValue,
+    grid::CodeCell,
     Pos, Rect, SheetPos, SheetRect, Value,
 };
 
@@ -14,7 +14,7 @@ impl GridController {
     pub fn update_code_cell_value(
         &mut self,
         sheet_pos: SheetPos,
-        updated_code_cell_value: Option<CodeCellValue>,
+        updated_code_cell_value: Option<CodeCell>,
     ) -> bool {
         assert!(self.transaction_in_progress);
         let mut success = false;
@@ -165,8 +165,8 @@ impl GridController {
     pub fn fetch_code_cell_difference(
         &mut self,
         sheet_pos: SheetPos,
-        old_code_cell_value: Option<CodeCellValue>,
-        new_code_cell_value: Option<CodeCellValue>,
+        old_code_cell_value: Option<CodeCell>,
+        new_code_cell_value: Option<CodeCell>,
     ) {
         assert!(self.transaction_in_progress);
         let sheet_id = sheet_pos.sheet_id;
@@ -284,7 +284,7 @@ mod test {
 
     use crate::{
         controller::GridController,
-        grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellValue},
+        grid::{CodeCell, CodeCellLanguage, CodeCellRun},
         Array, ArraySize, CellValue, Pos, SheetPos, Value,
     };
 
@@ -294,12 +294,12 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid.sheet_mut_from_id(sheet_id);
 
-        let old = Some(CodeCellValue {
+        let old = Some(CodeCell {
             language: CodeCellLanguage::Python,
             code_string: "print(1)".to_string(),
             formatted_code_string: None,
             last_modified: String::from(""),
-            output: Some(CodeCellRunOutput {
+            output: Some(CodeCellRun {
                 std_out: None,
                 std_err: None,
                 result: crate::grid::CodeCellRunResult::Ok {
@@ -308,15 +308,15 @@ mod test {
                     )),
                     cells_accessed: HashSet::new(),
                 },
-                spill: false,
+                spill_error: false,
             }),
         });
-        let new_smaller = Some(CodeCellValue {
+        let new_smaller = Some(CodeCell {
             language: CodeCellLanguage::Python,
             code_string: "print(1)".to_string(),
             formatted_code_string: None,
             last_modified: String::from(""),
-            output: Some(CodeCellRunOutput {
+            output: Some(CodeCellRun {
                 std_out: None,
                 std_err: None,
                 result: crate::grid::CodeCellRunResult::Ok {
@@ -325,7 +325,7 @@ mod test {
                     )),
                     cells_accessed: HashSet::new(),
                 },
-                spill: false,
+                spill_error: false,
             }),
         });
 
@@ -341,12 +341,12 @@ mod test {
 
         gc.summary.clear(false);
 
-        let new_larger = Some(CodeCellValue {
+        let new_larger = Some(CodeCell {
             language: CodeCellLanguage::Python,
             code_string: "print(1)".to_string(),
             formatted_code_string: None,
             last_modified: String::from(""),
-            output: Some(CodeCellRunOutput {
+            output: Some(CodeCellRun {
                 std_out: None,
                 std_err: None,
                 result: crate::grid::CodeCellRunResult::Ok {
@@ -355,7 +355,7 @@ mod test {
                     )),
                     cells_accessed: HashSet::new(),
                 },
-                spill: false,
+                spill_error: false,
             }),
         });
 
@@ -370,12 +370,12 @@ mod test {
         let sheet = gc.grid.sheet_mut_from_id(sheet_id);
         let _ = sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Text("test".into()));
 
-        let code_cell_output = Some(CodeCellValue {
+        let code_cell_output = Some(CodeCell {
             language: CodeCellLanguage::Python,
             code_string: "print(1)".to_string(),
             formatted_code_string: None,
             last_modified: String::from(""),
-            output: Some(CodeCellRunOutput {
+            output: Some(CodeCellRun {
                 std_out: None,
                 std_err: None,
                 result: crate::grid::CodeCellRunResult::Ok {
@@ -384,7 +384,7 @@ mod test {
                     )),
                     cells_accessed: HashSet::new(),
                 },
-                spill: false,
+                spill_error: false,
             }),
         });
 
@@ -408,12 +408,12 @@ mod test {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
 
-        let code_cell_output = Some(CodeCellValue {
+        let code_cell_output = Some(CodeCell {
             language: CodeCellLanguage::Python,
             code_string: "print(1)".to_string(),
             formatted_code_string: None,
             last_modified: String::from(""),
-            output: Some(CodeCellRunOutput {
+            output: Some(CodeCellRun {
                 std_out: None,
                 std_err: None,
                 result: crate::grid::CodeCellRunResult::Ok {
@@ -422,7 +422,7 @@ mod test {
                     )),
                     cells_accessed: HashSet::new(),
                 },
-                spill: false,
+                spill_error: false,
             }),
         });
 
@@ -434,12 +434,12 @@ mod test {
         gc.transaction_in_progress = true;
         gc.update_code_cell_value(original, code_cell_output.clone());
 
-        let code_cell_output = Some(CodeCellValue {
+        let code_cell_output = Some(CodeCell {
             language: CodeCellLanguage::Python,
             code_string: "print(1)".to_string(),
             formatted_code_string: None,
             last_modified: String::from(""),
-            output: Some(CodeCellRunOutput {
+            output: Some(CodeCellRun {
                 std_out: None,
                 std_err: None,
                 result: crate::grid::CodeCellRunResult::Ok {
@@ -448,7 +448,7 @@ mod test {
                     )),
                     cells_accessed: HashSet::new(),
                 },
-                spill: false,
+                spill_error: false,
             }),
         });
 

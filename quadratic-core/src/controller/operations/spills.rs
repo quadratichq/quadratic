@@ -1,4 +1,4 @@
-use crate::{controller::GridController, grid::CodeCellValue, SheetPos, SheetRect};
+use crate::{controller::GridController, grid::CodeCell, SheetPos, SheetRect};
 
 use super::operation::Operation;
 
@@ -7,7 +7,7 @@ impl GridController {
     pub fn add_code_cell_spill_operations(
         &self,
         sheet_pos: SheetPos,
-        code_cell_value: CodeCellValue,
+        code_cell_value: CodeCell,
     ) -> Vec<Operation> {
         let rect = code_cell_value.output_size();
         let spill_rect = SheetRect::from_numbers(

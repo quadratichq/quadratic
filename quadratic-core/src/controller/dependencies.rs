@@ -65,7 +65,7 @@ mod test {
 
     use crate::{
         controller::GridController,
-        grid::{CodeCellRunOutput, CodeCellValue},
+        grid::{CodeCell, CodeCellRun},
         CellValue, Pos, SheetPos, Value,
     };
 
@@ -92,19 +92,19 @@ mod test {
         cells_accessed.insert(sheet_pos_01);
         sheet.set_code_cell_value(
             Pos { x: 0, y: 2 },
-            Some(CodeCellValue {
+            Some(CodeCell {
                 code_string: "1".to_string(),
                 language: crate::grid::CodeCellLanguage::Python,
                 formatted_code_string: None,
                 last_modified: String::default(),
-                output: Some(CodeCellRunOutput {
+                output: Some(CodeCellRun {
                     std_err: None,
                     std_out: None,
                     result: crate::grid::CodeCellRunResult::Ok {
                         output_value: Value::Single(CellValue::Text("test".to_string())),
                         cells_accessed: cells_accessed.clone(),
                     },
-                    spill: false,
+                    spill_error: false,
                 }),
             }),
         );

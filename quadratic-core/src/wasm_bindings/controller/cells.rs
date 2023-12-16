@@ -1,62 +1,20 @@
 use std::str::FromStr;
 
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
-
 use crate::{
     controller::GridController,
     grid::{CodeCellLanguage, SheetId},
     Pos, Rect,
 };
+use serde::{Deserialize, Serialize};
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
-#[derive(PartialEq, Debug)]
-#[wasm_bindgen]
-pub struct CodeCell {
-    code_string: String,
-    language: CodeCellLanguage,
-    std_out: Option<String>,
-    std_err: Option<String>,
-    evaluation_result: Option<String>,
-}
-
-#[cfg(test)]
-impl CodeCell {
-    pub fn new(
-        code_string: String,
-        language: CodeCellLanguage,
-        evaluation_result: Option<String>,
-    ) -> Self {
-        Self {
-            code_string,
-            language,
-            evaluation_result,
-            std_out: None,
-            std_err: None,
-        }
-    }
-}
-
-#[wasm_bindgen]
-impl CodeCell {
-    #[wasm_bindgen(js_name = "getCodeString")]
-    pub fn code_string(&self) -> String {
-        self.code_string.clone()
-    }
-    #[wasm_bindgen(js_name = "getLanguage")]
-    pub fn language(&self) -> CodeCellLanguage {
-        self.language
-    }
-    #[wasm_bindgen(js_name = "getStdOut")]
-    pub fn std_out(&self) -> Option<String> {
-        self.std_out.clone()
-    }
-    #[wasm_bindgen(js_name = "getStdErr")]
-    pub fn std_err(&self) -> Option<String> {
-        self.std_err.clone()
-    }
-    #[wasm_bindgen(js_name = "getEvaluationResult")]
-    pub fn evaluation_result(&self) -> Option<String> {
-        self.evaluation_result.clone()
-    }
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct JsCodeCell {
+    pub code_string: String,
+    pub language: CodeCellLanguage,
+    pub std_out: Option<String>,
+    pub std_err: Option<String>,
 }
 
 #[wasm_bindgen]
@@ -136,35 +94,25 @@ impl GridController {
     }
 
     /// Gets the code_string of a code cell
+    ///
+    /// returns a stringified [`JsCodeCell`] or undefined
     #[wasm_bindgen(js_name = "getCodeCell")]
-    pub fn js_get_code_string(&self, sheet_id: String, pos: &Pos) -> Option<CodeCell> {
+    pub fn js_get_code_string(&self, sheet_id: String, pos: &Pos) -> Result<String, JsValue> {
         let sheet = self.grid().sheet_from_string(sheet_id);
         if let Some(code_cell) = sheet.get_code_cell(*pos) {
-            let (std_err, std_out, evaluation_result) =
-                if let Some(code_cell) = code_cell.output.as_ref() {
-                    let result = serde_json::to_string(code_cell);
-                    let evaluation_result = if let Ok(result) = result {
-                        Some(result)
-                    } else {
-                        None
-                    };
-                    (
-                        code_cell.std_err.clone(),
-                        code_cell.std_out.clone(),
-                        evaluation_result,
-                    )
-                } else {
-                    (None, None, None)
-                };
-            Some(CodeCell {
+            let mut js_code_cell = JsCodeCell {
                 code_string: code_cell.code_string.clone(),
                 language: code_cell.language,
-                std_err,
-                std_out,
-                evaluation_result,
-            })
+                std_err: None,
+                std_out: None,
+            };
+            if let Some(run) = sheet.get_code_cell_run(*pos) {
+                js_code_cell.std_out = run.std_out.clone();
+                js_code_cell.std_err = run.std_err.clone();
+            }
+            serde_json::to_string(&js_code_cell).map_err(|e| JsValue::UNDEFINED)
         } else {
-            None
+            Err(JsValue::UNDEFINED)
         }
     }
 

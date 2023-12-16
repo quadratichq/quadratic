@@ -1,77 +1,95 @@
-use std::{collections::HashSet, ops::Range};
+use std::collections::HashSet;
 
 use itertools::Itertools;
 
 use super::Sheet;
 use crate::{
-    grid::{CodeCellValue, RenderSize},
-    CellValue, Pos, Rect, Value,
+    grid::{CodeCell, CodeCellRun, RenderSize},
+    CellValue, Pos, Rect,
 };
 
 impl Sheet {
-    /// Sets or deletes a code cell value and populates spills.
-    pub fn set_code_cell_value(
-        &mut self,
-        pos: Pos,
-        code_cell: Option<CodeCellValue>,
-    ) -> Option<CodeCellValue> {
-        let old = self.code_cells.remove(&pos);
-
-        // this column has to exist since it was just created in the previous statement
-        let code_cell_column = self.get_or_create_column(pos.x);
-
-        if let Some(code_cell) = code_cell {
-            if let Some(output) = &code_cell.output {
-                match output.output_value() {
-                    Some(output_value) => {
-                        match output_value {
-                            Value::Single(_) => {
-                                code_cell_column.spills.set(pos.y, Some(pos));
-                            }
-                            Value::Array(array) => {
-                                // if spilled only set the top left cell
-                                if output.spill {
-                                    let column = self.get_or_create_column(pos.x);
-                                    column.spills.set(pos.y, Some(pos));
-                                }
-                                // otherwise set the whole array
-                                else {
-                                    let start = pos.x;
-                                    let end = start + array.width() as i64;
-                                    let range = Range {
-                                        start: pos.y,
-                                        end: pos.y + array.height() as i64,
-                                    };
-                                    for x in start..end {
-                                        let column = self.get_or_create_column(x);
-                                        column.spills.set_range(range.clone(), pos);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    None => {
-                        code_cell_column.spills.set(pos.y, Some(pos));
-                    }
-                }
-            } else {
-                code_cell_column.spills.set(pos.y, Some(pos));
-            }
-            self.code_cells.insert(pos, code_cell);
+    /// Sets or deletes a code cell value. Does not change self.code_cell_runs or column.spills.
+    pub fn set_code_cell(&mut self, pos: Pos, code_cell: Option<CodeCell>) -> Option<CodeCell> {
+        if let Some(code_cell) = &code_cell {
+            self.code_cells.insert(pos, code_cell.to_owned())
+        } else {
+            self.code_cells.remove(&pos)
         }
-        old
+
+        // // this column has to exist since it was just created in the previous statement
+
+        // if let Some(code_cell) = code_cell {
+        //     if let Some(output) = &code_cell.output {
+        //         match output.output_value() {
+        //             Some(output_value) => {
+        //                 match output_value {
+        //                     Value::Single(_) => {
+        //                         code_cell_column.spills.set(pos.y, Some(pos));
+        //                     }
+        //                     Value::Array(array) => {
+        //                         // if spilled only set the top left cell
+        //                         if output.spill {
+        //                             let column = self.get_or_create_column(pos.x);
+        //                             column.spills.set(pos.y, Some(pos));
+        //                         }
+        //                         // otherwise set the whole array
+        //                         else {
+        //                             let start = pos.x;
+        //                             let end = start + array.width() as i64;
+        //                             let range = Range {
+        //                                 start: pos.y,
+        //                                 end: pos.y + array.height() as i64,
+        //                             };
+        //                             for x in start..end {
+        //                                 let column = self.get_or_create_column(x);
+        //                                 column.spills.set_range(range.clone(), pos);
+        //                             }
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //             None => {
+        //                 code_cell_column.spills.set(pos.y, Some(pos));
+        //             }
+        //         }
+        //     } else {
+        //         code_cell_column.spills.set(pos.y, Some(pos));
+        //     }
+        //     self.code_cells.insert(pos, code_cell);
+        // }
+        // old
     }
 
-    /// Returns a code cell value.
-    pub fn get_code_cell(&self, pos: Pos) -> Option<&CodeCellValue> {
+    /// Sets or deletes a code cell run. Does not change code_cells or column.spills.
+    pub fn set_code_cell_run(
+        &mut self,
+        pos: Pos,
+        code_cell_run: Option<CodeCellRun>,
+    ) -> Option<CodeCellRun> {
+        if let Some(code_cell_run) = &code_cell_run {
+            self.code_cell_runs.insert(pos, code_cell_run.to_owned())
+        } else {
+            self.code_cell_runs.remove(&pos)
+        }
+    }
+
+    /// Returns a code cell
+    pub fn get_code_cell(&self, pos: Pos) -> Option<&CodeCell> {
         self.code_cells.get(&pos)
     }
 
-    pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
+    pub fn get_code_cell_run(&self, pos: Pos) -> Option<&CodeCellRun> {
+        self.code_cell_runs.get(&pos)
+    }
+
+    /// Returns the value of the output of a CodeCellRun at a given position
+    /// by checking column.spills and any resulting CodeCellRun
+    pub fn get_code_cell_run_output_at(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
         let code_cell_pos = column.spills.get(pos.y)?;
-        let code_cell = self.code_cells.get(&code_cell_pos)?;
-        code_cell.get_output_value(
+        let run = self.get_code_cell_run(code_cell_pos)?;
+        run.get_at(
             (pos.x - code_cell_pos.x) as u32,
             (pos.y - code_cell_pos.y) as u32,
         )
@@ -119,7 +137,7 @@ impl Sheet {
     /// Checks if the deletion of a cell or a code_cell released a spill error;
     /// sorted by earliest last_modified.
     /// Returns the cell_ref and the code_cell_value if it did
-    pub fn spill_error_released(&self, pos: Pos) -> Option<(Pos, CodeCellValue)> {
+    pub fn spill_error_released(&self, pos: Pos) -> Option<(Pos, CodeCell)> {
         self.code_cells
             .iter()
             .filter(|(_, code_cell)| code_cell.has_spill_error())

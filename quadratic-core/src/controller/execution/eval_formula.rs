@@ -1,7 +1,7 @@
 use crate::{
     controller::GridController,
     formulas::{parse_formula, Ctx},
-    grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
+    grid::{CodeCell, CodeCellLanguage, CodeCellRun, CodeCellRunResult},
     SheetPos,
 };
 
@@ -18,11 +18,11 @@ impl GridController {
                 match parsed.eval(&mut ctx) {
                     Ok(value) => {
                         self.cells_accessed = ctx.cells_accessed;
-                        let updated_code_cell_value = CodeCellValue {
+                        let updated_code_cell_value = CodeCell {
                             language,
                             code_string,
                             formatted_code_string: None,
-                            output: Some(CodeCellRunOutput {
+                            output: Some(CodeCellRun {
                                 std_out: None,
                                 std_err: None,
                                 result: CodeCellRunResult::Ok {
@@ -33,7 +33,7 @@ impl GridController {
                                         .into_iter()
                                         .collect(),
                                 },
-                                spill: false,
+                                spill_error: false,
                             }),
                             // todo
                             last_modified: String::new(),
