@@ -1,9 +1,9 @@
-use anyhow::{anyhow, Result};
 use quadratic_core::controller::GridController;
 use serde::Serialize;
 use std::collections::HashMap;
 use uuid::Uuid;
 
+use crate::error::Result;
 use crate::state::{user::User, State};
 use crate::{get_mut_room, get_or_create_room, get_room};
 
@@ -92,7 +92,10 @@ macro_rules! get_room {
             .lock()
             .await
             .get(&$file_id)
-            .ok_or(anyhow!("Room {} not found", $file_id))
+            .ok_or(crate::error::MpError::Room(format!(
+                "Room {} not found",
+                $file_id
+            )))
     };
 }
 
@@ -104,7 +107,10 @@ macro_rules! get_mut_room {
             .lock()
             .await
             .get_mut(&$file_id)
-            .ok_or(anyhow!("Room {} not found", $file_id))
+            .ok_or(crate::error::MpError::Room(format!(
+                "Room {} not found",
+                $file_id
+            )))
     };
 }
 

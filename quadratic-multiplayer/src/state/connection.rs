@@ -1,6 +1,6 @@
-use anyhow::{anyhow, Result};
 use uuid::Uuid;
 
+use crate::error::{MpError, Result};
 use crate::state::State;
 
 #[derive(Debug)]
@@ -26,10 +26,9 @@ impl State {
             .lock()
             .await
             .get(&connection_id)
-            .ok_or(anyhow!(
-                "connection_id {} not found in sockets",
-                connection_id
-            ))?
+            .ok_or(MpError::Connection(format!(
+                "connection_id {connection_id} not found in sockets"
+            )))?
             .to_owned();
 
         Ok(session_id)
@@ -61,7 +60,7 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::assert_anyhow_error;
+    use crate::error::MpError;
 
     use super::*;
 
@@ -95,6 +94,6 @@ mod tests {
         let result = state.get_session_id(connection_id).await;
         let expected = format!("connection_id {connection_id} not found in sockets");
 
-        assert_anyhow_error(result, &expected);
+        assert_eq!(result.unwrap_err(), MpError::Connection(expected));
     }
 }

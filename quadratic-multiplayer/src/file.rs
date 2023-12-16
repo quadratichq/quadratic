@@ -1,12 +1,13 @@
-use anyhow::Result;
 use quadratic_core::{
     controller::{operation::Operation, transaction_summary::TransactionSummary, GridController},
     grid::{file::import, Grid},
 };
 
+use crate::error::{MpError, Result};
+
 /// Load a .grid file
 pub(crate) fn _load_file(file: &str) -> Result<Grid> {
-    import(file)
+    import(file).map_err(|e| MpError::FileService(e.to_string()))
 }
 
 /// Apply a stringified vec of operations to the grid

@@ -14,8 +14,7 @@ use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::state::room::Room;
-
-use self::transaction_queue::TransactionQueue;
+use crate::state::transaction_queue::TransactionQueue;
 
 #[derive(Debug)]
 pub(crate) struct State {

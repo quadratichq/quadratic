@@ -21,8 +21,14 @@ pub(crate) enum MpError {
     #[error("Internal server error: {0}")]
     Config(String),
 
+    #[error("Connection error: {0}")]
+    Connection(String),
+
     #[error("File permissions error: {0}")]
     FilePermissions(String),
+
+    #[error("File service error: {0}")]
+    FileService(String),
 
     #[error("Internal server error: {0}")]
     InternalServer(String),
@@ -30,14 +36,23 @@ pub(crate) enum MpError {
     #[error("Error requesting data: {0}")]
     Request(String),
 
+    #[error("Room error: {0}")]
+    Room(String),
+
     #[error("Error sending message: {0}")]
     SendingMessage(String),
 
     #[error("Error serializing or deserializing: {0}")]
     Serialization(String),
 
+    #[error("Transaction queue error: {0}")]
+    TransactionQueue(String),
+
     #[error("unknown error: {0}")]
     Unknown(String),
+
+    #[error("User error: {0}")]
+    User(String),
 }
 
 impl From<anyhow::Error> for MpError {

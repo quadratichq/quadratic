@@ -1,4 +1,3 @@
-use anyhow::{anyhow, Result};
 use axum::extract::ws::{Message, WebSocket};
 use chrono::{DateTime, Utc};
 use futures_util::stream::SplitSink;
@@ -8,6 +7,7 @@ use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::auth::FilePermRole;
+use crate::error::{MpError, Result};
 use crate::state::State;
 use crate::{get_mut_room, get_room};
 
@@ -80,7 +80,9 @@ impl State {
         let user = get_room!(self, file_id)?
             .users
             .get(session_id)
-            .ok_or(anyhow!("User {} not found in Room {}", session_id, file_id))?
+            .ok_or(MpError::Unknown(format!(
+                "User {session_id} not found in Room {file_id}"
+            )))?
             .to_owned();
 
         Ok(user)
@@ -179,7 +181,7 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::{assert_anyhow_error, new_user};
+    use crate::{error::MpError, test_util::new_user};
 
     async fn setup() -> (State, Uuid, Uuid, User) {
         let state = State::new();
@@ -207,8 +209,10 @@ mod tests {
         tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 
         state.remove_stale_users_in_room(file_id, 0).await.unwrap();
-        let expected = format!("Room {file_id} not found");
-        assert_anyhow_error(get_room!(state, file_id), &expected);
+        assert_eq!(
+            get_room!(state, file_id).unwrap_err(),
+            MpError::Room(format!("Room {file_id} not found"))
+        );
     }
 
     #[tokio::test]

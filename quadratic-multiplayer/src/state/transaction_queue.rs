@@ -1,8 +1,9 @@
-use anyhow::{anyhow, Result};
 use quadratic_core::controller::operation::Operation;
 use serde::Serialize;
 use std::collections::HashMap;
 use uuid::Uuid;
+
+use crate::error::{MpError, Result};
 
 #[derive(Serialize, Debug, PartialEq, Clone)]
 pub(crate) struct Transaction {
@@ -53,7 +54,11 @@ impl TransactionQueue {
         let transactions = self
             .queue
             .get(&file_id)
-            .ok_or_else(|| anyhow!("file_id {file_id} not found in transaction queue"))?
+            .ok_or_else(|| {
+                MpError::TransactionQueue(format!(
+                    "file_id {file_id} not found in transaction queue"
+                ))
+            })?
             .1
             .to_owned();
 
@@ -78,7 +83,11 @@ impl TransactionQueue {
         let sequence_num = self
             .queue
             .get(&file_id)
-            .ok_or_else(|| anyhow!("file_id {file_id} not found in transaction queue"))?
+            .ok_or_else(|| {
+                MpError::TransactionQueue(format!(
+                    "file_id {file_id} not found in transaction queue"
+                ))
+            })?
             .0;
 
         Ok(sequence_num)
