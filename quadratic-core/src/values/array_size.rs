@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use super::ErrorMsg;
 
 /// Size of a region or array.
+/// Default = 1x1
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct ArraySize {
@@ -98,6 +99,12 @@ impl ArraySize {
         } else {
             Err(ErrorMsg::IndexOutOfBounds)
         }
+    }
+}
+
+impl Default for ArraySize {
+    fn default() -> Self {
+        Self::_1X1
     }
 }
 

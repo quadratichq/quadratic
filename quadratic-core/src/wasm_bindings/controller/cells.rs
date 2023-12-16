@@ -98,7 +98,7 @@ impl GridController {
     /// returns a stringified [`JsCodeCell`] or undefined
     #[wasm_bindgen(js_name = "getCodeCell")]
     pub fn js_get_code_string(&self, sheet_id: String, pos: &Pos) -> Result<String, JsValue> {
-        let sheet = self.grid().sheet_from_string(sheet_id);
+        let sheet = self.grid().try_sheet_from_string(sheet_id);
         if let Some(code_cell) = sheet.get_code_cell(*pos) {
             let mut js_code_cell = JsCodeCell {
                 code_string: code_cell.code_string.clone(),

@@ -54,116 +54,52 @@ impl GridController {
                 let sheet_id = sheet_pos.sheet_id;
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
 
-                // find combine area
-                let new_output_sheet_rect = code_cell_value
-                    .as_ref()
-                    .map(|code_cell_value| code_cell_value.output_rect())
-                    .flatten();
+                let old_code_cell_value = sheet.set_code_cell(sheet_pos.into(), code_cell_value);
 
-                let old_code_cell_value =
-                    sheet.set_code_cell_value(sheet_pos.into(), code_cell_value);
-
-                self.forward_operations.push(op);
-
-                // get range for changes to code_cell, including both new and old outputs
-                let old_output_sheet_rect = old_code_cell_value
-                    .as_ref()
-                    .map(|code_cell_value| code_cell_value.output_rect())
-                    .flatten();
-                let sheet_rect = match (old_output_sheet_rect, new_output_sheet_rect) {
-                    (Some(old), Some(new)) => old.union(&new),
-                    (Some(old), None) => old,
-                    (None, Some(new)) => new,
-                    (None, None) => Rect::single_pos(sheet_pos.into()),
-                }
-                .to_sheet_rect(sheet_id);
+                let sheet_rect = sheet_pos.into();
                 self.cells_updated.insert(sheet_rect);
-                self.sheets_with_dirty_bounds.insert(sheet_rect.sheet_id);
+                self.sheets_with_dirty_bounds.insert(sheet_id);
                 self.summary.generate_thumbnail =
                     self.summary.generate_thumbnail || self.thumbnail_dirty_sheet_rect(sheet_rect);
                 self.add_cell_sheets_modified_rect(&sheet_rect);
-
-                // let is_code_cell_empty = code_cell_value.is_none();
-                // let sheet_id = sheet_pos.sheet_id;
-
-                // // todo: all spill calculation should be moved to the code_cell operation function
-                // let old_spill = sheet.get_spill(sheet_pos.into());
-                // let old_code_cell_value = sheet.get_code_cell(sheet_pos.into()).cloned();
-                // let final_code_cell_value;
-
-                // // for compute, we keep the original cell output to avoid flashing of output (since values will be overridden once computation is complete)
-                // let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                // if compute {
-                //     if let Some(code_cell_value) = code_cell_value {
-                //         let updated_code_cell_value =
-                //             if let Some(old_code_cell_value) = &old_code_cell_value {
-                //                 let mut updated_code_cell_value = code_cell_value.clone();
-                //                 updated_code_cell_value.output = old_code_cell_value.output.clone();
-                //                 updated_code_cell_value
-                //             } else {
-                //                 code_cell_value
-                //             };
-                //         sheet.set_code_cell_value(
-                //             sheet_pos.into(),
-                //             Some(updated_code_cell_value.clone()),
-                //         );
-                //         final_code_cell_value = Some(updated_code_cell_value);
-                //     } else {
-                //         sheet.set_code_cell_value(sheet_pos.into(), code_cell_value);
-                //         self.fetch_code_cell_difference(
-                //             sheet_pos,
-                //             old_code_cell_value.clone(),
-                //             None,
-                //         );
-                //         let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                //         sheet.set_code_cell_value(sheet_pos.into(), None);
-                //         final_code_cell_value = None;
-                //     }
-                //     self.cells_to_compute.insert(sheet_pos);
-                // } else {
-                //     // need to update summary (cells_to_compute will be ignored)
-                //     self.fetch_code_cell_difference(
-                //         sheet_pos,
-                //         old_code_cell_value.clone(),
-                //         code_cell_value.clone(),
-                //     );
-                //     let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                //     sheet.set_code_cell_value(sheet_pos.into(), code_cell_value.clone());
-                //     final_code_cell_value = code_cell_value;
-                // }
-
-                // // TODO(ddimaria): resolve comment from @HactarCE:
-                // //
-                // // Can we use SheetPos instead of CellSheetsModified? I'd like
-                // // to avoid using String for sheet IDs as much as possible. If
-                // // it's needed for JS interop, then let's impl Serialize and
-                // // Deserialize on SheetId to make it serialize as a string.
-                // self.add_cell_sheets_modified_rect(&sheet_pos.into());
-                // self.summary.code_cells_modified.insert(sheet_id);
-
-                // // check if a new code_cell causes a spill error in another code cell
-                // if old_code_cell_value.is_none() && !is_code_cell_empty {
-                //     if let Some(old_spill) = old_spill {
-                //         if old_spill.to_sheet_pos(sheet_id) != sheet_pos {
-                //             self.set_spill_error(old_spill.to_sheet_pos(sheet_id));
-                //         }
-                //     }
-                // }
-
-                // // check if deleting a code cell releases a spill
-                // if is_code_cell_empty {
-                //     self.update_code_cell_value_if_spill_error_released(sheet_pos);
-                // }
-                // self.forward_operations.push(Operation::SetCodeCell {
-                //     sheet_pos,
-                //     code_cell_value: final_code_cell_value,
-                // });
                 self.reverse_operations.push(Operation::SetCodeCell {
                     sheet_pos,
                     code_cell_value: old_code_cell_value,
                 });
+                self.forward_operations.push(op);
+            }
 
-                self.sheets_with_dirty_bounds.insert(sheet_id);
+            Operation::SetCodeCellRun {
+                sheet_pos,
+                code_cell_run,
+            } => {
+                let sheet_id = sheet_pos.sheet_id;
+                let sheet = self.grid.sheet_mut_from_id(sheet_id);
+
+                let old_run = sheet.set_code_cell_run(sheet_pos.into(), code_cell_run);
+
+                // find the union of old and new output rects (for rendering purposes)
+                let new_output_sheet_rect = if let Some(code_cell_run) = code_cell_run.as_ref() {
+                    Rect::from_pos_and_size(
+                        sheet_pos.into(),
+                        code_cell_run.output_size().unwrap_or_default(),
+                    )
+                    .to_sheet_rect(sheet_id)
+                } else {
+                    sheet_pos.into()
+                };
+                // get range for changes to code_cell, including both new and old outputs
+                let old_output_sheet_rect = if let Some(old_run) = old_run.as_ref() {
+                    Rect::from_pos_and_size(
+                        sheet_pos.into(),
+                        old_run.output_size().unwrap_or_default(),
+                    )
+                    .to_sheet_rect(sheet_id)
+                } else {
+                    sheet_pos.into()
+                };
+
+                let sheet_rect = old_output_sheet_rect.union(&new_output_sheet_rect);
             }
 
             Operation::SetSpill {

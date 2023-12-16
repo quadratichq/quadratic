@@ -210,17 +210,6 @@ impl Rect {
         let Rect { min, max } = self;
         (min.y..=max.y).flat_map(move |y| (min.x..=max.x).map(move |x| Pos { x, y }))
     }
-
-    pub fn union(&self, other: &Self) -> Self {
-        let min_x = std::cmp::min(self.min.x, other.min.x);
-        let min_y = std::cmp::min(self.min.y, other.min.y);
-        let max_x = std::cmp::max(self.max.x, other.max.x);
-        let max_y = std::cmp::max(self.max.y, other.max.y);
-        Rect {
-            min: Pos { x: min_x, y: min_y },
-            max: Pos { x: max_x, y: max_y },
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone)]
@@ -359,6 +348,21 @@ impl SheetRect {
                 sheet_id: self.sheet_id,
             })
         })
+    }
+    pub fn union(&self, other: &Self) -> Self {
+        assert!(
+            self.sheet_id == other.sheet_id,
+            "Expected sheet_id for both SheetRects to be the same in SheetRect::union"
+        );
+        let min_x = std::cmp::min(self.min.x, other.min.x);
+        let min_y = std::cmp::min(self.min.y, other.min.y);
+        let max_x = std::cmp::max(self.max.x, other.max.x);
+        let max_y = std::cmp::max(self.max.y, other.max.y);
+        SheetRect {
+            min: Pos { x: min_x, y: min_y },
+            max: Pos { x: max_x, y: max_y },
+            sheet_id: self.sheet_id,
+        }
     }
 }
 impl fmt::Display for SheetRect {
@@ -646,11 +650,12 @@ mod test {
     }
 
     #[test]
-    fn test_rect_combine() {
-        let rect1 = Rect::from_numbers(1, 2, 3, 4);
-        let rect2 = Rect::from_numbers(2, 3, 4, 5);
-        let rect = rect1.union(&rect2);
-        assert_eq!(rect.min, Pos { x: 1, y: 2 });
-        assert_eq!(rect.max, Pos { x: 5, y: 7 });
+    fn test_sheet_rect_union() {
+        let sheet_id = SheetId::new();
+        let sheet_rect1 = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);
+        let sheet_rect2 = SheetRect::from_numbers(2, 3, 4, 5, sheet_id);
+        let union = sheet_rect1.union(&sheet_rect2);
+        assert_eq!(union.min, Pos { x: 1, y: 2 });
+        assert_eq!(union.max, Pos { x: 5, y: 7 });
     }
 }

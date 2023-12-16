@@ -161,7 +161,7 @@ pub struct NumericFormat {
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
-/// Measures DOM element size in pixels.
+/// Measures DOM element size in pixels. We use a String to avoid floating point rounding errors.
 pub struct RenderSize {
     pub w: String,
     pub h: String,

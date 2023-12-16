@@ -43,32 +43,24 @@ impl Sheet {
                 .blocks_of_range(rect.y_range())
                 .filter_map(move |block| {
                     let code_cell_pos = block.content.value;
-                    let code_cell = self.code_cells.get(&block.content.value)?;
+                    let code_cell = self.get_code_cell(code_cell_pos)?;
+                    let run = self.get_code_cell_run(block.content.value)?;
 
                     let mut block_len = block.len();
                     let mut cell_error = None;
 
                     // check for error in code cell
-                    //
-                    // TODO(ddimaria): address comment from @HactarCE:
-                    //
-                    // I think block_len should automatically equal 1 because
-                    // an error produces a 1x1 spill? If not, then we have to
-                    // be careful to only return the error value in the first
-                    // column of the spill.
-                    if let Some(error) = code_cell.get_error() {
+                    if let Some(error) = run.get_error() {
                         block_len = 1;
                         cell_error = Some(CellValue::Error(Box::new(error)));
                     }
                     // check for spill in code_cell
-                    else if let Some(output) = &code_cell.output {
-                        if output.spill {
-                            block_len = 1;
-                            cell_error = Some(CellValue::Error(Box::new(Error {
-                                span: None,
-                                msg: ErrorMsg::Spill,
-                            })));
-                        }
+                    else if run.spill_error {
+                        block_len = 1;
+                        cell_error = Some(CellValue::Error(Box::new(Error {
+                            span: None,
+                            msg: ErrorMsg::Spill,
+                        })))
                     }
 
                     let dx = (x - code_cell_pos.x) as u32;
@@ -81,9 +73,7 @@ impl Sheet {
                             x,
                             y,
                             column,
-                            cell_error
-                                .clone()
-                                .or_else(|| code_cell.get_output_value(dx, dy))?,
+                            cell_error.clone().or_else(|| run.get_at(dx, dy))?,
                             ((dx, dy) == (0, 0)).then_some(code_cell.language),
                         ))
                     }))
@@ -170,18 +160,16 @@ impl Sheet {
     }
 
     pub fn get_html_output(&self) -> Vec<JsHtmlOutput> {
-        self.code_cells
+        self.code_cell_runs
             .iter()
-            .filter_map(|(pos, code_cell_value)| {
-                let output = code_cell_value.get_output_value(0, 0)?;
+            .filter_map(|(pos, run)| {
+                let output = run.get_at(0, 0)?;
                 if !matches!(output, CellValue::Html(_)) {
                     return None;
                 }
-                let (w, h) = if let Some(render_size) = self.render_size(*pos) {
-                    (Some(render_size.w), Some(render_size.h))
-                } else {
-                    (None, None)
-                };
+                let render_size = self.render_size(*pos);
+                let w = render_size.map(|render_size| render_size.w);
+                let h = render_size.map(|render_size| render_size.h);
                 Some(JsHtmlOutput {
                     sheet_id: self.id.to_string(),
                     x: pos.x,
@@ -233,14 +221,16 @@ impl Sheet {
                 if !rect.contains(pos) {
                     return None;
                 }
+                // Expect to find the code_cell, but may not find the run (if it hasn't executed yet)
                 let code_cell = self.code_cells.get(&pos)?;
-                let output_size = code_cell.output_size();
-                let (state, w, h) = match &code_cell.output {
+                let run = self.code_cell_runs.get(&pos);
+                let (state, w, h) = match run {
                     Some(output) => match &output.result {
                         CodeCellRunResult::Ok { .. } => {
-                            if output.spill {
+                            if output.spill_error {
                                 (JsRenderCodeCellState::SpillError, 1, 1)
                             } else {
+                                let output_size = output.output_size().unwrap_or_default();
                                 (
                                     JsRenderCodeCellState::Success,
                                     output_size.w.get(),
@@ -268,15 +258,17 @@ impl Sheet {
     pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
         self.iter_code_cells_locations()
             .filter_map(|pos| {
+                // Expect to find the code_cell, but may not find the run (if it hasn't executed yet)
                 let code_cell = self.code_cells.get(&pos)?;
-                let output_size = code_cell.output_size();
+                let run = self.code_cell_runs.get(&pos);
 
-                let (state, w, h) = match &code_cell.output {
-                    Some(output) => match &output.result {
+                let (state, w, h) = match run {
+                    Some(run) => match &run.result {
                         CodeCellRunResult::Ok { .. } => {
-                            if output.spill {
+                            if run.spill_error {
                                 (JsRenderCodeCellState::SpillError, 1, 1)
                             } else {
+                                let output_size = run.output_size().unwrap_or_default();
                                 (
                                     JsRenderCodeCellState::Success,
                                     output_size.w.get(),
@@ -343,22 +335,27 @@ mod tests {
         sheet.delete_cell_values(Rect::single_pos(Pos { x: 1, y: 2 }));
         assert!(!sheet.has_render_cells(rect));
 
-        sheet.set_code_cell_value(
-            Pos { x: 2, y: 3 },
+        let pos = Pos { x: 2, y: 3 };
+        sheet.set_code_cell(
+            pos.clone(),
             Some(CodeCell {
                 language: crate::grid::CodeCellLanguage::Python,
                 code_string: "print('hello')".to_string(),
                 formatted_code_string: None,
-                output: Some(CodeCellRun {
-                    result: CodeCellRunResult::Ok {
-                        output_value: Value::Single(CellValue::Text("hello".to_string())),
-                        cells_accessed: HashSet::new(),
-                    },
-                    std_err: None,
-                    std_out: None,
-                    spill_error: false,
-                }),
                 last_modified: "".into(),
+            }),
+        );
+        sheet.set_code_cell_run(
+            pos,
+            Some(CodeCellRun {
+                result: CodeCellRunResult::Ok {
+                    output_value: Value::Single(CellValue::Text("hello".to_string())),
+                    cells_accessed: HashSet::new(),
+                },
+                std_err: None,
+                std_out: None,
+                spill_error: false,
+                last_code_run: 0,
             }),
         );
         assert!(sheet.has_render_cells(rect));

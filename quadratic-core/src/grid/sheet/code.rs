@@ -5,7 +5,7 @@ use itertools::Itertools;
 use super::Sheet;
 use crate::{
     grid::{CodeCell, CodeCellRun, RenderSize},
-    CellValue, Pos, Rect,
+    ArraySize, CellValue, Pos, Rect,
 };
 
 impl Sheet {
@@ -16,49 +16,6 @@ impl Sheet {
         } else {
             self.code_cells.remove(&pos)
         }
-
-        // // this column has to exist since it was just created in the previous statement
-
-        // if let Some(code_cell) = code_cell {
-        //     if let Some(output) = &code_cell.output {
-        //         match output.output_value() {
-        //             Some(output_value) => {
-        //                 match output_value {
-        //                     Value::Single(_) => {
-        //                         code_cell_column.spills.set(pos.y, Some(pos));
-        //                     }
-        //                     Value::Array(array) => {
-        //                         // if spilled only set the top left cell
-        //                         if output.spill {
-        //                             let column = self.get_or_create_column(pos.x);
-        //                             column.spills.set(pos.y, Some(pos));
-        //                         }
-        //                         // otherwise set the whole array
-        //                         else {
-        //                             let start = pos.x;
-        //                             let end = start + array.width() as i64;
-        //                             let range = Range {
-        //                                 start: pos.y,
-        //                                 end: pos.y + array.height() as i64,
-        //                             };
-        //                             for x in start..end {
-        //                                 let column = self.get_or_create_column(x);
-        //                                 column.spills.set_range(range.clone(), pos);
-        //                             }
-        //                         }
-        //                     }
-        //                 }
-        //             }
-        //             None => {
-        //                 code_cell_column.spills.set(pos.y, Some(pos));
-        //             }
-        //         }
-        //     } else {
-        //         code_cell_column.spills.set(pos.y, Some(pos));
-        //     }
-        //     self.code_cells.insert(pos, code_cell);
-        // }
-        // old
     }
 
     /// Sets or deletes a code cell run. Does not change code_cells or column.spills.
@@ -137,24 +94,24 @@ impl Sheet {
     /// Checks if the deletion of a cell or a code_cell released a spill error;
     /// sorted by earliest last_modified.
     /// Returns the cell_ref and the code_cell_value if it did
-    pub fn spill_error_released(&self, pos: Pos) -> Option<(Pos, CodeCell)> {
-        self.code_cells
+    pub fn spill_error_released(&self, rect: Rect) -> Option<(Pos, CodeCellRun)> {
+        self.code_cell_runs
             .iter()
-            .filter(|(_, code_cell)| code_cell.has_spill_error())
-            .sorted_by_key(|a| &a.1.last_modified)
+            .filter(|(_, run)| run.spill_error)
+            .sorted_by_key(|a| &a.1.last_code_run)
             .filter_map(|(code_cell_pos, code_cell)| {
                 let array_size = code_cell.output_size();
-                let rect = Rect::from_pos_and_size(pos, array_size);
+                let rect = Rect::from_pos_and_size(pos, array_size.unwrap_or(ArraySize::_1X1));
                 rect.contains(pos)
                     .then(|| (*code_cell_pos, code_cell.to_owned()))
             })
             .find(|(code_cell_pos, code_cell)| {
-                let array_size = code_cell.output_size();
-                if array_size.len() > 1 {
-                    !self.has_spill_error(*code_cell_pos, array_size, Some(pos))
-                } else {
-                    false
+                if let Some(array_size) = code_cell.output_size() {
+                    if array_size.len() > 1 {
+                        return !self.has_spill_error(*code_cell_pos, array_size, Some(pos));
+                    }
                 }
+                false
             })
     }
 }

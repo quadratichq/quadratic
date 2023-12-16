@@ -375,13 +375,14 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
+    use anyhow::Error;
     use bigdecimal::BigDecimal;
-    use std::str::FromStr;
+    use std::{collections::HashSet, str::FromStr};
 
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{Bold, Italic, NumericFormat},
+        grid::{Bold, CodeCellRunResult, Italic, NumericFormat},
         test_util::print_table,
         SheetPos,
     };
@@ -593,7 +594,7 @@ mod test {
     }
 
     #[test]
-    fn test_get_set_code_cell_value() {
+    fn test_get_set_code_cell() {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
         let code_cell = crate::grid::CodeCell {
@@ -602,9 +603,30 @@ mod test {
             formatted_code_string: None,
             last_modified: "".into(),
         };
-        sheet.set_code_cell_value((2, 1).into(), Some(code_cell.clone()));
+        sheet.set_code_cell((2, 1).into(), Some(code_cell.clone()));
         let value = sheet.get_code_cell((2, 1).into());
         assert_eq!(value, Some(&code_cell));
+    }
+
+    #[test]
+    fn test_get_set_code_cell_run() {
+        let (grid, sheet_id, _) = test_setup_basic();
+        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+        let run = CodeCellRun {
+            std_out: None,
+            std_err: None,
+            result: CodeCellRunResult::Ok {
+                output_value: crate::Value::Array(Array::new_empty(
+                    ArraySize::new(10, 11).unwrap(),
+                )),
+                cells_accessed: HashSet::new(),
+            },
+            spill_error: false,
+            last_code_run: 0,
+        };
+        sheet.set_code_cell_run((2, 1).into(), Some(run.clone()));
+        let value = sheet.get_code_cell_run((2, 1).into());
+        assert_eq!(value, Some(&run));
     }
 
     // TODO(ddimaria): use the code below numeric format kinds are in place

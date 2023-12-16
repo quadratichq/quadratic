@@ -31,7 +31,7 @@ impl GridController {
         column: i32,
         ignore_formatting: bool,
     ) -> Option<MinMax> {
-        let sheet = self.grid().sheet_from_string(sheet_id);
+        let sheet = self.grid().try_sheet_from_string(sheet_id);
         sheet
             .column_bounds(column as i64, ignore_formatting)
             .as_ref()
@@ -50,7 +50,7 @@ impl GridController {
         column_end: i32,
         ignore_formatting: bool,
     ) -> Option<MinMax> {
-        let sheet = self.grid().sheet_from_string(sheet_id);
+        let sheet = self.grid().try_sheet_from_string(sheet_id);
         sheet
             .columns_bounds(column_start as i64, column_end as i64, ignore_formatting)
             .as_ref()
@@ -68,7 +68,7 @@ impl GridController {
         row: i32,
         ignore_formatting: bool,
     ) -> Option<MinMax> {
-        let sheet = self.grid().sheet_from_string(sheet_id);
+        let sheet = self.grid().try_sheet_from_string(sheet_id);
         sheet
             .row_bounds(row as i64, ignore_formatting)
             .as_ref()
@@ -87,7 +87,7 @@ impl GridController {
         row_end: i32,
         ignore_formatting: bool,
     ) -> Option<MinMax> {
-        let sheet = self.grid().sheet_from_string(sheet_id);
+        let sheet = self.grid().try_sheet_from_string(sheet_id);
         sheet
             .rows_bounds(row_start as i64, row_end as i64, ignore_formatting)
             .as_ref()
@@ -107,7 +107,7 @@ impl GridController {
         reverse: bool,
         with_content: bool,
     ) -> i32 {
-        let sheet = self.grid().sheet_from_string(sheet_id);
+        let sheet = self.grid().try_sheet_from_string(sheet_id);
         sheet.find_next_column(column_start as i64, row as i64, reverse, with_content) as i32
     }
 
@@ -121,7 +121,7 @@ impl GridController {
         reverse: bool,
         with_content: bool,
     ) -> i32 {
-        let sheet = self.grid().sheet_from_string(sheet_id);
+        let sheet = self.grid().try_sheet_from_string(sheet_id);
         sheet.find_next_row(row_start as i64, column as i64, reverse, with_content) as i32
     }
 }

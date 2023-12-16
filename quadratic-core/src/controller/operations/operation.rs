@@ -2,7 +2,7 @@ use core::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    grid::{formatting::CellFmtArray, CodeCell, Sheet, SheetBorders, SheetId},
+    grid::{formatting::CellFmtArray, CodeCell, CodeCellRun, Sheet, SheetBorders, SheetId},
     Array, SheetPos, SheetRect,
 };
 
@@ -15,6 +15,10 @@ pub enum Operation {
     SetCodeCell {
         sheet_pos: SheetPos,
         code_cell_value: Option<CodeCell>,
+    },
+    SetCodeCellRun {
+        sheet_pos: SheetPos,
+        code_cell_run: Option<CodeCellRun>,
     },
     SetSpill {
         spill_rect: SheetRect,
@@ -70,6 +74,14 @@ impl fmt::Display for Operation {
                 fmt,
                 "SetCellCode {{ code_cell_value: {:?} }}",
                 code_cell_value
+            ),
+            Operation::SetCodeCellRun {
+                code_cell_run,
+                sheet_pos,
+            } => write!(
+                fmt,
+                "SetCellCodeRun {{ sheet_pos: {:?}, code_cell_run: {:?}  }}",
+                sheet_pos, code_cell_run
             ),
             Operation::SetSpill {
                 spill_rect,
