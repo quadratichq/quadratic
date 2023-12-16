@@ -7,8 +7,7 @@ use super::super::GridController;
 impl GridController {
     /// Executes the given operation.
     pub fn execute_operation(&mut self, op: Operation) {
-        self.forward_operations.push(op.clone());
-        match op {
+        match op.clone() {
             Operation::SetCellValues { sheet_rect, values } => {
                 let sheet = self.grid.sheet_mut_from_id(sheet_rect.sheet_id);
 
@@ -30,6 +29,8 @@ impl GridController {
                     })
                     .map(|old_value| old_value.unwrap_or(CellValue::Blank))
                     .collect();
+
+                self.forward_operations.push(op);
 
                 // create reverse_operation
                 let old_values = Array::new_row_major(sheet_rect.size(), old_values)
@@ -61,6 +62,8 @@ impl GridController {
 
                 let old_code_cell_value =
                     sheet.set_code_cell_value(sheet_pos.into(), code_cell_value);
+
+                self.forward_operations.push(op);
 
                 // get range for changes to code_cell, including both new and old outputs
                 let old_output_sheet_rect = old_code_cell_value
@@ -184,6 +187,8 @@ impl GridController {
                         code_cell_sheet_pos: old_spill.map(|p| p.to_sheet_pos(sheet_id)),
                     });
                 });
+
+                self.forward_operations.push(op);
             }
 
             Operation::SetCellFormats { sheet_rect, attr } => {
