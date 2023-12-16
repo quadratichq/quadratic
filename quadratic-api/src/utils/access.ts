@@ -28,6 +28,8 @@ export const getTeamAccess = (role: UserRoleTeam) => {
 /**
  * Derive a user's access to a file based on a variety of inputs that may or may
  * not be applicable for any given file.
+ *
+ * The idea is you can get access from different places. Highest assigned access wins.
  */
 export const getFileAccess = ({
   roleFile,
