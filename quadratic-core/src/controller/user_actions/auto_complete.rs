@@ -1,4 +1,4 @@
-use super::super::{transaction_summary::TransactionSummary, GridController};
+use crate::controller::{transaction_summary::TransactionSummary, GridController};
 use crate::{controller::execution::TransactionType, grid::SheetId, Rect};
 use anyhow::Result;
 
@@ -18,7 +18,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
         let ops = self.autocomplete_operations(sheet_id, selection, range)?;
-        Ok(self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal))
+        Ok(self.set_in_progress_transaction(ops, cursor, true, TransactionType::User))
     }
 }
 

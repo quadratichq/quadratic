@@ -49,7 +49,7 @@ export const firstRoleIsHigherThanSecond = (
     case 'VIEWER':
       return firstRole === 'OWNER' || firstRole === 'EDITOR';
     default:
-      // TODO log error to sentry because we should never reach this
+      // TODO: log error to sentry because we should never reach this
       return false;
   }
 };

@@ -1,7 +1,10 @@
-use super::super::{transaction_summary::TransactionSummary, GridController};
-use crate::controller::execution::TransactionType;
+use crate::controller::{
+    execution::TransactionType,
+    operations::clipboard::{Clipboard, ClipboardCell},
+    transaction_summary::TransactionSummary,
+    GridController,
+};
 use crate::{
-    controller::operations::clipboard::{Clipboard, ClipboardCell},
     grid::{get_cell_borders_in_rect, CodeCellValue},
     Pos, SheetPos, SheetRect,
 };
@@ -122,7 +125,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> (TransactionSummary, String, String) {
         let (ops, plain_text, html) = self.cut_to_clipboard_operations(sheet_rect);
-        let summary = self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal);
+        let summary = self.set_in_progress_transaction(ops, cursor, false, TransactionType::User);
         (summary, plain_text, html)
     }
 
@@ -136,7 +139,7 @@ impl GridController {
         // first try html
         if let Some(html) = html {
             if let Ok(ops) = self.paste_html_operations(sheet_pos, html) {
-                self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
+                self.set_in_progress_transaction(ops, cursor, true, TransactionType::User)
             } else {
                 TransactionSummary::default()
             }
@@ -145,7 +148,7 @@ impl GridController {
         // first try html
         else if let Some(plain_text) = plain_text {
             let ops = self.paste_plain_text_operations(sheet_pos, plain_text);
-            self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
+            self.set_in_progress_transaction(ops, cursor, true, TransactionType::User)
         } else {
             TransactionSummary::default()
         }

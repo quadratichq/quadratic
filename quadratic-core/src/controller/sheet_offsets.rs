@@ -31,7 +31,7 @@ impl GridController {
                     new_size: transient_resize.new_size,
                 });
             }
-            self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
+            self.set_in_progress_transaction(ops, cursor, false, TransactionType::User)
         } else {
             TransactionSummary::default()
         }

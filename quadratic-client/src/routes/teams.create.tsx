@@ -24,7 +24,7 @@ type ActionData = {
 export const action = async ({ request }: ActionFunctionArgs) => {
   // TODO convert blob URL to File and upload to S3
   const data: ActionData = await request.json();
-  const { uuid } = await apiClient.createTeam(data);
+  const { uuid } = await apiClient.teams.create(data);
   // await new Promise((resolve) => setTimeout(resolve, 5000));
   // TODO make dialog=share a const, or maybe share=1 or share=first for extra UI
   return redirect(ROUTES.TEAM(uuid) + '?share=team-created');
