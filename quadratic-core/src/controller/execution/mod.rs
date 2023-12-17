@@ -1,6 +1,9 @@
+/// This module handles the application of operations to the Grid.
 pub mod compute;
 pub mod control_transaction;
 pub mod eval_formula;
+///
+pub mod execute_operation;
 pub mod get_cells;
 use serde::{Deserialize, Serialize};
 

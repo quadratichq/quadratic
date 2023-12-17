@@ -1,6 +1,5 @@
-use super::{
-    transaction_in_progress::TransactionType, transaction_summary::TransactionSummary,
-    GridController,
+use crate::controller::{
+    execution::TransactionType, transaction_summary::TransactionSummary, GridController,
 };
 
 impl GridController {

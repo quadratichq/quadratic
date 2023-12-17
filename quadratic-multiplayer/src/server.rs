@@ -227,7 +227,7 @@ pub(crate) mod tests {
     use super::*;
     use crate::state::user::{CellEdit, User, UserStateUpdate};
     use crate::test_util::{integration_test_send_and_receive, integration_test_setup, new_user};
-    use quadratic_core::controller::operation::Operation;
+    use quadratic_core::controller::operations::operation::Operation;
     use tokio::net::TcpStream;
     use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
     use uuid::Uuid;
