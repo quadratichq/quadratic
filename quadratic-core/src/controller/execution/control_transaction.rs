@@ -222,7 +222,7 @@ mod tests {
         let mut gc = GridController::new();
         let (operation, operation_undo) = get_operations(&mut gc);
 
-        // TransactionType::Normal
+        // TransactionType::User
         gc.start_transaction(vec![operation.clone()], None, false, TransactionType::User);
         gc.finalize_transaction();
 

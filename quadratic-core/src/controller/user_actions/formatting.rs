@@ -134,7 +134,7 @@ macro_rules! impl_set_cell_fmt_method {
                 let attr =
                     $cell_fmt_array_constructor(RunLengthEncoding::repeat(value, sheet_rect.len()));
                 let ops = vec![Operation::SetCellFormats { sheet_rect, attr }];
-                self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
+                self.set_in_progress_transaction(ops, cursor, false, TransactionType::User)
             }
         }
     };
