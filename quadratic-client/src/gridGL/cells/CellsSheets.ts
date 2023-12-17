@@ -31,7 +31,6 @@ export class CellsSheets extends Container<CellsSheet> {
     }
     const cellsSheet = this.addChild(new CellsSheet(sheet));
     await cellsSheet.preload();
-    this.show(sheet.id);
   }
 
   deleteSheet(id: string): void {
@@ -49,7 +48,6 @@ export class CellsSheets extends Container<CellsSheet> {
         if (this.current?.sheet.id !== child?.sheet.id) {
           this.current = child;
           child.show(pixiApp.viewport.getVisibleBounds());
-          pixiApp.loadViewport();
         }
       } else {
         child.hide();

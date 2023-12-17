@@ -41,6 +41,7 @@ serde_repr = "0.1"
 smallvec = { version = "1.11.0", features = ["serde", "union"] }
 strum = "0.24.1"
 strum_macros = "0.24.3"
+tabled = { version ="0.14.0", features = ["color"] }
 pollster = "0.2.5"
 uuid = { version = "1.4.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde", "wasmbind"] }
@@ -68,7 +69,6 @@ indexmap = "2.0.2"
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }
-tabled = { version ="0.14.0", features = ["color"] }
 tokio-test = "0.4.3"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]

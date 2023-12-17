@@ -1,9 +1,9 @@
+import { multiplayer } from '@/multiplayer/multiplayer';
 import { Viewport } from 'pixi-viewport';
-import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
+import { Container, Graphics, Point, Rectangle, Renderer } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { HEADING_SIZE } from '../../constants/gridConstants';
-import { debugShowCacheFlag } from '../../debugFlags';
 import {
   copyToClipboardEvent,
   cutToClipboardEvent,
@@ -22,16 +22,17 @@ import { Pointer } from '../interaction/pointer/Pointer';
 import { ensureVisible } from '../interaction/viewportHelper';
 import { loadAssets } from '../loadAssets';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
-import { Quadrants } from '../quadrants/Quadrants';
 import { pixiAppSettings } from './PixiAppSettings';
 import { Update } from './Update';
 import { HighlightedCells } from './highlightedCells';
 import './pixiApp.css';
 
+// todo: move viewport stuff to a viewport.ts file
+const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
+
 export class PixiApp {
   private parent?: HTMLDivElement;
   private update!: Update;
-  private cacheIsVisible = false;
 
   highlightedCells = new HighlightedCells();
   canvas!: HTMLCanvasElement;
@@ -43,7 +44,6 @@ export class PixiApp {
   headings!: GridHeadings;
   boxCells!: BoxCells;
   cellsSheets!: CellsSheets;
-  quadrants!: Quadrants;
   pointer!: Pointer;
   viewportContents!: Container;
   htmlPlaceholders!: HtmlPlaceholders;
@@ -56,7 +56,10 @@ export class PixiApp {
   // for testing purposes
   debug!: Graphics;
 
+  initialized = false;
+
   async init() {
+    this.initialized = true;
     await loadAssets();
     this.initCanvas();
     await this.rebuild();
@@ -109,15 +112,11 @@ export class PixiApp {
     // hack to ensure pointermove works outside of canvas
     this.viewport.off('pointerout');
 
-    // this holds the viewport's contents so it can be reused in Quadrants
+    // this holds the viewport's contents
     this.viewportContents = this.viewport.addChild(new Container());
 
     // useful for debugging at viewport locations
     this.debug = this.viewportContents.addChild(new Graphics());
-
-    // todo...
-    this.quadrants = new Quadrants(); //this.viewportContents.addChild(new Quadrants(this));
-    this.quadrants.visible = false;
 
     this.gridLines = this.viewportContents.addChild(new GridLines());
     this.axesLines = this.viewportContents.addChild(new AxesLines());
@@ -150,31 +149,6 @@ export class PixiApp {
     document.removeEventListener('cut', cutToClipboardEvent);
   }
 
-  private showCache(): void {
-    if (debugShowCacheFlag && !this.quadrants.visible) {
-      const cacheOn = document.querySelector('.debug-show-cache-on');
-      if (cacheOn) {
-        (cacheOn as HTMLSpanElement).innerHTML = 'CACHE';
-      }
-    }
-    // this.cells.changeVisibility(false);
-    this.quadrants.visible = true;
-    this.cacheIsVisible = true;
-  }
-
-  private showCells(): void {
-    // if (debugShowCacheFlag && !this.cells.visible) {
-    //   const cacheOn = document.querySelector('.debug-show-cache-on') as HTMLSpanElement;
-    //   if (cacheOn) {
-    //     cacheOn.innerHTML = '';
-    //   }
-    // }
-    // this.cells.dirty = true;
-    // this.cells.changeVisibility(true);
-    this.quadrants.visible = false;
-    this.cacheIsVisible = false;
-  }
-
   setViewportDirty(): void {
     this.viewport.dirty = true;
   }
@@ -187,12 +161,7 @@ export class PixiApp {
     this.cursor.dirty = true;
     this.cellsSheets?.cull(this.viewport.getVisibleBounds());
     sheets.sheet.cursor.viewport = this.viewport.lastViewport!;
-
-    // if (!debugNeverShowCache && (this.viewport.scale.x < QUADRANT_SCALE || debugAlwaysShowCache)) {
-    //   this.showCache();
-    // } else {
-    //   this.showCells();
-    // }
+    multiplayer.sendViewport(this.saveMultiplayerViewport());
   };
 
   attach(parent: HTMLDivElement): void {
@@ -208,7 +177,6 @@ export class PixiApp {
     this.update.destroy();
     this.renderer.destroy(true);
     this.viewport.destroy();
-    this.quadrants.destroy();
     this.removeListeners();
     this.destroyed = true;
   }
@@ -227,14 +195,13 @@ export class PixiApp {
     this.cursor.dirty = true;
   };
 
-  // called before and after a quadrant render
+  // called before and after a render
   prepareForCopying(options?: { gridLines?: boolean; cull?: Rectangle }): Container {
     this.gridLines.visible = options?.gridLines ?? false;
     this.axesLines.visible = false;
     this.cursor.visible = false;
     this.multiplayerCursor.visible = false;
     this.headings.visible = false;
-    this.quadrants.visible = false;
     this.boxCells.visible = false;
     this.htmlPlaceholders.prepare();
     this.cellsSheets.toggleOutlines(false);
@@ -251,7 +218,6 @@ export class PixiApp {
     this.multiplayerCursor.visible = true;
     this.headings.visible = true;
     this.boxCells.visible = true;
-    this.quadrants.visible = this.cacheIsVisible;
     this.htmlPlaceholders.hide();
     this.cellsSheets.toggleOutlines();
     if (culled) {
@@ -276,22 +242,6 @@ export class PixiApp {
       this.viewport.position.set(0, 0);
     }
     pixiAppSettings.setEditorInteractionState?.(editorInteractionStateDefault);
-  }
-
-  // Pre-renders quadrants by cycling through one quadrant per frame
-  preRenderQuadrants(resolve?: () => void): Promise<void> {
-    return new Promise((_resolve) => {
-      if (!resolve) {
-        resolve = _resolve;
-      }
-      this.quadrants.update(0);
-      if (this.quadrants.needsUpdating()) {
-        // the timeout allows the quadratic logo animation to appear smooth
-        setTimeout(() => this.preRenderQuadrants(resolve), 100);
-      } else {
-        resolve();
-      }
-    });
   }
 
   async rebuild() {
@@ -328,6 +278,36 @@ export class PixiApp {
     } else {
       return { x: 0, y: 0 };
     }
+  }
+
+  saveMultiplayerViewport(): string {
+    const viewport = this.viewport;
+    return JSON.stringify({
+      x: viewport.center.x,
+      y: viewport.center.y,
+      bounds: viewport.getVisibleBounds(),
+    });
+  }
+
+  loadMultiplayerViewport(options: { x: number; y: number; bounds: Rectangle }): void {
+    const { x, y, bounds } = options;
+    let width: number | undefined;
+    let height: number | undefined;
+
+    // ensure the entire follow-ee's bounds is visible to the current user
+    if (this.viewport.screenWidth / this.viewport.screenHeight > bounds.width / bounds.height) {
+      height = bounds.height;
+    } else {
+      width = bounds.width;
+    }
+    this.viewport.animate({
+      position: new Point(x, y),
+      width,
+      height,
+      removeOnInterrupt: true,
+      time: MULTIPLAYER_VIEWPORT_EASE_TIME,
+    });
+    this.viewport.dirty = true;
   }
 
   updateCursorPosition(

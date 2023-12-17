@@ -11,9 +11,11 @@ export interface EditorInteractionState {
   showFeedbackMenu: boolean;
   showShareFileMenu: boolean;
   permission: ApiTypes['/v0/files/:uuid.GET.response']['permission'];
+  uuid: string;
   selectedCell: Coordinate;
   selectedCellSheet: string;
   mode: CellType;
+  follow?: string;
 }
 
 export const editorInteractionStateDefault: EditorInteractionState = {
@@ -23,7 +25,8 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showGoToMenu: false,
   showFeedbackMenu: false,
   showShareFileMenu: false,
-  permission: 'VIEWER', // FYI: when we call <RecoilRoot> we initialize this with the value from the server
+  permission: 'VIEWER', // when we call <RecoilRoot> we initialize this with the value from the server
+  uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   selectedCell: { x: 0, y: 0 },
   selectedCellSheet: '',
   mode: 'TEXT',

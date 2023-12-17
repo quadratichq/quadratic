@@ -78,17 +78,21 @@ export class SheetCursor {
       this.keyboardMovePosition = options.keyboardMovePosition;
     }
     pixiApp.updateCursorPosition({ ensureVisible: options.ensureVisible ?? true });
-    multiplayer.sendSelection(
-      this.cursorPosition,
-      this.multiCursor
-        ? new Rectangle(
-            this.multiCursor.originPosition.x,
-            this.multiCursor.originPosition.y,
-            this.multiCursor.terminalPosition.x - this.multiCursor.originPosition.x,
-            this.multiCursor.terminalPosition.y - this.multiCursor.originPosition.y
-          )
-        : undefined
-    );
+    multiplayer.sendSelection(this.getMultiplayerSelection());
+  }
+
+  // gets a stringified selection string for multiplayer
+  getMultiplayerSelection(): string {
+    const cursor = this.cursorPosition;
+    const rectangle = this.multiCursor
+      ? new Rectangle(
+          this.multiCursor.originPosition.x,
+          this.multiCursor.originPosition.y,
+          this.multiCursor.terminalPosition.x - this.multiCursor.originPosition.x,
+          this.multiCursor.terminalPosition.y - this.multiCursor.originPosition.y
+        )
+      : undefined;
+    return JSON.stringify({ cursor, rectangle });
   }
 
   changeBoxCells(boxCells: boolean) {

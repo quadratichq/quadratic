@@ -7,12 +7,12 @@ use std::vec;
 use super::schema::{Any, ArrayOutput, Cell};
 use crate::color::Rgba;
 use crate::grid::file::v1_3::schema::GridSchema;
-use crate::grid::file::v1_4::schema as current;
+use crate::grid::file::v1_4::schema as v1_4;
 
-pub(crate) fn upgrade(schema: GridSchema) -> Result<current::GridSchema> {
+pub(crate) fn upgrade(schema: GridSchema) -> Result<v1_4::GridSchema> {
     let sheet = upgrade_sheet(schema)?;
 
-    let converted = current::GridSchema {
+    let converted = v1_4::GridSchema {
         version: Some("1.4".into()),
         sheets: vec![sheet],
     };
@@ -30,7 +30,7 @@ pub fn language_conversion(language: &str) -> String {
     }
 }
 
-impl From<Any> for current::OutputValueValue {
+impl From<Any> for v1_4::OutputValueValue {
     fn from(val: Any) -> Self {
         match val {
             Any::Number(n) => match BigDecimal::from_str(n.to_string().as_str()).ok() {
@@ -62,31 +62,31 @@ impl From<Any> for current::OutputValueValue {
 }
 
 struct SheetBuilder {
-    sheet_id: current::Id,
-    columns: HashMap<i64, current::Column>,
-    column_ids: HashMap<i64, current::Id>,
-    row_ids: HashMap<i64, current::Id>,
-    borders: current::Borders,
+    sheet_id: v1_4::Id,
+    columns: HashMap<i64, v1_4::Column>,
+    column_ids: HashMap<i64, v1_4::Id>,
+    row_ids: HashMap<i64, v1_4::Id>,
+    borders: v1_4::Borders,
 }
 #[allow(clippy::unwrap_or_default)]
 impl SheetBuilder {
-    fn column_id(&mut self, x: i64) -> &mut current::Id {
-        self.column_ids.entry(x).or_insert_with(current::Id::new)
+    fn column_id(&mut self, x: i64) -> &mut v1_4::Id {
+        self.column_ids.entry(x).or_insert_with(v1_4::Id::new)
     }
 
-    fn row_id(&mut self, x: i64) -> &mut current::Id {
-        self.row_ids.entry(x).or_insert_with(current::Id::new)
+    fn row_id(&mut self, x: i64) -> &mut v1_4::Id {
+        self.row_ids.entry(x).or_insert_with(v1_4::Id::new)
     }
 
-    fn column(&mut self, x: i64) -> &mut current::Column {
+    fn column(&mut self, x: i64) -> &mut v1_4::Column {
         let id = self.column_id(x).to_owned();
         self.columns
             .entry(x)
-            .or_insert_with(|| current::Column::with_id(id))
+            .or_insert_with(|| v1_4::Column::with_id(id))
     }
 
-    fn cell_ref(&mut self, (x, y): (i64, i64)) -> current::CellRef {
-        current::CellRef {
+    fn cell_ref(&mut self, (x, y): (i64, i64)) -> v1_4::CellRef {
+        v1_4::CellRef {
             sheet: self.sheet_id.to_owned(),
             column: self.column_id(x).to_owned(),
             row: self.row_id(y).to_owned(),
@@ -106,7 +106,7 @@ impl SheetBuilder {
                 y.to_string(),
                 (
                     y,
-                    current::ColumnValue {
+                    v1_4::ColumnValue {
                         type_field: type_field.into(),
                         value: value.to_owned(),
                     },
@@ -116,11 +116,7 @@ impl SheetBuilder {
         }
     }
 
-    fn code_cell_value(
-        &mut self,
-        cell: &Cell,
-        cell_ref: current::CellRef,
-    ) -> current::CodeCellValue {
+    fn code_cell_value(&mut self, cell: &Cell, cell_ref: v1_4::CellRef) -> v1_4::CodeCellValue {
         let default = String::new();
         let language = language_conversion(&cell.type_field);
         let code_string = match cell.type_field.to_lowercase().as_str() {
@@ -135,7 +131,7 @@ impl SheetBuilder {
             .as_ref()
             .map(|result| result.formatted_code.to_string());
 
-        current::CodeCellValue {
+        v1_4::CodeCellValue {
             language,
             code_string: code_string.to_string(),
             formatted_code_string,
@@ -143,7 +139,7 @@ impl SheetBuilder {
             output: cell.evaluation_result.to_owned().and_then(|result| {
                 let column = self.column(cell.x);
                 let code_cell_result = match result.success {
-                    true => current::CodeCellRunResult::Ok {
+                    true => v1_4::CodeCellRunResult::Ok {
                         output_value: if let Some(array) = result.array_output {
                             match array {
                                 ArrayOutput::Array(values) => {
@@ -154,8 +150,8 @@ impl SheetBuilder {
                                             .spills
                                             .insert(y.to_string(), (y, cell_ref.to_owned()).into());
                                     }
-                                    current::OutputValue::Array(current::OutputArray {
-                                        size: current::OutputSize {
+                                    v1_4::OutputValue::Array(v1_4::OutputArray {
+                                        size: v1_4::OutputSize {
                                             w: 1_i64,
                                             h: values.len() as i64,
                                         },
@@ -186,8 +182,8 @@ impl SheetBuilder {
                                             );
                                         }
                                     }
-                                    current::OutputValue::Array(current::OutputArray {
-                                        size: current::OutputSize {
+                                    v1_4::OutputValue::Array(v1_4::OutputArray {
+                                        size: v1_4::OutputSize {
                                             w: values.get(0)?.len() as i64,
                                             h: values.len() as i64,
                                         },
@@ -203,12 +199,12 @@ impl SheetBuilder {
                             column
                                 .spills
                                 .insert(cell.y.to_string(), (cell.y, cell_ref.to_owned()).into());
-                            current::OutputValue::Single(current::OutputValueValue {
+                            v1_4::OutputValue::Single(v1_4::OutputValueValue {
                                 type_field: "TEXT".into(),
                                 value,
                             })
                         } else {
-                            current::OutputValue::Single(current::OutputValueValue {
+                            v1_4::OutputValue::Single(v1_4::OutputValueValue {
                                 type_field: "BLANK".into(),
                                 value: "".into(),
                             })
@@ -219,17 +215,17 @@ impl SheetBuilder {
                             .map(|&(x, y)| self.cell_ref((x, y)))
                             .collect(),
                     },
-                    false => current::CodeCellRunResult::Err {
-                        error: current::Error {
+                    false => v1_4::CodeCellRunResult::Err {
+                        error: v1_4::Error {
                             span: result
                                 .error_span
-                                .map(|(start, end)| current::Span { start, end }),
+                                .map(|(start, end)| v1_4::Span { start, end }),
                             msg: "unknown error".into(),
                         },
                     },
                 };
 
-                Some(current::CodeCellRunOutput {
+                Some(v1_4::CodeCellRunOutput {
                     std_out: result.std_out,
                     std_err: result.std_err,
                     result: code_cell_result,
@@ -240,8 +236,8 @@ impl SheetBuilder {
     }
 }
 
-pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
-    let sheet_id = current::Id::new();
+pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<v1_4::Sheet> {
+    let sheet_id = v1_4::Id::new();
     let column_widths = v
         .columns
         .iter()
@@ -309,7 +305,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
         if let Some(text_format) = format.text_format {
             column.numeric_format.insert(
                 format.y.to_string(),
-                current::NumericFormat {
+                v1_4::NumericFormat {
                     kind: text_format.type_field,
                     symbol: text_format.symbol.map(|symbol| match symbol.as_ref() {
                         "USD" => "$".into(),
@@ -330,13 +326,13 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
     for border in v.borders {
         let column = sheet.column(border.x);
         let column_id = column.id.to_string();
-        let top = border.horizontal.map(|horizontal| current::CellBorder {
+        let top = border.horizontal.map(|horizontal| v1_4::CellBorder {
             color: Rgba::from_css_str(&horizontal.color.unwrap_or("rgb(0, 0, 0)".into()))
                 .unwrap_or_default()
                 .as_string(),
             line: horizontal.border_type.unwrap_or("line1".into()),
         });
-        let left = border.vertical.map(|vertical| current::CellBorder {
+        let left = border.vertical.map(|vertical| v1_4::CellBorder {
             color: Rgba::from_css_str(&vertical.color.unwrap_or("rgb(0, 0, 0)".into()))
                 .unwrap_or_default()
                 .as_string(),
@@ -353,7 +349,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
             .or_insert(vec![entry]);
     }
 
-    Ok(current::Sheet {
+    Ok(v1_4::Sheet {
         id: sheet_id,
         name: "Sheet 1".into(),
         color: None,
@@ -367,7 +363,7 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<current::Sheet> {
         rows: sheet
             .row_ids
             .into_iter()
-            .map(|(id, row_id)| (id, current::Id { id: row_id.id }))
+            .map(|(id, row_id)| (id, v1_4::Id { id: row_id.id }))
             .collect(),
         borders: sheet.borders,
         code_cells,
@@ -379,7 +375,7 @@ mod tests {
     use super::*;
     use anyhow::anyhow;
 
-    const V1_3_FILE: &str = include_str!("../../../../examples/v1_3.grid");
+    const V1_3_FILE: &str = include_str!("../../../../../rust-shared/data/grid/v1_3.grid");
 
     fn import(file_contents: &str) -> Result<GridSchema> {
         serde_json::from_str::<GridSchema>(file_contents)

@@ -122,7 +122,7 @@ fn get_functions() -> Vec<FormulaFunction> {
 
 #[cfg(test)]
 mod tests {
-    use crate::formulas::tests::*;
+    use crate::{formulas::tests::*, Pos};
 
     #[test]
     fn test_formula_average() {
@@ -132,12 +132,12 @@ mod tests {
         let sheet = &mut g.sheets_mut()[0];
         for x in 1..=3 {
             for y in 1..=3 {
-                sheet.set_cell_value(Pos { x, y }, x * 3 + y);
+                let _ = sheet.set_cell_value(Pos { x, y }, x * 3 + y);
             }
         }
         let sheet_id = sheet.id;
 
-        let mut ctx = Ctx::new(&g, pos![nAn1].with_sheet(sheet_id));
+        let mut ctx = Ctx::new(&g, pos![nAn1].to_sheet_pos(sheet_id));
         assert_eq!("7.5".to_string(), form.eval(&mut ctx).unwrap().to_string(),);
 
         assert_eq!(
@@ -170,7 +170,7 @@ mod tests {
             let mut g = Grid::new();
             let sheet = &mut g.sheets_mut()[0];
             for y in 0..=10 {
-                sheet.set_cell_value(Pos { x: 1, y }, y);
+                let _ = sheet.set_cell_value(Pos { x: 1, y }, y);
             }
             assert_eq!("2.5", eval_to_string(&g, "AVERAGEIF(Bn5:B10, \"<=5\")"));
         }
@@ -248,7 +248,7 @@ mod tests {
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
         for y in 0..=10 {
-            sheet.set_cell_value(Pos { x: 1, y }, y);
+            let _ = sheet.set_cell_value(Pos { x: 1, y }, y);
         }
         assert_eq!("6", eval_to_string(&g, "COUNTIF(Bn5:B10, \"<=5\")"));
     }

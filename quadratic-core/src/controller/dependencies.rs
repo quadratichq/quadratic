@@ -2,21 +2,21 @@ use std::{self};
 
 use std::collections::HashSet;
 
-use crate::grid::{CellRef, RegionRef};
+use crate::{SheetPos, SheetRect};
 
 use super::GridController;
 
 impl GridController {
-    pub fn get_dependent_cells(&self, cell: CellRef) -> Option<HashSet<CellRef>> {
+    pub fn get_dependent_cells(&self, cell: SheetPos) -> Option<HashSet<SheetPos>> {
         let mut dependent_cells = HashSet::new();
 
         self.grid.sheets().iter().for_each(|sheet| {
-            sheet.code_cells.iter().for_each(|(cell_ref, code_cell)| {
+            sheet.code_cells.iter().for_each(|(pos, code_cell)| {
                 if let Some(output) = code_cell.output.as_ref() {
                     if let Some(cells_accessed) = output.cells_accessed() {
                         cells_accessed.iter().for_each(|cell_accessed| {
                             if *cell_accessed == cell {
-                                dependent_cells.insert(*cell_ref);
+                                dependent_cells.insert(pos.to_sheet_pos(sheet.id));
                             }
                         });
                     }
@@ -31,16 +31,19 @@ impl GridController {
         Some(dependent_cells)
     }
 
-    pub fn get_dependent_cells_for_region(&self, region: RegionRef) -> Option<HashSet<CellRef>> {
+    pub fn get_dependent_cells_for_sheet_rect(
+        &self,
+        sheet_rect: &SheetRect,
+    ) -> Option<HashSet<SheetPos>> {
         let mut dependent_cells = HashSet::new();
 
         self.grid.sheets().iter().for_each(|sheet| {
-            sheet.code_cells.iter().for_each(|(cell_ref, code_cell)| {
+            sheet.code_cells.iter().for_each(|(pos, code_cell)| {
                 if let Some(output) = code_cell.output.as_ref() {
                     if let Some(cells_accessed) = output.cells_accessed() {
                         cells_accessed.iter().for_each(|cell_accessed| {
-                            if region.contains(cell_accessed) {
-                                dependent_cells.insert(*cell_ref);
+                            if sheet_rect.contains(*cell_accessed) {
+                                dependent_cells.insert(pos.to_sheet_pos(sheet.id));
                             }
                         });
                     }
@@ -58,10 +61,12 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashSet;
+
     use crate::{
         controller::GridController,
         grid::{CodeCellRunOutput, CodeCellValue},
-        CellValue, Pos, Value,
+        CellValue, Pos, SheetPos, Value,
     };
 
     #[test]
@@ -70,13 +75,21 @@ mod test {
         let cdc = gc.grid_mut();
         let sheet_id = cdc.sheet_ids()[0];
         let sheet = cdc.sheet_mut_from_id(sheet_id);
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
-        sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
-        let mut cells_accessed = vec![];
-        let cell_ref00 = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
-        let cell_ref01 = sheet.get_or_create_cell_ref(Pos { x: 0, y: 1 });
-        cells_accessed.push(cell_ref00);
-        cells_accessed.push(cell_ref01);
+        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
+        let _ = sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
+        let mut cells_accessed = HashSet::new();
+        let sheet_pos_00 = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+        let sheet_pos_01 = SheetPos {
+            x: 0,
+            y: 1,
+            sheet_id,
+        };
+        cells_accessed.insert(sheet_pos_00);
+        cells_accessed.insert(sheet_pos_01);
         sheet.set_code_cell_value(
             Pos { x: 0, y: 2 },
             Some(CodeCellValue {
@@ -95,17 +108,21 @@ mod test {
                 }),
             }),
         );
-        let cell_ref02 = sheet.get_or_create_cell_ref(Pos { x: 0, y: 2 });
+        let sheet_pos_02 = SheetPos {
+            x: 0,
+            y: 2,
+            sheet_id,
+        };
 
-        assert_eq!(gc.get_dependent_cells(cell_ref00).unwrap().len(), 1);
+        assert_eq!(gc.get_dependent_cells(sheet_pos_00).unwrap().len(), 1);
         assert_eq!(
-            gc.get_dependent_cells(cell_ref00).unwrap().iter().next(),
-            Some(&cell_ref02)
+            gc.get_dependent_cells(sheet_pos_00).unwrap().iter().next(),
+            Some(&sheet_pos_02)
         );
         assert_eq!(
-            gc.get_dependent_cells(cell_ref01).unwrap().iter().next(),
-            Some(&cell_ref02)
+            gc.get_dependent_cells(sheet_pos_01).unwrap().iter().next(),
+            Some(&sheet_pos_02)
         );
-        assert_eq!(gc.get_dependent_cells(cell_ref02), None);
+        assert_eq!(gc.get_dependent_cells(sheet_pos_02), None);
     }
 }

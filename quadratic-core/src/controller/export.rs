@@ -1,16 +1,17 @@
 use anyhow::Result;
 use csv::Writer;
 
-use super::{auto_complete::cell_values_in_rect, GridController};
+use super::GridController;
 use crate::{grid::SheetId, Rect};
 
 impl GridController {
-    /// exports a CSV string from a selction on the grid.
+    /// exports a CSV string from a selection on the grid.
     ///
     /// Returns a [`String`].
     pub fn export_csv_selection(&self, sheet_id: SheetId, selection: &Rect) -> Result<String> {
         let sheet = self.sheet(sheet_id);
-        let values = cell_values_in_rect(selection, sheet)?
+        let values = sheet
+            .cell_values_in_rect(selection)?
             .into_cell_values_vec()
             .iter()
             .map(|record| record.to_string())
@@ -41,7 +42,7 @@ mod tests {
 
         for y in selection.y_range() {
             for x in selection.x_range() {
-                grid_controller.set_cell_value(sheet_id, (x, y).into(), vals[count].into(), None);
+                grid_controller.set_cell_value((x, y, sheet_id).into(), vals[count].into(), None);
                 count += 1;
             }
         }

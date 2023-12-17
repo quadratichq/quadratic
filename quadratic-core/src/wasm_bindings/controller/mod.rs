@@ -79,12 +79,9 @@ impl GridController {
 
     #[wasm_bindgen(js_name = "getCalculationTransactionSummary")]
     pub fn js_calculation_transaction_summary(&mut self) -> Result<JsValue, JsValue> {
-        self.updated_bounds_in_transaction();
-        if let Some(summary) = self.transaction_summary() {
-            Ok(serde_wasm_bindgen::to_value(&summary)?)
-        } else {
-            Err(JsValue::UNDEFINED)
-        }
+        self.transaction_updated_bounds();
+        let summary = self.prepare_transaction_summary();
+        Ok(serde_wasm_bindgen::to_value(&summary)?)
     }
 
     #[wasm_bindgen(js_name = "calculationGetCells")]
@@ -93,6 +90,13 @@ impl GridController {
         get_cells: JsComputeGetCells,
     ) -> Option<CellsForArray> {
         self.calculation_get_cells(get_cells)
+    }
+
+    #[wasm_bindgen(js_name = "multiplayerTransaction")]
+    pub fn js_multiplayer_transaction(&mut self, operations: String) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(
+            &self.received_transaction(operations),
+        )?)
     }
 
     /// Populates a portion of a sheet with random float values.
@@ -117,6 +121,7 @@ impl GridController {
             save: false,
             generate_thumbnail: false,
             transaction_busy: false,
+            forward_operations: None,
             html: HashSet::new(),
         })?)
     }

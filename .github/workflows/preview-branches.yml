@@ -1,0 +1,136 @@
+name: Deploy Preview Branch
+
+on:
+  pull_request:
+
+
+# Use runs on `ubuntu-latest-8-cores`. All of our self hosted runners use this tag.
+# Our runners pick up jobs first, and if all our runners are being used or are down
+# it will automatically back up to using GitHub hosted runners.
+
+
+jobs:
+
+  infra:
+    name: Create or Update Infrastructure with Pulumi
+    runs-on: ubuntu-latest-8-cores 
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+    - uses: pulumi/actions@v4
+
+    - name: Update Pulumi Infrastructure
+      id: pulumiInfra
+      working-directory: infra
+      run: |
+        npm ci
+        
+        STACK_NAME="preview-pr-${{ env.PR_ID }}"
+        if ! pulumi stack ls | grep -q "^$STACK_NAME"; then
+          echo "Stack $STACK_NAME does not exist. Initializing..."
+          pulumi stack init $STACK_NAME
+        else
+          echo "Stack $STACK_NAME already exists."
+          pulumi stack select $STACK_NAME
+        fi
+
+        pulumi config set aws:region us-west-2
+        pulumi config set domain quadratic-preview.com
+        pulumi config set subdomain multiplayer-pr-${{ env.PR_ID }}
+        pulumi config set data-dog-env preview
+        pulumi config set data-dog-api-key ${{ env.DD_API_KEY }}
+
+        pulumi up -y
+        echo "MULTIPLAYER_INSTANCE_DNS=$(pulumi stack output multiplayerInstanceDns)" >> "$GITHUB_OUTPUT"
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+        PR_ID: ${{ github.event.pull_request.number }}
+        DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+    outputs:
+      MULTIPLAYER_INSTANCE_DNS: ${{ steps.pulumiInfra.outputs.MULTIPLAYER_INSTANCE_DNS }}
+
+
+  multiplayer_preview:
+    needs: infra
+    runs-on: ubuntu-latest-8-cores 
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+
+    - name: Set up Rust
+      uses: moonrepo/setup-rust@v1
+      with:
+        components: clippy, llvm-tools-preview
+        cache: false
+        channel: 'nightly'
+
+    - name: Install pkg-config
+      if: github.runner.isHosted == true
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pkg-config
+
+    - name: Build quadratic-multiplayer
+      working-directory: quadratic-multiplayer
+      run: |
+        cargo build --release
+
+    - name: Deploy Multiplayer to EC2
+      run: ./infra/multiplayer/deploy-multiplayer-service.sh
+      env:
+        EC2_KEY_PEM: ${{ secrets.EC2_KEY_PEM }}
+        EC2_INSTANCE_DNS: ${{needs.infra.outputs.MULTIPLAYER_INSTANCE_DNS}}
+
+  # client_preview:
+  #   needs: infra
+  #   runs-on: ubuntu-latest-8-cores 
+  #   steps:
+  #   - uses: actions/checkout@v4
+  #   - uses: actions/setup-node@v4
+  #     with:
+  #       node-version: 18
+
+  #   - name: Set up Rust
+  #     uses: moonrepo/setup-rust@v1
+  #     with:
+  #       cache: false
+  #   - uses: jetli/wasm-pack-action@v0.4.0
+  #     with:
+  #       version: 'latest'
+
+  #   - name: Build Client
+  #     working-directory: quadratic-client
+  #     run: |
+  #       npm ci
+  #       npm run build:wasm:javascript
+  #       npm run build:wasm:types
+  #       npm run build
+  #     env:
+  #       VITE_ENVIRONMENT: preview
+  #       VITE_QUADRATIC_API_URL: https://quadratic-api-dev-pr-${{ github.event.pull_request.number }}.herokuapp.com
+  #       VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+  #       VITE_AUTH0_CLIENT_ID: ${{ secrets.VITE_AUTH0_CLIENT_ID }}
+  #       VITE_AUTH0_AUDIENCE: ${{ secrets.VITE_AUTH0_AUDIENCE }}
+  #       VITE_AUTH0_ISSUER: ${{ secrets.VITE_AUTH0_ISSUER }}
+  #       VITE_AUTH0_DOMAIN: ${{ secrets.VITE_AUTH0_DOMAIN }}
+
+  #   # Set up AWS credentials
+  #   - name: Set up AWS credentials
+  #     uses: aws-actions/configure-aws-credentials@v1
+  #     with:
+  #       aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #       aws-region: your-aws-region
+
+  # # Deploy to S3
+  # - name: Deploy to S3
+  #   run: |
+  #     aws s3 sync ./path-to-your-static-files/ s3://your-s3-bucket-name --delete
+

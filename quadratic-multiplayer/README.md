@@ -68,17 +68,6 @@ Signals that a user has entered the room
 
 #### Request
 
-```rust
-EnterRoom {
-    r#type: String,
-    user_id: Uuid,
-    file_id: Uuid,
-    first_name: String,
-    last_name: String,
-    image: String,
-},
-```
-
 JSON:
 
 ```json
@@ -93,23 +82,6 @@ JSON:
 ```
 
 #### Response
-
-```rust
-User {
-    id: Uuid,
-    first_name: String,
-    last_name: String,
-    image: String,
-}
-
-Room {
-    r#type: String,
-    room: {
-        file_id: Uuid,
-        users: HashMap<Uuid, User>,
-    },
-},
-```
 
 JSON:
 
@@ -134,22 +106,47 @@ JSON:
 }
 ```
 
+### Leave Room
+
+Signals that a user leaves a room
+
+#### Request
+
+JSON:
+
+```json
+{
+  "type": "LeaveRoom",
+  "user_id": "00000000-0000-0000-0000-000000000000",
+  "file_id": "00000000-0000-0000-0000-000000000001"
+}
+```
+
+#### Response
+
+JSON:
+
+```json
+{
+  "type":"Room",
+  "room":{
+    "file_id":"00000000-0000-0000-0000-000000000001",
+    "users":{
+      "00000000-0000-0000-0000-000000000002":{
+        "first_name":"David",
+        "last_name":"Figatner",
+        "image":"https://lh3.googleusercontent.com/a/ACg8ocLcJuKVkU7-Zr67hinRLyzgO_o3VOeMlOA17HcOlKe1fQ=s96-c"
+      }
+    }
+  }
+}
+```
+
 ### MouseMove
 
 Signals that a user in a room moved their mouse.
 
 #### Request
-
-Rust:
-
-```rust
-MouseMove {
-    user_id: Uuid,
-    file_id: Uuid,
-    x: f64,
-    y: f64,
-},
-```
 
 JSON:
 
@@ -165,17 +162,6 @@ JSON:
 
 #### Response
 
-Rust:
-
-```rust
-MouseMove {
-    user_id: Uuid,
-    file_id: Uuid,
-    x: f64,
-    y: f64,
-},
-```
-
 JSON:
 
 ```json
@@ -186,4 +172,29 @@ JSON:
   "x": 10,
   "y": 10
 }
+```
+
+
+### Heartbeat
+
+Signals that a user is still active in a room
+
+#### Request
+
+JSON:
+
+```json
+{
+  "type": "Heartbeat",
+  "user_id": "00000000-0000-0000-0000-000000000000",
+  "file_id": "00000000-0000-0000-0000-000000000001",
+}
+```
+
+#### Response
+
+JSON:
+
+```json
+{}
 ```

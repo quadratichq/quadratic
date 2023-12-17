@@ -13,18 +13,17 @@ mod bounds;
 mod code;
 mod column;
 pub mod file;
-mod formatting;
+pub mod formatting;
 mod ids;
 pub mod js_types;
 mod offsets;
-mod response;
 pub mod series;
 pub mod sheet;
 
 use block::{Block, BlockContent, CellValueBlockContent, SameValue};
 pub use borders::{
-    generate_borders, generate_borders_full, get_cell_borders_in_rect, get_region_borders,
-    set_region_borders, BorderSelection, BorderStyle, CellBorderLine, CellBorders, CellSide,
+    generate_borders, generate_borders_full, get_cell_borders_in_rect, get_rect_borders,
+    set_rect_borders, BorderSelection, BorderStyle, CellBorderLine, CellBorders, CellSide,
     IdSpaceBorders, LegacyCellBorder, LegacyCellBorders, SheetBorders,
 };
 pub use bounds::GridBounds;
@@ -37,7 +36,10 @@ pub use formatting::{
 pub use ids::*;
 pub use sheet::Sheet;
 
-use crate::{Array, CellValue, Pos};
+use crate::CellValue;
+
+#[cfg(test)]
+use crate::{Array, Pos};
 
 #[cfg(test)]
 pub use borders::print_borders;
@@ -61,13 +63,15 @@ impl Grid {
         ret.add_sheet(None).expect("error adding initial sheet");
         ret
     }
+
+    #[cfg(test)]
     pub fn from_array(base_pos: Pos, array: &Array) -> Self {
         let mut ret = Grid::new();
         let sheet = &mut ret.sheets_mut()[0];
         for ((x, y), value) in array.size().iter().zip(array.cell_values_slice()) {
             let x = base_pos.x + x as i64;
             let y = base_pos.y + y as i64;
-            sheet.set_cell_value(Pos { x, y }, value.clone());
+            let _ = sheet.set_cell_value(Pos { x, y }, value.clone());
         }
         ret
     }
@@ -85,6 +89,14 @@ impl Grid {
         } else {
             unreachable!("grid should always have at least one sheet");
         }
+    }
+    pub fn first_sheet(&self) -> &Sheet {
+        let id = self.first_sheet_id();
+        self.sheet_from_id(id)
+    }
+    pub fn first_sheet_mut(&mut self) -> &mut Sheet {
+        let id = self.first_sheet_id();
+        self.sheet_mut_from_id(id)
     }
     pub fn sheet_ids(&self) -> Vec<SheetId> {
         self.sheets.iter().map(|sheet| sheet.id).collect()
@@ -193,6 +205,10 @@ impl Grid {
     pub fn sheet_from_id(&self, sheet_id: SheetId) -> &Sheet {
         let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");
         &self.sheets[sheet_index]
+    }
+    pub fn try_sheet_from_id(&self, sheet_id: SheetId) -> Option<&Sheet> {
+        let sheet_index = self.sheet_id_to_index(sheet_id)?;
+        Some(&self.sheets[sheet_index])
     }
     pub fn sheet_mut_from_id(&mut self, sheet_id: SheetId) -> &mut Sheet {
         let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");

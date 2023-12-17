@@ -92,6 +92,7 @@ export const CodeEditor = () => {
 
   useEffect(() => {
     mixpanel.track('[CodeEditor].opened', { type: editorMode });
+    multiplayer.sendCellEdit('', 0, true);
   }, [editorMode]);
 
   const closeEditor = useCallback(
@@ -105,6 +106,7 @@ export const CodeEditor = () => {
         }));
         pixiApp.highlightedCells.clear();
         focusGrid();
+        multiplayer.sendEndCellEdit();
       }
     },
     [codeString, editorContent, setEditorInteractionState]
@@ -197,7 +199,6 @@ export const CodeEditor = () => {
         multiplayer.sendMouseMove();
       }}
       onPointerMove={(e) => {
-        console.log('hi');
         e.stopPropagation();
       }}
     >

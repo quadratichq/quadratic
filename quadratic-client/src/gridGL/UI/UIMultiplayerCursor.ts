@@ -4,10 +4,14 @@ import { Graphics, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
+import { CELL_INPUT_PADDING } from './Cursor';
 
 export const CURSOR_THICKNESS = 1;
 const ALPHA = 0.5;
 const FILL_ALPHA = 0.01 / ALPHA;
+
+// outside border when editing the cell
+const CURSOR_INPUT_ALPHA = 0.333 / ALPHA;
 
 export class UIMultiPlayerCursor extends Graphics {
   dirty = false;
@@ -18,23 +22,46 @@ export class UIMultiPlayerCursor extends Graphics {
   }
 
   // todo: handle multiple people in the same cell
-  private drawCursor(color: number, cursor: Coordinate) {
+  private drawCursor({
+    color,
+    cursor,
+    editing,
+    sessionId,
+    code,
+  }: {
+    color: number;
+    cursor: Coordinate;
+    editing: boolean;
+    sessionId: string;
+    code: boolean;
+  }): void {
     const sheet = sheets.sheet;
-
+    if (cursor.x === undefined || cursor.y === undefined) debugger
     let { x, y, width, height } = sheet.getCellOffsets(cursor.x, cursor.y);
 
-    // draw cursor
+    if (editing) {
+      const cellEdit = document.querySelector(`.multiplayer-cell-edit-${sessionId}`) as HTMLDivElement;
+      if (cellEdit.offsetWidth + CELL_INPUT_PADDING > width) {
+        width = Math.max(cellEdit.offsetWidth + CELL_INPUT_PADDING, width);
+      }
+    }
+
+    // draw cursor)
     this.lineStyle({
       width: CURSOR_THICKNESS,
       color,
       alignment: 0,
     });
-    this.moveTo(x, y);
-    this.lineTo(x + width, y);
-    this.lineTo(x + width, y + height);
-    this.moveTo(x + width, y + height);
-    this.lineTo(x, y + height);
-    this.lineTo(x, y);
+    this.drawRect(x, y, width, height);
+    if (editing || code) {
+      this.lineStyle({
+        width: CURSOR_THICKNESS * 1.5,
+        color,
+        alpha: CURSOR_INPUT_ALPHA,
+        alignment: 1,
+      });
+      this.drawRect(x, y, width, height);
+    }
   }
 
   private drawMultiCursor(color: number, rectangle: Rectangle): void {
@@ -55,15 +82,21 @@ export class UIMultiPlayerCursor extends Graphics {
     if (this.dirty) {
       this.dirty = false;
       this.clear();
-      // const sheetId = sheets.sheet.id;
-      multiplayer.players.forEach((player) => {
+      const sheetId = sheets.sheet.id;
+      multiplayer.users.forEach((player) => {
         const color = MULTIPLAYER_COLORS_TINT[player.color];
-        if (player.selection /* && player.sheetId === sheetId */) {
-          this.drawCursor(color, player.selection.cursor);
+        if (player.parsedSelection && player.sheet_id === sheetId) {
+          this.drawCursor({
+            color,
+            cursor: player.parsedSelection.cursor,
+            editing: player.cell_edit.active,
+            sessionId: player.session_id,
+            code: player.cell_edit.code_editor,
+          });
 
           // note: the rectangle is not really a PIXI.Rectangle, but a (x, y, width, height) type (b/c we JSON stringified)
-          if (player.selection.rectangle) {
-            this.drawMultiCursor(color, player.selection.rectangle);
+          if (player.parsedSelection.rectangle) {
+            this.drawMultiCursor(color, player.parsedSelection.rectangle);
           }
         }
       });

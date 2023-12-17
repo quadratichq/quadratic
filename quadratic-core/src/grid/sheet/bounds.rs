@@ -221,11 +221,11 @@ mod test {
         let mut sheet = Sheet::test();
         assert!(sheet.is_empty());
 
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
+        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
         sheet.recalculate_bounds();
         assert!(!sheet.is_empty());
 
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Blank);
+        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Blank);
         sheet.recalculate_bounds();
         assert!(sheet.is_empty());
     }
@@ -236,8 +236,9 @@ mod test {
         assert_eq!(sheet.bounds(true), GridBounds::Empty);
         assert_eq!(sheet.bounds(false), GridBounds::Empty);
 
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
-        sheet.set_formatting_value::<CellAlign>(Pos { x: 1, y: 1 }, Some(CellAlign::Center));
+        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
+        let _ =
+            sheet.set_formatting_value::<CellAlign>(Pos { x: 1, y: 1 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(
@@ -260,12 +261,13 @@ mod test {
     #[test]
     fn test_column_bounds() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             Pos { x: 100, y: -50 },
             CellValue::Text(String::from("test")),
         );
-        sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
-        sheet.set_formatting_value::<CellAlign>(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
+        let _ = sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
+        let _ = sheet
+            .set_formatting_value::<CellAlign>(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.column_bounds(100, true), Some((-50, 80)));
@@ -275,12 +277,13 @@ mod test {
     #[test]
     fn test_row_bounds() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             Pos { y: 100, x: -50 },
             CellValue::Text(String::from("test")),
         );
-        sheet.set_cell_value(Pos { y: 100, x: 80 }, CellValue::Text(String::from("test")));
-        sheet.set_formatting_value::<CellAlign>(Pos { y: 100, x: 200 }, Some(CellAlign::Center));
+        let _ = sheet.set_cell_value(Pos { y: 100, x: 80 }, CellValue::Text(String::from("test")));
+        let _ = sheet
+            .set_formatting_value::<CellAlign>(Pos { y: 100, x: 200 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.row_bounds(100, true), Some((-50, 80)));
@@ -291,23 +294,25 @@ mod test {
     fn test_columns_bounds() {
         let mut sheet = Sheet::test();
 
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             Pos { x: 100, y: -50 },
             CellValue::Text(String::from("test")),
         );
-        sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
-        sheet.set_formatting_value::<CellAlign>(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
+        let _ = sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
+        let _ = sheet
+            .set_formatting_value::<CellAlign>(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
 
         // set negative values
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             Pos { x: -100, y: -50 },
             CellValue::Text(String::from("test")),
         );
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             Pos { x: -100, y: -80 },
             CellValue::Text(String::from("test")),
         );
-        sheet.set_formatting_value::<CellAlign>(Pos { x: -100, y: -200 }, Some(CellAlign::Center));
+        let _ = sheet
+            .set_formatting_value::<CellAlign>(Pos { x: -100, y: -200 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.columns_bounds(0, 100, true), Some((-50, 80)));
@@ -327,23 +332,25 @@ mod test {
     fn test_rows_bounds() {
         let mut sheet = Sheet::test();
 
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             Pos { y: 100, x: -50 },
             CellValue::Text(String::from("test")),
         );
-        sheet.set_cell_value(Pos { y: 100, x: 80 }, CellValue::Text(String::from("test")));
-        sheet.set_formatting_value::<CellAlign>(Pos { y: 100, x: 200 }, Some(CellAlign::Center));
+        let _ = sheet.set_cell_value(Pos { y: 100, x: 80 }, CellValue::Text(String::from("test")));
+        let _ = sheet
+            .set_formatting_value::<CellAlign>(Pos { y: 100, x: 200 }, Some(CellAlign::Center));
 
         // set negative values
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             Pos { y: -100, x: -50 },
             CellValue::Text(String::from("test")),
         );
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             Pos { y: -100, x: -80 },
             CellValue::Text(String::from("test")),
         );
-        sheet.set_formatting_value::<CellAlign>(Pos { y: -100, x: -200 }, Some(CellAlign::Center));
+        let _ = sheet
+            .set_formatting_value::<CellAlign>(Pos { y: -100, x: -200 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.rows_bounds(0, 100, true), Some((-50, 80)));
@@ -363,7 +370,7 @@ mod test {
     fn test_find_next_column() {
         let mut sheet = Sheet::test();
 
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text(String::from("test")));
+        let _ = sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text(String::from("test")));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.find_next_column(-1, 2, false, true), 1);
@@ -378,7 +385,7 @@ mod test {
     fn test_find_next_row() {
         let mut sheet = Sheet::test();
 
-        sheet.set_cell_value(Pos { y: 1, x: 2 }, CellValue::Text(String::from("test")));
+        let _ = sheet.set_cell_value(Pos { y: 1, x: 2 }, CellValue::Text(String::from("test")));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.find_next_row(-1, 2, false, true), 1);

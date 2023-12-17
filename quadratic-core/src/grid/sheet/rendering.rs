@@ -42,7 +42,7 @@ impl Sheet {
                 .spills
                 .blocks_of_range(rect.y_range())
                 .filter_map(move |block| {
-                    let code_cell_pos = self.cell_ref_to_pos(block.content.value)?;
+                    let code_cell_pos = block.content.value;
                     let code_cell = self.code_cells.get(&block.content.value)?;
 
                     let mut block_len = block.len();
@@ -172,13 +172,12 @@ impl Sheet {
     pub fn get_html_output(&self) -> Vec<JsHtmlOutput> {
         self.code_cells
             .iter()
-            .filter_map(|(cell_ref, code_cell_value)| {
+            .filter_map(|(pos, code_cell_value)| {
                 let output = code_cell_value.get_output_value(0, 0)?;
                 if !matches!(output, CellValue::Html(_)) {
                     return None;
                 }
-                let pos = self.cell_ref_to_pos(*cell_ref)?;
-                let (w, h) = if let Some(render_size) = self.render_size(pos) {
+                let (w, h) = if let Some(render_size) = self.render_size(*pos) {
                     (Some(render_size.w), Some(render_size.h))
                 } else {
                     (None, None)
@@ -229,13 +228,12 @@ impl Sheet {
     }
     /// Returns data for rendering code cells.
     pub fn get_render_code_cells(&self, rect: Rect) -> Vec<JsRenderCodeCell> {
-        self.iter_code_cells_locations_in_region(rect)
-            .filter_map(|cell_ref| {
-                let pos = self.cell_ref_to_pos(cell_ref)?;
+        self.iter_code_cells_in_rect(rect)
+            .filter_map(|pos| {
                 if !rect.contains(pos) {
                     return None;
                 }
-                let code_cell = self.code_cells.get(&cell_ref)?;
+                let code_cell = self.code_cells.get(&pos)?;
                 let output_size = code_cell.output_size();
                 let (state, w, h) = match &code_cell.output {
                     Some(output) => match &output.result {
@@ -269,9 +267,8 @@ impl Sheet {
     /// Returns data for all rendering code cells
     pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
         self.iter_code_cells_locations()
-            .filter_map(|cell_ref| {
-                let pos = self.cell_ref_to_pos(cell_ref)?;
-                let code_cell = self.code_cells.get(&cell_ref)?;
+            .filter_map(|pos| {
+                let code_cell = self.code_cells.get(&pos)?;
                 let output_size = code_cell.output_size();
 
                 let (state, w, h) = match &code_cell.output {
@@ -316,6 +313,8 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
@@ -323,7 +322,7 @@ mod tests {
             Bold, CellAlign, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue,
             Italic, RenderSize,
         },
-        CellValue, Error, ErrorMsg, Pos, Rect, Value,
+        CellValue, Error, ErrorMsg, Pos, Rect, SheetPos, Value,
     };
 
     #[test]
@@ -338,7 +337,7 @@ mod tests {
         };
         assert!(!sheet.has_render_cells(rect));
 
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
+        let _ = sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
         assert!(sheet.has_render_cells(rect));
 
         sheet.delete_cell_values(Rect::single_pos(Pos { x: 1, y: 2 }));
@@ -353,7 +352,7 @@ mod tests {
                 output: Some(CodeCellRunOutput {
                     result: CodeCellRunResult::Ok {
                         output_value: Value::Single(CellValue::Text("hello".to_string())),
-                        cells_accessed: vec![],
+                        cells_accessed: HashSet::new(),
                     },
                     std_err: None,
                     std_out: None,
@@ -364,7 +363,15 @@ mod tests {
         );
         assert!(sheet.has_render_cells(rect));
 
-        gc.delete_cells_rect(sheet_id, Rect::single_pos(Pos { x: 2, y: 3 }), None);
+        gc.delete_cells_rect(
+            SheetPos {
+                x: 2,
+                y: 3,
+                sheet_id,
+            }
+            .into(),
+            None,
+        );
         let sheet = gc.sheet(sheet_id);
         assert!(!sheet.has_render_cells(rect));
     }
@@ -375,21 +382,22 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
-        sheet.set_formatting_value::<Bold>(Pos { x: 1, y: 2 }, Some(true));
-        sheet.set_formatting_value::<CellAlign>(Pos { x: 1, y: 2 }, Some(CellAlign::Center));
-        sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Number(123.into()));
-        sheet.set_formatting_value::<Italic>(Pos { x: 1, y: 3 }, Some(true));
-        sheet.set_cell_value(Pos { x: 2, y: 4 }, CellValue::Html("html".to_string()));
-        sheet.set_cell_value(Pos { x: 2, y: 5 }, CellValue::Logical(true));
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
+        let _ = sheet.set_formatting_value::<Bold>(Pos { x: 1, y: 2 }, Some(true));
+        let _ =
+            sheet.set_formatting_value::<CellAlign>(Pos { x: 1, y: 2 }, Some(CellAlign::Center));
+        let _ = sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Number(123.into()));
+        let _ = sheet.set_formatting_value::<Italic>(Pos { x: 1, y: 3 }, Some(true));
+        let _ = sheet.set_cell_value(Pos { x: 2, y: 4 }, CellValue::Html("html".to_string()));
+        let _ = sheet.set_cell_value(Pos { x: 2, y: 5 }, CellValue::Logical(true));
+        let _ = sheet.set_cell_value(
             Pos { x: 2, y: 6 },
             CellValue::Error(Box::new(Error {
                 span: None,
                 msg: ErrorMsg::Spill,
             })),
         );
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             Pos { x: 3, y: 3 },
             CellValue::Error(Box::new(Error {
                 span: None,
@@ -500,13 +508,16 @@ mod tests {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_code(
-            sheet_id,
-            Pos { x: 1, y: 2 },
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
             CodeCellLanguage::Python,
             "<html></html>".to_string(),
             None,
         );
-        gc.calculation_complete(JsCodeResult::new(
+        gc.after_calculation_async(JsCodeResult::new(
             true,
             None,
             None,
@@ -531,8 +542,12 @@ mod tests {
             }
         );
         gc.set_cell_render_size(
-            sheet_id,
-            Rect::single_pos(Pos { x: 1, y: 2 }),
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            }
+            .into(),
             Some(RenderSize {
                 w: "1".into(),
                 h: "2".into(),

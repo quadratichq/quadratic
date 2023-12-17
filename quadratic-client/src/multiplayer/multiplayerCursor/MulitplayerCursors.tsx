@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { sheets } from '@/grid/controller/Sheets';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { useEffect, useState } from 'react';
@@ -11,29 +10,40 @@ const OFFSCREEN_SIZE = 5;
 
 export const MultiplayerCursors = () => {
   // triggers a render
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, setPlayersTrigger] = useState(0);
   useEffect(() => {
     const updatePlayersTrigger = () => setPlayersTrigger((x) => x + 1);
     window.addEventListener('multiplayer-cursor', updatePlayersTrigger);
-    return () => window.removeEventListener('multiplayer-cursor', updatePlayersTrigger);
-  }, []);
-
-  const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
-  useEffect(() => {
-    const changeSheet = () => setCurrentSheetId(sheets.sheet.id);
-    window.addEventListener('change-sheet', changeSheet);
-    return () => window.removeEventListener('change-sheet', changeSheet);
+    window.addEventListener('change-sheet', updatePlayersTrigger);
+    pixiApp.viewport.on('moved', updatePlayersTrigger);
+    pixiApp.viewport.on('zoomed', updatePlayersTrigger);
+    return () => {
+      window.removeEventListener('multiplayer-cursor', updatePlayersTrigger);
+      window.removeEventListener('change-sheet', updatePlayersTrigger);
+      pixiApp.viewport.off('moved', updatePlayersTrigger);
+      pixiApp.viewport.off('zoomed', updatePlayersTrigger);
+    };
   }, []);
 
   return (
     <div className="multiplayer-cursors">
-      {[...multiplayer.players].flatMap(([id, player]) => {
+      {[...multiplayer.users].flatMap(([id, player]) => {
         const color = MULTIPLAYER_COLORS[player.color];
         const bounds = pixiApp.viewport.getVisibleBounds();
         const rect = pixiApp.canvas.getBoundingClientRect();
         const offsetTop = rect.top;
-        const { x, y, sheetId, name, visible } = player;
-        if (visible && x !== undefined && y !== undefined /*&& sheetId === currentSheetId*/) {
+        const { x, y, sheet_id, first_name, last_name, email, visible, index } = player;
+        let name: string;
+        if (first_name || last_name) {
+          name = `${first_name} ${last_name}`;
+        } else if (email) {
+          name = email;
+        } else {
+          name = `User ${index}`;
+        }
+
+        if (visible && x !== undefined && y !== undefined && sheet_id === sheets.sheet.id) {
           const translated = pixiApp.viewport.toScreen(x, y);
           let offscreen = false;
           if (x > bounds.right - OFFSCREEN_SIZE) {

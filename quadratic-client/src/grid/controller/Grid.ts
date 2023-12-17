@@ -1,3 +1,5 @@
+import { htmlCellsHandler } from '@/gridGL/htmlCells/htmlCellsHandler';
+import { multiplayer } from '@/multiplayer/multiplayer';
 import * as Sentry from '@sentry/react';
 import { Point, Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
@@ -105,6 +107,9 @@ export class Grid {
     if (summary.offsets_modified.length) {
       sheets.updateOffsets(summary.offsets_modified);
       pixiApp.cellsSheets.updateBorders(summary.offsets_modified);
+      htmlCellsHandler.updateOffsets(summary.offsets_modified.map((offset) => offset.id));
+      pixiApp.cursor.dirty = true;
+      pixiApp.multiplayerCursor.dirty = true;
     }
 
     if (summary.code_cells_modified.length) {
@@ -135,6 +140,10 @@ export class Grid {
     if (summary.save) {
       this.dirty = true;
       window.dispatchEvent(new CustomEvent('transaction-complete'));
+    }
+
+    if (summary.forward_operations) {
+      multiplayer.sendTransaction(summary.forward_operations);
     }
     pixiApp.setViewportDirty();
   }
@@ -738,6 +747,11 @@ export class Grid {
       rectangleToRect(sheets.sheet.cursor.getRectangle()),
       BigInt(decimal_places)
     );
+  }
+
+  multiplayerTransaction(transaction: string) {
+    const summary = this.gridController.multiplayerTransaction(transaction);
+    this.transactionResponse(summary);
   }
 
   //#endregion
