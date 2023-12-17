@@ -31,14 +31,16 @@ impl GridController {
         column: i32,
         ignore_formatting: bool,
     ) -> Option<MinMax> {
-        let sheet = self.grid().try_sheet_from_string(sheet_id);
-        sheet
-            .column_bounds(column as i64, ignore_formatting)
-            .as_ref()
-            .map(|bounds| MinMax {
-                min: bounds.0 as i32,
-                max: bounds.1 as i32,
-            })
+        match self.grid().try_sheet_from_string(sheet_id) {
+            None => None, // sheet no longer exists
+            Some(sheet) => sheet
+                .column_bounds(column as i64, ignore_formatting)
+                .as_ref()
+                .map(|bounds| MinMax {
+                    min: bounds.0 as i32,
+                    max: bounds.1 as i32,
+                }),
+        }
     }
 
     // returns a column's bounds.
@@ -50,14 +52,16 @@ impl GridController {
         column_end: i32,
         ignore_formatting: bool,
     ) -> Option<MinMax> {
-        let sheet = self.grid().try_sheet_from_string(sheet_id);
-        sheet
-            .columns_bounds(column_start as i64, column_end as i64, ignore_formatting)
-            .as_ref()
-            .map(|bounds| MinMax {
-                min: bounds.0 as i32,
-                max: bounds.1 as i32,
-            })
+        match self.grid().try_sheet_from_string(sheet_id) {
+            None => None, // sheet no longer exists
+            Some(sheet) => sheet
+                .columns_bounds(column_start as i64, column_end as i64, ignore_formatting)
+                .as_ref()
+                .map(|bounds| MinMax {
+                    min: bounds.0 as i32,
+                    max: bounds.1 as i32,
+                }),
+        }
     }
 
     // returns a row's bounds.
@@ -68,14 +72,16 @@ impl GridController {
         row: i32,
         ignore_formatting: bool,
     ) -> Option<MinMax> {
-        let sheet = self.grid().try_sheet_from_string(sheet_id);
-        sheet
-            .row_bounds(row as i64, ignore_formatting)
-            .as_ref()
-            .map(|bounds| MinMax {
-                min: bounds.0 as i32,
-                max: bounds.1 as i32,
-            })
+        match self.grid().try_sheet_from_string(sheet_id) {
+            None => None, // sheet no longer exists
+            Some(sheet) => sheet
+                .row_bounds(row as i64, ignore_formatting)
+                .as_ref()
+                .map(|bounds| MinMax {
+                    min: bounds.0 as i32,
+                    max: bounds.1 as i32,
+                }),
+        }
     }
 
     // returns a column's bounds.
@@ -87,14 +93,16 @@ impl GridController {
         row_end: i32,
         ignore_formatting: bool,
     ) -> Option<MinMax> {
-        let sheet = self.grid().try_sheet_from_string(sheet_id);
-        sheet
-            .rows_bounds(row_start as i64, row_end as i64, ignore_formatting)
-            .as_ref()
-            .map(|bounds| MinMax {
-                min: bounds.0 as i32,
-                max: bounds.1 as i32,
-            })
+        match self.grid().try_sheet_from_string(sheet_id) {
+            None => None, // sheet no longer exists
+            Some(sheet) => sheet
+                .rows_bounds(row_start as i64, row_end as i64, ignore_formatting)
+                .as_ref()
+                .map(|bounds| MinMax {
+                    min: bounds.0 as i32,
+                    max: bounds.1 as i32,
+                }),
+        }
     }
 
     /// finds nearest column with or without content
@@ -107,8 +115,14 @@ impl GridController {
         reverse: bool,
         with_content: bool,
     ) -> i32 {
-        let sheet = self.grid().try_sheet_from_string(sheet_id);
-        sheet.find_next_column(column_start as i64, row as i64, reverse, with_content) as i32
+        // todo: handle the None case better
+        match self.grid().try_sheet_from_string(sheet_id) {
+            None => 0, // sheet no longer exists
+            Some(sheet) => {
+                sheet.find_next_column(column_start as i64, row as i64, reverse, with_content)
+                    as i32
+            }
+        }
     }
 
     /// finds nearest row with or without content
@@ -121,7 +135,12 @@ impl GridController {
         reverse: bool,
         with_content: bool,
     ) -> i32 {
-        let sheet = self.grid().try_sheet_from_string(sheet_id);
-        sheet.find_next_row(row_start as i64, column as i64, reverse, with_content) as i32
+        // todo: handle the None case better
+        match self.grid().try_sheet_from_string(sheet_id) {
+            None => 0, // sheet no longer exists
+            Some(sheet) => {
+                sheet.find_next_row(row_start as i64, column as i64, reverse, with_content) as i32
+            }
+        }
     }
 }

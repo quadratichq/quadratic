@@ -1,3 +1,4 @@
+use super::operation::Operation;
 use crate::{
     controller::GridController,
     grid::{CodeCell, CodeCellLanguage, CodeCellRun},
@@ -5,7 +6,7 @@ use crate::{
     Array, CellValue, SheetPos, SheetRect,
 };
 
-use super::operation::Operation;
+pub mod temporary_sheets;
 
 impl GridController {
     /// Creates operations to set a code_cell and delete any cell_values that were on that cell
@@ -81,7 +82,8 @@ impl GridController {
                     ),
                     code_cell_sheet_pos: None,
                 });
-                self.check_spill_release_operations(sheet_pos);
+                // todo...
+                // self.check_spill_release_operations(sheet_pos);
             }
             ops.push(Operation::SetCodeCellRun {
                 sheet_pos,

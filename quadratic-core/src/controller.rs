@@ -6,7 +6,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::{
     grid::{CodeCellLanguage, Grid, SheetId},
-    SheetPos, SheetRect,
+    Pos, Rect, SheetPos, SheetRect,
 };
 
 use self::{
@@ -41,7 +41,8 @@ pub struct GridController {
     undo_stack: Vec<Transaction>,
     redo_stack: Vec<Transaction>,
 
-    // transaction in progress information
+    // current transaction tracking information
+    // -----------------------------------
     transaction_in_progress: bool,
     cursor: Option<String>,
     transaction_type: TransactionType,
@@ -76,6 +77,9 @@ pub struct GridController {
 
     // operations for multiplayer
     forward_operations: Vec<Operation>,
+
+    // temporary changes to the Grid to assist in calculation of spills
+    temporary_code_cells: TemporaryCodeCells,
 }
 
 impl GridController {

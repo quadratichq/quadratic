@@ -3,6 +3,17 @@ use crate::{controller::GridController, grid::CodeCellRun, ArraySize, SheetPos, 
 use super::operation::Operation;
 
 impl GridController {
+    fn spill_error_released(sheet: &Sheet, sheet_pos: SheetPos) -> Option<(SheetPos, CodeCellRun)> {
+        let sheet_id = sheet_pos.sheet_id;
+        let sheet = match self.grid.try_sheet_from_id(sheet_id) {
+            None => return None, // sheet may have been deleted in multiplayer
+            Some(sheet) => sheet,
+        };
+        sheet
+            .spill_error_released(sheet_pos.into())
+            .map(|(pos, run)| (pos.to_sheet_pos(sheet_id), run.clone().into_code_cell_run()))
+    }
+
     /// Adds operations to set the spill for a CodeCell within a SheetRect
     pub fn add_code_cell_spill_operations(
         &self,

@@ -1,11 +1,9 @@
 use std::collections::HashSet;
 
-use itertools::Itertools;
-
 use super::Sheet;
 use crate::{
     grid::{CodeCell, CodeCellRun, RenderSize},
-    ArraySize, CellValue, Pos, Rect,
+    CellValue, Pos, Rect,
 };
 
 impl Sheet {
@@ -89,30 +87,6 @@ impl Sheet {
     pub fn render_size(&self, pos: Pos) -> Option<RenderSize> {
         let column = self.get_column(pos.x)?;
         column.render_size.get(pos.y)
-    }
-
-    /// Checks if the deletion of a cell or a code_cell released a spill error;
-    /// sorted by earliest last_modified.
-    /// Returns the cell_ref and the code_cell_value if it did
-    pub fn spill_error_released(&self, rect: Rect) -> Option<(Pos, CodeCellRun)> {
-        self.code_cell_runs
-            .iter()
-            .filter(|(_, run)| run.spill_error)
-            .sorted_by_key(|a| &a.1.last_code_run)
-            .filter_map(|(code_cell_pos, code_cell)| {
-                let array_size = code_cell.output_size();
-                let rect = Rect::from_pos_and_size(pos, array_size.unwrap_or(ArraySize::_1X1));
-                rect.contains(pos)
-                    .then(|| (*code_cell_pos, code_cell.to_owned()))
-            })
-            .find(|(code_cell_pos, code_cell)| {
-                if let Some(array_size) = code_cell.output_size() {
-                    if array_size.len() > 1 {
-                        return !self.has_spill_error(*code_cell_pos, array_size, Some(pos));
-                    }
-                }
-                false
-            })
     }
 }
 
