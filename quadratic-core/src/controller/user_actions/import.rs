@@ -17,7 +17,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
         let ops = self.import_csv_operations(sheet_id, file, file_name, insert_at)?;
-        Ok(self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal))
+        Ok(self.set_in_progress_transaction(ops, cursor, true, TransactionType::User))
     }
 }
 

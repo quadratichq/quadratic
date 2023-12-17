@@ -15,7 +15,7 @@ use super::Transaction;
 pub enum TransactionType {
     #[default]
     Unset,
-    Normal,
+    User,
     Undo,
     Redo,
     Multiplayer,

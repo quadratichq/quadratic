@@ -291,7 +291,7 @@ mod test {
             }],
             None,
             true,
-            TransactionType::Normal,
+            TransactionType::User,
         );
 
         // code should be at (1, 0)
@@ -522,7 +522,7 @@ mod test {
             }],
             None,
             true,
-            TransactionType::Normal,
+            TransactionType::User,
         );
         assert!(!gc.transaction_in_progress);
 
@@ -569,7 +569,7 @@ mod test {
             }],
             None,
             true,
-            TransactionType::Normal,
+            TransactionType::User,
         );
 
         let sheet_pos = SheetPos {
@@ -590,7 +590,7 @@ mod test {
             }],
             None,
             true,
-            TransactionType::Normal,
+            TransactionType::User,
         );
 
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
@@ -618,7 +618,7 @@ mod test {
             }],
             None,
             true,
-            TransactionType::Normal,
+            TransactionType::User,
         );
 
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);

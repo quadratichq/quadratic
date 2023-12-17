@@ -21,7 +21,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.set_cell_value_operations(sheet_pos, value);
-        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
+        self.set_in_progress_transaction(ops, cursor, true, TransactionType::User)
     }
 
     pub fn set_cell_code(
@@ -32,7 +32,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.set_cell_code_operations(sheet_pos, language, code_string);
-        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
+        self.set_in_progress_transaction(ops, cursor, true, TransactionType::User)
     }
 
     /// Deletes the cell values and code in a given region.
@@ -44,7 +44,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.delete_cells_rect_operations(sheet_rect);
-        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
+        self.set_in_progress_transaction(ops, cursor, true, TransactionType::User)
     }
 
     pub fn clear_formatting(
@@ -53,7 +53,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.clear_formatting_operations(sheet_rect);
-        self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
+        self.set_in_progress_transaction(ops, cursor, false, TransactionType::User)
     }
 
     pub fn delete_values_and_formatting(
@@ -62,7 +62,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.delete_values_and_formatting_operations(sheet_rect);
-        self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal)
+        self.set_in_progress_transaction(ops, cursor, true, TransactionType::User)
     }
 }
 
