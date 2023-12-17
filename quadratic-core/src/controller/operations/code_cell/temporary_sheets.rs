@@ -1,7 +1,7 @@
 // Used by operations/code_cell.rs to track temporary changes to the Sheet
 // to assist in creating operations for spills.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap};
 use crate::{grid::{Sheet, SheetId}, Pos, Rect, SheetPos};
 
 #[derive(Debug, Default)]
@@ -26,7 +26,7 @@ impl TemporarySheets {
     pub fn cell_value_exists(&self, sheet: &Sheet, sheet_pos: SheetPos) -> bool {
       match self.sheets.get(&sheet_pos.sheet_id) {
         Some(temporary) =>
-          temporary.cell_value_exists(sheet_pos.into()) || sheet.get_cell_value_only(sheet_pos.into()).is_some(),
+          if temporary.cell_value_exists(sheet_pos.into()) || sheet.get_cell_value_only(sheet_pos.into()).is_some(),
         None => false,
       }
     }
@@ -52,13 +52,13 @@ pub struct TemporarySheet {
     code_cell_run: HashMap<Rect, (SheetPos, u32, bool)>,
 
     // whether cell_value exists at Pos
-    values: HashSet<Pos>,
+    values: HashMap<Pos, bool>,
 }
 
 impl TemporarySheet {
     /// Adds a temporary cell_value at the Pos
-    pub(crate) fn set_cell_value(&self, pos: Pos) {
-      self.values.insert(pos);
+    pub(crate) fn set_cell_value(&self, pos: Pos, exists: bool) {
+      self.values.insert(pos, exists);
     }
 
     /// Removes a temporary cell_value at the Pos
@@ -67,12 +67,13 @@ impl TemporarySheet {
     }
 
     /// Whether a cell_value exists at the Pos in the Sheet
-    pub(crate) fn cell_value_exists(&self, pos: Pos) -> bool {
-        self.values.contains(&pos)
+    pub(crate) fn cell_value_exists(&self, pos: Pos) -> Option<bool> {
+        self.values.get(&pos).map(|value| Some(value.clone())).unwrap_or(None)
     }
 
     pub(crate) fn set_code_cell(&mut self, rect: Rect, last_run: u32) {
-        self.code_cell_sizes.insert(rect, (last_run, time));
+        self.code_cell.insert(rect.pos, true);
+        self.code_cell_run.insert(rect, (last_run, false));
     }
 
     /// Whether a code cell or code cell run exists at the Pos.
