@@ -1,5 +1,6 @@
-use super::super::{transaction_summary::TransactionSummary, GridController};
-use crate::controller::execution::TransactionType;
+use crate::controller::{
+    execution::TransactionType, transaction_summary::TransactionSummary, GridController,
+};
 
 use crate::{
     grid::{CodeCellLanguage, SheetId},

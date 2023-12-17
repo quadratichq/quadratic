@@ -1,7 +1,7 @@
-use super::super::{
-    operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
+use crate::controller::{
+    execution::TransactionType, operations::operation::Operation,
+    transaction_summary::TransactionSummary, GridController,
 };
-use crate::controller::execution::TransactionType;
 use crate::{
     grid::{
         formatting::CellFmtArray, Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic,

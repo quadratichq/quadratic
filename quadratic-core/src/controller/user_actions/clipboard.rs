@@ -1,7 +1,10 @@
-use super::super::{transaction_summary::TransactionSummary, GridController};
-use crate::controller::execution::TransactionType;
+use crate::controller::{
+    execution::TransactionType,
+    operations::clipboard::{Clipboard, ClipboardCell},
+    transaction_summary::TransactionSummary,
+    GridController,
+};
 use crate::{
-    controller::operations::clipboard::{Clipboard, ClipboardCell},
     grid::{get_cell_borders_in_rect, CodeCellValue},
     Pos, SheetPos, SheetRect,
 };

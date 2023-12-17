@@ -1,6 +1,6 @@
-use super::super::GridController;
-use crate::controller::execution::TransactionType;
-use crate::controller::transaction_summary::TransactionSummary;
+use crate::controller::{
+    execution::TransactionType, transaction_summary::TransactionSummary, GridController,
+};
 use crate::grid::{BorderSelection, BorderStyle};
 use crate::SheetRect;
 

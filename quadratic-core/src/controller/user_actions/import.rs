@@ -1,8 +1,8 @@
-use anyhow::Result;
-
-use super::super::{transaction_summary::TransactionSummary, GridController};
-use crate::controller::execution::TransactionType;
+use crate::controller::{
+    execution::TransactionType, transaction_summary::TransactionSummary, GridController,
+};
 use crate::{grid::SheetId, Pos};
+use anyhow::Result;
 
 impl GridController {
     /// Imports a CSV file into the grid.

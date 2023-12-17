@@ -1,4 +1,4 @@
-use super::super::{transaction_summary::TransactionSummary, GridController};
+use crate::controller::{transaction_summary::TransactionSummary, GridController};
 use crate::{controller::execution::TransactionType, grid::SheetId, Rect};
 use anyhow::Result;
 
