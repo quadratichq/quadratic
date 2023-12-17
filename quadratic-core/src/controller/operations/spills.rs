@@ -29,7 +29,10 @@ impl GridController {
         let mut ops = vec![];
 
         let sheet_id = sheet_pos.sheet_id;
-        let sheet = self.grid.sheet_from_id(sheet_id);
+        let sheet = match self.grid.try_sheet_from_id(sheet_id) {
+            None => return ops, // sheet may have been deleted in multiplayer
+            Some(sheet) => sheet,
+        };
         if let Some((spill_sheet_pos, run)) = sheet.spill_error_released(sheet_pos.into()) {
             let mut run = run.clone();
             run.spill_error = false;

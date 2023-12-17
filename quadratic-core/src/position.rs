@@ -385,6 +385,15 @@ impl From<SheetPos> for SheetRect {
     }
 }
 
+impl From<SheetPos> for Rect {
+    fn from(sheet_pos: SheetPos) -> Self {
+        Rect {
+            min: sheet_pos.into(),
+            max: sheet_pos.into(),
+        }
+    }
+}
+
 // cannot go from Rect to SheetRect; need to use Rect.to_sheet_rect(sheet_id)
 #[allow(clippy::from_over_into)]
 impl Into<Rect> for SheetRect {

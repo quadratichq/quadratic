@@ -16,7 +16,11 @@ impl GridController {
         language: CodeCellLanguage,
         code_string: String,
     ) -> Vec<Operation> {
-        let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
+        let sheet = match self.grid.try_sheet_from_id(sheet_pos.sheet_id) {
+            None => return vec![], // sheet may have been deleted in multiplayer
+            Some(sheet) => sheet,
+        };
+
         let mut ops = vec![];
 
         // remove any values that were originally over the code cell
@@ -49,7 +53,11 @@ impl GridController {
 
     /// Creates operations to delete code_cell and code_cell_run, releases related Spills, and releases any SpillErrors
     pub fn delete_code_cell_operations(&self, sheet_pos: SheetPos) -> Vec<Operation> {
-        let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
+        let sheet = match self.grid.try_sheet_from_id(sheet_pos.sheet_id) {
+            None => return vec![], // sheet may have been deleted in multiplayer
+            Some(sheet) => sheet,
+        };
+
         let mut ops = vec![];
 
         let pos = sheet_pos.into();
@@ -87,7 +95,7 @@ impl GridController {
                 ops.push(Operation::SetSpill {
                     spill_rect: sheet_pos.into(),
                     code_cell_sheet_pos: None,
-                }
+                });
             }
             ops.push(Operation::SetCodeCell {
                 sheet_pos,
@@ -103,7 +111,11 @@ impl GridController {
         sheet_pos: SheetPos,
         code_cell_run: Option<CodeCellRun>,
     ) -> Vec<Operation> {
-        let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
+        let sheet = match self.grid.try_sheet_from_id(sheet_pos.sheet_id) {
+            None => return vec![], // sheet may have been deleted in multiplayer
+            Some(sheet) => sheet,
+        };
+        let pos = sheet_pos.into();
         let old_run = sheet.set_code_cell_run(pos, code_cell_run);
 
         let mut ops = vec![];
@@ -120,7 +132,7 @@ impl GridController {
             None => vec![], // sheet may have been deleted in multiplayer
             Some(sheet) => {
                 let mut ops = vec![];
-                if let Some((sheet_pos, run)) = sheet.spill_error_released(sheet_rect) {
+                if let Some((sheet_pos, run)) = sheet.spill_error_released(sheet_rect.into()) {
                     let mut run = run.clone();
                     run.spill_error = false;
                     ops.push(Operation::SetCodeCellRun {
@@ -131,13 +143,14 @@ impl GridController {
                 ops
             }
         }
+    }
 
     pub fn check_for_spill_error(&self, sheet_rect: SheetRect) -> Vec<Operation> {
         match self.grid.try_sheet_from_id(sheet_rect.sheet_id) {
             None => vec![], // sheet may have been deleted in multiplayer
             Some(sheet) => {
                 let mut ops = vec![];
-                if let Some((sheet_pos, run)) = sheet.spill_error_released(sheet_rect) {
+                if let Some((sheet_pos, run)) = sheet.spill_error_released(sheet_rect.into()) {
                     ops.push(Operation::SetCodeCellRun {
                         sheet_pos: sheet_pos.to_sheet_pos(sheet_rect.sheet_id),
                         code_cell_run: Some(run),
@@ -146,6 +159,5 @@ impl GridController {
                 ops
             }
         }
-
     }
 }

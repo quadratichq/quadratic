@@ -203,7 +203,7 @@ impl Grid {
         self.sheets.iter().any(|s| s.id == sheet_id)
     }
 
-    // todo: this should be deprecated to avoid problems with multiplayer
+    // replace this with try to avoid problems with multiplayer
     #[deprecated]
     pub fn sheet_from_id(&self, sheet_id: SheetId) -> &Sheet {
         let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");
@@ -214,7 +214,7 @@ impl Grid {
         Some(&self.sheets[sheet_index])
     }
 
-    // todo: this should be deprecated to avoid problems with multiplayer
+    // replace this with try to avoid problems with multiplayer
     #[deprecated]
     pub fn sheet_mut_from_id(&mut self, sheet_id: SheetId) -> &mut Sheet {
         let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");
@@ -227,13 +227,17 @@ impl Grid {
     }
 
     pub fn try_sheet_from_string(&self, sheet_id: String) -> Option<&Sheet> {
-        let sheet_id = SheetId::from_str(&sheet_id)?;
-        self.try_sheet_from_id(sheet_id)
+        match SheetId::from_str(&sheet_id) {
+            Ok(sheet_id) => self.try_sheet_from_id(sheet_id),
+            Err(_) => return None,
+        }
     }
 
-    pub fn try_sheet_mut_from_string(&mut self, sheet_id: String) -> Option<&Sheet> {
-        let sheet_id = SheetId::from_str(&sheet_id)?;
-        self.try_sheet_mut_from_id(sheet_id)
+    pub fn try_sheet_mut_from_string(&mut self, sheet_id: String) -> Option<&mut Sheet> {
+        match SheetId::from_str(&sheet_id) {
+            Ok(sheet_id) => self.try_sheet_mut_from_id(sheet_id),
+            Err(_) => return None,
+        }
     }
 }
 
