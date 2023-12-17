@@ -40,9 +40,11 @@ export const hasAccess = (userAccess: Access[], accessType: Access) => userAcces
 // =============================================================================
 // TODO share these with the API
 
+export const emailSchema = z.string().email();
+
 const user = {
   id: z.number(),
-  email: z.string().email(),
+  email: emailSchema,
   hasAccount: z.boolean(),
   name: z.string().optional(),
   picture: z.string().url().optional(),
@@ -67,6 +69,7 @@ export const TeamSchema = z.object({
     .max(140, { message: 'Cannot be longer than 140 characters.' }),
   picture: z.string().url().optional(),
   users: z.array(TeamUserSchema), // TODO not optional
+  invites: z.array(z.object({ email: emailSchema, role: UserRoleTeamSchema, id: z.number() })),
   // files: z.any(), // TODO
   // TODO billing
 });
@@ -210,17 +213,18 @@ export const ApiSchemas = {
   '/v0/teams/:uuid.POST.response': TeamSchema.pick({ uuid: true, name: true, picture: true }),
 
   // TODO equivalent for /files/:uuid/sharing
-  '/v0/teams/:uuid/sharing.POST.request': TeamUserSchema.pick({ email: true, role: true }),
-  '/v0/teams/:uuid/sharing.POST.response': TeamUserSchema.pick({ email: true, role: true }).extend({
-    id: TeamUserSchema.shape.id.optional(),
+  '/v0/teams/:uuid/invites.POST.request': TeamUserSchema.pick({ email: true, role: true }),
+  '/v0/teams/:uuid/invites.POST.response': TeamUserSchema.pick({ email: true, role: true }).extend({
+    id: TeamUserSchema.shape.id,
   }),
+  '/v0/teams/:uuid/invites/:inviteId.DELETE.response': z.object({ message: z.string() }),
   // Update a user's sharing role
-  '/v0/teams/:uuid/sharing/:userId.POST.request': TeamUserSchema.pick({ role: true }),
-  '/v0/teams/:uuid/sharing/:userId.POST.response': z.object({
+  '/v0/teams/:uuid/users/:userId.POST.request': TeamUserSchema.pick({ role: true }),
+  '/v0/teams/:uuid/users/:userId.POST.response': z.object({
     role: UserRoleTeamSchema,
   }),
   // Delete a user from a team
-  '/v0/teams/:uuid/sharing/:userId.DELETE.response': z.object({
+  '/v0/teams/:uuid/users/:userId.DELETE.response': z.object({
     message: z.string(),
   }),
 };

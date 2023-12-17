@@ -48,10 +48,15 @@ export const EXAMPLE_FILES = {
 export type ExampleFileNames = keyof typeof EXAMPLE_FILES;
 export const CSV_IMPORT_MESSAGE = 'Drag and drop a CSV file on the grid to import it.';
 export const TYPE = {
+  // Borrowed from mui typography
+  body1: 'text-md',
   body2: 'text-sm',
   caption: 'text-xs text-muted-foreground',
   overline: 'text-xs uppercase tracking-widest text-muted-foreground',
   h3: 'scroll-m-20 text-2xl font-semibold tracking-tight',
   h4: 'scroll-m-20 text-xl font-semibold tracking-tight',
   code: 'relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold',
+
+  // Taken from shadcn/ui form styles
+  formError: 'text-[0.8rem] font-medium text-destructive',
 };

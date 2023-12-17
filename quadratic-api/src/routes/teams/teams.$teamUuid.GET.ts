@@ -31,20 +31,31 @@ router.get(
     } = req as RequestWithTeam;
 
     // Get users in the team
-    const teamUsers = await dbClient.userTeamRole.findMany({
+    const dbTeam = await dbClient.team.findUnique({
       where: {
-        teamId,
+        id: teamId,
       },
       include: {
-        user: true,
-      },
-      orderBy: {
-        createdDate: 'asc',
+        UserTeamRole: {
+          include: {
+            user: true,
+          },
+          orderBy: {
+            createdDate: 'asc',
+          },
+        },
+        TeamInvite: {
+          orderBy: {
+            createdDate: 'asc',
+          },
+        },
       },
     });
-    const auth0UserIds = teamUsers.map(({ user: { auth0_id } }) => auth0_id);
 
-    // TODO get the invited users of a team
+    const dbUsers = dbTeam?.UserTeamRole ? dbTeam.UserTeamRole : [];
+    const dbInvites = dbTeam?.TeamInvite ? dbTeam.TeamInvite : [];
+
+    const auth0UserIds = dbUsers.map(({ user: { auth0_id } }) => auth0_id);
 
     // Get auth0 users
     const auth0Users = await getAuth0Users(auth0UserIds);
@@ -55,7 +66,19 @@ router.get(
       {}
     );
 
-    // TODO sort users by created_date in the team
+    // TODO: sort users by created_date in the team
+    // TODO: invited users, also can we guarantee ordering here?
+    const users = dbUsers.map(({ userId: id, role, user: { auth0_id } }) => {
+      const { email, name, picture } = auth0UsersByAuth0Id[auth0_id];
+      return {
+        id,
+        email,
+        role,
+        hasAccount: true,
+        name,
+        picture,
+      };
+    });
 
     const response = {
       team: {
@@ -64,18 +87,8 @@ router.get(
         created_date: team.createdDate,
         ...(team.picture ? { picture: team.picture } : {}),
         // TODO we could put this in /sharing and just return the userCount
-        // TODO invited users, also can we guarantee ordering here?
-        users: teamUsers.map(({ userId: id, role, user: { auth0_id } }) => {
-          const { email, name, picture } = auth0UsersByAuth0Id[auth0_id];
-          return {
-            id,
-            email,
-            role,
-            hasAccount: true,
-            name,
-            picture,
-          };
-        }),
+        users,
+        invites: dbInvites.map(({ email, role, id }) => ({ email, role, id })),
 
         files: [],
       },
@@ -86,7 +99,7 @@ router.get(
       },
     };
 
-    // @ts-expect-error fix types
+    // @ts-expect-error TODO: fix types
     return res.status(200).json(response);
   }
 );

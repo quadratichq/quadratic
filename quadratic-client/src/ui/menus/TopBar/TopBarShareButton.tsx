@@ -1,4 +1,4 @@
-import { Button } from '@mui/material';
+import { Button } from '@/shadcn/ui/button';
 import { Link } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
 import { isViewerOrAbove } from '../../../actions';
@@ -14,27 +14,19 @@ export const TopBarShareButton = () => {
     <>
       {isViewerOrAbove(permission) ? (
         <Button
-          variant="contained"
-          size="small"
-          disableElevation
+          size="sm"
           onClick={() => {
             setEditorInteractionState((prev) => ({ ...prev, showShareFileMenu: !prev.showShareFileMenu }));
           }}
-          sx={{ alignSelf: 'center' }}
+          className="self-center"
         >
           Share
         </Button>
       ) : (
-        <Button
-          replace
-          component={Link}
-          to={ROUTES.LOGIN_WITH_REDIRECT()}
-          variant="outlined"
-          size="small"
-          disableElevation
-          sx={{ alignSelf: 'center' }}
-        >
-          Log in
+        <Button asChild variant="outline" size="sm" className=" self-center">
+          <Link to={ROUTES.LOGIN_WITH_REDIRECT()} replace>
+            Log in
+          </Link>
         </Button>
       )}
     </>

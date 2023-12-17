@@ -1,5 +1,8 @@
 import { TYPE } from '@/constants/appConstants';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shadcn/ui/select';
+import { Button as Button2 } from '@/shadcn/ui/button';
+import { Input } from '@/shadcn/ui/input';
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/shadcn/ui/select';
+import { cn } from '@/shadcn/utils';
 import { ArrowDropDown, Check, EmailOutlined } from '@mui/icons-material';
 import {
   Alert,
@@ -18,9 +21,9 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { GlobeIcon, LockClosedIcon } from '@radix-ui/react-icons';
+import { GlobeIcon, LockClosedIcon, PersonIcon } from '@radix-ui/react-icons';
 import { ApiTypes, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
-import React, { useEffect, useState } from 'react';
+import React, { Children, useEffect, useRef, useState } from 'react';
 import { useFetcher, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { RoleSchema, UserRoleTeam } from '../permissions';
@@ -34,6 +37,8 @@ export const shareSearchParamValuesById = {
   TEAM_CREATED: 'team-created',
 };
 
+const rowClassName = 'flex flex-row items-center gap-3 [&>:nth-child(3)]:ml-auto';
+
 /**
  * <ShareMenu> usage:
  *
@@ -45,6 +50,274 @@ ShareMenu.Wrapper = Wrapper;
 ShareMenu.Invite = Invite;
 // ShareMenu.Users = Users;
 ShareMenu.UserListItem = UserListItem;
+
+export function Share({ loggedInUser, context, onInviteUser, onRemoveUser, onChangeUser, users }: any) {
+  // **** INVITE
+  // const [error, setError] = useState<string>('');
+  // const [role, setRole] = useState<z.infer<typeof RoleSchema>>(RoleSchema.enum.EDITOR);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // TODO comma separate list someday
+
+  // https://stackoverflow.com/a/9204568
+  // const reg = /\S+@\S+\.\S+/;
+  // const isValidEmail = reg.test(email);
+  // let disabled = false;
+  // if (!isValidEmail || error) {
+  //   disabled = true;
+  // }
+
+  // TODO proper form validation based on schema etc
+
+  const options = [
+    // TODO: if can invite owner, allow here
+    // TODO: context: team/file and proper enums
+    { label: 'Can edit', value: RoleSchema.enum.EDITOR },
+    { label: 'Can view', value: RoleSchema.enum.VIEWER },
+  ];
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // **** INVITE
+
+  return (
+    <div className={`flex flex-col gap-4`}>
+      <form
+        className={`flex flex-row items-start gap-2`}
+        onSubmit={(e) => {
+          e.preventDefault();
+
+          const formData = new FormData(e.currentTarget);
+          const json = Object.fromEntries(formData);
+          const { email, role } = json;
+
+          // TODO: validate
+
+          onInviteUser({ email, role });
+
+          // Reset the input & focus
+          if (inputRef.current) {
+            inputRef.current.value = '';
+            inputRef.current.focus();
+          }
+
+          // If we have ?share=team-created, turn it into just ?share
+          if (searchParams.get(shareSearchParamKey) === shareSearchParamValuesById.TEAM_CREATED) {
+            setSearchParams((prevParams: URLSearchParams) => {
+              const newParams = new URLSearchParams(prevParams);
+              newParams.set(shareSearchParamKey, '');
+              return newParams;
+            });
+          }
+        }}
+      >
+        <Input
+          // error={Boolean(error)}
+          // helperText={error ? error : ''}
+          className="flex-grow"
+          autoComplete="off"
+          aria-label="Email"
+          placeholder="Email"
+          name="email"
+          autoFocus
+          ref={inputRef}
+          // pattern="/\S+@\S+\.\S+/"
+          // variant="outlined"
+          // size="small"
+          // inputProps={{ sx: { fontSize: '.875rem' } }}
+          // value={email}
+          // onChange={(e) => {
+          //   const newEmail = e.target.value;
+          //   setEmail(newEmail);
+          //   if (users.map((user: any) => user.email).includes(newEmail)) {
+          //     setError('User already invited');
+          //   } else if (error) {
+          //     setError('');
+          //   }
+          // }}
+        />
+
+        <div className="flex-shrink-0">
+          <Select defaultValue={options[0].value} name="role">
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map(({ label, value }, key) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Button2 type="submit">Invite</Button2>
+      </form>
+
+      {/* TODO: File-specific items */}
+      <PublicLink fetcherUrl={'/files/12345'} publicLinkAccess={'EDIT'} />
+      {/* TODO: if it's a file and its part of a team, show that here */}
+      <div className={rowClassName}>
+        <div className={`flex h-6 w-6 items-center justify-center`}>
+          <PersonIcon className={`h-5 w-5`} />
+        </div>
+        <p className={`${TYPE.body2}`}>Everyone in {`{{team}}`} can access this file</p>
+      </div>
+
+      {users.map((user: any, i: number) => (
+        <UserListItem2
+          key={i}
+          numberOfOwners={users.filter((user: any) => user.role === 'OWNER').length}
+          loggedInUser={loggedInUser}
+          user={user}
+          onUpdateUser={onChangeUser}
+          onDeleteUser={onRemoveUser}
+        />
+      ))}
+    </div>
+  );
+}
+
+function UserListItem2({
+  numberOfOwners,
+  loggedInUser,
+  user,
+  onUpdateUser,
+  onDeleteUser,
+  disabled,
+  error,
+}: {
+  numberOfOwners: number;
+  loggedInUser: ApiTypes['/v0/teams/:uuid.GET.response']['user'];
+  user: ApiTypes['/v0/teams/:uuid.GET.response']['team']['users'][0];
+  onUpdateUser: any; // (userId: number, role: ApiTypes['/v0/teams/:uuid.GET.response']['team']['users'][0]['role']) => void;
+  onDeleteUser: any; // (userId: number) => void;
+  disabled?: boolean;
+  error?: string;
+}) {
+  // TODO: figure out primary vs. secondary display & "resend"
+  const primary = user.name ? user.name : user.email;
+
+  // TODO: user.permissions.status === 'INVITE_SENT';
+  const isPending = false;
+
+  let secondary;
+  if (error) {
+    secondary = error;
+  } else if (user.hasAccount) {
+    secondary = user.email;
+  } else {
+    secondary = (
+      <div className={`flex flex-row gap-1`}>
+        Invite sent.{' '}
+        <Button2 size="sm" variant="link">
+          Resend
+        </Button2>
+      </div>
+    );
+  }
+
+  let labels = disabled
+    ? user.role === 'OWNER'
+      ? ['Owner']
+      : user.role === 'EDITOR'
+      ? ['Can edit']
+      : ['Can view']
+    : getUserShareOptions({
+        user,
+        loggedInUser,
+        numberOfOwners,
+        canHaveMoreThanOneOwner: true, // TODO: teams? yes. files? no.
+      });
+  let options: Array<{ label: string; value: string; divider?: boolean }> = [];
+  labels.forEach((label) => {
+    if (label === 'Owner') {
+      options.push({
+        label,
+        value: RoleSchema.enum.OWNER,
+      });
+    }
+    if (label === 'Can edit') {
+      options.push({
+        label,
+        value: RoleSchema.enum.EDITOR,
+      });
+    }
+    if (label === 'Can view') {
+      options.push({
+        label,
+        value: RoleSchema.enum.VIEWER,
+      });
+    }
+    if (label === 'Leave' || label === 'Remove') {
+      options.push(
+        { label: '', value: '', divider: true },
+        {
+          label,
+          // TODO if 'leave' then redirect user to dashboard
+          value: 'DELETE',
+        }
+      );
+    }
+  });
+
+  return (
+    <form
+      className={rowClassName}
+      onChange={(e) => {
+        e.preventDefault();
+
+        const formData = new FormData(e.currentTarget);
+        const json = Object.fromEntries(formData);
+        const { role } = json;
+        if (role === 'DELETE') {
+          onDeleteUser({ userId: user.id });
+        } else {
+          onUpdateUser({ userId: user.id, role });
+        }
+      }}
+    >
+      {isPending ? (
+        <Avatar sx={{ width: 24, height: 24, fontSize: '1rem' }}>
+          <EmailOutlined fontSize="inherit" />
+        </Avatar>
+      ) : (
+        <AvatarWithLetters src={user.picture} size="small">
+          {user.name ? user.name : user.email}
+        </AvatarWithLetters>
+      )}
+      <div className={`flex flex-col`}>
+        <p className={`${TYPE.body2}`}>
+          {primary} {loggedInUser.id === user.id && ' (You)'}
+        </p>
+        {secondary && (
+          <p className={cn(TYPE.caption, error ? 'text-destructive' : 'text-muted-foreground')}>{secondary}</p>
+        )}
+      </div>
+      <div className={`ml-auto`}>
+        <Select defaultValue={user.role} name="role" disabled={options.length < 2}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option, key) => {
+              if (option.divider) {
+                return <SelectSeparator key={key} />;
+              }
+              const { label, value } = option;
+
+              return (
+                <SelectItem key={key} value={value}>
+                  {label}
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
+      </div>
+    </form>
+  );
+}
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
@@ -133,7 +406,7 @@ function ShareMenu({ fetcherUrl, uuid }: { fetcherUrl: string; uuid: string }) {
           {canEdit && (
             <>
               <Row>
-                <PublicLink fetcherUrl={fetcherUrl} publicLinkAccess={publicLinkAccess} uuid={uuid} />
+                <PublicLink fetcherUrl={fetcherUrl} publicLinkAccess={publicLinkAccess} />
               </Row>
               {/* TODO <Row>Team</Row> */}
             </>
@@ -494,11 +767,8 @@ function Invite({
   const options = Object.values(optionsByRole);
 
   return (
-    <Stack
-      component="form"
-      direction="row"
-      alignItems="flex-start"
-      gap={theme.spacing()}
+    <form
+      className={`flex flex-row items-start gap-2`}
       onSubmit={(e) => {
         e.preventDefault();
         if (disabled) return;
@@ -552,17 +822,15 @@ function Invite({
       <Button type="submit" variant="contained" disableElevation disabled={disabled}>
         Invite
       </Button>
-    </Stack>
+    </form>
   );
 }
 
 function PublicLink({
   publicLinkAccess,
-  uuid,
   fetcherUrl,
 }: {
   publicLinkAccess: PublicLinkAccess | undefined;
-  uuid: string;
   fetcherUrl: string;
 }) {
   const fetcher = useFetcher();
@@ -580,7 +848,6 @@ function PublicLink({
   const setPublicLinkAccess = async (newValue: PublicLinkAccess) => {
     const data /*TODO : Action['request.update-public-link-access'] */ = {
       action: 'update-public-link-access',
-      uuid: uuid,
       public_link_access: newValue,
     };
     fetcher.submit(data, {
@@ -599,21 +866,22 @@ function PublicLink({
   const activeOptionLabel = optionsByValue[public_link_access].label;
 
   return (
-    <>
-      <div className="flex items-center gap-2">
+    <Row>
+      <div className="flex h-6 w-6 items-center justify-center">
         {public_link_access === 'NOT_SHARED' ? (
           <LockClosedIcon className={`h-5 w-5`} />
         ) : (
           <GlobeIcon className={`h-5 w-5`} />
         )}
-        <div className={`flex flex-col`}>
-          <p className={`${TYPE.body2}`}>Anyone with the link</p>
-          {fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok && (
-            <Typography variant="caption" color="error">
-              Failed to update
-            </Typography>
-          )}
-        </div>
+      </div>
+
+      <div className={`flex flex-col`}>
+        <p className={`${TYPE.body2}`}>Anyone with the link</p>
+        {fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok && (
+          <Typography variant="caption" color="error">
+            Failed to update
+          </Typography>
+        )}
       </div>
 
       <Select
@@ -633,24 +901,16 @@ function PublicLink({
           ))}
         </SelectContent>
       </Select>
-
-      {/* <UserPopoverMenu label={label} options={options} /> */}
-    </>
+    </Row>
   );
 }
 
 function Row({ children, sx }: { children: React.ReactNode; sx?: any }) {
-  const theme = useTheme();
-  return (
-    <Stack
-      direction="row"
-      alignItems="center"
-      gap={theme.spacing(1.5)}
-      sx={{ minHeight: '2.5rem', '> :last-child': { marginLeft: 'auto' }, ...sx }}
-    >
-      {children}
-    </Stack>
-  );
+  if (Children.count(children) !== 3) {
+    console.warn('<Row> expects exactly 3 children');
+  }
+
+  return <div className={'flex flex-row items-center gap-3 [&>:last-child]:ml-auto'}>{children}</div>;
 }
 
 export { ShareMenu };

@@ -15,15 +15,15 @@ const requestValidationMiddleware = validateRequestSchema(
     params: z.object({
       uuid: z.string().uuid(),
     }),
-    body: ApiSchemas['/v0/teams/:uuid/sharing.POST.request'],
+    body: ApiSchemas['/v0/teams/:uuid/invites.POST.request'],
   })
 );
 
 router.post(
-  '/:uuid/sharing',
+  '/:uuid/invites',
   requestValidationMiddleware,
   teamMiddleware,
-  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid/sharing.POST.response'] | ResponseError>) => {
+  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid/invites.POST.response'] | ResponseError>) => {
     const {
       body: { email, role },
       team: {
@@ -57,31 +57,75 @@ router.post(
 
     // Nobody with an account by that email
     if (auth0Users.length === 0) {
-      // TODO where do we remove them from this table once they become a user?
-      await dbClient.teamInvite.create({
-        data: {
+      // TODO: where do we remove them from this table once they become a user?
+      // TODO: write tests for this
+
+      // TODO: figure out why this crashes the server (when adding a user in the UI)
+      // const existingInvite = await dbClient.teamInvite.findFirst({
+      //   where: {
+      //     email,
+      //     teamId,
+      //   },
+      // });
+      // console.log('exisiting invite', existingInvite);
+      // if (existingInvite) {
+      //   return res.status(409).json({ error: { message: 'User has already been invited to this team' } });
+      // }
+      // console.log('creating invite', email, role, teamId);
+      // // Invite the person!
+      // const dbInvite = await dbClient.teamInvite.create({
+      //   data: {
+      //     email,
+      //     role,
+      //     teamId,
+      //   },
+      // });
+
+      // See if this email already exists as an invite on the team and invite them
+      const dbInvite = await dbClient.teamInvite.upsert({
+        where: {
+          email_teamId: {
+            email,
+            teamId,
+          },
+        },
+        create: {
           email,
           role,
           teamId,
         },
+        update: {
+          role,
+        },
       });
-      // TODO send them an invitation email
-      return res.status(201).json({ email, role, id: 100 });
+
+      // TODO: send the invited person an email
+
+      return res.status(201).json({ email, role, id: dbInvite.id });
     }
 
     // Somebody with that email already has an account
     if (auth0Users.length === 1) {
       const auth0User = auth0Users[0];
 
-      // Lookup the user in our database
-      const dbUser = await dbClient.user.findUnique({
+      // Auth0 says this could be undefined. If that's the case (even though,
+      // we found a user) we'll throw an error
+      if (!auth0User.user_id) {
+        return res
+          .status(500)
+          .json({ error: { message: 'Internal server error: user found but expected `user_id` is not present' } });
+      }
+
+      // Lookup the user in our database (create if they don't exist)
+      const dbUser = await dbClient.user.upsert({
         where: {
           auth0_id: auth0User.user_id,
         },
+        create: {
+          auth0_id: auth0User.user_id,
+        },
+        update: {},
       });
-      if (!dbUser) {
-        return res.status(500).json({ error: { message: 'Internal server error: user not found' } });
-      }
 
       // See if they're already a member of the team
       const u = await dbClient.userTeamRole.findUnique({
@@ -107,13 +151,15 @@ router.post(
         },
       });
 
-      // TODO send them an email
+      // TODO: send them an email
 
-      // TODO what to return exactly...?
+      // TODO: what to return exactly...?
       return res.status(201).json({ email, role, id: dbUser.id });
     }
 
-    // TODO, how should we handle duplicate email?
+    // TODO:, how should we handle duplicate email?
+    // TODO: don't allow people to create multiple accounts with one email in auth0
+    // TODO: talk to David K.
     return res.status(500).json({ error: { message: 'Internal server error: duplicate email' } });
   }
 );

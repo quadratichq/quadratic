@@ -26,47 +26,65 @@ const DEFAULT_FILE: any = {
 };
 
 export const apiClient = {
-  async getTeams() {
-    return fetchFromApi(`/v0/teams`, { method: 'GET' }, ApiSchemas['/v0/teams.GET.response']);
-  },
-
-  async getTeam(uuid: string) {
-    return fetchFromApi(`/v0/teams/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/teams/:uuid.GET.response']);
-  },
-
-  async createTeam(body: ApiTypes['/v0/teams.POST.request']) {
-    return fetchFromApi(
-      `/v0/teams`,
-      { method: 'POST', body: JSON.stringify(body) },
-      ApiSchemas['/v0/teams.POST.response']
-    );
-  },
-
-  async updateTeam(uuid: string, body: ApiTypes['/v0/teams/:uuid.POST.request']) {
-    return fetchFromApi(
-      `/v0/teams/${uuid}`,
-      { method: 'POST', body: JSON.stringify(body) },
-      ApiSchemas['/v0/teams/:uuid.POST.response']
-    );
-  },
-
-  async updateUserInTeam(uuid: string, body: ApiTypes['/v0/teams/:uuid/sharing.POST.request']) {
-    return fetchFromApi(
-      `/v0/teams/${uuid}/sharing`,
-      {
-        method: 'POST',
-        body: JSON.stringify(body),
+  teams: {
+    async list() {
+      return fetchFromApi(`/v0/teams`, { method: 'GET' }, ApiSchemas['/v0/teams.GET.response']);
+    },
+    async get(uuid: string) {
+      return fetchFromApi(`/v0/teams/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/teams/:uuid.GET.response']);
+    },
+    async update(uuid: string, body: ApiTypes['/v0/teams/:uuid.POST.request']) {
+      return fetchFromApi(
+        `/v0/teams/${uuid}`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/teams/:uuid.POST.response']
+      );
+    },
+    async create(body: ApiTypes['/v0/teams.POST.request']) {
+      return fetchFromApi(
+        `/v0/teams`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/teams.POST.response']
+      );
+    },
+    invites: {
+      async create(teamUuid: string, body: ApiTypes['/v0/teams/:uuid/invites.POST.request']) {
+        return fetchFromApi(
+          `/v0/teams/${teamUuid}/invites`,
+          {
+            method: 'POST',
+            body: JSON.stringify(body),
+          },
+          ApiSchemas['/v0/teams/:uuid/invites.POST.response']
+        );
       },
-      ApiSchemas['/v0/teams/:uuid/sharing.POST.response']
-    );
-  },
-
-  async deleteUserInTeam(teamUuid: string, userId: number) {
-    return fetchFromApi(
-      `/v0/teams/${teamUuid}/sharing/${userId}`,
-      { method: 'DELETE' },
-      ApiSchemas['/v0/teams/:uuid/sharing/:userId.DELETE.response']
-    );
+      async delete(teamUuid: string, inviteId: string) {
+        console.log(`DELETE to /v0/teams/${teamUuid}/invites/${inviteId}`);
+        return fetchFromApi(
+          `/v0/teams/${teamUuid}/invites/${inviteId}`,
+          {
+            method: 'DELETE',
+          },
+          ApiSchemas['/v0/teams/:uuid/invites/:inviteId.DELETE.response']
+        );
+      },
+    },
+    users: {
+      async update(teamUuid: string, userId: string, body: ApiTypes['/v0/teams/:uuid/users/:userId.POST.request']) {
+        return fetchFromApi(
+          `/v0/teams/${teamUuid}/users/${userId}`,
+          { method: 'POST', body: JSON.stringify(body) },
+          ApiSchemas['/v0/teams/:uuid/users/:userId.POST.response']
+        );
+      },
+      async delete(teamUuid: string, userId: string) {
+        return fetchFromApi(
+          `/v0/teams/${teamUuid}/users/${userId}`,
+          { method: 'DELETE' },
+          ApiSchemas['/v0/teams/:uuid/users/:userId.DELETE.response']
+        );
+      },
+    },
   },
 
   async getFiles() {
