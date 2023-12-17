@@ -38,7 +38,6 @@ impl GridController {
         });
 
         // check if this causes a spill
-        if
 
         ops.push(Operation::SetSpill {
             spill_rect: sheet_pos.into(),
