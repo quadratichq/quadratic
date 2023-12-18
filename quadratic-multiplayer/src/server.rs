@@ -60,6 +60,7 @@ pub(crate) async fn serve() -> Result<()> {
         quadratic_api_uri,
         heartbeat_check_s,
         heartbeat_timeout_s,
+        ..
     } = config()?;
 
     tracing_subscriber::registry()

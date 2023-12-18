@@ -39,6 +39,9 @@ pub(crate) enum MpError {
     #[error("Room error: {0}")]
     Room(String),
 
+    #[error("Error in S3: {0}")]
+    S3(String),
+
     #[error("Error sending message: {0}")]
     SendingMessage(String),
 

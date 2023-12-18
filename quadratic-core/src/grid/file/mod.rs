@@ -67,6 +67,13 @@ pub fn export(grid: &mut Grid) -> Result<String> {
     Ok(serialized)
 }
 
+pub fn export_vec(grid: &mut Grid) -> Result<Vec<u8>> {
+    let converted = current::export(grid)?;
+    let serialized = serde_json::to_vec(&converted).map_err(|e| anyhow!(e))?;
+
+    Ok(serialized)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
