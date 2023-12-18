@@ -37,8 +37,16 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   // Fetch the file & its sharing data
   const [data, sharing] = await Promise.all([apiClient.getFile(uuid), apiClient.getFileSharing(uuid)]);
 
+  // Get file contents from S3
+  const res = await fetch(data.file.lastCheckpointDataUrl);
+
+  const checkpointContents = await res.text();
+
+  console.log('res', res);
+  console.log('checkpointContents', checkpointContents);
+
   // Validate and upgrade file to the latest version in TS (up to 1.4)
-  const file = await validateAndUpgradeGridFile(data.file.contents);
+  const file = await validateAndUpgradeGridFile(checkpointContents);
   if (!file) {
     Sentry.captureEvent({
       message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,

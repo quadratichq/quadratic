@@ -83,14 +83,10 @@ const FileSchema = z.object({
   name: z.string(),
   created_date: z.string().datetime(),
   updated_date: z.string().datetime(),
+  lastCheckpointSequenceNumber: z.number(),
+  lastCheckpointVersion: z.string(),
+  lastCheckpointDataUrl: z.string().url(),
   thumbnail: z.string().url().nullable(),
-  // A string-ified version of `GridFile`
-  contents: z.string(),
-  // We could derive this to be one of the defined types for `version` from
-  // our set of schemas, but it’s possible this is a _new_ version from
-  // the server and the app needs to refresh to use it. So we just allow a
-  // general string here.
-  version: z.string(),
 });
 
 export const PermissionSchema = z.enum(['OWNER', 'EDITOR', 'VIEWER', 'ANONYMOUS']);
