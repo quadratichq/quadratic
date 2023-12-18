@@ -95,13 +95,13 @@ async fn remove_stale_users_in_room(
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::{add_new_user_to_room, grid_setup, operation};
+    use crate::test_util::{add_new_user_to_room, grid_setup, new_arc_state, operation};
 
     use super::*;
 
     #[tokio::test]
     async fn broadcast_sequence_num() {
-        let state = Arc::new(State::new());
+        let state = new_arc_state().await;
         let file_id = Uuid::new_v4();
         let mut grid = grid_setup();
         let transaction_id_1 = Uuid::new_v4();
@@ -122,7 +122,7 @@ mod tests {
 
     #[tokio::test]
     async fn remove_stale_users_in_room() {
-        let state = Arc::new(State::new());
+        let state = new_arc_state().await;
         let file_id = Uuid::new_v4();
         let connection_id = Uuid::new_v4();
         let user = add_new_user_to_room(file_id, state.clone(), connection_id).await;

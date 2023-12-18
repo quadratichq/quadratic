@@ -198,11 +198,11 @@ pub(crate) mod tests {
 
     use super::*;
     use crate::state::user::{CellEdit, UserStateUpdate};
-    use crate::test_util::add_new_user_to_room;
+    use crate::test_util::{add_new_user_to_room, new_arc_state};
     use uuid::Uuid;
 
     async fn setup() -> (Arc<State>, Uuid, User) {
-        let state = Arc::new(State::new());
+        let state = new_arc_state().await;
         let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let user_1 = add_new_user_to_room(file_id, state.clone(), connection_id).await;

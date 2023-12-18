@@ -97,11 +97,11 @@ impl TransactionQueue {
 mod tests {
     use crate::{
         state::State,
-        test_util::{grid_setup, operation},
+        test_util::{grid_setup, new_state, operation},
     };
 
-    fn setup() -> (State, Uuid) {
-        let state = State::new();
+    async fn setup() -> (State, Uuid) {
+        let state = new_state().await;
         let file_id = Uuid::new_v4();
 
         (state, file_id)
@@ -110,7 +110,7 @@ mod tests {
     use super::*;
     #[tokio::test]
     async fn transaction_queue() {
-        let (state, file_id) = setup();
+        let (state, file_id) = setup().await;
         let mut grid = grid_setup();
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");

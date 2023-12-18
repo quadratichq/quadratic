@@ -60,12 +60,12 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use crate::error::MpError;
+    use crate::{error::MpError, test_util::new_state};
 
     use super::*;
 
     async fn setup() -> (State, Uuid, Connection) {
-        let state = State::new();
+        let state = new_state().await;
         let session_id = Uuid::new_v4();
         let connection = Connection::new(None);
 

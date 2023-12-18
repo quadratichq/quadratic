@@ -181,10 +181,13 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use crate::{error::MpError, test_util::new_user};
+    use crate::{
+        error::MpError,
+        test_util::{new_state, new_user},
+    };
 
     async fn setup() -> (State, Uuid, Uuid, User) {
-        let state = State::new();
+        let state = new_state().await;
         let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let user = new_user();

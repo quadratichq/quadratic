@@ -52,16 +52,7 @@ pub(crate) fn app(state: Arc<State>) -> Router {
 /// Start the websocket server.  This is the entrypoint for the application.
 #[tracing::instrument(level = "trace")]
 pub(crate) async fn serve() -> Result<()> {
-    let Config {
-        host,
-        port,
-        auth0_jwks_uri,
-        authenticate_jwt,
-        quadratic_api_uri,
-        heartbeat_check_s,
-        heartbeat_timeout_s,
-        ..
-    } = config()?;
+    let config = config()?;
 
     tracing_subscriber::registry()
         .with(
@@ -72,15 +63,10 @@ pub(crate) async fn serve() -> Result<()> {
         .init();
 
     // pull down the JWKS from Auth0 and add to state
-    let jwks = get_jwks(&auth0_jwks_uri).await?;
-    let settings = Settings {
-        jwks: Some(jwks),
-        authenticate_jwt,
-        quadratic_api_uri,
-    };
-    let state = Arc::new(State::new().with_settings(settings));
+    let jwks = get_jwks(&config.auth0_jwks_uri).await?;
+    let state = Arc::new(State::new(&config, Some(jwks)).await);
     let app = app(Arc::clone(&state));
-    let listener = tokio::net::TcpListener::bind(format!("{host}:{port}"))
+    let listener = tokio::net::TcpListener::bind(format!("{}:{}", config.host, config.port))
         .await
         .map_err(|e| MpError::InternalServer(e.to_string()))?;
     let local_addr = listener
@@ -89,12 +75,17 @@ pub(crate) async fn serve() -> Result<()> {
 
     tracing::info!("listening on {local_addr}");
 
-    if !authenticate_jwt {
+    if !config.authenticate_jwt {
         tracing::warn!("JWT authentication is disabled");
     }
 
     // perform various activities in a separate thread
-    background_worker::start(Arc::clone(&state), heartbeat_check_s, heartbeat_timeout_s).await;
+    background_worker::start(
+        Arc::clone(&state),
+        config.heartbeat_check_s,
+        config.heartbeat_timeout_s,
+    )
+    .await;
 
     axum::serve(
         listener,
@@ -281,7 +272,9 @@ pub(crate) mod tests {
 
     use super::*;
     use crate::state::user::{CellEdit, User, UserStateUpdate};
-    use crate::test_util::{integration_test_send_and_receive, integration_test_setup, new_user};
+    use crate::test_util::{
+        integration_test_send_and_receive, integration_test_setup, new_arc_state, new_user,
+    };
     use quadratic_core::controller::operations::operation::Operation;
     use tokio::net::TcpStream;
     use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
@@ -319,7 +312,7 @@ pub(crate) mod tests {
         Uuid,
         User,
     ) {
-        let state = Arc::new(State::new());
+        let state = new_arc_state().await;
         let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let socket = integration_test_setup(state.clone()).await;

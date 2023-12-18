@@ -126,13 +126,13 @@ macro_rules! get_or_create_room {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::new_user;
+    use crate::test_util::{new_state, new_user};
 
     use super::*;
 
     #[tokio::test]
     async fn enters_retrieves_leaves_and_removes_a_room() {
-        let state = State::new();
+        let state = new_state().await;
         let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let user = new_user();
