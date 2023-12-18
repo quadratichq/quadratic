@@ -94,9 +94,14 @@ pub(crate) async fn get_and_load_object(
     key: &str,
 ) -> Result<GridController> {
     let file = download_object(&client, bucket, key).await?;
-    let body = file.body.collect().await.unwrap().into_bytes();
-    let body = std::str::from_utf8(&body).unwrap();
-    let grid = load_file(body).unwrap();
+    let body = file
+        .body
+        .collect()
+        .await
+        .map_err(|e| MpError::FileService(e.to_string()))?
+        .into_bytes();
+    let body = std::str::from_utf8(&body).map_err(|e| MpError::FileService(e.to_string()))?;
+    let grid = load_file(body)?;
 
     Ok(GridController::from_grid(grid))
 }
@@ -117,7 +122,7 @@ pub(crate) async fn process(
     let mut grid = get_and_load_object(client, bucket, &key(file_id, sequence)).await?;
 
     let _ = apply_operations(&mut grid, trasaction);
-    let body = export_file(grid.grid_mut()).unwrap();
+    let body = export_file(grid.grid_mut())?;
 
     let key = key(file_id, sequence + num_operations as u64);
     upload_object(&client, bucket, &key, &body).await?;
