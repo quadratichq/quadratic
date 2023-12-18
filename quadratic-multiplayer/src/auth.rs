@@ -173,8 +173,6 @@ pub mod tests {
     #[tokio::test]
     async fn test_file_perms() {
         let perms = serde_json::from_str::<FilePerms>(PERMS).unwrap();
-
-        println!("perms: {:?}", perms);
-        // println!("perms: {}", perms["peramission"]);
+        assert_eq!(perms.permission, FilePermRole::Owner);
     }
 }
