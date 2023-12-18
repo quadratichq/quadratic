@@ -4,6 +4,7 @@ use std::sync::Arc;
 use tokio::task::JoinHandle;
 use uuid::Uuid;
 
+use crate::error::MpError;
 use crate::message::response::MessageResponse;
 use crate::state::State;
 
@@ -35,11 +36,12 @@ pub(crate) fn broadcast(
                         .lock()
                         .await
                         .send(Message::Text(serde_json::to_string(&message)?))
-                        .await?;
+                        .await
+                        .map_err(|e| MpError::SendingMessage(e.to_string()))?;
                 }
             }
 
-            Ok::<_, anyhow::Error>(())
+            Ok::<_, MpError>(())
         };
 
         if let Err(e) = result.await {

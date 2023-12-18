@@ -146,7 +146,7 @@ async fn ws_handler(
 
             jwt = Some(token.to_owned());
 
-            Ok::<_, anyhow::Error>(())
+            Ok::<_, MpError>(())
         }
         .await;
 

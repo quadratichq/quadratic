@@ -55,12 +55,6 @@ pub(crate) enum MpError {
     User(String),
 }
 
-impl From<anyhow::Error> for MpError {
-    fn from(error: anyhow::Error) -> Self {
-        MpError::Unknown(error.to_string())
-    }
-}
-
 impl From<serde_json::Error> for MpError {
     fn from(error: serde_json::Error) -> Self {
         MpError::Serialization(error.to_string())
