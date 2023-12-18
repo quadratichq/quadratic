@@ -26,12 +26,12 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use crate::{
     auth::{authorize, get_jwks},
     background_worker,
-    config::{config, Config},
+    config::config,
     error::{MpError, Result},
     message::{
         broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
     },
-    state::{connection::Connection, Settings, State},
+    state::{connection::Connection, settings::Settings, State},
 };
 
 /// Construct the application router.  This is separated out so that it can be
