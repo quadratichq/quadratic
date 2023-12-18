@@ -4,6 +4,7 @@ use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
+use strum_macros::Display;
 use uuid::Uuid;
 
 use crate::error::{MpError, Result};
@@ -22,7 +23,7 @@ pub(crate) struct FilePerms {
     permission: FilePermRole,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Display)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub(crate) enum FilePermRole {
     Owner,
@@ -46,10 +47,10 @@ pub(crate) async fn get_file_perms(
 
     match response.status() {
         StatusCode::OK => Ok(response.json::<FilePerms>().await?.permission),
-        StatusCode::FORBIDDEN => Err(MpError::FilePermissions("Forbidden".into())),
-        StatusCode::UNAUTHORIZED => Err(MpError::FilePermissions("Unauthorized".into())),
-        StatusCode::NOT_FOUND => Err(MpError::FilePermissions("File not found".into())),
-        _ => Err(MpError::FilePermissions("Unexpected response".into())),
+        StatusCode::FORBIDDEN => Err(MpError::FilePermissions(true, "Forbidden".into())),
+        StatusCode::UNAUTHORIZED => Err(MpError::FilePermissions(true, "Unauthorized".into())),
+        StatusCode::NOT_FOUND => Err(MpError::FilePermissions(true, "File not found".into())),
+        _ => Err(MpError::FilePermissions(true, "Unexpected response".into())),
     }
 }
 
@@ -100,6 +101,30 @@ pub(crate) fn authorize(
     }
 
     Ok(decoded_token)
+}
+
+/// Validate the role of a user against the required role.
+/// TODO(ddimaria): implement this once the new file permissions exist on the api server
+pub(crate) fn _validate_role(role: FilePermRole, required_role: FilePermRole) -> Result<()> {
+    let authorized = match required_role {
+        FilePermRole::Owner => role == FilePermRole::Owner,
+        FilePermRole::Editor => role == FilePermRole::Editor || role == FilePermRole::Owner,
+        FilePermRole::Viewer => {
+            role == FilePermRole::Viewer
+                || role == FilePermRole::Editor
+                || role == FilePermRole::Owner
+        }
+        FilePermRole::Annonymous => role == FilePermRole::Annonymous,
+    };
+
+    if !authorized {
+        MpError::FilePermissions(
+            true,
+            format!("Invalid role: user has {role} but needs to be {required_role}"),
+        );
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

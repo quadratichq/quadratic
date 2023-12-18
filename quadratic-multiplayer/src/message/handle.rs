@@ -45,16 +45,15 @@ pub(crate) async fn handle_message(
             // validate that the user has permission to access the file
             let base_url = &state.settings.quadratic_api_uri;
             let jwt = connection.jwt.to_owned().ok_or_else(|| {
-                MpError::FilePermissions("A JWT is required to validate file permissions".into())
+                MpError::Authentication("A JWT is required to validate file permissions".into())
             })?;
 
-            let permission;
-
-            if cfg!(test) {
-                permission = crate::auth::FilePermRole::Owner;
+            // default to owner for tests
+            let permission = if cfg!(test) {
+                crate::auth::FilePermRole::Owner
             } else {
-                permission = get_file_perms(base_url, jwt, file_id).await?;
-            }
+                get_file_perms(base_url, jwt, file_id).await?
+            };
 
             let user_state = UserState {
                 sheet_id,

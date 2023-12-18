@@ -92,7 +92,7 @@ macro_rules! get_room {
             .lock()
             .await
             .get(&$file_id)
-            .ok_or(crate::error::MpError::Room(format!(
+            .ok_or($crate::error::MpError::Room(format!(
                 "Room {} not found",
                 $file_id
             )))
@@ -107,7 +107,7 @@ macro_rules! get_mut_room {
             .lock()
             .await
             .get_mut(&$file_id)
-            .ok_or(crate::error::MpError::Room(format!(
+            .ok_or($crate::error::MpError::Room(format!(
                 "Room {} not found",
                 $file_id
             )))

@@ -3,7 +3,6 @@
 //! Handle bootstrapping and starting the websocket server.  Adds global state
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
-use anyhow::anyhow;
 use axum::{
     extract::{
         connect_info::ConnectInfo,
@@ -119,6 +118,8 @@ async fn ws_handler(
         user_agent.to_string()
     });
     let addr = addr.map_or("Unknown address".into(), |addr| addr.to_string());
+
+    #[allow(unused)]
     let mut jwt = None;
 
     #[cfg(test)]
@@ -127,15 +128,19 @@ async fn ws_handler(
     }
 
     if state.settings.authenticate_jwt {
+        let auth_error = |error: &str| MpError::Authentication(error.to_string());
+
         // validate the JWT
         let result = async {
-            let cookie = cookie.ok_or_else(|| anyhow!("No cookie found"))?;
-            let token = cookie.get("jwt").ok_or_else(|| anyhow!("No JWT found"))?;
+            let cookie = cookie.ok_or_else(|| auth_error("No cookie found"))?;
+            let token = cookie
+                .get("jwt")
+                .ok_or_else(|| auth_error("No JWT found"))?;
             let jwks: jsonwebtoken::jwk::JwkSet = state
                 .settings
                 .jwks
                 .clone()
-                .ok_or_else(|| anyhow!("No JWKS found"))?;
+                .ok_or_else(|| auth_error("No JWKS found"))?;
 
             authorize(&jwks, token, false, true)?;
 
@@ -191,8 +196,11 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, conne
                 }
 
                 match error {
-                    // kill the ws connection for auth/file permission errors
-                    MpError::Authentication(_) | MpError::FilePermissions(_) => {
+                    // kill the ws connection for auth errors
+                    MpError::Authentication(_) => {
+                        break;
+                    } // kill the ws connection for critical file permission errors
+                    MpError::FilePermissions(is_critical, _) if is_critical => {
                         break;
                     }
                     // noop

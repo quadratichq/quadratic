@@ -25,7 +25,7 @@ pub(crate) enum MpError {
     Connection(String),
 
     #[error("File permissions error: {0}")]
-    FilePermissions(String),
+    FilePermissions(bool, String),
 
     #[error("File service error: {0}")]
     FileService(String),
