@@ -1,5 +1,7 @@
 use quadratic_core::{
-    controller::{operation::Operation, transaction_summary::TransactionSummary, GridController},
+    controller::{
+        operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
+    },
     grid::{file::import, Grid},
 };
 

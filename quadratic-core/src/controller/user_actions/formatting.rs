@@ -1,21 +1,16 @@
+use crate::controller::{
+    execution::TransactionType, operations::operation::Operation,
+    transaction_summary::TransactionSummary, GridController,
+};
 use crate::{
     grid::{
-        Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericCommas, NumericDecimals,
-        NumericFormat, NumericFormatKind, RenderSize, TextColor,
+        formatting::CellFmtArray, Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic,
+        NumericCommas, NumericDecimals, NumericFormat, RenderSize, TextColor,
     },
     Pos, RunLengthEncoding, SheetPos, SheetRect,
 };
-use serde::{Deserialize, Serialize};
-
-use super::{
-    operation::Operation, transaction_in_progress::TransactionType,
-    transaction_summary::TransactionSummary, GridController,
-};
 
 impl GridController {
-    /// Set the cell formatting for a region.
-    /// Note: this assumes the RegionRef exists as there's not a great way of adding MapRow/ColumnIds operations at this level.
-    ///       This should be fine since the region *should* be created with the proper Operation before this is called.
     pub fn set_cell_formats_for_type<A: CellFmtAttr>(
         &mut self,
         sheet_rect: &SheetRect,
@@ -23,23 +18,11 @@ impl GridController {
         update_cell_sheets_modified: bool,
     ) -> RunLengthEncoding<Option<A::Value>> {
         let sheet = self.grid.sheet_mut_from_id(sheet_rect.sheet_id);
-        // todo: optimize this for contiguous runs of the same value
-        let mut old_values = RunLengthEncoding::new();
-        let mut i = 0;
-        for y in sheet_rect.y_range() {
-            for x in sheet_rect.x_range() {
-                let pos = Pos { x, y };
-                // see note above re: operations returned from set_formatting_value
-                let old_value =
-                    sheet.set_formatting_value::<A>(pos, values.get_at(i).unwrap_or(&None).clone());
-                old_values.push(old_value);
-                i += 1;
-            }
-        }
+        let results = sheet.set_cell_formats_for_type::<A>(sheet_rect, values);
         if update_cell_sheets_modified {
             self.add_cell_sheets_modified_rect(sheet_rect);
         }
-        old_values
+        results
     }
 
     /// set currency type for a region
@@ -50,26 +33,8 @@ impl GridController {
         symbol: Option<String>,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let ops = vec![
-            Operation::SetCellFormats {
-                sheet_rect: *sheet_rect,
-                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                    Some(NumericFormat {
-                        kind: NumericFormatKind::Currency,
-                        symbol,
-                    }),
-                    sheet_rect.len(),
-                )),
-            },
-            Operation::SetCellFormats {
-                sheet_rect: *sheet_rect,
-                attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
-                    Some(2),
-                    sheet_rect.len(),
-                )),
-            },
-        ];
-        self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
+        let ops = self.set_currency_operations(sheet_rect, symbol);
+        self.set_in_progress_transaction(ops, cursor, false, TransactionType::User)
     }
 
     /// Sets NumericFormat and NumericDecimals to None
@@ -78,33 +43,10 @@ impl GridController {
         sheet_rect: &SheetRect,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let ops = vec![
-            Operation::SetCellFormats {
-                sheet_rect: *sheet_rect,
-                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                    None,
-                    sheet_rect.len(),
-                )),
-            },
-            Operation::SetCellFormats {
-                sheet_rect: *sheet_rect,
-                attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
-                    None,
-                    sheet_rect.len(),
-                )),
-            },
-            Operation::SetCellFormats {
-                sheet_rect: *sheet_rect,
-                attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(
-                    None,
-                    sheet_rect.len(),
-                )),
-            },
-        ];
-        self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
+        let ops = self.remove_number_formatting_operations(sheet_rect);
+        self.set_in_progress_transaction(ops, cursor, false, TransactionType::User)
     }
 
-    // todo: should also check the results of spills
     pub fn change_decimal_places(
         &mut self,
         source: SheetPos,
@@ -112,24 +54,8 @@ impl GridController {
         delta: isize,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let sheet = self.sheet(source.sheet_id);
-        let is_percentage =
-            sheet.cell_numeric_format_kind(source.into()) == Some(NumericFormatKind::Percentage);
-        let decimals = sheet
-            .decimal_places(source.into(), is_percentage)
-            .unwrap_or(0);
-        if decimals + (delta as i16) < 0 {
-            return TransactionSummary::default();
-        }
-        let numeric_decimals = Some(decimals + delta as i16);
-        let ops = vec![Operation::SetCellFormats {
-            sheet_rect,
-            attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
-                numeric_decimals,
-                sheet_rect.len(),
-            )),
-        }];
-        self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
+        let ops = self.change_decimal_places_operations(source, sheet_rect, delta);
+        self.set_in_progress_transaction(ops, cursor, false, TransactionType::User)
     }
 
     pub fn toggle_commas(
@@ -138,21 +64,8 @@ impl GridController {
         sheet_rect: SheetRect,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let sheet = self.sheet(source.sheet_id);
-        let commas =
-            if let Some(commas) = sheet.get_formatting_value::<NumericCommas>(source.into()) {
-                !commas
-            } else {
-                true
-            };
-        let ops = vec![Operation::SetCellFormats {
-            sheet_rect,
-            attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(
-                Some(commas),
-                sheet_rect.len(),
-            )),
-        }];
-        self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
+        let ops = self.toggle_commas_operations(source, sheet_rect);
+        self.set_in_progress_transaction(ops, cursor, false, TransactionType::User)
     }
 
     pub fn get_all_cell_formats(&self, sheet_rect: SheetRect) -> Vec<CellFmtArray> {
@@ -221,7 +134,7 @@ macro_rules! impl_set_cell_fmt_method {
                 let attr =
                     $cell_fmt_array_constructor(RunLengthEncoding::repeat(value, sheet_rect.len()));
                 let ops = vec![Operation::SetCellFormats { sheet_rect, attr }];
-                self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
+                self.set_in_progress_transaction(ops, cursor, false, TransactionType::User)
             }
         }
     };
@@ -236,21 +149,6 @@ impl_set_cell_fmt_method!(set_cell_italic<Italic>(CellFmtArray::Italic));
 impl_set_cell_fmt_method!(set_cell_text_color<TextColor>(CellFmtArray::TextColor));
 impl_set_cell_fmt_method!(set_cell_fill_color<FillColor>(CellFmtArray::FillColor));
 impl_set_cell_fmt_method!(set_cell_render_size<RenderSize>(CellFmtArray::RenderSize));
-
-/// Array of a single cell formatting attribute.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum CellFmtArray {
-    Align(RunLengthEncoding<Option<CellAlign>>),
-    Wrap(RunLengthEncoding<Option<CellWrap>>),
-    NumericFormat(RunLengthEncoding<Option<NumericFormat>>),
-    NumericDecimals(RunLengthEncoding<Option<i16>>),
-    NumericCommas(RunLengthEncoding<Option<bool>>),
-    Bold(RunLengthEncoding<Option<bool>>),
-    Italic(RunLengthEncoding<Option<bool>>),
-    TextColor(RunLengthEncoding<Option<String>>),
-    FillColor(RunLengthEncoding<Option<String>>),
-    RenderSize(RunLengthEncoding<Option<RenderSize>>),
-}
 
 #[cfg(test)]
 mod test {

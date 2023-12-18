@@ -1,3 +1,4 @@
+import { ShareFileDialog } from '@/components/ShareDialog';
 import { TYPE } from '@/constants/appConstants';
 import { ROUTES } from '@/constants/routes';
 import { DOCUMENTATION_URL } from '@/constants/urls';
@@ -9,7 +10,6 @@ import { useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { Link, useFetchers, useLocation } from 'react-router-dom';
 import { Empty } from '../../components/Empty';
-import { ShareFileMenu } from '../../components/ShareFileMenu';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import { Loader as FilesLoader } from '../../routes/files';
 import { Action as FilesAction } from '../../routes/files.$uuid';
@@ -191,13 +191,12 @@ export function FilesList({ files }: { files: FilesLoader }) {
       )}
 
       {activeShareMenuFileId && (
-        <ShareFileMenu
+        <ShareFileDialog
           onClose={() => {
             setActiveShareMenuFileId('');
           }}
-          fetcherUrl={ROUTES.FILES_SHARE(activeShareMenuFileId)}
           uuid={activeShareMenuFileId}
-          fileName={activeShareMenuFileName}
+          name={activeShareMenuFileName}
         />
       )}
     </>

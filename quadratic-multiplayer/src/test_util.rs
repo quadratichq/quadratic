@@ -4,7 +4,7 @@ use fake::faker::name::en::{FirstName, LastName};
 use fake::Fake;
 use futures::stream::StreamExt;
 use futures_util::SinkExt;
-use quadratic_core::controller::operation::Operation;
+use quadratic_core::controller::operations::operation::Operation;
 use quadratic_core::controller::GridController;
 use quadratic_core::{Array, CellValue, SheetRect};
 use std::sync::Arc;

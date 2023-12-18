@@ -1,10 +1,8 @@
-use anyhow::{anyhow, bail, Result};
-
-use super::{
-    transaction_in_progress::TransactionType, transaction_summary::TransactionSummary,
-    GridController,
+use crate::controller::{
+    execution::TransactionType, transaction_summary::TransactionSummary, GridController,
 };
-use crate::{controller::operation::Operation, grid::SheetId, Array, CellValue, Pos, SheetRect};
+use crate::{grid::SheetId, Pos};
+use anyhow::Result;
 
 impl GridController {
     /// Imports a CSV file into the grid.
@@ -18,57 +16,8 @@ impl GridController {
         insert_at: Pos,
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
-        let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
-        let width = csv::ReaderBuilder::new().from_reader(file).headers()?.len() as u32;
-
-        if width == 0 {
-            bail!("empty files cannot be processed");
-        }
-
-        let mut reader = csv::ReaderBuilder::new()
-            .has_headers(false)
-            .from_reader(file);
-
-        let mut ops = vec![] as Vec<Operation>;
-
-        let cell_values = reader
-            .records()
-            .enumerate()
-            .flat_map(|(row, record)| {
-                // convert the record into a vector of Operations
-                record
-                    .map_err(|e| error(format!("line {}: {}", row + 1, e)))?
-                    .iter()
-                    .enumerate()
-                    .map(|(col, value)| {
-                        Ok(self.string_to_cell_value(
-                            (insert_at.x + col as i64, insert_at.y + row as i64, sheet_id).into(),
-                            value,
-                            &mut ops,
-                        ))
-                    })
-                    .collect::<Result<Vec<CellValue>>>()
-            })
-            .collect::<Vec<Vec<CellValue>>>();
-
-        let array = Array::from(cell_values);
-
-        let sheet_rect = SheetRect::new_pos_span(
-            insert_at,
-            (
-                insert_at.x + array.width() as i64 - 1,
-                insert_at.y + array.height() as i64 - 1,
-            )
-                .into(),
-            sheet_id,
-        );
-
-        ops.push(Operation::SetCellValues {
-            sheet_rect,
-            values: array,
-        });
-
-        Ok(self.set_in_progress_transaction(ops, cursor, true, TransactionType::Normal))
+        let ops = self.import_csv_operations(sheet_id, file, file_name, insert_at)?;
+        Ok(self.set_in_progress_transaction(ops, cursor, true, TransactionType::User))
     }
 }
 

@@ -19,6 +19,7 @@ use crate::{Array, ArraySize, CellValue, IsBlank, Pos, Rect};
 pub mod bounds;
 pub mod cells;
 pub mod code;
+pub mod formatting;
 pub mod rendering;
 pub mod sheet_offsets;
 
@@ -367,7 +368,7 @@ mod test {
 
     use super::*;
     use crate::{
-        controller::{auto_complete::cell_values_in_rect, GridController},
+        controller::GridController,
         grid::{Bold, Italic, NumericFormat},
         test_util::print_table,
         SheetPos,
@@ -484,7 +485,7 @@ mod test {
         print_table(&grid, sheet_id, selected);
 
         let sheet = grid.grid().sheet_from_id(sheet_id);
-        let values = cell_values_in_rect(&selected, sheet).unwrap();
+        let values = sheet.cell_values_in_rect(&selected).unwrap();
         values
             .into_cell_values_vec()
             .into_iter()
@@ -501,7 +502,7 @@ mod test {
 
         print_table(&grid, sheet_id, selected);
 
-        let values = cell_values_in_rect(&selected, sheet).unwrap();
+        let values = sheet.cell_values_in_rect(&selected).unwrap();
         values
             .into_cell_values_vec()
             .into_iter()
@@ -531,7 +532,7 @@ mod test {
 
         print_table(&grid, sheet_id, view_rect);
 
-        let values = cell_values_in_rect(&selected, sheet).unwrap();
+        let values = sheet.cell_values_in_rect(&selected).unwrap();
         values
             .into_cell_values_vec()
             .into_iter()

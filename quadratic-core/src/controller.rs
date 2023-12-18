@@ -10,30 +10,23 @@ use crate::{
 };
 
 use self::{
-    operation::Operation, transaction_in_progress::TransactionType,
+    execution::TransactionType, operations::operation::Operation,
     transaction_summary::TransactionSummary,
 };
 
-pub mod auto_complete;
-pub mod borders;
-pub mod cells;
-pub mod clipboard;
 pub mod dependencies;
+pub mod execution;
 pub mod export;
-pub mod formatting;
 pub mod formula;
-pub mod import;
-pub mod operation;
 pub mod operations;
 pub mod sheet_offsets;
 pub mod sheets;
 pub mod spills;
 pub mod thumbnail;
-pub mod transaction_in_progress;
 pub mod transaction_summary;
 pub mod transaction_types;
-pub mod undo;
 pub mod update_code_cell_value;
+pub mod user_actions;
 
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct Transaction {

@@ -3,7 +3,7 @@ use std::collections::HashSet;
 
 use crate::{
     controller::{
-        operation::Operation,
+        operations::operation::Operation,
         transaction_summary::{TransactionSummary, CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
         transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
     },
@@ -87,7 +87,7 @@ impl GridController {
 
     pub(super) fn finalize_transaction(&mut self) {
         match self.transaction_type {
-            TransactionType::Normal => {
+            TransactionType::User => {
                 self.undo_stack.push(self.to_transaction());
                 self.redo_stack.clear();
             }
@@ -222,13 +222,8 @@ mod tests {
         let mut gc = GridController::new();
         let (operation, operation_undo) = get_operations(&mut gc);
 
-        // TransactionType::Normal
-        gc.start_transaction(
-            vec![operation.clone()],
-            None,
-            false,
-            TransactionType::Normal,
-        );
+        // TransactionType::User
+        gc.start_transaction(vec![operation.clone()], None, false, TransactionType::User);
         gc.finalize_transaction();
 
         assert_eq!(gc.undo_stack.len(), 1);
@@ -262,12 +257,7 @@ mod tests {
         assert!(!gc.has_undo());
         assert!(!gc.has_redo());
 
-        gc.set_in_progress_transaction(
-            vec![operation.clone()],
-            None,
-            false,
-            TransactionType::Normal,
-        );
+        gc.set_in_progress_transaction(vec![operation.clone()], None, false, TransactionType::User);
         assert!(gc.has_undo());
         assert!(!gc.has_redo());
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].operations);
@@ -299,7 +289,7 @@ mod tests {
 
         assert_eq!(gc.grid().sheets()[0].bounds(true), GridBounds::Empty);
 
-        gc.set_in_progress_transaction(vec![operation], None, true, TransactionType::Normal);
+        gc.set_in_progress_transaction(vec![operation], None, true, TransactionType::User);
         gc.transaction_updated_bounds();
 
         let expected = GridBounds::NonEmpty(Rect::single_pos((0, 0).into()));

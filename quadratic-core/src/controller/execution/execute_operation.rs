@@ -1,13 +1,17 @@
+use crate::grid::formatting::CellFmtArray;
 use crate::{grid::*, Array, CellValue, SheetPos};
 
-use super::{formatting::CellFmtArray, operation::Operation, GridController};
+use crate::controller::operations::operation::Operation;
+use crate::controller::GridController;
 
 impl GridController {
     /// Executes the given operation.
     pub fn execute_operation(&mut self, op: Operation, compute: bool) {
         match op {
             Operation::SetCellValues { sheet_rect, values } => {
+                // todo: this should be moved to the update_bounds function
                 self.sheets_with_changed_bounds.insert(sheet_rect.sheet_id);
+
                 let sheet = self.grid.sheet_mut_from_id(sheet_rect.sheet_id);
 
                 let size = sheet_rect.size();
@@ -33,6 +37,7 @@ impl GridController {
 
                 self.add_cell_sheets_modified_rect(&sheet_rect);
 
+                // todo: this should be moved to the code_cell operations function
                 // check if override any code cells
                 let sheet = self.grid.sheet_from_id(sheet_rect.sheet_id);
                 let code_cells_to_delete = sheet
@@ -48,6 +53,7 @@ impl GridController {
                     })
                     .collect::<Vec<SheetPos>>();
 
+                // todo: this should be moved to the code_cell operations function
                 // remove the code cells
                 let sheet_id = sheet.id;
                 for sheet_pos in code_cells_to_delete {
@@ -60,6 +66,7 @@ impl GridController {
                     });
                 }
 
+                // todo: this should be moved to the spills operations function
                 // check for changes in spills
                 for sheet_pos in sheet_rect.iter() {
                     let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
@@ -72,6 +79,7 @@ impl GridController {
                     }
                 }
 
+                // todo: this should be removed (forward operations should be generically added in the execute_operations function)
                 self.forward_operations
                     .push(Operation::SetCellValues { sheet_rect, values });
 
@@ -93,6 +101,8 @@ impl GridController {
                 self.sheets_with_changed_bounds.insert(sheet_id);
 
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
+
+                // todo: all spill calculation should be moved to the code_cell operation function
                 let old_spill = sheet.get_spill(sheet_pos.into());
                 let old_code_cell_value = sheet.get_code_cell(sheet_pos.into()).cloned();
                 let final_code_cell_value;
@@ -169,6 +179,7 @@ impl GridController {
                     code_cell_value: old_code_cell_value,
                 });
             }
+
             Operation::SetCellFormats { sheet_rect, attr } => {
                 self.sheets_with_changed_bounds.insert(sheet_rect.sheet_id);
 
@@ -231,6 +242,8 @@ impl GridController {
                         ))
                     }
                 };
+
+                // todo: remove
                 self.forward_operations
                     .push(Operation::SetCellFormats { sheet_rect, attr });
 
@@ -239,6 +252,7 @@ impl GridController {
                     attr: old_attr,
                 });
             }
+
             Operation::SetBorders {
                 sheet_rect,
                 borders,
@@ -253,6 +267,8 @@ impl GridController {
                 let sheet = self.grid.sheet_mut_from_id(sheet_rect.sheet_id);
 
                 let old_borders = sheet.set_region_borders(&sheet_rect.into(), borders.clone());
+
+                // should be removed
                 self.forward_operations.push(Operation::SetBorders {
                     sheet_rect,
                     borders,

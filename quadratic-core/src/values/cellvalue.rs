@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use super::{Duration, Instant, IsBlank};
 use crate::{
-    controller::{formatting::CellFmtArray, operation::Operation},
-    grid::{NumericDecimals, NumericFormat, NumericFormatKind, Sheet},
+    controller::operations::operation::Operation,
+    grid::{formatting::CellFmtArray, NumericDecimals, NumericFormat, NumericFormatKind, Sheet},
     CodeResult, Error, Pos, RunLengthEncoding, SheetRect,
 };
 

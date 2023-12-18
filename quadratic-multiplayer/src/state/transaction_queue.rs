@@ -1,4 +1,4 @@
-use quadratic_core::controller::operation::Operation;
+use quadratic_core::controller::operations::operation::Operation;
 use serde::Serialize;
 use std::collections::HashMap;
 use uuid::Uuid;

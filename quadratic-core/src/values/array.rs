@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
 use super::{ArraySize, Axis, CellValue, Spanned, Value};
-use crate::{controller::operation::Operation, grid::Sheet, CodeResult, ErrorMsg, Pos};
+use crate::{controller::operations::operation::Operation, grid::Sheet, CodeResult, ErrorMsg, Pos};
 
 #[macro_export]
 macro_rules! array {

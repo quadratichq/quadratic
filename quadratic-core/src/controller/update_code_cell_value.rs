@@ -1,7 +1,9 @@
 use std::ops::Range;
 
 use crate::{
-    controller::{operation::Operation, transaction_summary::CellSheetsModified, GridController},
+    controller::{
+        operations::operation::Operation, transaction_summary::CellSheetsModified, GridController,
+    },
     grid::CodeCellValue,
     Pos, Rect, SheetPos, SheetRect, Value,
 };
