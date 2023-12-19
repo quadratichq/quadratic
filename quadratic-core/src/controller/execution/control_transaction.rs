@@ -15,34 +15,37 @@ use super::{GridController, TransactionType};
 
 impl GridController {
     // loop compute cycle until complete or an async call is made
-    pub(super) fn loop_compute(&mut self) {
+    pub(super) fn handle_transactions(&mut self) {
         loop {
-            self.compute();
-            if self.waiting_for_async.is_some() {
-                break;
-            }
-            if self.cells_to_compute.is_empty() {
+            if self.operations.is_empty() {
                 self.complete = true;
-                self.transaction_in_progress = false;
-                self.summary.save = true;
                 if self.has_async {
                     self.finalize_transaction();
                 }
                 break;
             }
-        }
-    }
 
-    /// executes a set of operations
-    fn transact(&mut self, operations: Vec<Operation>) {
-        for op in operations.iter() {
-            if cfg!(feature = "show-operations") {
-                crate::util::dbgjs(&format!("[Operation] {:?}", op.to_string()));
+            let op = self.operations.remove(0);
+            #[cfg(feature = "show-operations")]
+            crate::util::dbgjs(&format!("[Operation] {:?}", op));
+
+            self.execute_operation(op);
+
+            if self.waiting_for_async.is_some() {
+                break;
             }
-
-            self.execute_operation(op.clone());
         }
     }
+
+    // /// executes a set of operations
+    // fn transact(&mut self, operations: Vec<Operation>) {
+    //     for op in operations.iter() {
+    //         #[cfg(feature = "show-operations")]
+    //         crate::util::dbgjs(&format!("[Operation] {:?}", op.to_string()));
+
+    //         self.execute_operation(op);
+    //     }
+    // }
 
     /// Creates and runs a new Transaction
     ///
@@ -61,28 +64,19 @@ impl GridController {
         self.transaction_in_progress = true;
         self.reverse_operations = vec![];
         self.cells_updated = IndexSet::new();
-        self.cells_to_compute = IndexSet::new();
         self.cursor = cursor;
         self.cells_accessed = HashSet::new();
         self.summary = TransactionSummary::default();
+        self.operations = operations;
         self.sheets_with_dirty_bounds = HashSet::new();
         self.transaction_type = transaction_type;
         self.has_async = false;
         self.current_sheet_pos = None;
         self.waiting_for_async = None;
         self.complete = false;
-        self.forward_operations = vec![];
+        self.forward_operations = operations;
 
-        // apply operations
-        self.transact(operations);
-
-        // run computations
-        if compute {
-            self.loop_compute();
-        } else {
-            self.complete = true;
-            self.transaction_in_progress = false;
-        }
+        self.handle_transactions();
     }
 
     pub(super) fn finalize_transaction(&mut self) {
@@ -130,7 +124,7 @@ impl GridController {
 
         if cancel_compute {
             self.clear_cells_to_compute();
-            self.loop_compute();
+            self.handle_transactions();
         }
 
         self.after_calculation_async(result);

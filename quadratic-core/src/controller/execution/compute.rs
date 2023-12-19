@@ -21,15 +21,17 @@ impl GridController {
 
         if let Some(sheet_pos) = self.cells_to_compute.shift_remove_index(0) {
             // todo: this would be a good place to check for cycles
-            // add all dependent cells to the cells_to_compute
-            if let Some(dependent_cells) = self.get_dependent_cells(sheet_pos) {
-                #[cfg(feature = "show-operations")]
-                dependent_cells.iter().for_each(|sheet_pos| {
-                    crate::util::dbgjs(format!("[Adding Dependent Cell] {:?}", sheet_pos));
-                });
 
-                self.cells_to_compute.extend(dependent_cells);
-            }
+            // not sure this is still needed with the above code...
+            // // add all dependent cells to the cells_to_compute
+            // if let Some(dependent_cells) = self.get_dependent_cells(sheet_pos) {
+            //     #[cfg(feature = "show-operations")]
+            //     dependent_cells.iter().for_each(|sheet_pos| {
+            //         crate::util::dbgjs(format!("[Adding Dependent Cell] {:?}", sheet_pos));
+            //     });
+
+            //     self.cells_to_compute.extend(dependent_cells);
+            // }
 
             // whether to save the current code_cell_ref to the GridController
             let mut current_code_cell = false;
@@ -62,7 +64,7 @@ impl GridController {
                         self.has_async = true;
                     }
                     CodeCellLanguage::Formula => {
-                        self.eval_formula(code_string.clone(), language, sheet_pos);
+                        self.execute_formula(code_string.clone(), language, sheet_pos);
                     }
                     _ => {
                         crate::util::dbgjs(format!(
@@ -138,7 +140,7 @@ impl GridController {
             }
         }
         // continue the compute loop after a successful async call
-        self.loop_compute();
+        self.handle_transactions();
     }
 
     pub(super) fn code_cell_sheet_error(&mut self, error_msg: String, line_number: Option<i64>) {
@@ -262,6 +264,8 @@ mod test {
         Array, ArraySize, CellValue, Pos, SheetPos, Value,
     };
 
+    /// Sets up a GridController with a code cell at (1, 0) and a cell value at (0, 0)
+    /// Returns the GridController with the transaction in progress
     fn setup_python(
         gc: Option<GridController>,
         code_string: String,

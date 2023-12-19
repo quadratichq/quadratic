@@ -2,7 +2,9 @@ use core::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    grid::{formatting::CellFmtArray, CodeCellValue, Sheet, SheetBorders, SheetId},
+    grid::{
+        formatting::CellFmtArray, CodeCellRunOutput, CodeCellValue, Sheet, SheetBorders, SheetId,
+    },
     Array, SheetPos, SheetRect,
 };
 
@@ -15,6 +17,20 @@ pub enum Operation {
     SetCodeCell {
         sheet_pos: SheetPos,
         code_cell_value: Option<CodeCellValue>,
+    },
+    RunCodeCell {
+        sheet_pos: SheetPos,
+    },
+    SetCodeCellRun {
+        sheet_pos: SheetPos,
+        code_cell_run: Option<CodeCellRunOutput>,
+        last_modified: String,
+    },
+    CheckClearSpill {
+        sheet_rect: SheetRect,
+    },
+    CheckSetSpill {
+        sheet_rect: SheetRect,
     },
     SetSpill {
         spill_rect: SheetRect,
@@ -79,6 +95,23 @@ impl fmt::Display for Operation {
                 "SetSpill {{ pos: {:?}, code_cell_sheet_pos: {:?} }}",
                 spill_rect, code_cell_sheet_pos
             ),
+            Operation::RunCodeCell { sheet_pos } => {
+                write!(fmt, "RunCodeCell {{ sheet_pos: {:?} }}", sheet_pos)
+            }
+            Operation::SetCodeCellRun {
+                sheet_pos,
+                code_cell_run,
+            } => write!(
+                fmt,
+                "SetCodeCellRun {{ sheet_pos: {:?}, code_cell_run: {:?} }}",
+                sheet_pos, code_cell_run
+            ),
+            Operation::CheckClearSpill { sheet_rect } => {
+                write!(fmt, "CheckClearSpill {{ sheet_rect: {:?} }}", sheet_rect)
+            }
+            Operation::CheckSetSpill { sheet_rect } => {
+                write!(fmt, "CheckSetSpill {{ sheet_rect: {:?} }}", sheet_rect)
+            }
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),
             Operation::AddSheet { sheet } => write!(fmt, "AddSheet {{ sheet: {} }}", sheet.name),
             Operation::DeleteSheet { sheet_id } => {

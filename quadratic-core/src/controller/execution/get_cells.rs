@@ -38,7 +38,7 @@ impl GridController {
                     "Sheet not found".to_string()
                 };
                 self.code_cell_sheet_error(msg, get_cells.line_number());
-                self.loop_compute();
+                self.handle_transactions();
                 return Some(CellsForArray::new(vec![], true));
             }
 

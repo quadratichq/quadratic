@@ -46,9 +46,6 @@ pub struct GridController {
     cursor: Option<String>,
     transaction_type: TransactionType,
 
-    // queue of cells to compute
-    cells_to_compute: IndexSet<SheetPos>,
-
     // track changes
     cells_updated: IndexSet<SheetRect>,
 
@@ -74,8 +71,11 @@ pub struct GridController {
     // undo operations
     reverse_operations: Vec<Operation>,
 
-    // operations for multiplayer
+    // list of operations to share with other players
     forward_operations: Vec<Operation>,
+
+    // list of pending operations
+    operations: Vec<Operation>,
 }
 
 impl GridController {

@@ -1,10 +1,12 @@
 /// This module handles the application of operations to the Grid.
 pub mod compute;
 pub mod control_transaction;
-pub mod eval_formula;
-///
+pub mod execute_formula;
 pub mod execute_operation;
+pub mod execute_python;
 pub mod get_cells;
+pub mod output_difference;
+
 use serde::{Deserialize, Serialize};
 
 use crate::controller::{transaction_summary::TransactionSummary, GridController};

@@ -36,6 +36,8 @@ impl GridController {
             }),
         });
 
+        ops.push(Operation::RunCodeCell { sheet_pos });
+
         ops
     }
 

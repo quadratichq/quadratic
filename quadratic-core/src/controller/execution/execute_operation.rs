@@ -6,7 +6,9 @@ use crate::controller::GridController;
 
 impl GridController {
     /// Executes the given operation.
-    pub fn execute_operation(&mut self, op: Operation) {
+    /// Returns true if the operation resulted in an async call.
+    ///
+    pub fn execute_operation(&mut self, op: Operation) -> bool {
         match op.clone() {
             Operation::SetCellValues { sheet_rect, values } => {
                 let sheet = self.grid.sheet_mut_from_id(sheet_rect.sheet_id);
@@ -45,6 +47,8 @@ impl GridController {
                 self.summary.generate_thumbnail =
                     self.summary.generate_thumbnail || self.thumbnail_dirty_sheet_rect(sheet_rect);
                 self.add_cell_sheets_modified_rect(&sheet_rect);
+
+                false
             }
 
             Operation::SetCodeCell {
@@ -54,11 +58,11 @@ impl GridController {
                 let sheet_id = sheet_pos.sheet_id;
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
 
-                // find combine area
-                let new_output_sheet_rect = code_cell_value
-                    .as_ref()
-                    .map(|code_cell_value| code_cell_value.output_rect())
-                    .flatten();
+                // // find combine area
+                // let new_output_sheet_rect = code_cell_value
+                //     .as_ref()
+                //     .map(|code_cell_value| code_cell_value.output_rect())
+                //     .flatten();
 
                 let old_code_cell_value =
                     sheet.set_code_cell_value(sheet_pos.into(), code_cell_value);
@@ -77,7 +81,13 @@ impl GridController {
                     (None, None) => Rect::single_pos(sheet_pos.into()),
                 }
                 .to_sheet_rect(sheet_id);
-                self.cells_updated.insert(sheet_rect);
+
+                if compute {
+                    self.cells_to_compute.insert(sheet_pos);
+                } else {
+                    self.cells_updated.insert(sheet_rect);
+                }
+
                 self.sheets_with_dirty_bounds.insert(sheet_rect.sheet_id);
                 self.summary.generate_thumbnail =
                     self.summary.generate_thumbnail || self.thumbnail_dirty_sheet_rect(sheet_rect);
@@ -164,6 +174,31 @@ impl GridController {
                 });
 
                 self.sheets_with_dirty_bounds.insert(sheet_id);
+                false
+            }
+
+            Operation::RunCodeCell { sheet_pos } => {
+                // only execute if sheet still exists
+                if let Some(sheet) = self.grid.try_sheet_from_id(sheet_pos.sheet_id) {
+                    // ensure the code_cell still exists
+                    if let Some(code_cell_value) = sheet.get_code_cell(sheet_pos.into()) {
+                        match code_cell_value.language {
+                            CodeCellLanguage::Python => {
+                                self.execute_python(sheet_pos, code_cell_value)
+                            }
+                            CodeCellLanguage::Formula => {
+                                self.execute_formula(sheet_pos, code_cell_value)
+                            }
+                            _ => {
+                                unreachable!("Unsupported language in RunCodeCell");
+                            }
+                        }
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
             }
 
             Operation::SetSpill {
@@ -254,7 +289,6 @@ impl GridController {
                     }
                 };
 
-                // todo: remove
                 self.forward_operations
                     .push(Operation::SetCellFormats { sheet_rect, attr });
 
@@ -404,7 +438,7 @@ impl GridController {
                     new_size: old_size,
                 });
             }
-        };
+        }
     }
 }
 
@@ -412,9 +446,9 @@ impl GridController {
 mod tests {
     use super::*;
 
-    fn execute(gc: &mut GridController, operation: Operation) {
+    fn execute(gc: &mut GridController, operation: Operation, compute: bool) {
         gc.transaction_in_progress = true;
-        gc.execute_operation(operation);
+        gc.execute_operation(operation, false);
     }
 
     #[test]
@@ -435,7 +469,7 @@ mod tests {
             )
         );
 
-        execute(&mut gc, operation);
+        execute(&mut gc, operation, false);
         assert_eq!(gc.grid.sheets()[0].color, color);
     }
 
@@ -459,7 +493,7 @@ mod tests {
             )
         );
 
-        execute(&mut gc, operation);
+        execute(&mut gc, operation, false);
         let column_width = gc.grid.sheet_from_id(sheet_id).offsets.column_width(x);
         assert_eq!(column_width, new_size);
     }
@@ -485,7 +519,7 @@ mod tests {
             )
         );
 
-        execute(&mut gc, operation);
+        execute(&mut gc, operation, false);
         let row_height = gc.grid.sheets()[0].offsets.row_height(row);
         assert_eq!(row_height, new_size);
     }
