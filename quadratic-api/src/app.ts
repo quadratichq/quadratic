@@ -7,6 +7,7 @@ import ai_chat_router from './routes/ai_chat';
 import feedback_router from './routes/feedback';
 import files_router from './routes/files/files';
 import sharing_router from './routes/files/sharing';
+import internal_router from './routes/internal';
 import teams_router from './routes/teams';
 
 export const app = express();
@@ -63,6 +64,9 @@ app.use('/v0/files', files_router);
 app.use('/v0/files', sharing_router);
 app.use('/v0/feedback', feedback_router);
 app.use('/v0/teams', teams_router);
+
+// Internal routes
+app.use('/v0/internal', internal_router);
 
 if (SENTRY_DSN) {
   // test route
