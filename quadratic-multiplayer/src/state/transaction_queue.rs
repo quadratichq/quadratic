@@ -29,9 +29,12 @@ impl Transaction {
     }
 }
 
+pub(crate) type Queue = HashMap<Uuid, (u64, Vec<Transaction>)>;
+
 #[derive(Debug, Default)]
 pub(crate) struct TransactionQueue {
-    pub(crate) queue: HashMap<Uuid, (u64, Vec<Transaction>)>,
+    pending: Queue,
+    processed: Queue,
 }
 
 impl TransactionQueue {
@@ -39,8 +42,8 @@ impl TransactionQueue {
         Default::default()
     }
 
-    pub(crate) fn push(&mut self, id: Uuid, file_id: Uuid, operations: Vec<Operation>) -> u64 {
-        let (sequence_num, transactions) = self.queue.entry(file_id).or_insert_with(|| (0, vec![]));
+    fn push(queue: &mut Queue, id: Uuid, file_id: Uuid, operations: Vec<Operation>) -> u64 {
+        let (sequence_num, transactions) = queue.entry(file_id).or_insert_with(|| (0, vec![]));
 
         *sequence_num += 1;
 
@@ -50,9 +53,27 @@ impl TransactionQueue {
         sequence_num.to_owned()
     }
 
+    pub(crate) fn push_pending(
+        &mut self,
+        id: Uuid,
+        file_id: Uuid,
+        operations: Vec<Operation>,
+    ) -> u64 {
+        TransactionQueue::push(&mut self.pending, id, file_id, operations)
+    }
+
+    pub(crate) fn push_processed(
+        &mut self,
+        id: Uuid,
+        file_id: Uuid,
+        operations: Vec<Operation>,
+    ) -> u64 {
+        TransactionQueue::push(&mut self.processed, id, file_id, operations)
+    }
+
     pub(crate) fn get_transactions(&mut self, file_id: Uuid) -> Result<Vec<Transaction>> {
         let transactions = self
-            .queue
+            .pending
             .get(&file_id)
             .ok_or_else(|| {
                 MpError::TransactionQueue(format!(
@@ -65,10 +86,28 @@ impl TransactionQueue {
         Ok(transactions)
     }
 
-    pub(crate) fn clear_transactions(&mut self, file_id: Uuid) -> Result<()> {
-        let transactions = self.queue.remove(&file_id).ok_or_else(|| {
-            MpError::TransactionQueue(format!("file_id {file_id} not found in transaction queue"))
-        });
+    pub(crate) fn remove_transactions(&mut self, file_id: Uuid) -> Result<()> {
+        // first, add transactions to the processed queue
+        self.get_transactions(file_id)?
+            .iter()
+            .for_each(|transaction| {
+                self.push_processed(
+                    transaction.id,
+                    transaction.file_id,
+                    transaction.operations.to_owned(),
+                );
+            });
+
+        // next, remove transactions from the pending queue
+        //
+        // TODO(ddimaria): if remove transactions is atomic (locked mutex),
+        // then this error condition should never happen, but figure out
+        // what to do in the case that id does.
+        self.pending.remove(&file_id).ok_or_else(|| {
+            MpError::TransactionQueue(format!(
+                "Could not remove pending transactions for file_id {file_id}"
+            ))
+        })?;
 
         Ok(())
     }
@@ -89,7 +128,7 @@ impl TransactionQueue {
 
     pub(crate) fn get_sequence_num(&mut self, file_id: Uuid) -> Result<u64> {
         let sequence_num = self
-            .queue
+            .pending
             .get(&file_id)
             .ok_or_else(|| {
                 MpError::TransactionQueue(format!(
@@ -125,7 +164,7 @@ mod tests {
         let transaction_id_2 = Uuid::new_v4();
         let operations_2 = operation(&mut grid, 1, 0, "2");
 
-        state.transaction_queue.lock().await.push(
+        state.transaction_queue.lock().await.push_pending(
             transaction_id_1,
             file_id,
             vec![operations_1.clone()],
@@ -140,7 +179,7 @@ mod tests {
 
         std::mem::drop(transaction_queue);
 
-        state.transaction_queue.lock().await.push(
+        state.transaction_queue.lock().await.push_pending(
             transaction_id_2,
             file_id,
             vec![operations_2.clone()],

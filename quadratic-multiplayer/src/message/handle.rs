@@ -118,7 +118,7 @@ pub(crate) async fn handle_message(
             state.update_user_heartbeat(file_id, &session_id).await?;
 
             // add the transaction to the transaction queue
-            let sequence_num = state.transaction_queue.lock().await.push(
+            let sequence_num = state.transaction_queue.lock().await.push_pending(
                 id,
                 file_id,
                 serde_json::from_str(&operations)?,

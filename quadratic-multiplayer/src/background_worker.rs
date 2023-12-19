@@ -4,6 +4,7 @@ use uuid::Uuid;
 
 use crate::{
     error::{MpError, Result},
+    file::new_client,
     message::{broadcast, response::MessageResponse},
     state::{room::Room, State},
 };
@@ -109,7 +110,7 @@ mod tests {
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
 
-        state.transaction_queue.lock().await.push(
+        state.transaction_queue.lock().await.push_pending(
             transaction_id_1,
             file_id,
             vec![operations_1.clone()],

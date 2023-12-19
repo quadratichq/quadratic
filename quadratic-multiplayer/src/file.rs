@@ -166,6 +166,7 @@ pub(crate) async fn process_queue_for_room(
     transaction_queue: Mutex<TransactionQueue>,
     file_id: &Uuid,
 ) -> Result<()> {
+    // expensive lock since we're waiting for the file to write to S3 before unlocking
     let mut transaction_queue = transaction_queue.lock().await;
 
     // combine all operations into a single vec
@@ -176,7 +177,11 @@ pub(crate) async fn process_queue_for_room(
         .collect::<Vec<Operation>>();
     let sequence_num = transaction_queue.get_sequence_num(*file_id)?;
 
+    // process the transactions and save the file to S3
     process_transactions(client, bucket, *file_id, sequence_num, operations).await?;
+
+    // remove transactions from the queue
+    transaction_queue.remove_transactions(*file_id)?;
 
     Ok(())
 }
