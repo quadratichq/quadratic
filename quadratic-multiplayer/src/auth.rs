@@ -45,6 +45,8 @@ pub(crate) async fn get_file_perms(
         .send()
         .await?;
 
+    tracing::info!("File perms response: {:?}", response.status());
+
     match response.status() {
         StatusCode::OK => Ok(response.json::<FilePerms>().await?.permission),
         StatusCode::FORBIDDEN => Err(MpError::FilePermissions(true, "Forbidden".into())),

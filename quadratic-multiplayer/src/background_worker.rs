@@ -55,7 +55,8 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                 .await
                 {
                     tracing::warn!(
-                        "Error removing stale users from room {file_id}: {:?}",
+                        "Error removing stale users from room {}: {:?}",
+                        file_id,
                         error
                     );
                 }

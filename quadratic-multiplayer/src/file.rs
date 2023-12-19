@@ -166,14 +166,22 @@ pub(crate) async fn process_queue_for_room(
     transaction_queue: &Mutex<TransactionQueue>,
     file_id: &Uuid,
 ) -> Result<()> {
-    // expensive lock since we're waiting for the file to write to S3 before unlocking
+    // this is an expensive lock since we're waiting for the file to write to S3 before unlocking
     let mut transaction_queue = transaction_queue.lock().await;
 
     // combine all operations into a single vec
     let operations = transaction_queue
         .get_pending(*file_id)?
         .into_iter()
-        .flat_map(|transaction| transaction.operations)
+        .flat_map(|transaction| {
+            tracing::info!(
+                "Processing transaction {}, sequence number {} for room {file_id}",
+                transaction.id,
+                transaction.sequence_num
+            );
+
+            transaction.operations
+        })
         .collect::<Vec<Operation>>();
     let sequence_num = transaction_queue.get_sequence_num(*file_id)?;
 
@@ -182,6 +190,8 @@ pub(crate) async fn process_queue_for_room(
 
     // remove transactions from the queue
     transaction_queue.complete_transactions(*file_id)?;
+
+    tracing::info!("Processed up to sequence number {sequence_num} for room {file_id}");
 
     Ok(())
 }
