@@ -9,6 +9,7 @@ pub(crate) struct Settings {
     pub(crate) authenticate_jwt: bool,
     pub(crate) quadratic_api_uri: String,
     pub(crate) aws_client: Client,
+    pub(crate) aws_s3_bucket_name: String,
 }
 
 impl Settings {
@@ -23,6 +24,7 @@ impl Settings {
                 &config.aws_s3_region,
             )
             .await,
+            aws_s3_bucket_name: config.aws_s3_bucket_name.to_owned(),
         }
     }
 }

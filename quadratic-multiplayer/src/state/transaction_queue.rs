@@ -71,7 +71,7 @@ impl TransactionQueue {
         TransactionQueue::push(&mut self.processed, id, file_id, operations)
     }
 
-    pub(crate) fn get_transactions(&mut self, file_id: Uuid) -> Result<Vec<Transaction>> {
+    pub(crate) fn get_pending(&mut self, file_id: Uuid) -> Result<Vec<Transaction>> {
         let transactions = self
             .pending
             .get(&file_id)
@@ -86,39 +86,56 @@ impl TransactionQueue {
         Ok(transactions)
     }
 
-    pub(crate) fn remove_transactions(&mut self, file_id: Uuid) -> Result<()> {
+    pub(crate) fn complete_transactions(
+        &mut self,
+        file_id: Uuid,
+    ) -> Result<(u64, Vec<Transaction>)> {
         // first, add transactions to the processed queue
-        self.get_transactions(file_id)?
-            .iter()
-            .for_each(|transaction| {
+        self.shovel_pending(file_id)?;
+
+        // next, remove transactions from the pending queue
+        self.drain_pending(file_id)
+    }
+
+    /// Move transactions from the pending queue to the processed queue for a given file
+    pub(crate) fn shovel_pending(&mut self, file_id: Uuid) -> Result<Vec<Transaction>> {
+        let transactions = self
+            .get_pending(file_id)?
+            .into_iter()
+            .map(|transaction| {
                 self.push_processed(
                     transaction.id,
                     transaction.file_id,
                     transaction.operations.to_owned(),
                 );
-            });
 
-        // next, remove transactions from the pending queue
-        //
-        // TODO(ddimaria): if remove transactions is atomic (locked mutex),
-        // then this error condition should never happen, but figure out
-        // what to do in the case that id does.
+                transaction
+            })
+            .collect::<Vec<_>>();
+
+        Ok(transactions)
+    }
+
+    /// Drain the pending queue
+    ///
+    /// TODO(ddimaria): if remove transactions is atomic (locked mutex),
+    /// then this error condition should never happen, but figure out
+    /// what to do in the case that id does.
+    pub(crate) fn drain_pending(&mut self, file_id: Uuid) -> Result<(u64, Vec<Transaction>)> {
         self.pending.remove(&file_id).ok_or_else(|| {
             MpError::TransactionQueue(format!(
                 "Could not remove pending transactions for file_id {file_id}"
             ))
-        })?;
-
-        Ok(())
+        })
     }
 
-    pub(crate) fn get_transactions_min_sequence_num(
+    pub(crate) fn get_pending_min_sequence_num(
         &mut self,
         file_id: Uuid,
         min_sequence_num: u64,
     ) -> Result<Vec<Transaction>> {
         let transactions = self
-            .get_transactions(file_id)?
+            .get_pending(file_id)?
             .into_iter()
             .filter(|transaction| transaction.sequence_num >= min_sequence_num)
             .collect();
@@ -171,7 +188,7 @@ mod tests {
         );
 
         let mut transaction_queue = state.transaction_queue.lock().await;
-        let transactions = transaction_queue.get_transactions(file_id).unwrap();
+        let transactions = transaction_queue.get_pending(file_id).unwrap();
         assert_eq!(transactions.len(), 1);
         assert_eq!(transaction_queue.get_sequence_num(file_id).unwrap(), 1);
         assert_eq!(transactions[0].operations, vec![operations_1.clone()]);
@@ -186,7 +203,7 @@ mod tests {
         );
 
         let mut transaction_queue = state.transaction_queue.lock().await;
-        let transactions = transaction_queue.get_transactions(file_id).unwrap();
+        let transactions = transaction_queue.get_pending(file_id).unwrap();
         assert_eq!(transactions.len(), 2);
         assert_eq!(transaction_queue.get_sequence_num(file_id).unwrap(), 2);
         assert_eq!(transactions[0].operations, vec![operations_1.clone()]);

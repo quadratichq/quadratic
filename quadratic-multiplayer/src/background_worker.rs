@@ -4,9 +4,9 @@ use uuid::Uuid;
 
 use crate::{
     error::{MpError, Result},
-    file::new_client,
+    file::{new_client, process_queue_for_room},
     message::{broadcast, response::MessageResponse},
-    state::{room::Room, State},
+    state::{room::Room, settings::Settings, transaction_queue, State},
 };
 
 /// In a separate thread:
@@ -24,6 +24,20 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
             let rooms = state.rooms.lock().await.clone();
 
             for (file_id, room) in rooms.iter() {
+                // process transaction queue for the room
+                let transaction_queue = &state.transaction_queue;
+                let processed = process_queue_for_room(
+                    &state.settings.aws_client,
+                    &state.settings.aws_s3_bucket_name,
+                    transaction_queue,
+                    &file_id,
+                )
+                .await;
+
+                if let Err(error) = processed {
+                    tracing::warn!("Error processing queue for room {file_id}: {:?}", error);
+                }
+
                 // broadcast sequence number to all users in the room
                 if let Err(error) =
                     broadcast_sequence_num(Arc::clone(&state), file_id.to_owned()).await

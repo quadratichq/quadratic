@@ -151,7 +151,7 @@ pub(crate) async fn handle_message(
                 .transaction_queue
                 .lock()
                 .await
-                .get_transactions_min_sequence_num(file_id, min_sequence_num)?;
+                .get_pending_min_sequence_num(file_id, min_sequence_num)?;
 
             let response = MessageResponse::Transactions { transactions };
 
