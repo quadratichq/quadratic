@@ -1,9 +1,9 @@
-use aws_config::{meta::region::RegionProviderChain, retry::RetryConfig, BehaviorVersion, Region};
+use aws_config::{retry::RetryConfig, BehaviorVersion, Region};
 use aws_sdk_s3::{
     config::{Credentials, SharedCredentialsProvider},
     operation::{get_object::GetObjectOutput, put_object::PutObjectOutput},
     primitives::{ByteStream, SdkBody},
-    Client, Config,
+    Client,
 };
 use quadratic_core::{
     controller::{

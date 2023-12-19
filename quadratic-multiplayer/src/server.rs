@@ -31,7 +31,7 @@ use crate::{
     message::{
         broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
     },
-    state::{connection::Connection, settings::Settings, State},
+    state::{connection::Connection, State},
 };
 
 /// Construct the application router.  This is separated out so that it can be
@@ -52,8 +52,6 @@ pub(crate) fn app(state: Arc<State>) -> Router {
 /// Start the websocket server.  This is the entrypoint for the application.
 #[tracing::instrument(level = "trace")]
 pub(crate) async fn serve() -> Result<()> {
-    let config = config()?;
-
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -62,13 +60,15 @@ pub(crate) async fn serve() -> Result<()> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    // pull down the JWKS from Auth0 and add to state
+    let config = config()?;
     let jwks = get_jwks(&config.auth0_jwks_uri).await?;
     let state = Arc::new(State::new(&config, Some(jwks)).await);
     let app = app(Arc::clone(&state));
+
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", config.host, config.port))
         .await
         .map_err(|e| MpError::InternalServer(e.to_string()))?;
+
     let local_addr = listener
         .local_addr()
         .map_err(|e| MpError::InternalServer(e.to_string()))?;
