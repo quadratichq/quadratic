@@ -65,6 +65,14 @@ impl TransactionQueue {
         Ok(transactions)
     }
 
+    pub(crate) fn clear_transactions(&mut self, file_id: Uuid) -> Result<()> {
+        let transactions = self.queue.remove(&file_id).ok_or_else(|| {
+            MpError::TransactionQueue(format!("file_id {file_id} not found in transaction queue"))
+        });
+
+        Ok(())
+    }
+
     pub(crate) fn get_transactions_min_sequence_num(
         &mut self,
         file_id: Uuid,

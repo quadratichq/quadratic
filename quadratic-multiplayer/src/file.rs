@@ -14,9 +14,38 @@ use quadratic_core::{
         Grid,
     },
 };
+use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::error::{MpError, Result};
+use crate::{
+    error::{MpError, Result},
+    state::{
+        room::Room,
+        transaction_queue::{Transaction, TransactionQueue},
+    },
+};
+
+pub(crate) async fn new_client(
+    access_key_id: &str,
+    secret_access_key: &str,
+    region: &str,
+) -> Client {
+    let creds = Credentials::new(
+        access_key_id,
+        secret_access_key,
+        None,
+        None,
+        "Quadratic File Service",
+    );
+    let conf = aws_config::SdkConfig::builder()
+        .region(Region::new(region.to_owned()))
+        .credentials_provider(SharedCredentialsProvider::new(creds))
+        .retry_config(RetryConfig::standard().with_max_attempts(5))
+        .behavior_version(BehaviorVersion::latest())
+        .build();
+
+    Client::new(&conf)
+}
 
 /// Load a .grid file
 pub(crate) fn load_file(file: &str) -> Result<Grid> {
@@ -111,7 +140,7 @@ pub(crate) fn key(file_id: Uuid, sequence: u64) -> String {
 }
 
 /// Load a file from S3, add it to memory, process transactions and upload it back to S3
-pub(crate) async fn process(
+pub(crate) async fn process_transactions(
     client: &Client,
     bucket: &str,
     file_id: Uuid,
@@ -130,26 +159,26 @@ pub(crate) async fn process(
     Ok(())
 }
 
-pub(crate) async fn new_client(
-    access_key_id: &str,
-    secret_access_key: &str,
-    region: &str,
-) -> Client {
-    let creds = Credentials::new(
-        access_key_id,
-        secret_access_key,
-        None,
-        None,
-        "Quadratic File Service",
-    );
-    let conf = aws_config::SdkConfig::builder()
-        .region(Region::new(region.to_owned()))
-        .credentials_provider(SharedCredentialsProvider::new(creds))
-        .retry_config(RetryConfig::standard().with_max_attempts(5))
-        .behavior_version(BehaviorVersion::latest())
-        .build();
+/// Process outstanding transactions in the queue
+pub(crate) async fn process_queue_for_room(
+    client: &Client,
+    bucket: &str,
+    transaction_queue: Mutex<TransactionQueue>,
+    file_id: &Uuid,
+) -> Result<()> {
+    let mut transaction_queue = transaction_queue.lock().await;
 
-    Client::new(&conf)
+    // combine all operations into a single vec
+    let operations = transaction_queue
+        .get_transactions(*file_id)?
+        .into_iter()
+        .flat_map(|transaction| transaction.operations)
+        .collect::<Vec<Operation>>();
+    let sequence_num = transaction_queue.get_sequence_num(*file_id)?;
+
+    process_transactions(client, bucket, *file_id, sequence_num, operations).await?;
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -218,7 +247,7 @@ mod tests {
         // let values = Array::from(value);
         // let operation = Operation::SetCellValues { sheet_rect, values };
 
-        // process(
+        // process_transactions(
         //     &client,
         //     &config.aws_s3_bucket_name,
         //     file_id,
