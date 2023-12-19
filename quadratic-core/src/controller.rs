@@ -6,7 +6,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::{
     grid::{CodeCellLanguage, Grid, SheetId},
-    Pos, Rect, SheetPos, SheetRect,
+    SheetPos, SheetRect,
 };
 
 use self::{
@@ -21,11 +21,9 @@ pub mod formula;
 pub mod operations;
 pub mod sheet_offsets;
 pub mod sheets;
-pub mod spills;
 pub mod thumbnail;
 pub mod transaction_summary;
 pub mod transaction_types;
-pub mod update_code_cell_value;
 pub mod user_actions;
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -77,9 +75,6 @@ pub struct GridController {
 
     // operations for multiplayer
     forward_operations: Vec<Operation>,
-
-    // temporary changes to the Grid to assist in calculation of spills
-    temporary_code_cells: TemporaryCodeCells,
 }
 
 impl GridController {

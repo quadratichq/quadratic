@@ -105,7 +105,7 @@ fn column_id_to_x(sheet: &v1_4::Sheet, column_id: &String) -> i64 {
         .0
 }
 
-fn upgrade_code_cells(sheet: &v1_4::Sheet) -> Vec<(v1_5::Pos, v1_5::CodeCellValue)> {
+fn upgrade_code_cells(sheet: &v1_4::Sheet) -> Vec<(v1_5::Pos, v1_5::CodeCell)> {
     sheet
         .code_cells
         .clone()
@@ -114,40 +114,40 @@ fn upgrade_code_cells(sheet: &v1_4::Sheet) -> Vec<(v1_5::Pos, v1_5::CodeCellValu
             let pos = cell_ref_to_pos(sheet, &cell_ref);
             (
                 pos,
-                v1_5::CodeCellValue {
+                v1_5::CodeCell {
                     language: code_cell_value.language,
                     code_string: code_cell_value.code_string,
                     formatted_code_string: code_cell_value.formatted_code_string,
                     last_modified: code_cell_value.last_modified,
-                    output: code_cell_value
-                        .output
-                        .map(|output| v1_5::CodeCellRunOutput {
-                            std_out: output.std_out,
-                            std_err: output.std_err,
-                            result: match output.result {
-                                v1_4::CodeCellRunResult::Ok {
-                                    output_value,
-                                    cells_accessed,
-                                } => v1_5::CodeCellRunResult::Ok {
-                                    output_value: match output_value {
-                                        v1_4::OutputValue::Single(value) => {
-                                            v1_5::OutputValue::Single(value)
-                                        }
-                                        v1_4::OutputValue::Array(array) => {
-                                            v1_5::OutputValue::Array(array)
-                                        }
-                                    },
-                                    cells_accessed: cells_accessed
-                                        .into_iter()
-                                        .map(|cell_ref| cell_ref_to_sheet_pos(sheet, &cell_ref))
-                                        .collect(),
-                                },
-                                v1_4::CodeCellRunResult::Err { error } => {
-                                    v1_5::CodeCellRunResult::Err { error }
-                                }
-                            },
-                            spill: output.spill,
-                        }),
+                    // output: code_cell_value
+                    //     .output
+                    //     .map(|output| v1_5::CodeCellRunOutput {
+                    //         std_out: output.std_out,
+                    //         std_err: output.std_err,
+                    //         result: match output.result {
+                    //             v1_4::CodeCellRunResult::Ok {
+                    //                 output_value,
+                    //                 cells_accessed,
+                    //             } => v1_5::CodeCellRunResult::Ok {
+                    //                 output_value: match output_value {
+                    //                     v1_4::OutputValue::Single(value) => {
+                    //                         v1_5::OutputValue::Single(value)
+                    //                     }
+                    //                     v1_4::OutputValue::Array(array) => {
+                    //                         v1_5::OutputValue::Array(array)
+                    //                     }
+                    //                 },
+                    //                 cells_accessed: cells_accessed
+                    //                     .into_iter()
+                    //                     .map(|cell_ref| cell_ref_to_sheet_pos(sheet, &cell_ref))
+                    //                     .collect(),
+                    //             },
+                    //             v1_4::CodeCellRunResult::Err { error } => {
+                    //                 v1_5::CodeCellRunResult::Err { error }
+                    //             }
+                    //         },
+                    //         spill: output.spill,
+                    //     }),
                 },
             )
         })

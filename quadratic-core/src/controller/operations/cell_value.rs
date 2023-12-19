@@ -76,7 +76,10 @@ impl GridController {
         let value = value.trim();
 
         // check if any code cells need to be deleted
-        let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
+        let sheet = match self.grid.try_sheet_from_id(sheet_pos.sheet_id) {
+            None => return vec![], // sheet may have been deleted in multiplayer
+            Some(sheet) => sheet,
+        };
         sheet.code_cells.iter().for_each(|(pos, _)| {
             let possible_delete = pos.to_sheet_pos(sheet.id);
             if sheet_pos == possible_delete {
@@ -87,6 +90,8 @@ impl GridController {
         // convert the string to a cell value and generate necessary operations
         let (operations, cell_value) = self.string_to_cell_value(sheet_pos, value);
         ops.extend(operations);
+
+        ops.extend(self.check_for_cell_value_spill_error(sheet_pos));
 
         ops.push(Operation::SetCellValues {
             sheet_rect: sheet_pos.into(),

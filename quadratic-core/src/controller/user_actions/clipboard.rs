@@ -1,13 +1,13 @@
-use crate::controller::{
-    execution::TransactionType,
-    operations::clipboard::{Clipboard, ClipboardCell},
-    transaction_summary::TransactionSummary,
-    GridController,
-};
 use crate::{
-    grid::{get_cell_borders_in_rect, CodeCellValue},
-    Pos, SheetPos, SheetRect,
+    controller::{
+        execution::TransactionType,
+        operations::clipboard::{Clipboard, ClipboardCell},
+        transaction_summary::TransactionSummary,
+        GridController,
+    },
+    grid::CodeCell,
 };
+use crate::{grid::get_cell_borders_in_rect, Pos, SheetPos, SheetRect};
 use htmlescape;
 
 impl GridController {
@@ -53,7 +53,8 @@ impl GridController {
                             code_string: code_cell_value.code_string.clone(),
                             formatted_code_string: None,
                             last_modified: code_cell_value.last_modified.clone(),
-                            output: None,
+                            // todo...
+                            // output: None,
                         },
                     ));
                 }

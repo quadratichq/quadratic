@@ -3,7 +3,7 @@ use wasm_bindgen::JsValue;
 
 use crate::{
     controller::{transaction_types::JsCodeResult, GridController},
-    grid::{CodeCell, CodeCellLanguage, CodeCellRun, CodeCellRunResult},
+    grid::{CodeCell, CodeCellLanguage, CodeCellRunResult},
     util::date_string,
     Array, CellValue, Error, ErrorMsg, SheetPos, Span, Value,
 };
@@ -32,49 +32,49 @@ impl GridController {
                 self.cells_to_compute.extend(dependent_cells);
             }
 
-            // whether to save the current code_cell_ref to the GridController
-            let mut current_code_cell = false;
+            if let Some(sheet) = self.grid().try_sheet_from_id(sheet_pos.sheet_id) {
+                // whether to save the current code_cell_ref to the GridController
+                let mut current_code_cell = false;
 
-            let sheet = self.grid().sheet_from_id(sheet_pos.sheet_id);
-            // find which cells have code. Run the code and update the cells.
-            // add the updated cells to the cells_to_compute
+                // find which cells have code. Run the code and update the cells.
+                // add the updated cells to the cells_to_compute
+                if let Some(code_cell) = sheet.get_code_cell(sheet_pos.into()) {
+                    current_code_cell = true;
+                    let code_string = code_cell.code_string.clone();
+                    let language = code_cell.language;
+                    match language {
+                        CodeCellLanguage::Python => {
+                            // python is run async so we exit the compute cycle and wait for TS to restart the transaction
+                            if !cfg!(test) {
+                                let result = crate::wasm_bindings::js::runPython(code_string);
 
-            if let Some(code_cell) = sheet.get_code_cell(sheet_pos.into()) {
-                current_code_cell = true;
-                let code_string = code_cell.code_string.clone();
-                let language = code_cell.language;
-                match language {
-                    CodeCellLanguage::Python => {
-                        // python is run async so we exit the compute cycle and wait for TS to restart the transaction
-                        if !cfg!(test) {
-                            let result = crate::wasm_bindings::js::runPython(code_string);
-
-                            // run python will return false if python is not loaded (this can be generalized if we need to return a different error)
-                            if result == JsValue::FALSE {
-                                self.code_cell_sheet_error(
-                                    "Python interpreter not yet loaded (please run again)"
-                                        .to_string(),
-                                    None,
-                                );
-                                return;
+                                // run python will return false if python is not loaded (this can be generalized if we need to return a different error)
+                                if result == JsValue::FALSE {
+                                    self.code_cell_sheet_error(
+                                        "Python interpreter not yet loaded (please run again)"
+                                            .to_string(),
+                                        None,
+                                    );
+                                    return;
+                                }
                             }
+                            self.waiting_for_async = Some(language);
+                            self.has_async = true;
                         }
-                        self.waiting_for_async = Some(language);
-                        self.has_async = true;
-                    }
-                    CodeCellLanguage::Formula => {
-                        self.eval_formula(code_string.clone(), language, sheet_pos);
-                    }
-                    _ => {
-                        crate::util::dbgjs(format!(
-                            "Compute language {} not supported in compute.rs",
-                            language
-                        ));
+                        CodeCellLanguage::Formula => {
+                            self.eval_formula(code_string.clone(), language, sheet_pos);
+                        }
+                        _ => {
+                            crate::util::dbgjs(format!(
+                                "Compute language {} not supported in compute.rs",
+                                language
+                            ));
+                        }
                     }
                 }
-            }
-            if current_code_cell {
-                self.current_sheet_pos = Some(sheet_pos);
+                if current_code_cell {
+                    self.current_sheet_pos = Some(sheet_pos);
+                }
             }
         }
     }
@@ -91,7 +91,7 @@ impl GridController {
 
         let old_code_cell_value = self.current_sheet_pos.and_then(|code_cell_sheet_pos| {
             self.grid()
-                .sheet_from_id(code_cell_sheet_pos.sheet_id)
+                .try_sheet_from_id(code_cell_sheet_pos.sheet_id)?
                 .get_code_cell(code_cell_sheet_pos.into())
                 .cloned()
         });
@@ -123,13 +123,15 @@ impl GridController {
                             old_code_cell_value.language,
                             old_code_cell_value.code_string,
                         );
-                        if self.update_code_cell_value(
-                            sheet_pos,
-                            Some(updated_code_cell_value.clone()),
-                        ) {
-                            // clear cells_accessed
-                            self.cells_accessed.clear();
-                        }
+
+                        // todo...
+                        // if self.update_code_cell_value(
+                        //     sheet_pos,
+                        //     Some(updated_code_cell_value.clone()),
+                        // ) {
+                        //     // clear cells_accessed
+                        //     self.cells_accessed.clear();
+                        // }
                         self.waiting_for_async = None;
                     }
                     _ => {
@@ -142,7 +144,7 @@ impl GridController {
         self.loop_compute();
     }
 
-    pub(super) fn code_cell_sheet_error(&mut self, error_msg: String, line_number: Option<i64>) {
+    pub(super) fn code_cell_sheet_error(&mut self, error_msg: String, _line_number: Option<i64>) {
         let sheet_pos = if let Some(sheet_pos) = self.current_sheet_pos {
             sheet_pos
         } else {
@@ -156,36 +158,39 @@ impl GridController {
             self.current_sheet_pos,
             "Expected current_sheet_pos to be defined in code_cell_sheet_error"
         );
-        let current_sheet_pos = self.current_sheet_pos.unwrap();
 
-        let update_code_cell_run = self
-            .grid()
-            .sheet_from_id(current_sheet_pos.sheet_id)
-            .get_code_cell_run(current_sheet_pos.into())
-            .cloned();
-        match update_code_cell_run {
-            None => {}
-            Some(update_code_cell_value) => {
-                let mut code_cell_value = update_code_cell_value.clone();
-                code_cell_value.last_modified = date_string();
-                let msg = ErrorMsg::PythonError(error_msg.clone().into());
-                let span = line_number.map(|line_number| Span {
-                    start: line_number as u32,
-                    end: line_number as u32,
-                });
-                let error = Error { span, msg };
-                let result = CodeCellRunResult::Err { error };
-                code_cell_value.output = Some(CodeCellRun {
-                    std_out: None,
-                    std_err: Some(error_msg),
-                    result,
-                    spill_error: false,
-                });
-                self.update_code_cell_value(sheet_pos, Some(code_cell_value));
-                self.summary.code_cells_modified.insert(sheet_pos.sheet_id);
-                self.waiting_for_async = None;
-            }
-        }
+        // todo...
+        // let current_sheet_pos = self.current_sheet_pos.unwrap();
+
+        // let update_code_cell_run = self
+        //     .grid()
+        //     .try_sheet_from_id(current_sheet_pos.sheet_id)?
+        //     .get_code_cell_run(current_sheet_pos.into())
+        //     .cloned();
+        // match update_code_cell_run {
+        //     None => {}
+        //     Some(update_code_cell_value) => {
+        //         let mut code_cell_value = update_code_cell_value.clone();
+        //         code_cell_value.last_modified = date_string();
+        //         let msg = ErrorMsg::PythonError(error_msg.clone().into());
+        //         let span = line_number.map(|line_number| Span {
+        //             start: line_number as u32,
+        //             end: line_number as u32,
+        //         });
+        //         let error = Error { span, msg };
+        //         let result = CodeCellRunResult::Err { error };
+        //         code_cell_value.output = Some(CodeCellRun {
+        //             std_out: None,
+        //             std_err: Some(error_msg),
+        //             result,
+        //             spill_error: false,
+        //             last_code_run: date_string(),
+        //         });
+        //         self.update_code_cell_value(sheet_pos, Some(code_cell_value));
+        //         self.summary.code_cells_modified.insert(sheet_pos.sheet_id);
+        //         self.waiting_for_async = None;
+        //     }
+        // }
     }
 
     // Returns a CodeCellValue from a JsCodeResult.
@@ -235,13 +240,14 @@ impl GridController {
             language,
             code_string,
             formatted_code_string: js_code_result.formatted_code().clone(),
-            output: Some(CodeCellRun {
-                std_out: js_code_result.input_python_std_out(),
-                std_err: js_code_result.error_msg(),
-                result,
-                spill_error: false,
-            }),
             last_modified: date_string(),
+            // todo...
+            // output: Some(CodeCellRun {
+            //     std_out: js_code_result.input_python_std_out(),
+            //     std_err: js_code_result.error_msg(),
+            //     result,
+            //     spill_error: false,
+            // }),
         }
     }
 }
@@ -286,7 +292,9 @@ mod test {
                     language: CodeCellLanguage::Python,
                     code_string: code_string.clone(),
                     formatted_code_string: None,
-                    output: None,
+
+                    // todo...
+                    // output: None,
                     last_modified: String::new(),
                 }),
             }],
@@ -502,7 +510,7 @@ mod test {
     fn test_execute_operation_set_cell_values_formula() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+        let sheet = gc.grid_mut().try_sheet_mut_from_id(sheet_id).unwrap();
 
         let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
         let sheet_pos = SheetPos {

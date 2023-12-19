@@ -4,12 +4,12 @@ use crate::grid::{
     generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
     CellWrap, Grid, GridBounds, NumericFormat, NumericFormatKind,
 };
-use crate::{CellValue, Error, ErrorMsg, Pos, Rect, SheetPos, Span, Value};
+use crate::{CellValue, Pos, Rect};
 
 use crate::grid::file::v1_5::schema::{self as current};
 use crate::grid::{
-    block::SameValue, sheet::sheet_offsets::SheetOffsets, CodeCell, CodeCellLanguage, CodeCellRun,
-    CodeCellRunResult, Column, ColumnData, Sheet, SheetBorders, SheetId,
+    block::SameValue, sheet::sheet_offsets::SheetOffsets, CodeCell, CodeCellLanguage, Column,
+    ColumnData, Sheet, SheetBorders, SheetId,
 };
 use anyhow::{anyhow, Result};
 use bigdecimal::BigDecimal;
@@ -214,69 +214,69 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<Pos, CodeC
                     code_string: code_cell_value.code_string.to_owned(),
                     formatted_code_string: code_cell_value.formatted_code_string.to_owned(),
                     last_modified: code_cell_value.last_modified.to_owned(),
-                    output: code_cell_value.output.to_owned().and_then(|output| {
-                        Some(CodeCellRun {
-                            std_out: output.std_out,
-                            std_err: output.std_err,
-                            spill_error: output.spill,
-                            result: match output.result {
-                                current::CodeCellRunResult::Ok {
-                                    output_value,
-                                    cells_accessed,
-                                } => CodeCellRunResult::Ok {
-                                    output_value: match output_value {
-                                        current::OutputValue::Single(
-                                            current::OutputValueValue { type_field, value },
-                                        ) => Value::Single(import_code_cell_output(
-                                            &type_field,
-                                            &value,
-                                        )),
-                                        current::OutputValue::Array(current::OutputArray {
-                                            size,
-                                            values,
-                                        }) => Value::Array(crate::Array::from(
-                                            values
-                                                .chunks(size.w as usize)
-                                                .map(|row| {
-                                                    row.iter()
-                                                        .map(|cell| {
-                                                            import_code_cell_output(
-                                                                &cell.type_field,
-                                                                &cell.value,
-                                                            )
-                                                        })
-                                                        .collect::<Vec<_>>()
-                                                })
-                                                .collect::<Vec<Vec<_>>>(),
-                                        )),
-                                    },
-                                    cells_accessed: cells_accessed
-                                        .into_iter()
-                                        .map(|cell| {
-                                            Ok(SheetPos {
-                                                sheet_id: SheetId::from_str(&cell.sheet_id.id)?,
-                                                x: cell.x,
-                                                y: cell.y,
-                                            })
-                                        })
-                                        .collect::<Result<_>>()
-                                        .ok()?,
-                                },
-                                current::CodeCellRunResult::Err { error } => {
-                                    CodeCellRunResult::Err {
-                                        error: Error {
-                                            span: error.span.map(|span| Span {
-                                                start: span.start,
-                                                end: span.end,
-                                            }),
-                                            // TODO(ddimaria): implement ErrorMsg
-                                            msg: ErrorMsg::UnknownError,
-                                        },
-                                    }
-                                }
-                            },
-                        })
-                    }),
+                    // output: code_cell_value.output.to_owned().and_then(|output| {
+                    //     Some(CodeCellRun {
+                    //         std_out: output.std_out,
+                    //         std_err: output.std_err,
+                    //         spill_error: output.spill,
+                    //         result: match output.result {
+                    //             current::CodeCellRunResult::Ok {
+                    //                 output_value,
+                    //                 cells_accessed,
+                    //             } => CodeCellRunResult::Ok {
+                    //                 output_value: match output_value {
+                    //                     current::OutputValue::Single(
+                    //                         current::OutputValueValue { type_field, value },
+                    //                     ) => Value::Single(import_code_cell_output(
+                    //                         &type_field,
+                    //                         &value,
+                    //                     )),
+                    //                     current::OutputValue::Array(current::OutputArray {
+                    //                         size,
+                    //                         values,
+                    //                     }) => Value::Array(crate::Array::from(
+                    //                         values
+                    //                             .chunks(size.w as usize)
+                    //                             .map(|row| {
+                    //                                 row.iter()
+                    //                                     .map(|cell| {
+                    //                                         import_code_cell_output(
+                    //                                             &cell.type_field,
+                    //                                             &cell.value,
+                    //                                         )
+                    //                                     })
+                    //                                     .collect::<Vec<_>>()
+                    //                             })
+                    //                             .collect::<Vec<Vec<_>>>(),
+                    //                     )),
+                    //                 },
+                    //                 cells_accessed: cells_accessed
+                    //                     .into_iter()
+                    //                     .map(|cell| {
+                    //                         Ok(SheetPos {
+                    //                             sheet_id: SheetId::from_str(&cell.sheet_id.id)?,
+                    //                             x: cell.x,
+                    //                             y: cell.y,
+                    //                         })
+                    //                     })
+                    //                     .collect::<Result<_>>()
+                    //                     .ok()?,
+                    //             },
+                    //             current::CodeCellRunResult::Err { error } => {
+                    //                 CodeCellRunResult::Err {
+                    //                     error: Error {
+                    //                         span: error.span.map(|span| Span {
+                    //                             start: span.start,
+                    //                             end: span.end,
+                    //                         }),
+                    //                         // TODO(ddimaria): implement ErrorMsg
+                    //                         msg: ErrorMsg::UnknownError,
+                    //                     },
+                    //                 }
+                    //             }
+                    //         },
+                    //     })
+                    // }),
                 },
             ))
         })
@@ -296,9 +296,14 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                     order: sheet.order.to_owned(),
                     offsets: SheetOffsets::import(&sheet.offsets),
                     columns: import_column_builder(&sheet.columns)?,
+
                     // borders set after sheet is loaded
                     borders: SheetBorders::new(),
                     code_cells: import_code_cell_builder(&sheet)?,
+
+                    // todo!
+                    code_cell_runs: HashMap::new(),
+
                     data_bounds: GridBounds::Empty,
                     format_bounds: GridBounds::Empty,
                 };
@@ -500,70 +505,70 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                         let code_cell_value = sheet.get_code_cell(pos).unwrap().clone();
                         (
                             pos.into(),
-                            current::CodeCellValue {
+                            current::CodeCell {
                                 language: code_cell_value.language.to_string(),
                                 code_string: code_cell_value.code_string,
                                 formatted_code_string: code_cell_value.formatted_code_string,
                                 last_modified: code_cell_value.last_modified,
-                                output: code_cell_value.output.map(|output| current::CodeCellRunOutput {
-                                        std_out: output.std_out,
-                                        std_err: output.std_err,
-                                        spill: output.spill,
-                                        result: match output.result {
-                                            CodeCellRunResult::Ok {
-                                                output_value,
-                                                cells_accessed,
-                                            } => current::CodeCellRunResult::Ok {
-                                                output_value: match output_value {
-                                                    Value::Single(cell_value) => {
-                                                        current::OutputValue::Single(
-                                                            current::OutputValueValue {
-                                                                type_field: cell_value
-                                                                    .type_name()
-                                                                    .into(),
-                                                                value: cell_value.to_string(),
-                                                            },
-                                                        )
-                                                    }
-                                                    Value::Array(array) => {
-                                                        current::OutputValue::Array(
-                                                            current::OutputArray {
-                                                                size: current::OutputSize {
-                                                                    w: array.width() as i64,
-                                                                    h: array.height() as i64,
-                                                                },
-                                                                values: array
-                                                                    .rows().flat_map(|row| {
-                                                                        row.iter().map(|cell| {
-                                                                            current::OutputValueValue {
-                                                                                type_field: cell
-                                                                                    .type_name()
-                                                                                    .into(),
-                                                                                value: cell
-                                                                                    .to_string(),
-                                                                            }
-                                                                        })
-                                                                    })
-                                                                    .collect(),
-                                                            },
-                                                        )
-                                                    }
-                                                },
-                                                cells_accessed: cells_accessed.into_iter().map(|cell_ref| cell_ref.into()).collect(),
-                                            },
-                                            CodeCellRunResult::Err { error } => {
-                                                current::CodeCellRunResult::Err {
-                                                    error: current::Error {
-                                                        span: error.span.map(|span| current::Span {
-                                                                start: span.start,
-                                                                end: span.end,
-                                                            }),
-                                                        msg: error.msg.to_string()
-                                                    }
-                                                }
-                                            }
-                                        },
-                                    }),
+                                //     output: code_cell_value.output.map(|output| current::CodeCellRunOutput {
+                                //             std_out: output.std_out,
+                                //             std_err: output.std_err,
+                                //             spill: output.spill,
+                                //             result: match output.result {
+                                //                 CodeCellRunResult::Ok {
+                                //                     output_value,
+                                //                     cells_accessed,
+                                //                 } => current::CodeCellRunResult::Ok {
+                                //                     output_value: match output_value {
+                                //                         Value::Single(cell_value) => {
+                                //                             current::OutputValue::Single(
+                                //                                 current::OutputValueValue {
+                                //                                     type_field: cell_value
+                                //                                         .type_name()
+                                //                                         .into(),
+                                //                                     value: cell_value.to_string(),
+                                //                                 },
+                                //                             )
+                                //                         }
+                                //                         Value::Array(array) => {
+                                //                             current::OutputValue::Array(
+                                //                                 current::OutputArray {
+                                //                                     size: current::OutputSize {
+                                //                                         w: array.width() as i64,
+                                //                                         h: array.height() as i64,
+                                //                                     },
+                                //                                     values: array
+                                //                                         .rows().flat_map(|row| {
+                                //                                             row.iter().map(|cell| {
+                                //                                                 current::OutputValueValue {
+                                //                                                     type_field: cell
+                                //                                                         .type_name()
+                                //                                                         .into(),
+                                //                                                     value: cell
+                                //                                                         .to_string(),
+                                //                                                 }
+                                //                                             })
+                                //                                         })
+                                //                                         .collect(),
+                                //                                 },
+                                //                             )
+                                //                         }
+                                //                     },
+                                //                     cells_accessed: cells_accessed.into_iter().map(|cell_ref| cell_ref.into()).collect(),
+                                //                 },
+                                //                 CodeCellRunResult::Err { error } => {
+                                //                     current::CodeCellRunResult::Err {
+                                //                         error: current::Error {
+                                //                             span: error.span.map(|span| current::Span {
+                                //                                     start: span.start,
+                                //                                     end: span.end,
+                                //                                 }),
+                                //                             msg: error.msg.to_string()
+                                //                         }
+                                //                     }
+                                //                 }
+                                //             },
+                                //         }),
                             },
                         )
                     })

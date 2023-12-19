@@ -1,0 +1,49 @@
+// Used by operations/code_cell.rs to track temporary changes to the Sheet
+// to assist in creating operations for spills.
+
+use crate::{Pos, SheetPos, SheetRect};
+use std::collections::HashMap;
+
+#[derive(Debug, Default)]
+pub struct TemporarySheets {
+    // temporary code_cell
+    code_cells: HashMap<SheetPos, bool>,
+
+    // temporary spills
+    // key: SheetRect of run output
+    // map: (SheetPos of code_cell, last_run_time)
+    spills: HashMap<SheetRect, (SheetPos, u32)>,
+
+    // temporary cell_value (bool = exists)
+    values: HashMap<SheetPos, bool>,
+}
+
+impl TemporarySheets {
+    /// Adds a temporary cell_value at the Pos
+    pub(crate) fn set_cell_value(&self, sheet_pos: SheetPos, exists: bool) {
+        self.values.insert(sheet_pos, exists);
+    }
+
+    /// Checks if temporary cell_value exists
+    pub(crate) fn cell_value_exists(&self, sheet_pos: SheetPos) -> Option<bool> {
+        self.values
+            .get(&sheet_pos)
+            .map(|exists| Some(exists.clone()))
+            .unwrap_or(None)
+    }
+
+    /// Adds a temporary code_cell
+    pub(crate) fn set_code_cell(&mut self, sheet_pos: SheetPos, exists: bool) {
+        self.code_cells.insert(sheet_pos, exists);
+    }
+
+    /// adds a temporary spill
+    pub(crate) fn set_spill(&mut self, sheet_pos: SheetPos, output_rect: SheetRect, last_run: u32) {
+        self.spills.insert(output_rect, (sheet_pos, last_run));
+    }
+
+    /// deletes a temporary spill
+    pub(crate) fn delete_spill(&mut self, sheet_rect: SheetRect) {
+        self.spills.remove(&sheet_rect);
+    }
+}

@@ -6,8 +6,6 @@ use crate::{
     Array, CellValue, SheetPos, SheetRect,
 };
 
-pub mod temporary_sheets;
-
 impl GridController {
     /// Creates operations to set a code_cell and delete any cell_values that were on that cell
     /// Existing code_cells at that location will be overwritten in the Operation::SetCodeCell.
@@ -43,6 +41,7 @@ impl GridController {
         });
 
         // check if this causes a spill
+        ops.extend(self.check_for_cell_value_spill_error(sheet_pos));
 
         ops.push(Operation::SetSpill {
             spill_rect: sheet_pos.into(),
@@ -129,37 +128,112 @@ impl GridController {
         ops
     }
 
-    pub fn check_for_spill_error_release(&self, sheet_rect: SheetRect) -> Vec<Operation> {
-        match self.grid.try_sheet_from_id(sheet_rect.sheet_id) {
+    pub fn check_for_spill_error_release(
+        &self,
+        sheet_rect: SheetRect,
+        added_cell_values: Option<SheetPos>,
+    ) -> Vec<Operation> {
+        // match self.grid.try_sheet_from_id(sheet_rect.sheet_id) {
+        //     None => vec![], // sheet may have been deleted in multiplayer
+        //     Some(sheet) => {
+        //         let mut ops = vec![];
+        //         if let Some((sheet_pos, run)) = sheet.code_cell_runs.iter().find(|(pos, run)| {
+        //             if run.spill_error && run.output_origin_rect().translate(*pos).contains(sheet_rect) {
+        //                 if let Some(added_cell_values) = added_cell_values {
+        //                     // if the spill error was caused by the added cell_values then don't release it
+        //                     !run.output_origin_rect().translate(*pos).contains(added_cell_values)
+        //                 } else {
+        //                     true
+        //                 }
+        //             } else {
+        //                 false
+        //             }
+        //             let mut run = run.clone();
+        //             run.spill_error = false;
+        //             ops.push(Operation::SetCodeCellRun {
+        //                 sheet_pos: sheet_pos.to_sheet_pos(sheet_rect.sheet_id),
+        //                 code_cell_run: Some(run),
+        //             });
+        //         }
+        //         ops
+        //     }
+        // }
+        vec![]
+    }
+
+    /// Checks whether setting a cell_value will cause a spill_error.
+    /// if so then it returns the operations to set the spill_error.
+    pub fn check_for_cell_value_spill_error(&self, sheet_pos: SheetPos) -> Vec<Operation> {
+        match self.grid.try_sheet_from_id(sheet_pos.sheet_id) {
             None => vec![], // sheet may have been deleted in multiplayer
             Some(sheet) => {
                 let mut ops = vec![];
-                if let Some((sheet_pos, run)) = sheet.spill_error_released(sheet_rect.into()) {
+                if let Some((code_cell_sheet_pos, run)) = sheet
+                    .code_cell_runs
+                    .iter()
+                    .find(|(code_cell_pos, run)| {
+                        !run.spill_error
+                            && run
+                                .output_sheet_rect(code_cell_pos.to_sheet_pos(sheet_pos.sheet_id))
+                                .contains(sheet_pos)
+                    })
+                    .map(|(code_cell_pos, run)| (code_cell_pos.to_sheet_pos(sheet.id), run.clone()))
+                {
                     let mut run = run.clone();
-                    run.spill_error = false;
+                    run.spill_error = true;
                     ops.push(Operation::SetCodeCellRun {
-                        sheet_pos: sheet_pos.to_sheet_pos(sheet_rect.sheet_id),
+                        sheet_pos: code_cell_sheet_pos,
                         code_cell_run: Some(run),
                     });
+                    let output_rect = run.output_sheet_rect(code_cell_sheet_pos);
+                    ops.extend(self.check_for_spill_error_release(output_rect, Some(sheet_pos)));
                 }
                 ops
             }
         }
     }
+}
 
-    pub fn check_for_spill_error(&self, sheet_rect: SheetRect) -> Vec<Operation> {
-        match self.grid.try_sheet_from_id(sheet_rect.sheet_id) {
-            None => vec![], // sheet may have been deleted in multiplayer
-            Some(sheet) => {
-                let mut ops = vec![];
-                if let Some((sheet_pos, run)) = sheet.spill_error_released(sheet_rect.into()) {
-                    ops.push(Operation::SetCodeCellRun {
-                        sheet_pos: sheet_pos.to_sheet_pos(sheet_rect.sheet_id),
-                        code_cell_run: Some(run),
-                    });
-                }
-                ops
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_set_code_cell_operations() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos::new(sheet_id, 0, 0);
+        let ops = gc.set_code_cell_operations(
+            sheet_pos,
+            CodeCellLanguage::Python,
+            String::from("print('hello')"),
+        );
+        assert_eq!(ops.len(), 3);
+        assert_eq!(
+            ops[0],
+            Operation::SetCellValues {
+                sheet_rect: SheetRect::from(sheet_pos),
+                values: Array::from(CellValue::Blank),
             }
-        }
+        );
+        assert_eq!(
+            ops[1],
+            Operation::SetCodeCell {
+                sheet_pos,
+                code_cell_value: Some(CodeCell {
+                    language: CodeCellLanguage::Python,
+                    code_string: String::from("print('hello')"),
+                    formatted_code_string: None,
+                    last_modified: date_string(),
+                }),
+            }
+        );
+        assert_eq!(
+            ops[2],
+            Operation::SetSpill {
+                spill_rect: SheetRect::from(sheet_pos),
+                code_cell_sheet_pos: Some(sheet_pos),
+            }
+        );
     }
 }

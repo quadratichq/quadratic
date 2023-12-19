@@ -173,6 +173,20 @@ impl Rect {
             || other.min.y > self.max.y)
     }
 
+    /// Translates the rectangle by a given amount.
+    pub fn new_translated(self, x: i64, y: i64) -> Self {
+        Self {
+            min: Pos {
+                x: self.min.x + x,
+                y: self.min.y + y,
+            },
+            max: Pos {
+                x: self.max.x + x,
+                y: self.max.y + y,
+            },
+        }
+    }
+
     /// Returns the range of X values in the rectangle.
     pub fn x_range(self) -> Range<i64> {
         self.min.x..self.max.x + 1
@@ -362,6 +376,17 @@ impl SheetRect {
             min: Pos { x: min_x, y: min_y },
             max: Pos { x: max_x, y: max_y },
             sheet_id: self.sheet_id,
+        }
+    }
+    /// Constructs a rectangle from a top-left position and a size.
+    pub fn from_sheet_pos_and_size(top_left: SheetPos, size: ArraySize) -> Self {
+        SheetRect {
+            min: top_left.into(),
+            max: Pos {
+                x: top_left.x + size.w.get() as i64 - 1,
+                y: top_left.y + size.h.get() as i64 - 1,
+            },
+            sheet_id: top_left.sheet_id,
         }
     }
 }
@@ -613,7 +638,7 @@ mod test {
     #[test]
     fn test_translate() {
         let mut rect = Rect::from_ranges(1..4, 2..5);
-        rect.translate(1, 2);
+        rect.new_translated(1, 2);
         assert_eq!(rect.min, Pos { x: 2, y: 4 });
         assert_eq!(rect.max, Pos { x: 4, y: 6 });
     }
@@ -666,5 +691,26 @@ mod test {
         let union = sheet_rect1.union(&sheet_rect2);
         assert_eq!(union.min, Pos { x: 1, y: 2 });
         assert_eq!(union.max, Pos { x: 5, y: 7 });
+    }
+
+    #[test]
+    fn test_rect_translate() {
+        let mut rect = Rect::from_numbers(1, 2, 3, 4);
+        rect.translate(1, 2);
+        assert_eq!(rect.min, Pos { x: 2, y: 4 });
+        assert_eq!(rect.max, Pos { x: 4, y: 6 });
+    }
+
+    #[test]
+    fn test_from_sheet_pos_and_size() {
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id: SheetId::new(),
+        };
+        let rect =
+            SheetRect::from_sheet_pos_and_size(sheet_pos, crate::ArraySize::new(3, 4).unwrap());
+        assert_eq!(rect.min, Pos { x: 1, y: 2 });
+        assert_eq!(rect.max, Pos { x: 3, y: 5 });
     }
 }

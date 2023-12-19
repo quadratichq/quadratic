@@ -50,7 +50,7 @@ pub struct Sheet {
     pub columns: Vec<(i64, Column)>,
     pub borders: Borders,
     #[serde(rename = "code_cells")]
-    pub code_cells: Vec<(Pos, CodeCellValue)>,
+    pub code_cells: Vec<(Pos, CodeCell)>,
 }
 
 pub type Id = v1_4::Id;
@@ -62,24 +62,32 @@ impl From<SheetId> for Id {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub struct CodeCellValue {
+pub struct CodeCell {
     pub language: String,
     pub code_string: String,
     pub formatted_code_string: Option<String>,
     pub last_modified: String,
-    pub output: Option<CodeCellRunOutput>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CodeCellRunOutput {
+pub struct CodeCellRun {
     pub std_out: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub std_err: Option<String>,
     pub result: CodeCellRunResult,
-    pub spill: bool,
+    pub spill_error: bool,
+    pub last_code_run: u32,
 }
+
+// #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// #[serde(rename_all = "camelCase")]
+// pub struct CodeCellRunOutput {
+//     pub std_out: Option<String>,
+//     #[serde(skip_serializing_if = "Option::is_none")]
+//     pub std_err: Option<String>,
+//     pub result: CodeCellRunResult,
+//     pub spill: bool,
+// }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

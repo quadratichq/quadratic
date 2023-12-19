@@ -375,7 +375,6 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use anyhow::Error;
     use bigdecimal::BigDecimal;
     use std::{collections::HashSet, str::FromStr};
 
