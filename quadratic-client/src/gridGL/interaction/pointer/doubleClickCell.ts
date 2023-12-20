@@ -1,4 +1,4 @@
-import { isEditorOrAbove } from '../../../actions';
+import { hasPerissionToEditFile } from '../../../actions';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 
@@ -11,7 +11,7 @@ export function doubleClickCell(options: {
   const { mode, cell, column, row } = options;
   const settings = pixiAppSettings;
 
-  const hasPermission = isEditorOrAbove(settings.editorInteractionState.permission);
+  const hasPermission = hasPerissionToEditFile(settings.editorInteractionState.permission);
 
   if (!settings.setEditorInteractionState) return;
   if (mode) {

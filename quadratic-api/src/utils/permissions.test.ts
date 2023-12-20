@@ -1,6 +1,41 @@
-import { getFileAccess } from './access';
+import { getFilePermissions, getTeamPermissions } from './permissions';
 
-describe('getFileAccess', () => {
+describe('getTeamPermissions', () => {
+  it('should allow full access for team owners', () => {
+    const res = getTeamPermissions('OWNER');
+    expect(res).toContain('TEAM_VIEW');
+    expect(res).toContain('TEAM_EDIT');
+    expect(res).toContain('TEAM_DELETE');
+    expect(res).toContain('TEAM_BILLING_EDIT');
+    expect(res).toContain('FILE_VIEW');
+    expect(res).toContain('FILE_EDIT');
+    expect(res).toContain('FILE_DELETE');
+  });
+
+  it('should allow partial access for team editors', () => {
+    const res = getTeamPermissions('EDITOR');
+    expect(res).toContain('TEAM_VIEW');
+    expect(res).toContain('TEAM_EDIT');
+    expect(res).not.toContain('TEAM_DELETE');
+    expect(res).not.toContain('TEAM_BILLING_EDIT');
+    expect(res).toContain('FILE_VIEW');
+    expect(res).toContain('FILE_EDIT');
+    expect(res).toContain('FILE_DELETE');
+  });
+
+  it('should allow limited access for team viewers', () => {
+    const res = getTeamPermissions('VIEWER');
+    expect(res).toContain('TEAM_VIEW');
+    expect(res).not.toContain('TEAM_EDIT');
+    expect(res).not.toContain('TEAM_DELETE');
+    expect(res).not.toContain('TEAM_BILLING_EDIT');
+    expect(res).toContain('FILE_VIEW');
+    expect(res).not.toContain('FILE_EDIT');
+    expect(res).not.toContain('FILE_DELETE');
+  });
+});
+
+describe('getFilePermissions', () => {
   const tests = [
     // File owners
 
@@ -72,13 +107,12 @@ describe('getFileAccess', () => {
 
     [{ roleFile: undefined, roleTeam: undefined, publicLinkAccess: 'EDIT' }, 'partial'],
     [{ roleFile: undefined, roleTeam: undefined, publicLinkAccess: 'READONLY' }, 'limited'],
-    // This shouldn't be possible
-    // [{ roleFile: undefined, roleTeam: undefined, publicLinkAccess: 'NOT_SHARED' }, ''],
+    [{ roleFile: undefined, roleTeam: undefined, publicLinkAccess: 'NOT_SHARED' }, 'none'],
   ];
 
   tests.forEach(([input, access]: any) => {
     it(`should allow "${access}" access for ${JSON.stringify(input)}`, () => {
-      const res = getFileAccess(input);
+      const res = getFilePermissions(input);
       if (access === 'full') {
         expect(res).toContain('FILE_VIEW');
         expect(res).toContain('FILE_EDIT');
@@ -91,6 +125,8 @@ describe('getFileAccess', () => {
         expect(res).toContain('FILE_VIEW');
         expect(res).not.toContain('FILE_EDIT');
         expect(res).not.toContain('FILE_DELETE');
+      } else if (access === 'none') {
+        expect(res).toBe([]);
       }
     });
   });

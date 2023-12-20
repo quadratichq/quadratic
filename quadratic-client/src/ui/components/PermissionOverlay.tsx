@@ -8,7 +8,7 @@ import { duplicateFileAction } from '../../actions';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { ROUTES } from '../../constants/routes';
 import { useFileContext } from './FileProvider';
-const { ANONYMOUS, VIEWER, OWNER, EDITOR } = PermissionSchema.enum;
+const { FILE_EDIT, FILE_VIEW } = PermissionSchema.enum;
 
 export function PermissionOverlay() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
@@ -17,7 +17,7 @@ export function PermissionOverlay() {
   const theme = useTheme();
   const submit = useSubmit();
 
-  if ((permission === OWNER || permission === EDITOR) && isMobile && isOpen) {
+  if (permission.includes(FILE_EDIT) && isMobile && isOpen) {
     return (
       <Wrapper>
         <Alert variant="outlined" severity="info" sx={{ width: '100%' }} onClose={() => setIsOpen(false)}>
@@ -27,7 +27,9 @@ export function PermissionOverlay() {
     );
   }
 
-  if (permission === ANONYMOUS) {
+  // TODO: If they're not logged in but they can see the file, they're anonymous
+  const isLoggedIn = true;
+  if (permission.includes(FILE_VIEW) && isLoggedIn) {
     return (
       <Wrapper>
         <Alert
@@ -57,7 +59,7 @@ export function PermissionOverlay() {
     );
   }
 
-  if (permission === VIEWER) {
+  if (permission.includes(FILE_VIEW)) {
     return (
       <Wrapper>
         <Alert

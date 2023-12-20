@@ -7,26 +7,23 @@ beforeEach(async () => {
   const user_1 = await dbClient.user.create({
     data: {
       auth0_id: 'team_1_owner',
-      id: 1,
     },
   });
   const user_2 = await dbClient.user.create({
     data: {
       auth0_id: 'team_1_editor',
-      id: 2,
     },
   });
   const user_3 = await dbClient.user.create({
     data: {
       auth0_id: 'team_1_viewer',
-      id: 3,
     },
   });
+
   await dbClient.team.create({
     data: {
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000001',
-      id: 1,
       UserTeamRole: {
         create: [
           {
@@ -49,7 +46,7 @@ afterEach(async () => {
   await dbClient.$transaction([deleteTeamUsers, deleteUsers, deleteTeams]);
 });
 
-describe('POST /v0/teams/:uuid/sharing', () => {
+describe('POST /v0/teams/:uuid', () => {
   describe('sending a bad request', () => {
     it('responds with a 400 for an invalid UUID', async () => {
       await request(app)

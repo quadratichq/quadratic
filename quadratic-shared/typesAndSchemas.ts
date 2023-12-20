@@ -9,10 +9,10 @@ export type UserRoleFile = z.infer<typeof UserRoleFileSchema>;
 export const UserRoleTeamSchema = z.enum(['OWNER', /*'ADMIN',*/ 'EDITOR', 'VIEWER']);
 export type UserRoleTeam = z.infer<typeof UserRoleTeamSchema>;
 
-export const FileAccessSchema = z.enum(['FILE_VIEW', 'FILE_EDIT', 'FILE_DELETE']);
-export type FileAccess = z.infer<typeof FileAccessSchema>;
-
-export const TeamAccessSchema = z.enum([
+export const PermissionSchema = z.enum([
+  'FILE_VIEW',
+  'FILE_EDIT',
+  'FILE_DELETE',
   // View a team, including its members and files
   'TEAM_VIEW',
   // Edit attributes of a team, like name/picture, as well as its members and files
@@ -22,7 +22,9 @@ export const TeamAccessSchema = z.enum([
   // Edit the billing info on a team
   'TEAM_BILLING_EDIT',
 ]);
-export type TeamAccess = z.infer<typeof TeamAccessSchema>;
+export const PermissionsSchema = z.array(PermissionSchema);
+export type Permission = z.infer<typeof PermissionSchema>;
+export type Permissions = Permission[];
 
 // =============================================================================
 // TODO share these with the API
@@ -78,10 +80,6 @@ const FileSchema = z.object({
   version: z.string(),
 });
 
-// TODO: remove this entirely, which means removing it from the API and changing client code
-export const PermissionSchema = z.enum(['OWNER', 'EDITOR', 'VIEWER', 'ANONYMOUS']);
-export type Permission = z.infer<typeof PermissionSchema>;
-
 // Zod schemas for API endpoints
 export const ApiSchemas = {
   /**
@@ -106,6 +104,8 @@ export const ApiSchemas = {
   /**
    *
    * File
+   * Note: GET `/files/:uuid` may not have an authenticated user. All other
+   * requests to this endpoint (or nested under it) require authentication
    *
    */
   '/v0/files/:uuid.GET.response': z.object({
@@ -113,11 +113,11 @@ export const ApiSchemas = {
       publicLinkAccess: PublicLinkAccessSchema,
     }),
     user: z.object({
+      permissions: PermissionsSchema,
+      // These are optional because it might be a user who does not have an account
       role: UserRoleFileSchema.optional(),
-      access: z.array(FileAccessSchema),
-      id: FileUserSchema.shape.id,
+      id: FileUserSchema.shape.id.optional(),
     }),
-    permission: PermissionSchema,
   }),
   '/v0/files/:uuid.DELETE.response': z.object({
     message: z.string(),
@@ -145,8 +145,10 @@ export const ApiSchemas = {
       publicLinkAccess: PublicLinkAccessSchema,
     }),
     user: z.object({
-      access: z.array(FileAccessSchema),
-      id: FileUserSchema.shape.id.optional(),
+      permissions: PermissionsSchema,
+      id: FileUserSchema.shape.id,
+      // Optional because a user may not have an explicitly-defined role on a file
+      // e.g. they are accessing it via a team or shared link
       role: UserRoleFileSchema.optional(),
     }),
     team: TeamSchema.pick({ uuid: true, name: true }).optional(),
@@ -189,7 +191,7 @@ export const ApiSchemas = {
     team: TeamSchema,
     user: z.object({
       role: UserRoleTeamSchema,
-      access: TeamAccessSchema.array(),
+      permissions: PermissionsSchema,
       id: z.number(),
     }),
 

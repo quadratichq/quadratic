@@ -5,7 +5,7 @@ import { pythonStateAtom } from '../../../atoms/pythonStateAtom';
 import { Coordinate } from '../../../gridGL/types/size';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 // import { CodeCellValue } from '../../../quadratic-core/types';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPerissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL, DOCUMENTATION_URL } from '../../../constants/urls';
 import { colors } from '../../../theme/colors';
@@ -28,7 +28,7 @@ export const CodeEditorHeader = (props: Props) => {
   const { cellLocation, unsaved, isRunningComputation, saveAndRunCell, cancelPython, closeEditor } = props;
   const { pythonState } = useRecoilValue(pythonStateAtom);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const hasPermission = isEditorOrAbove(editorInteractionState.permission);
+  const hasPermission = hasPerissionToEditFile(editorInteractionState.permission);
 
   const language = editorInteractionState.mode;
 

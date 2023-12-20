@@ -2,7 +2,7 @@ import mixpanel from 'mixpanel-browser';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import { useSetRecoilState } from 'recoil';
-import { isOwner as isOwnerTest } from '../../actions';
+import { hasPerissionToEditFile } from '../../actions';
 import { apiClient } from '../../api/apiClient';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { useFileRouteLoaderData } from '../../dashboard/FileRoute';
@@ -37,13 +37,13 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   const { uuid } = useParams() as { uuid: string };
   const initialFileData = useFileRouteLoaderData();
   const [name, setName] = useState<FileContextType['name']>(initialFileData.name);
-  const [publicLinkAccess] = useState(initialFileData.sharing.publicLinkAccess);
+  const [publicLinkAccess] = useState(initialFileData.sharing.file.publicLinkAccess);
   let isFirstUpdate = useRef(true);
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
 
   const syncState = latestSync.state;
-  const isOwner = isOwnerTest(initialFileData.permission);
+  const canEdit = hasPerissionToEditFile(initialFileData.permission);
 
   const renameFile: FileContextType['renameFile'] = useCallback(
     (newName) => {
@@ -59,7 +59,7 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
     async (apiClientFn: Function) => {
       // User shouldn't have the ability to change anything, but we'll double
       // make sure the file can't be modified on the server if it's not the owner
-      if (!isOwner) return;
+      if (!canEdit) return;
 
       // Don't sync anything if we're on the first update
       if (isFirstUpdate.current) return;
@@ -73,7 +73,7 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
           setLatestSync((prev) => (prev.id === id ? { id, state: ok ? 'idle' : 'error' } : prev));
         });
     },
-    [setLatestSync, isOwner]
+    [setLatestSync, canEdit]
   );
 
   // When the file name changes, update document title and sync to server

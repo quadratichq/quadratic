@@ -3,7 +3,7 @@ import { z } from 'zod';
 import dbClient from '../dbClient';
 import { RequestWithTeam, RequestWithUser } from '../types/Request';
 import { ResponseError } from '../types/Response';
-import { getTeamAccess } from '../utils/access';
+import { getTeamPermissions } from '../utils/permissions';
 import { userMiddleware } from './user';
 import { validateAccessToken } from './validateAccessToken';
 
@@ -63,7 +63,7 @@ async function middleware(req: Request, res: Response<ResponseError>, next: Next
     user: {
       // @ts-expect-error fix types
       role: userMakingRequest.role,
-      access: getTeamAccess(userMakingRequest.role),
+      permissions: getTeamPermissions(userMakingRequest.role),
     },
   };
 

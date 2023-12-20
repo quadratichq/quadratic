@@ -72,7 +72,9 @@ router.get(
       const { email, name, picture } = auth0UsersByAuth0Id[auth0_id];
       return {
         id,
-        email,
+        // Casting this to a string because (presumably) auth0 should
+        // always return an email for a user
+        email: email as string,
         role,
         name,
         picture,
@@ -94,11 +96,10 @@ router.get(
       user: {
         id: userId,
         role: teamUser.role,
-        access: teamUser.access,
+        permissions: teamUser.permissions,
       },
     };
 
-    // @ts-expect-error TODO: fix types
     return res.status(200).json(response);
   }
 );

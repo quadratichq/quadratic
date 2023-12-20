@@ -4,39 +4,63 @@ import dbClient from '../../dbClient';
 
 beforeEach(async () => {
   // Create some users
-  const user_1 = await dbClient.user.create({
-    data: {
+  const user_1 = await dbClient.user.upsert({
+    create: {
       auth0_id: 'test_user_1',
       id: 1,
     },
+    update: {},
+    where: {
+      id: 1,
+    },
   });
-  const user_2 = await dbClient.user.create({
-    data: {
+  const user_2 = await dbClient.user.upsert({
+    create: {
       auth0_id: 'test_user_2',
       id: 2,
     },
+    update: {},
+    where: {
+      id: 2,
+    },
   });
-  const user_3 = await dbClient.user.create({
-    data: {
+  const user_3 = await dbClient.user.upsert({
+    create: {
       auth0_id: 'test_user_3',
       id: 3,
     },
+    update: {},
+    where: {
+      id: 3,
+    },
   });
-  const user_4 = await dbClient.user.create({
-    data: {
+  const user_4 = await dbClient.user.upsert({
+    create: {
       auth0_id: 'test_user_4',
       id: 4,
     },
+    update: {},
+    where: {
+      id: 4,
+    },
   });
-  const user_5 = await dbClient.user.create({
-    data: {
+  const user_5 = await dbClient.user.upsert({
+    create: {
       auth0_id: 'test_user_5',
       id: 5,
     },
+    update: {},
+    where: {
+      id: 5,
+    },
   });
-  const user_6 = await dbClient.user.create({
-    data: {
+  const user_6 = await dbClient.user.upsert({
+    create: {
       auth0_id: 'test_user_6',
+      id: 6,
+    },
+    update: {},
+    where: {
       id: 6,
     },
   });
@@ -46,7 +70,6 @@ beforeEach(async () => {
     data: {
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000001',
-      id: 1,
       UserTeamRole: {
         create: [
           {
@@ -64,7 +87,6 @@ beforeEach(async () => {
     data: {
       name: 'Test Team 2',
       uuid: '00000000-0000-4000-8000-000000000002',
-      id: 2,
       UserTeamRole: {
         create: [
           {

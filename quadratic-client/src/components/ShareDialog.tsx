@@ -19,8 +19,8 @@ import { isJsonObject } from '@/utils/isJsonObject';
 import { Avatar } from '@mui/material';
 import { CaretDownIcon, EnvelopeClosedIcon, GlobeIcon, LockClosedIcon } from '@radix-ui/react-icons';
 import {
-  Access,
   ApiTypes,
+  Permissions,
   PublicLinkAccess,
   UserRoleFile,
   UserRoleFileSchema,
@@ -106,7 +106,7 @@ export function ShareTeamDialog({
 
   return (
     <ShareDialog title={`Share ${name}`} description="Invite people to collaborate in this team" onClose={onClose}>
-      {loggedInUser.access.includes('TEAM_EDIT') && (
+      {loggedInUser.permissions.includes('TEAM_EDIT') && (
         <InviteForm
           action={action}
           intent="create-team-invite"
@@ -120,7 +120,7 @@ export function ShareTeamDialog({
         const canDelete = isLoggedInUser
           ? canDeleteLoggedInUserInTeam({ role: user.role, numberOfOwners })
           : canDeleteUserInTeam({
-              access: loggedInUser.access,
+              permissions: loggedInUser.permissions,
               loggedInUserRole: loggedInUser.role,
               userRole: user.role,
             });
@@ -149,7 +149,9 @@ export function ShareTeamDialog({
 }
 
 function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0/files/:uuid/sharing.GET.response'] }) {
-  const { publicLinkAccess } = data;
+  const {
+    file: { publicLinkAccess },
+  } = data;
   return (
     <>
       <InviteForm
@@ -476,12 +478,12 @@ function ManageInvite({
             });
           }}
         >
-          <SelectTrigger disabled={disabled || !loggedInUser.access.includes('TEAM_EDIT')}>
+          <SelectTrigger disabled={disabled || !loggedInUser.permissions.includes('TEAM_EDIT')}>
             {getRoleLabel(role)}
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={role}>{getRoleLabel(role)}</SelectItem>
-            {loggedInUser.access.includes('TEAM_EDIT') && (
+            {loggedInUser.permissions.includes('TEAM_EDIT') && (
               <>
                 <SelectSeparator key="divider" />
                 <SelectItem value="DELETE">Remove</SelectItem>
@@ -599,17 +601,17 @@ function canDeleteLoggedInUserInTeam({ role, numberOfOwners }: { role: UserRoleT
   return true;
 }
 function canDeleteUserInTeam({
-  access,
+  permissions,
   loggedInUserRole,
   userRole,
 }: {
-  access: Access[];
+  permissions: Permissions;
   loggedInUserRole: UserRoleTeam;
   userRole: UserRoleTeam;
 }) {
   // TODO: can a user who is an editor remove a member who has a higher role than themselves?
   const { OWNER, EDITOR } = UserRoleTeamSchema.enum;
-  if (access.includes('TEAM_EDIT')) {
+  if (permissions.includes('TEAM_EDIT')) {
     if (loggedInUserRole === EDITOR && userRole === OWNER) {
       return false;
     }

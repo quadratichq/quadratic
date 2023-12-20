@@ -13,6 +13,7 @@ model User {
     files        File[]
     QFeedback    QFeedback[]
     UserTeamRole UserTeamRole[]
+    UserFileRole UserFileRole[]
 }
 
 enum LinkPermission {
@@ -27,19 +28,23 @@ model File {
     uuid             String         @unique @default(uuid())
     name             String
     thumbnail        String? // S3FileKey
-    created_date     DateTime       @default(now())
-    updated_date     DateTime       @default(now())
+    created_date     DateTime       @default(now()) // TODO map("created_date")
+    updated_date     DateTime       @default(now()) // TODO map("updated_date")
     deleted          Boolean        @default(false)
     deleted_date     DateTime?
     // Binary file contents
     contents         Bytes
     // Permissions
-    owner            User           @relation(fields: [ownerUserId], references: [id])
+    owner            User           @relation(fields: [ownerUserId], references: [id]) // TODO: rename to `creator`
     ownerUserId      Int
+    team             Team?          @relation(fields: [teamId], references: [id])
+    teamId           Int?           @map("team_id")
     publicLinkAccess LinkPermission @default(NOT_SHARED) @map("public_link_access")
     // analytics fields
     times_updated    Int            @default(1)
     version          String?
+    UserFileRole     UserFileRole[]
+    FileInvite       FileInvite[]
 }
 
 model Team {
@@ -50,6 +55,7 @@ model Team {
     createdDate  DateTime       @default(now()) @map("created_date")
     UserTeamRole UserTeamRole[]
     TeamInvite   TeamInvite[]
+    File         File[]
 }
 
 enum TeamRole {
@@ -81,37 +87,48 @@ model TeamInvite {
     @@unique([email, teamId])
 }
 
-// enum SharePermission {
-//     READONLY
-//     EDIT
+enum FileRole {
+    // TODO: OWNER isn't really used ATM on here because it's defined on the File itself
+    OWNER
+    EDITOR
+    VIEWER
+}
+
+model UserFileRole {
+    id          Int
+    userId      Int
+    fileId      Int
+    user        User     @relation(fields: [userId], references: [id])
+    file        File     @relation(fields: [fileId], references: [id])
+    role        FileRole
+    createdDate DateTime @default(now()) @map("created_date")
+
+    @@unique([userId, fileId])
+}
+
+model FileInvite {
+    id          Int      @id @default(autoincrement())
+    email       String
+    fileId      Int      @map("file_id")
+    file        File     @relation(fields: [fileId], references: [id])
+    role        FileRole
+    createdDate DateTime @default(now()) @map("created_date")
+
+    @@unique([email, fileId])
+}
+
+// Future: folders
+// model Folder {
+//     id             Int      @id @default(autoincrement())
+//     uuid           String   @unique @default(uuid())
+//     name           String
+//     createdDate    DateTime @default(now()) @map("created_date")
+//     createdBy      User     @relation(fields: [createByUserId], references: [id])
+//     createByUserId Int      @map("created_by_user_id")
+//     team           Team?    @relation(fields: [teamId], references: [id])
 // }
-
-// model UserFileAccess {
-//   id Int
-//   userId    Int
-//   fileId    Int
-//   user      User      @relation(fields: [userId], references: [id])
-//   file      File      @relation(fields: [fileId], references: [id])
-//   permission SharePermission @default(READONLY)
-
-//   @@unique([userId, fileId])
-// }
-
-// model TeamFileAccess {
-//   id Int
-//   teamID    Int
-//   fileId    Int
-//   team      Team      @relation(fields: [teamID], references: [id])
-//   file      File      @relation(fields: [fileId], references: [id])
-//   permission SharePermission @default(READONLY)
-
-//   @@unique([userId, fileId])
-// }
-
-// Permission Logic
-// Public Link Access: Check the share_link column in the files table.
-// Direct User Access: Check for a row in UserFileAccess with the user's ID.
-// Team Access: Check for a row in TeamFileAccess with a team ID that the user is a part of.
+// enum FolderRole {}
+// model UserFolderRole {}
 
 model QFeedback {
     id           Int      @id @default(autoincrement())

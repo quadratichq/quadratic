@@ -8,32 +8,27 @@ beforeEach(async () => {
   const user_1 = await dbClient.user.create({
     data: {
       auth0_id: 'team_1_owner',
-      id: 1,
     },
   });
   const user_2 = await dbClient.user.create({
     data: {
       auth0_id: 'team_1_editor',
-      id: 2,
     },
   });
   const user_3 = await dbClient.user.create({
     data: {
       auth0_id: 'team_1_viewer',
-      id: 3,
     },
   });
   await dbClient.user.create({
     data: {
       auth0_id: 'user_without_team',
-      id: 4,
     },
   });
   await dbClient.team.create({
     data: {
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000001',
-      id: 1,
       UserTeamRole: {
         create: [
           {
@@ -209,7 +204,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .expect(({ body: { email, role, id } }) => {
           expect(email).toBe('user_without_team@example.com');
           expect(role).toBe('OWNER');
-          expect(id).toBe(4);
+          expect(typeof id).toBe('number');
         });
     });
     it('adds EDITOR invited by OWNER', async () => {
@@ -223,7 +218,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .expect(({ body: { email, role, id } }) => {
           expect(email).toBe('user_without_team@example.com');
           expect(role).toBe('EDITOR');
-          expect(id).toBe(4);
+          expect(typeof id).toBe('number');
         });
     });
     it('adds VIEWER invited by OWNER', async () => {
@@ -237,7 +232,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .expect(({ body: { email, role, id } }) => {
           expect(email).toBe('user_without_team@example.com');
           expect(role).toBe('VIEWER');
-          expect(id).toBe(4);
+          expect(typeof id).toBe('number');
         });
     });
 
@@ -262,7 +257,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .expect(({ body: { email, role, id } }) => {
           expect(email).toBe('user_without_team@example.com');
           expect(role).toBe('EDITOR');
-          expect(id).toBe(4);
+          expect(typeof id).toBe('number');
         });
     });
     it('adds VIEWER invited by EDITOR', async () => {
@@ -276,7 +271,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .expect(({ body: { email, role, id } }) => {
           expect(email).toBe('user_without_team@example.com');
           expect(role).toBe('VIEWER');
-          expect(id).toBe(4);
+          expect(typeof id).toBe('number');
         });
     });
 

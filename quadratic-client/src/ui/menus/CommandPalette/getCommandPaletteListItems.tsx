@@ -19,6 +19,7 @@ export interface Commands {
 }
 
 export const getCommandPaletteListItems = (props: {
+  isAuthenticated: boolean;
   permission: EditorInteractionState['permission'];
   closeCommandPalette: Function;
   activeSearchValue: string;
@@ -37,9 +38,11 @@ export const getCommandPaletteListItems = (props: {
     ...SheetListItems(),
     ...HelpListItems,
   ];
-  const { activeSearchValue, permission, ...rest } = props;
+  const { activeSearchValue, permission, isAuthenticated, ...rest } = props;
 
-  let filteredCommands = commands.filter((action) => (action.isAvailable ? action.isAvailable(permission) : true));
+  let filteredCommands = commands.filter((action) =>
+    action.isAvailable ? action.isAvailable(permission, isAuthenticated) : true
+  );
 
   // If there's no active search query, return everything
   if (!activeSearchValue) {

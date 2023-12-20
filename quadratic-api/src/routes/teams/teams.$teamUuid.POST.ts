@@ -30,7 +30,7 @@ router.post(
     const body = req.body as ApiTypes['/v0/teams/:uuid.POST.request'];
 
     // Can the user even edit this team?
-    if (!user.access.includes('TEAM_EDIT')) {
+    if (!user.permissions.includes('TEAM_EDIT')) {
       return res.status(403).json({ error: { message: 'User does not have permission to edit this team.' } });
     }
 

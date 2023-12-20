@@ -1,4 +1,4 @@
-import { isEditorOrAbove } from '../../../actions';
+import { hasPerissionToEditFile } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
 import { clearFormattingAndBorders, setBold, setItalic } from '../../../ui/menus/TopBar/SubMenus/formatCells';
@@ -85,7 +85,7 @@ export function keyboardViewport(options: {
   }
 
   // All formatting options past here are only available for people with rights
-  if (!isEditorOrAbove(editorInteractionState.permission)) {
+  if (!hasPerissionToEditFile(editorInteractionState.permission)) {
     return false;
   }
 

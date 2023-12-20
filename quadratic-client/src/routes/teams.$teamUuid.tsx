@@ -134,7 +134,7 @@ export const Component = () => {
   const loaderData = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
   const {
     team,
-    user: { access },
+    user: { permissions },
   } = loaderData;
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const fetcher = useFetcher();
@@ -182,10 +182,10 @@ export const Component = () => {
                   />
                 </label>
               </DropdownMenuItem>
-              {access.includes('TEAM_BILLING_EDIT') && (
+              {permissions.includes('TEAM_BILLING_EDIT') && (
                 <DropdownMenuItem onClick={() => {}}>Edit billing</DropdownMenuItem>
               )}
-              {access.includes('TEAM_DELETE') && [
+              {permissions.includes('TEAM_DELETE') && [
                 <DropdownMenuSeparator key={1} />,
                 <DropdownMenuItem
                   key={2}

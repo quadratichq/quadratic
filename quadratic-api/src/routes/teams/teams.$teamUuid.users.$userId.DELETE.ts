@@ -66,9 +66,9 @@ router.delete(
     // From here on, it's a user trying to delete another user
 
     // User making the request can edit the team
-    if (!userMakingRequest.access.includes('TEAM_EDIT')) {
+    if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
       return res.status(403).json({
-        error: { message: 'User does not have access to edit this team' },
+        error: { message: 'User does not have permission to edit this team' },
       });
     }
 

@@ -1,18 +1,18 @@
 import { Button } from '@/shadcn/ui/button';
 import { Link } from 'react-router-dom';
-import { useRecoilState } from 'recoil';
-import { isViewerOrAbove } from '../../../actions';
+import { useSetRecoilState } from 'recoil';
 
+import { useRootRouteLoaderData } from '@/router';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { ROUTES } from '../../../constants/routes';
 
 export const TopBarShareButton = () => {
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { permission } = editorInteractionState;
+  const { isAuthenticated } = useRootRouteLoaderData();
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
   return (
     <>
-      {isViewerOrAbove(permission) ? (
+      {isAuthenticated ? (
         <Button
           size="sm"
           onClick={() => {

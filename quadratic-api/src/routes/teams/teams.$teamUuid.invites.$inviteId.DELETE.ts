@@ -34,7 +34,7 @@ router.delete(
     // TODO: write tests for this endpoint
 
     // User making the request can edit the team
-    if (!userMakingRequest.access.includes('TEAM_EDIT')) {
+    if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
       return res.status(403).json({
         error: { message: 'User does not have access to edit this team' },
       });

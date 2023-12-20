@@ -13,7 +13,6 @@ import {
   deleteFile,
   downloadFileAction,
   duplicateFileAction,
-  isViewerOrAbove,
   pasteAction,
   provideFeedbackAction,
   redoAction,
@@ -39,7 +38,6 @@ import { useGridSettings } from './useGridSettings';
 export const QuadraticMenu = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
-
   const navigate = useNavigate();
   const submit = useSubmit();
   const { uuid } = useParams() as { uuid: string };
@@ -66,7 +64,7 @@ export const QuadraticMenu = () => {
           </TopBarMenuItem>
         )}
       >
-        {isViewerOrAbove(permission) && (
+        {isAuthenticated && (
           <>
             <MenuItem href={ROUTES.FILES} style={{ textDecoration: 'none' }}>
               <MenuLineItem primary="Back to files" />
@@ -86,19 +84,19 @@ export const QuadraticMenu = () => {
           <MenuLineItem primary="Command palette" secondary={KeyboardSymbols.Command + 'P'} />
         </MenuItem>
         <MenuDivider />
-        {isViewerOrAbove(permission) && (
+        {isAuthenticated && (
           <SubMenu label={<MenuLineItem primary="File" />}>
-            {createNewFileAction.isAvailable(permission) && (
+            {createNewFileAction.isAvailable(permission, isAuthenticated) && (
               <MenuItem onClick={() => createNewFileAction.run({ navigate })}>
                 <MenuLineItem primary={createNewFileAction.label} />
               </MenuItem>
             )}
-            {duplicateFileAction.isAvailable(permission) && (
+            {duplicateFileAction.isAvailable(permission, isAuthenticated) && (
               <MenuItem onClick={() => duplicateFileAction.run({ name, submit })}>
                 <MenuLineItem primary={duplicateFileAction.label} />
               </MenuItem>
             )}
-            {downloadFileAction.isAvailable(permission) && (
+            {downloadFileAction.isAvailable(permission, isAuthenticated) && (
               <MenuItem
                 onClick={() => {
                   downloadFileAction.run({ name });
@@ -188,7 +186,7 @@ export const QuadraticMenu = () => {
           <MenuItem onClick={() => viewDocsAction.run()}>
             <MenuLineItem primary={viewDocsAction.label} />
           </MenuItem>
-          {provideFeedbackAction.isAvailable(permission) && (
+          {provideFeedbackAction.isAvailable(permission, isAuthenticated) && (
             <MenuItem onClick={() => provideFeedbackAction.run({ setEditorInteractionState })}>
               <MenuLineItem primary={provideFeedbackAction.label} />
             </MenuItem>

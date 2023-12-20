@@ -1,26 +1,29 @@
-// TODO write tests for this
 import {
-  FileAccess,
-  FileAccessSchema,
+  Permission,
+  PermissionSchema,
   PublicLinkAccess,
-  TeamAccessSchema,
   UserRoleFile,
   UserRoleFileSchema,
   UserRoleTeam,
   UserRoleTeamSchema,
 } from 'quadratic-shared/typesAndSchemas';
+const { TEAM_EDIT, TEAM_DELETE, TEAM_BILLING_EDIT, TEAM_VIEW, FILE_VIEW, FILE_EDIT, FILE_DELETE } =
+  PermissionSchema.enum;
 
-export const getTeamAccess = (role: UserRoleTeam) => {
-  const { TEAM_EDIT, TEAM_DELETE, TEAM_BILLING_EDIT, TEAM_VIEW } = TeamAccessSchema.enum;
+/**
+ * Derive a user’s permissions for a team (and its contents) based on their role.
+ */
+export const getTeamPermissions = (role: UserRoleTeam) => {
   const { OWNER, EDITOR, VIEWER } = UserRoleFileSchema.enum;
   switch (role) {
     case OWNER:
-      return [TEAM_EDIT, TEAM_VIEW, TEAM_DELETE, TEAM_BILLING_EDIT];
+      return [TEAM_EDIT, TEAM_VIEW, TEAM_DELETE, TEAM_BILLING_EDIT, FILE_VIEW, FILE_EDIT, FILE_DELETE];
     case EDITOR:
-      return [TEAM_EDIT, TEAM_VIEW];
+      return [TEAM_EDIT, TEAM_VIEW, FILE_VIEW, FILE_EDIT, FILE_DELETE];
     case VIEWER:
-      return [TEAM_VIEW];
+      return [TEAM_VIEW, FILE_VIEW];
     default:
+      console.error('Invalid role. This could should never be reached.');
       return [];
   }
 };
@@ -31,7 +34,7 @@ export const getTeamAccess = (role: UserRoleTeam) => {
  *
  * The idea is you can get access from different places. Highest assigned access wins.
  */
-export const getFileAccess = ({
+export const getFilePermissions = ({
   roleFile,
   roleTeam,
   publicLinkAccess,
@@ -40,41 +43,37 @@ export const getFileAccess = ({
   roleTeam?: UserRoleTeam;
   publicLinkAccess: PublicLinkAccess;
 }) => {
-  const { FILE_VIEW, FILE_EDIT, FILE_DELETE } = FileAccessSchema.enum;
-  const access = new Set<FileAccess>();
+  const permissions = new Set<Permission>();
 
   // Assign access based on public link access
   if (publicLinkAccess === 'EDIT') {
-    access.add(FILE_EDIT).add(FILE_VIEW);
+    permissions.add(FILE_EDIT).add(FILE_VIEW);
   } else if (publicLinkAccess === 'READONLY') {
-    access.add(FILE_VIEW);
+    permissions.add(FILE_VIEW);
   }
 
   // Assign access based on user's explicitly-assigned role in the file's team (if applicable)
   if (roleTeam) {
     if (roleTeam === UserRoleTeamSchema.enum.OWNER || roleTeam === UserRoleTeamSchema.enum.EDITOR) {
-      access.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE);
+      permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE);
     } else {
-      access.add(FILE_VIEW);
+      permissions.add(FILE_VIEW);
     }
   }
 
   // Assign access based on user's explicitly-assigned role on the file (if applicable)
   if (roleFile) {
     if (roleFile === UserRoleFileSchema.enum.OWNER) {
-      access.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE);
+      permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE);
     } else if (roleFile === UserRoleFileSchema.enum.EDITOR) {
-      access.add(FILE_EDIT).add(FILE_VIEW);
+      permissions.add(FILE_EDIT).add(FILE_VIEW);
     } else {
-      access.add(FILE_VIEW);
+      permissions.add(FILE_VIEW);
     }
   }
 
-  const out = Array.from(access);
-
-  if (out.length === 0) {
-    console.error('No file access controls found for user. This should never happen.');
-  }
+  // Note: it's possible there are 0 permissions
+  const out = Array.from(permissions);
 
   return out;
 };

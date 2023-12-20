@@ -7,7 +7,7 @@ import { teamMiddleware } from '../../middleware/team';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithTeam } from '../../types/Request';
 import { ResponseError } from '../../types/Response';
-import { firstRoleIsHigherThanSecond } from '../../utils/access';
+import { firstRoleIsHigherThanSecond } from '../../utils/permissions';
 const router = express.Router();
 
 const requestValidationMiddleware = validateRequestSchema(
@@ -35,7 +35,7 @@ router.post(
     const userMakingRequestRole = teamUser.role;
 
     // Can you even invite others?
-    if (!teamUser.access.includes('TEAM_EDIT')) {
+    if (!teamUser.permissions.includes('TEAM_EDIT')) {
       return res.status(403).json({
         error: {
           message: 'User does not have permission to invite other users to this team.',

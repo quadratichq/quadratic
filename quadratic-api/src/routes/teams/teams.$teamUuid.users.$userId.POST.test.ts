@@ -4,31 +4,42 @@ import dbClient from '../../dbClient';
 
 beforeEach(async () => {
   // Create some users
-  const user_1 = await dbClient.user.create({
-    data: {
+  const user_1 = await dbClient.user.upsert({
+    create: {
       auth0_id: 'test_user_1',
       id: 1,
     },
+    update: {},
+    where: {
+      id: 1,
+    },
   });
-  const user_2 = await dbClient.user.create({
-    data: {
+  const user_2 = await dbClient.user.upsert({
+    create: {
       auth0_id: 'test_user_2',
       id: 2,
     },
+    update: {},
+    where: {
+      id: 2,
+    },
   });
-  const user_3 = await dbClient.user.create({
-    data: {
+  const user_3 = await dbClient.user.upsert({
+    create: {
       auth0_id: 'test_user_3',
+      id: 3,
+    },
+    update: {},
+    where: {
       id: 3,
     },
   });
 
   // Create a team with one owner and one with two
-  await dbClient.team.create({
-    data: {
+  await dbClient.team.upsert({
+    create: {
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000001',
-      id: 1,
       UserTeamRole: {
         create: [
           {
@@ -40,12 +51,15 @@ beforeEach(async () => {
         ],
       },
     },
+    update: {},
+    where: {
+      uuid: '00000000-0000-4000-8000-000000000001',
+    },
   });
-  await dbClient.team.create({
-    data: {
+  await dbClient.team.upsert({
+    create: {
       name: 'Test Team 2',
       uuid: '00000000-0000-4000-8000-000000000002',
-      id: 2,
       UserTeamRole: {
         create: [
           {
@@ -55,6 +69,10 @@ beforeEach(async () => {
           { userId: user_2.id, role: 'OWNER' },
         ],
       },
+    },
+    update: {},
+    where: {
+      uuid: '00000000-0000-4000-8000-000000000002',
     },
   });
 });
