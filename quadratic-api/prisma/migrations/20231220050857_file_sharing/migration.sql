@@ -6,11 +6,13 @@ ALTER TABLE "File" ADD COLUMN     "team_id" INTEGER;
 
 -- CreateTable
 CREATE TABLE "UserFileRole" (
-    "id" INTEGER NOT NULL,
+    "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
     "fileId" INTEGER NOT NULL,
     "role" "FileRole" NOT NULL,
-    "created_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "created_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "UserFileRole_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable

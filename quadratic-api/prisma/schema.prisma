@@ -95,7 +95,7 @@ enum FileRole {
 }
 
 model UserFileRole {
-    id          Int
+    id          Int      @id @default(autoincrement())
     userId      Int
     fileId      Int
     user        User     @relation(fields: [userId], references: [id])
