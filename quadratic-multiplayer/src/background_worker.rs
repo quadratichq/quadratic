@@ -5,6 +5,7 @@ use uuid::Uuid;
 use crate::{
     error::{MpError, Result},
     file::{new_client, process_queue_for_room},
+    get_mut_room,
     message::{broadcast, response::MessageResponse},
     state::{room::Room, settings::Settings, transaction_queue, State},
 };
@@ -34,32 +35,39 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                 )
                 .await;
 
-                if let Err(error) = processed {
-                    tracing::warn!("Error processing queue for room {file_id}: {:?}", error);
+                match processed {
+                    Ok(sequence_num) => {
+                        if let Some(sequence_num) = sequence_num {
+                            get_mut_room!(state, file_id).unwrap().sequence_num = sequence_num;
+                        }
+                    }
+                    Err(error) => {
+                        tracing::warn!("Error processing queue for room {file_id}: {:?}", error);
+                    }
+                };
+
+                // broadcast sequence number to all users in the room
+                if let Err(error) =
+                    broadcast_sequence_num(Arc::clone(&state), file_id.to_owned()).await
+                {
+                    tracing::warn!("Error broadcasting sequence number: {:?}", error);
                 }
 
-                // // broadcast sequence number to all users in the room
-                // if let Err(error) =
-                //     broadcast_sequence_num(Arc::clone(&state), file_id.to_owned()).await
-                // {
-                //     tracing::warn!("Error broadcasting sequence number: {:?}", error);
-                // }
-
-                // // remove stale users in the room
-                // if let Err(error) = remove_stale_users_in_room(
-                //     Arc::clone(&state),
-                //     file_id,
-                //     room,
-                //     heartbeat_timeout_s,
-                // )
-                // .await
-                // {
-                //     tracing::warn!(
-                //         "Error removing stale users from room {}: {:?}",
-                //         file_id,
-                //         error
-                //     );
-                // }
+                // remove stale users in the room
+                if let Err(error) = remove_stale_users_in_room(
+                    Arc::clone(&state),
+                    file_id,
+                    room,
+                    heartbeat_timeout_s,
+                )
+                .await
+                {
+                    tracing::warn!(
+                        "Error removing stale users from room {}: {:?}",
+                        file_id,
+                        error
+                    );
+                }
             }
 
             interval.tick().await;
@@ -69,11 +77,7 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
 
 // broadcast sequence number to all users in the room
 async fn broadcast_sequence_num(state: Arc<State>, file_id: Uuid) -> Result<JoinHandle<()>> {
-    let sequence_num = state
-        .transaction_queue
-        .lock()
-        .await
-        .get_sequence_num(file_id.to_owned())?;
+    let sequence_num = state.get_sequence_num(&file_id).await?;
 
     Ok(broadcast(
         vec![],
@@ -90,25 +94,23 @@ async fn remove_stale_users_in_room(
     file_id: &Uuid,
     room: &Room,
     heartbeat_timeout_s: i64,
-) -> Result<JoinHandle<()>> {
+) -> Result<Option<JoinHandle<()>>> {
     let (num_removed, num_remaining) = state
         .remove_stale_users_in_room(file_id.to_owned(), heartbeat_timeout_s)
         .await?;
 
     tracing::info!("Checking heartbeats in room {file_id} ({num_remaining} remaining in room)");
 
-    if num_removed > 0 {
-        return Ok(broadcast(
-            vec![],
-            file_id.to_owned(),
-            Arc::clone(&state),
-            MessageResponse::from(room.to_owned()),
-        ));
+    if num_removed == 0 {
+        return Ok(None);
     }
 
-    Err(MpError::BackgroundService(
-        "Error removing stale users from room {file_id}".into(),
-    ))
+    Ok(Some(broadcast(
+        vec![],
+        file_id.to_owned(),
+        Arc::clone(&state),
+        MessageResponse::from(room.to_owned()),
+    )))
 }
 
 #[cfg(test)]
@@ -129,6 +131,7 @@ mod tests {
             transaction_id_1,
             file_id,
             vec![operations_1.clone()],
+            0,
         );
 
         super::broadcast_sequence_num(state, file_id)
@@ -150,6 +153,7 @@ mod tests {
 
         super::remove_stale_users_in_room(state.clone(), &file_id, &room, -1)
             .await
+            .unwrap()
             .unwrap()
             .await
             .unwrap();

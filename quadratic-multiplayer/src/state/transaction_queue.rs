@@ -42,25 +42,23 @@ impl TransactionQueue {
         Default::default()
     }
 
-    pub(crate) fn initialize_room(&mut self, file_id: Uuid, sequence_num: u64) {
-        self.pending
+    fn push(
+        queue: &mut Queue,
+        id: Uuid,
+        file_id: Uuid,
+        operations: Vec<Operation>,
+        room_sequence_num: u64,
+    ) -> u64 {
+        let (sequence_num, transactions) = queue
             .entry(file_id)
-            .or_insert_with(|| (sequence_num, vec![]));
-    }
-
-    fn push(queue: &mut Queue, id: Uuid, file_id: Uuid, operations: Vec<Operation>) -> Result<u64> {
-        let (sequence_num, transactions) = queue.get_mut(&file_id).ok_or_else(|| {
-            MpError::TransactionQueue(format!(
-                "file_id {file_id} was not initialized in the pending transaction queue"
-            ))
-        })?;
+            .or_insert_with(|| (room_sequence_num, vec![]));
 
         *sequence_num += 1;
 
         let transaction = Transaction::new(id, file_id, operations, *sequence_num);
         transactions.push(transaction);
 
-        Ok(sequence_num.to_owned())
+        sequence_num.to_owned()
     }
 
     pub(crate) fn push_pending(
@@ -68,8 +66,15 @@ impl TransactionQueue {
         id: Uuid,
         file_id: Uuid,
         operations: Vec<Operation>,
-    ) -> Result<u64> {
-        TransactionQueue::push(&mut self.pending, id, file_id, operations)
+        room_sequence_num: u64,
+    ) -> u64 {
+        TransactionQueue::push(
+            &mut self.pending,
+            id,
+            file_id,
+            operations,
+            room_sequence_num,
+        )
     }
 
     pub(crate) fn push_processed(
@@ -77,8 +82,15 @@ impl TransactionQueue {
         id: Uuid,
         file_id: Uuid,
         operations: Vec<Operation>,
-    ) -> Result<u64> {
-        TransactionQueue::push(&mut self.processed, id, file_id, operations)
+        room_sequence_num: u64,
+    ) -> u64 {
+        TransactionQueue::push(
+            &mut self.processed,
+            id,
+            file_id,
+            operations,
+            room_sequence_num,
+        )
     }
 
     pub(crate) fn get_pending(&mut self, file_id: Uuid) -> Result<Vec<Transaction>> {
@@ -117,6 +129,7 @@ impl TransactionQueue {
                     transaction.id,
                     transaction.file_id,
                     transaction.operations.to_owned(),
+                    transaction.sequence_num,
                 );
 
                 transaction
@@ -195,6 +208,7 @@ mod tests {
             transaction_id_1,
             file_id,
             vec![operations_1.clone()],
+            0,
         );
 
         let mut transaction_queue = state.transaction_queue.lock().await;
@@ -210,6 +224,7 @@ mod tests {
             transaction_id_2,
             file_id,
             vec![operations_2.clone()],
+            0,
         );
 
         let mut transaction_queue = state.transaction_queue.lock().await;

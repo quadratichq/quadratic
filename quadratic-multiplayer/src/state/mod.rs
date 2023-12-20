@@ -15,6 +15,8 @@ use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::config::Config;
+use crate::error::Result;
+use crate::get_room;
 use crate::state::room::Room;
 use crate::state::settings::Settings;
 use crate::state::transaction_queue::TransactionQueue;
@@ -34,6 +36,19 @@ impl State {
             connections: Mutex::new(HashMap::new()),
             transaction_queue: Mutex::new(TransactionQueue::new()),
             settings: Settings::new(config, jwks).await,
+        }
+    }
+
+    pub(crate) async fn get_sequence_num(&self, file_id: &Uuid) -> Result<u64> {
+        let sequence_num = self
+            .transaction_queue
+            .lock()
+            .await
+            .get_sequence_num(file_id.to_owned());
+
+        match sequence_num {
+            Ok(sequence_num) => Ok(sequence_num),
+            Err(_) => Ok(get_room!(self, file_id)?.sequence_num),
         }
     }
 }

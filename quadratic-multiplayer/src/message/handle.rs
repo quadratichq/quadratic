@@ -12,6 +12,7 @@ use tokio::sync::Mutex;
 
 use crate::auth::{get_file_checkpoint, get_file_perms, LastCheckpoint};
 use crate::error::{MpError, Result};
+use crate::get_room;
 use crate::message::{broadcast, request::MessageRequest, response::MessageResponse};
 use crate::state::connection::Connection;
 use crate::state::user::UserState;
@@ -127,12 +128,15 @@ pub(crate) async fn handle_message(
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
+            let room_sequence_num = get_room!(state, file_id)?.sequence_num;
+
             // add the transaction to the transaction queue
             let sequence_num = state.transaction_queue.lock().await.push_pending(
                 id,
                 file_id,
                 serde_json::from_str(&operations)?,
-            )?;
+                room_sequence_num,
+            );
 
             let response = MessageResponse::Transaction {
                 id,

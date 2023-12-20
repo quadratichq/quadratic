@@ -167,16 +167,24 @@ pub(crate) async fn process_queue_for_room(
     bucket: &str,
     transaction_queue: &Mutex<TransactionQueue>,
     file_id: &Uuid,
-) -> Result<()> {
+) -> Result<Option<u64>> {
     // this is an expensive lock since we're waiting for the file to write to S3 before unlocking
     let mut transaction_queue = transaction_queue.lock().await;
     let transactions = transaction_queue
         .get_pending(*file_id)
         .unwrap_or_else(|_| vec![]);
 
+    tracing::info!(
+        "Found {} transactions for room {file_id}",
+        transactions.len()
+    );
+
     if transactions.is_empty() {
-        return Ok(());
+        return Ok(None);
     }
+
+    let first_sequence_num = transactions.first().unwrap().sequence_num;
+    let checkpoint_sequence_num = (first_sequence_num - 1).max(0);
 
     // combine all operations into a single vec
     let operations = transactions
@@ -191,29 +199,37 @@ pub(crate) async fn process_queue_for_room(
             transaction.operations
         })
         .collect::<Vec<Operation>>();
-    let sequence_num = transaction_queue.get_sequence_num(*file_id)?;
 
     // process the transactions and save the file to S3
-    let next_sequence_num =
-        process_transactions(client, bucket, *file_id, sequence_num, operations).await?;
+    let last_sequence_num = process_transactions(
+        client,
+        bucket,
+        *file_id,
+        checkpoint_sequence_num,
+        operations,
+    )
+    .await?;
 
     // remove transactions from the queue
+    // TODO(ddimaria): this assumes the queue was locked the whole time, confirm this is true
     transaction_queue.complete_transactions(*file_id)?;
 
     // update the checkpoint in quatratic-api
     update_checkpoint(
         bucket,
-        &key(*file_id, next_sequence_num),
+        &key(*file_id, last_sequence_num),
         "",
         file_id,
-        next_sequence_num,
+        last_sequence_num,
         "1.4".into(),
     )
     .await?;
 
-    tracing::info!("Processed up to sequence number {sequence_num} for room {file_id}");
+    tracing::info!(
+        "Processed sequence numbers {first_sequence_num} - {last_sequence_num} for room {file_id}"
+    );
 
-    Ok(())
+    Ok(Some(last_sequence_num))
 }
 
 pub(crate) async fn update_checkpoint(
@@ -267,50 +283,50 @@ mod tests {
         assert_cell_value(&grid, sheet_id, 0, 0, "hello");
     }
 
-    #[tokio::test]
-    async fn processes_a_file() {
-        let config = config().unwrap();
-        let client = new_client(
-            &config.aws_s3_access_key_id,
-            &config.aws_s3_secret_access_key,
-            &config.aws_s3_region,
-        )
-        .await;
+    // #[tokio::test]
+    // async fn processes_a_file() {
+    //     let config = config().unwrap();
+    //     let client = new_client(
+    //         &config.aws_s3_access_key_id,
+    //         &config.aws_s3_secret_access_key,
+    //         &config.aws_s3_region,
+    //     )
+    //     .await;
 
-        let file_id = Uuid::from_str("daf6008f-d858-4a6a-966b-928213048941").unwrap();
-        let sequence = 0;
-        let key = key(file_id, sequence);
+    //     let file_id = Uuid::from_str("daf6008f-d858-4a6a-966b-928213048941").unwrap();
+    //     let sequence = 0;
+    //     let key = key(file_id, sequence);
 
-        let file = download_object(&client, &config.aws_s3_bucket_name, &key)
-            .await
-            .unwrap();
-        let body = file.body.collect().await.unwrap().into_bytes();
-        let body = std::str::from_utf8(&body).unwrap();
-        println!("{:?}", body);
-        return;
+    //     let file = download_object(&client, &config.aws_s3_bucket_name, &key)
+    //         .await
+    //         .unwrap();
+    //     let body = file.body.collect().await.unwrap().into_bytes();
+    //     let body = std::str::from_utf8(&body).unwrap();
+    //     println!("{:?}", body);
+    //     return;
 
-        // let mut grid = get_and_load_object(&client, &config.aws_s3_bucket_name, &key)
-        //     .await
-        //     .unwrap();
-        // let sheet_id = grid.sheet_ids().first().unwrap().to_owned();
-        // let sheet_rect = SheetPos {
-        //     x: 0,
-        //     y: 0,
-        //     sheet_id,
-        // }
-        // .into();
-        // let value = CellValue::Text("hello".to_string());
-        // let values = Array::from(value);
-        // let operation = Operation::SetCellValues { sheet_rect, values };
+    //     // let mut grid = get_and_load_object(&client, &config.aws_s3_bucket_name, &key)
+    //     //     .await
+    //     //     .unwrap();
+    //     // let sheet_id = grid.sheet_ids().first().unwrap().to_owned();
+    //     // let sheet_rect = SheetPos {
+    //     //     x: 0,
+    //     //     y: 0,
+    //     //     sheet_id,
+    //     // }
+    //     // .into();
+    //     // let value = CellValue::Text("hello".to_string());
+    //     // let values = Array::from(value);
+    //     // let operation = Operation::SetCellValues { sheet_rect, values };
 
-        // process_transactions(
-        //     &client,
-        //     &config.aws_s3_bucket_name,
-        //     file_id,
-        //     sequence,
-        //     vec![operation],
-        // )
-        // .await
-        // .unwrap();
-    }
+    //     // process_transactions(
+    //     //     &client,
+    //     //     &config.aws_s3_bucket_name,
+    //     //     file_id,
+    //     //     sequence,
+    //     //     vec![operation],
+    //     // )
+    //     // .await
+    //     // .unwrap();
+    // }
 }

@@ -11,13 +11,15 @@ use crate::{get_mut_room, get_or_create_room, get_room};
 pub(crate) struct Room {
     pub(crate) file_id: Uuid,
     pub(crate) users: HashMap<Uuid, User>,
+    pub(crate) sequence_num: u64,
 }
 
 impl Room {
-    pub(crate) fn new(file_id: Uuid) -> Self {
+    pub(crate) fn new(file_id: Uuid, sequence_num: u64) -> Self {
         Room {
             file_id,
             users: HashMap::new(),
+            sequence_num,
         }
     }
 }
@@ -118,32 +120,33 @@ macro_rules! get_mut_room {
 #[macro_export]
 macro_rules! get_or_create_room {
     ( $self:ident, $file_id:ident, $sequence_num:ident ) => {{
-        let mut new_room = false;
-        let room = $self
-            .rooms
-            .lock()
-            .await
-            .entry($file_id)
-            .or_insert_with(|| {
-                new_room = true;
-                Room::new($file_id)
-            })
-            .to_owned();
+        let sequence_num = match get_room!($self, $file_id) {
+            Ok(room) => room.sequence_num,
+            Err(_) => {
+                if cfg!(test) {
+                    0
+                } else {
+                    crate::auth::get_file_checkpoint(
+                        "http://localhost:8000".into(),
+                        "ADD_TOKEN_HERE".into(),
+                        $file_id,
+                    )
+                    .await
+                    .unwrap()
+                    .sequenceNumber
+                }
+            }
+        };
 
-        if new_room {
+        $self.rooms.lock().await.entry($file_id).or_insert_with(|| {
             tracing::info!(
                 "Room {} created with sequence_num {}",
                 $file_id,
                 $sequence_num
             );
-            $self
-                .transaction_queue
-                .lock()
-                .await
-                .initialize_room($file_id, $sequence_num);
-        }
 
-        room
+            Room::new($file_id, sequence_num)
+        })
     }};
 }
 
