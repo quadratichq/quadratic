@@ -9,7 +9,7 @@ criterion_main!(benches);
 
 fn criterion_benchmark(c: &mut Criterion) {
     let airports = quadratic_core::grid::file::import(include_str!(
-        "../../rust-shared/data/grid/v1_4_airports_distance.grid"
+        "../../quadratic-rust-shared/data/grid/v1_4_airports_distance.grid"
     ))
     .unwrap();
 

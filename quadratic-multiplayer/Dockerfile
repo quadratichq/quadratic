@@ -7,7 +7,7 @@ WORKDIR /usr/src/quadratic-multiplayer
 # Copy the manifest files first to cache dependencies
 COPY quadratic-multiplayer/Cargo.toml quadratic-multiplayer/Cargo.lock ./
 COPY quadratic-core/ ../quadratic-core/
-COPY rust-shared/ ../rust-shared/
+COPY rust-shared/ ../quadratic-rust-shared/
 COPY quadratic-client/src/web-workers/rustWorker.ts ../quadratic-client/src/web-workers/rustWorker.ts
 
 # Create a dummy project and build the project to cache dependencies

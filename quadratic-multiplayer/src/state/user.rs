@@ -6,10 +6,10 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::auth::FilePermRole;
 use crate::error::{MpError, Result};
 use crate::state::State;
 use crate::{get_mut_room, get_room};
+use quadratic_rust_shared::quadratic_api::FilePermRole;
 
 #[derive(Serialize, Debug, Clone)]
 pub(crate) struct User {

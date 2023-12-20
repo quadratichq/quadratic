@@ -14,11 +14,11 @@ use quadratic_core::{
         Grid,
     },
 };
+use quadratic_rust_shared::quadratic_api::set_file_checkpoint;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::{
-    auth::{set_file_checkpoint, LastCheckpoint},
     error::{MpError, Result},
     state::transaction_queue::TransactionQueue,
 };
@@ -205,14 +205,14 @@ pub(crate) async fn process_queue_for_room(
 
     // update the checkpoint in quatratic-api
     let key = &key(*file_id, last_sequence_num);
-    update_checkpoint(
-        bucket,
-        key,
+    set_file_checkpoint(
         base_url,
         jwt,
         file_id,
         last_sequence_num,
         "1.4".into(),
+        key.to_owned(),
+        bucket.to_owned(),
     )
     .await?;
 
@@ -221,28 +221,6 @@ pub(crate) async fn process_queue_for_room(
     );
 
     Ok(Some(last_sequence_num))
-}
-
-pub(crate) async fn update_checkpoint(
-    bucket: &str,
-    key: &str,
-    base_url: &str,
-    jwt: &str,
-    file_id: &Uuid,
-    sequence_number: u64,
-    version: String,
-) -> Result<LastCheckpoint> {
-    // let base_url = &state.settings.quadratic_api_uri;
-    set_file_checkpoint(
-        base_url,
-        jwt,
-        file_id,
-        sequence_number,
-        version,
-        key.to_owned(),
-        bucket.to_owned(),
-    )
-    .await
 }
 
 #[cfg(test)]
@@ -254,7 +232,10 @@ mod tests {
 
     #[test]
     fn loads_a_file() {
-        let file = load_file(include_str!("../../rust-shared/data/grid/v1_4_simple.grid")).unwrap();
+        let file = load_file(include_str!(
+            "../../quadratic-rust-shared/data/grid/v1_4_simple.grid"
+        ))
+        .unwrap();
 
         let mut grid = GridController::from_grid(file);
         let sheet_id = grid.sheet_ids().first().unwrap().to_owned();

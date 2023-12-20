@@ -192,7 +192,8 @@ mod tests {
     use crate::grid::file::v1_4::schema::GridSchema;
     use anyhow::{anyhow, Result};
 
-    const V1_4_FILE: &str = include_str!("../../../../../rust-shared/data/grid/v1_4_simple.grid");
+    const V1_4_FILE: &str =
+        include_str!("../../../../../quadratic-rust-shared/data/grid/v1_4_simple.grid");
 
     fn import(file_contents: &str) -> Result<GridSchema> {
         serde_json::from_str::<GridSchema>(file_contents)

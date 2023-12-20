@@ -7,10 +7,10 @@
 
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
+use quadratic_rust_shared::quadratic_api::get_file_perms;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use crate::auth::get_file_perms;
 use crate::error::{MpError, Result};
 use crate::message::{broadcast, request::MessageRequest, response::MessageResponse};
 use crate::state::connection::Connection;
@@ -52,7 +52,7 @@ pub(crate) async fn handle_message(
 
             // default to owner for tests
             let (permission, sequence_num) = if cfg!(test) {
-                (crate::auth::FilePermRole::Owner, 0)
+                (quadratic_rust_shared::quadratic_api::FilePermRole::Owner, 0)
             } else {
                 get_file_perms(base_url, jwt, file_id).await?
             };

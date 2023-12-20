@@ -58,6 +58,17 @@ pub(crate) enum MpError {
     User(String),
 }
 
+impl From<quadratic_rust_shared::SharedError> for MpError {
+    fn from(error: quadratic_rust_shared::SharedError) -> Self {
+        match error {
+            quadratic_rust_shared::SharedError::QuadraticApi(is_critical, error) => {
+                MpError::FilePermissions(is_critical, error)
+            }
+            _ => MpError::Unknown("Unknown Quadratic API error".into()),
+        }
+    }
+}
+
 impl From<serde_json::Error> for MpError {
     fn from(error: serde_json::Error) -> Self {
         MpError::Serialization(error.to_string())

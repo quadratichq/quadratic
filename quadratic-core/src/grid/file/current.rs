@@ -577,7 +577,8 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
 mod tests {
     use super::*;
 
-    const V1_5_FILE: &str = include_str!("../../../../rust-shared/data/grid/v1_5_simple.grid");
+    const V1_5_FILE: &str =
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
 
     #[test]
     fn imports_and_exports_a_current_grid() {

@@ -7,6 +7,7 @@ use futures_util::SinkExt;
 use quadratic_core::controller::operations::operation::Operation;
 use quadratic_core::controller::GridController;
 use quadratic_core::{Array, CellValue, SheetRect};
+use quadratic_rust_shared::quadratic_api::FilePermRole;
 use std::sync::Arc;
 use std::{
     future::IntoFuture,
@@ -17,7 +18,6 @@ use tokio::sync::Mutex;
 use tokio_tungstenite::{tungstenite, MaybeTlsStream, WebSocketStream};
 use uuid::Uuid;
 
-use crate::auth::FilePermRole;
 use crate::config::config;
 use crate::message::request::MessageRequest;
 use crate::state::user::{User, UserState};
