@@ -1,6 +1,9 @@
 import { NextFunction, Response } from 'express';
+import { UserRoleFileSchema } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../../dbClient';
 import { Request } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
+import { getFilePermissions } from '../../utils/permissions';
 
 export const fileMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   // TODO: validate UUID
@@ -30,4 +33,60 @@ export const fileMiddleware = async (req: Request, res: Response, next: NextFunc
 
   req.quadraticFile = file;
   next();
+};
+
+export const getFile = async ({ uuid, userId }: { uuid: string; userId?: number }) => {
+  const file = await dbClient.file.findUnique({
+    where: {
+      uuid,
+    },
+    include: {
+      team: {
+        include: {
+          UserTeamRole: {
+            where: {
+              userId: userId,
+            },
+          },
+        },
+      },
+      UserFileRole: {
+        where: {
+          userId,
+        },
+      },
+    },
+  });
+
+  if (file === null) {
+    throw new ApiError(404, 'File not found');
+  }
+
+  if (file.deleted) {
+    throw new ApiError(400, 'File has been deleted');
+  }
+
+  let roleTeam = undefined;
+  if (file.team && file.team.UserTeamRole[0]) {
+    roleTeam = file.team.UserTeamRole[0].role;
+  }
+
+  let roleFile = undefined;
+  if (file.ownerUserId === userId) {
+    roleFile = UserRoleFileSchema.enum.OWNER;
+  } else if (file.UserFileRole[0]) {
+    roleFile = file.UserFileRole[0].role;
+  }
+
+  const permissions = getFilePermissions({
+    roleFile,
+    roleTeam,
+    publicLinkAccess: file.publicLinkAccess,
+  });
+
+  if (!permissions.includes('FILE_VIEW')) {
+    throw new ApiError(403, 'Permission denied');
+  }
+
+  return { file, user: { permissions, role: roleFile, id: userId } };
 };

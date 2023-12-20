@@ -3,9 +3,11 @@ import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { getAuth0Users } from '../../auth0/profile';
 import dbClient from '../../dbClient';
-import { teamMiddleware } from '../../middleware/team';
+import { getTeam } from '../../middleware/getTeam';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { RequestWithTeam } from '../../types/Request';
+import { RequestWithUser } from '../../types/Request';
 const router = express.Router();
 
 const requestValidationMiddleware = validateRequestSchema(
@@ -19,16 +21,18 @@ const requestValidationMiddleware = validateRequestSchema(
 router.get(
   '/:uuid',
   requestValidationMiddleware,
-  teamMiddleware,
-  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET.response']>) => {
+  validateAccessToken,
+  userMiddleware,
+  async (req: Request, res: Response) => {
     const {
+      params: { uuid },
       user: { id: userId },
-      team: {
-        data: team,
-        data: { id: teamId },
-        user: teamUser,
-      },
-    } = req as RequestWithTeam;
+    } = req as RequestWithUser;
+    const {
+      team,
+      team: { id: teamId },
+      user: teamUser,
+    } = await getTeam({ uuid, userId });
 
     // Get users in the team
     const dbTeam = await dbClient.team.findUnique({
@@ -81,17 +85,16 @@ router.get(
       };
     });
 
-    const response = {
+    const response: ApiTypes['/v0/teams/:uuid.GET.response'] = {
       team: {
         uuid: team.uuid,
         name: team.name,
-        created_date: team.createdDate,
         ...(team.picture ? { picture: team.picture } : {}),
         // TODO we could put this in /sharing and just return the userCount
         users,
         invites: dbInvites.map(({ email, role, id }) => ({ email, role, id })),
 
-        files: [],
+        // files: [],
       },
       user: {
         id: userId,

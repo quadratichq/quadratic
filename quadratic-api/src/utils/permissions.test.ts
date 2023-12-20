@@ -126,7 +126,7 @@ describe('getFilePermissions', () => {
         expect(res).not.toContain('FILE_EDIT');
         expect(res).not.toContain('FILE_DELETE');
       } else if (access === 'none') {
-        expect(res).toBe([]);
+        expect(res.length).toBe(0);
       }
     });
   });

@@ -128,7 +128,6 @@ describe('GET /v0/teams/:uuid', () => {
           expect(res.body).toHaveProperty('team');
           expect(res.body.team.uuid).toBe('00000000-0000-4000-8000-000000000001');
           expect(res.body.team.name).toBe('Test Team 1');
-          expect(res.body.team).toHaveProperty('created_date');
 
           expect(res.body.team.users[0].email).toBe('team_1_owner@example.com');
           expect(res.body.team.users[0].role).toBe('OWNER');

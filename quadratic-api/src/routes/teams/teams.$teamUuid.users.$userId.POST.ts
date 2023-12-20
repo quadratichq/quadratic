@@ -1,11 +1,12 @@
 import express, { Request, Response } from 'express';
-import { /* ApiSchemas, */ ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { /* ApiSchemas, */ ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
-import { teamMiddleware } from '../../middleware/team';
+import { getTeam } from '../../middleware/getTeam';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { RequestWithTeam } from '../../types/Request';
-import { ResponseError } from '../../types/Response';
+import { RequestWithUser } from '../../types/Request';
 import { firstRoleIsHigherThanSecond } from '../../utils/permissions';
 const router = express.Router();
 
@@ -15,24 +16,25 @@ const requestValidationMiddleware = validateRequestSchema(
       uuid: z.string().uuid(),
       userId: z.coerce.number(),
     }),
-    body: z.any(), // ApiSchemas["/v0/teams/:uuid/sharing/:userId.POST.request"],
+    body: ApiSchemas['/v0/teams/:uuid/users/:userId.POST.request'],
   })
 );
 
 router.post(
   '/:uuid/users/:userId',
   requestValidationMiddleware,
-  teamMiddleware,
-  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid/users/:userId.POST.response'] | ResponseError>) => {
+  validateAccessToken,
+  userMiddleware,
+  async (req: Request, res: Response) => {
     const {
       body: { role: newRole },
       user: { id: userMakingChangeId },
-      params: { userId },
-      team: {
-        data: { id: teamId },
-        user: teamUser,
-      },
-    } = req as RequestWithTeam;
+      params: { uuid, userId },
+    } = req as RequestWithUser;
+    const {
+      team: { id: teamId },
+      user: teamUser,
+    } = await getTeam({ uuid, userId: userMakingChangeId });
     const userBeingChangedId = Number(userId);
 
     // User is trying to update their own role
@@ -130,7 +132,9 @@ router.post(
         role: newRole,
       },
     });
-    return res.status(200).json({ role: newUserTeamRole.role });
+
+    const data: ApiTypes['/v0/teams/:uuid/users/:userId.POST.response'] = { role: newUserTeamRole.role };
+    return res.status(200).json(data);
   }
 );
 

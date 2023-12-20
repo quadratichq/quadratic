@@ -2,10 +2,11 @@ import express, { Request, Response } from 'express';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from '../../dbClient';
-import { teamMiddleware } from '../../middleware/team';
+import { getTeam } from '../../middleware/getTeam';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { RequestWithTeam } from '../../types/Request';
-import { ResponseError } from '../../types/Response';
+import { RequestWithUser } from '../../types/Request';
 const router = express.Router();
 
 const requestValidationMiddleware = validateRequestSchema(
@@ -20,12 +21,15 @@ const requestValidationMiddleware = validateRequestSchema(
 router.post(
   '/:uuid',
   requestValidationMiddleware,
-  teamMiddleware,
-  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid.POST.response'] | ResponseError>) => {
+  validateAccessToken,
+  userMiddleware,
+  async (req: Request, res: Response) => {
     const {
       params: { uuid },
-      team: { user },
-    } = req as RequestWithTeam;
+      user: { id: userId },
+    } = req as RequestWithUser;
+    const { user } = await getTeam({ uuid, userId });
+
     // TODO: improve this more generically when validating?
     const body = req.body as ApiTypes['/v0/teams/:uuid.POST.request'];
 

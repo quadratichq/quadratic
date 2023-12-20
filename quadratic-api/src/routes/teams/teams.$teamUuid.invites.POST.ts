@@ -3,10 +3,11 @@ import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { getUsersByEmail } from '../../auth0/profile';
 import dbClient from '../../dbClient';
-import { teamMiddleware } from '../../middleware/team';
+import { getTeam } from '../../middleware/getTeam';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { RequestWithTeam } from '../../types/Request';
-import { ResponseError } from '../../types/Response';
+import { RequestWithUser } from '../../types/Request';
 import { firstRoleIsHigherThanSecond } from '../../utils/permissions';
 const router = express.Router();
 
@@ -22,15 +23,18 @@ const requestValidationMiddleware = validateRequestSchema(
 router.post(
   '/:uuid/invites',
   requestValidationMiddleware,
-  teamMiddleware,
-  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid/invites.POST.response'] | ResponseError>) => {
+  validateAccessToken,
+  userMiddleware,
+  async (req: Request, res: Response) => {
     const {
       body: { email, role },
-      team: {
-        data: { id: teamId },
-        user: teamUser,
-      },
-    } = req as RequestWithTeam;
+      params: { uuid },
+      user: { id: userId },
+    } = req as RequestWithUser;
+    const {
+      team: { id: teamId },
+      user: teamUser,
+    } = await getTeam({ uuid, userId });
 
     const userMakingRequestRole = teamUser.role;
 
@@ -154,7 +158,8 @@ router.post(
       // TODO: send them an email
 
       // TODO: what to return exactly...?
-      return res.status(201).json({ email, role, id: dbUser.id });
+      const data: ApiTypes['/v0/teams/:uuid/invites.POST.response'] = { email, role, id: dbUser.id };
+      return res.status(201).json(data);
     }
 
     // TODO:, how should we handle duplicate email?

@@ -1,87 +1,91 @@
-import { LinkPermission } from '@prisma/client';
-import express, { Response } from 'express';
-import { body, validationResult } from 'express-validator';
-import { getUserProfile } from '../../auth0/profile';
+import express, { Request, Response } from 'express';
+import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { z } from 'zod';
 import dbClient from '../../dbClient';
-import { userMiddleware, userOptionalMiddleware } from '../../middleware/user';
+import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
-import { Request } from '../../types/Request';
-import { fileMiddleware } from './fileMiddleware';
-import { validateUUID } from './files';
-import { getFilePermissions } from './getFilePermissions';
-
-const validateFileSharingPermission = () =>
-  body('publicLinkAccess').isIn([LinkPermission.READONLY, LinkPermission.NOT_SHARED, LinkPermission.EDIT]);
+import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import { RequestWithUser } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
+import { getFile } from './fileMiddleware';
 
 const sharing_router = express.Router();
 
 sharing_router.get(
   '/:uuid/sharing',
-  validateUUID(),
-  validateOptionalAccessToken,
-  userOptionalMiddleware,
-  fileMiddleware,
+  validateRequestSchema(
+    z.object({
+      params: z.object({
+        uuid: z.string().uuid(),
+      }),
+    })
+  ),
+  validateAccessToken,
+  userMiddleware,
   async (req: Request, res: Response) => {
-    if (!req.quadraticFile) {
-      return res.status(500).json({ error: { message: 'Internal server error' } });
-    }
+    const {
+      user: { id: userId },
+      params: { uuid },
+    } = req as RequestWithUser;
 
-    // Validate request parameters
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+    const { file, user } = await getFile({ uuid, userId });
+    const { publicLinkAccess } = file;
 
-    // Only authenticated users can view the email addresses of other users
-    const owner = await getUserProfile(req.quadraticFile.ownerUserId);
-    if (!req.user) {
-      delete owner.email;
-    }
+    // TOOD: who can view the email addresses of other users?
+    // const owner = await getUserProfile(req.quadraticFile.ownerUserId);
+    // if (!req.user) {
+    //   delete owner.email;
+    // }
 
-    return res.status(200).json({
+    const data: ApiTypes['/v0/files/:uuid/sharing.GET.response'] = {
       file: {
-        owner: owner,
-        publicLinkAccess: req.quadraticFile.publicLinkAccess,
+        users: [],
+        invites: [],
+        publicLinkAccess,
       },
-      user: {},
-      team: {},
-
-      // users: [],
-      // teams: [],
-    });
+      user: {
+        id: userId,
+        permissions: user.permissions,
+        role: user.role,
+      },
+      // team: {},
+    };
+    return res.status(200).json(data);
   }
 );
 
 sharing_router.post(
   '/:uuid/sharing',
-  validateUUID(),
+  validateRequestSchema(
+    z.object({
+      params: z.object({
+        uuid: z.string().uuid(),
+      }),
+      body: ApiSchemas['/v0/files/:uuid/sharing.POST.request'],
+    })
+  ),
   validateAccessToken,
   userMiddleware,
-  fileMiddleware,
-  validateFileSharingPermission().optional(),
   async (req: Request, res: Response) => {
-    if (!req.quadraticFile || !req.user) {
-      return res.status(500).json({ error: { message: 'Internal server error' } });
+    const {
+      body: { publicLinkAccess },
+      user: { id: userId },
+      params: { uuid },
+    } = req as RequestWithUser;
+    const {
+      user: { permissions },
+    } = await getFile({ uuid, userId });
+
+    // Make sure they can edit the file sharing permissions
+    if (!permissions.includes('FILE_EDIT')) {
+      throw new ApiError(403, 'Permission denied');
     }
 
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    // update the link sharing permissions
-    if (req.body.publicLinkAccess !== undefined) {
-      // only the OWNER of the file can modify the link sharing permissions
-      const permissions = getFilePermissions(req.user, req.quadraticFile);
-      if (permissions !== 'OWNER') {
-        return res.status(403).json({ error: { message: 'Permission denied' } });
-      }
-      await dbClient.file.update({
-        where: { uuid: req.params.uuid },
-        data: { publicLinkAccess: req.body.publicLinkAccess },
-      });
-    }
+    // Then edit!
+    await dbClient.file.update({
+      where: { uuid },
+      data: { publicLinkAccess },
+    });
 
     return res.status(200).json({ message: 'File updated.' });
   }

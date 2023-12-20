@@ -34,6 +34,21 @@ export const userMiddleware = async (req: Request, res: Response, next: NextFunc
   next();
 };
 
+export const getUserFromRequest = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { auth } = req as RequestWithAuth;
+
+    const user = await getOrCreateUser(auth.sub);
+    if (!user) {
+      return res.status(500).json({ error: { message: 'Unable to get authenticated user' } });
+    }
+
+    return user;
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const userOptionalMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   const { auth } = req as RequestWithOptionalAuth;
 
