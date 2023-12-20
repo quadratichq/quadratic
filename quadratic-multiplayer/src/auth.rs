@@ -19,11 +19,13 @@ pub(crate) async fn get_jwks(url: &str) -> Result<jwk::JwkSet> {
 // This is only a partial mapping as permission is all that is needed from the
 // incoming json struct.
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct File {
-    lastCheckpointSequenceNumber: u64,
+    last_checkpoint_sequence_number: u64,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct FilePerms {
     file: File,
     permission: FilePermRole,
@@ -39,17 +41,18 @@ pub(crate) enum FilePermRole {
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct LastCheckpoint {
-    pub(crate) sequenceNumber: u64,
+    pub(crate) sequence_number: u64,
     version: String,
-    s3Key: String,
-    s3Bucket: String,
+    s3_key: String,
+    s3_bucket: String,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct Checkpoint {
-    fileUuid: Uuid,
-    lastCheckpoint: LastCheckpoint,
+    last_checkpoint: LastCheckpoint,
 }
 
 /// Retrieve file perms from the quadratic API server.
@@ -70,7 +73,7 @@ pub(crate) async fn get_file_perms(
             let deserailized = response.json::<FilePerms>().await?;
             Ok((
                 deserailized.permission,
-                deserailized.file.lastCheckpointSequenceNumber,
+                deserailized.file.last_checkpoint_sequence_number,
             ))
         }
         StatusCode::FORBIDDEN => Err(MpError::FilePermissions(true, "Forbidden".into())),
@@ -83,8 +86,8 @@ pub(crate) async fn get_file_perms(
 /// Retrieve file's checkpoint from the quadratic API server.
 pub(crate) async fn get_file_checkpoint(
     base_url: &str,
-    jwt: String,
-    file_id: Uuid,
+    jwt: &str,
+    file_id: &Uuid,
 ) -> Result<LastCheckpoint> {
     let url = format!("{base_url}/v0/internal/file/{file_id}/checkpoint");
     let response = reqwest::Client::new()
@@ -95,7 +98,7 @@ pub(crate) async fn get_file_checkpoint(
 
     match response.status() {
         StatusCode::OK => {
-            let deserailized = response.json::<Checkpoint>().await?.lastCheckpoint;
+            let deserailized = response.json::<Checkpoint>().await?.last_checkpoint;
             Ok(deserailized)
         }
         StatusCode::FORBIDDEN => Err(MpError::FilePermissions(true, "Forbidden".into())),
@@ -108,19 +111,19 @@ pub(crate) async fn get_file_checkpoint(
 /// Set the file's checkpoint with the quadratic API server.
 pub(crate) async fn set_file_checkpoint(
     base_url: &str,
-    jwt: String,
+    jwt: &str,
     file_id: &Uuid,
-    sequenceNumber: u64,
+    sequence_number: u64,
     version: String,
-    s3Key: String,
-    s3Bucket: String,
+    s3_key: String,
+    s3_bucket: String,
 ) -> Result<LastCheckpoint> {
     let url = format!("{base_url}/v0/internal/file/{file_id}/checkpoint");
     let body = LastCheckpoint {
-        sequenceNumber,
+        sequence_number,
         version,
-        s3Key,
-        s3Bucket,
+        s3_key,
+        s3_bucket,
     };
 
     let response = reqwest::Client::new()
@@ -132,7 +135,7 @@ pub(crate) async fn set_file_checkpoint(
 
     match response.status() {
         StatusCode::OK => {
-            let deserailized = response.json::<Checkpoint>().await?.lastCheckpoint;
+            let deserailized = response.json::<Checkpoint>().await?.last_checkpoint;
             Ok(deserailized)
         }
         StatusCode::FORBIDDEN => Err(MpError::Unknown("Forbidden".into())),

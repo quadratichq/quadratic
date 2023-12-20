@@ -20,10 +20,7 @@ use uuid::Uuid;
 use crate::{
     auth::{set_file_checkpoint, LastCheckpoint},
     error::{MpError, Result},
-    state::{
-        room::Room,
-        transaction_queue::{Transaction, TransactionQueue},
-    },
+    state::transaction_queue::TransactionQueue,
 };
 
 pub(crate) async fn new_client(
@@ -99,16 +96,6 @@ pub(crate) async fn upload_object(
         })
 }
 
-/// Apply a stringified vec of operations to the grid
-pub(crate) fn apply_string_operations(
-    grid: &mut GridController,
-    operations: String,
-) -> Result<TransactionSummary> {
-    let operations: Vec<Operation> = serde_json::from_str(&operations)?;
-
-    apply_operations(grid, operations)
-}
-
 /// Apply a vec of operations to the grid
 pub(crate) fn apply_operations(
     grid: &mut GridController,
@@ -123,7 +110,7 @@ pub(crate) async fn get_and_load_object(
     bucket: &str,
     key: &str,
 ) -> Result<GridController> {
-    let file = download_object(&client, bucket, key).await?;
+    let file = download_object(client, bucket, key).await?;
     let body = file
         .body
         .collect()
@@ -156,7 +143,7 @@ pub(crate) async fn process_transactions(
 
     let next_sequence_num = sequence + num_operations as u64;
     let key = key(file_id, next_sequence_num);
-    upload_object(&client, bucket, &key, &body).await?;
+    upload_object(client, bucket, &key, &body).await?;
 
     Ok(next_sequence_num)
 }
@@ -167,6 +154,8 @@ pub(crate) async fn process_queue_for_room(
     bucket: &str,
     transaction_queue: &Mutex<TransactionQueue>,
     file_id: &Uuid,
+    base_url: &str,
+    jwt: &str,
 ) -> Result<Option<u64>> {
     // this is an expensive lock since we're waiting for the file to write to S3 before unlocking
     let mut transaction_queue = transaction_queue.lock().await;
@@ -215,10 +204,12 @@ pub(crate) async fn process_queue_for_room(
     transaction_queue.complete_transactions(*file_id)?;
 
     // update the checkpoint in quatratic-api
+    let key = &key(*file_id, last_sequence_num);
     update_checkpoint(
         bucket,
-        &key(*file_id, last_sequence_num),
-        "",
+        key,
+        base_url,
+        jwt,
         file_id,
         last_sequence_num,
         "1.4".into(),
@@ -236,14 +227,15 @@ pub(crate) async fn update_checkpoint(
     bucket: &str,
     key: &str,
     base_url: &str,
+    jwt: &str,
     file_id: &Uuid,
     sequence_number: u64,
     version: String,
 ) -> Result<LastCheckpoint> {
     // let base_url = &state.settings.quadratic_api_uri;
     set_file_checkpoint(
-        "http://localhost:8000".into(),
-        "ADD_TOKEN_HERE".into(),
+        base_url,
+        jwt,
         file_id,
         sequence_number,
         version,
@@ -255,10 +247,8 @@ pub(crate) async fn update_checkpoint(
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
 
     use super::*;
-    use crate::config::config;
     use quadratic_core::test_util::assert_cell_value;
     use quadratic_core::{Array, CellValue, SheetPos};
 

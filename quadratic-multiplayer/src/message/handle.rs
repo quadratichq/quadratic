@@ -10,7 +10,7 @@ use futures_util::stream::SplitSink;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use crate::auth::{get_file_checkpoint, get_file_perms, LastCheckpoint};
+use crate::auth::get_file_perms;
 use crate::error::{MpError, Result};
 use crate::get_room;
 use crate::message::{broadcast, request::MessageRequest, response::MessageResponse};
@@ -45,6 +45,7 @@ pub(crate) async fn handle_message(
         } => {
             // validate that the user has permission to access the file
             let base_url = &state.settings.quadratic_api_uri;
+            // let api_jwt = &state.settings.quadratic_api_jwt;
             let jwt = connection.jwt.to_owned().ok_or_else(|| {
                 MpError::Authentication("A JWT is required to validate file permissions".into())
             })?;
@@ -55,14 +56,6 @@ pub(crate) async fn handle_message(
             } else {
                 get_file_perms(base_url, jwt, file_id).await?
             };
-
-            // let last_checkpoint = if cfg!(test) {
-            //     LastCheckpoint::default()
-            // } else {
-            //     get_file_checkpoint(base_url, "ADD_TOKEN_HERE".into(), file_id).await?
-            // };
-
-            // tracing::info!("{:?}", last_checkpoint);
 
             let user_state = UserState {
                 sheet_id,

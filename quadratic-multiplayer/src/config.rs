@@ -19,6 +19,7 @@ pub(crate) struct Config {
 
     pub(crate) auth0_jwks_uri: String,
     pub(crate) quadratic_api_uri: String,
+    pub(crate) quadratic_api_jwt: String,
 
     pub(crate) aws_s3_region: String,
     pub(crate) aws_s3_bucket_name: String,

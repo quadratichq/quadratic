@@ -1,4 +1,3 @@
-use quadratic_core::controller::GridController;
 use serde::Serialize;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -126,14 +125,12 @@ macro_rules! get_or_create_room {
                 if cfg!(test) {
                     0
                 } else {
-                    crate::auth::get_file_checkpoint(
-                        "http://localhost:8000".into(),
-                        "ADD_TOKEN_HERE".into(),
-                        $file_id,
-                    )
-                    .await
-                    .unwrap()
-                    .sequenceNumber
+                    let url = &$self.settings.quadratic_api_uri;
+                    let jwt = &$self.settings.quadratic_api_jwt;
+                    $crate::auth::get_file_checkpoint(url, jwt, &$file_id)
+                        .await
+                        .unwrap()
+                        .sequence_number
                 }
             }
         };

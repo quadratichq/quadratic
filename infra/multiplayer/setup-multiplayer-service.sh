@@ -13,9 +13,11 @@ ExecStart=/home/ubuntu/quadratic-multiplayer
 Restart=always
 Environment="HOST=0.0.0.0"
 Environment="PORT=80"
-Environment="AUTHENTICATE_JWT=false"
 Environment="HEARTBEAT_CHECK_S=15"
 Environment="HEARTBEAT_TIMEOUT_S=60"
+Environment="AUTHENTICATE_JWT=false"
+Environment="QUADRATIC_API_URI="
+Environment="QUADRATIC_API_JWT=ADD_TOKEN_HERE"
 Environment="AUTH0_JWKS_URI=https://dev-nje7dw8s.us.auth0.com/.well-known/jwks.json"
 
 [Install]

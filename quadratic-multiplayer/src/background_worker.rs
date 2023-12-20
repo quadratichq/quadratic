@@ -3,11 +3,11 @@ use tokio::{task::JoinHandle, time};
 use uuid::Uuid;
 
 use crate::{
-    error::{MpError, Result},
-    file::{new_client, process_queue_for_room},
+    error::Result,
+    file::process_queue_for_room,
     get_mut_room,
     message::{broadcast, response::MessageResponse},
-    state::{room::Room, settings::Settings, transaction_queue, State},
+    state::{room::Room, State},
 };
 
 /// In a separate thread:
@@ -31,7 +31,9 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                     &state.settings.aws_client,
                     &state.settings.aws_s3_bucket_name,
                     transaction_queue,
-                    &file_id,
+                    file_id,
+                    &state.settings.quadratic_api_uri,
+                    &state.settings.quadratic_api_jwt,
                 )
                 .await;
 
