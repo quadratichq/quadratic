@@ -20,7 +20,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[examples("INDIRECT(\"Cn7\")", "INDIRECT(\"F\" & B0)")]
             #[zip_map]
             fn INDIRECT(ctx: Ctx, [cellref_string]: (Spanned<String>)) {
-                let pos = CellRef::parse_a1(&cellref_string.inner, ctx.pos.without_sheet())
+                let pos = CellRef::parse_a1(&cellref_string.inner, ctx.sheet_pos.into())
                     .ok_or(ErrorMsg::BadCellReference.with_span(cellref_string.span))?;
                 ctx.get_cell(&pos, cellref_string.span)?.inner
             }
@@ -463,7 +463,7 @@ mod tests {
     use lazy_static::lazy_static;
     use smallvec::smallvec;
 
-    use crate::formulas::tests::*;
+    use crate::{formulas::tests::*, Pos};
 
     lazy_static! {
         static ref NUMBERS_LOOKUP_ARRAY: Array = array![
@@ -499,10 +499,10 @@ mod tests {
 
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
-        sheet.set_cell_value(pos![D5], 35);
+        let _ = sheet.set_cell_value(pos![D5], 35);
         let sheet_id = sheet.id;
 
-        let mut ctx = Ctx::new(&g, pos![D5].with_sheet(sheet_id));
+        let mut ctx = Ctx::new(&g, pos![D5].to_sheet_pos(sheet_id));
         assert_eq!(
             ErrorMsg::CircularReference,
             form.eval(&mut ctx).unwrap_err().msg,
@@ -1014,8 +1014,8 @@ mod tests {
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
         for y in 1..=6 {
-            sheet.set_cell_value(Pos { x: 0, y }, y);
-            sheet.set_cell_value(Pos { x: 1, y }, format!("cell #{y}"));
+            let _ = sheet.set_cell_value(Pos { x: 0, y }, y);
+            let _ = sheet.set_cell_value(Pos { x: 1, y }, format!("cell #{y}"));
         }
 
         // Test lookup in sorted array

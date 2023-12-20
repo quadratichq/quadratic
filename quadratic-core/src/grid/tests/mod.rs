@@ -41,7 +41,7 @@ fn proptest_sheet_writes_internal(writes: Vec<(Pos, CellValue)>) {
     let mut hashmap_of_truth = HashMap::new();
 
     for (pos, cell_value) in &writes {
-        sheet.set_cell_value(*pos, cell_value.clone());
+        let _ = sheet.set_cell_value(*pos, cell_value.clone());
         hashmap_of_truth.insert(*pos, cell_value);
     }
 

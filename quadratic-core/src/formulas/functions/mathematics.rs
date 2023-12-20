@@ -85,7 +85,7 @@ fn get_functions() -> Vec<FormulaFunction> {
 
 #[cfg(test)]
 mod tests {
-    use crate::formulas::tests::*;
+    use crate::{formulas::tests::*, Pos};
 
     #[test]
     fn test_sum() {
@@ -109,8 +109,8 @@ mod tests {
 
         let mut g = Grid::new();
         let sheet = &mut g.sheets_mut()[0];
-        sheet.set_cell_value(pos![A6], "text");
-        sheet.set_cell_value(pos![A7], "text");
+        let _ = sheet.set_cell_value(pos![A6], "text");
+        let _ = sheet.set_cell_value(pos![A7], "text");
         // One bad cell reference on its own doesn't cause an error because it's
         // a 1x1 array.
         assert_eq!("12", eval_to_string(&g, "SUM(12, A6)"));
@@ -168,7 +168,7 @@ mod tests {
         let g = Grid::new();
         assert_eq!("10", eval_to_string(&g, "ABS(-10)"));
         assert_eq!("10", eval_to_string(&g, "ABS(10)"));
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.with_sheet(g.sheets()[0].id));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             ErrorMsg::MissingRequiredArgument {
                 func_name: "ABS".into(),
@@ -180,7 +180,7 @@ mod tests {
                 .unwrap_err()
                 .msg,
         );
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.with_sheet(g.sheets()[0].id));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             ErrorMsg::TooManyArguments {
                 func_name: "ABS".into(),
@@ -199,7 +199,7 @@ mod tests {
         let g = Grid::new();
         crate::util::assert_f64_approx_eq(3.0_f64.sqrt(), &eval_to_string(&g, "SQRT(3)"));
         assert_eq!("4", eval_to_string(&g, "SQRT(16)"));
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.with_sheet(g.sheets()[0].id));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             ErrorMsg::MissingRequiredArgument {
                 func_name: "SQRT".into(),
@@ -211,7 +211,7 @@ mod tests {
                 .unwrap_err()
                 .msg,
         );
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.with_sheet(g.sheets()[0].id));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             ErrorMsg::TooManyArguments {
                 func_name: "SQRT".into(),
@@ -229,7 +229,7 @@ mod tests {
     fn test_pi() {
         let g = Grid::new();
         assert!(eval_to_string(&g, "PI()").starts_with("3.14159"));
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.with_sheet(g.sheets()[0].id));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             ErrorMsg::TooManyArguments {
                 func_name: "PI".into(),
@@ -247,7 +247,7 @@ mod tests {
     fn test_tau() {
         let g = Grid::new();
         assert!(eval_to_string(&g, "TAU()").starts_with("6.283"));
-        let mut ctx = Ctx::new(&g, Pos::ORIGIN.with_sheet(g.sheets()[0].id));
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
             ErrorMsg::TooManyArguments {
                 func_name: "TAU".into(),

@@ -1,36 +1,18 @@
-use indexmap::IndexSet;
-
-use crate::{
-    controller::{
-        transaction_summary::TransactionSummary, update_code_cell_value::update_code_cell_value,
-        GridController,
-    },
-    grid::CellRef,
-};
-
-use super::operation::Operation;
+use crate::{controller::GridController, SheetPos};
 
 impl GridController {
-    pub fn check_spill(
-        &mut self,
-        cell_ref: CellRef,
-        cells_to_compute: &mut IndexSet<CellRef>,
-        summary: &mut TransactionSummary,
-        reverse_operations: &mut Vec<Operation>,
-    ) {
+    /// Checks whether a spill exists
+    pub fn check_spill(&mut self, sheet_pos: SheetPos) {
+        let sheet_id = sheet_pos.sheet_id;
         // check if the addition of a cell causes a spill error
-        let sheet = self.grid.sheet_from_id(cell_ref.sheet);
-        if let Some(code_cell_ref) = sheet.get_spill(cell_ref) {
-            if code_cell_ref != cell_ref {
-                if let Some(code_cell) = sheet.get_code_cell_from_ref(code_cell_ref) {
+        let sheet = self.grid.sheet_from_id(sheet_id);
+        if let Some(code_cell_pos) = sheet.get_spill(sheet_pos.into()) {
+            if code_cell_pos != sheet_pos.into() {
+                if let Some(code_cell) = sheet.get_code_cell(code_cell_pos) {
                     if !code_cell.has_spill_error() {
-                        update_code_cell_value(
-                            self,
-                            code_cell_ref,
+                        self.update_code_cell_value(
+                            code_cell_pos.to_sheet_pos(sheet_id),
                             Some(code_cell.clone()),
-                            cells_to_compute,
-                            reverse_operations,
-                            summary,
                         );
                     }
                 }
@@ -38,50 +20,22 @@ impl GridController {
         }
     }
 
-    // TODO(ddimaria): implement many of the below functions in TransactionInProgress
-    // then we can just reference self
-
     /// sets a spill error for a code_cell
-    pub fn set_spill_error(
-        &mut self,
-        cell_ref: CellRef,
-        cells_to_compute: &mut IndexSet<CellRef>,
-        summary: &mut TransactionSummary,
-        reverse_operations: &mut Vec<Operation>,
-    ) {
-        let sheet = self.grid.sheet_from_id(cell_ref.sheet);
-        if let Some(code_cell) = sheet.get_code_cell_from_ref(cell_ref) {
+    pub fn set_spill_error(&mut self, sheet_pos: SheetPos) {
+        let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
+        if let Some(code_cell) = sheet.get_code_cell(sheet_pos.into()) {
             if !code_cell.has_spill_error() {
-                update_code_cell_value(
-                    self,
-                    cell_ref,
-                    Some(code_cell.clone()),
-                    cells_to_compute,
-                    reverse_operations,
-                    summary,
-                );
+                self.update_code_cell_value(sheet_pos, Some(code_cell.clone()));
             }
         }
     }
 
     /// update the code cell value if the deletion of a cell released a spill error
-    pub fn update_code_cell_value_if_spill_error_released(
-        &mut self,
-        cell_ref: CellRef,
-        cells_to_compute: &mut IndexSet<CellRef>,
-        summary: &mut TransactionSummary,
-        reverse_operations: &mut Vec<Operation>,
-    ) {
-        let sheet = self.grid.sheet_from_id(cell_ref.sheet);
-        if let Some((cell_ref, code_cell)) = sheet.spill_error_released(cell_ref) {
-            update_code_cell_value(
-                self,
-                cell_ref,
-                Some(code_cell),
-                cells_to_compute,
-                reverse_operations,
-                summary,
-            );
+    pub fn update_code_cell_value_if_spill_error_released(&mut self, sheet_pos: SheetPos) {
+        let sheet_id = sheet_pos.sheet_id;
+        let sheet = self.grid.sheet_from_id(sheet_id);
+        if let Some((spill_sheet_pos, code_cell)) = sheet.spill_error_released(sheet_pos.into()) {
+            self.update_code_cell_value(spill_sheet_pos.to_sheet_pos(sheet_id), Some(code_cell));
         }
     }
 }
@@ -91,7 +45,7 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{js_types::JsRenderCell, CellAlign, CodeCellLanguage},
-        Pos, Rect,
+        Pos, Rect, SheetPos,
     };
 
     fn output_spill_error(x: i64, y: i64) -> Vec<JsRenderCell> {
@@ -133,15 +87,50 @@ mod test {
         let sheet_id = gc.grid.sheet_ids()[0];
 
         // values to copy
-        gc.set_cell_value(sheet_id, Pos { x: 1, y: 0 }, "1".into(), None);
-        gc.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, "2".into(), None);
-        gc.set_cell_value(sheet_id, Pos { x: 1, y: 2 }, "3".into(), None);
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 0,
+                sheet_id,
+            },
+            "1".into(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            "2".into(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            "3".into(),
+            None,
+        );
 
         // value to cause the spill
-        gc.set_cell_value(sheet_id, Pos { x: 0, y: 1 }, "hello".into(), None);
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 1,
+                sheet_id,
+            },
+            "hello".into(),
+            None,
+        );
         gc.set_cell_code(
-            sheet_id,
-            Pos { x: 0, y: 0 },
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
             CodeCellLanguage::Formula,
             "B0:B3".into(),
             None,
@@ -153,7 +142,15 @@ mod test {
         assert_eq!(render_cells, output_spill_error(0, 0),);
 
         // remove 'hello' that caused spill
-        gc.set_cell_value(sheet_id, Pos { x: 0, y: 1 }, "".into(), None);
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 1,
+                sheet_id,
+            },
+            "".into(),
+            None,
+        );
 
         let sheet = gc.grid.sheet_from_id(sheet_id);
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 0 }));
@@ -171,14 +168,41 @@ mod test {
         let sheet_id = gc.grid.sheet_ids()[0];
 
         // values to copy
-        gc.set_cell_value(sheet_id, Pos { x: 1, y: 0 }, "1".into(), None);
-        gc.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, "2".into(), None);
-        gc.set_cell_value(sheet_id, Pos { x: 1, y: 2 }, "3".into(), None);
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 0,
+                sheet_id,
+            },
+            "1".into(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            "2".into(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            "3".into(),
+            None,
+        );
 
         // value to cause the spill
         gc.set_cell_code(
-            sheet_id,
-            Pos { x: 0, y: 0 },
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
             CodeCellLanguage::Formula,
             "B0:B3".into(),
             None,
@@ -194,8 +218,11 @@ mod test {
         assert_eq!(render_cells, output_number(0, 1, "2", None),);
 
         gc.set_cell_code(
-            sheet_id,
-            Pos { x: 0, y: 1 },
+            SheetPos {
+                x: 0,
+                y: 1,
+                sheet_id,
+            },
             CodeCellLanguage::Formula,
             "1 + 2".into(),
             None,
@@ -213,20 +240,95 @@ mod test {
         let sheet_id = gc.grid.sheet_ids()[0];
 
         // values to copy
-        gc.set_cell_value(sheet_id, Pos { x: 0, y: 0 }, "1".into(), None);
-        gc.set_cell_value(sheet_id, Pos { x: 0, y: 1 }, "2".into(), None);
-        gc.set_cell_value(sheet_id, Pos { x: 0, y: 2 }, "3".into(), None);
-        gc.set_cell_value(sheet_id, Pos { x: 1, y: 0 }, "1".into(), None);
-        gc.set_cell_value(sheet_id, Pos { x: 1, y: 1 }, "2".into(), None);
-        gc.set_cell_value(sheet_id, Pos { x: 1, y: 2 }, "3".into(), None);
-        gc.set_cell_value(sheet_id, Pos { x: 2, y: 0 }, "1".into(), None);
-        gc.set_cell_value(sheet_id, Pos { x: 2, y: 1 }, "2".into(), None);
-        gc.set_cell_value(sheet_id, Pos { x: 2, y: 2 }, "3".into(), None);
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            "1".into(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 1,
+                sheet_id,
+            },
+            "2".into(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 2,
+                sheet_id,
+            },
+            "3".into(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 0,
+                sheet_id,
+            },
+            "1".into(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            "2".into(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            "3".into(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 2,
+                y: 0,
+                sheet_id,
+            },
+            "1".into(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 2,
+                y: 1,
+                sheet_id,
+            },
+            "2".into(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 2,
+                y: 2,
+                sheet_id,
+            },
+            "3".into(),
+            None,
+        );
 
         // copies values to copy to 10,10
         gc.set_cell_code(
-            sheet_id,
-            Pos { x: 10, y: 10 },
+            SheetPos {
+                x: 10,
+                y: 10,
+                sheet_id,
+            },
             CodeCellLanguage::Formula,
             "A0:C2".into(),
             None,
@@ -234,8 +336,11 @@ mod test {
 
         // output that is spilled
         gc.set_cell_code(
-            sheet_id,
-            Pos { x: 11, y: 9 },
+            SheetPos {
+                x: 11,
+                y: 9,
+                sheet_id,
+            },
             CodeCellLanguage::Formula,
             "A0:A2".into(),
             None,
@@ -246,7 +351,15 @@ mod test {
         assert_eq!(render_cells, output_spill_error(11, 9));
 
         // delete the code_cell that caused the spill
-        gc.set_cell_value(sheet_id, Pos { x: 10, y: 10 }, "".into(), None);
+        gc.set_cell_value(
+            SheetPos {
+                x: 10,
+                y: 10,
+                sheet_id,
+            },
+            "".into(),
+            None,
+        );
 
         let sheet = gc.grid.sheet_from_id(sheet_id);
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 11, y: 9 }));

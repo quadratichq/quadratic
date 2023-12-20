@@ -1,4 +1,5 @@
 {
-  "buildCommand": "./scripts/run-ci-build.sh",
-  "installCommand": "npm install"
+  "buildCommand": "./infra/client/build-client-ci.sh",
+  "installCommand": "npm install",
+  "outputDirectory": "build"
 }
