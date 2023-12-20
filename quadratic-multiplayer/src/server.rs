@@ -388,7 +388,7 @@ pub(crate) mod tests {
             users: vec![user.clone()],
         };
 
-        state.enter_room(file_id, &new_user, connection_id).await;
+        state.enter_room(file_id, &new_user, connection_id, 0).await;
 
         let response = integration_test_send_and_receive(socket, request, true).await;
 

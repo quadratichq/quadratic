@@ -18,6 +18,7 @@ use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::{
+    auth::{set_file_checkpoint, LastCheckpoint},
     error::{MpError, Result},
     state::{
         room::Room,
@@ -146,17 +147,18 @@ pub(crate) async fn process_transactions(
     file_id: Uuid,
     sequence: u64,
     trasaction: Vec<Operation>,
-) -> Result<()> {
+) -> Result<u64> {
     let num_operations = trasaction.len();
     let mut grid = get_and_load_object(client, bucket, &key(file_id, sequence)).await?;
 
     let _ = apply_operations(&mut grid, trasaction);
     let body = export_file(grid.grid_mut())?;
 
-    let key = key(file_id, sequence + num_operations as u64);
+    let next_sequence_num = sequence + num_operations as u64;
+    let key = key(file_id, next_sequence_num);
     upload_object(&client, bucket, &key, &body).await?;
 
-    Ok(())
+    Ok(next_sequence_num)
 }
 
 /// Process outstanding transactions in the queue
@@ -168,10 +170,16 @@ pub(crate) async fn process_queue_for_room(
 ) -> Result<()> {
     // this is an expensive lock since we're waiting for the file to write to S3 before unlocking
     let mut transaction_queue = transaction_queue.lock().await;
+    let transactions = transaction_queue
+        .get_pending(*file_id)
+        .unwrap_or_else(|_| vec![]);
+
+    if transactions.is_empty() {
+        return Ok(());
+    }
 
     // combine all operations into a single vec
-    let operations = transaction_queue
-        .get_pending(*file_id)?
+    let operations = transactions
         .into_iter()
         .flat_map(|transaction| {
             tracing::info!(
@@ -186,14 +194,47 @@ pub(crate) async fn process_queue_for_room(
     let sequence_num = transaction_queue.get_sequence_num(*file_id)?;
 
     // process the transactions and save the file to S3
-    process_transactions(client, bucket, *file_id, sequence_num, operations).await?;
+    let next_sequence_num =
+        process_transactions(client, bucket, *file_id, sequence_num, operations).await?;
 
     // remove transactions from the queue
     transaction_queue.complete_transactions(*file_id)?;
 
+    // update the checkpoint in quatratic-api
+    update_checkpoint(
+        bucket,
+        &key(*file_id, next_sequence_num),
+        "",
+        file_id,
+        next_sequence_num,
+        "1.4".into(),
+    )
+    .await?;
+
     tracing::info!("Processed up to sequence number {sequence_num} for room {file_id}");
 
     Ok(())
+}
+
+pub(crate) async fn update_checkpoint(
+    bucket: &str,
+    key: &str,
+    base_url: &str,
+    file_id: &Uuid,
+    sequence_number: u64,
+    version: String,
+) -> Result<LastCheckpoint> {
+    // let base_url = &state.settings.quadratic_api_uri;
+    set_file_checkpoint(
+        "http://localhost:8000".into(),
+        "ADD_TOKEN_HERE".into(),
+        file_id,
+        sequence_number,
+        version,
+        key.to_owned(),
+        bucket.to_owned(),
+    )
+    .await
 }
 
 #[cfg(test)]

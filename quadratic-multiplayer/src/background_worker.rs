@@ -38,28 +38,28 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                     tracing::warn!("Error processing queue for room {file_id}: {:?}", error);
                 }
 
-                // broadcast sequence number to all users in the room
-                if let Err(error) =
-                    broadcast_sequence_num(Arc::clone(&state), file_id.to_owned()).await
-                {
-                    tracing::warn!("Error broadcasting sequence number: {:?}", error);
-                }
+                // // broadcast sequence number to all users in the room
+                // if let Err(error) =
+                //     broadcast_sequence_num(Arc::clone(&state), file_id.to_owned()).await
+                // {
+                //     tracing::warn!("Error broadcasting sequence number: {:?}", error);
+                // }
 
-                // remove stale users in the room
-                if let Err(error) = remove_stale_users_in_room(
-                    Arc::clone(&state),
-                    file_id,
-                    room,
-                    heartbeat_timeout_s,
-                )
-                .await
-                {
-                    tracing::warn!(
-                        "Error removing stale users from room {}: {:?}",
-                        file_id,
-                        error
-                    );
-                }
+                // // remove stale users in the room
+                // if let Err(error) = remove_stale_users_in_room(
+                //     Arc::clone(&state),
+                //     file_id,
+                //     room,
+                //     heartbeat_timeout_s,
+                // )
+                // .await
+                // {
+                //     tracing::warn!(
+                //         "Error removing stale users from room {}: {:?}",
+                //         file_id,
+                //         error
+                //     );
+                // }
             }
 
             interval.tick().await;

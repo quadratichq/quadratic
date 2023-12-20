@@ -63,7 +63,7 @@ pub(crate) async fn add_user_to_room(
     state: Arc<State>,
     connection_id: Uuid,
 ) -> User {
-    state.enter_room(file_id, &user, connection_id).await;
+    state.enter_room(file_id, &user, connection_id, 0).await;
     user
 }
 

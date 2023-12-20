@@ -25,7 +25,7 @@ const requestValidationMiddleware = validateRequestSchema(
 );
 
 router.put(
-  'file/:uuid/checkpoint',
+  '/file/:uuid/checkpoint',
   validateM2MAuth(),
   requestValidationMiddleware,
   async (req: Request, res: Response) => {
@@ -74,10 +74,12 @@ router.put(
 
     return res.status(200).json({
       fileUuid: fileUuid,
-      sequenceNumber: result.sequenceNumber,
-      s3Bucket: result.s3Bucket,
-      s3Key: result.s3Key,
-      version: result.version,
+      lastCheckpoint: {
+        sequenceNumber: result.sequenceNumber,
+        version: result.version,
+        s3Key: result.s3Key,
+        s3Bucket: result.s3Bucket,
+      },
     });
   }
 );

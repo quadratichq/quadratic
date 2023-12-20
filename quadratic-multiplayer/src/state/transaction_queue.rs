@@ -42,15 +42,25 @@ impl TransactionQueue {
         Default::default()
     }
 
-    fn push(queue: &mut Queue, id: Uuid, file_id: Uuid, operations: Vec<Operation>) -> u64 {
-        let (sequence_num, transactions) = queue.entry(file_id).or_insert_with(|| (0, vec![]));
+    pub(crate) fn initialize_room(&mut self, file_id: Uuid, sequence_num: u64) {
+        self.pending
+            .entry(file_id)
+            .or_insert_with(|| (sequence_num, vec![]));
+    }
+
+    fn push(queue: &mut Queue, id: Uuid, file_id: Uuid, operations: Vec<Operation>) -> Result<u64> {
+        let (sequence_num, transactions) = queue.get_mut(&file_id).ok_or_else(|| {
+            MpError::TransactionQueue(format!(
+                "file_id {file_id} was not initialized in the pending transaction queue"
+            ))
+        })?;
 
         *sequence_num += 1;
 
         let transaction = Transaction::new(id, file_id, operations, *sequence_num);
         transactions.push(transaction);
 
-        sequence_num.to_owned()
+        Ok(sequence_num.to_owned())
     }
 
     pub(crate) fn push_pending(
@@ -58,7 +68,7 @@ impl TransactionQueue {
         id: Uuid,
         file_id: Uuid,
         operations: Vec<Operation>,
-    ) -> u64 {
+    ) -> Result<u64> {
         TransactionQueue::push(&mut self.pending, id, file_id, operations)
     }
 
@@ -67,7 +77,7 @@ impl TransactionQueue {
         id: Uuid,
         file_id: Uuid,
         operations: Vec<Operation>,
-    ) -> u64 {
+    ) -> Result<u64> {
         TransactionQueue::push(&mut self.processed, id, file_id, operations)
     }
 

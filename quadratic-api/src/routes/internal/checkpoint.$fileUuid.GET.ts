@@ -8,9 +8,10 @@ export const validateM2MAuth = () => header('Authorization').equals('Bearer ADD_
 
 const router = express.Router();
 
-router.get('file/:uuid/checkpoint', validateM2MAuth(), validateUUID(), async (req: Request, res: Response) => {
+router.get('/file/:uuid/checkpoint', validateM2MAuth(), validateUUID(), async (req: Request, res: Response) => {
   // Validate request parameters
   const errors = validationResult(req);
+  console.log(errors);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }

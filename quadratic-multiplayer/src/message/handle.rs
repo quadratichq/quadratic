@@ -10,7 +10,7 @@ use futures_util::stream::SplitSink;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use crate::auth::get_file_perms;
+use crate::auth::{get_file_checkpoint, get_file_perms, LastCheckpoint};
 use crate::error::{MpError, Result};
 use crate::message::{broadcast, request::MessageRequest, response::MessageResponse};
 use crate::state::connection::Connection;
@@ -49,11 +49,19 @@ pub(crate) async fn handle_message(
             })?;
 
             // default to owner for tests
-            let permission = if cfg!(test) {
-                crate::auth::FilePermRole::Owner
+            let (permission, sequence_num) = if cfg!(test) {
+                (crate::auth::FilePermRole::Owner, 0)
             } else {
                 get_file_perms(base_url, jwt, file_id).await?
             };
+
+            // let last_checkpoint = if cfg!(test) {
+            //     LastCheckpoint::default()
+            // } else {
+            //     get_file_checkpoint(base_url, "ADD_TOKEN_HERE".into(), file_id).await?
+            // };
+
+            // tracing::info!("{:?}", last_checkpoint);
 
             let user_state = UserState {
                 sheet_id,
@@ -78,7 +86,9 @@ pub(crate) async fn handle_message(
                 last_heartbeat: chrono::Utc::now(),
             };
 
-            let is_new = state.enter_room(file_id, &user, connection.id).await;
+            let is_new = state
+                .enter_room(file_id, &user, connection.id, sequence_num)
+                .await;
 
             // only broadcast if the user is new to the room
             if is_new {
@@ -122,7 +132,7 @@ pub(crate) async fn handle_message(
                 id,
                 file_id,
                 serde_json::from_str(&operations)?,
-            );
+            )?;
 
             let response = MessageResponse::Transaction {
                 id,

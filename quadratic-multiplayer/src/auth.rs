@@ -19,7 +19,13 @@ pub(crate) async fn get_jwks(url: &str) -> Result<jwk::JwkSet> {
 // This is only a partial mapping as permission is all that is needed from the
 // incoming json struct.
 #[derive(Debug, Deserialize)]
+pub(crate) struct File {
+    lastCheckpointSequenceNumber: u64,
+}
+
+#[derive(Debug, Deserialize)]
 pub(crate) struct FilePerms {
+    file: File,
     permission: FilePermRole,
 }
 
@@ -32,12 +38,26 @@ pub(crate) enum FilePermRole {
     Annonymous,
 }
 
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub(crate) struct LastCheckpoint {
+    sequenceNumber: u64,
+    version: String,
+    s3Key: String,
+    s3Bucket: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct Checkpoint {
+    fileUuid: Uuid,
+    lastCheckpoint: LastCheckpoint,
+}
+
 /// Retrieve file perms from the quadratic API server.
 pub(crate) async fn get_file_perms(
     base_url: &str,
     jwt: String,
     file_id: Uuid,
-) -> Result<FilePermRole> {
+) -> Result<(FilePermRole, u64)> {
     let url = format!("{base_url}/v0/files/{file_id}");
     let response = reqwest::Client::new()
         .get(url)
@@ -45,14 +65,81 @@ pub(crate) async fn get_file_perms(
         .send()
         .await?;
 
-    tracing::info!("File perms response: {:?}", response.status());
-
     match response.status() {
-        StatusCode::OK => Ok(response.json::<FilePerms>().await?.permission),
+        StatusCode::OK => {
+            let deserailized = response.json::<FilePerms>().await?;
+            Ok((
+                deserailized.permission,
+                deserailized.file.lastCheckpointSequenceNumber,
+            ))
+        }
         StatusCode::FORBIDDEN => Err(MpError::FilePermissions(true, "Forbidden".into())),
         StatusCode::UNAUTHORIZED => Err(MpError::FilePermissions(true, "Unauthorized".into())),
         StatusCode::NOT_FOUND => Err(MpError::FilePermissions(true, "File not found".into())),
         _ => Err(MpError::FilePermissions(true, "Unexpected response".into())),
+    }
+}
+
+/// Retrieve file's checkpoint from the quadratic API server.
+pub(crate) async fn get_file_checkpoint(
+    base_url: &str,
+    jwt: String,
+    file_id: Uuid,
+) -> Result<LastCheckpoint> {
+    let url = format!("{base_url}/v0/internal/{file_id}/checkpoint");
+    tracing::info!("url: {:?}", &url);
+    let response = reqwest::Client::new()
+        .get(url)
+        .header("Authorization", format!("Bearer {}", jwt))
+        .send()
+        .await?;
+
+    match response.status() {
+        StatusCode::OK => {
+            let deserailized = response.json::<Checkpoint>().await?.lastCheckpoint;
+            Ok(deserailized)
+        }
+        StatusCode::FORBIDDEN => Err(MpError::FilePermissions(true, "Forbidden".into())),
+        StatusCode::UNAUTHORIZED => Err(MpError::FilePermissions(true, "Unauthorized".into())),
+        StatusCode::NOT_FOUND => Err(MpError::FilePermissions(true, "File not found".into())),
+        _ => Err(MpError::FilePermissions(true, "Unexpected response".into())),
+    }
+}
+
+/// Set the file's checkpoint with the quadratic API server.
+pub(crate) async fn set_file_checkpoint(
+    base_url: &str,
+    jwt: String,
+    file_id: &Uuid,
+    sequenceNumber: u64,
+    version: String,
+    s3Key: String,
+    s3Bucket: String,
+) -> Result<LastCheckpoint> {
+    let url = format!("{base_url}/v0/internal/{file_id}/checkpoint");
+    let body = LastCheckpoint {
+        sequenceNumber,
+        version,
+        s3Key,
+        s3Bucket,
+    };
+
+    let response = reqwest::Client::new()
+        .put(url)
+        .header("Authorization", format!("Bearer {}", jwt))
+        .json(&body)
+        .send()
+        .await?;
+
+    match response.status() {
+        StatusCode::OK => {
+            let deserailized = response.json::<Checkpoint>().await?.lastCheckpoint;
+            Ok(deserailized)
+        }
+        StatusCode::FORBIDDEN => Err(MpError::Unknown("Forbidden".into())),
+        StatusCode::UNAUTHORIZED => Err(MpError::Unknown("Unauthorized".into())),
+        StatusCode::NOT_FOUND => Err(MpError::Unknown("File not found".into())),
+        _ => Err(MpError::Unknown("Unexpected response".into())),
     }
 }
 

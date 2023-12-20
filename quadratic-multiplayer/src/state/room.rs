@@ -11,8 +11,6 @@ use crate::{get_mut_room, get_or_create_room, get_room};
 pub(crate) struct Room {
     pub(crate) file_id: Uuid,
     pub(crate) users: HashMap<Uuid, User>,
-    #[serde(skip_serializing)]
-    pub(crate) grid: GridController,
 }
 
 impl Room {
@@ -20,9 +18,6 @@ impl Room {
         Room {
             file_id,
             users: HashMap::new(),
-            grid: GridController::new(),
-            // TODO(ddimaria): load the grid from the file
-            // grid: GridController::from_grid(load_file(file).unwrap()),
         }
     }
 }
@@ -39,8 +34,14 @@ impl State {
     /// are only added to a room once (HashMap).  Returns true if the user was
     /// newly added.
     #[tracing::instrument(level = "trace")]
-    pub(crate) async fn enter_room(&self, file_id: Uuid, user: &User, connection_id: Uuid) -> bool {
-        let is_new = get_or_create_room!(self, file_id)
+    pub(crate) async fn enter_room(
+        &self,
+        file_id: Uuid,
+        user: &User,
+        connection_id: Uuid,
+        sequence_num: u64,
+    ) -> bool {
+        let is_new = get_or_create_room!(self, file_id, sequence_num)
             .users
             .insert(user.session_id.to_owned(), user.to_owned())
             .is_none();
@@ -116,12 +117,34 @@ macro_rules! get_mut_room {
 
 #[macro_export]
 macro_rules! get_or_create_room {
-    ( $self:ident, $file_id:ident ) => {
-        $self.rooms.lock().await.entry($file_id).or_insert_with(|| {
-            tracing::info!("Room {} created", $file_id);
-            Room::new($file_id)
-        })
-    };
+    ( $self:ident, $file_id:ident, $sequence_num:ident ) => {{
+        let mut new_room = false;
+        let room = $self
+            .rooms
+            .lock()
+            .await
+            .entry($file_id)
+            .or_insert_with(|| {
+                new_room = true;
+                Room::new($file_id)
+            })
+            .to_owned();
+
+        if new_room {
+            tracing::info!(
+                "Room {} created with sequence_num {}",
+                $file_id,
+                $sequence_num
+            );
+            $self
+                .transaction_queue
+                .lock()
+                .await
+                .initialize_room($file_id, $sequence_num);
+        }
+
+        room
+    }};
 }
 
 #[cfg(test)]
@@ -138,7 +161,7 @@ mod tests {
         let user = new_user();
         let user2 = new_user();
 
-        let is_new = state.enter_room(file_id, &user, connection_id).await;
+        let is_new = state.enter_room(file_id, &user, connection_id, 0).await;
         let room = state.get_room(&file_id).await.unwrap();
         let user = room.users.get(&user.session_id).unwrap();
 
@@ -148,7 +171,7 @@ mod tests {
         assert_eq!(room.users.get(&user.session_id), Some(user));
 
         // leave the room of 2 users
-        state.enter_room(file_id, &user2, connection_id).await;
+        state.enter_room(file_id, &user2, connection_id, 0).await;
         state.leave_room(file_id, &user.session_id).await.unwrap();
         let room = state.get_room(&file_id).await.unwrap();
 
