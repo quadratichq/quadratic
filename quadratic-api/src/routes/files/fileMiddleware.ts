@@ -23,7 +23,7 @@ export const fileMiddleware = async (req: Request, res: Response, next: NextFunc
   }
 
   if (file.ownerUserId !== req?.user?.id) {
-    if (file.public_link_access === 'NOT_SHARED') {
+    if (file.publicLinkAccess === 'NOT_SHARED') {
       return res.status(403).json({ error: { message: 'Permission denied' } });
     }
   }
