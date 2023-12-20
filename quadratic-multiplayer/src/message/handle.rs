@@ -12,11 +12,11 @@ use tokio::sync::Mutex;
 
 use crate::auth::get_file_perms;
 use crate::error::{MpError, Result};
-use crate::get_room;
 use crate::message::{broadcast, request::MessageRequest, response::MessageResponse};
 use crate::state::connection::Connection;
 use crate::state::user::UserState;
 use crate::state::{user::User, State};
+use crate::{get_mut_room, get_room};
 
 /// Handle incoming messages.  All requests and responses are strictly typed.
 #[tracing::instrument(level = "trace")]
@@ -82,7 +82,7 @@ pub(crate) async fn handle_message(
 
             let is_new = state
                 .enter_room(file_id, &user, connection.id, sequence_num)
-                .await;
+                .await?;
 
             // only broadcast if the user is new to the room
             if is_new {
@@ -130,6 +130,9 @@ pub(crate) async fn handle_message(
                 serde_json::from_str(&operations)?,
                 room_sequence_num,
             );
+
+            // update the room's sequence number
+            get_mut_room!(state, file_id)?.sequence_num = sequence_num;
 
             let response = MessageResponse::Transaction {
                 id,

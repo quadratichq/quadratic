@@ -163,14 +163,14 @@ pub(crate) async fn process_queue_for_room(
         .get_pending(*file_id)
         .unwrap_or_else(|_| vec![]);
 
+    if transactions.is_empty() {
+        return Ok(None);
+    }
+
     tracing::info!(
         "Found {} transactions for room {file_id}",
         transactions.len()
     );
-
-    if transactions.is_empty() {
-        return Ok(None);
-    }
 
     let first_sequence_num = transactions.first().unwrap().sequence_num;
     let checkpoint_sequence_num = (first_sequence_num - 1).max(0);

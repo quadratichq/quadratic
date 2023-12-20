@@ -58,7 +58,7 @@ impl TransactionQueue {
         let transaction = Transaction::new(id, file_id, operations, *sequence_num);
         transactions.push(transaction);
 
-        sequence_num.to_owned()
+        *sequence_num
     }
 
     pub(crate) fn push_pending(

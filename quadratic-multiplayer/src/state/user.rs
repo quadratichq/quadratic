@@ -192,7 +192,10 @@ mod tests {
         let file_id = Uuid::new_v4();
         let user = new_user();
 
-        state.enter_room(file_id, &user, connection_id, 0).await;
+        state
+            .enter_room(file_id, &user, connection_id, 0)
+            .await
+            .unwrap();
 
         (state, connection_id, file_id, user)
     }
@@ -205,7 +208,10 @@ mod tests {
         tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 
         let new_user = new_user();
-        state.enter_room(file_id, &new_user, connection_id, 0).await;
+        state
+            .enter_room(file_id, &new_user, connection_id, 0)
+            .await
+            .unwrap();
         state.remove_stale_users_in_room(file_id, 0).await.unwrap();
         assert_eq!(get_room!(state, file_id).unwrap().users.len(), 1);
 

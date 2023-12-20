@@ -41,7 +41,7 @@ impl State {
         user: &User,
         connection_id: Uuid,
         sequence_num: u64,
-    ) -> bool {
+    ) -> Result<bool> {
         let is_new = get_or_create_room!(self, file_id, sequence_num)
             .users
             .insert(user.session_id.to_owned(), user.to_owned())
@@ -54,7 +54,7 @@ impl State {
 
         tracing::info!("User {:?} entered room {:?}", user.session_id, file_id);
 
-        is_new
+        Ok(is_new)
     }
 
     /// Removes a user from a room. If the room is empty, it deletes the room.
@@ -128,8 +128,7 @@ macro_rules! get_or_create_room {
                     let url = &$self.settings.quadratic_api_uri;
                     let jwt = &$self.settings.quadratic_api_jwt;
                     $crate::auth::get_file_checkpoint(url, jwt, &$file_id)
-                        .await
-                        .unwrap()
+                        .await?
                         .sequence_number
                 }
             }
@@ -161,7 +160,10 @@ mod tests {
         let user = new_user();
         let user2 = new_user();
 
-        let is_new = state.enter_room(file_id, &user, connection_id, 0).await;
+        let is_new = state
+            .enter_room(file_id, &user, connection_id, 0)
+            .await
+            .unwrap();
         let room = state.get_room(&file_id).await.unwrap();
         let user = room.users.get(&user.session_id).unwrap();
 
@@ -171,7 +173,10 @@ mod tests {
         assert_eq!(room.users.get(&user.session_id), Some(user));
 
         // leave the room of 2 users
-        state.enter_room(file_id, &user2, connection_id, 0).await;
+        state
+            .enter_room(file_id, &user2, connection_id, 0)
+            .await
+            .unwrap();
         state.leave_room(file_id, &user.session_id).await.unwrap();
         let room = state.get_room(&file_id).await.unwrap();
 

@@ -39,13 +39,17 @@ impl State {
         }
     }
 
+    /// Get a room's current sequence number.
     pub(crate) async fn get_sequence_num(&self, file_id: &Uuid) -> Result<u64> {
+        // First, check the transaction queue for the sequence number
         let sequence_num = self
             .transaction_queue
             .lock()
             .await
             .get_sequence_num(file_id.to_owned());
 
+        // If the transaction queue doesn't have the sequence number, check the
+        // room's sequence number.
         match sequence_num {
             Ok(sequence_num) => Ok(sequence_num),
             Err(_) => Ok(get_room!(self, file_id)?.sequence_num),

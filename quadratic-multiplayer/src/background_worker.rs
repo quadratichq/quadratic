@@ -5,7 +5,6 @@ use uuid::Uuid;
 use crate::{
     error::Result,
     file::process_queue_for_room,
-    get_mut_room,
     message::{broadcast, response::MessageResponse},
     state::{room::Room, State},
 };
@@ -37,15 +36,8 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                 )
                 .await;
 
-                match processed {
-                    Ok(sequence_num) => {
-                        if let Some(sequence_num) = sequence_num {
-                            get_mut_room!(state, file_id).unwrap().sequence_num = sequence_num;
-                        }
-                    }
-                    Err(error) => {
-                        tracing::warn!("Error processing queue for room {file_id}: {:?}", error);
-                    }
+                if let Err(error) = processed {
+                    tracing::warn!("Error processing queue for room {file_id}: {:?}", error);
                 };
 
                 // broadcast sequence number to all users in the room
