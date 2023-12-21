@@ -96,7 +96,7 @@ describe('PATCH /v0/files/:uuid/users/:userId', () => {
             .expect(403);
         });
 
-        it('rejects OWNER -> VIEWER if there’s only one OWNER on the team', async () => {
+        it('rejects OWNER -> VIEWER', async () => {
           const id = await getUserIdByAuth0Id('user1');
           await request(app)
             .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${id}`)
