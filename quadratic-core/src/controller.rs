@@ -25,7 +25,6 @@ pub mod spills;
 pub mod thumbnail;
 pub mod transaction_summary;
 pub mod transaction_types;
-pub mod update_code_cell_value;
 pub mod user_actions;
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -50,7 +49,7 @@ pub struct GridController {
     cells_updated: IndexSet<SheetRect>,
 
     // used by Code Cell execution to track dependencies
-    cells_accessed: HashSet<SheetPos>,
+    cells_accessed: HashSet<SheetRect>,
 
     // returned to the TS client for (mostly) rendering updates
     summary: TransactionSummary,

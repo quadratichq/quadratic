@@ -207,14 +207,19 @@ impl Grid {
         &self.sheets[sheet_index]
     }
     pub fn try_sheet_from_id(&self, sheet_id: SheetId) -> Option<&Sheet> {
-        let sheet_index = self.sheet_id_to_index(sheet_id)?;
-        Some(&self.sheets[sheet_index])
+        self.sheet_id_to_index(sheet_id)
+            .map(|idx| &self.sheets[idx])
     }
     pub fn sheet_mut_from_id(&mut self, sheet_id: SheetId) -> &mut Sheet {
         let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");
         &mut self.sheets[sheet_index]
     }
+    pub fn try_sheet_mut_from_id(&mut self, sheet_id: SheetId) -> Option<&mut Sheet> {
+        self.sheet_id_to_index(sheet_id)
+            .map(|idx| &mut self.sheets[idx])
+    }
 
+    // todo: these should be try_* functions
     pub fn sheet_from_string(&self, sheet_id: String) -> &Sheet {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         self.sheet_from_id(sheet_id)
@@ -227,3 +232,26 @@ impl Grid {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod more_tests {
+    use super::*;
+
+    #[test]
+    fn test_try_sheet_from_id() {
+        let mut grid = Grid::new();
+        let id = grid.first_sheet_id();
+
+        assert!(grid.try_sheet_from_id(id).is_some());
+        assert!(grid.try_sheet_from_id(SheetId::new()).is_none());
+    }
+
+    #[test]
+    fn test_try_sheet_mut_from_id() {
+        let mut grid = Grid::new();
+        let id = grid.first_sheet_id();
+
+        assert!(grid.try_sheet_mut_from_id(id).is_some());
+        assert!(grid.try_sheet_mut_from_id(SheetId::new()).is_none());
+    }
+}

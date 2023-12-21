@@ -4,7 +4,7 @@ use crate::grid::{
     generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
     CellWrap, Grid, GridBounds, NumericFormat, NumericFormatKind,
 };
-use crate::{CellValue, Error, ErrorMsg, Pos, Rect, SheetPos, Span, Value};
+use crate::{CellValue, Error, ErrorMsg, Pos, Rect, Span, Value};
 
 use crate::grid::file::v1_5::schema::{self as current};
 use crate::grid::{
@@ -252,13 +252,7 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<Pos, CodeC
                                     },
                                     cells_accessed: cells_accessed
                                         .into_iter()
-                                        .map(|cell| {
-                                            Ok(SheetPos {
-                                                sheet_id: SheetId::from_str(&cell.sheet_id.id)?,
-                                                x: cell.x,
-                                                y: cell.y,
-                                            })
-                                        })
+                                        .map(|sheet_rect| Ok(sheet_rect.into()))
                                         .collect::<Result<_>>()
                                         .ok()?,
                                 },

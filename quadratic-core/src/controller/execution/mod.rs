@@ -1,17 +1,15 @@
-/// This module handles the application of operations to the Grid.
-pub mod compute;
 pub mod control_transaction;
-pub mod execute_formula;
 pub mod execute_operation;
-pub mod execute_python;
 pub mod get_cells;
-pub mod output_difference;
-
-use serde::{Deserialize, Serialize};
-
-use crate::controller::{transaction_summary::TransactionSummary, GridController};
+/// This module handles the application of operations to the Grid.
+pub mod run;
+pub mod run_formula;
+pub mod run_python;
+pub mod spills;
 
 use super::Transaction;
+use crate::controller::{transaction_summary::TransactionSummary, GridController};
+use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum TransactionType {
@@ -24,11 +22,6 @@ pub enum TransactionType {
 }
 
 impl GridController {
-    /// Clear the `cells_to_compute` attribute
-    pub fn clear_cells_to_compute(&mut self) {
-        self.cells_to_compute.clear();
-    }
-
     /// recalculate bounds for changed sheets
     pub fn transaction_updated_bounds(&mut self) {
         self.sheets_with_dirty_bounds

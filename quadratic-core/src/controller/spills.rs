@@ -1,43 +1,43 @@
-use crate::{controller::GridController, SheetPos};
+use crate::controller::GridController;
 
 impl GridController {
-    /// Checks whether a spill exists
-    pub fn check_spill(&mut self, sheet_pos: SheetPos) {
-        let sheet_id = sheet_pos.sheet_id;
-        // check if the addition of a cell causes a spill error
-        let sheet = self.grid.sheet_from_id(sheet_id);
-        if let Some(code_cell_pos) = sheet.get_spill(sheet_pos.into()) {
-            if code_cell_pos != sheet_pos.into() {
-                if let Some(code_cell) = sheet.get_code_cell(code_cell_pos) {
-                    if !code_cell.has_spill_error() {
-                        self.update_code_cell_value(
-                            code_cell_pos.to_sheet_pos(sheet_id),
-                            Some(code_cell.clone()),
-                        );
-                    }
-                }
-            }
-        }
-    }
+    // /// Checks whether a spill exists
+    // pub fn check_spill(&mut self, sheet_pos: SheetPos) {
+    //     let sheet_id = sheet_pos.sheet_id;
+    //     // check if the addition of a cell causes a spill error
+    //     let sheet = self.grid.sheet_from_id(sheet_id);
+    //     if let Some(code_cell_pos) = sheet.get_spill(sheet_pos.into()) {
+    //         if code_cell_pos != sheet_pos.into() {
+    //             if let Some(code_cell) = sheet.get_code_cell(code_cell_pos) {
+    //                 if !code_cell.has_spill_error() {
+    //                     self.update_code_cell_value(
+    //                         code_cell_pos.to_sheet_pos(sheet_id),
+    //                         Some(code_cell.clone()),
+    //                     );
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 
-    /// sets a spill error for a code_cell
-    pub fn set_spill_error(&mut self, sheet_pos: SheetPos) {
-        let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
-        if let Some(code_cell) = sheet.get_code_cell(sheet_pos.into()) {
-            if !code_cell.has_spill_error() {
-                self.update_code_cell_value(sheet_pos, Some(code_cell.clone()));
-            }
-        }
-    }
+    // /// sets a spill error for a code_cell
+    // pub fn set_spill_error(&mut self, sheet_pos: SheetPos) {
+    //     let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
+    //     if let Some(code_cell) = sheet.get_code_cell(sheet_pos.into()) {
+    //         if !code_cell.has_spill_error() {
+    //             self.update_code_cell_value(sheet_pos, Some(code_cell.clone()));
+    //         }
+    //     }
+    // }
 
-    /// update the code cell value if the deletion of a cell released a spill error
-    pub fn update_code_cell_value_if_spill_error_released(&mut self, sheet_pos: SheetPos) {
-        let sheet_id = sheet_pos.sheet_id;
-        let sheet = self.grid.sheet_from_id(sheet_id);
-        if let Some((spill_sheet_pos, code_cell)) = sheet.spill_error_released(sheet_pos.into()) {
-            self.update_code_cell_value(spill_sheet_pos.to_sheet_pos(sheet_id), Some(code_cell));
-        }
-    }
+    // /// update the code cell value if the deletion of a cell released a spill error
+    // pub fn update_code_cell_value_if_spill_error_released(&mut self, sheet_pos: SheetPos) {
+    //     let sheet_id = sheet_pos.sheet_id;
+    //     let sheet = self.grid.sheet_from_id(sheet_id);
+    //     if let Some((spill_sheet_pos, code_cell)) = sheet.spill_error_released(sheet_pos.into()) {
+    //         self.update_code_cell_value(spill_sheet_pos.to_sheet_pos(sheet_id), Some(code_cell));
+    //     }
+    // }
 }
 
 #[cfg(test)]

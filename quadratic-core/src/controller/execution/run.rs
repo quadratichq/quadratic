@@ -1,82 +1,54 @@
-use wasm_bindgen::JsValue;
-
+use crate::controller::operations::operation::Operation;
 use crate::{
     controller::{transaction_types::JsCodeResult, GridController},
     grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
     util::date_string,
-    Array, CellValue, Error, ErrorMsg, SheetPos, Span, Value,
+    Array, CellValue, Error, ErrorMsg, Pos, SheetPos, SheetRect, Span, Value,
 };
 
 impl GridController {
-    /// checks the next cell in the cells_to_compute and computes it
-    /// returns true if an async call is made or the compute cycle is completed
-    pub(super) fn compute(&mut self) {
-        while let Some(sheet_rect) = self.cells_updated.shift_remove_index(0) {
-            #[cfg(feature = "show-operations")]
-            crate::util::dbgjs(format!("[Computing Cells] Checking: {:?}", sheet_rect));
-            if let Some(dependent_cells) = self.get_dependent_cells_for_sheet_rect(&sheet_rect) {
-                self.cells_to_compute.extend(dependent_cells);
-            }
-        }
+    /// finalize changes to a code_cell
+    pub(crate) fn finalize_code_cell(
+        &mut self,
+        sheet_pos: SheetPos,
+        old_code_cell_value: Option<CodeCellValue>,
+    ) {
+        if let Some(sheet) = self.grid().try_sheet_from_id(sheet_pos.sheet_id) {
+            let code_cell_value = sheet.get_code_cell(sheet_pos.into());
+            self.forward_operations.push(Operation::SetCodeCell {
+                sheet_pos,
+                code_cell_value: code_cell_value.map(|v| *v),
+            });
+            self.reverse_operations.push(Operation::SetCodeCell {
+                sheet_pos,
+                code_cell_value: old_code_cell_value,
+            });
+            let sheet_id = sheet_pos.sheet_id;
+            self.sheets_with_dirty_bounds.insert(sheet_id);
 
-        if let Some(sheet_pos) = self.cells_to_compute.shift_remove_index(0) {
-            // todo: this would be a good place to check for cycles
-
-            // not sure this is still needed with the above code...
-            // // add all dependent cells to the cells_to_compute
-            // if let Some(dependent_cells) = self.get_dependent_cells(sheet_pos) {
-            //     #[cfg(feature = "show-operations")]
-            //     dependent_cells.iter().for_each(|sheet_pos| {
-            //         crate::util::dbgjs(format!("[Adding Dependent Cell] {:?}", sheet_pos));
-            //     });
-
-            //     self.cells_to_compute.extend(dependent_cells);
-            // }
-
-            // whether to save the current code_cell_ref to the GridController
-            let mut current_code_cell = false;
-
-            let sheet = self.grid().sheet_from_id(sheet_pos.sheet_id);
-            // find which cells have code. Run the code and update the cells.
-            // add the updated cells to the cells_to_compute
-
-            if let Some(code_cell) = sheet.get_code_cell(sheet_pos.into()) {
-                current_code_cell = true;
-                let code_string = code_cell.code_string.clone();
-                let language = code_cell.language;
-                match language {
-                    CodeCellLanguage::Python => {
-                        // python is run async so we exit the compute cycle and wait for TS to restart the transaction
-                        if !cfg!(test) {
-                            let result = crate::wasm_bindings::js::runPython(code_string);
-
-                            // run python will return false if python is not loaded (this can be generalized if we need to return a different error)
-                            if result == JsValue::FALSE {
-                                self.code_cell_sheet_error(
-                                    "Python interpreter not yet loaded (please run again)"
-                                        .to_string(),
-                                    None,
-                                );
-                                return;
-                            }
-                        }
-                        self.waiting_for_async = Some(language);
-                        self.has_async = true;
-                    }
-                    CodeCellLanguage::Formula => {
-                        self.execute_formula(code_string.clone(), language, sheet_pos);
-                    }
-                    _ => {
-                        crate::util::dbgjs(format!(
-                            "Compute language {} not supported in compute.rs",
-                            language
-                        ));
+            let sheet_rect = match (old_code_cell_value, code_cell_value) {
+                (None, None) => sheet_pos.into(),
+                (None, Some(code_cell_value)) => code_cell_value.output_sheet_rect(sheet_pos),
+                (Some(old_code_cell_value), None) => {
+                    old_code_cell_value.output_sheet_rect(sheet_pos)
+                }
+                (Some(old_code_cell_value), Some(code_cell_value)) => {
+                    let old = old_code_cell_value.output_sheet_rect(sheet_pos);
+                    let new = code_cell_value.output_sheet_rect(sheet_pos);
+                    SheetRect {
+                        min: sheet_pos.into(),
+                        max: Pos {
+                            x: old.max.x.max(new.max.x),
+                            y: old.max.y.max(new.max.y),
+                        },
+                        sheet_id,
                     }
                 }
-            }
-            if current_code_cell {
-                self.current_sheet_pos = Some(sheet_pos);
-            }
+            };
+            self.summary.generate_thumbnail =
+                self.summary.generate_thumbnail || self.thumbnail_dirty_sheet_rect(sheet_rect);
+            self.summary.code_cells_modified.insert(sheet_id);
+            self.add_cell_sheets_modified_rect(&sheet_rect);
         }
     }
 
@@ -124,6 +96,7 @@ impl GridController {
                             old_code_cell_value.language,
                             old_code_cell_value.code_string,
                         );
+                        // todo....
                         if self.update_code_cell_value(
                             sheet_pos,
                             Some(updated_code_cell_value.clone()),

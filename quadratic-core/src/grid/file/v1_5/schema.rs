@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use crate::grid::{file::v1_4::schema as v1_4, SheetId};
 use serde::{Deserialize, Serialize};
@@ -8,6 +9,20 @@ use serde::{Deserialize, Serialize};
 pub struct GridSchema {
     pub sheets: Vec<Sheet>,
     pub version: Option<String>,
+}
+
+pub type Id = v1_4::Id;
+
+impl From<SheetId> for Id {
+    fn from(id: SheetId) -> Self {
+        Self { id: id.to_string() }
+    }
+}
+
+impl From<Id> for SheetId {
+    fn from(id: Id) -> Self {
+        SheetId::from_str(&id.id).unwrap()
+    }
 }
 
 pub type Pos = v1_4::Pos;
@@ -24,13 +39,50 @@ pub struct SheetPos {
     pub y: i64,
     pub sheet_id: Id,
 }
-
 impl From<crate::SheetPos> for SheetPos {
     fn from(pos: crate::SheetPos) -> Self {
         Self {
             x: pos.x,
             y: pos.y,
             sheet_id: pos.sheet_id.into(),
+        }
+    }
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SheetRect {
+    pub min: Pos,
+    pub max: Pos,
+    pub sheet_id: Id,
+}
+impl From<crate::SheetRect> for SheetRect {
+    fn from(sheet_rect: crate::SheetRect) -> Self {
+        Self {
+            min: Pos {
+                x: sheet_rect.min.x,
+                y: sheet_rect.min.y,
+            },
+            max: Pos {
+                x: sheet_rect.max.x,
+                y: sheet_rect.max.y,
+            },
+            sheet_id: sheet_rect.sheet_id.into(),
+        }
+    }
+}
+
+impl From<SheetRect> for crate::SheetRect {
+    fn from(sheet_rect: SheetRect) -> Self {
+        Self {
+            min: crate::Pos {
+                x: sheet_rect.min.x,
+                y: sheet_rect.min.y,
+            },
+            max: crate::Pos {
+                x: sheet_rect.max.x,
+                y: sheet_rect.max.y,
+            },
+            sheet_id: sheet_rect.sheet_id.into(),
         }
     }
 }
@@ -51,14 +103,6 @@ pub struct Sheet {
     pub borders: Borders,
     #[serde(rename = "code_cells")]
     pub code_cells: Vec<(Pos, CodeCellValue)>,
-}
-
-pub type Id = v1_4::Id;
-
-impl From<SheetId> for Id {
-    fn from(id: SheetId) -> Self {
-        Self { id: id.to_string() }
-    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -87,7 +131,7 @@ pub struct CodeCellRunOutput {
 pub enum CodeCellRunResult {
     Ok {
         output_value: OutputValue,
-        cells_accessed: Vec<SheetPos>,
+        cells_accessed: Vec<SheetRect>,
     },
     Err {
         error: Error,

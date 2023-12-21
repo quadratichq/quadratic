@@ -14,28 +14,28 @@ pub enum Operation {
         sheet_rect: SheetRect,
         values: Array,
     },
+
+    // used for undo and multiplayer
     SetCodeCell {
         sheet_pos: SheetPos,
         code_cell_value: Option<CodeCellValue>,
     },
-    RunCodeCell {
+
+    // used for user compute or update code_cell actions
+    ComputeCodeCell {
         sheet_pos: SheetPos,
+        code_cell_value: Option<CodeCellValue>,
+
+        // do not update code_cell_value, only compute existing code_cell
+        only_compute: bool,
     },
-    SetCodeCellRun {
-        sheet_pos: SheetPos,
-        code_cell_run: Option<CodeCellRunOutput>,
-        last_modified: String,
-    },
-    CheckClearSpill {
-        sheet_rect: SheetRect,
-    },
-    CheckSetSpill {
-        sheet_rect: SheetRect,
-    },
-    SetSpill {
+
+    // used for undo and multiplayer -- for user actions, spills are set w/o a separate Operation
+    SetSpills {
         spill_rect: SheetRect,
         code_cell_sheet_pos: Option<SheetPos>,
     },
+
     SetCellFormats {
         sheet_rect: SheetRect,
         attr: CellFmtArray,
@@ -80,6 +80,8 @@ impl fmt::Display for Operation {
             Operation::SetCellValues { values, .. } => {
                 write!(fmt, "SetCellValues {{ value count: {} }}", values.size())
             }
+
+            // todo: Separate out changes to CodeCellValue and CodeCellOutput into separate operations (and perhaps separate variables in Sheet)
             Operation::SetCodeCell {
                 code_cell_value, ..
             } => write!(
@@ -87,7 +89,8 @@ impl fmt::Display for Operation {
                 "SetCellCode {{ code_cell_value: {:?} }}",
                 code_cell_value
             ),
-            Operation::SetSpill {
+
+            Operation::SetSpills {
                 spill_rect,
                 code_cell_sheet_pos,
             } => write!(
@@ -95,22 +98,8 @@ impl fmt::Display for Operation {
                 "SetSpill {{ pos: {:?}, code_cell_sheet_pos: {:?} }}",
                 spill_rect, code_cell_sheet_pos
             ),
-            Operation::RunCodeCell { sheet_pos } => {
+            Operation::ComputeCodeCell { sheet_pos } => {
                 write!(fmt, "RunCodeCell {{ sheet_pos: {:?} }}", sheet_pos)
-            }
-            Operation::SetCodeCellRun {
-                sheet_pos,
-                code_cell_run,
-            } => write!(
-                fmt,
-                "SetCodeCellRun {{ sheet_pos: {:?}, code_cell_run: {:?} }}",
-                sheet_pos, code_cell_run
-            ),
-            Operation::CheckClearSpill { sheet_rect } => {
-                write!(fmt, "CheckClearSpill {{ sheet_rect: {:?} }}", sheet_rect)
-            }
-            Operation::CheckSetSpill { sheet_rect } => {
-                write!(fmt, "CheckSetSpill {{ sheet_rect: {:?} }}", sheet_rect)
             }
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),
             Operation::AddSheet { sheet } => write!(fmt, "AddSheet {{ sheet: {} }}", sheet.name),

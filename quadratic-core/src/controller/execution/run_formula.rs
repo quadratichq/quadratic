@@ -7,35 +7,31 @@ use crate::{
 };
 
 impl GridController {
-    pub(super) fn execute_formula(&mut self, sheet_pos: SheetPos, code_cell: &CodeCellValue) {
+    pub(super) fn run_formula(&mut self, sheet_pos: SheetPos, code_cell: &CodeCellValue) {
         let mut ctx = Ctx::new(self.grid(), sheet_pos);
         match parse_formula(&code_cell.code_string, sheet_pos.into()) {
             Ok(parsed) => {
                 match parsed.eval(&mut ctx) {
                     Ok(value) => {
                         self.cells_accessed = ctx.cells_accessed;
+                        let code_cell_value = Some(CodeCellValue {
+                            last_modified: date_string(),
+                            output: Some(CodeCellRunOutput {
+                                std_out: None,
+                                std_err: None,
+                                result: CodeCellRunResult::Ok {
+                                    output_value: value,
+                                    cells_accessed: self.cells_accessed.clone(),
+                                },
+                                spill: false,
+                            }),
+                            ..code_cell.clone()
+                        });
                         self.operations.insert(
                             0,
-                            Operation::Check
-                        )
-                        self.operations.insert(
-                            0,
-                            Operation::SetCodeCellRun {
+                            Operation::SetCodeCell {
                                 sheet_pos,
-                                last_modified: date_string(),
-                                code_cell_run: Some(CodeCellRunOutput {
-                                    std_out: None,
-                                    std_err: None,
-                                    result: CodeCellRunResult::Ok {
-                                        output_value: value,
-                                        cells_accessed: self
-                                            .cells_accessed
-                                            .clone()
-                                            .into_iter()
-                                            .collect(),
-                                    },
-                                    spill: false,
-                                }),
+                                code_cell_value,
                             },
                         );
                     }

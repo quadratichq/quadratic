@@ -1,11 +1,7 @@
-use std::collections::HashSet;
-
 use crate::controller::{
     transaction_types::{CellsForArray, JsComputeGetCells},
     GridController,
 };
-use crate::SheetPos;
-
 impl GridController {
     /// gets cells for use in async calculations
     pub fn get_cells(&mut self, get_cells: JsComputeGetCells) -> Option<CellsForArray> {
@@ -44,16 +40,7 @@ impl GridController {
 
             let rect = get_cells.rect();
             let array = sheet.cell_array(rect);
-            let mut cells_accessed: HashSet<SheetPos> = HashSet::new();
-            let sheet_id = sheet.id;
-            for y in rect.y_range() {
-                for x in rect.x_range() {
-                    cells_accessed.insert(SheetPos { x, y, sheet_id });
-                }
-            }
-            cells_accessed.iter().for_each(|sheet_pos| {
-                self.cells_accessed.insert(*sheet_pos);
-            });
+            self.cells_accessed.insert(rect.to_sheet_rect(sheet.id));
             Some(array)
         } else {
             // unable to find sheet by name, generate error

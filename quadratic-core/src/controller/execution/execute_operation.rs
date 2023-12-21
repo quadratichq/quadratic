@@ -1,5 +1,5 @@
 use crate::grid::formatting::CellFmtArray;
-use crate::{grid::*, Array, CellValue, Rect, SheetPos, SheetRect};
+use crate::{grid::*, Array, CellValue, SheetPos};
 
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
@@ -8,7 +8,7 @@ impl GridController {
     /// Executes the given operation.
     /// Returns true if the operation resulted in an async call.
     ///
-    pub fn execute_operation(&mut self, op: Operation) -> bool {
+    pub fn execute_operation(&mut self, op: Operation) {
         match op.clone() {
             Operation::SetCellValues { sheet_rect, values } => {
                 let sheet = self.grid.sheet_mut_from_id(sheet_rect.sheet_id);
@@ -47,8 +47,6 @@ impl GridController {
                 self.summary.generate_thumbnail =
                     self.summary.generate_thumbnail || self.thumbnail_dirty_sheet_rect(sheet_rect);
                 self.add_cell_sheets_modified_rect(&sheet_rect);
-
-                false
             }
 
             Operation::SetCodeCell {
@@ -57,151 +55,51 @@ impl GridController {
             } => {
                 let sheet_id = sheet_pos.sheet_id;
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                sheet.set_code_cell_value(sheet_pos.into(), code_cell_value);
 
-                // // find combine area
-                // let new_output_sheet_rect = code_cell_value
-                //     .as_ref()
-                //     .map(|code_cell_value| code_cell_value.output_rect())
-                //     .flatten();
-
-                let old_code_cell_value =
-                    sheet.set_code_cell_value(sheet_pos.into(), code_cell_value);
-
-                self.forward_operations.push(op);
-
-                // get range for changes to code_cell, including both new and old outputs
-                let old_output_sheet_rect = old_code_cell_value
-                    .as_ref()
-                    .map(|code_cell_value| code_cell_value.output_rect())
-                    .flatten();
-                let sheet_rect = match (old_output_sheet_rect, new_output_sheet_rect) {
-                    (Some(old), Some(new)) => old.union(&new),
-                    (Some(old), None) => old,
-                    (None, Some(new)) => new,
-                    (None, None) => Rect::single_pos(sheet_pos.into()),
-                }
-                .to_sheet_rect(sheet_id);
-
-                if compute {
-                    self.cells_to_compute.insert(sheet_pos);
-                } else {
-                    self.cells_updated.insert(sheet_rect);
-                }
-
-                self.sheets_with_dirty_bounds.insert(sheet_rect.sheet_id);
+                let sheet_rect = sheet_pos.into();
+                self.sheets_with_dirty_bounds.insert(sheet_id);
                 self.summary.generate_thumbnail =
                     self.summary.generate_thumbnail || self.thumbnail_dirty_sheet_rect(sheet_rect);
+                self.summary.code_cells_modified.insert(sheet_id);
                 self.add_cell_sheets_modified_rect(&sheet_rect);
-
-                // let is_code_cell_empty = code_cell_value.is_none();
-                // let sheet_id = sheet_pos.sheet_id;
-
-                // // todo: all spill calculation should be moved to the code_cell operation function
-                // let old_spill = sheet.get_spill(sheet_pos.into());
-                // let old_code_cell_value = sheet.get_code_cell(sheet_pos.into()).cloned();
-                // let final_code_cell_value;
-
-                // // for compute, we keep the original cell output to avoid flashing of output (since values will be overridden once computation is complete)
-                // let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                // if compute {
-                //     if let Some(code_cell_value) = code_cell_value {
-                //         let updated_code_cell_value =
-                //             if let Some(old_code_cell_value) = &old_code_cell_value {
-                //                 let mut updated_code_cell_value = code_cell_value.clone();
-                //                 updated_code_cell_value.output = old_code_cell_value.output.clone();
-                //                 updated_code_cell_value
-                //             } else {
-                //                 code_cell_value
-                //             };
-                //         sheet.set_code_cell_value(
-                //             sheet_pos.into(),
-                //             Some(updated_code_cell_value.clone()),
-                //         );
-                //         final_code_cell_value = Some(updated_code_cell_value);
-                //     } else {
-                //         sheet.set_code_cell_value(sheet_pos.into(), code_cell_value);
-                //         self.fetch_code_cell_difference(
-                //             sheet_pos,
-                //             old_code_cell_value.clone(),
-                //             None,
-                //         );
-                //         let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                //         sheet.set_code_cell_value(sheet_pos.into(), None);
-                //         final_code_cell_value = None;
-                //     }
-                //     self.cells_to_compute.insert(sheet_pos);
-                // } else {
-                //     // need to update summary (cells_to_compute will be ignored)
-                //     self.fetch_code_cell_difference(
-                //         sheet_pos,
-                //         old_code_cell_value.clone(),
-                //         code_cell_value.clone(),
-                //     );
-                //     let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                //     sheet.set_code_cell_value(sheet_pos.into(), code_cell_value.clone());
-                //     final_code_cell_value = code_cell_value;
-                // }
-
-                // // TODO(ddimaria): resolve comment from @HactarCE:
-                // //
-                // // Can we use SheetPos instead of CellSheetsModified? I'd like
-                // // to avoid using String for sheet IDs as much as possible. If
-                // // it's needed for JS interop, then let's impl Serialize and
-                // // Deserialize on SheetId to make it serialize as a string.
-                // self.add_cell_sheets_modified_rect(&sheet_pos.into());
-                // self.summary.code_cells_modified.insert(sheet_id);
-
-                // // check if a new code_cell causes a spill error in another code cell
-                // if old_code_cell_value.is_none() && !is_code_cell_empty {
-                //     if let Some(old_spill) = old_spill {
-                //         if old_spill.to_sheet_pos(sheet_id) != sheet_pos {
-                //             self.set_spill_error(old_spill.to_sheet_pos(sheet_id));
-                //         }
-                //     }
-                // }
-
-                // // check if deleting a code cell releases a spill
-                // if is_code_cell_empty {
-                //     self.update_code_cell_value_if_spill_error_released(sheet_pos);
-                // }
-                // self.forward_operations.push(Operation::SetCodeCell {
-                //     sheet_pos,
-                //     code_cell_value: final_code_cell_value,
-                // });
-                self.reverse_operations.push(Operation::SetCodeCell {
-                    sheet_pos,
-                    code_cell_value: old_code_cell_value,
-                });
-
-                self.sheets_with_dirty_bounds.insert(sheet_id);
-                false
             }
 
-            Operation::RunCodeCell { sheet_pos } => {
+            Operation::ComputeCodeCell {
+                sheet_pos,
+                code_cell_value,
+                only_compute,
+            } => {
                 // only execute if sheet still exists
                 if let Some(sheet) = self.grid.try_sheet_from_id(sheet_pos.sheet_id) {
-                    // ensure the code_cell still exists
-                    if let Some(code_cell_value) = sheet.get_code_cell(sheet_pos.into()) {
+                    let old_code_cell = if only_compute {
+                        sheet.get_code_cell(sheet_pos.into()).map(|v| *v)
+                    } else {
+                        sheet.set_code_cell_value(sheet_pos.into(), code_cell_value.clone())
+                    };
+                    if let Some(code_cell_value) = &code_cell_value {
                         match code_cell_value.language {
                             CodeCellLanguage::Python => {
-                                self.execute_python(sheet_pos, code_cell_value)
+                                self.run_python(sheet_pos, code_cell_value);
                             }
                             CodeCellLanguage::Formula => {
-                                self.execute_formula(sheet_pos, code_cell_value)
+                                self.run_formula(sheet_pos, code_cell_value);
                             }
                             _ => {
                                 unreachable!("Unsupported language in RunCodeCell");
                             }
                         }
-                    } else {
-                        false
                     }
-                } else {
-                    false
+
+                    // only capture operations if not waiting for async, otherwise wait until calculation is complete
+                    if self.waiting_for_async.is_none() {
+                        // todo: check for changes in spills here...
+                        self.finalize_code_cell();
+                    }
                 }
             }
 
-            Operation::SetSpill {
+            Operation::SetSpills {
                 spill_rect,
                 code_cell_sheet_pos,
             } => {
@@ -214,14 +112,17 @@ impl GridController {
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
 
                 // remove all spills in rect and add reverse operation if needed
-                spill_rect.iter().for_each(|sheet_pos| {
-                    let old_spill =
-                        sheet.set_spill(sheet_pos.into(), code_cell_sheet_pos.map(|p| p.into()));
-                    self.reverse_operations.push(Operation::SetSpill {
-                        spill_rect: SheetRect::single_sheet_pos(sheet_pos),
-                        code_cell_sheet_pos: old_spill.map(|p| p.to_sheet_pos(sheet_id)),
-                    });
-                });
+
+                // let old_spills =
+                //     sheet.set_spills(&spill_rect, code_cell_sheet_pos.map(|p| p.into()));
+                // old_spills.iter().for_each(|sheet_rect| {
+
+                // })
+                //     self.reverse_operations.push(Operation::SetSpill {
+                //         spill_rect: SheetRect::single_sheet_pos(sheet_pos),
+                //         code_cell_sheet_pos: old_spill.map(|p| p.to_sheet_pos(sheet_id)),
+                //     });
+                // });
 
                 self.forward_operations.push(op);
             }
@@ -448,7 +349,7 @@ mod tests {
 
     fn execute(gc: &mut GridController, operation: Operation, compute: bool) {
         gc.transaction_in_progress = true;
-        gc.execute_operation(operation, false);
+        gc.execute_operation(operation);
     }
 
     #[test]

@@ -120,10 +120,10 @@ impl GridController {
 
     pub fn calculation_complete(&mut self, result: JsCodeResult) -> TransactionSummary {
         assert!(self.transaction_in_progress);
-        let cancel_compute = result.cancel_compute.unwrap_or(false);
 
-        if cancel_compute {
-            self.clear_cells_to_compute();
+        // todo: i'm not sure what this does
+        if result.cancel_compute.unwrap_or(false) {
+            // self.clear_cells_to_compute();
             self.handle_transactions();
         }
 

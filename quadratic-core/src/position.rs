@@ -360,6 +360,39 @@ impl SheetRect {
             })
         })
     }
+    pub fn from_sheet_pos_and_size(top_left: SheetPos, size: ArraySize) -> Self {
+        SheetRect {
+            min: top_left.into(),
+            max: Pos {
+                x: top_left.x + size.w.get() as i64 - 1,
+                y: top_left.y + size.h.get() as i64 - 1,
+            },
+            sheet_id: top_left.sheet_id,
+        }
+    }
+    pub fn union(&self, other: &Self) -> Self {
+        assert!(
+            self.sheet_id == other.sheet_id,
+            "Cannot union different sheets"
+        );
+        let min_x = std::cmp::min(self.min.x, other.min.x);
+        let min_y = std::cmp::min(self.min.y, other.min.y);
+        let max_x = std::cmp::max(self.max.x, other.max.x);
+        let max_y = std::cmp::max(self.max.y, other.max.y);
+        SheetRect {
+            min: Pos { x: min_x, y: min_y },
+            max: Pos { x: max_x, y: max_y },
+            sheet_id: self.sheet_id,
+        }
+    }
+
+    pub fn top_left(&self) -> SheetPos {
+        SheetPos {
+            x: self.min.x,
+            y: self.min.y,
+            sheet_id: self.sheet_id,
+        }
+    }
 }
 impl fmt::Display for SheetRect {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -652,5 +685,37 @@ mod test {
         let rect = rect1.union(&rect2);
         assert_eq!(rect.min, Pos { x: 1, y: 2 });
         assert_eq!(rect.max, Pos { x: 5, y: 7 });
+    }
+
+    #[test]
+    fn test_sheet_rect_union() {
+        let sheet_id = SheetId::new();
+        let rect1 = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);
+        let rect2 = SheetRect::from_numbers(2, 3, 4, 5, sheet_id);
+        let rect = rect1.union(&rect2);
+        assert_eq!(rect.min, Pos { x: 1, y: 2 });
+        assert_eq!(rect.max, Pos { x: 5, y: 7 });
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_sheet_rect_union_different_sheets() {
+        let rect1 = SheetRect::from_numbers(1, 2, 3, 4, SheetId::new());
+        let rect2 = SheetRect::from_numbers(2, 3, 4, 5, SheetId::new());
+        let _ = rect1.union(&rect2);
+    }
+
+    #[test]
+    fn test_top_left() {
+        let sheet_id = SheetId::new();
+        let rect = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);
+        assert_eq!(
+            rect.top_left(),
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id
+            }
+        );
     }
 }

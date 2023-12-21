@@ -80,6 +80,26 @@ fn cell_ref_to_sheet_pos(sheet: &v1_4::Sheet, cell_ref: &v1_4::CellRef) -> v1_5:
     }
 }
 
+fn cell_ref_to_sheet_rect(sheet: &v1_4::Sheet, cell_ref: &v1_4::CellRef) -> v1_5::SheetRect {
+    let x = sheet
+        .columns
+        .iter()
+        .find(|column| column.1.id == cell_ref.column)
+        .unwrap()
+        .0;
+    let y = sheet
+        .rows
+        .iter()
+        .find(|row| row.1 == cell_ref.row)
+        .unwrap()
+        .0;
+    v1_5::SheetRect {
+        min: v1_5::Pos { x, y },
+        max: v1_5::Pos { x, y },
+        sheet_id: v1_5::Id::from(cell_ref.sheet.id.clone()),
+    }
+}
+
 fn cell_ref_to_pos(sheet: &v1_4::Sheet, cell_ref: &v1_4::CellRef) -> v1_5::Pos {
     let x = sheet
         .columns
@@ -139,7 +159,7 @@ fn upgrade_code_cells(sheet: &v1_4::Sheet) -> Vec<(v1_5::Pos, v1_5::CodeCellValu
                                     },
                                     cells_accessed: cells_accessed
                                         .into_iter()
-                                        .map(|cell_ref| cell_ref_to_sheet_pos(sheet, &cell_ref))
+                                        .map(|cell_ref| cell_ref_to_sheet_rect(sheet, &cell_ref))
                                         .collect(),
                                 },
                                 v1_4::CodeCellRunResult::Err { error } => {

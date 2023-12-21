@@ -1,0 +1,60 @@
+use crate::{controller::GridController, ArraySize, SheetPos, SheetRect};
+
+use super::operation::Operation;
+
+impl GridController {
+    /// Returns (removed_rects, added_rects) for output_changes
+    pub(crate) fn spill_output_operations(
+        &mut self,
+        sheet_pos: SheetPos,
+        original: Option<ArraySize>,
+        new: Option<ArraySize>,
+    ) {
+        if original != new {
+            if let (Some(original), None) = (&original, &new) {
+                self.remove_spill_operations(SheetRect::from_sheet_pos_and_size(
+                    sheet_pos, *original,
+                ));
+            } else if let (None, Some(new)) = (&original, &new) {
+                self.operations.push(Operation::SetSpill {
+                    code_cell_sheet_pos: Some(sheet_pos),
+                    spill_rect: SheetRect::from_sheet_pos_and_size(sheet_pos, *new),
+                });
+            } else if let (Some(original), Some(new)) = (&original, &new) {
+                if original != new {
+                    self.operations.push(Operation::SetSpill {
+                        code_cell_sheet_pos: None,
+                        spill_rect: SheetRect::from_sheet_pos_and_size(sheet_pos, *new),
+                    });
+                }
+            }
+        }
+    }
+
+    // adds operations to delete all spill values within a SheetRect
+    pub fn remove_spill_operations(&self, sheet_rect: SheetRect) -> Vec<Operation> {
+        vec![Operation::SetSpill {
+            spill_rect: sheet_rect,
+            code_cell_sheet_pos: None,
+        }]
+    }
+
+    // // check if the deletion of a cell_value would release a spill error
+    // pub fn check_spill_release_operations(&self, sheet_pos: SheetPos) -> Vec<Operation> {
+    //     let mut ops = vec![];
+
+    //     let sheet_id = sheet_pos.sheet_id;
+    //     let sheet = self.grid.sheet_from_id(sheet_id);
+    //     if let Some((spill_sheet_pos, code_cell_value)) =
+    //         sheet.spill_error_released(sheet_pos.into())
+    //     {
+    //         let mut code_cell = code_cell_value.clone();
+    //         code_cell.set_spill(false);
+    //         ops.push(Operation::SetCodeCell {
+    //             sheet_pos: spill_sheet_pos.to_sheet_pos(sheet_id),
+    //             code_cell_value: Some(code_cell),
+    //         });
+    //     }
+    //     ops
+    // }
+}
