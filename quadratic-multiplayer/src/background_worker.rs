@@ -1,3 +1,4 @@
+// use rayon::prelude::*;
 use std::{sync::Arc, time::Duration};
 use tokio::{task::JoinHandle, time};
 use uuid::Uuid;
@@ -153,7 +154,7 @@ mod tests {
         let user = add_new_user_to_room(file_id, state.clone(), connection_id).await;
 
         let room = state.get_room(&file_id).await.unwrap();
-        assert_eq!(room.users.get(&user.session_id), Some(&user));
+        assert_eq!(room.users.get(&user.session_id).unwrap().value(), &user);
 
         super::remove_stale_users_in_room(state.clone(), &file_id, &room, -1)
             .await

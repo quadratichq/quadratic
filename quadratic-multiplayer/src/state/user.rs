@@ -99,7 +99,7 @@ impl State {
         let stale_users = get_room!(self, file_id)?
             .users
             .iter()
-            .filter(|(_, user)| {
+            .filter(|user| {
                 let no_heartbeat =
                     user.last_heartbeat.timestamp() + heartbeat_timeout_s < Utc::now().timestamp();
 
@@ -109,7 +109,7 @@ impl State {
 
                 no_heartbeat
             })
-            .map(|(user_id, _)| user_id.to_owned())
+            .map(|user| user.key().to_owned())
             .collect::<Vec<Uuid>>();
 
         for user_id in stale_users.iter() {

@@ -24,12 +24,12 @@ pub(crate) fn broadcast(
     // println!("message: {:?}", message);
     tokio::spawn(async move {
         let result = async {
-            for (_, user) in state
+            for user in state
                 .get_room(&file_id)
                 .await?
                 .users
                 .iter()
-                .filter(|(_, user)| !exclude.contains(&user.session_id))
+                .filter(|user| !exclude.contains(&user.session_id))
             {
                 if let Some(sender) = &user.socket {
                     sender

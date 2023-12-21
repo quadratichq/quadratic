@@ -1,23 +1,31 @@
+use dashmap::DashMap;
 use serde::Serialize;
-use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::error::Result;
 use crate::state::{user::User, State};
 use crate::{get_mut_room, get_or_create_room, get_room};
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone)]
 pub(crate) struct Room {
     pub(crate) file_id: Uuid,
-    pub(crate) users: HashMap<Uuid, User>,
+    pub(crate) users: DashMap<Uuid, User>,
     pub(crate) sequence_num: u64,
+}
+
+impl PartialEq for Room {
+    fn eq(&self, other: &Self) -> bool {
+        self.file_id == other.file_id
+            && self.sequence_num == other.sequence_num
+            && self.users.len() == other.users.len()
+    }
 }
 
 impl Room {
     pub(crate) fn new(file_id: Uuid, sequence_num: u64) -> Self {
         Room {
             file_id,
-            users: HashMap::new(),
+            users: DashMap::new(),
             sequence_num,
         }
     }
@@ -32,7 +40,7 @@ impl State {
     }
 
     /// Add a user to a room.  If the room doesn't exist, it is created.  Users
-    /// are only added to a room once (HashMap).  Returns true if the user was
+    /// are only added to a room once (DashMap).  Returns true if the user was
     /// newly added.
     #[tracing::instrument(level = "trace")]
     pub(crate) async fn enter_room(
@@ -170,7 +178,10 @@ mod tests {
         assert!(is_new);
         assert_eq!(state.rooms.lock().await.len(), 1);
         assert_eq!(room.users.len(), 1);
-        assert_eq!(room.users.get(&user.session_id), Some(user));
+        assert_eq!(
+            room.users.get(&user.session_id).unwrap().value(),
+            user.value()
+        );
 
         // leave the room of 2 users
         state
@@ -181,7 +192,7 @@ mod tests {
         let room = state.get_room(&file_id).await.unwrap();
 
         assert_eq!(room.users.len(), 1);
-        assert_eq!(room.users.get(&user2.session_id), Some(&user2));
+        assert_eq!(room.users.get(&user2.session_id).unwrap().value(), &user2);
 
         // leave a room of 1 user
         state.leave_room(file_id, &user2.session_id).await.unwrap();
