@@ -1,10 +1,3 @@
-use aws_config::{retry::RetryConfig, BehaviorVersion, Region};
-use aws_sdk_s3::{
-    config::{Credentials, SharedCredentialsProvider},
-    operation::{get_object::GetObjectOutput, put_object::PutObjectOutput},
-    primitives::{ByteStream, SdkBody},
-    Client,
-};
 use quadratic_core::{
     controller::{
         operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
@@ -13,6 +6,10 @@ use quadratic_core::{
         file::{export_vec, import},
         Grid,
     },
+};
+use quadratic_rust_shared::aws::{
+    s3::{download_object, upload_object},
+    Client,
 };
 use quadratic_rust_shared::quadratic_api::set_file_checkpoint;
 use tokio::sync::Mutex;
@@ -23,28 +20,6 @@ use crate::{
     state::transaction_queue::TransactionQueue,
 };
 
-pub(crate) async fn new_client(
-    access_key_id: &str,
-    secret_access_key: &str,
-    region: &str,
-) -> Client {
-    let creds = Credentials::new(
-        access_key_id,
-        secret_access_key,
-        None,
-        None,
-        "Quadratic File Service",
-    );
-    let conf = aws_config::SdkConfig::builder()
-        .region(Region::new(region.to_owned()))
-        .credentials_provider(SharedCredentialsProvider::new(creds))
-        .retry_config(RetryConfig::standard().with_max_attempts(5))
-        .behavior_version(BehaviorVersion::latest())
-        .build();
-
-    Client::new(&conf)
-}
-
 /// Load a .grid file
 pub(crate) fn load_file(file: &str) -> Result<Grid> {
     import(file).map_err(|e| MpError::FileService(e.to_string()))
@@ -53,47 +28,6 @@ pub(crate) fn load_file(file: &str) -> Result<Grid> {
 /// Exports a .grid file
 pub(crate) fn export_file(grid: &mut Grid) -> Result<Vec<u8>> {
     export_vec(grid).map_err(|e| MpError::FileService(e.to_string()))
-}
-
-pub(crate) async fn download_object(
-    client: &Client,
-    bucket: &str,
-    key: &str,
-) -> Result<GetObjectOutput> {
-    client
-        .get_object()
-        .bucket(bucket)
-        .key(key)
-        .send()
-        .await
-        .map_err(|error| {
-            MpError::S3(format!(
-                "Error retrieving file {} from bucket {}: {:?}.",
-                key, bucket, error
-            ))
-        })
-}
-
-pub(crate) async fn upload_object(
-    client: &Client,
-    bucket: &str,
-    key: &str,
-    body: &[u8],
-) -> Result<PutObjectOutput> {
-    let body = ByteStream::from(SdkBody::from(body));
-    client
-        .put_object()
-        .bucket(bucket)
-        .key(key)
-        .body(body)
-        .send()
-        .await
-        .map_err(|error| {
-            MpError::S3(format!(
-                "Error uploading file {key} to bucket {bucket}: {:?}.",
-                error
-            ))
-        })
 }
 
 /// Apply a vec of operations to the grid

@@ -1,7 +1,7 @@
-use aws_sdk_s3::Client;
 use jsonwebtoken::jwk::JwkSet;
+use quadratic_rust_shared::aws::{client, Client};
 
-use crate::{config::Config, file::new_client};
+use crate::config::Config;
 
 #[derive(Debug)]
 pub(crate) struct Settings {
@@ -20,10 +20,11 @@ impl Settings {
             authenticate_jwt: config.authenticate_jwt,
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
             quadratic_api_jwt: config.quadratic_api_jwt.to_owned(),
-            aws_client: new_client(
+            aws_client: client(
                 &config.aws_s3_access_key_id,
                 &config.aws_s3_secret_access_key,
                 &config.aws_s3_region,
+                "Quadratic File Service",
             )
             .await,
             aws_s3_bucket_name: config.aws_s3_bucket_name.to_owned(),

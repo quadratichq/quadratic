@@ -5,6 +5,7 @@
 //! Convert third party crate errors to application errors.
 //! Convert errors to responses.
 
+use quadratic_rust_shared::{Aws, SharedError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -58,12 +59,15 @@ pub(crate) enum MpError {
     User(String),
 }
 
-impl From<quadratic_rust_shared::SharedError> for MpError {
-    fn from(error: quadratic_rust_shared::SharedError) -> Self {
+impl From<SharedError> for MpError {
+    fn from(error: SharedError) -> Self {
         match error {
-            quadratic_rust_shared::SharedError::QuadraticApi(is_critical, error) => {
+            SharedError::QuadraticApi(is_critical, error) => {
                 MpError::FilePermissions(is_critical, error)
             }
+            SharedError::Aws(aws) => match aws {
+                Aws::S3(error) => MpError::S3(error),
+            },
             _ => MpError::Unknown("Unknown Quadratic API error".into()),
         }
     }

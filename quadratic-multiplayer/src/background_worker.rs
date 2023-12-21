@@ -25,37 +25,31 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
 
             for (file_id, room) in rooms.iter() {
                 // process transaction queue for the room
-                let transaction_queue = &state.transaction_queue;
-                let processed = process_queue_for_room(
-                    &state.settings.aws_client,
-                    &state.settings.aws_s3_bucket_name,
-                    transaction_queue,
-                    file_id,
-                    &state.settings.quadratic_api_uri,
-                    &state.settings.quadratic_api_jwt,
-                )
-                .await;
+                let processed =
+                    process_transaction_queue_for_room(Arc::clone(&state), file_id).await;
 
                 if let Err(error) = processed {
                     tracing::warn!("Error processing queue for room {file_id}: {:?}", error);
                 };
 
                 // broadcast sequence number to all users in the room
-                if let Err(error) =
-                    broadcast_sequence_num(Arc::clone(&state), file_id.to_owned()).await
-                {
+                let broadcasted =
+                    broadcast_sequence_num(Arc::clone(&state), file_id.to_owned()).await;
+
+                if let Err(error) = broadcasted {
                     tracing::warn!("Error broadcasting sequence number: {:?}", error);
                 }
 
                 // remove stale users in the room
-                if let Err(error) = remove_stale_users_in_room(
+                let removed = remove_stale_users_in_room(
                     Arc::clone(&state),
                     file_id,
                     room,
                     heartbeat_timeout_s,
                 )
-                .await
-                {
+                .await;
+
+                if let Err(error) = removed {
                     tracing::warn!(
                         "Error removing stale users from room {}: {:?}",
                         file_id,
@@ -67,6 +61,22 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
             interval.tick().await;
         }
     });
+}
+
+// Process the transaction queue for a room
+async fn process_transaction_queue_for_room(
+    state: Arc<State>,
+    file_id: &Uuid,
+) -> Result<Option<u64>> {
+    process_queue_for_room(
+        &state.settings.aws_client,
+        &state.settings.aws_s3_bucket_name,
+        &state.transaction_queue,
+        file_id,
+        &state.settings.quadratic_api_uri,
+        &state.settings.quadratic_api_jwt,
+    )
+    .await
 }
 
 // broadcast sequence number to all users in the room

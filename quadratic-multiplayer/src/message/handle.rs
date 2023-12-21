@@ -45,7 +45,6 @@ pub(crate) async fn handle_message(
         } => {
             // validate that the user has permission to access the file
             let base_url = &state.settings.quadratic_api_uri;
-            // let api_jwt = &state.settings.quadratic_api_jwt;
             let jwt = connection.jwt.to_owned().ok_or_else(|| {
                 MpError::Authentication("A JWT is required to validate file permissions".into())
             })?;
