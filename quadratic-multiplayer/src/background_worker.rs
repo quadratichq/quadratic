@@ -1,4 +1,4 @@
-// use rayon::prelude::*;
+use rayon::prelude::*;
 use std::{sync::Arc, time::Duration};
 use tokio::{task::JoinHandle, time};
 use uuid::Uuid;
@@ -24,7 +24,9 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
             // get a fresh copy of rooms for each iteration
             let rooms = state.rooms.lock().await.clone();
 
-            for (file_id, room) in rooms.iter() {
+            for room in rooms.iter() {
+                let (file_id, room) = room.pair();
+
                 // process transaction queue for the room
                 let processed =
                     process_transaction_queue_for_room(Arc::clone(&state), file_id).await;

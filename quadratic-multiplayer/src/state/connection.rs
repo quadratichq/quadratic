@@ -41,8 +41,10 @@ impl State {
         let mut affected_rooms = vec![];
         let rooms = self.rooms.lock().await.clone();
 
-        for (file_id, room) in rooms.iter() {
+        for room in rooms.iter() {
+            let (file_id, room) = room.pair();
             let session_id = self.get_session_id(connection_id).await?;
+
             if let Some(user) = room.users.get(&session_id) {
                 tracing::info!("Removing connection_id {connection_id} from room {file_id}");
 

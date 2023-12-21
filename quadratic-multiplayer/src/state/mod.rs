@@ -9,6 +9,7 @@ pub mod settings;
 pub mod transaction_queue;
 pub mod user;
 
+use dashmap::DashMap;
 use jsonwebtoken::jwk::JwkSet;
 use std::collections::HashMap;
 use tokio::sync::Mutex;
@@ -23,7 +24,7 @@ use crate::state::transaction_queue::TransactionQueue;
 
 #[derive(Debug)]
 pub(crate) struct State {
-    pub(crate) rooms: Mutex<HashMap<Uuid, Room>>,
+    pub(crate) rooms: Mutex<DashMap<Uuid, Room>>,
     pub(crate) connections: Mutex<HashMap<Uuid, Uuid>>,
     pub(crate) transaction_queue: Mutex<TransactionQueue>,
     pub(crate) settings: Settings,
@@ -32,7 +33,7 @@ pub(crate) struct State {
 impl State {
     pub(crate) async fn new(config: &Config, jwks: Option<JwkSet>) -> Self {
         State {
-            rooms: Mutex::new(HashMap::new()),
+            rooms: Mutex::new(DashMap::new()),
             connections: Mutex::new(HashMap::new()),
             transaction_queue: Mutex::new(TransactionQueue::new()),
             settings: Settings::new(config, jwks).await,
