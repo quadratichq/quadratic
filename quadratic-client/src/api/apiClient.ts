@@ -87,6 +87,18 @@ export const apiClient = {
     },
   },
 
+  files: {
+    users: {
+      async update(uuid: string, userId: string, body: ApiTypes['/v0/files/:uuid/users/:userId.PATCH.request']) {
+        return fetchFromApi(
+          `/v0/files/${uuid}/users/${userId}`,
+          { method: 'PATCH', body: JSON.stringify(body) },
+          ApiSchemas['/v0/files/:uuid/users/:userId.PATCH.response']
+        );
+      },
+    },
+  },
+
   async getFiles() {
     return fetchFromApi(`/v0/files`, { method: 'GET' }, ApiSchemas['/v0/files.GET.response']);
   },

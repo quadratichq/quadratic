@@ -2,12 +2,12 @@ import express, { Request, Response } from 'express';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
+import { getFile } from '../../middleware/fileMiddleware';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
-import { getFile } from './fileMiddleware';
 
 const sharing_router = express.Router();
 

@@ -135,7 +135,9 @@ export const ApiSchemas = {
     message: z.string(),
   }),
 
-  // File sharing
+  /**
+   * File sharing
+   */
   '/v0/files/:uuid/sharing.GET.response': z.object({
     file: z.object({
       // TODO: how, if at all, do we want to handle email visibility in the UI?
@@ -155,11 +157,14 @@ export const ApiSchemas = {
   }),
   '/v0/files/:uuid/sharing.POST.request': z.object({
     publicLinkAccess: PublicLinkAccessSchema,
-    // newUser: z.object({}), TODO
   }),
   '/v0/files/:uuid/sharing.POST.response': z.object({ message: z.string() }),
-  // TODO
-  // '/v0/files/:uuid/sharing/:userId.POST.request': z.object({ permission }),
+
+  /**
+   * File users
+   */
+  '/v0/files/:uuid/users/:userId.PATCH.request': FileUserSchema.pick({ role: true }),
+  '/v0/files/:uuid/users/:userId.PATCH.response': FileUserSchema.pick({ role: true }),
   // '/v0/files/:uuid/sharing/:userId.DELETE.request': z.object({ permission }),
 
   /**

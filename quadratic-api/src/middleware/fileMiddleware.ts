@@ -1,9 +1,9 @@
 import { NextFunction, Response } from 'express';
 import { UserRoleFileSchema } from 'quadratic-shared/typesAndSchemas';
-import dbClient from '../../dbClient';
-import { Request } from '../../types/Request';
-import { ApiError } from '../../utils/ApiError';
-import { getFilePermissions } from '../../utils/permissions';
+import dbClient from '../dbClient';
+import { Request } from '../types/Request';
+import { ApiError } from '../utils/ApiError';
+import { getFilePermissions } from '../utils/permissions';
 
 export const fileMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   // TODO: validate UUID

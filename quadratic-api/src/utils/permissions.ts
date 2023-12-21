@@ -79,8 +79,8 @@ export const getFilePermissions = ({
 };
 
 export const firstRoleIsHigherThanSecond = (
-  firstRole: UserRoleTeam | UserRoleFile,
-  secondRole: UserRoleTeam | UserRoleFile
+  firstRole: UserRoleTeam | UserRoleFile | undefined,
+  secondRole: UserRoleTeam | UserRoleFile | undefined
 ) => {
   switch (secondRole) {
     case 'OWNER':
@@ -90,7 +90,7 @@ export const firstRoleIsHigherThanSecond = (
     case 'VIEWER':
       return firstRole === 'OWNER' || firstRole === 'EDITOR';
     default:
-      // TODO: log error to sentry because we should never reach this
+      // If it's undefined, it's not higher than anything
       return false;
   }
 };

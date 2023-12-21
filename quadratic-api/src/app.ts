@@ -6,8 +6,7 @@ import 'express-async-errors';
 import helmet from 'helmet';
 import ai_chat_router from './routes/ai_chat';
 import feedback_router from './routes/feedback';
-import files_router from './routes/files/files';
-import sharing_router from './routes/files/sharing';
+import files_router from './routes/files';
 import teams_router from './routes/teams';
 import { ApiError } from './utils/ApiError';
 
@@ -59,7 +58,6 @@ app.use((req, res, next) => {
 // Routes
 app.use('/ai', ai_chat_router);
 app.use('/v0/files', files_router);
-app.use('/v0/files', sharing_router);
 app.use('/v0/feedback', feedback_router);
 app.use('/v0/teams', teams_router);
 

@@ -1,11 +1,11 @@
 import express, { Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
 import dbClient from '../../dbClient';
+import { fileMiddleware } from '../../middleware/fileMiddleware';
 import { userMiddleware, userOptionalMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { Request } from '../../types/Request';
-import { fileMiddleware } from './fileMiddleware';
 import { getFilePermissions } from './getFilePermissions';
 import { generatePresignedUrl, uploadThumbnailToS3 } from './thumbnail';
 
