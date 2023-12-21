@@ -1,3 +1,4 @@
+import { UserRoleFile } from 'quadratic-shared/typesAndSchemas';
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
@@ -38,12 +39,13 @@ beforeEach(async () => {
       version: '1.4',
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000001',
-      UserFileRole: {
-        create: [
-          { userId: user2.id, role: 'EDITOR' },
-          { userId: user3.id, role: 'VIEWER' },
-        ],
-      },
+      publicLinkAccess: 'NOT_SHARED',
+      // UserFileRole: {
+      //   create: [
+      //     { userId: user2.id, role: 'EDITOR' },
+      //     { userId: user3.id, role: 'VIEWER' },
+      //   ],
+      // },
     },
   });
 });
@@ -68,8 +70,53 @@ afterEach(async () => {
 
 // TODO sending bad data
 
-describe('PATCH /v0/files/:uuid/users/:userId', () => {
-  describe('🔒 Private file', () => {
+const test = (
+  userMakingChange: 'user1' | 'user2' | 'user3',
+  expectation: 'changes' | 'accepts' | 'rejects',
+  fromRole: UserRoleFile,
+  toRole: UserRoleFile
+) => {
+  it(`${expectation} ${fromRole} to ${toRole}`, async () => {
+    const userToChange = fromRole === 'OWNER' ? 'user1' : fromRole === 'EDITOR' ? 'user2' : 'user3';
+    const userId = await getUserIdByAuth0Id(userToChange);
+    await request(app)
+      .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
+      .send({ role: toRole })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken ${userMakingChange}`)
+      .expect((res) => {
+        if (expectation === 'changes' || expectation === 'accepts') {
+          expect(res.status).toBe(200);
+          expect(res.body.role).toBe(toRole);
+        } else if (expectation === 'rejects') {
+          expect(res.status).toBe(403);
+        }
+      });
+  });
+};
+
+describe.only('PATCH /v0/files/:uuid/users/:userId', () => {
+  describe('🔒 Private user file with 3 members', () => {
+    beforeEach(async () => {
+      const user2Id = await getUserIdByAuth0Id('user2');
+      const user3Id = await getUserIdByAuth0Id('user3');
+      await dbClient.file.update({
+        data: {
+          UserFileRole: {
+            create: [
+              { userId: user2Id, role: 'EDITOR' },
+              { userId: user3Id, role: 'VIEWER' },
+            ],
+          },
+        },
+        where: {
+          uuid: '00000000-0000-4000-8000-000000000001',
+        },
+        select: {
+          UserFileRole: {},
+        },
+      });
+    });
     describe('Update yourself', () => {
       describe('as file OWNER', () => {
         it('accepts OWNER -> OWNER', async () => {
@@ -251,24 +298,40 @@ describe('PATCH /v0/files/:uuid/users/:userId', () => {
         });
       });
       describe('as file EDITOR', () => {
-        it.todo('rejects EDITOR -> OWNER');
-        it.todo('accepts EDITOR -> EDITOR');
-        it.todo('changes EDITOR -> VIEWER');
+        test('user2', 'rejects', 'EDITOR', 'OWNER');
+        test('user2', 'accepts', 'EDITOR', 'EDITOR');
+        test('user2', 'changes', 'EDITOR', 'VIEWER');
       });
       describe('as file VIEWER', () => {
-        it.todo('rejects VIEWER -> OWNER');
-        it.todo('rejects VIEWER -> EDITOR');
-        it.todo('accepts EDITOR -> VIEWER');
+        test('user3', 'rejects', 'VIEWER', 'OWNER');
+        test('user3', 'rejects', 'VIEWER', 'EDITOR');
+        test('user3', 'accepts', 'VIEWER', 'VIEWER');
       });
     });
   });
-  describe('👁️ Public file READONLY', () => {
+  describe('👁️ Public user file (READONLY) with 0 members', () => {
+    describe('Update yourself', () => {
+      describe('as file OWNER', () => {
+        test('user1', 'accepts', 'OWNER', 'OWNER');
+        test('user1', 'rejects', 'OWNER', 'EDITOR');
+        test('user1', 'rejects', 'OWNER', 'VIEWER');
+      });
+      describe('as file EDITOR', () => {
+        test('user2', 'rejects', 'EDITOR', 'OWNER');
+        test('user2', 'rejects', 'EDITOR', 'EDITOR');
+        test('user2', 'rejects', 'EDITOR', 'VIEWER');
+      });
+      describe('as file VIEWER', () => {
+        test('user2', 'rejects', 'VIEWER', 'OWNER');
+        test('user2', 'rejects', 'VIEWER', 'EDITOR');
+        test('user2', 'rejects', 'VIEWER', 'VIEWER');
+      });
+    });
+  });
+  describe('📝 Public user file (EDIT) with 3 members', () => {
     it.todo('TODO');
   });
-  describe('📝 Public file EDIT', () => {
-    it.todo('TODO');
-  });
-  describe('👩‍👧 Team file', () => {
+  describe('🔒 Private team file', () => {
     describe('Update yourself', () => {
       describe('as team OWNER', () => {
         // what do we do if you try to add yourself to a file that you already get access to via a team?
@@ -292,6 +355,12 @@ describe('PATCH /v0/files/:uuid/users/:userId', () => {
         it.todo('TODO');
       });
     });
+  });
+  describe('👁️ Public team file (READONLY)', () => {
+    it.todo('TODO');
+  });
+  describe('📝 Public team file (EDIT)', () => {
+    it.todo('TODO');
   });
 
   // TODO trying to change a user that don't exist or exists but not part of the team
