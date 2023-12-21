@@ -24,42 +24,50 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
             // get a fresh copy of rooms for each iteration
             let rooms = state.rooms.lock().await.clone();
 
-            for room in rooms.iter() {
-                let (file_id, room) = room.pair();
+            // parallelize the work for each room
+            rooms.par_iter().for_each(|room| {
+                let rt = tokio::runtime::Runtime::new();
+                let _ = rt.map(|rt| {
+                    rt.block_on(async {
+                        let (file_id, room) = &room.pair();
 
-                // process transaction queue for the room
-                let processed =
-                    process_transaction_queue_for_room(Arc::clone(&state), file_id).await;
+                        // process transaction queue for the room
+                        let processed =
+                            process_transaction_queue_for_room(Arc::clone(&state), file_id).await;
 
-                if let Err(error) = processed {
-                    tracing::warn!("Error processing queue for room {file_id}: {:?}", error);
-                };
+                        if let Err(error) = processed {
+                            tracing::warn!(
+                                "Error processing queue for room {file_id}: {:?}",
+                                error
+                            );
+                        };
 
-                // broadcast sequence number to all users in the room
-                let broadcasted =
-                    broadcast_sequence_num(Arc::clone(&state), file_id.to_owned()).await;
+                        // broadcast sequence number to all users in the room
+                        let broadcasted = broadcast_sequence_num(Arc::clone(&state), file_id).await;
 
-                if let Err(error) = broadcasted {
-                    tracing::warn!("Error broadcasting sequence number: {:?}", error);
-                }
+                        if let Err(error) = broadcasted {
+                            tracing::warn!("Error broadcasting sequence number: {:?}", error);
+                        }
 
-                // remove stale users in the room
-                let removed = remove_stale_users_in_room(
-                    Arc::clone(&state),
-                    file_id,
-                    room,
-                    heartbeat_timeout_s,
-                )
-                .await;
+                        // remove stale users in the room
+                        let removed = remove_stale_users_in_room(
+                            Arc::clone(&state),
+                            file_id,
+                            room,
+                            heartbeat_timeout_s,
+                        )
+                        .await;
 
-                if let Err(error) = removed {
-                    tracing::warn!(
-                        "Error removing stale users from room {}: {:?}",
-                        file_id,
-                        error
-                    );
-                }
-            }
+                        if let Err(error) = removed {
+                            tracing::warn!(
+                                "Error removing stale users from room {}: {:?}",
+                                file_id,
+                                error
+                            );
+                        }
+                    });
+                });
+            });
 
             interval.tick().await;
         }
@@ -83,7 +91,7 @@ async fn process_transaction_queue_for_room(
 }
 
 // broadcast sequence number to all users in the room
-async fn broadcast_sequence_num(state: Arc<State>, file_id: Uuid) -> Result<JoinHandle<()>> {
+async fn broadcast_sequence_num(state: Arc<State>, file_id: &Uuid) -> Result<JoinHandle<()>> {
     let sequence_num = state.get_sequence_num(&file_id).await?;
 
     Ok(broadcast(
@@ -141,7 +149,7 @@ mod tests {
             0,
         );
 
-        super::broadcast_sequence_num(state, file_id)
+        super::broadcast_sequence_num(state, &file_id)
             .await
             .unwrap()
             .await

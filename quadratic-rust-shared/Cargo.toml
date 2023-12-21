@@ -6,6 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+aws-config = { version= "1.1.1", features = ["behavior-version-latest"] }
+aws-sdk-s3 = {version = "1.8.0", features = ["rt-tokio"] }
 jsonwebtoken = "9.2.0"
 reqwest = { version = "0.11.22", features = ["json", "serde_json"] }
 serde = { version = "1.0.193", features = ["derive"] }
