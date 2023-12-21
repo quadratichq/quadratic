@@ -6,8 +6,9 @@ use uuid::Uuid;
 use crate::{
     error::Result,
     file::process_queue_for_room,
+    get_room,
     message::{broadcast, response::MessageResponse},
-    state::{room::Room, State},
+    state::State,
 };
 
 /// In a separate thread:
@@ -21,54 +22,53 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
         let mut interval = time::interval(Duration::from_millis(heartbeat_check_s as u64 * 1000));
 
         loop {
-            // get a fresh copy of rooms for each iteration
-            let rooms = state.rooms.lock().await.clone();
+            // get all room ids
+            let rooms = state
+                .rooms
+                .lock()
+                .await
+                .iter()
+                .map(|room| room.key().to_owned())
+                .collect::<Vec<_>>();
 
             // parallelize the work for each room
-            rooms.par_iter().for_each(|room| {
-                let rt = tokio::runtime::Runtime::new();
-                let _ = rt.map(|rt| {
-                    rt.block_on(async {
-                        let (file_id, room) = &room.pair();
+            for file_id in rooms.into_iter() {
+                let state = Arc::clone(&state);
 
-                        // process transaction queue for the room
-                        let processed =
-                            process_transaction_queue_for_room(Arc::clone(&state), file_id).await;
+                tokio::spawn(async move {
+                    tracing::info!("Processing room {}", file_id);
+                    // process transaction queue for the room
+                    let processed =
+                        process_transaction_queue_for_room(Arc::clone(&state), &file_id).await;
 
-                        if let Err(error) = processed {
-                            tracing::warn!(
-                                "Error processing queue for room {file_id}: {:?}",
-                                error
-                            );
-                        };
+                    if let Err(error) = processed {
+                        tracing::warn!("Error processing queue for room {file_id}: {:?}", error);
+                    };
 
-                        // broadcast sequence number to all users in the room
-                        let broadcasted = broadcast_sequence_num(Arc::clone(&state), file_id).await;
+                    // broadcast sequence number to all users in the room
+                    let broadcasted = broadcast_sequence_num(Arc::clone(&state), &file_id).await;
 
-                        if let Err(error) = broadcasted {
-                            tracing::warn!("Error broadcasting sequence number: {:?}", error);
-                        }
+                    if let Err(error) = broadcasted {
+                        tracing::warn!("Error broadcasting sequence number: {:?}", error);
+                    }
 
-                        // remove stale users in the room
-                        let removed = remove_stale_users_in_room(
-                            Arc::clone(&state),
+                    // remove stale users in the room
+                    let removed = remove_stale_users_in_room(
+                        Arc::clone(&state),
+                        &file_id,
+                        heartbeat_timeout_s,
+                    )
+                    .await;
+
+                    if let Err(error) = removed {
+                        tracing::warn!(
+                            "Error removing stale users from room {}: {:?}",
                             file_id,
-                            room,
-                            heartbeat_timeout_s,
-                        )
-                        .await;
-
-                        if let Err(error) = removed {
-                            tracing::warn!(
-                                "Error removing stale users from room {}: {:?}",
-                                file_id,
-                                error
-                            );
-                        }
-                    });
+                            error
+                        );
+                    }
                 });
-            });
-
+            }
             interval.tick().await;
         }
     });
@@ -107,7 +107,6 @@ async fn broadcast_sequence_num(state: Arc<State>, file_id: &Uuid) -> Result<Joi
 async fn remove_stale_users_in_room(
     state: Arc<State>,
     file_id: &Uuid,
-    room: &Room,
     heartbeat_timeout_s: i64,
 ) -> Result<Option<JoinHandle<()>>> {
     let (num_removed, num_remaining) = state
@@ -120,11 +119,14 @@ async fn remove_stale_users_in_room(
         return Ok(None);
     }
 
+    let users = get_room!(state, file_id)?.users.to_owned();
+    let message = MessageResponse::from(users);
+
     Ok(Some(broadcast(
         vec![],
         file_id.to_owned(),
         Arc::clone(&state),
-        MessageResponse::from(room.to_owned()),
+        message,
     )))
 }
 
@@ -166,7 +168,7 @@ mod tests {
         let room = state.get_room(&file_id).await.unwrap();
         assert_eq!(room.users.get(&user.session_id).unwrap().value(), &user);
 
-        super::remove_stale_users_in_room(state.clone(), &file_id, &room, -1)
+        super::remove_stale_users_in_room(state.clone(), &file_id, -1)
             .await
             .unwrap()
             .unwrap()

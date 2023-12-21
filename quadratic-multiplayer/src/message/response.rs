@@ -2,6 +2,7 @@
 //!
 //! A central place for storing websocket messages responses.
 
+use dashmap::DashMap;
 use serde::Serialize;
 use uuid::Uuid;
 
@@ -44,6 +45,14 @@ impl From<Room> for MessageResponse {
     fn from(room: Room) -> Self {
         MessageResponse::UsersInRoom {
             users: room.users.into_iter().map(|user| (user.1)).collect(),
+        }
+    }
+}
+
+impl From<DashMap<Uuid, User>> for MessageResponse {
+    fn from(users: DashMap<Uuid, User>) -> Self {
+        MessageResponse::UsersInRoom {
+            users: users.into_iter().map(|user| (user.1)).collect(),
         }
     }
 }
