@@ -12,6 +12,7 @@ use crate::{
 };
 
 /// In a separate thread:
+///   * Process transaction queue for the room
 ///   * Broadcast sequence number to all users in the room
 ///   * Check for stale users in rooms and remove them.
 #[tracing::instrument(level = "trace")]
@@ -27,12 +28,12 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                 .rooms
                 .lock()
                 .await
-                .iter()
+                .par_iter()
                 .map(|room| room.key().to_owned())
                 .collect::<Vec<_>>();
 
             // parallelize the work for each room
-            for file_id in rooms.into_iter() {
+            rooms.into_par_iter().for_each(|file_id| {
                 let state = Arc::clone(&state);
 
                 tokio::spawn(async move {
@@ -68,7 +69,8 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                         );
                     }
                 });
-            }
+            });
+
             interval.tick().await;
         }
     });
