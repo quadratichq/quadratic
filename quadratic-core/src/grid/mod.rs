@@ -239,7 +239,7 @@ mod more_tests {
 
     #[test]
     fn test_try_sheet_from_id() {
-        let mut grid = Grid::new();
+        let grid = Grid::new();
         let id = grid.first_sheet_id();
 
         assert!(grid.try_sheet_from_id(id).is_some());

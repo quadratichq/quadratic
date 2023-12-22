@@ -1,18 +1,14 @@
-use std::collections::HashSet;
-
-use indexmap::IndexSet;
-#[cfg(feature = "js")]
-use wasm_bindgen::prelude::*;
-
-use crate::{
-    grid::{CodeCellLanguage, Grid, SheetId},
-    SheetPos, SheetRect,
-};
-
 use self::{
     execution::TransactionType, operations::operation::Operation,
     transaction_summary::TransactionSummary,
 };
+use crate::{
+    grid::{CodeCellLanguage, Grid, SheetId},
+    SheetPos, SheetRect,
+};
+use std::collections::HashSet;
+#[cfg(feature = "js")]
+use wasm_bindgen::prelude::*;
 
 pub mod dependencies;
 pub mod execution;
@@ -21,7 +17,6 @@ pub mod formula;
 pub mod operations;
 pub mod sheet_offsets;
 pub mod sheets;
-pub mod spills;
 pub mod thumbnail;
 pub mod transaction_summary;
 pub mod transaction_types;
@@ -45,27 +40,8 @@ pub struct GridController {
     cursor: Option<String>,
     transaction_type: TransactionType,
 
-    // track changes
-    cells_updated: IndexSet<SheetRect>,
-
-    // used by Code Cell execution to track dependencies
-    cells_accessed: HashSet<SheetRect>,
-
-    // returned to the TS client for (mostly) rendering updates
-    summary: TransactionSummary,
-
-    // tracks sheets that will need updated bounds
-    sheets_with_dirty_bounds: HashSet<SheetId>,
-
-    // tracks whether there are any async calls (which changes how the transaction is finalized)
-    has_async: bool,
-
-    // save code_cell info for async calls
-    current_sheet_pos: Option<SheetPos>,
-    waiting_for_async: Option<CodeCellLanguage>,
-
-    // true when transaction completes
-    complete: bool,
+    // list of pending operations
+    operations: Vec<Operation>,
 
     // undo operations
     reverse_operations: Vec<Operation>,
@@ -73,8 +49,27 @@ pub struct GridController {
     // list of operations to share with other players
     forward_operations: Vec<Operation>,
 
-    // list of pending operations
-    operations: Vec<Operation>,
+    // tracks sheets that will need updated bounds calculations
+    sheets_with_dirty_bounds: HashSet<SheetId>,
+
+    // tracks whether there are any async calls (which changes how the transaction is finalized)
+    has_async: bool,
+
+    // returned to the TS client for (mostly) rendering updates
+    summary: TransactionSummary,
+
+    // Keeps track of pending async transaction
+    // ----------------------------------------
+
+    // used by Code Cell execution to track dependencies
+    cells_accessed: HashSet<SheetRect>,
+
+    // save code_cell info for async calls
+    current_sheet_pos: Option<SheetPos>,
+    waiting_for_async: Option<CodeCellLanguage>,
+
+    // true when transaction completes
+    complete: bool,
 }
 
 impl GridController {

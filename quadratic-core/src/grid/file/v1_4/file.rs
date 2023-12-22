@@ -1,43 +1,13 @@
-use std::collections::HashMap;
-
 use crate::grid::file::v1_4::schema as v1_4;
 use crate::grid::file::v1_5::schema::{self as v1_5};
 use anyhow::Result;
 
-fn upgrade_spills(
-    sheet: &v1_4::Sheet,
-    spills: &HashMap<String, v1_4::ColumnFormatType<String>>,
-) -> HashMap<String, v1_5::ColumnFormatType<String>> {
-    spills
-        .iter()
-        .flat_map(|(_, spill)| {
-            let y = spill.y;
-            let cell_ref = serde_json::from_str::<v1_4::CellRef>(&spill.content.value).unwrap();
-            let len = spill.content.len;
-            match serde_json::to_string(&cell_ref_to_sheet_pos(sheet, &cell_ref)) {
-                Ok(sheet_pos_string) => Some((
-                    y.to_string(),
-                    v1_5::ColumnFormatType::<String> {
-                        y,
-                        content: v1_5::ColumnFormatContent {
-                            value: sheet_pos_string,
-                            len,
-                        },
-                    },
-                )),
-                Err(_) => None,
-            }
-        })
-        .collect()
-}
-
-fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, v1_5::Column) {
+fn upgrade_column(x: &i64, column: &v1_4::Column) -> (i64, v1_5::Column) {
     (
         *x,
         v1_5::Column {
             x: *x,
             values: column.values.clone(),
-            spills: upgrade_spills(sheet, &column.spills),
             align: column.align.clone(),
             wrap: column.wrap.clone(),
             numeric_format: column.numeric_format.clone(),
@@ -56,28 +26,8 @@ fn upgrade_columns(sheet: &v1_4::Sheet) -> Vec<(i64, v1_5::Column)> {
     sheet
         .columns
         .iter()
-        .map(|(x, column)| upgrade_column(sheet, x, column))
+        .map(|(x, column)| upgrade_column(x, column))
         .collect()
-}
-
-fn cell_ref_to_sheet_pos(sheet: &v1_4::Sheet, cell_ref: &v1_4::CellRef) -> v1_5::SheetPos {
-    let x = sheet
-        .columns
-        .iter()
-        .find(|column| column.1.id == cell_ref.column)
-        .unwrap()
-        .0;
-    let y = sheet
-        .rows
-        .iter()
-        .find(|row| row.1 == cell_ref.row)
-        .unwrap()
-        .0;
-    v1_5::SheetPos {
-        x,
-        y,
-        sheet_id: v1_5::Id::from(cell_ref.sheet.id.clone()),
-    }
 }
 
 fn cell_ref_to_sheet_rect(sheet: &v1_4::Sheet, cell_ref: &v1_4::CellRef) -> v1_5::SheetRect {

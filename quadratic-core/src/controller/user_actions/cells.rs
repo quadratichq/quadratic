@@ -1,6 +1,4 @@
-use crate::controller::{
-    execution::TransactionType, transaction_summary::TransactionSummary, GridController,
-};
+use crate::controller::{transaction_summary::TransactionSummary, GridController};
 
 use crate::{
     grid::{CodeCellLanguage, SheetId},
@@ -21,7 +19,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.set_cell_value_operations(sheet_pos, value);
-        self.set_in_progress_transaction(ops, cursor, true, TransactionType::User)
+        self.start_user_transaction(ops, cursor)
     }
 
     pub fn set_cell_code(
@@ -32,7 +30,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.set_code_cell_operations(sheet_pos, language, code_string);
-        self.set_in_progress_transaction(ops, cursor, true, TransactionType::User)
+        self.start_user_transaction(ops, cursor)
     }
 
     /// Deletes the cell values and code in a given region.
@@ -44,7 +42,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.delete_cells_rect_operations(sheet_rect);
-        self.set_in_progress_transaction(ops, cursor, true, TransactionType::User)
+        self.start_user_transaction(ops, cursor)
     }
 
     pub fn clear_formatting(
@@ -53,7 +51,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.clear_formatting_operations(sheet_rect);
-        self.set_in_progress_transaction(ops, cursor, false, TransactionType::User)
+        self.start_user_transaction(ops, cursor)
     }
 
     pub fn delete_values_and_formatting(
@@ -62,7 +60,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.delete_values_and_formatting_operations(sheet_rect);
-        self.set_in_progress_transaction(ops, cursor, true, TransactionType::User)
+        self.start_user_transaction(ops, cursor)
     }
 }
 

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::{ArraySize, CellValue, Error, SheetPos, SheetRect, Value};
+use crate::{ArraySize, CellValue, Error, Pos, Rect, SheetPos, SheetRect, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CodeCellValue {
@@ -55,6 +55,16 @@ impl CodeCellValue {
             SheetRect::from_sheet_pos_and_size(sheet_pos, ArraySize::_1X1)
         } else {
             SheetRect::from_sheet_pos_and_size(sheet_pos, self.output_size())
+        }
+    }
+
+    /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
+    /// Note: this returns a 1x1 if there is a spill_error.
+    pub fn output_rect(&self, pos: Pos) -> Rect {
+        if self.has_spill_error() {
+            Rect::from_pos_and_size(pos, ArraySize::_1X1)
+        } else {
+            Rect::from_pos_and_size(pos, self.output_size())
         }
     }
 

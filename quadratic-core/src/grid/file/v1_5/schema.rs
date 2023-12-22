@@ -151,7 +151,6 @@ pub type RenderSize = v1_4::RenderSize;
 pub struct Column {
     pub x: i64,
     pub values: HashMap<String, ColumnValues>,
-    pub spills: HashMap<String, ColumnFormatType<String>>,
     pub align: HashMap<String, ColumnFormatType<String>>,
     pub wrap: HashMap<String, ColumnFormatType<String>>,
     #[serde(rename = "numeric_format")]

@@ -2,9 +2,7 @@ use core::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    grid::{
-        formatting::CellFmtArray, CodeCellRunOutput, CodeCellValue, Sheet, SheetBorders, SheetId,
-    },
+    grid::{formatting::CellFmtArray, CodeCellValue, Sheet, SheetBorders, SheetId},
     Array, SheetPos, SheetRect,
 };
 
@@ -30,12 +28,11 @@ pub enum Operation {
         only_compute: bool,
     },
 
-    // used for undo and multiplayer -- for user actions, spills are set w/o a separate Operation
-    SetSpills {
-        spill_rect: SheetRect,
-        code_cell_sheet_pos: Option<SheetPos>,
-    },
-
+    // // used for undo and multiplayer -- for user actions, spills are set w/o a separate Operation
+    // SetSpills {
+    //     spill_rect: SheetRect,
+    //     code_cell_sheet_pos: Option<SheetPos>,
+    // },
     SetCellFormats {
         sheet_rect: SheetRect,
         attr: CellFmtArray,
@@ -90,16 +87,20 @@ impl fmt::Display for Operation {
                 code_cell_value
             ),
 
-            Operation::SetSpills {
-                spill_rect,
-                code_cell_sheet_pos,
-            } => write!(
-                fmt,
-                "SetSpill {{ pos: {:?}, code_cell_sheet_pos: {:?} }}",
-                spill_rect, code_cell_sheet_pos
-            ),
-            Operation::ComputeCodeCell { sheet_pos } => {
-                write!(fmt, "RunCodeCell {{ sheet_pos: {:?} }}", sheet_pos)
+            // Operation::SetSpills {
+            //     spill_rect,
+            //     code_cell_sheet_pos,
+            // } => write!(
+            //     fmt,
+            //     "SetSpill {{ pos: {:?}, code_cell_sheet_pos: {:?} }}",
+            //     spill_rect, code_cell_sheet_pos
+            // ),
+            Operation::ComputeCodeCell {
+                sheet_pos,
+                code_cell_value,
+                only_compute,
+            } => {
+                write!(fmt, "ComputeCodeCell {{ sheet_pos: {:?}, code_cell_value: {:?}, only_compute: {:?} }}", sheet_pos, code_cell_value, only_compute)
             }
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),
             Operation::AddSheet { sheet } => write!(fmt, "AddSheet {{ sheet: {} }}", sheet.name),

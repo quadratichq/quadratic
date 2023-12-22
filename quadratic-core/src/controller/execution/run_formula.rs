@@ -1,5 +1,5 @@
 use crate::{
-    controller::{operations::operation::Operation, GridController},
+    controller::GridController,
     formulas::{parse_formula, Ctx},
     grid::{CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
     util::date_string,
@@ -27,13 +27,9 @@ impl GridController {
                             }),
                             ..code_cell.clone()
                         });
-                        self.operations.insert(
-                            0,
-                            Operation::SetCodeCell {
-                                sheet_pos,
-                                code_cell_value,
-                            },
-                        );
+                        if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) {
+                            sheet.set_code_cell_value(sheet_pos.into(), code_cell_value);
+                        }
                     }
                     Err(error) => {
                         let msg = error.msg.to_string();

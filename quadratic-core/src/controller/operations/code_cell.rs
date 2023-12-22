@@ -64,24 +64,24 @@ impl GridController {
         self.get_dependent_cells_for_sheet_rect(output)
             .iter()
             .for_each(|sheet_pos| {
-                cells_to_compute.extend(*sheet_pos);
+                cells_to_compute.extend(sheet_pos);
             });
-        self.operations.extend(
-            cells_to_compute
-                .iter()
-                .filter(|sheet_pos| {
-                    !self.operations.contains(&Operation::ComputeCodeCell {
-                        sheet_pos: **sheet_pos,
-                        code_cell_value: None,
-                        only_compute: true,
-                    })
-                })
-                .map(|sheet_pos| Operation::ComputeCodeCell {
-                    sheet_pos: *sheet_pos,
+        let operations: Vec<Operation> = cells_to_compute
+            .iter()
+            .filter(|sheet_pos| {
+                !self.operations.contains(&Operation::ComputeCodeCell {
+                    sheet_pos: **sheet_pos,
                     code_cell_value: None,
                     only_compute: true,
-                }),
-        );
+                })
+            })
+            .map(|sheet_pos| Operation::ComputeCodeCell {
+                sheet_pos: *sheet_pos,
+                code_cell_value: None,
+                only_compute: true,
+            })
+            .collect();
+        self.operations.extend(operations);
     }
 
     /// Adds operations after a code_cell has changed
@@ -97,7 +97,7 @@ impl GridController {
             (Some(old_sheet_rect), Some(new_sheet_rect)) => {
                 let sheet_rect = old_sheet_rect.union(new_sheet_rect);
                 self.add_compute_operations(&sheet_rect);
-                self.add_spills(new_sheet_rect, sheet_pos);
+                // self.add_spills(new_sheet_rect, sheet_pos);
 
                 // clears spills from the right of old_sheet_rect to the right of new_sheet_rect
                 let mut clear_spills = vec![];
@@ -129,15 +129,15 @@ impl GridController {
                         sheet_id: sheet_pos.sheet_id,
                     });
                 }
-                self.clear_spills(clear_spills);
+                // self.clear_spills(clear_spills);
             }
             (Some(old_sheet_rect), None) => {
                 self.add_compute_operations(old_sheet_rect);
-                self.clear_spills(vec![*old_sheet_rect])
+                // self.clear_spills(vec![*old_sheet_rect])
             }
             (None, Some(new_sheet_rect)) => {
                 self.add_compute_operations(new_sheet_rect);
-                self.add_spills(new_sheet_rect, sheet_pos);
+                // self.add_spills(new_sheet_rect, sheet_pos);
             }
             (None, None) => {}
         }

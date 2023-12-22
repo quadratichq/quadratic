@@ -75,15 +75,6 @@ impl GridController {
         // strip whitespace
         let value = value.trim();
 
-        // check if any code cells need to be deleted
-        let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
-        sheet.code_cells.iter().for_each(|(pos, _)| {
-            let possible_delete = pos.to_sheet_pos(sheet.id);
-            if sheet_pos == possible_delete {
-                ops.extend(self.delete_code_cell_operations(possible_delete));
-            }
-        });
-
         // convert the string to a cell value and generate necessary operations
         let (operations, cell_value) = self.string_to_cell_value(sheet_pos, value);
         ops.extend(operations);
@@ -98,22 +89,8 @@ impl GridController {
     /// Generates and returns the set of operations to deleted the values and code in a given region
     /// Does not commit the operations or create a transaction.
     pub fn delete_cells_rect_operations(&mut self, sheet_rect: SheetRect) -> Vec<Operation> {
-        let mut ops = vec![];
         let values = Array::new_empty(sheet_rect.size());
-        ops.push(Operation::SetCellValues { sheet_rect, values });
-
-        let sheet = self.grid.sheet_from_id(sheet_rect.sheet_id);
-
-        // collect all the code cells in the region
-        for pos in sheet.code_cells.keys() {
-            if sheet_rect.contains(pos.to_sheet_pos(sheet_rect.sheet_id)) {
-                ops.push(Operation::SetCodeCell {
-                    sheet_pos: pos.to_sheet_pos(sheet_rect.sheet_id),
-                    code_cell_value: None,
-                });
-            }
-        }
-        ops
+        vec![Operation::SetCellValues { sheet_rect, values }]
     }
 
     pub fn delete_values_and_formatting_operations(
