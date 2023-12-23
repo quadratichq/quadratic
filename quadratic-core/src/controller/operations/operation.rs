@@ -22,10 +22,7 @@ pub enum Operation {
     // used for user compute or update code_cell actions
     ComputeCodeCell {
         sheet_pos: SheetPos,
-        code_cell_value: Option<CodeCellValue>,
-
-        // do not update code_cell_value, only compute existing code_cell
-        only_compute: bool,
+        code_cell_value: CodeCellValue,
     },
 
     // // used for undo and multiplayer -- for user actions, spills are set w/o a separate Operation
@@ -98,9 +95,12 @@ impl fmt::Display for Operation {
             Operation::ComputeCodeCell {
                 sheet_pos,
                 code_cell_value,
-                only_compute,
             } => {
-                write!(fmt, "ComputeCodeCell {{ sheet_pos: {:?}, code_cell_value: {:?}, only_compute: {:?} }}", sheet_pos, code_cell_value, only_compute)
+                write!(
+                    fmt,
+                    "ComputeCodeCell {{ sheet_pos: {:?}, code_cell_value: {:?} }}",
+                    sheet_pos, code_cell_value
+                )
             }
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),
             Operation::AddSheet { sheet } => write!(fmt, "AddSheet {{ sheet: {} }}", sheet.name),

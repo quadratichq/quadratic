@@ -82,26 +82,21 @@ impl GridController {
             Operation::ComputeCodeCell {
                 sheet_pos,
                 code_cell_value,
-                only_compute,
             } => {
                 // only execute if sheet still exists
                 if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) {
-                    let old_code_cell = if only_compute {
-                        sheet.get_code_cell(sheet_pos.into()).map(|v| v.clone())
-                    } else {
-                        sheet.set_code_cell_value(sheet_pos.into(), code_cell_value.clone())
-                    };
-                    if let Some(code_cell_value) = &code_cell_value {
-                        match code_cell_value.language {
-                            CodeCellLanguage::Python => {
-                                self.run_python(sheet_pos, code_cell_value);
-                            }
-                            CodeCellLanguage::Formula => {
-                                self.run_formula(sheet_pos, code_cell_value);
-                            }
-                            _ => {
-                                unreachable!("Unsupported language in RunCodeCell");
-                            }
+                    let old_code_cell =
+                        sheet.set_code_cell_value(sheet_pos.into(), Some(code_cell_value.clone()));
+
+                    match code_cell_value.language {
+                        CodeCellLanguage::Python => {
+                            self.run_python(sheet_pos, &code_cell_value);
+                        }
+                        CodeCellLanguage::Formula => {
+                            self.run_formula(sheet_pos, &code_cell_value);
+                        }
+                        _ => {
+                            unreachable!("Unsupported language in RunCodeCell");
                         }
                     }
 

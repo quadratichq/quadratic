@@ -7,10 +7,7 @@ use crate::{SheetPos, SheetRect};
 use super::GridController;
 
 impl GridController {
-    pub fn get_dependent_cells_for_sheet_rect(
-        &self,
-        sheet_rect: &SheetRect,
-    ) -> Option<HashSet<SheetPos>> {
+    pub fn get_dependent_code_cells(&self, sheet_rect: &SheetRect) -> Option<HashSet<SheetPos>> {
         let mut dependent_cells = HashSet::new();
 
         self.grid.sheets().iter().for_each(|sheet| {
@@ -95,28 +92,25 @@ mod test {
         };
 
         assert_eq!(
-            gc.get_dependent_cells_for_sheet_rect(&sheet_pos_00.into())
+            gc.get_dependent_code_cells(&sheet_pos_00.into())
                 .unwrap()
                 .len(),
             1
         );
         assert_eq!(
-            gc.get_dependent_cells_for_sheet_rect(&sheet_pos_00.into())
+            gc.get_dependent_code_cells(&sheet_pos_00.into())
                 .unwrap()
                 .iter()
                 .next(),
             Some(&sheet_pos_02)
         );
         assert_eq!(
-            gc.get_dependent_cells_for_sheet_rect(&sheet_pos_01.into())
+            gc.get_dependent_code_cells(&sheet_pos_01.into())
                 .unwrap()
                 .iter()
                 .next(),
             Some(&sheet_pos_02)
         );
-        assert_eq!(
-            gc.get_dependent_cells_for_sheet_rect(&sheet_pos_02.into()),
-            None
-        );
+        assert_eq!(gc.get_dependent_code_cells(&sheet_pos_02.into()), None);
     }
 }

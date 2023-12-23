@@ -257,14 +257,13 @@ mod test {
         gc.start_user_transaction(
             vec![Operation::ComputeCodeCell {
                 sheet_pos: code_cell_pos,
-                code_cell_value: Some(CodeCellValue {
+                code_cell_value: CodeCellValue {
                     language: CodeCellLanguage::Python,
                     code_string: code_string.clone(),
                     formatted_code_string: None,
                     output: None,
                     last_modified: String::new(),
-                }),
-                only_compute: false,
+                },
             }],
             None,
         );
@@ -489,14 +488,13 @@ mod test {
         gc.start_user_transaction(
             vec![Operation::ComputeCodeCell {
                 sheet_pos,
-                code_cell_value: Some(CodeCellValue {
+                code_cell_value: CodeCellValue {
                     language: CodeCellLanguage::Formula,
                     code_string: "A0 + 1".to_string(),
                     formatted_code_string: None,
                     output: None,
                     last_modified: String::new(),
-                }),
-                only_compute: false,
+                },
             }],
             None,
         );
@@ -555,14 +553,13 @@ mod test {
         gc.start_user_transaction(
             vec![Operation::ComputeCodeCell {
                 sheet_pos,
-                code_cell_value: Some(CodeCellValue {
+                code_cell_value: CodeCellValue {
                     language: CodeCellLanguage::Formula,
                     code_string: "B0 + 1".to_string(),
                     formatted_code_string: None,
                     output: None,
                     last_modified: String::new(),
-                }),
-                only_compute: false,
+                },
             }],
             None,
         );

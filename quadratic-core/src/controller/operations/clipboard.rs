@@ -89,7 +89,7 @@ impl GridController {
         for x in sheet_rect.x_range() {
             for y in sheet_rect.y_range() {
                 let pos = Pos { x, y };
-                if let Some(_code_cell) = sheet.get_code_cell(pos) {
+                if let Some(code_cell_value) = sheet.get_code_cell(pos) {
                     // no need to clear code cells that are being pasted
                     if !code.iter().any(|(code_pos, _)| {
                         Pos {
@@ -99,8 +99,7 @@ impl GridController {
                     }) {
                         ops.push(Operation::ComputeCodeCell {
                             sheet_pos: pos.to_sheet_pos(start_pos.sheet_id),
-                            code_cell_value: None,
-                            only_compute: false,
+                            code_cell_value: code_cell_value.to_owned(),
                         });
                         compute = true;
                     }
@@ -117,8 +116,7 @@ impl GridController {
             };
             ops.push(Operation::ComputeCodeCell {
                 sheet_pos,
-                code_cell_value: Some(entry.1.clone()),
-                only_compute: false,
+                code_cell_value: entry.1.clone(),
             });
             compute = true;
         });

@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use crate::{
     controller::GridController,
     grid::{CodeCellLanguage, CodeCellValue},
@@ -29,14 +27,13 @@ impl GridController {
 
         ops.push(Operation::ComputeCodeCell {
             sheet_pos,
-            code_cell_value: Some(CodeCellValue {
+            code_cell_value: CodeCellValue {
                 language,
                 code_string,
                 formatted_code_string: None,
                 output: None,
                 last_modified: date_string(),
-            }),
-            only_compute: false,
+            },
         });
 
         ops
@@ -47,11 +44,10 @@ impl GridController {
         let mut ops = vec![];
 
         // add remove code cell operation if there is a code cell
-        if let Some(_) = sheet.get_code_cell(sheet_pos.into()) {
+        if let Some(code_cell_value) = sheet.get_code_cell(sheet_pos.into()) {
             ops.push(Operation::ComputeCodeCell {
                 sheet_pos,
-                code_cell_value: None,
-                only_compute: false,
+                code_cell_value: code_cell_value.to_owned(),
             });
         }
 
@@ -60,27 +56,39 @@ impl GridController {
 
     /// Adds operations to compute cells that are dependents within a SheetRect
     pub fn add_compute_operations(&mut self, output: &SheetRect) {
-        let mut cells_to_compute = HashSet::new();
-        self.get_dependent_cells_for_sheet_rect(output)
+        let mut operations = vec![];
+        self.get_dependent_code_cells(output)
             .iter()
-            .for_each(|sheet_pos| {
-                cells_to_compute.extend(sheet_pos);
-            });
-        let operations: Vec<Operation> = cells_to_compute
-            .iter()
-            .filter(|sheet_pos| {
-                !self.operations.contains(&Operation::ComputeCodeCell {
-                    sheet_pos: **sheet_pos,
-                    code_cell_value: None,
-                    only_compute: true,
+            .for_each(|sheet_positions| {
+                sheet_positions.iter().for_each(|code_cell_sheet_pos| {
+                    // only add a compute operation if there isn't already one
+                    if self
+                        .operations
+                        .iter()
+                        .find(|op| match op {
+                            Operation::ComputeCodeCell { sheet_pos, .. } => {
+                                code_cell_sheet_pos == sheet_pos
+                            }
+                            _ => false,
+                        })
+                        .is_none()
+                    {
+                        if let Some(sheet) =
+                            self.grid.try_sheet_from_id(code_cell_sheet_pos.sheet_id)
+                        {
+                            if let Some(code_cell_value) =
+                                sheet.get_code_cell(Pos::from(*code_cell_sheet_pos))
+                            {
+                                operations.push(Operation::ComputeCodeCell {
+                                    sheet_pos: *code_cell_sheet_pos,
+                                    code_cell_value: code_cell_value.clone(),
+                                });
+                            }
+                        }
+                    }
                 })
-            })
-            .map(|sheet_pos| Operation::ComputeCodeCell {
-                sheet_pos: *sheet_pos,
-                code_cell_value: None,
-                only_compute: true,
-            })
-            .collect();
+            });
+
         self.operations.extend(operations);
     }
 

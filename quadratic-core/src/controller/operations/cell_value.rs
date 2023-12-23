@@ -11,6 +11,7 @@ use crate::{
 use super::operation::Operation;
 
 impl GridController {
+    /// Convert string to a cell_value and generate necessary operations
     pub(super) fn string_to_cell_value(
         &mut self,
         sheet_pos: SheetPos,
@@ -65,6 +66,7 @@ impl GridController {
         (ops, cell_value)
     }
 
+    /// Generate operations for a user-initiated change to a cell value
     pub fn set_cell_value_operations(
         &mut self,
         sheet_pos: SheetPos,
@@ -83,16 +85,18 @@ impl GridController {
             sheet_rect: sheet_pos.into(),
             values: Array::from(cell_value),
         });
+
         ops
     }
 
-    /// Generates and returns the set of operations to deleted the values and code in a given region
+    /// Generates and returns the set of operations to deleted the values and code in a sheet_rect
     /// Does not commit the operations or create a transaction.
     pub fn delete_cells_rect_operations(&mut self, sheet_rect: SheetRect) -> Vec<Operation> {
         let values = Array::new_empty(sheet_rect.size());
         vec![Operation::SetCellValues { sheet_rect, values }]
     }
 
+    /// Generates and returns the set of operations to clear the formatting in a sheet_rect
     pub fn delete_values_and_formatting_operations(
         &mut self,
         sheet_rect: SheetRect,
