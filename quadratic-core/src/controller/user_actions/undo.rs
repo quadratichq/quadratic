@@ -9,7 +9,7 @@ impl GridController {
     }
     pub fn undo(&mut self, cursor: Option<String>) -> TransactionSummary {
         if let Some(transaction) = self.undo_stack.pop() {
-            let mut summary = self.start_user_transaction(transaction.operations, cursor);
+            let mut summary = self.undo_transaction(transaction.operations, cursor);
             summary.cursor = transaction.cursor;
             summary
         } else {
@@ -18,7 +18,7 @@ impl GridController {
     }
     pub fn redo(&mut self, cursor: Option<String>) -> TransactionSummary {
         if let Some(transaction) = self.redo_stack.pop() {
-            let mut summary = self.start_user_transaction(transaction.operations, cursor);
+            let mut summary = self.redo_transaction(transaction.operations, cursor);
             summary.cursor = transaction.cursor;
             summary
         } else {

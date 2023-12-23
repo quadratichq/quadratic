@@ -59,7 +59,7 @@ impl GridController {
     }
 
     /// Adds operations to compute cells that are dependents within a SheetRect
-    fn add_compute_operations(&mut self, output: &SheetRect) {
+    pub fn add_compute_operations(&mut self, output: &SheetRect) {
         let mut cells_to_compute = HashSet::new();
         self.get_dependent_cells_for_sheet_rect(output)
             .iter()

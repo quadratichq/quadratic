@@ -42,14 +42,19 @@ impl GridController {
                     values: old_values,
                 });
 
-                // todo...
                 // check if any code cells need to be deleted
-                // let sheet = self.grid.sheet_mut_from_id(sheet.id);
-                // sheet.code_cells.iter_mut().for_each(|(pos, _)| {
-                //     if sheet_rect.contains(pos.to_sheet_pos(sheet.id)) {
-                //         sheet.code_cells.remove(pos);
-                //     }
-                // });
+                let sheet = self.grid.sheet_mut_from_id(sheet_rect.sheet_id);
+                sheet.code_cells.retain(|(pos, _)| {
+                    if sheet_rect.contains(pos.to_sheet_pos(sheet.id)) {
+                        self.summary.code_cells_modified.insert(sheet.id);
+                        false
+                    } else {
+                        true
+                    }
+                });
+                self.add_compute_operations(&sheet_rect);
+
+                // todo: check if a spill was released
 
                 // prepare summary
                 self.sheets_with_dirty_bounds.insert(sheet_rect.sheet_id);

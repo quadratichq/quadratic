@@ -487,7 +487,7 @@ mod test {
             sheet_id,
         };
         gc.start_user_transaction(
-            vec![Operation::SetCodeCell {
+            vec![Operation::ComputeCodeCell {
                 sheet_pos,
                 code_cell_value: Some(CodeCellValue {
                     language: CodeCellLanguage::Formula,
@@ -496,6 +496,7 @@ mod test {
                     output: None,
                     last_modified: String::new(),
                 }),
+                only_compute: false,
             }],
             None,
         );
@@ -552,7 +553,7 @@ mod test {
             sheet_id,
         };
         gc.start_user_transaction(
-            vec![Operation::SetCodeCell {
+            vec![Operation::ComputeCodeCell {
                 sheet_pos,
                 code_cell_value: Some(CodeCellValue {
                     language: CodeCellLanguage::Formula,
@@ -561,6 +562,7 @@ mod test {
                     output: None,
                     last_modified: String::new(),
                 }),
+                only_compute: false,
             }],
             None,
         );

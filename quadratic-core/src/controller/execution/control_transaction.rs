@@ -103,6 +103,32 @@ impl GridController {
         summary
     }
 
+    pub fn undo_transaction(
+        &mut self,
+        operations: Vec<Operation>,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        self.start_transaction(operations, cursor, TransactionType::Undo);
+        let mut summary = self.prepare_transaction_summary();
+        self.transaction_updated_bounds();
+        summary.save = true;
+        self.finalize_transaction();
+        summary
+    }
+
+    pub fn redo_transaction(
+        &mut self,
+        operations: Vec<Operation>,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        self.start_transaction(operations, cursor, TransactionType::Redo);
+        let mut summary = self.prepare_transaction_summary();
+        self.transaction_updated_bounds();
+        summary.save = true;
+        self.finalize_transaction();
+        summary
+    }
+
     pub fn calculation_complete(&mut self, result: JsCodeResult) -> TransactionSummary {
         assert!(self.transaction_in_progress);
 
