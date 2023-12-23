@@ -233,7 +233,7 @@ mod test {
             GridController,
         },
         grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellValue},
-        Array, ArraySize, CellValue, Pos, SheetPos, Value,
+        Array, ArraySize, CellValue, Pos, SheetPos, SheetRect, Value,
     };
 
     /// Sets up a GridController with a code cell at (1, 0) and a cell value at (0, 0)
@@ -523,36 +523,40 @@ mod test {
     fn test_multiple_formula() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+        let sheet = gc.grid_mut().try_sheet_mut_from_id(sheet_id).unwrap();
 
-        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
         let sheet_pos = SheetPos {
             x: 1,
             y: 0,
             sheet_id,
         };
         gc.start_user_transaction(
-            vec![Operation::SetCodeCell {
+            vec![Operation::ComputeCodeCell {
                 sheet_pos,
-                code_cell_value: Some(CodeCellValue {
+                code_cell_value: CodeCellValue {
                     language: CodeCellLanguage::Formula,
                     code_string: "A0 + 1".to_string(),
                     formatted_code_string: None,
                     output: None,
                     last_modified: String::new(),
-                }),
+                },
             }],
             None,
         );
 
-        let sheet_pos = SheetPos {
-            x: 2,
-            y: 0,
-            sheet_id,
-        };
+        assert_eq!(
+            gc.sheet(sheet_id).get_cell_value(Pos { x: 1, y: 0 }),
+            Some(CellValue::Number(11.into()))
+        );
+
         gc.start_user_transaction(
             vec![Operation::ComputeCodeCell {
-                sheet_pos,
+                sheet_pos: SheetPos {
+                    x: 2,
+                    y: 0,
+                    sheet_id,
+                },
                 code_cell_value: CodeCellValue {
                     language: CodeCellLanguage::Formula,
                     code_string: "B0 + 1".to_string(),
@@ -564,7 +568,7 @@ mod test {
             None,
         );
 
-        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+        let sheet = gc.grid().try_sheet_from_id(sheet_id).unwrap();
         assert!(sheet.get_code_cell(Pos { x: 2, y: 0 }).is_some());
         let code_cell = sheet.get_code_cell(Pos { x: 2, y: 0 }).unwrap();
         assert_eq!(code_cell.code_string, "B0 + 1".to_string());
@@ -577,20 +581,21 @@ mod test {
             Some(CellValue::Number(12.into()))
         );
 
-        let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
-            sheet_id,
-        };
         gc.start_user_transaction(
             vec![Operation::SetCellValues {
-                sheet_rect: sheet_pos.into(),
+                sheet_rect: SheetRect::single_sheet_pos(SheetPos {
+                    x: 0,
+                    y: 0,
+                    sheet_id,
+                }),
                 values: CellValue::Number(1.into()).into(),
             }],
             None,
         );
 
-        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+        crate::test_util::print_table(&gc, sheet_id, crate::Rect::from_numbers(0, 0, 3, 1));
+
+        let sheet = gc.grid().try_sheet_from_id(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(2.into()))

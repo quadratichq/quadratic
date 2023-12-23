@@ -96,10 +96,10 @@ impl GridController {
     pub fn add_code_cell_operations(
         &mut self,
         sheet_pos: SheetPos,
-        code_cell: Option<&CodeCellValue>,
+        old_code_cell: Option<&CodeCellValue>,
         new_code_cell: Option<&CodeCellValue>,
     ) {
-        let old_sheet_rect = code_cell.map(|c| c.output_sheet_rect(sheet_pos));
+        let old_sheet_rect = old_code_cell.map(|c| c.output_sheet_rect(sheet_pos));
         let new_sheet_rect = new_code_cell.map(|c| c.output_sheet_rect(sheet_pos));
         match (&old_sheet_rect, &new_sheet_rect) {
             (Some(old_sheet_rect), Some(new_sheet_rect)) => {
