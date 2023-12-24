@@ -1,3 +1,5 @@
+// Handles all spill checking for the sheet
+
 use crate::{
     controller::{operations::operation::Operation, GridController},
     grid::SheetId,
@@ -26,6 +28,8 @@ impl GridController {
     }
 
     /// Checks for spills caused by a change in a sheet_rect.
+    /// Use only when the changed output range is known (otherwise call check_all_spills).
+    /// Will automatically call check_all_spills if a code_cell's spill error has changed.
     pub fn check_spills(&mut self, sheet_rect: &SheetRect) {
         let sheet_id = sheet_rect.sheet_id;
         // find the first code cell that has a change in its spill_error
@@ -66,6 +70,10 @@ impl GridController {
         }
     }
 
+    /// Checks all code_cells for changes in spill_errors.
+    /// Will iterate through remaining code_cells after a change until it touches every code_cell.
+    ///
+    /// * `start` - the index of the first code_cell to check (we don't need to check earlier code_cells when iterating)
     pub fn check_all_spills(&mut self, sheet_id: SheetId, start: usize) {
         if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_id) {
             let result = sheet.code_cells.iter().skip(start).enumerate().find_map(
