@@ -12,21 +12,10 @@ pub enum Operation {
         sheet_rect: SheetRect,
         values: Array,
     },
-
     SetCodeCell {
         sheet_pos: SheetPos,
         code_cell_value: Option<CodeCellValue>,
     },
-
-    // Only used during user operations
-    DeleteCodeCell {
-        sheet_pos: SheetPos,
-    },
-    ComputeCodeCell {
-        sheet_pos: SheetPos,
-        code_cell_value: CodeCellValue,
-    },
-
     SetCellFormats {
         sheet_rect: SheetRect,
         attr: CellFmtArray,
@@ -82,19 +71,6 @@ impl fmt::Display for Operation {
                 "SetCellCode {{ code_cell_value: {:?} }}",
                 code_cell_value
             ),
-            Operation::DeleteCodeCell { sheet_pos } => {
-                write!(fmt, "DeleteCodeCell {{ sheet_pos: {:?} }}", sheet_pos)
-            }
-            Operation::ComputeCodeCell {
-                sheet_pos,
-                code_cell_value,
-            } => {
-                write!(
-                    fmt,
-                    "ComputeCodeCell {{ sheet_pos: {:?}, code_cell_value: {:?} }}",
-                    sheet_pos, code_cell_value
-                )
-            }
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),
             Operation::AddSheet { sheet } => write!(fmt, "AddSheet {{ sheet: {} }}", sheet.name),
             Operation::DeleteSheet { sheet_id } => {

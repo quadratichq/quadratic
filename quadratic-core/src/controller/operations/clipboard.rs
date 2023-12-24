@@ -111,9 +111,9 @@ impl GridController {
                 y: entry.0.y + start_pos.y,
                 sheet_id: start_pos.sheet_id,
             };
-            ops.push(Operation::ComputeCodeCell {
+            ops.push(Operation::SetCodeCell {
                 sheet_pos,
-                code_cell_value: entry.1.clone(),
+                code_cell_value: Some(entry.1.clone()),
             });
         });
 

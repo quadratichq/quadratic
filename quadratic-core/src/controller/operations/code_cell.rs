@@ -15,8 +15,9 @@ impl GridController {
             sheet.code_cells.iter().for_each(|(pos, _)| {
                 let code_sheet_pos = pos.to_sheet_pos(sheet.id);
                 if sheet_rect.contains(code_sheet_pos) {
-                    ops.push(Operation::DeleteCodeCell {
+                    ops.push(Operation::SetCodeCell {
                         sheet_pos: code_sheet_pos,
+                        code_cell_value: None,
                     });
                 }
             });
@@ -41,15 +42,15 @@ impl GridController {
             });
         }
 
-        ops.push(Operation::ComputeCodeCell {
+        ops.push(Operation::SetCodeCell {
             sheet_pos,
-            code_cell_value: CodeCellValue {
+            code_cell_value: Some(CodeCellValue {
                 language,
                 code_string,
                 formatted_code_string: None,
                 output: None,
                 last_modified: date_string(),
-            },
+            }),
         });
 
         ops
@@ -70,7 +71,7 @@ impl GridController {
                             .operations
                             .iter()
                             .find(|op| match op {
-                                Operation::ComputeCodeCell { sheet_pos, .. } => {
+                                Operation::SetCodeCell { sheet_pos, .. } => {
                                     code_cell_sheet_pos == sheet_pos
                                 }
                                 _ => false,
@@ -83,9 +84,9 @@ impl GridController {
                                 if let Some(code_cell_value) =
                                     sheet.get_code_cell(Pos::from(*code_cell_sheet_pos))
                                 {
-                                    operations.push(Operation::ComputeCodeCell {
+                                    operations.push(Operation::SetCodeCell {
                                         sheet_pos: *code_cell_sheet_pos,
-                                        code_cell_value: code_cell_value.clone(),
+                                        code_cell_value: Some(code_cell_value.clone()),
                                     });
                                 }
                             }

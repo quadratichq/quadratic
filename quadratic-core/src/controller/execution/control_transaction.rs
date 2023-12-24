@@ -12,7 +12,7 @@ use std::collections::HashSet;
 
 impl GridController {
     // loop compute cycle until complete or an async call is made
-    pub(super) fn handle_transactions(&mut self) {
+    pub(super) fn handle_transactions(&mut self, transaction_type: TransactionType) {
         loop {
             if self.operations.is_empty() {
                 self.complete = true;
@@ -27,7 +27,7 @@ impl GridController {
             #[cfg(feature = "show-operations")]
             crate::util::dbgjs(&format!("[Operation] {:?}", &op));
 
-            self.execute_operation(op);
+            self.execute_operation(op, transaction_type.clone());
 
             if self.waiting_for_async.is_some() {
                 break;
@@ -36,19 +36,12 @@ impl GridController {
     }
 
     /// Creates and runs a new Transaction
-    ///
-    /// Description
-    /// * `compute` triggers the computation cycle
     fn start_transaction(
         &mut self,
         operations: Vec<Operation>,
         cursor: Option<String>,
         transaction_type: TransactionType,
     ) {
-        if self.transaction_in_progress {
-            panic!("Expected no transaction in progress");
-        }
-
         self.transaction_in_progress = true;
         self.reverse_operations = vec![];
         self.cursor = cursor;
@@ -56,14 +49,14 @@ impl GridController {
         self.summary = TransactionSummary::default();
         self.operations = operations;
         self.sheets_with_dirty_bounds = HashSet::new();
-        self.transaction_type = transaction_type;
+        self.transaction_type = transaction_type.clone();
         self.has_async = false;
         self.current_sheet_pos = None;
         self.waiting_for_async = None;
         self.complete = false;
         self.forward_operations = vec![];
 
-        self.handle_transactions();
+        self.handle_transactions(transaction_type);
     }
 
     pub(super) fn finalize_transaction(&mut self) {
@@ -110,6 +103,8 @@ impl GridController {
         operations: Vec<Operation>,
         cursor: Option<String>,
     ) -> TransactionSummary {
+        // todo: clone transaction_in_progress here
+
         self.start_transaction(operations, cursor, TransactionType::Undo);
         let mut summary = self.prepare_transaction_summary();
         self.transaction_updated_bounds();
@@ -123,6 +118,8 @@ impl GridController {
         operations: Vec<Operation>,
         cursor: Option<String>,
     ) -> TransactionSummary {
+        // todo: clone transaction_in_progress here
+
         self.start_transaction(operations, cursor, TransactionType::Redo);
         let mut summary = self.prepare_transaction_summary();
         self.transaction_updated_bounds();
@@ -135,9 +132,10 @@ impl GridController {
         assert!(self.transaction_in_progress);
 
         // todo: i'm not sure what this does
+        let transaction_type = self.transaction_type.clone();
         if result.cancel_compute.unwrap_or(false) {
             // self.clear_cells_to_compute();
-            self.handle_transactions();
+            self.handle_transactions(transaction_type);
         }
 
         self.after_calculation_async(result);

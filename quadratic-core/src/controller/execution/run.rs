@@ -1,3 +1,4 @@
+use crate::controller::execution::TransactionType;
 use crate::controller::operations::operation::Operation;
 use crate::{
     controller::{transaction_types::JsCodeResult, GridController},
@@ -113,7 +114,8 @@ impl GridController {
             },
         }
         // continue the compute loop after a successful async call
-        self.handle_transactions();
+        assert_eq!(self.transaction_type, TransactionType::User);
+        self.handle_transactions(TransactionType::User);
     }
 
     pub(super) fn code_cell_sheet_error(&mut self, error_msg: String, line_number: Option<i64>) {
@@ -258,15 +260,15 @@ mod test {
         sheet.set_cell_value(cell_value_pos, cell_value.clone());
 
         gc.start_user_transaction(
-            vec![Operation::ComputeCodeCell {
+            vec![Operation::SetCodeCell {
                 sheet_pos: code_cell_pos,
-                code_cell_value: CodeCellValue {
+                code_cell_value: Some(CodeCellValue {
                     language: CodeCellLanguage::Python,
                     code_string: code_string.clone(),
                     formatted_code_string: None,
                     output: None,
                     last_modified: String::new(),
-                },
+                }),
             }],
             None,
         );
@@ -489,15 +491,15 @@ mod test {
             sheet_id,
         };
         gc.start_user_transaction(
-            vec![Operation::ComputeCodeCell {
+            vec![Operation::SetCodeCell {
                 sheet_pos,
-                code_cell_value: CodeCellValue {
+                code_cell_value: Some(CodeCellValue {
                     language: CodeCellLanguage::Formula,
                     code_string: "A0 + 1".to_string(),
                     formatted_code_string: None,
                     output: None,
                     last_modified: String::new(),
-                },
+                }),
             }],
             None,
         );
@@ -535,15 +537,15 @@ mod test {
             sheet_id,
         };
         gc.start_user_transaction(
-            vec![Operation::ComputeCodeCell {
+            vec![Operation::SetCodeCell {
                 sheet_pos,
-                code_cell_value: CodeCellValue {
+                code_cell_value: Some(CodeCellValue {
                     language: CodeCellLanguage::Formula,
                     code_string: "A0 + 1".to_string(),
                     formatted_code_string: None,
                     output: None,
                     last_modified: String::new(),
-                },
+                }),
             }],
             None,
         );
@@ -554,19 +556,19 @@ mod test {
         );
 
         gc.start_user_transaction(
-            vec![Operation::ComputeCodeCell {
+            vec![Operation::SetCodeCell {
                 sheet_pos: SheetPos {
                     x: 2,
                     y: 0,
                     sheet_id,
                 },
-                code_cell_value: CodeCellValue {
+                code_cell_value: Some(CodeCellValue {
                     language: CodeCellLanguage::Formula,
                     code_string: "B0 + 1".to_string(),
                     formatted_code_string: None,
                     output: None,
                     last_modified: String::new(),
-                },
+                }),
             }],
             None,
         );

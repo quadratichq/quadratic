@@ -1,4 +1,5 @@
 use crate::controller::{
+    execution::TransactionType,
     transaction_types::{CellsForArray, JsComputeGetCells},
     GridController,
 };
@@ -24,6 +25,8 @@ impl GridController {
             |sheet_name| self.grid().sheet_from_name(sheet_name),
         );
 
+        let transaction_type = self.transaction_type.clone();
+        assert_eq!(transaction_type, TransactionType::User);
         if let Some(sheet) = sheet {
             // ensure that the current cell ref is not in the get_cells request
             if get_cells.rect().contains(pos) && sheet.id == current_sheet {
@@ -34,7 +37,7 @@ impl GridController {
                     "Sheet not found".to_string()
                 };
                 self.code_cell_sheet_error(msg, get_cells.line_number());
-                self.handle_transactions();
+                self.handle_transactions(transaction_type);
                 return Some(CellsForArray::new(vec![], true));
             }
 

@@ -4,11 +4,16 @@ use crate::{grid::*, Array, CellValue, SheetPos};
 use crate::controller::operations::operation::Operation;
 use crate::controller::GridController;
 
+use super::TransactionType;
+
 impl GridController {
     /// Executes the given operation.
     /// Returns true if the operation resulted in an async call.
     ///
-    pub fn execute_operation(&mut self, op: Operation) {
+    pub fn execute_operation(&mut self, op: Operation, transaction_type: TransactionType) {
+        let is_user = matches!(transaction_type, TransactionType::User);
+        let is_undo = matches!(transaction_type, TransactionType::Undo)
+            || matches!(transaction_type, TransactionType::Redo);
         match op.clone() {
             Operation::SetCellValues { sheet_rect, values } => {
                 let sheet = self.grid.sheet_mut_from_id(sheet_rect.sheet_id);
@@ -32,19 +37,21 @@ impl GridController {
                     .map(|old_value| old_value.unwrap_or(CellValue::Blank))
                     .collect();
 
-                self.forward_operations.push(op);
+                if is_user || is_undo {
+                    self.forward_operations.push(op);
 
-                // create reverse_operation
-                let old_values = Array::new_row_major(sheet_rect.size(), old_values)
-                    .expect("error constructing array of old values for SetCells operation");
-                self.reverse_operations.push(Operation::SetCellValues {
-                    sheet_rect,
-                    values: old_values,
-                });
-
-                self.add_compute_operations(&sheet_rect, None);
-
-                self.check_spills(&sheet_rect);
+                    // create reverse_operation
+                    let old_values = Array::new_row_major(sheet_rect.size(), old_values)
+                        .expect("error constructing array of old values for SetCells operation");
+                    self.reverse_operations.push(Operation::SetCellValues {
+                        sheet_rect,
+                        values: old_values,
+                    });
+                    if is_user {
+                        self.add_compute_operations(&sheet_rect, None);
+                        self.check_spills(&sheet_rect);
+                    }
+                }
 
                 // prepare summary
                 self.sheets_with_dirty_bounds.insert(sheet_rect.sheet_id);
@@ -59,65 +66,48 @@ impl GridController {
             } => {
                 let sheet_id = sheet_pos.sheet_id;
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                sheet.set_code_cell(sheet_pos.into(), code_cell_value);
-
-                let sheet_rect = sheet_pos.into();
-                self.sheets_with_dirty_bounds.insert(sheet_id);
-                self.summary.generate_thumbnail =
-                    self.summary.generate_thumbnail || self.thumbnail_dirty_sheet_rect(sheet_rect);
-                self.summary.code_cells_modified.insert(sheet_id);
-                self.add_cell_sheets_modified_rect(&sheet_rect);
-            }
-
-            Operation::DeleteCodeCell { sheet_pos } => {
-                let sheet_id = sheet_pos.sheet_id;
-                let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                self.reverse_operations.push(Operation::SetCodeCell {
-                    sheet_pos,
-                    code_cell_value: sheet.get_code_cell(sheet_pos.into()).cloned(),
-                });
-
-                sheet.set_code_cell(sheet_pos.into(), None);
-                self.forward_operations.push(Operation::SetCodeCell {
-                    sheet_pos,
-                    code_cell_value: None,
-                });
-                self.check_spills(&sheet_pos.into());
-
-                let sheet_rect = sheet_pos.into();
-                self.sheets_with_dirty_bounds.insert(sheet_id);
-                self.summary.generate_thumbnail =
-                    self.summary.generate_thumbnail || self.thumbnail_dirty_sheet_rect(sheet_rect);
-                self.summary.code_cells_modified.insert(sheet_id);
-                self.add_cell_sheets_modified_rect(&sheet_rect);
-            }
-
-            Operation::ComputeCodeCell {
-                sheet_pos,
-                code_cell_value,
-            } => {
-                // only execute if sheet still exists
-                if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) {
+                if is_user {
+                    self.reverse_operations.push(Operation::SetCodeCell {
+                        sheet_pos,
+                        code_cell_value: sheet.get_code_cell(sheet_pos.into()).cloned(),
+                    });
                     let old_code_cell =
-                        sheet.set_code_cell(sheet_pos.into(), Some(code_cell_value.clone()));
+                        sheet.set_code_cell(sheet_pos.into(), code_cell_value.clone());
+                    if let Some(code_cell_value) = &code_cell_value {
+                        match code_cell_value.language {
+                            CodeCellLanguage::Python => {
+                                self.run_python(sheet_pos, &code_cell_value);
+                            }
+                            CodeCellLanguage::Formula => {
+                                self.run_formula(sheet_pos, &code_cell_value);
+                            }
+                            _ => {
+                                unreachable!("Unsupported language in RunCodeCell");
+                            }
+                        }
 
-                    match code_cell_value.language {
-                        CodeCellLanguage::Python => {
-                            self.run_python(sheet_pos, &code_cell_value);
-                        }
-                        CodeCellLanguage::Formula => {
-                            self.run_formula(sheet_pos, &code_cell_value);
-                        }
-                        _ => {
-                            unreachable!("Unsupported language in RunCodeCell");
+                        // only capture operations if not waiting for async, otherwise wait until calculation is complete
+                        if self.waiting_for_async.is_none() {
+                            self.finalize_code_cell(sheet_pos, old_code_cell);
                         }
                     }
-
-                    // only capture operations if not waiting for async, otherwise wait until calculation is complete
-                    if self.waiting_for_async.is_none() {
-                        self.finalize_code_cell(sheet_pos, old_code_cell);
-                    }
+                } else if is_undo {
+                    self.reverse_operations.push(Operation::SetCodeCell {
+                        sheet_pos,
+                        code_cell_value: sheet.get_code_cell(sheet_pos.into()).cloned(),
+                    });
+                    sheet.set_code_cell(sheet_pos.into(), code_cell_value);
+                    self.forward_operations.push(op);
+                } else {
+                    sheet.set_code_cell(sheet_pos.into(), code_cell_value);
                 }
+
+                let sheet_rect = sheet_pos.into();
+                self.sheets_with_dirty_bounds.insert(sheet_id);
+                self.summary.generate_thumbnail =
+                    self.summary.generate_thumbnail || self.thumbnail_dirty_sheet_rect(sheet_rect);
+                self.summary.code_cells_modified.insert(sheet_id);
+                self.add_cell_sheets_modified_rect(&sheet_rect);
             }
 
             Operation::SetCellFormats { sheet_rect, attr } => {
