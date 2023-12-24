@@ -17,6 +17,11 @@ pub enum Operation {
         sheet_pos: SheetPos,
         code_cell_value: Option<CodeCellValue>,
     },
+
+    // Only used during user operations
+    DeleteCodeCell {
+        sheet_pos: SheetPos,
+    },
     ComputeCodeCell {
         sheet_pos: SheetPos,
         code_cell_value: CodeCellValue,
@@ -70,8 +75,6 @@ impl fmt::Display for Operation {
             Operation::SetCellValues { values, .. } => {
                 write!(fmt, "SetCellValues {{ value count: {} }}", values.size())
             }
-
-            // todo: Separate out changes to CodeCellValue and CodeCellOutput into separate operations (and perhaps separate variables in Sheet)
             Operation::SetCodeCell {
                 code_cell_value, ..
             } => write!(
@@ -79,6 +82,9 @@ impl fmt::Display for Operation {
                 "SetCellCode {{ code_cell_value: {:?} }}",
                 code_cell_value
             ),
+            Operation::DeleteCodeCell { sheet_pos } => {
+                write!(fmt, "DeleteCodeCell {{ sheet_pos: {:?} }}", sheet_pos)
+            }
             Operation::ComputeCodeCell {
                 sheet_pos,
                 code_cell_value,

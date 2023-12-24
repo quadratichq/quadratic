@@ -50,8 +50,8 @@ impl CodeCellValue {
 
     /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
     /// Note: this returns a 1x1 if there is a spill_error.
-    pub fn output_sheet_rect(&self, sheet_pos: SheetPos) -> SheetRect {
-        if self.has_spill_error() {
+    pub fn output_sheet_rect(&self, sheet_pos: SheetPos, ignore_spill: bool) -> SheetRect {
+        if !ignore_spill && self.has_spill_error() {
             SheetRect::from_sheet_pos_and_size(sheet_pos, ArraySize::_1X1)
         } else {
             SheetRect::from_sheet_pos_and_size(sheet_pos, self.output_size())
@@ -167,11 +167,14 @@ mod test {
         };
         assert_eq!(code_cell.output_size(), super::ArraySize::_1X1);
         assert_eq!(
-            code_cell.output_sheet_rect(SheetPos {
-                x: -1,
-                y: -2,
-                sheet_id
-            }),
+            code_cell.output_sheet_rect(
+                SheetPos {
+                    x: -1,
+                    y: -2,
+                    sheet_id
+                },
+                false
+            ),
             SheetRect::from_numbers(-1, -2, 1, 1, sheet_id)
         );
 
@@ -195,11 +198,14 @@ mod test {
         assert_eq!(code_cell.output_size().w.get(), 10);
         assert_eq!(code_cell.output_size().h.get(), 11);
         assert_eq!(
-            code_cell.output_sheet_rect(SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id
-            }),
+            code_cell.output_sheet_rect(
+                SheetPos {
+                    x: 1,
+                    y: 2,
+                    sheet_id
+                },
+                false
+            ),
             SheetRect::from_numbers(1, 2, 10, 11, sheet_id)
         );
     }
@@ -227,12 +233,26 @@ mod test {
         assert_eq!(code_cell.output_size().w.get(), 10);
         assert_eq!(code_cell.output_size().h.get(), 11);
         assert_eq!(
-            code_cell.output_sheet_rect(SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id
-            }),
+            code_cell.output_sheet_rect(
+                SheetPos {
+                    x: 1,
+                    y: 2,
+                    sheet_id
+                },
+                false
+            ),
             SheetRect::from_numbers(1, 2, 1, 1, sheet_id)
+        );
+        assert_eq!(
+            code_cell.output_sheet_rect(
+                SheetPos {
+                    x: 1,
+                    y: 2,
+                    sheet_id
+                },
+                true
+            ),
+            SheetRect::from_numbers(1, 2, 10, 11, sheet_id)
         );
     }
 }

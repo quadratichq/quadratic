@@ -41,7 +41,7 @@ impl GridController {
                     .iter()
                     .enumerate()
                     .find_map(|(index, (pos, code_cell))| {
-                        let output = code_cell.output_sheet_rect(pos.to_sheet_pos(sheet_id));
+                        let output = code_cell.output_sheet_rect(pos.to_sheet_pos(sheet_id), true);
 
                         // initially only check the code_cell if the output intersects the sheet_rect
                         if output.intersects(*sheet_rect) {
@@ -50,7 +50,7 @@ impl GridController {
                             // then do the more expensive checks to see if there is a spill error
                             if sheet.has_cell_value_in_rect(&rect)
                                 || sheet.has_code_cell_anchor_in_rect(&rect, *pos)
-                                || sheet.has_code_cell_in_rect(&rect, code_cell)
+                                || sheet.has_code_cell_in_rect(&rect, *pos)
                             {
                                 // if spill error has not been set, then set it and start the more expensive checks for all later code_cells.
                                 if !code_cell.has_spill_error() {
@@ -83,11 +83,11 @@ impl GridController {
         if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_id) {
             let result = sheet.code_cells.iter().skip(start).enumerate().find_map(
                 |(index, (pos, code_cell))| {
-                    let output = code_cell.output_sheet_rect(pos.to_sheet_pos(sheet.id));
+                    let output = code_cell.output_sheet_rect(pos.to_sheet_pos(sheet.id), true);
                     let rect: Rect = output.into();
                     if sheet.has_cell_value_in_rect(&rect)
                         || sheet.has_code_cell_anchor_in_rect(&rect, *pos)
-                        || sheet.has_code_cell_in_rect(&rect, code_cell)
+                        || sheet.has_code_cell_in_rect(&rect, *pos)
                     {
                         if !code_cell.has_spill_error() {
                             Some((index, true))

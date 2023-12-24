@@ -69,6 +69,29 @@ impl GridController {
                 self.add_cell_sheets_modified_rect(&sheet_rect);
             }
 
+            Operation::DeleteCodeCell { sheet_pos } => {
+                let sheet_id = sheet_pos.sheet_id;
+                let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                self.reverse_operations.push(Operation::SetCodeCell {
+                    sheet_pos,
+                    code_cell_value: sheet.get_code_cell(sheet_pos.into()).cloned(),
+                });
+
+                sheet.set_code_cell(sheet_pos.into(), None);
+                self.forward_operations.push(Operation::SetCodeCell {
+                    sheet_pos,
+                    code_cell_value: None,
+                });
+                self.check_spills(&sheet_pos.into());
+
+                let sheet_rect = sheet_pos.into();
+                self.sheets_with_dirty_bounds.insert(sheet_id);
+                self.summary.generate_thumbnail =
+                    self.summary.generate_thumbnail || self.thumbnail_dirty_sheet_rect(sheet_rect);
+                self.summary.code_cells_modified.insert(sheet_id);
+                self.add_cell_sheets_modified_rect(&sheet_rect);
+            }
+
             Operation::ComputeCodeCell {
                 sheet_pos,
                 code_cell_value,

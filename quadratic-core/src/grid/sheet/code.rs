@@ -99,12 +99,13 @@ impl Sheet {
 
     /// Returns whether a rect overlaps the output of a code cell.
     /// It will only check code_cells until it finds the code_cell_search since later code_cells don't cause spills in earlier ones.
-    pub fn has_code_cell_in_rect(&self, rect: &Rect, code_cell_search: &CodeCellValue) -> bool {
+    pub fn has_code_cell_in_rect(&self, rect: &Rect, skip: Pos) -> bool {
         self.code_cells.iter().any(|(pos, code_cell)| {
-            if code_cell == code_cell_search {
-                return false;
+            if skip == *pos {
+                false
+            } else {
+                code_cell.output_rect(*pos).intersects(*rect)
             }
-            code_cell.output_rect(*pos).intersects(*rect)
         })
     }
 }

@@ -62,17 +62,24 @@ impl Sheet {
         }
 
         match column {
-            None => JsRenderCell {
-                x,
-                y,
-                value: value.to_display(None, None, None),
-                language,
-                align: None,
-                wrap: None,
-                bold: None,
-                italic: None,
-                text_color: None,
-            },
+            None => {
+                let align = if matches!(value, CellValue::Number(_)) {
+                    Some(CellAlign::Right)
+                } else {
+                    None
+                };
+                JsRenderCell {
+                    x,
+                    y,
+                    value: value.to_display(None, None, None),
+                    language,
+                    align,
+                    wrap: None,
+                    bold: None,
+                    italic: None,
+                    text_color: None,
+                }
+            }
             Some(column) => {
                 let mut align: Option<CellAlign> = column.align.get(y);
                 let wrap = column.wrap.get(y);
@@ -141,7 +148,7 @@ impl Sheet {
                             span: None,
                             msg: ErrorMsg::Spill,
                         })),
-                        None,
+                        Some(code_cell_value.language),
                     ));
                 } else if let Some(error) = code_cell_value.get_error() {
                     render_cells.push(self.get_render_cell(
@@ -149,7 +156,7 @@ impl Sheet {
                         code_rect.min.y,
                         None,
                         CellValue::Error(Box::new(error)),
-                        None,
+                        Some(code_cell_value.language),
                     ));
                 } else {
                     // find overlap of code_rect into rect
@@ -176,8 +183,10 @@ impl Sheet {
                     for x in x_start..=x_end {
                         let column = self.get_column(x);
                         for y in y_start..=y_end {
-                            let value = code_cell_value
-                                .get_output_value((x - x_start) as u32, (y - y_start) as u32);
+                            let value = code_cell_value.get_output_value(
+                                (x - code_rect.min.x) as u32,
+                                (y - code_rect.min.y) as u32,
+                            );
                             if let Some(value) = value {
                                 let language = if x == code_rect.min.x && y == code_rect.min.y {
                                     Some(code_cell_value.language)

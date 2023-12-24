@@ -21,11 +21,13 @@ impl GridController {
         };
         let sheet_rect = match (&old_code_cell_value, &code_cell_value) {
             (None, None) => sheet_pos.into(),
-            (None, Some(code_cell_value)) => code_cell_value.output_sheet_rect(sheet_pos),
-            (Some(old_code_cell_value), None) => old_code_cell_value.output_sheet_rect(sheet_pos),
+            (None, Some(code_cell_value)) => code_cell_value.output_sheet_rect(sheet_pos, false),
+            (Some(old_code_cell_value), None) => {
+                old_code_cell_value.output_sheet_rect(sheet_pos, false)
+            }
             (Some(old_code_cell_value), Some(code_cell_value)) => {
-                let old = old_code_cell_value.output_sheet_rect(sheet_pos);
-                let new = code_cell_value.output_sheet_rect(sheet_pos);
+                let old = old_code_cell_value.output_sheet_rect(sheet_pos, false);
+                let new = code_cell_value.output_sheet_rect(sheet_pos, false);
                 SheetRect {
                     min: sheet_pos.into(),
                     max: Pos {
@@ -45,6 +47,8 @@ impl GridController {
             sheet_pos,
             code_cell_value: old_code_cell_value,
         });
+        self.check_spills(&sheet_pos.into());
+
         self.sheets_with_dirty_bounds.insert(sheet_id);
 
         self.summary.generate_thumbnail =
