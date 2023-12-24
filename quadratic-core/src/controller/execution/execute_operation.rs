@@ -44,7 +44,7 @@ impl GridController {
 
                 self.add_compute_operations(&sheet_rect, None);
 
-                // todo: check if a spill was released
+                self.check_spills(&sheet_rect);
 
                 // prepare summary
                 self.sheets_with_dirty_bounds.insert(sheet_rect.sheet_id);

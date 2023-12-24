@@ -1,9 +1,7 @@
-use itertools::Itertools;
-
 use super::Sheet;
 use crate::{
     grid::{CodeCellValue, RenderSize},
-    CellValue, Pos, Rect, SheetPos, SheetRect,
+    CellValue, Pos, Rect,
 };
 
 impl Sheet {
@@ -85,36 +83,23 @@ impl Sheet {
         column.render_size.get(pos.y)
     }
 
-    /// Checks if the deletion of a cell or a code_cell released a spill error;
-    /// sorted by earliest last_modified.
-    /// Returns the Pos and the code_cell_value if it did
-    pub fn spill_error_released(
-        &self,
-        sheet_rect: &SheetRect,
-    ) -> Option<(SheetPos, CodeCellValue)> {
-        let sheet_id = sheet_rect.sheet_id;
+    /// Returns whether a rect has a code_cell anchor (ie, the cell with the code) of any code_cell within it.
+    /// This needs to be checked regardless of ordering.
+    pub fn has_code_cell_anchor_in_rect(&self, rect: &Rect, skip: Pos) -> bool {
         self.code_cells
             .iter()
-            .filter(|(_, code_cell)| code_cell.has_spill_error())
-            .sorted_by_key(|a| &a.1.last_modified)
-            .filter_map(|(code_cell_pos, code_cell)| {
-                // only check code_cells with spill errors
-                if !code_cell.has_spill_error() {
-                    return None;
-                }
-                let output_size = code_cell.output_size();
-                // cannot spill if only 1x1
-                if output_size.len() == 1 {
-                    return None;
-                }
-                sheet_rect
-                    .intersects(SheetRect::from_sheet_pos_and_size(
-                        code_cell_pos.to_sheet_pos(sheet_id),
-                        output_size,
-                    ))
-                    .then(|| (code_cell_pos.to_sheet_pos(sheet_id), code_cell.to_owned()))
-            })
-            .next()
+            .any(|(pos, _)| *pos != skip && rect.contains(*pos))
+    }
+
+    /// Returns whether a rect overlaps the output of a code cell.
+    /// It will only check code_cells until it finds the code_cell_search since later code_cells don't cause spills in earlier ones.
+    pub fn has_code_cell_in_rect(&self, rect: &Rect, code_cell_search: &CodeCellValue) -> bool {
+        self.code_cells.iter().any(|(pos, code_cell)| {
+            if code_cell == code_cell_search {
+                return false;
+            }
+            code_cell.output_rect(*pos).intersects(*rect)
+        })
     }
 }
 
@@ -126,7 +111,7 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{CodeCellLanguage, RenderSize},
-        Value,
+        SheetPos, Value,
     };
 
     #[test]

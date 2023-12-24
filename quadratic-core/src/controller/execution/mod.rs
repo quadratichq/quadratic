@@ -5,6 +5,7 @@ pub mod get_cells;
 pub mod run;
 pub mod run_formula;
 pub mod run_python;
+pub mod spills;
 mod tests;
 
 use super::Transaction;
