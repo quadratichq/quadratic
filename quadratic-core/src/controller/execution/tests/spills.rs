@@ -53,8 +53,13 @@ mod tests {
             sheet.get_cell_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("cause spill".into()))
         );
-        assert_eq!(sheet.get_cell_value(Pos { x: 1, y: 0 }), None);
-        // let code_cell = sheet.get_code_cell(Pos { x: 1, y: 0 });
-        // assert!(code_cell.unwrap().has_spill_error());
+
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 1, y: 0 }),
+            Some(CellValue::Blank)
+        );
+
+        let code_cell = sheet.get_code_cell(Pos { x: 1, y: 0 });
+        assert!(code_cell.unwrap().has_spill_error());
     }
 }

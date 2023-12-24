@@ -54,14 +54,19 @@ impl GridController {
                             {
                                 // if spill error has not been set, then set it and start the more expensive checks for all later code_cells.
                                 if !code_cell.has_spill_error() {
-                                    return Some((index, true));
+                                    Some((index, true))
+                                } else {
+                                    None
                                 }
                             } else if code_cell.has_spill_error() {
                                 // release the code_cell's spill error, then start the more expensive checks for all later code_cells.
-                                return Some((index, false));
+                                Some((index, false))
+                            } else {
+                                None
                             }
+                        } else {
+                            None
                         }
-                        None
                     })
             }
         };

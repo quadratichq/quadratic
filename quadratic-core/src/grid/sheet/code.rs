@@ -47,16 +47,22 @@ impl Sheet {
             })
     }
 
+    /// Returns the value for a cell checking first column.values and then code_cell output.
+    /// Note: spill error will return a CellValue::Blank to ensure calculations can continue.
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
         self.code_cells
             .iter()
             .find_map(|(code_cell_pos, code_cell_value)| {
                 let output_rect = code_cell_value.output_rect(*code_cell_pos);
                 if output_rect.contains(pos) {
-                    code_cell_value.get_output_value(
-                        (pos.x - code_cell_pos.x) as u32,
-                        (pos.y - code_cell_pos.y) as u32,
-                    )
+                    if code_cell_value.has_spill_error() {
+                        Some(CellValue::Blank)
+                    } else {
+                        code_cell_value.get_output_value(
+                            (pos.x - code_cell_pos.x) as u32,
+                            (pos.y - code_cell_pos.y) as u32,
+                        )
+                    }
                 } else {
                     None
                 }
