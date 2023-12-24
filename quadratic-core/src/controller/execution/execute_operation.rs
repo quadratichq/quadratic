@@ -42,17 +42,7 @@ impl GridController {
                     values: old_values,
                 });
 
-                // check if any code cells need to be deleted
-                let sheet = self.grid.sheet_mut_from_id(sheet_rect.sheet_id);
-                sheet.code_cells.retain(|(pos, _)| {
-                    if sheet_rect.contains(pos.to_sheet_pos(sheet.id)) {
-                        self.summary.code_cells_modified.insert(sheet.id);
-                        false
-                    } else {
-                        true
-                    }
-                });
-                self.add_compute_operations(&sheet_rect);
+                self.add_compute_operations(&sheet_rect, None);
 
                 // todo: check if a spill was released
 
@@ -69,7 +59,7 @@ impl GridController {
             } => {
                 let sheet_id = sheet_pos.sheet_id;
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                sheet.set_code_cell_value(sheet_pos.into(), code_cell_value);
+                sheet.set_code_cell(sheet_pos.into(), code_cell_value);
 
                 let sheet_rect = sheet_pos.into();
                 self.sheets_with_dirty_bounds.insert(sheet_id);
@@ -86,7 +76,7 @@ impl GridController {
                 // only execute if sheet still exists
                 if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) {
                     let old_code_cell =
-                        sheet.set_code_cell_value(sheet_pos.into(), Some(code_cell_value.clone()));
+                        sheet.set_code_cell(sheet_pos.into(), Some(code_cell_value.clone()));
 
                     match code_cell_value.language {
                         CodeCellLanguage::Python => {
@@ -107,20 +97,6 @@ impl GridController {
                 }
             }
 
-            // Operation::SetSpills {
-            //     spill_rect,
-            //     code_cell_sheet_pos,
-            // } => {
-            //     let sheet_id = spill_rect.sheet_id;
-            //     assert!(
-            //         sheet_id == code_cell_sheet_pos.map(|p| p.sheet_id).unwrap_or(sheet_id),
-            //         "Expected spill_rect and code_cell_sheet_pos to have the same sheet_id in SetSpill operation"
-            //     );
-
-            //     if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_id) {
-            //         sheet.set_spills(&spill_rect, code_cell_sheet_pos.map(|p| p.into()));
-            //     }
-            // }
             Operation::SetCellFormats { sheet_rect, attr } => {
                 self.sheets_with_dirty_bounds.insert(sheet_rect.sheet_id);
 

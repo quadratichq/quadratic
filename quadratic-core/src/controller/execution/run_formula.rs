@@ -33,7 +33,7 @@ impl GridController {
                             Some(&new_code_cell_value),
                         );
                         if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) {
-                            sheet.set_code_cell_value(sheet_pos.into(), Some(new_code_cell_value));
+                            sheet.set_code_cell(sheet_pos.into(), Some(new_code_cell_value));
                         }
                     }
                     Err(error) => {

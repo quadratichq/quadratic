@@ -67,7 +67,7 @@ mod test {
             sheet_id,
         };
         cells_accessed.insert(sheet_rect);
-        sheet.set_code_cell_value(
+        sheet.set_code_cell(
             Pos { x: 0, y: 2 },
             Some(CodeCellValue {
                 code_string: "1".to_string(),

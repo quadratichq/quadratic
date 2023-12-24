@@ -94,13 +94,12 @@ impl GridController {
                         old_code_cell_value.language,
                         old_code_cell_value.code_string,
                     );
-                    let old_code_cell_value = if let Some(sheet) =
-                        self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id)
-                    {
-                        sheet.set_code_cell_value(sheet_pos.into(), Some(updated_code_cell_value))
-                    } else {
-                        None
-                    };
+                    let old_code_cell_value =
+                        if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) {
+                            sheet.set_code_cell(sheet_pos.into(), Some(updated_code_cell_value))
+                        } else {
+                            None
+                        };
                     self.finalize_code_cell(sheet_pos, old_code_cell_value);
                     self.waiting_for_async = None;
                 }

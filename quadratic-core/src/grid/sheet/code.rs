@@ -8,7 +8,7 @@ use crate::{
 
 impl Sheet {
     /// Sets or deletes a code cell value.
-    pub fn set_code_cell_value(
+    pub fn set_code_cell(
         &mut self,
         pos: Pos,
         code_cell: Option<CodeCellValue>,
@@ -29,47 +29,6 @@ impl Sheet {
             self.code_cells
                 .retain(|(code_cell_pos, _)| *code_cell_pos != pos);
         }
-
-        // // this column has to exist since it was just created in the previous statement
-        // let code_cell_column = self.get_or_create_column(pos.x);
-
-        // if let Some(code_cell) = code_cell {
-        //     if let Some(output) = &code_cell.output {
-        //         match output.output_value() {
-        //             Some(output_value) => {
-        //                 match output_value {
-        //                     Value::Single(_) => {
-        //                         code_cell_column.spills.set(pos.y, Some(pos));
-        //                     }
-        //                     Value::Array(array) => {
-        //                         // if spilled only set the top left cell
-        //                         if output.spill {
-        //                             let column = self.get_or_create_column(pos.x);
-        //                             column.spills.set(pos.y, Some(pos));
-        //                         }
-        //                         // otherwise set the whole array
-        //                         else {
-        //                             let start = pos.x;
-        //                             let end = start + array.width() as i64;
-        //                             let range = Range {
-        //                                 start: pos.y,
-        //                                 end: pos.y + array.height() as i64,
-        //                             };
-        //                             for x in start..end {
-        //                                 let column = self.get_or_create_column(x);
-        //                                 column.spills.set_range(range.clone(), pos);
-        //                             }
-        //                         }
-        //                     }
-        //                 }
-        //             }
-        //             None => {
-        //                 code_cell_column.spills.set(pos.y, Some(pos));
-        //             }
-        //         }
-        //     } else {
-        //         code_cell_column.spills.set(pos.y, Some(pos));
-        //     }
         if let Some(code_cell) = code_cell {
             self.code_cells.push((pos, code_cell));
         }
@@ -161,8 +120,14 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
+    use bigdecimal::BigDecimal;
+
     use super::*;
-    use crate::{controller::GridController, grid::RenderSize};
+    use crate::{
+        controller::GridController,
+        grid::{CodeCellLanguage, RenderSize},
+        Value,
+    };
 
     #[test]
     fn test_render_size() {
@@ -195,65 +160,54 @@ mod test {
         assert_eq!(sheet.render_size(Pos { x: 1, y: 1 }), None);
     }
 
-    // #[test]
-    // fn test_set_spills() {
-    //     let mut gc = GridController::new();
-    //     let sheet_id = gc.sheet_ids()[0];
-    //     let sheet = gc.grid_mut().try_sheet_mut_from_id(sheet_id).unwrap();
-    //     sheet.set_spills(
-    //         &SheetRect::from_numbers(0, 0, 1, 5, sheet_id),
-    //         Some(Pos { x: 0, y: 0 }),
-    //     );
-    //     let sheet_rect = crate::SheetRect::from_numbers(0, 0, 1, 5, sheet_id);
-    //     let old_values = sheet.set_spills(&sheet_rect, Some(Pos { x: 1, y: 1 }));
-    //     let code_cell_sheet_pos = Some(SheetPos {
-    //         x: 0,
-    //         y: 0,
-    //         sheet_id,
-    //     });
-    //     assert_eq!(
-    //         old_values,
-    //         vec![
-    //             Operation::SetSpills {
-    //                 spill_rect: SheetRect::from_numbers(0, 0, 1, 1, sheet_id),
-    //                 code_cell_sheet_pos: code_cell_sheet_pos.clone(),
-    //             },
-    //             Operation::SetSpills {
-    //                 spill_rect: SheetRect::from_numbers(0, 1, 1, 1, sheet_id),
-    //                 code_cell_sheet_pos: code_cell_sheet_pos.clone(),
-    //             },
-    //             Operation::SetSpills {
-    //                 spill_rect: SheetRect::from_numbers(0, 2, 1, 1, sheet_id),
-    //                 code_cell_sheet_pos: code_cell_sheet_pos.clone(),
-    //             },
-    //             Operation::SetSpills {
-    //                 spill_rect: SheetRect::from_numbers(0, 3, 1, 1, sheet_id),
-    //                 code_cell_sheet_pos: code_cell_sheet_pos.clone(),
-    //             },
-    //             Operation::SetSpills {
-    //                 spill_rect: SheetRect::from_numbers(0, 4, 1, 1, sheet_id),
-    //                 code_cell_sheet_pos: code_cell_sheet_pos.clone(),
-    //             },
-    //         ]
-    //     );
-    //     assert_eq!(
-    //         sheet.get_spill(Pos { x: 0, y: 0 }),
-    //         Some(Pos { x: 1, y: 1 })
-    //     );
+    #[test]
+    fn test_set_code_cell_value() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.grid_mut().try_sheet_mut_from_id(sheet_id).unwrap();
+        let code_cell_value = CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code_string: "1".to_string(),
+            formatted_code_string: None,
+            output: None,
+            last_modified: "".to_string(),
+        };
+        let old = sheet.set_code_cell(Pos { x: 0, y: 0 }, Some(code_cell_value.clone()));
+        assert_eq!(
+            sheet.get_code_cell(Pos { x: 0, y: 0 }),
+            Some(&code_cell_value)
+        );
+        assert_eq!(old, None);
+        let old = sheet.set_code_cell(Pos { x: 0, y: 0 }, None);
+        assert_eq!(old, Some(code_cell_value));
+        assert_eq!(sheet.get_code_cell(Pos { x: 0, y: 0 }), None);
+    }
 
-    //     // if setting empty spills, return a single SetSpills operation
-    //     let sheet_rect = SheetRect {
-    //         min: Pos { x: 100, y: 0 },
-    //         max: Pos { x: 200, y: 100 },
-    //         sheet_id,
-    //     };
-    //     let old_values = sheet.set_spills(&sheet_rect, Some(Pos { x: 2, y: 2 }));
-    //     assert_eq!(
-    //         old_values,
-    //         vec![Operation::SetSpills {
-    //             spill_rect: sheet_rect,
-    //             code_cell_sheet_pos: None,
-    //         }]
-    //     );
-    // }
+    #[test]
+    fn test_get_code_cell_value() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.grid_mut().try_sheet_mut_from_id(sheet_id).unwrap();
+        let code_cell_value = CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code_string: "1 + 1".to_string(),
+            formatted_code_string: None,
+            output: Some(crate::grid::CodeCellRunOutput {
+                std_out: None,
+                std_err: None,
+                result: crate::grid::CodeCellRunResult::Ok {
+                    output_value: Value::Single(CellValue::Number(BigDecimal::from(2))),
+                    cells_accessed: std::collections::HashSet::new(),
+                },
+                spill: false,
+            }),
+            last_modified: "".to_string(),
+        };
+        sheet.set_code_cell(Pos { x: 0, y: 0 }, Some(code_cell_value.clone()));
+        assert_eq!(
+            sheet.get_code_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        assert_eq!(sheet.get_code_cell_value(Pos { x: 1, y: 1 }), None);
+    }
 }

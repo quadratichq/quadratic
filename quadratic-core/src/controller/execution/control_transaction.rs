@@ -23,8 +23,9 @@ impl GridController {
             }
 
             let op = self.operations.remove(0);
+
             #[cfg(feature = "show-operations")]
-            crate::util::dbgjs(&format!("[Operation] {:?}", op));
+            crate::util::dbgjs(&format!("[Operation] {:?}", &op));
 
             self.execute_operation(op);
 
@@ -47,6 +48,12 @@ impl GridController {
         if self.transaction_in_progress {
             panic!("Expected no transaction in progress");
         }
+
+        println!("transaction {:?}", transaction_type);
+        if matches!(transaction_type, TransactionType::Undo) {
+            dbg!("undo operations {:?}", &operations);
+        }
+
         self.transaction_in_progress = true;
         self.reverse_operations = vec![];
         self.cursor = cursor;

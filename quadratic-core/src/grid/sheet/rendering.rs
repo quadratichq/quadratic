@@ -331,7 +331,7 @@ mod tests {
         sheet.delete_cell_values(Rect::single_pos(Pos { x: 1, y: 2 }));
         assert!(!sheet.has_render_cells(rect));
 
-        sheet.set_code_cell_value(
+        sheet.set_code_cell(
             Pos { x: 2, y: 3 },
             Some(CodeCellValue {
                 language: crate::grid::CodeCellLanguage::Python,
