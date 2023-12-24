@@ -1,18 +1,19 @@
-import * as Sentry from "@sentry/node";
-import * as Tracing from "@sentry/tracing";
-import cors from "cors";
-import express, { NextFunction, Request, Response } from "express";
-import helmet from "helmet";
-import ai_chat_router from "./routes/ai_chat";
-import feedback_router from "./routes/feedback";
-import files_router from "./routes/files/files";
-import sharing_router from "./routes/files/sharing";
-import teams_router from "./routes/teams";
+import * as Sentry from '@sentry/node';
+import * as Tracing from '@sentry/tracing';
+import cors from 'cors';
+import express, { NextFunction, Request, Response } from 'express';
+import 'express-async-errors';
+import helmet from 'helmet';
+import ai_chat_router from './routes/ai_chat';
+import feedback_router from './routes/feedback';
+import files_router from './routes/files/files';
+import sharing_router from './routes/files/sharing';
+import teams_router from './routes/teams';
 
 export const app = express();
 
 // Configure Sentry
-const SENTRY_DSN = process.env.SENTRY_DSN || "";
+const SENTRY_DSN = process.env.SENTRY_DSN || '';
 
 if (SENTRY_DSN) {
   Sentry.init({
@@ -39,35 +40,32 @@ if (SENTRY_DSN) {
   app.use(Sentry.Handlers.tracingHandler());
 }
 
-app.use(express.json({ limit: "75mb" }));
+app.use(express.json({ limit: '75mb' }));
 app.use(helmet());
 
 // set CORS origin from env variable
-const origin = process.env.CORS || "*";
+const origin = process.env.CORS || '*';
 app.use(cors({ origin }));
 
 // Middleware to redirect HTTP requests to HTTPS
 app.use((req, res, next) => {
-  if (
-    req.headers["x-forwarded-proto"] !== "https" &&
-    process.env.NODE_ENV === "production"
-  ) {
+  if (req.headers['x-forwarded-proto'] !== 'https' && process.env.NODE_ENV === 'production') {
     return res.redirect(`https://${req.hostname}${req.url}`);
   }
   return next();
 });
 
 // Routes
-app.use("/ai", ai_chat_router);
-app.use("/v0/files", files_router);
-app.use("/v0/files", sharing_router);
-app.use("/v0/feedback", feedback_router);
-app.use("/v0/teams", teams_router);
+app.use('/ai', ai_chat_router);
+app.use('/v0/files', files_router);
+app.use('/v0/files', sharing_router);
+app.use('/v0/feedback', feedback_router);
+app.use('/v0/teams', teams_router);
 
 if (SENTRY_DSN) {
   // test route
-  app.get("/debug-sentry", function mainHandler(req, res) {
-    throw new Error("My first Sentry error!");
+  app.get('/debug-sentry', function mainHandler(req, res) {
+    throw new Error('My first Sentry error!');
   });
 
   // The error handler must be before any other error middleware and after all controllers
@@ -78,8 +76,7 @@ if (SENTRY_DSN) {
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   if (err.status >= 500) {
     console.error(`[${new Date().toISOString()}] ${err.message}`);
-    if (process.env.NODE_ENV !== "production")
-      console.log(`[${new Date().toISOString()}] ${err.message}`);
+    if (process.env.NODE_ENV !== 'production') console.log(`[${new Date().toISOString()}] ${err.message}`);
   }
   next(err);
 });
