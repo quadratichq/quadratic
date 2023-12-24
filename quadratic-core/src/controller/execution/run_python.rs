@@ -40,3 +40,52 @@ impl GridController {
         self.waiting_for_async = Some(CodeCellLanguage::Python);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        controller::{transaction_types::JsCodeResult, GridController},
+        grid::CodeCellLanguage,
+        ArraySize, CellValue, SheetPos,
+    };
+
+    #[test]
+    fn test_run_python() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+        let code_string = "print(1)".to_string();
+        gc.set_code_cell(
+            sheet_pos.clone(),
+            CodeCellLanguage::Python,
+            code_string.clone(),
+            None,
+        );
+        gc.calculation_complete(JsCodeResult::new(
+            true,
+            None,
+            None,
+            None,
+            Some("test".to_string()),
+            None,
+            None,
+            None,
+        ));
+
+        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
+        let code_cell = sheet.get_code_cell(sheet_pos.into()).unwrap();
+        assert_eq!(code_cell.language, CodeCellLanguage::Python);
+        assert_eq!(code_cell.code_string, code_string);
+        assert_eq!(code_cell.output_size(), ArraySize::_1X1);
+        assert_eq!(
+            code_cell.get_output_value(0, 0),
+            Some(CellValue::Text("test".to_string()))
+        );
+        assert_eq!(code_cell.has_spill_error(), false);
+    }
+}

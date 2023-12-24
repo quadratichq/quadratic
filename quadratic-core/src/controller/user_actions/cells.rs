@@ -22,7 +22,7 @@ impl GridController {
         self.start_user_transaction(ops, cursor)
     }
 
-    pub fn set_cell_code(
+    pub fn set_code_cell(
         &mut self,
         sheet_pos: SheetPos,
         language: CodeCellLanguage,

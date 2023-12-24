@@ -13,36 +13,30 @@ pub enum Operation {
         values: Array,
     },
 
-    // used for undo and multiplayer
     SetCodeCell {
         sheet_pos: SheetPos,
         code_cell_value: Option<CodeCellValue>,
     },
-
-    // used for user compute or update code_cell actions
     ComputeCodeCell {
         sheet_pos: SheetPos,
         code_cell_value: CodeCellValue,
     },
 
-    // // used for undo and multiplayer -- for user actions, spills are set w/o a separate Operation
-    // SetSpills {
-    //     spill_rect: SheetRect,
-    //     code_cell_sheet_pos: Option<SheetPos>,
-    // },
     SetCellFormats {
         sheet_rect: SheetRect,
         attr: CellFmtArray,
     },
+    SetBorders {
+        sheet_rect: SheetRect,
+        borders: SheetBorders,
+    },
+
+    // Sheet metadata operations
     AddSheet {
         sheet: Sheet,
     },
     DeleteSheet {
         sheet_id: SheetId,
-    },
-    SetBorders {
-        sheet_rect: SheetRect,
-        borders: SheetBorders,
     },
     SetSheetName {
         sheet_id: SheetId,
@@ -56,6 +50,8 @@ pub enum Operation {
         target: SheetId,
         order: String,
     },
+
+    // Sheet offsets operations
     ResizeColumn {
         sheet_id: SheetId,
         column: i64,
@@ -83,15 +79,6 @@ impl fmt::Display for Operation {
                 "SetCellCode {{ code_cell_value: {:?} }}",
                 code_cell_value
             ),
-
-            // Operation::SetSpills {
-            //     spill_rect,
-            //     code_cell_sheet_pos,
-            // } => write!(
-            //     fmt,
-            //     "SetSpill {{ pos: {:?}, code_cell_sheet_pos: {:?} }}",
-            //     spill_rect, code_cell_sheet_pos
-            // ),
             Operation::ComputeCodeCell {
                 sheet_pos,
                 code_cell_value,

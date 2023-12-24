@@ -619,7 +619,7 @@ mod test {
             "10".into(),
             None,
         );
-        gc.set_cell_code(
+        gc.set_code_cell(
             SheetPos {
                 x: 0,
                 y: 1,

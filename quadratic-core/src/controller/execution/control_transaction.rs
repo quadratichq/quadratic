@@ -49,11 +49,6 @@ impl GridController {
             panic!("Expected no transaction in progress");
         }
 
-        println!("transaction {:?}", transaction_type);
-        if matches!(transaction_type, TransactionType::Undo) {
-            dbg!("undo operations {:?}", &operations);
-        }
-
         self.transaction_in_progress = true;
         self.reverse_operations = vec![];
         self.cursor = cursor;

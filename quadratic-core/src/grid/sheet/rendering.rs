@@ -495,7 +495,7 @@ mod tests {
     fn test_get_html_output() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_code(
+        gc.set_code_cell(
             SheetPos {
                 x: 1,
                 y: 2,

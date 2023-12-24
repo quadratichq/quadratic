@@ -307,7 +307,7 @@ mod test {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_cell_code(
+        gc.set_code_cell(
             SheetPos {
                 x: 1,
                 y: 1,
@@ -336,7 +336,7 @@ mod test {
         assert_eq!(gc.undo_stack.len(), 0);
 
         // prepare a cell to be overwritten
-        gc.set_cell_code(
+        gc.set_code_cell(
             SheetPos {
                 x: 0,
                 y: 0,

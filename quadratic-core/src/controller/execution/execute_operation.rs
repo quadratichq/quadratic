@@ -313,85 +313,80 @@ impl GridController {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+/*
 
-    fn execute(gc: &mut GridController, operation: Operation) {
+    /*
+
+
+    #[test]
+    fn test_spilled_output_over_code_cell() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let code_cell_output = Some(CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code_string: "print(1)".to_string(),
+            formatted_code_string: None,
+            last_modified: String::from(""),
+            output: Some(CodeCellRunOutput {
+                std_out: None,
+                std_err: None,
+                result: crate::grid::CodeCellRunResult::Ok {
+                    output_value: Value::Array(Array::new_empty(
+                        ArraySize::try_from((2, 3)).expect("failed to create array"),
+                    )),
+                    cells_accessed: HashSet::new(),
+                },
+                spill: false,
+            }),
+        });
+
+        let original = SheetPos {
+            x: 0,
+            y: 1,
+            sheet_id,
+        };
         gc.transaction_in_progress = true;
-        gc.execute_operation(operation);
-    }
+        gc.update_code_cell_value(original, code_cell_output.clone());
 
-    #[test]
-    fn test_execute_operation_set_sheet_color() {
-        let mut gc = GridController::new();
-        let sheet_id = gc.sheet_ids()[0];
-        let color = Some("red".to_string());
-        let operation = Operation::SetSheetColor {
+        let code_cell_output = Some(CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code_string: "print(1)".to_string(),
+            formatted_code_string: None,
+            last_modified: String::from(""),
+            output: Some(CodeCellRunOutput {
+                std_out: None,
+                std_err: None,
+                result: crate::grid::CodeCellRunResult::Ok {
+                    output_value: Value::Array(Array::new_empty(
+                        ArraySize::try_from((1, 3)).expect("failed to create array"),
+                    )),
+                    cells_accessed: HashSet::new(),
+                },
+                spill: false,
+            }),
+        });
+
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
             sheet_id,
-            color: color.clone(),
         };
 
+        gc.update_code_cell_value(sheet_pos, code_cell_output.clone());
+
+        let sheet = gc.grid.sheet_from_id(sheet_id);
+        let code_cell = sheet.get_code_cell(Pos { x: 0, y: 0 });
+        assert!(code_cell.unwrap().has_spill_error());
         assert_eq!(
-            format!("{:?}", operation),
-            format!(
-                "SetSheetColor {{ sheet_id: SheetId {{ id: {} }}, color: Some(\"red\") }}",
-                sheet_id
-            )
+            sheet.get_column(0).unwrap().spills.get(0),
+            Some(sheet_pos.into())
         );
-
-        execute(&mut gc, operation);
-        assert_eq!(gc.grid.sheets()[0].color, color);
-    }
-
-    #[test]
-    fn test_execute_operation_resize_column() {
-        let mut gc = GridController::new();
-        let sheet_id = gc.sheet_ids()[0];
-        let x = 0;
-        let new_size = 100.0;
-        let operation = Operation::ResizeColumn {
-            sheet_id,
-            column: x,
-            new_size,
-        };
-
         assert_eq!(
-            format!("{:?}", operation),
-            format!(
-                "ResizeColumn {{ sheet_id: SheetId {{ id: {} }}, column: {}, new_size: {:.1} }}",
-                sheet_id, x, new_size
-            )
+            sheet.get_column(0).unwrap().spills.get(1),
+            Some(original.into())
         );
-
-        execute(&mut gc, operation);
-        let column_width = gc.grid.sheet_from_id(sheet_id).offsets.column_width(x);
-        assert_eq!(column_width, new_size);
     }
-
-    #[test]
-    fn test_execute_operation_resize_row() {
-        let mut gc = GridController::new();
-        let sheet = &mut gc.grid_mut().sheets_mut()[0];
-        let sheet_id = sheet.id;
-        let row = 0;
-        let new_size = 100.0;
-        let operation = Operation::ResizeRow {
-            sheet_id,
-            row,
-            new_size,
-        };
-
-        assert_eq!(
-            format!("{:?}", operation),
-            format!(
-                "ResizeRow {{ sheet_id: SheetId {{ id: {} }}, row: {}, new_size: {:.1} }}",
-                sheet_id, row, new_size
-            )
-        );
-
-        execute(&mut gc, operation);
-        let row_height = gc.grid.sheets()[0].offsets.row_height(row);
-        assert_eq!(row_height, new_size);
-    }
+     */
 }
+ */
