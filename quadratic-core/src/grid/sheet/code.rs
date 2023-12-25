@@ -57,6 +57,12 @@ impl Sheet {
                 if output_rect.contains(pos) {
                     if code_cell_value.has_spill_error() {
                         Some(CellValue::Blank)
+                    } else if code_cell_value.get_error().is_some() {
+                        if pos.x - code_cell_pos.x == 0 && pos.y - code_cell_pos.y == 0 {
+                            Some(CellValue::Blank)
+                        } else {
+                            None
+                        }
                     } else {
                         code_cell_value.get_output_value(
                             (pos.x - code_cell_pos.x) as u32,

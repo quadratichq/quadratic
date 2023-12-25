@@ -1,16 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
-
-    use bigdecimal::BigDecimal;
-
     use crate::{
         controller::GridController,
-        grid::{
-            js_types::JsRenderCell, CellAlign, CodeCellLanguage, CodeCellRunOutput,
-            CodeCellRunResult, CodeCellValue,
-        },
-        Array, ArraySize, CellValue, Pos, Rect, SheetPos, Value,
+        grid::{js_types::JsRenderCell, CellAlign, CodeCellLanguage},
+        CellValue, Pos, Rect, SheetPos,
     };
 
     #[test]
@@ -406,58 +399,57 @@ mod tests {
         );
     }
 
-    // todo...make this real
-
     #[test]
     fn test_spilled_output_over_code_cell() {
-        let mut gc = GridController::new();
-        let sheet_id = gc.sheet_ids()[0];
+        todo!(); // make this real
+                 // let mut gc = GridController::new();
+                 // let sheet_id = gc.sheet_ids()[0];
 
-        let code_cell = Some(CodeCellValue {
-            language: CodeCellLanguage::Python,
-            code_string: "print(1)".to_string(),
-            formatted_code_string: None,
-            last_modified: String::from(""),
-            output: Some(CodeCellRunOutput {
-                std_out: None,
-                std_err: None,
-                result: CodeCellRunResult::Ok {
-                    output_value: Value::Array(Array::new_empty(
-                        ArraySize::try_from((2, 3)).expect("failed to create array"),
-                    )),
-                    cells_accessed: HashSet::new(),
-                },
-                spill: false,
-            }),
-        });
+        // let code_cell = Some(CodeCellValue {
+        //     language: CodeCellLanguage::Python,
+        //     code_string: "print(1)".to_string(),
+        //     formatted_code_string: None,
+        //     last_modified: String::from(""),
+        //     output: Some(CodeCellRunOutput {
+        //         std_out: None,
+        //         std_err: None,
+        //         result: CodeCellRunResult::Ok {
+        //             output_value: Value::Array(Array::new_empty(
+        //                 ArraySize::try_from((2, 3)).expect("failed to create array"),
+        //             )),
+        //             cells_accessed: HashSet::new(),
+        //         },
+        //         spill: false,
+        //     }),
+        // });
 
-        let sheet = gc.grid.try_sheet_mut_from_id(sheet_id).unwrap();
-        sheet.set_code_cell(Pos { x: 0, y: 1 }, code_cell);
+        // let sheet = gc.grid.try_sheet_mut_from_id(sheet_id).unwrap();
+        // sheet.set_code_cell(Pos { x: 0, y: 1 }, code_cell);
 
-        let code_cell_output = Some(CodeCellValue {
-            language: CodeCellLanguage::Python,
-            code_string: "print(1)".to_string(),
-            formatted_code_string: None,
-            last_modified: String::from(""),
-            output: Some(CodeCellRunOutput {
-                std_out: None,
-                std_err: None,
-                result: crate::grid::CodeCellRunResult::Ok {
-                    output_value: Value::Array(Array::new_empty(
-                        ArraySize::try_from((1, 3)).expect("failed to create array"),
-                    )),
-                    cells_accessed: HashSet::new(),
-                },
-                spill: false,
-            }),
-        });
+        // let _code_cell_output = Some(CodeCellValue {
+        //     language: CodeCellLanguage::Python,
+        //     code_string: "print(1)".to_string(),
+        //     formatted_code_string: None,
+        //     last_modified: String::from(""),
+        //     output: Some(CodeCellRunOutput {
+        //         std_out: None,
+        //         std_err: None,
+        //         result: crate::grid::CodeCellRunResult::Ok {
+        //             output_value: Value::Array(Array::new_empty(
+        //                 ArraySize::try_from((1, 3)).expect("failed to create array"),
+        //             )),
+        //             cells_accessed: HashSet::new(),
+        //         },
+        //         spill: false,
+        //     }),
+        // });
 
-        let sheet = gc.grid.sheet_from_id(sheet_id);
-        let code_cell = sheet.get_code_cell(Pos { x: 0, y: 0 });
-        assert!(code_cell.unwrap().has_spill_error());
-        assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
-            Some(CellValue::Number(BigDecimal::from(1)))
-        );
+        // let sheet = gc.grid.sheet_from_id(sheet_id);
+        // let code_cell = sheet.get_code_cell(Pos { x: 0, y: 0 });
+        // assert!(code_cell.unwrap().has_spill_error());
+        // assert_eq!(
+        //     sheet.get_cell_value(Pos { x: 0, y: 0 }),
+        //     Some(CellValue::Number(BigDecimal::from(1)))
+        // );
     }
 }
