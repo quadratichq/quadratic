@@ -10,14 +10,15 @@ import { authClient } from '@/auth';
 import { MULTIPLAYER_COLORS } from './multiplayerCursor/multiplayerColors';
 import {
   Heartbeat,
-  MessageTransaction,
   MessageUserUpdate,
   MultiplayerUser,
   ReceiveMessages,
   ReceiveRoom,
+  ReceiveTransaction,
   ReceiveTransactions,
   SendEnterRoom,
   SendGetTransactions,
+  SendTransaction,
 } from './multiplayerTypes';
 
 const UPDATE_TIME = 1000 / 30;
@@ -254,11 +255,9 @@ export class Multiplayer {
     userUpdate.viewport = viewport;
   }
 
-  async sendTransaction(operations: string) {
+  async sendTransaction(id: string, operations: string) {
     await this.init();
-    // TODO(ddimaria): this ID should be stored somewhere
-    let id = uuid();
-    const message: MessageTransaction = {
+    const message: SendTransaction = {
       type: 'Transaction',
       id,
       session_id: this.sessionId,
@@ -407,13 +406,13 @@ export class Multiplayer {
     }
   }
 
-  private receiveTransaction(data: MessageTransaction) {
+  private receiveTransaction(data: ReceiveTransaction) {
     // todo: need to handle transaction ordering...
     // will receive your own transaction back and need to handle it
     if (data.file_id !== this.room) {
       throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
     }
-    grid.multiplayerTransaction(data.operations);
+    grid.multiplayerTransaction(data.sequence_num, data.operations);
   }
 
   private receiveTransactions(data: ReceiveTransactions) {

@@ -125,6 +125,7 @@ impl GridController {
             save: false,
             generate_thumbnail: false,
             transaction_busy: false,
+            transaction_id: None,
             transaction: None,
             html: HashSet::new(),
         })?)

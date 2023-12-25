@@ -64,6 +64,7 @@ pub struct TransactionSummary {
     pub generate_thumbnail: bool,
 
     // Transaction to be shared via multiplayer
+    pub transaction_id: Option<String>,
     pub transaction: Option<String>,
 
     // changes to html output

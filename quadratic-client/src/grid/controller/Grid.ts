@@ -142,8 +142,8 @@ export class Grid {
       window.dispatchEvent(new CustomEvent('transaction-complete'));
     }
 
-    if (summary.forward_operations) {
-      multiplayer.sendTransaction(summary.forward_operations);
+    if (summary.transaction) {
+      multiplayer.sendTransaction(summary.transaction_id!, summary.transaction);
     }
     pixiApp.setViewportDirty();
   }
@@ -749,8 +749,8 @@ export class Grid {
     );
   }
 
-  multiplayerTransaction(transaction: string) {
-    const summary = this.gridController.multiplayerTransaction(transaction);
+  multiplayerTransaction(sequenceNum: bigint, transaction: string) {
+    const summary = this.gridController.multiplayerTransaction(sequenceNum, transaction);
     this.transactionResponse(summary);
   }
 

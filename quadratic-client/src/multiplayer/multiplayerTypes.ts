@@ -65,7 +65,15 @@ export interface Transaction {
   operations: string[];
 }
 
-export interface MessageTransaction {
+export interface ReceiveTransaction {
+  type: 'Transaction';
+  id: string;
+  file_id: string;
+  operations: string;
+  sequence_num: bigint;
+}
+
+export interface SendTransaction {
   type: 'Transaction';
   id: string;
   session_id: string;
@@ -95,4 +103,4 @@ export interface ReceiveEmpty {
   type: 'Empty';
 }
 
-export type ReceiveMessages = ReceiveRoom | MessageUserUpdate | MessageTransaction | ReceiveEmpty | ReceiveTransactions;
+export type ReceiveMessages = ReceiveRoom | MessageUserUpdate | ReceiveTransaction | ReceiveEmpty | ReceiveTransactions;
