@@ -93,9 +93,13 @@ impl GridController {
     }
 
     #[wasm_bindgen(js_name = "multiplayerTransaction")]
-    pub fn js_multiplayer_transaction(&mut self, operations: String) -> Result<JsValue, JsValue> {
+    pub fn js_multiplayer_transaction(
+        &mut self,
+        sequence_num: u64,
+        operations: String,
+    ) -> Result<JsValue, JsValue> {
         Ok(serde_wasm_bindgen::to_value(
-            &self.received_transaction(operations),
+            &self.received_transaction(sequence_num, operations),
         )?)
     }
 
@@ -121,7 +125,7 @@ impl GridController {
             save: false,
             generate_thumbnail: false,
             transaction_busy: false,
-            forward_operations: None,
+            transaction: None,
             html: HashSet::new(),
         })?)
     }

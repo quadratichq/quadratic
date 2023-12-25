@@ -1,13 +1,19 @@
 /// This module handles the application of operations to the Grid.
 ///
 pub mod control_transaction;
+pub mod execute_offsets;
 pub mod execute_operation;
+pub mod execute_set_borders;
+pub mod execute_set_cell_formats;
+pub mod execute_set_cell_values;
+pub mod execute_set_code_cell;
+pub mod execute_sheets;
 pub mod get_cells;
+pub mod receive_multiplayer;
 pub mod run;
 pub mod run_formula;
 pub mod run_python;
 pub mod spills;
-mod tests;
 
 use super::Transaction;
 use crate::controller::{transaction_summary::TransactionSummary, GridController};
@@ -38,8 +44,8 @@ impl GridController {
     /// returns the TransactionSummary
     pub fn prepare_transaction_summary(&mut self) -> TransactionSummary {
         if self.complete {
-            self.summary.forward_operations = Some(
-                serde_json::to_string(&self.forward_operations)
+            self.summary.transaction = Some(
+                serde_json::to_string(&self.to_transaction())
                     .expect("Failed to serialize forward operations"),
             );
         }
@@ -51,6 +57,8 @@ impl GridController {
     /// Creates a transaction to save to the Undo/Redo stack
     fn to_transaction(&self) -> Transaction {
         Transaction {
+            id: self.transaction_id,
+            sequence_num: None,
             operations: self.reverse_operations.clone().into_iter().rev().collect(),
             cursor: self.cursor.clone(),
         }

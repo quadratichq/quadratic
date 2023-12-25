@@ -53,7 +53,7 @@ impl GridController {
         self.sheets_with_dirty_bounds.insert(sheet_id);
 
         self.summary.generate_thumbnail =
-            self.summary.generate_thumbnail || self.thumbnail_dirty_sheet_rect(sheet_rect);
+            self.summary.generate_thumbnail || self.thumbnail_dirty_sheet_rect(&sheet_rect);
         self.summary.code_cells_modified.insert(sheet_id);
         self.add_cell_sheets_modified_rect(&sheet_rect);
     }

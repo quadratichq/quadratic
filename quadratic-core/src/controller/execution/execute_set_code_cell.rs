@@ -1,3 +1,65 @@
+use crate::{
+    controller::{operations::operation::Operation, GridController},
+    grid::CodeCellLanguage,
+};
+
+impl GridController {
+    pub(super) fn execute_set_code_cell(&mut self, op: &Operation, is_user: bool, is_undo: bool) {
+        match op.clone() {
+            Operation::SetCodeCell {
+                sheet_pos,
+                code_cell_value,
+            } => {
+                let sheet_id = sheet_pos.sheet_id;
+                let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                if is_user {
+                    self.reverse_operations.push(Operation::SetCodeCell {
+                        sheet_pos,
+                        code_cell_value: sheet.get_code_cell(sheet_pos.into()).cloned(),
+                    });
+                    let old_code_cell =
+                        sheet.set_code_cell(sheet_pos.into(), code_cell_value.clone());
+                    if let Some(code_cell_value) = &code_cell_value {
+                        match code_cell_value.language {
+                            CodeCellLanguage::Python => {
+                                self.run_python(sheet_pos, &code_cell_value);
+                            }
+                            CodeCellLanguage::Formula => {
+                                self.run_formula(sheet_pos, &code_cell_value);
+                            }
+                            _ => {
+                                unreachable!("Unsupported language in RunCodeCell");
+                            }
+                        }
+
+                        // only capture operations if not waiting for async, otherwise wait until calculation is complete
+                        if self.waiting_for_async.is_none() {
+                            self.finalize_code_cell(sheet_pos, old_code_cell);
+                        }
+                    }
+                } else if is_undo {
+                    self.reverse_operations.push(Operation::SetCodeCell {
+                        sheet_pos,
+                        code_cell_value: sheet.get_code_cell(sheet_pos.into()).cloned(),
+                    });
+                    sheet.set_code_cell(sheet_pos.into(), code_cell_value);
+                    self.forward_operations.push(op.clone());
+                } else {
+                    sheet.set_code_cell(sheet_pos.into(), code_cell_value);
+                }
+
+                let sheet_rect = &sheet_pos.into();
+                self.sheets_with_dirty_bounds.insert(sheet_id);
+                self.summary.generate_thumbnail =
+                    self.summary.generate_thumbnail || self.thumbnail_dirty_sheet_rect(sheet_rect);
+                self.summary.code_cells_modified.insert(sheet_id);
+                self.add_cell_sheets_modified_rect(sheet_rect);
+            }
+            _ => unreachable!("Expected Operation::SetCodeCell in execute_set_code_cell"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{

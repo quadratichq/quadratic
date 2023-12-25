@@ -6,7 +6,9 @@ use crate::{
     grid::{CodeCellLanguage, Grid, SheetId},
     SheetPos, SheetRect,
 };
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use uuid::Uuid;
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
@@ -22,8 +24,10 @@ pub mod transaction_summary;
 pub mod transaction_types;
 pub mod user_actions;
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct Transaction {
+    id: Uuid,
+    sequence_num: Option<u64>,
     operations: Vec<Operation>,
     cursor: Option<String>,
 }
@@ -34,6 +38,14 @@ pub struct GridController {
     grid: Grid,
     undo_stack: Vec<Transaction>,
     redo_stack: Vec<Transaction>,
+
+    // completed Transactions that do not have a sequence number from the server
+    // these have been pushed to the undo stack
+    unsaved_transactions: Vec<Transaction>,
+
+    // transactions that are awaiting async responses
+    // these have not been pushed to the undo stack
+    incomplete_transactions: Vec<Transaction>,
 
     // transaction in progress information
     transaction_in_progress: bool,
@@ -48,6 +60,9 @@ pub struct GridController {
 
     // list of operations to share with other players
     forward_operations: Vec<Operation>,
+
+    // transaction id used for multiplayer
+    transaction_id: Uuid,
 
     // tracks sheets that will need updated bounds calculations
     sheets_with_dirty_bounds: HashSet<SheetId>,

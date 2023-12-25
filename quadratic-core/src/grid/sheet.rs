@@ -17,7 +17,7 @@ use crate::grid::{borders, SheetBorders};
 use crate::{Array, ArraySize, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;
-pub mod cells;
+pub mod cell_array;
 pub mod code;
 pub mod formatting;
 pub mod rendering;

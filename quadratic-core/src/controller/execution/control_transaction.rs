@@ -36,7 +36,7 @@ impl GridController {
     }
 
     /// Creates and runs a new Transaction
-    fn start_transaction(
+    pub(super) fn start_transaction(
         &mut self,
         operations: Vec<Operation>,
         cursor: Option<String>,
@@ -152,27 +152,6 @@ impl GridController {
     pub fn calculation_get_cells(&mut self, get_cells: JsComputeGetCells) -> Option<CellsForArray> {
         assert!(self.transaction_in_progress);
         self.get_cells(get_cells)
-    }
-
-    pub fn received_transaction(&mut self, transaction: String) -> TransactionSummary {
-        let operations: Vec<Operation> = if let Ok(operations) = serde_json::from_str(&transaction)
-        {
-            operations
-        } else {
-            return TransactionSummary::default();
-        };
-
-        self.apply_received_transaction(operations)
-    }
-
-    pub fn apply_received_transaction(&mut self, operations: Vec<Operation>) -> TransactionSummary {
-        self.start_transaction(operations, None, TransactionType::Multiplayer);
-        self.transaction_updated_bounds();
-        let mut summary = self.prepare_transaction_summary();
-        summary.generate_thumbnail = false;
-        summary.forward_operations = None;
-        summary.save = false;
-        summary
     }
 }
 
