@@ -9,16 +9,43 @@ impl GridController {
         transaction: String,
     ) -> TransactionSummary {
         if let Ok(transaction) = serde_json::from_str(&transaction) {
-            dbg!(&transaction);
             self.apply_received_transaction(sequence_num, transaction)
         } else {
             panic!("Unable to unpack multiplayer transaction");
         }
     }
 
+    fn rollback_unsaved_transactions(&mut self) {
+        self.clear_summary();
+        let operations = self
+            .unsaved_transactions
+            .iter()
+            .rev()
+            .map(|(_, undo)| undo.operations.clone())
+            .collect::<Vec<_>>();
+        operations
+            .iter()
+            .for_each(|o| self.start_transaction(o.to_vec(), None, TransactionType::Rollback));
+    }
+
+    fn reapply_unsaved_transactions(&mut self) {
+        let operations = self
+            .unsaved_transactions
+            .iter()
+            .rev()
+            .map(|(forward, _)| forward.operations.clone())
+            .collect::<Vec<_>>();
+        operations
+            .iter()
+            .for_each(|o| self.start_transaction(o.to_vec(), None, TransactionType::Rollback));
+    }
+
     pub fn apply_received_transaction(
         &mut self,
-        sequence_num: u64,
+
+        // todo: check this and request transactions again if out of order
+        _sequence_num: u64,
+
         transaction: Transaction,
     ) -> TransactionSummary {
         // first check if the received transaction is one of ours
@@ -26,12 +53,13 @@ impl GridController {
             .unsaved_transactions
             .iter_mut()
             .enumerate()
-            .find(|t| t.1.id == transaction.id);
-        if let Some((index, transaction)) = existing {
+            .find(|(_, unsaved_transaction)| unsaved_transaction.0.id == transaction.id);
+        if let Some((index, _)) = existing {
             // if transaction is the top of the unsaved_transactions, then only need to set the sequence_num
             if index == 0 {
-                transaction.sequence_num = Some(sequence_num);
                 self.unsaved_transactions.remove(index);
+
+                // todo: probably should check sequence_num at this point
 
                 // nothing to render as we've already rendered this transaction
                 return TransactionSummary::default();
@@ -42,9 +70,12 @@ impl GridController {
             }
         }
         if self.unsaved_transactions.len() > 0 {
-            todo!("need to undo unsaved_transactions and then reapply them after the current transaction comes through");
+            self.rollback_unsaved_transactions();
+            self.start_transaction(transaction.operations, None, TransactionType::Rollback);
+            self.reapply_unsaved_transactions();
+        } else {
+            self.start_transaction(transaction.operations, None, TransactionType::Multiplayer);
         }
-        self.start_transaction(transaction.operations, None, TransactionType::Multiplayer);
         self.transaction_updated_bounds();
         let mut summary = self.prepare_transaction_summary();
         summary.generate_thumbnail = false;
@@ -77,9 +108,6 @@ mod tests {
             Some(CellValue::Text("Hello World".to_string()))
         );
 
-        dbg!("***");
-        dbg!(&summary.transaction);
-
         // received our own transaction back
         gc1.received_transaction(1, summary.transaction.clone().unwrap());
 
@@ -97,6 +125,56 @@ mod tests {
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_apply_multiplayer_before_unsaved_transaction() {
+        let mut gc1 = GridController::new();
+        let sheet_id = gc1.sheet_ids()[0];
+        gc1.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            "Hello World from 1".to_string(),
+            None,
+        );
+        let sheet = gc1.grid().try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Text("Hello World from 1".to_string()))
+        );
+
+        let mut gc2 = GridController::new();
+        // set gc2's sheet 1's id to gc1 sheet 1's id
+        gc2.grid
+            .try_sheet_mut_from_id(gc2.sheet_ids()[0])
+            .unwrap()
+            .id = sheet_id;
+        let summary = gc2.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            "Hello World from 2".to_string(),
+            None,
+        );
+        let sheet = gc2.grid().try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Text("Hello World from 2".to_string()))
+        );
+
+        // gc1 should apply gc2's cell value to 0,0 before its unsaved transaction
+        // and then reapply its unsaved transaction, overwriting 0,0
+        gc1.received_transaction(1, summary.transaction.unwrap());
+        let sheet = gc1.grid.try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Text("Hello World from 1".to_string()))
         );
     }
 }

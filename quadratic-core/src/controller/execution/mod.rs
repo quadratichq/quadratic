@@ -18,6 +18,9 @@ pub enum TransactionType {
     Undo,
     Redo,
     Multiplayer,
+
+    // used to rollback unsaved_transactions
+    Rollback,
 }
 
 impl GridController {
@@ -36,7 +39,7 @@ impl GridController {
     pub fn prepare_transaction_summary(&mut self) -> TransactionSummary {
         if self.complete {
             self.summary.transaction = Some(
-                serde_json::to_string(&self.to_undo_transaction())
+                serde_json::to_string(&self.to_forward_transaction())
                     .expect("Failed to serialize forward operations"),
             );
         }

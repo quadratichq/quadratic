@@ -48,15 +48,18 @@ impl GridController {
         self.reverse_operations = vec![];
         self.cursor = cursor;
         self.cells_accessed = HashSet::new();
-        self.summary = TransactionSummary::default();
         self.operations = operations;
-        self.sheets_with_dirty_bounds = HashSet::new();
         self.transaction_type = transaction_type.clone();
         self.has_async = false;
         self.current_sheet_pos = None;
         self.waiting_for_async = None;
         self.complete = false;
         self.forward_operations = vec![];
+
+        // rollback transaction combines these summaries
+        if transaction_type != TransactionType::Rollback {
+            self.clear_summary();
+        }
 
         if matches!(transaction_type, TransactionType::User) {
             self.transaction_id = Uuid::new_v4();
@@ -65,22 +68,36 @@ impl GridController {
         self.handle_transactions(transaction_type);
     }
 
+    /// Clears summary-type flags -- not called when rolling back changes for multiplayer on the grid
+    pub(crate) fn clear_summary(&mut self) {
+        self.summary = TransactionSummary::default();
+        self.sheets_with_dirty_bounds = HashSet::new();
+    }
+
+    /// Finalizes the transaction and pushes it to the various stacks (if needed)
     pub(super) fn finalize_transaction(&mut self) {
         match self.transaction_type {
             TransactionType::User => {
-                self.undo_stack.push(self.to_undo_transaction());
+                let undo = self.to_undo_transaction();
+                self.undo_stack.push(undo.clone());
                 self.redo_stack.clear();
-                self.unsaved_transactions.push(self.to_undo_transaction());
+                self.unsaved_transactions
+                    .push((self.to_forward_transaction(), undo));
             }
             TransactionType::Undo => {
-                self.redo_stack.push(self.to_undo_transaction());
-                self.unsaved_transactions.push(self.to_undo_transaction());
+                let undo = self.to_undo_transaction();
+                self.redo_stack.push(undo.clone());
+                self.unsaved_transactions
+                    .push((self.to_forward_transaction(), undo));
             }
             TransactionType::Redo => {
-                self.undo_stack.push(self.to_undo_transaction());
-                self.unsaved_transactions.push(self.to_undo_transaction());
+                let undo = self.to_undo_transaction();
+                self.undo_stack.push(undo.clone());
+                self.unsaved_transactions
+                    .push((self.to_forward_transaction(), undo));
             }
             TransactionType::Multiplayer => (),
+            TransactionType::Rollback => (),
             TransactionType::Unset => panic!("Expected a transaction type"),
         }
         self.transaction_in_progress = false;

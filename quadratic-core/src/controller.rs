@@ -40,7 +40,8 @@ pub struct GridController {
     redo_stack: Vec<Transaction>,
 
     // completed Transactions that do not have a sequence number from the server
-    unsaved_transactions: Vec<Transaction>,
+    // Vec<(forward_transaction, reverse_transaction)>
+    unsaved_transactions: Vec<(Transaction, Transaction)>,
 
     // transactions that are awaiting async responses
     // these have not been pushed to the undo stack
