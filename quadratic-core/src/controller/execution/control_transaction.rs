@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use super::{GridController, TransactionType};
 use crate::{
     controller::{
@@ -56,20 +58,27 @@ impl GridController {
         self.complete = false;
         self.forward_operations = vec![];
 
+        if matches!(transaction_type, TransactionType::User) {
+            self.transaction_id = Uuid::new_v4();
+        }
+
         self.handle_transactions(transaction_type);
     }
 
     pub(super) fn finalize_transaction(&mut self) {
         match self.transaction_type {
             TransactionType::User => {
-                self.undo_stack.push(self.to_transaction());
+                self.undo_stack.push(self.to_undo_transaction());
                 self.redo_stack.clear();
+                self.unsaved_transactions.push(self.to_undo_transaction());
             }
             TransactionType::Undo => {
-                self.redo_stack.push(self.to_transaction());
+                self.redo_stack.push(self.to_undo_transaction());
+                self.unsaved_transactions.push(self.to_undo_transaction());
             }
             TransactionType::Redo => {
-                self.undo_stack.push(self.to_transaction());
+                self.undo_stack.push(self.to_undo_transaction());
+                self.unsaved_transactions.push(self.to_undo_transaction());
             }
             TransactionType::Multiplayer => (),
             TransactionType::Unset => panic!("Expected a transaction type"),

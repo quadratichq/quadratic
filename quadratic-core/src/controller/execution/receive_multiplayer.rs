@@ -9,6 +9,7 @@ impl GridController {
         transaction: String,
     ) -> TransactionSummary {
         if let Ok(transaction) = serde_json::from_str(&transaction) {
+            dbg!(&transaction);
             self.apply_received_transaction(sequence_num, transaction)
         } else {
             panic!("Unable to unpack multiplayer transaction");
@@ -20,6 +21,7 @@ impl GridController {
         sequence_num: u64,
         transaction: Transaction,
     ) -> TransactionSummary {
+        // first check if the received transaction is one of ours
         let existing = self
             .unsaved_transactions
             .iter_mut()
@@ -40,7 +42,7 @@ impl GridController {
             }
         }
         if self.unsaved_transactions.len() > 0 {
-            // need to undo unsaved_transactions and then reapply them after the current transaction comes through
+            todo!("need to undo unsaved_transactions and then reapply them after the current transaction comes through");
         }
         self.start_transaction(transaction.operations, None, TransactionType::Multiplayer);
         self.transaction_updated_bounds();
@@ -75,13 +77,18 @@ mod tests {
             Some(CellValue::Text("Hello World".to_string()))
         );
 
-        // received its own transaction back...
+        dbg!("***");
+        dbg!(&summary.transaction);
+
+        // received our own transaction back
         gc1.received_transaction(1, summary.transaction.clone().unwrap());
+
         let sheet = gc1.grid().try_sheet_from_id(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World".to_string()))
         );
+        assert_eq!(gc1.unsaved_transactions.len(), 0);
 
         let mut gc2 = GridController::new();
         gc2.grid_mut().sheets_mut()[0].id = sheet_id;
