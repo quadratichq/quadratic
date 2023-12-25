@@ -48,22 +48,22 @@ impl GridController {
                         values: old_values,
                     });
 
-                    // remove any code_cells that are now covered by the new values
-                    let mut code_cell_removed = false;
-                    sheet.code_cells.retain(|(pos, code_cell)| {
-                        if sheet_rect.contains(pos.to_sheet_pos(sheet.id)) {
-                            self.reverse_operations.push(Operation::SetCodeCell {
-                                sheet_pos: pos.to_sheet_pos(sheet.id),
-                                code_cell_value: Some(code_cell.clone()),
-                            });
-                            code_cell_removed = true;
-                            false
-                        } else {
-                            true
-                        }
-                    });
-
                     if is_user {
+                        // remove any code_cells that are now covered by the new values
+                        let mut code_cell_removed = false;
+                        sheet.code_cells.retain(|(pos, code_cell)| {
+                            if sheet_rect.contains(pos.to_sheet_pos(sheet.id)) {
+                                self.reverse_operations.push(Operation::SetCodeCell {
+                                    sheet_pos: pos.to_sheet_pos(sheet.id),
+                                    code_cell_value: Some(code_cell.clone()),
+                                });
+                                code_cell_removed = true;
+                                false
+                            } else {
+                                true
+                            }
+                        });
+
                         self.add_compute_operations(&sheet_rect, None);
 
                         // if a code_cell was removed, then we need to check all spills.

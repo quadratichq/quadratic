@@ -356,7 +356,6 @@ mod test {
         );
 
         // todo: the reverse ops for clipboard have SetCodeCell before SetCellValues, which is what's causing the test to fail
-        // may need an additional SetCodeCell in addition to the ComputeCodeCell to get around this problem
 
         gc.paste_from_clipboard(
             SheetPos {
@@ -375,6 +374,8 @@ mod test {
         );
 
         assert_eq!(gc.undo_stack.len(), 2);
+
+        dbg!(&gc.undo_stack);
 
         // undo to original code cell value
         gc.undo(None);
