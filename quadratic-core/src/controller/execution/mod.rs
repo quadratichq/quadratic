@@ -1,7 +1,8 @@
+/// This module handles the application of operations to the Grid.
+///
 pub mod control_transaction;
 pub mod execute_operation;
 pub mod get_cells;
-/// This module handles the application of operations to the Grid.
 pub mod run;
 pub mod run_formula;
 pub mod run_python;
