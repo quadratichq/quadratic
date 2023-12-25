@@ -2,7 +2,6 @@
 ///
 pub mod control_transaction;
 pub mod execute_operation;
-pub mod get_cells;
 pub mod receive_multiplayer;
 pub mod run_code;
 pub mod spills;

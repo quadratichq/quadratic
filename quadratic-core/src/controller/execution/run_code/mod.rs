@@ -7,6 +7,7 @@ use crate::{
     Array, CellValue, Error, ErrorMsg, Pos, SheetPos, SheetRect, Span, Value,
 };
 
+pub mod get_cells;
 pub mod run_formula;
 pub mod run_python;
 
