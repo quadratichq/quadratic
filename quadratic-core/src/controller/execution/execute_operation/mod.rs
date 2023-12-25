@@ -3,6 +3,13 @@ use crate::controller::GridController;
 
 use super::TransactionType;
 
+pub mod execute_offsets;
+pub mod execute_set_borders;
+pub mod execute_set_cell_formats;
+pub mod execute_set_cell_values;
+pub mod execute_set_code_cell;
+pub mod execute_sheets;
+
 impl GridController {
     /// Executes the given operation.
     ///

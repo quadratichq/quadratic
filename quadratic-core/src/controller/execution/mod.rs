@@ -1,18 +1,10 @@
 /// This module handles the application of operations to the Grid.
 ///
 pub mod control_transaction;
-pub mod execute_offsets;
 pub mod execute_operation;
-pub mod execute_set_borders;
-pub mod execute_set_cell_formats;
-pub mod execute_set_cell_values;
-pub mod execute_set_code_cell;
-pub mod execute_sheets;
 pub mod get_cells;
 pub mod receive_multiplayer;
-pub mod run;
-pub mod run_formula;
-pub mod run_python;
+pub mod run_code;
 pub mod spills;
 
 use super::Transaction;

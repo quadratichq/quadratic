@@ -7,7 +7,7 @@ use crate::{
 };
 
 impl GridController {
-    pub(super) fn run_formula(&mut self, sheet_pos: SheetPos, old_code_cell: &CodeCellValue) {
+    pub(crate) fn run_formula(&mut self, sheet_pos: SheetPos, old_code_cell: &CodeCellValue) {
         let mut ctx = Ctx::new(self.grid(), sheet_pos);
         match parse_formula(&old_code_cell.code_string, sheet_pos.into()) {
             Ok(parsed) => {

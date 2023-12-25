@@ -7,6 +7,9 @@ use crate::{
     Array, CellValue, Error, ErrorMsg, Pos, SheetPos, SheetRect, Span, Value,
 };
 
+pub mod run_formula;
+pub mod run_python;
+
 impl GridController {
     /// finalize changes to a code_cell
     pub(crate) fn finalize_code_cell(
