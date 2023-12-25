@@ -84,7 +84,7 @@ impl GridController {
     ) -> TransactionSummary {
         assert!(
             !self.transaction_in_progress,
-            "Expected no transaction in progress in set_in_progress_transaction"
+            "Expected no transaction in progress in start_user_transaction"
         );
         self.start_transaction(operations, cursor, TransactionType::User);
 

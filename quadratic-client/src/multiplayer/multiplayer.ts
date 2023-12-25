@@ -408,13 +408,12 @@ export class Multiplayer {
   }
 
   private receiveTransaction(data: MessageTransaction) {
-    // todo: this check should not be needed (eventually)
-    if (data.session_id !== this.sessionId) {
-      if (data.file_id !== this.room) {
-        throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
-      }
-      grid.multiplayerTransaction(data.operations);
+    // todo: need to handle transaction ordering...
+    // will receive your own transaction back and need to handle it
+    if (data.file_id !== this.room) {
+      throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
     }
+    grid.multiplayerTransaction(data.operations);
   }
 
   private receiveTransactions(data: ReceiveTransactions) {
