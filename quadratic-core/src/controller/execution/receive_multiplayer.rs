@@ -9,7 +9,7 @@ impl GridController {
         transaction: String,
     ) -> TransactionSummary {
         if let Ok(transaction) = serde_json::from_str(&transaction) {
-            self.apply_received_transaction(sequence_num, transaction)
+            self.client_apply_transaction(sequence_num, transaction)
         } else {
             panic!("Unable to unpack multiplayer transaction");
         }
@@ -40,7 +40,14 @@ impl GridController {
             .for_each(|o| self.start_transaction(o.to_vec(), None, TransactionType::Rollback));
     }
 
-    pub fn apply_received_transaction(
+    /// Used by the server to apply transactions.
+    /// The server owns the sequence_num, so there's no need to check or alter the execution order.
+    pub fn server_apply_transaction(&mut self, transaction: Transaction) {
+        self.start_transaction(transaction.operations, None, TransactionType::Multiplayer);
+    }
+
+    /// Used by the client to ensure transactions are applied in order
+    pub fn client_apply_transaction(
         &mut self,
 
         // todo: check this and request transactions again if out of order
@@ -87,7 +94,10 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use crate::{controller::GridController, CellValue, Pos, SheetPos};
+    use crate::{
+        controller::{GridController, Transaction},
+        CellValue, Pos, SheetPos,
+    };
 
     #[test]
     fn test_multiplayer_hello_world() {
@@ -175,6 +185,41 @@ mod tests {
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World from 1".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_server_apply_transaction() {
+        let mut client = GridController::new();
+        let sheet_id = client.sheet_ids()[0];
+        let summary = client.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            "Hello World".to_string(),
+            None,
+        );
+        let sheet = client.grid().try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Text("Hello World".to_string()))
+        );
+        let transaction_str = summary.transaction.unwrap();
+        let transaction: Transaction = serde_json::from_str(&transaction_str).unwrap();
+
+        let mut server = GridController::new();
+        server
+            .grid
+            .try_sheet_mut_from_id(server.sheet_ids()[0])
+            .unwrap()
+            .id = sheet_id;
+        server.server_apply_transaction(transaction);
+        let sheet = server.grid.try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Text("Hello World".to_string()))
         );
     }
 }

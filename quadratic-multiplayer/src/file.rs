@@ -1,8 +1,6 @@
 use anyhow::Result;
 use quadratic_core::{
-    controller::{
-        operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
-    },
+    controller::{GridController, Transaction},
     grid::{file::import, Grid},
 };
 
@@ -12,27 +10,16 @@ pub(crate) fn _load_file(file: &str) -> Result<Grid> {
 }
 
 /// Apply a stringified vec of operations to the grid
-pub(crate) fn _apply_string_operations(
-    grid: &mut GridController,
-    operations: String,
-) -> Result<TransactionSummary> {
-    let operations: Vec<Operation> = serde_json::from_str(&operations)?;
-
-    _apply_operations(grid, operations)
-}
-
-/// Apply a vec of operations to the grid
-pub(crate) fn _apply_operations(
-    grid: &mut GridController,
-    operations: Vec<Operation>,
-) -> Result<TransactionSummary> {
-    Ok(grid.apply_received_transaction(operations))
+pub(crate) fn _apply_transaction(grid: &mut GridController, transaction: String) -> Result<()> {
+    let transaction: Transaction = serde_json::from_str(&transaction)?;
+    grid.server_apply_transaction(transaction);
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use quadratic_core::test_util::assert_cell_value;
-    use quadratic_core::{Array, CellValue, SheetPos};
+    use quadratic_core::SheetPos;
 
     use super::*;
 
@@ -41,20 +28,22 @@ mod tests {
         let file =
             _load_file(include_str!("../../rust-shared/data/grid/v1_4_simple.grid")).unwrap();
 
-        let mut grid = GridController::from_grid(file);
-        let sheet_id = grid.sheet_ids().first().unwrap().to_owned();
-        let sheet_rect = SheetPos {
-            x: 0,
-            y: 0,
-            sheet_id,
-        }
-        .into();
-        let value = CellValue::Text("hello".to_string());
-        let values = Array::from(value);
-        let operation = Operation::SetCellValues { sheet_rect, values };
+        let mut client = GridController::from_grid(file.clone());
+        let sheet_id = client.sheet_ids().first().unwrap().to_owned();
+        let summary = client.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            "hello".to_string(),
+            None,
+        );
+        assert_cell_value(&client, sheet_id, 0, 0, "hello");
 
-        let _ = _apply_operations(&mut grid, vec![operation]);
+        let mut server = GridController::from_grid(file);
+        let _ = _apply_transaction(&mut server, summary.transaction.unwrap());
 
-        assert_cell_value(&grid, sheet_id, 0, 0, "hello");
+        assert_cell_value(&server, sheet_id, 0, 0, "hello");
     }
 }
