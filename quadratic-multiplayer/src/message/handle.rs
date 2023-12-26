@@ -13,7 +13,9 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::message::{broadcast, request::MessageRequest, response::MessageResponse};
+use crate::message::{
+    broadcast, direct_message, request::MessageRequest, response::MessageResponse,
+};
 use crate::state::user::UserState;
 use crate::state::{user::User, State};
 
@@ -73,6 +75,22 @@ pub(crate) async fn handle_message(
 
                 broadcast(vec![], file_id, Arc::clone(&state), response);
             }
+
+            // this is a placeholder for a better way to get the current sequence_num
+            let sequence_num = state
+                .transaction_queue
+                .lock()
+                .await
+                .get_sequence_num(file_id.to_owned())
+                .unwrap_or(0);
+
+            direct_message(
+                session_id,
+                file_id,
+                Arc::clone(&state),
+                MessageResponse::CurrentTransaction { sequence_num },
+            )
+            .await?;
 
             Ok(None)
         }

@@ -419,7 +419,10 @@ export class Multiplayer {
   }
 
   private receiveCurrentTransaction(data: ReceiveCurrentTransaction) {
-    console.log('[TODO]: receiveCurrentTransaction', data);
+    if (debugShowMultiplayer) {
+      console.log(`[Multiplayer]: Current transaction number set to ${data.sequence_num}`);
+      grid.setMultiplayerSequenceNum(data.sequence_num);
+    }
   }
 
   receiveMessage = (e: { data: string }) => {

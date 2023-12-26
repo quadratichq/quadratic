@@ -126,6 +126,11 @@ impl GridController {
         ))?)
     }
 
+    #[wasm_bindgen(js_name = "setMultiplayerSequenceNum")]
+    pub fn js_multiplayer_set_sequence_num(&mut self, sequence_num: u32) {
+        self.last_sequence_num = sequence_num as u64;
+    }
+
     /// Populates a portion of a sheet with random float values.
     ///
     /// Returns a [`TransactionSummary`].

@@ -749,9 +749,18 @@ export class Grid {
     );
   }
 
+  //#endregion
+
+  //#region Multiplayer
+  //-----------------
+
   multiplayerTransaction(transactionId: string, sequenceNum: number, operations: string) {
     const summary = this.gridController.multiplayerTransaction(transactionId, sequenceNum, operations);
     this.transactionResponse(summary);
+  }
+
+  setMultiplayerSequenceNum(sequenceNum: number) {
+    this.gridController.setMultiplayerSequenceNum(sequenceNum);
   }
 
   //#endregion

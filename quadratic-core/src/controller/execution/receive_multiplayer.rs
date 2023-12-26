@@ -67,16 +67,14 @@ impl GridController {
             // if transaction is the top of the unsaved_transactions, then only need to set the sequence_num
             if index as u64 == sequence_num - self.last_sequence_num - 1 {
                 self.unsaved_transactions.remove(index);
-
-                // todo: probably should check sequence_num at this point
-
                 self.last_sequence_num = sequence_num;
+
                 // nothing to render as we've already rendered this transaction
                 return TransactionSummary::default();
             } else {
                 crate::util::dbgjs(format!(
                     "Rust panic: out of order. Received {}, expected {}",
-                    sequence_num - 1,
+                    sequence_num - self.last_sequence_num - 1,
                     index
                 ));
                 todo!(
