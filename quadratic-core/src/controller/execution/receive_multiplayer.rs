@@ -53,7 +53,7 @@ impl GridController {
         transaction_id: Uuid,
 
         // todo: check this and request transactions again if out of order
-        _sequence_num: u64,
+        sequence_num: u64,
 
         operations: Vec<Operation>,
     ) -> TransactionSummary {
@@ -65,14 +65,20 @@ impl GridController {
             .find(|(_, unsaved_transaction)| unsaved_transaction.0.id == transaction_id);
         if let Some((index, _)) = existing {
             // if transaction is the top of the unsaved_transactions, then only need to set the sequence_num
-            if index == 0 {
+            if index as u64 == sequence_num - self.last_sequence_num - 1 {
                 self.unsaved_transactions.remove(index);
 
                 // todo: probably should check sequence_num at this point
 
+                self.last_sequence_num = sequence_num;
                 // nothing to render as we've already rendered this transaction
                 return TransactionSummary::default();
             } else {
+                crate::util::dbgjs(format!(
+                    "Rust panic: out of order. Received {}, expected {}",
+                    sequence_num - 1,
+                    index
+                ));
                 todo!(
                     "Handle received transactions that are out of order with current transaction."
                 );
@@ -85,6 +91,8 @@ impl GridController {
         } else {
             self.start_transaction(operations, None, TransactionType::Multiplayer);
         }
+        self.last_sequence_num = sequence_num;
+
         self.transaction_updated_bounds();
         let mut summary = self.prepare_transaction_summary();
         summary.generate_thumbnail = false;

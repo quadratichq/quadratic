@@ -85,6 +85,8 @@ pub struct GridController {
 
     // true when transaction completes
     complete: bool,
+
+    pub last_sequence_num: u64,
 }
 
 impl GridController {

@@ -12,6 +12,7 @@ import {
   Heartbeat,
   MessageUserUpdate,
   MultiplayerUser,
+  ReceiveCurrentTransaction,
   ReceiveMessages,
   ReceiveRoom,
   ReceiveTransaction,
@@ -417,6 +418,10 @@ export class Multiplayer {
     console.log(data.transactions);
   }
 
+  private receiveCurrentTransaction(data: ReceiveCurrentTransaction) {
+    console.log('[TODO]: receiveCurrentTransaction', data);
+  }
+
   receiveMessage = (e: { data: string }) => {
     const data = JSON.parse(e.data) as ReceiveMessages;
     console.log(`[Multiplayer] Received receiveMessage ${data.type}`);
@@ -429,6 +434,8 @@ export class Multiplayer {
       this.receiveTransaction(data);
     } else if (type === 'Transactions') {
       this.receiveTransactions(data);
+    } else if (type === 'CurrentTransaction') {
+      this.receiveCurrentTransaction(data);
     } else if (type !== 'Empty') {
       console.warn(`Unknown message type: ${type}`);
     }

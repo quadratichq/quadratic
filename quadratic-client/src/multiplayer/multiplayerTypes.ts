@@ -103,4 +103,15 @@ export interface ReceiveEmpty {
   type: 'Empty';
 }
 
-export type ReceiveMessages = ReceiveRoom | MessageUserUpdate | ReceiveTransaction | ReceiveEmpty | ReceiveTransactions;
+export interface ReceiveCurrentTransaction {
+  type: 'CurrentTransaction';
+  sequence_num: number;
+}
+
+export type ReceiveMessages =
+  | ReceiveRoom
+  | MessageUserUpdate
+  | ReceiveTransaction
+  | ReceiveEmpty
+  | ReceiveTransactions
+  | ReceiveCurrentTransaction;
