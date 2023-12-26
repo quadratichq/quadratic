@@ -30,6 +30,10 @@ pub(crate) enum MessageResponse {
     Transactions {
         transactions: Vec<TransactionServer>,
     },
+    EnterRoom {
+        file_id: Uuid,
+        sequence_num: u64,
+    },
     CurrentTransaction {
         sequence_num: u64,
     },

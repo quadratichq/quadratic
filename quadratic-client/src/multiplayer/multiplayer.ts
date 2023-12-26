@@ -13,6 +13,7 @@ import {
   MessageUserUpdate,
   MultiplayerUser,
   ReceiveCurrentTransaction,
+  ReceiveEnterRoom,
   ReceiveMessages,
   ReceiveRoom,
   ReceiveTransaction,
@@ -418,11 +419,18 @@ export class Multiplayer {
     console.log(data.transactions);
   }
 
-  private receiveCurrentTransaction(data: ReceiveCurrentTransaction) {
+  private receiveEnterRoom(data: ReceiveEnterRoom) {
+    if (data.file_id !== this.room) {
+      throw new Error("Expected file_id to match room before receiving a message of type 'EnterRoom'");
+    }
     if (debugShowMultiplayer) {
       console.log(`[Multiplayer]: Current transaction number set to ${data.sequence_num}`);
       grid.setMultiplayerSequenceNum(data.sequence_num);
     }
+  }
+
+  private receiveCurrentTransaction(data: ReceiveCurrentTransaction) {
+    throw new Error('receive current transaction not handled yet');
   }
 
   receiveMessage = (e: { data: string }) => {
@@ -437,6 +445,8 @@ export class Multiplayer {
       this.receiveTransaction(data);
     } else if (type === 'Transactions') {
       this.receiveTransactions(data);
+    } else if (type === 'EnterRoom') {
+      this.receiveEnterRoom(data);
     } else if (type === 'CurrentTransaction') {
       this.receiveCurrentTransaction(data);
     } else if (type !== 'Empty') {

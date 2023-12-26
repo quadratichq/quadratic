@@ -84,11 +84,15 @@ pub(crate) async fn handle_message(
                 .get_sequence_num(file_id.to_owned())
                 .unwrap_or(0);
 
+            // direct response to user after logging in
             direct_message(
                 session_id,
                 file_id,
                 Arc::clone(&state),
-                MessageResponse::CurrentTransaction { sequence_num },
+                MessageResponse::EnterRoom {
+                    file_id,
+                    sequence_num,
+                },
             )
             .await?;
 
