@@ -22,6 +22,12 @@ impl SheetId {
     }
 }
 
+impl Default for SheetId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FromStr for SheetId {
     type Err = anyhow::Error;
 

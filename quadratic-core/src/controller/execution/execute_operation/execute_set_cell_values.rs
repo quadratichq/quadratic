@@ -38,7 +38,7 @@ impl GridController {
                                     "error constructing array of old values for SetCells operation",
                                 );
                             self.reverse_operations.push(Operation::SetCellValues {
-                                sheet_rect: sheet_rect.clone(),
+                                sheet_rect: *sheet_rect,
                                 values: old_values,
                             });
 
@@ -58,14 +58,14 @@ impl GridController {
                                     }
                                 });
 
-                                self.add_compute_operations(&sheet_rect, None);
+                                self.add_compute_operations(sheet_rect, None);
 
                                 // if a code_cell was removed, then we need to check all spills.
                                 // Otherwise we only need to check spills for the sheet_rect.
                                 if code_cell_removed {
                                     self.check_all_spills(sheet_rect.sheet_id, 0);
                                 } else {
-                                    self.check_spills(&sheet_rect);
+                                    self.check_spills(sheet_rect);
                                 }
                             }
                         }
@@ -73,8 +73,8 @@ impl GridController {
                         // prepare summary
                         self.sheets_with_dirty_bounds.insert(sheet_rect.sheet_id);
                         self.summary.generate_thumbnail = self.summary.generate_thumbnail
-                            || self.thumbnail_dirty_sheet_rect(&sheet_rect);
-                        self.add_cell_sheets_modified_rect(&sheet_rect);
+                            || self.thumbnail_dirty_sheet_rect(sheet_rect);
+                        self.add_cell_sheets_modified_rect(sheet_rect);
                     }
                 }
             }

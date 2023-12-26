@@ -67,17 +67,12 @@ impl GridController {
                         .is_some_and(|skip_compute| skip_compute == *code_cell_sheet_pos)
                     {
                         // only add a compute operation if there isn't already one pending
-                        if self
-                            .operations
-                            .iter()
-                            .find(|op| match op {
-                                Operation::SetCodeCell { sheet_pos, .. } => {
-                                    code_cell_sheet_pos == sheet_pos
-                                }
-                                _ => false,
-                            })
-                            .is_none()
-                        {
+                        if !self.operations.iter().any(|op| match op {
+                            Operation::SetCodeCell { sheet_pos, .. } => {
+                                code_cell_sheet_pos == sheet_pos
+                            }
+                            _ => false,
+                        }) {
                             if let Some(sheet) =
                                 self.grid.try_sheet_from_id(code_cell_sheet_pos.sheet_id)
                             {
@@ -92,7 +87,7 @@ impl GridController {
                             }
                         }
                     }
-                })
+                });
             });
 
         self.operations.extend(operations);

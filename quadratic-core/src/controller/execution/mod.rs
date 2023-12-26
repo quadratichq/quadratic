@@ -114,11 +114,7 @@ mod tests {
         assert_eq!(reverse_transaction.id, transaction_id);
         assert_eq!(
             reverse_transaction.operations,
-            reverse_operations
-                .iter()
-                .map(|s| s.clone())
-                .rev()
-                .collect::<Vec<_>>()
+            reverse_operations.iter().cloned().rev().collect::<Vec<_>>()
         );
         assert_eq!(reverse_transaction.sequence_num, None);
     }

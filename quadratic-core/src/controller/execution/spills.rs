@@ -21,7 +21,7 @@ impl GridController {
                 self.reverse_operations.push(Operation::SetCodeCell {
                     sheet_pos,
                     code_cell_value: Some(code_cell.clone()),
-                })
+                });
             }
             self.check_all_spills(sheet_id, index + 1);
         }
@@ -143,12 +143,12 @@ mod tests {
         .into();
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
-        assert_eq!(sheet.code_cells[0].1.has_spill_error(), false);
+        assert!(!sheet.code_cells[0].1.has_spill_error());
 
         gc.check_spills(&sheet_rect);
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
-        assert_eq!(sheet.code_cells[0].1.has_spill_error(), true);
+        assert!(sheet.code_cells[0].1.has_spill_error());
     }
 
     #[test]
@@ -175,11 +175,11 @@ mod tests {
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(3.into()));
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
-        assert_eq!(sheet.code_cells[0].1.has_spill_error(), false);
+        assert!(!sheet.code_cells[0].1.has_spill_error());
 
         gc.check_all_spills(sheet_id, 0);
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
-        assert_eq!(sheet.code_cells[0].1.has_spill_error(), true);
+        assert!(sheet.code_cells[0].1.has_spill_error());
     }
 }

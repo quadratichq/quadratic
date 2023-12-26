@@ -22,10 +22,10 @@ impl GridController {
                     if let Some(code_cell_value) = &code_cell_value {
                         match code_cell_value.language {
                             CodeCellLanguage::Python => {
-                                self.run_python(sheet_pos, &code_cell_value);
+                                self.run_python(sheet_pos, code_cell_value);
                             }
                             CodeCellLanguage::Formula => {
-                                self.run_formula(sheet_pos, &code_cell_value);
+                                self.run_formula(sheet_pos, code_cell_value);
                             }
                             _ => {
                                 unreachable!("Unsupported language in RunCodeCell");

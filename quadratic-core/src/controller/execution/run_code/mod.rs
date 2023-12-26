@@ -20,7 +20,7 @@ impl GridController {
     ) {
         let sheet_id = sheet_pos.sheet_id;
         let code_cell_value = if let Some(sheet) = self.grid().try_sheet_from_id(sheet_id) {
-            sheet.get_code_cell(sheet_pos.into()).map(|v| v.clone())
+            sheet.get_code_cell(sheet_pos.into()).cloned()
         } else {
             return;
         };

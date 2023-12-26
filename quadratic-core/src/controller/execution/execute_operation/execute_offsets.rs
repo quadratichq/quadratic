@@ -87,7 +87,7 @@ mod tests {
             .offsets
             .column_width(column as i64);
         assert_eq!(column_width, new_size);
-        assert_eq!(summary.save, true);
+        assert!(summary.save);
         assert_eq!(summary.offsets_modified.len(), 1);
         assert_eq!(summary.offsets_modified, vec![sheet_id]);
     }
@@ -106,7 +106,7 @@ mod tests {
             .offsets
             .row_height(row as i64);
         assert_eq!(row_height, new_size);
-        assert_eq!(summary.save, true);
+        assert!(summary.save);
         assert_eq!(summary.offsets_modified.len(), 1);
         assert_eq!(summary.offsets_modified, vec![sheet_id]);
     }

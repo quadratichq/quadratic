@@ -67,7 +67,7 @@ mod tests {
         };
         let code_string = "print(1)".to_string();
         gc.set_code_cell(
-            sheet_pos.clone(),
+            sheet_pos,
             CodeCellLanguage::Python,
             code_string.clone(),
             None,
@@ -92,7 +92,7 @@ mod tests {
             code_cell.get_output_value(0, 0),
             Some(CellValue::Text("test".to_string()))
         );
-        assert_eq!(code_cell.has_spill_error(), false);
+        assert!(!code_cell.has_spill_error());
     }
 
     #[test]

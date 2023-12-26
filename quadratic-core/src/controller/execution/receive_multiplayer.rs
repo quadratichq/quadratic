@@ -76,7 +76,7 @@ impl GridController {
                 );
             }
         }
-        if self.unsaved_transactions.len() > 0 {
+        if !self.unsaved_transactions.is_empty() {
             self.rollback_unsaved_transactions();
             self.start_transaction(transaction.operations, None, TransactionType::Rollback);
             self.reapply_unsaved_transactions();

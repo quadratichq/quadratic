@@ -85,7 +85,7 @@ impl Sheet {
                 let output_rect = code_cell_value.output_rect(*pos);
                 output_rect
                     .intersects(rect)
-                    .then(|| (output_rect, code_cell_value))
+                    .then_some((output_rect, code_cell_value))
             })
     }
 

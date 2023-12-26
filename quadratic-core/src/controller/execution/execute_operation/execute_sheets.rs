@@ -104,12 +104,12 @@ mod tests {
         let mut gc = GridController::new();
         let summary = gc.add_sheet(None);
         assert_eq!(gc.grid.sheets().len(), 2);
-        assert_eq!(summary.save, true);
-        assert_eq!(summary.sheet_list_modified, true);
+        assert!(summary.save);
+        assert!(summary.sheet_list_modified);
         gc.undo(None);
         assert_eq!(gc.grid.sheets().len(), 1);
-        assert_eq!(summary.save, true);
-        assert_eq!(summary.sheet_list_modified, true);
+        assert!(summary.save);
+        assert!(summary.sheet_list_modified);
     }
 
     #[test]
@@ -118,13 +118,13 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         let summary = gc.delete_sheet(sheet_id, None);
         assert_eq!(gc.grid.sheets().len(), 1);
-        assert_eq!(summary.save, true);
-        assert_eq!(summary.sheet_list_modified, true);
+        assert!(summary.save);
+        assert!(summary.sheet_list_modified);
         gc.undo(None);
         assert_eq!(gc.grid.sheets().len(), 1);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
-        assert_eq!(summary.save, true);
-        assert_eq!(summary.sheet_list_modified, true);
+        assert!(summary.save);
+        assert!(summary.sheet_list_modified);
     }
 
     #[test]
@@ -134,12 +134,12 @@ mod tests {
         let name = "new name".to_string();
         let summary = gc.set_sheet_name(sheet_id, name.clone(), None);
         assert_eq!(gc.grid.sheets()[0].name, name);
-        assert_eq!(summary.save, true);
-        assert_eq!(summary.sheet_list_modified, true);
+        assert!(summary.save);
+        assert!(summary.sheet_list_modified);
         gc.undo(None);
         assert_eq!(gc.grid.sheets()[0].name, "Sheet 1".to_string());
-        assert_eq!(summary.save, true);
-        assert_eq!(summary.sheet_list_modified, true);
+        assert!(summary.save);
+        assert!(summary.sheet_list_modified);
     }
 
     #[test]
@@ -149,12 +149,12 @@ mod tests {
         let color = Some("red".to_string());
         let summary = gc.set_sheet_color(sheet_id, color.clone(), None);
         assert_eq!(gc.grid.sheets()[0].color, color);
-        assert_eq!(summary.save, true);
-        assert_eq!(summary.sheet_list_modified, true);
+        assert!(summary.save);
+        assert!(summary.sheet_list_modified);
         gc.undo(None);
         assert_eq!(gc.grid.sheets()[0].color, None);
-        assert_eq!(summary.save, true);
-        assert_eq!(summary.sheet_list_modified, true);
+        assert!(summary.save);
+        assert!(summary.sheet_list_modified);
     }
 
     #[test]
@@ -167,22 +167,22 @@ mod tests {
         let summary = gc.move_sheet(sheet_id, None, None);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id2);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id);
-        assert_eq!(summary.save, true);
-        assert_eq!(summary.sheet_list_modified, true);
+        assert!(summary.save);
+        assert!(summary.sheet_list_modified);
         gc.undo(None);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id2);
-        assert_eq!(summary.save, true);
-        assert_eq!(summary.sheet_list_modified, true);
+        assert!(summary.save);
+        assert!(summary.sheet_list_modified);
         let summary = gc.move_sheet(sheet_id2, Some(sheet_id), None);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id2);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id);
-        assert_eq!(summary.save, true);
-        assert_eq!(summary.sheet_list_modified, true);
+        assert!(summary.save);
+        assert!(summary.sheet_list_modified);
         gc.undo(None);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id2);
-        assert_eq!(summary.save, true);
-        assert_eq!(summary.sheet_list_modified, true);
+        assert!(summary.save);
+        assert!(summary.sheet_list_modified);
     }
 }
