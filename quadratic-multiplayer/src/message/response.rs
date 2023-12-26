@@ -5,7 +5,7 @@
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::state::transaction_queue::Transaction;
+use crate::state::transaction_queue::TransactionServer;
 use crate::state::user::UserStateUpdate;
 use crate::state::{room::Room, user::User};
 
@@ -24,12 +24,11 @@ pub(crate) enum MessageResponse {
     Transaction {
         id: Uuid,
         file_id: Uuid,
-        // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
-        operations: String,
         sequence_num: u64,
+        operations: String,
     },
     Transactions {
-        transactions: Vec<Transaction>,
+        transactions: Vec<TransactionServer>,
     },
     CurrentTransaction {
         sequence_num: u64,

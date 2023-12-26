@@ -5,21 +5,21 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 #[derive(Serialize, Debug, PartialEq, Clone)]
-pub(crate) struct Transaction {
+pub(crate) struct TransactionServer {
     pub(crate) id: Uuid,
     pub(crate) file_id: Uuid,
     pub(crate) operations: Vec<Operation>,
     pub(crate) sequence_num: u64,
 }
 
-impl Transaction {
+impl TransactionServer {
     pub(crate) fn new(
         id: Uuid,
         file_id: Uuid,
         operations: Vec<Operation>,
         sequence_num: u64,
     ) -> Self {
-        Transaction {
+        TransactionServer {
             id,
             file_id,
             operations,
@@ -30,7 +30,7 @@ impl Transaction {
 
 #[derive(Debug, Default)]
 pub(crate) struct TransactionQueue {
-    pub(crate) queue: HashMap<Uuid, (u64, Vec<Transaction>)>,
+    pub(crate) queue: HashMap<Uuid, (u64, Vec<TransactionServer>)>,
 }
 
 impl TransactionQueue {
@@ -43,13 +43,13 @@ impl TransactionQueue {
 
         *sequence_num += 1;
 
-        let transaction = Transaction::new(id, file_id, operations, *sequence_num);
+        let transaction = TransactionServer::new(id, file_id, operations, *sequence_num);
         transactions.push(transaction);
 
         sequence_num.to_owned()
     }
 
-    pub(crate) fn get_transactions(&mut self, file_id: Uuid) -> Result<Vec<Transaction>> {
+    pub(crate) fn get_transactions(&mut self, file_id: Uuid) -> Result<Vec<TransactionServer>> {
         let transactions = self
             .queue
             .get(&file_id)
@@ -64,7 +64,7 @@ impl TransactionQueue {
         &mut self,
         file_id: Uuid,
         min_sequence_num: u64,
-    ) -> Result<Vec<Transaction>> {
+    ) -> Result<Vec<TransactionServer>> {
         let transactions = self
             .get_transactions(file_id)?
             .into_iter()

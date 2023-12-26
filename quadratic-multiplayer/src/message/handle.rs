@@ -8,6 +8,7 @@
 use anyhow::Result;
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
+use quadratic_core::controller::operations::operation::Operation;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
@@ -102,12 +103,20 @@ pub(crate) async fn handle_message(
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
-            // add the transaction to the transaction queue
-            let sequence_num = state.transaction_queue.lock().await.push(
-                id,
+            tracing::info!(
+                "Transaction received for room {} from user {}",
                 file_id,
-                serde_json::from_str(&operations)?,
+                session_id
             );
+
+            // add the transaction to the transaction queue
+            let parsed_operations: Vec<Operation> = serde_json::from_str(&operations)?;
+            let sequence_num =
+                state
+                    .transaction_queue
+                    .lock()
+                    .await
+                    .push(id, file_id, parsed_operations.clone());
 
             let response = MessageResponse::Transaction {
                 id,
@@ -116,7 +125,7 @@ pub(crate) async fn handle_message(
                 sequence_num,
             };
 
-            // the user who sent the transaction should receive the transaction response
+            // broadcast the transaction to all users in the room
             broadcast(vec![], file_id, Arc::clone(&state), response);
 
             Ok(None)
@@ -180,6 +189,9 @@ pub(crate) async fn handle_message(
 
 #[cfg(test)]
 pub(crate) mod tests {
+
+    use quadratic_core::controller::operations::operation::Operation;
+    use quadratic_core::grid::SheetId;
 
     use super::*;
     use crate::state::user::{CellEdit, UserStateUpdate};
@@ -346,7 +358,11 @@ pub(crate) mod tests {
         let message = MessageResponse::Transaction {
             id,
             file_id,
-            operations: "test".to_string(),
+            operations: serde_json::to_string(&vec![Operation::SetSheetColor {
+                sheet_id: SheetId::new(),
+                color: Some("red".to_string()),
+            }])
+            .unwrap(),
             sequence_num: 1,
         };
         broadcast(vec![user_1.session_id], file_id, state, message)

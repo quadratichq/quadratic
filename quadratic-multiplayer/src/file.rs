@@ -1,6 +1,6 @@
 use anyhow::Result;
 use quadratic_core::{
-    controller::{GridController, Transaction},
+    controller::{operations::operation::Operation, GridController},
     grid::{file::import, Grid},
 };
 
@@ -10,16 +10,15 @@ pub(crate) fn _load_file(file: &str) -> Result<Grid> {
 }
 
 /// Apply a stringified vec of operations to the grid
-pub(crate) fn _apply_transaction(grid: &mut GridController, transaction: String) -> Result<()> {
-    let transaction: Transaction = serde_json::from_str(&transaction)?;
-    grid.server_apply_transaction(transaction);
+pub(crate) fn _apply_transaction(grid: &mut GridController, operations: String) -> Result<()> {
+    let operations: Vec<Operation> = serde_json::from_str(&operations)?;
+    grid.server_apply_transaction(operations);
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use quadratic_core::test_util::assert_cell_value;
-    use quadratic_core::SheetPos;
+    use quadratic_core::{CellValue, Pos, SheetPos};
 
     use super::*;
 
@@ -39,11 +38,18 @@ mod tests {
             "hello".to_string(),
             None,
         );
-        assert_cell_value(&client, sheet_id, 0, 0, "hello");
+        let sheet = client.grid().try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Text("hello".to_string()))
+        );
 
         let mut server = GridController::from_grid(file);
-        let _ = _apply_transaction(&mut server, summary.transaction.unwrap());
-
-        assert_cell_value(&server, sheet_id, 0, 0, "hello");
+        let _ = _apply_transaction(&mut server, summary.operations.unwrap());
+        let sheet = server.grid().try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Text("hello".to_string()))
+        );
     }
 }

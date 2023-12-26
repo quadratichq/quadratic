@@ -1,18 +1,19 @@
-use crate::controller::{transaction_summary::TransactionSummary, GridController, Transaction};
+use uuid::Uuid;
+
+use crate::controller::{
+    operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
+};
 
 use super::TransactionType;
 
 impl GridController {
     pub fn received_transaction(
         &mut self,
+        transaction_id: Uuid,
         sequence_num: u64,
-        transaction: String,
+        operations: Vec<Operation>,
     ) -> TransactionSummary {
-        if let Ok(transaction) = serde_json::from_str(&transaction) {
-            self.client_apply_transaction(sequence_num, transaction)
-        } else {
-            panic!("Unable to unpack multiplayer transaction");
-        }
+        self.client_apply_transaction(transaction_id, sequence_num, operations)
     }
 
     fn rollback_unsaved_transactions(&mut self) {
@@ -42,25 +43,26 @@ impl GridController {
 
     /// Used by the server to apply transactions.
     /// The server owns the sequence_num, so there's no need to check or alter the execution order.
-    pub fn server_apply_transaction(&mut self, transaction: Transaction) {
-        self.start_transaction(transaction.operations, None, TransactionType::Multiplayer);
+    pub fn server_apply_transaction(&mut self, operations: Vec<Operation>) {
+        self.start_transaction(operations, None, TransactionType::Multiplayer);
     }
 
     /// Used by the client to ensure transactions are applied in order
     pub fn client_apply_transaction(
         &mut self,
+        transaction_id: Uuid,
 
         // todo: check this and request transactions again if out of order
         _sequence_num: u64,
 
-        transaction: Transaction,
+        operations: Vec<Operation>,
     ) -> TransactionSummary {
         // first check if the received transaction is one of ours
         let existing = self
             .unsaved_transactions
             .iter_mut()
             .enumerate()
-            .find(|(_, unsaved_transaction)| unsaved_transaction.0.id == transaction.id);
+            .find(|(_, unsaved_transaction)| unsaved_transaction.0.id == transaction_id);
         if let Some((index, _)) = existing {
             // if transaction is the top of the unsaved_transactions, then only need to set the sequence_num
             if index == 0 {
@@ -78,15 +80,15 @@ impl GridController {
         }
         if !self.unsaved_transactions.is_empty() {
             self.rollback_unsaved_transactions();
-            self.start_transaction(transaction.operations, None, TransactionType::Rollback);
+            self.start_transaction(operations, None, TransactionType::Rollback);
             self.reapply_unsaved_transactions();
         } else {
-            self.start_transaction(transaction.operations, None, TransactionType::Multiplayer);
+            self.start_transaction(operations, None, TransactionType::Multiplayer);
         }
         self.transaction_updated_bounds();
         let mut summary = self.prepare_transaction_summary();
         summary.generate_thumbnail = false;
-        summary.transaction = None;
+        summary.operations = None;
         summary.save = false;
         summary
     }
@@ -94,8 +96,12 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
+    use uuid::Uuid;
+
     use crate::{
-        controller::{GridController, Transaction},
+        controller::{operations::operation::Operation, GridController},
         CellValue, Pos, SheetPos,
     };
 
@@ -118,8 +124,12 @@ mod tests {
             Some(CellValue::Text("Hello World".to_string()))
         );
 
+        let transaction_id = Uuid::from_str(&summary.transaction_id.unwrap()).unwrap();
+        let operations: Vec<Operation> =
+            serde_json::from_str(&summary.operations.unwrap()).unwrap();
+
         // received our own transaction back
-        gc1.received_transaction(1, summary.transaction.clone().unwrap());
+        gc1.received_transaction(transaction_id, 1, operations.clone());
 
         let sheet = gc1.grid().try_sheet_from_id(sheet_id).unwrap();
         assert_eq!(
@@ -130,7 +140,7 @@ mod tests {
 
         let mut gc2 = GridController::new();
         gc2.grid_mut().sheets_mut()[0].id = sheet_id;
-        gc2.received_transaction(1, summary.transaction.unwrap());
+        gc2.received_transaction(transaction_id, 1, operations);
         let sheet = gc2.grid().try_sheet_from_id(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
@@ -178,9 +188,12 @@ mod tests {
             Some(CellValue::Text("Hello World from 2".to_string()))
         );
 
+        let transaction_id = Uuid::from_str(&summary.transaction_id.unwrap()).unwrap();
+        let operations = serde_json::from_str(&summary.operations.unwrap()).unwrap();
+
         // gc1 should apply gc2's cell value to 0,0 before its unsaved transaction
         // and then reapply its unsaved transaction, overwriting 0,0
-        gc1.received_transaction(1, summary.transaction.unwrap());
+        gc1.received_transaction(transaction_id, 1, operations);
         let sheet = gc1.grid.try_sheet_from_id(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
@@ -206,8 +219,8 @@ mod tests {
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World".to_string()))
         );
-        let transaction_str = summary.transaction.unwrap();
-        let transaction: Transaction = serde_json::from_str(&transaction_str).unwrap();
+        let operations: Vec<Operation> =
+            serde_json::from_str(&summary.operations.unwrap()).unwrap();
 
         let mut server = GridController::new();
         server
@@ -215,7 +228,7 @@ mod tests {
             .try_sheet_mut_from_id(server.sheet_ids()[0])
             .unwrap()
             .id = sheet_id;
-        server.server_apply_transaction(transaction);
+        server.server_apply_transaction(operations);
         let sheet = server.grid.try_sheet_from_id(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),

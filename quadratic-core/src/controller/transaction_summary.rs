@@ -65,7 +65,7 @@ pub struct TransactionSummary {
 
     // Transaction to be shared via multiplayer
     pub transaction_id: Option<String>,
-    pub transaction: Option<String>,
+    pub operations: Option<String>,
 
     // changes to html output
     pub html: HashSet<SheetId>,
@@ -91,7 +91,7 @@ impl TransactionSummary {
         self.generate_thumbnail = false;
         self.save = false;
         if !keep_forward_transaction {
-            self.transaction = None;
+            self.operations = None;
         }
     }
 }

@@ -70,6 +70,7 @@ impl State {
         );
 
         if num_in_room == 0 {
+            tracing::info!("Empty room.");
             self.remove_room(file_id).await;
         }
 

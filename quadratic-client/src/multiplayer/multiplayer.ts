@@ -407,12 +407,10 @@ export class Multiplayer {
   }
 
   private receiveTransaction(data: ReceiveTransaction) {
-    // todo: need to handle transaction ordering...
-    // will receive your own transaction back and need to handle it
     if (data.file_id !== this.room) {
       throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
     }
-    grid.multiplayerTransaction(data.sequence_num, data.operations);
+    grid.multiplayerTransaction(data.id, data.sequence_num, data.operations);
   }
 
   private receiveTransactions(data: ReceiveTransactions) {

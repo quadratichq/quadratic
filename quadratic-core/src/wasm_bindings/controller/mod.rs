@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use super::*;
 use crate::controller::transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells};
 use crate::{controller::transaction_summary::TransactionSummary, grid::js_types::*};
@@ -95,12 +97,33 @@ impl GridController {
     #[wasm_bindgen(js_name = "multiplayerTransaction")]
     pub fn js_multiplayer_transaction(
         &mut self,
-        sequence_num: u64,
+        transaction_id: String,
+        sequence_num: u32,
         operations: String,
     ) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(
-            &self.received_transaction(sequence_num, operations),
-        )?)
+        let transaction_id = match Uuid::parse_str(&transaction_id) {
+            Ok(transaction_id) => transaction_id,
+            Err(e) => {
+                return Err(JsValue::from_str(&format!(
+                    "Invalid transaction id: {}",
+                    e.to_string()
+                )))
+            }
+        };
+        let operations = match serde_json::from_str(&operations) {
+            Ok(operations) => operations,
+            Err(e) => {
+                return Err(JsValue::from_str(&format!(
+                    "Invalid operations: {}",
+                    e.to_string()
+                )))
+            }
+        };
+        Ok(serde_wasm_bindgen::to_value(&self.received_transaction(
+            transaction_id,
+            sequence_num as u64,
+            operations,
+        ))?)
     }
 
     /// Populates a portion of a sheet with random float values.
@@ -126,7 +149,7 @@ impl GridController {
             generate_thumbnail: false,
             transaction_busy: false,
             transaction_id: None,
-            transaction: None,
+            operations: None,
             html: HashSet::new(),
         })?)
     }

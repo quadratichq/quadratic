@@ -70,7 +70,7 @@ export interface ReceiveTransaction {
   id: string;
   file_id: string;
   operations: string;
-  sequence_num: bigint;
+  sequence_num: number;
 }
 
 export interface SendTransaction {

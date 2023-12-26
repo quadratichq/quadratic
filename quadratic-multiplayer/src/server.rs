@@ -228,6 +228,7 @@ pub(crate) mod tests {
     use crate::state::user::{CellEdit, User, UserStateUpdate};
     use crate::test_util::{integration_test_send_and_receive, integration_test_setup, new_user};
     use quadratic_core::controller::operations::operation::Operation;
+    use quadratic_core::grid::SheetId;
     use tokio::net::TcpStream;
     use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
     use uuid::Uuid;
@@ -397,8 +398,12 @@ pub(crate) mod tests {
         let (socket, _, _, file_id, _) = setup().await;
         let new_user = new_user();
         let session_id = new_user.session_id;
-        let operations = serde_json::to_string::<Vec<Operation>>(&vec![]).unwrap();
+        let operations = vec![Operation::SetSheetName {
+            sheet_id: SheetId::new(),
+            name: "test".to_string(),
+        }];
         let id = Uuid::new_v4();
+        let operations = serde_json::to_string(&operations).unwrap();
         let request = MessageRequest::Transaction {
             id,
             session_id,
@@ -408,7 +413,7 @@ pub(crate) mod tests {
         let expected = MessageResponse::Transaction {
             id,
             file_id,
-            operations: operations.clone(),
+            operations: operations,
             sequence_num: 1,
         };
 

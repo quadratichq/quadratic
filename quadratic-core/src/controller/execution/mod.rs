@@ -6,7 +6,7 @@ pub mod receive_multiplayer;
 pub mod run_code;
 pub mod spills;
 
-use super::Transaction;
+use super::{operations::operation::Operation, Transaction};
 use crate::controller::{transaction_summary::TransactionSummary, GridController};
 use serde::{Deserialize, Serialize};
 
@@ -39,8 +39,8 @@ impl GridController {
     pub fn prepare_transaction_summary(&mut self) -> TransactionSummary {
         if self.complete {
             self.summary.transaction_id = Some(self.transaction_id.to_string());
-            self.summary.transaction = Some(
-                serde_json::to_string(&self.to_forward_transaction())
+            self.summary.operations = Some(
+                serde_json::to_string(&self.to_multiplayer_operations())
                     .expect("Failed to serialize forward operations"),
             );
         }
@@ -49,11 +49,15 @@ impl GridController {
         summary
     }
 
+    fn to_multiplayer_operations(&self) -> Vec<Operation> {
+        self.forward_operations.clone()
+    }
+
     fn to_forward_transaction(&self) -> Transaction {
         Transaction {
             id: self.transaction_id,
             sequence_num: None,
-            operations: self.forward_operations.clone().into_iter().collect(),
+            operations: self.forward_operations.clone(),
             cursor: None,
         }
     }
