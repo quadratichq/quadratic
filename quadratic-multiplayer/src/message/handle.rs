@@ -76,7 +76,7 @@ pub(crate) async fn handle_message(
                 broadcast(vec![], file_id, Arc::clone(&state), response);
             }
 
-            // this is a placeholder for a better way to get the current sequence_num
+            // todo: this is a placeholder for a better way to get the current sequence_num
             let sequence_num = state
                 .transaction_queue
                 .lock()

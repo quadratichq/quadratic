@@ -419,6 +419,7 @@ export class Multiplayer {
     console.log(data.transactions);
   }
 
+  // todo: this will be incorrect when we have a real saving server. instead, we need to get the sequence_num based on the loaded file, not where the server is
   private receiveEnterRoom(data: ReceiveEnterRoom) {
     if (data.file_id !== this.room) {
       throw new Error("Expected file_id to match room before receiving a message of type 'EnterRoom'");
