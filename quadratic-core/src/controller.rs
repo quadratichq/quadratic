@@ -91,11 +91,12 @@ pub struct GridController {
 
 impl GridController {
     pub fn new() -> Self {
-        Self::from_grid(Grid::new())
+        Self::from_grid(Grid::new(), 0)
     }
-    pub fn from_grid(grid: Grid) -> Self {
+    pub fn from_grid(grid: Grid, last_sequence_num: u64) -> Self {
         GridController {
             grid,
+            last_sequence_num,
             ..Default::default()
         }
     }

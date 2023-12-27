@@ -5,7 +5,7 @@ use crate::{
 use quadratic_core::{
     controller::{operations::operation::Operation, GridController},
     grid::{
-        file::{export_vec, import},
+        file::{export_vec, import, CURRENT_VERSION},
         Grid,
     },
 };
@@ -37,6 +37,7 @@ pub(crate) async fn get_and_load_object(
     client: &Client,
     bucket: &str,
     key: &str,
+    sequence_num: u64,
 ) -> Result<GridController> {
     let file = download_object(client, bucket, key).await?;
     let body = file
@@ -48,7 +49,7 @@ pub(crate) async fn get_and_load_object(
     let body = std::str::from_utf8(&body).map_err(|e| MpError::FileService(e.to_string()))?;
     let grid = load_file(body)?;
 
-    Ok(GridController::from_grid(grid))
+    Ok(GridController::from_grid(grid, sequence_num))
 }
 
 pub(crate) fn key(file_id: Uuid, sequence: u64) -> String {
@@ -64,7 +65,7 @@ pub(crate) async fn process_transactions(
     operations: Vec<Operation>,
 ) -> Result<u64> {
     let num_operations = operations.len();
-    let mut grid = get_and_load_object(client, bucket, &key(file_id, sequence)).await?;
+    let mut grid = get_and_load_object(client, bucket, &key(file_id, sequence), sequence).await?;
 
     apply_transaction(&mut grid, operations);
     let body = export_file(grid.grid_mut())?;
@@ -131,14 +132,14 @@ pub(crate) async fn process_queue_for_room(
     // TODO(ddimaria): this assumes the queue was locked the whole time, confirm this is true
     transaction_queue.complete_transactions(*file_id)?;
 
-    // update the checkpoint in quatratic-api
+    // update the checkpoint in quadratic-api
     let key = &key(*file_id, last_sequence_num);
     set_file_checkpoint(
         base_url,
         jwt,
         file_id,
         last_sequence_num,
-        "1.4".into(),
+        CURRENT_VERSION.into(),
         key.to_owned(),
         bucket.to_owned(),
     )
@@ -163,7 +164,7 @@ mod tests {
         ))
         .unwrap();
 
-        let mut client = GridController::from_grid(file.clone());
+        let mut client = GridController::from_grid(file.clone(), 0);
         let sheet_id = client.sheet_ids().first().unwrap().to_owned();
         let summary = client.set_cell_value(
             SheetPos {
@@ -180,7 +181,7 @@ mod tests {
             Some(CellValue::Text("hello".to_string()))
         );
 
-        let mut server = GridController::from_grid(file);
+        let mut server = GridController::from_grid(file, 0);
         apply_transaction(
             &mut server,
             serde_json::from_str(&summary.operations.unwrap()).unwrap(),

@@ -69,14 +69,15 @@ export const rectToPoint = (rect: Rect): Point => {
 };
 
 export const upgradeFileRust = async (
-  grid: GridFile
+  grid: GridFile,
+  lastSequenceNum: number
 ): Promise<{
   contents: string;
   version: string;
 } | null> => {
   await init();
   try {
-    const gc = GridController.newFromFile(JSON.stringify(grid));
+    const gc = GridController.newFromFile(JSON.stringify(grid), lastSequenceNum);
     const contents = gc.exportToFile();
     return { contents: contents, version: gc.getVersion() };
   } catch (e) {
@@ -161,9 +162,9 @@ export class Grid {
   }
 
   // import/export
-  openFromContents(contents: string): boolean {
+  openFromContents(contents: string, lastSequenceNum: number): boolean {
     try {
-      this.gridController = GridController.newFromFile(contents);
+      this.gridController = GridController.newFromFile(contents, lastSequenceNum);
       return true;
     } catch (e) {
       console.warn(e);

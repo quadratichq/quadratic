@@ -23,9 +23,10 @@ pub mod summarize;
 impl GridController {
     /// Imports a [`GridController`] from a JSON string.
     #[wasm_bindgen(js_name = "newFromFile")]
-    pub fn js_new_from_file(file: &str) -> Result<GridController, JsValue> {
+    pub fn js_new_from_file(file: &str, last_sequence_num: u32) -> Result<GridController, JsValue> {
         Ok(GridController::from_grid(
             file::import(file).map_err(|e| e.to_string())?,
+            last_sequence_num as u64,
         ))
     }
 
