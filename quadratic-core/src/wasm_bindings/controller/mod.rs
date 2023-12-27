@@ -104,21 +104,11 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let transaction_id = match Uuid::parse_str(&transaction_id) {
             Ok(transaction_id) => transaction_id,
-            Err(e) => {
-                return Err(JsValue::from_str(&format!(
-                    "Invalid transaction id: {}",
-                    e.to_string()
-                )))
-            }
+            Err(e) => return Err(JsValue::from_str(&format!("Invalid transaction id: {}", e))),
         };
         let operations = match serde_json::from_str(&operations) {
             Ok(operations) => operations,
-            Err(e) => {
-                return Err(JsValue::from_str(&format!(
-                    "Invalid operations: {}",
-                    e.to_string()
-                )))
-            }
+            Err(e) => return Err(JsValue::from_str(&format!("Invalid operations: {}", e))),
         };
         Ok(serde_wasm_bindgen::to_value(&self.received_transaction(
             transaction_id,

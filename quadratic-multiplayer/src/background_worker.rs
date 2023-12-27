@@ -94,7 +94,7 @@ async fn process_transaction_queue_for_room(
 
 // broadcast sequence number to all users in the room
 async fn broadcast_sequence_num(state: Arc<State>, file_id: &Uuid) -> Result<JoinHandle<()>> {
-    let sequence_num = state.get_sequence_num(&file_id).await?;
+    let sequence_num = state.get_sequence_num(file_id).await?;
 
     Ok(broadcast(
         vec![],
