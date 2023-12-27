@@ -302,7 +302,9 @@ pub(crate) mod tests {
             viewport: "initial viewport".to_string(),
         };
 
+        // UsersInRoom and EnterRoom are sent to the client when they enter a room
         integration_test_send_and_receive(&socket, request, true).await;
+        integration_test_receive(&socket).await;
 
         user
     }
@@ -347,6 +349,7 @@ pub(crate) mod tests {
     #[tokio::test]
     async fn test_user_enters_a_room() {
         let (socket, _, _, file_id, user) = setup().await;
+
         let new_user = new_user();
         let session_id = new_user.session_id;
         let request = MessageRequest::EnterRoom {

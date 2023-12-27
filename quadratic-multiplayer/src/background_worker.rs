@@ -121,6 +121,11 @@ async fn remove_stale_users_in_room(
         return Ok(None);
     }
 
+    if num_remaining == 0 {
+        tracing::info!("No users remaining in room {file_id}",);
+        return Ok(None);
+    }
+
     let users = get_room!(state, file_id)?.users.to_owned();
     let message = MessageResponse::from(users);
 
@@ -170,12 +175,8 @@ mod tests {
         let room = state.get_room(&file_id).await.unwrap();
         assert_eq!(room.users.get(&user.session_id).unwrap().value(), &user);
 
-        super::remove_stale_users_in_room(state.clone(), &file_id, -1)
-            .await
-            .unwrap()
-            .unwrap()
-            .await
-            .unwrap();
+        let result = super::remove_stale_users_in_room(state.clone(), &file_id, -1).await;
+        assert!(result.is_ok_and(|v| v.is_none()));
 
         // user was removed from the room and the room was closed
         let room = state.get_room(&file_id).await;

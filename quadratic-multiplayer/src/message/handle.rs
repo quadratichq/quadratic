@@ -84,6 +84,19 @@ pub(crate) async fn handle_message(
                 .enter_room(file_id, &user, connection.id, sequence_num)
                 .await?;
 
+            // direct response to user w/sequence_num after logging in
+            direct_message(
+                session_id,
+                file_id,
+                Arc::clone(&state),
+                MessageResponse::EnterRoom {
+                    file_id,
+                    sequence_num,
+                },
+            )
+            .await
+            .map_err(|e| MpError::SendingMessage(e.to_string()))?;
+
             // only broadcast if the user is new to the room
             if is_new {
                 let room = state.get_room(&file_id).await?;
@@ -98,19 +111,6 @@ pub(crate) async fn handle_message(
                         ))
                     })?;
             }
-
-            // direct response to user w/sequence_num after logging in
-            direct_message(
-                session_id,
-                file_id,
-                Arc::clone(&state),
-                MessageResponse::EnterRoom {
-                    file_id,
-                    sequence_num,
-                },
-            )
-            .await
-            .map_err(|e| MpError::SendingMessage(e.to_string()))?;
 
             Ok(None)
         }
