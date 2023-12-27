@@ -187,7 +187,7 @@ impl GridController {
             CodeCellRunResult::Ok {
                 output_value: if let Some(array_output) = js_code_result.array_output() {
                     let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
-                    self.reverse_operations.extend(ops);
+                    self.reverse_operations.splice(0..0, ops);
                     if let Some(array) = array {
                         Value::Array(array)
                     } else {
@@ -196,7 +196,7 @@ impl GridController {
                 } else if let Some(output_value) = js_code_result.output_value() {
                     let (cell_value, ops) =
                         CellValue::from_string(&output_value, start.into(), sheet);
-                    self.reverse_operations.extend(ops);
+                    self.reverse_operations.splice(0..0, ops);
                     Value::Single(cell_value)
                 } else {
                     unreachable!()
@@ -851,5 +851,12 @@ mod test {
             .get_code_cell(Pos { x: 1, y: 0 })
             .unwrap()
             .has_spill_error());
+
+        // undo the spill error
+        gc.undo(None);
+        assert_eq!(
+            gc.sheet(sheet_id).get_cell_value(Pos { x: 1, y: 0 }),
+            Some(CellValue::Number(1.into()))
+        );
     }
 }

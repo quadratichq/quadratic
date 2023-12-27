@@ -32,19 +32,6 @@ impl GridController {
                         if is_user || is_undo {
                             self.forward_operations.push(op.clone());
 
-                            // create reverse_operation
-                            let old_values = Array::new_row_major(sheet_rect.size(), old_values)
-                                .expect(
-                                    "error constructing array of old values for SetCells operation",
-                                );
-                            self.reverse_operations.insert(
-                                0,
-                                Operation::SetCellValues {
-                                    sheet_rect: *sheet_rect,
-                                    values: old_values,
-                                },
-                            );
-
                             if is_user {
                                 // remove any code_cells that are now covered by the new values
                                 let mut code_cell_removed = false;
@@ -75,6 +62,19 @@ impl GridController {
                                 }
                             }
                         }
+
+                        // create reverse_operation
+                        let old_values = Array::new_row_major(sheet_rect.size(), old_values)
+                            .expect(
+                                "error constructing array of old values for SetCells operation",
+                            );
+                        self.reverse_operations.insert(
+                            0,
+                            Operation::SetCellValues {
+                                sheet_rect: *sheet_rect,
+                                values: old_values,
+                            },
+                        );
 
                         // prepare summary
                         self.sheets_with_dirty_bounds.insert(sheet_rect.sheet_id);

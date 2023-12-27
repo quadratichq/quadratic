@@ -13,11 +13,6 @@ impl GridController {
         if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_id) {
             if let Some((pos, code_cell)) = sheet.code_cells.get_mut(index) {
                 let sheet_pos = pos.to_sheet_pos(sheet.id);
-                self.forward_operations.push(Operation::SetCodeCell {
-                    sheet_pos,
-                    code_cell_value: Some(code_cell.clone()),
-                });
-                code_cell.set_spill(set_spill_error);
                 self.reverse_operations.insert(
                     0,
                     Operation::SetCodeCell {
@@ -25,6 +20,11 @@ impl GridController {
                         code_cell_value: Some(code_cell.clone()),
                     },
                 );
+                code_cell.set_spill(set_spill_error);
+                self.forward_operations.push(Operation::SetCodeCell {
+                    sheet_pos,
+                    code_cell_value: Some(code_cell.clone()),
+                });
             }
             self.check_all_spills(sheet_id, index + 1);
         }
