@@ -3,7 +3,6 @@
 //! A central place for storing websocket messages responses.
 
 use crate::error::MpError;
-use crate::state::transaction_queue::Transaction;
 use crate::state::transaction_queue::TransactionServer;
 use crate::state::user::UserStateUpdate;
 use crate::state::{room::Room, user::User};

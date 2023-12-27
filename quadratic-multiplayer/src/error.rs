@@ -57,6 +57,9 @@ pub(crate) enum MpError {
 
     #[error("User error: {0}")]
     User(String),
+
+    #[error("User does not exist: {0}")]
+    UserDoesNotExist(String),
 }
 
 impl From<SharedError> for MpError {

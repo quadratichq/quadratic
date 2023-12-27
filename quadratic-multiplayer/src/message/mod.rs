@@ -59,7 +59,6 @@ pub(crate) fn direct_message(
     state: Arc<State>,
     message: MessageResponse,
 ) -> JoinHandle<()> {
-    // println!("message: {:?}", message);
     tokio::spawn(async move {
         let result = async {
             if let Some(user) = state.get_room(&file_id).await?.users.get(&session_id) {
@@ -68,13 +67,12 @@ pub(crate) fn direct_message(
                         .lock()
                         .await
                         .send(Message::Text(serde_json::to_string(&message)?))
-                        .await?;
+                        .await
+                        .map_err(|e| MpError::SendingMessage(e.to_string()))?;
                 }
-                Ok::<_, anyhow::Error>(())
+                Ok::<_, MpError>(())
             } else {
-                Err(anyhow::anyhow!(
-                    "Trying to send a message to a user that does not exist"
-                ))
+                Err(MpError::UserDoesNotExist(session_id.to_string()))
             }
         };
 

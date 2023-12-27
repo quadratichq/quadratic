@@ -273,7 +273,8 @@ pub(crate) mod tests {
     use super::*;
     use crate::state::user::{CellEdit, User, UserStateUpdate};
     use crate::test_util::{
-        integration_test_send_and_receive, integration_test_setup, new_arc_state, new_user,
+        integration_test_receive, integration_test_send_and_receive, integration_test_setup,
+        new_arc_state, new_user,
     };
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::grid::SheetId;
@@ -301,7 +302,7 @@ pub(crate) mod tests {
             viewport: "initial viewport".to_string(),
         };
 
-        integration_test_send_and_receive(socket, request, true).await;
+        integration_test_send_and_receive(&socket, request, true).await;
 
         user
     }
@@ -338,13 +339,13 @@ pub(crate) mod tests {
             update,
         };
 
-        let response = integration_test_send_and_receive(socket, request, true).await;
+        let response = integration_test_send_and_receive(&socket, request, true).await;
 
         assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
     }
 
     #[tokio::test]
-    async fn user_enters_a_room() {
+    async fn test_user_enters_a_room() {
         let (socket, _, _, file_id, user) = setup().await;
         let new_user = new_user();
         let session_id = new_user.session_id;
@@ -361,18 +362,21 @@ pub(crate) mod tests {
             cell_edit: CellEdit::default(),
             viewport: "initial viewport".to_string(),
         };
-        let expected_1 = MessageResponse::UsersInRoom {
-            users: vec![new_user.clone(), user.clone()],
+        let enter_room_response = MessageResponse::EnterRoom {
+            file_id,
+            sequence_num: 0,
         };
-        let expected_2 = MessageResponse::UsersInRoom {
+        assert_eq!(
+            integration_test_send_and_receive(&socket, request, true).await,
+            serde_json::to_string(&enter_room_response).ok()
+        );
+
+        let users_in_room_response = MessageResponse::UsersInRoom {
             users: vec![user, new_user],
         };
-        let response = integration_test_send_and_receive(socket, request, true).await;
-
-        // order is brittle, this feels hacky
-        assert!(
-            response == Some(serde_json::to_string(&expected_1).unwrap())
-                || response == Some(serde_json::to_string(&expected_2).unwrap())
+        assert_eq!(
+            integration_test_receive(&socket).await,
+            serde_json::to_string(&users_in_room_response).ok()
         );
     }
 
@@ -394,7 +398,7 @@ pub(crate) mod tests {
             .await
             .unwrap();
 
-        let response = integration_test_send_and_receive(socket, request, true).await;
+        let response = integration_test_send_and_receive(&socket, request, true).await;
 
         assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
     }
@@ -468,7 +472,7 @@ pub(crate) mod tests {
             sequence_num: 1,
         };
 
-        let response = integration_test_send_and_receive(socket, request, true).await;
+        let response = integration_test_send_and_receive(&socket, request, true).await;
 
         assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
     }

@@ -1,7 +1,9 @@
+use crate::{
+    error::{MpError, Result},
+    state::transaction_queue::TransactionQueue,
+};
 use quadratic_core::{
-    controller::{
-        operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
-    },
+    controller::{operations::operation::Operation, GridController},
     grid::{
         file::{export_vec, import},
         Grid,
@@ -15,13 +17,6 @@ use quadratic_rust_shared::quadratic_api::set_file_checkpoint;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::{
-    controller::{operations::operation::Operation, GridController},
-    error::{MpError, Result},
-    grid::{file::import, Grid},
-    state::transaction_queue::TransactionQueue,
-};
-
 /// Load a .grid file
 pub(crate) fn load_file(file: &str) -> Result<Grid> {
     import(file).map_err(|e| MpError::FileService(e.to_string()))
@@ -33,11 +28,8 @@ pub(crate) fn export_file(grid: &mut Grid) -> Result<Vec<u8>> {
 }
 
 /// Apply a vec of operations to the grid
-pub(crate) fn apply_operations(
-    grid: &mut GridController,
-    operations: Vec<Operation>,
-) -> Result<TransactionSummary> {
-    Ok(grid.server_apply_transaction(operations))
+pub(crate) fn apply_transaction(grid: &mut GridController, operations: Vec<Operation>) {
+    grid.server_apply_transaction(operations)
 }
 
 /// Exports a .grid file
@@ -74,7 +66,7 @@ pub(crate) async fn process_transactions(
     let num_operations = operations.len();
     let mut grid = get_and_load_object(client, bucket, &key(file_id, sequence)).await?;
 
-    apply_operations(&mut grid, operations);
+    apply_transaction(&mut grid, operations);
     let body = export_file(grid.grid_mut())?;
 
     let next_sequence_num = sequence + num_operations as u64;
@@ -162,8 +154,7 @@ pub(crate) async fn process_queue_for_room(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use quadratic_core::test_util::assert_cell_value;
-    use quadratic_core::{Array, CellValue, CellValue, Pos, SheetPos};
+    use quadratic_core::{CellValue, Pos, SheetPos};
 
     #[test]
     fn loads_a_file() {
@@ -190,7 +181,10 @@ mod tests {
         );
 
         let mut server = GridController::from_grid(file);
-        let _ = _apply_transaction(&mut server, summary.operations.unwrap());
+        apply_transaction(
+            &mut server,
+            serde_json::from_str(&summary.operations.unwrap()).unwrap(),
+        );
         let sheet = server.grid().try_sheet_from_id(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 1, y: 2 }),

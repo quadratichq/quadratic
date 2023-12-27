@@ -9,14 +9,12 @@ use crate::error::{MpError, Result};
 use crate::message::{
     broadcast, direct_message, request::MessageRequest, response::MessageResponse,
 };
-use crate::message::{broadcast, request::MessageRequest, response::MessageResponse};
 use crate::state::connection::Connection;
 use crate::state::user::UserState;
 use crate::state::{user::User, State};
 use crate::{get_mut_room, get_room};
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
-use quadratic_core::controller::operations::operation::Operation;
 use quadratic_rust_shared::quadratic_api::get_file_perms;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -94,15 +92,7 @@ pub(crate) async fn handle_message(
                 broadcast(vec![], file_id, Arc::clone(&state), response);
             }
 
-            // todo: this is a placeholder for a better way to get the current sequence_num
-            let sequence_num = state
-                .transaction_queue
-                .lock()
-                .await
-                .get_sequence_num(file_id.to_owned())
-                .unwrap_or(0);
-
-            // direct response to user after logging in
+            // direct response to user w/sequence_num after logging in
             direct_message(
                 session_id,
                 file_id,
@@ -112,7 +102,8 @@ pub(crate) async fn handle_message(
                     sequence_num,
                 },
             )
-            .await?;
+            .await
+            .map_err(|e| MpError::SendingMessage(e.to_string()))?;
 
             Ok(None)
         }
