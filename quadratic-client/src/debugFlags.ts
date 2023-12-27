@@ -65,7 +65,7 @@ export const debugShowFileIO = debug && true;
 
 export const debugGridSettings = debug && false;
 
-export const debugShowMultiplayer = debug && false;
+export const debugShowMultiplayer = debug && true;
 
 // --------
 // UI

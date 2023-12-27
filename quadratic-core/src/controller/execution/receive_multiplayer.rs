@@ -103,7 +103,7 @@ impl GridController {
     pub fn receive_sequence_num(&mut self, sequence_num: u64) {
         if sequence_num != self.last_sequence_num {
             // Rust is out of sync with the server. Need to request transactions
-            crate::util::dbgjs("Rust is out of sync with the server. Requesting transactions.");
+            crate::util::dbgjs(format!("Rust is out of sync with the server: received {} but expected {}. Requesting transactions.", sequence_num, self.last_sequence_num));
         }
     }
 }

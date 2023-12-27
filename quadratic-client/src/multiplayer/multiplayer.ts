@@ -408,6 +408,7 @@ export class Multiplayer {
     }
   }
 
+  // Receives a new transaction from the server
   private receiveTransaction(data: ReceiveTransaction) {
     if (data.file_id !== this.room) {
       throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
@@ -415,30 +416,29 @@ export class Multiplayer {
     grid.multiplayerTransaction(data.id, data.sequence_num, data.operations);
   }
 
+  // Receives a collection of transactions to catch us up based on our sequenceNum
   private receiveTransactions(data: ReceiveTransactions) {
     console.log(data.transactions);
   }
 
-  // todo: this will be incorrect when we have a real saving server. instead, we need to get the sequence_num based on the loaded file, not where the server is
+  // Receives the current transaction number from the server when entering a room.
+  // Note: this may be different than the one provided by the api as there may be unsaved Transactions.
   private receiveEnterRoom(data: ReceiveEnterRoom) {
     if (data.file_id !== this.room) {
       throw new Error("Expected file_id to match room before receiving a message of type 'EnterRoom'");
     }
     if (debugShowMultiplayer) {
-      console.log(`[Multiplayer]: Current transaction number set to ${data.sequence_num}`);
-      grid.setMultiplayerSequenceNum(data.sequence_num);
+      grid.receiveSequenceNum(data.sequence_num);
     }
   }
 
+  // Called during a heartbeat from the server to verify we're at the correct sequenceNum
   private receiveCurrentTransaction(data: ReceiveCurrentTransaction) {
     grid.receiveSequenceNum(data.sequence_num);
   }
 
   receiveMessage = (e: { data: string }) => {
     const data = JSON.parse(e.data) as ReceiveMessages;
-    if (debugShowMultiplayer) {
-      console.log(`[Multiplayer] Received receiveMessage ${data.type}`);
-    }
     const { type } = data;
     if (type === 'UsersInRoom') {
       this.receiveUsersInRoom(data);

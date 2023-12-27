@@ -37,7 +37,7 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                 let state = Arc::clone(&state);
 
                 tokio::spawn(async move {
-                    tracing::info!("Processing room {}", file_id);
+                    // tracing::info!("Processing room {}", file_id);
                     // process transaction queue for the room
                     let processed =
                         process_transaction_queue_for_room(Arc::clone(&state), &file_id).await;
@@ -115,7 +115,7 @@ async fn remove_stale_users_in_room(
         .remove_stale_users_in_room(file_id.to_owned(), heartbeat_timeout_s)
         .await?;
 
-    tracing::info!("Checking heartbeats in room {file_id} ({num_remaining} remaining in room)");
+    // tracing::info!("Checking heartbeats in room {file_id} ({num_remaining} remaining in room)");
 
     if num_removed == 0 {
         return Ok(None);
