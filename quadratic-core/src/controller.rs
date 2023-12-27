@@ -47,6 +47,10 @@ pub struct GridController {
     // these have not been pushed to the undo stack
     incomplete_transactions: Vec<Transaction>,
 
+    // client requested transactions from the server to catch up to sequence_num
+    // todo: better to use a js timestamp library than String
+    last_request_transaction_time: Option<String>,
+
     // transaction in progress information
     transaction_in_progress: bool,
     cursor: Option<String>,

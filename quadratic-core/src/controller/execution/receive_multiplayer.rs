@@ -51,8 +51,6 @@ impl GridController {
     pub fn client_apply_transaction(
         &mut self,
         transaction_id: Uuid,
-
-        // todo: check this and request transactions again if out of order
         sequence_num: u64,
 
         operations: Vec<Operation>,
