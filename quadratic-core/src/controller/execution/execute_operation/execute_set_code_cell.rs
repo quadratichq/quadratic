@@ -13,10 +13,13 @@ impl GridController {
                 let sheet_id = sheet_pos.sheet_id;
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
                 if is_user {
-                    self.reverse_operations.push(Operation::SetCodeCell {
-                        sheet_pos,
-                        code_cell_value: sheet.get_code_cell(sheet_pos.into()).cloned(),
-                    });
+                    self.reverse_operations.insert(
+                        0,
+                        Operation::SetCodeCell {
+                            sheet_pos,
+                            code_cell_value: sheet.get_code_cell(sheet_pos.into()).cloned(),
+                        },
+                    );
                     let old_code_cell =
                         sheet.set_code_cell(sheet_pos.into(), code_cell_value.clone());
                     if let Some(code_cell_value) = &code_cell_value {
@@ -38,10 +41,13 @@ impl GridController {
                         }
                     }
                 } else if is_undo {
-                    self.reverse_operations.push(Operation::SetCodeCell {
-                        sheet_pos,
-                        code_cell_value: sheet.get_code_cell(sheet_pos.into()).cloned(),
-                    });
+                    self.reverse_operations.insert(
+                        0,
+                        Operation::SetCodeCell {
+                            sheet_pos,
+                            code_cell_value: sheet.get_code_cell(sheet_pos.into()).cloned(),
+                        },
+                    );
                     sheet.set_code_cell(sheet_pos.into(), code_cell_value);
                     self.forward_operations.push(op.clone());
                 } else {

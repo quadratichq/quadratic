@@ -67,7 +67,7 @@ impl GridController {
         Transaction {
             id: self.transaction_id,
             sequence_num: None,
-            operations: self.reverse_operations.clone().into_iter().rev().collect(),
+            operations: self.reverse_operations.clone(),
             cursor: self.cursor.clone(),
         }
     }
@@ -116,10 +116,7 @@ mod tests {
 
         let reverse_transaction = gc.to_undo_transaction();
         assert_eq!(reverse_transaction.id, transaction_id);
-        assert_eq!(
-            reverse_transaction.operations,
-            reverse_operations.iter().cloned().rev().collect::<Vec<_>>()
-        );
+        assert_eq!(reverse_transaction.operations, reverse_operations);
         assert_eq!(reverse_transaction.sequence_num, None);
     }
 }

@@ -24,7 +24,7 @@ impl GridController {
             Operation::SetBorders { .. } => self.execute_set_borders(&op),
 
             Operation::AddSheet { .. } => self.execute_add_sheet(&op),
-            Operation::DeleteSheet { .. } => self.execute_delete_sheet(&op),
+            Operation::DeleteSheet { .. } => self.execute_delete_sheet(&op, is_user),
             Operation::ReorderSheet { .. } => self.execute_reorder_sheet(&op),
             Operation::SetSheetName { .. } => self.execute_set_sheet_name(&op),
             Operation::SetSheetColor { .. } => self.execute_set_sheet_color(&op),

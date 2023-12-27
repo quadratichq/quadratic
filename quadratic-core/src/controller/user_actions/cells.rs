@@ -11,7 +11,9 @@ impl GridController {
         sheet.with_random_floats(region);
     }
 
-    /// sets the value based on a user's input and converts input to proper NumericFormat
+    /// Starts a transaction to set the value of a cell by converting a user's String input
+    ///
+    /// Returns a [`TransactionSummary`].
     pub fn set_cell_value(
         &mut self,
         sheet_pos: SheetPos,
@@ -22,6 +24,39 @@ impl GridController {
         self.start_user_transaction(ops, cursor)
     }
 
+    /// Starts a transaction to set cell values using a 2d array of user's &str input where [[1, 2, 3], [4, 5, 6]] creates a grid of width 3 and height 2.
+    ///
+    /// Returns a [`TransactionSummary`].
+    pub fn set_cell_values(
+        &mut self,
+        sheet_pos: SheetPos,
+        values: Vec<Vec<&str>>,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let mut ops = vec![];
+        let mut x = sheet_pos.x;
+        let mut y = sheet_pos.y;
+        for row in values {
+            for value in row {
+                ops.extend(self.set_cell_value_operations(
+                    SheetPos {
+                        x,
+                        y,
+                        sheet_id: sheet_pos.sheet_id,
+                    },
+                    value.to_string(),
+                ));
+                x += 1;
+            }
+            x = sheet_pos.x;
+            y += 1;
+        }
+        self.start_user_transaction(ops, cursor)
+    }
+
+    /// Starts a transaction to set a code_cell using user's code_string input
+    ///
+    /// Returns a [`TransactionSummary`].
     pub fn set_code_cell(
         &mut self,
         sheet_pos: SheetPos,
@@ -33,8 +68,8 @@ impl GridController {
         self.start_user_transaction(ops, cursor)
     }
 
-    /// Deletes the cell values and code in a given region.
-    /// Creates and runs a transaction, also updates dependent cells.
+    /// Starts a transaction to deletes the cell values and code in a given rect and updates dependent cells.
+    ///
     /// Returns a [`TransactionSummary`].
     pub fn delete_cells_rect(
         &mut self,
@@ -45,6 +80,9 @@ impl GridController {
         self.start_user_transaction(ops, cursor)
     }
 
+    /// Starts a transaction to clear formatting in a given rect.
+    ///
+    /// Returns a [`TransactionSummary`].
     pub fn clear_formatting(
         &mut self,
         sheet_rect: SheetRect,
@@ -54,6 +92,9 @@ impl GridController {
         self.start_user_transaction(ops, cursor)
     }
 
+    /// Starts a transaction to delete values and formatting in a given rect, and updates dependent cells.
+    ///
+    /// Returns a [`TransactionSummary`].
     pub fn delete_values_and_formatting(
         &mut self,
         sheet_rect: SheetRect,

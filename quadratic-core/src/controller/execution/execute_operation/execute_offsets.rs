@@ -25,11 +25,14 @@ impl GridController {
                     column,
                     new_size,
                 });
-                self.reverse_operations.push(Operation::ResizeColumn {
-                    sheet_id,
-                    column,
-                    new_size: old_size,
-                });
+                self.reverse_operations.insert(
+                    0,
+                    Operation::ResizeColumn {
+                        sheet_id,
+                        column,
+                        new_size: old_size,
+                    },
+                );
             }
             _ => unreachable!("Expected Operation::ResizeColumn"),
         }
@@ -56,11 +59,14 @@ impl GridController {
                     row,
                     new_size,
                 });
-                self.reverse_operations.push(Operation::ResizeRow {
-                    sheet_id,
-                    row,
-                    new_size: old_size,
-                });
+                self.reverse_operations.insert(
+                    0,
+                    Operation::ResizeRow {
+                        sheet_id,
+                        row,
+                        new_size: old_size,
+                    },
+                );
             }
             _ => unreachable!("Expected Operation::ResizeRow"),
         }

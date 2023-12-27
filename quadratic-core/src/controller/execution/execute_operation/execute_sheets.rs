@@ -1,35 +1,68 @@
-use crate::controller::{operations::operation::Operation, GridController};
+use crate::{
+    controller::{operations::operation::Operation, GridController},
+    grid::{Sheet, SheetId},
+};
 
 impl GridController {
     pub(crate) fn execute_add_sheet(&mut self, op: &Operation) {
         match op.clone() {
             Operation::AddSheet { sheet } => {
-                // todo: need to handle the case where sheet.order overlaps another sheet order
-                // this may happen after (1) delete a sheet; (2) MP update w/an added sheet; and (3) undo the deleted sheet
                 let sheet_id = sheet.id;
                 self.grid
                     .add_sheet(Some(sheet.clone()))
-                    .expect("duplicate sheet name");
+                    .expect("Unexpected duplicate sheet name in Operation::AddSheet");
                 self.summary.sheet_list_modified = true;
                 self.summary.html.insert(sheet_id);
                 self.forward_operations.push(Operation::AddSheet { sheet });
                 self.reverse_operations
-                    .push(Operation::DeleteSheet { sheet_id });
+                    .insert(0, Operation::DeleteSheet { sheet_id });
             }
             _ => unreachable!("Expected Operation::AddSheet"),
         }
     }
 
-    pub(crate) fn execute_delete_sheet(&mut self, op: &Operation) {
+    pub(crate) fn execute_delete_sheet(&mut self, op: &Operation, is_user: bool) {
         match op.clone() {
             Operation::DeleteSheet { sheet_id } => {
                 let deleted_sheet = self.grid.remove_sheet(sheet_id);
+
+                // create a sheet if we deleted the last one (only for user actions)
+                if is_user && self.sheet_ids().is_empty() {
+                    let new_first_sheet_id = SheetId::new();
+                    let name = String::from("Sheet 1");
+                    let order = self.grid.end_order();
+                    let new_first_sheet = Sheet::new(new_first_sheet_id, name, order);
+                    self.grid
+                        .add_sheet(Some(new_first_sheet.clone()))
+                        .expect("This should not throw an error as we just deleted the last sheet and therefore there can be no sheet name conflicts");
+                    self.forward_operations
+                        .push(Operation::DeleteSheet { sheet_id });
+                    self.forward_operations.push(Operation::AddSheet {
+                        sheet: new_first_sheet,
+                    });
+                    self.reverse_operations.insert(
+                        0,
+                        Operation::AddSheet {
+                            sheet: deleted_sheet,
+                        },
+                    );
+                    self.reverse_operations.insert(
+                        0,
+                        Operation::DeleteSheet {
+                            sheet_id: new_first_sheet_id,
+                        },
+                    );
+                } else {
+                    self.forward_operations
+                        .push(Operation::DeleteSheet { sheet_id });
+                    self.reverse_operations.insert(
+                        0,
+                        Operation::AddSheet {
+                            sheet: deleted_sheet,
+                        },
+                    );
+                }
                 self.summary.sheet_list_modified = true;
-                self.forward_operations
-                    .push(Operation::DeleteSheet { sheet_id });
-                self.reverse_operations.push(Operation::AddSheet {
-                    sheet: deleted_sheet,
-                });
             }
             _ => unreachable!("Expected operation::DeleteSheet"),
         }
@@ -49,10 +82,13 @@ impl GridController {
                 }
                 self.forward_operations
                     .push(Operation::ReorderSheet { target, order });
-                self.reverse_operations.push(Operation::ReorderSheet {
-                    target,
-                    order: original_order,
-                });
+                self.reverse_operations.insert(
+                    0,
+                    Operation::ReorderSheet {
+                        target,
+                        order: original_order,
+                    },
+                );
             }
             _ => unreachable!("Expected operation::ReorderSheet"),
         }
@@ -67,10 +103,13 @@ impl GridController {
                 self.summary.sheet_list_modified = true;
                 self.forward_operations
                     .push(Operation::SetSheetName { sheet_id, name });
-                self.reverse_operations.push(Operation::SetSheetName {
-                    sheet_id,
-                    name: old_name,
-                });
+                self.reverse_operations.insert(
+                    0,
+                    Operation::SetSheetName {
+                        sheet_id,
+                        name: old_name,
+                    },
+                );
             }
             _ => unreachable!("Expected operation::SetSheetName"),
         }
@@ -85,10 +124,13 @@ impl GridController {
                 self.summary.sheet_list_modified = true;
                 self.forward_operations
                     .push(Operation::SetSheetColor { sheet_id, color });
-                self.reverse_operations.push(Operation::SetSheetColor {
-                    sheet_id,
-                    color: old_color,
-                });
+                self.reverse_operations.insert(
+                    0,
+                    Operation::SetSheetColor {
+                        sheet_id,
+                        color: old_color,
+                    },
+                );
             }
             _ => unreachable!("Expected operation::SetSheetColor"),
         }

@@ -37,20 +37,26 @@ impl GridController {
                                 .expect(
                                     "error constructing array of old values for SetCells operation",
                                 );
-                            self.reverse_operations.push(Operation::SetCellValues {
-                                sheet_rect: *sheet_rect,
-                                values: old_values,
-                            });
+                            self.reverse_operations.insert(
+                                0,
+                                Operation::SetCellValues {
+                                    sheet_rect: *sheet_rect,
+                                    values: old_values,
+                                },
+                            );
 
                             if is_user {
                                 // remove any code_cells that are now covered by the new values
                                 let mut code_cell_removed = false;
                                 sheet.code_cells.retain(|(pos, code_cell)| {
                                     if sheet_rect.contains(pos.to_sheet_pos(sheet.id)) {
-                                        self.reverse_operations.push(Operation::SetCodeCell {
-                                            sheet_pos: pos.to_sheet_pos(sheet.id),
-                                            code_cell_value: Some(code_cell.clone()),
-                                        });
+                                        self.reverse_operations.insert(
+                                            0,
+                                            Operation::SetCodeCell {
+                                                sheet_pos: pos.to_sheet_pos(sheet.id),
+                                                code_cell_value: Some(code_cell.clone()),
+                                            },
+                                        );
                                         code_cell_removed = true;
                                         false
                                     } else {

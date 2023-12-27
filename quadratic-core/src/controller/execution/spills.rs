@@ -18,10 +18,13 @@ impl GridController {
                     code_cell_value: Some(code_cell.clone()),
                 });
                 code_cell.set_spill(set_spill_error);
-                self.reverse_operations.push(Operation::SetCodeCell {
-                    sheet_pos,
-                    code_cell_value: Some(code_cell.clone()),
-                });
+                self.reverse_operations.insert(
+                    0,
+                    Operation::SetCodeCell {
+                        sheet_pos,
+                        code_cell_value: Some(code_cell.clone()),
+                    },
+                );
             }
             self.check_all_spills(sheet_id, index + 1);
         }

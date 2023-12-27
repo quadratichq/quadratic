@@ -48,10 +48,13 @@ impl GridController {
             sheet_pos,
             code_cell_value,
         });
-        self.reverse_operations.push(Operation::SetCodeCell {
-            sheet_pos,
-            code_cell_value: old_code_cell_value,
-        });
+        self.reverse_operations.insert(
+            0,
+            Operation::SetCodeCell {
+                sheet_pos,
+                code_cell_value: old_code_cell_value,
+            },
+        );
         self.check_spills(&sheet_pos.into());
 
         self.sheets_with_dirty_bounds.insert(sheet_id);
@@ -781,5 +784,72 @@ mod test {
                 spill: false,
             }),
         );
+    }
+
+    #[test]
+    fn test_undo_redo_spill_change() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_values(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            vec![vec!["1", "2", "3"]],
+            None,
+        );
+
+        // create code that will later have a spill error
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 0,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "A0:A3".into(),
+            None,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).get_cell_value(Pos { x: 1, y: 0 }),
+            Some(CellValue::Number(1.into()))
+        );
+
+        // create a spill error for the code
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            "create spill error".into(),
+            None,
+        );
+        assert!(gc
+            .sheet(sheet_id)
+            .get_code_cell(Pos { x: 1, y: 0 })
+            .unwrap()
+            .has_spill_error());
+        assert!(gc
+            .sheet(sheet_id)
+            .get_cell_value(Pos { x: 1, y: 0 })
+            .unwrap()
+            .is_blank_or_empty_string());
+
+        // undo the spill error
+        gc.undo(None);
+        assert_eq!(
+            gc.sheet(sheet_id).get_cell_value(Pos { x: 1, y: 0 }),
+            Some(CellValue::Number(1.into()))
+        );
+
+        // redo the spill error
+        gc.redo(None);
+        assert!(gc
+            .sheet(sheet_id)
+            .get_code_cell(Pos { x: 1, y: 0 })
+            .unwrap()
+            .has_spill_error());
     }
 }

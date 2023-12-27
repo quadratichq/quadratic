@@ -23,10 +23,13 @@ impl GridController {
                     sheet_rect,
                     borders,
                 });
-                self.reverse_operations.push(Operation::SetBorders {
-                    sheet_rect,
-                    borders: old_borders,
-                });
+                self.reverse_operations.insert(
+                    0,
+                    Operation::SetBorders {
+                        sheet_rect,
+                        borders: old_borders,
+                    },
+                );
             }
             _ => unreachable!("Expected Operation::SetBorders"),
         }

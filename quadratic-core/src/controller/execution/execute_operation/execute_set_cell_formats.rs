@@ -73,10 +73,13 @@ impl GridController {
                 self.forward_operations
                     .push(Operation::SetCellFormats { sheet_rect, attr });
 
-                self.reverse_operations.push(Operation::SetCellFormats {
-                    sheet_rect,
-                    attr: old_attr,
-                });
+                self.reverse_operations.insert(
+                    0,
+                    Operation::SetCellFormats {
+                        sheet_rect,
+                        attr: old_attr,
+                    },
+                );
             }
             _ => unreachable!("Expected Operation::SetCellFormats"),
         }
