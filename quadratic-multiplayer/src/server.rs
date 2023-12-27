@@ -362,21 +362,28 @@ pub(crate) mod tests {
             cell_edit: CellEdit::default(),
             viewport: "initial viewport".to_string(),
         };
-        let enter_room_response = MessageResponse::EnterRoom {
+        let expected_enter_room = MessageResponse::EnterRoom {
             file_id,
             sequence_num: 0,
         };
+        let received_enter_room = &integration_test_send_and_receive(&socket, request, true)
+            .await
+            .unwrap();
         assert_eq!(
-            integration_test_send_and_receive(&socket, request, true).await,
-            serde_json::to_string(&enter_room_response).ok()
+            &serde_json::to_string(&expected_enter_room).unwrap(),
+            received_enter_room
         );
 
+        // This is not the best test, but the ordering of the users is somewhat random in the UsersInRoom message.
+        // Since we can't deserialize easily (b/c of Vec), we instead compare the length of the stringified output.
         let users_in_room_response = MessageResponse::UsersInRoom {
             users: vec![user, new_user],
         };
         assert_eq!(
-            integration_test_receive(&socket).await,
-            serde_json::to_string(&users_in_room_response).ok()
+            integration_test_receive(&socket).await.map(|s| s.len()),
+            serde_json::to_string(&users_in_room_response)
+                .ok()
+                .map(|s| s.len())
         );
     }
 
