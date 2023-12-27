@@ -1,11 +1,8 @@
-use std::collections::HashSet;
-
 use crate::controller::{
+    execution::TransactionType,
     transaction_types::{CellsForArray, JsComputeGetCells},
     GridController,
 };
-use crate::SheetPos;
-
 impl GridController {
     /// gets cells for use in async calculations
     pub fn get_cells(&mut self, get_cells: JsComputeGetCells) -> Option<CellsForArray> {
@@ -28,6 +25,8 @@ impl GridController {
             |sheet_name| self.grid().sheet_from_name(sheet_name),
         );
 
+        let transaction_type = self.transaction_type.clone();
+        assert_eq!(transaction_type, TransactionType::User);
         if let Some(sheet) = sheet {
             // ensure that the current cell ref is not in the get_cells request
             if get_cells.rect().contains(pos) && sheet.id == current_sheet {
@@ -38,22 +37,13 @@ impl GridController {
                     "Sheet not found".to_string()
                 };
                 self.code_cell_sheet_error(msg, get_cells.line_number());
-                self.loop_compute();
+                self.handle_transactions(transaction_type);
                 return Some(CellsForArray::new(vec![], true));
             }
 
             let rect = get_cells.rect();
             let array = sheet.cell_array(rect);
-            let mut cells_accessed: HashSet<SheetPos> = HashSet::new();
-            let sheet_id = sheet.id;
-            for y in rect.y_range() {
-                for x in rect.x_range() {
-                    cells_accessed.insert(SheetPos { x, y, sheet_id });
-                }
-            }
-            cells_accessed.iter().for_each(|sheet_pos| {
-                self.cells_accessed.insert(*sheet_pos);
-            });
+            self.cells_accessed.insert(rect.to_sheet_rect(sheet.id));
             Some(array)
         } else {
             // unable to find sheet by name, generate error

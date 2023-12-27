@@ -63,7 +63,6 @@ impl GridController {
     }
 
     fn set_clipboard_cells(&mut self, start_pos: SheetPos, clipboard: Clipboard) -> Vec<Operation> {
-        let mut compute = false;
         let sheet_rect = SheetRect {
             min: start_pos.into(),
             max: Pos {
@@ -80,7 +79,6 @@ impl GridController {
         let values = GridController::array_from_clipboard_cells(clipboard);
         if let Some(values) = values {
             ops.push(Operation::SetCellValues { sheet_rect, values });
-            compute = true;
         }
 
         let sheet = self.grid.sheet_mut_from_id(start_pos.sheet_id);
@@ -89,7 +87,7 @@ impl GridController {
         for x in sheet_rect.x_range() {
             for y in sheet_rect.y_range() {
                 let pos = Pos { x, y };
-                if let Some(_code_cell) = sheet.get_code_cell(pos) {
+                if sheet.get_code_cell(pos).is_some() {
                     // no need to clear code cells that are being pasted
                     if !code.iter().any(|(code_pos, _)| {
                         Pos {
@@ -97,11 +95,10 @@ impl GridController {
                             y: code_pos.y + start_pos.y,
                         } == pos
                     }) {
-                        ops.push(Operation::SetCellCode {
+                        ops.push(Operation::SetCodeCell {
                             sheet_pos: pos.to_sheet_pos(start_pos.sheet_id),
                             code_cell_value: None,
                         });
-                        compute = true;
                     }
                 }
             }
@@ -114,11 +111,10 @@ impl GridController {
                 y: entry.0.y + start_pos.y,
                 sheet_id: start_pos.sheet_id,
             };
-            ops.push(Operation::SetCellCode {
+            ops.push(Operation::SetCodeCell {
                 sheet_pos,
                 code_cell_value: Some(entry.1.clone()),
             });
-            compute = true;
         });
 
         formats.iter().for_each(|format| {

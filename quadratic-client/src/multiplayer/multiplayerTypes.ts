@@ -58,6 +58,12 @@ export interface SendEnterRoom extends MultiplayerUserServer {
   type: 'EnterRoom';
 }
 
+export interface ReceiveEnterRoom {
+  type: 'EnterRoom';
+  file_id: string;
+  sequence_num: number;
+}
+
 export interface Transaction {
   id: string;
   file_id: string;
@@ -65,7 +71,15 @@ export interface Transaction {
   operations: string[];
 }
 
-export interface MessageTransaction {
+export interface ReceiveTransaction {
+  type: 'Transaction';
+  id: string;
+  file_id: string;
+  operations: string;
+  sequence_num: number;
+}
+
+export interface SendTransaction {
   type: 'Transaction';
   id: string;
   session_id: string;
@@ -95,4 +109,16 @@ export interface ReceiveEmpty {
   type: 'Empty';
 }
 
-export type ReceiveMessages = ReceiveRoom | MessageUserUpdate | MessageTransaction | ReceiveEmpty | ReceiveTransactions;
+export interface ReceiveCurrentTransaction {
+  type: 'CurrentTransaction';
+  sequence_num: number;
+}
+
+export type ReceiveMessages =
+  | ReceiveRoom
+  | MessageUserUpdate
+  | ReceiveTransaction
+  | ReceiveEmpty
+  | ReceiveTransactions
+  | ReceiveEnterRoom
+  | ReceiveCurrentTransaction;

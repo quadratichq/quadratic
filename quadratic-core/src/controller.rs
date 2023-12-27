@@ -1,18 +1,16 @@
-use std::collections::HashSet;
-
-use indexmap::IndexSet;
-#[cfg(feature = "js")]
-use wasm_bindgen::prelude::*;
-
-use crate::{
-    grid::{CodeCellLanguage, Grid, SheetId},
-    SheetPos, SheetRect,
-};
-
 use self::{
     execution::TransactionType, operations::operation::Operation,
     transaction_summary::TransactionSummary,
 };
+use crate::{
+    grid::{CodeCellLanguage, Grid, SheetId},
+    SheetPos, SheetRect,
+};
+use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+use uuid::Uuid;
+#[cfg(feature = "js")]
+use wasm_bindgen::prelude::*;
 
 pub mod dependencies;
 pub mod execution;
@@ -21,15 +19,15 @@ pub mod formula;
 pub mod operations;
 pub mod sheet_offsets;
 pub mod sheets;
-pub mod spills;
 pub mod thumbnail;
 pub mod transaction_summary;
 pub mod transaction_types;
-pub mod update_code_cell_value;
 pub mod user_actions;
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct Transaction {
+    id: Uuid,
+    sequence_num: Option<u64>,
     operations: Vec<Operation>,
     cursor: Option<String>,
 }
@@ -41,22 +39,45 @@ pub struct GridController {
     undo_stack: Vec<Transaction>,
     redo_stack: Vec<Transaction>,
 
+    // completed Transactions that do not have a sequence number from the server
+    // Vec<(forward_transaction, reverse_transaction)>
+    unsaved_transactions: Vec<(Transaction, Transaction)>,
+
+    // transactions that are awaiting async responses
+    // these have not been pushed to the undo stack
+    incomplete_transactions: Vec<Transaction>,
+
     // transaction in progress information
     transaction_in_progress: bool,
     cursor: Option<String>,
     transaction_type: TransactionType,
 
-    // queue of cells to compute
-    cells_to_compute: IndexSet<SheetPos>,
+    // list of pending operations
+    operations: Vec<Operation>,
 
-    // track changes
-    cells_updated: IndexSet<SheetRect>,
-    cells_accessed: HashSet<SheetPos>,
-    summary: TransactionSummary,
-    sheets_with_changed_bounds: HashSet<SheetId>,
+    // undo operations
+    reverse_operations: Vec<Operation>,
+
+    // list of operations to share with other players
+    forward_operations: Vec<Operation>,
+
+    // transaction id used for multiplayer
+    transaction_id: Uuid,
+
+    // tracks sheets that will need updated bounds calculations
+    sheets_with_dirty_bounds: HashSet<SheetId>,
 
     // tracks whether there are any async calls (which changes how the transaction is finalized)
     has_async: bool,
+
+    // returned to the TS client for (mostly) rendering updates
+    summary: TransactionSummary,
+
+    // Keeps track of pending async transaction
+    // ----------------------------------------
+
+    // used by Code Cell execution to track dependencies
+    cells_accessed: HashSet<SheetRect>,
 
     // save code_cell info for async calls
     current_sheet_pos: Option<SheetPos>,
@@ -65,11 +86,7 @@ pub struct GridController {
     // true when transaction completes
     complete: bool,
 
-    // undo operations
-    reverse_operations: Vec<Operation>,
-
-    // operations for multiplayer
-    forward_operations: Vec<Operation>,
+    pub last_sequence_num: u64,
 }
 
 impl GridController {

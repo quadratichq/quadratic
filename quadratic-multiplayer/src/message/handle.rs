@@ -5,18 +5,21 @@
 //! socket information is stored in the global state, we can broadcast
 //! to all users in a room.
 
-use axum::extract::ws::{Message, WebSocket};
-use futures_util::stream::SplitSink;
-use quadratic_rust_shared::quadratic_api::get_file_perms;
-use std::sync::Arc;
-use tokio::sync::Mutex;
-
 use crate::error::{MpError, Result};
+use crate::message::{
+    broadcast, direct_message, request::MessageRequest, response::MessageResponse,
+};
 use crate::message::{broadcast, request::MessageRequest, response::MessageResponse};
 use crate::state::connection::Connection;
 use crate::state::user::UserState;
 use crate::state::{user::User, State};
 use crate::{get_mut_room, get_room};
+use axum::extract::ws::{Message, WebSocket};
+use futures_util::stream::SplitSink;
+use quadratic_core::controller::operations::operation::Operation;
+use quadratic_rust_shared::quadratic_api::get_file_perms;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 /// Handle incoming messages.  All requests and responses are strictly typed.
 #[tracing::instrument(level = "trace")]
@@ -91,6 +94,26 @@ pub(crate) async fn handle_message(
                 broadcast(vec![], file_id, Arc::clone(&state), response);
             }
 
+            // todo: this is a placeholder for a better way to get the current sequence_num
+            let sequence_num = state
+                .transaction_queue
+                .lock()
+                .await
+                .get_sequence_num(file_id.to_owned())
+                .unwrap_or(0);
+
+            // direct response to user after logging in
+            direct_message(
+                session_id,
+                file_id,
+                Arc::clone(&state),
+                MessageResponse::EnterRoom {
+                    file_id,
+                    sequence_num,
+                },
+            )
+            .await?;
+
             Ok(None)
         }
 
@@ -120,6 +143,12 @@ pub(crate) async fn handle_message(
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
+            tracing::info!(
+                "Transaction received for room {} from user {}",
+                file_id,
+                session_id
+            );
+
             let room_sequence_num = get_room!(state, file_id)?.sequence_num;
 
             // add the transaction to the transaction queue
@@ -140,7 +169,7 @@ pub(crate) async fn handle_message(
                 sequence_num,
             };
 
-            // the user who sent the transaction should receive the transaction response
+            // broadcast the transaction to all users in the room
             broadcast(vec![], file_id, Arc::clone(&state), response);
 
             Ok(None)
@@ -204,6 +233,9 @@ pub(crate) async fn handle_message(
 
 #[cfg(test)]
 pub(crate) mod tests {
+
+    use quadratic_core::controller::operations::operation::Operation;
+    use quadratic_core::grid::SheetId;
 
     use super::*;
     use crate::state::user::{CellEdit, UserStateUpdate};
@@ -371,7 +403,11 @@ pub(crate) mod tests {
         let message = MessageResponse::Transaction {
             id,
             file_id,
-            operations: "test".to_string(),
+            operations: serde_json::to_string(&vec![Operation::SetSheetColor {
+                sheet_id: SheetId::new(),
+                color: Some("red".to_string()),
+            }])
+            .unwrap(),
             sequence_num: 1,
         };
         broadcast(vec![user_1.session_id], file_id, state, message)

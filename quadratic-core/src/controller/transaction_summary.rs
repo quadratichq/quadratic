@@ -63,8 +63,9 @@ pub struct TransactionSummary {
     // should the grid generate a thumbnail
     pub generate_thumbnail: bool,
 
-    // holds the operations to be shared via multiplayer
-    pub forward_operations: Option<String>,
+    // Transaction to be shared via multiplayer
+    pub transaction_id: Option<String>,
+    pub operations: Option<String>,
 
     // changes to html output
     pub html: HashSet<SheetId>,
@@ -78,7 +79,7 @@ impl TransactionSummary {
         }
     }
 
-    pub fn clear(&mut self, keep_forward_operations: bool) {
+    pub fn clear(&mut self, keep_forward_transaction: bool) {
         self.fill_sheets_modified.clear();
         self.border_sheets_modified.clear();
         self.code_cells_modified.clear();
@@ -89,8 +90,8 @@ impl TransactionSummary {
         self.transaction_busy = false;
         self.generate_thumbnail = false;
         self.save = false;
-        if !keep_forward_operations {
-            self.forward_operations = None;
+        if !keep_forward_transaction {
+            self.operations = None;
         }
     }
 }

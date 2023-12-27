@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use super::*;
 use crate::controller::transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells};
 use crate::{controller::transaction_summary::TransactionSummary, grid::js_types::*};
@@ -93,10 +95,40 @@ impl GridController {
     }
 
     #[wasm_bindgen(js_name = "multiplayerTransaction")]
-    pub fn js_multiplayer_transaction(&mut self, operations: String) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(
-            &self.received_transaction(operations),
-        )?)
+    pub fn js_multiplayer_transaction(
+        &mut self,
+        transaction_id: String,
+        sequence_num: u32,
+        operations: String,
+    ) -> Result<JsValue, JsValue> {
+        let transaction_id = match Uuid::parse_str(&transaction_id) {
+            Ok(transaction_id) => transaction_id,
+            Err(e) => {
+                return Err(JsValue::from_str(&format!(
+                    "Invalid transaction id: {}",
+                    e.to_string()
+                )))
+            }
+        };
+        let operations = match serde_json::from_str(&operations) {
+            Ok(operations) => operations,
+            Err(e) => {
+                return Err(JsValue::from_str(&format!(
+                    "Invalid operations: {}",
+                    e.to_string()
+                )))
+            }
+        };
+        Ok(serde_wasm_bindgen::to_value(&self.received_transaction(
+            transaction_id,
+            sequence_num as u64,
+            operations,
+        ))?)
+    }
+
+    #[wasm_bindgen(js_name = "setMultiplayerSequenceNum")]
+    pub fn js_multiplayer_set_sequence_num(&mut self, sequence_num: u32) {
+        self.last_sequence_num = sequence_num as u64;
     }
 
     /// Populates a portion of a sheet with random float values.
@@ -121,7 +153,8 @@ impl GridController {
             save: false,
             generate_thumbnail: false,
             transaction_busy: false,
-            forward_operations: None,
+            transaction_id: None,
+            operations: None,
             html: HashSet::new(),
         })?)
     }

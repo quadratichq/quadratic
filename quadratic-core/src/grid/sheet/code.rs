@@ -1,108 +1,92 @@
-use std::{collections::HashSet, ops::Range};
-
-use itertools::Itertools;
-
 use super::Sheet;
 use crate::{
     grid::{CodeCellValue, RenderSize},
-    CellValue, Pos, Rect, Value,
+    CellValue, Pos, Rect,
 };
 
 impl Sheet {
-    /// Sets or deletes a code cell value and populates spills.
-    pub fn set_code_cell_value(
+    /// Sets or deletes a code cell value.
+    pub fn set_code_cell(
         &mut self,
         pos: Pos,
         code_cell: Option<CodeCellValue>,
     ) -> Option<CodeCellValue> {
-        let old = self.code_cells.remove(&pos);
-
-        // this column has to exist since it was just created in the previous statement
-        let code_cell_column = self.get_or_create_column(pos.x);
-
-        if let Some(code_cell) = code_cell {
-            if let Some(output) = &code_cell.output {
-                match output.output_value() {
-                    Some(output_value) => {
-                        match output_value {
-                            Value::Single(_) => {
-                                code_cell_column.spills.set(pos.y, Some(pos));
-                            }
-                            Value::Array(array) => {
-                                // if spilled only set the top left cell
-                                if output.spill {
-                                    let column = self.get_or_create_column(pos.x);
-                                    column.spills.set(pos.y, Some(pos));
-                                }
-                                // otherwise set the whole array
-                                else {
-                                    let start = pos.x;
-                                    let end = start + array.width() as i64;
-                                    let range = Range {
-                                        start: pos.y,
-                                        end: pos.y + array.height() as i64,
-                                    };
-                                    for x in start..end {
-                                        let column = self.get_or_create_column(x);
-                                        column.spills.set_range(range.clone(), pos);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    None => {
-                        code_cell_column.spills.set(pos.y, Some(pos));
-                    }
+        // todo: probably a more rust-y way to do this
+        let old = self
+            .code_cells
+            .iter()
+            .find_map(|(code_cell_pos, code_cell_value)| {
+                if *code_cell_pos == pos {
+                    Some(code_cell_value)
+                } else {
+                    None
                 }
-            } else {
-                code_cell_column.spills.set(pos.y, Some(pos));
-            }
-            self.code_cells.insert(pos, code_cell);
+            })
+            .cloned();
+        if old.is_some() {
+            self.code_cells
+                .retain(|(code_cell_pos, _)| *code_cell_pos != pos);
         }
+        if let Some(code_cell) = code_cell {
+            self.code_cells.push((pos, code_cell));
+        }
+        // }
         old
     }
 
     /// Returns a code cell value.
     pub fn get_code_cell(&self, pos: Pos) -> Option<&CodeCellValue> {
-        self.code_cells.get(&pos)
-    }
-
-    pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
-        let column = self.get_column(pos.x)?;
-        let code_cell_pos = column.spills.get(pos.y)?;
-        let code_cell = self.code_cells.get(&code_cell_pos)?;
-        code_cell.get_output_value(
-            (pos.x - code_cell_pos.x) as u32,
-            (pos.y - code_cell_pos.y) as u32,
-        )
-    }
-
-    /// Get the spill location for a given cell_ref.  Note that a spill is
-    /// also stored as as cell_ref.
-    pub fn get_spill(&self, pos: Pos) -> Option<Pos> {
-        let column = self.get_column(pos.x)?;
-        column.spills.get(pos.y)
-    }
-
-    /// Returns an iterator over all locations containing code cells that may
-    /// spill into `region`.
-    pub fn iter_code_cells_in_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
-        let code_cell_positions: HashSet<Pos> = self
-            .columns
-            .range(rect.x_range())
-            .flat_map(|(_x, column)| {
-                column
-                    .spills
-                    .blocks_covering_range(rect.y_range())
-                    .map(|block| block.content().value)
+        self.code_cells
+            .iter()
+            .find_map(|(code_cell_pos, code_cell_value)| {
+                if *code_cell_pos == pos {
+                    Some(code_cell_value)
+                } else {
+                    None
+                }
             })
-            .collect();
-
-        code_cell_positions.into_iter()
     }
 
-    pub fn iter_code_cells_locations(&self) -> impl '_ + Iterator<Item = Pos> {
-        self.code_cells.keys().copied()
+    /// Returns the value for a cell checking first column.values and then code_cell output.
+    /// Note: spill error will return a CellValue::Blank to ensure calculations can continue.
+    pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
+        self.code_cells
+            .iter()
+            .find_map(|(code_cell_pos, code_cell_value)| {
+                let output_rect = code_cell_value.output_rect(*code_cell_pos);
+                if output_rect.contains(pos) {
+                    if code_cell_value.has_spill_error() {
+                        Some(CellValue::Blank)
+                    } else if code_cell_value.get_error().is_some() {
+                        if pos.x - code_cell_pos.x == 0 && pos.y - code_cell_pos.y == 0 {
+                            Some(CellValue::Blank)
+                        } else {
+                            None
+                        }
+                    } else {
+                        code_cell_value.get_output_value(
+                            (pos.x - code_cell_pos.x) as u32,
+                            (pos.y - code_cell_pos.y) as u32,
+                        )
+                    }
+                } else {
+                    None
+                }
+            })
+    }
+
+    pub fn iter_code_output_in_rect(
+        &self,
+        rect: Rect,
+    ) -> impl Iterator<Item = (Rect, &CodeCellValue)> {
+        self.code_cells
+            .iter()
+            .filter_map(move |(pos, code_cell_value)| {
+                let output_rect = code_cell_value.output_rect(*pos);
+                output_rect
+                    .intersects(rect)
+                    .then_some((output_rect, code_cell_value))
+            })
     }
 
     /// returns the render-size for a html-like cell
@@ -111,34 +95,37 @@ impl Sheet {
         column.render_size.get(pos.y)
     }
 
-    /// Checks if the deletion of a cell or a code_cell released a spill error;
-    /// sorted by earliest last_modified.
-    /// Returns the cell_ref and the code_cell_value if it did
-    pub fn spill_error_released(&self, pos: Pos) -> Option<(Pos, CodeCellValue)> {
+    /// Returns whether a rect has a code_cell anchor (ie, the cell with the code) of any code_cell within it.
+    /// This needs to be checked regardless of ordering.
+    pub fn has_code_cell_anchor_in_rect(&self, rect: &Rect, skip: Pos) -> bool {
         self.code_cells
             .iter()
-            .filter(|(_, code_cell)| code_cell.has_spill_error())
-            .sorted_by_key(|a| &a.1.last_modified)
-            .filter_map(|(code_cell_pos, code_cell)| {
-                let array_size = code_cell.output_size();
-                let rect = Rect::from_pos_and_size(pos, array_size);
-                rect.contains(pos)
-                    .then(|| (*code_cell_pos, code_cell.to_owned()))
-            })
-            .find(|(cell_ref, code_cell)| {
-                let array_size = code_cell.output_size();
-                if array_size.len() > 1 {
-                    !self.is_ok_to_spill_in(*cell_ref, array_size)
-                } else {
-                    false
-                }
-            })
+            .any(|(pos, _)| *pos != skip && rect.contains(*pos))
+    }
+
+    /// Returns whether a rect overlaps the output of a code cell.
+    /// It will only check code_cells until it finds the code_cell_search since later code_cells don't cause spills in earlier ones.
+    pub fn has_code_cell_in_rect(&self, rect: &Rect, skip: Pos) -> bool {
+        self.code_cells.iter().any(|(pos, code_cell)| {
+            if skip == *pos {
+                false
+            } else {
+                code_cell.output_rect(*pos).intersects(*rect)
+            }
+        })
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{controller::GridController, grid::RenderSize, SheetPos};
+    use bigdecimal::BigDecimal;
+
+    use super::*;
+    use crate::{
+        controller::GridController,
+        grid::{CodeCellLanguage, RenderSize},
+        SheetPos, Value,
+    };
 
     #[test]
     fn test_render_size() {
@@ -169,5 +156,56 @@ mod test {
             })
         );
         assert_eq!(sheet.render_size(Pos { x: 1, y: 1 }), None);
+    }
+
+    #[test]
+    fn test_set_code_cell_value() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.grid_mut().try_sheet_mut_from_id(sheet_id).unwrap();
+        let code_cell_value = CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code_string: "1".to_string(),
+            formatted_code_string: None,
+            output: None,
+            last_modified: "".to_string(),
+        };
+        let old = sheet.set_code_cell(Pos { x: 0, y: 0 }, Some(code_cell_value.clone()));
+        assert_eq!(
+            sheet.get_code_cell(Pos { x: 0, y: 0 }),
+            Some(&code_cell_value)
+        );
+        assert_eq!(old, None);
+        let old = sheet.set_code_cell(Pos { x: 0, y: 0 }, None);
+        assert_eq!(old, Some(code_cell_value));
+        assert_eq!(sheet.get_code_cell(Pos { x: 0, y: 0 }), None);
+    }
+
+    #[test]
+    fn test_get_code_cell_value() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.grid_mut().try_sheet_mut_from_id(sheet_id).unwrap();
+        let code_cell_value = CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code_string: "1 + 1".to_string(),
+            formatted_code_string: None,
+            output: Some(crate::grid::CodeCellRunOutput {
+                std_out: None,
+                std_err: None,
+                result: crate::grid::CodeCellRunResult::Ok {
+                    output_value: Value::Single(CellValue::Number(BigDecimal::from(2))),
+                    cells_accessed: std::collections::HashSet::new(),
+                },
+                spill: false,
+            }),
+            last_modified: "".to_string(),
+        };
+        sheet.set_code_cell(Pos { x: 0, y: 0 }, Some(code_cell_value.clone()));
+        assert_eq!(
+            sheet.get_code_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        assert_eq!(sheet.get_code_cell_value(Pos { x: 1, y: 1 }), None);
     }
 }

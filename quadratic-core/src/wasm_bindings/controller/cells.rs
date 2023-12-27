@@ -181,7 +181,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(&self.set_cell_code(
+        Ok(serde_wasm_bindgen::to_value(&self.set_code_cell(
             pos.to_sheet_pos(sheet_id),
             language,
             code_string,

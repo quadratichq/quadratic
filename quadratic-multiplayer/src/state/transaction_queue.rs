@@ -6,21 +6,21 @@ use uuid::Uuid;
 use crate::error::{MpError, Result};
 
 #[derive(Serialize, Debug, PartialEq, Clone)]
-pub(crate) struct Transaction {
+pub(crate) struct TransactionServer {
     pub(crate) id: Uuid,
     pub(crate) file_id: Uuid,
     pub(crate) operations: Vec<Operation>,
     pub(crate) sequence_num: u64,
 }
 
-impl Transaction {
+impl TransactionServer {
     pub(crate) fn new(
         id: Uuid,
         file_id: Uuid,
         operations: Vec<Operation>,
         sequence_num: u64,
     ) -> Self {
-        Transaction {
+        TransactionServer {
             id,
             file_id,
             operations,
@@ -29,7 +29,7 @@ impl Transaction {
     }
 }
 
-pub(crate) type Queue = HashMap<Uuid, (u64, Vec<Transaction>)>;
+pub(crate) type Queue = HashMap<Uuid, (u64, Vec<TransactionServer>)>;
 
 #[derive(Debug, Default)]
 pub(crate) struct TransactionQueue {
@@ -55,7 +55,7 @@ impl TransactionQueue {
 
         *sequence_num += 1;
 
-        let transaction = Transaction::new(id, file_id, operations, *sequence_num);
+        let transaction = TransactionServer::new(id, file_id, operations, *sequence_num);
         transactions.push(transaction);
 
         *sequence_num
@@ -93,7 +93,7 @@ impl TransactionQueue {
         )
     }
 
-    pub(crate) fn get_pending(&mut self, file_id: Uuid) -> Result<Vec<Transaction>> {
+    pub(crate) fn get_pending(&mut self, file_id: Uuid) -> Result<Vec<TransactionServer>> {
         let transactions = self
             .pending
             .get(&file_id)
@@ -111,7 +111,7 @@ impl TransactionQueue {
     pub(crate) fn complete_transactions(
         &mut self,
         file_id: Uuid,
-    ) -> Result<(u64, Vec<Transaction>)> {
+    ) -> Result<(u64, Vec<TransactionServer>)> {
         // first, add transactions to the processed queue
         self.shovel_pending(file_id)?;
 
@@ -120,7 +120,7 @@ impl TransactionQueue {
     }
 
     /// Move transactions from the pending queue to the processed queue for a given file
-    pub(crate) fn shovel_pending(&mut self, file_id: Uuid) -> Result<Vec<Transaction>> {
+    pub(crate) fn shovel_pending(&mut self, file_id: Uuid) -> Result<Vec<TransactionServer>> {
         let transactions = self
             .get_pending(file_id)?
             .into_iter()
@@ -144,7 +144,7 @@ impl TransactionQueue {
     /// TODO(ddimaria): if remove transactions is atomic (locked mutex),
     /// then this error condition should never happen, but figure out
     /// what to do in the case that id does.
-    pub(crate) fn drain_pending(&mut self, file_id: Uuid) -> Result<(u64, Vec<Transaction>)> {
+    pub(crate) fn drain_pending(&mut self, file_id: Uuid) -> Result<(u64, Vec<TransactionServer>)> {
         self.pending.remove(&file_id).ok_or_else(|| {
             MpError::TransactionQueue(format!(
                 "Could not remove pending transactions for file_id {file_id}"
@@ -156,7 +156,7 @@ impl TransactionQueue {
         &mut self,
         file_id: Uuid,
         min_sequence_num: u64,
-    ) -> Result<Vec<Transaction>> {
+    ) -> Result<Vec<TransactionServer>> {
         let transactions = self
             .get_pending(file_id)?
             .into_iter()

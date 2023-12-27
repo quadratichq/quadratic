@@ -1,7 +1,5 @@
 use crate::{
-    controller::{
-        execution::TransactionType, transaction_summary::TransactionSummary, GridController,
-    },
+    controller::{transaction_summary::TransactionSummary, GridController},
     grid::SheetId,
 };
 
@@ -13,7 +11,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.set_sheet_name_operations(sheet_id, name);
-        self.set_in_progress_transaction(ops, cursor, false, TransactionType::User)
+        self.start_user_transaction(ops, cursor)
     }
 
     pub fn set_sheet_color(
@@ -23,12 +21,12 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.set_sheet_color_operations(sheet_id, color);
-        self.set_in_progress_transaction(ops, cursor, false, TransactionType::User)
+        self.start_user_transaction(ops, cursor)
     }
 
     pub fn add_sheet(&mut self, cursor: Option<String>) -> TransactionSummary {
         let ops = self.add_sheet_operations();
-        self.set_in_progress_transaction(ops, cursor, false, TransactionType::User)
+        self.start_user_transaction(ops, cursor)
     }
     pub fn delete_sheet(
         &mut self,
@@ -36,7 +34,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.delete_sheet_operations(sheet_id);
-        self.set_in_progress_transaction(ops, cursor, false, TransactionType::User)
+        self.start_user_transaction(ops, cursor)
     }
     pub fn move_sheet(
         &mut self,
@@ -45,7 +43,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.move_sheet_operations(sheet_id, to_before);
-        self.set_in_progress_transaction(ops, cursor, false, TransactionType::User)
+        self.start_user_transaction(ops, cursor)
     }
     pub fn duplicate_sheet(
         &mut self,
@@ -53,7 +51,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.duplicate_sheet_operations(sheet_id);
-        self.set_in_progress_transaction(ops, cursor, false, TransactionType::User)
+        self.start_user_transaction(ops, cursor)
     }
 }
 

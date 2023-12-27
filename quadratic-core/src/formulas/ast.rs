@@ -138,6 +138,7 @@ impl AstNode {
                     return Err(ErrorMsg::ArrayTooBig.with_span(self.span));
                 }
 
+                // todo: this should call a new ctx.get_cells to push a full SheetRect to cells_accessed instead of an array of SheetPos
                 let mut flat_array = smallvec![];
                 // Reuse the same `CellRef` object so that we don't have to
                 // clone `sheet_name.`

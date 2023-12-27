@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::{ArraySize, CellValue, Error, Rect, SheetPos, Value};
+use crate::{ArraySize, CellValue, Error, Pos, Rect, SheetPos, SheetRect, Value};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CodeCellValue {
@@ -31,7 +31,8 @@ impl CodeCellValue {
         }
     }
 
-    // todo: output_size outputs a 1x1 for output == None. That seems wrong
+    /// Returns the size of the output array, or defaults to `_1X1` (since output always includes the code_cell).
+    /// Note: this does not take spill_error into account.
     pub fn output_size(&self) -> ArraySize {
         match self.output.as_ref().and_then(|out| out.output_value()) {
             Some(Value::Array(a)) => a.size(),
@@ -47,18 +48,31 @@ impl CodeCellValue {
         }
     }
 
-    /// returns a Rect for the output of the code cell if it is an array
-    pub fn output_rect(&self) -> Option<Rect> {
-        self.output
-            .is_some()
-            .then(|| Rect::from_pos_and_size((0, 0).into(), self.output_size()))
+    /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
+    /// Note: this returns a 1x1 if there is a spill_error.
+    pub fn output_sheet_rect(&self, sheet_pos: SheetPos, ignore_spill: bool) -> SheetRect {
+        if !ignore_spill && self.has_spill_error() {
+            SheetRect::from_sheet_pos_and_size(sheet_pos, ArraySize::_1X1)
+        } else {
+            SheetRect::from_sheet_pos_and_size(sheet_pos, self.output_size())
+        }
+    }
+
+    /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
+    /// Note: this returns a 1x1 if there is a spill_error.
+    pub fn output_rect(&self, pos: Pos) -> Rect {
+        if self.has_spill_error() {
+            Rect::from_pos_and_size(pos, ArraySize::_1X1)
+        } else {
+            Rect::from_pos_and_size(pos, self.output_size())
+        }
     }
 
     pub fn has_spill_error(&self) -> bool {
         self.output.as_ref().map(|out| out.spill).unwrap_or(false)
     }
 
-    pub fn cells_accessed_copy(&self) -> Option<HashSet<SheetPos>> {
+    pub fn cells_accessed_copy(&self) -> Option<HashSet<SheetRect>> {
         self.output.as_ref()?.cells_accessed().cloned()
     }
 
@@ -99,7 +113,7 @@ impl CodeCellRunOutput {
         self.result.output_value()
     }
 
-    pub fn cells_accessed(&self) -> Option<&HashSet<SheetPos>> {
+    pub fn cells_accessed(&self) -> Option<&HashSet<SheetRect>> {
         match &self.result {
             CodeCellRunResult::Ok { cells_accessed, .. } => Some(cells_accessed),
             CodeCellRunResult::Err { .. } => None,
@@ -112,7 +126,7 @@ impl CodeCellRunOutput {
 pub enum CodeCellRunResult {
     Ok {
         output_value: Value,
-        cells_accessed: HashSet<SheetPos>,
+        cells_accessed: HashSet<SheetRect>,
     },
     Err {
         error: Error,
@@ -139,10 +153,11 @@ impl CodeCellRunResult {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{Array, Pos};
+    use crate::{grid::SheetId, Array};
 
     #[test]
     fn test_output_size() {
+        let sheet_id = SheetId::new();
         let code_cell = CodeCellValue {
             language: super::CodeCellLanguage::Python,
             code_string: "1".to_string(),
@@ -151,7 +166,17 @@ mod test {
             output: None,
         };
         assert_eq!(code_cell.output_size(), super::ArraySize::_1X1);
-        assert_eq!(code_cell.output_rect(), None);
+        assert_eq!(
+            code_cell.output_sheet_rect(
+                SheetPos {
+                    x: -1,
+                    y: -2,
+                    sheet_id
+                },
+                false
+            ),
+            SheetRect::from_numbers(-1, -2, 1, 1, sheet_id)
+        );
 
         let code_cell = CodeCellValue {
             language: super::CodeCellLanguage::Python,
@@ -173,8 +198,61 @@ mod test {
         assert_eq!(code_cell.output_size().w.get(), 10);
         assert_eq!(code_cell.output_size().h.get(), 11);
         assert_eq!(
-            code_cell.output_rect(),
-            Some(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 9, y: 10 }))
+            code_cell.output_sheet_rect(
+                SheetPos {
+                    x: 1,
+                    y: 2,
+                    sheet_id
+                },
+                false
+            ),
+            SheetRect::from_numbers(1, 2, 10, 11, sheet_id)
+        );
+    }
+
+    #[test]
+    fn test_output_sheet_rect_spill_error() {
+        let sheet_id = SheetId::new();
+        let code_cell = CodeCellValue {
+            language: super::CodeCellLanguage::Python,
+            code_string: "1".to_string(),
+            formatted_code_string: None,
+            last_modified: "1".to_string(),
+            output: Some(CodeCellRunOutput {
+                std_out: None,
+                std_err: None,
+                result: super::CodeCellRunResult::Ok {
+                    output_value: crate::Value::Array(Array::new_empty(
+                        ArraySize::new(10, 11).unwrap(),
+                    )),
+                    cells_accessed: HashSet::new(),
+                },
+                spill: true,
+            }),
+        };
+        assert_eq!(code_cell.output_size().w.get(), 10);
+        assert_eq!(code_cell.output_size().h.get(), 11);
+        assert_eq!(
+            code_cell.output_sheet_rect(
+                SheetPos {
+                    x: 1,
+                    y: 2,
+                    sheet_id
+                },
+                false
+            ),
+            SheetRect::from_numbers(1, 2, 1, 1, sheet_id)
+        );
+        assert_eq!(
+            code_cell.output_sheet_rect(
+                SheetPos {
+                    x: 1,
+                    y: 2,
+                    sheet_id
+                },
+                true
+            ),
+            SheetRect::from_numbers(1, 2, 10, 11, sheet_id)
         );
     }
 }

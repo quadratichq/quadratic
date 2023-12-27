@@ -12,7 +12,7 @@ pub enum Operation {
         sheet_rect: SheetRect,
         values: Array,
     },
-    SetCellCode {
+    SetCodeCell {
         sheet_pos: SheetPos,
         code_cell_value: Option<CodeCellValue>,
     },
@@ -20,15 +20,17 @@ pub enum Operation {
         sheet_rect: SheetRect,
         attr: CellFmtArray,
     },
+    SetBorders {
+        sheet_rect: SheetRect,
+        borders: SheetBorders,
+    },
+
+    // Sheet metadata operations
     AddSheet {
         sheet: Sheet,
     },
     DeleteSheet {
         sheet_id: SheetId,
-    },
-    SetBorders {
-        sheet_rect: SheetRect,
-        borders: SheetBorders,
     },
     SetSheetName {
         sheet_id: SheetId,
@@ -42,6 +44,8 @@ pub enum Operation {
         target: SheetId,
         order: String,
     },
+
+    // Sheet offsets operations
     ResizeColumn {
         sheet_id: SheetId,
         column: i64,
@@ -60,7 +64,7 @@ impl fmt::Display for Operation {
             Operation::SetCellValues { values, .. } => {
                 write!(fmt, "SetCellValues {{ value count: {} }}", values.size())
             }
-            Operation::SetCellCode {
+            Operation::SetCodeCell {
                 code_cell_value, ..
             } => write!(
                 fmt,

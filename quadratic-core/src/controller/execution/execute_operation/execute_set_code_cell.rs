@@ -1,52 +1,139 @@
-use crate::{controller::GridController, SheetPos};
+use crate::{
+    controller::{operations::operation::Operation, GridController},
+    grid::CodeCellLanguage,
+};
 
 impl GridController {
-    /// Checks whether a spill exists
-    pub fn check_spill(&mut self, sheet_pos: SheetPos) {
-        let sheet_id = sheet_pos.sheet_id;
-        // check if the addition of a cell causes a spill error
-        let sheet = self.grid.sheet_from_id(sheet_id);
-        if let Some(code_cell_pos) = sheet.get_spill(sheet_pos.into()) {
-            if code_cell_pos != sheet_pos.into() {
-                if let Some(code_cell) = sheet.get_code_cell(code_cell_pos) {
-                    if !code_cell.has_spill_error() {
-                        self.update_code_cell_value(
-                            code_cell_pos.to_sheet_pos(sheet_id),
-                            Some(code_cell.clone()),
-                        );
+    pub(super) fn execute_set_code_cell(&mut self, op: &Operation, is_user: bool, is_undo: bool) {
+        match op.clone() {
+            Operation::SetCodeCell {
+                sheet_pos,
+                code_cell_value,
+            } => {
+                let sheet_id = sheet_pos.sheet_id;
+                let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                if is_user {
+                    self.reverse_operations.insert(
+                        0,
+                        Operation::SetCodeCell {
+                            sheet_pos,
+                            code_cell_value: sheet.get_code_cell(sheet_pos.into()).cloned(),
+                        },
+                    );
+                    let old_code_cell =
+                        sheet.set_code_cell(sheet_pos.into(), code_cell_value.clone());
+                    if let Some(code_cell_value) = &code_cell_value {
+                        match code_cell_value.language {
+                            CodeCellLanguage::Python => {
+                                self.run_python(sheet_pos, code_cell_value);
+                            }
+                            CodeCellLanguage::Formula => {
+                                self.run_formula(sheet_pos, code_cell_value);
+                            }
+                            _ => {
+                                unreachable!("Unsupported language in RunCodeCell");
+                            }
+                        }
+
+                        // only capture operations if not waiting for async, otherwise wait until calculation is complete
+                        if self.waiting_for_async.is_none() {
+                            self.finalize_code_cell(sheet_pos, old_code_cell);
+                        }
                     }
+                } else if is_undo {
+                    self.reverse_operations.insert(
+                        0,
+                        Operation::SetCodeCell {
+                            sheet_pos,
+                            code_cell_value: sheet.get_code_cell(sheet_pos.into()).cloned(),
+                        },
+                    );
+                    sheet.set_code_cell(sheet_pos.into(), code_cell_value);
+                    self.forward_operations.push(op.clone());
+                } else {
+                    sheet.set_code_cell(sheet_pos.into(), code_cell_value);
                 }
-            }
-        }
-    }
 
-    /// sets a spill error for a code_cell
-    pub fn set_spill_error(&mut self, sheet_pos: SheetPos) {
-        let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
-        if let Some(code_cell) = sheet.get_code_cell(sheet_pos.into()) {
-            if !code_cell.has_spill_error() {
-                self.update_code_cell_value(sheet_pos, Some(code_cell.clone()));
+                let sheet_rect = &sheet_pos.into();
+                self.sheets_with_dirty_bounds.insert(sheet_id);
+                self.summary.generate_thumbnail =
+                    self.summary.generate_thumbnail || self.thumbnail_dirty_sheet_rect(sheet_rect);
+                self.summary.code_cells_modified.insert(sheet_id);
+                self.add_cell_sheets_modified_rect(sheet_rect);
             }
-        }
-    }
-
-    /// update the code cell value if the deletion of a cell released a spill error
-    pub fn update_code_cell_value_if_spill_error_released(&mut self, sheet_pos: SheetPos) {
-        let sheet_id = sheet_pos.sheet_id;
-        let sheet = self.grid.sheet_from_id(sheet_id);
-        if let Some((spill_sheet_pos, code_cell)) = sheet.spill_error_released(sheet_pos.into()) {
-            self.update_code_cell_value(spill_sheet_pos.to_sheet_pos(sheet_id), Some(code_cell));
+            _ => unreachable!("Expected Operation::SetCodeCell in execute_set_code_cell"),
         }
     }
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use crate::{
         controller::GridController,
         grid::{js_types::JsRenderCell, CellAlign, CodeCellLanguage},
-        Pos, Rect, SheetPos,
+        CellValue, Pos, Rect, SheetPos,
     };
+
+    #[test]
+    fn test_spilled_output_over_normal_cell() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.grid.sheet_mut_from_id(sheet_id);
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text("one".into()));
+        sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Text("two".into()));
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 0,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "A0:A1".to_string(),
+            None,
+        );
+        let sheet = gc.grid.sheet_from_id(sheet_id);
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Text("one".into()))
+        );
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 1 }),
+            Some(CellValue::Text("two".into()))
+        );
+        assert_eq!(sheet.get_cell_value(Pos { x: 0, y: 2 }), None);
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 1, y: 0 }),
+            Some(CellValue::Text("one".into()))
+        );
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Text("two".into()))
+        );
+
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            "cause spill".to_string(),
+            None,
+        );
+
+        let sheet = gc.grid.sheet_from_id(sheet_id);
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Text("cause spill".into()))
+        );
+
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 1, y: 0 }),
+            Some(CellValue::Blank)
+        );
+
+        let code_cell = sheet.get_code_cell(Pos { x: 1, y: 0 });
+        assert!(code_cell.unwrap().has_spill_error());
+    }
 
     fn output_spill_error(x: i64, y: i64) -> Vec<JsRenderCell> {
         vec![JsRenderCell {
@@ -125,7 +212,7 @@ mod test {
             "hello".into(),
             None,
         );
-        gc.set_cell_code(
+        gc.set_code_cell(
             SheetPos {
                 x: 0,
                 y: 0,
@@ -136,10 +223,16 @@ mod test {
             None,
         );
         let sheet = gc.grid.sheet_from_id(sheet_id);
+
+        assert!(sheet
+            .get_code_cell(Pos { x: 0, y: 0 })
+            .unwrap()
+            .has_spill_error());
+
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 0 }));
 
         // should be a spill caused by 0,1
-        assert_eq!(render_cells, output_spill_error(0, 0),);
+        assert_eq!(render_cells, output_spill_error(0, 0));
 
         // remove 'hello' that caused spill
         gc.set_cell_value(
@@ -153,6 +246,11 @@ mod test {
         );
 
         let sheet = gc.grid.sheet_from_id(sheet_id);
+        assert!(!sheet
+            .get_code_cell(Pos { x: 0, y: 0 })
+            .unwrap()
+            .has_spill_error());
+
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 0 }));
 
         // should be B0: "1" since spill was removed
@@ -197,7 +295,7 @@ mod test {
         );
 
         // value to cause the spill
-        gc.set_cell_code(
+        gc.set_code_cell(
             SheetPos {
                 x: 0,
                 y: 0,
@@ -217,7 +315,7 @@ mod test {
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 1 }));
         assert_eq!(render_cells, output_number(0, 1, "2", None),);
 
-        gc.set_cell_code(
+        gc.set_code_cell(
             SheetPos {
                 x: 0,
                 y: 1,
@@ -323,7 +421,7 @@ mod test {
         );
 
         // copies values to copy to 10,10
-        gc.set_cell_code(
+        gc.set_code_cell(
             SheetPos {
                 x: 10,
                 y: 10,
@@ -335,7 +433,7 @@ mod test {
         );
 
         // output that is spilled
-        gc.set_cell_code(
+        gc.set_code_cell(
             SheetPos {
                 x: 11,
                 y: 9,

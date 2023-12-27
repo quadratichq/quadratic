@@ -10,14 +10,17 @@ import { authClient } from '@/auth';
 import { MULTIPLAYER_COLORS } from './multiplayerCursor/multiplayerColors';
 import {
   Heartbeat,
-  MessageTransaction,
   MessageUserUpdate,
   MultiplayerUser,
+  ReceiveCurrentTransaction,
+  ReceiveEnterRoom,
   ReceiveMessages,
   ReceiveRoom,
+  ReceiveTransaction,
   ReceiveTransactions,
   SendEnterRoom,
   SendGetTransactions,
+  SendTransaction,
 } from './multiplayerTypes';
 
 const UPDATE_TIME = 1000 / 30;
@@ -254,11 +257,9 @@ export class Multiplayer {
     userUpdate.viewport = viewport;
   }
 
-  async sendTransaction(operations: string) {
+  async sendTransaction(id: string, operations: string) {
     await this.init();
-    // TODO(ddimaria): this ID should be stored somewhere
-    let id = uuid();
-    const message: MessageTransaction = {
+    const message: SendTransaction = {
       type: 'Transaction',
       id,
       session_id: this.sessionId,
@@ -407,18 +408,30 @@ export class Multiplayer {
     }
   }
 
-  private receiveTransaction(data: MessageTransaction) {
-    // todo: this check should not be needed (eventually)
-    if (data.session_id !== this.sessionId) {
-      if (data.file_id !== this.room) {
-        throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
-      }
-      grid.multiplayerTransaction(data.operations);
+  private receiveTransaction(data: ReceiveTransaction) {
+    if (data.file_id !== this.room) {
+      throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
     }
+    grid.multiplayerTransaction(data.id, data.sequence_num, data.operations);
   }
 
   private receiveTransactions(data: ReceiveTransactions) {
     console.log(data.transactions);
+  }
+
+  // todo: this will be incorrect when we have a real saving server. instead, we need to get the sequence_num based on the loaded file, not where the server is
+  private receiveEnterRoom(data: ReceiveEnterRoom) {
+    if (data.file_id !== this.room) {
+      throw new Error("Expected file_id to match room before receiving a message of type 'EnterRoom'");
+    }
+    if (debugShowMultiplayer) {
+      console.log(`[Multiplayer]: Current transaction number set to ${data.sequence_num}`);
+      grid.setMultiplayerSequenceNum(data.sequence_num);
+    }
+  }
+
+  private receiveCurrentTransaction(data: ReceiveCurrentTransaction) {
+    throw new Error('receive current transaction not handled yet');
   }
 
   receiveMessage = (e: { data: string }) => {
@@ -433,6 +446,10 @@ export class Multiplayer {
       this.receiveTransaction(data);
     } else if (type === 'Transactions') {
       this.receiveTransactions(data);
+    } else if (type === 'EnterRoom') {
+      this.receiveEnterRoom(data);
+    } else if (type === 'CurrentTransaction') {
+      this.receiveCurrentTransaction(data);
     } else if (type !== 'Empty') {
       console.warn(`Unknown message type: ${type}`);
     }

@@ -27,6 +27,13 @@ impl Sheet {
                 self.format_bounds.add(Pos { x, y });
             }
         }
+        self.code_cells.iter().for_each(|(pos, code_cell_value)| {
+            let output_rect = code_cell_value.output_rect(*pos);
+            self.data_bounds.add(output_rect.min);
+            self.data_bounds.add(output_rect.max);
+            self.format_bounds.add(output_rect.min);
+            self.format_bounds.add(output_rect.max);
+        });
     }
 
     /// Returns whether the sheet is completely empty.

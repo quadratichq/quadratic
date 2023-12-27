@@ -1,6 +1,4 @@
-use crate::controller::{
-    execution::TransactionType, transaction_summary::TransactionSummary, GridController,
-};
+use crate::controller::{transaction_summary::TransactionSummary, GridController};
 use crate::{grid::SheetId, Pos};
 use anyhow::Result;
 
@@ -17,7 +15,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
         let ops = self.import_csv_operations(sheet_id, file, file_name, insert_at)?;
-        Ok(self.set_in_progress_transaction(ops, cursor, true, TransactionType::User))
+        Ok(self.start_user_transaction(ops, cursor))
     }
 }
 

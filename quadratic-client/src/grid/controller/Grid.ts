@@ -141,8 +141,8 @@ export class Grid {
       window.dispatchEvent(new CustomEvent('transaction-complete'));
     }
 
-    if (summary.forward_operations) {
-      multiplayer.sendTransaction(summary.forward_operations);
+    if (summary.operations) {
+      multiplayer.sendTransaction(summary.transaction_id!, summary.operations);
     }
     pixiApp.setViewportDirty();
   }
@@ -748,9 +748,18 @@ export class Grid {
     );
   }
 
-  multiplayerTransaction(transaction: string) {
-    const summary = this.gridController.multiplayerTransaction(transaction);
+  //#endregion
+
+  //#region Multiplayer
+  //-----------------
+
+  multiplayerTransaction(transactionId: string, sequenceNum: number, operations: string) {
+    const summary = this.gridController.multiplayerTransaction(transactionId, sequenceNum, operations);
     this.transactionResponse(summary);
+  }
+
+  setMultiplayerSequenceNum(sequenceNum: number) {
+    this.gridController.setMultiplayerSequenceNum(sequenceNum);
   }
 
   //#endregion

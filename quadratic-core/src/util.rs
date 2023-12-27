@@ -36,38 +36,6 @@ pub(crate) mod btreemap_serde {
     }
 }
 
-pub(crate) mod hashmap_serde {
-    use std::collections::HashMap;
-    use std::hash::Hash;
-
-    use serde::ser::SerializeMap;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-    pub fn serialize<S: Serializer, K: Serialize, V: Serialize>(
-        map: &HashMap<K, V>,
-        s: S,
-    ) -> Result<S::Ok, S::Error> {
-        let mut m = s.serialize_map(Some(map.len()))?;
-        for (k, v) in map {
-            m.serialize_entry(&serde_json::to_string(k).unwrap(), v)?;
-        }
-        m.end()
-    }
-    pub fn deserialize<
-        'de,
-        D: Deserializer<'de>,
-        K: for<'k> Deserialize<'k> + Eq + Hash,
-        V: Deserialize<'de>,
-    >(
-        d: D,
-    ) -> Result<HashMap<K, V>, D::Error> {
-        Ok(HashMap::<String, V>::deserialize(d)?
-            .into_iter()
-            .map(|(k, v)| (serde_json::from_str(&k).unwrap(), v))
-            .collect())
-    }
-}
-
 /// Recursively evaluates an expression, mimicking JavaScript syntax. Assumes
 /// that `?` can throw an error of type `JsValue`.
 #[cfg(feature = "js")]
