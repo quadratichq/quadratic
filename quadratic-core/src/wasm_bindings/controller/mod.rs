@@ -131,6 +131,11 @@ impl GridController {
         self.last_sequence_num = sequence_num as u64;
     }
 
+    #[wasm_bindgen(js_name = "receiveSequenceNum")]
+    pub fn js_receive_sequence_num(&mut self, sequence_num: u32) {
+        self.receive_sequence_num(sequence_num as u64);
+    }
+
     /// Populates a portion of a sheet with random float values.
     ///
     /// Returns a [`TransactionSummary`].

@@ -98,6 +98,14 @@ impl GridController {
         summary.save = false;
         summary
     }
+
+    /// Server sends us the latest sequence_num to ensure we're in sync
+    pub fn receive_sequence_num(&mut self, sequence_num: u64) {
+        if sequence_num != self.last_sequence_num {
+            // Rust is out of sync with the server. Need to request transactions
+            crate::util::dbgjs("Rust is out of sync with the server. Requesting transactions.")
+        }
+    }
 }
 
 #[cfg(test)]

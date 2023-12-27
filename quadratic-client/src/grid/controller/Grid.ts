@@ -762,6 +762,10 @@ export class Grid {
     this.gridController.setMultiplayerSequenceNum(sequenceNum);
   }
 
+  receiveSequenceNum(sequenceNum: number) {
+    this.gridController.receiveSequenceNum(sequenceNum);
+  }
+
   //#endregion
 }
 

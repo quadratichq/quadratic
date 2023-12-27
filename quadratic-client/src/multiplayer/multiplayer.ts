@@ -431,7 +431,7 @@ export class Multiplayer {
   }
 
   private receiveCurrentTransaction(data: ReceiveCurrentTransaction) {
-    throw new Error('receive current transaction not handled yet');
+    grid.receiveSequenceNum(data.sequence_num);
   }
 
   receiveMessage = (e: { data: string }) => {
