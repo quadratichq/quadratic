@@ -1,10 +1,11 @@
-use uuid::Uuid;
-
+use super::TransactionType;
 use crate::controller::{
     operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
 };
+use chrono::{Duration, Utc};
+use uuid::Uuid;
 
-use super::TransactionType;
+const SECONDS_TO_WAIT_FOR_TRANSACTIONS: i64 = 10;
 
 impl GridController {
     pub fn received_transaction(
@@ -47,6 +48,27 @@ impl GridController {
         self.start_transaction(operations, None, TransactionType::Multiplayer);
     }
 
+    /// Catches up to the server's sequence_num by requesting transactions (via quadratic-client by signalling with TransactionSummary)
+    fn handle_out_of_order_transactions(&mut self) -> TransactionSummary {
+        let now = Utc::now();
+        if match self.last_request_transaction_time {
+            None => true,
+            Some(last_request_transaction_time) => {
+                last_request_transaction_time
+                    .checked_add_signed(Duration::seconds(SECONDS_TO_WAIT_FOR_TRANSACTIONS))
+                    .unwrap()
+                    < now
+            }
+        } {
+            self.last_request_transaction_time = Some(now);
+            let mut summary = TransactionSummary::default();
+            summary.request_transactions = Some(self.last_sequence_num + 1);
+            summary
+        } else {
+            TransactionSummary::default()
+        }
+    }
+
     /// Used by the client to ensure transactions are applied in order
     pub fn client_apply_transaction(
         &mut self,
@@ -61,6 +83,12 @@ impl GridController {
             .iter_mut()
             .enumerate()
             .find(|(_, unsaved_transaction)| unsaved_transaction.0.id == transaction_id);
+        if sequence_num != self.last_sequence_num + 1 {
+            // Rust is out of sync with the server. Need to request transactions
+            crate::util::dbgjs(format!("Rust is out of sync with the server: received {} but expected {}. Requesting transactions.", sequence_num, self.last_sequence_num));
+            return self.handle_out_of_order_transactions();
+        }
+
         if let Some((index, _)) = existing {
             // if transaction is the top of the unsaved_transactions, then only need to set the sequence_num
             if index as u64 == sequence_num - self.last_sequence_num - 1 {
@@ -70,14 +98,13 @@ impl GridController {
                 // nothing to render as we've already rendered this transaction
                 return TransactionSummary::default();
             } else {
+                // todo: not sure this is necessary...
                 crate::util::dbgjs(format!(
                     "Rust panic: out of order. Received {}, expected {}",
                     sequence_num - self.last_sequence_num - 1,
                     index
                 ));
-                todo!(
-                    "Handle received transactions that are out of order with current transaction."
-                );
+                return self.handle_out_of_order_transactions();
             }
         }
         if !self.unsaved_transactions.is_empty() {

@@ -69,6 +69,9 @@ pub struct TransactionSummary {
 
     // changes to html output
     pub html: HashSet<SheetId>,
+
+    // indicates the client should request transactions from the server starting from this sequence_num
+    pub request_transactions: Option<u64>,
 }
 
 impl TransactionSummary {

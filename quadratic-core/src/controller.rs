@@ -6,6 +6,7 @@ use crate::{
     grid::{CodeCellLanguage, Grid, SheetId},
     SheetPos, SheetRect,
 };
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use uuid::Uuid;
@@ -48,8 +49,7 @@ pub struct GridController {
     incomplete_transactions: Vec<Transaction>,
 
     // client requested transactions from the server to catch up to sequence_num
-    // todo: better to use a js timestamp library than String
-    last_request_transaction_time: Option<String>,
+    last_request_transaction_time: Option<DateTime<Utc>>,
 
     // transaction in progress information
     transaction_in_progress: bool,
