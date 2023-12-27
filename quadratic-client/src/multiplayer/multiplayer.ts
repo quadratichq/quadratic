@@ -436,7 +436,9 @@ export class Multiplayer {
 
   receiveMessage = (e: { data: string }) => {
     const data = JSON.parse(e.data) as ReceiveMessages;
-    console.log(`[Multiplayer] Received receiveMessage ${data.type}`);
+    if (debugShowMultiplayer) {
+      console.log(`[Multiplayer] Received receiveMessage ${data.type}`);
+    }
     const { type } = data;
     if (type === 'UsersInRoom') {
       this.receiveUsersInRoom(data);

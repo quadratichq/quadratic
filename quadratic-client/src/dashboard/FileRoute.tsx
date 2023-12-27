@@ -36,7 +36,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   // Fetch the file & its sharing data
   const [data, sharing] = await Promise.all([apiClient.getFile(uuid), apiClient.getFileSharing(uuid)]);
-  console.log(data);
+
   // Get file contents from S3
   const res = await fetch(data.file.lastCheckpointDataUrl);
 
