@@ -138,7 +138,6 @@ export class Grid {
       sheets.sheet.cursor.load(cursor);
     }
     if (summary.save) {
-      this.dirty = true;
       window.dispatchEvent(new CustomEvent('transaction-complete'));
     }
 
