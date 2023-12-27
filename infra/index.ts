@@ -4,7 +4,7 @@
 import {
   multiplayerInstanceDns,
   multiplayerPublicDns,
-} from "./multiplayer/multiplayer";
+} from "./multiplayer/multiplayer-service";
 
 // Global exports
 export { multiplayerInstanceDns, multiplayerPublicDns };

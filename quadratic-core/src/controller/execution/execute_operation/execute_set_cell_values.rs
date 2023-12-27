@@ -44,6 +44,10 @@ impl GridController {
                                                 code_cell_value: Some(code_cell.clone()),
                                             },
                                         );
+                                        self.forward_operations.push(Operation::SetCodeCell {
+                                            sheet_pos: pos.to_sheet_pos(sheet.id),
+                                            code_cell_value: None,
+                                        });
                                         code_cell_removed = true;
                                         false
                                     } else {
@@ -163,5 +167,39 @@ mod tests {
             None,
         );
         assert_eq!(summary.cell_sheets_modified.len(), 0);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use bigdecimal::BigDecimal;
+
+    use crate::{grid::CodeCellLanguage, SheetPos};
+
+    use super::*;
+    #[test]
+    fn test_set_cell_values_code_cell_remove() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Formula,
+            "1 + 1".to_string(),
+            None,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).get_cell_value(sheet_pos.into()),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        gc.set_cell_value(sheet_pos, "".to_string(), None);
+        assert_eq!(gc.sheet(sheet_id).get_cell_value(sheet_pos.into()), None);
+
+        // should be one set_cell_values and one set_code_cell
+        assert_eq!(gc.forward_operations.len(), 2);
     }
 }

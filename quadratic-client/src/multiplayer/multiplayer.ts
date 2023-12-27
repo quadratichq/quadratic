@@ -412,6 +412,7 @@ export class Multiplayer {
     if (data.file_id !== this.room) {
       throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
     }
+    console.log(data.operations);
     grid.multiplayerTransaction(data.id, data.sequence_num, data.operations);
   }
 
