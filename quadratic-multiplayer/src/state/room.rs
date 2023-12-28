@@ -29,6 +29,11 @@ impl Room {
             sequence_num,
         }
     }
+
+    pub fn increment_sequence_num(&mut self) -> u64 {
+        self.sequence_num += 1;
+        self.sequence_num
+    }
 }
 
 impl State {

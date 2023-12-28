@@ -60,6 +60,9 @@ pub(crate) enum MpError {
 
     #[error("User does not exist: {0}")]
     UserDoesNotExist(String),
+
+    #[error("Sequence number mismatch")]
+    SequenceNumberMismatch,
 }
 
 impl From<SharedError> for MpError {

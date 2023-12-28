@@ -144,7 +144,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn broadcast_sequence_num() {
+    async fn test_broadcast_sequence_num() {
         let state = new_arc_state().await;
         let file_id = Uuid::new_v4();
         let mut grid = grid_setup();
@@ -155,7 +155,7 @@ mod tests {
             transaction_id_1,
             file_id,
             vec![operations_1.clone()],
-            0,
+            1,
         );
 
         super::broadcast_sequence_num(state, &file_id)

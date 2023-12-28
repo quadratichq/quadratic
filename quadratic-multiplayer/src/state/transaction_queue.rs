@@ -25,9 +25,10 @@ impl TransactionQueue {
         operations: Vec<Operation>,
         room_sequence_num: u64,
     ) -> u64 {
+        // The `room_sequence_num - 1` is necessary because the room_sequence_num is already incremented when received here.
         let (sequence_num, transactions) = queue
             .entry(file_id)
-            .or_insert_with(|| (room_sequence_num, vec![]));
+            .or_insert_with(|| (room_sequence_num - 1, vec![]));
 
         *sequence_num += 1;
 
@@ -177,7 +178,7 @@ mod tests {
 
     use super::*;
     #[tokio::test]
-    async fn transaction_queue() {
+    async fn test_transaction_queue() {
         let (state, file_id) = setup().await;
         let mut grid = grid_setup();
         let transaction_id_1 = Uuid::new_v4();
@@ -189,7 +190,7 @@ mod tests {
             transaction_id_1,
             file_id,
             vec![operations_1.clone()],
-            0,
+            1,
         );
 
         let mut transaction_queue = state.transaction_queue.lock().await;

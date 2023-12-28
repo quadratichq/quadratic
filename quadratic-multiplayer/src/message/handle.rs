@@ -148,44 +148,35 @@ pub(crate) async fn handle_message(
                 session_id
             );
 
-            // I believe room_sequence_num is always correct. Let's broadcast after unpacking but before we push it to the transaction_queue.
-            // that way we don't need to wait for the transaction_queue to update the sequence_num
-            // TODO[ddimaria]: Please check my reworking of the order of operations below.
-
             // unpack the operations or return an error
             let operations_unpacked: Vec<Operation> = serde_json::from_str(&operations)?;
 
-            // lock the room
-            if let Ok(mut room) = get_mut_room!(state, file_id) {
-                // update the room's sequence number
-                room.sequence_num += 1;
-                let sequence_num = room.sequence_num;
+            // update the room's sequence_num
+            let sequence_num = get_mut_room!(state, file_id)?.increment_sequence_num();
 
-                // broadcast the transaction to all users in the room
-                let response = MessageResponse::Transaction {
-                    id,
-                    file_id,
-                    operations,
-                    sequence_num,
-                };
-                broadcast(vec![], file_id, Arc::clone(&state), response);
+            // broadcast the transaction to all users in the room
+            let response = MessageResponse::Transaction {
+                id,
+                file_id,
+                operations,
+                sequence_num,
+            };
+            broadcast(vec![], file_id, Arc::clone(&state), response);
 
-                // add the transaction to the transaction queue
-                let calculated_sequence_num = state.transaction_queue.lock().await.push_pending(
-                    id,
-                    file_id,
-                    operations_unpacked,
-                    sequence_num,
-                );
+            // add the transaction to the transaction queue
+            let calculated_sequence_num = state.transaction_queue.lock().await.push_pending(
+                id,
+                file_id,
+                operations_unpacked,
+                sequence_num,
+            );
 
-                // this should never happen if my logic above is correct
-                assert_eq!(
-                    calculated_sequence_num, sequence_num,
-                    "Sequence number mismatch in handler of MessageRequest::Transaction"
-                );
-                Ok(None)
+            // this should never happen if my logic above is correct
+
+            if calculated_sequence_num != sequence_num {
+                Err(MpError::SequenceNumberMismatch)
             } else {
-                Err(MpError::Room(format!("Room {} not found", file_id)))
+                Ok(None)
             }
         }
 
