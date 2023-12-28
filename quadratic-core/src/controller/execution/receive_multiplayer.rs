@@ -47,7 +47,16 @@ impl GridController {
         self.start_transaction(operations, None, TransactionType::Multiplayer);
     }
 
+    /// Handle received transactions that are out of order with current transaction.
+    ///
+    /// Returns a [`TransactionSummary`] that will be rendered by the client.
+    fn receive_out_of_order_transaction(&mut self) -> TransactionSummary {
+        TransactionSummary::default()
+    }
+
     /// Used by the client to ensure transactions are applied in order
+    ///
+    /// Returns a [`TransactionSummary`] that will be rendered by the client.
     pub fn client_apply_transaction(
         &mut self,
         transaction_id: Uuid,
@@ -72,21 +81,34 @@ impl GridController {
                 // nothing to render as we've already rendered this transaction
                 return TransactionSummary::default();
             } else {
+                // we've received a transaction that is out of order with the current transaction
                 crate::util::dbgjs(format!(
                     "Rust panic: out of order. Received {}, expected {}",
                     sequence_num - self.last_sequence_num - 1,
                     index
                 ));
-                todo!(
-                    "Handle received transactions that are out of order with current transaction."
-                );
+                return self.receive_out_of_order_transaction();
             }
         }
+
+        // next ensure that the received transaction is the next in sequence
+        if sequence_num != self.last_sequence_num + 1 {
+            crate::util::dbgjs(format!(
+                "Rust panic: out of order. Received {}, expected {}",
+                sequence_num,
+                self.last_sequence_num + 1
+            ));
+            return self.receive_out_of_order_transaction();
+        }
+
+        // if we have any unsaved transactions (ie, transactions that are applied but not returned by the server), then we
+        // need to rollback those transactions, apply the received transaction, and then reapply the unsaved transactions.
         if !self.unsaved_transactions.is_empty() {
             self.rollback_unsaved_transactions();
             self.start_transaction(operations, None, TransactionType::Rollback);
             self.reapply_unsaved_transactions();
         } else {
+            // otherwise we can just apply the transaction
             self.start_transaction(operations, None, TransactionType::Multiplayer);
         }
         self.last_sequence_num = sequence_num;
