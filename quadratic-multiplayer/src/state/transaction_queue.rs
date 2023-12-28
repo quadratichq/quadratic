@@ -1,34 +1,10 @@
-use quadratic_core::controller::operations::operation::Operation;
-use serde::Serialize;
+use quadratic_core::controller::{
+    operations::operation::Operation, transaction::TransactionServer,
+};
 use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::error::{MpError, Result};
-
-#[derive(Serialize, Debug, PartialEq, Clone)]
-pub(crate) struct TransactionServer {
-    pub(crate) id: Uuid,
-    pub(crate) file_id: Uuid,
-    pub(crate) operations: Vec<Operation>,
-    pub(crate) sequence_num: u64,
-}
-
-impl TransactionServer {
-    pub(crate) fn new(
-        id: Uuid,
-        file_id: Uuid,
-        operations: Vec<Operation>,
-        sequence_num: u64,
-    ) -> Self {
-        TransactionServer {
-            id,
-            file_id,
-            operations,
-            sequence_num,
-        }
-    }
-}
-
 pub(crate) type Queue = HashMap<Uuid, (u64, Vec<TransactionServer>)>;
 
 #[derive(Debug, Default)]
@@ -55,7 +31,12 @@ impl TransactionQueue {
 
         *sequence_num += 1;
 
-        let transaction = TransactionServer::new(id, file_id, operations, *sequence_num);
+        let transaction = TransactionServer {
+            id,
+            file_id,
+            operations,
+            sequence_num: *sequence_num,
+        };
         transactions.push(transaction);
 
         *sequence_num

@@ -145,6 +145,11 @@ export class Grid {
     if (summary.operations) {
       multiplayer.sendTransaction(summary.transaction_id!, summary.operations);
     }
+
+    if (summary.request_transactions) {
+      multiplayer.sendGetTransactions(summary.request_transactions);
+    }
+
     pixiApp.setViewportDirty();
   }
 

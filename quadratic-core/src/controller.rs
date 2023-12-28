@@ -1,5 +1,5 @@
 use self::{
-    execution::TransactionType, operations::operation::Operation,
+    execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     transaction_summary::TransactionSummary,
 };
 use crate::{
@@ -7,7 +7,6 @@ use crate::{
     SheetPos, SheetRect,
 };
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use uuid::Uuid;
 #[cfg(feature = "js")]
@@ -21,17 +20,10 @@ pub mod operations;
 pub mod sheet_offsets;
 pub mod sheets;
 pub mod thumbnail;
+pub mod transaction;
 pub mod transaction_summary;
 pub mod transaction_types;
 pub mod user_actions;
-
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
-pub struct Transaction {
-    id: Uuid,
-    sequence_num: Option<u64>,
-    operations: Vec<Operation>,
-    cursor: Option<String>,
-}
 
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
@@ -45,14 +37,12 @@ pub struct GridController {
     unsaved_transactions: Vec<(Transaction, Transaction)>,
 
     // sorted list of Transactions we received from multiplayer that are after our last_sequence_num (we are missing some transactions)
+    last_need_request_transactions_time: Option<DateTime<Utc>>,
     out_of_order_transactions: Vec<Transaction>,
 
     // transactions that are awaiting async responses
     // these have not been pushed to the undo stack
     incomplete_transactions: Vec<Transaction>,
-
-    // client requested transactions from the server to catch up to sequence_num
-    last_request_transaction_time: Option<DateTime<Utc>>,
 
     // transaction in progress information
     transaction_in_progress: bool,

@@ -6,7 +6,8 @@ use crate::controller::{
 use chrono::{Duration, Utc};
 use uuid::Uuid;
 
-const _SECONDS_TO_WAIT_FOR_TRANSACTIONS: i64 = 10;
+// seconds to wait before requesting wait_for_transactions
+const SECONDS_TO_WAIT_FOR_GET_TRANSACTIONS: i64 = 5;
 
 impl GridController {
     pub fn received_transaction(
@@ -54,28 +55,26 @@ impl GridController {
     /// Used to request missing transactions from the server.
     ///
     /// Returns a [`TransactionSummary`] that will be rendered by the client.
-    fn _request_transactions(&mut self) -> TransactionSummary {
-        let now = Utc::now();
-        if match self.last_request_transaction_time {
-            None => true,
-            Some(last_request_transaction_time) => {
-                last_request_transaction_time
-                    .checked_add_signed(Duration::seconds(_SECONDS_TO_WAIT_FOR_TRANSACTIONS))
-                    .unwrap()
-                    < now
+    fn request_transactions(&mut self) {
+        if self.out_of_order_transactions.len() > 0 {
+            let now = Utc::now();
+            if match self.last_need_request_transactions_time {
+                None => true,
+                Some(last_request_transaction_time) => {
+                    last_request_transaction_time
+                        .checked_add_signed(Duration::seconds(SECONDS_TO_WAIT_FOR_GET_TRANSACTIONS))
+                        .unwrap()
+                        < now
+                }
+            } {
+                self.last_need_request_transactions_time = None;
+                self.summary.request_transactions = Some(self.last_sequence_num + 1);
             }
-        } {
-            self.last_request_transaction_time = Some(now);
-            let mut summary = TransactionSummary::default();
-            summary.request_transactions = Some(self.last_sequence_num + 1);
-            summary
-        } else {
-            TransactionSummary::default()
         }
     }
 
-    /// Check the out_of_order_transactions to see if they are next in order. If so, we remove them from the
-    /// sorted out of order list and apply their operations.
+    /// Check the out_of_order_transactions to see if they are next in order. If so, we remove them from
+    ///out_of_order_transactions and apply their operations.
     fn apply_out_of_order_transactions(&mut self, sequence_num: u64) {
         let mut sequence_num = sequence_num;
 
@@ -188,6 +187,9 @@ impl GridController {
             );
         }
 
+        // check if we need to send a GetTransactions request
+        self.request_transactions();
+
         // prepare the summary
         self.transaction_updated_bounds();
         let mut summary = self.prepare_transaction_summary();
@@ -199,9 +201,27 @@ impl GridController {
     /// Server sends us the latest sequence_num to ensure we're in sync
     pub fn receive_sequence_num(&mut self, sequence_num: u64) {
         if sequence_num != self.last_sequence_num {
-            // Rust is out of sync with the server. Need to request transactions
-            crate::util::dbgjs(format!("Rust is out of sync with the server: received {} but expected {}. Requesting transactions.", sequence_num, self.last_sequence_num));
+            self.request_transactions();
         }
+    }
+
+    /// Received transactions from the server
+    pub fn received_transactions(&mut self, transactions: Vec<Transaction>) {
+        transactions.iter().for_each(|t| {
+            if t.sequence_num == Some(self.last_sequence_num + 1) {
+                self.received_transaction(t.id, t.sequence_num.unwrap(), t.operations.clone());
+                self.out_of_order_transactions.retain(|o| o.id != t.id);
+            } else if t.sequence_num > Some(self.last_sequence_num + 1) {
+                // Otherwise add to out_of_order_transactions unless already there. This should not happen?
+                if let Some(index) = self
+                    .out_of_order_transactions
+                    .iter()
+                    .position(|o| o.sequence_num.unwrap() < t.sequence_num.unwrap())
+                {
+                    self.out_of_order_transactions.insert(index, t.clone());
+                }
+            }
+        });
     }
 }
 

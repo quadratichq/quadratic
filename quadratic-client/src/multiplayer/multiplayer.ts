@@ -269,7 +269,7 @@ export class Multiplayer {
     this.websocket!.send(JSON.stringify(message));
   }
 
-  sendGetTransactions(min_sequence_num: number) {
+  sendGetTransactions(min_sequence_num: bigint) {
     const message: SendGetTransactions = {
       type: 'GetTransactions',
       session_id: this.sessionId,
@@ -418,7 +418,7 @@ export class Multiplayer {
 
   // Receives a collection of transactions to catch us up based on our sequenceNum
   private receiveTransactions(data: ReceiveTransactions) {
-    console.log(data.transactions);
+    grid.multiplayerTransactions(data.transactions);
   }
 
   // Receives the current transaction number from the server when entering a room.

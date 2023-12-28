@@ -3,10 +3,10 @@
 //! A central place for storing websocket messages responses.
 
 use crate::error::MpError;
-use crate::state::transaction_queue::TransactionServer;
 use crate::state::user::UserStateUpdate;
 use crate::state::{room::Room, user::User};
 use dashmap::DashMap;
+use quadratic_core::controller::transaction::Transaction;
 use serde::Serialize;
 use uuid::Uuid;
 
@@ -29,7 +29,7 @@ pub(crate) enum MessageResponse {
         operations: String,
     },
     Transactions {
-        transactions: Vec<TransactionServer>,
+        transactions: Vec<Transaction>,
     },
     EnterRoom {
         file_id: Uuid,

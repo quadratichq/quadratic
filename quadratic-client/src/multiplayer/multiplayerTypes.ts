@@ -91,7 +91,7 @@ export interface SendGetTransactions {
   type: 'GetTransactions';
   session_id: string;
   file_id: string;
-  min_sequence_num: number;
+  min_sequence_num: bigint;
 }
 
 export interface ReceiveTransactions {

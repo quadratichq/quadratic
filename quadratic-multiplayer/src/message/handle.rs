@@ -6,13 +6,13 @@
 //! to all users in a room.
 
 use crate::error::{MpError, Result};
+use crate::get_mut_room;
 use crate::message::{
     broadcast, direct_message, request::MessageRequest, response::MessageResponse,
 };
 use crate::state::connection::Connection;
 use crate::state::user::UserState;
 use crate::state::{user::User, State};
-use crate::{get_mut_room, get_room};
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use quadratic_core::controller::operations::operation::Operation;
@@ -198,12 +198,17 @@ pub(crate) async fn handle_message(
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
+            // todo: this will also need to get the unpending transactions to catch the client up
+
             // get transactions from the transaction queue
             let transactions = state
                 .transaction_queue
                 .lock()
                 .await
-                .get_pending_min_sequence_num(file_id, min_sequence_num)?;
+                .get_pending_min_sequence_num(file_id, min_sequence_num)?
+                .iter()
+                .map(|t| t.to_owned().into())
+                .collect::<Vec<_>>();
 
             let response = MessageResponse::Transactions { transactions };
 
