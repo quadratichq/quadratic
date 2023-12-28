@@ -57,7 +57,7 @@ impl GridController {
         self.forward_operations = vec![];
 
         // rollback transaction combines these summaries
-        if transaction_type != TransactionType::Rollback {
+        if transaction_type != TransactionType::MultiplayerKeepSummary {
             self.clear_summary();
         }
 
@@ -97,7 +97,7 @@ impl GridController {
                     .push((self.to_forward_transaction(), undo));
             }
             TransactionType::Multiplayer => (),
-            TransactionType::Rollback => (),
+            TransactionType::MultiplayerKeepSummary => (),
             TransactionType::Unset => panic!("Expected a transaction type"),
         }
         self.transaction_in_progress = false;

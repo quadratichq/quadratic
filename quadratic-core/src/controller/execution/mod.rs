@@ -19,8 +19,8 @@ pub enum TransactionType {
     Redo,
     Multiplayer,
 
-    // used to rollback unsaved_transactions
-    Rollback,
+    // Used to rollback
+    MultiplayerKeepSummary,
 }
 
 impl GridController {
