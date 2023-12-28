@@ -1,6 +1,7 @@
 use uuid::Uuid;
 
 use super::*;
+use crate::controller::transaction::Transaction;
 use crate::controller::transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells};
 use crate::{controller::transaction_summary::TransactionSummary, grid::js_types::*};
 use std::collections::HashSet;
@@ -125,6 +126,13 @@ impl GridController {
     #[wasm_bindgen(js_name = "receiveSequenceNum")]
     pub fn js_receive_sequence_num(&mut self, sequence_num: u32) {
         self.receive_sequence_num(sequence_num as u64);
+    }
+
+    #[wasm_bindgen(js_name = "receiveMultiplayerTransactions")]
+    pub fn js_receive_multiplayer_transactions(&mut self, transactions: String) {
+        let transactions: Vec<Transaction> = serde_json::from_str(&transactions)
+            .expect("Invalid transactions received in receiveMultiplayerTransactions");
+        self.received_transactions(transactions);
     }
 
     /// Populates a portion of a sheet with random float values.

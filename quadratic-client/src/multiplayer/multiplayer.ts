@@ -418,7 +418,7 @@ export class Multiplayer {
 
   // Receives a collection of transactions to catch us up based on our sequenceNum
   private receiveTransactions(data: ReceiveTransactions) {
-    grid.multiplayerTransactions(data.transactions);
+    grid.receiveMultiplayerTransactions(data.transactions);
   }
 
   // Receives the current transaction number from the server when entering a room.

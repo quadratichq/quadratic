@@ -96,7 +96,7 @@ export interface SendGetTransactions {
 
 export interface ReceiveTransactions {
   type: 'Transactions';
-  transactions: Transaction[];
+  transactions: string;
 }
 
 export interface Heartbeat {
