@@ -15,6 +15,7 @@ use crate::state::{user::User, State};
 use crate::{get_mut_room, get_room};
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
+use quadratic_core::controller::operations::operation::Operation;
 use quadratic_rust_shared::quadratic_api::get_file_perms;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -147,30 +148,45 @@ pub(crate) async fn handle_message(
                 session_id
             );
 
-            let room_sequence_num = get_room!(state, file_id)?.sequence_num;
+            // I believe room_sequence_num is always correct. Let's broadcast after unpacking but before we push it to the transaction_queue.
+            // that way we don't need to wait for the transaction_queue to update the sequence_num
+            // TODO[ddimaria]: Please check my reworking of the order of operations below.
 
-            // add the transaction to the transaction queue
-            let sequence_num = state.transaction_queue.lock().await.push_pending(
-                id,
-                file_id,
-                serde_json::from_str(&operations)?,
-                room_sequence_num,
-            );
+            // unpack the operations or return an error
+            let operations_unpacked: Vec<Operation> = serde_json::from_str(&operations)?;
 
-            // update the room's sequence number
-            get_mut_room!(state, file_id)?.sequence_num = sequence_num;
+            // lock the room
+            if let Ok(mut room) = get_mut_room!(state, file_id) {
+                // update the room's sequence number
+                room.sequence_num += 1;
+                let sequence_num = room.sequence_num;
 
-            let response = MessageResponse::Transaction {
-                id,
-                file_id,
-                operations,
-                sequence_num,
-            };
+                // broadcast the transaction to all users in the room
+                let response = MessageResponse::Transaction {
+                    id,
+                    file_id,
+                    operations,
+                    sequence_num,
+                };
+                broadcast(vec![], file_id, Arc::clone(&state), response);
 
-            // broadcast the transaction to all users in the room
-            broadcast(vec![], file_id, Arc::clone(&state), response);
+                // add the transaction to the transaction queue
+                let calculated_sequence_num = state.transaction_queue.lock().await.push_pending(
+                    id,
+                    file_id,
+                    operations_unpacked,
+                    sequence_num,
+                );
 
-            Ok(None)
+                // this should never happen if my logic above is correct
+                assert_eq!(
+                    calculated_sequence_num, sequence_num,
+                    "Sequence number mismatch in handler of MessageRequest::Transaction"
+                );
+                Ok(None)
+            } else {
+                Err(MpError::Room(format!("Room {} not found", file_id)))
+            }
         }
 
         // User sends transactions

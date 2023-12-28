@@ -293,4 +293,9 @@ mod tests {
             Some(CellValue::Text("Hello World".to_string()))
         );
     }
+
+    #[test]
+    fn test_handle_out_of_order_transactions() {
+        todo!();
+    }
 }
