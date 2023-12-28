@@ -152,6 +152,7 @@ impl GridController {
             transaction_id: None,
             operations: None,
             html: HashSet::new(),
+            request_transactions: None,
         })?)
     }
 }

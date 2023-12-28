@@ -1,10 +1,11 @@
-use uuid::Uuid;
-
+use super::TransactionType;
 use crate::controller::{
     operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
 };
+use chrono::{Duration, Utc};
+use uuid::Uuid;
 
-use super::TransactionType;
+const SECONDS_TO_WAIT_FOR_TRANSACTIONS: i64 = 10;
 
 impl GridController {
     pub fn received_transaction(
@@ -50,8 +51,25 @@ impl GridController {
     /// Handle received transactions that are out of order with current transaction.
     ///
     /// Returns a [`TransactionSummary`] that will be rendered by the client.
-    fn receive_out_of_order_transaction(&mut self) -> TransactionSummary {
-        TransactionSummary::default()
+    /// Catches up to the server's sequence_num by requesting transactions (via quadratic-client by signalling with TransactionSummary)
+    fn handle_out_of_order_transactions(&mut self) -> TransactionSummary {
+        let now = Utc::now();
+        if match self.last_request_transaction_time {
+            None => true,
+            Some(last_request_transaction_time) => {
+                last_request_transaction_time
+                    .checked_add_signed(Duration::seconds(SECONDS_TO_WAIT_FOR_TRANSACTIONS))
+                    .unwrap()
+                    < now
+            }
+        } {
+            self.last_request_transaction_time = Some(now);
+            let mut summary = TransactionSummary::default();
+            summary.request_transactions = Some(self.last_sequence_num + 1);
+            summary
+        } else {
+            TransactionSummary::default()
+        }
     }
 
     /// Used by the client to ensure transactions are applied in order
@@ -60,8 +78,6 @@ impl GridController {
     pub fn client_apply_transaction(
         &mut self,
         transaction_id: Uuid,
-
-        // todo: check this and request transactions again if out of order
         sequence_num: u64,
 
         operations: Vec<Operation>,
@@ -72,6 +88,12 @@ impl GridController {
             .iter_mut()
             .enumerate()
             .find(|(_, unsaved_transaction)| unsaved_transaction.0.id == transaction_id);
+        if sequence_num != self.last_sequence_num + 1 {
+            // Rust is out of sync with the server. Need to request transactions
+            crate::util::dbgjs(format!("Rust is out of sync with the server: received {} but expected {}. Requesting transactions.", sequence_num, self.last_sequence_num));
+            return self.handle_out_of_order_transactions();
+        }
+
         if let Some((index, _)) = existing {
             // if transaction is the top of the unsaved_transactions, then only need to set the sequence_num
             if index as u64 == sequence_num - self.last_sequence_num - 1 {
@@ -87,7 +109,7 @@ impl GridController {
                     sequence_num - self.last_sequence_num - 1,
                     index
                 ));
-                return self.receive_out_of_order_transaction();
+                return self.handle_out_of_order_transactions();
             }
         }
 
@@ -98,7 +120,7 @@ impl GridController {
                 sequence_num,
                 self.last_sequence_num + 1
             ));
-            return self.receive_out_of_order_transaction();
+            return self.handle_out_of_order_transactions();
         }
 
         // if we have any unsaved transactions (ie, transactions that are applied but not returned by the server), then we
@@ -125,7 +147,7 @@ impl GridController {
     pub fn receive_sequence_num(&mut self, sequence_num: u64) {
         if sequence_num != self.last_sequence_num {
             // Rust is out of sync with the server. Need to request transactions
-            crate::util::dbgjs("Rust is out of sync with the server. Requesting transactions.");
+            crate::util::dbgjs(format!("Rust is out of sync with the server: received {} but expected {}. Requesting transactions.", sequence_num, self.last_sequence_num));
         }
     }
 }

@@ -6,6 +6,7 @@ use crate::{
     grid::{CodeCellLanguage, Grid, SheetId},
     SheetPos, SheetRect,
 };
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use uuid::Uuid;
@@ -46,6 +47,9 @@ pub struct GridController {
     // transactions that are awaiting async responses
     // these have not been pushed to the undo stack
     incomplete_transactions: Vec<Transaction>,
+
+    // client requested transactions from the server to catch up to sequence_num
+    last_request_transaction_time: Option<DateTime<Utc>>,
 
     // transaction in progress information
     transaction_in_progress: bool,
