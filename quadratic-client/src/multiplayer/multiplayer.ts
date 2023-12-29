@@ -277,6 +277,7 @@ export class Multiplayer {
       min_sequence_num,
     };
     this.websocket!.send(JSON.stringify(message));
+    if (debugShowMultiplayer) console.log(`[Multiplayer] Requesting transactions starting from ${min_sequence_num}.`);
   }
 
   //#endregion

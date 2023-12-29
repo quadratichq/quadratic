@@ -52,11 +52,13 @@ impl GridController {
         self.start_transaction(operations, None, TransactionType::Multiplayer);
     }
 
-    /// Used to request missing transactions from the server.
+    /// Server sends us the latest sequence_num to ensure we're in sync. We respond with a request if
+    /// we've been missing numbers for too long.
     ///
     /// Returns a [`TransactionSummary`] that will be rendered by the client.
-    fn request_transactions(&mut self) {
-        if self.out_of_order_transactions.len() > 0 {
+    pub fn receive_sequence_num(&mut self, sequence_num: u64) -> TransactionSummary {
+        let mut summary = TransactionSummary::default();
+        if sequence_num != self.last_sequence_num {
             let now = Utc::now();
             if match self.last_need_request_transactions_time {
                 None => true,
@@ -68,9 +70,10 @@ impl GridController {
                 }
             } {
                 self.last_need_request_transactions_time = None;
-                self.summary.request_transactions = Some(self.last_sequence_num + 1);
+                summary.request_transactions = Some(self.last_sequence_num + 1);
             }
         }
+        summary
     }
 
     /// Check the out_of_order_transactions to see if they are next in order. If so, we remove them from
@@ -187,22 +190,12 @@ impl GridController {
             );
         }
 
-        // check if we need to send a GetTransactions request
-        self.request_transactions();
-
         // prepare the summary
         self.transaction_updated_bounds();
         let mut summary = self.prepare_transaction_summary();
         summary.operations = None;
         summary.save = false;
         summary
-    }
-
-    /// Server sends us the latest sequence_num to ensure we're in sync
-    pub fn receive_sequence_num(&mut self, sequence_num: u64) {
-        if sequence_num != self.last_sequence_num {
-            self.request_transactions();
-        }
     }
 
     /// Received transactions from the server
@@ -232,7 +225,7 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        controller::{operations::operation::Operation, GridController},
+        controller::{operations::operation::Operation, transaction::Transaction, GridController},
         CellValue, Pos, SheetPos,
     };
 
@@ -564,6 +557,71 @@ mod tests {
                 .unwrap()
                 .get_cell_value(Pos { x: 0, y: 0 }),
             None
+        );
+    }
+
+    #[test]
+    fn test_send_request_transactions() {
+        let mut client = GridController::new();
+        let sheet_id = client.sheet_ids()[0];
+
+        // other is where the transaction are created
+        let mut other = GridController::new();
+        other.grid_mut().sheets_mut()[0].id = sheet_id;
+        let other_1 = other.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            "This is sequence_num = 1".to_string(),
+            None,
+        );
+        let other_1_operations = serde_json::from_str(&other_1.operations.unwrap()).unwrap();
+        let other_2 = other.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            "This is sequence_num = 2".to_string(),
+            None,
+        );
+        let other_2_operations = serde_json::from_str(&other_2.operations.unwrap()).unwrap();
+
+        let client_summary = client.receive_sequence_num(2);
+
+        // we send our last_sequence_num + 1 to the server so it can provide all later transactions
+        assert_eq!(client_summary.request_transactions, Some(1));
+
+        client.received_transactions(vec![
+            Transaction {
+                id: Uuid::new_v4(),
+                sequence_num: Some(1),
+                operations: other_1_operations,
+                cursor: None,
+            },
+            Transaction {
+                id: Uuid::new_v4(),
+                sequence_num: Some(2),
+                operations: other_2_operations,
+                cursor: None,
+            },
+        ]);
+
+        assert_eq!(
+            client
+                .try_sheet_from_id(sheet_id)
+                .unwrap()
+                .get_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Text("This is sequence_num = 1".to_string()))
+        );
+        assert_eq!(
+            client
+                .try_sheet_from_id(sheet_id)
+                .unwrap()
+                .get_cell_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Text("This is sequence_num = 2".to_string()))
         );
     }
 }

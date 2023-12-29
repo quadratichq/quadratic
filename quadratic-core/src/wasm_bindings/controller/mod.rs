@@ -123,9 +123,14 @@ impl GridController {
         self.last_sequence_num = sequence_num as u64;
     }
 
+    /// Handle server-provided sequence_num.
+    ///
+    /// Returns a [`TransactionSummary`] (sometimes with a request for more transactions)
     #[wasm_bindgen(js_name = "receiveSequenceNum")]
-    pub fn js_receive_sequence_num(&mut self, sequence_num: u32) {
-        self.receive_sequence_num(sequence_num as u64);
+    pub fn js_receive_sequence_num(&mut self, sequence_num: u32) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(
+            &self.receive_sequence_num(sequence_num as u64),
+        )?)
     }
 
     #[wasm_bindgen(js_name = "receiveMultiplayerTransactions")]

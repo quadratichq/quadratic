@@ -2,7 +2,7 @@ import { htmlCellsHandler } from '@/gridGL/htmlCells/htmlCellsHandler';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import * as Sentry from '@sentry/react';
 import { Point, Rectangle } from 'pixi.js';
-import { debugMockLargeData } from '../../debugFlags';
+import { debugMockLargeData, debugShowMultiplayer } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
@@ -773,6 +773,7 @@ export class Grid {
   }
 
   receiveMultiplayerTransactions(transactions: string) {
+    if (debugShowMultiplayer) console.log('[Multiplayer] received GetTransactions from the server to catch us up.');
     this.gridController.receiveMultiplayerTransactions(transactions);
   }
 
