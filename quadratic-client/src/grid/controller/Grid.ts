@@ -769,12 +769,15 @@ export class Grid {
   }
 
   receiveSequenceNum(sequenceNum: number) {
-    this.gridController.receiveSequenceNum(sequenceNum);
+    if (debugShowMultiplayer) console.log(`[Multiplayer] Server is at sequence_num ${sequenceNum}.`);
+    const summary = this.gridController.receiveSequenceNum(sequenceNum);
+    this.transactionResponse(summary);
   }
 
   receiveMultiplayerTransactions(transactions: string) {
-    if (debugShowMultiplayer) console.log('[Multiplayer] received GetTransactions from the server to catch us up.');
-    this.gridController.receiveMultiplayerTransactions(transactions);
+    if (debugShowMultiplayer) console.log('[Multiplayer] Received catch-up transactions.');
+    const summary = this.gridController.receiveMultiplayerTransactions(transactions);
+    this.transactionResponse(summary);
   }
 
   //#endregion

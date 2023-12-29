@@ -16,7 +16,14 @@ impl GridController {
         sequence_num: u64,
         operations: Vec<Operation>,
     ) -> TransactionSummary {
-        self.client_apply_transaction(transaction_id, sequence_num, operations)
+        self.clear_summary();
+        self.client_apply_transaction(transaction_id, sequence_num, operations);
+        self.transaction_updated_bounds();
+        self.finalize_transaction();
+        let mut summary = self.prepare_transaction_summary();
+        summary.operations = None;
+        summary.save = false;
+        summary
     }
 
     /// Rolls back unsaved transactions to apply earlier transactions received from the server.
@@ -79,6 +86,9 @@ impl GridController {
     /// Check the out_of_order_transactions to see if they are next in order. If so, we remove them from
     ///out_of_order_transactions and apply their operations.
     fn apply_out_of_order_transactions(&mut self, sequence_num: u64) {
+        if self.out_of_order_transactions.is_empty() {
+            return;
+        }
         let mut sequence_num = sequence_num;
 
         // combines all out of order transactions into a single vec of operations
@@ -106,9 +116,7 @@ impl GridController {
         transaction_id: Uuid,
         sequence_num: u64,
         operations: Vec<Operation>,
-    ) -> TransactionSummary {
-        self.clear_summary();
-
+    ) {
         // this is the normal case where we receive the next transaction in sequence
         if sequence_num == self.last_sequence_num + 1 {
             // first check if the received transaction is one of ours
@@ -170,10 +178,11 @@ impl GridController {
                     self.summary.generate_thumbnail = false;
                 }
             }
-        } else {
+        } else if sequence_num > self.last_sequence_num {
             // If we receive an unexpected later transaction then we just hold on to it in a sorted list.
             // We could apply these transactions as they come in, but only if multiplayer also sent all undo
             // operations w/each Transaction. I don't think this would be worth the cost.
+            // We ignore any transactions that we already applied (ie, sequence_num <= self.last_sequence_num).
             let index = self
                 .out_of_order_transactions
                 .iter()
@@ -189,32 +198,22 @@ impl GridController {
                 },
             );
         }
+    }
 
-        // prepare the summary
+    /// Received transactions from the server
+    pub fn received_transactions(&mut self, transactions: &Vec<Transaction>) -> TransactionSummary {
+        self.clear_summary();
+        let mut expected_sequence_num = self.last_sequence_num + 1;
+        transactions.iter().for_each(|t| {
+            self.client_apply_transaction(t.id, t.sequence_num.unwrap(), t.operations.clone());
+        });
+
         self.transaction_updated_bounds();
+        self.finalize_transaction();
         let mut summary = self.prepare_transaction_summary();
         summary.operations = None;
         summary.save = false;
         summary
-    }
-
-    /// Received transactions from the server
-    pub fn received_transactions(&mut self, transactions: Vec<Transaction>) {
-        transactions.iter().for_each(|t| {
-            if t.sequence_num == Some(self.last_sequence_num + 1) {
-                self.received_transaction(t.id, t.sequence_num.unwrap(), t.operations.clone());
-                self.out_of_order_transactions.retain(|o| o.id != t.id);
-            } else if t.sequence_num > Some(self.last_sequence_num + 1) {
-                // Otherwise add to out_of_order_transactions unless already there. This should not happen?
-                if let Some(index) = self
-                    .out_of_order_transactions
-                    .iter()
-                    .position(|o| o.sequence_num.unwrap() < t.sequence_num.unwrap())
-                {
-                    self.out_of_order_transactions.insert(index, t.clone());
-                }
-            }
-        });
     }
 }
 
@@ -594,7 +593,7 @@ mod tests {
         // we send our last_sequence_num + 1 to the server so it can provide all later transactions
         assert_eq!(client_summary.request_transactions, Some(1));
 
-        client.received_transactions(vec![
+        client.received_transactions(&vec![
             Transaction {
                 id: Uuid::new_v4(),
                 sequence_num: Some(1),

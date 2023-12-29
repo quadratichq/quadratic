@@ -29,7 +29,7 @@ pub(crate) enum MessageResponse {
         operations: String,
     },
     Transactions {
-        transactions: Vec<Transaction>,
+        transactions: String,
     },
     EnterRoom {
         file_id: Uuid,

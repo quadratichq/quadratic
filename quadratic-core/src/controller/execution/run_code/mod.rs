@@ -90,7 +90,7 @@ impl GridController {
         match self.waiting_for_async {
             None => {
                 // this should only occur after an internal logic error
-                crate::util::dbgjs("Expected transaction to be waiting_for_async to be defined in transaction::complete");
+                dbgjs!("Expected transaction to be waiting_for_async to be defined in transaction::complete");
                 return;
             }
             Some(waiting_for_async) => match waiting_for_async {
@@ -116,7 +116,7 @@ impl GridController {
                     self.waiting_for_async = None;
                 }
                 _ => {
-                    crate::util::dbgjs("Transaction.complete called for an unhandled language");
+                    dbgjs!("Transaction.complete called for an unhandled language");
                 }
             },
         }
@@ -130,9 +130,7 @@ impl GridController {
             sheet_pos
         } else {
             // this should only happen after an internal logic error
-            crate::util::dbgjs(
-                "Expected current_sheet_pos to be defined in transaction::code_cell_error",
-            );
+            dbgjs!("Expected current_sheet_pos to be defined in transaction::code_cell_error",);
             return;
         };
         let update_code_cell_value = self.current_sheet_pos.and_then(|code_cell_sheet_pos| {
@@ -144,9 +142,7 @@ impl GridController {
         match update_code_cell_value {
             None => {
                 // this should only happen after an internal logic error
-                crate::util::dbgjs(
-                    "Expected current_code_cell to be defined in transaction::code_cell_error",
-                );
+                dbgjs!("Expected current_code_cell to be defined in transaction::code_cell_error",);
             }
             Some(update_code_cell_value) => {
                 let mut code_cell_value = update_code_cell_value.clone();

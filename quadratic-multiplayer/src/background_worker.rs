@@ -39,6 +39,7 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                 tokio::spawn(async move {
                     // tracing::info!("Processing room {}", file_id);
                     // process transaction queue for the room
+
                     let processed =
                         process_transaction_queue_for_room(Arc::clone(&state), &file_id).await;
 

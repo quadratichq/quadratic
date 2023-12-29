@@ -1,5 +1,6 @@
 import { ApiError } from '@/api/fetchFromApi';
 import { CONTACT_URL } from '@/constants/urls';
+import { debugShowMultiplayer } from '@/debugFlags';
 import { Button } from '@/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
@@ -36,6 +37,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   // Fetch the file & its sharing data
   const [data, sharing] = await Promise.all([apiClient.getFile(uuid), apiClient.getFileSharing(uuid)]);
+  if (debugShowMultiplayer)
+    console.log(`[File API] Received file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`);
 
   // Get file contents from S3
   const res = await fetch(data.file.lastCheckpointDataUrl);

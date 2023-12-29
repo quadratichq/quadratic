@@ -276,8 +276,8 @@ export class Multiplayer {
       file_id: this.room!,
       min_sequence_num,
     };
-    this.websocket!.send(JSON.stringify(message));
     if (debugShowMultiplayer) console.log(`[Multiplayer] Requesting transactions starting from ${min_sequence_num}.`);
+    this.websocket!.send(JSON.stringify(message));
   }
 
   //#endregion
@@ -428,9 +428,7 @@ export class Multiplayer {
     if (data.file_id !== this.room) {
       throw new Error("Expected file_id to match room before receiving a message of type 'EnterRoom'");
     }
-    if (debugShowMultiplayer) {
-      grid.receiveSequenceNum(data.sequence_num);
-    }
+    grid.receiveSequenceNum(data.sequence_num);
   }
 
   // Called during a heartbeat from the server to verify we're at the correct sequenceNum
@@ -453,6 +451,8 @@ export class Multiplayer {
       this.receiveEnterRoom(data);
     } else if (type === 'CurrentTransaction') {
       this.receiveCurrentTransaction(data);
+    } else if (type === 'Error') {
+      console.warn(`[Multiplayer] Error: ${data.error}`);
     } else if (type !== 'Empty') {
       console.warn(`Unknown message type: ${type}`);
     }

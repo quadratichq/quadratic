@@ -238,6 +238,13 @@ pub fn dbgjs(val: impl fmt::Debug) {
     }
 }
 
+#[allow(unused_macros)]
+macro_rules! dbgjs {
+    ($($arg:tt)*) => {
+        $crate::util::dbgjs($($arg)*)
+    };
+}
+
 pub fn date_string() -> String {
     let now = Utc::now();
     now.format("%Y-%m-%d %H:%M:%S").to_string()

@@ -16,6 +16,7 @@ use crate::state::{user::User, State};
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use quadratic_core::controller::operations::operation::Operation;
+use quadratic_core::controller::transaction::Transaction;
 use quadratic_rust_shared::quadratic_api::get_file_perms;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -55,7 +56,22 @@ pub(crate) async fn handle_message(
             let (permission, sequence_num) = if cfg!(test) {
                 (quadratic_rust_shared::quadratic_api::FilePermRole::Owner, 0)
             } else {
-                get_file_perms(base_url, jwt, file_id).await?
+                // get permission and sequence_num from the quadratic api
+                let (permission, mut sequence_num) = get_file_perms(base_url, jwt, file_id).await?;
+
+                // check for updated sequence num from the transaction queue
+                // todo: this will need to be reworked to check the transaction data store
+                if let Ok(transaction_sequence_num) = state
+                    .transaction_queue
+                    .lock()
+                    .await
+                    .get_sequence_num(file_id)
+                {
+                    // replace the current sequence_num with the transaction sequence_num
+                    sequence_num = transaction_sequence_num;
+                }
+
+                (permission, sequence_num)
             };
 
             let user_state = UserState {
@@ -164,20 +180,14 @@ pub(crate) async fn handle_message(
             broadcast(vec![], file_id, Arc::clone(&state), response);
 
             // add the transaction to the transaction queue
-            let calculated_sequence_num = state.transaction_queue.lock().await.push_pending(
+            state.transaction_queue.lock().await.push_pending(
                 id,
                 file_id,
                 operations_unpacked,
                 sequence_num,
             );
 
-            // this should never happen if my logic above is correct
-
-            if calculated_sequence_num != sequence_num {
-                Err(MpError::SequenceNumberMismatch)
-            } else {
-                Ok(None)
-            }
+            Ok(None)
         }
 
         // User sends transactions
@@ -192,7 +202,7 @@ pub(crate) async fn handle_message(
             // todo: this will also need to get the unpending transactions to catch the client up
 
             // get transactions from the transaction queue
-            let transactions = state
+            let transactions: Vec<Transaction> = state
                 .transaction_queue
                 .lock()
                 .await
@@ -201,7 +211,9 @@ pub(crate) async fn handle_message(
                 .map(|t| t.to_owned().into())
                 .collect::<Vec<_>>();
 
-            let response = MessageResponse::Transactions { transactions };
+            let response = MessageResponse::Transactions {
+                transactions: serde_json::to_string(&transactions)?,
+            };
 
             Ok(Some(response))
         }

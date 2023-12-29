@@ -11,9 +11,7 @@ impl GridController {
             (current_sheet_pos.sheet_id, current_sheet_pos.into())
         } else {
             // this should only occur after an internal logic error
-            crate::util::dbgjs(
-                "Expected current_sheet_pos to be defined in transaction::get_cells",
-            );
+            dbgjs!("Expected current_sheet_pos to be defined in transaction::get_cells",);
             return Some(CellsForArray::new(vec![], true));
         };
 

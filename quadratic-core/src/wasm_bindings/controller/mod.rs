@@ -134,10 +134,15 @@ impl GridController {
     }
 
     #[wasm_bindgen(js_name = "receiveMultiplayerTransactions")]
-    pub fn js_receive_multiplayer_transactions(&mut self, transactions: String) {
+    pub fn js_receive_multiplayer_transactions(
+        &mut self,
+        transactions: String,
+    ) -> Result<JsValue, JsValue> {
         let transactions: Vec<Transaction> = serde_json::from_str(&transactions)
             .expect("Invalid transactions received in receiveMultiplayerTransactions");
-        self.received_transactions(transactions);
+        Ok(serde_wasm_bindgen::to_value(
+            &self.received_transactions(&transactions),
+        )?)
     }
 
     /// Populates a portion of a sheet with random float values.

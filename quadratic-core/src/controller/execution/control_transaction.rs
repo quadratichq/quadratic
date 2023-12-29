@@ -27,7 +27,7 @@ impl GridController {
             let op = self.operations.remove(0);
 
             #[cfg(feature = "show-operations")]
-            crate::util::dbgjs(&format!("[Operation] {:?}", &op));
+            dbgjs!(&format!("[Operation] {:?}", &op));
 
             self.execute_operation(op, transaction_type.clone());
 
@@ -44,6 +44,11 @@ impl GridController {
         cursor: Option<String>,
         transaction_type: TransactionType,
     ) {
+        // sanity check
+        if operations.is_empty() {
+            return;
+        }
+
         self.transaction_in_progress = true;
         self.reverse_operations = vec![];
         self.cursor = cursor;

@@ -114,6 +114,11 @@ export interface ReceiveCurrentTransaction {
   sequence_num: number;
 }
 
+export interface ReceiveError {
+  type: 'Error';
+  error: string;
+}
+
 export type ReceiveMessages =
   | ReceiveRoom
   | MessageUserUpdate
@@ -121,4 +126,5 @@ export type ReceiveMessages =
   | ReceiveEmpty
   | ReceiveTransactions
   | ReceiveEnterRoom
+  | ReceiveError
   | ReceiveCurrentTransaction;

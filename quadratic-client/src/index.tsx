@@ -22,6 +22,9 @@ if (import.meta.env.VITE_SENTRY_DSN && import.meta.env.VITE_SENTRY_DSN !== 'none
 
 Sentry.addTracingExtensions();
 
+// This increases the size of the stack traces that are shown from Rust -> console.error
+Error.stackTraceLimit = 100;
+
 const container = document.getElementById('root');
 const root = createRoot(container as HTMLElement);
 root.render(
