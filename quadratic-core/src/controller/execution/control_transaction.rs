@@ -228,7 +228,6 @@ mod tests {
         let value = CellValue::Text("test".into());
         let operation = add_cell_value(sheet_pos, value);
         let operation_undo = add_cell_value(sheet_pos, CellValue::Blank);
-
         (operation, operation_undo)
     }
 
@@ -246,22 +245,22 @@ mod tests {
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].operations);
 
         // TransactionType::Undo
-        gc.start_transaction(vec![], None, TransactionType::Undo);
+        gc.start_transaction(vec![operation_undo.clone()], None, TransactionType::Undo);
         gc.finalize_transaction();
 
         assert_eq!(gc.undo_stack.len(), 1);
         assert_eq!(gc.redo_stack.len(), 1);
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].operations);
-        assert_eq!(gc.redo_stack[0].operations.len(), 0);
+        assert_eq!(gc.redo_stack[0].operations.len(), 1);
 
         // TransactionType::Redo
-        gc.start_transaction(vec![], None, TransactionType::Redo);
+        gc.start_transaction(vec![operation.clone()], None, TransactionType::Redo);
         gc.finalize_transaction();
 
         assert_eq!(gc.undo_stack.len(), 2);
         assert_eq!(gc.redo_stack.len(), 1);
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].operations);
-        assert_eq!(gc.redo_stack[0].operations.len(), 0);
+        assert_eq!(gc.redo_stack[0].operations.len(), 1);
     }
 
     #[test]

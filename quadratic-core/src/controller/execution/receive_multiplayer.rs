@@ -16,6 +16,7 @@ impl GridController {
         sequence_num: u64,
         operations: Vec<Operation>,
     ) -> TransactionSummary {
+        self.transaction_type = TransactionType::MultiplayerKeepSummary;
         self.clear_summary();
         self.client_apply_transaction(transaction_id, sequence_num, operations);
         self.transaction_updated_bounds();
@@ -86,10 +87,13 @@ impl GridController {
     /// Check the out_of_order_transactions to see if they are next in order. If so, we remove them from
     ///out_of_order_transactions and apply their operations.
     fn apply_out_of_order_transactions(&mut self, sequence_num: u64) {
+        let mut sequence_num = sequence_num;
+
+        // nothing to do here
         if self.out_of_order_transactions.is_empty() {
+            self.last_sequence_num = sequence_num;
             return;
         }
-        let mut sequence_num = sequence_num;
 
         // combines all out of order transactions into a single vec of operations
         let mut operations = vec![];
@@ -203,6 +207,7 @@ impl GridController {
     /// Received transactions from the server
     pub fn received_transactions(&mut self, transactions: &Vec<Transaction>) -> TransactionSummary {
         self.clear_summary();
+        self.transaction_type = TransactionType::MultiplayerKeepSummary;
         transactions.iter().for_each(|t| {
             self.client_apply_transaction(t.id, t.sequence_num.unwrap(), t.operations.clone())
         });
@@ -589,8 +594,10 @@ mod tests {
         let client_summary = client.receive_sequence_num(2);
 
         // we send our last_sequence_num + 1 to the server so it can provide all later transactions
+        assert_eq!(client.last_sequence_num, 0);
         assert_eq!(client_summary.request_transactions, Some(1));
 
+        // todo: the sequence_num seems wrong here
         client.received_transactions(&vec![
             Transaction {
                 id: Uuid::new_v4(),
@@ -605,6 +612,7 @@ mod tests {
                 cursor: None,
             },
         ]);
+        assert_eq!(client.last_sequence_num, 2);
 
         assert_eq!(
             client
