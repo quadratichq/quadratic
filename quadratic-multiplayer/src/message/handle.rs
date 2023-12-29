@@ -61,7 +61,7 @@ pub(crate) async fn handle_message(
 
                 // check for updated sequence num from the transaction queue
                 // todo: this will need to be reworked to check the transaction data store
-                if let Ok(transaction_sequence_num) = state
+                if let Some(transaction_sequence_num) = state
                     .transaction_queue
                     .lock()
                     .await

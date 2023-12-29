@@ -148,18 +148,9 @@ impl TransactionQueue {
         Ok(transactions)
     }
 
-    pub(crate) fn get_sequence_num(&mut self, file_id: Uuid) -> Result<u64> {
-        let sequence_num = self
-            .pending
-            .get(&file_id)
-            .ok_or_else(|| {
-                MpError::TransactionQueue(format!(
-                    "file_id {file_id} not found in transaction queue"
-                ))
-            })?
-            .0;
-
-        Ok(sequence_num)
+    /// Returns latest sequence number for a given file (if any are in the transaction_queue)
+    pub(crate) fn get_sequence_num(&mut self, file_id: Uuid) -> Option<u64> {
+        self.pending.get(&file_id).map(|o| o.0)
     }
 }
 #[cfg(test)]

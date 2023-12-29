@@ -93,10 +93,8 @@ pub(crate) async fn process_queue_for_room(
         .unwrap_or_else(|_| vec![]);
 
     if transactions.is_empty() {
-        println!("No transactions...");
         return Ok(None);
     }
-    println!("Found transactions...");
     tracing::info!(
         "Found {} transactions for room {file_id}",
         transactions.len()
