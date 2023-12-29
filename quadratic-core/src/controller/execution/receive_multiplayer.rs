@@ -203,11 +203,9 @@ impl GridController {
     /// Received transactions from the server
     pub fn received_transactions(&mut self, transactions: &Vec<Transaction>) -> TransactionSummary {
         self.clear_summary();
-        let mut expected_sequence_num = self.last_sequence_num + 1;
         transactions.iter().for_each(|t| {
-            self.client_apply_transaction(t.id, t.sequence_num.unwrap(), t.operations.clone());
+            self.client_apply_transaction(t.id, t.sequence_num.unwrap(), t.operations.clone())
         });
-
         self.transaction_updated_bounds();
         self.finalize_transaction();
         let mut summary = self.prepare_transaction_summary();
