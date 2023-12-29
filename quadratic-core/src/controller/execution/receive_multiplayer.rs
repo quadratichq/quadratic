@@ -37,7 +37,7 @@ impl GridController {
             .map(|(_, undo)| undo.operations.clone())
             .collect::<Vec<_>>();
         operations.iter().for_each(|o| {
-            self.start_transaction(o.to_vec(), None, TransactionType::MultiplayerKeepSummary)
+            self.start_transaction(o.to_vec(), None, TransactionType::MultiplayerKeepSummary);
         });
     }
 
@@ -50,7 +50,7 @@ impl GridController {
             .map(|(forward, _)| forward.operations.clone())
             .collect::<Vec<_>>();
         operations.iter().for_each(|o| {
-            self.start_transaction(o.to_vec(), None, TransactionType::MultiplayerKeepSummary)
+            self.start_transaction(o.to_vec(), None, TransactionType::MultiplayerKeepSummary);
         });
     }
 
@@ -137,7 +137,7 @@ impl GridController {
 
                     // if there are any out of order transactions, now may be the time to apply them. Let's do a quick
                     // check before rolling back unsaved_transactions.
-                    if self.out_of_order_transactions.len() > 0
+                    if !self.out_of_order_transactions.is_empty()
                         && self.out_of_order_transactions[0].sequence_num.unwrap()
                             == sequence_num + 1
                     {
@@ -205,11 +205,11 @@ impl GridController {
     }
 
     /// Received transactions from the server
-    pub fn received_transactions(&mut self, transactions: &Vec<Transaction>) -> TransactionSummary {
+    pub fn received_transactions(&mut self, transactions: &[Transaction]) -> TransactionSummary {
         self.clear_summary();
         self.transaction_type = TransactionType::MultiplayerKeepSummary;
         transactions.iter().for_each(|t| {
-            self.client_apply_transaction(t.id, t.sequence_num.unwrap(), t.operations.clone())
+            self.client_apply_transaction(t.id, t.sequence_num.unwrap(), t.operations.clone());
         });
         self.transaction_updated_bounds();
         self.finalize_transaction();
@@ -395,7 +395,7 @@ mod tests {
         let summary = client.received_transaction(Uuid::new_v4(), 1, other_operations);
 
         // we should generate the thumbnail as we overwrite the unsaved value again
-        assert_eq!(summary.generate_thumbnail, true);
+        assert!(summary.generate_thumbnail);
 
         // we should still have out unsaved transaction
         assert_eq!(client.unsaved_transactions.len(), 1);
@@ -598,7 +598,7 @@ mod tests {
         assert_eq!(client_summary.request_transactions, Some(1));
 
         // todo: the sequence_num seems wrong here
-        client.received_transactions(&vec![
+        client.received_transactions(&[
             Transaction {
                 id: Uuid::new_v4(),
                 sequence_num: Some(1),

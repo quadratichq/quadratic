@@ -21,6 +21,8 @@ pub struct TransactionServer {
     pub sequence_num: u64,
 }
 
+// From doesn't work since we don't have file_id
+#[allow(clippy::from_over_into)]
 impl Into<Transaction> for TransactionServer {
     fn into(self) -> Transaction {
         Transaction {
