@@ -106,8 +106,8 @@ impl GridController {
         pending.id = Uuid::new_v4();
         self.start_transaction(&mut pending);
         self.finalize_transaction(&mut pending);
-        pending.prepare_summary(true);
-        pending.summary
+        let summary = pending.prepare_summary(true);
+        summary
     }
 
     pub fn calculation_complete(&mut self, result: JsCodeResult) -> Result<TransactionSummary> {
