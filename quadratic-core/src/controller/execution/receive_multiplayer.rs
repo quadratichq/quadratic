@@ -752,8 +752,10 @@ mod tests {
         // Unlike previous test, we receive a multiplayer transaction that will be underneath the async code_cell.
         // We expect the async code_cell to overwrite it when it completes.
 
-        // Regrettably, it doesn't, since it only replaces cell_values at the start of the async operation. Not sure
-        // how to handle this scenario without recreating the set_code operations.
+        // Regrettably, it doesn't, since it only replaces cell_values at the start of the async operation.
+        // TODO: to fix this, we should refactor code_cells so they are part of CellValue. We can also maintain the
+        // separate sheet.code_cells vector as an index. This will ensure that all CellValues overwrite code_cells
+        // and vice versa without additional work.
 
         let mut client = GridController::new();
         let sheet_id = client.sheet_ids()[0];
