@@ -18,21 +18,21 @@ impl GridController {
                 code_cell_value,
             } => {
                 let sheet_id = sheet_pos.sheet_id;
-                let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                let sheet = self.grid.sheet_from_id(sheet_id);
                 if transaction.is_user() {
-                    transaction.reverse_operations.insert(
-                        0,
-                        Operation::SetCodeCell {
-                            sheet_pos,
-                            code_cell_value: sheet.get_code_cell(sheet_pos.into()).cloned(),
-                        },
-                    );
-                    let old_code_cell =
-                        sheet.set_code_cell(sheet_pos.into(), code_cell_value.clone());
+                    let old_code_cell = sheet.get_code_cell(sheet_pos.into()).cloned();
                     if let Some(code_cell_value) = &code_cell_value {
                         match code_cell_value.language {
                             CodeCellLanguage::Python => {
-                                self.run_python(transaction, sheet_pos, code_cell_value);
+                                // save the output from the last run to avoid flickering the output (we'll replace it when the run is complete)
+                                let mut code_cell_value = code_cell_value.clone();
+                                code_cell_value.output = match &old_code_cell {
+                                    Some(old_code_cell) => old_code_cell.output.clone(),
+                                    None => None,
+                                };
+                                self.run_python(transaction, sheet_pos, &code_cell_value);
+                                let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                                sheet.set_code_cell(sheet_pos.into(), Some(code_cell_value));
                             }
                             CodeCellLanguage::Formula => {
                                 self.run_formula(transaction, sheet_pos, code_cell_value);
@@ -41,6 +41,14 @@ impl GridController {
                                 unreachable!("Unsupported language in RunCodeCell");
                             }
                         }
+
+                        transaction.reverse_operations.insert(
+                            0,
+                            Operation::SetCodeCell {
+                                sheet_pos,
+                                code_cell_value: old_code_cell.clone(),
+                            },
+                        );
 
                         // only capture operations if not waiting for async, otherwise wait until calculation is complete
                         if transaction.waiting_for_async.is_none() {
@@ -55,9 +63,11 @@ impl GridController {
                             code_cell_value: sheet.get_code_cell(sheet_pos.into()).cloned(),
                         },
                     );
+                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
                     sheet.set_code_cell(sheet_pos.into(), code_cell_value);
                     transaction.forward_operations.push(op.clone());
                 } else {
+                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
                     sheet.set_code_cell(sheet_pos.into(), code_cell_value);
                 }
 

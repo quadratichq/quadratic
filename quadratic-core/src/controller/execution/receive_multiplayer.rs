@@ -35,6 +35,9 @@ impl GridController {
 
     /// Rolls back unsaved transactions to apply earlier transactions received from the server.
     fn rollback_unsaved_transactions(&mut self, transaction: &mut PendingTransaction) {
+        if self.transactions.unsaved_transactions.is_empty() {
+            return;
+        }
         let operations = self
             .transactions
             .unsaved_transactions
@@ -57,6 +60,9 @@ impl GridController {
 
     /// Reapplies the rolled-back unsaved transactions after adding earlier transactions.
     fn reapply_unsaved_transactions(&mut self, transaction: &mut PendingTransaction) {
+        if self.transactions.unsaved_transactions.is_empty() {
+            return;
+        }
         let operations = self
             .transactions
             .unsaved_transactions
@@ -157,51 +163,21 @@ impl GridController {
         if sequence_num == self.transactions.last_sequence_num + 1 {
             // first check if the received transaction is one of ours
             if let Some((index, _)) = self.transactions.find_unsaved_transaction(transaction.id) {
-                // If transaction is the top of the unsaved_transactions, then we only need to set the sequence_num.
-                // Note: if the server ever changes the operations in transactions, then we could not take this shortcut.
-                if index as u64 == 0 {
-                    self.transactions.unsaved_transactions.remove(index);
-
-                    // if there are any out of order transactions, now may be the time to apply them. Let's do a quick
-                    // check before rolling back unsaved_transactions.
-                    if !self.transactions.out_of_order_transactions.is_empty()
-                        && self.transactions.out_of_order_transactions[0]
-                            .sequence_num
-                            .unwrap()
-                            == sequence_num + 1
-                    {
-                        self.rollback_unsaved_transactions(transaction);
-                        self.apply_out_of_order_transactions(sequence_num);
-                        self.reapply_unsaved_transactions(transaction);
-                    } else {
-                        // otherwise we just need to set the sequence_num (which is normally taken care of in apply_out_of_order_transactions)
-                        self.transactions.last_sequence_num = sequence_num;
-                    }
-                } else {
-                    // Otherwise we need to rollback the unsaved transactions and then reapply our found unsaved transaction first.
-                    // This handles the case where the server received our transactions out of order. We will need to reapply our unsaved
-                    // transactions in the server's order.
-                    self.rollback_unsaved_transactions(transaction);
-                    self.transactions.unsaved_transactions.remove(index);
-                    self.start_transaction(transaction);
-                    self.apply_out_of_order_transactions(sequence_num);
-                    self.reapply_unsaved_transactions(transaction);
-                }
+                dbgjs!(&transaction.operations);
+                self.rollback_unsaved_transactions(transaction);
+                self.transactions.unsaved_transactions.remove(index);
+                self.start_transaction(transaction);
+                self.apply_out_of_order_transactions(sequence_num);
+                self.reapply_unsaved_transactions(transaction);
             } else {
-                // If the transaction is not one of ours, then we just apply the transaction after rolling back any unsaved transactions (if necessary).
-                if !self.transactions.unsaved_transactions.is_empty() {
-                    self.rollback_unsaved_transactions(transaction);
-                    self.start_transaction(transaction);
-                    self.apply_out_of_order_transactions(sequence_num);
-                    self.reapply_unsaved_transactions(transaction);
-                } else {
-                    // otherwise we can just apply the transaction
-                    self.start_transaction(transaction);
-                    self.apply_out_of_order_transactions(sequence_num);
+                // If the transaction is not one of ours, then we just apply the transaction after rolling back any unsaved transactions
+                self.rollback_unsaved_transactions(transaction);
+                self.start_transaction(transaction);
+                self.apply_out_of_order_transactions(sequence_num);
+                self.reapply_unsaved_transactions(transaction);
 
-                    // We do not need to render a thumbnail since none of these are our transactions.
-                    transaction.summary.generate_thumbnail = false;
-                }
+                // We do not need to render a thumbnail since none of these are our transactions.
+                transaction.summary.generate_thumbnail = false;
             }
         } else if sequence_num > self.transactions.last_sequence_num {
             // If we receive an unexpected later transaction then we just hold on to it in a sorted list.

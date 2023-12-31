@@ -772,8 +772,12 @@ export class Grid {
 
   receiveMultiplayerTransactions(transactions: string) {
     if (debugShowMultiplayer) console.log('[Multiplayer] Received catch-up transactions.');
-    const summary = this.gridController.receiveMultiplayerTransactions(transactions);
-    this.transactionResponse(summary);
+    const summaryResponse = this.gridController.receiveMultiplayerTransactions(transactions);
+    if (summaryResponse.Ok) {
+      this.transactionResponse(summaryResponse.Ok);
+    } else {
+      throw new Error(summaryResponse.Err);
+    }
   }
 
   //#endregion

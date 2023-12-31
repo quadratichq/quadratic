@@ -62,7 +62,6 @@ impl GridController {
         transaction.sheets_with_dirty_bounds.insert(sheet_id);
         transaction.summary.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
         transaction.summary.code_cells_modified.insert(sheet_id);
-        dbg!("here!!!!");
         transaction
             .summary
             .add_cell_sheets_modified_rect(&sheet_rect);
@@ -109,8 +108,10 @@ impl GridController {
                         old_code_cell_value.language,
                         old_code_cell_value.code_string,
                     );
+
+                    // set the new value. Just return if the sheet is not defined (as it may have been deleted by a concurrent user)
                     let old_code_cell_value = if let Some(sheet) =
-                        self.grid.try_sheet_mut_from_id(current_sheet_pos.sheet_id)
+                        self.try_sheet_mut_from_id(current_sheet_pos.sheet_id)
                     {
                         sheet.set_code_cell(current_sheet_pos.into(), Some(updated_code_cell_value))
                     } else {

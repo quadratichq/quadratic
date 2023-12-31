@@ -264,6 +264,103 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_python_cell_reference_change() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // set (0, 0) = 9
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            "9".into(),
+            None,
+        );
+
+        // create a python program at (0, 1) that adds (0, 0) + 1
+        gc.set_code_cell(
+            SheetPos {
+                x: 0,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Python,
+            "c(0, 0) + 1".into(),
+            None,
+        );
+
+        // get the transaction id for the awaiting python async calculation
+        let transaction_id = gc.async_transactions()[0].id;
+
+        // mock the get_cells to populate dependencies
+        let _ = gc.calculation_get_cells(JsComputeGetCells::new(
+            transaction_id.to_string(),
+            Rect::from_numbers(0, 0, 1, 1),
+            None,
+            None,
+        ));
+        // mock the calculation_complete
+        let _ = gc.calculation_complete(JsCodeResult::new_from_rust(
+            transaction_id.to_string(),
+            true,
+            None,
+            None,
+            None,
+            Some("10".to_string()),
+            None,
+            None,
+            None,
+        ));
+
+        // replace the value in (0, 0) to trigger the python calculation
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            "10".into(),
+            None,
+        );
+        assert_eq!(gc.async_transactions().len(), 1);
+
+        let transaction_id = gc.async_transactions()[0].id;
+
+        let cells = gc.calculation_get_cells(JsComputeGetCells::new(
+            transaction_id.to_string(),
+            Rect::from_numbers(0, 0, 1, 1),
+            None,
+            None,
+        ));
+        assert_eq!(
+            cells.unwrap().get_cells(),
+            &vec![CellForArray::new(0, 0, Some("10".to_string()))]
+        );
+        assert!(gc
+            .calculation_complete(JsCodeResult::new_from_rust(
+                transaction_id.to_string(),
+                true,
+                None,
+                None,
+                None,
+                Some("11".to_string()),
+                None,
+                None,
+                None,
+            ))
+            .is_ok());
+
+        // check that the value at (0, 1) contains the expected output
+        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 1 }),
+            Some(CellValue::Number(BigDecimal::from(11)))
+        );
+    }
+
     fn python_array(input: Vec<isize>) -> Vec<Vec<String>> {
         input.iter().map(|i| vec![i.to_string()]).collect()
     }
@@ -349,5 +446,130 @@ mod tests {
             .get_cell_value(Pos { x: 0, y: 0 })
             .unwrap()
             .is_blank_or_empty_string());
+    }
+
+    #[test]
+    fn test_python_does_not_replace_output_until_complete() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // creates a python program that outputs a string
+        gc.set_code_cell(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            CodeCellLanguage::Python,
+            "print('original output')".into(),
+            None,
+        );
+
+        // get the transaction id for the awaiting python async calculation
+        let transaction_id = gc.async_transactions()[0].id;
+
+        // mock the python calculation returning the result
+        assert!(gc
+            .calculation_complete(JsCodeResult::new_from_rust(
+                transaction_id.to_string(),
+                true,
+                None,
+                None,
+                None,
+                Some("original output".to_string()),
+                None,
+                None,
+                None,
+            ))
+            .is_ok());
+
+        // check that the value at (0, 0) contains the expected output
+        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Text("original output".into()))
+        );
+        gc.set_code_cell(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            CodeCellLanguage::Python,
+            "print('new output')".into(),
+            None,
+        );
+
+        // check that the value at (0, 0) contains the original output
+        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Text("original output".into()))
+        );
+
+        let transaction_id = gc.async_transactions()[0].id;
+
+        // mock the python calculation returning the result
+        assert!(gc
+            .calculation_complete(JsCodeResult::new_from_rust(
+                transaction_id.to_string(),
+                true,
+                None,
+                None,
+                None,
+                Some("new output".to_string()),
+                None,
+                None,
+                None,
+            ))
+            .is_ok());
+
+        // repeat the same action to find a bug that occurs on second change
+        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Text("new output".into()))
+        );
+        gc.set_code_cell(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            CodeCellLanguage::Python,
+            "print('new output second time')".into(),
+            None,
+        );
+
+        // check that the value at (0, 0) contains the original output
+        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Text("new output".into()))
+        );
+
+        let transaction_id = gc.async_transactions()[0].id;
+
+        // mock the python calculation returning the result
+        assert!(gc
+            .calculation_complete(JsCodeResult::new_from_rust(
+                transaction_id.to_string(),
+                true,
+                None,
+                None,
+                None,
+                Some("new output second time".to_string()),
+                None,
+                None,
+                None,
+            ))
+            .is_ok());
+
+        // check that the value at (0, 0) contains the original output
+        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Text("new output second time".into()))
+        );
     }
 }

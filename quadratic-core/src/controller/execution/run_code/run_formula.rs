@@ -11,10 +11,10 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        old_code_cell: &CodeCellValue,
+        code_cell: &CodeCellValue,
     ) {
         let mut ctx = Ctx::new(self.grid(), sheet_pos);
-        match parse_formula(&old_code_cell.code_string, sheet_pos.into()) {
+        match parse_formula(&code_cell.code_string, sheet_pos.into()) {
             Ok(parsed) => {
                 match parsed.eval(&mut ctx) {
                     Ok(value) => {
@@ -30,12 +30,12 @@ impl GridController {
                                 },
                                 spill: false,
                             }),
-                            ..old_code_cell.clone()
+                            ..code_cell.clone()
                         };
                         self.add_code_cell_operations(
                             transaction,
                             sheet_pos,
-                            Some(old_code_cell),
+                            Some(code_cell),
                             Some(&new_code_cell_value),
                         );
                         if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) {

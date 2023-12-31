@@ -36,6 +36,7 @@ impl GridController {
 
     /// Creates and runs a new Transaction
     pub(super) fn start_transaction(&mut self, transaction: &mut PendingTransaction) {
+        // todo: maybe remove this?
         if matches!(transaction.transaction_type, TransactionType::User) {
             transaction.id = Uuid::new_v4();
         }
@@ -109,6 +110,7 @@ impl GridController {
         pending.prepare_summary(true)
     }
 
+    /// Externally called when an async calculation completes
     pub fn calculation_complete(&mut self, result: JsCodeResult) -> Result<TransactionSummary> {
         let transaction_id = Uuid::parse_str(&result.transaction_id())?;
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
