@@ -253,7 +253,10 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{controller::GridController, CellValue, Pos, SheetPos};
+    use crate::{
+        controller::{transaction_types::JsCodeResult, GridController},
+        CellValue, Pos, SheetPos,
+    };
     use std::str::FromStr;
     use uuid::Uuid;
 
@@ -654,6 +657,93 @@ mod tests {
                 .unwrap()
                 .get_cell_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("This is sequence_num = 2".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_receive_multiplayer_while_waiting_for_async() {
+        let mut client = GridController::new();
+        let sheet_id = client.sheet_ids()[0];
+
+        // other is where the transaction are created
+        let mut other = GridController::new();
+        other.grid_mut().sheets_mut()[0].id = sheet_id;
+        let other = other.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            "From other".to_string(),
+            None,
+        );
+        let other_operations = serde_json::from_str(&other.operations.unwrap()).unwrap();
+
+        client.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            crate::grid::CodeCellLanguage::Python,
+            "start this before receiving multiplayer".to_string(),
+            None,
+        );
+
+        // ensure code_cell exists
+        let code_cell = client
+            .try_sheet_from_id(sheet_id)
+            .unwrap()
+            .get_code_cell(Pos { x: 1, y: 1 });
+        assert!(code_cell.is_some());
+
+        let transaction_id = client.async_transactions()[0].id;
+
+        // we receive the first transaction while waiting for the async call to complete
+        client
+            .received_transactions(&[TransactionServer {
+                file_id: Uuid::new_v4(),
+                id: Uuid::new_v4(),
+                sequence_num: 1,
+                operations: other_operations,
+            }])
+            .ok();
+
+        assert_eq!(
+            client
+                .try_sheet_from_id(sheet_id)
+                .unwrap()
+                .get_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Text("From other".to_string()))
+        );
+
+        // ensure code_cell still exists
+        let code_cell = client
+            .try_sheet_from_id(sheet_id)
+            .unwrap()
+            .get_code_cell(Pos { x: 1, y: 1 });
+        assert!(code_cell.is_some());
+
+        // mock the python calculation returning the result
+        let result = client.calculation_complete(JsCodeResult::new_from_rust(
+            transaction_id.to_string(),
+            true,
+            None,
+            None,
+            None,
+            Some("async output".to_string()),
+            None,
+            None,
+            None,
+        ));
+        assert!(result.is_ok());
+
+        assert_eq!(
+            client
+                .try_sheet_from_id(sheet_id)
+                .unwrap()
+                .get_cell_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Text("async output".to_string()))
         );
     }
 }

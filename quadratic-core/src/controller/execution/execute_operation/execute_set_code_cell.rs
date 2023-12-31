@@ -32,7 +32,21 @@ impl GridController {
                                 };
                                 self.run_python(transaction, sheet_pos, &code_cell_value);
                                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                                sheet.set_code_cell(sheet_pos.into(), Some(code_cell_value));
+                                sheet
+                                    .set_code_cell(sheet_pos.into(), Some(code_cell_value.clone()));
+
+                                // this forward_operations will be replaced when the async call completes
+                                transaction.forward_operations.push(Operation::SetCodeCell {
+                                    sheet_pos,
+                                    code_cell_value: Some(code_cell_value),
+                                });
+                                transaction.reverse_operations.insert(
+                                    0,
+                                    Operation::SetCodeCell {
+                                        sheet_pos,
+                                        code_cell_value: old_code_cell.clone(),
+                                    },
+                                );
                             }
                             CodeCellLanguage::Formula => {
                                 self.run_formula(transaction, sheet_pos, code_cell_value);
@@ -41,14 +55,6 @@ impl GridController {
                                 unreachable!("Unsupported language in RunCodeCell");
                             }
                         }
-
-                        transaction.reverse_operations.insert(
-                            0,
-                            Operation::SetCodeCell {
-                                sheet_pos,
-                                code_cell_value: old_code_cell.clone(),
-                            },
-                        );
 
                         // only capture operations if not waiting for async, otherwise wait until calculation is complete
                         if transaction.waiting_for_async.is_none() {

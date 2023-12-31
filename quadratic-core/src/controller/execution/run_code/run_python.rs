@@ -57,11 +57,10 @@ impl GridController {
                 return false;
             }
         }
-        transaction.waiting_for_async = Some(CodeCellLanguage::Python);
-        transaction.has_async = true;
-
         // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);
+        transaction.waiting_for_async = Some(CodeCellLanguage::Python);
+        transaction.has_async = true;
         true
     }
 }

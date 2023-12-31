@@ -17,7 +17,7 @@ pub struct ActiveTransactions {
     // async user transactions that are awaiting a response.
     async_transactions: Vec<PendingTransaction>,
 
-    // Completed user Transactions that do not yet have a sequence number from the server.
+    // Completed and async user Transactions that do not yet have a sequence number from the server.
     // Vec<(forward_transaction, reverse_transaction)>
     pub unsaved_transactions: Vec<(Transaction, Transaction)>,
 
@@ -62,6 +62,9 @@ impl ActiveTransactions {
     }
 
     pub fn add_async_transaction(&mut self, pending: PendingTransaction) {
+        let forward = pending.to_forward_transaction();
+        let undo = pending.to_undo_transaction();
+        self.unsaved_transactions.push((forward, undo));
         self.async_transactions.push(pending);
     }
 

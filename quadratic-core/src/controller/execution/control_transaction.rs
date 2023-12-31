@@ -115,6 +115,8 @@ impl GridController {
         let transaction_id = Uuid::parse_str(&result.transaction_id())?;
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
 
+        // we can remove the last forward_operation since it's the original SetCodeCell operation (used for rolling back while pending)
+        transaction.forward_operations.pop();
         if result.cancel_compute.unwrap_or(false) {
             self.handle_transactions(&mut transaction);
         }
