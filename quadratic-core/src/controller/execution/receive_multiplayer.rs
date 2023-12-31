@@ -163,10 +163,10 @@ impl GridController {
         if sequence_num == self.transactions.last_sequence_num + 1 {
             // first check if the received transaction is one of ours
             if let Some((index, _)) = self.transactions.find_unsaved_transaction(transaction.id) {
-                dbgjs!(&transaction.operations);
                 self.rollback_unsaved_transactions(transaction);
                 self.transactions.unsaved_transactions.remove(index);
                 self.start_transaction(transaction);
+                dbgjs!(&self.transactions.unsaved_transactions.len());
                 self.apply_out_of_order_transactions(sequence_num);
                 self.reapply_unsaved_transactions(transaction);
             } else {
