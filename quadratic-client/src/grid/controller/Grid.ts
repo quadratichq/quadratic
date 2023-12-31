@@ -2,7 +2,7 @@ import { htmlCellsHandler } from '@/gridGL/htmlCells/htmlCellsHandler';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import * as Sentry from '@sentry/react';
 import { Point, Rectangle } from 'pixi.js';
-import { debugMockLargeData, debugShowMultiplayer } from '../../debugFlags';
+import { debugShowMultiplayer } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
@@ -89,7 +89,6 @@ export const upgradeFileRust = async (
 // TS wrapper around Grid.rs
 export class Grid {
   private gridController!: GridController;
-  private _dirty = false;
   thumbnailDirty = false;
 
   transactionResponse(summary: TransactionSummary) {
@@ -153,14 +152,6 @@ export class Grid {
     pixiApp.setViewportDirty();
   }
 
-  get dirty(): boolean {
-    // the sheet is never dirty when mocking large data (to stop it from saving over an actual file)
-    return debugMockLargeData ? false : this._dirty;
-  }
-  set dirty(value: boolean) {
-    this._dirty = value;
-  }
-
   // this cannot be called in the constructor as Rust is not yet loaded
   init() {
     this.gridController = new GridController();
@@ -175,10 +166,6 @@ export class Grid {
       console.warn(e);
       return false;
     }
-  }
-
-  populateWithRandomFloats(sheetId: string, width: number, height: number) {
-    this.gridController.populateWithRandomFloats(sheetId, pointsToRect(0, 0, width, height));
   }
 
   export(): string {
@@ -428,7 +415,6 @@ export class Grid {
       sheets.getCursorPosition()
     );
     this.transactionResponse(summary);
-    this.dirty = true;
   }
 
   setCellRenderSize(sheetId: string, x: number, y: number, width: number, height: number) {
@@ -712,11 +698,17 @@ export class Grid {
 
   // returns undefined if there was an error fetching cells (eg, invalid sheet name)
   calculationGetCells(
+    transactionId: string,
     rect: RectInternal,
     sheetName: string | undefined,
     lineNumber: number | undefined
   ): { x: number; y: number; value: string }[] | undefined {
-    const getCells = new JsComputeGetCells(rect, sheetName, lineNumber === undefined ? undefined : BigInt(lineNumber));
+    const getCells = new JsComputeGetCells(
+      transactionId,
+      rect,
+      sheetName,
+      lineNumber === undefined ? undefined : BigInt(lineNumber)
+    );
     const array = this.gridController.calculationGetCells(getCells);
     if (array) {
       // indication that getCells resulted in an error
