@@ -1,4 +1,6 @@
-use crate::controller::{transaction_summary::TransactionSummary, GridController};
+use crate::controller::{
+    execution::TransactionType, transaction_summary::TransactionSummary, GridController,
+};
 
 impl GridController {
     pub fn has_undo(&self) -> bool {
@@ -9,18 +11,14 @@ impl GridController {
     }
     pub fn undo(&mut self, cursor: Option<String>) -> TransactionSummary {
         if let Some(transaction) = self.undo_stack.pop() {
-            let mut summary = self.undo_transaction(transaction.operations, cursor);
-            summary.cursor = transaction.cursor;
-            summary
+            self.start_undo_transaction(&transaction, TransactionType::Undo, cursor)
         } else {
             TransactionSummary::default()
         }
     }
     pub fn redo(&mut self, cursor: Option<String>) -> TransactionSummary {
         if let Some(transaction) = self.redo_stack.pop() {
-            let mut summary = self.redo_transaction(transaction.operations, cursor);
-            summary.cursor = transaction.cursor;
-            summary
+            self.start_undo_transaction(&transaction, TransactionType::Redo, cursor)
         } else {
             TransactionSummary::default()
         }

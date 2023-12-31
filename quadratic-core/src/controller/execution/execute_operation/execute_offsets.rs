@@ -1,10 +1,13 @@
 use crate::{
-    controller::{operations::operation::Operation, GridController},
+    controller::{
+        active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation, GridController,
+    },
     SheetPos,
 };
 
 impl GridController {
-    pub fn execute_resize_column(&mut self, op: &Operation) {
+    pub fn execute_resize_column(&mut self, transaction: &mut PendingTransaction, op: &Operation) {
         match op.clone() {
             Operation::ResizeColumn {
                 sheet_id,
@@ -12,20 +15,22 @@ impl GridController {
                 new_size,
             } => {
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                self.summary.offsets_modified.push(sheet.id);
+                transaction.summary.offsets_modified.insert(sheet.id);
                 let old_size = sheet.offsets.set_column_width(column, new_size);
-                self.summary.generate_thumbnail = self.summary.generate_thumbnail
-                    || self.thumbnail_dirty_sheet_pos(SheetPos {
+                transaction.summary.generate_thumbnail |=
+                    self.thumbnail_dirty_sheet_pos(SheetPos {
                         x: column,
                         y: 0,
                         sheet_id,
                     });
-                self.forward_operations.push(Operation::ResizeColumn {
-                    sheet_id,
-                    column,
-                    new_size,
-                });
-                self.reverse_operations.insert(
+                transaction
+                    .forward_operations
+                    .push(Operation::ResizeColumn {
+                        sheet_id,
+                        column,
+                        new_size,
+                    });
+                transaction.reverse_operations.insert(
                     0,
                     Operation::ResizeColumn {
                         sheet_id,
@@ -38,7 +43,7 @@ impl GridController {
         }
     }
 
-    pub fn execute_resize_row(&mut self, op: &Operation) {
+    pub fn execute_resize_row(&mut self, transaction: &mut PendingTransaction, op: &Operation) {
         match op.clone() {
             Operation::ResizeRow {
                 sheet_id,
@@ -47,19 +52,19 @@ impl GridController {
             } => {
                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
                 let old_size = sheet.offsets.set_row_height(row, new_size);
-                self.summary.offsets_modified.push(sheet.id);
-                self.summary.generate_thumbnail = self.summary.generate_thumbnail
-                    || self.thumbnail_dirty_sheet_pos(SheetPos {
+                transaction.summary.offsets_modified.insert(sheet.id);
+                transaction.summary.generate_thumbnail |=
+                    self.thumbnail_dirty_sheet_pos(SheetPos {
                         x: 0,
                         y: row,
                         sheet_id,
                     });
-                self.forward_operations.push(Operation::ResizeRow {
+                transaction.forward_operations.push(Operation::ResizeRow {
                     sheet_id,
                     row,
                     new_size,
                 });
-                self.reverse_operations.insert(
+                transaction.reverse_operations.insert(
                     0,
                     Operation::ResizeRow {
                         sheet_id,
@@ -76,6 +81,7 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::controller::GridController;
+    use std::collections::HashSet;
 
     // also see tests in sheet_offsets.rs
 
@@ -95,7 +101,9 @@ mod tests {
         assert_eq!(column_width, new_size);
         assert!(summary.save);
         assert_eq!(summary.offsets_modified.len(), 1);
-        assert_eq!(summary.offsets_modified, vec![sheet_id]);
+        let mut offsets = HashSet::new();
+        offsets.insert(sheet_id);
+        assert_eq!(summary.offsets_modified, offsets);
     }
 
     #[test]
@@ -114,6 +122,8 @@ mod tests {
         assert_eq!(row_height, new_size);
         assert!(summary.save);
         assert_eq!(summary.offsets_modified.len(), 1);
-        assert_eq!(summary.offsets_modified, vec![sheet_id]);
+        let mut offsets = HashSet::new();
+        offsets.insert(sheet_id);
+        assert_eq!(summary.offsets_modified, offsets);
     }
 }

@@ -79,41 +79,6 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
     syncChanges(() => apiClient.updateFile(uuid, { name }));
   }, [name, syncChanges, uuid]);
 
-  // disabled saving for server-backed saving
-  // ----------------------------------------
-  //
-  // // If a sync fails, start an interval that tries to sync everything about the
-  // // file anew every few seconds until a sync completes again
-  // useInterval(
-  //   () => {
-  //     // on error, attempt to resync everything
-  //     if (syncState === 'error') {
-  //       if (debugShowFileIO) console.log('[FileProvider] attempting to resync entire file after error...');
-  //       syncChanges(() =>
-  //         apiClient.updateFile(uuid, {
-  //           name,
-  //           contents: grid.export(),
-  //           version: grid.getVersion(),
-  //         })
-  //       );
-  //       apiClient.updateFileSharing(uuid, { public_link_access: publicLinkAccess });
-  //       grid.dirty = false;
-  //     } else if (grid.dirty) {
-  //       const now = performance.now();
-  //       const contents = grid.export();
-  //       if (debugShowFileIO)
-  //         console.log(
-  //           `[FileProvider] saving file... (${Math.round(contents.length / 1000)}kb in ${Math.round(
-  //             performance.now() - now
-  //           )}ms)`
-  //         );
-  //       syncChanges(() => apiClient.updateFile(uuid, { contents, version: grid.getVersion() }));
-  //       grid.dirty = false;
-  //     }
-  //   },
-  //   syncState === 'error' ? syncErrorInterval : syncInterval
-  // );
-
   // Set the permission in recoil based on the initial state
   // TODO figure out a way to set this in RecoilRoot (if possible)
   //      or let it flow if we go with react-router's loaders for this

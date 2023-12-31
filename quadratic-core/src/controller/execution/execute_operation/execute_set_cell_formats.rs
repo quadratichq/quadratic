@@ -1,17 +1,37 @@
 use crate::{
-    controller::{operations::operation::Operation, GridController},
+    controller::{
+        active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation, GridController,
+    },
     grid::formatting::CellFmtArray,
     grid::*,
 };
 
 impl GridController {
-    pub(crate) fn execute_set_cell_formats(&mut self, op: &Operation) {
+    pub(crate) fn execute_set_cell_formats(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: &Operation,
+    ) {
         match op.clone() {
             Operation::SetCellFormats { sheet_rect, attr } => {
-                self.sheets_with_dirty_bounds.insert(sheet_rect.sheet_id);
+                transaction
+                    .sheets_with_dirty_bounds
+                    .insert(sheet_rect.sheet_id);
 
-                if let CellFmtArray::FillColor(_) = attr {
-                    self.summary.fill_sheets_modified.push(sheet_rect.sheet_id);
+                if !matches!(attr, CellFmtArray::RenderSize(_))
+                    && !matches!(attr, CellFmtArray::FillColor(_))
+                {
+                    transaction
+                        .summary
+                        .add_cell_sheets_modified_rect(&sheet_rect);
+                }
+
+                if matches!(attr, CellFmtArray::FillColor(_)) {
+                    transaction
+                        .summary
+                        .fill_sheets_modified
+                        .insert(sheet_rect.sheet_id);
                 }
 
                 // todo: this is too slow -- perhaps call this again when we have a better way of setting multiple formats within an array
@@ -21,59 +41,54 @@ impl GridController {
 
                 let old_attr = match attr.clone() {
                     CellFmtArray::Align(align) => CellFmtArray::Align(
-                        self.set_cell_formats_for_type::<CellAlign>(&sheet_rect, align, true),
+                        self.set_cell_formats_for_type::<CellAlign>(&sheet_rect, align),
                     ),
                     CellFmtArray::Wrap(wrap) => CellFmtArray::Wrap(
-                        self.set_cell_formats_for_type::<CellWrap>(&sheet_rect, wrap, true),
+                        self.set_cell_formats_for_type::<CellWrap>(&sheet_rect, wrap),
                     ),
                     CellFmtArray::NumericFormat(num_fmt) => CellFmtArray::NumericFormat(
-                        self.set_cell_formats_for_type::<NumericFormat>(&sheet_rect, num_fmt, true),
+                        self.set_cell_formats_for_type::<NumericFormat>(&sheet_rect, num_fmt),
                     ),
                     CellFmtArray::NumericDecimals(num_decimals) => CellFmtArray::NumericDecimals(
                         self.set_cell_formats_for_type::<NumericDecimals>(
                             &sheet_rect,
                             num_decimals,
-                            true,
                         ),
                     ),
                     CellFmtArray::NumericCommas(num_commas) => CellFmtArray::NumericCommas(
-                        self.set_cell_formats_for_type::<NumericCommas>(
-                            &sheet_rect,
-                            num_commas,
-                            true,
-                        ),
+                        self.set_cell_formats_for_type::<NumericCommas>(&sheet_rect, num_commas),
                     ),
                     CellFmtArray::Bold(bold) => CellFmtArray::Bold(
-                        self.set_cell_formats_for_type::<Bold>(&sheet_rect, bold, true),
+                        self.set_cell_formats_for_type::<Bold>(&sheet_rect, bold),
                     ),
                     CellFmtArray::Italic(italic) => CellFmtArray::Italic(
-                        self.set_cell_formats_for_type::<Italic>(&sheet_rect, italic, true),
+                        self.set_cell_formats_for_type::<Italic>(&sheet_rect, italic),
                     ),
                     CellFmtArray::TextColor(text_color) => CellFmtArray::TextColor(
-                        self.set_cell_formats_for_type::<TextColor>(&sheet_rect, text_color, true),
+                        self.set_cell_formats_for_type::<TextColor>(&sheet_rect, text_color),
                     ),
                     CellFmtArray::FillColor(fill_color) => {
-                        self.summary.fill_sheets_modified.push(sheet_rect.sheet_id);
-                        CellFmtArray::FillColor(self.set_cell_formats_for_type::<FillColor>(
-                            &sheet_rect,
-                            fill_color,
-                            false,
-                        ))
+                        transaction
+                            .summary
+                            .fill_sheets_modified
+                            .insert(sheet_rect.sheet_id);
+                        CellFmtArray::FillColor(
+                            self.set_cell_formats_for_type::<FillColor>(&sheet_rect, fill_color),
+                        )
                     }
                     CellFmtArray::RenderSize(output_size) => {
-                        self.summary.html.insert(sheet_rect.sheet_id);
-                        CellFmtArray::RenderSize(self.set_cell_formats_for_type::<RenderSize>(
-                            &sheet_rect,
-                            output_size,
-                            false,
-                        ))
+                        transaction.summary.html.insert(sheet_rect.sheet_id);
+                        CellFmtArray::RenderSize(
+                            self.set_cell_formats_for_type::<RenderSize>(&sheet_rect, output_size),
+                        )
                     }
                 };
 
-                self.forward_operations
+                transaction
+                    .forward_operations
                     .push(Operation::SetCellFormats { sheet_rect, attr });
 
-                self.reverse_operations.insert(
+                transaction.reverse_operations.insert(
                     0,
                     Operation::SetCellFormats {
                         sheet_rect,

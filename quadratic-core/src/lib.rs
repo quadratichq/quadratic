@@ -7,6 +7,7 @@ pub mod util;
 mod error;
 mod color;
 pub mod controller;
+pub mod core_error;
 pub mod ext;
 pub mod formulas;
 pub mod grid;

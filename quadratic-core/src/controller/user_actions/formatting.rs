@@ -14,14 +14,9 @@ impl GridController {
         &mut self,
         sheet_rect: &SheetRect,
         values: RunLengthEncoding<Option<A::Value>>,
-        update_cell_sheets_modified: bool,
     ) -> RunLengthEncoding<Option<A::Value>> {
         let sheet = self.grid.sheet_mut_from_id(sheet_rect.sheet_id);
-        let results = sheet.set_cell_formats_for_type::<A>(sheet_rect, values);
-        if update_cell_sheets_modified {
-            self.add_cell_sheets_modified_rect(sheet_rect);
-        }
-        results
+        sheet.set_cell_formats_for_type::<A>(sheet_rect, values)
     }
 
     /// set currency type for a region

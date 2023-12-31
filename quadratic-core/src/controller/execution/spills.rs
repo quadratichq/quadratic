@@ -1,19 +1,28 @@
 // Handles all spill checking for the sheet
 
 use crate::{
-    controller::{operations::operation::Operation, GridController},
+    controller::{
+        active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation, GridController,
+    },
     grid::SheetId,
     Rect, SheetRect,
 };
 
 impl GridController {
     /// Changes the spill error for a code_cell and adds necessary operations
-    fn change_spill(&mut self, sheet_id: SheetId, index: usize, set_spill_error: bool) {
+    fn change_spill(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        sheet_id: SheetId,
+        index: usize,
+        set_spill_error: bool,
+    ) {
         // change the spill for the first code_cell and then iterate the later code_cells.
         if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_id) {
             if let Some((pos, code_cell)) = sheet.code_cells.get_mut(index) {
                 let sheet_pos = pos.to_sheet_pos(sheet.id);
-                self.reverse_operations.insert(
+                transaction.reverse_operations.insert(
                     0,
                     Operation::SetCodeCell {
                         sheet_pos,
@@ -21,19 +30,19 @@ impl GridController {
                     },
                 );
                 code_cell.set_spill(set_spill_error);
-                self.forward_operations.push(Operation::SetCodeCell {
+                transaction.forward_operations.push(Operation::SetCodeCell {
                     sheet_pos,
                     code_cell_value: Some(code_cell.clone()),
                 });
             }
-            self.check_all_spills(sheet_id, index + 1);
+            self.check_all_spills(transaction, sheet_id, index + 1);
         }
     }
 
     /// Checks for spills caused by a change in a sheet_rect.
     /// Use only when the changed output range is known (otherwise call check_all_spills).
     /// Will automatically call check_all_spills if a code_cell's spill error has changed.
-    pub fn check_spills(&mut self, sheet_rect: &SheetRect) {
+    pub fn check_spills(&mut self, transaction: &mut PendingTransaction, sheet_rect: &SheetRect) {
         let sheet_id = sheet_rect.sheet_id;
         // find the first code cell that has a change in its spill_error
         let result = match self.grid.try_sheet_mut_from_id(sheet_id) {
@@ -74,7 +83,7 @@ impl GridController {
             }
         };
         if let Some((index, set_spill_error)) = result {
-            self.change_spill(sheet_id, index, set_spill_error);
+            self.change_spill(transaction, sheet_id, index, set_spill_error);
         }
     }
 
@@ -82,7 +91,12 @@ impl GridController {
     /// Will iterate through remaining code_cells after a change until it touches every code_cell.
     ///
     /// * `start` - the index of the first code_cell to check (we don't need to check earlier code_cells when iterating)
-    pub fn check_all_spills(&mut self, sheet_id: SheetId, start: usize) {
+    pub fn check_all_spills(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        sheet_id: SheetId,
+        start: usize,
+    ) {
         if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_id) {
             let result = sheet.code_cells.iter().skip(start).enumerate().find_map(
                 |(index, (pos, code_cell))| {
@@ -105,8 +119,8 @@ impl GridController {
                 },
             );
             if let Some((index, set_spill_error)) = result {
-                self.change_spill(sheet_id, index, set_spill_error);
-                self.check_all_spills(sheet_id, index + 1);
+                self.change_spill(transaction, sheet_id, index, set_spill_error);
+                self.check_all_spills(transaction, sheet_id, index + 1);
             }
         }
     }
@@ -114,11 +128,18 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use crate::{controller::GridController, CellValue, Pos, SheetPos};
+    use crate::{
+        controller::{
+            active_transactions::pending_transaction::PendingTransaction, GridController,
+        },
+        CellValue, Pos, SheetPos,
+    };
 
     #[test]
     fn test_check_spills() {
         let mut gc = GridController::new();
+        let mut transaction = PendingTransaction::default();
+
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid.try_sheet_mut_from_id(sheet_id).unwrap();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
@@ -148,7 +169,7 @@ mod tests {
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
         assert!(!sheet.code_cells[0].1.has_spill_error());
 
-        gc.check_spills(&sheet_rect);
+        gc.check_spills(&mut transaction, &sheet_rect);
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
         assert!(sheet.code_cells[0].1.has_spill_error());
@@ -157,6 +178,8 @@ mod tests {
     #[test]
     fn test_check_all_spills() {
         let mut gc = GridController::new();
+        let mut transaction = PendingTransaction::default();
+
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid.try_sheet_mut_from_id(sheet_id).unwrap();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
@@ -180,7 +203,7 @@ mod tests {
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
         assert!(!sheet.code_cells[0].1.has_spill_error());
 
-        gc.check_all_spills(sheet_id, 0);
+        gc.check_all_spills(&mut transaction, sheet_id, 0);
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
         assert!(sheet.code_cells[0].1.has_spill_error());

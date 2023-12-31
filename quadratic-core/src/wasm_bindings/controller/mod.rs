@@ -1,10 +1,9 @@
 use uuid::Uuid;
 
 use super::*;
-use crate::controller::transaction::Transaction;
+use crate::controller::transaction::TransactionServer;
 use crate::controller::transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells};
 use crate::{controller::transaction_summary::TransactionSummary, grid::js_types::*};
-use std::collections::HashSet;
 use std::str::FromStr;
 
 pub mod auto_complete;
@@ -81,19 +80,22 @@ impl GridController {
         )?)
     }
 
+    // TODO: this will not work with PendingTransaction
     #[wasm_bindgen(js_name = "getCalculationTransactionSummary")]
     pub fn js_calculation_transaction_summary(&mut self) -> Result<JsValue, JsValue> {
-        self.transaction_updated_bounds();
-        let summary = self.prepare_transaction_summary();
+        // self.transaction_updated_bounds();
+        // let summary = self.prepare_transaction_summary();
+        let summary = TransactionSummary::default();
         Ok(serde_wasm_bindgen::to_value(&summary)?)
     }
 
+    // todo: this should be reworked with ts-rs. also need better error return error to TS
     #[wasm_bindgen(js_name = "calculationGetCells")]
     pub fn js_calculation_get_cells(
         &mut self,
         get_cells: JsComputeGetCells,
     ) -> Option<CellsForArray> {
-        self.calculation_get_cells(get_cells)
+        self.calculation_get_cells(get_cells).ok()
     }
 
     #[wasm_bindgen(js_name = "multiplayerTransaction")]
@@ -118,9 +120,11 @@ impl GridController {
         ))?)
     }
 
+    /// Used to set the sequence_num for multiplayer. This should only be called when receiving the sequence_num
+    /// directly from the file. Use receiveSequenceNum for all other cases.
     #[wasm_bindgen(js_name = "setMultiplayerSequenceNum")]
     pub fn js_multiplayer_set_sequence_num(&mut self, sequence_num: u32) {
-        self.last_sequence_num = sequence_num as u64;
+        self.set_last_sequence_num(sequence_num as u64);
     }
 
     /// Handle server-provided sequence_num.
@@ -138,39 +142,10 @@ impl GridController {
         &mut self,
         transactions: String,
     ) -> Result<JsValue, JsValue> {
-        let transactions: Vec<Transaction> = serde_json::from_str(&transactions)
+        let transactions: Vec<TransactionServer> = serde_json::from_str(&transactions)
             .expect("Invalid transactions received in receiveMultiplayerTransactions");
         Ok(serde_wasm_bindgen::to_value(
-            &self.received_transactions(&transactions),
+            &self.received_transactions(&transactions[..]),
         )?)
-    }
-
-    /// Populates a portion of a sheet with random float values.
-    ///
-    /// Returns a [`TransactionSummary`].
-    #[wasm_bindgen(js_name = "populateWithRandomFloats")]
-    pub fn js_populate_with_random_floats(
-        &mut self,
-        sheet_id: String,
-        region: &Rect,
-    ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        self.populate_with_random_floats(sheet_id, region);
-        Ok(serde_wasm_bindgen::to_value(&TransactionSummary {
-            fill_sheets_modified: vec![],
-            border_sheets_modified: vec![],
-            code_cells_modified: HashSet::new(),
-            cell_sheets_modified: HashSet::new(),
-            sheet_list_modified: false,
-            cursor: None,
-            offsets_modified: vec![],
-            save: false,
-            generate_thumbnail: false,
-            transaction_busy: false,
-            transaction_id: None,
-            operations: None,
-            html: HashSet::new(),
-            request_transactions: None,
-        })?)
     }
 }

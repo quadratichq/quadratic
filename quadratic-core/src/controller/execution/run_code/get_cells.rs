@@ -1,18 +1,26 @@
-use crate::controller::{
-    execution::TransactionType,
-    transaction_types::{CellsForArray, JsComputeGetCells},
-    GridController,
+use uuid::Uuid;
+
+use crate::{
+    controller::{
+        execution::TransactionType,
+        transaction_types::{CellsForArray, JsComputeGetCells},
+        GridController,
+    },
+    core_error::{CoreError, Result},
 };
 impl GridController {
-    /// gets cells for use in async calculations
-    pub fn get_cells(&mut self, get_cells: JsComputeGetCells) -> Option<CellsForArray> {
-        // ensure that the get_cells is not requesting a reference to itself
-        let (current_sheet, pos) = if let Some(current_sheet_pos) = self.current_sheet_pos {
+    /// This is used to get cells during a  async calculation.
+    pub fn calculation_get_cells(&mut self, get_cells: JsComputeGetCells) -> Result<CellsForArray> {
+        let transaction_id = Uuid::parse_str(&get_cells.transaction_id())?;
+        let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
+
+        let (current_sheet, pos) = if let Some(current_sheet_pos) = transaction.current_sheet_pos {
             (current_sheet_pos.sheet_id, current_sheet_pos.into())
         } else {
-            // this should only occur after an internal logic error
-            dbgjs!("Expected current_sheet_pos to be defined in transaction::get_cells",);
-            return Some(CellsForArray::new(vec![], true));
+            self.transactions.add_async_transaction(transaction);
+            return Err(CoreError::TransactionNotFound(
+                "get_cells failed to get current_sheet_pos".to_string(),
+            ));
         };
 
         let sheet_name = get_cells.sheet_name();
@@ -23,7 +31,7 @@ impl GridController {
             |sheet_name| self.grid().sheet_from_name(sheet_name),
         );
 
-        let transaction_type = self.transaction_type.clone();
+        let transaction_type = transaction.transaction_type.clone();
         assert_eq!(transaction_type, TransactionType::User);
         if let Some(sheet) = sheet {
             // ensure that the current cell ref is not in the get_cells request
@@ -34,15 +42,18 @@ impl GridController {
                 } else {
                     "Sheet not found".to_string()
                 };
-                self.code_cell_sheet_error(msg, get_cells.line_number());
-                self.handle_transactions(transaction_type);
-                return Some(CellsForArray::new(vec![], true));
+                self.code_cell_sheet_error(&mut transaction, msg, get_cells.line_number())?;
+                self.handle_transactions(&mut transaction);
+                return Ok(CellsForArray::new(vec![], true));
             }
 
             let rect = get_cells.rect();
             let array = sheet.cell_array(rect);
-            self.cells_accessed.insert(rect.to_sheet_rect(sheet.id));
-            Some(array)
+            transaction
+                .cells_accessed
+                .insert(rect.to_sheet_rect(sheet.id));
+            self.transactions.add_async_transaction(transaction);
+            Ok(array)
         } else {
             // unable to find sheet by name, generate error
             let msg = if let (Some(sheet_name), Some(line_number)) =
@@ -52,8 +63,9 @@ impl GridController {
             } else {
                 "Sheet not found".to_string()
             };
-            self.code_cell_sheet_error(msg, get_cells.line_number());
-            Some(CellsForArray::new(vec![], true))
+            self.code_cell_sheet_error(&mut transaction, msg, get_cells.line_number())?;
+            self.transactions.add_async_transaction(transaction);
+            Ok(CellsForArray::new(vec![], true))
         }
     }
 }
