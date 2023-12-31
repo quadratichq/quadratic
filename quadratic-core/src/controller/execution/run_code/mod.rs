@@ -153,12 +153,9 @@ impl GridController {
             .get_code_cell(sheet_pos.into())
             .cloned();
         match update_code_cell_value {
-            None => {
-                return Err(CoreError::TransactionNotFound(
-                    "Expected current_code_cell to be defined in transaction::code_cell_error"
-                        .into(),
-                ));
-            }
+            None => Err(CoreError::TransactionNotFound(
+                "Expected current_code_cell to be defined in transaction::code_cell_error".into(),
+            )),
             Some(update_code_cell_value) => {
                 let mut code_cell_value = update_code_cell_value.clone();
                 code_cell_value.last_modified = date_string();

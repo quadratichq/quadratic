@@ -17,7 +17,7 @@ use crate::{
     SheetPos, SheetRect,
 };
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PendingTransaction {
     pub id: Uuid,
 
@@ -55,14 +55,27 @@ pub struct PendingTransaction {
     pub complete: bool,
 }
 
-impl PendingTransaction {
-    pub fn default() -> Self {
+impl Default for PendingTransaction {
+    fn default() -> Self {
         PendingTransaction {
             id: Uuid::new_v4(),
-            ..Default::default()
+            cursor: None,
+            transaction_type: TransactionType::User,
+            operations: VecDeque::new(),
+            reverse_operations: Vec::new(),
+            forward_operations: Vec::new(),
+            sheets_with_dirty_bounds: HashSet::new(),
+            has_async: false,
+            summary: TransactionSummary::default(),
+            cells_accessed: HashSet::new(),
+            current_sheet_pos: None,
+            waiting_for_async: None,
+            complete: false,
         }
     }
+}
 
+impl PendingTransaction {
     pub fn to_transaction(&self, sequence_num: Option<u64>) -> Transaction {
         Transaction {
             id: self.id,

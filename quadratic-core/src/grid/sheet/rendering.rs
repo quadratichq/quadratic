@@ -514,7 +514,7 @@ mod tests {
             "<html></html>".to_string(),
             None,
         );
-        let transaction_id = gc.async_transactions()[0].id.clone();
+        let transaction_id = gc.async_transactions()[0].id;
         gc.calculation_complete(JsCodeResult::new(
             transaction_id.to_string(),
             true,

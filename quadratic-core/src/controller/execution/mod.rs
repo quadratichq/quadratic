@@ -42,6 +42,6 @@ impl GridController {
     /// Gets the pending transactions for test purposes
     #[cfg(test)]
     pub fn async_transactions(&self) -> &[PendingTransaction] {
-        &self.transactions.async_transactions()
+        self.transactions.async_transactions()
     }
 }

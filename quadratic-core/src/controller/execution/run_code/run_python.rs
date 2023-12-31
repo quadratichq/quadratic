@@ -135,12 +135,12 @@ mod tests {
             last_modified: "".to_string(),
         };
         gc.set_code_cell(
-            sheet_pos.into(),
+            sheet_pos,
             code_cell.language,
             code_cell.code_string.clone(),
             None,
         );
-        let transaction_id = gc.async_transactions()[0].id.clone();
+        let transaction_id = gc.async_transactions()[0].id;
         let mut transaction = gc
             .transactions
             .remove_awaiting_async(transaction_id)
@@ -172,7 +172,7 @@ mod tests {
         );
 
         // transaction for its id
-        let transaction_id = gc.async_transactions()[0].id.clone();
+        let transaction_id = gc.async_transactions()[0].id;
 
         assert!(gc
             .calculation_complete(JsCodeResult::new_from_rust(
@@ -223,7 +223,7 @@ mod tests {
         );
 
         // get the transaction id for the awaiting python async calculation
-        let transaction_id = gc.async_transactions()[0].id.clone();
+        let transaction_id = gc.async_transactions()[0].id;
 
         // mock the get_cells request from python
         let cells = gc.calculation_get_cells(JsComputeGetCells::new(
@@ -283,7 +283,7 @@ mod tests {
         );
 
         // get the transaction id for the awaiting python async calculation
-        let transaction_id = gc.async_transactions()[0].id.clone();
+        let transaction_id = gc.async_transactions()[0].id;
 
         // mock the python calculation returning the result
         assert!(gc
@@ -326,7 +326,7 @@ mod tests {
             "dummy calculation".into(),
             None,
         );
-        let transaction_id = gc.async_transactions()[0].id.clone();
+        let transaction_id = gc.async_transactions()[0].id;
         // mock the python result
         let result = JsCodeResult::new(
             transaction_id.to_string(),
