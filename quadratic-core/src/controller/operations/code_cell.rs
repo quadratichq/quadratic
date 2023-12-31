@@ -1,5 +1,5 @@
 use crate::{
-    controller::GridController,
+    controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
     grid::{CodeCellLanguage, CodeCellValue},
     util::date_string,
     Array, CellValue, Pos, SheetPos, SheetRect,
@@ -57,7 +57,12 @@ impl GridController {
     }
 
     /// Adds operations to compute cells that are dependents within a SheetRect
-    pub fn add_compute_operations(&mut self, output: &SheetRect, skip_compute: Option<SheetPos>) {
+    pub fn add_compute_operations(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        output: &SheetRect,
+        skip_compute: Option<SheetPos>,
+    ) {
         let mut operations = vec![];
         self.get_dependent_code_cells(output)
             .iter()
@@ -67,7 +72,7 @@ impl GridController {
                         .is_some_and(|skip_compute| skip_compute == *code_cell_sheet_pos)
                     {
                         // only add a compute operation if there isn't already one pending
-                        if !self.operations.iter().any(|op| match op {
+                        if !transaction.operations.iter().any(|op| match op {
                             Operation::SetCodeCell { sheet_pos, .. } => {
                                 code_cell_sheet_pos == sheet_pos
                             }
@@ -89,13 +94,13 @@ impl GridController {
                     }
                 });
             });
-
-        self.operations.extend(operations);
+        transaction.operations.extend(operations);
     }
 
     /// Adds operations after a code_cell has changed
     pub fn add_code_cell_operations(
         &mut self,
+        transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
         old_code_cell: Option<&CodeCellValue>,
         new_code_cell: Option<&CodeCellValue>,
@@ -105,13 +110,13 @@ impl GridController {
         match (&old_sheet_rect, &new_sheet_rect) {
             (Some(old_sheet_rect), Some(new_sheet_rect)) => {
                 let sheet_rect = old_sheet_rect.union(new_sheet_rect);
-                self.add_compute_operations(&sheet_rect, Some(sheet_pos));
+                self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
             }
             (Some(old_sheet_rect), None) => {
-                self.add_compute_operations(old_sheet_rect, Some(sheet_pos));
+                self.add_compute_operations(transaction, old_sheet_rect, Some(sheet_pos));
             }
             (None, Some(new_sheet_rect)) => {
-                self.add_compute_operations(new_sheet_rect, Some(sheet_pos));
+                self.add_compute_operations(transaction, new_sheet_rect, Some(sheet_pos));
             }
             (None, None) => {}
         }

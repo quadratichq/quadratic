@@ -1,10 +1,17 @@
 use crate::{
-    controller::{operations::operation::Operation, GridController},
+    controller::{
+        active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation, GridController,
+    },
     Array, CellValue,
 };
 
 impl GridController {
-    pub(crate) fn execute_set_cell_values(&mut self, op: &Operation, is_user: bool, is_undo: bool) {
+    pub(crate) fn execute_set_cell_values(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: &Operation,
+    ) {
         match op {
             Operation::SetCellValues { sheet_rect, values } => {
                 match self.grid.try_sheet_mut_from_id(sheet_rect.sheet_id) {
@@ -22,32 +29,34 @@ impl GridController {
                                     .as_ref()
                                     .is_some_and(|cell_value| cell_value.is_html())
                                 {
-                                    self.summary.html.insert(sheet_pos.sheet_id);
+                                    transaction.summary.html.insert(sheet_pos.sheet_id);
                                 }
                                 old_value
                             })
                             .map(|old_value| old_value.unwrap_or(CellValue::Blank))
                             .collect();
 
-                        if is_user || is_undo {
-                            self.forward_operations.push(op.clone());
+                        if transaction.is_user() || transaction.is_undo() {
+                            transaction.forward_operations.push(op.clone());
 
-                            if is_user {
+                            if transaction.is_user() {
                                 // remove any code_cells that are now covered by the new values
                                 let mut code_cell_removed = false;
                                 sheet.code_cells.retain(|(pos, code_cell)| {
                                     if sheet_rect.contains(pos.to_sheet_pos(sheet.id)) {
-                                        self.reverse_operations.insert(
+                                        transaction.reverse_operations.insert(
                                             0,
                                             Operation::SetCodeCell {
                                                 sheet_pos: pos.to_sheet_pos(sheet.id),
                                                 code_cell_value: Some(code_cell.clone()),
                                             },
                                         );
-                                        self.forward_operations.push(Operation::SetCodeCell {
-                                            sheet_pos: pos.to_sheet_pos(sheet.id),
-                                            code_cell_value: None,
-                                        });
+                                        transaction.forward_operations.push(
+                                            Operation::SetCodeCell {
+                                                sheet_pos: pos.to_sheet_pos(sheet.id),
+                                                code_cell_value: None,
+                                            },
+                                        );
                                         code_cell_removed = true;
                                         false
                                     } else {
@@ -55,14 +64,14 @@ impl GridController {
                                     }
                                 });
 
-                                self.add_compute_operations(sheet_rect, None);
+                                self.add_compute_operations(transaction, sheet_rect, None);
 
                                 // if a code_cell was removed, then we need to check all spills.
                                 // Otherwise we only need to check spills for the sheet_rect.
                                 if code_cell_removed {
-                                    self.check_all_spills(sheet_rect.sheet_id, 0);
+                                    self.check_all_spills(transaction, sheet_rect.sheet_id, 0);
                                 } else {
-                                    self.check_spills(sheet_rect);
+                                    self.check_spills(transaction, sheet_rect);
                                 }
                             }
                         }
@@ -72,7 +81,7 @@ impl GridController {
                             .expect(
                                 "error constructing array of old values for SetCells operation",
                             );
-                        self.reverse_operations.insert(
+                        transaction.reverse_operations.insert(
                             0,
                             Operation::SetCellValues {
                                 sheet_rect: *sheet_rect,
@@ -81,10 +90,14 @@ impl GridController {
                         );
 
                         // prepare summary
-                        self.sheets_with_dirty_bounds.insert(sheet_rect.sheet_id);
-                        self.summary.generate_thumbnail = self.summary.generate_thumbnail
-                            || self.thumbnail_dirty_sheet_rect(sheet_rect);
-                        self.add_cell_sheets_modified_rect(sheet_rect);
+                        transaction
+                            .sheets_with_dirty_bounds
+                            .insert(sheet_rect.sheet_id);
+                        transaction.summary.generate_thumbnail |=
+                            self.thumbnail_dirty_sheet_rect(sheet_rect);
+                        transaction
+                            .summary
+                            .add_cell_sheets_modified_rect(sheet_rect);
                     }
                 }
             }
@@ -198,8 +211,5 @@ mod test {
         );
         gc.set_cell_value(sheet_pos, "".to_string(), None);
         assert_eq!(gc.sheet(sheet_id).get_cell_value(sheet_pos.into()), None);
-
-        // should be one set_cell_values and one set_code_cell
-        assert_eq!(gc.forward_operations.len(), 2);
     }
 }

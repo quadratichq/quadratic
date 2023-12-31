@@ -1,13 +1,11 @@
-/// This module handles the application of operations to the Grid.
-///
 pub mod control_transaction;
 pub mod execute_operation;
 pub mod receive_multiplayer;
 pub mod run_code;
 pub mod spills;
 
-use super::{operations::operation::Operation, Transaction};
-use crate::controller::{transaction_summary::TransactionSummary, GridController};
+use super::active_transactions::pending_transaction::PendingTransaction;
+use crate::controller::GridController;
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -19,104 +17,31 @@ pub enum TransactionType {
     Redo,
     Multiplayer,
 
-    // Used to rollback
+    // todo: this functionality should be moved to the actual function instead of the transaction type
+    // Used to rollback and keep summaries while rolling back
     MultiplayerKeepSummary,
 }
 
 impl GridController {
     /// recalculate bounds for changed sheets
-    pub fn transaction_updated_bounds(&mut self) {
-        self.sheets_with_dirty_bounds
-            .clone()
-            .iter()
+    pub fn recalculate_sheet_bounds(&mut self, transaction: &mut PendingTransaction) {
+        transaction
+            .sheets_with_dirty_bounds
+            .drain()
             .for_each(|sheet_id| {
-                let sheet = self.grid_mut().sheet_mut_from_id(*sheet_id);
+                let sheet = self.grid_mut().sheet_mut_from_id(sheet_id);
                 sheet.recalculate_bounds();
             });
     }
 
-    /// returns the TransactionSummary
-    pub fn prepare_transaction_summary(&mut self) -> TransactionSummary {
-        if self.complete {
-            self.summary.transaction_id = Some(self.transaction_id.to_string());
-            self.summary.operations = Some(
-                serde_json::to_string(&self.to_multiplayer_operations())
-                    .expect("Failed to serialize forward operations"),
-            );
-        }
-        let summary = self.summary.clone();
-        self.summary.clear(self.complete);
-        summary
+    /// Sets the last_sequence_num for multiplayer. This should only be called when receiving the sequence_num.
+    pub fn set_last_sequence_num(&mut self, last_sequence_num: u64) {
+        self.transactions.last_sequence_num = last_sequence_num;
     }
 
-    fn to_multiplayer_operations(&self) -> Vec<Operation> {
-        self.forward_operations.clone()
-    }
-
-    fn to_forward_transaction(&self) -> Transaction {
-        Transaction {
-            id: self.transaction_id,
-            sequence_num: None,
-            operations: self.forward_operations.clone(),
-            cursor: None,
-        }
-    }
-
-    /// Creates a transaction to save to the Undo/Redo stack
-    fn to_undo_transaction(&self) -> Transaction {
-        Transaction {
-            id: self.transaction_id,
-            sequence_num: None,
-            operations: self.reverse_operations.clone(),
-            cursor: self.cursor.clone(),
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use uuid::Uuid;
-
-    use crate::controller::operations::operation::Operation;
-
-    use super::*;
-
-    #[test]
-    fn test_to_transaction() {
-        let mut gc = GridController::new();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
-        let name = sheet.name.clone();
-
-        let transaction_id = Uuid::new_v4();
-        gc.transaction_id = transaction_id;
-        let forward_operations = vec![
-            Operation::SetSheetName {
-                sheet_id,
-                name: "new name".to_string(),
-            },
-            Operation::SetSheetColor {
-                sheet_id,
-                color: Some("red".to_string()),
-            },
-        ];
-        gc.forward_operations = forward_operations.clone();
-        let reverse_operations = vec![
-            Operation::SetSheetName { sheet_id, name },
-            Operation::SetSheetColor {
-                sheet_id,
-                color: None,
-            },
-        ];
-        gc.reverse_operations = reverse_operations.clone();
-        let forward_transaction = gc.to_forward_transaction();
-        assert_eq!(forward_transaction.id, transaction_id);
-        assert_eq!(forward_transaction.operations, forward_operations);
-        assert_eq!(forward_transaction.sequence_num, None);
-
-        let reverse_transaction = gc.to_undo_transaction();
-        assert_eq!(reverse_transaction.id, transaction_id);
-        assert_eq!(reverse_transaction.operations, reverse_operations);
-        assert_eq!(reverse_transaction.sequence_num, None);
+    /// Gets the pending transactions for test purposes
+    #[cfg(test)]
+    pub fn async_transactions(&self) -> &[PendingTransaction] {
+        &self.transactions.async_transactions()
     }
 }

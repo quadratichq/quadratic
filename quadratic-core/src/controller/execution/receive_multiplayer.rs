@@ -1,7 +1,13 @@
+use std::collections::VecDeque;
+
 use super::TransactionType;
-use crate::controller::{
-    operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
-    Transaction,
+use crate::{
+    controller::{
+        active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation, transaction::TransactionServer,
+        transaction_summary::TransactionSummary, GridController,
+    },
+    core_error::Result,
 };
 use chrono::{Duration, Utc};
 use uuid::Uuid;
@@ -16,48 +22,70 @@ impl GridController {
         sequence_num: u64,
         operations: Vec<Operation>,
     ) -> TransactionSummary {
-        self.transaction_type = TransactionType::MultiplayerKeepSummary;
-        self.clear_summary();
-        self.client_apply_transaction(transaction_id, sequence_num, operations);
-        self.transaction_updated_bounds();
-        self.finalize_transaction();
-        let mut summary = self.prepare_transaction_summary();
-        summary.operations = None;
-        summary.save = false;
-        summary
+        let mut transaction = PendingTransaction {
+            id: transaction_id,
+            transaction_type: TransactionType::Multiplayer,
+            operations: operations.into(),
+            ..Default::default()
+        };
+        self.client_apply_transaction(&mut transaction, sequence_num);
+        self.finalize_transaction(&mut transaction);
+        transaction.prepare_summary(false)
     }
 
     /// Rolls back unsaved transactions to apply earlier transactions received from the server.
-    fn rollback_unsaved_transactions(&mut self) {
-        self.clear_summary();
+    fn rollback_unsaved_transactions(&mut self, transaction: &mut PendingTransaction) {
         let operations = self
+            .transactions
             .unsaved_transactions
             .iter()
             .rev()
-            .map(|(_, undo)| undo.operations.clone())
-            .collect::<Vec<_>>();
-        operations.iter().for_each(|o| {
-            self.start_transaction(o.to_vec(), None, TransactionType::MultiplayerKeepSummary);
-        });
+            .flat_map(|(_, undo)| undo.operations.clone())
+            .collect::<VecDeque<_>>();
+        let mut rollback = PendingTransaction {
+            transaction_type: TransactionType::MultiplayerKeepSummary,
+            operations,
+            ..Default::default()
+        };
+        self.start_transaction(&mut rollback);
+        transaction
+            .sheets_with_dirty_bounds
+            .extend(rollback.sheets_with_dirty_bounds.clone());
+        let rollback_summary = rollback.prepare_summary(false);
+        transaction.summary.merge(&rollback_summary);
     }
 
     /// Reapplies the rolled-back unsaved transactions after adding earlier transactions.
-    fn reapply_unsaved_transactions(&mut self) {
+    fn reapply_unsaved_transactions(&mut self, transaction: &mut PendingTransaction) {
         let operations = self
+            .transactions
             .unsaved_transactions
             .iter()
             .rev()
-            .map(|(forward, _)| forward.operations.clone())
+            .flat_map(|(forward, _)| forward.operations.clone())
             .collect::<Vec<_>>();
-        operations.iter().for_each(|o| {
-            self.start_transaction(o.to_vec(), None, TransactionType::MultiplayerKeepSummary);
-        });
+        let mut reapply = PendingTransaction {
+            transaction_type: TransactionType::MultiplayerKeepSummary,
+            operations: operations.into(),
+            ..Default::default()
+        };
+        self.start_transaction(&mut reapply);
+        transaction
+            .sheets_with_dirty_bounds
+            .extend(reapply.sheets_with_dirty_bounds.clone());
+        let reapply_summary = reapply.prepare_summary(false);
+        transaction.summary.merge(&reapply_summary);
     }
 
     /// Used by the server to apply transactions. Since the server owns the sequence_num,
     /// there's no need to check or alter the execution order.
     pub fn server_apply_transaction(&mut self, operations: Vec<Operation>) {
-        self.start_transaction(operations, None, TransactionType::Multiplayer);
+        let mut transaction = PendingTransaction {
+            transaction_type: TransactionType::Multiplayer,
+            operations: operations.into(),
+            ..Default::default()
+        };
+        self.start_transaction(&mut transaction);
     }
 
     /// Server sends us the latest sequence_num to ensure we're in sync. We respond with a request if
@@ -66,9 +94,9 @@ impl GridController {
     /// Returns a [`TransactionSummary`] that will be rendered by the client.
     pub fn receive_sequence_num(&mut self, sequence_num: u64) -> TransactionSummary {
         let mut summary = TransactionSummary::default();
-        if sequence_num != self.last_sequence_num {
+        if sequence_num != self.transactions.last_sequence_num {
             let now = Utc::now();
-            if match self.last_need_request_transactions_time {
+            if match self.transactions.last_get_transactions_time {
                 None => true,
                 Some(last_request_transaction_time) => {
                     last_request_transaction_time
@@ -77,8 +105,8 @@ impl GridController {
                         < now
                 }
             } {
-                self.last_need_request_transactions_time = None;
-                summary.request_transactions = Some(self.last_sequence_num + 1);
+                self.transactions.last_get_transactions_time = None;
+                summary.request_transactions = Some(self.transactions.last_sequence_num + 1);
             }
         }
         summary
@@ -86,19 +114,18 @@ impl GridController {
 
     /// Check the out_of_order_transactions to see if they are next in order. If so, we remove them from
     ///out_of_order_transactions and apply their operations.
-    fn apply_out_of_order_transactions(&mut self, sequence_num: u64) {
+    fn apply_out_of_order_transactions(&mut self, sequence_num: u64) -> Option<TransactionSummary> {
         let mut sequence_num = sequence_num;
 
         // nothing to do here
-        if self.out_of_order_transactions.is_empty() {
-            self.last_sequence_num = sequence_num;
-            return;
+        if self.transactions.out_of_order_transactions.is_empty() {
+            self.transactions.last_sequence_num = sequence_num;
+            return None;
         }
 
         // combines all out of order transactions into a single vec of operations
-        let mut operations = vec![];
-
-        self.out_of_order_transactions.retain(|t| {
+        let mut operations = VecDeque::new();
+        self.transactions.out_of_order_transactions.retain(|t| {
             // while the out of order transaction is next in sequence, we apply it and remove it from the list
             if t.sequence_num.unwrap() == sequence_num + 1 {
                 operations.extend(t.operations.clone());
@@ -108,128 +135,130 @@ impl GridController {
                 true
             }
         });
-        self.start_transaction(operations, None, TransactionType::MultiplayerKeepSummary);
-        self.last_sequence_num = sequence_num;
+        let mut transaction = PendingTransaction {
+            transaction_type: TransactionType::Multiplayer,
+            operations,
+            ..Default::default()
+        };
+        self.start_transaction(&mut transaction);
+        self.transactions.last_sequence_num = sequence_num;
+        Some(transaction.prepare_summary(false))
     }
 
     /// Used by the client to ensure transactions are applied in order
     ///
     /// Returns a [`TransactionSummary`] that will be rendered by the client.
-    pub fn client_apply_transaction(
+    fn client_apply_transaction(
         &mut self,
-        transaction_id: Uuid,
+        transaction: &mut PendingTransaction,
         sequence_num: u64,
-        operations: Vec<Operation>,
     ) {
         // this is the normal case where we receive the next transaction in sequence
-        if sequence_num == self.last_sequence_num + 1 {
+        if sequence_num == self.transactions.last_sequence_num + 1 {
             // first check if the received transaction is one of ours
-            if let Some((index, _)) = self
-                .unsaved_transactions
-                .iter_mut()
-                .enumerate()
-                .find(|(_, unsaved_transaction)| unsaved_transaction.0.id == transaction_id)
-            {
+            if let Some((index, _)) = self.transactions.find_unsaved_transaction(transaction.id) {
                 // If transaction is the top of the unsaved_transactions, then we only need to set the sequence_num.
                 // Note: if the server ever changes the operations in transactions, then we could not take this shortcut.
                 if index as u64 == 0 {
-                    self.unsaved_transactions.remove(index);
+                    self.transactions.unsaved_transactions.remove(index);
 
                     // if there are any out of order transactions, now may be the time to apply them. Let's do a quick
                     // check before rolling back unsaved_transactions.
-                    if !self.out_of_order_transactions.is_empty()
-                        && self.out_of_order_transactions[0].sequence_num.unwrap()
+                    if !self.transactions.out_of_order_transactions.is_empty()
+                        && self.transactions.out_of_order_transactions[0]
+                            .sequence_num
+                            .unwrap()
                             == sequence_num + 1
                     {
-                        self.rollback_unsaved_transactions();
+                        self.rollback_unsaved_transactions(transaction);
                         self.apply_out_of_order_transactions(sequence_num);
-                        self.reapply_unsaved_transactions();
+                        self.reapply_unsaved_transactions(transaction);
                     } else {
                         // otherwise we just need to set the sequence_num (which is normally taken care of in apply_out_of_order_transactions)
-                        self.last_sequence_num = sequence_num;
+                        self.transactions.last_sequence_num = sequence_num;
                     }
                 } else {
                     // Otherwise we need to rollback the unsaved transactions and then reapply our found unsaved transaction first.
                     // This handles the case where the server received our transactions out of order. We will need to reapply our unsaved
                     // transactions in the server's order.
-                    self.rollback_unsaved_transactions();
-                    self.unsaved_transactions.remove(index);
-                    self.start_transaction(
-                        operations,
-                        None,
-                        TransactionType::MultiplayerKeepSummary,
-                    );
+                    self.rollback_unsaved_transactions(transaction);
+                    self.transactions.unsaved_transactions.remove(index);
+                    self.start_transaction(transaction);
                     self.apply_out_of_order_transactions(sequence_num);
-                    self.reapply_unsaved_transactions();
+                    self.reapply_unsaved_transactions(transaction);
                 }
             } else {
                 // If the transaction is not one of ours, then we just apply the transaction after rolling back any unsaved transactions (if necessary).
-                if !self.unsaved_transactions.is_empty() {
-                    self.rollback_unsaved_transactions();
-                    self.start_transaction(
-                        operations,
-                        None,
-                        TransactionType::MultiplayerKeepSummary,
-                    );
+                if !self.transactions.unsaved_transactions.is_empty() {
+                    self.rollback_unsaved_transactions(transaction);
+                    self.start_transaction(transaction);
                     self.apply_out_of_order_transactions(sequence_num);
-                    self.reapply_unsaved_transactions();
+                    self.reapply_unsaved_transactions(transaction);
                 } else {
                     // otherwise we can just apply the transaction
-                    self.start_transaction(operations, None, TransactionType::Multiplayer);
+                    self.start_transaction(transaction);
                     self.apply_out_of_order_transactions(sequence_num);
 
                     // We do not need to render a thumbnail since none of these are our transactions.
-                    self.summary.generate_thumbnail = false;
+                    transaction.summary.generate_thumbnail = false;
                 }
             }
-        } else if sequence_num > self.last_sequence_num {
+        } else if sequence_num > self.transactions.last_sequence_num {
             // If we receive an unexpected later transaction then we just hold on to it in a sorted list.
             // We could apply these transactions as they come in, but only if multiplayer also sent all undo
             // operations w/each Transaction. I don't think this would be worth the cost.
             // We ignore any transactions that we already applied (ie, sequence_num <= self.last_sequence_num).
             let index = self
+                .transactions
                 .out_of_order_transactions
                 .iter()
                 .position(|t| t.sequence_num.unwrap() < sequence_num)
-                .unwrap_or(self.out_of_order_transactions.len());
-            self.out_of_order_transactions.insert(
-                index,
-                Transaction {
-                    id: transaction_id,
-                    sequence_num: Some(sequence_num),
-                    operations,
-                    cursor: None,
-                },
-            );
+                .unwrap_or(self.transactions.out_of_order_transactions.len());
+            self.transactions
+                .out_of_order_transactions
+                .insert(index, transaction.to_transaction(Some(sequence_num)));
         }
     }
 
     /// Received transactions from the server
-    pub fn received_transactions(&mut self, transactions: &[Transaction]) -> TransactionSummary {
-        self.clear_summary();
-        self.transaction_type = TransactionType::MultiplayerKeepSummary;
+    pub fn received_transactions(
+        &mut self,
+        transactions: &[TransactionServer],
+    ) -> Result<TransactionSummary> {
+        // used to track client changes when combining transactions
+        let mut results = PendingTransaction {
+            transaction_type: TransactionType::Multiplayer,
+            ..Default::default()
+        };
+        self.rollback_unsaved_transactions(&mut results);
+
+        // combine all transaction into one transaction
         transactions.iter().for_each(|t| {
-            self.client_apply_transaction(t.id, t.sequence_num.unwrap(), t.operations.clone());
+            let mut transaction = PendingTransaction {
+                id: t.id,
+                transaction_type: TransactionType::Multiplayer,
+                operations: t.operations.clone().into(),
+                cursor: None,
+                ..Default::default()
+            };
+            self.client_apply_transaction(&mut transaction, t.sequence_num);
+            results.summary.merge(&transaction.summary);
+            results
+                .sheets_with_dirty_bounds
+                .extend(transaction.sheets_with_dirty_bounds);
         });
-        self.transaction_updated_bounds();
-        self.finalize_transaction();
-        let mut summary = self.prepare_transaction_summary();
-        summary.operations = None;
-        summary.save = false;
-        summary
+        self.reapply_unsaved_transactions(&mut results);
+        self.finalize_transaction(&mut results);
+        Ok(results.prepare_summary(false))
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::{controller::GridController, CellValue, Pos, SheetPos};
     use std::str::FromStr;
-
     use uuid::Uuid;
-
-    use crate::{
-        controller::{operations::operation::Operation, transaction::Transaction, GridController},
-        CellValue, Pos, SheetPos,
-    };
 
     #[test]
     fn test_multiplayer_hello_world() {
@@ -262,7 +291,7 @@ mod tests {
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World".to_string()))
         );
-        assert_eq!(gc1.unsaved_transactions.len(), 0);
+        assert_eq!(gc1.transactions.unsaved_transactions.len(), 0);
 
         let mut gc2 = GridController::new();
         gc2.grid_mut().sheets_mut()[0].id = sheet_id;
@@ -398,7 +427,7 @@ mod tests {
         assert!(summary.generate_thumbnail);
 
         // we should still have out unsaved transaction
-        assert_eq!(client.unsaved_transactions.len(), 1);
+        assert_eq!(client.transactions.unsaved_transactions.len(), 1);
 
         // our unsaved value overwrites the older multiplayer value
         assert_eq!(
@@ -451,7 +480,7 @@ mod tests {
                 .get_cell_value(Pos { x: 1, y: 1 }),
             None
         );
-        assert_eq!(client.out_of_order_transactions.len(), 1);
+        assert_eq!(client.transactions.out_of_order_transactions.len(), 1);
 
         // We receive the correctly ordered transaction. Both are applied in the correct order.
         client.received_transaction(Uuid::new_v4(), 1, out_of_order_1_operations);
@@ -469,7 +498,7 @@ mod tests {
                 .get_cell_value(Pos { x: 2, y: 2 }),
             Some(CellValue::Text("This is sequence_num = 2".to_string()))
         );
-        assert_eq!(client.out_of_order_transactions.len(), 0);
+        assert_eq!(client.transactions.out_of_order_transactions.len(), 0);
     }
 
     #[test]
@@ -522,8 +551,8 @@ mod tests {
                 .get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Client unsaved value".to_string()))
         );
-        assert_eq!(client.out_of_order_transactions.len(), 1);
-        assert_eq!(client.unsaved_transactions.len(), 1);
+        assert_eq!(client.transactions.out_of_order_transactions.len(), 1);
+        assert_eq!(client.transactions.unsaved_transactions.len(), 1);
 
         // We receive the correctly ordered transaction. Both are applied in the correct order.
         client.received_transaction(Uuid::new_v4(), 1, out_of_order_1_operations);
@@ -534,7 +563,7 @@ mod tests {
                 .get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Client unsaved value".to_string()))
         );
-        assert_eq!(client.out_of_order_transactions.len(), 0);
+        assert_eq!(client.transactions.out_of_order_transactions.len(), 0);
 
         // We receive our unsaved transaction back.
         client.received_transaction(
@@ -542,7 +571,7 @@ mod tests {
             3,
             serde_json::from_str(&client_summary.operations.unwrap()).unwrap(),
         );
-        assert_eq!(client.unsaved_transactions.len(), 0);
+        assert_eq!(client.transactions.unsaved_transactions.len(), 0);
         assert_eq!(
             client
                 .try_sheet_from_id(sheet_id)
@@ -594,25 +623,26 @@ mod tests {
         let client_summary = client.receive_sequence_num(2);
 
         // we send our last_sequence_num + 1 to the server so it can provide all later transactions
-        assert_eq!(client.last_sequence_num, 0);
+        assert_eq!(client.transactions.last_sequence_num, 0);
         assert_eq!(client_summary.request_transactions, Some(1));
 
-        // todo: the sequence_num seems wrong here
-        client.received_transactions(&[
-            Transaction {
-                id: Uuid::new_v4(),
-                sequence_num: Some(1),
-                operations: other_1_operations,
-                cursor: None,
-            },
-            Transaction {
-                id: Uuid::new_v4(),
-                sequence_num: Some(2),
-                operations: other_2_operations,
-                cursor: None,
-            },
-        ]);
-        assert_eq!(client.last_sequence_num, 2);
+        client
+            .received_transactions(&[
+                TransactionServer {
+                    file_id: Uuid::new_v4(),
+                    id: Uuid::new_v4(),
+                    sequence_num: 1,
+                    operations: other_1_operations,
+                },
+                TransactionServer {
+                    file_id: Uuid::new_v4(),
+                    id: Uuid::new_v4(),
+                    sequence_num: 2,
+                    operations: other_2_operations,
+                },
+            ])
+            .ok();
+        assert_eq!(client.transactions.last_sequence_num, 2);
 
         assert_eq!(
             client

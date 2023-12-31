@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::operations::operation::Operation;
+use super::{
+    active_transactions::pending_transaction::PendingTransaction, execution::TransactionType,
+    operations::operation::Operation,
+};
 
 // Transaction created by client
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
@@ -12,8 +15,24 @@ pub struct Transaction {
     pub cursor: Option<String>,
 }
 
+impl Transaction {
+    pub fn to_pending_transaction(
+        &self,
+        transaction_type: TransactionType,
+        cursor: Option<String>,
+    ) -> PendingTransaction {
+        PendingTransaction {
+            id: self.id,
+            cursor,
+            transaction_type,
+            operations: self.operations.clone().into(),
+            ..Default::default()
+        }
+    }
+}
+
 // Transaction received from Server
-#[derive(Serialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct TransactionServer {
     pub id: Uuid,
     pub file_id: Uuid,

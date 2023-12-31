@@ -514,7 +514,9 @@ mod tests {
             "<html></html>".to_string(),
             None,
         );
-        gc.after_calculation_async(JsCodeResult::new(
+        let transaction_id = gc.async_transactions()[0].id.clone();
+        gc.calculation_complete(JsCodeResult::new(
+            transaction_id.to_string(),
             true,
             None,
             None,
@@ -523,7 +525,8 @@ mod tests {
             None,
             None,
             None,
-        ));
+        ))
+        .ok();
         let sheet = gc.sheet(sheet_id);
         let render_cells = sheet.get_html_output();
         assert_eq!(render_cells.len(), 1);
