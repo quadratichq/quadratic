@@ -1,6 +1,5 @@
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
-use crate::controller::transaction_summary::TransactionSummary;
 use crate::core_error::{CoreError, Result};
 use crate::{
     controller::{transaction_types::JsCodeResult, GridController},
@@ -61,9 +60,9 @@ impl GridController {
         self.check_spills(transaction, &sheet_pos.into());
 
         transaction.sheets_with_dirty_bounds.insert(sheet_id);
-
         transaction.summary.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
         transaction.summary.code_cells_modified.insert(sheet_id);
+        dbg!("here!!!!");
         transaction
             .summary
             .add_cell_sheets_modified_rect(&sheet_rect);
@@ -74,7 +73,7 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         result: JsCodeResult,
-    ) -> Result<TransactionSummary> {
+    ) -> Result<()> {
         let current_sheet_pos = match transaction.current_sheet_pos {
             Some(current_sheet_pos) => current_sheet_pos,
             None => {
@@ -129,7 +128,7 @@ impl GridController {
         }
         // continue the compute loop after a successful async call
         self.handle_transactions(transaction);
-        Ok(transaction.prepare_summary(transaction.complete))
+        Ok(())
     }
 
     pub(super) fn code_cell_sheet_error(

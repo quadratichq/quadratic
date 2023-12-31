@@ -177,24 +177,24 @@ mod tests {
         // transaction for its id
         let transaction_id = gc.async_transactions()[0].id;
 
-        assert!(gc
-            .calculation_complete(JsCodeResult::new_from_rust(
-                transaction_id.to_string(),
-                true,
-                None,
-                None,
-                None,
-                Some("hello world".to_string()),
-                None,
-                None,
-                None,
-            ))
-            .is_ok());
+        let summary = gc.calculation_complete(JsCodeResult::new_from_rust(
+            transaction_id.to_string(),
+            true,
+            None,
+            None,
+            None,
+            Some("hello world".to_string()),
+            None,
+            None,
+            None,
+        ));
+        assert!(summary.is_ok());
         let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
         assert_eq!(
             sheet.get_code_cell_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Text("hello world".into()))
         );
+        assert_eq!(summary.ok().unwrap().cell_sheets_modified.len(), 1);
     }
 
     #[test]
