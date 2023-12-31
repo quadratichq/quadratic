@@ -102,10 +102,11 @@ class PythonWebWorker {
     };
   }
 
-  start(python: string): boolean {
+  start(transactionId: string, python: string): boolean {
     if (!this.loaded || !this.worker) {
       return false;
     }
+    this.transactionId = transactionId;
     window.dispatchEvent(new CustomEvent('python-computation-started'));
 
     this.worker.postMessage({ type: 'execute', python });

@@ -46,7 +46,10 @@ impl GridController {
         code_cell: &CodeCellValue,
     ) -> bool {
         if !cfg!(test) {
-            let result = crate::wasm_bindings::js::runPython(code_cell.code_string.clone());
+            let result = crate::wasm_bindings::js::runPython(
+                transaction.id.to_string(),
+                code_cell.code_string.clone(),
+            );
 
             // run python will return false if python is not loaded (this can be generalized if we need to return a different error)
             if result == JsValue::FALSE {

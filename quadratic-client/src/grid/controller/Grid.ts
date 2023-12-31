@@ -688,8 +688,12 @@ export class Grid {
   //#region Compute
 
   calculationComplete(result: JsCodeResult) {
-    const summary = this.gridController.calculationComplete(result);
-    this.transactionResponse(summary);
+    const summaryResult = this.gridController.calculationComplete(result);
+    if (summaryResult.Ok) {
+      this.transactionResponse(summaryResult.Ok);
+    } else {
+      throw new Error(summaryResult.Err);
+    }
   }
 
   getTransactionResponse(): TransactionSummary | undefined {
