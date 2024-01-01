@@ -20,7 +20,7 @@ impl GridController {
     ) {
         // change the spill for the first code_cell and then iterate the later code_cells.
         if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_id) {
-            if let Some((pos, code_cell)) = sheet.code_cells.get_mut(index) {
+            if let Some((pos, code_cell)) = sheet.code_runs.get_mut(index) {
                 let sheet_pos = pos.to_sheet_pos(sheet.id);
                 transaction.reverse_operations.insert(
                     0,
@@ -49,7 +49,7 @@ impl GridController {
             None => None,
             Some(sheet) => {
                 sheet
-                    .code_cells
+                    .code_runs
                     .iter()
                     .enumerate()
                     .find_map(|(index, (pos, code_cell))| {
@@ -98,7 +98,7 @@ impl GridController {
         start: usize,
     ) {
         if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_id) {
-            let result = sheet.code_cells.iter().skip(start).enumerate().find_map(
+            let result = sheet.code_runs.iter().skip(start).enumerate().find_map(
                 |(index, (pos, code_cell))| {
                     let output = code_cell.output_sheet_rect(pos.to_sheet_pos(sheet.id), true);
                     let rect: Rect = output.into();
@@ -167,12 +167,12 @@ mod tests {
         .into();
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
-        assert!(!sheet.code_cells[0].1.has_spill_error());
+        assert!(!sheet.code_runs[0].1.has_spill_error());
 
         gc.check_spills(&mut transaction, &sheet_rect);
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
-        assert!(sheet.code_cells[0].1.has_spill_error());
+        assert!(sheet.code_runs[0].1.has_spill_error());
     }
 
     #[test]
@@ -201,11 +201,11 @@ mod tests {
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(3.into()));
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
-        assert!(!sheet.code_cells[0].1.has_spill_error());
+        assert!(!sheet.code_runs[0].1.has_spill_error());
 
         gc.check_all_spills(&mut transaction, sheet_id, 0);
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
-        assert!(sheet.code_cells[0].1.has_spill_error());
+        assert!(sheet.code_runs[0].1.has_spill_error());
     }
 }

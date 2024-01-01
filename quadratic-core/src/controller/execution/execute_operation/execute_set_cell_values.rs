@@ -42,7 +42,7 @@ impl GridController {
                             if transaction.is_user() {
                                 // remove any code_cells that are now covered by the new values
                                 let mut code_cell_removed = false;
-                                sheet.code_cells.retain(|(pos, code_cell)| {
+                                sheet.code_runs.retain(|(pos, code_cell)| {
                                     if sheet_rect.contains(pos.to_sheet_pos(sheet.id)) {
                                         transaction.reverse_operations.insert(
                                             0,

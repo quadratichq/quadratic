@@ -6,13 +6,22 @@ use serde::{Deserialize, Serialize};
 use super::{Duration, Instant, IsBlank};
 use crate::{
     controller::operations::operation::Operation,
-    grid::{formatting::CellFmtArray, NumericDecimals, NumericFormat, NumericFormatKind, Sheet},
+    grid::{
+        formatting::CellFmtArray, CodeCellLanguage, NumericDecimals, NumericFormat,
+        NumericFormatKind, Sheet,
+    },
     CodeResult, Error, Pos, RunLengthEncoding, SheetRect,
 };
 
 // todo: fill this out
 const CURRENCY_SYMBOLS: &str = "$€£¥";
 const PERCENTAGE_SYMBOL: char = '%';
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct CellCode {
+    language: CodeCellLanguage,
+    value: String,
+}
 
 /// Non-array value in the formula language.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -39,6 +48,10 @@ pub enum CellValue {
     #[cfg_attr(test, proptest(skip))]
     Error(Box<Error>),
     Html(String),
+    #[cfg_attr(test, proptest(skip))]
+    Python(CellCode),
+    #[cfg_attr(test, proptest(skip))]
+    Formula(CellCode),
 }
 impl fmt::Display for CellValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -52,6 +65,8 @@ impl fmt::Display for CellValue {
             CellValue::Duration(d) => write!(f, "{d}"),
             CellValue::Error(e) => write!(f, "{}", e.msg),
             CellValue::Html(s) => write!(f, "{}", s),
+            CellValue::Python(code) => write!(f, "{:?}", code),
+            CellValue::Formula(code) => write!(f, "{:?}", code),
         }
     }
 }
@@ -75,6 +90,8 @@ impl CellValue {
             CellValue::Duration(_) => "time duration",
             CellValue::Error(_) => "error",
             CellValue::Html(_) => "html",
+            CellValue::Python(_) => "python",
+            CellValue::Formula(_) => "formula",
         }
     }
     /// Returns a formula-source-code representation of the value.
@@ -89,6 +106,8 @@ impl CellValue {
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::Html(s) => s.clone(),
+            CellValue::Python(_) => todo!("repr of python"),
+            CellValue::Formula(_) => todo!("repr of formula"),
         }
     }
 
@@ -120,6 +139,11 @@ impl CellValue {
         } else {
             n
         }
+    }
+
+    /// Whether the CellValue contains code.
+    pub fn is_code(&self) -> bool {
+        matches!(self, CellValue::Python(_) | CellValue::Formula(_))
     }
 
     pub fn to_display(
@@ -196,6 +220,10 @@ impl CellValue {
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
+
+            // these should not render
+            CellValue::Python(_) => String::new(),
+            CellValue::Formula(_) => String::new(),
         }
     }
 
@@ -210,6 +238,10 @@ impl CellValue {
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
+
+            // these should not render
+            CellValue::Python(_) => String::new(),
+            CellValue::Formula(_) => String::new(),
         }
     }
 
@@ -273,7 +305,7 @@ impl CellValue {
         }
     }
 
-    /// Compares two values but propogates errors and returns `None` in the case
+    /// Compares two values but propagates errors and returns `None` in the case
     /// of disparate types.
     pub fn partial_cmp(&self, other: &Self) -> CodeResult<Option<std::cmp::Ordering>> {
         Ok(Some(match (self, other) {
@@ -296,11 +328,13 @@ impl CellValue {
             | (CellValue::Instant(_), _)
             | (CellValue::Duration(_), _)
             | (CellValue::Html(_), _)
+            | (CellValue::Python(_), _)
+            | (CellValue::Formula(_), _)
             | (CellValue::Blank, _) => return Ok(None),
         }))
     }
 
-    /// Compares two values using a total ordering that propogates errors and
+    /// Compares two values using a total ordering that propagates errors and
     /// converts blanks to zeros.
     #[allow(clippy::should_implement_trait)]
     pub fn cmp(&self, other: &Self) -> CodeResult<std::cmp::Ordering> {
@@ -317,6 +351,8 @@ impl CellValue {
                 CellValue::Duration(_) => 5,
                 CellValue::Blank => 6,
                 CellValue::Html(_) => 7,
+                CellValue::Python(_) => 8,
+                CellValue::Formula(_) => 9,
             }
         }
 

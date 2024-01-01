@@ -8,8 +8,8 @@ use crate::{CellValue, Error, ErrorMsg, Pos, Rect, Span, Value};
 
 use crate::grid::file::v1_5::schema::{self as current};
 use crate::grid::{
-    block::SameValue, sheet::sheet_offsets::SheetOffsets, CodeCellLanguage, CodeCellRunOutput,
-    CodeCellRunResult, CodeCellValue, Column, ColumnData, Sheet, SheetBorders, SheetId,
+    block::SameValue, sheet::sheet_offsets::SheetOffsets, CodeCellLanguage, CodeRun, CodeRun,
+    CodeRunOutput, Column, ColumnData, Sheet, SheetBorders, SheetId,
 };
 use anyhow::{anyhow, Result};
 use bigdecimal::BigDecimal;
@@ -201,20 +201,20 @@ fn import_code_cell_output(type_field: &str, value: &str) -> CellValue {
     }
 }
 
-fn import_code_cell_builder(sheet: &current::Sheet) -> Result<Vec<(Pos, CodeCellValue)>> {
+fn import_code_cell_builder(sheet: &current::Sheet) -> Result<Vec<(Pos, CodeRun)>> {
     sheet
         .code_cells
         .iter()
         .map(|(pos, code_cell_value)| {
             Ok((
                 Pos { x: pos.x, y: pos.y },
-                CodeCellValue {
+                CodeRun {
                     language: CodeCellLanguage::from_str(&code_cell_value.language)?,
                     code_string: code_cell_value.code_string.to_owned(),
                     formatted_code_string: code_cell_value.formatted_code_string.to_owned(),
                     last_modified: code_cell_value.last_modified.to_owned(),
                     output: code_cell_value.output.to_owned().and_then(|output| {
-                        Some(CodeCellRunOutput {
+                        Some(CodeRunOutput {
                             std_out: output.std_out,
                             std_err: output.std_err,
                             spill: output.spill,
@@ -222,7 +222,7 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<Vec<(Pos, CodeCell
                                 current::CodeCellRunResult::Ok {
                                     output_value,
                                     cells_accessed,
-                                } => CodeCellRunResult::Ok {
+                                } => CodeRun::Ok {
                                     output_value: match output_value {
                                         current::OutputValue::Single(
                                             current::OutputValueValue { type_field, value },
@@ -256,7 +256,7 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<Vec<(Pos, CodeCell
                                         .ok()?,
                                 },
                                 current::CodeCellRunResult::Err { error } => {
-                                    CodeCellRunResult::Err {
+                                    CodeRun::Err {
                                         error: Error {
                                             span: error.span.map(|span| Span {
                                                 start: span.start,
@@ -291,7 +291,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                     columns: import_column_builder(&sheet.columns)?,
                     // borders set after sheet is loaded
                     borders: SheetBorders::new(),
-                    code_cells: import_code_cell_builder(&sheet)?,
+                    code_runs: import_code_cell_builder(&sheet)?,
                     data_bounds: GridBounds::Empty,
                     format_bounds: GridBounds::Empty,
                 };
@@ -487,7 +487,7 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                 columns: export_column_builder(sheet),
                 borders: export_borders_builder(sheet),
                 code_cells: sheet
-                    .code_cells
+                    .code_runs
                     .iter()
                     .map(|(pos, code_cell_value)| {
                         (
@@ -505,7 +505,7 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                                         std_err: output.std_err,
                                         spill: output.spill,
                                         result: match output.result {
-                                            CodeCellRunResult::Ok {
+                                            CodeRun::Ok {
                                                 output_value,
                                                 cells_accessed,
                                             } => current::CodeCellRunResult::Ok {
@@ -550,7 +550,7 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                                                     .map(|cell_ref| cell_ref.into())
                                                     .collect(),
                                             },
-                                            CodeCellRunResult::Err { error } => {
+                                            CodeRun::Err { error } => {
                                                 current::CodeCellRunResult::Err {
                                                     error: current::Error {
                                                         span: error.span.map(|span| {

@@ -5,7 +5,7 @@ use crate::{
             JsHtmlOutput, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState,
             JsRenderFill,
         },
-        CellAlign, CodeCellLanguage, CodeCellRunResult, Column, NumericFormatKind,
+        CellAlign, CodeCellLanguage, CodeRun, Column, NumericFormatKind,
     },
     CellValue, Error, ErrorMsg, Pos, Rect,
 };
@@ -183,7 +183,7 @@ impl Sheet {
                     for x in x_start..=x_end {
                         let column = self.get_column(x);
                         for y in y_start..=y_end {
-                            let value = code_cell_value.get_output_value(
+                            let value = code_cell_value.output_cell_value(
                                 (x - code_rect.min.x) as u32,
                                 (y - code_rect.min.y) as u32,
                             );
@@ -204,7 +204,7 @@ impl Sheet {
     }
 
     pub fn get_html_output(&self) -> Vec<JsHtmlOutput> {
-        self.code_cells
+        self.code_runs
             .iter()
             .filter_map(|(pos, code_cell_value)| {
                 let output = code_cell_value.get_output_value(0, 0)?;
@@ -263,14 +263,14 @@ impl Sheet {
 
     /// Returns data for all rendering code cells
     pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
-        self.code_cells
+        self.code_runs
             .iter()
             .map(|(pos, code_cell)| {
                 let output_size = code_cell.output_size();
 
                 let (state, w, h) = match &code_cell.output {
                     Some(output) => match &output.result {
-                        CodeCellRunResult::Ok { .. } => {
+                        CodeRun::Ok { .. } => {
                             if output.spill {
                                 (JsRenderCodeCellState::SpillError, 1, 1)
                             } else {
@@ -281,7 +281,7 @@ impl Sheet {
                                 )
                             }
                         }
-                        CodeCellRunResult::Err { .. } => (JsRenderCodeCellState::RunError, 1, 1),
+                        CodeRun::Err { .. } => (JsRenderCodeCellState::RunError, 1, 1),
                     },
                     None => (JsRenderCodeCellState::NotYetRun, 1, 1),
                 };
@@ -316,8 +316,7 @@ mod tests {
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
             js_types::{JsHtmlOutput, JsRenderCell},
-            Bold, CellAlign, CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue,
-            Italic, RenderSize,
+            Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRun, CodeRunOutput, Italic, RenderSize,
         },
         CellValue, Error, ErrorMsg, Pos, Rect, SheetPos, Value,
     };
@@ -340,14 +339,14 @@ mod tests {
         sheet.delete_cell_values(Rect::single_pos(Pos { x: 1, y: 2 }));
         assert!(!sheet.has_render_cells(rect));
 
-        sheet.set_code_cell(
+        sheet.set_code_result(
             Pos { x: 2, y: 3 },
-            Some(CodeCellValue {
+            Some(CodeRun {
                 language: crate::grid::CodeCellLanguage::Python,
                 code_string: "print('hello')".to_string(),
                 formatted_code_string: None,
-                output: Some(CodeCellRunOutput {
-                    result: CodeCellRunResult::Ok {
+                output: Some(CodeRunOutput {
+                    result: CodeRun::Ok {
                         output_value: Value::Single(CellValue::Text("hello".to_string())),
                         cells_accessed: HashSet::new(),
                     },

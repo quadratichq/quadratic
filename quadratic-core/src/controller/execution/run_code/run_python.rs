@@ -2,7 +2,7 @@ use wasm_bindgen::JsValue;
 
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
-    grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
+    grid::{CodeCellLanguage, CodeRun, CodeRun, CodeRunOutput},
     Error, ErrorMsg, SheetPos,
 };
 
@@ -11,16 +11,16 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        code_cell: &CodeCellValue,
+        code_cell: &CodeRun,
     ) {
         let error = Error {
             span: None,
             msg: ErrorMsg::PythonNotLoaded,
         };
-        let result = CodeCellRunResult::Err { error };
+        let result = CodeRun::Err { error };
         let spill = false;
-        let new_code_cell = CodeCellValue {
-            output: Some(CodeCellRunOutput {
+        let new_code_cell = CodeRun {
+            output: Some(CodeRunOutput {
                 std_out: None,
                 std_err: Some(ErrorMsg::PythonNotLoaded.to_string()),
                 result,
@@ -29,7 +29,7 @@ impl GridController {
             ..code_cell.clone()
         };
         if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) {
-            sheet.set_code_cell(sheet_pos.into(), Some(new_code_cell.clone()));
+            sheet.set_code_result(sheet_pos.into(), Some(new_code_cell.clone()));
         }
         self.add_code_cell_operations(
             transaction,
@@ -43,7 +43,7 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        code_cell: &CodeCellValue,
+        code_cell: &CodeRun,
     ) -> bool {
         if !cfg!(test) {
             let result = crate::wasm_bindings::js::runPython(
@@ -129,7 +129,7 @@ mod tests {
             y: 0,
             sheet_id,
         };
-        let code_cell = CodeCellValue {
+        let code_cell = CodeRun {
             language: CodeCellLanguage::Python,
             code_string: "print(1)".to_string(),
             formatted_code_string: None,

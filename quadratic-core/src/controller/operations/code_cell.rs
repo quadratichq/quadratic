@@ -1,6 +1,6 @@
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
-    grid::{CodeCellLanguage, CodeCellValue},
+    grid::{CodeCellLanguage, CodeRun},
     util::date_string,
     Array, CellValue, Pos, SheetPos, SheetRect,
 };
@@ -12,7 +12,7 @@ impl GridController {
     pub fn delete_code_cell_operations(&self, sheet_rect: &SheetRect) -> Vec<Operation> {
         let mut ops = vec![];
         if let Some(sheet) = self.grid.try_sheet_from_id(sheet_rect.sheet_id) {
-            sheet.code_cells.iter().for_each(|(pos, _)| {
+            sheet.code_runs.iter().for_each(|(pos, _)| {
                 let code_sheet_pos = pos.to_sheet_pos(sheet.id);
                 if sheet_rect.contains(code_sheet_pos) {
                     ops.push(Operation::SetCodeCell {
@@ -44,7 +44,7 @@ impl GridController {
 
         ops.push(Operation::SetCodeCell {
             sheet_pos,
-            code_cell_value: Some(CodeCellValue {
+            code_cell_value: Some(CodeRun {
                 language,
                 code_string,
                 formatted_code_string: None,
@@ -102,8 +102,8 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        old_code_cell: Option<&CodeCellValue>,
-        new_code_cell: Option<&CodeCellValue>,
+        old_code_cell: Option<&CodeRun>,
+        new_code_cell: Option<&CodeRun>,
     ) {
         let old_sheet_rect = old_code_cell.map(|c| c.output_sheet_rect(sheet_pos, false));
         let new_sheet_rect = new_code_cell.map(|c| c.output_sheet_rect(sheet_pos, false));
@@ -133,9 +133,9 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid_mut().try_sheet_mut_from_id(sheet_id).unwrap();
         let pos = Pos { x: 0, y: 0 };
-        sheet.set_code_cell(
+        sheet.set_code_result(
             pos,
-            Some(CodeCellValue {
+            Some(CodeRun {
                 language: CodeCellLanguage::Python,
                 code_string: "print('hello world')".to_string(),
                 formatted_code_string: None,
@@ -180,7 +180,7 @@ mod test {
             operations[1],
             Operation::SetCodeCell {
                 sheet_pos: pos.to_sheet_pos(sheet_id),
-                code_cell_value: Some(CodeCellValue {
+                code_cell_value: Some(CodeRun {
                     language: CodeCellLanguage::Python,
                     code_string: "print('hello world')".to_string(),
                     formatted_code_string: None,

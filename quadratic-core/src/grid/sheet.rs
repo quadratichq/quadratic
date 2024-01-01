@@ -2,12 +2,12 @@ use std::collections::{btree_map, BTreeMap};
 use std::str::FromStr;
 
 use bigdecimal::BigDecimal;
+use indexmap::IndexMap;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use self::sheet_offsets::SheetOffsets;
 use super::bounds::GridBounds;
-use super::code::CodeCellValue;
 use super::column::Column;
 use super::formatting::{BoolSummary, CellFmtAttr};
 use super::ids::SheetId;
@@ -35,7 +35,7 @@ pub struct Sheet {
     #[serde(with = "crate::util::btreemap_serde")]
     pub(super) columns: BTreeMap<i64, Column>,
     pub(super) borders: SheetBorders,
-    pub code_cells: Vec<(Pos, CodeCellValue)>,
+    pub code_runs: IndexMap<Pos, CodeRunOutput>,
 
     pub(super) data_bounds: GridBounds,
     pub(super) format_bounds: GridBounds,
@@ -51,7 +51,7 @@ impl Sheet {
 
             columns: BTreeMap::new(),
             borders: SheetBorders::new(),
-            code_cells: vec![],
+            code_runs: IndexMap::new(),
 
             data_bounds: GridBounds::Empty,
             format_bounds: GridBounds::Empty,
@@ -125,7 +125,7 @@ impl Sheet {
         }
 
         // remove code_cells where the rect overlaps the anchor cell
-        self.code_cells.retain(|(pos, _)| !rect.contains(*pos));
+        self.code_runs.retain(|pos, _| !rect.contains(*pos));
 
         old_cell_values_array
     }
@@ -296,7 +296,7 @@ impl Sheet {
     /// Deletes all data and formatting in the sheet, effectively recreating it.
     pub fn clear(&mut self) {
         self.columns.clear();
-        self.code_cells.clear();
+        self.code_runs.clear();
         self.recalculate_bounds();
     }
 
@@ -520,11 +520,11 @@ mod test {
         let (mut grid, sheet_id, selected) = test_setup_basic();
 
         let view_rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 4 });
-        let _code_cell = crate::grid::CodeCellValue {
-            language: crate::grid::CodeCellLanguage::Formula,
-            code_string: "=SUM(A1:B2)".into(),
-            formatted_code_string: None,
-            last_modified: "".into(),
+        let _code_cell = crate::grid::CodeRun {
+            // language: crate::grid::CodeCellLanguage::Formula,
+            // code_string: "=SUM(A1:B2)".into(),
+            // last_modified: "".into(),
+            // formatted_code_string: None,
             output: None,
         };
 
@@ -589,14 +589,14 @@ mod test {
     fn test_get_set_code_cell_value() {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
-        let code_cell = crate::grid::CodeCellValue {
+        let code_cell = crate::grid::CodeRun {
             language: crate::grid::CodeCellLanguage::Formula,
             code_string: "=SUM(A1:B2)".into(),
             formatted_code_string: None,
             last_modified: "".into(),
             output: None,
         };
-        sheet.set_code_cell((2, 1).into(), Some(code_cell.clone()));
+        sheet.set_code_result((2, 1).into(), Some(code_cell.clone()));
         let value = sheet.get_code_cell((2, 1).into());
         assert_eq!(value, Some(&code_cell));
     }

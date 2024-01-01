@@ -124,8 +124,8 @@ mod tests {
     #[test]
     fn process_a_v1_3_single_formula_file() {
         let mut imported = import(V1_3_SINGLE_FORMULS_CODE_CELL_FILE).unwrap();
-        assert_eq!(imported.sheets[0].code_cells[0].0, Pos { x: 0, y: 2 });
-        assert_eq!(imported.sheets[0].code_cells[0].1.code_string, "SUM(A0:A1)");
+        assert_eq!(imported.sheets[0].code_runs[0].0, Pos { x: 0, y: 2 });
+        assert_eq!(imported.sheets[0].code_runs[0].1.code_string, "SUM(A0:A1)");
         let _exported = export(&mut imported).unwrap();
     }
 

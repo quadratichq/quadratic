@@ -4,7 +4,7 @@ use crate::controller::{
     GridController,
 };
 use crate::{
-    grid::{get_cell_borders_in_rect, CodeCellValue},
+    grid::{get_cell_borders_in_rect, CodeRun},
     Pos, SheetPos, SheetRect,
 };
 use htmlescape;
@@ -47,7 +47,7 @@ impl GridController {
                             x: x - sheet_rect.min.x,
                             y: y - sheet_rect.min.y,
                         },
-                        CodeCellValue {
+                        CodeRun {
                             language: code_cell_value.language,
                             code_string: code_cell_value.code_string.clone(),
                             formatted_code_string: None,

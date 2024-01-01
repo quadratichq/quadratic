@@ -107,7 +107,7 @@ pub struct Sheet {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub struct CodeCellValue {
+pub struct CodeRun {
     pub language: String,
     pub code_string: String,
     pub formatted_code_string: Option<String>,

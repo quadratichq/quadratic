@@ -1,7 +1,7 @@
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
     formulas::{parse_formula, Ctx},
-    grid::{CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
+    grid::{CodeRun, CodeRun, CodeRunOutput},
     util::date_string,
     SheetPos,
 };
@@ -11,7 +11,7 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        code_cell: &CodeCellValue,
+        code_cell: &CodeRun,
     ) {
         let mut ctx = Ctx::new(self.grid(), sheet_pos);
         match parse_formula(&code_cell.code_string, sheet_pos.into()) {
@@ -19,12 +19,12 @@ impl GridController {
                 match parsed.eval(&mut ctx) {
                     Ok(value) => {
                         transaction.cells_accessed = ctx.cells_accessed;
-                        let new_code_cell_value = CodeCellValue {
+                        let new_code_cell_value = CodeRun {
                             last_modified: date_string(),
-                            output: Some(CodeCellRunOutput {
+                            output: Some(CodeRunOutput {
                                 std_out: None,
                                 std_err: None,
-                                result: CodeCellRunResult::Ok {
+                                result: CodeRun::Ok {
                                     output_value: value,
                                     cells_accessed: transaction.cells_accessed.clone(),
                                 },
@@ -39,7 +39,7 @@ impl GridController {
                             Some(&new_code_cell_value),
                         );
                         if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) {
-                            sheet.set_code_cell(sheet_pos.into(), Some(new_code_cell_value));
+                            sheet.set_code_result(sheet_pos.into(), Some(new_code_cell_value));
                         }
                     }
                     Err(error) => {
@@ -76,7 +76,7 @@ mod test {
             active_transactions::pending_transaction::PendingTransaction,
             operations::operation::Operation, transaction_types::JsCodeResult, GridController,
         },
-        grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellValue},
+        grid::{CodeCellLanguage, CodeRun, CodeRunOutput},
         Array, ArraySize, CellValue, Pos, SheetPos, SheetRect, Value,
     };
 
@@ -95,7 +95,7 @@ mod test {
         gc.start_user_transaction(
             vec![Operation::SetCodeCell {
                 sheet_pos,
-                code_cell_value: Some(CodeCellValue {
+                code_cell_value: Some(CodeRun {
                     language: CodeCellLanguage::Formula,
                     code_string: "A0 + 1".to_string(),
                     formatted_code_string: None,
@@ -131,7 +131,7 @@ mod test {
         gc.start_user_transaction(
             vec![Operation::SetCodeCell {
                 sheet_pos,
-                code_cell_value: Some(CodeCellValue {
+                code_cell_value: Some(CodeRun {
                     language: CodeCellLanguage::Formula,
                     code_string: "A0 + 1".to_string(),
                     formatted_code_string: None,
@@ -154,7 +154,7 @@ mod test {
                     y: 0,
                     sheet_id,
                 },
-                code_cell_value: Some(CodeCellValue {
+                code_cell_value: Some(CodeRun {
                     language: CodeCellLanguage::Formula,
                     code_string: "B0 + 1".to_string(),
                     formatted_code_string: None,
@@ -280,10 +280,10 @@ mod test {
                 "".into(),
             )
             .output,
-            Some(CodeCellRunOutput {
+            Some(CodeRunOutput {
                 std_out: None,
                 std_err: None,
-                result: crate::grid::CodeCellRunResult::Ok {
+                result: crate::grid::CodeRun::Ok {
                     output_value: Value::Single(CellValue::Number(12.into())),
                     cells_accessed: HashSet::new()
                 },
@@ -340,10 +340,10 @@ mod test {
                 "".into(),
             )
             .output,
-            Some(CodeCellRunOutput {
+            Some(CodeRunOutput {
                 std_out: None,
                 std_err: None,
-                result: crate::grid::CodeCellRunResult::Ok {
+                result: crate::grid::CodeRun::Ok {
                     output_value: Value::Array(array),
                     cells_accessed: HashSet::new()
                 },

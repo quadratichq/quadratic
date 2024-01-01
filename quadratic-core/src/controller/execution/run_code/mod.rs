@@ -3,7 +3,7 @@ use crate::controller::operations::operation::Operation;
 use crate::core_error::{CoreError, Result};
 use crate::{
     controller::{transaction_types::JsCodeResult, GridController},
-    grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
+    grid::{CodeCellLanguage, CodeRun, CodeRun, CodeRunOutput},
     util::date_string,
     Array, CellValue, Error, ErrorMsg, Pos, SheetPos, SheetRect, Span, Value,
 };
@@ -18,7 +18,7 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        old_code_cell_value: Option<CodeCellValue>,
+        old_code_cell_value: Option<CodeRun>,
     ) {
         let sheet_id = sheet_pos.sheet_id;
         let code_cell_value = if let Some(sheet) = self.grid().try_sheet_from_id(sheet_id) {
@@ -113,7 +113,10 @@ impl GridController {
                     let old_code_cell_value = if let Some(sheet) =
                         self.try_sheet_mut_from_id(current_sheet_pos.sheet_id)
                     {
-                        sheet.set_code_cell(current_sheet_pos.into(), Some(updated_code_cell_value))
+                        sheet.set_code_result(
+                            current_sheet_pos.into(),
+                            Some(updated_code_cell_value),
+                        )
                     } else {
                         None
                     };
@@ -165,8 +168,8 @@ impl GridController {
                     end: line_number as u32,
                 });
                 let error = Error { span, msg };
-                let result = CodeCellRunResult::Err { error };
-                code_cell_value.output = Some(CodeCellRunOutput {
+                let result = CodeRun::Err { error };
+                code_cell_value.output = Some(CodeRunOutput {
                     std_out: None,
                     std_err: Some(error_msg),
                     result,
@@ -192,10 +195,10 @@ impl GridController {
         start: SheetPos,
         language: CodeCellLanguage,
         code_string: String,
-    ) -> CodeCellValue {
+    ) -> CodeRun {
         let sheet = self.grid_mut().sheet_mut_from_id(start.sheet_id);
         let result = if js_code_result.success() {
-            CodeCellRunResult::Ok {
+            CodeRun::Ok {
                 output_value: if let Some(array_output) = js_code_result.array_output() {
                     let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
                     transaction.reverse_operations.splice(0..0, ops);
@@ -223,16 +226,16 @@ impl GridController {
                 start: line_number,
                 end: line_number,
             });
-            CodeCellRunResult::Err {
+            CodeRun::Err {
                 error: Error { span, msg },
             }
         };
         transaction.cells_accessed.clear();
-        CodeCellValue {
+        CodeRun {
             language,
             code_string,
             formatted_code_string: js_code_result.formatted_code().clone(),
-            output: Some(CodeCellRunOutput {
+            output: Some(CodeRunOutput {
                 std_out: js_code_result.input_python_std_out(),
                 std_err: js_code_result.error_msg(),
                 result,

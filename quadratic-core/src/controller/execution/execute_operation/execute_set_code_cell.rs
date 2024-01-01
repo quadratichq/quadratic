@@ -32,8 +32,10 @@ impl GridController {
                                 };
                                 self.run_python(transaction, sheet_pos, &code_cell_value);
                                 let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                                sheet
-                                    .set_code_cell(sheet_pos.into(), Some(code_cell_value.clone()));
+                                sheet.set_code_result(
+                                    sheet_pos.into(),
+                                    Some(code_cell_value.clone()),
+                                );
 
                                 // this forward_operations will be replaced when the async call completes
                                 transaction.forward_operations.push(Operation::SetCodeCell {
@@ -70,11 +72,11 @@ impl GridController {
                         },
                     );
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    sheet.set_code_cell(sheet_pos.into(), code_cell_value);
+                    sheet.set_code_result(sheet_pos.into(), code_cell_value);
                     transaction.forward_operations.push(op.clone());
                 } else {
                     let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    sheet.set_code_cell(sheet_pos.into(), code_cell_value);
+                    sheet.set_code_result(sheet_pos.into(), code_cell_value);
                 }
 
                 let sheet_rect = &sheet_pos.into();

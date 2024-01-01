@@ -93,6 +93,10 @@ impl<'a> TryFrom<&'a CellValue> for String {
             CellValue::Duration(d) => Ok(d.to_string()),
             CellValue::Error(e) => Err(e.msg.clone()),
             CellValue::Html(s) => Ok(s.clone()),
+
+            // not sure these make sense
+            CellValue::Python(_) => Ok(String::new()),
+            CellValue::Formula(_) => Ok(String::new()),
         }
     }
 }
@@ -126,6 +130,8 @@ impl<'a> TryFrom<&'a CellValue> for f64 {
             }),
             CellValue::Error(e) => Err(e.msg.clone()),
             CellValue::Html(_) => Ok(0.0),
+            CellValue::Python(_) => Ok(0.0),
+            CellValue::Formula(_) => Ok(0.0),
         }
     }
 }

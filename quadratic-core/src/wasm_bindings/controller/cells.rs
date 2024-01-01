@@ -139,6 +139,10 @@ impl GridController {
     #[wasm_bindgen(js_name = "getCodeCell")]
     pub fn js_get_code_string(&self, sheet_id: String, pos: &Pos) -> Option<CodeCell> {
         let sheet = self.grid().sheet_from_string(sheet_id);
+        let code_cell = sheet.get_cell_value(*pos)?;
+        if !code_cell.is_code() {
+            return None;
+        }
         if let Some(code_cell) = sheet.get_code_cell(*pos) {
             let (std_err, std_out, evaluation_result) =
                 if let Some(code_cell) = code_cell.output.as_ref() {
