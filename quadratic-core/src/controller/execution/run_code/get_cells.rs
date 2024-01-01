@@ -6,7 +6,7 @@ use crate::{
         transaction_types::{CellsForArray, JsComputeGetCells},
         GridController,
     },
-    core_error::{CoreError, Result},
+    error_core::{CoreError, Result},
 };
 impl GridController {
     /// This is used to get cells during a  async calculation.

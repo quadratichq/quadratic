@@ -7,7 +7,7 @@ use crate::{
         },
         CellAlign, CodeCellLanguage, CodeRun, Column, NumericFormatKind,
     },
-    CellValue, Error, ErrorMsg, Pos, Rect,
+    CellValue, Pos, Rect, RunError, RunErrorMsg,
 };
 
 use super::Sheet;
@@ -45,7 +45,7 @@ impl Sheet {
             };
         } else if let CellValue::Error(error) = value {
             let value = match error.msg {
-                ErrorMsg::Spill => " SPILL",
+                RunErrorMsg::Spill => " SPILL",
                 _ => " ERROR",
             };
             return JsRenderCell {
@@ -144,9 +144,9 @@ impl Sheet {
                         code_rect.min.x,
                         code_rect.min.y,
                         None,
-                        CellValue::Error(Box::new(Error {
+                        CellValue::Error(Box::new(RunError {
                             span: None,
-                            msg: ErrorMsg::Spill,
+                            msg: RunErrorMsg::Spill,
                         })),
                         Some(code_cell_value.language),
                     ));
@@ -318,7 +318,7 @@ mod tests {
             js_types::{JsHtmlOutput, JsRenderCell},
             Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRun, CodeRunOutput, Italic, RenderSize,
         },
-        CellValue, Error, ErrorMsg, Pos, Rect, SheetPos, Value,
+        CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
     };
 
     #[test]
@@ -388,16 +388,16 @@ mod tests {
         let _ = sheet.set_cell_value(Pos { x: 2, y: 5 }, CellValue::Logical(true));
         let _ = sheet.set_cell_value(
             Pos { x: 2, y: 6 },
-            CellValue::Error(Box::new(Error {
+            CellValue::Error(Box::new(RunError {
                 span: None,
-                msg: ErrorMsg::Spill,
+                msg: RunErrorMsg::Spill,
             })),
         );
         let _ = sheet.set_cell_value(
             Pos { x: 3, y: 3 },
-            CellValue::Error(Box::new(Error {
+            CellValue::Error(Box::new(RunError {
                 span: None,
-                msg: crate::ErrorMsg::ArrayTooBig,
+                msg: crate::RunErrorMsg::ArrayTooBig,
             })),
         );
 

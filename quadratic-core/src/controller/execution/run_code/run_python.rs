@@ -3,7 +3,7 @@ use wasm_bindgen::JsValue;
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
     grid::{CodeCellLanguage, CodeRun, CodeRun, CodeRunOutput},
-    Error, ErrorMsg, SheetPos,
+    RunError, RunErrorMsg, SheetPos,
 };
 
 impl GridController {
@@ -13,16 +13,16 @@ impl GridController {
         sheet_pos: SheetPos,
         code_cell: &CodeRun,
     ) {
-        let error = Error {
+        let error = RunError {
             span: None,
-            msg: ErrorMsg::PythonNotLoaded,
+            msg: RunErrorMsg::PythonNotLoaded,
         };
         let result = CodeRun::Err { error };
         let spill = false;
         let new_code_cell = CodeRun {
             output: Some(CodeRunOutput {
                 std_out: None,
-                std_err: Some(ErrorMsg::PythonNotLoaded.to_string()),
+                std_err: Some(RunErrorMsg::PythonNotLoaded.to_string()),
                 result,
                 spill,
             }),

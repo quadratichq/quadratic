@@ -4,7 +4,8 @@ use smallvec::SmallVec;
 
 use super::*;
 use crate::{
-    grid::Grid, Array, CellValue, CodeResult, ErrorMsg, SheetPos, SheetRect, Span, Spanned, Value,
+    grid::Grid, Array, CellValue, CodeResult, RunErrorMsg, SheetPos, SheetRect, Span, Spanned,
+    Value,
 };
 
 /// Formula execution context.
@@ -33,13 +34,13 @@ impl<'ctx> Ctx<'ctx> {
             Some(sheet_name) => self
                 .grid
                 .sheet_from_name(sheet_name.clone())
-                .ok_or(ErrorMsg::BadCellReference.with_span(span))?,
+                .ok_or(RunErrorMsg::BadCellReference.with_span(span))?,
             None => self.grid.sheet_from_id(self.sheet_pos.sheet_id),
         };
         let ref_pos = ref_pos.resolve_from(self.sheet_pos.into());
         let ref_pos_with_sheet = ref_pos.to_sheet_pos(sheet.id);
         if ref_pos_with_sheet == self.sheet_pos {
-            return Err(ErrorMsg::CircularReference.with_span(span));
+            return Err(RunErrorMsg::CircularReference.with_span(span));
         }
 
         self.cells_accessed.insert(ref_pos_with_sheet.into());

@@ -9,7 +9,7 @@ use crate::{
         transaction_summary::{TransactionSummary, CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
         transaction_types::JsCodeResult,
     },
-    core_error::Result,
+    error_core::Result,
     Pos,
 };
 

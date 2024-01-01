@@ -1,11 +1,11 @@
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
-use crate::core_error::{CoreError, Result};
+use crate::error_core::{CoreError, Result};
 use crate::{
     controller::{transaction_types::JsCodeResult, GridController},
     grid::{CodeCellLanguage, CodeRun, CodeRun, CodeRunOutput},
     util::date_string,
-    Array, CellValue, Error, ErrorMsg, Pos, SheetPos, SheetRect, Span, Value,
+    Array, CellValue, Pos, RunError, RunErrorMsg, SheetPos, SheetRect, Span, Value,
 };
 
 pub mod get_cells;
@@ -162,12 +162,12 @@ impl GridController {
             Some(update_code_cell_value) => {
                 let mut code_cell_value = update_code_cell_value.clone();
                 code_cell_value.last_modified = date_string();
-                let msg = ErrorMsg::PythonError(error_msg.clone().into());
+                let msg = RunErrorMsg::PythonError(error_msg.clone().into());
                 let span = line_number.map(|line_number| Span {
                     start: line_number as u32,
                     end: line_number as u32,
                 });
-                let error = Error { span, msg };
+                let error = RunError { span, msg };
                 let result = CodeRun::Err { error };
                 code_cell_value.output = Some(CodeRunOutput {
                     std_out: None,
@@ -221,13 +221,13 @@ impl GridController {
             let error_msg = js_code_result
                 .error_msg()
                 .unwrap_or_else(|| "Unknown Python Error".into());
-            let msg = ErrorMsg::PythonError(error_msg.into());
+            let msg = RunErrorMsg::PythonError(error_msg.into());
             let span = js_code_result.line_number().map(|line_number| Span {
                 start: line_number,
                 end: line_number,
             });
             CodeRun::Err {
-                error: Error { span, msg },
+                error: RunError { span, msg },
             }
         };
         transaction.cells_accessed.clear();

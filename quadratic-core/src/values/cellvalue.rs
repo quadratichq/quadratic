@@ -10,7 +10,7 @@ use crate::{
         formatting::CellFmtArray, CodeCellLanguage, NumericDecimals, NumericFormat,
         NumericFormatKind, Sheet,
     },
-    CodeResult, Error, Pos, RunLengthEncoding, SheetRect,
+    CodeResult, Pos, RunError, RunLengthEncoding, SheetRect,
 };
 
 // todo: fill this out
@@ -19,8 +19,8 @@ const PERCENTAGE_SYMBOL: char = '%';
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CellCode {
-    language: CodeCellLanguage,
-    value: String,
+    pub language: CodeCellLanguage,
+    pub code: String,
 }
 
 /// Non-array value in the formula language.
@@ -46,7 +46,7 @@ pub enum CellValue {
     Duration(Duration),
     /// Error value.
     #[cfg_attr(test, proptest(skip))]
-    Error(Box<Error>),
+    Error(Box<RunError>),
     Html(String),
     #[cfg_attr(test, proptest(skip))]
     Python(CellCode),
@@ -286,7 +286,7 @@ impl CellValue {
         self.is_blank() || *self == CellValue::Text(String::new())
     }
     /// Returns the contained error, if this is an error value.
-    pub fn error(&self) -> Option<&Error> {
+    pub fn error(&self) -> Option<&RunError> {
         match self {
             CellValue::Error(e) => Some(e),
             _ => None,

@@ -4,7 +4,8 @@
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
 
-use crate::{ArraySize, CellValue, Error, Pos, Rect, SheetPos, SheetRect, Value};
+use crate::{ArraySize, CellValue, Pos, Rect, RunError, SheetPos, SheetRect, Value};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use strum_macros::{Display, EnumString};
@@ -12,23 +13,23 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CodeRun {
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub formatted_code_string: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub std_out: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub std_err: Option<String>,
+    pub cells_accessed: HashSet<SheetRect>,
     pub result: CodeRunResult,
     pub spill_error: bool,
+    pub last_modified: DateTime<Utc>,
 }
+
 impl CodeRun {
     pub fn output_cell_value(&self, x: u32, y: u32) -> Option<CellValue> {
         match &self.result {
-            CodeRunResult::Ok { output_value, .. } => match output_value {
+            CodeRunResult::Ok(value) => match value {
                 Value::Single(v) => Some(v.clone()),
                 Value::Array(a) => Some(a.get(x, y).ok()?.clone()),
             },
-            CodeRunResult::Err { .. } => None,
+            CodeRunResult::Err(_) => None,
         }
     }
 
@@ -36,11 +37,11 @@ impl CodeRun {
     /// Note: this does not take spill_error into account.
     pub fn output_size(&self) -> ArraySize {
         match &self.result {
-            CodeRunResult::Ok { output_value, .. } => match output_value {
+            CodeRunResult::Ok(value) => match value {
                 Value::Single(_) => ArraySize::_1X1,
                 Value::Array(a) => a.size(),
             },
-            CodeRunResult::Err { .. } => ArraySize::_1X1,
+            CodeRunResult::Err(_) => ArraySize::_1X1,
         }
     }
 
@@ -73,17 +74,10 @@ impl CodeRun {
     }
 
     /// Returns any error in a code run.
-    pub fn get_error(&self) -> Option<Error> {
+    pub fn get_error(&self) -> Option<RunError> {
         match &self.result {
             CodeRunResult::Ok { .. } => None,
-            CodeRunResult::Err { error } => Some(error.clone()),
-        }
-    }
-
-    pub fn cells_accessed(&self) -> Option<&HashSet<SheetRect>> {
-        match &self.result {
-            CodeRunResult::Ok { cells_accessed, .. } => Some(cells_accessed),
-            CodeRunResult::Err { .. } => None,
+            CodeRunResult::Err(error) => Some(error.clone()),
         }
     }
 }
@@ -101,13 +95,8 @@ pub enum CodeCellLanguage {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum CodeRunResult {
-    Ok {
-        output_value: Value,
-        cells_accessed: HashSet<SheetRect>,
-    },
-    Err {
-        error: Error,
-    },
+    Ok(Value),
+    Err(RunError),
 }
 
 #[cfg(test)]
@@ -122,13 +111,12 @@ mod test {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            result: CodeRunResult::Ok {
-                cells_accessed: HashSet::new(),
-                output_value: Value::Single(CellValue::Number(1.into())),
-            },
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Single(CellValue::Number(1.into()))),
             spill_error: false,
+            last_modified: Utc::now(),
         };
-        assert_eq!(code_run.output_size(), code_run::ArraySize::_1X1);
+        assert_eq!(code_run.output_size(), ArraySize::_1X1);
         assert_eq!(
             code_run.output_sheet_rect(
                 SheetPos {
@@ -145,13 +133,12 @@ mod test {
             std_out: None,
             std_err: None,
             formatted_code_string: None,
-            result: CodeRunResult::Ok {
-                output_value: crate::Value::Array(Array::new_empty(
-                    ArraySize::new(10, 11).unwrap(),
-                )),
-                cells_accessed: HashSet::new(),
-            },
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Array(Array::new_empty(
+                ArraySize::new(10, 11).unwrap(),
+            ))),
             spill_error: false,
+            last_modified: Utc::now(),
         };
         assert_eq!(code_run.output_size().w.get(), 10);
         assert_eq!(code_run.output_size().h.get(), 11);
@@ -175,13 +162,12 @@ mod test {
             formatted_code_string: None,
             std_out: None,
             std_err: None,
-            result: CodeRunResult::Ok {
-                output_value: crate::Value::Array(Array::new_empty(
-                    ArraySize::new(10, 11).unwrap(),
-                )),
-                cells_accessed: HashSet::new(),
-            },
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Array(Array::new_empty(
+                ArraySize::new(10, 11).unwrap(),
+            ))),
             spill_error: true,
+            last_modified: Utc::now(),
         };
         assert_eq!(code_run.output_size().w.get(), 10);
         assert_eq!(code_run.output_size().h.get(), 11);

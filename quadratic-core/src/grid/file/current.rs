@@ -1,119 +1,133 @@
 use crate::color::Rgba;
-use crate::grid::formatting::RenderSize;
-use crate::grid::{
-    generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
-    CellWrap, Grid, GridBounds, NumericFormat, NumericFormatKind,
-};
-use crate::{CellValue, Error, ErrorMsg, Pos, Rect, Span, Value};
-
 use crate::grid::file::v1_5::schema::{self as current};
+use crate::grid::CodeRunResult;
 use crate::grid::{
-    block::SameValue, sheet::sheet_offsets::SheetOffsets, CodeCellLanguage, CodeRun, CodeRun,
-    CodeRunOutput, Column, ColumnData, Sheet, SheetBorders, SheetId,
+    block::SameValue, formatting::RenderSize, generate_borders, set_rect_borders,
+    sheet::sheet_offsets::SheetOffsets, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
+    CellWrap, CodeRun, Column, ColumnData, Grid, GridBounds, NumericFormat, NumericFormatKind,
+    Sheet, SheetBorders, SheetId,
 };
+use crate::{CellValue, Pos, Rect, Value};
 use anyhow::{anyhow, Result};
 use bigdecimal::BigDecimal;
-use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use chrono::Utc;
+use indexmap::IndexMap;
 use std::{
     collections::{BTreeMap, HashMap},
-    fmt::Debug,
     str::FromStr,
 };
 
 use super::CURRENT_VERSION;
 
-fn set_column_format<T>(
-    column_data: &mut ColumnData<SameValue<T>>,
-    column: &HashMap<String, current::ColumnFormatType<String>>,
-) -> Result<()>
-where
-    T: Serialize + for<'d> Deserialize<'d> + Debug + Clone + PartialEq,
-{
+fn set_column_format_align(
+    column_data: &mut ColumnData<SameValue<CellAlign>>,
+    column: &HashMap<i64, current::ColumnRepeat<current::CellAlign>>,
+) {
     for (y, format) in column.iter() {
-        let y =
-            i64::from_str(y).map_err(|e| anyhow!("Unable to convert {} to an i64: {}", y, e))?;
-        column_data.set(y, serde_json::from_str(&format.content.value).ok());
+        // there's probably a better way to do this...
+        for y in *y..(*y + format.len as i64) {
+            column_data.set(
+                y,
+                Some(match format.value {
+                    current::CellAlign::Left => CellAlign::Left,
+                    current::CellAlign::Center => CellAlign::Center,
+                    current::CellAlign::Right => CellAlign::Right,
+                }),
+            );
+        }
     }
+}
 
-    Ok(())
+fn set_column_format_wrap(
+    column_data: &mut ColumnData<SameValue<CellWrap>>,
+    column: &HashMap<i64, current::ColumnRepeat<current::CellWrap>>,
+) {
+    for (y, format) in column.iter() {
+        // there's probably a better way to do this...
+        for y in *y..(*y + format.len as i64) {
+            column_data.set(
+                y,
+                Some(match format.value {
+                    current::CellWrap::Wrap => CellWrap::Wrap,
+                    current::CellWrap::Overflow => CellWrap::Overflow,
+                    current::CellWrap::Clip => CellWrap::Clip,
+                }),
+            );
+        }
+    }
 }
 
 fn set_column_format_numeric_format(
     column_data: &mut ColumnData<SameValue<NumericFormat>>,
-    column: &HashMap<String, current::ColumnFormatType<current::NumericFormat>>,
-) -> Result<()> {
+    column: &HashMap<i64, current::ColumnRepeat<current::NumericFormat>>,
+) {
     for (y, format) in column.iter() {
-        let y =
-            i64::from_str(y).map_err(|e| anyhow!("Unable to convert {} to an i64: {}", y, e))?;
-        column_data.set(
-            y,
-            Some(NumericFormat {
-                kind: NumericFormatKind::from_str(&format.content.value.kind.to_string())
-                    .unwrap_or(NumericFormatKind::Number),
-                symbol: format.content.value.symbol.to_owned(),
-            }),
-        );
+        // there's probably a better way to do this...
+        for y in *y..(*y + format.len as i64) {
+            column_data.set(
+                y,
+                Some(NumericFormat {
+                    kind: NumericFormatKind::from_str(&format.value.kind.to_string())
+                        .unwrap_or(NumericFormatKind::Number),
+                    symbol: format.value.symbol.to_owned(),
+                }),
+            );
+        }
     }
-
-    Ok(())
 }
 
 fn set_column_format_i16(
     column_data: &mut ColumnData<SameValue<i16>>,
-    column: &HashMap<String, current::ColumnFormatType<i16>>,
-) -> Result<()> {
+    column: &HashMap<i64, current::ColumnRepeat<i16>>,
+) {
     for (y, format) in column.iter() {
-        let y =
-            i64::from_str(y).map_err(|e| anyhow!("Unable to convert {} to an i64: {}", y, e))?;
-        column_data.set(y, Some(format.content.value));
+        // there's probably a better way to do this...
+        for y in *y..(*y + format.len as i64) {
+            column_data.set(y, Some(format.value));
+        }
     }
-
-    Ok(())
 }
 
 fn set_column_format_string(
     column_data: &mut ColumnData<SameValue<String>>,
-    column: &HashMap<String, current::ColumnFormatType<String>>,
-) -> Result<()> {
+    column: &HashMap<i64, current::ColumnRepeat<String>>,
+) {
     for (y, format) in column.iter() {
-        let y =
-            i64::from_str(y).map_err(|e| anyhow!("Unable to convert {} to an i64: {}", y, e))?;
-        column_data.set(y, Some(format.content.value.to_string()));
+        // there's probably a better way to do this...
+        for y in *y..(*y + format.len as i64) {
+            column_data.set(y, Some(format.value.clone()));
+        }
     }
-
-    Ok(())
 }
 
 fn set_column_format_bool(
     column_data: &mut ColumnData<SameValue<bool>>,
-    column: &HashMap<String, current::ColumnFormatType<bool>>,
-) -> Result<()> {
+    column: &HashMap<i64, current::ColumnRepeat<bool>>,
+) {
     for (y, format) in column.iter() {
-        let y =
-            i64::from_str(y).map_err(|e| anyhow!("Unable to convert {} to an i64: {}", y, e))?;
-        column_data.set(y, Some(format.content.value));
+        // there's probably a better way to do this...
+        for y in *y..(*y + format.len as i64) {
+            column_data.set(y, Some(format.value));
+        }
     }
-
-    Ok(())
 }
 
 fn set_column_format_render_size(
     column_data: &mut ColumnData<SameValue<RenderSize>>,
-    column: &HashMap<String, current::ColumnFormatType<current::RenderSize>>,
-) -> Result<()> {
+    column: &HashMap<i64, current::ColumnRepeat<current::RenderSize>>,
+) {
     for (y, format) in column.iter() {
-        let y =
-            i64::from_str(y).map_err(|e| anyhow!("Unable to convert {} to an i64: {}", y, e))?;
-        column_data.set(
-            y,
-            Some(RenderSize {
-                w: format.content.value.w.clone(),
-                h: format.content.value.h.clone(),
-            }),
-        );
+        // there's probably a better way to do this...
+        for y in *y..(*y + format.len as i64) {
+            column_data.set(
+                y,
+                Some(RenderSize {
+                    w: format.value.w.clone(),
+                    h: format.value.h.clone(),
+                }),
+            );
+        }
     }
-    Ok(())
 }
 
 fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<i64, Column>> {
@@ -121,35 +135,59 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
         .iter()
         .map(|(x, column)| {
             let mut col = Column::new(*x);
-            set_column_format::<CellAlign>(&mut col.align, &column.align)?;
-            set_column_format::<CellWrap>(&mut col.wrap, &column.wrap)?;
-            set_column_format_i16(&mut col.numeric_decimals, &column.numeric_decimals)?;
-            set_column_format_numeric_format(&mut col.numeric_format, &column.numeric_format)?;
-            set_column_format_bool(&mut col.numeric_commas, &column.numeric_commas)?;
-            set_column_format_bool(&mut col.bold, &column.bold)?;
-            set_column_format_bool(&mut col.italic, &column.italic)?;
-            set_column_format_string(&mut col.text_color, &column.text_color)?;
-            set_column_format_string(&mut col.fill_color, &column.fill_color)?;
-            set_column_format_render_size(&mut col.render_size, &column.render_size)?;
+            set_column_format_align(&mut col.align, &column.align);
+            set_column_format_wrap(&mut col.wrap, &column.wrap);
+            set_column_format_i16(&mut col.numeric_decimals, &column.numeric_decimals);
+            set_column_format_numeric_format(&mut col.numeric_format, &column.numeric_format);
+            set_column_format_bool(&mut col.numeric_commas, &column.numeric_commas);
+            set_column_format_bool(&mut col.bold, &column.bold);
+            set_column_format_bool(&mut col.italic, &column.italic);
+            set_column_format_string(&mut col.text_color, &column.text_color);
+            set_column_format_string(&mut col.fill_color, &column.fill_color);
+            set_column_format_render_size(&mut col.render_size, &column.render_size);
 
             for (y, value) in column.values.iter() {
-                for cell_value in value.content.values.iter() {
-                    let y = i64::from_str(y)
-                        .map_err(|e| anyhow!("Could not convert {} to an i64: {}", &y, e))?;
-                    match cell_value.type_field.to_lowercase().as_str() {
-                        "text" => {
-                            col.values
-                                .set(y, Some(CellValue::Text(cell_value.value.to_owned())));
-                        }
-                        "number" => {
-                            col.values.set(
-                                y,
-                                Some(CellValue::Number(BigDecimal::from_str(&cell_value.value)?)),
-                            );
-                        }
-                        _ => {}
-                    };
-                }
+                match value.type_field.to_lowercase().as_str() {
+                    "text" => {
+                        col.values
+                            .set(*y, Some(CellValue::Text(value.value.to_owned())));
+                    }
+                    "number" => {
+                        col.values.set(
+                            *y,
+                            Some(CellValue::Number(BigDecimal::from_str(&value.value)?)),
+                        );
+                    }
+                    "html" => {
+                        col.values
+                            .set(*y, Some(CellValue::Html(value.value.to_owned())));
+                    }
+                    "python" => {
+                        let value = CellValue::Python(serde_json::from_str(&value.value)?);
+                        col.values.set(*y, Some(value));
+                    }
+                    "formula" => {
+                        let value = CellValue::Formula(serde_json::from_str(&value.value)?);
+                        col.values.set(*y, Some(value));
+                    }
+                    "logical" => {
+                        let value = CellValue::Logical(serde_json::from_str(&value.value)?);
+                        col.values.set(*y, Some(value));
+                    }
+                    "instant" => {
+                        let value = CellValue::Instant(serde_json::from_str(&value.value)?);
+                        col.values.set(*y, Some(value));
+                    }
+                    "duration" => {
+                        let value = CellValue::Duration(serde_json::from_str(&value.value)?);
+                        col.values.set(*y, Some(value));
+                    }
+                    "error" => {
+                        let value = CellValue::Error(serde_json::from_str(&value.value)?);
+                        col.values.set(*y, Some(value));
+                    }
+                    _ => {}
+                };
             }
 
             Ok((*x, col))
@@ -201,79 +239,54 @@ fn import_code_cell_output(type_field: &str, value: &str) -> CellValue {
     }
 }
 
-fn import_code_cell_builder(sheet: &current::Sheet) -> Result<Vec<(Pos, CodeRun)>> {
-    sheet
-        .code_cells
-        .iter()
-        .map(|(pos, code_cell_value)| {
-            Ok((
-                Pos { x: pos.x, y: pos.y },
-                CodeRun {
-                    language: CodeCellLanguage::from_str(&code_cell_value.language)?,
-                    code_string: code_cell_value.code_string.to_owned(),
-                    formatted_code_string: code_cell_value.formatted_code_string.to_owned(),
-                    last_modified: code_cell_value.last_modified.to_owned(),
-                    output: code_cell_value.output.to_owned().and_then(|output| {
-                        Some(CodeRunOutput {
-                            std_out: output.std_out,
-                            std_err: output.std_err,
-                            spill: output.spill,
-                            result: match output.result {
-                                current::CodeCellRunResult::Ok {
-                                    output_value,
-                                    cells_accessed,
-                                } => CodeRun::Ok {
-                                    output_value: match output_value {
-                                        current::OutputValue::Single(
-                                            current::OutputValueValue { type_field, value },
-                                        ) => Value::Single(import_code_cell_output(
-                                            &type_field,
-                                            &value,
-                                        )),
-                                        current::OutputValue::Array(current::OutputArray {
-                                            size,
-                                            values,
-                                        }) => Value::Array(crate::Array::from(
-                                            values
-                                                .chunks(size.w as usize)
-                                                .map(|row| {
-                                                    row.iter()
-                                                        .map(|cell| {
-                                                            import_code_cell_output(
-                                                                &cell.type_field,
-                                                                &cell.value,
-                                                            )
-                                                        })
-                                                        .collect::<Vec<_>>()
-                                                })
-                                                .collect::<Vec<Vec<_>>>(),
-                                        )),
-                                    },
-                                    cells_accessed: cells_accessed
-                                        .into_iter()
-                                        .map(|sheet_rect| Ok(sheet_rect.into()))
-                                        .collect::<Result<_>>()
-                                        .ok()?,
-                                },
-                                current::CodeCellRunResult::Err { error } => {
-                                    CodeRun::Err {
-                                        error: Error {
-                                            span: error.span.map(|span| Span {
-                                                start: span.start,
-                                                end: span.end,
-                                            }),
-                                            // TODO(ddimaria): implement ErrorMsg
-                                            msg: ErrorMsg::UnknownError,
-                                        },
-                                    }
-                                }
-                            },
-                        })
-                    }),
-                },
-            ))
-        })
-        .collect::<Result<_>>()
+fn import_code_cell_builder(sheet: &current::Sheet) -> Result<IndexMap<Pos, CodeRun>> {
+    // davidfig: probably the more idiomatic way is to return the code_runs below. It's above my skill level, though.
+    let mut code_runs = IndexMap::new();
+
+    sheet.code_runs.iter().for_each(|(pos, code_run)| {
+        let cells_accessed = code_run
+            .cells_accessed
+            .iter()
+            .map(|sheet_rect| crate::SheetRect::from(*sheet_rect))
+            .collect();
+
+        let result = match code_run.result {
+            current::CodeRunResult::Ok(output) => CodeRunResult::Ok(match output {
+                current::OutputValue::Single(current::OutputValueValue { type_field, value }) => {
+                    Value::Single(import_code_cell_output(&type_field, &value))
+                }
+                current::OutputValue::Array(current::OutputArray { size, values }) => {
+                    Value::Array(crate::Array::from(
+                        values
+                            .chunks(size.w as usize)
+                            .map(|row| {
+                                row.iter()
+                                    .map(|cell| {
+                                        import_code_cell_output(&cell.type_field, &cell.value)
+                                    })
+                                    .collect::<Vec<_>>()
+                            })
+                            .collect::<Vec<Vec<_>>>(),
+                    ))
+                }
+            }),
+            current::CodeRunResult::Err(error) => CodeRunResult::Err(error.into()),
+        };
+        code_runs.insert(
+            Pos { x: pos.x, y: pos.y },
+            CodeRun {
+                formatted_code_string: code_run.formatted_code_string.to_owned(),
+                last_modified: code_run.last_modified.unwrap_or(Utc::now()), // this is required but fall back to now if failed
+                std_out: code_run.std_out.to_owned(),
+                std_err: code_run.std_err.to_owned(),
+                spill_error: code_run.spill_error,
+                cells_accessed,
+                result,
+            },
+        );
+    });
+
+    Ok(code_runs)
 }
 
 pub fn import(file: current::GridSchema) -> Result<Grid> {
@@ -305,48 +318,69 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
 
 fn export_column_data_bool(
     column_data: &ColumnData<SameValue<bool>>,
-) -> HashMap<String, current::ColumnFormatType<bool>> {
+) -> HashMap<i64, current::ColumnRepeat<bool>> {
     column_data
-        .values()
-        .map(|(y, value)| (y.to_string(), (y, value).into()))
+        .blocks()
+        .map(|block| {
+            (
+                block.y,
+                current::ColumnRepeat {
+                    value: block.content.value,
+                    len: block.len() as u32,
+                },
+            )
+        })
         .collect()
 }
 
 fn export_column_data_string(
     column_data: &ColumnData<SameValue<String>>,
-) -> HashMap<String, current::ColumnFormatType<String>> {
+) -> HashMap<i64, current::ColumnRepeat<String>> {
     column_data
-        .values()
-        .map(|(y, value)| (y.to_string(), (y, value).into()))
+        .blocks()
+        .map(|block| {
+            (
+                block.y,
+                current::ColumnRepeat {
+                    value: block.content.value.clone(),
+                    len: block.len() as u32,
+                },
+            )
+        })
         .collect()
 }
 
 fn export_column_data_i16(
     column_data: &ColumnData<SameValue<i16>>,
-) -> HashMap<String, current::ColumnFormatType<i16>> {
+) -> HashMap<i64, current::ColumnRepeat<i16>> {
     column_data
-        .values()
-        .map(|(y, value)| (y.to_string(), (y, value).into()))
+        .blocks()
+        .map(|block| {
+            (
+                block.y,
+                current::ColumnRepeat {
+                    value: block.content.value,
+                    len: block.len() as u32,
+                },
+            )
+        })
         .collect()
 }
 
 fn export_column_data_numeric_format(
     column_data: &ColumnData<SameValue<NumericFormat>>,
-) -> HashMap<String, current::ColumnFormatType<current::NumericFormat>> {
+) -> HashMap<i64, current::ColumnRepeat<current::NumericFormat>> {
     column_data
-        .values()
-        .map(|(y, value)| {
+        .blocks()
+        .map(|block| {
             (
-                y.to_string(),
-                current::ColumnFormatType {
-                    y,
-                    content: current::ColumnFormatContent {
-                        value: current::NumericFormat {
-                            kind: value.kind.to_string(),
-                            symbol: value.symbol,
-                        },
-                        len: 1,
+                block.y,
+                current::ColumnRepeat {
+                    value: current::NumericFormat {
+                        kind: block.content.value.kind.to_string(),
+                        symbol: block.content.value.symbol,
                     },
+                    len: block.len() as u32,
                 },
             )
         })
@@ -355,39 +389,61 @@ fn export_column_data_numeric_format(
 
 fn export_column_data_render_size(
     column_data: &ColumnData<SameValue<RenderSize>>,
-) -> HashMap<String, current::ColumnFormatType<current::RenderSize>> {
+) -> HashMap<i64, current::ColumnRepeat<current::RenderSize>> {
     column_data
-        .values()
-        .map(|(y, value)| {
+        .blocks()
+        .map(|block| {
             (
-                y.to_string(),
-                current::ColumnFormatType {
-                    y,
-                    content: current::ColumnFormatContent {
-                        value: current::RenderSize {
-                            w: value.w,
-                            h: value.h,
-                        },
-                        len: 1,
+                block.y,
+                current::ColumnRepeat {
+                    value: current::RenderSize {
+                        w: block.content.value.w,
+                        h: block.content.value.h,
                     },
+                    len: block.len() as u32,
                 },
             )
         })
         .collect()
 }
 
-fn export_column_data<T>(
-    column_data: &ColumnData<SameValue<T>>,
-) -> HashMap<String, current::ColumnFormatType<String>>
-where
-    T: Serialize + DeserializeOwned + Debug + Clone + PartialEq,
-{
+fn export_column_data_align(
+    column_data: &ColumnData<SameValue<CellAlign>>,
+) -> HashMap<i64, current::ColumnRepeat<current::CellAlign>> {
     column_data
-        .values()
-        .map(|(y, value)| {
+        .blocks()
+        .map(|block| {
             (
-                y.to_string(),
-                (y, serde_json::to_string(&value).unwrap_or_default()).into(),
+                block.y,
+                current::ColumnRepeat {
+                    value: match block.content.value {
+                        CellAlign::Left => current::CellAlign::Left,
+                        CellAlign::Center => current::CellAlign::Center,
+                        CellAlign::Right => current::CellAlign::Right,
+                    },
+                    len: block.len() as u32,
+                },
+            )
+        })
+        .collect()
+}
+
+fn export_column_data_wrap(
+    column_data: &ColumnData<SameValue<CellWrap>>,
+) -> HashMap<i64, current::ColumnRepeat<current::CellWrap>> {
+    column_data
+        .blocks()
+        .map(|block| {
+            (
+                block.y,
+                current::ColumnRepeat {
+                    value: match block.content.value {
+                        CellWrap::Wrap => current::CellWrap::Wrap,
+                        CellWrap::Overflow => current::CellWrap::Overflow,
+                        CellWrap::Clip => current::CellWrap::Clip,
+                    },
+                    len: block.len() as u32,
+                },
             )
         })
         .collect()
@@ -401,9 +457,8 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
             (
                 *x,
                 current::Column {
-                    x: *x,
-                    align: export_column_data(&column.align),
-                    wrap: export_column_data(&column.wrap),
+                    align: export_column_data_align(&column.align),
+                    wrap: export_column_data_wrap(&column.wrap),
                     numeric_decimals: export_column_data_i16(&column.numeric_decimals),
                     numeric_format: export_column_data_numeric_format(&column.numeric_format),
                     numeric_commas: export_column_data_bool(&column.numeric_commas),
@@ -417,15 +472,11 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                         .values()
                         .map(|(y, value)| {
                             (
-                                y.to_string(),
-                                (
-                                    y,
-                                    current::ColumnValue {
-                                        type_field: value.type_name().into(),
-                                        value: value.to_string(),
-                                    },
-                                )
-                                    .into(),
+                                y,
+                                current::ColumnValue {
+                                    type_field: value.type_name().into(),
+                                    value: serde_json::to_string(&value).unwrap(),
+                                },
                             )
                         })
                         .collect(),
@@ -486,86 +537,55 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                 offsets: sheet.offsets.export(),
                 columns: export_column_builder(sheet),
                 borders: export_borders_builder(sheet),
-                code_cells: sheet
+                code_runs: sheet
                     .code_runs
                     .iter()
-                    .map(|(pos, code_cell_value)| {
+                    .map(|(pos, code_run)| {
+                        let result = match &code_run.result {
+                            CodeRunResult::Ok(output) => current::CodeRunResult::Ok(match output {
+                                Value::Single(cell_value) => {
+                                    current::OutputValue::Single(current::OutputValueValue {
+                                        type_field: cell_value.type_name().into(),
+                                        value: cell_value.to_string(),
+                                    })
+                                }
+                                Value::Array(array) => {
+                                    current::OutputValue::Array(current::OutputArray {
+                                        size: current::OutputSize {
+                                            w: array.width() as i64,
+                                            h: array.height() as i64,
+                                        },
+                                        values: array
+                                            .rows()
+                                            .flat_map(|row| {
+                                                row.iter().map(|cell| current::OutputValueValue {
+                                                    type_field: cell.type_name().into(),
+                                                    value: cell.to_string(),
+                                                })
+                                            })
+                                            .collect(),
+                                    })
+                                }
+                            }),
+                            CodeRunResult::Err(error) => current::CodeRunResult::Err(
+                                current::RunError::from_grid_run_error(error),
+                            ),
+                        };
+
                         (
                             current::Pos::from(*pos),
-                            current::CodeCellValue {
-                                language: code_cell_value.language.to_string(),
-                                code_string: code_cell_value.code_string.clone(),
-                                formatted_code_string: code_cell_value
-                                    .formatted_code_string
-                                    .clone(),
-                                last_modified: code_cell_value.last_modified.clone(),
-                                output: code_cell_value.output.clone().map(|output| {
-                                    current::CodeCellRunOutput {
-                                        std_out: output.std_out,
-                                        std_err: output.std_err,
-                                        spill: output.spill,
-                                        result: match output.result {
-                                            CodeRun::Ok {
-                                                output_value,
-                                                cells_accessed,
-                                            } => current::CodeCellRunResult::Ok {
-                                                output_value: match output_value {
-                                                    Value::Single(cell_value) => {
-                                                        current::OutputValue::Single(
-                                                            current::OutputValueValue {
-                                                                type_field: cell_value
-                                                                    .type_name()
-                                                                    .into(),
-                                                                value: cell_value.to_string(),
-                                                            },
-                                                        )
-                                                    }
-                                                    Value::Array(array) => {
-                                                        current::OutputValue::Array(
-                                                            current::OutputArray {
-                                                                size: current::OutputSize {
-                                                                    w: array.width() as i64,
-                                                                    h: array.height() as i64,
-                                                                },
-                                                                values: array
-                                                                    .rows()
-                                                                    .flat_map(|row| {
-                                                                        row.iter().map(|cell| {
-                                                                        current::OutputValueValue {
-                                                                            type_field: cell
-                                                                                .type_name()
-                                                                                .into(),
-                                                                            value: cell
-                                                                                .to_string(),
-                                                                        }
-                                                                    })
-                                                                    })
-                                                                    .collect(),
-                                                            },
-                                                        )
-                                                    }
-                                                },
-                                                cells_accessed: cells_accessed
-                                                    .into_iter()
-                                                    .map(|cell_ref| cell_ref.into())
-                                                    .collect(),
-                                            },
-                                            CodeRun::Err { error } => {
-                                                current::CodeCellRunResult::Err {
-                                                    error: current::Error {
-                                                        span: error.span.map(|span| {
-                                                            current::Span {
-                                                                start: span.start,
-                                                                end: span.end,
-                                                            }
-                                                        }),
-                                                        msg: error.msg.to_string(),
-                                                    },
-                                                }
-                                            }
-                                        },
-                                    }
-                                }),
+                            current::CodeRun {
+                                formatted_code_string: code_run.formatted_code_string.clone(),
+                                last_modified: Some(code_run.last_modified.clone()),
+                                std_out: code_run.std_out,
+                                std_err: code_run.std_err,
+                                spill_error: code_run.spill_error,
+                                cells_accessed: code_run
+                                    .cells_accessed
+                                    .iter()
+                                    .map(|sheet_rect| current::SheetRect::from(*sheet_rect))
+                                    .collect(),
+                                result,
                             },
                         )
                     })

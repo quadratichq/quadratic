@@ -7,7 +7,7 @@ use crate::{
         operations::operation::Operation, transaction::TransactionServer,
         transaction_summary::TransactionSummary, GridController,
     },
-    core_error::Result,
+    error_core::Result,
 };
 use chrono::{Duration, Utc};
 use uuid::Uuid;

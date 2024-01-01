@@ -21,7 +21,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[zip_map]
             fn INDIRECT(ctx: Ctx, [cellref_string]: (Spanned<String>)) {
                 let pos = CellRef::parse_a1(&cellref_string.inner, ctx.sheet_pos.into())
-                    .ok_or(ErrorMsg::BadCellReference.with_span(cellref_string.span))?;
+                    .ok_or(RunErrorMsg::BadCellReference.with_span(cellref_string.span))?;
                 ctx.get_cell(&pos, cellref_string.span)?.inner
             }
         ),
@@ -58,9 +58,9 @@ fn get_functions() -> Vec<FormulaFunction> {
 
                 let x = output_col
                     .checked_sub(1)
-                    .ok_or(ErrorMsg::IndexOutOfBounds)?;
+                    .ok_or(RunErrorMsg::IndexOutOfBounds)?;
                 let y = lookup(needle, haystack, match_mode, search_mode)?
-                    .ok_or_else(|| ErrorMsg::NoMatch.with_span(span))?;
+                    .ok_or_else(|| RunErrorMsg::NoMatch.with_span(span))?;
 
                 search_range.get(x, y as u32)?.clone()
             }
@@ -99,10 +99,10 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let search_mode = LookupSearchMode::from_is_sorted(is_sorted);
 
                 let x = lookup(needle, haystack, match_mode, search_mode)?
-                    .ok_or_else(|| ErrorMsg::NoMatch.with_span(span))?;
+                    .ok_or_else(|| RunErrorMsg::NoMatch.with_span(span))?;
                 let y = output_row
                     .checked_sub(1)
-                    .ok_or(ErrorMsg::IndexOutOfBounds)?;
+                    .ok_or(RunErrorMsg::IndexOutOfBounds)?;
 
                 search_range.get(x as u32, y)?.clone()
             }
@@ -184,7 +184,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let fallback = fallback.unwrap_or(Spanned {
                     span,
                     inner: Array::from(CellValue::Error(Box::new(
-                        ErrorMsg::NoMatch.with_span(span),
+                        RunErrorMsg::NoMatch.with_span(span),
                     ))),
                 });
                 let search_mode_span = search_mode.map_or(span, |arg| arg.span);
@@ -197,7 +197,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                         LookupSearchMode::LinearForward | LookupSearchMode::LinearReverse => (), //ok
                         LookupSearchMode::BinaryAscending | LookupSearchMode::BinaryDescending => {
                             // not ok -- can't do binary search with wildcard
-                            return Err(ErrorMsg::InvalidArgument.with_span(search_mode_span));
+                            return Err(RunErrorMsg::InvalidArgument.with_span(search_mode_span));
                         }
                     }
                 }
@@ -407,7 +407,7 @@ enum LookupMatchMode {
     Wildcard = 2,
 }
 impl TryFrom<Option<Spanned<i64>>> for LookupMatchMode {
-    type Error = Error;
+    type Error = RunError;
 
     fn try_from(value: Option<Spanned<i64>>) -> Result<Self, Self::Error> {
         match value {
@@ -417,7 +417,7 @@ impl TryFrom<Option<Spanned<i64>>> for LookupMatchMode {
                 -1 => Ok(LookupMatchMode::NextSmaller),
                 1 => Ok(LookupMatchMode::NextLarger),
                 2 => Ok(LookupMatchMode::Wildcard),
-                _ => Err(ErrorMsg::InvalidArgument.with_span(v.span)),
+                _ => Err(RunErrorMsg::InvalidArgument.with_span(v.span)),
             },
         }
     }
@@ -440,7 +440,7 @@ impl LookupSearchMode {
     }
 }
 impl TryFrom<Option<Spanned<i64>>> for LookupSearchMode {
-    type Error = Error;
+    type Error = RunError;
 
     fn try_from(value: Option<Spanned<i64>>) -> Result<Self, Self::Error> {
         match value {
@@ -450,7 +450,7 @@ impl TryFrom<Option<Spanned<i64>>> for LookupSearchMode {
                 -1 => Ok(LookupSearchMode::LinearReverse),
                 2 => Ok(LookupSearchMode::BinaryAscending),
                 -2 => Ok(LookupSearchMode::BinaryDescending),
-                _ => Err(ErrorMsg::InvalidArgument.with_span(v.span)),
+                _ => Err(RunErrorMsg::InvalidArgument.with_span(v.span)),
             },
         }
     }
@@ -504,7 +504,7 @@ mod tests {
 
         let mut ctx = Ctx::new(&g, pos![D5].to_sheet_pos(sheet_id));
         assert_eq!(
-            ErrorMsg::CircularReference,
+            RunErrorMsg::CircularReference,
             form.eval(&mut ctx).unwrap_err().msg,
         );
 
@@ -689,7 +689,7 @@ mod tests {
         let array = &*NUMBERS_LOOKUP_ARRAY;
         let g = Grid::from_array(pos![A1], array);
 
-        const EXPECTED_NUMBER_ERR: ErrorMsg = ErrorMsg::Expected {
+        const EXPECTED_NUMBER_ERR: RunErrorMsg = RunErrorMsg::Expected {
             expected: Cow::Borrowed("number"),
             got: Some(Cow::Borrowed("text")),
         };
@@ -697,7 +697,7 @@ mod tests {
         // Good value for `match_mode`
         eval_to_string(&g, "XLOOKUP(50, A1:A4, B1:B4, 1)");
         // Bad values for `match_mode`
-        let e = &ErrorMsg::InvalidArgument;
+        let e = &RunErrorMsg::InvalidArgument;
         expect_err(e, &g, "XLOOKUP(50, A1:A4, B1:B4,, -2)");
         let e = &EXPECTED_NUMBER_ERR;
         expect_err(e, &g, "XLOOKUP(50, A1:A4, B1:B4,, 'word')");
@@ -705,7 +705,7 @@ mod tests {
         // Good value for `search_mode`
         eval_to_string(&g, "XLOOKUP(50, A1:A4, B1:B4,,, 1)");
         // Bad values for `search_mode`
-        let e = &ErrorMsg::InvalidArgument;
+        let e = &RunErrorMsg::InvalidArgument;
         expect_err(e, &g, "XLOOKUP(50, A1:A4, B1:B4,,, 0)");
         expect_err(e, &g, "XLOOKUP(50, A1:A4, B1:B4,,, -3)");
         let e = &EXPECTED_NUMBER_ERR;
@@ -722,7 +722,7 @@ mod tests {
         eval_to_string(&g, "XLOOKUP(50, A3, B3)");
 
         // NxM is not ok
-        let e = &ErrorMsg::NonLinearArray;
+        let e = &RunErrorMsg::NonLinearArray;
         expect_err(e, &g, "XLOOKUP(50, A1:B4, A5:B8)");
 
         // Mismatch is not ok (vertical)
@@ -831,7 +831,7 @@ mod tests {
 
                         if if_not_found.is_blank() {
                             for v in results {
-                                assert_eq!(ErrorMsg::NoMatch, v.error().unwrap().msg);
+                                assert_eq!(RunErrorMsg::NoMatch, v.error().unwrap().msg);
                             }
                         } else {
                             for v in results {
@@ -969,12 +969,12 @@ mod tests {
             eval_to_string(&g, "XLOOKUP('b*', A1:A20, A1:A20,, 2, -1)"),
         ); // linear reverse
         expect_err(
-            &ErrorMsg::InvalidArgument,
+            &RunErrorMsg::InvalidArgument,
             &g,
             "XLOOKUP('b*', A1:A20, A1:A20,, 2, 2)", // binary ascending (invalid!)
         );
         expect_err(
-            &ErrorMsg::InvalidArgument,
+            &RunErrorMsg::InvalidArgument,
             &g,
             "XLOOKUP('b*', A1:A20, A1:A20,, 2, -2)", // binary descending (invalid!)
         );

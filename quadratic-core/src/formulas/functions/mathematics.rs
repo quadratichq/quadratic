@@ -91,14 +91,14 @@ mod tests {
     fn test_sum() {
         let g = Grid::new();
         assert_eq!(
-            ErrorMsg::Expected {
+            RunErrorMsg::Expected {
                 expected: "number".into(),
                 got: Some("text".into()),
             },
             eval_to_err(&g, "SUM(\"abc\")").msg,
         );
-        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(&g, "SUM(1/0)").msg);
-        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(&g, "SUM({1/0})").msg);
+        assert_eq!(RunErrorMsg::DivideByZero, eval_to_err(&g, "SUM(1/0)").msg);
+        assert_eq!(RunErrorMsg::DivideByZero, eval_to_err(&g, "SUM({1/0})").msg);
         assert_eq!("0", eval_to_string(&g, "SUM()"));
         assert_eq!("12", eval_to_string(&g, "SUM(12)"));
         assert_eq!("27", eval_to_string(&g, "SUM(0..5, 12)"));
@@ -117,7 +117,7 @@ mod tests {
         // But doing an operation on it converts it to a single value, which
         // does cause an error.
         assert_eq!(
-            ErrorMsg::Expected {
+            RunErrorMsg::Expected {
                 expected: "number".into(),
                 got: Some("text".into())
             },
@@ -170,7 +170,7 @@ mod tests {
         assert_eq!("10", eval_to_string(&g, "ABS(10)"));
         let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
-            ErrorMsg::MissingRequiredArgument {
+            RunErrorMsg::MissingRequiredArgument {
                 func_name: "ABS".into(),
                 arg_name: "number".into(),
             },
@@ -182,7 +182,7 @@ mod tests {
         );
         let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
-            ErrorMsg::TooManyArguments {
+            RunErrorMsg::TooManyArguments {
                 func_name: "ABS".into(),
                 max_arg_count: 1,
             },
@@ -201,7 +201,7 @@ mod tests {
         assert_eq!("4", eval_to_string(&g, "SQRT(16)"));
         let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
-            ErrorMsg::MissingRequiredArgument {
+            RunErrorMsg::MissingRequiredArgument {
                 func_name: "SQRT".into(),
                 arg_name: "number".into(),
             },
@@ -213,7 +213,7 @@ mod tests {
         );
         let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
-            ErrorMsg::TooManyArguments {
+            RunErrorMsg::TooManyArguments {
                 func_name: "SQRT".into(),
                 max_arg_count: 1,
             },
@@ -231,7 +231,7 @@ mod tests {
         assert!(eval_to_string(&g, "PI()").starts_with("3.14159"));
         let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
-            ErrorMsg::TooManyArguments {
+            RunErrorMsg::TooManyArguments {
                 func_name: "PI".into(),
                 max_arg_count: 0,
             },
@@ -249,7 +249,7 @@ mod tests {
         assert!(eval_to_string(&g, "TAU()").starts_with("6.283"));
         let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         assert_eq!(
-            ErrorMsg::TooManyArguments {
+            RunErrorMsg::TooManyArguments {
                 func_name: "TAU".into(),
                 max_arg_count: 0,
             },

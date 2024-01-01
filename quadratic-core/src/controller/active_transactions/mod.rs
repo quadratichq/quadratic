@@ -7,7 +7,7 @@
 
 use self::pending_transaction::PendingTransaction;
 use super::transaction::Transaction;
-use crate::core_error::{CoreError, Result};
+use crate::error_core::{CoreError, Result};
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 pub mod pending_transaction;
