@@ -10,7 +10,7 @@ use wasm_bindgen::prelude::*;
 mod block;
 mod borders;
 mod bounds;
-mod code;
+mod code_run;
 mod column;
 pub mod file;
 pub mod formatting;
@@ -27,7 +27,7 @@ pub use borders::{
     IdSpaceBorders, LegacyCellBorder, LegacyCellBorders, SheetBorders,
 };
 pub use bounds::GridBounds;
-pub use code::*;
+pub use code_run::*;
 pub use column::{Column, ColumnData};
 pub use formatting::{
     Bold, BoolSummary, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericCommas,

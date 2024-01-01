@@ -102,14 +102,12 @@ pub struct Sheet {
     pub columns: Vec<(i64, Column)>,
     pub borders: Borders,
     #[serde(rename = "code_cells")]
-    pub code_cells: Vec<(Pos, CodeCellValue)>,
+    pub code_runs: Vec<(Pos, CodeRun)>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct CodeRun {
-    pub language: String,
-    pub code_string: String,
     pub formatted_code_string: Option<String>,
     pub last_modified: String,
     pub output: Option<CodeCellRunOutput>,

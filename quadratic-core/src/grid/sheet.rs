@@ -12,7 +12,7 @@ use super::column::Column;
 use super::formatting::{BoolSummary, CellFmtAttr};
 use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, FormattingSummary};
-use super::{NumericFormat, NumericFormatKind};
+use super::{CodeRun, NumericFormat, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
 use crate::{Array, ArraySize, CellValue, IsBlank, Pos, Rect};
 
@@ -35,7 +35,7 @@ pub struct Sheet {
     #[serde(with = "crate::util::btreemap_serde")]
     pub(super) columns: BTreeMap<i64, Column>,
     pub(super) borders: SheetBorders,
-    pub code_runs: IndexMap<Pos, CodeRunOutput>,
+    pub code_runs: IndexMap<Pos, CodeRun>,
 
     pub(super) data_bounds: GridBounds,
     pub(super) format_bounds: GridBounds,

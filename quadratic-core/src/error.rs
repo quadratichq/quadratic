@@ -1,11 +1,11 @@
 //! Error reporting functionality for compilation and runtime.
-
-use std::borrow::Cow;
-use std::fmt;
-
-use serde::{Deserialize, Serialize};
+//!
+//! Use CoreError for runtime errors outside of code (eg, Python, Formulas).
 
 use crate::{ArraySize, Axis, Span, Spanned, Value};
+use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
+use std::fmt;
 
 /// Result of a [`crate::Error`].
 pub type CodeResult<T = Spanned<Value>> = Result<T, Error>;

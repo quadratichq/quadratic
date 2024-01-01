@@ -128,7 +128,7 @@ mod test {
             },
             spill_error: false,
         };
-        assert_eq!(code_run.output_size(), super::ArraySize::_1X1);
+        assert_eq!(code_run.output_size(), code_run::ArraySize::_1X1);
         assert_eq!(
             code_run.output_sheet_rect(
                 SheetPos {
