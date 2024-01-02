@@ -4,89 +4,72 @@ use crate::{
         operations::operation::Operation, GridController,
     },
     grid::CodeCellLanguage,
+    CellValue, Pos,
 };
 
 impl GridController {
-    pub(super) fn execute_set_code_cell(
+    pub(super) fn execute_set_code_run(
         &mut self,
         transaction: &mut PendingTransaction,
         op: &Operation,
     ) {
         match op.clone() {
-            Operation::SetCodeCell {
+            Operation::SetCodeRun {
                 sheet_pos,
-                code_cell_value,
+                code_run,
             } => {
                 let sheet_id = sheet_pos.sheet_id;
+                let pos: Pos = sheet_pos.into();
                 let sheet = self.grid.sheet_from_id(sheet_id);
-                if transaction.is_user() {
-                    let old_code_cell = sheet.get_code_cell(sheet_pos.into()).cloned();
-                    if let Some(code_cell_value) = &code_cell_value {
-                        match code_cell_value.language {
-                            CodeCellLanguage::Python => {
-                                // save the output from the last run to avoid flickering the output (we'll replace it when the run is complete)
-                                let mut code_cell_value = code_cell_value.clone();
-                                code_cell_value.output = match &old_code_cell {
-                                    Some(old_code_cell) => old_code_cell.output.clone(),
-                                    None => None,
-                                };
-                                self.run_python(transaction, sheet_pos, &code_cell_value);
-                                let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                                sheet.set_code_result(
-                                    sheet_pos.into(),
-                                    Some(code_cell_value.clone()),
-                                );
+                let old_code_run = sheet.set_code_run(pos, code_run);
+                self.finalize_code_cell(transaction, sheet_pos, old_code_run);
+            }
+            _ => unreachable!("Expected Operation::SetCodeRun in execute_set_code_run"),
+        }
+    }
 
-                                // this forward_operations will be replaced when the async call completes
-                                transaction.forward_operations.push(Operation::SetCodeCell {
-                                    sheet_pos,
-                                    code_cell_value: Some(code_cell_value),
-                                });
-                                transaction.reverse_operations.insert(
-                                    0,
-                                    Operation::SetCodeCell {
-                                        sheet_pos,
-                                        code_cell_value: old_code_cell.clone(),
-                                    },
-                                );
-                            }
-                            CodeCellLanguage::Formula => {
-                                self.run_formula(transaction, sheet_pos, code_cell_value);
-                            }
-                            _ => {
-                                unreachable!("Unsupported language in RunCodeCell");
-                            }
-                        }
-
-                        // only capture operations if not waiting for async, otherwise wait until calculation is complete
-                        if transaction.waiting_for_async.is_none() {
-                            self.finalize_code_cell(transaction, sheet_pos, old_code_cell);
-                        }
-                    }
-                } else if transaction.is_undo() {
-                    transaction.reverse_operations.insert(
-                        0,
-                        Operation::SetCodeCell {
-                            sheet_pos,
-                            code_cell_value: sheet.get_code_cell(sheet_pos.into()).cloned(),
-                        },
-                    );
-                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    sheet.set_code_result(sheet_pos.into(), code_cell_value);
-                    transaction.forward_operations.push(op.clone());
-                } else {
-                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    sheet.set_code_result(sheet_pos.into(), code_cell_value);
+    pub(super) fn execute_compute_code(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: &Operation,
+    ) {
+        match op.clone() {
+            Operation::ComputeCode { sheet_pos } => {
+                if !transaction.is_user() {
+                    unreachable!("Only a user transaction should have a ComputeCode");
                 }
+                let sheet_id = sheet_pos.sheet_id;
+                let pos: Pos = sheet_pos.into();
+                let sheet = self.grid.sheet_from_id(sheet_id);
+                // We need to get the corresponding CellValue::Code, which should always exist.
+                let (language, code) = match sheet.get_cell_value(pos) {
+                    Some(code_cell) => match code_cell {
+                        CellValue::Code(value) => (value.language, value.code),
+                        _ => unreachable!("Expected CellValue::Code in execute_set_code_cell"),
+                    },
+                    None => unreachable!("Expected CellValue::Code in execute_set_code_cell"),
+                };
 
-                let sheet_rect = &sheet_pos.into();
-                transaction.sheets_with_dirty_bounds.insert(sheet_id);
-                transaction.summary.generate_thumbnail |=
-                    self.thumbnail_dirty_sheet_rect(sheet_rect);
-                transaction.summary.code_cells_modified.insert(sheet_id);
-                transaction
-                    .summary
-                    .add_cell_sheets_modified_rect(sheet_rect);
+                let old_code_run = sheet.code_runs.get(&pos);
+                match language {
+                    CodeCellLanguage::Python => {
+                        self.run_python(transaction, sheet_pos, code, old_code_run);
+                        transaction.reverse_operations.insert(
+                            0,
+                            Operation::SetCodeRun {
+                                sheet_pos,
+                                code_run: old_code_run.cloned(),
+                            },
+                        );
+                    }
+                    CodeCellLanguage::Formula => {
+                        self.run_formula(transaction, sheet_pos, code, old_code_run);
+                        self.finalize_code_cell(transaction, sheet_pos, old_code_run.cloned());
+                    }
+                    _ => {
+                        unreachable!("Unsupported language in RunCodeCell");
+                    }
+                }
             }
             _ => unreachable!("Expected Operation::SetCodeCell in execute_set_code_cell"),
         }
@@ -158,8 +141,8 @@ mod tests {
             Some(CellValue::Blank)
         );
 
-        let code_cell = sheet.get_code_cell(Pos { x: 1, y: 0 });
-        assert!(code_cell.unwrap().has_spill_error());
+        let code_cell = sheet.code_run(Pos { x: 1, y: 0 });
+        assert!(code_cell.unwrap().spill_error);
     }
 
     fn output_spill_error(x: i64, y: i64) -> Vec<JsRenderCell> {
@@ -251,10 +234,7 @@ mod tests {
         );
         let sheet = gc.grid.sheet_from_id(sheet_id);
 
-        assert!(sheet
-            .get_code_cell(Pos { x: 0, y: 0 })
-            .unwrap()
-            .has_spill_error());
+        assert!(sheet.code_run(Pos { x: 0, y: 0 }).unwrap().spill_error);
 
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 0 }));
 
@@ -273,10 +253,7 @@ mod tests {
         );
 
         let sheet = gc.grid.sheet_from_id(sheet_id);
-        assert!(!sheet
-            .get_code_cell(Pos { x: 0, y: 0 })
-            .unwrap()
-            .has_spill_error());
+        assert!(!sheet.code_run(Pos { x: 0, y: 0 }).unwrap().spill_error);
 
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 0 }));
 

@@ -20,19 +20,19 @@ impl GridController {
     ) {
         // change the spill for the first code_cell and then iterate the later code_cells.
         if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_id) {
-            if let Some((pos, code_cell)) = sheet.code_runs.get_mut(index) {
+            if let Some((pos, run)) = sheet.code_runs.get_index_mut(index) {
                 let sheet_pos = pos.to_sheet_pos(sheet.id);
                 transaction.reverse_operations.insert(
                     0,
-                    Operation::SetCodeCell {
+                    Operation::SetCodeRun {
                         sheet_pos,
-                        code_cell_value: Some(code_cell.clone()),
+                        code_run: Some(run.clone()),
                     },
                 );
-                code_cell.set_spill(set_spill_error);
-                transaction.forward_operations.push(Operation::SetCodeCell {
+                run.spill_error = set_spill_error;
+                transaction.forward_operations.push(Operation::SetCodeRun {
                     sheet_pos,
-                    code_cell_value: Some(code_cell.clone()),
+                    code_run: Some(run.clone()),
                 });
             }
             self.check_all_spills(transaction, sheet_id, index + 1);
@@ -52,8 +52,8 @@ impl GridController {
                     .code_runs
                     .iter()
                     .enumerate()
-                    .find_map(|(index, (pos, code_cell))| {
-                        let output = code_cell.output_sheet_rect(pos.to_sheet_pos(sheet_id), true);
+                    .find_map(|(index, (pos, code_run))| {
+                        let output = code_run.output_sheet_rect(pos.to_sheet_pos(sheet_id), true);
 
                         // initially only check the code_cell if the output intersects the sheet_rect
                         if output.intersects(*sheet_rect) {
@@ -65,12 +65,12 @@ impl GridController {
                                 || sheet.has_code_cell_in_rect(&rect, *pos)
                             {
                                 // if spill error has not been set, then set it and start the more expensive checks for all later code_cells.
-                                if !code_cell.has_spill_error() {
+                                if !code_run.spill_error {
                                     Some((index, true))
                                 } else {
                                     None
                                 }
-                            } else if code_cell.has_spill_error() {
+                            } else if code_run.spill_error {
                                 // release the code_cell's spill error, then start the more expensive checks for all later code_cells.
                                 Some((index, false))
                             } else {
@@ -106,12 +106,12 @@ impl GridController {
                         || sheet.has_code_cell_anchor_in_rect(&rect, *pos)
                         || sheet.has_code_cell_in_rect(&rect, *pos)
                     {
-                        if !code_cell.has_spill_error() {
+                        if !code_cell.spill_error {
                             Some((index, true))
                         } else {
                             None
                         }
-                    } else if code_cell.has_spill_error() {
+                    } else if code_cell.spill_error {
                         Some((index, false))
                     } else {
                         None
@@ -167,12 +167,12 @@ mod tests {
         .into();
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
-        assert!(!sheet.code_runs[0].1.has_spill_error());
+        assert!(!sheet.code_runs[0].spill_error);
 
         gc.check_spills(&mut transaction, &sheet_rect);
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
-        assert!(sheet.code_runs[0].1.has_spill_error());
+        assert!(sheet.code_runs[0].spill_error);
     }
 
     #[test]
@@ -201,11 +201,11 @@ mod tests {
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(3.into()));
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
-        assert!(!sheet.code_runs[0].1.has_spill_error());
+        assert!(!sheet.code_runs[0].spill_error);
 
         gc.check_all_spills(&mut transaction, sheet_id, 0);
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
-        assert!(sheet.code_runs[0].1.has_spill_error());
+        assert!(sheet.code_runs[0].spill_error);
     }
 }

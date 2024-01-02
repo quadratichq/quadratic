@@ -32,7 +32,6 @@ impl TryFrom<Spanned<&CellValue>> for Criterion {
             | CellValue::Number(_)
             | CellValue::Html(_)
             | CellValue::Code(_)
-            | CellValue::Formula(_)
             | CellValue::Logical(_)
             | CellValue::Instant(_)
             | CellValue::Duration(_) => Ok(Criterion::Compare {
@@ -106,7 +105,6 @@ impl Criterion {
             CellValue::Error(_) => false,
             CellValue::Html(_) => false,
             CellValue::Code(_) => false,
-            CellValue::Formula(_) => false,
         }
     }
 

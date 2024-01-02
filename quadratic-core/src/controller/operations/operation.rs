@@ -14,7 +14,7 @@ pub enum Operation {
     },
     SetCodeRun {
         sheet_pos: SheetPos,
-        run: Option<CodeRun>,
+        code_run: Option<CodeRun>,
     },
     ComputeCode {
         sheet_pos: SheetPos,
@@ -70,7 +70,10 @@ impl fmt::Display for Operation {
             Operation::ComputeCode { sheet_pos } => {
                 write!(fmt, "ComputeCode {{ sheet_pos: {} }}", sheet_pos)
             }
-            Operation::SetCodeRun { sheet_pos, run } => write!(
+            Operation::SetCodeRun {
+                sheet_pos,
+                code_run: run,
+            } => write!(
                 fmt,
                 "SetCellRun {{ sheet_pos: {} code_cell_value: {:?} }}",
                 sheet_pos, run

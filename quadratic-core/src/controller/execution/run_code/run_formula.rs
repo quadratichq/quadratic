@@ -1,8 +1,9 @@
+use chrono::Utc;
+
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
     formulas::{parse_formula, Ctx},
-    grid::{CodeRun, CodeRun, CodeRunOutput},
-    util::date_string,
+    grid::{CodeRun, CodeRunResult},
     SheetPos,
 };
 
@@ -11,35 +12,32 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        code_cell: &CodeRun,
+        code: String,
+        old_code_run: Option<&CodeRun>,
     ) {
         let mut ctx = Ctx::new(self.grid(), sheet_pos);
-        match parse_formula(&code_cell.code_string, sheet_pos.into()) {
+        match parse_formula(&code, sheet_pos.into()) {
             Ok(parsed) => {
                 match parsed.eval(&mut ctx) {
                     Ok(value) => {
                         transaction.cells_accessed = ctx.cells_accessed;
-                        let new_code_cell_value = CodeRun {
-                            last_modified: date_string(),
-                            output: Some(CodeRunOutput {
-                                std_out: None,
-                                std_err: None,
-                                result: CodeRun::Ok {
-                                    output_value: value,
-                                    cells_accessed: transaction.cells_accessed.clone(),
-                                },
-                                spill: false,
-                            }),
-                            ..code_cell.clone()
+                        let new_code_run = CodeRun {
+                            std_out: None,
+                            std_err: None,
+                            formatted_code_string: None,
+                            spill_error: false,
+                            last_modified: Utc::now(),
+                            cells_accessed: transaction.cells_accessed.clone(),
+                            result: CodeRunResult::Ok(value),
                         };
-                        self.add_code_cell_operations(
+                        self.add_code_run_operations(
                             transaction,
                             sheet_pos,
-                            Some(code_cell),
-                            Some(&new_code_cell_value),
+                            old_code_run,
+                            Some(&new_code_run),
                         );
                         if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) {
-                            sheet.set_code_result(sheet_pos.into(), Some(new_code_cell_value));
+                            sheet.set_code_run(sheet_pos.into(), Some(new_code_run));
                         }
                     }
                     Err(error) => {
@@ -76,8 +74,8 @@ mod test {
             active_transactions::pending_transaction::PendingTransaction,
             operations::operation::Operation, transaction_types::JsCodeResult, GridController,
         },
-        grid::{CodeCellLanguage, CodeRun, CodeRunOutput},
-        Array, ArraySize, CellValue, Pos, SheetPos, SheetRect, Value,
+        grid::{CodeCellLanguage, CodeRun, CodeRunResult},
+        Array, ArraySize, CellValue, CodeCellValue, Pos, SheetPos, Value,
     };
 
     #[test]
@@ -92,27 +90,26 @@ mod test {
             y: 0,
             sheet_id,
         };
+        let code_cell = CellValue::Code(CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code: "A0 + 1".to_string(),
+        });
         gc.start_user_transaction(
-            vec![Operation::SetCodeCell {
-                sheet_pos,
-                code_cell_value: Some(CodeRun {
-                    language: CodeCellLanguage::Formula,
-                    code_string: "A0 + 1".to_string(),
-                    formatted_code_string: None,
-                    output: None,
-                    last_modified: String::new(),
-                }),
+            vec![Operation::SetCellValues {
+                sheet_rect: sheet_pos.into(),
+                values: Array::from(Value::Single(code_cell)),
             }],
             None,
         );
 
         let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
-        assert!(sheet.get_code_cell(Pos { x: 1, y: 0 }).is_some());
-        let code_cell = sheet.get_code_cell(Pos { x: 1, y: 0 }).unwrap();
-        assert_eq!(code_cell.code_string, "A0 + 1".to_string());
         assert_eq!(
-            code_cell.get_output_value(0, 0),
+            sheet.get_cell_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(11.into()))
+        );
+        assert_eq!(
+            sheet.get_cell_value_only(Pos { x: 1, y: 0 }),
+            Some(code_cell)
         );
     }
 
@@ -128,17 +125,10 @@ mod test {
             y: 0,
             sheet_id,
         };
-        gc.start_user_transaction(
-            vec![Operation::SetCodeCell {
-                sheet_pos,
-                code_cell_value: Some(CodeRun {
-                    language: CodeCellLanguage::Formula,
-                    code_string: "A0 + 1".to_string(),
-                    formatted_code_string: None,
-                    output: None,
-                    last_modified: String::new(),
-                }),
-            }],
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Formula,
+            "A0 + 1".to_string(),
             None,
         );
 
@@ -147,30 +137,20 @@ mod test {
             Some(CellValue::Number(11.into()))
         );
 
-        gc.start_user_transaction(
-            vec![Operation::SetCodeCell {
-                sheet_pos: SheetPos {
-                    x: 2,
-                    y: 0,
-                    sheet_id,
-                },
-                code_cell_value: Some(CodeRun {
-                    language: CodeCellLanguage::Formula,
-                    code_string: "B0 + 1".to_string(),
-                    formatted_code_string: None,
-                    output: None,
-                    last_modified: String::new(),
-                }),
-            }],
+        gc.set_code_cell(
+            SheetPos {
+                x: 2,
+                y: 0,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "B0 + 1".to_string(),
             None,
         );
 
         let sheet = gc.grid().try_sheet_from_id(sheet_id).unwrap();
-        assert!(sheet.get_code_cell(Pos { x: 2, y: 0 }).is_some());
-        let code_cell = sheet.get_code_cell(Pos { x: 2, y: 0 }).unwrap();
-        assert_eq!(code_cell.code_string, "B0 + 1".to_string());
         assert_eq!(
-            code_cell.get_output_value(0, 0),
+            sheet.get_cell_value(Pos { x: 2, y: 0 }),
             Some(CellValue::Number(12.into()))
         );
         assert_eq!(
@@ -178,19 +158,15 @@ mod test {
             Some(CellValue::Number(12.into()))
         );
 
-        gc.start_user_transaction(
-            vec![Operation::SetCellValues {
-                sheet_rect: SheetRect::single_sheet_pos(SheetPos {
-                    x: 0,
-                    y: 0,
-                    sheet_id,
-                }),
-                values: CellValue::Number(1.into()).into(),
-            }],
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            "1".into(),
             None,
         );
-
-        crate::test_util::print_table(&gc, sheet_id, crate::Rect::from_numbers(0, 0, 3, 1));
 
         let sheet = gc.grid().try_sheet_from_id(sheet_id).unwrap();
         assert_eq!(
@@ -271,24 +247,26 @@ mod test {
             y: 0,
             sheet_id,
         };
+
+        // need the result to ensure last_modified is the same
+        let result = gc.js_code_result_to_code_cell_value(
+            &mut transaction,
+            result,
+            sheet_pos,
+            CodeCellLanguage::Python,
+            "".into(),
+        );
         assert_eq!(
-            gc.js_code_result_to_code_cell_value(
-                &mut transaction,
-                result,
-                sheet_pos,
-                CodeCellLanguage::Python,
-                "".into(),
-            )
-            .output,
-            Some(CodeRunOutput {
+            result,
+            CodeRun {
                 std_out: None,
                 std_err: None,
-                result: crate::grid::CodeRun::Ok {
-                    output_value: Value::Single(CellValue::Number(12.into())),
-                    cells_accessed: HashSet::new()
-                },
-                spill: false,
-            }),
+                formatted_code_string: None,
+                last_modified: result.last_modified,
+                result: CodeRunResult::Ok(Value::Single(CellValue::Number(12.into()))),
+                cells_accessed: HashSet::new(),
+                spill_error: false,
+            },
         );
     }
 
@@ -331,24 +309,25 @@ mod test {
         );
         let _ = array.set(0, 1, CellValue::Number(BigDecimal::from_str("3").unwrap()));
         let _ = array.set(1, 1, CellValue::Text("Hello".into()));
+
+        let result = gc.js_code_result_to_code_cell_value(
+            &mut transaction,
+            result,
+            sheet_pos,
+            CodeCellLanguage::Python,
+            "".into(),
+        );
         assert_eq!(
-            gc.js_code_result_to_code_cell_value(
-                &mut transaction,
-                result,
-                sheet_pos,
-                CodeCellLanguage::Python,
-                "".into(),
-            )
-            .output,
-            Some(CodeRunOutput {
+            result,
+            CodeRun {
                 std_out: None,
                 std_err: None,
-                result: crate::grid::CodeRun::Ok {
-                    output_value: Value::Array(array),
-                    cells_accessed: HashSet::new()
-                },
-                spill: false,
-            }),
+                formatted_code_string: None,
+                result: CodeRunResult::Ok(Value::Array(array)),
+                cells_accessed: HashSet::new(),
+                spill_error: false,
+                last_modified: result.last_modified,
+            }
         );
     }
 
@@ -392,11 +371,12 @@ mod test {
             "create spill error".into(),
             None,
         );
-        assert!(gc
-            .sheet(sheet_id)
-            .get_code_cell(Pos { x: 1, y: 0 })
-            .unwrap()
-            .has_spill_error());
+        assert!(
+            gc.sheet(sheet_id)
+                .code_run(Pos { x: 1, y: 0 })
+                .unwrap()
+                .spill_error
+        );
         assert!(gc
             .sheet(sheet_id)
             .get_cell_value(Pos { x: 1, y: 0 })
@@ -412,11 +392,12 @@ mod test {
 
         // redo the spill error
         gc.redo(None);
-        assert!(gc
-            .sheet(sheet_id)
-            .get_code_cell(Pos { x: 1, y: 0 })
-            .unwrap()
-            .has_spill_error());
+        assert!(
+            gc.sheet(sheet_id)
+                .code_run(Pos { x: 1, y: 0 })
+                .unwrap()
+                .spill_error
+        );
 
         // undo the spill error
         gc.undo(None);

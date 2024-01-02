@@ -1,8 +1,11 @@
+use std::collections::HashSet;
+
+use chrono::Utc;
 use wasm_bindgen::JsValue;
 
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
-    grid::{CodeCellLanguage, CodeRun, CodeRun, CodeRunOutput},
+    grid::{CodeCellLanguage, CodeRun, CodeRunResult},
     RunError, RunErrorMsg, SheetPos,
 };
 
@@ -11,49 +14,45 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        code_cell: &CodeRun,
+        old_code_run: Option<&CodeRun>,
     ) {
         let error = RunError {
             span: None,
             msg: RunErrorMsg::PythonNotLoaded,
         };
-        let result = CodeRun::Err { error };
-        let spill = false;
-        let new_code_cell = CodeRun {
-            output: Some(CodeRunOutput {
-                std_out: None,
-                std_err: Some(RunErrorMsg::PythonNotLoaded.to_string()),
-                result,
-                spill,
-            }),
-            ..code_cell.clone()
+        let (formatted_code_string, cells_accessed) = if let Some(c) = old_code_run {
+            (c.formatted_code_string.clone(), c.cells_accessed.clone())
+        } else {
+            (None, HashSet::new())
+        };
+        let new_run = CodeRun {
+            std_out: None,
+            std_err: Some(RunErrorMsg::PythonNotLoaded.to_string()),
+            spill_error: false,
+            result: CodeRunResult::Err(error),
+            formatted_code_string,
+            cells_accessed,
+            last_modified: Utc::now(),
         };
         if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) {
-            sheet.set_code_result(sheet_pos.into(), Some(new_code_cell.clone()));
+            sheet.set_code_run(sheet_pos.into(), Some(new_run.clone()));
         }
-        self.add_code_cell_operations(
-            transaction,
-            sheet_pos,
-            Some(code_cell),
-            Some(&new_code_cell),
-        );
+        self.add_code_run_operations(transaction, sheet_pos, old_code_run, Some(&new_run));
     }
 
     pub(crate) fn run_python(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        code_cell: &CodeRun,
+        code: String,
+        old_code_run: Option<&CodeRun>,
     ) -> bool {
         if !cfg!(test) {
-            let result = crate::wasm_bindings::js::runPython(
-                transaction.id.to_string(),
-                code_cell.code_string.clone(),
-            );
+            let result = crate::wasm_bindings::js::runPython(transaction.id.to_string(), code);
 
             // run python will return false if python is not loaded (this can be generalized if we need to return a different error)
             if result == JsValue::FALSE {
-                self.python_not_loaded(transaction, sheet_pos, code_cell);
+                self.python_not_loaded(transaction, sheet_pos, old_code_run);
                 return false;
             }
         }
@@ -86,13 +85,8 @@ mod tests {
             y: 0,
             sheet_id,
         };
-        let code_string = "print(1)".to_string();
-        gc.set_code_cell(
-            sheet_pos,
-            CodeCellLanguage::Python,
-            code_string.clone(),
-            None,
-        );
+        let code = "print(1)".to_string();
+        gc.set_code_cell(sheet_pos, CodeCellLanguage::Python, code.clone(), None);
         let transaction = gc.async_transactions().get(0).unwrap();
         gc.calculation_complete(JsCodeResult::new(
             transaction.id.to_string(),
@@ -108,15 +102,22 @@ mod tests {
         .ok();
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
-        let code_cell = sheet.get_code_cell(sheet_pos.into()).unwrap();
-        assert_eq!(code_cell.language, CodeCellLanguage::Python);
-        assert_eq!(code_cell.code_string, code_string);
-        assert_eq!(code_cell.output_size(), ArraySize::_1X1);
+        let pos = sheet_pos.into();
+        let code_cell = sheet.get_cell_value(pos).unwrap();
+        match code_cell {
+            CellValue::Code(code_cell) => {
+                assert_eq!(code_cell.language, CodeCellLanguage::Python);
+                assert_eq!(code_cell.code, code);
+            }
+            _ => panic!("expected code cell"),
+        }
+        let code_run = sheet.code_runs.get(&pos).unwrap();
+        assert_eq!(code_run.output_size(), ArraySize::_1X1);
         assert_eq!(
-            code_cell.get_output_value(0, 0),
+            code_run.cell_value_at(0, 0),
             Some(CellValue::Text("test".to_string()))
         );
-        assert!(!code_cell.has_spill_error());
+        assert!(!code_run.spill_error);
     }
 
     #[test]
@@ -129,26 +130,15 @@ mod tests {
             y: 0,
             sheet_id,
         };
-        let code_cell = CodeRun {
-            language: CodeCellLanguage::Python,
-            code_string: "print(1)".to_string(),
-            formatted_code_string: None,
-            output: None,
-            last_modified: "".to_string(),
-        };
-        gc.set_code_cell(
-            sheet_pos,
-            code_cell.language,
-            code_cell.code_string.clone(),
-            None,
-        );
+        let code = "print(1)".to_string();
+        gc.set_code_cell(sheet_pos, CodeCellLanguage::Python, code.clone(), None);
         let transaction_id = gc.async_transactions()[0].id;
         let mut transaction = gc
             .transactions
             .remove_awaiting_async(transaction_id)
             .ok()
             .unwrap();
-        gc.python_not_loaded(&mut transaction, sheet_pos, &code_cell);
+        gc.python_not_loaded(&mut transaction, sheet_pos, None);
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
         let cells = sheet.get_render_cells(crate::Rect::single_pos(Pos { x: 0, y: 0 }));

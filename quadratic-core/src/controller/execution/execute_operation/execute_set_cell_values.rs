@@ -40,24 +40,24 @@ impl GridController {
                             transaction.forward_operations.push(op.clone());
 
                             if transaction.is_user() {
-                                // remove any code_cells that are now covered by the new values
-                                let mut code_cell_removed = false;
-                                sheet.code_runs.retain(|(pos, code_cell)| {
+                                // remove any code_runs where the (0, 0) is replaced
+                                let mut code_run_removed = false;
+                                sheet.code_runs.retain(|pos, code_run| {
                                     if sheet_rect.contains(pos.to_sheet_pos(sheet.id)) {
                                         transaction.reverse_operations.insert(
                                             0,
-                                            Operation::SetCodeCell {
+                                            Operation::SetCodeRun {
                                                 sheet_pos: pos.to_sheet_pos(sheet.id),
-                                                code_cell_value: Some(code_cell.clone()),
+                                                code_run: Some(code_run.clone()),
                                             },
                                         );
                                         transaction.forward_operations.push(
-                                            Operation::SetCodeCell {
+                                            Operation::SetCodeRun {
                                                 sheet_pos: pos.to_sheet_pos(sheet.id),
-                                                code_cell_value: None,
+                                                code_run: None,
                                             },
                                         );
-                                        code_cell_removed = true;
+                                        code_run_removed = true;
                                         false
                                     } else {
                                         true
@@ -68,7 +68,7 @@ impl GridController {
 
                                 // if a code_cell was removed, then we need to check all spills.
                                 // Otherwise we only need to check spills for the sheet_rect.
-                                if code_cell_removed {
+                                if code_run_removed {
                                     self.check_all_spills(transaction, sheet_rect.sheet_id, 0);
                                 } else {
                                     self.check_spills(transaction, sheet_rect);
