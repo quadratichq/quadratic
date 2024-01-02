@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use crate::grid::file::v1_4::schema as v1_4;
-use crate::grid::file::v1_5::schema as v1_5;
+use crate::grid::file::v1_5::schema::{self as v1_5, CellAlign, ColumnRepeat};
 use anyhow::Result;
 use chrono::DateTime;
 
@@ -24,31 +24,32 @@ fn convert_column_values(
 }
 
 fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, v1_5::Column) {
-    // need to add CellValue::Formula/Python to v1_5::Column.values
+    let mut values = convert_column_values(&column.values);
+
+    // add CellValue::Formula/Python to v1_5::Column.values
     let code_values = sheet
         .code_cells
         .iter()
-        .filter_map(|(cell_ref, code_cell_value)| {
+        .for_each(|(cell_ref, code_cell_value)| {
             if cell_ref.column == column.id {
                 let pos = cell_ref_to_pos(sheet, cell_ref);
-                Some((pos.y, code_cell_value.language, code_cell_value.code_string))
-            } else {
-                None
+                let language = match code_cell_value.language.to_lowercase().as_str() {
+                    "python" => Some(v1_5::CodeCellLanguage::Python),
+                    "formula" => Some(v1_5::CodeCellLanguage::Formula),
+                    _ => Some(v1_5::CodeCellLanguage::Formula), // this should not happen
+                };
+                if let Some(language) = language {
+                    values.insert(
+                        pos.y,
+                        v1_5::CellValue::Code(v1_5::CodeCell {
+                            code: code_cell_value.code_string,
+                            language,
+                        }),
+                    );
+                }
             }
         });
-    let mut values = convert_column_values(&column.values);
-    for (y, language, code) in code_values {
-        if let Ok(value) = serde_json::to_string(&v1_5::CodeCell { language, code }) {
-            let language = if language == "python" {
-                Some(v1_5::CodeCellLanguage::Python)
-            } else if language == "formula" {
-                Some(v1_5::CodeCellLanguage::Formula)
-            } else {
-                None
-            };
-            values.insert(y, v1_5::CellValue::Code(v1_5::CodeCell { code, language }));
-        }
-    }
+
     (
         *x,
         v1_5::Column {
@@ -56,12 +57,34 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
             align: column
                 .align
                 .iter()
-                .map(|(k, v)| (i64::from_str(&k).unwrap(), v.clone()))
+                .map(|(k, v)| {
+                    let value = ColumnRepeat {
+                        value: match v.content.value.as_str() {
+                            "left" => CellAlign::Left,
+                            "center" => CellAlign::Center,
+                            "right" => CellAlign::Right,
+                            _ => CellAlign::Left, // this should not happen
+                        },
+                        len: v.content.len as u32,
+                    };
+                    (i64::from_str(&k).unwrap(), value)
+                })
                 .collect(),
             wrap: column
                 .wrap
                 .iter()
-                .map(|(k, v)| (i64::from_str(&k).unwrap(), v.clone()))
+                .map(|(k, v)| {
+                    let value = ColumnRepeat {
+                        value: match v.content.value.to_lowercase().as_str() {
+                            "overflow" => v1_5::CellWrap::Overflow,
+                            "wrap" => v1_5::CellWrap::Wrap,
+                            "clip" => v1_5::CellWrap::Clip,
+                            _ => v1_5::CellWrap::Overflow, // this should not happen
+                        },
+                        len: v.content.len as u32,
+                    };
+                    (i64::from_str(&k).unwrap(), value)
+                })
                 .collect(),
             numeric_format: column
                 .numeric_format
@@ -261,8 +284,6 @@ mod tests {
     #[test]
     fn import_and_export_a_v1_4_file() {
         let imported = import(V1_4_FILE).unwrap();
-        let exported = export(&imported).unwrap();
-        println!("{}", exported);
-        // assert_eq!(V1_4_FILE, exported);
+        let _ = export(&imported).unwrap();
     }
 }
