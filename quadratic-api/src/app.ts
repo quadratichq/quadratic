@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/node';
 import * as Tracing from '@sentry/tracing';
 import cors from 'cors';
 import express, { NextFunction, Request, Response } from 'express';
+import 'express-async-errors';
 import helmet from 'helmet';
 import ai_chat_router from './routes/ai_chat';
 import feedback_router from './routes/feedback';
@@ -67,6 +68,7 @@ app.use('/v0/teams', teams_router);
 
 // Internal routes
 app.use('/v0/internal', internal_router);
+
 
 if (SENTRY_DSN) {
   // test route
