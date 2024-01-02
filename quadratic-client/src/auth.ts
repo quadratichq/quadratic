@@ -31,6 +31,7 @@ async function getClient() {
       },
       cacheLocation: 'localstorage',
       useRefreshTokens: true,
+      cookieDomain: '.' + window.location.host.replace(/^[^.]+\./, ''),
     });
   }
   const auth0Client = await auth0ClientPromise;
