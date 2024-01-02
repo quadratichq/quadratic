@@ -18,7 +18,7 @@ const CURRENCY_SYMBOLS: &str = "$€£¥";
 const PERCENTAGE_SYMBOL: char = '%';
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct CellCode {
+pub struct CodeCellValue {
     pub language: CodeCellLanguage,
     pub code: String,
 }
@@ -49,9 +49,7 @@ pub enum CellValue {
     Error(Box<RunError>),
     Html(String),
     #[cfg_attr(test, proptest(skip))]
-    Python(CellCode),
-    #[cfg_attr(test, proptest(skip))]
-    Formula(CellCode),
+    Code(CodeCellValue),
 }
 impl fmt::Display for CellValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -65,8 +63,7 @@ impl fmt::Display for CellValue {
             CellValue::Duration(d) => write!(f, "{d}"),
             CellValue::Error(e) => write!(f, "{}", e.msg),
             CellValue::Html(s) => write!(f, "{}", s),
-            CellValue::Python(code) => write!(f, "{:?}", code),
-            CellValue::Formula(code) => write!(f, "{:?}", code),
+            CellValue::Code(code) => write!(f, "{:?}", code),
         }
     }
 }
@@ -90,8 +87,7 @@ impl CellValue {
             CellValue::Duration(_) => "time duration",
             CellValue::Error(_) => "error",
             CellValue::Html(_) => "html",
-            CellValue::Python(_) => "python",
-            CellValue::Formula(_) => "formula",
+            CellValue::Code(_) => "python",
         }
     }
     /// Returns a formula-source-code representation of the value.
@@ -106,8 +102,7 @@ impl CellValue {
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::Html(s) => s.clone(),
-            CellValue::Python(_) => todo!("repr of python"),
-            CellValue::Formula(_) => todo!("repr of formula"),
+            CellValue::Code(_) => todo!("repr of python"),
         }
     }
 
@@ -139,11 +134,6 @@ impl CellValue {
         } else {
             n
         }
-    }
-
-    /// Whether the CellValue contains code.
-    pub fn is_code(&self) -> bool {
-        matches!(self, CellValue::Python(_) | CellValue::Formula(_))
     }
 
     pub fn to_display(
@@ -221,9 +211,8 @@ impl CellValue {
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
 
-            // these should not render
-            CellValue::Python(_) => String::new(),
-            CellValue::Formula(_) => String::new(),
+            // this should not render
+            CellValue::Code(_) => String::new(),
         }
     }
 
@@ -239,9 +228,8 @@ impl CellValue {
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
 
-            // these should not render
-            CellValue::Python(_) => String::new(),
-            CellValue::Formula(_) => String::new(),
+            // this should not be editable
+            CellValue::Code(_) => String::new(),
         }
     }
 
@@ -328,8 +316,7 @@ impl CellValue {
             | (CellValue::Instant(_), _)
             | (CellValue::Duration(_), _)
             | (CellValue::Html(_), _)
-            | (CellValue::Python(_), _)
-            | (CellValue::Formula(_), _)
+            | (CellValue::Code(_), _)
             | (CellValue::Blank, _) => return Ok(None),
         }))
     }
@@ -351,8 +338,7 @@ impl CellValue {
                 CellValue::Duration(_) => 5,
                 CellValue::Blank => 6,
                 CellValue::Html(_) => 7,
-                CellValue::Python(_) => 8,
-                CellValue::Formula(_) => 9,
+                CellValue::Code(_) => 8,
             }
         }
 

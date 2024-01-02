@@ -136,7 +136,7 @@ pub type RenderSize = v1_4::RenderSize;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Column {
-    pub values: HashMap<i64, ColumnValue>,
+    pub values: HashMap<i64, CellValue>,
     pub align: HashMap<i64, ColumnRepeat<CellAlign>>,
     pub wrap: HashMap<i64, ColumnRepeat<CellWrap>>,
     pub numeric_format: HashMap<i64, ColumnRepeat<NumericFormat>>,
@@ -149,11 +149,17 @@ pub struct Column {
     pub render_size: HashMap<i64, ColumnRepeat<RenderSize>>,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ColumnValue {
-    #[serde(rename = "type")]
-    pub type_field: String,
-    pub value: String,
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum CellValue {
+    Blank,
+    Text(String),
+    Number(String),
+    Html(String),
+    Code(CodeCell),
+    Logical(bool),
+    Instant(String),
+    Duration(String),
+    Error(RunError),
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -164,9 +170,15 @@ pub struct ColumnRepeat<T> {
 pub type NumericFormat = v1_4::NumericFormat;
 pub type CellBorder = v1_4::CellBorder;
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum CodeCellLanguage {
+    Python,
+    Formula,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CodeCell {
-    pub language: String,
+    pub language: CodeCellLanguage,
     pub code: String,
 }
 

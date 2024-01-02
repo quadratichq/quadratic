@@ -13,6 +13,7 @@ mod time;
 pub use array::Array;
 pub use array_size::{ArraySize, Axis};
 pub use cellvalue::CellValue;
+pub use cellvalue::CodeCellValue;
 pub use convert::CoerceInto;
 pub use isblank::IsBlank;
 pub use time::{Duration, Instant};

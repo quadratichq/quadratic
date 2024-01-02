@@ -93,10 +93,7 @@ impl<'a> TryFrom<&'a CellValue> for String {
             CellValue::Duration(d) => Ok(d.to_string()),
             CellValue::Error(e) => Err(e.msg.clone()),
             CellValue::Html(s) => Ok(s.clone()),
-
-            // not sure these make sense
-            CellValue::Python(_) => Ok(String::new()),
-            CellValue::Formula(_) => Ok(String::new()),
+            CellValue::Code(code) => Ok(String::new()),
         }
     }
 }
@@ -130,8 +127,7 @@ impl<'a> TryFrom<&'a CellValue> for f64 {
             }),
             CellValue::Error(e) => Err(e.msg.clone()),
             CellValue::Html(_) => Ok(0.0),
-            CellValue::Python(_) => Ok(0.0),
-            CellValue::Formula(_) => Ok(0.0),
+            CellValue::Code(_) => Ok(0.0),
         }
     }
 }
@@ -182,7 +178,7 @@ impl TryFrom<CellValue> for String {
 macro_rules! impl_try_from_cell_value_for {
     ($type:ty) => {
         impl TryFrom<CellValue> for $type {
-            type Error = ErrorMsg;
+            type Error = RunErrorMsg;
 
             fn try_from(value: CellValue) -> Result<Self, Self::Error> {
                 <$type>::try_from(&value)
@@ -212,14 +208,14 @@ impl TryFrom<Value> for CellValue {
 macro_rules! impl_try_from_value_for {
     ($type:ty) => {
         impl<'a> TryFrom<&'a Value> for $type {
-            type Error = ErrorMsg;
+            type Error = RunErrorMsg;
 
             fn try_from(value: &'a Value) -> Result<Self, Self::Error> {
                 value.cell_value()?.try_into()
             }
         }
         impl TryFrom<Value> for $type {
-            type Error = ErrorMsg;
+            type Error = RunErrorMsg;
 
             fn try_from(value: Value) -> Result<Self, Self::Error> {
                 value.into_cell_value()?.try_into()

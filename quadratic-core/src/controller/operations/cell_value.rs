@@ -86,7 +86,7 @@ impl GridController {
             sheet_rect,
             values: Array::from(cell_value),
         });
-        ops.extend(self.delete_code_cell_operations(&sheet_rect));
+        ops.extend(self.delete_code_run_operations(&sheet_rect));
         ops
     }
 
@@ -95,7 +95,7 @@ impl GridController {
     pub fn delete_cells_rect_operations(&mut self, sheet_rect: SheetRect) -> Vec<Operation> {
         let values = Array::new_empty(sheet_rect.size());
         let mut ops = vec![Operation::SetCellValues { sheet_rect, values }];
-        ops.extend(self.delete_code_cell_operations(&sheet_rect));
+        ops.extend(self.delete_code_run_operations(&sheet_rect));
         ops
     }
 

@@ -1,4 +1,4 @@
-//! CodeRun is the output of a CellValue.is_code() type (eg, CellValue::Python)
+//! CodeRun is the output of a CellValue::Code type
 //!
 //! This lives in sheet.code_runs. CodeRun is optional within sheet.code_runs for
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
@@ -23,13 +23,19 @@ pub struct CodeRun {
 }
 
 impl CodeRun {
-    pub fn output_cell_value(&self, x: u32, y: u32) -> Option<CellValue> {
-        match &self.result {
-            CodeRunResult::Ok(value) => match value {
-                Value::Single(v) => Some(v.clone()),
-                Value::Array(a) => Some(a.get(x, y).ok()?.clone()),
-            },
-            CodeRunResult::Err(_) => None,
+    /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
+    /// A spill or error returns CellValue::Blank. Note: this assumes a CellValue::Code exists at the location.
+    pub fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
+        if self.spill_error {
+            return Some(CellValue::Blank);
+        } else {
+            match &self.result {
+                CodeRunResult::Ok(value) => match value {
+                    Value::Single(v) => Some(v.clone()),
+                    Value::Array(a) => Some(a.get(x, y).ok()?.clone()),
+                },
+                CodeRunResult::Err(_) => None,
+            }
         }
     }
 
@@ -46,7 +52,7 @@ impl CodeRun {
     }
 
     pub fn is_html(&self) -> bool {
-        if let Some(code_cell_value) = self.output_cell_value(0, 0) {
+        if let Some(code_cell_value) = self.cell_value_at(0, 0) {
             code_cell_value.is_html()
         } else {
             false
@@ -88,8 +94,8 @@ impl CodeRun {
 pub enum CodeCellLanguage {
     Python,
     Formula,
-    JavaScript,
-    Sql,
+    // JavaScript,
+    // Sql,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

@@ -1,14 +1,14 @@
 use crate::color::Rgba;
 use crate::grid::file::v1_5::schema::{self as current};
-use crate::grid::CodeRunResult;
 use crate::grid::{
     block::SameValue, formatting::RenderSize, generate_borders, set_rect_borders,
     sheet::sheet_offsets::SheetOffsets, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
     CellWrap, CodeRun, Column, ColumnData, Grid, GridBounds, NumericFormat, NumericFormatKind,
     Sheet, SheetBorders, SheetId,
 };
-use crate::{CellValue, Pos, Rect, Value};
-use anyhow::{anyhow, Result};
+use crate::grid::{CodeCellLanguage, CodeRunResult};
+use crate::{CellValue, CodeCellValue, Pos, Rect, Value};
+use anyhow::Result;
 use bigdecimal::BigDecimal;
 use chrono::Utc;
 use indexmap::IndexMap;
@@ -147,46 +147,28 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
             set_column_format_render_size(&mut col.render_size, &column.render_size);
 
             for (y, value) in column.values.iter() {
-                match value.type_field.to_lowercase().as_str() {
-                    "text" => {
-                        col.values
-                            .set(*y, Some(CellValue::Text(value.value.to_owned())));
+                match value {
+                    current::CellValue::Blank => CellValue::Blank,
+                    current::CellValue::Text(text) => CellValue::Text(text.to_owned()),
+                    current::CellValue::Number(number) => {
+                        CellValue::Number(BigDecimal::from_str(&number)?)
                     }
-                    "number" => {
-                        col.values.set(
-                            *y,
-                            Some(CellValue::Number(BigDecimal::from_str(&value.value)?)),
-                        );
+                    current::CellValue::Html(html) => CellValue::Html(html.to_owned()),
+                    current::CellValue::Code(code_cell) => CellValue::Code(CodeCellValue {
+                        code: code_cell.code.to_owned(),
+                        language: match code_cell.language {
+                            current::CodeCellLanguage::Python => CodeCellLanguage::Python,
+                            current::CodeCellLanguage::Formula => CodeCellLanguage::Formula,
+                        },
+                    }),
+                    current::CellValue::Logical(logical) => CellValue::Logical(*logical),
+                    current::CellValue::Instant(instant) => {
+                        CellValue::Instant(serde_json::from_str(&instant)?)
                     }
-                    "html" => {
-                        col.values
-                            .set(*y, Some(CellValue::Html(value.value.to_owned())));
+                    current::CellValue::Duration(duration) => {
+                        CellValue::Duration(serde_json::from_str(&duration)?)
                     }
-                    "python" => {
-                        let value = CellValue::Python(serde_json::from_str(&value.value)?);
-                        col.values.set(*y, Some(value));
-                    }
-                    "formula" => {
-                        let value = CellValue::Formula(serde_json::from_str(&value.value)?);
-                        col.values.set(*y, Some(value));
-                    }
-                    "logical" => {
-                        let value = CellValue::Logical(serde_json::from_str(&value.value)?);
-                        col.values.set(*y, Some(value));
-                    }
-                    "instant" => {
-                        let value = CellValue::Instant(serde_json::from_str(&value.value)?);
-                        col.values.set(*y, Some(value));
-                    }
-                    "duration" => {
-                        let value = CellValue::Duration(serde_json::from_str(&value.value)?);
-                        col.values.set(*y, Some(value));
-                    }
-                    "error" => {
-                        let value = CellValue::Error(serde_json::from_str(&value.value)?);
-                        col.values.set(*y, Some(value));
-                    }
-                    _ => {}
+                    current::CellValue::Error(error) => CellValue::Error(Box::new((*error).into())),
                 };
             }
 
@@ -473,9 +455,40 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                         .map(|(y, value)| {
                             (
                                 y,
-                                current::ColumnValue {
-                                    type_field: value.type_name().into(),
-                                    value: serde_json::to_string(&value).unwrap(),
+                                match value {
+                                    CellValue::Text(text) => {
+                                        current::CellValue::Text(text.to_owned())
+                                    }
+                                    CellValue::Number(number) => {
+                                        current::CellValue::Number(number.to_string())
+                                    }
+                                    CellValue::Html(html) => current::CellValue::Html(html),
+                                    CellValue::Code(cell_code) => {
+                                        current::CellValue::Code(current::CodeCell {
+                                            code: cell_code.code.to_owned(),
+                                            language: match cell_code.language {
+                                                CodeCellLanguage::Python => {
+                                                    current::CodeCellLanguage::Python
+                                                }
+                                                CodeCellLanguage::Formula => {
+                                                    current::CodeCellLanguage::Formula
+                                                }
+                                            },
+                                        })
+                                    }
+                                    CellValue::Logical(logical) => {
+                                        current::CellValue::Logical(logical)
+                                    }
+                                    CellValue::Instant(instant) => {
+                                        current::CellValue::Instant(instant.to_string())
+                                    }
+                                    CellValue::Duration(duration) => {
+                                        current::CellValue::Duration(duration.to_string())
+                                    }
+                                    CellValue::Error(error) => current::CellValue::Error(
+                                        current::RunError::from_grid_run_error(&*error),
+                                    ),
+                                    CellValue::Blank => current::CellValue::Blank,
                                 },
                             )
                         })

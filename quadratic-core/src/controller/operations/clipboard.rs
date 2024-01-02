@@ -1,9 +1,7 @@
 use super::operation::Operation;
 use crate::{
     controller::GridController,
-    grid::{
-        formatting::CellFmtArray, generate_borders_full, BorderSelection, CellBorders, CodeRun,
-    },
+    grid::{formatting::CellFmtArray, generate_borders_full, BorderSelection, CellBorders},
     Array, ArraySize, CellValue, Pos, SheetPos, SheetRect,
 };
 use anyhow::{Error, Result};
@@ -11,19 +9,12 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ClipboardCell {
-    pub value: Option<CellValue>,
-    pub spill: Option<CellValue>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct Clipboard {
     pub w: u32,
     pub h: u32,
-    pub cells: Vec<ClipboardCell>,
+    pub cells: Vec<Option<CellValue>>,
     pub formats: Vec<CellFmtArray>,
     pub borders: Vec<(i64, i64, Option<CellBorders>)>,
-    pub code: Vec<(Pos, CodeRun)>,
 }
 
 impl GridController {
@@ -46,7 +37,7 @@ impl GridController {
         let mut y = 0;
 
         clipboard.cells.iter().for_each(|cell| {
-            let value = cell.value.to_owned().map_or(CellValue::Blank, |v| v);
+            let value = cell.map_or(CellValue::Blank, |v| v);
             // ignore result errors
             let _ = array.set(x, y, value);
 
@@ -72,7 +63,6 @@ impl GridController {
         };
         let formats = clipboard.formats.clone();
         let borders = clipboard.borders.clone();
-        let code = clipboard.code.clone();
 
         let mut ops = vec![];
         let values = GridController::array_from_clipboard_cells(clipboard);
@@ -82,39 +72,40 @@ impl GridController {
 
         let sheet = self.grid.sheet_mut_from_id(start_pos.sheet_id);
 
-        // remove any overlapping code cells (which will automatically set the reverse operations)
-        for x in sheet_rect.x_range() {
-            for y in sheet_rect.y_range() {
-                let pos = Pos { x, y };
-                if sheet.get_code_cell(pos).is_some() {
-                    // no need to clear code cells that are being pasted
-                    if !code.iter().any(|(code_pos, _)| {
-                        Pos {
-                            x: code_pos.x + start_pos.x,
-                            y: code_pos.y + start_pos.y,
-                        } == pos
-                    }) {
-                        ops.push(Operation::SetCodeCell {
-                            sheet_pos: pos.to_sheet_pos(start_pos.sheet_id),
-                            code_cell_value: None,
-                        });
-                    }
-                }
-            }
-        }
+        // this should not be necessary.
+        // // remove any overlapping code cells (which will automatically set the reverse operations)
+        // for x in sheet_rect.x_range() {
+        //     for y in sheet_rect.y_range() {
+        //         let pos = Pos { x, y };
+        //         if sheet.get_code_cell(pos).is_some() {
+        //             // no need to clear code cells that are being pasted
+        //             if !code.iter().any(|(code_pos, _)| {
+        //                 Pos {
+        //                     x: code_pos.x + start_pos.x,
+        //                     y: code_pos.y + start_pos.y,
+        //                 } == pos
+        //             }) {
+        //                 ops.push(Operation::SetCodeCell {
+        //                     sheet_pos: pos.to_sheet_pos(start_pos.sheet_id),
+        //                     code_cell_value: None,
+        //                 });
+        //             }
+        //         }
+        //     }
+        // }
 
-        // add copied code cells to the sheet
-        code.iter().for_each(|entry| {
-            let sheet_pos = SheetPos {
-                x: entry.0.x + start_pos.x,
-                y: entry.0.y + start_pos.y,
-                sheet_id: start_pos.sheet_id,
-            };
-            ops.push(Operation::SetCodeCell {
-                sheet_pos,
-                code_cell_value: Some(entry.1.clone()),
-            });
-        });
+        // // add copied code cells to the sheet
+        // code.iter().for_each(|entry| {
+        //     let sheet_pos = SheetPos {
+        //         x: entry.0.x + start_pos.x,
+        //         y: entry.0.y + start_pos.y,
+        //         sheet_id: start_pos.sheet_id,
+        //     };
+        //     ops.push(Operation::SetCodeCell {
+        //         sheet_pos,
+        //         code_cell_value: Some(entry.1.clone()),
+        //     });
+        // });
 
         formats.iter().for_each(|format| {
             ops.push(Operation::SetCellFormats {

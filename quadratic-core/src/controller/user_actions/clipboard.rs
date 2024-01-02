@@ -1,12 +1,7 @@
 use crate::controller::{
-    operations::clipboard::{Clipboard, ClipboardCell},
-    transaction_summary::TransactionSummary,
-    GridController,
+    operations::clipboard::Clipboard, transaction_summary::TransactionSummary, GridController,
 };
-use crate::{
-    grid::{get_cell_borders_in_rect, CodeRun},
-    Pos, SheetPos, SheetRect,
-};
+use crate::{grid::get_cell_borders_in_rect, Pos, SheetPos, SheetRect};
 use htmlescape;
 
 impl GridController {
@@ -14,7 +9,6 @@ impl GridController {
         let mut cells = vec![];
         let mut plain_text = String::new();
         let mut html = String::from("<tbody>");
-        let mut code = vec![];
         let sheet = &mut self.grid().sheet_from_id(sheet_rect.sheet_id);
 
         for y in sheet_rect.y_range() {
@@ -31,37 +25,15 @@ impl GridController {
                 }
                 html.push_str("<td>");
                 let pos = Pos { x, y };
-                let value = sheet.get_cell_value_only(pos);
 
-                // spill_value is only needed if there is no cell_value
-                let spill_value = if value.is_none() {
-                    sheet.get_code_cell_value(pos)
-                } else {
-                    None
-                };
+                // the CellValue at the cell that would be displayed in the cell (ie, including code_runs)
+                let simple_value = sheet.get_cell_value(pos);
 
-                // store code_cells w/o output (which will be rerun on paste)
-                if let Some(code_cell_value) = sheet.get_code_cell(pos) {
-                    code.push((
-                        Pos {
-                            x: x - sheet_rect.min.x,
-                            y: y - sheet_rect.min.y,
-                        },
-                        CodeRun {
-                            language: code_cell_value.language,
-                            code_string: code_cell_value.code_string.clone(),
-                            formatted_code_string: None,
-                            last_modified: code_cell_value.last_modified.clone(),
-                            output: None,
-                        },
-                    ));
-                }
+                // the CellValue at the cell (ignoring code_runs)
+                let real_value = sheet.get_cell_value_only(pos);
 
                 // create quadratic clipboard values
-                cells.push(ClipboardCell {
-                    value: value.clone(),
-                    spill: spill_value.clone(),
-                });
+                cells.push(real_value.clone());
 
                 // add styling for html (only used for pasting to other spreadsheets)
                 // todo: add text color, fill, etc.
@@ -84,13 +56,10 @@ impl GridController {
                     }
                     html.push_str("}>");
                 }
-                if let Some(value) = value.as_ref() {
+                if let Some(value) = &simple_value {
                     plain_text.push_str(&value.to_string());
                     html.push_str(&value.to_string());
-                } else if let Some(spill_value) = spill_value.as_ref() {
-                    plain_text.push_str(&spill_value.to_string());
-                    html.push_str(&spill_value.to_string());
-                };
+                }
                 if bold || italic {
                     html.push_str("</span>");
                 }
@@ -103,7 +72,6 @@ impl GridController {
             cells,
             formats,
             borders,
-            code,
             w: sheet_rect.width() as u32,
             h: sheet_rect.height() as u32,
         };

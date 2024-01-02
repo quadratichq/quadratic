@@ -8,13 +8,14 @@ use chrono::DateTime;
 
 fn convert_column_values(
     from: &HashMap<String, v1_4::ColumnValues>,
-) -> HashMap<i64, v1_5::ColumnValue> {
+) -> HashMap<i64, v1_5::CellValue> {
     from.into_iter()
         .map(|(k, v)| {
             let value = match &v.content.values[0] {
-                v1_4::ColumnValue { type_field, value } => v1_5::ColumnValue {
-                    type_field: type_field.clone(),
-                    value: value.clone(),
+                v1_4::ColumnValue { type_field, value } => match type_field.as_str() {
+                    "Text" => v1_5::CellValue::Text(value.clone()),
+                    "Number" => v1_5::CellValue::Number(value.clone()),
+                    _ => panic!("Unknown type_field: {}", type_field),
                 },
             };
             (i64::from_str(&k).unwrap(), value)
@@ -30,11 +31,7 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
         .filter_map(|(cell_ref, code_cell_value)| {
             if cell_ref.column == column.id {
                 let pos = cell_ref_to_pos(sheet, cell_ref);
-                Some((
-                    pos.y,
-                    code_cell_value.language,
-                    code_cell_value.code_string.clone(),
-                ))
+                Some((pos.y, code_cell_value.language, code_cell_value.code_string))
             } else {
                 None
             }
@@ -42,13 +39,14 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
     let mut values = convert_column_values(&column.values);
     for (y, language, code) in code_values {
         if let Ok(value) = serde_json::to_string(&v1_5::CodeCell { language, code }) {
-            values.insert(
-                y,
-                v1_5::ColumnValue {
-                    type_field: "CodeCell".to_string(),
-                    value,
-                },
-            );
+            let language = if language == "python" {
+                Some(v1_5::CodeCellLanguage::Python)
+            } else if language == "formula" {
+                Some(v1_5::CodeCellLanguage::Formula)
+            } else {
+                None
+            };
+            values.insert(y, v1_5::CellValue::Code(v1_5::CodeCell { code, language }));
         }
     }
     (

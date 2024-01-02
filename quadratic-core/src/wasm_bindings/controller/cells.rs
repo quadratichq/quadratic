@@ -5,7 +5,7 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 use crate::{
     controller::GridController,
     grid::{CodeCellLanguage, SheetId},
-    Pos, Rect,
+    CellValue, Pos, Rect,
 };
 
 #[derive(PartialEq, Debug)]
@@ -135,40 +135,34 @@ impl GridController {
         )?)
     }
 
-    /// Gets the code_string of a code cell
+    /// Returns the CodeCell for a code (which is a combination of CellValue::Code and CodeRun).
+    ///
+    /// * CodeCell.evaluation_result is a stringified version of the output (used for AI models)
     #[wasm_bindgen(js_name = "getCodeCell")]
     pub fn js_get_code_string(&self, sheet_id: String, pos: &Pos) -> Option<CodeCell> {
         let sheet = self.grid().sheet_from_string(sheet_id);
         let code_cell = sheet.get_cell_value(*pos)?;
-        if !code_cell.is_code() {
-            return None;
-        }
-        if let Some(code_cell) = sheet.get_code_cell(*pos) {
-            let (std_err, std_out, evaluation_result) =
-                if let Some(code_cell) = code_cell.output.as_ref() {
-                    let result = serde_json::to_string(code_cell);
-                    let evaluation_result = if let Ok(result) = result {
-                        Some(result)
-                    } else {
-                        None
-                    };
-                    (
-                        code_cell.std_err.clone(),
-                        code_cell.std_out.clone(),
-                        evaluation_result,
-                    )
+        match code_cell {
+            CellValue::Code(code_cell) => {
+                if let Some(code_run) = sheet.code_run(*pos) {
+                    Some(CodeCell {
+                        code_string: code_cell.code,
+                        language: code_cell.language,
+                        std_err: code_run.std_err.clone(),
+                        std_out: code_run.std_out.clone(),
+                        evaluation_result: serde_json::to_string(&code_run.result).ok(),
+                    })
                 } else {
-                    (None, None, None)
-                };
-            Some(CodeCell {
-                code_string: code_cell.code_string.clone(),
-                language: code_cell.language,
-                std_err,
-                std_out,
-                evaluation_result,
-            })
-        } else {
-            None
+                    Some(CodeCell {
+                        code_string: code_cell.code,
+                        language: code_cell.language,
+                        std_err: None,
+                        std_out: None,
+                        evaluation_result: None,
+                    })
+                }
+            }
+            _ => None,
         }
     }
 

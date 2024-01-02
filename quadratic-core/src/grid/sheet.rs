@@ -147,14 +147,26 @@ impl Sheet {
     /// Returns the value of a cell (i.e., what would be returned if code asked
     /// for it).
     pub fn get_cell_value(&self, pos: Pos) -> Option<CellValue> {
-        if let Some(column) = self.get_column(pos.x) {
-            if let Some(value) = column.values.get(pos.y) {
-                return Some(value.clone());
+        let cell_value = self
+            .get_column(pos.x)
+            .and_then(|column| column.values.get(pos.y));
+
+        // if CellValue::Code, then we need to get the value from code_runs
+        if let Some(cell_value) = cell_value {
+            match cell_value {
+                CellValue::Code(cell_code) => self
+                    .code_runs
+                    .get(&pos)
+                    .and_then(|run| run.cell_value_at(0, 0)),
+                _ => Some(cell_value),
             }
+        } else {
+            // if there is no CellValue at Pos, then we still need to check code_runs
+            self.get_code_cell_value(pos)
         }
-        self.get_code_cell_value(pos)
     }
 
+    /// Returns only the cell_value at the Pos. This does not check code_runs.
     pub fn get_cell_value_only(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
         column.values.get(pos.y)
@@ -368,14 +380,15 @@ impl Sheet {
 #[cfg(test)]
 mod test {
     use bigdecimal::BigDecimal;
-    use std::str::FromStr;
+    use chrono::Utc;
+    use std::{collections::HashSet, str::FromStr};
 
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{Bold, Italic, NumericFormat},
+        grid::{Bold, CodeCellLanguage, CodeRunResult, Italic, NumericFormat},
         test_util::print_table,
-        SheetPos,
+        CodeCellValue, SheetPos, Value,
     };
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
@@ -520,12 +533,14 @@ mod test {
         let (mut grid, sheet_id, selected) = test_setup_basic();
 
         let view_rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 4 });
-        let _code_cell = crate::grid::CodeRun {
-            // language: crate::grid::CodeCellLanguage::Formula,
-            // code_string: "=SUM(A1:B2)".into(),
-            // last_modified: "".into(),
-            // formatted_code_string: None,
-            output: None,
+        let code_run = CodeRun {
+            std_err: None,
+            std_out: None,
+            spill_error: false,
+            formatted_code_string: None,
+            cells_accessed: HashSet::new(),
+            last_modified: Utc::now(),
+            result: CodeRunResult::Ok(Value::Single(CellValue::Number(BigDecimal::from(1)))),
         };
 
         // grid.set_code_cell_value((5, 2).into(), Some(code_cell));
@@ -583,22 +598,6 @@ mod test {
         let value = sheet.get_formatting_value::<Bold>((2, 1).into());
 
         assert_eq!(value, Some(true));
-    }
-
-    #[test]
-    fn test_get_set_code_cell_value() {
-        let (grid, sheet_id, _) = test_setup_basic();
-        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
-        let code_cell = crate::grid::CodeRun {
-            language: crate::grid::CodeCellLanguage::Formula,
-            code_string: "=SUM(A1:B2)".into(),
-            formatted_code_string: None,
-            last_modified: "".into(),
-            output: None,
-        };
-        sheet.set_code_result((2, 1).into(), Some(code_cell.clone()));
-        let value = sheet.get_code_cell((2, 1).into());
-        assert_eq!(value, Some(&code_cell));
     }
 
     // TODO(ddimaria): use the code below numeric format kinds are in place
