@@ -40,10 +40,10 @@ jobs:
         pulumi config set domain quadratic-preview.com
         pulumi config set subdomain multiplayer-pr-${{ env.PR_ID }}
         pulumi config set data-dog-env preview
-        pulumi config set data-dog-api-key ${{ env.DD_API_KEY }}
+        pulumi config set data-dog-api-key ${{ env.DD_API_KEY }} --secret
         pulumi config set quadratic-api-uri https://quadratic-api-dev-pr-${{ env.PR_ID }}.herokuapp.com
-        pulumi config set multiplayer-aws-s3-access-key-id ${{ secrets.MULTIPLAYER_AWS_S3_ACCESS_KEY_ID }}
-        pulumi config set multiplayer-aws-s3-secret-access-key ${{ secrets.MULTIPLAYER_AWS_S3_SECRET_ACCESS_KEY }}
+        pulumi config set multiplayer-aws-s3-access-key-id ${{ secrets.MULTIPLAYER_AWS_S3_ACCESS_KEY_ID }} --secret
+        pulumi config set multiplayer-aws-s3-secret-access-key ${{ secrets.MULTIPLAYER_AWS_S3_SECRET_ACCESS_KEY }} --secret
 
         pulumi up -y
         echo "MULTIPLAYER_INSTANCE_DNS=$(pulumi stack output multiplayerInstanceDns)" >> "$GITHUB_OUTPUT"
