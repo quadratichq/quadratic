@@ -92,7 +92,10 @@ pub(crate) async fn serve() -> Result<()> {
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
     .await
-    .map_err(|e| MpError::InternalServer(e.to_string()))?;
+    .map_err(|e| {
+        tracing::warn!("{e}");
+        MpError::InternalServer(e.to_string())
+    })?;
 
     Ok(())
 }
