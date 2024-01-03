@@ -6,7 +6,7 @@ import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
 import { User } from '@auth0/auth0-spa-js';
 import { v4 as uuid } from 'uuid';
 
-import { authClient } from '@/auth';
+import { authClient, parseDomain } from '@/auth';
 import { MULTIPLAYER_COLORS } from './multiplayerCursor/multiplayerColors';
 import {
   Heartbeat,
@@ -17,7 +17,7 @@ import {
   ReceiveRoom,
   ReceiveTransactions,
   SendEnterRoom,
-  SendGetTransactions,
+  SendGetTransactions
 } from './multiplayerTypes';
 
 const UPDATE_TIME = 1000 / 30;
@@ -46,6 +46,8 @@ export class Multiplayer {
   // users currently logged in to the room
   users: Map<string, MultiplayerUser> = new Map();
 
+ 
+
   constructor() {
     this.state = 'not connected';
     this.sessionId = uuid();
@@ -61,7 +63,7 @@ export class Multiplayer {
       await this.getJwt();
 
       if (this.jwt) {
-        let domain = '.' + window.location.host.match(/(?:localhost:[0-9]+|[^.]*\.[^.]{2,3}(?:\.[^.]{2,3})?$)/)![0];
+        let domain = parseDomain(window.location.host);
         document.cookie = `jwt=${this.jwt}; path=/; domain=${domain};`;
       }
     }

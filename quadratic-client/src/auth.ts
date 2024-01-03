@@ -32,8 +32,7 @@ async function getClient() {
       cacheLocation: 'localstorage',
       useRefreshTokens: true,
       // remove the subdomain from the cookie domain so that the ws server can access it
-      // cookieDomain: '.' + window.location.host.match(/(?:localhost:[0-9]+|[^.]*\.[^.]{2,3}(?:\.[^.]{2,3})?$)/)![0],
-      // cookieDomain: ".quadratic-preview.com",
+      cookieDomain: parseDomain(window.location.host),
     });
   }
   const auth0Client = await auth0ClientPromise;
@@ -118,4 +117,19 @@ export function protectedRouteLoaderWrapper(loaderFn: LoaderFunction): LoaderFun
     }
     return loaderFn(loaderFnArgs);
   };
+}
+
+/**
+ * Utility function parse the domain from a url
+ */
+export function parseDomain(url: string): string {
+  // check for classic URLs
+  let matches = url.match(/([^.]*\.[^.]{2,3}(?:\.[^.]{2,3})?$)/);
+  
+  if (matches) {
+    return '.' + matches[0];
+  } else {
+    // check for IP addresses or localhost (ignore ports) or just return the url
+    return url.match(/(?:(?!:).)*/)![0] ?? url;
+  }
 }
