@@ -28,7 +28,7 @@ impl GridController {
             self.execute_operation(transaction);
 
             if transaction.waiting_for_async.is_some() {
-                self.transactions.add_async_transaction(&transaction);
+                self.transactions.add_async_transaction(transaction);
                 break;
             }
         }
