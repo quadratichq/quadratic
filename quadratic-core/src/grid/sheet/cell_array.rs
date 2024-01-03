@@ -51,15 +51,14 @@ impl Sheet {
     }
 
     /// Returns whether a rect has any CellValue within it.
-    pub fn has_cell_value_in_rect(&self, rect: &Rect) -> bool {
+    pub fn has_cell_value_in_rect(&self, rect: &Rect, skip: Option<Pos>) -> bool {
         for x in rect.x_range() {
             if let Some(column) = self.get_column(x) {
                 for y in rect.y_range() {
-                    if column
-                        .values
-                        .get(y)
-                        .is_some_and(|cell| !cell.is_blank_or_empty_string())
-                    {
+                    let cell_pos = Pos { x, y };
+                    if column.values.get(y).is_some_and(|cell| {
+                        Some(cell_pos) != skip && !cell.is_blank_or_empty_string()
+                    }) {
                         return true;
                     }
                 }
@@ -77,8 +76,9 @@ mod tests {
     fn test_has_cell_values_in_rect() {
         let mut sheet = Sheet::test();
         let rect = Rect::from_numbers(0, 0, 10, 10);
-        assert!(!sheet.has_cell_value_in_rect(&rect));
+        assert!(!sheet.has_cell_value_in_rect(&rect, None));
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
-        assert!(sheet.has_cell_value_in_rect(&rect));
+        assert!(sheet.has_cell_value_in_rect(&rect, None));
+        assert!(!sheet.has_cell_value_in_rect(&rect, Some(Pos { x: 0, y: 0 })));
     }
 }

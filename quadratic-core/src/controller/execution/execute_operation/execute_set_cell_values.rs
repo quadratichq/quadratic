@@ -207,11 +207,10 @@ mod tests {
 
 #[cfg(test)]
 mod test {
+    use super::*;
+    use crate::{grid::CodeCellLanguage, SheetPos};
     use bigdecimal::BigDecimal;
 
-    use crate::{grid::CodeCellLanguage, SheetPos};
-
-    use super::*;
     #[test]
     fn test_set_cell_values_code_cell_remove() {
         let mut gc = GridController::new();

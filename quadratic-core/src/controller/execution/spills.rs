@@ -60,7 +60,7 @@ impl GridController {
                             let rect: Rect = output.into();
 
                             // then do the more expensive checks to see if there is a spill error
-                            if sheet.has_cell_value_in_rect(&rect)
+                            if sheet.has_cell_value_in_rect(&rect, Some(*pos))
                                 || sheet.has_code_cell_anchor_in_rect(&rect, *pos)
                                 || sheet.has_code_cell_in_rect(&rect, *pos)
                             {
@@ -102,7 +102,7 @@ impl GridController {
                 |(index, (pos, code_cell))| {
                     let output = code_cell.output_sheet_rect(pos.to_sheet_pos(sheet.id), true);
                     let rect: Rect = output.into();
-                    if sheet.has_cell_value_in_rect(&rect)
+                    if sheet.has_cell_value_in_rect(&rect, Some(*pos))
                         || sheet.has_code_cell_anchor_in_rect(&rect, *pos)
                         || sheet.has_code_cell_in_rect(&rect, *pos)
                     {

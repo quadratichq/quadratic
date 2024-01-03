@@ -44,8 +44,9 @@ impl GridController {
                 return;
             };
             let pos: Pos = sheet_pos.into();
+
             // We need to get the corresponding CellValue::Code, which should always exist.
-            let (language, code) = match sheet.get_cell_value(pos) {
+            let (language, code) = match sheet.get_cell_value_only(pos) {
                 Some(code_cell) => match code_cell {
                     CellValue::Code(value) => (value.language, value.code),
                     _ => unreachable!("Expected CellValue::Code in execute_set_code_cell"),

@@ -93,7 +93,7 @@ impl<'a> TryFrom<&'a CellValue> for String {
             CellValue::Duration(d) => Ok(d.to_string()),
             CellValue::Error(e) => Err(e.msg.clone()),
             CellValue::Html(s) => Ok(s.clone()),
-            CellValue::Code(code) => Ok(String::new()),
+            CellValue::Code(_) => Ok(String::new()),
         }
     }
 }

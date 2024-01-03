@@ -36,11 +36,6 @@ impl GridController {
 
     /// Creates and runs a new Transaction
     pub(super) fn start_transaction(&mut self, transaction: &mut PendingTransaction) {
-        // todo: maybe remove this?
-        if matches!(transaction.transaction_type, TransactionType::User) {
-            transaction.id = Uuid::new_v4();
-        }
-
         self.handle_transactions(transaction);
     }
 
@@ -98,7 +93,7 @@ impl GridController {
 
     pub fn start_undo_transaction(
         &mut self,
-        transaction: &Transaction,
+        transaction: Transaction,
         transaction_type: TransactionType,
         cursor: Option<String>,
     ) -> TransactionSummary {

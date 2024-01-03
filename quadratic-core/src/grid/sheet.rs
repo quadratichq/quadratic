@@ -154,7 +154,7 @@ impl Sheet {
         // if CellValue::Code, then we need to get the value from code_runs
         if let Some(cell_value) = cell_value {
             match cell_value {
-                CellValue::Code(cell_code) => self
+                CellValue::Code(_) => self
                     .code_runs
                     .get(&pos)
                     .and_then(|run| run.cell_value_at(0, 0)),
@@ -386,9 +386,9 @@ mod test {
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{Bold, CodeCellLanguage, CodeRunResult, Italic, NumericFormat},
+        grid::{Bold, CodeRunResult, Italic, NumericFormat},
         test_util::print_table,
-        CodeCellValue, SheetPos, Value,
+        SheetPos, Value,
     };
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
@@ -533,7 +533,7 @@ mod test {
         let (mut grid, sheet_id, selected) = test_setup_basic();
 
         let view_rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 4 });
-        let code_run = CodeRun {
+        let _ = CodeRun {
             std_err: None,
             std_out: None,
             spill_error: false,
