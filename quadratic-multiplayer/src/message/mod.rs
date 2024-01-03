@@ -53,7 +53,7 @@ pub(crate) fn broadcast(
 /// Send a message to a specific user in a room.
 /// All messages are sent in a separate thread.
 #[tracing::instrument(level = "trace")]
-pub(crate) fn direct_message(
+pub(crate) fn send_user_message(
     session_id: Uuid,
     file_id: Uuid,
     state: Arc<State>,

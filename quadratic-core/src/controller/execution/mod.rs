@@ -16,10 +16,6 @@ pub enum TransactionType {
     Undo,
     Redo,
     Multiplayer,
-
-    // todo: this functionality should be moved to the actual function instead of the transaction type
-    // Used to rollback and keep summaries while rolling back
-    MultiplayerKeepSummary,
 }
 
 impl GridController {

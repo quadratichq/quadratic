@@ -7,9 +7,6 @@ import { apiClient } from '../../api/apiClient';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { useFileRouteLoaderData } from '../../dashboard/FileRoute';
 
-// const syncInterval = 500;
-// const syncErrorInterval = 1000;
-
 type Sync = {
   id: number;
   state: 'idle' | 'syncing' | 'error';
@@ -34,7 +31,6 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   const { uuid } = useParams() as { uuid: string };
   const initialFileData = useFileRouteLoaderData();
   const [name, setName] = useState<FileContextType['name']>(initialFileData.name);
-  // const [publicLinkAccess] = useState(initialFileData.sharing.public_link_access);
   let isFirstUpdate = useRef(true);
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });

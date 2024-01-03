@@ -10,160 +10,145 @@ impl GridController {
     pub(crate) fn execute_add_sheet(
         &mut self,
         transaction: &mut PendingTransaction,
-        op: &Operation,
+        op: Operation,
     ) {
-        match op.clone() {
-            Operation::AddSheet { sheet } => {
-                let sheet_id = sheet.id;
-                self.grid
-                    .add_sheet(Some(sheet.clone()))
-                    .expect("Unexpected duplicate sheet name in Operation::AddSheet");
-                transaction.summary.sheet_list_modified = true;
-                transaction.summary.html.insert(sheet_id);
-                transaction
-                    .forward_operations
-                    .push(Operation::AddSheet { sheet });
-                transaction
-                    .reverse_operations
-                    .insert(0, Operation::DeleteSheet { sheet_id });
-            }
-            _ => unreachable!("Expected Operation::AddSheet"),
+        if let Operation::AddSheet { sheet } = op {
+            let sheet_id = sheet.id;
+            self.grid
+                .add_sheet(Some(sheet.clone()))
+                .expect("Unexpected duplicate sheet name in Operation::AddSheet");
+            transaction.summary.sheet_list_modified = true;
+            transaction.summary.html.insert(sheet_id);
+            transaction
+                .forward_operations
+                .push(Operation::AddSheet { sheet });
+            transaction
+                .reverse_operations
+                .insert(0, Operation::DeleteSheet { sheet_id });
         }
     }
 
     pub(crate) fn execute_delete_sheet(
         &mut self,
         transaction: &mut PendingTransaction,
-        op: &Operation,
+        op: Operation,
     ) {
-        match op.clone() {
-            Operation::DeleteSheet { sheet_id } => {
-                let deleted_sheet = self.grid.remove_sheet(sheet_id);
+        if let Operation::DeleteSheet { sheet_id } = op {
+            let deleted_sheet = self.grid.remove_sheet(sheet_id);
 
-                // create a sheet if we deleted the last one (only for user actions)
-                if transaction.is_user() && self.sheet_ids().is_empty() {
-                    let new_first_sheet_id = SheetId::new();
-                    let name = String::from("Sheet 1");
-                    let order = self.grid.end_order();
-                    let new_first_sheet = Sheet::new(new_first_sheet_id, name, order);
-                    self.grid
+            // create a sheet if we deleted the last one (only for user actions)
+            if transaction.is_user() && self.sheet_ids().is_empty() {
+                let new_first_sheet_id = SheetId::new();
+                let name = String::from("Sheet 1");
+                let order = self.grid.end_order();
+                let new_first_sheet = Sheet::new(new_first_sheet_id, name, order);
+                self.grid
                         .add_sheet(Some(new_first_sheet.clone()))
                         .expect("This should not throw an error as we just deleted the last sheet and therefore there can be no sheet name conflicts");
-                    transaction
-                        .forward_operations
-                        .push(Operation::DeleteSheet { sheet_id });
-                    transaction.forward_operations.push(Operation::AddSheet {
-                        sheet: new_first_sheet,
-                    });
-                    transaction.reverse_operations.insert(
-                        0,
-                        Operation::AddSheet {
-                            sheet: deleted_sheet,
-                        },
-                    );
-                    transaction.reverse_operations.insert(
-                        0,
-                        Operation::DeleteSheet {
-                            sheet_id: new_first_sheet_id,
-                        },
-                    );
-                } else {
-                    transaction
-                        .forward_operations
-                        .push(Operation::DeleteSheet { sheet_id });
-                    transaction.reverse_operations.insert(
-                        0,
-                        Operation::AddSheet {
-                            sheet: deleted_sheet,
-                        },
-                    );
-                }
-                transaction.summary.sheet_list_modified = true;
+                transaction
+                    .forward_operations
+                    .push(Operation::DeleteSheet { sheet_id });
+                transaction.forward_operations.push(Operation::AddSheet {
+                    sheet: new_first_sheet,
+                });
+                transaction.reverse_operations.insert(
+                    0,
+                    Operation::AddSheet {
+                        sheet: deleted_sheet,
+                    },
+                );
+                transaction.reverse_operations.insert(
+                    0,
+                    Operation::DeleteSheet {
+                        sheet_id: new_first_sheet_id,
+                    },
+                );
+            } else {
+                transaction
+                    .forward_operations
+                    .push(Operation::DeleteSheet { sheet_id });
+                transaction.reverse_operations.insert(
+                    0,
+                    Operation::AddSheet {
+                        sheet: deleted_sheet,
+                    },
+                );
             }
-            _ => unreachable!("Expected operation::DeleteSheet"),
+            transaction.summary.sheet_list_modified = true;
         }
     }
 
     pub(crate) fn execute_reorder_sheet(
         &mut self,
         transaction: &mut PendingTransaction,
-        op: &Operation,
+        op: Operation,
     ) {
-        match op.clone() {
-            Operation::ReorderSheet { target, order } => {
-                let old_first = self.grid.first_sheet_id();
-                let sheet = self.grid.sheet_from_id(target);
-                let original_order = sheet.order.clone();
-                self.grid.move_sheet(target, order.clone());
-                transaction.summary.sheet_list_modified = true;
+        if let Operation::ReorderSheet { target, order } = op {
+            let old_first = self.grid.first_sheet_id();
+            let sheet = self.grid.sheet_from_id(target);
+            let original_order = sheet.order.clone();
+            self.grid.move_sheet(target, order.clone());
+            transaction.summary.sheet_list_modified = true;
 
-                if old_first != self.grid.first_sheet_id() {
-                    transaction.summary.generate_thumbnail = true;
-                }
-                transaction
-                    .forward_operations
-                    .push(Operation::ReorderSheet { target, order });
-                transaction.reverse_operations.insert(
-                    0,
-                    Operation::ReorderSheet {
-                        target,
-                        order: original_order,
-                    },
-                );
+            if old_first != self.grid.first_sheet_id() {
+                transaction.summary.generate_thumbnail = true;
             }
-            _ => unreachable!("Expected operation::ReorderSheet"),
+            transaction
+                .forward_operations
+                .push(Operation::ReorderSheet { target, order });
+            transaction.reverse_operations.insert(
+                0,
+                Operation::ReorderSheet {
+                    target,
+                    order: original_order,
+                },
+            );
         }
     }
 
     pub(crate) fn execute_set_sheet_name(
         &mut self,
         transaction: &mut PendingTransaction,
-        op: &Operation,
+        op: Operation,
     ) {
-        match op.clone() {
-            Operation::SetSheetName { sheet_id, name } => {
-                let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                let old_name = sheet.name.clone();
-                sheet.name = name.clone();
-                transaction.summary.sheet_list_modified = true;
-                transaction
-                    .forward_operations
-                    .push(Operation::SetSheetName { sheet_id, name });
-                transaction.reverse_operations.insert(
-                    0,
-                    Operation::SetSheetName {
-                        sheet_id,
-                        name: old_name,
-                    },
-                );
-            }
-            _ => unreachable!("Expected operation::SetSheetName"),
+        if let Operation::SetSheetName { sheet_id, name } = op {
+            let sheet = self.grid.sheet_mut_from_id(sheet_id);
+            let old_name = sheet.name.clone();
+            sheet.name = name.clone();
+            transaction.summary.sheet_list_modified = true;
+            transaction
+                .forward_operations
+                .push(Operation::SetSheetName { sheet_id, name });
+            transaction.reverse_operations.insert(
+                0,
+                Operation::SetSheetName {
+                    sheet_id,
+                    name: old_name,
+                },
+            );
         }
     }
 
     pub(crate) fn execute_set_sheet_color(
         &mut self,
         transaction: &mut PendingTransaction,
-        op: &Operation,
+        op: Operation,
     ) {
-        match op.clone() {
-            Operation::SetSheetColor { sheet_id, color } => {
-                let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                let old_color = sheet.color.clone();
-                sheet.color = color.clone();
-                transaction.summary.sheet_list_modified = true;
-                transaction
-                    .forward_operations
-                    .push(Operation::SetSheetColor { sheet_id, color });
-                transaction.reverse_operations.insert(
-                    0,
-                    Operation::SetSheetColor {
-                        sheet_id,
-                        color: old_color,
-                    },
-                );
-            }
-            _ => unreachable!("Expected operation::SetSheetColor"),
+        if let Operation::SetSheetColor { sheet_id, color } = op {
+            let sheet = self.grid.sheet_mut_from_id(sheet_id);
+            let old_color = sheet.color.clone();
+            sheet.color = color.clone();
+            transaction.summary.sheet_list_modified = true;
+            transaction
+                .forward_operations
+                .push(Operation::SetSheetColor { sheet_id, color });
+            transaction.reverse_operations.insert(
+                0,
+                Operation::SetSheetColor {
+                    sheet_id,
+                    color: old_color,
+                },
+            );
         }
     }
 }

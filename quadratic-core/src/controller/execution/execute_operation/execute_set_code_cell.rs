@@ -10,83 +10,82 @@ impl GridController {
     pub(super) fn execute_set_code_cell(
         &mut self,
         transaction: &mut PendingTransaction,
-        op: &Operation,
+        op: Operation,
     ) {
-        match op.clone() {
-            Operation::SetCodeCell {
-                sheet_pos,
-                code_cell_value,
-            } => {
-                let sheet_id = sheet_pos.sheet_id;
-                let sheet = self.grid.sheet_from_id(sheet_id);
-                if transaction.is_user() {
-                    let old_code_cell = sheet.get_code_cell(sheet_pos.into()).cloned();
-                    if let Some(code_cell_value) = &code_cell_value {
-                        match code_cell_value.language {
-                            CodeCellLanguage::Python => {
-                                // save the output from the last run to avoid flickering the output (we'll replace it when the run is complete)
-                                let mut code_cell_value = code_cell_value.clone();
-                                code_cell_value.output = match &old_code_cell {
-                                    Some(old_code_cell) => old_code_cell.output.clone(),
-                                    None => None,
-                                };
-                                self.run_python(transaction, sheet_pos, &code_cell_value);
-                                let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                                sheet
-                                    .set_code_cell(sheet_pos.into(), Some(code_cell_value.clone()));
+        if let Operation::SetCodeCell {
+            sheet_pos,
+            code_cell_value,
+        } = op
+        {
+            let sheet_id = sheet_pos.sheet_id;
+            let sheet = self.grid.sheet_from_id(sheet_id);
+            if transaction.is_user() {
+                let old_code_cell = sheet.get_code_cell(sheet_pos.into()).cloned();
+                if let Some(code_cell_value) = &code_cell_value {
+                    match code_cell_value.language {
+                        CodeCellLanguage::Python => {
+                            // save the output from the last run to avoid flickering the output (we'll replace it when the run is complete)
+                            let mut code_cell_value = code_cell_value.clone();
+                            code_cell_value.output = match &old_code_cell {
+                                Some(old_code_cell) => old_code_cell.output.clone(),
+                                None => None,
+                            };
+                            self.run_python(transaction, sheet_pos, &code_cell_value);
+                            let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                            sheet.set_code_cell(sheet_pos.into(), Some(code_cell_value.clone()));
 
-                                // this forward_operations will be replaced when the async call completes
-                                transaction.forward_operations.push(Operation::SetCodeCell {
+                            // this forward_operations will be replaced when the async call completes
+                            transaction.forward_operations.push(Operation::SetCodeCell {
+                                sheet_pos,
+                                code_cell_value: Some(code_cell_value),
+                            });
+                            transaction.reverse_operations.insert(
+                                0,
+                                Operation::SetCodeCell {
                                     sheet_pos,
-                                    code_cell_value: Some(code_cell_value),
-                                });
-                                transaction.reverse_operations.insert(
-                                    0,
-                                    Operation::SetCodeCell {
-                                        sheet_pos,
-                                        code_cell_value: old_code_cell.clone(),
-                                    },
-                                );
-                            }
-                            CodeCellLanguage::Formula => {
-                                self.run_formula(transaction, sheet_pos, code_cell_value);
-                            }
-                            _ => {
-                                unreachable!("Unsupported language in RunCodeCell");
-                            }
+                                    code_cell_value: old_code_cell.clone(),
+                                },
+                            );
                         }
-
-                        // only capture operations if not waiting for async, otherwise wait until calculation is complete
-                        if transaction.waiting_for_async.is_none() {
-                            self.finalize_code_cell(transaction, sheet_pos, old_code_cell);
+                        CodeCellLanguage::Formula => {
+                            self.run_formula(transaction, sheet_pos, code_cell_value);
+                        }
+                        _ => {
+                            unreachable!("Unsupported language in RunCodeCell");
                         }
                     }
-                } else if transaction.is_undo() {
-                    transaction.reverse_operations.insert(
-                        0,
-                        Operation::SetCodeCell {
-                            sheet_pos,
-                            code_cell_value: sheet.get_code_cell(sheet_pos.into()).cloned(),
-                        },
-                    );
-                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    sheet.set_code_cell(sheet_pos.into(), code_cell_value);
-                    transaction.forward_operations.push(op.clone());
-                } else {
-                    let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                    sheet.set_code_cell(sheet_pos.into(), code_cell_value);
-                }
 
-                let sheet_rect = &sheet_pos.into();
-                transaction.sheets_with_dirty_bounds.insert(sheet_id);
-                transaction.summary.generate_thumbnail |=
-                    self.thumbnail_dirty_sheet_rect(sheet_rect);
-                transaction.summary.code_cells_modified.insert(sheet_id);
-                transaction
-                    .summary
-                    .add_cell_sheets_modified_rect(sheet_rect);
+                    // only capture operations if not waiting for async, otherwise wait until calculation is complete
+                    if transaction.waiting_for_async.is_none() {
+                        self.finalize_code_cell(transaction, sheet_pos, old_code_cell);
+                    }
+                }
+            } else if transaction.is_undo() {
+                transaction.reverse_operations.insert(
+                    0,
+                    Operation::SetCodeCell {
+                        sheet_pos,
+                        code_cell_value: sheet.get_code_cell(sheet_pos.into()).cloned(),
+                    },
+                );
+                let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                sheet.set_code_cell(sheet_pos.into(), code_cell_value.clone());
+                transaction.forward_operations.push(Operation::SetCodeCell {
+                    sheet_pos,
+                    code_cell_value,
+                });
+            } else {
+                let sheet = self.grid.sheet_mut_from_id(sheet_id);
+                sheet.set_code_cell(sheet_pos.into(), code_cell_value);
             }
-            _ => unreachable!("Expected Operation::SetCodeCell in execute_set_code_cell"),
+
+            let sheet_rect = &sheet_pos.into();
+            transaction.sheets_with_dirty_bounds.insert(sheet_id);
+            transaction.summary.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
+            transaction.summary.code_cells_modified.insert(sheet_id);
+            transaction
+                .summary
+                .add_cell_sheets_modified_rect(sheet_rect);
         }
     }
 }

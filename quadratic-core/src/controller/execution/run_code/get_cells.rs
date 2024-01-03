@@ -17,7 +17,7 @@ impl GridController {
         let (current_sheet, pos) = if let Some(current_sheet_pos) = transaction.current_sheet_pos {
             (current_sheet_pos.sheet_id, current_sheet_pos.into())
         } else {
-            self.transactions.add_async_transaction(transaction);
+            self.transactions.add_async_transaction(&transaction);
             return Err(CoreError::TransactionNotFound(
                 "get_cells failed to get current_sheet_pos".to_string(),
             ));
@@ -32,7 +32,12 @@ impl GridController {
         );
 
         let transaction_type = transaction.transaction_type.clone();
-        assert_eq!(transaction_type, TransactionType::User);
+        if transaction_type != TransactionType::User {
+            // this should only be called for a user transaction
+            return Err(CoreError::TransactionNotFound(
+                "get_cells called for non-user transaction".to_string(),
+            ));
+        }
         if let Some(sheet) = sheet {
             // ensure that the current cell ref is not in the get_cells request
             if get_cells.rect().contains(pos) && sheet.id == current_sheet {
@@ -52,7 +57,7 @@ impl GridController {
             transaction
                 .cells_accessed
                 .insert(rect.to_sheet_rect(sheet.id));
-            self.transactions.add_async_transaction(transaction);
+            self.transactions.add_async_transaction(&transaction);
             Ok(array)
         } else {
             // unable to find sheet by name, generate error
@@ -64,7 +69,7 @@ impl GridController {
                 "Sheet not found".to_string()
             };
             self.code_cell_sheet_error(&mut transaction, msg, get_cells.line_number())?;
-            self.transactions.add_async_transaction(transaction);
+            self.transactions.add_async_transaction(&transaction);
             Ok(CellsForArray::new(vec![], true))
         }
     }

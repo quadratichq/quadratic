@@ -46,7 +46,7 @@ impl GridController {
             .flat_map(|(_, undo)| undo.operations.clone())
             .collect::<VecDeque<_>>();
         let mut rollback = PendingTransaction {
-            transaction_type: TransactionType::MultiplayerKeepSummary,
+            transaction_type: TransactionType::Multiplayer,
             operations,
             ..Default::default()
         };
@@ -73,7 +73,7 @@ impl GridController {
             .flat_map(|(forward, _)| forward.operations.clone())
             .collect::<Vec<_>>();
         let mut reapply = PendingTransaction {
-            transaction_type: TransactionType::MultiplayerKeepSummary,
+            transaction_type: TransactionType::Multiplayer,
             operations: operations.into(),
             ..Default::default()
         };
@@ -111,7 +111,7 @@ impl GridController {
                 Some(last_request_transaction_time) => {
                     last_request_transaction_time
                         .checked_add_signed(Duration::seconds(SECONDS_TO_WAIT_FOR_GET_TRANSACTIONS))
-                        .unwrap()
+                        .unwrap_or(now)
                         < now
                 }
             } {
@@ -127,10 +127,8 @@ impl GridController {
     fn apply_out_of_order_transactions(
         &mut self,
         transaction: &mut PendingTransaction,
-        sequence_num: u64,
+        mut sequence_num: u64,
     ) {
-        let mut sequence_num = sequence_num;
-
         // nothing to do here
         if self.transactions.out_of_order_transactions.is_empty() {
             self.transactions.last_sequence_num = sequence_num;
@@ -141,11 +139,16 @@ impl GridController {
         let mut operations = VecDeque::new();
         self.transactions.out_of_order_transactions.retain(|t| {
             // while the out of order transaction is next in sequence, we apply it and remove it from the list
-            if t.sequence_num.unwrap() == sequence_num + 1 {
-                operations.extend(t.operations.clone());
-                sequence_num += 1;
-                false
+            if let Some(transaction_sequence_num) = t.sequence_num {
+                if transaction_sequence_num == sequence_num + 1 {
+                    operations.extend(t.operations.clone());
+                    sequence_num += 1;
+                    false
+                } else {
+                    true
+                }
             } else {
+                // this should not happen as sequence_num for multiplayer transactions should always be set
                 true
             }
         });

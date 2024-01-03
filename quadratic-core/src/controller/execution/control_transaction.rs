@@ -28,7 +28,7 @@ impl GridController {
             self.execute_operation(transaction);
 
             if transaction.waiting_for_async.is_some() {
-                self.transactions.add_async_transaction(transaction.clone());
+                self.transactions.add_async_transaction(&transaction);
                 break;
             }
         }
@@ -71,7 +71,6 @@ impl GridController {
                     .push((transaction.to_forward_transaction(), undo));
             }
             TransactionType::Multiplayer => (),
-            TransactionType::MultiplayerKeepSummary => (),
             TransactionType::Unset => panic!("Expected a transaction type"),
         }
     }

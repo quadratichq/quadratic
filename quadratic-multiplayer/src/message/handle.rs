@@ -8,7 +8,7 @@
 use crate::error::{MpError, Result};
 use crate::get_mut_room;
 use crate::message::{
-    broadcast, direct_message, request::MessageRequest, response::MessageResponse,
+    broadcast, request::MessageRequest, response::MessageResponse, send_user_message,
 };
 use crate::state::connection::Connection;
 use crate::state::user::UserState;
@@ -102,7 +102,7 @@ pub(crate) async fn handle_message(
                 .await?;
 
             // direct response to user w/sequence_num after logging in
-            direct_message(
+            send_user_message(
                 session_id,
                 file_id,
                 Arc::clone(&state),
