@@ -4,8 +4,8 @@ use crate::controller::{
 };
 
 impl GridController {
-    pub fn execute_set_borders(&mut self, transaction: &mut PendingTransaction, op: &Operation) {
-        match op.clone() {
+    pub fn execute_set_borders(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+        match op {
             Operation::SetBorders {
                 sheet_rect,
                 borders,

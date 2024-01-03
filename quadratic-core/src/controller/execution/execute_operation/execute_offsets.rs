@@ -7,73 +7,67 @@ use crate::{
 };
 
 impl GridController {
-    pub fn execute_resize_column(&mut self, transaction: &mut PendingTransaction, op: &Operation) {
-        match op.clone() {
-            Operation::ResizeColumn {
+    pub fn execute_resize_column(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+        if let Operation::ResizeColumn {
+            sheet_id,
+            column,
+            new_size,
+        } = op
+        {
+            let sheet = self.grid.sheet_mut_from_id(sheet_id);
+            transaction.summary.offsets_modified.insert(sheet.id);
+            let old_size = sheet.offsets.set_column_width(column, new_size);
+            transaction.summary.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
+                x: column,
+                y: 0,
                 sheet_id,
-                column,
-                new_size,
-            } => {
-                let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                transaction.summary.offsets_modified.insert(sheet.id);
-                let old_size = sheet.offsets.set_column_width(column, new_size);
-                transaction.summary.generate_thumbnail |=
-                    self.thumbnail_dirty_sheet_pos(SheetPos {
-                        x: column,
-                        y: 0,
-                        sheet_id,
-                    });
-                transaction
-                    .forward_operations
-                    .push(Operation::ResizeColumn {
-                        sheet_id,
-                        column,
-                        new_size,
-                    });
-                transaction.reverse_operations.insert(
-                    0,
-                    Operation::ResizeColumn {
-                        sheet_id,
-                        column,
-                        new_size: old_size,
-                    },
-                );
-            }
-            _ => unreachable!("Expected Operation::ResizeColumn"),
+            });
+            transaction
+                .forward_operations
+                .push(Operation::ResizeColumn {
+                    sheet_id,
+                    column,
+                    new_size,
+                });
+            transaction.reverse_operations.insert(
+                0,
+                Operation::ResizeColumn {
+                    sheet_id,
+                    column,
+                    new_size: old_size,
+                },
+            );
         }
     }
 
-    pub fn execute_resize_row(&mut self, transaction: &mut PendingTransaction, op: &Operation) {
-        match op.clone() {
-            Operation::ResizeRow {
+    pub fn execute_resize_row(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+        if let Operation::ResizeRow {
+            sheet_id,
+            row,
+            new_size,
+        } = op
+        {
+            let sheet = self.grid.sheet_mut_from_id(sheet_id);
+            let old_size = sheet.offsets.set_row_height(row, new_size);
+            transaction.summary.offsets_modified.insert(sheet.id);
+            transaction.summary.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
+                x: 0,
+                y: row,
+                sheet_id,
+            });
+            transaction.forward_operations.push(Operation::ResizeRow {
                 sheet_id,
                 row,
                 new_size,
-            } => {
-                let sheet = self.grid.sheet_mut_from_id(sheet_id);
-                let old_size = sheet.offsets.set_row_height(row, new_size);
-                transaction.summary.offsets_modified.insert(sheet.id);
-                transaction.summary.generate_thumbnail |=
-                    self.thumbnail_dirty_sheet_pos(SheetPos {
-                        x: 0,
-                        y: row,
-                        sheet_id,
-                    });
-                transaction.forward_operations.push(Operation::ResizeRow {
+            });
+            transaction.reverse_operations.insert(
+                0,
+                Operation::ResizeRow {
                     sheet_id,
                     row,
-                    new_size,
-                });
-                transaction.reverse_operations.insert(
-                    0,
-                    Operation::ResizeRow {
-                        sheet_id,
-                        row,
-                        new_size: old_size,
-                    },
-                );
-            }
-            _ => unreachable!("Expected Operation::ResizeRow"),
+                    new_size: old_size,
+                },
+            );
         }
     }
 }

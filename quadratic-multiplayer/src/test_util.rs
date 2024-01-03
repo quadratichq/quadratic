@@ -128,12 +128,7 @@ pub(crate) async fn integration_test_send_and_receive(
         return None;
     }
 
-    let response = match socket.lock().await.next().await.unwrap().unwrap() {
-        tungstenite::Message::Text(msg) => msg,
-        other => panic!("expected a text message but got {other:?}"),
-    };
-
-    Some(response)
+    integration_test_receive(socket).await
 }
 
 pub(crate) async fn integration_test_receive(

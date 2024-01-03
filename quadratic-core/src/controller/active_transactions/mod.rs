@@ -61,11 +61,11 @@ impl ActiveTransactions {
             .map(|(index, (forward, _))| (index, forward))
     }
 
-    pub fn add_async_transaction(&mut self, pending: PendingTransaction) {
+    pub fn add_async_transaction(&mut self, pending: &PendingTransaction) {
         let forward = pending.to_forward_transaction();
         let undo = pending.to_undo_transaction();
         self.unsaved_transactions.push((forward, undo));
-        self.async_transactions.push(pending);
+        self.async_transactions.push(pending.clone());
     }
 
     /// Returns the async_transactions for testing purposes

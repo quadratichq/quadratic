@@ -10,35 +10,58 @@ impl GridController {
     pub(crate) fn execute_set_cell_values(
         &mut self,
         transaction: &mut PendingTransaction,
-        op: &Operation,
+        op: Operation,
     ) {
-        match op {
-            Operation::SetCellValues { sheet_rect, values } => {
-                match self.grid.try_sheet_mut_from_id(sheet_rect.sheet_id) {
-                    None => (), // sheet may have been deleted
-                    Some(sheet) => {
-                        // update individual cell values and collect old_values
-                        let old_values = sheet_rect
-                            .iter()
-                            .zip(values.clone().into_cell_values_vec())
-                            .map(|(sheet_pos, value)| {
-                                let old_value = sheet.set_cell_value(sheet_pos.into(), value);
+        if let Operation::SetCellValues { sheet_rect, values } = op {
+            match self.grid.try_sheet_mut_from_id(sheet_rect.sheet_id) {
+                None => (), // sheet may have been deleted
+                Some(sheet) => {
+                    // update individual cell values and collect old_values
+                    let old_values = sheet_rect
+                        .iter()
+                        .zip(values.clone().into_cell_values_vec())
+                        .map(|(sheet_pos, value)| {
+                            let old_value = sheet.set_cell_value(sheet_pos.into(), value);
 
-                                // add html to summary if old value was of that type
-                                if old_value
-                                    .as_ref()
-                                    .is_some_and(|cell_value| cell_value.is_html())
-                                {
-                                    transaction.summary.html.insert(sheet_pos.sheet_id);
+                            // add html to summary if old value was of that type
+                            if old_value
+                                .as_ref()
+                                .is_some_and(|cell_value| cell_value.is_html())
+                            {
+                                transaction.summary.html.insert(sheet_pos.sheet_id);
+                            }
+                            old_value
+                        })
+                        .map(|old_value| old_value.unwrap_or(CellValue::Blank))
+                        .collect();
+
+                    if transaction.is_user() || transaction.is_undo() {
+                        transaction
+                            .forward_operations
+                            .push(Operation::SetCellValues { sheet_rect, values });
+
+                        if transaction.is_user() {
+                            // remove any code_cells that are now covered by the new values
+                            let mut code_cell_removed = false;
+                            sheet.code_cells.retain(|(pos, code_cell)| {
+                                if sheet_rect.contains(pos.to_sheet_pos(sheet.id)) {
+                                    transaction.reverse_operations.insert(
+                                        0,
+                                        Operation::SetCodeCell {
+                                            sheet_pos: pos.to_sheet_pos(sheet.id),
+                                            code_cell_value: Some(code_cell.clone()),
+                                        },
+                                    );
+                                    transaction.forward_operations.push(Operation::SetCodeCell {
+                                        sheet_pos: pos.to_sheet_pos(sheet.id),
+                                        code_cell_value: None,
+                                    });
+                                    code_cell_removed = true;
+                                    false
+                                } else {
+                                    true
                                 }
-                                old_value
-                            })
-                            .map(|old_value| old_value.unwrap_or(CellValue::Blank))
-                            .collect();
-
-                        if transaction.is_user() || transaction.is_undo() {
-                            transaction.forward_operations.push(op.clone());
-
+                            });
                             if transaction.is_user() {
                                 // remove any code_runs where the (0, 0) is replaced
                                 let mut code_run_removed = false;
@@ -64,44 +87,40 @@ impl GridController {
                                     }
                                 });
 
-                                self.add_compute_operations(transaction, sheet_rect, None);
+                            self.add_compute_operations(transaction, &sheet_rect, None);
 
-                                // if a code_cell was removed, then we need to check all spills.
-                                // Otherwise we only need to check spills for the sheet_rect.
-                                if code_run_removed {
-                                    self.check_all_spills(transaction, sheet_rect.sheet_id, 0);
-                                } else {
-                                    self.check_spills(transaction, sheet_rect);
-                                }
+                            // if a code_cell was removed, then we need to check all spills.
+                            // Otherwise we only need to check spills for the sheet_rect.
+                            if code_cell_removed {
+                                self.check_all_spills(transaction, sheet_rect.sheet_id, 0);
+                            } else {
+                                self.check_spills(transaction, &sheet_rect);
                             }
                         }
-
-                        // create reverse_operation
-                        let old_values = Array::new_row_major(sheet_rect.size(), old_values)
-                            .expect(
-                                "error constructing array of old values for SetCells operation",
-                            );
-                        transaction.reverse_operations.insert(
-                            0,
-                            Operation::SetCellValues {
-                                sheet_rect: *sheet_rect,
-                                values: old_values,
-                            },
-                        );
-
-                        // prepare summary
-                        transaction
-                            .sheets_with_dirty_bounds
-                            .insert(sheet_rect.sheet_id);
-                        transaction.summary.generate_thumbnail |=
-                            self.thumbnail_dirty_sheet_rect(sheet_rect);
-                        transaction
-                            .summary
-                            .add_cell_sheets_modified_rect(sheet_rect);
                     }
+
+                    // create reverse_operation
+                    let old_values = Array::new_row_major(sheet_rect.size(), old_values)
+                        .expect("error constructing array of old values for SetCells operation");
+                    transaction.reverse_operations.insert(
+                        0,
+                        Operation::SetCellValues {
+                            sheet_rect,
+                            values: old_values,
+                        },
+                    );
+
+                    // prepare summary
+                    transaction
+                        .sheets_with_dirty_bounds
+                        .insert(sheet_rect.sheet_id);
+                    transaction.summary.generate_thumbnail |=
+                        self.thumbnail_dirty_sheet_rect(&sheet_rect);
+                    transaction
+                        .summary
+                        .add_cell_sheets_modified_rect(&sheet_rect);
                 }
             }
-            _ => unreachable!("Expected Operation::SetCellValues in execute_set_cell_values"),
         }
     }
 }
