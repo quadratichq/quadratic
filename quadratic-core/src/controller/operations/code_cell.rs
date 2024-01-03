@@ -1,7 +1,7 @@
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
     grid::{CodeCellLanguage, CodeRun},
-    Array, CellValue, CodeCellValue, Pos, Rect, SheetPos, SheetRect,
+    Array, CellValue, CodeCellValue, Rect, SheetPos, SheetRect,
 };
 
 use super::operation::Operation;
@@ -108,7 +108,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{grid::CodeRunResult, Value};
+    use crate::{grid::CodeRunResult, Pos, Value};
     use chrono::Utc;
     use std::collections::HashSet;
 
