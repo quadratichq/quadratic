@@ -24,17 +24,56 @@ const multiplayerAwsS3AccessKeyId =
 const multiplayerAwsS3SecretAccesskey =
   config.get("multiplayer-aws-s3-secret-access-key") || "";
 
-// Infrastructure
-const group = new aws.ec2.SecurityGroup("multiplayer-sg", {
+// Create a Security Group for the NLB
+const nlbSecurityGroup = new aws.ec2.SecurityGroup("nlb-security-group", {
   ingress: [
-    { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
-    { protocol: "tcp", fromPort: 80, toPort: 80, cidrBlocks: ["0.0.0.0/0"] },
-  ],
-  egress: [
-    { protocol: "tcp", fromPort: 80, toPort: 80, cidrBlocks: ["0.0.0.0/0"] },
     { protocol: "tcp", fromPort: 443, toPort: 443, cidrBlocks: ["0.0.0.0/0"] },
   ],
+  egress: [
+    { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
+  ],
 });
+
+// Create a Security Group for the EC2 instance
+const ec2SecurityGroup = new aws.ec2.SecurityGroup("multiplayer-sg", {
+  ingress: [
+    { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
+    {
+      protocol: "tcp",
+      fromPort: 80,
+      toPort: 80,
+      securityGroups: [nlbSecurityGroup.id],
+    },
+  ],
+  egress: [
+    { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
+  ],
+});
+
+// Redis Security Group
+const redisSecurityGroup = new aws.ec2.SecurityGroup("redis-sg", {
+  ingress: [
+    {
+      protocol: "tcp",
+      fromPort: 6379,
+      toPort: 6379,
+      securityGroups: [ec2SecurityGroup.id],
+    },
+  ],
+});
+
+// Create a Redis ElastiCache cluster
+const redisCluster = new aws.elasticache.Cluster("multiplayer-redis-cluster", {
+  engine: "redis",
+  engineVersion: "7.x",
+  nodeType: "cache.t4g.micro",
+  numCacheNodes: 1,
+  securityGroupIds: [redisSecurityGroup.id],
+});
+
+const redisConnectionString = `${redisCluster.cacheNodes.apply(
+  (nodes) => nodes[0].address
+)}:${redisCluster.port}`;
 
 // Read the content of the Bash script
 let setupMultiplayerService = fs.readFileSync(
@@ -62,12 +101,16 @@ setupMultiplayerService = setupMultiplayerService.replace(
   "{{MULTIPLAYER_AWS_S3_SECRET_ACCESS_KEY}}",
   multiplayerAwsS3SecretAccesskey
 );
+setupMultiplayerService = setupMultiplayerService.replace(
+  "{{AWS_REDIS_CONNECTION_STRING}}",
+  redisConnectionString
+);
 const instance = new aws.ec2.Instance("multiplayer-instance", {
   tags: {
     Name: `multiplayer-instance-${multiplayerSubdomain}`,
   },
   instanceType: instanceSize,
-  vpcSecurityGroupIds: [group.id],
+  vpcSecurityGroupIds: [ec2SecurityGroup.id],
   ami: instanceAmi,
   keyName: instanceKeyName,
   // Run Setup script on instance boot to create multiplayer systemd service
@@ -80,6 +123,7 @@ const nlb = new aws.lb.LoadBalancer("multiplayer-nlb", {
   loadBalancerType: "network",
   subnets: [subNet1, subNet2],
   enableCrossZoneLoadBalancing: true,
+  securityGroups: [nlbSecurityGroup.id],
 });
 
 // Create a new Target Group
