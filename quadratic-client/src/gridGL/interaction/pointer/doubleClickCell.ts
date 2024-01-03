@@ -11,7 +11,7 @@ export function doubleClickCell(options: {
   const { mode, cell, column, row } = options;
   const settings = pixiAppSettings;
 
-  const hasPermission = hasPerissionToEditFile(settings.editorInteractionState.permission);
+  const hasPermission = hasPerissionToEditFile(settings.editorInteractionState.permissions);
 
   if (!settings.setEditorInteractionState) return;
   if (mode) {

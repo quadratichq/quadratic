@@ -14,9 +14,8 @@ import { QuadraticLoading } from './loading/QuadraticLoading';
 export default function QuadraticApp() {
   const { user } = useRootRouteLoaderData();
 
-
   const [loading, setLoading] = useState(true);
-  const { permission, uuid } = useRecoilValue(editorInteractionStateAtom);
+  const { permissions, uuid } = useRecoilValue(editorInteractionStateAtom);
   const setLoadedState = useSetRecoilState(pythonStateAtom);
   const didMount = useRef<boolean>(false);
 
@@ -68,17 +67,17 @@ export default function QuadraticApp() {
     didMount.current = true;
 
     // Load python and populate web workers (if supported)
-    if (!isMobile && hasPerissionToEditFile(permission)) {
+    if (!isMobile && hasPerissionToEditFile(permissions)) {
       setLoadedState((prevState) => ({ ...prevState, pythonState: 'loading' }));
       initializeWebWorkers();
     }
-  }, [permission, setLoadedState]);
+  }, [permissions, setLoadedState]);
 
   useEffect(() => {
     if (uuid && user && !pixiApp.initialized) {
       pixiApp.init().then(() => {
         multiplayer.enterFileRoom(uuid, user);
-        setLoading(false)
+        setLoading(false);
       });
     }
   }, [uuid, user]);

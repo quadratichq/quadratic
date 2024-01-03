@@ -1,4 +1,4 @@
-import { Permission, PermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import { PermissionSchema, Permissions } from 'quadratic-shared/typesAndSchemas';
 import { NavigateFunction, SubmitFunction } from 'react-router-dom';
 import { SetterOrUpdater } from 'recoil';
 import { apiClient } from './api/apiClient';
@@ -14,7 +14,7 @@ const { FILE_EDIT, FILE_DELETE } = PermissionSchema.enum;
 
 export type GenericAction = {
   label: string;
-  isAvailable?: (permission: Permission, isAuthenticated?: boolean) => boolean;
+  isAvailable?: (permissions: Permissions, isAuthenticated?: boolean) => boolean;
   run?: (args: any) => void;
 
   // Future shortcuts
@@ -49,8 +49,8 @@ export type GenericAction = {
 
 // TODO: create generic hasPermission(permission, permissionToCheck) function
 
-export const hasPerissionToEditFile = (permission: Permission) => permission.includes(FILE_EDIT);
-const isLoggedIn = (permission: Permission, isAuthenticated: boolean) => isAuthenticated;
+export const hasPerissionToEditFile = (permissions: Permissions) => permissions.includes(FILE_EDIT);
+const isLoggedIn = (permissions: Permissions, isAuthenticated: boolean) => isAuthenticated;
 
 export const createNewFileAction = {
   label: 'New',
@@ -89,7 +89,7 @@ export const downloadFileAction = {
 
 export const deleteFile = {
   label: 'Delete',
-  isAvailable: (permission: Permission) => permission.includes(FILE_DELETE),
+  isAvailable: (permissions: Permissions) => permissions.includes(FILE_DELETE),
   // TODO enhancement: handle this async operation in the UI similar to /files/create
   async run({ uuid, addGlobalSnackbar }: { uuid: string; addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'] }) {
     if (window.confirm('Please confirm you want to delete this file.')) {

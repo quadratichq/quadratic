@@ -24,7 +24,7 @@ export const CodeEditorBody = (props: Props) => {
   const { editorContent, setEditorContent, closeEditor } = props;
 
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const readOnly = !hasPerissionToEditFile(editorInteractionState.permission);
+  const readOnly = !hasPerissionToEditFile(editorInteractionState.permissions);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
 

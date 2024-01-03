@@ -1,6 +1,6 @@
 import { Coordinate } from '@/gridGL/types/size';
 import { CellType } from '@/schemas';
-import { Permission } from 'quadratic-shared/typesAndSchemas';
+import { Permissions } from 'quadratic-shared/typesAndSchemas';
 import { atom } from 'recoil';
 
 export interface EditorInteractionState {
@@ -10,7 +10,7 @@ export interface EditorInteractionState {
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
   showShareFileMenu: boolean;
-  permission: Permission;
+  permissions: Permissions;
   uuid: string;
   selectedCell: Coordinate;
   selectedCellSheet: string;
@@ -25,7 +25,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showGoToMenu: false,
   showFeedbackMenu: false,
   showShareFileMenu: false,
-  permission: 'FILE_VIEW', // FYI: when we call <RecoilRoot> we initialize this with the value from the server
+  permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   selectedCell: { x: 0, y: 0 },
   selectedCellSheet: '',

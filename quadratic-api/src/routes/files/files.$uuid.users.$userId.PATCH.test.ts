@@ -1,61 +1,77 @@
-import { UserRoleFile } from 'quadratic-shared/typesAndSchemas';
+// TEST
+
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
-
-async function getUserIdByAuth0Id(id: string) {
-  const user = await dbClient.user.findFirst({
-    where: {
-      auth0_id: id,
-    },
-  });
-  if (!user) throw new Error('User not found');
-  return user.id;
-}
+import { getUserIdByAuth0Id } from '../../tests/helpers';
 
 beforeEach(async () => {
   // Create some users
-  const user1 = await dbClient.user.create({
+  const userWithFileRoleOfOwner = await dbClient.user.create({
     data: {
-      auth0_id: 'user1',
+      auth0_id: 'userWithFileRoleOfOwner',
     },
   });
-  const user2 = await dbClient.user.create({
+  const userWithFileRoleOfEditor = await dbClient.user.create({
     data: {
-      auth0_id: 'user2',
+      auth0_id: 'userWithFileRoleOfEditor',
     },
   });
-  const user3 = await dbClient.user.create({
+  const userWithFileRoleOfViewer = await dbClient.user.create({
     data: {
-      auth0_id: 'user3',
+      auth0_id: 'userWithFileRoleOfViewer',
+    },
+  });
+  await dbClient.user.create({
+    data: {
+      auth0_id: 'userWithoutFileRole',
     },
   });
 
-  // Create a file with an owner, editor, and viewer
+  // await dbClient.team.create({
+  //   data: {
+  //     name: 'Test Team 1',
+  //     uuid: '00000000-0000-2000-8000-000000000001',
+  //     UserTeamRole: {
+  //       create: [
+  //         { userId: userWithFileRoleOfEditorAndTeamRoleOfOwner.id, role: 'OWNER' },
+  //         //     { userId: userWithFileRoleOfOwner.id, role: 'OWNER' },
+  //         //     { userId: userWithFileRoleOfEditorAndTeamRoleOfOwner.id, role: 'OWNER' },
+  //         //     { userId: userWithFileRoleOfEditor.id, role: 'EDITOR' },
+  //         //     { userId: userWithFileRoleOfViewer.id, role: 'VIEWER' },
+  //       ],
+  //     },
+  //   },
+  // });
+
+  // Create a file with an owner, editor, and viewer and associated to a team
   await dbClient.file.create({
     data: {
-      ownerUserId: user1.id,
+      ownerUserId: userWithFileRoleOfOwner.id,
       contents: Buffer.from('contents_0'),
       version: '1.4',
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000001',
       publicLinkAccess: 'NOT_SHARED',
-      // UserFileRole: {
-      //   create: [
-      //     { userId: user2.id, role: 'EDITOR' },
-      //     { userId: user3.id, role: 'VIEWER' },
-      //   ],
-      // },
+      // teamId: team.id,
+      UserFileRole: {
+        create: [
+          { userId: userWithFileRoleOfEditor.id, role: 'EDITOR' },
+          { userId: userWithFileRoleOfViewer.id, role: 'VIEWER' },
+        ],
+      },
     },
   });
 });
 
 afterEach(async () => {
+  const deleteTeamUsers = dbClient.userTeamRole.deleteMany();
+  const deleteTeams = dbClient.team.deleteMany();
   const deleteFileUsers = dbClient.userFileRole.deleteMany();
   const deleteFiles = dbClient.file.deleteMany();
   const deleteUsers = dbClient.user.deleteMany();
 
-  await dbClient.$transaction([deleteFileUsers, deleteFiles, deleteUsers]);
+  await dbClient.$transaction([deleteTeamUsers, deleteTeams, deleteFileUsers, deleteFiles, deleteUsers]);
 });
 
 // describe('POST /v0/teams/:uuid/users/:userId - unauthenticated requests', () => {
@@ -68,300 +84,287 @@ afterEach(async () => {
 //   });
 // });
 
+async function itt(str: string) {
+  try {
+    const reg = /(.*): `(.*)`.*`(.*)`.*`(.*)`/g;
+    const matches = reg.exec(str);
+    // @ts-expect-error
+    const [, expectation, userMakingRequest, userBeingChanged, role] = matches;
+
+    it(str, async () => {
+      const userBeingChangedId = await getUserIdByAuth0Id(userBeingChanged);
+      // const userMakingRequestId = await getUserIdByAuth0Id(userMakingRequest);
+      await request(app)
+        .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userBeingChangedId}`)
+        .send({ role })
+        .set('Accept', 'application/json')
+        .set('Authorization', `Bearer ValidToken ${userMakingRequest}`)
+        .expect('Content-Type', /json/)
+        .expect((res) => {
+          // console.log(res.body, userMakingRequestId, userBeingChangedId);
+          if (expectation === 'accepts') {
+            expect(res.status).toBe(200);
+            expect(res.body.role).toBe(role);
+          } else if (expectation === 'rejects') {
+            expect(res.status).toBe(403);
+          }
+        });
+    });
+  } catch (e) {
+    console.log(
+      'Failed to run test. It that didn’t match the format: `[expectation]: `userMakingRequeset` changing role of `userBeingChanged` to `role`',
+      e
+    );
+  }
+}
+
+// TODO unauthenticated requests
 // TODO sending bad data
+// TODO trying to change a user that don't exist or exists but not part of the team
 
-const test = (
-  userMakingChange: 'user1' | 'user2' | 'user3',
-  expectation: 'changes' | 'accepts' | 'rejects',
-  fromRole: UserRoleFile,
-  toRole: UserRoleFile
-) => {
-  it(`${expectation} ${fromRole} to ${toRole}`, async () => {
-    const userToChange = fromRole === 'OWNER' ? 'user1' : fromRole === 'EDITOR' ? 'user2' : 'user3';
-    const userId = await getUserIdByAuth0Id(userToChange);
-    await request(app)
-      .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
-      .send({ role: toRole })
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken ${userMakingChange}`)
-      .expect((res) => {
-        if (expectation === 'changes' || expectation === 'accepts') {
-          expect(res.status).toBe(200);
-          expect(res.body.role).toBe(toRole);
-        } else if (expectation === 'rejects') {
-          expect(res.status).toBe(403);
-        }
-      });
+describe('PATCH /v0/files/:uuid/users/:userId', () => {
+  describe('When a file’s public link access is: NOT_SHARED', () => {
+    itt('accepts: `userWithFileRoleOfOwner` changing role of `userWithFileRoleOfOwner` to `OWNER`');
+    itt('rejects: `userWithFileRoleOfOwner` changing role of `userWithFileRoleOfOwner` to `EDITOR`');
+    itt('rejects: `userWithFileRoleOfOwner` changing role of `userWithFileRoleOfOwner` to `VIEWER`');
+    itt('rejects: `userWithFileRoleOfOwner` changing role of `userWithFileRoleOfEditor` to `OWNER`');
+    itt('accepts: `userWithFileRoleOfOwner` changing role of `userWithFileRoleOfEditor` to `EDITOR`');
+    itt('accepts: `userWithFileRoleOfOwner` changing role of `userWithFileRoleOfEditor` to `VIEWER`');
+    itt('rejects: `userWithFileRoleOfOwner` changing role of `userWithFileRoleOfViewer` to `OWNER`');
+    itt('accepts: `userWithFileRoleOfOwner` changing role of `userWithFileRoleOfViewer` to `EDITOR`');
+    itt('accepts: `userWithFileRoleOfOwner` changing role of `userWithFileRoleOfViewer` to `VIEWER`');
+
+    itt('rejects: `userWithFileRoleOfEditor` changing role of `userWithFileRoleOfOwner` to `OWNER`');
+    // itt('rejects: `userWithFileRoleOfEditor` changing role of `userWithFileRoleOfOwner` to `EDITOR`');
+    // itt('rejects: `userWithFileRoleOfEditor` changing role of `userWithFileRoleOfOwner` to `VIEWER`');
+    itt('rejects: `userWithFileRoleOfEditor` changing role of `userWithFileRoleOfEditor` to `OWNER`');
+    itt('accepts: `userWithFileRoleOfEditor` changing role of `userWithFileRoleOfEditor` to `EDITOR`');
+    itt('accepts: `userWithFileRoleOfEditor` changing role of `userWithFileRoleOfEditor` to `VIEWER`');
+    itt('rejects: `userWithFileRoleOfEditor` changing role of `userWithFileRoleOfViewer` to `OWNER`');
+    itt('accepts: `userWithFileRoleOfEditor` changing role of `userWithFileRoleOfViewer` to `EDITOR`');
+    itt('accepts: `userWithFileRoleOfEditor` changing role of `userWithFileRoleOfViewer` to `VIEWER`');
+
+    itt('rejects: `userWithFileRoleOfViewer` changing role of `userWithFileRoleOfOwner` to `OWNER`');
+    itt('rejects: `userWithFileRoleOfViewer` changing role of `userWithFileRoleOfOwner` to `EDITOR`');
+    itt('rejects: `userWithFileRoleOfViewer` changing role of `userWithFileRoleOfOwner` to `VIEWER`');
+    itt('rejects: `userWithFileRoleOfViewer` changing role of `userWithFileRoleOfEditor` to `OWNER`');
+    itt('rejects: `userWithFileRoleOfViewer` changing role of `userWithFileRoleOfEditor` to `EDITOR`');
+    itt('rejects: `userWithFileRoleOfViewer` changing role of `userWithFileRoleOfEditor` to `VIEWER`');
+    itt('rejects: `userWithFileRoleOfViewer` changing role of `userWithFileRoleOfViewer` to `OWNER`');
+    itt('rejects: `userWithFileRoleOfViewer` changing role of `userWithFileRoleOfViewer` to `EDITOR`');
+    itt('accepts: `userWithFileRoleOfViewer` changing role of `userWithFileRoleOfViewer` to `VIEWER`');
+
+    itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfOwner` to `OWNER`');
+    itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfOwner` to `EDITOR`');
+    itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfOwner` to `VIEWER`');
+    itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfEditor` to `OWNER`');
+    itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfEditor` to `EDITOR`');
+    itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfEditor` to `VIEWER`');
+    itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfViewer` to `OWNER`');
+    itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfViewer` to `EDITOR`');
+    itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfViewer` to `VIEWER`');
+
+    // prettier-ignore
+    // describe('userWithFileRoleOfOwner and is owner of team', () => {
+    //   beforeEach(async () => {
+    //     const team = await dbClient.team.findFirst({
+    //       where: {
+    //         uuid: '00000000-0000-2000-8000-000000000001',
+    //       },
+    //     });
+
+    //     await dbClient.file.update({
+    //       data: {
+    //         // @ts-expect-error
+    //         teamId: team.id
+    //       },
+    //       where: {
+    //         uuid: '00000000-0000-4000-8000-000000000001',
+    //       },
+    //     });
+    //   });
+    //   itt('accepts: `userWithFileRoleOfOwner` as Team owner changing role of `userWithFileRoleOfOwner` to `OWNER`');
+    //   itt('rejects: `userWithFileRoleOfOwner` as Team owner changing role of `userWithFileRoleOfOwner` to `EDITOR`');
+    //   itt('rejects: `userWithFileRoleOfOwner` as Team owner changing role of `userWithFileRoleOfOwner` to `VIEWER`');
+    //   itt('rejects: `userWithFileRoleOfOwner` as Team owner changing role of `userWithFileRoleOfEditor` to `OWNER`');
+    //   itt('accepts: `userWithFileRoleOfOwner` as Team owner changing role of `userWithFileRoleOfEditor` to `EDITOR`');
+    //   itt('accepts: `userWithFileRoleOfOwner` as Team owner changing role of `userWithFileRoleOfEditor` to `VIEWER`');
+    //   itt('rejects: `userWithFileRoleOfOwner` as Team owner changing role of `userWithFileRoleOfViewer` to `OWNER`');
+    //   itt('accepts: `userWithFileRoleOfOwner` as Team owner changing role of `userWithFileRoleOfViewer` to `EDITOR`');
+    //   itt('accepts: `userWithFileRoleOfOwner` as Team owner changing role of `userWithFileRoleOfViewer` to `VIEWER`');
+    // });
+
+    // describe('userWithFileRoleOfOwnerAndTeamRoleOfEditor', () => {
+    //   itt('rejects: `userWithFileRoleOfOwnerAndTeamRoleOfEditor` changing role of `userWithFileRoleOfOwner` to `OWNER`');
+    //   itt('rejects: `userWithFileRoleOfOwnerAndTeamRoleOfEditor` changing role of `userWithFileRoleOfOwner` to `EDITOR`');
+    //   itt('rejects: `userWithFileRoleOfOwnerAndTeamRoleOfEditor` changing role of `userWithFileRoleOfOwner` to `VIEWER`');
+    //   itt('rejects: `userWithFileRoleOfOwnerAndTeamRoleOfEditor` changing role of `userWithFileRoleOfEditor` to `OWNER`');
+    //   itt('accepts: `userWithFileRoleOfOwnerAndTeamRoleOfEditor` changing role of `userWithFileRoleOfEditor` to `EDITOR`');
+    //   itt('accepts: `userWithFileRoleOfOwnerAndTeamRoleOfEditor` changing role of `userWithFileRoleOfEditor` to `VIEWER`');
+    //   itt('rejects: `userWithFileRoleOfOwnerAndTeamRoleOfEditor` changing role of `userWithFileRoleOfViewer` to `OWNER`');
+    //   itt('accepts: `userWithFileRoleOfOwnerAndTeamRoleOfEditor` changing role of `userWithFileRoleOfViewer` to `EDITOR`');
+    //   itt('accepts: `userWithFileRoleOfOwnerAndTeamRoleOfEditor` changing role of `userWithFileRoleOfViewer` to `VIEWER`');
+    // });
   });
-};
 
-describe.only('PATCH /v0/files/:uuid/users/:userId', () => {
-  describe('🔒 Private user file with 3 members', () => {
+  describe('When a file’s public link access is: EDIT', () => {
     beforeEach(async () => {
-      const user2Id = await getUserIdByAuth0Id('user2');
-      const user3Id = await getUserIdByAuth0Id('user3');
       await dbClient.file.update({
         data: {
-          UserFileRole: {
-            create: [
-              { userId: user2Id, role: 'EDITOR' },
-              { userId: user3Id, role: 'VIEWER' },
-            ],
-          },
+          publicLinkAccess: 'EDIT',
         },
         where: {
           uuid: '00000000-0000-4000-8000-000000000001',
         },
-        select: {
-          UserFileRole: {},
+      });
+    });
+    describe('userWithoutFileRole', () => {
+      itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfOwner` to `OWNER`');
+      // itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfOwner` to `EDITOR`');
+      // itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfOwner` to `VIEWER`');
+
+      itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfEditor` to `OWNER`');
+      itt('accepts: `userWithoutFileRole` changing role of `userWithFileRoleOfEditor` to `EDITOR`');
+      itt('accepts: `userWithoutFileRole` changing role of `userWithFileRoleOfEditor` to `VIEWER`');
+
+      itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfViewer` to `OWNER`');
+      itt('accepts: `userWithoutFileRole` changing role of `userWithFileRoleOfViewer` to `EDITOR`');
+      itt('accepts: `userWithoutFileRole` changing role of `userWithFileRoleOfViewer` to `VIEWER`');
+    });
+  });
+
+  describe('When a file’s public link access is: READONLY', () => {
+    beforeEach(async () => {
+      await dbClient.file.update({
+        data: {
+          publicLinkAccess: 'READONLY',
+        },
+        where: {
+          uuid: '00000000-0000-4000-8000-000000000001',
         },
       });
     });
-    describe('Update yourself', () => {
-      describe('as file OWNER', () => {
-        it('accepts OWNER -> OWNER', async () => {
-          const id = await getUserIdByAuth0Id('user1');
-          await request(app)
-            .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${id}`)
-            .set('Accept', 'application/json')
-            .set('Authorization', `Bearer ValidToken user1`)
-            .send({ role: 'OWNER' })
-            .expect(200)
-            .expect(({ body: { role } }) => {
-              expect(role).toBe('OWNER');
-            });
-        });
+    describe('userWithoutFileRole', () => {
+      itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfOwner` to `OWNER`');
+      itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfOwner` to `EDITOR`');
+      itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfOwner` to `VIEWER`');
 
-        it('rejects OWNER -> EDITOR', async () => {
-          const id = await getUserIdByAuth0Id('user1');
-          await request(app)
-            .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${id}`)
-            .send({ role: 'EDITOR' })
-            .set('Accept', 'application/json')
-            .set('Authorization', `Bearer ValidToken user1`)
-            .expect('Content-Type', /json/)
-            .expect(403);
-        });
+      itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfEditor` to `OWNER`');
+      itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfEditor` to `EDITOR`');
+      itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfEditor` to `VIEWER`');
 
-        it('rejects OWNER -> VIEWER', async () => {
-          const id = await getUserIdByAuth0Id('user1');
-          await request(app)
-            .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${id}`)
-            .send({ role: 'VIEWER' })
-            .set('Accept', 'application/json')
-            .set('Authorization', `Bearer ValidToken user1`)
-            .expect('Content-Type', /json/)
-            .expect(403);
-        });
-      });
-      describe('as file EDITOR', () => {
-        it('rejects EDITOR -> OWNER', async () => {
-          const userId = await getUserIdByAuth0Id('user2');
-          await request(app)
-            .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
-            .send({ role: 'OWNER' })
-            .set('Accept', 'application/json')
-            .set('Authorization', `Bearer ValidToken user2`)
-            .expect('Content-Type', /json/)
-            .expect(403);
-        });
-        it('accepts EDITOR -> EDITOR', async () => {
-          const userId = await getUserIdByAuth0Id('user2');
-          await request(app)
-            .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
-            .set('Accept', 'application/json')
-            .set('Authorization', `Bearer ValidToken user2`)
-            .send({ role: 'EDITOR' })
-            .expect(200)
-            .expect(({ body: { role } }) => {
-              expect(role).toBe('EDITOR');
-            });
-        });
-        it('changes EDITOR -> VIEWER', async () => {
-          const userId = await getUserIdByAuth0Id('user2');
-          await request(app)
-            .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
-            .set('Accept', 'application/json')
-            .set('Authorization', `Bearer ValidToken user2`)
-            .send({ role: 'VIEWER' })
-            .expect('Content-Type', /json/)
-            .expect(200)
-            .expect(({ body: { role } }) => {
-              expect(role).toBe('VIEWER');
-            });
-        });
-      });
-      describe('as file VIEWER', () => {
-        it('rejects VIEWER -> OWNER', async () => {
-          const userId = await getUserIdByAuth0Id('user3');
-          await request(app)
-            .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
-            .send({ role: 'OWNER' })
-            .set('Accept', 'application/json')
-            .set('Authorization', `Bearer ValidToken user3`)
-            .expect('Content-Type', /json/)
-            .expect(403);
-        });
-        it('rejects VIEWER -> EDITOR', async () => {
-          const userId = await getUserIdByAuth0Id('user3');
-          await request(app)
-            .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
-            .set('Accept', 'application/json')
-            .set('Authorization', `Bearer ValidToken user3`)
-            .send({ role: 'EDITOR' })
-            .expect(403);
-        });
-        it('accepts VIEWER -> VIEWER', async () => {
-          const userId = await getUserIdByAuth0Id('user3');
-          await request(app)
-            .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
-            .set('Accept', 'application/json')
-            .set('Authorization', `Bearer ValidToken user3`)
-            .send({ role: 'VIEWER' })
-            .expect(200)
-            .expect(({ body: { role } }) => {
-              expect(role).toBe('VIEWER');
-            });
-        });
-      });
-    });
-    describe('Update others', () => {
-      describe('as file OWNER', () => {
-        // There shouldn't be more than 1 owner ever, so we don't test updating other owners
-
-        it('rejects EDITOR -> OWNER', async () => {
-          const userId = await getUserIdByAuth0Id('user2');
-          await request(app)
-            .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
-            .send({ role: 'OWNER' })
-            .set('Accept', 'application/json')
-            .set('Authorization', `Bearer ValidToken user1`)
-            .expect(403);
-        });
-        it('accepts EDITOR -> EDITOR', async () => {
-          const userId = await getUserIdByAuth0Id('user2');
-          await request(app)
-            .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
-            .send({ role: 'EDITOR' })
-            .set('Accept', 'application/json')
-            .set('Authorization', `Bearer ValidToken user1`)
-            .expect(200)
-            .expect(({ body: { role } }) => {
-              expect(role).toBe('EDITOR');
-            });
-        });
-        it('accepts EDITOR -> VIEWER', async () => {
-          const userId = await getUserIdByAuth0Id('user2');
-          await request(app)
-            .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
-            .send({ role: 'VIEWER' })
-            .set('Accept', 'application/json')
-            .set('Authorization', `Bearer ValidToken user1`)
-            .expect(200)
-            .expect(({ body: { role } }) => {
-              expect(role).toBe('VIEWER');
-            });
-        });
-
-        it('rejects VIEWER -> OWNER', async () => {
-          const userId = await getUserIdByAuth0Id('user3');
-          await request(app)
-            .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
-            .send({ role: 'OWNER' })
-            .set('Accept', 'application/json')
-            .set('Authorization', `Bearer ValidToken user1`)
-            .expect(403);
-        });
-        it('changes VIEWER -> EDITOR', async () => {
-          const userId = await getUserIdByAuth0Id('user3');
-          await request(app)
-            .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
-            .send({ role: 'EDITOR' })
-            .set('Accept', 'application/json')
-            .set('Authorization', `Bearer ValidToken user1`)
-            .expect(200)
-            .expect(({ body: { role } }) => {
-              expect(role).toBe('EDITOR');
-            });
-        });
-        it('accepts VIEWER -> VIEWER', async () => {
-          const userId = await getUserIdByAuth0Id('user3');
-          await request(app)
-            .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
-            .send({ role: 'VIEWER' })
-            .set('Accept', 'application/json')
-            .set('Authorization', `Bearer ValidToken user1`)
-            .expect(200)
-            .expect(({ body: { role } }) => {
-              expect(role).toBe('VIEWER');
-            });
-        });
-      });
-      describe('as file EDITOR', () => {
-        test('user2', 'rejects', 'EDITOR', 'OWNER');
-        test('user2', 'accepts', 'EDITOR', 'EDITOR');
-        test('user2', 'changes', 'EDITOR', 'VIEWER');
-      });
-      describe('as file VIEWER', () => {
-        test('user3', 'rejects', 'VIEWER', 'OWNER');
-        test('user3', 'rejects', 'VIEWER', 'EDITOR');
-        test('user3', 'accepts', 'VIEWER', 'VIEWER');
-      });
+      itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfViewer` to `OWNER`');
+      itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfViewer` to `EDITOR`');
+      itt('rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfViewer` to `VIEWER`');
     });
   });
-  describe('👁️ Public user file (READONLY) with 0 members', () => {
-    describe('Update yourself', () => {
-      describe('as file OWNER', () => {
-        test('user1', 'accepts', 'OWNER', 'OWNER');
-        test('user1', 'rejects', 'OWNER', 'EDITOR');
-        test('user1', 'rejects', 'OWNER', 'VIEWER');
-      });
-      describe('as file EDITOR', () => {
-        test('user2', 'rejects', 'EDITOR', 'OWNER');
-        test('user2', 'rejects', 'EDITOR', 'EDITOR');
-        test('user2', 'rejects', 'EDITOR', 'VIEWER');
-      });
-      describe('as file VIEWER', () => {
-        test('user2', 'rejects', 'VIEWER', 'OWNER');
-        test('user2', 'rejects', 'VIEWER', 'EDITOR');
-        test('user2', 'rejects', 'VIEWER', 'VIEWER');
-      });
-    });
-  });
-  describe('📝 Public user file (EDIT) with 3 members', () => {
-    it.todo('TODO');
-  });
-  describe('🔒 Private team file', () => {
-    describe('Update yourself', () => {
-      describe('as team OWNER', () => {
-        // what do we do if you try to add yourself to a file that you already get access to via a team?
-        it.todo('TODO');
-      });
-      describe('as team EDITOR', () => {
-        it.todo('TODO');
-      });
-      describe('as team VIEWER', () => {
-        it.todo('TODO');
-      });
-    });
-    describe('Update others', () => {
-      describe('as team OWNER', () => {
-        it.todo('rejects OWNER -> OWNER');
-      });
-      describe('as team EDITOR', () => {
-        it.todo('TODO');
-      });
-      describe('as team VIEWER', () => {
-        it.todo('TODO');
-      });
-    });
-  });
-  describe('👁️ Public team file (READONLY)', () => {
-    it.todo('TODO');
-  });
-  describe('📝 Public team file (EDIT)', () => {
-    it.todo('TODO');
-  });
-
-  // TODO trying to change a user that don't exist or exists but not part of the team
 });
+
+/*
+
+==================================================
+
+Personal Files - NOT_SHARED | EDIT | READONLY
+
+userWithFileRoleOfOwner
+userWithFileRoleOfEditor
+userWithFileRoleViewer
+userWithoutFileRole
+
+Team Files = NOT_SHARED | EDIT | READONLY
+
+userWithFileRoleOfOwnerAndTeamRoleOfOwner
+userWithFileRoleOfOwnerAndTeamRoleOfEditor
+userWithFileRoleOfOwnerAndTeamRoleOfViewer - ???
+
+userWithFileRoleOfEditorAndTeamRoleOfOwner
+userWithFileRoleOfEditorAndTeamRoleOfEditor
+userWithFileRoleOfEditorAndTeamRoleOfViewer
+
+userWithFileRoleOfViewerAndTeamRoleOfOwner
+userWithFileRoleOfViewerAndTeamRoleOfEditor
+userWithFileRoleOfViewerAndTeamRoleOfViewer
+
+userWithoutFileRoleAndTeamRoleOfOwner
+userWithoutFileRoleAndTeamRoleOfEditor
+userWithoutFileRoleAndTeamRoleOfViewer
+
+=============================================
+
+
+READONLY | EDIT | NOT_SHARED
+rejects: `userWithFileRoleOfOwner` changing role of `userWithFileRoleOfEditor` to OWNER
+accepts: `userWithFileRoleOfOwner` changing role of `userWithFileRoleOfEditor` to EDITOR
+updates: `userWithFileRoleOfOwner` changing role of `userWithFileRoleOfEditor` to VIEWER
+
+
+NOT_SHARED | EDIT | READONLY
+rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfOwner` to OWNER
+rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfOwner` to EDITOR
+rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfOwner` to VIEWER
+
+when a file's public link access is: NOT_SHARED
+  rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfEditor` to OWNER
+  rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfEditor` to EDITOR
+  rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfEditor` to VIEWER
+when a file's public link access is: EDIT
+  accepts: `userWithoutFileRole` changing role of `userWithFileRoleOfOwner` to OWNER
+  rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfOwner` to EDITOR
+  rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfOwner` to VIEWER
+  rejects: `userWithoutFileRole` deleting `userWithFileRoleOfEditor`
+
+  rejects: `userWithoutFileRole` changing role of `userWithFileRoleOfEditor` to OWNER
+  accepts: `userWithoutFileRole` changing role of `userWithFileRoleOfEditor` to EDITOR
+  accepts: `userWithoutFileRole` changing role of `userWithFileRoleOfEditor` to VIEWER
+
+when a file's public link access is: READONLY
+  accepts: `userWithoutFileRole` changing role of `userWithFileRoleOfOwner` to OWNER
+
+
+it('rejects: ...', testUpdateUser());
+function async testUpdateUser(userMakingRequest, userBeingChanged, role) {
+  const userBeingChangedId = await getUserIdByAuth0Id(userBeingChanged);
+  return request(app)
+      .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userBeingChangedId}`)
+      .send({ role })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken ${userMakingRequest}`)
+      .expect('Content-Type', /json/)
+      .expect(403);
+}
+function testDeleteUser() {}
+
+
+
+
+[accepts: `userWithFileRoleOfOwner` changing `userWithFileRoleOfEditor` to `{ role: 'OWNER' }`],
+[userWithFileRoleOfOwner, userWithFileRoleOfEditor, { role: 'OWNER' }, 'rejects'],
+
+
+
+
+
+
+
+
+
+
+
+
+
+test('rejects', `userWithFileRoleOfOwner`, `userWithFileRoleOfEditor`, 'OWNER')
+
+async function test(result, userMakingRequest, userBeingChanged, role) {
+  it(`${result}: ${userMakingRequest} changing role of ${userBeingChanged} to ${role}`, async () => {
+    const userId = await getUserIdByAuth0Id(userBeingChanged);
+    request(app)
+      .patch(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
+      .send({ role })
+      .set('Accept', 'application/json')
+      .set('Authorization', `Bearer ValidToken ${userMakingRequest}`)
+      .expect('Content-Type', /json/)
+      .expect(403);
+  }
+}
+
+*/

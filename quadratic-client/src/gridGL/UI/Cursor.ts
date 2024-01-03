@@ -50,7 +50,7 @@ export class Cursor extends Graphics {
     const editor_selected_cell = editorInteractionState.selectedCell;
 
     // draw cursor but leave room for cursor indicator if needed
-    const indicatorSize = hasPerissionToEditFile(pixiAppSettings.editorInteractionState.permission)
+    const indicatorSize = hasPerissionToEditFile(pixiAppSettings.editorInteractionState.permissions)
       ? Math.max(INDICATOR_SIZE / viewport.scale.x, 4)
       : 0;
     this.indicator.width = this.indicator.height = indicatorSize;

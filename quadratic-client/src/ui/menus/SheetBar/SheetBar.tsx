@@ -24,8 +24,8 @@ export const SheetBar = (): JSX.Element => {
   const [_, setTrigger] = useState(0);
 
   const theme = useTheme();
-  const { permission } = useRecoilValue(editorInteractionStateAtom);
-  const hasPermission = hasPerissionToEditFile(permission) && !isMobile;
+  const { permissions } = useRecoilValue(editorInteractionStateAtom);
+  const hasPermission = hasPerissionToEditFile(permissions) && !isMobile;
 
   // activate sheet
   const [activeSheet, setActiveSheet] = useState(sheets.current);

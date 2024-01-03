@@ -52,12 +52,6 @@ afterEach(async () => {
   await dbClient.$transaction([deleteTeamInvites, deleteTeamUsers, deleteUsers, deleteTeams]);
 });
 
-// const expectErrorMsg = (req: any) => {
-//   expect(req).toHaveProperty('body');
-//   expect(req.body).toHaveProperty('error');
-//   expect(req.body.error).toHaveProperty('message');
-// };
-
 jest.mock('auth0', () => {
   return {
     ManagementClient: jest.fn().mockImplementation(() => {

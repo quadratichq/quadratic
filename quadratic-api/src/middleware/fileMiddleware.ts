@@ -5,6 +5,7 @@ import { Request } from '../types/Request';
 import { ApiError } from '../utils/ApiError';
 import { getFilePermissions } from '../utils/permissions';
 
+// TODO: eventually we can get rid of this and use `getFile` instead
 export const fileMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   // TODO: validate UUID
   if (req.params.uuid === undefined) {

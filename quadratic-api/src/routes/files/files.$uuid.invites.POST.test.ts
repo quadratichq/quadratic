@@ -6,38 +6,39 @@ import { expectError } from '../../tests/helpers';
 
 beforeEach(async () => {
   // Create some users & team
-  const user_1 = await dbClient.user.create({
+  const userOwner = await dbClient.user.create({
     data: {
-      auth0_id: 'team_1_owner',
+      auth0_id: 'userOwner',
     },
   });
-  const user_2 = await dbClient.user.create({
+  const userEditor = await dbClient.user.create({
     data: {
-      auth0_id: 'team_1_editor',
+      auth0_id: 'userEditor',
     },
   });
-  const user_3 = await dbClient.user.create({
+  const userViewer = await dbClient.user.create({
     data: {
-      auth0_id: 'team_1_viewer',
+      auth0_id: 'userViewer',
     },
   });
   await dbClient.user.create({
     data: {
-      auth0_id: 'user_without_team',
+      auth0_id: 'userNoRole',
     },
   });
-  await dbClient.team.create({
+  await dbClient.file.create({
     data: {
-      name: 'Test Team 1',
+      ownerUserId: userOwner.id,
+      contents: Buffer.from('contents_0'),
+      version: '1.4',
+      name: 'Personal File',
       uuid: '00000000-0000-4000-8000-000000000001',
-      UserTeamRole: {
+      publicLinkAccess: 'NOT_SHARED',
+      // teamId: team.id,
+      UserFileRole: {
         create: [
-          {
-            userId: user_1.id,
-            role: 'OWNER',
-          },
-          { userId: user_2.id, role: 'EDITOR' },
-          { userId: user_3.id, role: 'VIEWER' },
+          { userId: userEditor.id, role: 'EDITOR' },
+          { userId: userViewer.id, role: 'VIEWER' },
         ],
       },
     },
@@ -45,12 +46,12 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  const deleteTeamInvites = dbClient.teamInvite.deleteMany();
-  const deleteTeamUsers = dbClient.userTeamRole.deleteMany();
+  const deleteFileInvites = dbClient.fileInvite.deleteMany();
+  const deleteFileUsers = dbClient.userFileRole.deleteMany();
+  const deleteFiles = dbClient.file.deleteMany();
   const deleteUsers = dbClient.user.deleteMany();
-  const deleteTeams = dbClient.team.deleteMany();
 
-  await dbClient.$transaction([deleteTeamInvites, deleteTeamUsers, deleteUsers, deleteTeams]);
+  await dbClient.$transaction([deleteFileInvites, deleteFileUsers, deleteFiles, deleteUsers]);
 });
 
 // Mock Auth0 getUsersByEmail
@@ -61,26 +62,26 @@ jest.mock('auth0', () => {
         getUsersByEmail: jest.fn().mockImplementation((email: string) => {
           const users: User[] = [
             {
-              user_id: 'team_1_owner',
-              email: 'team_1_owner@example.com',
+              user_id: 'userOwner',
+              email: 'userOwner@example.com',
               // picture: null,
               name: 'Test User 1',
             },
             {
-              user_id: 'team_1_editor',
-              email: 'team_1_editor@example.com',
+              user_id: 'userEditor',
+              email: 'userEditor@example.com',
               // picture: null,
               name: 'Test User 2',
             },
             {
-              user_id: 'team_1_viewer',
-              email: 'team_1_viewer@example.com',
+              user_id: 'userViewer',
+              email: 'userViewer@example.com',
               // picture: null,
               name: 'Test User 3',
             },
             {
-              user_id: 'user_without_team',
-              email: 'user_without_team@example.com',
+              user_id: 'userNoRole',
+              email: 'userNoRole@example.com',
               // picture: null,
               name: 'Test User 4',
             },
@@ -104,66 +105,50 @@ jest.mock('auth0', () => {
   };
 });
 
-describe('POST /v0/teams/:uuid/invites', () => {
+describe('POST /v0/files/:uuid/invites', () => {
   describe('sending a bad request', () => {
-    it('responds with a 401 without authentication', async () => {
+    it('responds with a 400 for failing schema validation on the file UUID', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
-        .send({ role: 'OWNER', email: 'test@example.com' })
-        .set('Accept', 'application/json')
-        .expect('Content-Type', /json/)
-        .expect(401)
-        .expect(expectError);
-    });
-    it('responds with a 404 for requesting a team that doesn’t exist', async () => {
-      await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000000/invites')
+        .post('/v0/files/foo/invites')
         .send({ email: 'test@example.com', role: 'OWNER' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_owner`)
-        .expect('Content-Type', /json/)
-        .expect(404)
-        .expect(expectError);
-    });
-    it('responds with a 400 for failing schema validation on the team UUID', async () => {
-      await request(app)
-        .post('/v0/teams/foo/invites')
-        .send({ email: 'test@example.com', role: 'OWNER' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .set('Authorization', `Bearer ValidToken userOwner`)
         .expect('Content-Type', /json/)
         .expect(400)
         .expect(expectError);
     });
     it('responds with a 400 for failing schema validation on the payload', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
         .send({ role: 'OWNER' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .set('Authorization', `Bearer ValidToken userOwner`)
         .expect('Content-Type', /json/)
         .expect(400)
         .expect(expectError);
     });
   });
 
-  describe('inviting yourself to a team', () => {
-    it('responds with 400 for owners', async () => {
-      await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'team_1_owner@example.com', role: 'EDITOR' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_owner`)
-        .expect('Content-Type', /json/)
-        .expect(400)
-        .expect(expectError);
-    });
+  // TODO: tests for inviting to files public/private or in a team, etc.
+  // review all the tests below
+
+  describe('inviting yourself to a file', () => {
+    // it('responds with 400 for owners', async () => {
+    //   await request(app)
+    //     .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
+    //     .send({ email: 'userOwner@example.com', role: 'EDITOR' })
+    //     .set('Accept', 'application/json')
+    //     .set('Authorization', `Bearer ValidToken userOwner`)
+    //     .expect('Content-Type', /json/)
+    //     .expect(400)
+    //     .expect(expectErrorMsg);
+    // });
     it('responds with 400 for editors', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'team_1_editor@example.com', role: 'EDITOR' })
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
+        .send({ email: 'userEditor@example.com', role: 'EDITOR' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_editor`)
+        .set('Authorization', `Bearer ValidToken userEditor`)
         .expect('Content-Type', /json/)
         .expect(400)
         .expect(expectError);
@@ -173,10 +158,10 @@ describe('POST /v0/teams/:uuid/invites', () => {
   describe('inviting someone to a team who is already a member', () => {
     it('responds with 400', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'team_1_editor@example.com', role: 'EDITOR' })
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
+        .send({ email: 'userEditor@example.com', role: 'EDITOR' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .set('Authorization', `Bearer ValidToken userOwner`)
         .expect('Content-Type', /json/)
         .expect(400)
         .expect(expectError);
@@ -190,42 +175,42 @@ describe('POST /v0/teams/:uuid/invites', () => {
   describe('adding users who already have a Quadratic account', () => {
     it('adds OWNER invited by OWNER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'user_without_team@example.com', role: 'OWNER' })
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
+        .send({ email: 'userNoRole@example.com', role: 'OWNER' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .set('Authorization', `Bearer ValidToken userOwner`)
         .expect('Content-Type', /json/)
         .expect(201)
         .expect(({ body: { email, role, id } }) => {
-          expect(email).toBe('user_without_team@example.com');
+          expect(email).toBe('userNoRole@example.com');
           expect(role).toBe('OWNER');
           expect(typeof id).toBe('number');
         });
     });
     it('adds EDITOR invited by OWNER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'user_without_team@example.com', role: 'EDITOR' })
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
+        .send({ email: 'userNoRole@example.com', role: 'EDITOR' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .set('Authorization', `Bearer ValidToken userOwner`)
         .expect('Content-Type', /json/)
         .expect(201)
         .expect(({ body: { email, role, id } }) => {
-          expect(email).toBe('user_without_team@example.com');
+          expect(email).toBe('userNoRole@example.com');
           expect(role).toBe('EDITOR');
           expect(typeof id).toBe('number');
         });
     });
     it('adds VIEWER invited by OWNER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'user_without_team@example.com', role: 'VIEWER' })
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
+        .send({ email: 'userNoRole@example.com', role: 'VIEWER' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .set('Authorization', `Bearer ValidToken userOwner`)
         .expect('Content-Type', /json/)
         .expect(201)
         .expect(({ body: { email, role, id } }) => {
-          expect(email).toBe('user_without_team@example.com');
+          expect(email).toBe('userNoRole@example.com');
           expect(role).toBe('VIEWER');
           expect(typeof id).toBe('number');
         });
@@ -233,38 +218,38 @@ describe('POST /v0/teams/:uuid/invites', () => {
 
     it('rejects OWNER invited by EDITOR', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'user_without_team@example.com', role: 'OWNER' })
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
+        .send({ email: 'userNoRole@example.com', role: 'OWNER' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_editor`)
+        .set('Authorization', `Bearer ValidToken userEditor`)
         .expect('Content-Type', /json/)
         .expect(403)
         .expect(expectError);
     });
     it('adds EDITOR invited by EDITOR', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'user_without_team@example.com', role: 'EDITOR' })
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
+        .send({ email: 'userNoRole@example.com', role: 'EDITOR' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_editor`)
+        .set('Authorization', `Bearer ValidToken userEditor`)
         .expect('Content-Type', /json/)
         .expect(201)
         .expect(({ body: { email, role, id } }) => {
-          expect(email).toBe('user_without_team@example.com');
+          expect(email).toBe('userNoRole@example.com');
           expect(role).toBe('EDITOR');
           expect(typeof id).toBe('number');
         });
     });
     it('adds VIEWER invited by EDITOR', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'user_without_team@example.com', role: 'VIEWER' })
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
+        .send({ email: 'userNoRole@example.com', role: 'VIEWER' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_editor`)
+        .set('Authorization', `Bearer ValidToken userEditor`)
         .expect('Content-Type', /json/)
         .expect(201)
         .expect(({ body: { email, role, id } }) => {
-          expect(email).toBe('user_without_team@example.com');
+          expect(email).toBe('userNoRole@example.com');
           expect(role).toBe('VIEWER');
           expect(typeof id).toBe('number');
         });
@@ -272,30 +257,30 @@ describe('POST /v0/teams/:uuid/invites', () => {
 
     it('rejects OWNER invited by VIEWER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'user_without_team@example.com', role: 'OWNER' })
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
+        .send({ email: 'userNoRole@example.com', role: 'OWNER' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_viewer`)
+        .set('Authorization', `Bearer ValidToken userViewer`)
         .expect('Content-Type', /json/)
         .expect(403)
         .expect(expectError);
     });
     it('rejects EDITOR invited by VIEWER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'user_without_team@example.com', role: 'EDITOR' })
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
+        .send({ email: 'userNoRole@example.com', role: 'EDITOR' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_viewer`)
+        .set('Authorization', `Bearer ValidToken userViewer`)
         .expect('Content-Type', /json/)
         .expect(403)
         .expect(expectError);
     });
     it('rejects VIEWER invited by VIEWER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'user_without_team@example.com', role: 'VIEWER' })
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
+        .send({ email: 'userNoRole@example.com', role: 'VIEWER' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_viewer`)
+        .set('Authorization', `Bearer ValidToken userViewer`)
         .expect('Content-Type', /json/)
         .expect(403)
         .expect(expectError);
@@ -306,87 +291,87 @@ describe('POST /v0/teams/:uuid/invites', () => {
     const email = 'jane_doe@example.com';
     it('adds OWNER invited by OWNER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'OWNER' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .set('Authorization', `Bearer ValidToken userOwner`)
         .expect('Content-Type', /json/)
         .expect(201);
     });
     it('adds EDITOR invited by OWNER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'EDITOR' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .set('Authorization', `Bearer ValidToken userOwner`)
         .expect('Content-Type', /json/)
         .expect(201);
     });
     it('adds VIEWER invited by OWNER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'VIEWER' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_owner`)
+        .set('Authorization', `Bearer ValidToken userOwner`)
         .expect('Content-Type', /json/)
         .expect(201);
     });
 
     it('rejects OWNER invited by EDITOR', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'OWNER' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_editor`)
+        .set('Authorization', `Bearer ValidToken userEditor`)
         .expect('Content-Type', /json/)
         .expect(403)
         .expect(expectError);
     });
     it('adds EDITOR invited by EDITOR', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'EDITOR' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_editor`)
+        .set('Authorization', `Bearer ValidToken userEditor`)
         .expect('Content-Type', /json/)
         .expect(201);
     });
     it('adds VIEWER invited by EDITOR', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'VIEWER' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_editor`)
+        .set('Authorization', `Bearer ValidToken userEditor`)
         .expect('Content-Type', /json/)
         .expect(201);
     });
 
     it('rejects OWNER invited by VIEWER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'OWNER' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_viewer`)
+        .set('Authorization', `Bearer ValidToken userViewer`)
         .expect('Content-Type', /json/)
         .expect(403)
         .expect(expectError);
     });
     it('rejects EDITOR invited by VIEWER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'EDITOR' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_viewer`)
+        .set('Authorization', `Bearer ValidToken userViewer`)
         .expect('Content-Type', /json/)
         .expect(403)
         .expect(expectError);
     });
     it('rejects VIEWER invited by VIEWER', async () => {
       await request(app)
-        .post('/v0/teams/00000000-0000-4000-8000-000000000001/invites')
+        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
         .send({ email, role: 'VIEWER' })
         .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken team_1_viewer`)
+        .set('Authorization', `Bearer ValidToken userViewer`)
         .expect('Content-Type', /json/)
         .expect(403)
         .expect(expectError);

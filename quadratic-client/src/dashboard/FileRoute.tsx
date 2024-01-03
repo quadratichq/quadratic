@@ -28,7 +28,7 @@ export type FileData = {
   name: string;
   uuid: string;
   sharing: ApiTypes['/v0/files/:uuid/sharing.GET.response'];
-  permission: ApiTypes['/v0/files/:uuid.GET.response']['permission'];
+  permissions: ApiTypes['/v0/files/:uuid.GET.response']['user']['permissions'];
 };
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData> => {
@@ -69,19 +69,19 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   return {
     name: data.file.name,
     uuid: data.file.uuid,
-    permission: data.permission,
+    permissions: data.user.permissions,
     sharing,
   };
 };
 
 export const Component = () => {
   // Initialize recoil with the file's permission we get from the server
-  const { permission, uuid } = useLoaderData() as FileData;
+  const { permissions, uuid } = useLoaderData() as FileData;
   const initializeState = ({ set }: MutableSnapshot) => {
     set(editorInteractionStateAtom, (prevState) => ({
       ...prevState,
       uuid,
-      permission,
+      permissions,
     }));
   };
   // multiplayer.enterFileRoom(uuid, user);

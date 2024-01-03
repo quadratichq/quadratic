@@ -165,14 +165,14 @@ export const apiClient = {
       ApiSchemas['/v0/files/:uuid/sharing.GET.response']
     );
   },
-  async updateFileSharing(uuid: string, body: ApiTypes['/v0/files/:uuid/sharing.POST.request']) {
+  async updateFileSharing(uuid: string, body: ApiTypes['/v0/files/:uuid/sharing.PATCH.request']) {
     return fetchFromApi(
       `/v0/files/${uuid}/sharing`,
       {
-        method: 'POST',
+        method: 'PATCH',
         body: JSON.stringify(body),
       },
-      ApiSchemas['/v0/files/:uuid/sharing.POST.response']
+      ApiSchemas['/v0/files/:uuid/sharing.PATCH.response']
     );
   },
 

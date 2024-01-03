@@ -19,7 +19,7 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
   const submit = useSubmit();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { isAuthenticated } = useRootRouteLoaderData();
-  const { permission } = editorInteractionState;
+  const { permissions } = editorInteractionState;
 
   if (!isAuthenticated) {
     return null;
@@ -56,7 +56,7 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
         </IconButton>
       )}
     >
-      {renameFileAction.isAvailable(permission) && (
+      {renameFileAction.isAvailable(permissions) && (
         <MenuItem
           onClick={() => {
             setIsRenaming(true);
@@ -65,12 +65,12 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
           <MenuLineItem primary={renameFileAction.label} />
         </MenuItem>
       )}
-      {duplicateFileAction.isAvailable(permission, isAuthenticated) && (
+      {duplicateFileAction.isAvailable(permissions, isAuthenticated) && (
         <MenuItem onClick={() => duplicateFileAction.run({ name, submit })}>
           <MenuLineItem primary={duplicateFileAction.label} />
         </MenuItem>
       )}
-      {downloadFileAction.isAvailable(permission, isAuthenticated) && (
+      {downloadFileAction.isAvailable(permissions, isAuthenticated) && (
         <MenuItem
           onClick={() => {
             downloadFileAction.run({ name });
@@ -79,7 +79,7 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
           <MenuLineItem primary={downloadFileAction.label} />
         </MenuItem>
       )}
-      {deleteFile.isAvailable(permission) && (
+      {deleteFile.isAvailable(permissions) && (
         <>
           <MenuDivider />
           <MenuItem

@@ -69,8 +69,8 @@ class PixiAppSettings {
     this.lastSettings = this.settings;
   };
 
-  get permission(): ApiTypes['/v0/files/:uuid.GET.response']['permission'] {
-    return this.editorInteractionState.permission;
+  get permissions(): ApiTypes['/v0/files/:uuid.GET.response']['user']['permissions'] {
+    return this.editorInteractionState.permissions;
   }
 
   updateEditorInteractionState(

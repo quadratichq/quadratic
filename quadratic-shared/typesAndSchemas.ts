@@ -155,10 +155,10 @@ export const ApiSchemas = {
     }),
     team: TeamSchema.pick({ uuid: true, name: true }).optional(),
   }),
-  '/v0/files/:uuid/sharing.POST.request': z.object({
+  '/v0/files/:uuid/sharing.PATCH.request': z.object({
     publicLinkAccess: PublicLinkAccessSchema,
   }),
-  '/v0/files/:uuid/sharing.POST.response': z.object({ message: z.string() }),
+  '/v0/files/:uuid/sharing.PATCH.response': z.object({ message: z.string() }),
 
   /**
    * File users
@@ -166,6 +166,15 @@ export const ApiSchemas = {
   '/v0/files/:uuid/users/:userId.PATCH.request': FileUserSchema.pick({ role: true }),
   '/v0/files/:uuid/users/:userId.PATCH.response': FileUserSchema.pick({ role: true }),
   // '/v0/files/:uuid/sharing/:userId.DELETE.request': z.object({ permission }),
+
+  /**
+   * File invites
+   */
+  '/v0/files/:uuid/invites.POST.request': FileUserSchema.pick({ email: true, role: true }),
+  '/v0/files/:uuid/invites.POST.response': FileUserSchema.pick({ email: true, role: true }).extend({
+    id: FileUserSchema.shape.id,
+  }),
+  '/v0/files/:uuid/invites/:inviteId.DELETE.response': z.object({ message: z.string() }),
 
   /**
    *

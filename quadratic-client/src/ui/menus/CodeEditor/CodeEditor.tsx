@@ -149,7 +149,7 @@ export const CodeEditor = () => {
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // Don't allow the shortcuts below for certain users
-    if (!hasPerissionToEditFile(editorInteractionState.permission)) {
+    if (!hasPerissionToEditFile(editorInteractionState.permissions)) {
       return;
     }
 

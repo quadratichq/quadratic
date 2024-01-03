@@ -44,7 +44,7 @@ export const QuadraticMenu = () => {
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { name } = useFileContext();
   const { isAuthenticated } = useRootRouteLoaderData();
-  const { permission } = editorInteractionState;
+  const { permissions } = editorInteractionState;
 
   // For mobile, set Headers to not visible by default
   useEffect(() => {
@@ -86,17 +86,17 @@ export const QuadraticMenu = () => {
         <MenuDivider />
         {isAuthenticated && (
           <SubMenu label={<MenuLineItem primary="File" />}>
-            {createNewFileAction.isAvailable(permission, isAuthenticated) && (
+            {createNewFileAction.isAvailable(permissions, isAuthenticated) && (
               <MenuItem onClick={() => createNewFileAction.run({ navigate })}>
                 <MenuLineItem primary={createNewFileAction.label} />
               </MenuItem>
             )}
-            {duplicateFileAction.isAvailable(permission, isAuthenticated) && (
+            {duplicateFileAction.isAvailable(permissions, isAuthenticated) && (
               <MenuItem onClick={() => duplicateFileAction.run({ name, submit })}>
                 <MenuLineItem primary={duplicateFileAction.label} />
               </MenuItem>
             )}
-            {downloadFileAction.isAvailable(permission, isAuthenticated) && (
+            {downloadFileAction.isAvailable(permissions, isAuthenticated) && (
               <MenuItem
                 onClick={() => {
                   downloadFileAction.run({ name });
@@ -105,7 +105,7 @@ export const QuadraticMenu = () => {
                 <MenuLineItem primary={downloadFileAction.label} />
               </MenuItem>
             )}
-            {deleteFile.isAvailable(permission) && (
+            {deleteFile.isAvailable(permissions) && (
               <>
                 <MenuDivider />
                 <MenuItem
@@ -120,12 +120,12 @@ export const QuadraticMenu = () => {
           </SubMenu>
         )}
         <SubMenu label={<MenuLineItem primary="Edit" />}>
-          {undoAction.isAvailable(permission) && (
+          {undoAction.isAvailable(permissions) && (
             <MenuItem onClick={() => grid.undo()} disabled={!grid.hasUndo()}>
               <MenuLineItem primary={undoAction.label} secondary={KeyboardSymbols.Command + 'Z'} />
             </MenuItem>
           )}
-          {redoAction.isAvailable(permission) && (
+          {redoAction.isAvailable(permissions) && (
             <>
               <MenuItem onClick={() => grid.redo()} disabled={!grid.hasRedo()}>
                 <MenuLineItem
@@ -139,7 +139,7 @@ export const QuadraticMenu = () => {
             </>
           )}
 
-          {cutAction.isAvailable(permission) && (
+          {cutAction.isAvailable(permissions) && (
             <MenuItem onClick={cutToClipboard}>
               <MenuLineItem primary={cutAction.label} secondary={KeyboardSymbols.Command + 'X'} />
             </MenuItem>
@@ -147,7 +147,7 @@ export const QuadraticMenu = () => {
           <MenuItem onClick={copyToClipboard}>
             <MenuLineItem primary={copyAction.label} secondary={KeyboardSymbols.Command + 'C'} />
           </MenuItem>
-          {pasteAction.isAvailable(permission) && (
+          {pasteAction.isAvailable(permissions) && (
             <MenuItem onClick={pasteFromClipboard}>
               <MenuLineItem primary={pasteAction.label} secondary={KeyboardSymbols.Command + 'V'} />
             </MenuItem>
@@ -186,7 +186,7 @@ export const QuadraticMenu = () => {
           <MenuItem onClick={() => viewDocsAction.run()}>
             <MenuLineItem primary={viewDocsAction.label} />
           </MenuItem>
-          {provideFeedbackAction.isAvailable(permission, isAuthenticated) && (
+          {provideFeedbackAction.isAvailable(permissions, isAuthenticated) && (
             <MenuItem onClick={() => provideFeedbackAction.run({ setEditorInteractionState })}>
               <MenuLineItem primary={provideFeedbackAction.label} />
             </MenuItem>

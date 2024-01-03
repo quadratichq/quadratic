@@ -60,7 +60,7 @@ export class PointerHeading {
     const intersects = headings.intersectsHeadings(world);
     if (!intersects) return false;
 
-    const hasPermission = hasPerissionToEditFile(pixiAppSettings.editorInteractionState.permission);
+    const hasPermission = hasPerissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
     const headingResize = !hasPermission ? undefined : headings.intersectsHeadingGridLine(world);
     if (headingResize) {
       pixiApp.setViewportDirty();
@@ -143,7 +143,7 @@ export class PointerHeading {
     this.clicked = false;
 
     if (pixiAppSettings.panMode === PanMode.Disabled) {
-      const hasPermission = hasPerissionToEditFile(pixiAppSettings.editorInteractionState.permission);
+      const hasPermission = hasPerissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
       const headingResize = this.active ? this.resizing : headings.intersectsHeadingGridLine(world);
       if (hasPermission && headingResize) {
         this.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';

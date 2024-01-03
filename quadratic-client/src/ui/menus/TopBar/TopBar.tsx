@@ -18,7 +18,7 @@ export const TopBar = () => {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const { permission } = editorInteractionState;
+  const { permissions } = editorInteractionState;
 
   return (
     <Box
@@ -61,7 +61,7 @@ export const TopBar = () => {
         }}
       >
         <QuadraticMenu />
-        {hasPerissionToEditFile(permission) && isDesktop && (
+        {hasPerissionToEditFile(permissions) && isDesktop && (
           <>
             <DataMenu />
             <FormatMenu />

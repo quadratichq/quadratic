@@ -97,3 +97,34 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 
   next(err);
 });
+
+/*
+async function registerRoutes() {
+  const currentDirectory = path.join(__dirname, '/routes/v0');
+  const files = fs.readdirSync(currentDirectory).filter((item) => !item.includes('.test.'));
+
+  for (const file of files) {
+    const segments = file.split('.');
+
+    let httpMethodIndex = segments.indexOf('GET');
+    if (httpMethodIndex === -1) httpMethodIndex = segments.indexOf('POST');
+    if (httpMethodIndex === -1) httpMethodIndex = segments.indexOf('PUT');
+    if (httpMethodIndex === -1) httpMethodIndex = segments.indexOf('PATCH');
+    if (httpMethodIndex === -1) httpMethodIndex = segments.indexOf('DELETE');
+
+    if (httpMethodIndex === -1) {
+      console.error('File route is malformed. It needs an HTTP method: %s', file);
+    } else {
+      const routeSegments = segments.slice(0, httpMethodIndex);
+      const route = '/v0/' + routeSegments.map((str) => (str.startsWith('$') ? str.replace('$', ':') : str)).join('/');
+
+      try {
+        const routeModule = await import(path.join(currentDirectory, file)).then((module) => module.default);
+        app.use(route, routeModule);
+      } catch (err) {
+        console.error(`Failed to register route: ${route}`);
+      }
+    }
+  }
+}
+*/

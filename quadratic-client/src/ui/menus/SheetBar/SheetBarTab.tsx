@@ -28,8 +28,8 @@ export const SheetBarTab = (props: Props): JSX.Element => {
   const [isRenaming, setIsRenaming] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
-  const { permission } = useRecoilValue(editorInteractionStateAtom);
-  const hasPermission = hasPerissionToEditFile(permission) && !isMobile;
+  const { permissions } = useRecoilValue(editorInteractionStateAtom);
+  const hasPermission = hasPerissionToEditFile(permissions) && !isMobile;
 
   useEffect(() => {
     if (forceRename) {

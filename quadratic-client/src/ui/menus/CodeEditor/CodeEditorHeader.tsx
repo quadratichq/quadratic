@@ -28,7 +28,7 @@ export const CodeEditorHeader = (props: Props) => {
   const { cellLocation, unsaved, isRunningComputation, saveAndRunCell, cancelPython, closeEditor } = props;
   const { pythonState } = useRecoilValue(pythonStateAtom);
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const hasPermission = hasPerissionToEditFile(editorInteractionState.permission);
+  const hasPermission = hasPerissionToEditFile(editorInteractionState.permissions);
 
   const language = editorInteractionState.mode;
 

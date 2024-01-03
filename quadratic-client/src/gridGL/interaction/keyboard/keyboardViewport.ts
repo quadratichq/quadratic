@@ -85,7 +85,7 @@ export function keyboardViewport(options: {
   }
 
   // All formatting options past here are only available for people with rights
-  if (!hasPerissionToEditFile(editorInteractionState.permission)) {
+  if (!hasPerissionToEditFile(editorInteractionState.permissions)) {
     return false;
   }
 

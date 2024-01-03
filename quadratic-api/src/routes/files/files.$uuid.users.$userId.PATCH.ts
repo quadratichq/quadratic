@@ -102,7 +102,7 @@ router.patch(
       },
     });
     if (userBeingChanged === null) {
-      return res.status(404).json({ error: { message: 'User not found' } });
+      return res.status(404).json({ error: { message: `The user you’re trying to change could not found.` } });
     }
     const userBeingChangedRole = userBeingChanged.role;
     const userMakingChangeRole = fileUser.role;

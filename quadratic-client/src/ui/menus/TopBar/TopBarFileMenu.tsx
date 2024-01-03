@@ -15,11 +15,11 @@ export const TopBarFileMenu = () => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const theme = useTheme();
   const isNarrowScreen = useMediaQuery(theme.breakpoints.down('md'));
-  const { permission } = editorInteractionState;
+  const { permissions } = editorInteractionState;
 
   // TODO: this needs to be reworked to show file context, e.g.
   // is it in a team? is it in the user's personal folder?
-  console.log(permission);
+  console.log(permissions);
 
   return (
     <Box
@@ -69,7 +69,7 @@ export const TopBarFileMenu = () => {
           <Stack direction="row" gap={theme.spacing(1)} alignItems="center">
             <Typography
               onClick={() => {
-                if (isNarrowScreen || !hasPerissionToEditFile(permission)) {
+                if (isNarrowScreen || !hasPerissionToEditFile(permissions)) {
                   return;
                 }
                 setIsRenaming(true);

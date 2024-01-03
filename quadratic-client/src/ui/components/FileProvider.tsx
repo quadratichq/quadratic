@@ -43,7 +43,7 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
 
   const syncState = latestSync.state;
-  const canEdit = hasPerissionToEditFile(initialFileData.permission);
+  const canEdit = hasPerissionToEditFile(initialFileData.permissions);
 
   const renameFile: FileContextType['renameFile'] = useCallback(
     (newName) => {
@@ -118,8 +118,8 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   // TODO figure out a way to set this in RecoilRoot (if possible)
   //      or let it flow if we go with react-router's loaders for this
   useEffect(() => {
-    setEditorInteractionState((prev) => ({ ...prev, permission: initialFileData.permission }));
-  }, [initialFileData.permission, setEditorInteractionState]);
+    setEditorInteractionState((prev) => ({ ...prev, permission: initialFileData.permissions }));
+  }, [initialFileData.permissions, setEditorInteractionState]);
 
   // Keep track of lifecycle so we can run things at a specific time
   useEffect(() => {

@@ -42,7 +42,7 @@ export function keyboardCell(options: {
   const cursor = sheet.cursor;
   const cursorPosition = cursor.cursorPosition;
 
-  const hasPermission = hasPerissionToEditFile(editorInteractionState.permission);
+  const hasPermission = hasPerissionToEditFile(editorInteractionState.permissions);
 
   if (event.key === 'Tab') {
     // move single cursor one right
