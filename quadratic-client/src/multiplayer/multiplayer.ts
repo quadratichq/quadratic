@@ -60,10 +60,9 @@ export class Multiplayer {
     if (force || !this.jwt) {
       await this.getJwt();
 
-      console.log("jwt", this.jwt);
-
       if (this.jwt) {
-        document.cookie = `jwt=${this.jwt}; path=/;`;
+        let domain = '.' + window.location.host.match(/(?:localhost:[0-9]+|[^.]*\.[^.]{2,3}(?:\.[^.]{2,3})?$)/)![0];
+        document.cookie = `jwt=${this.jwt}; path=/; domain=${domain};`;
       }
     }
   }
