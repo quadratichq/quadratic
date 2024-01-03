@@ -22,7 +22,6 @@ if (!(AUTH0_DOMAIN && AUTH0_CLIENT_ID && AUTH0_AUDIENCE && AUTH0_ISSUER)) {
 let auth0ClientPromise: Promise<Auth0Client>;
 async function getClient() {
   if (!auth0ClientPromise) {
-    console.log("cookieDomain:", '.' + window.location.host.replace(/(?:localhost:[0-9]+|[^.]*\.[^.]{2,3}(?:\.[^.]{2,3})?$)/, ''));
     auth0ClientPromise = createAuth0Client({
       domain: AUTH0_DOMAIN,
       clientId: AUTH0_CLIENT_ID,
@@ -33,7 +32,7 @@ async function getClient() {
       cacheLocation: 'localstorage',
       useRefreshTokens: true,
       // remove the subdomain from the cookie domain so that the ws server can access it
-      cookieDomain: '.' + window.location.host.replace(/(?:localhost:[0-9]+|[^.]*\.[^.]{2,3}(?:\.[^.]{2,3})?$)/, ''),
+      cookieDomain: '.' + window.location.host.match(/(?:localhost:[0-9]+|[^.]*\.[^.]{2,3}(?:\.[^.]{2,3})?$)/)![0],
     });
   }
   const auth0Client = await auth0ClientPromise;
