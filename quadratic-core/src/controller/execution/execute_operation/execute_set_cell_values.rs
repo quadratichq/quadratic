@@ -40,85 +40,88 @@ impl GridController {
                             .forward_operations
                             .push(Operation::SetCellValues { sheet_rect, values });
 
-                        if transaction.is_user() {
-                            // remove any code_cells that are now covered by the new values
-                            let mut code_cell_removed = false;
-                            sheet.code_cells.retain(|(pos, code_cell)| {
-                                if sheet_rect.contains(pos.to_sheet_pos(sheet.id)) {
-                                    transaction.reverse_operations.insert(
-                                        0,
-                                        Operation::SetCodeCell {
-                                            sheet_pos: pos.to_sheet_pos(sheet.id),
-                                            code_cell_value: Some(code_cell.clone()),
-                                        },
-                                    );
-                                    transaction.forward_operations.push(Operation::SetCodeCell {
-                                        sheet_pos: pos.to_sheet_pos(sheet.id),
-                                        code_cell_value: None,
-                                    });
-                                    code_cell_removed = true;
-                                    false
-                                } else {
-                                    true
-                                }
-                            });
-                            if transaction.is_user() {
-                                // remove any code_runs where the (0, 0) is replaced
-                                let mut code_run_removed = false;
-                                sheet.code_runs.retain(|pos, code_run| {
-                                    if sheet_rect.contains(pos.to_sheet_pos(sheet.id)) {
-                                        transaction.reverse_operations.insert(
-                                            0,
-                                            Operation::SetCodeRun {
-                                                sheet_pos: pos.to_sheet_pos(sheet.id),
-                                                code_run: Some(code_run.clone()),
-                                            },
-                                        );
-                                        transaction.forward_operations.push(
-                                            Operation::SetCodeRun {
-                                                sheet_pos: pos.to_sheet_pos(sheet.id),
-                                                code_run: None,
-                                            },
-                                        );
-                                        code_run_removed = true;
-                                        false
-                                    } else {
-                                        true
-                                    }
-                                });
+                        // if transaction.is_user() {
+                        //     // remove any code_cells that are now covered by the new values
+                        //     let mut code_cell_removed = false;
+                        //     sheet.code_cells.retain(|(pos, code_cell)| {
+                        //         if sheet_rect.contains(pos.to_sheet_pos(sheet.id)) {
+                        //             transaction.reverse_operations.insert(
+                        //                 0,
+                        //                 Operation::SetCodeCell {
+                        //                     sheet_pos: pos.to_sheet_pos(sheet.id),
+                        //                     code_cell_value: Some(code_cell.clone()),
+                        //                 },
+                        //             );
+                        //             transaction.forward_operations.push(Operation::SetCodeCell {
+                        //                 sheet_pos: pos.to_sheet_pos(sheet.id),
+                        //                 code_cell_value: None,
+                        //             });
+                        //             code_cell_removed = true;
+                        //             false
+                        //         } else {
+                        //             true
+                        //         }
+                        //     });
+                        //     if transaction.is_user() {
+                        //         // remove any code_runs where the (0, 0) is replaced
+                        //         let mut code_run_removed = false;
+                        //         sheet.code_runs.retain(|pos, code_run| {
+                        //             if sheet_rect.contains(pos.to_sheet_pos(sheet.id)) {
+                        //                 transaction.reverse_operations.insert(
+                        //                     0,
+                        //                     Operation::SetCodeRun {
+                        //                         sheet_pos: pos.to_sheet_pos(sheet.id),
+                        //                         code_run: Some(code_run.clone()),
+                        //                     },
+                        //                 );
+                        //                 transaction.forward_operations.push(
+                        //                     Operation::SetCodeRun {
+                        //                         sheet_pos: pos.to_sheet_pos(sheet.id),
+                        //                         code_run: None,
+                        //                     },
+                        //                 );
+                        //                 code_run_removed = true;
+                        //                 false
+                        //             } else {
+                        //                 true
+                        //             }
+                        //         });
 
-                            self.add_compute_operations(transaction, &sheet_rect, None);
+                        //         self.add_compute_operations(transaction, &sheet_rect, None);
 
-                            // if a code_cell was removed, then we need to check all spills.
-                            // Otherwise we only need to check spills for the sheet_rect.
-                            if code_cell_removed {
-                                self.check_all_spills(transaction, sheet_rect.sheet_id, 0);
-                            } else {
-                                self.check_spills(transaction, &sheet_rect);
-                            }
-                        }
+                        //         // if a code_cell was removed, then we need to check all spills.
+                        //         // Otherwise we only need to check spills for the sheet_rect.
+                        //         if code_cell_removed {
+                        //             self.check_all_spills(transaction, sheet_rect.sheet_id, 0);
+                        //         } else {
+                        //             self.check_spills(transaction, &sheet_rect);
+                        //         }
+                        //     }
+                        // }
+
+                        // create reverse_operation
+                        let old_values = Array::new_row_major(sheet_rect.size(), old_values)
+                            .expect(
+                                "error constructing array of old values for SetCells operation",
+                            );
+                        transaction.reverse_operations.insert(
+                            0,
+                            Operation::SetCellValues {
+                                sheet_rect,
+                                values: old_values,
+                            },
+                        );
+
+                        // prepare summary
+                        transaction
+                            .sheets_with_dirty_bounds
+                            .insert(sheet_rect.sheet_id);
+                        transaction.summary.generate_thumbnail |=
+                            self.thumbnail_dirty_sheet_rect(&sheet_rect);
+                        transaction
+                            .summary
+                            .add_cell_sheets_modified_rect(&sheet_rect);
                     }
-
-                    // create reverse_operation
-                    let old_values = Array::new_row_major(sheet_rect.size(), old_values)
-                        .expect("error constructing array of old values for SetCells operation");
-                    transaction.reverse_operations.insert(
-                        0,
-                        Operation::SetCellValues {
-                            sheet_rect,
-                            values: old_values,
-                        },
-                    );
-
-                    // prepare summary
-                    transaction
-                        .sheets_with_dirty_bounds
-                        .insert(sheet_rect.sheet_id);
-                    transaction.summary.generate_thumbnail |=
-                        self.thumbnail_dirty_sheet_rect(&sheet_rect);
-                    transaction
-                        .summary
-                        .add_cell_sheets_modified_rect(&sheet_rect);
                 }
             }
         }

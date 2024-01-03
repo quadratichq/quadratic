@@ -11,70 +11,65 @@ impl GridController {
     pub(super) fn execute_set_code_run(
         &mut self,
         transaction: &mut PendingTransaction,
-        op: &Operation,
+        op: Operation,
     ) {
-        match op.clone() {
-            Operation::SetCodeRun {
-                sheet_pos,
-                code_run,
-            } => {
-                let sheet_id = sheet_pos.sheet_id;
-                let pos: Pos = sheet_pos.into();
+        if let Operation::SetCodeRun {
+            sheet_pos,
+            code_run,
+        } = op
+        {
+            let sheet_id = sheet_pos.sheet_id;
+            let pos: Pos = sheet_pos.into();
 
-                // ignore if sheet does not exist as it may have been deleted in a multiplayer operation
-                if let Some(sheet) = self.try_sheet_mut_from_id(sheet_id) {
-                    let old_code_run = sheet.set_code_run(pos, code_run);
-                    self.finalize_code_cell(transaction, sheet_pos, old_code_run);
-                }
+            // ignore if sheet does not exist as it may have been deleted in a multiplayer operation
+            if let Some(sheet) = self.try_sheet_mut_from_id(sheet_id) {
+                let old_code_run = sheet.set_code_run(pos, code_run);
+                self.finalize_code_cell(transaction, sheet_pos, old_code_run);
             }
-            _ => unreachable!("Expected Operation::SetCodeRun in execute_set_code_run"),
         }
     }
 
     pub(super) fn execute_compute_code(
         &mut self,
         transaction: &mut PendingTransaction,
-        op: &Operation,
+        op: Operation,
     ) {
-        match op.clone() {
-            Operation::ComputeCode { sheet_pos } => {
-                if !transaction.is_user() {
-                    unreachable!("Only a user transaction should have a ComputeCode");
-                }
-                let sheet_id = sheet_pos.sheet_id;
-                let Some(sheet) = self.try_sheet_from_id(sheet_id) else {
-                    // sheet may have been deleted in a multiplayer operation
-                    return;
-                };
-                let pos: Pos = sheet_pos.into();
-                // We need to get the corresponding CellValue::Code, which should always exist.
-                let (language, code) = match sheet.get_cell_value(pos) {
-                    Some(code_cell) => match code_cell {
-                        CellValue::Code(value) => (value.language, value.code),
-                        _ => unreachable!("Expected CellValue::Code in execute_set_code_cell"),
-                    },
-                    None => unreachable!("Expected CellValue::Code in execute_set_code_cell"),
-                };
+        if let Operation::ComputeCode { sheet_pos } = op {
+            if !transaction.is_user() {
+                unreachable!("Only a user transaction should have a ComputeCode");
+            }
+            let sheet_id = sheet_pos.sheet_id;
+            let Some(sheet) = self.try_sheet_from_id(sheet_id) else {
+                // sheet may have been deleted in a multiplayer operation
+                return;
+            };
+            let pos: Pos = sheet_pos.into();
+            // We need to get the corresponding CellValue::Code, which should always exist.
+            let (language, code) = match sheet.get_cell_value(pos) {
+                Some(code_cell) => match code_cell {
+                    CellValue::Code(value) => (value.language, value.code),
+                    _ => unreachable!("Expected CellValue::Code in execute_set_code_cell"),
+                },
+                None => unreachable!("Expected CellValue::Code in execute_set_code_cell"),
+            };
 
-                let old_code_run = sheet.code_runs.get(&pos).cloned();
-                match language {
-                    CodeCellLanguage::Python => {
-                        self.run_python(transaction, sheet_pos, code, &old_code_run);
-                        transaction.reverse_operations.insert(
-                            0,
-                            Operation::SetCodeRun {
-                                sheet_pos,
-                                code_run: old_code_run,
-                            },
-                        );
-                    }
-                    CodeCellLanguage::Formula => {
-                        self.run_formula(transaction, sheet_pos, code, &old_code_run);
-                        self.finalize_code_cell(transaction, sheet_pos, old_code_run);
-                    }
+            let old_code_run = sheet.code_runs.get(&pos).cloned();
+            match language {
+                CodeCellLanguage::Python => {
+                    self.run_python(transaction, sheet_pos, code, &old_code_run);
+                    transaction.reverse_operations.insert(
+                        0,
+                        Operation::SetCodeRun {
+                            sheet_pos,
+                            code_run: old_code_run,
+                        },
+                    );
+                }
+                CodeCellLanguage::Formula => {
+                    self.run_formula(transaction, sheet_pos, code, &old_code_run);
+                    self.finalize_code_cell(transaction, sheet_pos, old_code_run);
                 }
             }
-            _ => unreachable!("Expected Operation::SetCodeCell in execute_set_code_cell"),
         }
     }
 }
