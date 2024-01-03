@@ -27,7 +27,7 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
     let mut values = convert_column_values(&column.values);
 
     // add CellValue::Formula/Python to v1_5::Column.values
-    let code_values = sheet
+    sheet
         .code_cells
         .iter()
         .for_each(|(cell_ref, code_cell_value)| {
@@ -42,7 +42,7 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
                     values.insert(
                         pos.y,
                         v1_5::CellValue::Code(v1_5::CodeCell {
-                            code: code_cell_value.code_string,
+                            code: code_cell_value.code_string.clone(),
                             language,
                         }),
                     );
@@ -89,42 +89,102 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
             numeric_format: column
                 .numeric_format
                 .iter()
-                .map(|(k, v)| (i64::from_str(&k).unwrap(), v.clone()))
+                .map(|(k, v)| {
+                    let value = ColumnRepeat {
+                        value: v1_5::NumericFormat {
+                            kind: match v.content.value.kind.to_lowercase().as_str() {
+                                "number" => v1_5::NumericFormatKind::Number,
+                                "percentage" => v1_5::NumericFormatKind::Percentage,
+                                "currency" => v1_5::NumericFormatKind::Currency,
+                                "exponential" => v1_5::NumericFormatKind::Exponential,
+                                _ => v1_5::NumericFormatKind::Number, // this should not happen
+                            },
+                            symbol: v.content.value.symbol.clone(),
+                        },
+                        len: v.content.len as u32,
+                    };
+                    (i64::from_str(&k).unwrap(), value)
+                })
                 .collect(),
             numeric_decimals: column
                 .numeric_decimals
                 .iter()
-                .map(|(k, v)| (i64::from_str(&k).unwrap(), v.clone()))
+                .map(|(k, v)| {
+                    let value = ColumnRepeat {
+                        value: v.content.value,
+                        len: v.content.len as u32,
+                    };
+                    (i64::from_str(&k).unwrap(), value)
+                })
                 .collect(),
             numeric_commas: column
                 .numeric_commas
                 .iter()
-                .map(|(k, v)| (i64::from_str(&k).unwrap(), v.clone()))
+                .map(|(k, v)| {
+                    let value = ColumnRepeat {
+                        value: v.content.value,
+                        len: v.content.len as u32,
+                    };
+                    (i64::from_str(&k).unwrap(), value)
+                })
                 .collect(),
             bold: column
                 .bold
                 .iter()
-                .map(|(k, v)| (i64::from_str(&k).unwrap(), v.clone()))
+                .map(|(k, v)| {
+                    let value = ColumnRepeat {
+                        value: v.content.value,
+                        len: v.content.len as u32,
+                    };
+                    (i64::from_str(&k).unwrap(), value)
+                })
                 .collect(),
             italic: column
                 .italic
                 .iter()
-                .map(|(k, v)| (i64::from_str(&k).unwrap(), v.clone()))
+                .map(|(k, v)| {
+                    let value = ColumnRepeat {
+                        value: v.content.value,
+                        len: v.content.len as u32,
+                    };
+                    (i64::from_str(&k).unwrap(), value)
+                })
                 .collect(),
             text_color: column
                 .text_color
                 .iter()
-                .map(|(k, v)| (i64::from_str(&k).unwrap(), v.clone()))
+                .map(|(k, v)| {
+                    let value = ColumnRepeat {
+                        value: v.content.value.clone(),
+                        len: v.content.len as u32,
+                    };
+                    (i64::from_str(&k).unwrap(), value)
+                })
                 .collect(),
             fill_color: column
                 .fill_color
                 .iter()
-                .map(|(k, v)| (i64::from_str(&k).unwrap(), v.clone()))
+                .map(|(k, v)| {
+                    let value = ColumnRepeat {
+                        value: v.content.value.clone(),
+                        len: v.content.len as u32,
+                    };
+                    (i64::from_str(&k).unwrap(), value)
+                })
                 .collect(),
             render_size: column
                 .render_size
                 .iter()
-                .map(|(k, v)| (i64::from_str(&k).unwrap(), v.clone()))
+                .map(|(k, v)| {
+                    let value = ColumnRepeat {
+                        value: v1_5::RenderSize {
+                            w: v.content.value.w.clone(),
+                            h: v.content.value.h.clone(),
+                        },
+                        len: v.content.len as u32,
+                    };
+                    (i64::from_str(&k).unwrap(), value)
+                })
                 .collect(),
         },
     )
@@ -188,16 +248,32 @@ fn upgrade_code_runs(sheet: &v1_4::Sheet) -> Vec<(v1_5::Pos, v1_5::CodeRun)> {
         .code_cells
         .iter()
         .filter_map(|(cell_ref, code_cell_value)| {
-            code_cell_value.output.map(|output| {
+            code_cell_value.output.clone().map(|output| {
+                let result = match output.result.clone() {
+                    v1_4::CodeCellRunResult::Ok { output_value, .. } => {
+                        v1_5::CodeRunResult::Ok(match output_value {
+                            v1_4::OutputValue::Single(value) => v1_5::OutputValue::Single(value),
+                            v1_4::OutputValue::Array(array) => v1_5::OutputValue::Array(array),
+                        })
+                    }
+                    v1_4::CodeCellRunResult::Err { error } => {
+                        // note: we never saved the error type in v1_4
+                        v1_5::CodeRunResult::Err(v1_5::RunError {
+                            span: error.span,
+                            msg: v1_5::RunErrorMsg::InternalError(error.msg.into()),
+                        })
+                    }
+                };
+
                 (
                     cell_ref_to_pos(sheet, &cell_ref),
                     v1_5::CodeRun {
-                        formatted_code_string: code_cell_value.formatted_code_string,
+                        formatted_code_string: code_cell_value.formatted_code_string.clone(),
                         last_modified: Some(
                             DateTime::from_str(&code_cell_value.last_modified).unwrap_or_default(),
                         ),
-                        std_out: output.std_out,
-                        std_err: output.std_err,
+                        std_out: output.std_out.clone(),
+                        std_err: output.std_err.clone(),
                         spill_error: output.spill,
                         cells_accessed: match output.result {
                             v1_4::CodeCellRunResult::Ok { cells_accessed, .. } => cells_accessed
@@ -206,24 +282,7 @@ fn upgrade_code_runs(sheet: &v1_4::Sheet) -> Vec<(v1_5::Pos, v1_5::CodeRun)> {
                                 .collect(),
                             v1_4::CodeCellRunResult::Err { .. } => vec![],
                         },
-                        result: match output.result {
-                            v1_4::CodeCellRunResult::Ok {
-                                output_value,
-                                cells_accessed,
-                            } => v1_5::CodeRunResult::Ok(match output_value {
-                                v1_4::OutputValue::Single(value) => {
-                                    v1_5::OutputValue::Single(value)
-                                }
-                                v1_4::OutputValue::Array(array) => v1_5::OutputValue::Array(array),
-                            }),
-                            v1_4::CodeCellRunResult::Err { error } => {
-                                // note: we never saved the error type in v1_4
-                                v1_5::CodeRunResult::Err(v1_5::RunError {
-                                    span: error.span,
-                                    msg: v1_5::RunErrorMsg::InternalError(error.msg.into()),
-                                })
-                            }
-                        },
+                        result,
                     },
                 )
             })

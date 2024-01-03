@@ -13,7 +13,7 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
         code: String,
-        old_code_run: Option<&CodeRun>,
+        old_code_run: &Option<CodeRun>,
     ) {
         let mut ctx = Ctx::new(self.grid(), sheet_pos);
         match parse_formula(&code, sheet_pos.into()) {
@@ -34,7 +34,7 @@ impl GridController {
                             transaction,
                             sheet_pos,
                             old_code_run,
-                            Some(&new_code_run),
+                            &Some(new_code_run.clone()),
                         );
                         if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) {
                             sheet.set_code_run(sheet_pos.into(), Some(new_code_run));
@@ -97,7 +97,7 @@ mod test {
         gc.start_user_transaction(
             vec![Operation::SetCellValues {
                 sheet_rect: sheet_pos.into(),
-                values: Array::from(Value::Single(code_cell)),
+                values: Array::from(Value::Single(code_cell.clone())),
             }],
             None,
         );
@@ -249,13 +249,7 @@ mod test {
         };
 
         // need the result to ensure last_modified is the same
-        let result = gc.js_code_result_to_code_cell_value(
-            &mut transaction,
-            result,
-            sheet_pos,
-            CodeCellLanguage::Python,
-            "".into(),
-        );
+        let result = gc.js_code_result_to_code_cell_value(&mut transaction, result, sheet_pos);
         assert_eq!(
             result,
             CodeRun {
@@ -310,13 +304,7 @@ mod test {
         let _ = array.set(0, 1, CellValue::Number(BigDecimal::from_str("3").unwrap()));
         let _ = array.set(1, 1, CellValue::Text("Hello".into()));
 
-        let result = gc.js_code_result_to_code_cell_value(
-            &mut transaction,
-            result,
-            sheet_pos,
-            CodeCellLanguage::Python,
-            "".into(),
-        );
+        let result = gc.js_code_result_to_code_cell_value(&mut transaction, result, sheet_pos);
         assert_eq!(
             result,
             CodeRun {

@@ -67,8 +67,12 @@ fn set_column_format_numeric_format(
             column_data.set(
                 y,
                 Some(NumericFormat {
-                    kind: NumericFormatKind::from_str(&format.value.kind.to_string())
-                        .unwrap_or(NumericFormatKind::Number),
+                    kind: match format.value.kind {
+                        current::NumericFormatKind::Number => NumericFormatKind::Number,
+                        current::NumericFormatKind::Currency => NumericFormatKind::Currency,
+                        current::NumericFormatKind::Percentage => NumericFormatKind::Percentage,
+                        current::NumericFormatKind::Exponential => NumericFormatKind::Exponential,
+                    },
                     symbol: format.value.symbol.to_owned(),
                 }),
             );
@@ -146,7 +150,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
             set_column_format_string(&mut col.fill_color, &column.fill_color);
             set_column_format_render_size(&mut col.render_size, &column.render_size);
 
-            for (y, value) in column.values.iter() {
+            for (_, value) in column.values.iter() {
                 match value {
                     current::CellValue::Blank => CellValue::Blank,
                     current::CellValue::Text(text) => CellValue::Text(text.to_owned()),
@@ -168,7 +172,9 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
                     current::CellValue::Duration(duration) => {
                         CellValue::Duration(serde_json::from_str(&duration)?)
                     }
-                    current::CellValue::Error(error) => CellValue::Error(Box::new((*error).into())),
+                    current::CellValue::Error(error) => {
+                        CellValue::Error(Box::new((*error).clone().into()))
+                    }
                 };
             }
 
@@ -229,10 +235,10 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<IndexMap<Pos, Code
         let cells_accessed = code_run
             .cells_accessed
             .iter()
-            .map(|sheet_rect| crate::SheetRect::from(*sheet_rect))
+            .map(|sheet_rect| crate::SheetRect::from(sheet_rect.clone()))
             .collect();
 
-        let result = match code_run.result {
+        let result = match &code_run.result {
             current::CodeRunResult::Ok(output) => CodeRunResult::Ok(match output {
                 current::OutputValue::Single(current::OutputValueValue { type_field, value }) => {
                     Value::Single(import_code_cell_output(&type_field, &value))
@@ -252,7 +258,7 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<IndexMap<Pos, Code
                     ))
                 }
             }),
-            current::CodeRunResult::Err(error) => CodeRunResult::Err(error.into()),
+            current::CodeRunResult::Err(error) => CodeRunResult::Err(error.clone().into()),
         };
         code_runs.insert(
             Pos { x: pos.x, y: pos.y },
@@ -359,8 +365,15 @@ fn export_column_data_numeric_format(
                 block.y,
                 current::ColumnRepeat {
                     value: current::NumericFormat {
-                        kind: block.content.value.kind.to_string(),
-                        symbol: block.content.value.symbol,
+                        kind: match block.content.value.kind {
+                            NumericFormatKind::Number => current::NumericFormatKind::Number,
+                            NumericFormatKind::Currency => current::NumericFormatKind::Currency,
+                            NumericFormatKind::Percentage => current::NumericFormatKind::Percentage,
+                            NumericFormatKind::Exponential => {
+                                current::NumericFormatKind::Exponential
+                            }
+                        },
+                        symbol: block.content.value.symbol.clone(),
                     },
                     len: block.len() as u32,
                 },
@@ -379,8 +392,8 @@ fn export_column_data_render_size(
                 block.y,
                 current::ColumnRepeat {
                     value: current::RenderSize {
-                        w: block.content.value.w,
-                        h: block.content.value.h,
+                        w: block.content.value.w.clone(),
+                        h: block.content.value.h.clone(),
                     },
                     len: block.len() as u32,
                 },
@@ -590,8 +603,8 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                             current::CodeRun {
                                 formatted_code_string: code_run.formatted_code_string.clone(),
                                 last_modified: Some(code_run.last_modified.clone()),
-                                std_out: code_run.std_out,
-                                std_err: code_run.std_err,
+                                std_out: code_run.std_out.clone(),
+                                std_err: code_run.std_err.clone(),
                                 spill_error: code_run.spill_error,
                                 cells_accessed: code_run
                                     .cells_accessed

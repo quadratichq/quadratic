@@ -15,7 +15,7 @@ impl GridController {
             sheet
                 .code_runs
                 .iter()
-                .filter(|(pos, run)| rect.contains(**pos))
+                .filter(|(pos, _)| rect.contains(**pos))
                 .for_each(|(pos, _)| {
                     let code_sheet_pos = pos.to_sheet_pos(sheet.id);
                     if sheet_rect.contains(code_sheet_pos) {
@@ -80,11 +80,15 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        old_code_run: Option<&CodeRun>,
-        new_code_run: Option<&CodeRun>,
+        old_code_run: &Option<CodeRun>,
+        new_code_run: &Option<CodeRun>,
     ) {
-        let old_sheet_rect = old_code_run.map(|c| c.output_sheet_rect(sheet_pos, false));
-        let new_sheet_rect = new_code_run.map(|c| c.output_sheet_rect(sheet_pos, false));
+        let old_sheet_rect = old_code_run
+            .as_ref()
+            .map(|c| c.output_sheet_rect(sheet_pos, false));
+        let new_sheet_rect = new_code_run
+            .as_ref()
+            .map(|c| c.output_sheet_rect(sheet_pos, false));
         match (&old_sheet_rect, &new_sheet_rect) {
             (Some(old_sheet_rect), Some(new_sheet_rect)) => {
                 let sheet_rect = old_sheet_rect.union(new_sheet_rect);

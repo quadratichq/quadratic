@@ -167,7 +167,23 @@ pub struct ColumnRepeat<T> {
     pub value: T,
     pub len: u32,
 }
-pub type NumericFormat = v1_4::NumericFormat;
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum NumericFormatKind {
+    #[default]
+    Number,
+    Currency,
+    Percentage,
+    Exponential,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct NumericFormat {
+    #[serde(rename = "type")]
+    pub kind: NumericFormatKind,
+    pub symbol: Option<String>,
+}
+
 pub type CellBorder = v1_4::CellBorder;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

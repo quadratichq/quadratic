@@ -37,7 +37,7 @@ impl GridController {
         let mut y = 0;
 
         clipboard.cells.iter().for_each(|cell| {
-            let value = cell.map_or(CellValue::Blank, |v| v);
+            let value = cell.clone().map_or(CellValue::Blank, |v| v);
             // ignore result errors
             let _ = array.set(x, y, value);
 

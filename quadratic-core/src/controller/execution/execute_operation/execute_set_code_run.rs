@@ -20,9 +20,12 @@ impl GridController {
             } => {
                 let sheet_id = sheet_pos.sheet_id;
                 let pos: Pos = sheet_pos.into();
-                let sheet = self.grid.sheet_from_id(sheet_id);
-                let old_code_run = sheet.set_code_run(pos, code_run);
-                self.finalize_code_cell(transaction, sheet_pos, old_code_run);
+
+                // ignore if sheet does not exist as it may have been deleted in a multiplayer operation
+                if let Some(sheet) = self.try_sheet_mut_from_id(sheet_id) {
+                    let old_code_run = sheet.set_code_run(pos, code_run);
+                    self.finalize_code_cell(transaction, sheet_pos, old_code_run);
+                }
             }
             _ => unreachable!("Expected Operation::SetCodeRun in execute_set_code_run"),
         }
@@ -39,8 +42,11 @@ impl GridController {
                     unreachable!("Only a user transaction should have a ComputeCode");
                 }
                 let sheet_id = sheet_pos.sheet_id;
+                let Some(sheet) = self.try_sheet_from_id(sheet_id) else {
+                    // sheet may have been deleted in a multiplayer operation
+                    return;
+                };
                 let pos: Pos = sheet_pos.into();
-                let sheet = self.grid.sheet_from_id(sheet_id);
                 // We need to get the corresponding CellValue::Code, which should always exist.
                 let (language, code) = match sheet.get_cell_value(pos) {
                     Some(code_cell) => match code_cell {
@@ -50,24 +56,21 @@ impl GridController {
                     None => unreachable!("Expected CellValue::Code in execute_set_code_cell"),
                 };
 
-                let old_code_run = sheet.code_runs.get(&pos);
+                let old_code_run = sheet.code_runs.get(&pos).cloned();
                 match language {
                     CodeCellLanguage::Python => {
-                        self.run_python(transaction, sheet_pos, code, old_code_run);
+                        self.run_python(transaction, sheet_pos, code, &old_code_run);
                         transaction.reverse_operations.insert(
                             0,
                             Operation::SetCodeRun {
                                 sheet_pos,
-                                code_run: old_code_run.cloned(),
+                                code_run: old_code_run,
                             },
                         );
                     }
                     CodeCellLanguage::Formula => {
-                        self.run_formula(transaction, sheet_pos, code, old_code_run);
-                        self.finalize_code_cell(transaction, sheet_pos, old_code_run.cloned());
-                    }
-                    _ => {
-                        unreachable!("Unsupported language in RunCodeCell");
+                        self.run_formula(transaction, sheet_pos, code, &old_code_run);
+                        self.finalize_code_cell(transaction, sheet_pos, old_code_run);
                     }
                 }
             }

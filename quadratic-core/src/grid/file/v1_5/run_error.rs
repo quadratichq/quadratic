@@ -88,7 +88,7 @@ impl RunError {
                 start: span.start,
                 end: span.end,
             }),
-            msg: match error.msg {
+            msg: match error.msg.clone() {
                 crate::RunErrorMsg::PythonError(str) => RunErrorMsg::PythonError(str),
                 crate::RunErrorMsg::Spill => RunErrorMsg::Spill,
                 crate::RunErrorMsg::Unimplemented => RunErrorMsg::Unimplemented,

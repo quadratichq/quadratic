@@ -83,26 +83,6 @@ impl GridController {
                 ))
             }
         };
-
-        let Some(sheet) = self.try_sheet_from_id(current_sheet_pos.sheet_id) else {
-            // sheet may have been deleted before the async operation completed
-            return Ok(());
-        };
-        let pos: Pos = current_sheet_pos.into();
-        let Some(code_cell) = sheet.get_cell_value(pos) else {
-            // cell may have been deleted before the async operation completed
-            return Ok(());
-        };
-        let (language, code) = match code_cell {
-            // Note: there is a super edge case where the CellValue::Code was replaced by another CellValue::Code while async is running.
-            // Right now, that case is *not* handled. The easiest way to handle this would be to search adn remove impacted async transactions
-            // when handling the deletion or replacement of a code_cell.
-            CellValue::Code(code_cell) => (code_cell.language, code_cell.code),
-            _ => {
-                // code may have been replaced while waiting for async operation
-                return Ok(());
-            }
-        };
         match transaction.waiting_for_async {
             None => {
                 return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async to be defined in transaction::complete".into()));
@@ -113,8 +93,6 @@ impl GridController {
                         transaction,
                         result,
                         current_sheet_pos,
-                        language,
-                        code,
                     );
 
                     // set the new value. Just return if the sheet is not defined (as it may have been deleted by a concurrent user)
@@ -157,10 +135,6 @@ impl GridController {
         };
         let sheet_id = sheet_pos.sheet_id;
         let pos = Pos::from(sheet_pos);
-        let sheet = self.try_sheet_from_id(sheet_id) else {
-            // sheet may have been deleted before the async operation completed
-            return Ok(());
-        };
         let Some(sheet) = self.try_sheet_from_id(sheet_id) else {
             // sheet may have been deleted before the async operation completed
             return Ok(());
@@ -187,7 +161,7 @@ impl GridController {
         let (old_code_run, new_code_run) = match sheet.code_run(pos) {
             Some(old_code_run) => {
                 (
-                    Some(old_code_run),
+                    Some(old_code_run.clone()),
                     CodeRun {
                         formatted_code_string: old_code_run.formatted_code_string.clone(),
                         result,
@@ -219,7 +193,7 @@ impl GridController {
             return Ok(());
         };
         sheet.set_code_run(pos, Some(new_code_run));
-        self.finalize_code_cell(transaction, sheet_pos, old_code_run.cloned());
+        self.finalize_code_cell(transaction, sheet_pos, old_code_run);
         transaction
             .summary
             .code_cells_modified
@@ -234,8 +208,6 @@ impl GridController {
         transaction: &mut PendingTransaction,
         js_code_result: JsCodeResult,
         start: SheetPos,
-        language: CodeCellLanguage,
-        code_string: String,
     ) -> CodeRun {
         let sheet = self.grid_mut().sheet_mut_from_id(start.sheet_id);
         let result = if js_code_result.success() {

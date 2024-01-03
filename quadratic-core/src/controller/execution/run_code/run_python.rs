@@ -14,7 +14,7 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        old_code_run: Option<&CodeRun>,
+        old_code_run: &Option<CodeRun>,
     ) {
         let error = RunError {
             span: None,
@@ -37,7 +37,7 @@ impl GridController {
         if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) {
             sheet.set_code_run(sheet_pos.into(), Some(new_run.clone()));
         }
-        self.add_code_run_operations(transaction, sheet_pos, old_code_run, Some(&new_run));
+        self.add_code_run_operations(transaction, sheet_pos, old_code_run, &Some(new_run));
     }
 
     pub(crate) fn run_python(
@@ -45,7 +45,7 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
         code: String,
-        old_code_run: Option<&CodeRun>,
+        old_code_run: &Option<CodeRun>,
     ) -> bool {
         if !cfg!(test) {
             let result = crate::wasm_bindings::js::runPython(transaction.id.to_string(), code);
@@ -138,7 +138,7 @@ mod tests {
             .remove_awaiting_async(transaction_id)
             .ok()
             .unwrap();
-        gc.python_not_loaded(&mut transaction, sheet_pos, None);
+        gc.python_not_loaded(&mut transaction, sheet_pos, &None);
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
         let cells = sheet.get_render_cells(crate::Rect::single_pos(Pos { x: 0, y: 0 }));
