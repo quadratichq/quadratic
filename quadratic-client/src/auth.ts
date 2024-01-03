@@ -22,6 +22,7 @@ if (!(AUTH0_DOMAIN && AUTH0_CLIENT_ID && AUTH0_AUDIENCE && AUTH0_ISSUER)) {
 let auth0ClientPromise: Promise<Auth0Client>;
 async function getClient() {
   if (!auth0ClientPromise) {
+    console.log("cookieDomain:", '.' + window.location.host.replace(/(?:localhost:[0-9]+|[^.]*\.[^.]{2,3}(?:\.[^.]{2,3})?$)/, ''));
     auth0ClientPromise = createAuth0Client({
       domain: AUTH0_DOMAIN,
       clientId: AUTH0_CLIENT_ID,
