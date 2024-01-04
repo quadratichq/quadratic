@@ -161,7 +161,7 @@ export const ApiSchemas = {
    */
   '/v0/files/:uuid/users/:userId.PATCH.request': FileUserSchema.pick({ role: true }),
   '/v0/files/:uuid/users/:userId.PATCH.response': FileUserSchema.pick({ role: true }),
-  // '/v0/files/:uuid/sharing/:userId.DELETE.request': z.object({ permission }),
+  '/v0/files/:uuid/users/:userId.DELETE.response': z.object({ message: z.string() }),
 
   /**
    * File invites

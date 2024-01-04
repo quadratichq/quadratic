@@ -88,6 +88,37 @@ export const apiClient = {
   },
 
   files: {
+    async get(uuid: string) {
+      return fetchFromApi(`/v0/files/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/files/:uuid.GET.response']);
+    },
+    async download(uuid: string) {
+      mixpanel.track('[Files].downloadFile', { id: uuid });
+      const { file } = await this.get(uuid);
+      const checkpointUrl = file.lastCheckpointDataUrl;
+      const checkpointData = await fetch(checkpointUrl).then((res) => res.text());
+      downloadQuadraticFile(file.name, checkpointData);
+    },
+    sharing: {
+      async get(uuid: string) {
+        return fetchFromApi(
+          `/v0/files/${uuid}/sharing`,
+          {
+            method: 'GET',
+          },
+          ApiSchemas['/v0/files/:uuid/sharing.GET.response']
+        );
+      },
+      async update(uuid: string, body: ApiTypes['/v0/files/:uuid/sharing.PATCH.request']) {
+        return fetchFromApi(
+          `/v0/files/${uuid}/sharing`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify(body),
+          },
+          ApiSchemas['/v0/files/:uuid/sharing.PATCH.response']
+        );
+      },
+    },
     users: {
       async update(uuid: string, userId: string, body: ApiTypes['/v0/files/:uuid/users/:userId.PATCH.request']) {
         return fetchFromApi(
@@ -103,10 +134,6 @@ export const apiClient = {
     return fetchFromApi(`/v0/files`, { method: 'GET' }, ApiSchemas['/v0/files.GET.response']);
   },
 
-  async getFile(uuid: string) {
-    return fetchFromApi(`/v0/files/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/files/:uuid.GET.response']);
-  },
-
   async createFile(
     body: ApiTypes['/v0/files.POST.request'] = {
       name: 'Untitled',
@@ -119,14 +146,6 @@ export const apiClient = {
       { method: 'POST', body: JSON.stringify(body) },
       ApiSchemas['/v0/files.POST.response']
     );
-  },
-
-  async downloadFile(uuid: string) {
-    mixpanel.track('[Files].downloadFile', { id: uuid });
-    const { file } = await this.getFile(uuid);
-    const checkpointUrl = file.lastCheckpointDataUrl;
-    const checkpointData = await fetch(checkpointUrl).then((res) => res.text());
-    return downloadQuadraticFile(file.name, checkpointData);
   },
 
   async deleteFile(uuid: string) {
@@ -156,26 +175,6 @@ export const apiClient = {
         body: formData,
       },
       ApiSchemas['/v0/files/:uuid/thumbnail.POST.response']
-    );
-  },
-
-  async getFileSharing(uuid: string) {
-    return fetchFromApi(
-      `/v0/files/${uuid}/sharing`,
-      {
-        method: 'GET',
-      },
-      ApiSchemas['/v0/files/:uuid/sharing.GET.response']
-    );
-  },
-  async updateFileSharing(uuid: string, body: ApiTypes['/v0/files/:uuid/sharing.PATCH.request']) {
-    return fetchFromApi(
-      `/v0/files/${uuid}/sharing`,
-      {
-        method: 'PATCH',
-        body: JSON.stringify(body),
-      },
-      ApiSchemas['/v0/files/:uuid/sharing.PATCH.response']
     );
   },
 

@@ -8,7 +8,7 @@ import helmet from 'helmet';
 import path from 'path';
 import ai_chat_router from './routes/ai_chat';
 import feedback_router from './routes/feedback';
-import files_router from './routes/files';
+import files_router from './routes/files/files';
 import internal_router from './routes/internal';
 import teams_router from './routes/teams';
 import { ApiError } from './utils/ApiError';

@@ -1,13 +1,11 @@
 import express, { Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { generatePresignedUrl, uploadStringAsFileS3 } from '../../aws/s3';
 import dbClient from '../../dbClient';
 import { fileMiddleware } from '../../middleware/fileMiddleware';
 import { uploadThumbnailToS3 } from '../../middleware/s3fileThumbnailUpload';
-import { userMiddleware, userOptionalMiddleware } from '../../middleware/user';
+import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { Request } from '../../types/Request';
 import { getFilePermissions } from './getFilePermissions';
 
@@ -55,60 +53,6 @@ files_router.get('/', validateAccessToken, userMiddleware, async (req: Request, 
 
   return res.status(200).json(files);
 });
-
-files_router.get(
-  '/:uuid',
-  validateUUID(),
-  validateOptionalAccessToken,
-  userOptionalMiddleware,
-  fileMiddleware,
-  async (req: Request, res: Response) => {
-    if (!req.quadraticFile) {
-      return res.status(500).json({ error: { message: 'Internal server error' } });
-    }
-
-    // Validate request parameters
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    let thumbnailUrl = null;
-    if (req.quadraticFile.thumbnail) {
-      thumbnailUrl = await generatePresignedUrl(req.quadraticFile.thumbnail);
-    }
-
-    // Get the most recent checkpoint for the file
-    const checkpoint = await dbClient.fileCheckpoint.findFirst({
-      where: {
-        fileId: req.quadraticFile.id,
-      },
-      orderBy: {
-        sequenceNumber: 'desc',
-      },
-    });
-
-    if (!checkpoint) {
-      return res.status(500).json({ error: { message: 'No Checkpoints exist for this file' } });
-    }
-
-    const lastCheckpointDataUrl = await generatePresignedUrl(checkpoint.s3Key);
-
-    return res.status(200).json({
-      file: {
-        uuid: req.quadraticFile.uuid,
-        name: req.quadraticFile.name,
-        created_date: req.quadraticFile.created_date.toISOString(),
-        updated_date: req.quadraticFile.updated_date.toISOString(),
-        lastCheckpointSequenceNumber: checkpoint?.sequenceNumber,
-        lastCheckpointVersion: checkpoint?.version,
-        lastCheckpointDataUrl,
-        thumbnail: thumbnailUrl,
-      },
-      permission: getFilePermissions(req.user, req.quadraticFile),
-    } as ApiTypes['/v0/files/:uuid.GET.response']);
-  }
-);
 
 files_router.post(
   '/:uuid',

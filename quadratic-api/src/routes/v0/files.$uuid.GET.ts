@@ -1,13 +1,14 @@
 import { Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
+import { generatePresignedUrl } from '../../aws/s3';
+import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/fileMiddleware';
 import { userOptionalMiddleware } from '../../middleware/user';
-import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithOptionalUser } from '../../types/Request';
 import { getFilePermissions } from '../../utils/permissions';
-import { generatePresignedUrl } from '../files/thumbnail';
 
 export default [
   validateRequestSchema(
@@ -17,19 +18,33 @@ export default [
       }),
     })
   ),
-  validateAccessToken,
+  validateOptionalAccessToken,
   userOptionalMiddleware,
   handler,
 ];
 
 async function handler(req: RequestWithOptionalUser, res: Response) {
   const {
-    file: { thumbnail, uuid, name, created_date, updated_date, version, publicLinkAccess, contents },
+    file: { id, thumbnail, uuid, name, created_date, updated_date, publicLinkAccess },
     user,
   } = await getFile({ uuid: req.params.uuid, userId: req.user?.id });
 
   const thumbnailSignedUrl = thumbnail ? await generatePresignedUrl(thumbnail) : null;
   const permissions = getFilePermissions({ roleFile: 'OWNER', roleTeam: 'OWNER', publicLinkAccess });
+
+  // Get the most recent checkpoint for the file
+  const checkpoint = await dbClient.fileCheckpoint.findFirst({
+    where: {
+      fileId: id,
+    },
+    orderBy: {
+      sequenceNumber: 'desc',
+    },
+  });
+  if (!checkpoint) {
+    return res.status(500).json({ error: { message: 'No Checkpoints exist for this file' } });
+  }
+  const lastCheckpointDataUrl = await generatePresignedUrl(checkpoint.s3Key);
 
   const data: ApiTypes['/v0/files/:uuid.GET.response'] = {
     file: {
@@ -37,9 +52,10 @@ async function handler(req: RequestWithOptionalUser, res: Response) {
       name,
       created_date: created_date.toISOString(),
       updated_date: updated_date.toISOString(),
-      version: version || '',
       publicLinkAccess,
-      contents: contents.toString('utf8'),
+      lastCheckpointSequenceNumber: checkpoint?.sequenceNumber,
+      lastCheckpointVersion: checkpoint?.version,
+      lastCheckpointDataUrl,
       thumbnail: thumbnailSignedUrl,
     },
     user: {

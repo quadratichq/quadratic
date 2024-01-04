@@ -44,7 +44,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'download') {
     try {
-      await apiClient.downloadFile(uuid);
+      await apiClient.files.download(uuid);
       return { ok: true };
     } catch (error) {
       return { ok: false };
@@ -61,7 +61,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
       const {
         file: { thumbnail },
         file,
-      } = await apiClient.getFile(uuid);
+      } = await apiClient.files.get(uuid);
 
       // Get the most recent checkpoint for the file
       const lastCheckpointContents = await fetch(file.lastCheckpointDataUrl).then((res) => res.text());

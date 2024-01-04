@@ -28,15 +28,14 @@ import QuadraticApp from '../ui/QuadraticApp';
 export type FileData = {
   name: string;
   uuid: string;
-  sharing: ApiTypes['/v0/files/:uuid/sharing.GET.response'];
   permissions: ApiTypes['/v0/files/:uuid.GET.response']['user']['permissions'];
 };
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData> => {
   const { uuid } = params as { uuid: string };
 
-  // Fetch the file & its sharing data
-  const [data, sharing] = await Promise.all([apiClient.getFile(uuid), apiClient.getFileSharing(uuid)]);
+  // Fetch the file
+  const data = await apiClient.files.get(uuid);
   if (debugShowMultiplayer)
     console.log(`[File API] Received file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`);
 
@@ -78,7 +77,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     name: data.file.name,
     uuid: data.file.uuid,
     permissions: data.user.permissions,
-    sharing,
   };
 };
 

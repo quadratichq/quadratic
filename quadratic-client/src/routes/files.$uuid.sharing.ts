@@ -11,7 +11,7 @@ export const loader = async ({ params }: LoaderFunctionArgs): Promise<Loader> =>
   const { uuid } = params as { uuid: string };
 
   try {
-    const data = await apiClient.getFileSharing(uuid);
+    const data = await apiClient.files.sharing.get(uuid);
     return { ok: true, data };
   } catch (e) {
     return { ok: false };
@@ -37,7 +37,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
   if (intent === 'update-public-link-access') {
     const { publicLinkAccess } = json as Action['request.update-public-link-access'];
     try {
-      await apiClient.updateFileSharing(uuid, { publicLinkAccess });
+      await apiClient.files.sharing.update(uuid, { publicLinkAccess });
       return { ok: true };
     } catch (e) {
       return { ok: false };
