@@ -2,7 +2,7 @@ import { htmlCellsHandler } from '@/gridGL/htmlCells/htmlCellsHandler';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import * as Sentry from '@sentry/react';
 import { Point, Rectangle } from 'pixi.js';
-import { debugMockLargeData } from '../../debugFlags';
+import { debugShowMultiplayer } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
@@ -69,14 +69,15 @@ export const rectToPoint = (rect: Rect): Point => {
 };
 
 export const upgradeFileRust = async (
-  grid: GridFile
+  grid: GridFile,
+  lastSequenceNum: number
 ): Promise<{
   contents: string;
   version: string;
 } | null> => {
   await init();
   try {
-    const gc = GridController.newFromFile(JSON.stringify(grid));
+    const gc = GridController.newFromFile(JSON.stringify(grid), lastSequenceNum);
     const contents = gc.exportToFile();
     return { contents: contents, version: gc.getVersion() };
   } catch (e) {
@@ -88,7 +89,6 @@ export const upgradeFileRust = async (
 // TS wrapper around Grid.rs
 export class Grid {
   private gridController!: GridController;
-  private _dirty = false;
   thumbnailDirty = false;
 
   transactionResponse(summary: TransactionSummary) {
@@ -138,22 +138,18 @@ export class Grid {
       sheets.sheet.cursor.load(cursor);
     }
     if (summary.save) {
-      this.dirty = true;
       window.dispatchEvent(new CustomEvent('transaction-complete'));
     }
 
-    if (summary.forward_operations) {
-      multiplayer.sendTransaction(summary.forward_operations);
+    if (summary.operations) {
+      multiplayer.sendTransaction(summary.transaction_id!, summary.operations);
     }
-    pixiApp.setViewportDirty();
-  }
 
-  get dirty(): boolean {
-    // the sheet is never dirty when mocking large data (to stop it from saving over an actual file)
-    return debugMockLargeData ? false : this._dirty;
-  }
-  set dirty(value: boolean) {
-    this._dirty = value;
+    if (summary.request_transactions) {
+      multiplayer.sendGetTransactions(summary.request_transactions);
+    }
+
+    pixiApp.setViewportDirty();
   }
 
   // this cannot be called in the constructor as Rust is not yet loaded
@@ -162,18 +158,14 @@ export class Grid {
   }
 
   // import/export
-  openFromContents(contents: string): boolean {
+  openFromContents(contents: string, lastSequenceNum: number): boolean {
     try {
-      this.gridController = GridController.newFromFile(contents);
+      this.gridController = GridController.newFromFile(contents, lastSequenceNum);
       return true;
     } catch (e) {
       console.warn(e);
       return false;
     }
-  }
-
-  populateWithRandomFloats(sheetId: string, width: number, height: number) {
-    this.gridController.populateWithRandomFloats(sheetId, pointsToRect(0, 0, width, height));
   }
 
   export(): string {
@@ -423,7 +415,6 @@ export class Grid {
       sheets.getCursorPosition()
     );
     this.transactionResponse(summary);
-    this.dirty = true;
   }
 
   setCellRenderSize(sheetId: string, x: number, y: number, width: number, height: number) {
@@ -697,8 +688,12 @@ export class Grid {
   //#region Compute
 
   calculationComplete(result: JsCodeResult) {
-    const summary = this.gridController.calculationComplete(result);
-    this.transactionResponse(summary);
+    const summaryResult = this.gridController.calculationComplete(result);
+    if (summaryResult.Ok) {
+      this.transactionResponse(summaryResult.Ok);
+    } else {
+      throw new Error(summaryResult.Err);
+    }
   }
 
   getTransactionResponse(): TransactionSummary | undefined {
@@ -707,11 +702,17 @@ export class Grid {
 
   // returns undefined if there was an error fetching cells (eg, invalid sheet name)
   calculationGetCells(
+    transactionId: string,
     rect: RectInternal,
     sheetName: string | undefined,
     lineNumber: number | undefined
   ): { x: number; y: number; value: string }[] | undefined {
-    const getCells = new JsComputeGetCells(rect, sheetName, lineNumber === undefined ? undefined : BigInt(lineNumber));
+    const getCells = new JsComputeGetCells(
+      transactionId,
+      rect,
+      sheetName,
+      lineNumber === undefined ? undefined : BigInt(lineNumber)
+    );
     const array = this.gridController.calculationGetCells(getCells);
     if (array) {
       // indication that getCells resulted in an error
@@ -749,9 +750,34 @@ export class Grid {
     );
   }
 
-  multiplayerTransaction(transaction: string) {
-    const summary = this.gridController.multiplayerTransaction(transaction);
+  //#endregion
+
+  //#region Multiplayer
+  //-----------------
+
+  multiplayerTransaction(transactionId: string, sequenceNum: number, operations: string) {
+    const summary = this.gridController.multiplayerTransaction(transactionId, sequenceNum, operations);
     this.transactionResponse(summary);
+  }
+
+  setMultiplayerSequenceNum(sequenceNum: number) {
+    this.gridController.setMultiplayerSequenceNum(sequenceNum);
+  }
+
+  receiveSequenceNum(sequenceNum: number) {
+    if (debugShowMultiplayer) console.log(`[Multiplayer] Server is at sequence_num ${sequenceNum}.`);
+    const summary = this.gridController.receiveSequenceNum(sequenceNum);
+    this.transactionResponse(summary);
+  }
+
+  receiveMultiplayerTransactions(transactions: string) {
+    if (debugShowMultiplayer) console.log('[Multiplayer] Received catch-up transactions.');
+    const summaryResponse = this.gridController.receiveMultiplayerTransactions(transactions);
+    if (summaryResponse.Ok) {
+      this.transactionResponse(summaryResponse.Ok);
+    } else {
+      throw new Error(summaryResponse.Err);
+    }
   }
 
   //#endregion

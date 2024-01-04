@@ -14,5 +14,7 @@ export async function validateAndUpgradeGridFile(
 } | null> {
   let file = validateAndUpgradeLegacyGridFile(input, logOutput);
   if (file === null) return null;
-  return await upgradeFileRust(file);
+
+  // There cannot be a sequence_num before v1.5
+  return await upgradeFileRust(file, 0);
 }

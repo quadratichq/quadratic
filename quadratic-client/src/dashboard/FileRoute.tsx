@@ -1,5 +1,6 @@
 import { ApiError } from '@/api/fetchFromApi';
 import { CONTACT_URL } from '@/constants/urls';
+import { debugShowMultiplayer } from '@/debugFlags';
 import { Button } from '@/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
@@ -36,14 +37,13 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   // Fetch the file & its sharing data
   const [data, sharing] = await Promise.all([apiClient.getFile(uuid), apiClient.getFileSharing(uuid)]);
+  if (debugShowMultiplayer)
+    console.log(`[File API] Received file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`);
 
   // Get file contents from S3
   const res = await fetch(data.file.lastCheckpointDataUrl);
 
   const checkpointContents = await res.text();
-
-  console.log('res', res);
-  console.log('checkpointContents', checkpointContents);
 
   // Validate and upgrade file to the latest version in TS (up to 1.4)
   const file = await validateAndUpgradeGridFile(checkpointContents);
@@ -59,7 +59,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   await init();
   hello();
   grid.init();
-  grid.openFromContents(file.contents);
+  grid.openFromContents(file.contents, data.file.lastCheckpointSequenceNumber);
   grid.thumbnailDirty = !data.file.thumbnail;
 
   // If the file is newer than the app, do a (hard) reload.

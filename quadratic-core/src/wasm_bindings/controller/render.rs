@@ -38,19 +38,6 @@ impl GridController {
         Ok(serde_json::to_string::<[JsRenderFill]>(&output).map_err(|e| e.to_string())?)
     }
 
-    /// Returns data for rendering code cells as a string containing a JSON array
-    /// of [`JsRenderCodeCell`].
-    #[wasm_bindgen(js_name = "getRenderCodeCells")]
-    pub fn get_render_code_cells(
-        &self,
-        sheet_id: String,
-        region: &Rect,
-    ) -> Result<String, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let output = self.sheet(sheet_id).get_render_code_cells(*region);
-        Ok(serde_json::to_string::<[JsRenderCodeCell]>(&output).map_err(|e| e.to_string())?)
-    }
-
     /// Returns all data for rendering HTML for a sheet
     #[wasm_bindgen(js_name = "getHtmlOutput")]
     pub fn get_html_output(&self, sheet_id: String) -> Result<String, JsValue> {

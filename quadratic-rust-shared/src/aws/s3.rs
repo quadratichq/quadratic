@@ -45,7 +45,4 @@ pub async fn upload_object(
 }
 
 #[cfg(test)]
-mod tests {
-
-    use super::*;
-}
+mod tests {}

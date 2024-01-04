@@ -66,6 +66,7 @@ htmlescape = "0.3.1"
 bigdecimal = { version = "0.4.1", features = ["serde"] }
 csv = "1.2.2"
 indexmap = "2.0.2"
+thiserror = "1.0.52"
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }

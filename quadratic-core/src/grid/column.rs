@@ -10,15 +10,12 @@ use smallvec::{smallvec, SmallVec};
 
 use super::formatting::*;
 use super::{Block, BlockContent, CellValueBlockContent, SameValue};
-use crate::{IsBlank, Pos};
+use crate::IsBlank;
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
 pub struct Column {
     pub x: i64,
-
     pub values: ColumnData<CellValueBlockContent>,
-    pub spills: ColumnData<SameValue<Pos>>,
-
     pub align: ColumnData<SameValue<CellAlign>>,
     pub wrap: ColumnData<SameValue<CellWrap>>,
     pub numeric_format: ColumnData<SameValue<NumericFormat>>,
@@ -40,11 +37,10 @@ impl Column {
 
     pub fn range(&self, ignore_formatting: bool) -> Option<Range<i64>> {
         if ignore_formatting {
-            crate::util::union_ranges([self.values.range(), self.spills.range()])
+            self.values.range()
         } else {
             crate::util::union_ranges([
                 self.values.range(),
-                self.spills.range(),
                 self.align.range(),
                 self.wrap.range(),
                 self.numeric_format.range(),
@@ -58,7 +54,7 @@ impl Column {
     }
 
     pub fn has_data_in_row(&self, y: i64) -> bool {
-        self.values.get(y).is_some_and(|v| !v.is_blank()) || self.spills.get(y).is_some()
+        self.values.get(y).is_some_and(|v| !v.is_blank())
     }
     pub fn has_anything_in_row(&self, y: i64) -> bool {
         self.has_data_in_row(y)

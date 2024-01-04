@@ -5,7 +5,7 @@ use crate::{
             JsHtmlOutput, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState,
             JsRenderFill,
         },
-        CellAlign, CodeCellRunResult, NumericFormatKind,
+        CellAlign, CodeCellLanguage, CodeCellRunResult, Column, NumericFormatKind,
     },
     CellValue, Error, ErrorMsg, Pos, Rect,
 };
@@ -14,127 +14,78 @@ use super::Sheet;
 
 impl Sheet {
     /// checks columns for any column that has data that might render
-    pub fn has_render_cells(&self, region: Rect) -> bool {
-        self.columns.range(region.x_range()).any(|(_, column)| {
-            column.values.has_blocks_in_range(region.y_range())
-                || column.spills.has_blocks_in_range(region.y_range())
-        })
+    pub fn has_render_cells(&self, rect: Rect) -> bool {
+        self.columns
+            .range(rect.x_range())
+            .any(|(_, column)| column.values.has_blocks_in_range(rect.y_range()))
+            || self.iter_code_output_in_rect(rect).count() > 0
     }
 
-    /// Returns cell data in a format useful for rendering. This includes only
-    /// the data necessary to render raw text values.
-    pub fn get_render_cells(&self, rect: Rect) -> Vec<JsRenderCell> {
-        let columns_iter = rect
-            .x_range()
-            .filter_map(|x| Some((x, self.get_column(x)?)));
+    /// creates a render for a single cell
+    fn get_render_cell(
+        &self,
+        x: i64,
+        y: i64,
+        column: Option<&Column>,
+        value: CellValue,
+        language: Option<CodeCellLanguage>,
+    ) -> JsRenderCell {
+        if let CellValue::Html(_) = value {
+            return JsRenderCell {
+                x,
+                y,
+                value: " CHART".to_string(),
+                language,
+                align: None,
+                wrap: None,
+                bold: None,
+                italic: Some(true),
+                // from colors.ts: colors.languagePython
+                text_color: Some(String::from("#3776ab")),
+            };
+        } else if let CellValue::Error(error) = value {
+            let value = match error.msg {
+                ErrorMsg::Spill => " SPILL",
+                _ => " ERROR",
+            };
+            return JsRenderCell {
+                x,
+                y,
+                value: value.into(),
+                language,
+                align: None,
+                wrap: None,
+                bold: None,
+                italic: Some(true),
+                text_color: Some(String::from("red")),
+            };
+        }
 
-        // Fetch ordinary value cells.
-        let ordinary_cells = columns_iter.clone().flat_map(|(x, column)| {
-            column
-                .values
-                .values_in_range(rect.y_range())
-                .map(move |(y, value)| (x, y, column, value, None))
-        });
-
-        // Fetch values from code cells.
-        let code_output_cells = columns_iter.flat_map(move |(x, column)| {
-            column
-                .spills
-                .blocks_of_range(rect.y_range())
-                .filter_map(move |block| {
-                    let code_cell_pos = block.content.value;
-                    let code_cell = self.code_cells.get(&block.content.value)?;
-
-                    let mut block_len = block.len();
-                    let mut cell_error = None;
-
-                    // check for error in code cell
-                    //
-                    // TODO(ddimaria): address comment from @HactarCE:
-                    //
-                    // I think block_len should automatically equal 1 because
-                    // an error produces a 1x1 spill? If not, then we have to
-                    // be careful to only return the error value in the first
-                    // column of the spill.
-                    if let Some(error) = code_cell.get_error() {
-                        block_len = 1;
-                        cell_error = Some(CellValue::Error(Box::new(error)));
-                    }
-                    // check for spill in code_cell
-                    else if let Some(output) = &code_cell.output {
-                        if output.spill {
-                            block_len = 1;
-                            cell_error = Some(CellValue::Error(Box::new(Error {
-                                span: None,
-                                msg: ErrorMsg::Spill,
-                            })));
-                        }
-                    }
-
-                    let dx = (x - code_cell_pos.x) as u32;
-                    let dy = (block.y - code_cell_pos.y) as u32;
-
-                    Some((0..block_len).filter_map(move |y_within_block| {
-                        let y = block.y + y_within_block as i64;
-                        let dy = dy + y_within_block as u32;
-                        Some((
-                            x,
-                            y,
-                            column,
-                            cell_error
-                                .clone()
-                                .or_else(|| code_cell.get_output_value(dx, dy))?,
-                            ((dx, dy) == (0, 0)).then_some(code_cell.language),
-                        ))
-                    }))
-                })
-                .flatten()
-        });
-
-        itertools::chain(ordinary_cells, code_output_cells)
-            .map(|(x, y, column, value, language)| {
-                if let CellValue::Html(_) = value {
-                    return JsRenderCell {
-                        x,
-                        y,
-
-                        value: " CHART".to_string(),
-                        language,
-
-                        align: None,
-                        wrap: None,
-                        bold: None,
-                        italic: Some(true),
-
-                        // from colors.ts: colors.languagePython
-                        text_color: Some(String::from("#3776ab")),
-                    };
-                } else if let CellValue::Error(error) = value {
-                    let value = match error.msg {
-                        ErrorMsg::Spill => " SPILL",
-                        _ => " ERROR",
-                    };
-                    return JsRenderCell {
-                        x,
-                        y,
-
-                        value: value.into(),
-                        language,
-
-                        align: None,
-                        wrap: None,
-                        bold: None,
-                        italic: Some(true),
-                        text_color: Some(String::from("red")),
-                    };
+        match column {
+            None => {
+                let align = if matches!(value, CellValue::Number(_)) {
+                    Some(CellAlign::Right)
+                } else {
+                    None
+                };
+                JsRenderCell {
+                    x,
+                    y,
+                    value: value.to_display(None, None, None),
+                    language,
+                    align,
+                    wrap: None,
+                    bold: None,
+                    italic: None,
+                    text_color: None,
                 }
-
+            }
+            Some(column) => {
                 let mut align: Option<CellAlign> = column.align.get(y);
                 let wrap = column.wrap.get(y);
                 let bold = column.bold.get(y);
                 let italic = column.italic.get(y);
                 let text_color = column.text_color.get(y);
-
                 let value = if matches!(value, CellValue::Number(_)) {
                     // get numeric_format and numeric_decimal to turn number into a string
                     let numeric_format = column.numeric_format.get(y);
@@ -151,22 +102,105 @@ impl Sheet {
                 } else {
                     value.to_display(None, None, None)
                 };
-
                 JsRenderCell {
                     x,
                     y,
-
                     value,
                     language,
-
                     align,
                     wrap,
                     bold,
                     italic,
                     text_color,
                 }
-            })
-            .collect()
+            }
+        }
+    }
+
+    /// Returns cell data in a format useful for rendering. This includes only
+    /// the data necessary to render raw text values.
+    pub fn get_render_cells(&self, rect: Rect) -> Vec<JsRenderCell> {
+        let columns_iter = rect
+            .x_range()
+            .filter_map(|x| Some((x, self.get_column(x)?)));
+
+        let mut render_cells = vec![];
+
+        // Fetch ordinary value cells.
+        columns_iter.clone().for_each(|(x, column)| {
+            column
+                .values
+                .values_in_range(rect.y_range())
+                .for_each(|(y, value)| {
+                    render_cells.push(self.get_render_cell(x, y, Some(column), value, None));
+                });
+        });
+
+        // Fetch values from code cells
+        self.iter_code_output_in_rect(rect)
+            .for_each(|(code_rect, code_cell_value)| {
+                if code_cell_value.has_spill_error() {
+                    render_cells.push(self.get_render_cell(
+                        code_rect.min.x,
+                        code_rect.min.y,
+                        None,
+                        CellValue::Error(Box::new(Error {
+                            span: None,
+                            msg: ErrorMsg::Spill,
+                        })),
+                        Some(code_cell_value.language),
+                    ));
+                } else if let Some(error) = code_cell_value.get_error() {
+                    render_cells.push(self.get_render_cell(
+                        code_rect.min.x,
+                        code_rect.min.y,
+                        None,
+                        CellValue::Error(Box::new(error)),
+                        Some(code_cell_value.language),
+                    ));
+                } else {
+                    // find overlap of code_rect into rect
+                    let x_start = if rect.min.x < code_rect.min.x {
+                        code_rect.min.x
+                    } else {
+                        rect.min.x
+                    };
+                    let x_end = if rect.max.x > code_rect.max.x {
+                        code_rect.max.x
+                    } else {
+                        rect.max.x
+                    };
+                    let y_start = if rect.min.y < code_rect.min.y {
+                        code_rect.min.y
+                    } else {
+                        rect.min.y
+                    };
+                    let y_end = if rect.max.y > code_rect.max.y {
+                        code_rect.max.y
+                    } else {
+                        rect.max.y
+                    };
+                    for x in x_start..=x_end {
+                        let column = self.get_column(x);
+                        for y in y_start..=y_end {
+                            let value = code_cell_value.get_output_value(
+                                (x - code_rect.min.x) as u32,
+                                (y - code_rect.min.y) as u32,
+                            );
+                            if let Some(value) = value {
+                                let language = if x == code_rect.min.x && y == code_rect.min.y {
+                                    Some(code_cell_value.language)
+                                } else {
+                                    None
+                                };
+                                render_cells
+                                    .push(self.get_render_cell(x, y, column, value, language));
+                            }
+                        }
+                    }
+                }
+            });
+        render_cells
     }
 
     pub fn get_html_output(&self) -> Vec<JsHtmlOutput> {
@@ -226,49 +260,12 @@ impl Sheet {
         }
         ret
     }
-    /// Returns data for rendering code cells.
-    pub fn get_render_code_cells(&self, rect: Rect) -> Vec<JsRenderCodeCell> {
-        self.iter_code_cells_in_rect(rect)
-            .filter_map(|pos| {
-                if !rect.contains(pos) {
-                    return None;
-                }
-                let code_cell = self.code_cells.get(&pos)?;
-                let output_size = code_cell.output_size();
-                let (state, w, h) = match &code_cell.output {
-                    Some(output) => match &output.result {
-                        CodeCellRunResult::Ok { .. } => {
-                            if output.spill {
-                                (JsRenderCodeCellState::SpillError, 1, 1)
-                            } else {
-                                (
-                                    JsRenderCodeCellState::Success,
-                                    output_size.w.get(),
-                                    output_size.h.get(),
-                                )
-                            }
-                        }
-                        CodeCellRunResult::Err { .. } => (JsRenderCodeCellState::RunError, 1, 1),
-                    },
-                    None => (JsRenderCodeCellState::NotYetRun, 1, 1),
-                };
-                Some(JsRenderCodeCell {
-                    x: pos.x,
-                    y: pos.y,
-                    w,
-                    h,
-                    language: code_cell.language,
-                    state,
-                })
-            })
-            .collect()
-    }
 
     /// Returns data for all rendering code cells
     pub fn get_all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
-        self.iter_code_cells_locations()
-            .filter_map(|pos| {
-                let code_cell = self.code_cells.get(&pos)?;
+        self.code_cells
+            .iter()
+            .map(|(pos, code_cell)| {
                 let output_size = code_cell.output_size();
 
                 let (state, w, h) = match &code_cell.output {
@@ -288,14 +285,14 @@ impl Sheet {
                     },
                     None => (JsRenderCodeCellState::NotYetRun, 1, 1),
                 };
-                Some(JsRenderCodeCell {
+                JsRenderCodeCell {
                     x: pos.x,
                     y: pos.y,
                     w,
                     h,
                     language: code_cell.language,
                     state,
-                })
+                }
             })
             .collect()
     }
@@ -343,7 +340,7 @@ mod tests {
         sheet.delete_cell_values(Rect::single_pos(Pos { x: 1, y: 2 }));
         assert!(!sheet.has_render_cells(rect));
 
-        sheet.set_code_cell_value(
+        sheet.set_code_cell(
             Pos { x: 2, y: 3 },
             Some(CodeCellValue {
                 language: crate::grid::CodeCellLanguage::Python,
@@ -507,7 +504,7 @@ mod tests {
     fn test_get_html_output() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_code(
+        gc.set_code_cell(
             SheetPos {
                 x: 1,
                 y: 2,
@@ -517,7 +514,9 @@ mod tests {
             "<html></html>".to_string(),
             None,
         );
-        gc.after_calculation_async(JsCodeResult::new(
+        let transaction_id = gc.async_transactions()[0].id;
+        gc.calculation_complete(JsCodeResult::new(
+            transaction_id.to_string(),
             true,
             None,
             None,
@@ -526,7 +525,8 @@ mod tests {
             None,
             None,
             None,
-        ));
+        ))
+        .ok();
         let sheet = gc.sheet(sheet_id);
         let render_cells = sheet.get_html_output();
         assert_eq!(render_cells.len(), 1);

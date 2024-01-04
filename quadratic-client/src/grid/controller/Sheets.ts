@@ -1,10 +1,8 @@
-import { debugMockLargeData } from '../../debugFlags';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
 import { SheetId } from '../../quadratic-core/types';
 import { Sheet } from '../sheet/Sheet';
 import { grid } from './Grid';
-import { mockLargeData } from './mockLargeData';
 
 class Sheets {
   sheets: Sheet[];
@@ -19,9 +17,6 @@ class Sheets {
   }
 
   async create() {
-    if (debugMockLargeData) {
-      mockLargeData();
-    }
     this.sheets = [];
     const sheetIds = grid.getSheetIds();
     sheetIds.forEach((_, index) => {

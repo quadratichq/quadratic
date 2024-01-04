@@ -1,5 +1,4 @@
 use crate::controller::{
-    execution::TransactionType,
     operations::clipboard::{Clipboard, ClipboardCell},
     transaction_summary::TransactionSummary,
     GridController,
@@ -125,7 +124,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> (TransactionSummary, String, String) {
         let (ops, plain_text, html) = self.cut_to_clipboard_operations(sheet_rect);
-        let summary = self.set_in_progress_transaction(ops, cursor, false, TransactionType::User);
+        let summary = self.start_user_transaction(ops, cursor);
         (summary, plain_text, html)
     }
 
@@ -139,7 +138,7 @@ impl GridController {
         // first try html
         if let Some(html) = html {
             if let Ok(ops) = self.paste_html_operations(sheet_pos, html) {
-                self.set_in_progress_transaction(ops, cursor, true, TransactionType::User)
+                self.start_user_transaction(ops, cursor)
             } else {
                 TransactionSummary::default()
             }
@@ -148,7 +147,7 @@ impl GridController {
         // first try html
         else if let Some(plain_text) = plain_text {
             let ops = self.paste_plain_text_operations(sheet_pos, plain_text);
-            self.set_in_progress_transaction(ops, cursor, true, TransactionType::User)
+            self.start_user_transaction(ops, cursor)
         } else {
             TransactionSummary::default()
         }
@@ -308,7 +307,7 @@ mod test {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_cell_code(
+        gc.set_code_cell(
             SheetPos {
                 x: 1,
                 y: 1,
@@ -320,18 +319,24 @@ mod test {
         );
 
         assert_eq!(gc.undo_stack.len(), 1);
+        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
 
         let sheet_rect = SheetRect::new_pos_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 1 }, sheet_id);
         let clipboard = gc.copy_to_clipboard(sheet_rect);
 
-        // paste using html
+        // paste using html on a new grid controller
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
+        // ensure the grid controller is empty
         assert_eq!(gc.undo_stack.len(), 0);
 
-        // overwrite an existing code cell
-        gc.set_cell_code(
+        // prepare a cell to be overwritten
+        gc.set_code_cell(
             SheetPos {
                 x: 0,
                 y: 0,
@@ -343,6 +348,14 @@ mod test {
         );
 
         assert_eq!(gc.undo_stack.len(), 1);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(4)))
+        );
+
+        // todo: the reverse ops for clipboard have SetCodeCell before SetCellValues, which is what's causing the test to fail
 
         gc.paste_from_clipboard(
             SheetPos {
@@ -362,8 +375,11 @@ mod test {
 
         assert_eq!(gc.undo_stack.len(), 2);
 
-        // original code cell value
+        dbg!(&gc.undo_stack);
+
+        // undo to original code cell value
         gc.undo(None);
+
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
