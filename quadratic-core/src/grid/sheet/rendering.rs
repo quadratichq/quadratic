@@ -121,71 +121,76 @@ impl Sheet {
     }
 
     // Converts a CodeValue::Code and CodeRun into a vector of JsRenderCell.
-    fn get_code_cells(&self, code: &CellValue, run: &CodeRun, rect: &Rect) -> Vec<JsRenderCell> {
-        match code {
-            CellValue::Code(code) => {
-                let mut cells = vec![];
-                if run.spill_error {
-                    cells.push(self.get_render_cell(
-                        rect.min.x,
-                        rect.min.y,
-                        None,
-                        CellValue::Error(Box::new(RunError {
-                            span: None,
-                            msg: RunErrorMsg::Spill,
-                        })),
-                        Some(code.language),
-                    ));
-                } else if let Some(error) = run.get_error() {
-                    cells.push(self.get_render_cell(
-                        rect.min.x,
-                        rect.min.y,
-                        None,
-                        CellValue::Error(Box::new(error)),
-                        Some(code.language),
-                    ));
+    fn get_code_cells(
+        &self,
+        code: &CellValue,
+        run: &CodeRun,
+        output_rect: &Rect,
+        code_rect: &Rect,
+    ) -> Vec<JsRenderCell> {
+        let mut cells = vec![];
+        if let CellValue::Code(code) = code {
+            if run.spill_error {
+                cells.push(self.get_render_cell(
+                    code_rect.min.x,
+                    code_rect.min.y,
+                    None,
+                    CellValue::Error(Box::new(RunError {
+                        span: None,
+                        msg: RunErrorMsg::Spill,
+                    })),
+                    Some(code.language),
+                ));
+            } else if let Some(error) = run.get_error() {
+                cells.push(self.get_render_cell(
+                    code_rect.min.x,
+                    code_rect.min.y,
+                    None,
+                    CellValue::Error(Box::new(error)),
+                    Some(code.language),
+                ));
+            } else {
+                // find overlap of code_rect into rect
+                let x_start = if code_rect.min.x > output_rect.min.x {
+                    code_rect.min.x
                 } else {
-                    // find overlap of code_rect into rect
-                    let x_start = if rect.min.x < rect.min.x {
-                        rect.min.x
-                    } else {
-                        rect.min.x
-                    };
-                    let x_end = if rect.max.x > rect.max.x {
-                        rect.max.x
-                    } else {
-                        rect.max.x
-                    };
-                    let y_start = if rect.min.y < rect.min.y {
-                        rect.min.y
-                    } else {
-                        rect.min.y
-                    };
-                    let y_end = if rect.max.y > rect.max.y {
-                        rect.max.y
-                    } else {
-                        rect.max.y
-                    };
-                    for x in x_start..=x_end {
-                        let column = self.get_column(x);
-                        for y in y_start..=y_end {
-                            let value =
-                                run.cell_value_at((x - rect.min.x) as u32, (y - rect.min.y) as u32);
-                            if let Some(value) = value {
-                                let language = if x == rect.min.x && y == rect.min.y {
-                                    Some(code.language)
-                                } else {
-                                    None
-                                };
-                                cells.push(self.get_render_cell(x, y, column, value, language));
-                            }
+                    output_rect.min.x
+                };
+                let x_end = if code_rect.max.x > output_rect.max.x {
+                    output_rect.max.x
+                } else {
+                    code_rect.max.x
+                };
+                let y_start = if code_rect.min.y > output_rect.min.y {
+                    code_rect.min.y
+                } else {
+                    output_rect.min.y
+                };
+                let y_end = if code_rect.max.y > output_rect.max.y {
+                    output_rect.max.y
+                } else {
+                    code_rect.max.y
+                };
+                for x in x_start..=x_end {
+                    let column = self.get_column(x);
+                    for y in y_start..=y_end {
+                        let value = run.cell_value_at(
+                            (x - code_rect.min.x) as u32,
+                            (y - code_rect.min.y) as u32,
+                        );
+                        if let Some(value) = value {
+                            let language = if x == code_rect.min.x && y == code_rect.min.y {
+                                Some(code.language)
+                            } else {
+                                None
+                            };
+                            cells.push(self.get_render_cell(x, y, column, value, language));
                         }
                     }
                 }
-                cells
             }
-            _ => vec![], // this should not happen
         }
+        cells
     }
 
     /// Returns cell data in a format useful for rendering. This includes only
@@ -203,18 +208,22 @@ impl Sheet {
                 .values
                 .values_in_range(rect.y_range())
                 .for_each(|(y, value)| {
-                    render_cells.push(self.get_render_cell(x, y, Some(column), value, None));
+                    // ignore code cells when rendering since they will be taken care in the next part
+                    if !matches!(value, CellValue::Code(_)) {
+                        render_cells.push(self.get_render_cell(x, y, Some(column), value, None));
+                    }
                 });
         });
 
         // Fetch values from code cells
         self.iter_code_output_in_rect(rect)
             .for_each(|(code_rect, code_run)| {
-                if let Some(code) = self.get_cell_value(Pos {
+                // sanity check that there is a CellValue::Code for this CodeRun
+                if let Some(code) = self.get_cell_value_only(Pos {
                     x: code_rect.min.x,
                     y: code_rect.min.y,
                 }) {
-                    render_cells.extend(self.get_code_cells(&code, code_run, &code_rect))
+                    render_cells.extend(self.get_code_cells(&code, code_run, &rect, &code_rect))
                 }
             });
         render_cells
@@ -340,9 +349,9 @@ mod tests {
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
             js_types::{JsHtmlOutput, JsRenderCell},
-            Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize,
+            Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize, Sheet,
         },
-        CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
+        CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
     };
 
     #[test]
@@ -585,5 +594,62 @@ mod tests {
                 h: Some("2".into()),
             }
         );
+    }
+
+    #[test]
+    fn test_get_code_cells() {
+        let sheet = Sheet::test();
+        let code_cell = CellValue::Code(CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code: "".to_string(),
+        });
+
+        // code_run is always 3x2
+        let code_run = CodeRun {
+            std_out: None,
+            std_err: None,
+            formatted_code_string: None,
+            last_modified: Utc::now(),
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Array(
+                vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into(),
+            )),
+            spill_error: false,
+        };
+
+        // render rect is larger than code rect
+        let code_cells = sheet.get_code_cells(
+            &code_cell,
+            &code_run,
+            &Rect::from_numbers(0, 0, 10, 10),
+            &Rect::from_numbers(5, 5, 3, 2),
+        );
+        assert_eq!(code_cells.len(), 6);
+        assert_eq!(code_cells[0].value, "1".to_string());
+        assert_eq!(code_cells[0].language, Some(CodeCellLanguage::Python));
+        assert_eq!(code_cells[5].value, "6".to_string());
+        assert_eq!(code_cells[5].language, None);
+
+        // code rect overlaps render rect to the top-left
+        let code_cells = sheet.get_code_cells(
+            &code_cell,
+            &code_run,
+            &Rect::from_numbers(2, 1, 10, 10),
+            &Rect::from_numbers(0, 0, 3, 2),
+        );
+        assert_eq!(code_cells.len(), 1);
+        assert_eq!(code_cells[0].value, "6".to_string());
+        assert_eq!(code_cells[0].language, None);
+
+        // code rect overlaps render rect to the bottom-right
+        let code_cells = sheet.get_code_cells(
+            &code_cell,
+            &code_run,
+            &Rect::from_numbers(0, 0, 3, 2),
+            &Rect::from_numbers(2, 1, 10, 10),
+        );
+        assert_eq!(code_cells.len(), 1);
+        assert_eq!(code_cells[0].value, "1".to_string());
+        assert_eq!(code_cells[0].language, Some(CodeCellLanguage::Python));
     }
 }

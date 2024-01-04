@@ -95,10 +95,13 @@ mod test {
             code: "A0 + 1".to_string(),
         });
         gc.start_user_transaction(
-            vec![Operation::SetCellValues {
-                sheet_rect: sheet_pos.into(),
-                values: Array::from(Value::Single(code_cell.clone())),
-            }],
+            vec![
+                Operation::SetCellValues {
+                    sheet_rect: sheet_pos.into(),
+                    values: Array::from(Value::Single(code_cell.clone())),
+                },
+                Operation::ComputeCode { sheet_pos },
+            ],
             None,
         );
 

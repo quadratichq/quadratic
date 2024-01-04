@@ -90,6 +90,21 @@ impl From<Vec<Vec<String>>> for Array {
     }
 }
 
+impl From<Vec<Vec<&str>>> for Array {
+    fn from(v: Vec<Vec<&str>>) -> Self {
+        let w = v[0].len();
+        let h = v.len();
+        Array {
+            size: ArraySize::new(w as u32, h as u32).unwrap(),
+            values: v
+                .iter()
+                .flatten()
+                .map(|s| CellValue::from(s.as_ref()))
+                .collect(),
+        }
+    }
+}
+
 impl From<Vec<Vec<CellValue>>> for Array {
     fn from(v: Vec<Vec<CellValue>>) -> Self {
         let w = v[0].len();

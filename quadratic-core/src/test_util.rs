@@ -1,11 +1,9 @@
-use std::collections::HashMap;
-
 use crate::{
     controller::GridController,
     grid::{Bold, FillColor, SheetId},
     CellValue, Pos, Rect,
 };
-
+use std::collections::HashMap;
 use tabled::{
     builder::Builder,
     settings::{themes::Colorization, Color},

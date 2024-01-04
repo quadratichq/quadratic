@@ -697,7 +697,7 @@ mod tests {
         let code_cell = client
             .try_sheet_from_id(sheet_id)
             .unwrap()
-            .get_cell_value(Pos { x: 1, y: 1 });
+            .get_cell_value_only(Pos { x: 1, y: 1 });
         assert!(matches!(code_cell, Some(CellValue::Code(_))));
 
         let transaction_id = client.async_transactions()[0].id;
@@ -724,7 +724,7 @@ mod tests {
         let code_cell = client
             .try_sheet_from_id(sheet_id)
             .unwrap()
-            .get_cell_value(Pos { x: 1, y: 1 });
+            .get_cell_value_only(Pos { x: 1, y: 1 });
         assert!(matches!(code_cell, Some(CellValue::Code(_))));
 
         // mock the python calculation returning the result
