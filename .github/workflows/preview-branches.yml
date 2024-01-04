@@ -36,6 +36,12 @@ jobs:
           pulumi stack select $STACK_NAME
         fi
 
+        # Create a file pointing at the correct Pulumi ESC Environment
+        cat <<EOF | tee Pulumi.$STACK_NAME.yaml
+        environment:
+          - aws-infra-development
+        EOF
+
         pulumi config set subdomain multiplayer-pr-${{ env.PR_ID }}
         pulumi config set quadratic-api-uri https://quadratic-api-dev-pr-${{ env.PR_ID }}.herokuapp.com
         pulumi config set multiplayer-aws-s3-access-key-id ${{ secrets.MULTIPLAYER_AWS_S3_ACCESS_KEY_ID }} --secret

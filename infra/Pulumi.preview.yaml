@@ -1,6 +1,0 @@
-config:
-  aws-native:region: us-west-2
-  aws:region: us-west-2
-
-environment:
-  - aws-infra-development
