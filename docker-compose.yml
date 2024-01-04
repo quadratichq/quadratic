@@ -8,6 +8,7 @@ services:
       - "6379:6379"
     volumes:
       - ./docker/redis/dаta:/root/redis
+    command: redis-server --loglevel debug
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: "5s"

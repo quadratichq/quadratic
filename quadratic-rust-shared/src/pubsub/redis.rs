@@ -1,4 +1,4 @@
-use futures_util::stream::StreamExt;
+use futures_util::stream::{Stream, StreamExt};
 use redis::{
     aio::{AsyncStream, MultiplexedConnection, PubSub},
     AsyncCommands, Client,
@@ -8,6 +8,7 @@ use std::pin::Pin;
 use crate::pubsub::Config;
 use crate::{error::Result, SharedError};
 
+#[derive(Debug, Clone)]
 pub struct RedisConfig {
     host: String,
     port: String,
@@ -17,7 +18,7 @@ pub struct RedisConfig {
 pub type PubSubConnection = PubSub<Pin<Box<dyn AsyncStream + Send + Sync>>>;
 
 pub struct RedisConnection {
-    pubsub: PubSubConnection,
+    pub pubsub: PubSubConnection,
     multiplex: MultiplexedConnection,
 }
 
@@ -71,20 +72,16 @@ impl super::PubSub for RedisConnection {
     }
 
     /// Get the next message from the pubsub server.
-    async fn get_message(&mut self) -> Result<Option<String>> {
-        let payload: Result<Option<String>> = self
-            .pubsub
-            .on_message()
-            .next()
-            .await
-            .map_or_else(|| Ok(None), |message| Ok(Some(message.get_payload()?)));
-
-        payload
+    async fn poll<T>(&mut self) -> impl Stream {
+        self.pubsub.on_message()
     }
 }
 
 #[cfg(test)]
 pub mod tests {
+    use std::vec;
+
+    use redis::Msg;
     use uuid::Uuid;
 
     use crate::pubsub::PubSub;
@@ -104,13 +101,37 @@ pub mod tests {
 
     #[tokio::test]
     async fn connect_subscribe_publish_get_message() {
+        let messages = vec!["test 1", "test 2"];
         let (config, channel) = setup();
-        let message = "test";
-        let mut connection = RedisConnection::new(config).await.unwrap();
-        connection.subscribe(&channel).await.unwrap();
-        connection.publish(&channel, message).await.unwrap();
-        let message_read = connection.get_message().await.unwrap().unwrap();
 
-        assert_eq!(message_read, message);
+        let config_clone = config.clone();
+        let channel_clone = channel.clone();
+        let handle = tokio::spawn(async move {
+            let mut connection = RedisConnection::new(config_clone).await.unwrap();
+            connection.subscribe(&channel_clone).await.unwrap();
+            let mut received = vec![];
+
+            while let Some(message) = connection.pubsub.on_message().next().await {
+                received.push(message.get_payload::<String>().unwrap());
+
+                if received.len() == 2 {
+                    break;
+                }
+            }
+
+            received
+        });
+
+        tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+
+        for message in messages.iter() {
+            connection.publish(&channel, message).await.unwrap();
+        }
+
+        let received = handle.await.unwrap();
+
+        assert_eq!(received, messages);
     }
 }
