@@ -1,0 +1,54 @@
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+use super::{
+    active_transactions::pending_transaction::PendingTransaction, execution::TransactionType,
+    operations::operation::Operation,
+};
+
+// Transaction created by client
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
+pub struct Transaction {
+    pub id: Uuid,
+    pub sequence_num: Option<u64>,
+    pub operations: Vec<Operation>,
+    pub cursor: Option<String>,
+}
+
+impl Transaction {
+    pub fn to_pending_transaction(
+        &self,
+        transaction_type: TransactionType,
+        cursor: Option<String>,
+    ) -> PendingTransaction {
+        PendingTransaction {
+            id: self.id,
+            cursor,
+            transaction_type,
+            operations: self.operations.clone().into(),
+            ..Default::default()
+        }
+    }
+}
+
+// Transaction received from Server
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct TransactionServer {
+    pub id: Uuid,
+    pub file_id: Uuid,
+    pub operations: Vec<Operation>,
+    pub sequence_num: u64,
+}
+
+// From doesn't work since we don't have file_id
+#[allow(clippy::from_over_into)]
+impl Into<Transaction> for TransactionServer {
+    fn into(self) -> Transaction {
+        Transaction {
+            id: self.id,
+            sequence_num: Some(self.sequence_num),
+            operations: self.operations,
+            cursor: None,
+        }
+    }
+}

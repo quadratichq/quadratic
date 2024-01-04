@@ -1,7 +1,22 @@
-use anyhow::{anyhow, Result};
 use uuid::Uuid;
 
+use crate::error::{MpError, Result};
 use crate::state::State;
+
+#[derive(Debug)]
+pub(crate) struct Connection {
+    pub(crate) id: Uuid,
+    pub(crate) jwt: Option<String>,
+}
+
+impl Connection {
+    pub(crate) fn new(jwt: Option<String>) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            jwt,
+        }
+    }
+}
 
 impl State {
     /// Retrieve the session_id from connections
@@ -11,10 +26,9 @@ impl State {
             .lock()
             .await
             .get(&connection_id)
-            .ok_or(anyhow!(
-                "connection_id {} not found in sockets",
-                connection_id
-            ))?
+            .ok_or(MpError::Connection(format!(
+                "connection_id {connection_id} not found in sockets"
+            )))?
             .to_owned();
 
         Ok(session_id)
@@ -22,12 +36,15 @@ impl State {
 
     /// Removes a connection from the state.  If the connection is in a room, leave the room.
     #[tracing::instrument(level = "trace")]
-    pub(crate) async fn clear_connections(&self, connection_id: Uuid) -> Result<Vec<Uuid>> {
+    pub(crate) async fn clear_connections(&self, connection: &Connection) -> Result<Vec<Uuid>> {
+        let connection_id = connection.id;
         let mut affected_rooms = vec![];
         let rooms = self.rooms.lock().await.clone();
 
-        for (file_id, room) in rooms.iter() {
+        for room in rooms.iter() {
+            let (file_id, room) = room.pair();
             let session_id = self.get_session_id(connection_id).await?;
+
             if let Some(user) = room.users.get(&session_id) {
                 tracing::info!("Removing connection_id {connection_id} from room {file_id}");
 
@@ -45,39 +62,40 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::assert_anyhow_error;
+    use crate::{error::MpError, test_util::new_state};
 
     use super::*;
 
-    async fn setup() -> (State, Uuid, Uuid) {
-        let state = State::new();
+    async fn setup() -> (State, Uuid, Connection) {
+        let state = new_state().await;
         let session_id = Uuid::new_v4();
-        let connection_id = Uuid::new_v4();
+        let connection = Connection::new(None);
 
         state
             .connections
             .lock()
             .await
-            .insert(connection_id, session_id);
+            .insert(connection.id, session_id);
 
-        (state, session_id, connection_id)
+        (state, session_id, connection)
     }
 
     #[tokio::test]
     async fn get_session_id() {
-        let (state, session_id, connection_id) = setup().await;
-        let result = state.get_session_id(connection_id).await.unwrap();
+        let (state, session_id, connection) = setup().await;
+        let result = state.get_session_id(connection.id).await.unwrap();
 
         assert_eq!(result, session_id);
     }
 
     #[tokio::test]
     async fn clear_connections() {
-        let (state, _, connection_id) = setup().await;
-        state.clear_connections(connection_id).await.unwrap();
+        let (state, _, connection) = setup().await;
+        let connection_id = connection.id;
+        state.clear_connections(&connection).await.unwrap();
         let result = state.get_session_id(connection_id).await;
         let expected = format!("connection_id {connection_id} not found in sockets");
 
-        assert_anyhow_error(result, &expected);
+        assert_eq!(result.unwrap_err(), MpError::Connection(expected));
     }
 }

@@ -9,6 +9,7 @@ import path from 'path';
 import ai_chat_router from './routes/ai_chat';
 import feedback_router from './routes/feedback';
 import files_router from './routes/files';
+import internal_router from './routes/internal';
 import teams_router from './routes/teams';
 import { ApiError } from './utils/ApiError';
 
@@ -58,15 +59,21 @@ app.use((req, res, next) => {
 });
 
 // Routes
+app.route('/').get((_r, res: Response) => {
+  res.send({ message: '200 OK' });
+});
 app.use('/ai', ai_chat_router);
 app.use('/v0/files', files_router);
 app.use('/v0/feedback', feedback_router);
 app.use('/v0/teams', teams_router);
 registerRoutes();
 
+// Internal routes
+app.use('/v0/internal', internal_router);
+
 if (SENTRY_DSN) {
   // test route
-  app.get('/debug-sentry', function mainHandler(req, res) {
+  app.get('/debug-sentry', function mainHandler(/*req, res*/) {
     throw new Error('My first Sentry error!');
   });
 
@@ -97,7 +104,6 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
       message: err.message,
     },
   });
-
   next(err);
 });
 

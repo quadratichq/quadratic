@@ -3,7 +3,9 @@ use std::collections::HashSet;
 use smallvec::SmallVec;
 
 use super::*;
-use crate::{grid::Grid, Array, CellValue, CodeResult, ErrorMsg, SheetPos, Span, Spanned, Value};
+use crate::{
+    grid::Grid, Array, CellValue, CodeResult, ErrorMsg, SheetPos, SheetRect, Span, Spanned, Value,
+};
 
 /// Formula execution context.
 pub struct Ctx<'ctx> {
@@ -12,7 +14,7 @@ pub struct Ctx<'ctx> {
     /// Position in the grid from which the formula is being evaluated.
     pub sheet_pos: SheetPos,
     /// Cells that have been accessed in evaluating the formula.
-    pub cells_accessed: HashSet<SheetPos>,
+    pub cells_accessed: HashSet<SheetRect>,
 }
 impl<'ctx> Ctx<'ctx> {
     /// Constructs a context for evaluating a formula at `pos` in `grid`.
@@ -30,7 +32,7 @@ impl<'ctx> Ctx<'ctx> {
         let sheet = match &ref_pos.sheet {
             Some(sheet_name) => self
                 .grid
-                .sheet_from_name(sheet_name.clone()) // TODO: should not need clone
+                .sheet_from_name(sheet_name.clone())
                 .ok_or(ErrorMsg::BadCellReference.with_span(span))?,
             None => self.grid.sheet_from_id(self.sheet_pos.sheet_id),
         };
@@ -40,7 +42,7 @@ impl<'ctx> Ctx<'ctx> {
             return Err(ErrorMsg::CircularReference.with_span(span));
         }
 
-        self.cells_accessed.insert(ref_pos_with_sheet);
+        self.cells_accessed.insert(ref_pos_with_sheet.into());
 
         let value = sheet.get_cell_value(ref_pos).unwrap_or(CellValue::Blank);
         Ok(Spanned { inner: value, span })

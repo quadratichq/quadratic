@@ -4,7 +4,7 @@ use crate::grid::{
     generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
     CellWrap, Grid, GridBounds, NumericFormat, NumericFormatKind,
 };
-use crate::{CellValue, Error, ErrorMsg, Pos, Rect, SheetPos, Span, Value};
+use crate::{CellValue, Error, ErrorMsg, Pos, Rect, Span, Value};
 
 use crate::grid::file::v1_5::schema::{self as current};
 use crate::grid::{
@@ -121,7 +121,6 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
         .iter()
         .map(|(x, column)| {
             let mut col = Column::new(*x);
-            set_column_format::<Pos>(&mut col.spills, &column.spills)?;
             set_column_format::<CellAlign>(&mut col.align, &column.align)?;
             set_column_format::<CellWrap>(&mut col.wrap, &column.wrap)?;
             set_column_format_i16(&mut col.numeric_decimals, &column.numeric_decimals)?;
@@ -202,7 +201,7 @@ fn import_code_cell_output(type_field: &str, value: &str) -> CellValue {
     }
 }
 
-fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<Pos, CodeCellValue>> {
+fn import_code_cell_builder(sheet: &current::Sheet) -> Result<Vec<(Pos, CodeCellValue)>> {
     sheet
         .code_cells
         .iter()
@@ -252,13 +251,7 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<HashMap<Pos, CodeC
                                     },
                                     cells_accessed: cells_accessed
                                         .into_iter()
-                                        .map(|cell| {
-                                            Ok(SheetPos {
-                                                sheet_id: SheetId::from_str(&cell.sheet_id.id)?,
-                                                x: cell.x,
-                                                y: cell.y,
-                                            })
-                                        })
+                                        .map(|sheet_rect| Ok(sheet_rect.into()))
                                         .collect::<Result<_>>()
                                         .ok()?,
                                 },
@@ -409,7 +402,6 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                 *x,
                 current::Column {
                     x: *x,
-                    spills: export_column_data(&column.spills),
                     align: export_column_data(&column.align),
                     wrap: export_column_data(&column.wrap),
                     numeric_decimals: export_column_data_i16(&column.numeric_decimals),
@@ -495,17 +487,20 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                 columns: export_column_builder(sheet),
                 borders: export_borders_builder(sheet),
                 code_cells: sheet
-                    .iter_code_cells_locations()
-                    .map(|pos| {
-                        let code_cell_value = sheet.get_code_cell(pos).unwrap().clone();
+                    .code_cells
+                    .iter()
+                    .map(|(pos, code_cell_value)| {
                         (
-                            pos.into(),
+                            current::Pos::from(*pos),
                             current::CodeCellValue {
                                 language: code_cell_value.language.to_string(),
-                                code_string: code_cell_value.code_string,
-                                formatted_code_string: code_cell_value.formatted_code_string,
-                                last_modified: code_cell_value.last_modified,
-                                output: code_cell_value.output.map(|output| current::CodeCellRunOutput {
+                                code_string: code_cell_value.code_string.clone(),
+                                formatted_code_string: code_cell_value
+                                    .formatted_code_string
+                                    .clone(),
+                                last_modified: code_cell_value.last_modified.clone(),
+                                output: code_cell_value.output.clone().map(|output| {
+                                    current::CodeCellRunOutput {
                                         std_out: output.std_out,
                                         std_err: output.std_err,
                                         spill: output.spill,
@@ -533,37 +528,44 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                                                                     h: array.height() as i64,
                                                                 },
                                                                 values: array
-                                                                    .rows().flat_map(|row| {
+                                                                    .rows()
+                                                                    .flat_map(|row| {
                                                                         row.iter().map(|cell| {
-                                                                            current::OutputValueValue {
-                                                                                type_field: cell
-                                                                                    .type_name()
-                                                                                    .into(),
-                                                                                value: cell
-                                                                                    .to_string(),
-                                                                            }
-                                                                        })
+                                                                        current::OutputValueValue {
+                                                                            type_field: cell
+                                                                                .type_name()
+                                                                                .into(),
+                                                                            value: cell
+                                                                                .to_string(),
+                                                                        }
+                                                                    })
                                                                     })
                                                                     .collect(),
                                                             },
                                                         )
                                                     }
                                                 },
-                                                cells_accessed: cells_accessed.into_iter().map(|cell_ref| cell_ref.into()).collect(),
+                                                cells_accessed: cells_accessed
+                                                    .into_iter()
+                                                    .map(|cell_ref| cell_ref.into())
+                                                    .collect(),
                                             },
                                             CodeCellRunResult::Err { error } => {
                                                 current::CodeCellRunResult::Err {
                                                     error: current::Error {
-                                                        span: error.span.map(|span| current::Span {
+                                                        span: error.span.map(|span| {
+                                                            current::Span {
                                                                 start: span.start,
                                                                 end: span.end,
-                                                            }),
-                                                        msg: error.msg.to_string()
-                                                    }
+                                                            }
+                                                        }),
+                                                        msg: error.msg.to_string(),
+                                                    },
                                                 }
                                             }
                                         },
-                                    }),
+                                    }
+                                }),
                             },
                         )
                     })
@@ -577,7 +579,8 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
 mod tests {
     use super::*;
 
-    const V1_5_FILE: &str = include_str!("../../../../rust-shared/data/grid/v1_5_simple.grid");
+    const V1_5_FILE: &str =
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
 
     #[test]
     fn imports_and_exports_a_current_grid() {

@@ -6,6 +6,7 @@
     "bindgen",
     "dbgjs",
     "dcell",
+    "ddimaria",
     "dgraph",
     "endregion",
     "Fuzzysort",
@@ -24,6 +25,7 @@
     "Signin",
     "smallpop",
     "Southborough",
+    "thiserror",
     "unspill",
     "vals",
     "Westborough"

@@ -4,20 +4,15 @@ import { RequestWithAuth, RequestWithOptionalAuth, RequestWithUser } from '../ty
 
 const getOrCreateUser = async (auth0_id: string) => {
   // get user from db
-  let user = await dbClient.user.findUnique({
+  const user = await dbClient.user.upsert({
     where: {
       auth0_id,
     },
+    update: {},
+    create: {
+      auth0_id,
+    },
   });
-
-  // if not user, create user
-  if (user === null) {
-    user = await dbClient.user.create({
-      data: {
-        auth0_id,
-      },
-    });
-  }
 
   return user;
 };

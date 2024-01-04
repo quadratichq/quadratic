@@ -14,6 +14,8 @@ model User {
     QFeedback    QFeedback[]
     UserTeamRole UserTeamRole[]
     UserFileRole UserFileRole[]
+
+    @@index([auth0_id])
 }
 
 enum LinkPermission {
@@ -24,27 +26,48 @@ enum LinkPermission {
 
 // TODO Properly configure camelCase <-> snake_case
 model File {
-    id               Int            @id @default(autoincrement())
-    uuid             String         @unique @default(uuid())
+    id               Int              @id @default(autoincrement())
+    uuid             String           @unique @default(uuid())
     name             String
     thumbnail        String? // S3FileKey
-    created_date     DateTime       @default(now()) // TODO map("created_date")
-    updated_date     DateTime       @default(now()) // TODO map("updated_date")
-    deleted          Boolean        @default(false)
+    created_date     DateTime         @default(now()) // TODO map("created_date")
+    updated_date     DateTime         @default(now()) // TODO map("updated_date")
+    deleted          Boolean          @default(false)
     deleted_date     DateTime?
     // Binary file contents
-    contents         Bytes
-    // Permissions
-    owner            User           @relation(fields: [ownerUserId], references: [id]) // TODO: rename to `creator`
+    contents         Bytes? // unused to delete
+    // Role
+    owner            User             @relation(fields: [ownerUserId], references: [id]) // TODO: rename to `creator`
     ownerUserId      Int
-    team             Team?          @relation(fields: [teamId], references: [id])
-    teamId           Int?           @map("team_id")
-    publicLinkAccess LinkPermission @default(NOT_SHARED) @map("public_link_access")
+    publicLinkAccess LinkPermission   @default(NOT_SHARED) @map("public_link_access")
+    // Team
+    team             Team?            @relation(fields: [teamId], references: [id])
+    teamId           Int?             @map("team_id")
     // analytics fields
-    times_updated    Int            @default(1)
-    version          String?
+    times_updated    Int              @default(1) // unused to delete
+    version          String? // unused to delete
+    FileCheckpoint   FileCheckpoint[]
     UserFileRole     UserFileRole[]
     FileInvite       FileInvite[]
+
+    @@index([uuid])
+}
+
+model FileCheckpoint {
+    // Unique Identifiers
+    id             Int      @id @default(autoincrement())
+    file           File     @relation(fields: [fileId], references: [id])
+    fileId         Int      @map("file_id")
+    sequenceNumber Int      @map("sequence_number")
+    // Checkpoint Data
+    s3Bucket       String   @map("s3_bucket")
+    s3Key          String   @map("s3_key")
+    version        String // Quadratic file version
+    // Metadata
+    timestamp      DateTime @default(now())
+
+    @@unique([fileId, sequenceNumber])
+    @@index([fileId, sequenceNumber])
 }
 
 model Team {
@@ -56,6 +79,8 @@ model Team {
     UserTeamRole UserTeamRole[]
     TeamInvite   TeamInvite[]
     File         File[]
+
+    @@index([uuid])
 }
 
 enum TeamRole {

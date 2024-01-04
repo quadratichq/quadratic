@@ -27,7 +27,7 @@ echo 'Stop Service on EC2'
 ssh -i ~/.ssh/id_rsa ubuntu@$EC2_INSTANCE_DNS "sudo systemctl stop quadratic-multiplayer && rm -f /home/ubuntu/quadratic-multiplayer"
 
 echo 'Transfer Build to EC2'
-scp -i ~/.ssh/id_rsa quadratic-multiplayer/target/release/quadratic-multiplayer ubuntu@$EC2_INSTANCE_DNS:/home/ubuntu/
+scp -i ~/.ssh/id_rsa target/release/quadratic-multiplayer ubuntu@$EC2_INSTANCE_DNS:/home/ubuntu/
 
 echo 'Restart Service on EC2'
 ssh -i ~/.ssh/id_rsa ubuntu@$EC2_INSTANCE_DNS "sudo systemctl start quadratic-multiplayer"

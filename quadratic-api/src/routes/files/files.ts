@@ -1,13 +1,15 @@
 import express, { Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { generatePresignedUrl, uploadStringAsFileS3 } from '../../aws/s3';
 import dbClient from '../../dbClient';
 import { fileMiddleware } from '../../middleware/fileMiddleware';
+import { uploadThumbnailToS3 } from '../../middleware/s3fileThumbnailUpload';
 import { userMiddleware, userOptionalMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { Request } from '../../types/Request';
 import { getFilePermissions } from './getFilePermissions';
-import { generatePresignedUrl, uploadThumbnailToS3 } from './thumbnail';
 
 export const validateUUID = () => param('uuid').isUUID(4);
 const validateFileContents = () => body('contents').isString().not().isEmpty();
@@ -71,22 +73,40 @@ files_router.get(
       return res.status(400).json({ errors: errors.array() });
     }
 
+    let thumbnailUrl = null;
     if (req.quadraticFile.thumbnail) {
-      req.quadraticFile.thumbnail = await generatePresignedUrl(req.quadraticFile.thumbnail);
+      thumbnailUrl = await generatePresignedUrl(req.quadraticFile.thumbnail);
     }
+
+    // Get the most recent checkpoint for the file
+    const checkpoint = await dbClient.fileCheckpoint.findFirst({
+      where: {
+        fileId: req.quadraticFile.id,
+      },
+      orderBy: {
+        sequenceNumber: 'desc',
+      },
+    });
+
+    if (!checkpoint) {
+      return res.status(500).json({ error: { message: 'No Checkpoints exist for this file' } });
+    }
+
+    const lastCheckpointDataUrl = await generatePresignedUrl(checkpoint.s3Key);
 
     return res.status(200).json({
       file: {
         uuid: req.quadraticFile.uuid,
         name: req.quadraticFile.name,
-        created_date: req.quadraticFile.created_date,
-        updated_date: req.quadraticFile.updated_date,
-        version: req.quadraticFile.version,
-        contents: req.quadraticFile.contents.toString('utf8'),
-        thumbnail: req.quadraticFile.thumbnail,
+        created_date: req.quadraticFile.created_date.toISOString(),
+        updated_date: req.quadraticFile.updated_date.toISOString(),
+        lastCheckpointSequenceNumber: checkpoint?.sequenceNumber,
+        lastCheckpointVersion: checkpoint?.version,
+        lastCheckpointDataUrl,
+        thumbnail: thumbnailUrl,
       },
       permission: getFilePermissions(req.user, req.quadraticFile),
-    });
+    } as ApiTypes['/v0/files/:uuid.GET.response']);
   }
 );
 
@@ -96,8 +116,6 @@ files_router.post(
   validateAccessToken,
   userMiddleware,
   fileMiddleware,
-  validateFileContents().optional(),
-  validateFileVersion().optional(),
   validateFileName().optional(),
   async (req: Request, res: Response) => {
     if (!req.quadraticFile || !req.user) {
@@ -113,28 +131,6 @@ files_router.post(
     const permissions = getFilePermissions(req.user, req.quadraticFile);
     if (permissions !== 'EDITOR' && permissions !== 'OWNER') {
       return res.status(403).json({ error: { message: 'Permission denied' } });
-    }
-
-    // Update the contents
-    if (req.body.contents !== undefined) {
-      if (req.body.version === undefined) {
-        return res.status(400).json({ error: { message: 'Updating `contents` requires `version` in body' } });
-      }
-
-      const contents = Buffer.from(req.body.contents, 'utf-8');
-      await dbClient.file.update({
-        where: {
-          uuid: req.params.uuid,
-        },
-        data: {
-          contents,
-          updated_date: new Date(),
-          version: req.body.version,
-          times_updated: {
-            increment: 1,
-          },
-        },
-      });
     }
 
     // update the file name
@@ -242,20 +238,30 @@ files_router.post(
       return res.status(500).json({ error: { message: 'Internal server error' } });
     }
 
-    const contents = Buffer.from(req.body.contents, 'utf8');
-
     const file = await dbClient.file.create({
       data: {
         ownerUserId: req.user.id,
         name: req.body.name,
-        contents: contents,
-        version: req.body.version,
       },
       select: {
+        id: true,
         uuid: true,
         name: true,
         created_date: true,
         updated_date: true,
+      },
+    });
+
+    // upload file to S3
+    const response = await uploadStringAsFileS3(`${file.uuid}-0.grid`, req.body.contents);
+
+    await dbClient.fileCheckpoint.create({
+      data: {
+        fileId: file.id,
+        sequenceNumber: 0,
+        s3Bucket: response.bucket,
+        s3Key: response.key,
+        version: req.body.version,
       },
     });
 

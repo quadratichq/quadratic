@@ -6,6 +6,7 @@
 mod auth;
 mod background_worker;
 mod config;
+mod error;
 mod file;
 mod message;
 mod server;
@@ -13,7 +14,7 @@ mod state;
 #[cfg(test)]
 mod test_util;
 
-use anyhow::Result;
+use error::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {

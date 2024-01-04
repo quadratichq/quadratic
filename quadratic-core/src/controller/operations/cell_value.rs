@@ -11,7 +11,8 @@ use crate::{
 use super::operation::Operation;
 
 impl GridController {
-    pub fn string_to_cell_value(
+    /// Convert string to a cell_value and generate necessary operations
+    pub(super) fn string_to_cell_value(
         &mut self,
         sheet_pos: SheetPos,
         value: &str,
@@ -65,6 +66,7 @@ impl GridController {
         (ops, cell_value)
     }
 
+    /// Generate operations for a user-initiated change to a cell value
     pub fn set_cell_value_operations(
         &mut self,
         sheet_pos: SheetPos,
@@ -79,34 +81,25 @@ impl GridController {
         let (operations, cell_value) = self.string_to_cell_value(sheet_pos, value);
         ops.extend(operations);
 
+        let sheet_rect = sheet_pos.into();
         ops.push(Operation::SetCellValues {
-            sheet_rect: sheet_pos.into(),
+            sheet_rect,
             values: Array::from(cell_value),
         });
+        ops.extend(self.delete_code_cell_operations(&sheet_rect));
         ops
     }
 
-    /// Generates and returns the set of operations to deleted the values and code in a given region
+    /// Generates and returns the set of operations to deleted the values and code in a sheet_rect
     /// Does not commit the operations or create a transaction.
     pub fn delete_cells_rect_operations(&mut self, sheet_rect: SheetRect) -> Vec<Operation> {
-        let mut ops = vec![];
         let values = Array::new_empty(sheet_rect.size());
-        ops.push(Operation::SetCellValues { sheet_rect, values });
-
-        let sheet = self.grid.sheet_from_id(sheet_rect.sheet_id);
-
-        // collect all the code cells in the region
-        for pos in sheet.code_cells.keys() {
-            if sheet_rect.contains(pos.to_sheet_pos(sheet_rect.sheet_id)) {
-                ops.push(Operation::SetCellCode {
-                    sheet_pos: pos.to_sheet_pos(sheet_rect.sheet_id),
-                    code_cell_value: None,
-                });
-            }
-        }
+        let mut ops = vec![Operation::SetCellValues { sheet_rect, values }];
+        ops.extend(self.delete_code_cell_operations(&sheet_rect));
         ops
     }
 
+    /// Generates and returns the set of operations to clear the formatting in a sheet_rect
     pub fn delete_values_and_formatting_operations(
         &mut self,
         sheet_rect: SheetRect,
