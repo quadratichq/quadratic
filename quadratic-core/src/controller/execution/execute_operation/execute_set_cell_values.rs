@@ -40,6 +40,8 @@ impl GridController {
                             .forward_operations
                             .push(Operation::SetCellValues { sheet_rect, values });
 
+                        self.check_all_spills(transaction, sheet_rect.sheet_id, 0);
+
                         // if transaction.is_user() {
                         //     // remove any code_cells that are now covered by the new values
                         //     let mut code_cell_removed = false;

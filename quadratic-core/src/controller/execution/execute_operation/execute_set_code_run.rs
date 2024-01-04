@@ -233,7 +233,9 @@ mod tests {
         );
         let sheet = gc.grid.sheet_from_id(sheet_id);
 
-        assert!(sheet.code_run(Pos { x: 0, y: 0 }).unwrap().spill_error);
+        let code_run = sheet.code_run(Pos { x: 0, y: 0 });
+        assert!(code_run.is_some());
+        assert!(code_run.unwrap().spill_error);
 
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 0 }));
 
@@ -251,8 +253,10 @@ mod tests {
             None,
         );
 
-        let sheet = gc.grid.sheet_from_id(sheet_id);
-        assert!(!sheet.code_run(Pos { x: 0, y: 0 }).unwrap().spill_error);
+        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let code_run = sheet.code_run(Pos { x: 0, y: 0 });
+        assert!(code_run.is_some());
+        assert!(!code_run.unwrap().spill_error);
 
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 0 }));
 
