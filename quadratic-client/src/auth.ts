@@ -33,7 +33,7 @@ async function getClient() {
       cacheLocation: 'localstorage',
       useRefreshTokens: true,
       // remove the subdomain from the cookie domain so that the ws server can access it
-      cookieDomain: '.' + window.location.host.match(/^(?:.*?\.)?([a-zA-Z0-9\-_]{3,}\.(?:\w{2,8}|\w{2,4}\.\w{2,4}))$/)![1],
+      // cookieDomain: '.' + window.location.host.match(/^(?:.*?\.)?([a-zA-Z0-9\-_]{3,}\.(?:\w{2,8}|\w{2,4}\.\w{2,4}))$/)![1],
     });
   }
   const auth0Client = await auth0ClientPromise;
