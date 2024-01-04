@@ -32,8 +32,8 @@ router.delete(
     const inviteToDelete = Number(inviteId);
     const { user: userMakingRequest } = await getFile({ uuid, userId });
 
-    // User making the request can edit the team
-    if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
+    // User making the request can edit
+    if (!userMakingRequest.permissions.includes('FILE_EDIT')) {
       return res.status(403).json({
         error: { message: 'You do not have permission to delete this invite.' },
       });

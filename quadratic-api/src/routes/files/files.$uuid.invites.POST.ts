@@ -136,7 +136,7 @@ router.post(
 
       // TODO: send them an email
 
-      const data: ApiTypes['/v0/teams/:uuid/invites.POST.response'] = { email, role, id: dbUser.id };
+      const data: ApiTypes['/v0/files/:uuid/invites.POST.response'] = { email, role, id: dbUser.id };
       return res.status(201).json(data);
     }
 

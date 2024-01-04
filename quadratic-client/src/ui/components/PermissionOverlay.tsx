@@ -1,3 +1,4 @@
+import { useRootRouteLoaderData } from '@/router';
 import { Alert, Button, Paper, Stack, useTheme } from '@mui/material';
 import { PermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import React, { useState } from 'react';
@@ -8,7 +9,7 @@ import { duplicateFileAction } from '../../actions';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { ROUTES } from '../../constants/routes';
 import { useFileContext } from './FileProvider';
-const { FILE_EDIT, FILE_VIEW } = PermissionSchema.enum;
+const { FILE_EDIT } = PermissionSchema.enum;
 
 export function PermissionOverlay() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
@@ -16,20 +17,14 @@ export function PermissionOverlay() {
   const { name } = useFileContext();
   const theme = useTheme();
   const submit = useSubmit();
+  const { isAuthenticated } = useRootRouteLoaderData();
 
-  if (permissions.includes(FILE_EDIT) && isMobile && isOpen) {
-    return (
-      <Wrapper>
-        <Alert variant="outlined" severity="info" sx={{ width: '100%' }} onClose={() => setIsOpen(false)}>
-          <strong>Read-only on mobile.</strong> Open on desktop to edit cells and run code.
-        </Alert>
-      </Wrapper>
-    );
-  }
+  // This component assumes that the file can be viewed in some way, either by
+  // a logged in user or a logged out user where the file's link is public.
+  // This render path will never be reached if the user doesn't have access to the file.
 
-  // TODO: If they're not logged in but they can see the file, they're anonymous
-  const isLoggedIn = true;
-  if (permissions.includes(FILE_VIEW) && isLoggedIn) {
+  // If you're not logged in, we've got a message for you
+  if (!isAuthenticated) {
     return (
       <Wrapper>
         <Alert
@@ -59,7 +54,8 @@ export function PermissionOverlay() {
     );
   }
 
-  if (permissions.includes(FILE_VIEW)) {
+  // If you can't edit the file, we've got a message for you
+  if (!permissions.includes(FILE_EDIT)) {
     return (
       <Wrapper>
         <Alert
@@ -78,6 +74,19 @@ export function PermissionOverlay() {
           }
         >
           <strong>Read-only.</strong> To edit this file, make a duplicate in your files.
+        </Alert>
+      </Wrapper>
+    );
+  }
+
+  // If you can edit the file, but you're on mobile, we've got a message for you
+  // Note: it's possible somebody can edit this file on mobile but they aren't
+  // logged in. They won't see this. They'll see the "Log in" message above.
+  if (permissions.includes(FILE_EDIT) && isMobile && isOpen) {
+    return (
+      <Wrapper>
+        <Alert variant="outlined" severity="info" sx={{ width: '100%' }} onClose={() => setIsOpen(false)}>
+          <strong>Read-only on mobile.</strong> Open on desktop to edit cells and run code.
         </Alert>
       </Wrapper>
     );

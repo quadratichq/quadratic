@@ -3,7 +3,9 @@ import * as Tracing from '@sentry/tracing';
 import cors from 'cors';
 import express, { NextFunction, Request, Response } from 'express';
 import 'express-async-errors';
+import fs from 'fs';
 import helmet from 'helmet';
+import path from 'path';
 import ai_chat_router from './routes/ai_chat';
 import feedback_router from './routes/feedback';
 import files_router from './routes/files';
@@ -60,6 +62,7 @@ app.use('/ai', ai_chat_router);
 app.use('/v0/files', files_router);
 app.use('/v0/feedback', feedback_router);
 app.use('/v0/teams', teams_router);
+registerRoutes();
 
 if (SENTRY_DSN) {
   // test route
@@ -98,7 +101,13 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   next(err);
 });
 
-/*
+/**
+ * Dynamically register routes that define their paths & HTTP methods in the filename.
+ * e.g. `routes/v0/<segment>.<segment>.<$dynamicSegment>.<HTTP_METHOD>.ts`
+ *
+ * Each route exports an array of middleware functions with the last function being the handler.
+ * e.g. `export default [middleware1, middleware2, handler];`
+ */
 async function registerRoutes() {
   const currentDirectory = path.join(__dirname, '/routes/v0');
   const files = fs.readdirSync(currentDirectory).filter((item) => !item.includes('.test.'));
@@ -111,20 +120,23 @@ async function registerRoutes() {
     if (httpMethodIndex === -1) httpMethodIndex = segments.indexOf('PUT');
     if (httpMethodIndex === -1) httpMethodIndex = segments.indexOf('PATCH');
     if (httpMethodIndex === -1) httpMethodIndex = segments.indexOf('DELETE');
+    const httpMethod = segments[httpMethodIndex].toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete';
 
     if (httpMethodIndex === -1) {
       console.error('File route is malformed. It needs an HTTP method: %s', file);
     } else {
       const routeSegments = segments.slice(0, httpMethodIndex);
-      const route = '/v0/' + routeSegments.map((str) => (str.startsWith('$') ? str.replace('$', ':') : str)).join('/');
+      const expressRoute =
+        '/v0/' + routeSegments.map((str) => (str.startsWith('$') ? str.replace('$', ':') : str)).join('/');
 
       try {
-        const routeModule = await import(path.join(currentDirectory, file)).then((module) => module.default);
-        app.use(route, routeModule);
+        const callbacks = await import(path.join(currentDirectory, file)).then((module) => module.default);
+        app[httpMethod](expressRoute, ...callbacks);
+        if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test')
+          console.log(`Registered route: ${httpMethod.toUpperCase()} ${expressRoute}`);
       } catch (err) {
-        console.error(`Failed to register route: ${route}`);
+        console.error(`Failed to register route: ${expressRoute}`, err);
       }
     }
   }
 }
-*/
