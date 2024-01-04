@@ -1,36 +1,16 @@
-use anyhow::{anyhow, Result};
-use quadratic_core::controller::operations::operation::Operation;
-use serde::Serialize;
+use quadratic_core::controller::{
+    operations::operation::Operation, transaction::TransactionServer,
+};
 use std::collections::HashMap;
 use uuid::Uuid;
 
-#[derive(Serialize, Debug, PartialEq, Clone)]
-pub(crate) struct Transaction {
-    pub(crate) id: Uuid,
-    pub(crate) file_id: Uuid,
-    pub(crate) operations: Vec<Operation>,
-    pub(crate) sequence_num: u64,
-}
-
-impl Transaction {
-    pub(crate) fn new(
-        id: Uuid,
-        file_id: Uuid,
-        operations: Vec<Operation>,
-        sequence_num: u64,
-    ) -> Self {
-        Transaction {
-            id,
-            file_id,
-            operations,
-            sequence_num,
-        }
-    }
-}
+use crate::error::{MpError, Result};
+pub(crate) type Queue = HashMap<Uuid, (u64, Vec<TransactionServer>)>;
 
 #[derive(Debug, Default)]
 pub(crate) struct TransactionQueue {
-    pub(crate) queue: HashMap<Uuid, (u64, Vec<Transaction>)>,
+    pending: Queue,
+    processed: Queue,
 }
 
 impl TransactionQueue {
@@ -38,35 +18,129 @@ impl TransactionQueue {
         Default::default()
     }
 
-    pub(crate) fn push(&mut self, id: Uuid, file_id: Uuid, operations: Vec<Operation>) -> u64 {
-        let (sequence_num, transactions) = self.queue.entry(file_id).or_insert_with(|| (0, vec![]));
+    fn push(
+        queue: &mut Queue,
+        id: Uuid,
+        file_id: Uuid,
+        operations: Vec<Operation>,
+        room_sequence_num: u64,
+    ) -> u64 {
+        // The `room_sequence_num - 1` is necessary because the room_sequence_num is already incremented when received here.
+        let (sequence_num, transactions) = queue
+            .entry(file_id)
+            .or_insert_with(|| (room_sequence_num - 1, vec![]));
 
         *sequence_num += 1;
 
-        let transaction = Transaction::new(id, file_id, operations, *sequence_num);
+        let transaction = TransactionServer {
+            id,
+            file_id,
+            operations,
+            sequence_num: *sequence_num,
+        };
         transactions.push(transaction);
 
-        sequence_num.to_owned()
+        *sequence_num
     }
 
-    pub(crate) fn get_transactions(&mut self, file_id: Uuid) -> Result<Vec<Transaction>> {
+    pub(crate) fn push_pending(
+        &mut self,
+        id: Uuid,
+        file_id: Uuid,
+        operations: Vec<Operation>,
+        room_sequence_num: u64,
+    ) -> u64 {
+        TransactionQueue::push(
+            &mut self.pending,
+            id,
+            file_id,
+            operations,
+            room_sequence_num,
+        )
+    }
+
+    pub(crate) fn push_processed(
+        &mut self,
+        id: Uuid,
+        file_id: Uuid,
+        operations: Vec<Operation>,
+        room_sequence_num: u64,
+    ) -> u64 {
+        TransactionQueue::push(
+            &mut self.processed,
+            id,
+            file_id,
+            operations,
+            room_sequence_num,
+        )
+    }
+
+    pub(crate) fn get_pending(&mut self, file_id: Uuid) -> Result<Vec<TransactionServer>> {
         let transactions = self
-            .queue
+            .pending
             .get(&file_id)
-            .ok_or_else(|| anyhow!("file_id {file_id} not found in transaction queue"))?
+            .ok_or_else(|| {
+                MpError::TransactionQueue(format!(
+                    "file_id {file_id} not found in transaction queue"
+                ))
+            })?
             .1
             .to_owned();
 
         Ok(transactions)
     }
 
-    pub(crate) fn get_transactions_min_sequence_num(
+    pub(crate) fn complete_transactions(
+        &mut self,
+        file_id: Uuid,
+    ) -> Result<(u64, Vec<TransactionServer>)> {
+        // first, add transactions to the processed queue
+        self.shovel_pending(file_id)?;
+
+        // next, remove transactions from the pending queue
+        self.drain_pending(file_id)
+    }
+
+    /// Move transactions from the pending queue to the processed queue for a given file
+    pub(crate) fn shovel_pending(&mut self, file_id: Uuid) -> Result<Vec<TransactionServer>> {
+        let transactions = self
+            .get_pending(file_id)?
+            .into_iter()
+            .map(|transaction| {
+                self.push_processed(
+                    transaction.id,
+                    transaction.file_id,
+                    transaction.operations.to_owned(),
+                    transaction.sequence_num,
+                );
+
+                transaction
+            })
+            .collect::<Vec<_>>();
+
+        Ok(transactions)
+    }
+
+    /// Drain the pending queue
+    ///
+    /// TODO(ddimaria): if remove transactions is atomic (locked mutex),
+    /// then this error condition should never happen, but figure out
+    /// what to do in the case that id does.
+    pub(crate) fn drain_pending(&mut self, file_id: Uuid) -> Result<(u64, Vec<TransactionServer>)> {
+        self.pending.remove(&file_id).ok_or_else(|| {
+            MpError::TransactionQueue(format!(
+                "Could not remove pending transactions for file_id {file_id}"
+            ))
+        })
+    }
+
+    pub(crate) fn get_pending_min_sequence_num(
         &mut self,
         file_id: Uuid,
         min_sequence_num: u64,
-    ) -> Result<Vec<Transaction>> {
+    ) -> Result<Vec<TransactionServer>> {
         let transactions = self
-            .get_transactions(file_id)?
+            .get_pending(file_id)?
             .into_iter()
             .filter(|transaction| transaction.sequence_num >= min_sequence_num)
             .collect();
@@ -74,25 +148,20 @@ impl TransactionQueue {
         Ok(transactions)
     }
 
-    pub(crate) fn get_sequence_num(&mut self, file_id: Uuid) -> Result<u64> {
-        let sequence_num = self
-            .queue
-            .get(&file_id)
-            .ok_or_else(|| anyhow!("file_id {file_id} not found in transaction queue"))?
-            .0;
-
-        Ok(sequence_num)
+    /// Returns latest sequence number for a given file (if any are in the transaction_queue)
+    pub(crate) fn get_sequence_num(&mut self, file_id: Uuid) -> Option<u64> {
+        self.pending.get(&file_id).map(|o| o.0)
     }
 }
 #[cfg(test)]
 mod tests {
     use crate::{
         state::State,
-        test_util::{grid_setup, operation},
+        test_util::{grid_setup, new_state, operation},
     };
 
-    fn setup() -> (State, Uuid) {
-        let state = State::new();
+    async fn setup() -> (State, Uuid) {
+        let state = new_state().await;
         let file_id = Uuid::new_v4();
 
         (state, file_id)
@@ -100,22 +169,23 @@ mod tests {
 
     use super::*;
     #[tokio::test]
-    async fn transaction_queue() {
-        let (state, file_id) = setup();
+    async fn test_transaction_queue() {
+        let (state, file_id) = setup().await;
         let mut grid = grid_setup();
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
         let transaction_id_2 = Uuid::new_v4();
         let operations_2 = operation(&mut grid, 1, 0, "2");
 
-        state.transaction_queue.lock().await.push(
+        state.transaction_queue.lock().await.push_pending(
             transaction_id_1,
             file_id,
             vec![operations_1.clone()],
+            1,
         );
 
         let mut transaction_queue = state.transaction_queue.lock().await;
-        let transactions = transaction_queue.get_transactions(file_id).unwrap();
+        let transactions = transaction_queue.get_pending(file_id).unwrap();
         assert_eq!(transactions.len(), 1);
         assert_eq!(transaction_queue.get_sequence_num(file_id).unwrap(), 1);
         assert_eq!(transactions[0].operations, vec![operations_1.clone()]);
@@ -123,14 +193,15 @@ mod tests {
 
         std::mem::drop(transaction_queue);
 
-        state.transaction_queue.lock().await.push(
+        state.transaction_queue.lock().await.push_pending(
             transaction_id_2,
             file_id,
             vec![operations_2.clone()],
+            0,
         );
 
         let mut transaction_queue = state.transaction_queue.lock().await;
-        let transactions = transaction_queue.get_transactions(file_id).unwrap();
+        let transactions = transaction_queue.get_pending(file_id).unwrap();
         assert_eq!(transactions.len(), 2);
         assert_eq!(transaction_queue.get_sequence_num(file_id).unwrap(), 2);
         assert_eq!(transactions[0].operations, vec![operations_1.clone()]);

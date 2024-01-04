@@ -3,7 +3,6 @@
 //! Handle bootstrapping and starting the websocket server.  Adds global state
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
-use anyhow::{anyhow, Result};
 use axum::{
     extract::{
         connect_info::ConnectInfo,
@@ -23,16 +22,16 @@ use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::Mutex;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use uuid::Uuid;
 
 use crate::{
     auth::{authorize, get_jwks},
     background_worker,
-    config::{config, Config},
+    config::config,
+    error::{MpError, Result},
     message::{
         broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
     },
-    state::{Settings, State},
+    state::{connection::Connection, State},
 };
 
 /// Construct the application router.  This is separated out so that it can be
@@ -53,15 +52,6 @@ pub(crate) fn app(state: Arc<State>) -> Router {
 /// Start the websocket server.  This is the entrypoint for the application.
 #[tracing::instrument(level = "trace")]
 pub(crate) async fn serve() -> Result<()> {
-    let Config {
-        host,
-        port,
-        auth0_jwks_uri,
-        heartbeat_check_s,
-        heartbeat_timeout_s,
-        authenticate_jwt,
-    } = config()?;
-
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -70,28 +60,42 @@ pub(crate) async fn serve() -> Result<()> {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let jwks = get_jwks(&auth0_jwks_uri).await?;
-    let settings = Settings {
-        jwks: Some(jwks),
-        authenticate_jwt,
-    };
-    let state = Arc::new(State::new().with_settings(settings));
+    let config = config()?;
+    let jwks = get_jwks(&config.auth0_jwks_uri).await?;
+    let state = Arc::new(State::new(&config, Some(jwks)).await);
     let app = app(Arc::clone(&state));
-    let listener = tokio::net::TcpListener::bind(format!("{host}:{port}")).await?;
 
-    tracing::info!("listening on {}", listener.local_addr()?);
+    let listener = tokio::net::TcpListener::bind(format!("{}:{}", config.host, config.port))
+        .await
+        .map_err(|e| MpError::InternalServer(e.to_string()))?;
 
-    if !authenticate_jwt {
+    let local_addr = listener
+        .local_addr()
+        .map_err(|e| MpError::InternalServer(e.to_string()))?;
+
+    tracing::info!("listening on {local_addr}");
+
+    if !config.authenticate_jwt {
         tracing::warn!("JWT authentication is disabled");
     }
 
-    background_worker::start(Arc::clone(&state), heartbeat_check_s, heartbeat_timeout_s).await;
+    // perform various activities in a separate thread
+    background_worker::start(
+        Arc::clone(&state),
+        config.heartbeat_check_s,
+        config.heartbeat_timeout_s,
+    )
+    .await;
 
     axum::serve(
         listener,
         app.into_make_service_with_connect_info::<SocketAddr>(),
     )
-    .await?;
+    .await
+    .map_err(|e| {
+        tracing::warn!("{e}");
+        MpError::InternalServer(e.to_string())
+    })?;
 
     Ok(())
 }
@@ -109,24 +113,35 @@ async fn ws_handler(
         user_agent.to_string()
     });
     let addr = addr.map_or("Unknown address".into(), |addr| addr.to_string());
-    let connection_id = Uuid::new_v4();
 
-    tracing::info!("`{user_agent}` at {addr} connected: connection_id={connection_id}");
+    #[allow(unused)]
+    let mut jwt = None;
+
+    #[cfg(test)]
+    {
+        jwt = Some(crate::test_util::TOKEN.to_string());
+    }
 
     if state.settings.authenticate_jwt {
+        let auth_error = |error: &str| MpError::Authentication(error.to_string());
+
         // validate the JWT
         let result = async {
-            let cookie = cookie.ok_or_else(|| anyhow!("No cookie found"))?;
-            let token = cookie.get("jwt").ok_or_else(|| anyhow!("No JWT found"))?;
+            let cookie = cookie.ok_or_else(|| auth_error("No cookie found"))?;
+            let token = cookie
+                .get("jwt")
+                .ok_or_else(|| auth_error("No JWT found"))?;
             let jwks: jsonwebtoken::jwk::JwkSet = state
                 .settings
                 .jwks
                 .clone()
-                .ok_or_else(|| anyhow!("No JWKS found"))?;
+                .ok_or_else(|| auth_error("No JWKS found"))?;
 
             authorize(&jwks, token, false, true)?;
 
-            Ok::<_, anyhow::Error>(())
+            jwt = Some(token.to_owned());
+
+            Ok::<_, MpError>(())
         }
         .await;
 
@@ -136,31 +151,62 @@ async fn ws_handler(
         }
     }
 
+    let connection = Connection::new(jwt);
+
+    tracing::info!(
+        "`{user_agent}` at {addr} connected: connection_id={}",
+        connection.id
+    );
+
     // upgrade the connection
-    ws.on_upgrade(move |socket| handle_socket(socket, state, addr, connection_id))
+    ws.on_upgrade(move |socket| handle_socket(socket, state, addr, connection))
 }
 
 // After websocket is established, delegate incoming messages as they arrive.
 #[tracing::instrument(level = "trace")]
-async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, connection_id: Uuid) {
+async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, connection: Connection) {
     let (sender, mut receiver) = socket.split();
     let sender = Arc::new(Mutex::new(sender));
+    let connection_id = connection.id;
 
     while let Some(Ok(msg)) = receiver.next().await {
         let response =
-            process_message(msg, Arc::clone(&sender), Arc::clone(&state), connection_id).await;
+            process_message(msg, Arc::clone(&sender), Arc::clone(&state), &connection).await;
 
         match response {
             Ok(ControlFlow::Continue(_)) => {}
             Ok(ControlFlow::Break(_)) => break,
-            Err(e) => {
-                tracing::warn!("Error processing message: {:?}", e);
+            Err(error) => {
+                tracing::warn!("Error processing message: {:?}", &error);
+
+                if let Ok(message) = serde_json::to_string(&MessageResponse::Error {
+                    error: error.to_owned(),
+                }) {
+                    // send error message to the client
+                    let sent = sender.lock().await.send(Message::Text(message)).await;
+
+                    if let Err(sent) = sent {
+                        tracing::warn!("Error sending error message: {:?}", sent);
+                    }
+                }
+
+                match error {
+                    // kill the ws connection for auth errors
+                    MpError::Authentication(_) => {
+                        break;
+                    } // kill the ws connection for critical file permission errors
+                    MpError::FilePermissions(is_critical, _) if is_critical => {
+                        break;
+                    }
+                    // noop
+                    _ => {}
+                };
             }
         }
     }
 
     // websocket is closed, remove the user from any rooms they were in and broadcast
-    if let Ok(rooms) = state.clear_connections(connection_id).await {
+    if let Ok(rooms) = state.clear_connections(&connection).await {
         tracing::info!("Removing stale users from rooms: {:?}", rooms);
 
         for file_id in rooms.into_iter() {
@@ -184,18 +230,21 @@ async fn process_message(
     msg: Message,
     sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
     state: Arc<State>,
-    connection_id: Uuid,
+    connection: &Connection,
 ) -> Result<ControlFlow<Option<MessageResponse>, ()>> {
     match msg {
         Message::Text(text) => {
             let messsage_request = serde_json::from_str::<MessageRequest>(&text)?;
             let message_response =
-                handle_message(messsage_request, state, Arc::clone(&sender), connection_id).await?;
+                handle_message(messsage_request, state, Arc::clone(&sender), connection).await?;
 
             if let Some(message_response) = message_response {
                 let response = Message::Text(serde_json::to_string(&message_response)?);
 
-                (*sender.lock().await).send(response).await?;
+                (*sender.lock().await)
+                    .send(response)
+                    .await
+                    .map_err(|e| MpError::SendingMessage(e.to_string()))?;
             }
         }
         Message::Binary(d) => {
@@ -226,8 +275,12 @@ pub(crate) mod tests {
 
     use super::*;
     use crate::state::user::{CellEdit, User, UserStateUpdate};
-    use crate::test_util::{integration_test_send_and_receive, integration_test_setup, new_user};
+    use crate::test_util::{
+        integration_test_receive, integration_test_send_and_receive, integration_test_setup,
+        new_arc_state, new_user,
+    };
     use quadratic_core::controller::operations::operation::Operation;
+    use quadratic_core::grid::SheetId;
     use tokio::net::TcpStream;
     use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
     use uuid::Uuid;
@@ -252,7 +305,9 @@ pub(crate) mod tests {
             viewport: "initial viewport".to_string(),
         };
 
-        integration_test_send_and_receive(socket, request, true).await;
+        // UsersInRoom and EnterRoom are sent to the client when they enter a room
+        integration_test_send_and_receive(&socket, request, true).await;
+        integration_test_receive(&socket).await;
 
         user
     }
@@ -264,7 +319,7 @@ pub(crate) mod tests {
         Uuid,
         User,
     ) {
-        let state = Arc::new(State::new());
+        let state = new_arc_state().await;
         let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let socket = integration_test_setup(state.clone()).await;
@@ -289,14 +344,15 @@ pub(crate) mod tests {
             update,
         };
 
-        let response = integration_test_send_and_receive(socket, request, true).await;
+        let response = integration_test_send_and_receive(&socket, request, true).await;
 
         assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
     }
 
     #[tokio::test]
-    async fn user_enters_a_room() {
+    async fn test_user_enters_a_room() {
         let (socket, _, _, file_id, user) = setup().await;
+
         let new_user = new_user();
         let session_id = new_user.session_id;
         let request = MessageRequest::EnterRoom {
@@ -312,18 +368,28 @@ pub(crate) mod tests {
             cell_edit: CellEdit::default(),
             viewport: "initial viewport".to_string(),
         };
-        let expected_1 = MessageResponse::UsersInRoom {
-            users: vec![new_user.clone(), user.clone()],
+        let expected_enter_room = MessageResponse::EnterRoom {
+            file_id,
+            sequence_num: 0,
         };
-        let expected_2 = MessageResponse::UsersInRoom {
+        let received_enter_room = &integration_test_send_and_receive(&socket, request, true)
+            .await
+            .unwrap();
+        assert_eq!(
+            &serde_json::to_string(&expected_enter_room).unwrap(),
+            received_enter_room
+        );
+
+        // This is not the best test, but the ordering of the users is somewhat random in the UsersInRoom message.
+        // Since we can't deserialize easily (b/c of Vec), we instead compare the length of the stringified output.
+        let users_in_room_response = MessageResponse::UsersInRoom {
             users: vec![user, new_user],
         };
-        let response = integration_test_send_and_receive(socket, request, true).await;
-
-        // order is brittle, this feels hacky
-        assert!(
-            response == Some(serde_json::to_string(&expected_1).unwrap())
-                || response == Some(serde_json::to_string(&expected_2).unwrap())
+        assert_eq!(
+            integration_test_receive(&socket).await.map(|s| s.len()),
+            serde_json::to_string(&users_in_room_response)
+                .ok()
+                .map(|s| s.len())
         );
     }
 
@@ -340,9 +406,12 @@ pub(crate) mod tests {
             users: vec![user.clone()],
         };
 
-        state.enter_room(file_id, &new_user, connection_id).await;
+        state
+            .enter_room(file_id, &new_user, connection_id, 0)
+            .await
+            .unwrap();
 
-        let response = integration_test_send_and_receive(socket, request, true).await;
+        let response = integration_test_send_and_receive(&socket, request, true).await;
 
         assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
     }
@@ -397,8 +466,12 @@ pub(crate) mod tests {
         let (socket, _, _, file_id, _) = setup().await;
         let new_user = new_user();
         let session_id = new_user.session_id;
-        let operations = serde_json::to_string::<Vec<Operation>>(&vec![]).unwrap();
+        let operations = vec![Operation::SetSheetName {
+            sheet_id: SheetId::new(),
+            name: "test".to_string(),
+        }];
         let id = Uuid::new_v4();
+        let operations = serde_json::to_string(&operations).unwrap();
         let request = MessageRequest::Transaction {
             id,
             session_id,
@@ -408,11 +481,11 @@ pub(crate) mod tests {
         let expected = MessageResponse::Transaction {
             id,
             file_id,
-            operations: operations.clone(),
+            operations: operations,
             sequence_num: 1,
         };
 
-        let response = integration_test_send_and_receive(socket, request, true).await;
+        let response = integration_test_send_and_receive(&socket, request, true).await;
 
         assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
     }

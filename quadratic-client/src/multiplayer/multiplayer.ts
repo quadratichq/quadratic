@@ -6,18 +6,21 @@ import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
 import { User } from '@auth0/auth0-spa-js';
 import { v4 as uuid } from 'uuid';
 
-import { authClient } from '@/auth';
+import { authClient, parseDomain } from '@/auth';
 import { MULTIPLAYER_COLORS } from './multiplayerCursor/multiplayerColors';
 import {
   Heartbeat,
-  MessageTransaction,
   MessageUserUpdate,
   MultiplayerUser,
+  ReceiveCurrentTransaction,
+  ReceiveEnterRoom,
   ReceiveMessages,
   ReceiveRoom,
+  ReceiveTransaction,
   ReceiveTransactions,
   SendEnterRoom,
   SendGetTransactions,
+  SendTransaction,
 } from './multiplayerTypes';
 
 const UPDATE_TIME = 1000 / 30;
@@ -61,7 +64,8 @@ export class Multiplayer {
       await this.getJwt();
 
       if (this.jwt) {
-        document.cookie = `jwt=${this.jwt}; path=/;`;
+        let domain = parseDomain(window.location.host);
+        document.cookie = `jwt=${this.jwt}; path=/; domain=${domain};`;
       }
     }
   }
@@ -254,11 +258,9 @@ export class Multiplayer {
     userUpdate.viewport = viewport;
   }
 
-  async sendTransaction(operations: string) {
+  async sendTransaction(id: string, operations: string) {
     await this.init();
-    // TODO(ddimaria): this ID should be stored somewhere
-    let id = uuid();
-    const message: MessageTransaction = {
+    const message: SendTransaction = {
       type: 'Transaction',
       id,
       session_id: this.sessionId,
@@ -268,13 +270,14 @@ export class Multiplayer {
     this.websocket!.send(JSON.stringify(message));
   }
 
-  sendGetTransactions(min_sequence_num: number) {
+  sendGetTransactions(min_sequence_num: bigint) {
     const message: SendGetTransactions = {
       type: 'GetTransactions',
       session_id: this.sessionId,
       file_id: this.room!,
       min_sequence_num,
     };
+    if (debugShowMultiplayer) console.log(`[Multiplayer] Requesting transactions starting from ${min_sequence_num}.`);
     this.websocket!.send(JSON.stringify(message));
   }
 
@@ -407,23 +410,35 @@ export class Multiplayer {
     }
   }
 
-  private receiveTransaction(data: MessageTransaction) {
-    // todo: this check should not be needed (eventually)
-    if (data.session_id !== this.sessionId) {
-      if (data.file_id !== this.room) {
-        throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
-      }
-      grid.multiplayerTransaction(data.operations);
+  // Receives a new transaction from the server
+  private receiveTransaction(data: ReceiveTransaction) {
+    if (data.file_id !== this.room) {
+      throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
     }
+    grid.multiplayerTransaction(data.id, data.sequence_num, data.operations);
   }
 
+  // Receives a collection of transactions to catch us up based on our sequenceNum
   private receiveTransactions(data: ReceiveTransactions) {
-    console.log(data.transactions);
+    grid.receiveMultiplayerTransactions(data.transactions);
+  }
+
+  // Receives the current transaction number from the server when entering a room.
+  // Note: this may be different than the one provided by the api as there may be unsaved Transactions.
+  private receiveEnterRoom(data: ReceiveEnterRoom) {
+    if (data.file_id !== this.room) {
+      throw new Error("Expected file_id to match room before receiving a message of type 'EnterRoom'");
+    }
+    grid.receiveSequenceNum(data.sequence_num);
+  }
+
+  // Called during a heartbeat from the server to verify we're at the correct sequenceNum
+  private receiveCurrentTransaction(data: ReceiveCurrentTransaction) {
+    grid.receiveSequenceNum(data.sequence_num);
   }
 
   receiveMessage = (e: { data: string }) => {
     const data = JSON.parse(e.data) as ReceiveMessages;
-    console.log(`[Multiplayer] Received receiveMessage ${data.type}`);
     const { type } = data;
     if (type === 'UsersInRoom') {
       this.receiveUsersInRoom(data);
@@ -433,6 +448,12 @@ export class Multiplayer {
       this.receiveTransaction(data);
     } else if (type === 'Transactions') {
       this.receiveTransactions(data);
+    } else if (type === 'EnterRoom') {
+      this.receiveEnterRoom(data);
+    } else if (type === 'CurrentTransaction') {
+      this.receiveCurrentTransaction(data);
+    } else if (type === 'Error') {
+      console.warn(`[Multiplayer] Error: ${data.error}`);
     } else if (type !== 'Empty') {
       console.warn(`Unknown message type: ${type}`);
     }

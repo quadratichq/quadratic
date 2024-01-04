@@ -100,6 +100,7 @@ pub enum ErrorMsg {
     IndexOutOfBounds,
     NoMatch,
     InvalidArgument,
+    PythonNotLoaded,
 }
 impl fmt::Display for ErrorMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -235,6 +236,9 @@ impl fmt::Display for ErrorMsg {
             }
             Self::InvalidArgument => {
                 write!(f, "Invalid argument")
+            }
+            Self::PythonNotLoaded => {
+                write!(f, "Python interpreter not yet loaded (please run again)")
             }
         }
     }

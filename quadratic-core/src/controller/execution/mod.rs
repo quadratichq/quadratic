@@ -1,15 +1,12 @@
-/// This module handles the application of operations to the Grid.
-pub mod compute;
 pub mod control_transaction;
-pub mod eval_formula;
-///
 pub mod execute_operation;
-pub mod get_cells;
+pub mod receive_multiplayer;
+pub mod run_code;
+pub mod spills;
+
+use super::active_transactions::pending_transaction::PendingTransaction;
+use crate::controller::GridController;
 use serde::{Deserialize, Serialize};
-
-use crate::controller::{transaction_summary::TransactionSummary, GridController};
-
-use super::Transaction;
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum TransactionType {
@@ -22,40 +19,25 @@ pub enum TransactionType {
 }
 
 impl GridController {
-    /// Clear the `cells_to_compute` attribute
-    pub fn clear_cells_to_compute(&mut self) {
-        self.cells_to_compute.clear();
-    }
-
     /// recalculate bounds for changed sheets
-    pub fn transaction_updated_bounds(&mut self) {
-        self.sheets_with_changed_bounds
-            .clone()
-            .iter()
+    pub fn recalculate_sheet_bounds(&mut self, transaction: &mut PendingTransaction) {
+        transaction
+            .sheets_with_dirty_bounds
+            .drain()
             .for_each(|sheet_id| {
-                let sheet = self.grid_mut().sheet_mut_from_id(*sheet_id);
+                let sheet = self.grid_mut().sheet_mut_from_id(sheet_id);
                 sheet.recalculate_bounds();
             });
     }
 
-    /// returns the TransactionSummary
-    pub fn prepare_transaction_summary(&mut self) -> TransactionSummary {
-        if self.complete {
-            self.summary.forward_operations = Some(
-                serde_json::to_string(&self.forward_operations)
-                    .expect("Failed to serialize forward operations"),
-            );
-        }
-        let summary = self.summary.clone();
-        self.summary.clear(self.complete);
-        summary
+    /// Sets the last_sequence_num for multiplayer. This should only be called when receiving the sequence_num.
+    pub fn set_last_sequence_num(&mut self, last_sequence_num: u64) {
+        self.transactions.last_sequence_num = last_sequence_num;
     }
 
-    /// Creates a transaction to save to the Undo/Redo stack
-    fn to_transaction(&self) -> Transaction {
-        Transaction {
-            operations: self.reverse_operations.clone().into_iter().rev().collect(),
-            cursor: self.cursor.clone(),
-        }
+    /// Gets the pending transactions for test purposes
+    #[cfg(test)]
+    pub fn async_transactions(&self) -> &[PendingTransaction] {
+        self.transactions.async_transactions()
     }
 }

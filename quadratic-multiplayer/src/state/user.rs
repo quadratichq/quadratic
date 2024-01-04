@@ -1,4 +1,3 @@
-use anyhow::{anyhow, Result};
 use axum::extract::ws::{Message, WebSocket};
 use chrono::{DateTime, Utc};
 use futures_util::stream::SplitSink;
@@ -7,8 +6,10 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
+use crate::error::{MpError, Result};
 use crate::state::State;
 use crate::{get_mut_room, get_room};
+use quadratic_rust_shared::quadratic_api::FilePermRole;
 
 #[derive(Serialize, Debug, Clone)]
 pub(crate) struct User {
@@ -18,6 +19,7 @@ pub(crate) struct User {
     pub last_name: String,
     pub email: String,
     pub image: String,
+    pub permission: FilePermRole,
     #[serde(flatten)]
     pub state: UserState,
     #[serde(skip_serializing)]
@@ -78,7 +80,9 @@ impl State {
         let user = get_room!(self, file_id)?
             .users
             .get(session_id)
-            .ok_or(anyhow!("User {} not found in Room {}", session_id, file_id))?
+            .ok_or(MpError::Unknown(format!(
+                "User {session_id} not found in Room {file_id}"
+            )))?
             .to_owned();
 
         Ok(user)
@@ -95,7 +99,7 @@ impl State {
         let stale_users = get_room!(self, file_id)?
             .users
             .iter()
-            .filter(|(_, user)| {
+            .filter(|user| {
                 let no_heartbeat =
                     user.last_heartbeat.timestamp() + heartbeat_timeout_s < Utc::now().timestamp();
 
@@ -105,7 +109,7 @@ impl State {
 
                 no_heartbeat
             })
-            .map(|(user_id, _)| user_id.to_owned())
+            .map(|user| user.key().to_owned())
             .collect::<Vec<Uuid>>();
 
         for user_id in stale_users.iter() {
@@ -177,15 +181,21 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::{assert_anyhow_error, new_user};
+    use crate::{
+        error::MpError,
+        test_util::{new_state, new_user},
+    };
 
     async fn setup() -> (State, Uuid, Uuid, User) {
-        let state = State::new();
+        let state = new_state().await;
         let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let user = new_user();
 
-        state.enter_room(file_id, &user, connection_id).await;
+        state
+            .enter_room(file_id, &user, connection_id, 0)
+            .await
+            .unwrap();
 
         (state, connection_id, file_id, user)
     }
@@ -198,15 +208,20 @@ mod tests {
         tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 
         let new_user = new_user();
-        state.enter_room(file_id, &new_user, connection_id).await;
+        state
+            .enter_room(file_id, &new_user, connection_id, 0)
+            .await
+            .unwrap();
         state.remove_stale_users_in_room(file_id, 0).await.unwrap();
         assert_eq!(get_room!(state, file_id).unwrap().users.len(), 1);
 
         tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 
         state.remove_stale_users_in_room(file_id, 0).await.unwrap();
-        let expected = format!("Room {file_id} not found");
-        assert_anyhow_error(get_room!(state, file_id), &expected);
+        assert_eq!(
+            get_room!(state, file_id).unwrap_err(),
+            MpError::Room(format!("Room {file_id} not found"))
+        );
     }
 
     #[tokio::test]

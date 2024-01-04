@@ -17,9 +17,15 @@ const subNet2 = config.get("subnet2") || "subnet-0c6f318928373a253";
 const vpcId = config.get("vpc-id") || "vpc-035fff213c528dbe5";
 const dataDogEnv = config.get("data-dog-env") || "preview";
 const dataDogApiKey = config.get("data-dog-api-key") || "";
+const quadraticApiUri =
+  config.get("quadratic-api-uri") || "https://api.quadratichq.com";
+const multiplayerAwsS3AccessKeyId =
+  config.get("multiplayer-aws-s3-access-key-id") || "";
+const multiplayerAwsS3SecretAccesskey =
+  config.get("multiplayer-aws-s3-secret-access-key") || "";
 
 // Infrastructure
-const group = new aws.ec2.SecurityGroup("multiplayer-sc", {
+const group = new aws.ec2.SecurityGroup("multiplayer-sg", {
   ingress: [
     { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
     { protocol: "tcp", fromPort: 80, toPort: 80, cidrBlocks: ["0.0.0.0/0"] },
@@ -43,6 +49,18 @@ setupMultiplayerService = setupMultiplayerService.replace(
 setupMultiplayerService = setupMultiplayerService.replace(
   "{{DD_API_KEY}}",
   dataDogApiKey
+);
+setupMultiplayerService = setupMultiplayerService.replace(
+  "{{QUADRATIC_API_URI}}",
+  quadraticApiUri
+);
+setupMultiplayerService = setupMultiplayerService.replace(
+  "{{MULTIPLAYER_AWS_S3_ACCESS_KEY_ID}}",
+  multiplayerAwsS3AccessKeyId
+);
+setupMultiplayerService = setupMultiplayerService.replace(
+  "{{MULTIPLAYER_AWS_S3_SECRET_ACCESS_KEY}}",
+  multiplayerAwsS3SecretAccesskey
 );
 const instance = new aws.ec2.Instance("multiplayer-instance", {
   tags: {

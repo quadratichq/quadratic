@@ -1,6 +1,4 @@
-use crate::controller::{
-    execution::TransactionType, transaction_summary::TransactionSummary, GridController,
-};
+use crate::controller::{transaction_summary::TransactionSummary, GridController};
 use crate::grid::{BorderSelection, BorderStyle};
 use crate::SheetRect;
 
@@ -13,7 +11,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         let ops = self.set_borders_operations(sheet_rect, selections, style);
-        self.set_in_progress_transaction(ops, cursor, false, TransactionType::User)
+        self.start_user_transaction(ops, cursor)
     }
 }
 

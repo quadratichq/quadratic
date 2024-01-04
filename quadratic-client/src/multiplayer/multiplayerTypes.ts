@@ -58,6 +58,12 @@ export interface SendEnterRoom extends MultiplayerUserServer {
   type: 'EnterRoom';
 }
 
+export interface ReceiveEnterRoom {
+  type: 'EnterRoom';
+  file_id: string;
+  sequence_num: number;
+}
+
 export interface Transaction {
   id: string;
   file_id: string;
@@ -65,7 +71,15 @@ export interface Transaction {
   operations: string[];
 }
 
-export interface MessageTransaction {
+export interface ReceiveTransaction {
+  type: 'Transaction';
+  id: string;
+  file_id: string;
+  operations: string;
+  sequence_num: number;
+}
+
+export interface SendTransaction {
   type: 'Transaction';
   id: string;
   session_id: string;
@@ -77,12 +91,12 @@ export interface SendGetTransactions {
   type: 'GetTransactions';
   session_id: string;
   file_id: string;
-  min_sequence_num: number;
+  min_sequence_num: bigint;
 }
 
 export interface ReceiveTransactions {
   type: 'Transactions';
-  transactions: Transaction[];
+  transactions: string;
 }
 
 export interface Heartbeat {
@@ -95,4 +109,22 @@ export interface ReceiveEmpty {
   type: 'Empty';
 }
 
-export type ReceiveMessages = ReceiveRoom | MessageUserUpdate | MessageTransaction | ReceiveEmpty | ReceiveTransactions;
+export interface ReceiveCurrentTransaction {
+  type: 'CurrentTransaction';
+  sequence_num: number;
+}
+
+export interface ReceiveError {
+  type: 'Error';
+  error: string;
+}
+
+export type ReceiveMessages =
+  | ReceiveRoom
+  | MessageUserUpdate
+  | ReceiveTransaction
+  | ReceiveEmpty
+  | ReceiveTransactions
+  | ReceiveEnterRoom
+  | ReceiveError
+  | ReceiveCurrentTransaction;

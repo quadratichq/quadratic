@@ -67,6 +67,13 @@ pub fn export(grid: &mut Grid) -> Result<String> {
     Ok(serialized)
 }
 
+pub fn export_vec(grid: &mut Grid) -> Result<Vec<u8>> {
+    let converted = current::export(grid)?;
+    let serialized = serde_json::to_vec(&converted).map_err(|e| anyhow!(e))?;
+
+    Ok(serialized)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -76,20 +83,21 @@ mod tests {
         Pos, Rect,
     };
 
-    const V1_3_FILE: &str = include_str!("../../../../rust-shared/data/grid/v1_3.grid");
+    const V1_3_FILE: &str = include_str!("../../../../quadratic-rust-shared/data/grid/v1_3.grid");
     const V1_3_PYTHON_FILE: &str =
-        include_str!("../../../../rust-shared/data/grid/v1_3_python.grid");
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_python.grid");
     const V1_3_TEXT_ONLY_CODE_CELL_FILE: &str =
-        include_str!("../../../../rust-shared/data/grid/v1_3_python_text_only.grid");
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_python_text_only.grid");
     const V1_3_SINGLE_FORMULS_CODE_CELL_FILE: &str =
-        include_str!("../../../../rust-shared/data/grid/v1_3_single_formula.grid");
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_single_formula.grid");
     const V1_3_NPM_DOWNLOADS_FILE: &str =
-        include_str!("../../../../rust-shared/data/grid/v1_3_fill_color.grid");
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_fill_color.grid");
     const V1_3_BORDERS_FILE: &str =
-        include_str!("../../../../rust-shared/data/grid/v1_3_borders.grid");
-    const V1_4_FILE: &str = include_str!("../../../../rust-shared/data/grid/v1_4_simple.grid");
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_borders.grid");
+    const V1_4_FILE: &str =
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_4_simple.grid");
     const V1_4_AIRPORTS_DISTANCE_FILE: &str =
-        include_str!("../../../../rust-shared/data/grid/v1_4_airports_distance.grid");
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_4_airports_distance.grid");
 
     #[test]
     fn process_a_v1_3_file() {
@@ -116,7 +124,8 @@ mod tests {
     #[test]
     fn process_a_v1_3_single_formula_file() {
         let mut imported = import(V1_3_SINGLE_FORMULS_CODE_CELL_FILE).unwrap();
-        assert!(imported.sheets[0].columns[&0_i64].spills.get(2).is_some());
+        assert_eq!(imported.sheets[0].code_cells[0].0, Pos { x: 0, y: 2 });
+        assert_eq!(imported.sheets[0].code_cells[0].1.code_string, "SUM(A0:A1)");
         let _exported = export(&mut imported).unwrap();
     }
 

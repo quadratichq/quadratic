@@ -1,4 +1,4 @@
-use std::collections::{btree_map, BTreeMap, HashMap};
+use std::collections::{btree_map, BTreeMap};
 use std::str::FromStr;
 
 use bigdecimal::BigDecimal;
@@ -17,7 +17,7 @@ use crate::grid::{borders, SheetBorders};
 use crate::{Array, ArraySize, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;
-pub mod cells;
+pub mod cell_array;
 pub mod code;
 pub mod formatting;
 pub mod rendering;
@@ -35,8 +35,7 @@ pub struct Sheet {
     #[serde(with = "crate::util::btreemap_serde")]
     pub(super) columns: BTreeMap<i64, Column>,
     pub(super) borders: SheetBorders,
-    #[serde(with = "crate::util::hashmap_serde")]
-    pub code_cells: HashMap<Pos, CodeCellValue>,
+    pub code_cells: Vec<(Pos, CodeCellValue)>,
 
     pub(super) data_bounds: GridBounds,
     pub(super) format_bounds: GridBounds,
@@ -52,7 +51,7 @@ impl Sheet {
 
             columns: BTreeMap::new(),
             borders: SheetBorders::new(),
-            code_cells: HashMap::new(),
+            code_cells: vec![],
 
             data_bounds: GridBounds::Empty,
             format_bounds: GridBounds::Empty,
@@ -125,9 +124,8 @@ impl Sheet {
             }
         }
 
-        for sheet_pos in self.iter_code_cells_in_rect(rect) {
-            self.code_cells.remove(&sheet_pos);
-        }
+        // remove code_cells where the rect overlaps the anchor cell
+        self.code_cells.retain(|(pos, _)| !rect.contains(*pos));
 
         old_cell_values_array
     }
@@ -149,9 +147,12 @@ impl Sheet {
     /// Returns the value of a cell (i.e., what would be returned if code asked
     /// for it).
     pub fn get_cell_value(&self, pos: Pos) -> Option<CellValue> {
-        let column = self.get_column(pos.x)?;
-        None.or_else(|| self.get_code_cell_value(pos))
-            .or_else(|| column.values.get(pos.y))
+        if let Some(column) = self.get_column(pos.x) {
+            if let Some(value) = column.values.get(pos.y) {
+                return Some(value.clone());
+            }
+        }
+        self.get_code_cell_value(pos)
     }
 
     pub fn get_cell_value_only(&self, pos: Pos) -> Option<CellValue> {
@@ -333,7 +334,13 @@ impl Sheet {
 
     /// Determines whether an output array would cause a spill error because it
     /// would overlap existing cell values or spills.
-    pub fn is_ok_to_spill_in(&self, pos: Pos, size: ArraySize) -> bool {
+    /// * cell_value_to_delete ignores this cell_value in this check (this allows operations to be created before the position is vacated)
+    pub fn has_spill_error(
+        &self,
+        pos: Pos,
+        size: ArraySize,
+        cell_value_to_delete: Option<Pos>,
+    ) -> bool {
         let Pos { x, y } = pos;
         let (w, h) = size.into();
 
@@ -343,20 +350,17 @@ impl Sheet {
             if let Some(column) = self.columns.get(&x) {
                 for j in 0..h {
                     let y = y + j;
-
-                    if let Some(spill) = column.spills.get(y) {
-                        if spill != pos {
-                            return true;
-                        }
-                    }
                     if let Some(value) = column.values.get(y) {
-                        if !value.is_blank() {
+                        if !value.is_blank() && Some(Pos { x, y }) != cell_value_to_delete {
                             return true;
                         }
                     }
                 }
             }
         }
+
+        // todo: need to check if it would spill over an existing code_cell output
+
         false
     }
 }
@@ -592,7 +596,7 @@ mod test {
             last_modified: "".into(),
             output: None,
         };
-        sheet.set_code_cell_value((2, 1).into(), Some(code_cell.clone()));
+        sheet.set_code_cell((2, 1).into(), Some(code_cell.clone()));
         let value = sheet.get_code_cell((2, 1).into());
         assert_eq!(value, Some(&code_cell));
     }

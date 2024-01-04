@@ -111,7 +111,10 @@ export const apiClient = {
 
   async downloadFile(uuid: string) {
     mixpanel.track('[Files].downloadFile', { id: uuid });
-    return this.getFile(uuid).then((json) => downloadQuadraticFile(json.file.name, json.file.contents));
+    const { file } = await this.getFile(uuid);
+    const checkpointUrl = file.lastCheckpointDataUrl;
+    const checkpointData = await fetch(checkpointUrl).then((res) => res.text());
+    return downloadQuadraticFile(file.name, checkpointData);
   },
 
   async deleteFile(uuid: string) {

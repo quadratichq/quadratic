@@ -4,7 +4,7 @@ resolver = "2"
 members = [
     "quadratic-core",
     "quadratic-multiplayer",
-    "rust-shared",
+    "quadratic-rust-shared",
 ]
 
 [workspace.package]

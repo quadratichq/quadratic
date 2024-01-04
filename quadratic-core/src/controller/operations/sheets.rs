@@ -37,15 +37,7 @@ impl GridController {
     }
 
     pub fn delete_sheet_operations(&mut self, sheet_id: SheetId) -> Vec<Operation> {
-        let mut operations = vec![Operation::DeleteSheet { sheet_id }];
-        if self.sheet_ids().len() == 1 {
-            let id = SheetId::new();
-            let name = String::from("Sheet 1");
-            let order = self.grid.end_order();
-            let sheet = Sheet::new(id, name, order);
-            operations.push(Operation::AddSheet { sheet });
-        }
-        operations
+        vec![Operation::DeleteSheet { sheet_id }]
     }
 
     pub fn move_sheet_operations(

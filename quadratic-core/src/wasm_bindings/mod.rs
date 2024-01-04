@@ -34,28 +34,6 @@ pub fn column_from_name(s: &str) -> Option<f64> {
     Some(util::column_from_name(s)? as f64)
 }
 
-// #[derive(Serialize, Deserialize, Debug, Default, Clone, TS)]
-// pub struct JsCodeResult {
-//     pub success: bool,
-//     pub formatted_code: Option<String>,
-//     pub error_msg: Option<String>,
-//     pub input_python_std_out: Option<String>,
-//     pub output_value: Option<String>,
-//     pub array_output: Option<Vec<Vec<String>>>,
-//     pub cells_accessed: Vec<[i64; 2]>,
-//     pub error_span: Option<[u32; 2]>,
-//     pub cancel_compute: Option<bool>,
-// }
-
-// #[derive(Serialize, Deserialize, Debug, Clone, TS)]
-// pub struct JsComputeResult {
-//     pub complete: bool,
-//     pub rect: Option<Rect>,
-//     pub sheet_id: Option<String>,
-//     pub line_number: Option<i64>,
-//     pub result: Option<JsCodeResult>,
-// }
-
 #[derive(Serialize, Deserialize, Debug, Default, Clone, TS)]
 pub struct JsFormulaParseResult {
     pub parse_error_msg: Option<String>,

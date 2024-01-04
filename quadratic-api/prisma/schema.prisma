@@ -13,6 +13,8 @@ model User {
     files        File[]
     QFeedback    QFeedback[]
     UserTeamRole UserTeamRole[]
+
+    @@index([auth0_id])
 }
 
 enum LinkPermission {
@@ -23,23 +25,43 @@ enum LinkPermission {
 
 // TODO Properly configure camelCase <-> snake_case
 model File {
-    id                 Int            @id @default(autoincrement())
-    uuid               String         @unique @default(uuid())
+    id                 Int              @id @default(autoincrement())
+    uuid               String           @unique @default(uuid())
     name               String
     thumbnail          String? // S3FileKey
-    created_date       DateTime       @default(now())
-    updated_date       DateTime       @default(now())
-    deleted            Boolean        @default(false)
+    created_date       DateTime         @default(now())
+    updated_date       DateTime         @default(now())
+    deleted            Boolean          @default(false)
     deleted_date       DateTime?
     // Binary file contents
-    contents           Bytes
-    // Permissions
-    owner              User           @relation(fields: [ownerUserId], references: [id])
+    contents           Bytes? // unused to delete
+    // Role
+    owner              User             @relation(fields: [ownerUserId], references: [id])
     ownerUserId        Int
-    public_link_access LinkPermission @default(NOT_SHARED)
+    public_link_access LinkPermission   @default(NOT_SHARED)
     // analytics fields
-    times_updated      Int            @default(1)
-    version            String?
+    times_updated      Int              @default(1) // unused to delete
+    version            String? // unused to delete
+    FileCheckpoint     FileCheckpoint[]
+
+    @@index([uuid])
+}
+
+model FileCheckpoint {
+    // Unique Identifiers
+    id             Int      @id @default(autoincrement())
+    file           File     @relation(fields: [fileId], references: [id])
+    fileId         Int      @map("file_id")
+    sequenceNumber Int      @map("sequence_number")
+    // Checkpoint Data
+    s3Bucket       String   @map("s3_bucket")
+    s3Key          String   @map("s3_key")
+    version        String // Quadratic file version
+    // Metadata
+    timestamp      DateTime @default(now())
+
+    @@unique([fileId, sequenceNumber])
+    @@index([fileId, sequenceNumber])
 }
 
 model Team {
@@ -50,6 +72,8 @@ model Team {
     createdDate  DateTime       @default(now()) @map("created_date")
     UserTeamRole UserTeamRole[]
     TeamInvite   TeamInvite[]
+
+    @@index([uuid])
 }
 
 enum TeamRole {
@@ -86,7 +110,7 @@ model TeamInvite {
 //     EDIT
 // }
 
-// model UserFileAccess {
+// model UserFileRole {
 //   id Int
 //   userId    Int
 //   fileId    Int
@@ -96,6 +120,8 @@ model TeamInvite {
 
 //   @@unique([userId, fileId])
 // }
+
+// model FileInvite { ... }
 
 // model TeamFileAccess {
 //   id Int

@@ -7,7 +7,7 @@ use crate::{SheetPos, SheetRect};
 use super::GridController;
 
 impl GridController {
-    pub fn get_dependent_cells(&self, cell: SheetPos) -> Option<HashSet<SheetPos>> {
+    pub fn get_dependent_code_cells(&self, sheet_rect: &SheetRect) -> Option<HashSet<SheetPos>> {
         let mut dependent_cells = HashSet::new();
 
         self.grid.sheets().iter().for_each(|sheet| {
@@ -15,34 +15,7 @@ impl GridController {
                 if let Some(output) = code_cell.output.as_ref() {
                     if let Some(cells_accessed) = output.cells_accessed() {
                         cells_accessed.iter().for_each(|cell_accessed| {
-                            if *cell_accessed == cell {
-                                dependent_cells.insert(pos.to_sheet_pos(sheet.id));
-                            }
-                        });
-                    }
-                }
-            });
-        });
-
-        if dependent_cells.is_empty() {
-            return None;
-        }
-
-        Some(dependent_cells)
-    }
-
-    pub fn get_dependent_cells_for_sheet_rect(
-        &self,
-        sheet_rect: &SheetRect,
-    ) -> Option<HashSet<SheetPos>> {
-        let mut dependent_cells = HashSet::new();
-
-        self.grid.sheets().iter().for_each(|sheet| {
-            sheet.code_cells.iter().for_each(|(pos, code_cell)| {
-                if let Some(output) = code_cell.output.as_ref() {
-                    if let Some(cells_accessed) = output.cells_accessed() {
-                        cells_accessed.iter().for_each(|cell_accessed| {
-                            if sheet_rect.contains(*cell_accessed) {
+                            if sheet_rect.intersects(*cell_accessed) {
                                 dependent_cells.insert(pos.to_sheet_pos(sheet.id));
                             }
                         });
@@ -66,7 +39,7 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{CodeCellRunOutput, CodeCellValue},
-        CellValue, Pos, SheetPos, Value,
+        CellValue, Pos, SheetPos, SheetRect, Value,
     };
 
     #[test]
@@ -88,9 +61,13 @@ mod test {
             y: 1,
             sheet_id,
         };
-        cells_accessed.insert(sheet_pos_00);
-        cells_accessed.insert(sheet_pos_01);
-        sheet.set_code_cell_value(
+        let sheet_rect = SheetRect {
+            min: sheet_pos_00.into(),
+            max: sheet_pos_01.into(),
+            sheet_id,
+        };
+        cells_accessed.insert(sheet_rect);
+        sheet.set_code_cell(
             Pos { x: 0, y: 2 },
             Some(CodeCellValue {
                 code_string: "1".to_string(),
@@ -114,15 +91,26 @@ mod test {
             sheet_id,
         };
 
-        assert_eq!(gc.get_dependent_cells(sheet_pos_00).unwrap().len(), 1);
         assert_eq!(
-            gc.get_dependent_cells(sheet_pos_00).unwrap().iter().next(),
+            gc.get_dependent_code_cells(&sheet_pos_00.into())
+                .unwrap()
+                .len(),
+            1
+        );
+        assert_eq!(
+            gc.get_dependent_code_cells(&sheet_pos_00.into())
+                .unwrap()
+                .iter()
+                .next(),
             Some(&sheet_pos_02)
         );
         assert_eq!(
-            gc.get_dependent_cells(sheet_pos_01).unwrap().iter().next(),
+            gc.get_dependent_code_cells(&sheet_pos_01.into())
+                .unwrap()
+                .iter()
+                .next(),
             Some(&sheet_pos_02)
         );
-        assert_eq!(gc.get_dependent_cells(sheet_pos_02), None);
+        assert_eq!(gc.get_dependent_code_cells(&sheet_pos_02.into()), None);
     }
 }

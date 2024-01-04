@@ -5,7 +5,7 @@
 //! sub-repo.  If ANY of the environment variables are missing, the program will
 //! panic at startup.
 
-use anyhow::Result;
+use crate::error::{MpError, Result};
 use dotenv::dotenv;
 use serde::Deserialize;
 
@@ -13,18 +13,30 @@ use serde::Deserialize;
 pub(crate) struct Config {
     pub(crate) host: String,
     pub(crate) port: String,
-    pub(crate) auth0_jwks_uri: String,
     pub(crate) heartbeat_check_s: i64,
-    pub(crate) heartbeat_timeout_s: i64,
     pub(crate) authenticate_jwt: bool,
+    pub(crate) heartbeat_timeout_s: i64,
+
+    pub(crate) auth0_jwks_uri: String,
+    pub(crate) quadratic_api_uri: String,
+    pub(crate) quadratic_api_jwt: String,
+
+    pub(crate) aws_s3_region: String,
+    pub(crate) aws_s3_bucket_name: String,
+    pub(crate) aws_s3_access_key_id: String,
+    pub(crate) aws_s3_secret_access_key: String,
 }
 
 /// Load the global configuration from the environment into Config.
 pub(crate) fn config() -> Result<Config> {
     let filename = if cfg!(test) { ".env.test" } else { ".env" };
+    // let filename = if cfg!(test) { ".env" } else { ".env" };
+
     dotenv::from_filename(filename).ok();
     dotenv().ok();
-    Ok(envy::from_env::<Config>()?)
+
+    let config = envy::from_env::<Config>().map_err(|e| MpError::Config(e.to_string()))?;
+    Ok(config)
 }
 
 #[cfg(test)]

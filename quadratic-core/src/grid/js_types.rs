@@ -34,6 +34,23 @@ pub struct JsRenderCell {
     pub text_color: Option<String>,
 }
 
+#[cfg(test)]
+impl JsRenderCell {
+    pub fn new_number(x: i64, y: i64, value: isize, language: Option<CodeCellLanguage>) -> Self {
+        Self {
+            x,
+            y,
+            value: value.to_string(),
+            language,
+            align: Some(CellAlign::Right),
+            wrap: None,
+            bold: None,
+            italic: None,
+            text_color: None,
+        }
+    }
+}
+
 impl From<Pos> for JsRenderCell {
     fn from(pos: Pos) -> Self {
         Self {

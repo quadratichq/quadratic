@@ -19,6 +19,9 @@ class PythonWebWorker {
   private worker?: Worker;
   private loaded = false;
 
+  // todo: we could support multiple python executions by changing the way this works....
+  private transactionId?: string;
+
   init() {
     this.worker = new Worker(new URL('./python.worker.ts', import.meta.url));
 
@@ -26,6 +29,7 @@ class PythonWebWorker {
       const event = e.data;
 
       if (event.type === 'results') {
+        if (!this.transactionId) throw new Error('Expected transactionId to be defined in get-cells');
         const pythonResult = event.results;
         if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
 
@@ -52,6 +56,7 @@ class PythonWebWorker {
           pythonResult.error_msg = pythonResult.input_python_stack_trace;
         }
         const result = new JsCodeResult(
+          this.transactionId,
           pythonResult.success,
           pythonResult.formatted_code,
           pythonResult.error_msg,
@@ -62,14 +67,17 @@ class PythonWebWorker {
           pythonResult.cancel_compute
         );
         grid.calculationComplete(result);
+
         // triggers any CodeEditor updates (if necessary)
         window.dispatchEvent(new CustomEvent('python-computation-finished'));
       } else if (event.type === 'get-cells') {
+        if (!this.transactionId) throw new Error('Expected transactionId to be defined in get-cells');
         const range = event.range;
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');
         }
         const cells = grid.calculationGetCells(
+          this.transactionId,
           pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
           range.sheet !== undefined ? range.sheet.toString() : undefined,
           event.range?.lineNumber
@@ -94,10 +102,11 @@ class PythonWebWorker {
     };
   }
 
-  start(python: string): boolean {
+  start(transactionId: string, python: string): boolean {
     if (!this.loaded || !this.worker) {
       return false;
     }
+    this.transactionId = transactionId;
     window.dispatchEvent(new CustomEvent('python-computation-started'));
 
     this.worker.postMessage({ type: 'execute', python });
@@ -117,8 +126,10 @@ class PythonWebWorker {
 
   restartFromUser() {
     mixpanel.track('[PythonWebWorker].restartFromUser');
+    if (!this.transactionId) throw new Error('Expected transactionId to be defined in restartFromUser');
     this.restart();
     const result = new JsCodeResult(
+      this.transactionId,
       false,
       undefined,
       'Python execution cancelled by user',

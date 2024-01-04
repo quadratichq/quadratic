@@ -84,6 +84,7 @@ impl CellsForArray {
 // todo: this should also be reworked with ts-rs
 #[wasm_bindgen]
 pub struct JsCodeResult {
+    transaction_id: String,
     success: bool,
     formatted_code: Option<String>,
     error_msg: Option<String>,
@@ -95,6 +96,9 @@ pub struct JsCodeResult {
 }
 
 impl JsCodeResult {
+    pub fn transaction_id(&self) -> String {
+        self.transaction_id.clone()
+    }
     pub fn success(&self) -> bool {
         self.success
     }
@@ -120,6 +124,7 @@ impl JsCodeResult {
     #[cfg(test)]
     #[allow(clippy::too_many_arguments)]
     pub fn new_from_rust(
+        transaction_id: String,
         success: bool,
         formatted_code: Option<String>,
         error_msg: Option<String>,
@@ -130,6 +135,7 @@ impl JsCodeResult {
         cancel_compute: Option<bool>,
     ) -> Self {
         JsCodeResult {
+            transaction_id,
             success,
             formatted_code,
             error_msg,
@@ -147,6 +153,7 @@ impl JsCodeResult {
     #[wasm_bindgen(constructor)]
     #[allow(clippy::too_many_arguments)]
     pub fn new(
+        transaction_id: String,
         success: bool,
         formatted_code: Option<String>,
         error_msg: Option<String>,
@@ -167,6 +174,7 @@ impl JsCodeResult {
             None
         };
         JsCodeResult {
+            transaction_id,
             success,
             formatted_code,
             error_msg,
@@ -181,6 +189,7 @@ impl JsCodeResult {
 
 #[wasm_bindgen]
 pub struct JsComputeGetCells {
+    transaction_id: String,
     rect: Rect,
     sheet_name: Option<String>,
     line_number: Option<i64>,
@@ -189,8 +198,14 @@ pub struct JsComputeGetCells {
 #[wasm_bindgen]
 impl JsComputeGetCells {
     #[wasm_bindgen(constructor)]
-    pub fn new(rect: Rect, sheet_name: Option<String>, line_number: Option<i64>) -> Self {
+    pub fn new(
+        transaction_id: String,
+        rect: Rect,
+        sheet_name: Option<String>,
+        line_number: Option<i64>,
+    ) -> Self {
         Self {
+            transaction_id,
             rect,
             sheet_name,
             line_number,
@@ -199,6 +214,9 @@ impl JsComputeGetCells {
 }
 
 impl JsComputeGetCells {
+    pub fn transaction_id(&self) -> String {
+        self.transaction_id.clone()
+    }
     pub fn sheet_name(&self) -> Option<String> {
         self.sheet_name.clone()
     }

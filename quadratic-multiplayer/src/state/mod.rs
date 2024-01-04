@@ -5,45 +5,54 @@
 
 pub mod connection;
 pub mod room;
+pub mod settings;
 pub mod transaction_queue;
 pub mod user;
 
+use dashmap::DashMap;
 use jsonwebtoken::jwk::JwkSet;
 use std::collections::HashMap;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
+use crate::config::Config;
+use crate::error::Result;
+use crate::get_room;
 use crate::state::room::Room;
-
-use self::transaction_queue::TransactionQueue;
+use crate::state::settings::Settings;
+use crate::state::transaction_queue::TransactionQueue;
 
 #[derive(Debug)]
 pub(crate) struct State {
-    pub(crate) rooms: Mutex<HashMap<Uuid, Room>>,
+    pub(crate) rooms: Mutex<DashMap<Uuid, Room>>,
     pub(crate) connections: Mutex<HashMap<Uuid, Uuid>>,
     pub(crate) transaction_queue: Mutex<TransactionQueue>,
     pub(crate) settings: Settings,
 }
 
-#[derive(Debug, Default)]
-pub(crate) struct Settings {
-    pub(crate) jwks: Option<JwkSet>,
-    pub(crate) authenticate_jwt: bool,
-}
-
 impl State {
-    pub(crate) fn new() -> Self {
-        // TODO(ddimaria): seed transaction_queue with the sequence_num from the database for each file
+    pub(crate) async fn new(config: &Config, jwks: Option<JwkSet>) -> Self {
         State {
-            rooms: Mutex::new(HashMap::new()),
+            rooms: Mutex::new(DashMap::new()),
             connections: Mutex::new(HashMap::new()),
             transaction_queue: Mutex::new(TransactionQueue::new()),
-            settings: Settings::default(),
+            settings: Settings::new(config, jwks).await,
         }
     }
 
-    pub(crate) fn with_settings(mut self, settings: Settings) -> Self {
-        self.settings = settings;
-        self
+    /// Get a room's current sequence number.
+    pub(crate) async fn get_sequence_num(&self, file_id: &Uuid) -> Result<u64> {
+        // First, check the transaction queue for the sequence number
+        if let Some(sequence_num) = self
+            .transaction_queue
+            .lock()
+            .await
+            .get_sequence_num(file_id.to_owned())
+        {
+            Ok(sequence_num)
+        } else {
+            // otherwise get it from the room (which has the last loaded file's sequence_num)
+            Ok(get_room!(self, file_id)?.sequence_num)
+        }
     }
 }

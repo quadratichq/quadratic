@@ -7,9 +7,9 @@ use futures_util::SinkExt;
 use quadratic_core::controller::operations::operation::Operation;
 use quadratic_core::controller::GridController;
 use quadratic_core::{Array, CellValue, SheetRect};
+use quadratic_rust_shared::quadratic_api::FilePermRole;
 use std::sync::Arc;
 use std::{
-    fmt::Debug,
     future::IntoFuture,
     net::{Ipv4Addr, SocketAddr},
 };
@@ -18,15 +18,20 @@ use tokio::sync::Mutex;
 use tokio_tungstenite::{tungstenite, MaybeTlsStream, WebSocketStream};
 use uuid::Uuid;
 
+use crate::config::config;
 use crate::message::request::MessageRequest;
 use crate::state::user::{User, UserState};
 use crate::state::State;
 
-pub(crate) fn assert_anyhow_error<T: Debug>(result: anyhow::Result<T>, message: &str) {
-    let error = result.unwrap_err();
-    let root_cause = error.root_cause();
+pub(crate) const TOKEN: &str = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjFaNTdkX2k3VEU2S1RZNTdwS3pEeSJ9.eyJpc3MiOiJodHRwczovL2Rldi1kdXp5YXlrNC5ldS5hdXRoMC5jb20vIiwic3ViIjoiNDNxbW44c281R3VFU0U1N0Fkb3BhN09jYTZXeVNidmRAY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vZGV2LWR1enlheWs0LmV1LmF1dGgwLmNvbS9hcGkvdjIvIiwiaWF0IjoxNjIzNTg1MzAxLCJleHAiOjE2MjM2NzE3MDEsImF6cCI6IjQzcW1uOHNvNUd1RVNFNTdBZG9wYTdPY2E2V3lTYnZkIiwic2NvcGUiOiJyZWFkOnVzZXJzIiwiZ3R5IjoiY2xpZW50LWNyZWRlbnRpYWxzIn0.0MpewU1GgvRqn4F8fK_-Eu70cUgWA5JJrdbJhkCPCxXP-8WwfI-qx1ZQg2a7nbjXICYAEl-Z6z4opgy-H5fn35wGP0wywDqZpqL35IPqx6d0wRvpPMjJM75zVXuIjk7cEhDr2kaf1LOY9auWUwGzPiDB_wM-R0uvUMeRPMfrHaVN73xhAuQWVjCRBHvNscYS5-i6qBQKDMsql87dwR72DgHzMlaC8NnaGREBC-xiSamesqhKPVyGzSkFSaF3ZKpGrSDapqmHkNW9RDBE3GQ9OHM33vzUdVKOjU1g9Leb9PDt0o1U4p3NQoGJPShQ6zgWSUEaqvUZTfkbpD_DoYDRxA";
 
-    assert_eq!(format!("{}", root_cause), message);
+pub(crate) async fn new_state() -> State {
+    let config = config().unwrap();
+    State::new(&config, None).await
+}
+
+pub(crate) async fn new_arc_state() -> Arc<State> {
+    Arc::new(new_state().await)
 }
 
 pub(crate) fn new_user() -> User {
@@ -46,6 +51,7 @@ pub(crate) fn new_user() -> User {
             viewport: "initial viewport".to_string(),
         },
         image: FilePath().fake(),
+        permission: FilePermRole::Owner,
         socket: None,
         last_heartbeat: chrono::Utc::now(),
     }
@@ -57,7 +63,10 @@ pub(crate) async fn add_user_to_room(
     state: Arc<State>,
     connection_id: Uuid,
 ) -> User {
-    state.enter_room(file_id, &user, connection_id).await;
+    state
+        .enter_room(file_id, &user, connection_id, 0)
+        .await
+        .unwrap();
     user
 }
 
@@ -101,7 +110,7 @@ pub(crate) async fn integration_test_setup(
 }
 
 pub(crate) async fn integration_test_send_and_receive(
-    socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
+    socket: &Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
     request: MessageRequest,
     expect_response: bool,
 ) -> Option<String> {
@@ -114,10 +123,17 @@ pub(crate) async fn integration_test_send_and_receive(
         ))
         .await
         .unwrap();
+
     if !expect_response {
         return None;
     }
 
+    integration_test_receive(socket).await
+}
+
+pub(crate) async fn integration_test_receive(
+    socket: &Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
+) -> Option<String> {
     let response = match socket.lock().await.next().await.unwrap().unwrap() {
         tungstenite::Message::Text(msg) => msg,
         other => panic!("expected a text message but got {other:?}"),
