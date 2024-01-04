@@ -4,10 +4,93 @@ use crate::{
         operations::operation::Operation, GridController,
     },
     grid::CodeCellLanguage,
-    CellValue, Pos,
+    CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 
 impl GridController {
+    /// Adds operations to compute cells that are dependents within a SheetRect
+    pub fn add_compute_operations(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        output: &SheetRect,
+        skip_compute: Option<SheetPos>,
+    ) {
+        self.get_dependent_code_cells(output)
+            .iter()
+            .for_each(|sheet_positions| {
+                sheet_positions.iter().for_each(|code_cell_sheet_pos| {
+                    if !skip_compute
+                        .is_some_and(|skip_compute| skip_compute == *code_cell_sheet_pos)
+                    {
+                        // only add a compute operation if there isn't already one pending
+                        if !transaction.operations.iter().any(|op| match op {
+                            Operation::ComputeCode { sheet_pos } => {
+                                code_cell_sheet_pos == sheet_pos
+                            }
+                            _ => false,
+                        }) {
+                            transaction.operations.push_back(Operation::ComputeCode {
+                                sheet_pos: *code_cell_sheet_pos,
+                            });
+                        }
+                    }
+                });
+            });
+    }
+
+    // /// Adds operations after a code_run has changed
+    // pub fn add_changed_code_run_operations(
+    //     &mut self,
+    //     transaction: &mut PendingTransaction,
+    //     sheet_pos: SheetPos,
+    //     old_code_run: &Option<CodeRun>,
+    //     new_code_run: &Option<CodeRun>,
+    // ) {
+    //     let old_sheet_rect = old_code_run
+    //         .as_ref()
+    //         .map(|c| c.output_sheet_rect(sheet_pos, false));
+    //     let new_sheet_rect = new_code_run
+    //         .as_ref()
+    //         .map(|c| c.output_sheet_rect(sheet_pos, false));
+    //     match (&old_sheet_rect, &new_sheet_rect) {
+    //         (Some(old_sheet_rect), Some(new_sheet_rect)) => {
+    //             let sheet_rect = old_sheet_rect.union(new_sheet_rect);
+    //             self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
+    //         }
+    //         (Some(old_sheet_rect), None) => {
+    //             self.add_compute_operations(transaction, old_sheet_rect, Some(sheet_pos));
+    //         }
+    //         (None, Some(new_sheet_rect)) => {
+    //             self.add_compute_operations(transaction, new_sheet_rect, Some(sheet_pos));
+    //         }
+    //         (None, None) => {}
+    //     }
+    // }
+
+    // delete any code runs within the sheet_rect.
+    pub(super) fn check_deleted_code_runs(
+        &self,
+        transaction: &mut PendingTransaction,
+        sheet_rect: &SheetRect,
+    ) {
+        if let Some(sheet) = self.grid.try_sheet_from_id(sheet_rect.sheet_id) {
+            let rect: Rect = (*sheet_rect).into();
+            sheet
+                .code_runs
+                .iter()
+                .filter(|(pos, _)| rect.contains(**pos))
+                .for_each(|(pos, _)| {
+                    let code_sheet_pos = pos.to_sheet_pos(sheet.id);
+                    if sheet_rect.contains(code_sheet_pos) {
+                        transaction.operations.push_front(Operation::SetCodeRun {
+                            sheet_pos: pos.to_sheet_pos(sheet_rect.sheet_id),
+                            code_run: None,
+                        });
+                    }
+                });
+        }
+    }
+
     pub(super) fn execute_set_code_run(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -24,7 +107,7 @@ impl GridController {
             // ignore if sheet does not exist as it may have been deleted in a multiplayer operation
             if let Some(sheet) = self.try_sheet_mut_from_id(sheet_id) {
                 let old_code_run = sheet.set_code_run(pos, code_run);
-                self.finalize_code_cell(transaction, sheet_pos, old_code_run);
+                self.finalize_code_run(transaction, sheet_pos, old_code_run);
             }
         }
     }
@@ -54,21 +137,12 @@ impl GridController {
                 None => unreachable!("Expected CellValue::Code in execute_set_code_cell"),
             };
 
-            let old_code_run = sheet.code_runs.get(&pos).cloned();
             match language {
                 CodeCellLanguage::Python => {
-                    self.run_python(transaction, sheet_pos, code, &old_code_run);
-                    transaction.reverse_operations.insert(
-                        0,
-                        Operation::SetCodeRun {
-                            sheet_pos,
-                            code_run: old_code_run,
-                        },
-                    );
+                    self.run_python(transaction, sheet_pos, code);
                 }
                 CodeCellLanguage::Formula => {
-                    self.run_formula(transaction, sheet_pos, code, &old_code_run);
-                    self.finalize_code_cell(transaction, sheet_pos, old_code_run);
+                    self.run_formula(transaction, sheet_pos, code);
                 }
             }
         }

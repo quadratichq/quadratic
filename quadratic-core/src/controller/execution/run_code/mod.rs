@@ -15,21 +15,26 @@ pub mod run_formula;
 pub mod run_python;
 
 impl GridController {
-    /// finalize changes to a code_cell
-    pub(crate) fn finalize_code_cell(
+    /// finalize changes to a code_run
+    pub(crate) fn finalize_code_run(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        old_code_run: Option<CodeRun>,
+        new_code_run: Option<CodeRun>,
     ) {
         let sheet_id = sheet_pos.sheet_id;
-        let code_run = if let Some(sheet) = self.grid().try_sheet_from_id(sheet_id) {
-            let pos: Pos = sheet_pos.into();
-            sheet.code_runs.get(&pos)
-        } else {
+        let Some(sheet) = self.try_sheet_mut_from_id(sheet_id) else {
+            // sheet may have been deleted
             return;
         };
-        let sheet_rect = match (&old_code_run, &code_run) {
+        let pos: Pos = sheet_pos.into();
+        let old_code_run = if let Some(new_code_run) = &new_code_run {
+            sheet.code_runs.insert(pos, new_code_run.clone())
+        } else {
+            sheet.code_runs.remove(&pos)
+        };
+
+        let sheet_rect = match (&old_code_run, &new_code_run) {
             (None, None) => sheet_pos.into(),
             (None, Some(code_cell_value)) => code_cell_value.output_sheet_rect(sheet_pos, false),
             (Some(old_code_cell_value), None) => {
@@ -51,7 +56,7 @@ impl GridController {
 
         transaction.forward_operations.push(Operation::SetCodeRun {
             sheet_pos,
-            code_run: code_run.cloned(),
+            code_run: new_code_run,
         });
         transaction.reverse_operations.insert(
             0,
@@ -60,6 +65,7 @@ impl GridController {
                 code_run: old_code_run,
             },
         );
+        self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
         self.check_spills(transaction, &sheet_pos.into());
         transaction.sheets_with_dirty_bounds.insert(sheet_id);
         transaction.summary.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
@@ -103,7 +109,7 @@ impl GridController {
                     } else {
                         return Ok(());
                     };
-                    self.finalize_code_cell(transaction, current_sheet_pos, old_code_run);
+                    self.finalize_code_run(transaction, current_sheet_pos, old_code_run);
                     transaction.waiting_for_async = None;
                 }
                 _ => {
@@ -193,7 +199,7 @@ impl GridController {
             return Ok(());
         };
         sheet.set_code_run(pos, Some(new_code_run));
-        self.finalize_code_cell(transaction, sheet_pos, old_code_run);
+        self.finalize_code_run(transaction, sheet_pos, old_code_run);
         transaction
             .summary
             .code_cells_modified
@@ -249,5 +255,110 @@ impl GridController {
         };
         transaction.cells_accessed.clear();
         code_run
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::collections::HashSet;
+
+    use crate::{controller::transaction_summary::CellSheetsModified, CodeCellValue};
+
+    use super::*;
+
+    #[test]
+    fn test_finalize_code_cell() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+
+        // manually set the CellValue::Code
+        let sheet = gc.try_sheet_mut_from_id(sheet_id).unwrap();
+        sheet.set_cell_value(
+            sheet_pos.into(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "delete me".to_string(),
+            }),
+        );
+
+        // manually create the transaction
+        let transaction = &mut PendingTransaction::default();
+
+        // test finalize_code_cell
+        let new_code_run = CodeRun {
+            formatted_code_string: None,
+            std_err: None,
+            std_out: None,
+            result: CodeRunResult::Ok(Value::Single(CellValue::Text("delete me".to_string()))),
+            last_modified: Utc::now(),
+            cells_accessed: HashSet::new(),
+            spill_error: false,
+        };
+        gc.finalize_code_run(transaction, sheet_pos, Some(new_code_run.clone()));
+        assert_eq!(transaction.forward_operations.len(), 1);
+        assert_eq!(transaction.reverse_operations.len(), 1);
+        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(sheet.code_run(sheet_pos.into()), Some(&new_code_run));
+        let summary = transaction.prepare_summary(true);
+        assert_eq!(summary.code_cells_modified.len(), 1);
+        assert_eq!(summary.code_cells_modified.contains(&sheet_id), true);
+        assert_eq!(summary.generate_thumbnail, true);
+        assert_eq!(summary.cell_sheets_modified.len(), 1);
+        assert!(summary
+            .cell_sheets_modified
+            .iter()
+            .any(|c| c == &CellSheetsModified::new(sheet_pos)));
+
+        // replace the code_run with another code_run
+        // manually create the transaction
+        let transaction = &mut PendingTransaction::default();
+
+        // test finalize_code_cell
+        let new_code_run = CodeRun {
+            formatted_code_string: None,
+            std_err: None,
+            std_out: None,
+            result: CodeRunResult::Ok(Value::Single(CellValue::Text("replace me".to_string()))),
+            last_modified: Utc::now(),
+            cells_accessed: HashSet::new(),
+            spill_error: false,
+        };
+        gc.finalize_code_run(transaction, sheet_pos, Some(new_code_run.clone()));
+        assert_eq!(transaction.forward_operations.len(), 1);
+        assert_eq!(transaction.reverse_operations.len(), 1);
+        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(sheet.code_run(sheet_pos.into()), Some(&new_code_run));
+        let summary = transaction.prepare_summary(true);
+        assert_eq!(summary.code_cells_modified.len(), 1);
+        assert_eq!(summary.code_cells_modified.contains(&sheet_id), true);
+        assert_eq!(summary.generate_thumbnail, true);
+        assert_eq!(summary.cell_sheets_modified.len(), 1);
+        assert!(summary
+            .cell_sheets_modified
+            .iter()
+            .any(|c| c == &CellSheetsModified::new(sheet_pos)));
+
+        // remove the code_run
+        let transaction = &mut PendingTransaction::default();
+        gc.finalize_code_run(transaction, sheet_pos, None);
+        assert_eq!(transaction.forward_operations.len(), 1);
+        assert_eq!(transaction.reverse_operations.len(), 1);
+        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(sheet.code_run(sheet_pos.into()), None);
+        let summary = transaction.prepare_summary(true);
+        assert_eq!(summary.code_cells_modified.len(), 1);
+        assert_eq!(summary.code_cells_modified.contains(&sheet_id), true);
+        assert_eq!(summary.generate_thumbnail, true);
+        assert_eq!(summary.cell_sheets_modified.len(), 1);
+        assert!(summary
+            .cell_sheets_modified
+            .iter()
+            .any(|c| c == &CellSheetsModified::new(sheet_pos)));
     }
 }

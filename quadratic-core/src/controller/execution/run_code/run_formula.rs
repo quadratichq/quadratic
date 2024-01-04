@@ -13,7 +13,6 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
         code: String,
-        old_code_run: &Option<CodeRun>,
     ) {
         let mut ctx = Ctx::new(self.grid(), sheet_pos);
         match parse_formula(&code, sheet_pos.into()) {
@@ -30,15 +29,7 @@ impl GridController {
                             cells_accessed: transaction.cells_accessed.clone(),
                             result: CodeRunResult::Ok(value),
                         };
-                        self.add_code_run_operations(
-                            transaction,
-                            sheet_pos,
-                            old_code_run,
-                            &Some(new_code_run.clone()),
-                        );
-                        if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) {
-                            sheet.set_code_run(sheet_pos.into(), Some(new_code_run));
-                        }
+                        self.finalize_code_run(transaction, sheet_pos, Some(new_code_run));
                     }
                     Err(error) => {
                         let msg = error.msg.to_string();
@@ -82,14 +73,15 @@ mod test {
     fn test_execute_operation_set_cell_values_formula() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
 
-        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
+        let sheet = gc.try_sheet_mut_from_id(sheet_id).unwrap();
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
         let sheet_pos = SheetPos {
             x: 1,
             y: 0,
             sheet_id,
         };
+
         let code_cell = CellValue::Code(CodeCellValue {
             language: CodeCellLanguage::Formula,
             code: "A0 + 1".to_string(),
@@ -135,8 +127,9 @@ mod test {
             None,
         );
 
+        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
         assert_eq!(
-            gc.sheet(sheet_id).get_cell_value(Pos { x: 1, y: 0 }),
+            sheet.get_cell_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(11.into()))
         );
 
@@ -153,8 +146,8 @@ mod test {
 
         let sheet = gc.grid().try_sheet_from_id(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 2, y: 0 }),
-            Some(CellValue::Number(12.into()))
+            sheet.get_cell_value(Pos { x: 1, y: 0 }),
+            Some(CellValue::Number(11.into()))
         );
         assert_eq!(
             sheet.get_cell_value(Pos { x: 2, y: 0 }),
@@ -171,7 +164,7 @@ mod test {
             None,
         );
 
-        let sheet = gc.grid().try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(2.into()))
@@ -207,7 +200,7 @@ mod test {
             None,
         );
 
-        let sheet = gc.sheet(sheet_id);
+        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Number(11.into()))
@@ -222,7 +215,8 @@ mod test {
             "".into(),
             None,
         );
-        let sheet = gc.sheet(sheet_id);
+        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(sheet.get_cell_value(Pos { x: 0, y: 0 }), None);
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Number(1.into()))

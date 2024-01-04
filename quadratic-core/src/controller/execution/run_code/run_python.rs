@@ -10,22 +10,26 @@ use crate::{
 };
 
 impl GridController {
-    fn python_not_loaded(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        sheet_pos: SheetPos,
-        old_code_run: &Option<CodeRun>,
-    ) {
+    fn python_not_loaded(&mut self, transaction: &mut PendingTransaction, sheet_pos: SheetPos) {
         let error = RunError {
             span: None,
             msg: RunErrorMsg::PythonNotLoaded,
         };
-        let (formatted_code_string, cells_accessed) = if let Some(c) = old_code_run {
-            (c.formatted_code_string.clone(), c.cells_accessed.clone())
-        } else {
-            (None, HashSet::new())
+        let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) else {
+            // sheet may have been deleted
+            return;
         };
-        let new_run = CodeRun {
+        // keep old formatted code_cell and cells_accessed when creating not loaded error
+        let (formatted_code_string, cells_accessed) =
+            if let Some(old_code_run) = sheet.code_run(sheet_pos.into()).as_ref() {
+                (
+                    old_code_run.formatted_code_string.clone(),
+                    old_code_run.cells_accessed.clone(),
+                )
+            } else {
+                (None, HashSet::new())
+            };
+        let new_code_run = CodeRun {
             std_out: None,
             std_err: Some(RunErrorMsg::PythonNotLoaded.to_string()),
             spill_error: false,
@@ -34,10 +38,7 @@ impl GridController {
             cells_accessed,
             last_modified: Utc::now(),
         };
-        if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) {
-            sheet.set_code_run(sheet_pos.into(), Some(new_run.clone()));
-        }
-        self.add_code_run_operations(transaction, sheet_pos, old_code_run, &Some(new_run));
+        self.finalize_code_run(transaction, sheet_pos, Some(new_code_run));
     }
 
     pub(crate) fn run_python(
@@ -45,14 +46,13 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
         code: String,
-        old_code_run: &Option<CodeRun>,
     ) -> bool {
         if !cfg!(test) {
             let result = crate::wasm_bindings::js::runPython(transaction.id.to_string(), code);
 
             // run python will return false if python is not loaded (this can be generalized if we need to return a different error)
             if result == JsValue::FALSE {
-                self.python_not_loaded(transaction, sheet_pos, old_code_run);
+                self.python_not_loaded(transaction, sheet_pos);
                 return false;
             }
         }
@@ -138,7 +138,7 @@ mod tests {
             .remove_awaiting_async(transaction_id)
             .ok()
             .unwrap();
-        gc.python_not_loaded(&mut transaction, sheet_pos, &None);
+        gc.python_not_loaded(&mut transaction, sheet_pos);
 
         let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
         let cells = sheet.get_render_cells(crate::Rect::single_pos(Pos { x: 0, y: 0 }));
