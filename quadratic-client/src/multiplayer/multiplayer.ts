@@ -6,7 +6,7 @@ import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
 import { User } from '@auth0/auth0-spa-js';
 import { v4 as uuid } from 'uuid';
 
-import { authClient } from '@/auth';
+import { authClient, parseDomain } from '@/auth';
 import { MULTIPLAYER_COLORS } from './multiplayerCursor/multiplayerColors';
 import {
   Heartbeat,
@@ -63,10 +63,9 @@ export class Multiplayer {
     if (force || !this.jwt) {
       await this.getJwt();
 
-      console.log("jwt", this.jwt);
-
       if (this.jwt) {
-        document.cookie = `jwt=${this.jwt}; path=/;`;
+        let domain = parseDomain(window.location.host);
+        document.cookie = `jwt=${this.jwt}; path=/; domain=${domain};`;
       }
     }
   }
