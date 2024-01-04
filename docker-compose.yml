@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./docker/redis/dаta:/root/redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: "5s"
+    networks:
+      - quadratic
+
+volumes:
+  docker:
+
+networks:
+  quadratic:
