@@ -38,6 +38,7 @@ impl GridController {
             });
     }
 
+    // todo: move this....
     // /// Adds operations after a code_run has changed
     // pub fn add_changed_code_run_operations(
     //     &mut self,
@@ -69,26 +70,30 @@ impl GridController {
 
     // delete any code runs within the sheet_rect.
     pub(super) fn check_deleted_code_runs(
-        &self,
+        &mut self,
         transaction: &mut PendingTransaction,
         sheet_rect: &SheetRect,
     ) {
-        if let Some(sheet) = self.grid.try_sheet_from_id(sheet_rect.sheet_id) {
-            let rect: Rect = (*sheet_rect).into();
-            sheet
-                .code_runs
-                .iter()
-                .filter(|(pos, _)| rect.contains(**pos))
-                .for_each(|(pos, _)| {
-                    let code_sheet_pos = pos.to_sheet_pos(sheet.id);
-                    if sheet_rect.contains(code_sheet_pos) {
-                        transaction.operations.push_front(Operation::SetCodeRun {
-                            sheet_pos: pos.to_sheet_pos(sheet_rect.sheet_id),
-                            code_run: None,
-                        });
-                    }
-                });
-        }
+        let sheet_id = sheet_rect.sheet_id;
+        let Some(sheet) = self.grid.try_sheet_from_id(sheet_id) else {
+            // sheet may have been deleted
+            return;
+        };
+        let rect: Rect = (*sheet_rect).into();
+        let code_runs_to_delete: Vec<Pos> = sheet
+            .code_runs
+            .iter()
+            .filter_map(|(pos, _)| {
+                if rect.contains(*pos) {
+                    Some(pos.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+        code_runs_to_delete.iter().for_each(|pos| {
+            self.finalize_code_run(transaction, pos.to_sheet_pos(sheet_id), None);
+        });
     }
 
     pub(super) fn execute_set_code_run(
@@ -105,7 +110,7 @@ impl GridController {
             let pos: Pos = sheet_pos.into();
 
             // ignore if sheet does not exist as it may have been deleted in a multiplayer operation
-            if let Some(sheet) = self.try_sheet_mut_from_id(sheet_id) {
+            if let Some(sheet) = self.try_sheet_mut(sheet_id) {
                 let old_code_run = sheet.set_code_run(pos, code_run);
                 self.finalize_code_run(transaction, sheet_pos, old_code_run);
             }
@@ -122,7 +127,7 @@ impl GridController {
                 unreachable!("Only a user transaction should have a ComputeCode");
             }
             let sheet_id = sheet_pos.sheet_id;
-            let Some(sheet) = self.try_sheet_from_id(sheet_id) else {
+            let Some(sheet) = self.try_sheet(sheet_id) else {
                 // sheet may have been deleted in a multiplayer operation
                 return;
             };
@@ -151,17 +156,21 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
+    use chrono::Utc;
+
     use crate::{
         controller::GridController,
-        grid::{js_types::JsRenderCell, CellAlign, CodeCellLanguage},
-        CellValue, Pos, Rect, SheetPos,
+        grid::{js_types::JsRenderCell, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult},
+        Array, CellValue, Pos, Rect, SheetPos, Value,
     };
 
     #[test]
     fn test_spilled_output_over_normal_cell() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid.sheet_mut_from_id(sheet_id);
+        let sheet = gc.sheet_mut(sheet_id);
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text("one".into()));
         sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Text("two".into()));
         gc.set_code_cell(
@@ -174,7 +183,7 @@ mod tests {
             "A0:A1".to_string(),
             None,
         );
-        let sheet = gc.grid.sheet_from_id(sheet_id);
+        let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("one".into()))
@@ -203,7 +212,7 @@ mod tests {
             None,
         );
 
-        let sheet = gc.grid.sheet_from_id(sheet_id);
+        let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.get_cell_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("cause spill".into()))
@@ -305,7 +314,7 @@ mod tests {
             "B0:B3".into(),
             None,
         );
-        let sheet = gc.grid.sheet_from_id(sheet_id);
+        let sheet = gc.sheet(sheet_id);
 
         let code_run = sheet.code_run(Pos { x: 0, y: 0 });
         assert!(code_run.is_some());
@@ -327,7 +336,7 @@ mod tests {
             None,
         );
 
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         let code_run = sheet.code_run(Pos { x: 0, y: 0 });
         assert!(code_run.is_some());
         assert!(!code_run.unwrap().spill_error);
@@ -387,7 +396,7 @@ mod tests {
             None,
         );
 
-        let sheet = gc.grid.sheet_from_id(sheet_id);
+        let sheet = gc.sheet(sheet_id);
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 0 }));
         assert_eq!(
             render_cells,
@@ -408,7 +417,7 @@ mod tests {
         );
 
         // should be spilled because of the code_cell
-        let sheet = gc.grid.sheet_from_id(sheet_id);
+        let sheet = gc.sheet(sheet_id);
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 0, y: 0 }));
         assert_eq!(render_cells, output_spill_error(0, 0),);
     }
@@ -525,7 +534,7 @@ mod tests {
             None,
         );
 
-        let sheet = gc.grid.sheet_from_id(sheet_id);
+        let sheet = gc.sheet(sheet_id);
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 11, y: 9 }));
         assert_eq!(render_cells, output_spill_error(11, 9));
 
@@ -540,11 +549,29 @@ mod tests {
             None,
         );
 
-        let sheet = gc.grid.sheet_from_id(sheet_id);
+        let sheet = gc.sheet(sheet_id);
         let render_cells = sheet.get_render_cells(Rect::single_pos(Pos { x: 11, y: 9 }));
         assert_eq!(
             render_cells,
             output_number(11, 9, "1", Some(CodeCellLanguage::Formula))
         );
+    }
+
+    #[test]
+    fn test_check_deleted_code_runs() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+        let code_run = CodeRun {
+            std_err: None,
+            std_out: None,
+            result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["1"]]))),
+            spill_error: false,
+            last_modified: Utc::now(),
+            cells_accessed: HashSet::new(),
+            formatted_code_string: None,
+        };
+        let pos = Pos { x: 0, y: 0 };
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.set_code_run(pos, Some(code_run.clone()));
     }
 }

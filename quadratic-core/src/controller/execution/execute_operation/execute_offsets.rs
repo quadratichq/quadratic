@@ -14,7 +14,10 @@ impl GridController {
             new_size,
         } = op
         {
-            let sheet = self.grid.sheet_mut_from_id(sheet_id);
+            let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+                // sheet may have been deleted
+                return;
+            };
             transaction.summary.offsets_modified.insert(sheet.id);
             let old_size = sheet.offsets.set_column_width(column, new_size);
             transaction.summary.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
@@ -47,7 +50,10 @@ impl GridController {
             new_size,
         } = op
         {
-            let sheet = self.grid.sheet_mut_from_id(sheet_id);
+            let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+                // sheet may have been deleted
+                return;
+            };
             let old_size = sheet.offsets.set_row_height(row, new_size);
             transaction.summary.offsets_modified.insert(sheet.id);
             transaction.summary.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {

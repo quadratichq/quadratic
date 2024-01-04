@@ -25,8 +25,9 @@ impl GridController {
             .sheets_with_dirty_bounds
             .drain()
             .for_each(|sheet_id| {
-                let sheet = self.grid_mut().sheet_mut_from_id(sheet_id);
-                sheet.recalculate_bounds();
+                if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+                    sheet.recalculate_bounds();
+                }
             });
     }
 

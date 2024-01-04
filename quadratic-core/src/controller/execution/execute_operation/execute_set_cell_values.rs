@@ -13,7 +13,7 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::SetCellValues { sheet_rect, values } = op {
-            match self.grid.try_sheet_mut_from_id(sheet_rect.sheet_id) {
+            match self.grid.try_sheet_mut(sheet_rect.sheet_id) {
                 None => (), // sheet may have been deleted
                 Some(sheet) => {
                     // update individual cell values and collect old_values
@@ -42,67 +42,7 @@ impl GridController {
 
                         self.check_deleted_code_runs(transaction, &sheet_rect);
                         self.add_compute_operations(transaction, &sheet_rect, None);
-
                         self.check_all_spills(transaction, sheet_rect.sheet_id, 0);
-
-                        // if transaction.is_user() {
-                        //     // remove any code_cells that are now covered by the new values
-                        //     let mut code_cell_removed = false;
-                        //     sheet.code_cells.retain(|(pos, code_cell)| {
-                        //         if sheet_rect.contains(pos.to_sheet_pos(sheet.id)) {
-                        //             transaction.reverse_operations.insert(
-                        //                 0,
-                        //                 Operation::SetCodeCell {
-                        //                     sheet_pos: pos.to_sheet_pos(sheet.id),
-                        //                     code_cell_value: Some(code_cell.clone()),
-                        //                 },
-                        //             );
-                        //             transaction.forward_operations.push(Operation::SetCodeCell {
-                        //                 sheet_pos: pos.to_sheet_pos(sheet.id),
-                        //                 code_cell_value: None,
-                        //             });
-                        //             code_cell_removed = true;
-                        //             false
-                        //         } else {
-                        //             true
-                        //         }
-                        //     });
-                        //     if transaction.is_user() {
-                        //         // remove any code_runs where the (0, 0) is replaced
-                        //         let mut code_run_removed = false;
-                        //         sheet.code_runs.retain(|pos, code_run| {
-                        //             if sheet_rect.contains(pos.to_sheet_pos(sheet.id)) {
-                        //                 transaction.reverse_operations.insert(
-                        //                     0,
-                        //                     Operation::SetCodeRun {
-                        //                         sheet_pos: pos.to_sheet_pos(sheet.id),
-                        //                         code_run: Some(code_run.clone()),
-                        //                     },
-                        //                 );
-                        //                 transaction.forward_operations.push(
-                        //                     Operation::SetCodeRun {
-                        //                         sheet_pos: pos.to_sheet_pos(sheet.id),
-                        //                         code_run: None,
-                        //                     },
-                        //                 );
-                        //                 code_run_removed = true;
-                        //                 false
-                        //             } else {
-                        //                 true
-                        //             }
-                        //         });
-
-                        //         self.add_compute_operations(transaction, &sheet_rect, None);
-
-                        //         // if a code_cell was removed, then we need to check all spills.
-                        //         // Otherwise we only need to check spills for the sheet_rect.
-                        //         if code_cell_removed {
-                        //             self.check_all_spills(transaction, sheet_rect.sheet_id, 0);
-                        //         } else {
-                        //             self.check_spills(transaction, &sheet_rect);
-                        //         }
-                        //     }
-                        // }
 
                         // create reverse_operation
                         let old_values = Array::new_row_major(sheet_rect.size(), old_values)
@@ -236,6 +176,7 @@ mod test {
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         gc.set_cell_value(sheet_pos, "".to_string(), None);
-        assert_eq!(gc.sheet(sheet_id).get_cell_value(sheet_pos.into()), None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.get_cell_value(sheet_pos.into()), None);
     }
 }

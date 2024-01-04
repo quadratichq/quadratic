@@ -92,27 +92,22 @@ impl Grid {
     }
     pub fn first_sheet(&self) -> &Sheet {
         let id = self.first_sheet_id();
-        self.sheet_from_id(id)
+        self.try_sheet_from_id(id)
+            .expect("there should always be a first sheet in the grid")
     }
     pub fn first_sheet_mut(&mut self) -> &mut Sheet {
         let id = self.first_sheet_id();
-        self.sheet_mut_from_id(id)
+        self.try_sheet_mut(id)
+            .expect("there should always be a first sheet in the grid")
     }
     pub fn sheet_ids(&self) -> Vec<SheetId> {
         self.sheets.iter().map(|sheet| sheet.id).collect()
     }
-    pub fn sheet_mut_from_name(&mut self, name: String) -> Option<&Sheet> {
-        if let Some(sheet) = self.sheets.iter().find(|sheet| sheet.name == name) {
-            Some(sheet)
-        } else {
-            None
-        }
-    }
-    pub fn sheet_from_name(&self, name: String) -> Option<&Sheet> {
+    pub fn try_sheet_from_name(&mut self, name: String) -> Option<&Sheet> {
         self.sheets.iter().find(|sheet| sheet.name == name)
     }
-    pub fn sheets_mut(&mut self) -> &mut [Sheet] {
-        &mut self.sheets
+    pub fn try_sheet_mut_from_name(&mut self, name: String) -> Option<&mut Sheet> {
+        self.sheets.iter_mut().find(|sheet| sheet.name == name)
     }
     pub fn sort_sheets(&mut self) {
         self.sheets.sort_by(|a, b| a.order.cmp(&b.order));
@@ -186,9 +181,10 @@ impl Grid {
     }
     /// Moves a sheet before another sheet
     pub fn move_sheet(&mut self, target: SheetId, order: String) {
-        let target = self.sheet_mut_from_id(target);
-        target.order = order;
-        self.sort_sheets();
+        if let Some(target) = self.try_sheet_mut(target) {
+            target.order = order;
+            self.sort_sheets();
+        }
     }
     pub fn sheet_id_to_index(&self, id: SheetId) -> Option<usize> {
         self.sheets.iter().position(|sheet| sheet.id == id)
@@ -202,31 +198,16 @@ impl Grid {
         };
         self.sheets.iter().any(|s| s.id == sheet_id)
     }
-    pub fn sheet_from_id(&self, sheet_id: SheetId) -> &Sheet {
-        let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");
-        &self.sheets[sheet_index]
-    }
     pub fn try_sheet_from_id(&self, sheet_id: SheetId) -> Option<&Sheet> {
-        self.sheet_id_to_index(sheet_id)
-            .map(|idx| &self.sheets[idx])
+        self.sheets.iter().find(|s| s.id == sheet_id)
     }
-    pub fn sheet_mut_from_id(&mut self, sheet_id: SheetId) -> &mut Sheet {
-        let sheet_index = self.sheet_id_to_index(sheet_id).expect("bad sheet ID");
-        &mut self.sheets[sheet_index]
-    }
-    pub fn try_sheet_mut_from_id(&mut self, sheet_id: SheetId) -> Option<&mut Sheet> {
-        self.sheet_id_to_index(sheet_id)
-            .map(|idx| &mut self.sheets[idx])
+    pub fn try_sheet_mut(&mut self, sheet_id: SheetId) -> Option<&mut Sheet> {
+        self.sheets.iter_mut().find(|s| s.id == sheet_id)
     }
 
-    // todo: these should be try_* functions
-    pub fn sheet_from_string(&self, sheet_id: String) -> &Sheet {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        self.sheet_from_id(sheet_id)
-    }
-    pub fn sheet_mut_from_string(&mut self, sheet_id: String) -> &Sheet {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        self.sheet_mut_from_id(sheet_id)
+    #[cfg(test)]
+    pub fn sheets_mut(&mut self) -> &mut [Sheet] {
+        &mut self.sheets
     }
 }
 
@@ -251,7 +232,7 @@ mod more_tests {
         let mut grid = Grid::new();
         let id = grid.first_sheet_id();
 
-        assert!(grid.try_sheet_mut_from_id(id).is_some());
-        assert!(grid.try_sheet_mut_from_id(SheetId::new()).is_none());
+        assert!(grid.try_sheet_mut(id).is_some());
+        assert!(grid.try_sheet_mut(SheetId::new()).is_none());
     }
 }

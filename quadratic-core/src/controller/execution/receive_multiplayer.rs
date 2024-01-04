@@ -326,10 +326,7 @@ mod tests {
 
         let mut gc2 = GridController::new();
         // set gc2's sheet 1's id to gc1 sheet 1's id
-        gc2.grid
-            .try_sheet_mut_from_id(gc2.sheet_ids()[0])
-            .unwrap()
-            .id = sheet_id;
+        gc2.grid.try_sheet_mut(gc2.sheet_ids()[0]).unwrap().id = sheet_id;
         let summary = gc2.set_cell_value(
             SheetPos {
                 x: 0,
@@ -380,11 +377,7 @@ mod tests {
             serde_json::from_str(&summary.operations.unwrap()).unwrap();
 
         let mut server = GridController::new();
-        server
-            .grid
-            .try_sheet_mut_from_id(server.sheet_ids()[0])
-            .unwrap()
-            .id = sheet_id;
+        server.grid.try_sheet_mut(server.sheet_ids()[0]).unwrap().id = sheet_id;
         server.server_apply_transaction(operations);
         let sheet = server.grid.try_sheet_from_id(sheet_id).unwrap();
         assert_eq!(
@@ -435,7 +428,7 @@ mod tests {
         // our unsaved value overwrites the older multiplayer value
         assert_eq!(
             client
-                .try_sheet_from_id(sheet_id)
+                .try_sheet(sheet_id)
                 .unwrap()
                 .get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Client unsaved value".to_string()))
@@ -478,7 +471,7 @@ mod tests {
         client.received_transaction(Uuid::new_v4(), 2, out_of_order_2_operations);
         assert_eq!(
             client
-                .try_sheet_from_id(sheet_id)
+                .try_sheet(sheet_id)
                 .unwrap()
                 .get_cell_value(Pos { x: 1, y: 1 }),
             None
@@ -489,14 +482,14 @@ mod tests {
         client.received_transaction(Uuid::new_v4(), 1, out_of_order_1_operations);
         assert_eq!(
             client
-                .try_sheet_from_id(sheet_id)
+                .try_sheet(sheet_id)
                 .unwrap()
                 .get_cell_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("This is sequence_num = 1".to_string()))
         );
         assert_eq!(
             client
-                .try_sheet_from_id(sheet_id)
+                .try_sheet(sheet_id)
                 .unwrap()
                 .get_cell_value(Pos { x: 2, y: 2 }),
             Some(CellValue::Text("This is sequence_num = 2".to_string()))
@@ -549,7 +542,7 @@ mod tests {
         client.received_transaction(Uuid::new_v4(), 2, out_of_order_2_operations);
         assert_eq!(
             client
-                .try_sheet_from_id(sheet_id)
+                .try_sheet(sheet_id)
                 .unwrap()
                 .get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Client unsaved value".to_string()))
@@ -561,7 +554,7 @@ mod tests {
         client.received_transaction(Uuid::new_v4(), 1, out_of_order_1_operations);
         assert_eq!(
             client
-                .try_sheet_from_id(sheet_id)
+                .try_sheet(sheet_id)
                 .unwrap()
                 .get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Client unsaved value".to_string()))
@@ -577,7 +570,7 @@ mod tests {
         assert_eq!(client.transactions.unsaved_transactions.len(), 0);
         assert_eq!(
             client
-                .try_sheet_from_id(sheet_id)
+                .try_sheet(sheet_id)
                 .unwrap()
                 .get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Client unsaved value".to_string()))
@@ -587,7 +580,7 @@ mod tests {
         client.undo(None);
         assert_eq!(
             client
-                .try_sheet_from_id(sheet_id)
+                .try_sheet(sheet_id)
                 .unwrap()
                 .get_cell_value(Pos { x: 0, y: 0 }),
             None
@@ -649,14 +642,14 @@ mod tests {
 
         assert_eq!(
             client
-                .try_sheet_from_id(sheet_id)
+                .try_sheet(sheet_id)
                 .unwrap()
                 .get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("This is sequence_num = 1".to_string()))
         );
         assert_eq!(
             client
-                .try_sheet_from_id(sheet_id)
+                .try_sheet(sheet_id)
                 .unwrap()
                 .get_cell_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("This is sequence_num = 2".to_string()))
@@ -695,7 +688,7 @@ mod tests {
 
         // ensure code_cell exists
         let code_cell = client
-            .try_sheet_from_id(sheet_id)
+            .try_sheet(sheet_id)
             .unwrap()
             .get_cell_value_only(Pos { x: 1, y: 1 });
         assert!(matches!(code_cell, Some(CellValue::Code(_))));
@@ -714,7 +707,7 @@ mod tests {
 
         assert_eq!(
             client
-                .try_sheet_from_id(sheet_id)
+                .try_sheet(sheet_id)
                 .unwrap()
                 .get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("From other".to_string()))
@@ -722,7 +715,7 @@ mod tests {
 
         // ensure code_cell still exists
         let code_cell = client
-            .try_sheet_from_id(sheet_id)
+            .try_sheet(sheet_id)
             .unwrap()
             .get_cell_value_only(Pos { x: 1, y: 1 });
         assert!(matches!(code_cell, Some(CellValue::Code(_))));
@@ -743,7 +736,7 @@ mod tests {
 
         assert_eq!(
             client
-                .try_sheet_from_id(sheet_id)
+                .try_sheet(sheet_id)
                 .unwrap()
                 .get_cell_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("async output".to_string()))
@@ -785,7 +778,7 @@ mod tests {
 
         // ensure code_cell exists
         let code_cell = client
-            .try_sheet_from_id(sheet_id)
+            .try_sheet(sheet_id)
             .unwrap()
             .get_cell_value_only(Pos { x: 0, y: 0 });
         assert_eq!(
@@ -811,7 +804,7 @@ mod tests {
         // expect this to be None since the async client.set_code_cell overwrites the other's multiplayer transaction
         assert_eq!(
             client
-                .try_sheet_from_id(sheet_id)
+                .try_sheet(sheet_id)
                 .unwrap()
                 .get_cell_value(Pos { x: 0, y: 0 }),
             None
@@ -819,7 +812,7 @@ mod tests {
 
         // ensure code_cell still exists
         let code_cell = client
-            .try_sheet_from_id(sheet_id)
+            .try_sheet(sheet_id)
             .unwrap()
             .get_cell_value_only(Pos { x: 0, y: 0 });
         assert!(matches!(code_cell, Some(CellValue::Code(_))));
@@ -840,7 +833,7 @@ mod tests {
 
         assert_eq!(
             client
-                .try_sheet_from_id(sheet_id)
+                .try_sheet(sheet_id)
                 .unwrap()
                 .get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("async output".to_string()))

@@ -23,7 +23,7 @@ impl GridController {
         new_code_run: Option<CodeRun>,
     ) {
         let sheet_id = sheet_pos.sheet_id;
-        let Some(sheet) = self.try_sheet_mut_from_id(sheet_id) else {
+        let Some(sheet) = self.try_sheet_mut(sheet_id) else {
             // sheet may have been deleted
             return;
         };
@@ -95,21 +95,13 @@ impl GridController {
             }
             Some(waiting_for_async) => match waiting_for_async {
                 CodeCellLanguage::Python => {
-                    let updated_code_cell_value = self.js_code_result_to_code_cell_value(
+                    let new_code_run = self.js_code_result_to_code_cell_value(
                         transaction,
                         result,
                         current_sheet_pos,
                     );
 
-                    // set the new value. Just return if the sheet is not defined (as it may have been deleted by a concurrent user)
-                    let old_code_run = if let Some(sheet) =
-                        self.try_sheet_mut_from_id(current_sheet_pos.sheet_id)
-                    {
-                        sheet.set_code_run(current_sheet_pos.into(), Some(updated_code_cell_value))
-                    } else {
-                        return Ok(());
-                    };
-                    self.finalize_code_run(transaction, current_sheet_pos, old_code_run);
+                    self.finalize_code_run(transaction, current_sheet_pos, Some(new_code_run));
                     transaction.waiting_for_async = None;
                 }
                 _ => {
@@ -141,7 +133,7 @@ impl GridController {
         };
         let sheet_id = sheet_pos.sheet_id;
         let pos = Pos::from(sheet_pos);
-        let Some(sheet) = self.try_sheet_from_id(sheet_id) else {
+        let Some(sheet) = self.try_sheet(sheet_id) else {
             // sheet may have been deleted before the async operation completed
             return Ok(());
         };
@@ -194,7 +186,7 @@ impl GridController {
                 },
             ),
         };
-        let Some(sheet) = self.try_sheet_mut_from_id(sheet_id) else {
+        let Some(sheet) = self.try_sheet_mut(sheet_id) else {
             // sheet may have been deleted before the async operation completed
             return Ok(());
         };
@@ -278,7 +270,7 @@ mod test {
         };
 
         // manually set the CellValue::Code
-        let sheet = gc.try_sheet_mut_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet_mut(sheet_id).unwrap();
         sheet.set_cell_value(
             sheet_pos.into(),
             CellValue::Code(CodeCellValue {
@@ -303,7 +295,7 @@ mod test {
         gc.finalize_code_run(transaction, sheet_pos, Some(new_code_run.clone()));
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(sheet.code_run(sheet_pos.into()), Some(&new_code_run));
         let summary = transaction.prepare_summary(true);
         assert_eq!(summary.code_cells_modified.len(), 1);
@@ -332,7 +324,7 @@ mod test {
         gc.finalize_code_run(transaction, sheet_pos, Some(new_code_run.clone()));
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(sheet.code_run(sheet_pos.into()), Some(&new_code_run));
         let summary = transaction.prepare_summary(true);
         assert_eq!(summary.code_cells_modified.len(), 1);
@@ -349,7 +341,7 @@ mod test {
         gc.finalize_code_run(transaction, sheet_pos, None);
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(sheet.code_run(sheet_pos.into()), None);
         let summary = transaction.prepare_summary(true);
         assert_eq!(summary.code_cells_modified.len(), 1);

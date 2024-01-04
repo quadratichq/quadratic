@@ -551,7 +551,7 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
     Ok(current::GridSchema {
         version: Some(CURRENT_VERSION.into()),
         sheets: grid
-            .sheets_mut()
+            .sheets()
             .iter()
             .map(|sheet| current::Sheet {
                 id: current::Id {

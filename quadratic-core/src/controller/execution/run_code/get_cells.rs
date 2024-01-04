@@ -23,13 +23,25 @@ impl GridController {
             ));
         };
 
-        let sheet_name = get_cells.sheet_name();
-
         // if sheet_name is None, use the sheet_id from the pos
-        let sheet = sheet_name.clone().map_or_else(
-            || Some(self.grid().sheet_from_id(current_sheet)),
-            |sheet_name| self.grid().sheet_from_name(sheet_name),
-        );
+        let sheet = if let Some(sheet_name) = get_cells.sheet_name() {
+            if let Some(sheet) = self.try_sheet_from_name(sheet_name) {
+                sheet
+            } else {
+                // unable to find sheet by name, generate error
+                let msg = if let Some(line_number) = get_cells.line_number() {
+                    format!("Sheet '{}' not found at line {}", sheet_name, line_number)
+                } else {
+                    format!("Sheet '{}' not found", sheet_name)
+                };
+                self.code_cell_sheet_error(&mut transaction, msg, get_cells.line_number())?;
+                self.transactions.add_async_transaction(&transaction);
+                return Ok(CellsForArray::new(vec![], true));
+            }
+        } else {
+            self.try_sheet(current_sheet)
+                .expect("get_cells failed to get sheet from id")
+        };
 
         let transaction_type = transaction.transaction_type.clone();
         if transaction_type != TransactionType::User {
@@ -38,39 +50,25 @@ impl GridController {
                 "get_cells called for non-user transaction".to_string(),
             ));
         }
-        if let Some(sheet) = sheet {
-            // ensure that the current cell ref is not in the get_cells request
-            if get_cells.rect().contains(pos) && sheet.id == current_sheet {
-                // unable to find sheet by name, generate error
-                let msg = if let Some(line_number) = get_cells.line_number() {
-                    format!("cell cannot reference itself at line {}", line_number)
-                } else {
-                    "Sheet not found".to_string()
-                };
-                self.code_cell_sheet_error(&mut transaction, msg, get_cells.line_number())?;
-                self.handle_transactions(&mut transaction);
-                return Ok(CellsForArray::new(vec![], true));
-            }
-
-            let rect = get_cells.rect();
-            let array = sheet.cell_array(rect);
-            transaction
-                .cells_accessed
-                .insert(rect.to_sheet_rect(sheet.id));
-            self.transactions.add_async_transaction(&transaction);
-            Ok(array)
-        } else {
+        // ensure that the current cell ref is not in the get_cells request
+        if get_cells.rect().contains(pos) && sheet.id == current_sheet {
             // unable to find sheet by name, generate error
-            let msg = if let (Some(sheet_name), Some(line_number)) =
-                (sheet_name, get_cells.line_number())
-            {
-                format!("Sheet '{}' not found at line {}", sheet_name, line_number)
+            let msg = if let Some(line_number) = get_cells.line_number() {
+                format!("cell cannot reference itself at line {}", line_number)
             } else {
                 "Sheet not found".to_string()
             };
             self.code_cell_sheet_error(&mut transaction, msg, get_cells.line_number())?;
-            self.transactions.add_async_transaction(&transaction);
-            Ok(CellsForArray::new(vec![], true))
+            self.handle_transactions(&mut transaction);
+            return Ok(CellsForArray::new(vec![], true));
         }
+
+        let rect = get_cells.rect();
+        let array = sheet.cell_array(rect);
+        transaction
+            .cells_accessed
+            .insert(rect.to_sheet_rect(sheet.id));
+        self.transactions.add_async_transaction(&transaction);
+        Ok(array)
     }
 }

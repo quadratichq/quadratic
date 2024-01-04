@@ -61,7 +61,7 @@ mod test {
     fn test_set_code_cell_operations() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().try_sheet_mut_from_id(sheet_id).unwrap();
+        let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
         let pos = Pos { x: 0, y: 0 };
         sheet.set_cell_value(pos, CellValue::Text("delete me".to_string()));
 

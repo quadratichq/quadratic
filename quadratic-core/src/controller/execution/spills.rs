@@ -19,7 +19,7 @@ impl GridController {
         set_spill_error: bool,
     ) {
         // change the spill for the first code_cell and then iterate the later code_cells.
-        if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_id) {
+        if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             if let Some((pos, run)) = sheet.code_runs.get_index_mut(index) {
                 let sheet_pos = pos.to_sheet_pos(sheet.id);
                 transaction.reverse_operations.insert(
@@ -45,7 +45,7 @@ impl GridController {
     pub fn check_spills(&mut self, transaction: &mut PendingTransaction, sheet_rect: &SheetRect) {
         let sheet_id = sheet_rect.sheet_id;
         // find the first code cell that has a change in its spill_error
-        let result = match self.grid.try_sheet_mut_from_id(sheet_id) {
+        let result = match self.grid.try_sheet_mut(sheet_id) {
             None => None,
             Some(sheet) => {
                 sheet
@@ -97,7 +97,7 @@ impl GridController {
         sheet_id: SheetId,
         start: usize,
     ) {
-        if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_id) {
+        if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             let result = sheet.code_runs.iter().skip(start).enumerate().find_map(
                 |(index, (pos, code_cell))| {
                     let output = code_cell.output_sheet_rect(pos.to_sheet_pos(sheet.id), true);
@@ -141,7 +141,7 @@ mod tests {
         let mut transaction = PendingTransaction::default();
 
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid.try_sheet_mut_from_id(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet_mut(sheet_id).unwrap();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
         sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
         gc.set_code_cell(
@@ -155,7 +155,7 @@ mod tests {
             None,
         );
 
-        let sheet = gc.grid.try_sheet_mut_from_id(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet_mut(sheet_id).unwrap();
 
         // manually set a cell value and see if spill is changed
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(3.into()));
@@ -181,7 +181,7 @@ mod tests {
         let mut transaction = PendingTransaction::default();
 
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid.try_sheet_mut_from_id(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet_mut(sheet_id).unwrap();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
         sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
         gc.set_code_cell(
@@ -195,7 +195,7 @@ mod tests {
             None,
         );
 
-        let sheet = gc.grid.try_sheet_mut_from_id(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet_mut(sheet_id).unwrap();
 
         // manually set a cell value and see if spill is changed
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(3.into()));

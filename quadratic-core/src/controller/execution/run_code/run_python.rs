@@ -15,7 +15,7 @@ impl GridController {
             span: None,
             msg: RunErrorMsg::PythonNotLoaded,
         };
-        let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) else {
+        let Some(sheet) = self.grid.try_sheet_mut(sheet_pos.sheet_id) else {
             // sheet may have been deleted
             return;
         };
@@ -178,7 +178,7 @@ mod tests {
             None,
         ));
         assert!(summary.is_ok());
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_code_cell_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Text("hello world".into()))
@@ -246,7 +246,7 @@ mod tests {
             .is_ok());
 
         // check that the value at (0, 1) contains the expected output
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(10)))
@@ -343,7 +343,7 @@ mod tests {
             .is_ok());
 
         // check that the value at (0, 1) contains the expected output
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(11)))
@@ -389,7 +389,7 @@ mod tests {
             ))
             .is_ok());
 
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         let cells = sheet.get_render_cells(Rect::from_numbers(0, 0, 1, 3));
         assert_eq!(cells.len(), 3);
         assert_eq!(
@@ -430,7 +430,7 @@ mod tests {
         );
         gc.calculation_complete(result).unwrap();
         assert!(gc.async_transactions().is_empty());
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert!(sheet
             .get_cell_value(Pos { x: 0, y: 0 })
             .unwrap()
@@ -473,7 +473,7 @@ mod tests {
             .is_ok());
 
         // check that the value at (0, 0) contains the expected output
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("original output".into()))
@@ -490,7 +490,7 @@ mod tests {
         );
 
         // check that the value at (0, 0) contains the original output
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("original output".into()))
@@ -514,7 +514,7 @@ mod tests {
             .is_ok());
 
         // repeat the same action to find a bug that occurs on second change
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("new output".into()))
@@ -531,7 +531,7 @@ mod tests {
         );
 
         // check that the value at (0, 0) contains the original output
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("new output".into()))
@@ -555,7 +555,7 @@ mod tests {
             .is_ok());
 
         // check that the value at (0, 0) contains the original output
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("new output second time".into()))

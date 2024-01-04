@@ -34,7 +34,8 @@ impl GridController {
                     Err(error) => {
                         let msg = error.msg.to_string();
                         let line_number = error.span.map(|span| span.start as i64);
-                        // there's probably a better way to handle this error
+
+                        // todo: propagate the result
                         let _ = self.code_cell_sheet_error(
                             transaction,
                             msg,
@@ -46,7 +47,7 @@ impl GridController {
             }
             Err(e) => {
                 let msg = e.to_string();
-                // there's probably a better way to handle this error
+                // todo: propagate the result
                 let _ = self.code_cell_sheet_error(transaction, msg, None);
             }
         }
@@ -74,7 +75,7 @@ mod test {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
 
-        let sheet = gc.try_sheet_mut_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet_mut(sheet_id).unwrap();
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
         let sheet_pos = SheetPos {
             x: 1,
@@ -112,7 +113,7 @@ mod test {
     fn test_multiple_formula() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().try_sheet_mut_from_id(sheet_id).unwrap();
+        let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
 
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(BigDecimal::from(10)));
         let sheet_pos = SheetPos {
@@ -127,7 +128,7 @@ mod test {
             None,
         );
 
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(11.into()))
@@ -164,7 +165,7 @@ mod test {
             None,
         );
 
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(2.into()))
@@ -200,7 +201,7 @@ mod test {
             None,
         );
 
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Number(11.into()))
@@ -215,7 +216,7 @@ mod test {
             "".into(),
             None,
         );
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(sheet.get_cell_value(Pos { x: 0, y: 0 }), None);
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 1 }),

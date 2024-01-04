@@ -85,7 +85,11 @@ impl GridController {
     ) {
         if let Operation::ReorderSheet { target, order } = op {
             let old_first = self.grid.first_sheet_id();
-            let sheet = self.grid.sheet_from_id(target);
+            let Some(sheet) = self.try_sheet_mut(target) else {
+                // sheet may have been deleted
+                return;
+            };
+            sheet.order = order.clone();
             let original_order = sheet.order.clone();
             self.grid.move_sheet(target, order.clone());
             transaction.summary.sheet_list_modified = true;
@@ -112,7 +116,10 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::SetSheetName { sheet_id, name } = op {
-            let sheet = self.grid.sheet_mut_from_id(sheet_id);
+            let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+                // sheet may have been deleted
+                return;
+            };
             let old_name = sheet.name.clone();
             sheet.name = name.clone();
             transaction.summary.sheet_list_modified = true;
@@ -135,7 +142,10 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::SetSheetColor { sheet_id, color } = op {
-            let sheet = self.grid.sheet_mut_from_id(sheet_id);
+            let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+                // sheet may have been deleted
+                return;
+            };
             let old_color = sheet.color.clone();
             sheet.color = color.clone();
             transaction.summary.sheet_list_modified = true;

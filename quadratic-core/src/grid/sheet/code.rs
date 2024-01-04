@@ -122,7 +122,7 @@ mod test {
     fn test_set_code_run() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().try_sheet_mut_from_id(sheet_id).unwrap();
+        let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
         let code_run = CodeRun {
             std_out: None,
             std_err: None,
@@ -143,7 +143,7 @@ mod test {
     fn test_get_code_run() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().try_sheet_mut_from_id(sheet_id).unwrap();
+        let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
         let code_run = CodeRun {
             std_err: None,
             std_out: None,

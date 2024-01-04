@@ -1,5 +1,5 @@
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
-use crate::grid::{Grid, Sheet, SheetId};
+use crate::grid::Grid;
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
@@ -47,13 +47,5 @@ impl GridController {
 
     pub fn grid_mut(&mut self) -> &mut Grid {
         &mut self.grid
-    }
-
-    pub fn try_sheet_from_id(&self, sheet_id: SheetId) -> Option<&Sheet> {
-        self.grid.try_sheet_from_id(sheet_id)
-    }
-
-    pub fn try_sheet_mut_from_id(&mut self, sheet_id: SheetId) -> Option<&mut Sheet> {
-        self.grid.try_sheet_mut_from_id(sheet_id)
     }
 }
