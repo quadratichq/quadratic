@@ -36,11 +36,7 @@ jobs:
           pulumi stack select $STACK_NAME
         fi
 
-        pulumi config set aws:region us-west-2
-        pulumi config set domain quadratic-preview.com
         pulumi config set subdomain multiplayer-pr-${{ env.PR_ID }}
-        pulumi config set data-dog-env preview
-        pulumi config set data-dog-api-key ${{ env.DD_API_KEY }} --secret
         pulumi config set quadratic-api-uri https://quadratic-api-dev-pr-${{ env.PR_ID }}.herokuapp.com
         pulumi config set multiplayer-aws-s3-access-key-id ${{ secrets.MULTIPLAYER_AWS_S3_ACCESS_KEY_ID }} --secret
         pulumi config set multiplayer-aws-s3-secret-access-key ${{ secrets.MULTIPLAYER_AWS_S3_SECRET_ACCESS_KEY }} --secret
