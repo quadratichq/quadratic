@@ -39,7 +39,7 @@ jobs:
         # Create a file pointing at the correct Pulumi ESC Environment
         cat <<EOF | tee Pulumi.$STACK_NAME.yaml
         environment:
-          - quadratic/aws-infra-development
+          - aws-infra-development
         EOF
 
         pulumi config set subdomain multiplayer-pr-${{ env.PR_ID }}
