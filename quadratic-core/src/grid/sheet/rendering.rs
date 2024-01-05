@@ -292,7 +292,7 @@ impl Sheet {
         self.code_runs
             .iter()
             .filter_map(|(pos, run)| {
-                if let Some(code) = self.get_cell_value(*pos) {
+                if let Some(code) = self.get_cell_value_only(*pos) {
                     match &code {
                         CellValue::Code(code) => {
                             let (state, w, h) = if run.spill_error {
@@ -651,5 +651,37 @@ mod tests {
         assert_eq!(code_cells.len(), 1);
         assert_eq!(code_cells[0].value, "1".to_string());
         assert_eq!(code_cells[0].language, Some(CodeCellLanguage::Python));
+    }
+
+    #[test]
+    fn test_get_render_cells_code() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "1 + 1".to_string(),
+            None,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id)
+                .get_render_cells(Rect::from_numbers(1, 2, 1, 1)),
+            vec![JsRenderCell {
+                x: 1,
+                y: 2,
+                value: "2".to_string(),
+                language: Some(CodeCellLanguage::Formula),
+                align: Some(CellAlign::Right),
+                wrap: None,
+                bold: None,
+                italic: None,
+                text_color: None,
+            }]
+        );
     }
 }
