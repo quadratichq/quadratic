@@ -67,13 +67,13 @@ impl Sheet {
     }
 
     /// Populates the current sheet with random values
-    /// todo: this does not work with multiplayer... need to fix (or delete)
-    pub fn with_random_floats(&mut self, region: &Rect) {
+    /// Should only be used for testing (as it will not propagate in multiplayer)
+    pub fn random_numbers(&mut self, rect: &Rect) {
         self.columns.clear();
         let mut rng = rand::thread_rng();
-        for x in region.x_range() {
-            let column = self.get_or_create_column(x);
-            for y in region.y_range() {
+        for x in rect.x_range() {
+            for y in rect.y_range() {
+                let column = self.get_or_create_column(x);
                 let value = rng.gen_range(-10000..=10000).to_string();
                 column.values.set(
                     y,
