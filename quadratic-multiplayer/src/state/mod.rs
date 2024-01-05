@@ -39,6 +39,7 @@ impl State {
             port: config.pubsub_port.to_owned(),
             password: config.pubsub_password.to_owned(),
         });
+
         State {
             rooms: Mutex::new(DashMap::new()),
             connections: Mutex::new(HashMap::new()),
