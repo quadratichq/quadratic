@@ -25,7 +25,7 @@ export default [
 
 async function handler(req: RequestWithOptionalUser, res: Response) {
   const {
-    file: { id, thumbnail, uuid, name, created_date, updated_date, publicLinkAccess },
+    file: { id, thumbnail, uuid, name, createdDate, updatedDate, publicLinkAccess },
     user,
   } = await getFile({ uuid: req.params.uuid, userId: req.user?.id });
 
@@ -50,8 +50,8 @@ async function handler(req: RequestWithOptionalUser, res: Response) {
     file: {
       uuid,
       name,
-      created_date: created_date.toISOString(),
-      updated_date: updated_date.toISOString(),
+      createdDate: createdDate.toISOString(),
+      updatedDate: updatedDate.toISOString(),
       publicLinkAccess,
       lastCheckpointSequenceNumber: checkpoint?.sequenceNumber,
       lastCheckpointVersion: checkpoint?.version,

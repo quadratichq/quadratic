@@ -21,6 +21,10 @@ export interface Request extends JWTRequest {
   file?: UploadFile;
 }
 
+export type RequestWithFile = Request & {
+  file: UploadFile;
+};
+
 export type RequestWithOptionalAuth = JWTRequest & {
   auth?: { sub: string };
 };

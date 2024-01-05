@@ -30,10 +30,10 @@ model File {
     uuid             String           @unique @default(uuid())
     name             String
     thumbnail        String? // S3FileKey
-    created_date     DateTime         @default(now()) // TODO map("created_date")
-    updated_date     DateTime         @default(now()) // TODO map("updated_date")
+    createdDate      DateTime         @default(now()) @map("created_date")
+    updatedDate      DateTime         @default(now()) @map("updated_date")
     deleted          Boolean          @default(false)
-    deleted_date     DateTime?
+    deletedDate      DateTime?        @map("deleted_date")
     // Binary file contents
     contents         Bytes? // unused to delete
     // Role

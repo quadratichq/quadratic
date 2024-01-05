@@ -12,7 +12,7 @@ import { debugShowUILogs } from '../debugFlags';
 export type Loader = ApiTypes['/v0/files.GET.response'];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const data = await apiClient.getFiles();
+  const data = await apiClient.files.list();
   return data;
 };
 

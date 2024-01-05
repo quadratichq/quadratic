@@ -88,8 +88,24 @@ export const apiClient = {
   },
 
   files: {
+    async list() {
+      return fetchFromApi(`/v0/files`, { method: 'GET' }, ApiSchemas['/v0/files.GET.response']);
+    },
     async get(uuid: string) {
       return fetchFromApi(`/v0/files/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/files/:uuid.GET.response']);
+    },
+    async create(
+      body: ApiTypes['/v0/files.POST.request'] = {
+        name: 'Untitled',
+        contents: JSON.stringify(DEFAULT_FILE),
+        version: DEFAULT_FILE.version,
+      }
+    ) {
+      return fetchFromApi(
+        `/v0/files/`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/files.POST.response']
+      );
     },
     async download(uuid: string) {
       mixpanel.track('[Files].downloadFile', { id: uuid });
@@ -97,6 +113,31 @@ export const apiClient = {
       const checkpointUrl = file.lastCheckpointDataUrl;
       const checkpointData = await fetch(checkpointUrl).then((res) => res.text());
       downloadQuadraticFile(file.name, checkpointData);
+    },
+    async update(uuid: string, body: ApiTypes['/v0/files/:uuid.PATCH.request']) {
+      return fetchFromApi(
+        `/v0/files/${uuid}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        },
+        ApiSchemas['/v0/files/:uuid.PATCH.response']
+      );
+    },
+    thumbnail: {
+      async update(uuid: string, thumbnail: Blob) {
+        const formData = new FormData();
+        formData.append('thumbnail', thumbnail, 'thumbnail.png');
+
+        return fetchFromApi(
+          `/v0/files/${uuid}/thumbnail`,
+          {
+            method: 'POST',
+            body: formData,
+          },
+          ApiSchemas['/v0/files/:uuid/thumbnail.POST.response']
+        );
+      },
     },
     sharing: {
       async get(uuid: string) {
@@ -130,52 +171,9 @@ export const apiClient = {
     },
   },
 
-  async getFiles() {
-    return fetchFromApi(`/v0/files`, { method: 'GET' }, ApiSchemas['/v0/files.GET.response']);
-  },
-
-  async createFile(
-    body: ApiTypes['/v0/files.POST.request'] = {
-      name: 'Untitled',
-      contents: JSON.stringify(DEFAULT_FILE),
-      version: DEFAULT_FILE.version,
-    }
-  ) {
-    return fetchFromApi(
-      `/v0/files/`,
-      { method: 'POST', body: JSON.stringify(body) },
-      ApiSchemas['/v0/files.POST.response']
-    );
-  },
-
   async deleteFile(uuid: string) {
     mixpanel.track('[Files].deleteFile', { id: uuid });
     return fetchFromApi(`/v0/files/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/files/:uuid.DELETE.response']);
-  },
-
-  async updateFile(uuid: string, body: ApiTypes['/v0/files/:uuid.POST.request']) {
-    return fetchFromApi(
-      `/v0/files/${uuid}`,
-      {
-        method: 'POST',
-        body: JSON.stringify(body),
-      },
-      ApiSchemas['/v0/files/:uuid.POST.response']
-    );
-  },
-
-  async updateFileThumbnail(uuid: string, thumbnail: Blob) {
-    const formData = new FormData();
-    formData.append('thumbnail', thumbnail, 'thumbnail.png');
-
-    return fetchFromApi<ApiTypes['/v0/files/:uuid/thumbnail.POST.response']>(
-      `/v0/files/${uuid}/thumbnail`,
-      {
-        method: 'POST',
-        body: formData,
-      },
-      ApiSchemas['/v0/files/:uuid/thumbnail.POST.response']
-    );
   },
 
   async postFeedback(body: ApiTypes['/v0/feedback.POST.request']) {

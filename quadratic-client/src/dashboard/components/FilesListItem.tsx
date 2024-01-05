@@ -55,7 +55,7 @@ export function FileListItem({
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
 
-  const { uuid, name, created_date, updated_date, publicLinkAccess, thumbnail } = file;
+  const { uuid, name, createdDate, updatedDate, publicLinkAccess, thumbnail } = file;
 
   const fetcherSubmitOpts: SubmitOptions = {
     method: 'POST',
@@ -112,8 +112,8 @@ export function FileListItem({
         publicLinkAccess: 'NOT_SHARED',
         name: name + ' (Copy)',
         thumbnail: null,
-        updated_date: date,
-        created_date: date,
+        updatedDate: date,
+        createdDate: date,
       },
     };
     fetcherDuplicate.submit(data, fetcherSubmitOpts);
@@ -131,7 +131,7 @@ export function FileListItem({
     filterValue,
     name: displayName,
     description:
-      viewPreferences.sort === Sort.Created ? `Created ${timeAgo(created_date)}` : `Modified ${timeAgo(updated_date)}`,
+      viewPreferences.sort === Sort.Created ? `Created ${timeAgo(createdDate)}` : `Modified ${timeAgo(updatedDate)}`,
     hasNetworkError: Boolean(failedToDelete || failedToRename),
     isShared: publicLinkAccess !== 'NOT_SHARED',
     viewPreferences,

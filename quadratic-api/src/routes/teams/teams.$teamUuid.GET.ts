@@ -70,7 +70,7 @@ router.get(
       {}
     );
 
-    // TODO: sort users by created_date in the team
+    // TODO: sort users by createdDate in the team
     // TODO: invited users, also can we guarantee ordering here?
     const users = dbUsers.map(({ userId: id, role, user: { auth0_id } }) => {
       const { email, name, picture } = auth0UsersByAuth0Id[auth0_id];

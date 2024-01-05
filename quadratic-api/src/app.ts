@@ -8,7 +8,6 @@ import helmet from 'helmet';
 import path from 'path';
 import ai_chat_router from './routes/ai_chat';
 import feedback_router from './routes/feedback';
-import files_router from './routes/files/files';
 import internal_router from './routes/internal';
 import teams_router from './routes/teams';
 import { ApiError } from './utils/ApiError';
@@ -58,16 +57,11 @@ app.use((req, res, next) => {
   return next();
 });
 
-// Routes
-app.route('/').get((_r, res: Response) => {
-  res.send({ message: '200 OK' });
-});
+// App routes
+// TODO: eventually move all of these into the `v0` directory and register them dynamically
 app.use('/ai', ai_chat_router);
-app.use('/v0/files', files_router);
 app.use('/v0/feedback', feedback_router);
 app.use('/v0/teams', teams_router);
-registerRoutes();
-
 // Internal routes
 app.use('/v0/internal', internal_router);
 
@@ -81,30 +75,33 @@ if (SENTRY_DSN) {
   app.use(Sentry.Handlers.errorHandler());
 }
 
-// Error-logging middleware
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  if (err.status >= 500) {
-    console.error(`[${new Date().toISOString()}] ${err.message}`);
-    if (process.env.NODE_ENV !== 'production') console.log(`[${new Date().toISOString()}] ${err.message}`);
-  }
-  next(err);
-});
-
-// Error-handling middleware
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  // Application-specific error handling
-  if (err instanceof ApiError) {
-    res.status(err.status).json({ error: { message: err.message, ...(err.meta ? { meta: err.meta } : {}) } });
-  }
-
-  // Generic error handling
-  res.status(err.status || 500);
-  res.json({
-    error: {
-      message: err.message,
-    },
+// Register all our dynamic routes, then regsiter the error middleware last of all
+registerRoutes().then(() => {
+  // Error-logging middleware
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    if (err.status >= 500) {
+      console.error(`[${new Date().toISOString()}] ${err.message}`);
+      if (process.env.NODE_ENV !== 'production') console.log(`[${new Date().toISOString()}] ${err.message}`);
+    }
+    next(err);
   });
-  next(err);
+
+  // Error-handling middleware
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    // Application-specific error handling
+    if (err instanceof ApiError) {
+      res.status(err.status).json({ error: { message: err.message, ...(err.meta ? { meta: err.meta } : {}) } });
+    }
+
+    // Generic error handling
+    res.status(err.status || 500);
+    res.json({
+      error: {
+        message: err.message,
+      },
+    });
+    next(err);
+  });
 });
 
 /**
@@ -116,7 +113,11 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
  */
 async function registerRoutes() {
   const currentDirectory = path.join(__dirname, '/routes/v0');
+
+  // Remove any `**.test.ts` files
   const files = fs.readdirSync(currentDirectory).filter((item) => !item.includes('.test.'));
+
+  const registeredRoutes = [];
 
   for (const file of files) {
     const segments = file.split('.');
@@ -126,11 +127,11 @@ async function registerRoutes() {
     if (httpMethodIndex === -1) httpMethodIndex = segments.indexOf('PUT');
     if (httpMethodIndex === -1) httpMethodIndex = segments.indexOf('PATCH');
     if (httpMethodIndex === -1) httpMethodIndex = segments.indexOf('DELETE');
-    const httpMethod = segments[httpMethodIndex].toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete';
 
     if (httpMethodIndex === -1) {
       console.error('File route is malformed. It needs an HTTP method: %s', file);
     } else {
+      const httpMethod = segments[httpMethodIndex].toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete';
       const routeSegments = segments.slice(0, httpMethodIndex);
       const expressRoute =
         '/v0/' + routeSegments.map((str) => (str.startsWith('$') ? str.replace('$', ':') : str)).join('/');
@@ -138,11 +139,14 @@ async function registerRoutes() {
       try {
         const callbacks = await import(path.join(currentDirectory, file)).then((module) => module.default);
         app[httpMethod](expressRoute, ...callbacks);
-        if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test')
-          console.log(`Registered route: ${httpMethod.toUpperCase()} ${expressRoute}`);
+        registeredRoutes.push(httpMethod.toUpperCase() + ' ' + expressRoute);
       } catch (err) {
         console.error(`Failed to register route: ${expressRoute}`, err);
       }
     }
+  }
+
+  if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
+    console.log(`Dynamically registered routes: ${registeredRoutes.map((route) => `\n  ${route}`).join('')}`);
   }
 }

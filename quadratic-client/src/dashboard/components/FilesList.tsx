@@ -57,9 +57,9 @@ export function FilesList({ files }: { files: FilesLoader }) {
       const nameB = b.name.toLowerCase();
       comparison = nameA.localeCompare(nameB);
     } else if (viewPreferences.sort === Sort.Created) {
-      comparison = a.created_date.localeCompare(b.created_date);
+      comparison = a.createdDate.localeCompare(b.createdDate);
     } else {
-      comparison = a.updated_date.localeCompare(b.updated_date);
+      comparison = a.updatedDate.localeCompare(b.updatedDate);
     }
     return viewPreferences.order === Order.Ascending ? comparison : -comparison;
   });

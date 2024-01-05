@@ -68,8 +68,8 @@ export type PublicLinkAccess = z.infer<typeof PublicLinkAccessSchema>;
 const FileSchema = z.object({
   uuid: z.string().uuid(),
   name: z.string(),
-  created_date: z.string().datetime(),
-  updated_date: z.string().datetime(),
+  createdDate: z.string().datetime(),
+  updatedDate: z.string().datetime(),
   lastCheckpointSequenceNumber: z.number(),
   lastCheckpointVersion: z.string(),
   lastCheckpointDataUrl: z.string().url(),
@@ -84,18 +84,19 @@ export const ApiSchemas = {
    *
    */
   '/v0/files.GET.response': z.array(
-    FileSchema.pick({ uuid: true, name: true, created_date: true, updated_date: true, thumbnail: true }).extend({
+    FileSchema.pick({ uuid: true, name: true, createdDate: true, updatedDate: true, thumbnail: true }).extend({
       publicLinkAccess: PublicLinkAccessSchema,
     })
   ),
-  '/v0/files.POST.request': z
-    .object({
-      name: z.string(),
+  '/v0/files.POST.request': FileSchema.pick({
+    name: true,
+  })
+    .extend({
       contents: z.string(),
       version: z.string(),
     })
     .optional(),
-  '/v0/files.POST.response': FileSchema.pick({ uuid: true, name: true, created_date: true, updated_date: true }),
+  '/v0/files.POST.response': FileSchema.pick({ uuid: true, name: true, createdDate: true, updatedDate: true }),
 
   /**
    *
@@ -118,15 +119,8 @@ export const ApiSchemas = {
   '/v0/files/:uuid.DELETE.response': z.object({
     message: z.string(),
   }),
-  '/v0/files/:uuid.POST.request': z.object({
-    // You can post any of these, but if you post `contents` you have to also send `version`
-    contents: z.string().optional(),
-    version: z.string().optional(), // GridFileSchema.shape.version.optional(), -- version # is pulled from rust
-    name: z.string().optional(),
-  }),
-  '/v0/files/:uuid.POST.response': z.object({
-    message: z.string(),
-  }),
+  '/v0/files/:uuid.PATCH.request': FileSchema.pick({ name: true }),
+  '/v0/files/:uuid.PATCH.response': FileSchema.pick({ name: true }),
   '/v0/files/:uuid/thumbnail.POST.response': z.object({
     message: z.string(),
   }),
