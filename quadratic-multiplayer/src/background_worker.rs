@@ -40,12 +40,12 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                     tracing::trace!("Processing room {}", file_id);
                     // process transaction queue for the room
 
-                    // let processed =
-                    //     process_transaction_queue_for_room(Arc::clone(&state), &file_id).await;
+                    let processed =
+                        process_transaction_queue_for_room(Arc::clone(&state), &file_id).await;
 
-                    // if let Err(error) = processed {
-                    //     tracing::warn!("Error processing queue for room {file_id}: {:?}", error);
-                    // };
+                    if let Err(error) = processed {
+                        tracing::warn!("Error processing queue for room {file_id}: {:?}", error);
+                    };
 
                     // broadcast sequence number to all users in the room
                     let broadcasted = broadcast_sequence_num(Arc::clone(&state), &file_id).await;
