@@ -106,7 +106,10 @@ impl GridController {
 
     /// Externally called when an async calculation completes
     pub fn calculation_complete(&mut self, result: JsCodeResult) -> Result<TransactionSummary> {
+        dbgjs!("1");
         let transaction_id = Uuid::parse_str(&result.transaction_id())?;
+        dbgjs!("2");
+
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
 
         // we can remove the last forward_operation since it's the original SetCodeCell operation (used for rolling back while pending)
@@ -272,5 +275,35 @@ mod tests {
         let pos = Pos::from((0, 0));
         let cell_hash = CellHash::from(pos);
         assert_eq!(cell_hash, CellHash("0,0".into()));
+    }
+
+    #[test]
+    fn test_js_calculation_complete() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let summary = gc.set_code_cell(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            crate::grid::CodeCellLanguage::Python,
+            "1 + 1".into(),
+            None,
+        );
+        assert!(summary.transaction_id.is_some());
+
+        let result = gc.calculation_complete(JsCodeResult::new(
+            summary.transaction_id.unwrap(),
+            true,
+            None,
+            None,
+            None,
+            Some("1".into()),
+            None,
+            None,
+            None,
+        ));
+        assert!(result.is_ok());
     }
 }

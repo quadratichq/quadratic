@@ -57,6 +57,7 @@ impl GridController {
             }
         }
         // stop the computation cycle until async returns
+        transaction.summary.transaction_id = Some(transaction.id.to_string());
         transaction.current_sheet_pos = Some(sheet_pos);
         transaction.waiting_for_async = Some(CodeCellLanguage::Python);
         transaction.has_async = true;
