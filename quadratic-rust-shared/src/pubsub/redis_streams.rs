@@ -29,6 +29,8 @@ impl Debug for RedisConnection {
     }
 }
 
+type Message = (String, String);
+
 fn client(config: Config) -> Result<Client> {
     if let Config::RedisStreams(RedisStreamsConfig {
         host,
@@ -66,11 +68,15 @@ fn from_value(value: &Value) -> String {
     }
 }
 
-fn parse_message(id: &StreamId) -> (String, String) {
+fn parse_message(id: &StreamId) -> Message {
     let StreamId { id, map: value } = id;
     let parsed_id = from_key(&id);
     let message = from_value(value.iter().next().unwrap().1);
     (parsed_id.to_string(), message)
+}
+
+fn stream_ids_to_messages(ids: Vec<StreamId>) -> Vec<Message> {
+    ids.iter().map(parse_message).collect::<Vec<_>>()
 }
 
 impl super::PubSub for RedisConnection {
@@ -148,7 +154,7 @@ impl super::PubSub for RedisConnection {
         group: &str,
         keys: Option<Vec<&str>>,
         max_messages: usize,
-    ) -> Result<Vec<(String, String)>> {
+    ) -> Result<Vec<Message>> {
         // convert keys to ids, default to all new messages (">") if None
         let ids = keys.map_or_else(|| vec![">".to_string()], |keys| to_keys(keys));
 
@@ -177,7 +183,14 @@ impl super::PubSub for RedisConnection {
     }
 
     /// Get the last message in a channel
-    async fn last_message(&mut self, channel: &str) -> Result<(String, String)> {
+    async fn get_message_from(&mut self, channel: &str, id: &str) -> Result<Vec<Message>> {
+        let messages: StreamRangeReply = self.multiplex.xrange(channel, id, "+").await?;
+
+        Ok(stream_ids_to_messages(messages.ids))
+    }
+
+    /// Get the last message in a channel
+    async fn last_message(&mut self, channel: &str) -> Result<Message> {
         let message: StreamRangeReply =
             self.multiplex.xrevrange_count(channel, "+", "-", 1).await?;
 

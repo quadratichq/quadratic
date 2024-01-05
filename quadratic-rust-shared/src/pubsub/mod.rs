@@ -26,5 +26,6 @@ pub trait PubSub {
         keys: Option<Vec<&str>>,
         max_messages: usize,
     ) -> Result<Vec<(String, String)>>;
+    async fn get_message_from(&mut self, channel: &str, id: &str) -> Result<Vec<(String, String)>>;
     async fn last_message(&mut self, channel: &str) -> Result<(String, String)>;
 }
