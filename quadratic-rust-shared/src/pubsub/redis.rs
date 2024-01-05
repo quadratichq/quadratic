@@ -71,7 +71,7 @@ impl super::PubSub for RedisConnection {
 
     /// Acknowledge that a message was processed
     async fn ack(&mut self, _channel: &str, _group: &str, _keys: Vec<&str>) -> Result<()> {
-        Ok(())
+        unimplemented!()
     }
 
     async fn messages(
@@ -81,7 +81,11 @@ impl super::PubSub for RedisConnection {
         _keys: Option<Vec<&str>>,
         _max_messages: usize,
     ) -> Result<Vec<(String, String)>> {
-        Ok(vec![])
+        unimplemented!()
+    }
+
+    async fn last_message(&mut self, _channel: &str) -> Result<(String, String)> {
+        unimplemented!()
     }
 
     // /// Get the next message from the pubsub server.

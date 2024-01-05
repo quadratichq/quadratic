@@ -61,17 +61,19 @@ pub(crate) async fn handle_message(
                 // get permission and sequence_num from the quadratic api
                 let (permission, mut sequence_num) = get_file_perms(base_url, jwt, file_id).await?;
 
-                // // check for updated sequence num from the transaction queue
-                // // todo: this will need to be reworked to check the transaction data store
-                // if let Some(transaction_sequence_num) = state
-                //     .transaction_queue
-                //     .lock()
-                //     .await
-                //     .get_sequence_num(file_id)
-                // {
-                //     // replace the current sequence_num with the transaction sequence_num
-                //     sequence_num = transaction_sequence_num;
-                // }
+                // TODO(ddimaria): break out any pubsub work into a separate file
+                if let Ok(pubsub_sequence_num) = state
+                    .transaction_queue
+                    .lock()
+                    .await
+                    .pubsub
+                    .connection
+                    .last_message(&file_id.to_string())
+                    .await
+                {
+                    // ignore parsing errors for now
+                    sequence_num = pubsub_sequence_num.0.parse::<u64>().unwrap_or(sequence_num);
+                }
 
                 (permission, sequence_num)
             };
@@ -100,6 +102,7 @@ pub(crate) async fn handle_message(
             };
 
             // subscribe to the file's pubsub channel
+            // TODO(ddimaria): break out any pubsub work into a separate file
             if let Err(error) = state
                 .transaction_queue
                 .lock()
@@ -214,6 +217,7 @@ pub(crate) async fn handle_message(
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
+            // TODO(ddimaria): break out any pubsub work into a separate file
             let transactions = state
                 .transaction_queue
                 .lock()
