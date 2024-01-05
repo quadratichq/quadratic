@@ -27,17 +27,24 @@ impl GridController {
         (operations, copy.0, copy.1)
     }
 
-    fn array_from_clipboard_cells(clipboard: Clipboard) -> Option<Array> {
+    /// Converts the clipboard to an (Array, Vec<(relative x, relative y) for a CellValue::Code>) tuple.
+    fn array_from_clipboard_cells(clipboard: Clipboard) -> (Option<Array>, Vec<(u32, u32)>) {
         if clipboard.w == 0 && clipboard.h == 0 {
-            return None;
+            return (None, vec![]);
         }
 
         let mut array = Array::new_empty(ArraySize::new(clipboard.w, clipboard.h).unwrap());
+        let mut code = vec![];
         let mut x = 0;
         let mut y = 0;
 
         clipboard.cells.iter().for_each(|cell| {
             let value = cell.clone().map_or(CellValue::Blank, |v| v);
+
+            if let CellValue::Code(_) = &value {
+                code.push((x, y));
+            }
+
             // ignore result errors
             let _ = array.set(x, y, value);
 
@@ -49,7 +56,7 @@ impl GridController {
             }
         });
 
-        Some(array)
+        (Some(array), code)
     }
 
     fn set_clipboard_cells(&mut self, start_pos: SheetPos, clipboard: Clipboard) -> Vec<Operation> {
@@ -65,45 +72,19 @@ impl GridController {
         let borders = clipboard.borders.clone();
 
         let mut ops = vec![];
-        let values = GridController::array_from_clipboard_cells(clipboard);
+        let (values, code) = GridController::array_from_clipboard_cells(clipboard);
         if let Some(values) = values {
             ops.push(Operation::SetCellValues { sheet_rect, values });
         }
 
-        // this should not be necessary.
-        // // remove any overlapping code cells (which will automatically set the reverse operations)
-        // for x in sheet_rect.x_range() {
-        //     for y in sheet_rect.y_range() {
-        //         let pos = Pos { x, y };
-        //         if sheet.get_code_cell(pos).is_some() {
-        //             // no need to clear code cells that are being pasted
-        //             if !code.iter().any(|(code_pos, _)| {
-        //                 Pos {
-        //                     x: code_pos.x + start_pos.x,
-        //                     y: code_pos.y + start_pos.y,
-        //                 } == pos
-        //             }) {
-        //                 ops.push(Operation::SetCodeCell {
-        //                     sheet_pos: pos.to_sheet_pos(start_pos.sheet_id),
-        //                     code_cell_value: None,
-        //                 });
-        //             }
-        //         }
-        //     }
-        // }
-
-        // // add copied code cells to the sheet
-        // code.iter().for_each(|entry| {
-        //     let sheet_pos = SheetPos {
-        //         x: entry.0.x + start_pos.x,
-        //         y: entry.0.y + start_pos.y,
-        //         sheet_id: start_pos.sheet_id,
-        //     };
-        //     ops.push(Operation::SetCodeCell {
-        //         sheet_pos,
-        //         code_cell_value: Some(entry.1.clone()),
-        //     });
-        // });
+        code.iter().for_each(|(x, y)| {
+            let sheet_pos = SheetPos {
+                x: start_pos.x + *x as i64,
+                y: start_pos.y + *y as i64,
+                sheet_id: start_pos.sheet_id,
+            };
+            ops.push(Operation::ComputeCode { sheet_pos });
+        });
 
         formats.iter().for_each(|format| {
             ops.push(Operation::SetCellFormats {

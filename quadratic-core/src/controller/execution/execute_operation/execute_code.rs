@@ -38,36 +38,6 @@ impl GridController {
             });
     }
 
-    // todo: move this....
-    // /// Adds operations after a code_run has changed
-    // pub fn add_changed_code_run_operations(
-    //     &mut self,
-    //     transaction: &mut PendingTransaction,
-    //     sheet_pos: SheetPos,
-    //     old_code_run: &Option<CodeRun>,
-    //     new_code_run: &Option<CodeRun>,
-    // ) {
-    //     let old_sheet_rect = old_code_run
-    //         .as_ref()
-    //         .map(|c| c.output_sheet_rect(sheet_pos, false));
-    //     let new_sheet_rect = new_code_run
-    //         .as_ref()
-    //         .map(|c| c.output_sheet_rect(sheet_pos, false));
-    //     match (&old_sheet_rect, &new_sheet_rect) {
-    //         (Some(old_sheet_rect), Some(new_sheet_rect)) => {
-    //             let sheet_rect = old_sheet_rect.union(new_sheet_rect);
-    //             self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
-    //         }
-    //         (Some(old_sheet_rect), None) => {
-    //             self.add_compute_operations(transaction, old_sheet_rect, Some(sheet_pos));
-    //         }
-    //         (None, Some(new_sheet_rect)) => {
-    //             self.add_compute_operations(transaction, new_sheet_rect, Some(sheet_pos));
-    //         }
-    //         (None, None) => {}
-    //     }
-    // }
-
     // delete any code runs within the sheet_rect.
     pub(super) fn check_deleted_code_runs(
         &mut self,
@@ -116,14 +86,7 @@ impl GridController {
             code_run,
         } = op
         {
-            let sheet_id = sheet_pos.sheet_id;
-            let pos: Pos = sheet_pos.into();
-
-            // ignore if sheet does not exist as it may have been deleted in a multiplayer operation
-            if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                let old_code_run = sheet.set_code_run(pos, code_run);
-                self.finalize_code_run(transaction, sheet_pos, old_code_run);
-            }
+            self.finalize_code_run(transaction, sheet_pos, code_run);
         }
     }
 

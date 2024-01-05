@@ -40,9 +40,11 @@ impl GridController {
                             .forward_operations
                             .push(Operation::SetCellValues { sheet_rect, values });
 
-                        self.check_deleted_code_runs(transaction, &sheet_rect);
-                        self.add_compute_operations(transaction, &sheet_rect, None);
-                        self.check_all_spills(transaction, sheet_rect.sheet_id, 0);
+                        if transaction.is_user() {
+                            self.check_deleted_code_runs(transaction, &sheet_rect);
+                            self.add_compute_operations(transaction, &sheet_rect, None);
+                            self.check_all_spills(transaction, sheet_rect.sheet_id, 0);
+                        }
 
                         // create reverse_operation
                         let old_values = Array::new_row_major(sheet_rect.size(), old_values)

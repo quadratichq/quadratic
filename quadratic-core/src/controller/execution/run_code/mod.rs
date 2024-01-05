@@ -58,6 +58,7 @@ impl GridController {
             sheet_pos,
             code_run: new_code_run,
         });
+
         transaction.reverse_operations.insert(
             0,
             Operation::SetCodeRun {
@@ -65,8 +66,12 @@ impl GridController {
                 code_run: old_code_run,
             },
         );
-        self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
-        self.check_spills(transaction, &sheet_pos.into());
+
+        if transaction.is_user() {
+            self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
+            self.check_spills(transaction, &sheet_pos.into());
+        }
+
         transaction.sheets_with_dirty_bounds.insert(sheet_id);
         transaction.summary.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
         transaction.summary.code_cells_modified.insert(sheet_id);
