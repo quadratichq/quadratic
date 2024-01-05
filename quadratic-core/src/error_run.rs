@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::fmt;
 
-/// Result of a [`crate::Error`].
+/// Result of a [`crate::RunError`].
 pub type CodeResult<T = Spanned<Value>> = Result<T, RunError>;
 
 /// Error message and accompanying span.
@@ -284,7 +284,7 @@ macro_rules! internal_error_value {
         // Give nice error message for user in release build.
         #[cfg(not(all(debug_assertions, not(target_arch = "wasm32"))))]
         #[allow(unused)]
-        let ret: $crate::RunError = $crate::RunError::InternalError(
+        let ret: $crate::RunError = $crate::RunErrorMsg::InternalError(
             std::borrow::Cow::Borrowed($msg),
         )
         .without_span();
@@ -300,8 +300,8 @@ macro_rules! internal_error_value {
         // Give nice error message for user in release build.
         #[cfg(not(all(debug_assertions, not(target_arch = "wasm32"))))]
         #[allow(unused)]
-        let ret: $crate::Error =
-            $crate::ErrorMsg::InternalError(format!($( $args ),+).into()).without_span();
+        let ret: $crate::RunError =
+            $crate::RunErrorMsg::InternalError(format!($( $args ),+).into()).without_span();
         #[allow(unreachable_code)]
         ret
     }};
