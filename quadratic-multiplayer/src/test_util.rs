@@ -110,7 +110,7 @@ pub(crate) async fn integration_test_setup(
 }
 
 pub(crate) async fn integration_test_send_and_receive(
-    socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
+    socket: &Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
     request: MessageRequest,
     expect_response: bool,
 ) -> Option<String> {
@@ -128,6 +128,12 @@ pub(crate) async fn integration_test_send_and_receive(
         return None;
     }
 
+    integration_test_receive(socket).await
+}
+
+pub(crate) async fn integration_test_receive(
+    socket: &Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
+) -> Option<String> {
     let response = match socket.lock().await.next().await.unwrap().unwrap() {
         tungstenite::Message::Text(msg) => msg,
         other => panic!("expected a text message but got {other:?}"),

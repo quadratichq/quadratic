@@ -2,14 +2,12 @@
 //!
 //! A central place for storing websocket messages responses.
 
+use crate::error::MpError;
+use crate::state::user::UserStateUpdate;
+use crate::state::{room::Room, user::User};
 use dashmap::DashMap;
 use serde::Serialize;
 use uuid::Uuid;
-
-use crate::error::MpError;
-use crate::state::transaction_queue::Transaction;
-use crate::state::user::UserStateUpdate;
-use crate::state::{room::Room, user::User};
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
 #[derive(Serialize, Debug, Clone, PartialEq)]
@@ -26,12 +24,15 @@ pub(crate) enum MessageResponse {
     Transaction {
         id: Uuid,
         file_id: Uuid,
-        // todo: this is a stringified Vec<Operation>. Eventually, Operation should be a shared type.
-        operations: String,
         sequence_num: u64,
+        operations: String,
     },
     Transactions {
-        transactions: Vec<Transaction>,
+        transactions: String,
+    },
+    EnterRoom {
+        file_id: Uuid,
+        sequence_num: u64,
     },
     CurrentTransaction {
         sequence_num: u64,

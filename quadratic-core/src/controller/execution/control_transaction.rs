@@ -1,173 +1,128 @@
-use core::panic;
-use std::collections::HashSet;
-
-use crate::{
-    controller::{
-        operations::operation::Operation,
-        transaction_summary::{TransactionSummary, CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
-        transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells},
-    },
-    Pos,
-};
-use indexmap::IndexSet;
+use uuid::Uuid;
 
 use super::{GridController, TransactionType};
+use crate::{
+    controller::{
+        active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation,
+        transaction::Transaction,
+        transaction_summary::{TransactionSummary, CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
+        transaction_types::JsCodeResult,
+    },
+    core_error::Result,
+    Pos,
+};
 
 impl GridController {
     // loop compute cycle until complete or an async call is made
-    pub(super) fn loop_compute(&mut self) {
+    pub(super) fn handle_transactions(&mut self, transaction: &mut PendingTransaction) {
         loop {
-            self.compute();
-            if self.waiting_for_async.is_some() {
-                break;
-            }
-            if self.cells_to_compute.is_empty() {
-                self.complete = true;
-                self.transaction_in_progress = false;
-                self.summary.save = true;
-                if self.has_async {
-                    self.finalize_transaction();
+            if transaction.operations.is_empty() {
+                transaction.complete = true;
+                if transaction.has_async {
+                    self.finalize_transaction(transaction);
                 }
                 break;
             }
-        }
-    }
 
-    /// executes a set of operations
-    fn transact(&mut self, operations: Vec<Operation>, compute: bool) {
-        for op in operations.iter() {
-            if cfg!(feature = "show-operations") {
-                crate::util::dbgjs(&format!("[Operation] {:?}", op.to_string()));
+            self.execute_operation(transaction);
+
+            if transaction.waiting_for_async.is_some() {
+                self.transactions.add_async_transaction(transaction);
+                break;
             }
-
-            self.execute_operation(op.clone(), compute);
         }
     }
 
     /// Creates and runs a new Transaction
-    ///
-    /// Description
-    /// * `compute` triggers the computation cycle
-    fn start_transaction(
-        &mut self,
-        operations: Vec<Operation>,
-        cursor: Option<String>,
-        compute: bool,
-        transaction_type: TransactionType,
-    ) {
-        if self.transaction_in_progress {
-            panic!("Expected no transaction in progress");
+    pub(super) fn start_transaction(&mut self, transaction: &mut PendingTransaction) {
+        // todo: maybe remove this?
+        if matches!(transaction.transaction_type, TransactionType::User) {
+            transaction.id = Uuid::new_v4();
         }
-        self.transaction_in_progress = true;
-        self.reverse_operations = vec![];
-        self.cells_updated = IndexSet::new();
-        self.cells_to_compute = IndexSet::new();
-        self.cursor = cursor;
-        self.cells_accessed = HashSet::new();
-        self.summary = TransactionSummary::default();
-        self.sheets_with_changed_bounds = HashSet::new();
-        self.transaction_type = transaction_type;
-        self.has_async = false;
-        self.current_sheet_pos = None;
-        self.waiting_for_async = None;
-        self.complete = false;
-        self.forward_operations = vec![];
 
-        // apply operations
-        self.transact(operations, compute);
-
-        // run computations
-        if compute {
-            self.loop_compute();
-        } else {
-            self.complete = true;
-            self.transaction_in_progress = false;
-        }
+        self.handle_transactions(transaction);
     }
 
-    pub(super) fn finalize_transaction(&mut self) {
-        match self.transaction_type {
+    /// Finalizes the transaction and pushes it to the various stacks (if needed)
+    pub(super) fn finalize_transaction(&mut self, transaction: &mut PendingTransaction) {
+        self.recalculate_sheet_bounds(transaction);
+        match transaction.transaction_type {
             TransactionType::User => {
-                self.undo_stack.push(self.to_transaction());
+                let undo = transaction.to_undo_transaction();
+                self.undo_stack.push(undo.clone());
                 self.redo_stack.clear();
+                self.transactions
+                    .unsaved_transactions
+                    .push((transaction.to_forward_transaction(), undo));
             }
             TransactionType::Undo => {
-                self.redo_stack.push(self.to_transaction());
+                let undo = transaction.to_undo_transaction();
+                self.redo_stack.push(undo.clone());
+                self.transactions
+                    .unsaved_transactions
+                    .push((transaction.to_forward_transaction(), undo));
             }
             TransactionType::Redo => {
-                self.undo_stack.push(self.to_transaction());
+                let undo = transaction.to_undo_transaction();
+                self.undo_stack.push(undo.clone());
+                self.transactions
+                    .unsaved_transactions
+                    .push((transaction.to_forward_transaction(), undo));
             }
             TransactionType::Multiplayer => (),
             TransactionType::Unset => panic!("Expected a transaction type"),
         }
     }
 
-    pub fn set_in_progress_transaction(
+    pub fn start_user_transaction(
         &mut self,
         operations: Vec<Operation>,
         cursor: Option<String>,
-        compute: bool,
-        transaction_type: TransactionType,
     ) -> TransactionSummary {
-        assert!(
-            !self.transaction_in_progress,
-            "Expected no transaction in progress in set_in_progress_transaction"
-        );
-        self.start_transaction(operations, cursor, compute, transaction_type);
-        let mut summary = self.prepare_transaction_summary();
-        self.transaction_updated_bounds();
-
-        if self.complete {
-            summary.save = true;
-            self.finalize_transaction();
-        }
-        summary
-    }
-
-    pub fn calculation_complete(&mut self, result: JsCodeResult) -> TransactionSummary {
-        assert!(self.transaction_in_progress);
-        let cancel_compute = result.cancel_compute.unwrap_or(false);
-
-        if cancel_compute {
-            self.clear_cells_to_compute();
-            self.loop_compute();
-        }
-
-        self.after_calculation_async(result);
-
-        self.transaction_updated_bounds();
-        if self.complete {
-            self.summary.save = true;
-            self.finalize_transaction();
-        }
-        self.prepare_transaction_summary()
-    }
-
-    /// This is used to get cells during a TS-controlled async calculation
-    pub fn calculation_get_cells(&mut self, get_cells: JsComputeGetCells) -> Option<CellsForArray> {
-        assert!(self.transaction_in_progress);
-        self.get_cells(get_cells)
-    }
-
-    pub fn received_transaction(&mut self, transaction: String) -> TransactionSummary {
-        let operations: Vec<Operation> = if let Ok(operations) = serde_json::from_str(&transaction)
-        {
-            operations
-        } else {
-            return TransactionSummary::default();
+        let mut transaction = PendingTransaction {
+            transaction_type: TransactionType::User,
+            operations: operations.into(),
+            cursor,
+            ..Default::default()
         };
+        self.start_transaction(&mut transaction);
 
-        self.apply_received_transaction(operations)
+        if transaction.complete {
+            self.finalize_transaction(&mut transaction);
+            transaction.prepare_summary(true)
+        } else {
+            transaction.prepare_summary(false)
+        }
     }
 
-    pub fn apply_received_transaction(&mut self, operations: Vec<Operation>) -> TransactionSummary {
-        self.start_transaction(operations, None, false, TransactionType::Multiplayer);
-        self.transaction_updated_bounds();
-        let mut summary = self.prepare_transaction_summary();
-        summary.generate_thumbnail = false;
-        summary.forward_operations = None;
-        summary.save = false;
-        summary
+    pub fn start_undo_transaction(
+        &mut self,
+        transaction: &Transaction,
+        transaction_type: TransactionType,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let mut pending = transaction.to_pending_transaction(transaction_type, cursor);
+        pending.id = Uuid::new_v4();
+        self.start_transaction(&mut pending);
+        self.finalize_transaction(&mut pending);
+        pending.prepare_summary(true)
+    }
+
+    /// Externally called when an async calculation completes
+    pub fn calculation_complete(&mut self, result: JsCodeResult) -> Result<TransactionSummary> {
+        let transaction_id = Uuid::parse_str(&result.transaction_id())?;
+        let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
+
+        // we can remove the last forward_operation since it's the original SetCodeCell operation (used for rolling back while pending)
+        transaction.forward_operations.pop();
+        if result.cancel_compute.unwrap_or(false) {
+            self.handle_transactions(&mut transaction);
+        }
+
+        self.after_calculation_async(&mut transaction, result)?;
+
+        Ok(transaction.prepare_summary(transaction.complete))
     }
 }
 
@@ -194,9 +149,8 @@ impl From<Pos> for CellHash {
 
 #[cfg(test)]
 mod tests {
-    use crate::{grid::GridBounds, Array, CellValue, Pos, Rect, SheetPos, SheetRect};
-
     use super::*;
+    use crate::{grid::GridBounds, Array, CellValue, Pos, Rect, SheetPos, SheetRect};
 
     fn add_cell_value(sheet_pos: SheetPos, value: CellValue) -> Operation {
         let sheet_rect = SheetRect::single_sheet_pos(sheet_pos);
@@ -213,7 +167,6 @@ mod tests {
         let value = CellValue::Text("test".into());
         let operation = add_cell_value(sheet_pos, value);
         let operation_undo = add_cell_value(sheet_pos, CellValue::Blank);
-
         (operation, operation_undo)
     }
 
@@ -223,30 +176,45 @@ mod tests {
         let (operation, operation_undo) = get_operations(&mut gc);
 
         // TransactionType::User
-        gc.start_transaction(vec![operation.clone()], None, false, TransactionType::User);
-        gc.finalize_transaction();
+        let mut transaction = PendingTransaction {
+            transaction_type: TransactionType::User,
+            operations: vec![operation].into(),
+            ..Default::default()
+        };
+        gc.start_transaction(&mut transaction);
+        gc.finalize_transaction(&mut transaction);
 
         assert_eq!(gc.undo_stack.len(), 1);
         assert_eq!(gc.redo_stack.len(), 0);
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].operations);
 
         // TransactionType::Undo
-        gc.start_transaction(vec![], None, false, TransactionType::Undo);
-        gc.finalize_transaction();
+        let mut transaction = PendingTransaction {
+            transaction_type: TransactionType::Undo,
+            operations: vec![operation_undo.clone()].into(),
+            ..Default::default()
+        };
+        gc.start_transaction(&mut transaction);
+        gc.finalize_transaction(&mut transaction);
 
         assert_eq!(gc.undo_stack.len(), 1);
         assert_eq!(gc.redo_stack.len(), 1);
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].operations);
-        assert_eq!(gc.redo_stack[0].operations.len(), 0);
+        assert_eq!(gc.redo_stack[0].operations.len(), 1);
 
         // TransactionType::Redo
-        gc.start_transaction(vec![], None, false, TransactionType::Redo);
-        gc.finalize_transaction();
+        let mut transaction = PendingTransaction {
+            transaction_type: TransactionType::Redo,
+            operations: vec![operation_undo.clone()].into(),
+            ..Default::default()
+        };
+        gc.start_transaction(&mut transaction);
+        gc.finalize_transaction(&mut transaction);
 
         assert_eq!(gc.undo_stack.len(), 2);
         assert_eq!(gc.redo_stack.len(), 1);
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].operations);
-        assert_eq!(gc.redo_stack[0].operations.len(), 0);
+        assert_eq!(gc.redo_stack[0].operations.len(), 1);
     }
 
     #[test]
@@ -257,7 +225,7 @@ mod tests {
         assert!(!gc.has_undo());
         assert!(!gc.has_redo());
 
-        gc.set_in_progress_transaction(vec![operation.clone()], None, false, TransactionType::User);
+        gc.start_user_transaction(vec![operation.clone()], None);
         assert!(gc.has_undo());
         assert!(!gc.has_redo());
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].operations);
@@ -275,9 +243,9 @@ mod tests {
 
     #[test]
     fn test_transactions_transaction_summary() {
-        let mut gc = GridController::new();
+        let mut transaction = PendingTransaction::default();
         assert_eq!(
-            gc.prepare_transaction_summary(),
+            transaction.prepare_summary(false),
             TransactionSummary::default()
         );
     }
@@ -286,11 +254,15 @@ mod tests {
     fn test_transactions_updated_bounds_in_transaction() {
         let mut gc = GridController::new();
         let (operation, _) = get_operations(&mut gc);
-
         assert_eq!(gc.grid().sheets()[0].bounds(true), GridBounds::Empty);
 
-        gc.set_in_progress_transaction(vec![operation], None, true, TransactionType::User);
-        gc.transaction_updated_bounds();
+        let mut transaction = PendingTransaction {
+            transaction_type: TransactionType::User,
+            operations: vec![operation.clone()].into(),
+            ..Default::default()
+        };
+        gc.start_transaction(&mut transaction);
+        gc.finalize_transaction(&mut transaction);
 
         let expected = GridBounds::NonEmpty(Rect::single_pos((0, 0).into()));
         assert_eq!(gc.grid().sheets()[0].bounds(true), expected);

@@ -24,7 +24,4 @@ pub async fn client(
 }
 
 #[cfg(test)]
-mod tests {
-
-    use super::*;
-}
+mod tests {}

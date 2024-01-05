@@ -276,9 +276,11 @@ pub(crate) mod tests {
     use super::*;
     use crate::state::user::{CellEdit, User, UserStateUpdate};
     use crate::test_util::{
-        integration_test_send_and_receive, integration_test_setup, new_arc_state, new_user,
+        integration_test_receive, integration_test_send_and_receive, integration_test_setup,
+        new_arc_state, new_user,
     };
     use quadratic_core::controller::operations::operation::Operation;
+    use quadratic_core::grid::SheetId;
     use tokio::net::TcpStream;
     use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
     use uuid::Uuid;
@@ -303,7 +305,9 @@ pub(crate) mod tests {
             viewport: "initial viewport".to_string(),
         };
 
-        integration_test_send_and_receive(socket, request, true).await;
+        // UsersInRoom and EnterRoom are sent to the client when they enter a room
+        integration_test_send_and_receive(&socket, request, true).await;
+        integration_test_receive(&socket).await;
 
         user
     }
@@ -340,14 +344,15 @@ pub(crate) mod tests {
             update,
         };
 
-        let response = integration_test_send_and_receive(socket, request, true).await;
+        let response = integration_test_send_and_receive(&socket, request, true).await;
 
         assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
     }
 
     #[tokio::test]
-    async fn user_enters_a_room() {
+    async fn test_user_enters_a_room() {
         let (socket, _, _, file_id, user) = setup().await;
+
         let new_user = new_user();
         let session_id = new_user.session_id;
         let request = MessageRequest::EnterRoom {
@@ -363,18 +368,28 @@ pub(crate) mod tests {
             cell_edit: CellEdit::default(),
             viewport: "initial viewport".to_string(),
         };
-        let expected_1 = MessageResponse::UsersInRoom {
-            users: vec![new_user.clone(), user.clone()],
+        let expected_enter_room = MessageResponse::EnterRoom {
+            file_id,
+            sequence_num: 0,
         };
-        let expected_2 = MessageResponse::UsersInRoom {
+        let received_enter_room = &integration_test_send_and_receive(&socket, request, true)
+            .await
+            .unwrap();
+        assert_eq!(
+            &serde_json::to_string(&expected_enter_room).unwrap(),
+            received_enter_room
+        );
+
+        // This is not the best test, but the ordering of the users is somewhat random in the UsersInRoom message.
+        // Since we can't deserialize easily (b/c of Vec), we instead compare the length of the stringified output.
+        let users_in_room_response = MessageResponse::UsersInRoom {
             users: vec![user, new_user],
         };
-        let response = integration_test_send_and_receive(socket, request, true).await;
-
-        // order is brittle, this feels hacky
-        assert!(
-            response == Some(serde_json::to_string(&expected_1).unwrap())
-                || response == Some(serde_json::to_string(&expected_2).unwrap())
+        assert_eq!(
+            integration_test_receive(&socket).await.map(|s| s.len()),
+            serde_json::to_string(&users_in_room_response)
+                .ok()
+                .map(|s| s.len())
         );
     }
 
@@ -396,7 +411,7 @@ pub(crate) mod tests {
             .await
             .unwrap();
 
-        let response = integration_test_send_and_receive(socket, request, true).await;
+        let response = integration_test_send_and_receive(&socket, request, true).await;
 
         assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
     }
@@ -451,8 +466,12 @@ pub(crate) mod tests {
         let (socket, _, _, file_id, _) = setup().await;
         let new_user = new_user();
         let session_id = new_user.session_id;
-        let operations = serde_json::to_string::<Vec<Operation>>(&vec![]).unwrap();
+        let operations = vec![Operation::SetSheetName {
+            sheet_id: SheetId::new(),
+            name: "test".to_string(),
+        }];
         let id = Uuid::new_v4();
+        let operations = serde_json::to_string(&operations).unwrap();
         let request = MessageRequest::Transaction {
             id,
             session_id,
@@ -462,11 +481,11 @@ pub(crate) mod tests {
         let expected = MessageResponse::Transaction {
             id,
             file_id,
-            operations: operations.clone(),
+            operations: operations,
             sequence_num: 1,
         };
 
-        let response = integration_test_send_and_receive(socket, request, true).await;
+        let response = integration_test_send_and_receive(&socket, request, true).await;
 
         assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
     }

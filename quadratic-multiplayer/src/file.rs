@@ -1,9 +1,11 @@
+use crate::{
+    error::{MpError, Result},
+    state::transaction_queue::TransactionQueue,
+};
 use quadratic_core::{
-    controller::{
-        operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
-    },
+    controller::{operations::operation::Operation, GridController},
     grid::{
-        file::{export_vec, import},
+        file::{export_vec, import, CURRENT_VERSION},
         Grid,
     },
 };
@@ -14,11 +16,6 @@ use quadratic_rust_shared::aws::{
 use quadratic_rust_shared::quadratic_api::set_file_checkpoint;
 use tokio::sync::Mutex;
 use uuid::Uuid;
-
-use crate::{
-    error::{MpError, Result},
-    state::transaction_queue::TransactionQueue,
-};
 
 /// Load a .grid file
 pub(crate) fn load_file(file: &str) -> Result<Grid> {
@@ -31,11 +28,8 @@ pub(crate) fn export_file(grid: &mut Grid) -> Result<Vec<u8>> {
 }
 
 /// Apply a vec of operations to the grid
-pub(crate) fn apply_operations(
-    grid: &mut GridController,
-    operations: Vec<Operation>,
-) -> Result<TransactionSummary> {
-    Ok(grid.apply_received_transaction(operations))
+pub(crate) fn apply_transaction(grid: &mut GridController, operations: Vec<Operation>) {
+    grid.server_apply_transaction(operations)
 }
 
 /// Exports a .grid file
@@ -43,6 +37,7 @@ pub(crate) async fn get_and_load_object(
     client: &Client,
     bucket: &str,
     key: &str,
+    sequence_num: u64,
 ) -> Result<GridController> {
     let file = download_object(client, bucket, key).await?;
     let body = file
@@ -54,7 +49,7 @@ pub(crate) async fn get_and_load_object(
     let body = std::str::from_utf8(&body).map_err(|e| MpError::FileService(e.to_string()))?;
     let grid = load_file(body)?;
 
-    Ok(GridController::from_grid(grid))
+    Ok(GridController::from_grid(grid, sequence_num))
 }
 
 pub(crate) fn key(file_id: Uuid, sequence: u64) -> String {
@@ -67,12 +62,12 @@ pub(crate) async fn process_transactions(
     bucket: &str,
     file_id: Uuid,
     sequence: u64,
-    trasaction: Vec<Operation>,
+    operations: Vec<Operation>,
 ) -> Result<u64> {
-    let num_operations = trasaction.len();
-    let mut grid = get_and_load_object(client, bucket, &key(file_id, sequence)).await?;
+    let num_operations = operations.len();
+    let mut grid = get_and_load_object(client, bucket, &key(file_id, sequence), sequence).await?;
 
-    let _ = apply_operations(&mut grid, trasaction);
+    apply_transaction(&mut grid, operations);
     let body = export_file(grid.grid_mut())?;
 
     let next_sequence_num = sequence + num_operations as u64;
@@ -100,7 +95,6 @@ pub(crate) async fn process_queue_for_room(
     if transactions.is_empty() {
         return Ok(None);
     }
-
     tracing::info!(
         "Found {} transactions for room {file_id}",
         transactions.len()
@@ -137,14 +131,14 @@ pub(crate) async fn process_queue_for_room(
     // TODO(ddimaria): this assumes the queue was locked the whole time, confirm this is true
     transaction_queue.complete_transactions(*file_id)?;
 
-    // update the checkpoint in quatratic-api
+    // update the checkpoint in quadratic-api
     let key = &key(*file_id, last_sequence_num);
     set_file_checkpoint(
         base_url,
         jwt,
         file_id,
         last_sequence_num,
-        "1.4".into(),
+        CURRENT_VERSION.into(),
         key.to_owned(),
         bucket.to_owned(),
     )
@@ -159,10 +153,8 @@ pub(crate) async fn process_queue_for_room(
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-    use quadratic_core::test_util::assert_cell_value;
-    use quadratic_core::{Array, CellValue, SheetPos};
+    use quadratic_core::{CellValue, Pos, SheetPos};
 
     #[test]
     fn loads_a_file() {
@@ -171,21 +163,33 @@ mod tests {
         ))
         .unwrap();
 
-        let mut grid = GridController::from_grid(file);
-        let sheet_id = grid.sheet_ids().first().unwrap().to_owned();
-        let sheet_rect = SheetPos {
-            x: 0,
-            y: 0,
-            sheet_id,
-        }
-        .into();
-        let value = CellValue::Text("hello".to_string());
-        let values = Array::from(value);
-        let operation = Operation::SetCellValues { sheet_rect, values };
+        let mut client = GridController::from_grid(file.clone(), 0);
+        let sheet_id = client.sheet_ids().first().unwrap().to_owned();
+        let summary = client.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            "hello".to_string(),
+            None,
+        );
+        let sheet = client.grid().try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Text("hello".to_string()))
+        );
 
-        let _ = apply_operations(&mut grid, vec![operation]);
-
-        assert_cell_value(&grid, sheet_id, 0, 0, "hello");
+        let mut server = GridController::from_grid(file, 0);
+        apply_transaction(
+            &mut server,
+            serde_json::from_str(&summary.operations.unwrap()).unwrap(),
+        );
+        let sheet = server.grid().try_sheet_from_id(sheet_id).unwrap();
+        assert_eq!(
+            sheet.get_cell_value(Pos { x: 1, y: 2 }),
+            Some(CellValue::Text("hello".to_string()))
+        );
     }
 
     // #[tokio::test]

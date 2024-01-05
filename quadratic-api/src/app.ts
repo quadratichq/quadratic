@@ -72,7 +72,7 @@ app.use('/v0/internal', internal_router);
 
 if (SENTRY_DSN) {
   // test route
-  app.get('/debug-sentry', function mainHandler(req, res) {
+  app.get('/debug-sentry', function mainHandler(/*req, res*/) {
     throw new Error('My first Sentry error!');
   });
 

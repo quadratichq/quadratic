@@ -11,28 +11,14 @@ impl GridController {
     }
     pub fn undo(&mut self, cursor: Option<String>) -> TransactionSummary {
         if let Some(transaction) = self.undo_stack.pop() {
-            let mut summary = self.set_in_progress_transaction(
-                transaction.operations,
-                cursor,
-                false,
-                TransactionType::Undo,
-            );
-            summary.cursor = transaction.cursor;
-            summary
+            self.start_undo_transaction(&transaction, TransactionType::Undo, cursor)
         } else {
             TransactionSummary::default()
         }
     }
     pub fn redo(&mut self, cursor: Option<String>) -> TransactionSummary {
         if let Some(transaction) = self.redo_stack.pop() {
-            let mut summary = self.set_in_progress_transaction(
-                transaction.operations,
-                cursor,
-                false,
-                TransactionType::Redo,
-            );
-            summary.cursor = transaction.cursor;
-            summary
+            self.start_undo_transaction(&transaction, TransactionType::Redo, cursor)
         } else {
             TransactionSummary::default()
         }

@@ -37,8 +37,9 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                 let state = Arc::clone(&state);
 
                 tokio::spawn(async move {
-                    tracing::info!("Processing room {}", file_id);
+                    tracing::trace!("Processing room {}", file_id);
                     // process transaction queue for the room
+
                     let processed =
                         process_transaction_queue_for_room(Arc::clone(&state), &file_id).await;
 
@@ -94,7 +95,7 @@ async fn process_transaction_queue_for_room(
 
 // broadcast sequence number to all users in the room
 async fn broadcast_sequence_num(state: Arc<State>, file_id: &Uuid) -> Result<JoinHandle<()>> {
-    let sequence_num = state.get_sequence_num(&file_id).await?;
+    let sequence_num = state.get_sequence_num(file_id).await?;
 
     Ok(broadcast(
         vec![],
@@ -115,9 +116,14 @@ async fn remove_stale_users_in_room(
         .remove_stale_users_in_room(file_id.to_owned(), heartbeat_timeout_s)
         .await?;
 
-    tracing::info!("Checking heartbeats in room {file_id} ({num_remaining} remaining in room)");
+    tracing::trace!("Checking heartbeats in room {file_id} ({num_remaining} remaining in room)");
 
     if num_removed == 0 {
+        return Ok(None);
+    }
+
+    if num_remaining == 0 {
+        tracing::info!("No users remaining in room {file_id}",);
         return Ok(None);
     }
 
@@ -139,7 +145,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn broadcast_sequence_num() {
+    async fn test_broadcast_sequence_num() {
         let state = new_arc_state().await;
         let file_id = Uuid::new_v4();
         let mut grid = grid_setup();
@@ -150,7 +156,7 @@ mod tests {
             transaction_id_1,
             file_id,
             vec![operations_1.clone()],
-            0,
+            1,
         );
 
         super::broadcast_sequence_num(state, &file_id)
@@ -170,12 +176,8 @@ mod tests {
         let room = state.get_room(&file_id).await.unwrap();
         assert_eq!(room.users.get(&user.session_id).unwrap().value(), &user);
 
-        super::remove_stale_users_in_room(state.clone(), &file_id, -1)
-            .await
-            .unwrap()
-            .unwrap()
-            .await
-            .unwrap();
+        let result = super::remove_stale_users_in_room(state.clone(), &file_id, -1).await;
+        assert!(result.is_ok_and(|v| v.is_none()));
 
         // user was removed from the room and the room was closed
         let room = state.get_room(&file_id).await;
