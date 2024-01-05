@@ -129,7 +129,7 @@ pub(crate) async fn process_queue_for_room(
 
     // remove transactions from the queue
     // TODO(ddimaria): this assumes the queue was locked the whole time, confirm this is true
-    transaction_queue.complete_transactions(*file_id)?;
+    transaction_queue.complete_transactions(*file_id).await?;
 
     // update the checkpoint in quadratic-api
     let key = &key(*file_id, last_sequence_num);

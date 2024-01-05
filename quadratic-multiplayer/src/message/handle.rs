@@ -59,17 +59,17 @@ pub(crate) async fn handle_message(
                 // get permission and sequence_num from the quadratic api
                 let (permission, mut sequence_num) = get_file_perms(base_url, jwt, file_id).await?;
 
-                // check for updated sequence num from the transaction queue
-                // todo: this will need to be reworked to check the transaction data store
-                if let Some(transaction_sequence_num) = state
-                    .transaction_queue
-                    .lock()
-                    .await
-                    .get_sequence_num(file_id)
-                {
-                    // replace the current sequence_num with the transaction sequence_num
-                    sequence_num = transaction_sequence_num;
-                }
+                // // check for updated sequence num from the transaction queue
+                // // todo: this will need to be reworked to check the transaction data store
+                // if let Some(transaction_sequence_num) = state
+                //     .transaction_queue
+                //     .lock()
+                //     .await
+                //     .get_sequence_num(file_id)
+                // {
+                //     // replace the current sequence_num with the transaction sequence_num
+                //     sequence_num = transaction_sequence_num;
+                // }
 
                 (permission, sequence_num)
             };
@@ -167,8 +167,16 @@ pub(crate) async fn handle_message(
             // unpack the operations or return an error
             let operations_unpacked: Vec<Operation> = serde_json::from_str(&operations)?;
 
-            // update the room's sequence_num
-            let sequence_num = get_mut_room!(state, file_id)?.increment_sequence_num();
+            // get the room's sequence_num
+            let room_sequence_num = get_mut_room!(state, file_id)?.increment_sequence_num();
+
+            // add the transaction to the transaction queue
+            let sequence_num = state
+                .transaction_queue
+                .lock()
+                .await
+                .push_pending(id, file_id, operations_unpacked, room_sequence_num)
+                .await;
 
             // broadcast the transaction to all users in the room
             let response = MessageResponse::Transaction {
@@ -178,14 +186,6 @@ pub(crate) async fn handle_message(
                 sequence_num,
             };
             broadcast(vec![], file_id, Arc::clone(&state), response);
-
-            // add the transaction to the transaction queue
-            state.transaction_queue.lock().await.push_pending(
-                id,
-                file_id,
-                operations_unpacked,
-                sequence_num,
-            );
 
             Ok(None)
         }
