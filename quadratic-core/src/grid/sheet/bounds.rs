@@ -220,7 +220,7 @@ impl Sheet {
 mod test {
     use crate::{
         grid::{CellAlign, GridBounds, Sheet},
-        CellValue, Pos, Rect,
+        CellValue, IsBlank, Pos, Rect,
     };
     use proptest::proptest;
     use std::collections::HashMap;
@@ -437,7 +437,7 @@ mod test {
 
         let nonempty_positions = hashmap_of_truth
             .iter()
-            .filter(|(_, value)| !value.is_blank_or_empty_string())
+            .filter(|(_, value)| !value.is_blank())
             .map(|(pos, _)| pos);
         let min_x = nonempty_positions.clone().map(|pos| pos.x).min();
         let min_y = nonempty_positions.clone().map(|pos| pos.y).min();
@@ -453,7 +453,7 @@ mod test {
 
         for (pos, expected) in hashmap_of_truth {
             let actual = sheet.get_cell_value(pos);
-            if expected.is_blank_or_empty_string() {
+            if expected.is_blank() {
                 assert_eq!(None, actual);
             } else {
                 assert_eq!(Some(expected.clone()), actual);

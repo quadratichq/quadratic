@@ -87,6 +87,7 @@ mod tests {
         };
         let code = "print(1)".to_string();
         gc.set_code_cell(sheet_pos, CodeCellLanguage::Python, code.clone(), None);
+
         let transaction = gc.async_transactions().get(0).unwrap();
         gc.calculation_complete(JsCodeResult::new(
             transaction.id.to_string(),
@@ -103,7 +104,7 @@ mod tests {
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         let pos = sheet_pos.into();
-        let code_cell = sheet.get_cell_value(pos).unwrap();
+        let code_cell = sheet.get_cell_value_only(pos).unwrap();
         match code_cell {
             CellValue::Code(code_cell) => {
                 assert_eq!(code_cell.language, CodeCellLanguage::Python);
