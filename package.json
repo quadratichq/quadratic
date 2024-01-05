@@ -37,7 +37,9 @@
     "watch:test:wasm": "cd quadratic-core && cargo watch -x test",
     "benchmark:rust": "cd quadratic-core && cargo bench",
     "lint:clippy": "cd quadratic-core && cargo clippy --all-targets --all-features -- -D warnings",
-    "heroku-postbuild": "npm run build --workspace=quadratic-api"
+    "heroku-postbuild": "npm run build --workspace=quadratic-api",
+    "kill": "killport 3000 && killport 3001 && killport 8001"
+
   },
   "dependencies": {
     "zod": "^3.22.4"

@@ -8,7 +8,7 @@ use chrono::DateTime;
 
 fn convert_column_values(
     from: &HashMap<String, v1_4::ColumnValues>,
-) -> HashMap<i64, v1_5::CellValue> {
+) -> HashMap<String, v1_5::CellValue> {
     from.into_iter()
         .map(|(k, v)| {
             let value = match &v.content.values[0] {
@@ -19,7 +19,7 @@ fn convert_column_values(
                     _ => panic!("Unknown type_field: {}", type_field),
                 },
             };
-            (i64::from_str(&k).unwrap(), value)
+            (k.clone(), value)
         })
         .collect()
 }
@@ -41,7 +41,7 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
                 };
                 if let Some(language) = language {
                     values.insert(
-                        pos.y,
+                        pos.y.to_string(),
                         v1_5::CellValue::Code(v1_5::CodeCell {
                             code: code_cell_value.code_string.clone(),
                             language,
@@ -68,7 +68,7 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
                         },
                         len: v.content.len as u32,
                     };
-                    (i64::from_str(&k).unwrap(), value)
+                    (k.clone(), value)
                 })
                 .collect(),
             wrap: column
@@ -84,7 +84,7 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
                         },
                         len: v.content.len as u32,
                     };
-                    (i64::from_str(&k).unwrap(), value)
+                    (k.clone(), value)
                 })
                 .collect(),
             numeric_format: column
@@ -104,7 +104,7 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
                         },
                         len: v.content.len as u32,
                     };
-                    (i64::from_str(&k).unwrap(), value)
+                    (k.clone(), value)
                 })
                 .collect(),
             numeric_decimals: column
@@ -115,7 +115,7 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
                         value: v.content.value,
                         len: v.content.len as u32,
                     };
-                    (i64::from_str(&k).unwrap(), value)
+                    (k.clone(), value)
                 })
                 .collect(),
             numeric_commas: column
@@ -126,7 +126,7 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
                         value: v.content.value,
                         len: v.content.len as u32,
                     };
-                    (i64::from_str(&k).unwrap(), value)
+                    (k.clone(), value)
                 })
                 .collect(),
             bold: column
@@ -137,7 +137,7 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
                         value: v.content.value,
                         len: v.content.len as u32,
                     };
-                    (i64::from_str(&k).unwrap(), value)
+                    (k.clone(), value)
                 })
                 .collect(),
             italic: column
@@ -148,7 +148,7 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
                         value: v.content.value,
                         len: v.content.len as u32,
                     };
-                    (i64::from_str(&k).unwrap(), value)
+                    (k.clone(), value)
                 })
                 .collect(),
             text_color: column
@@ -159,7 +159,7 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
                         value: v.content.value.clone(),
                         len: v.content.len as u32,
                     };
-                    (i64::from_str(&k).unwrap(), value)
+                    (k.clone(), value)
                 })
                 .collect(),
             fill_color: column
@@ -170,7 +170,7 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
                         value: v.content.value.clone(),
                         len: v.content.len as u32,
                     };
-                    (i64::from_str(&k).unwrap(), value)
+                    (k.clone(), value)
                 })
                 .collect(),
             render_size: column
@@ -184,7 +184,7 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
                         },
                         len: v.content.len as u32,
                     };
-                    (i64::from_str(&k).unwrap(), value)
+                    (k.clone(), value)
                 })
                 .collect(),
         },

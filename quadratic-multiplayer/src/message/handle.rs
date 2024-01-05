@@ -16,7 +16,7 @@ use crate::state::{user::User, State};
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use quadratic_core::controller::operations::operation::Operation;
-use quadratic_core::controller::transaction::Transaction;
+use quadratic_core::controller::transaction::TransactionServer;
 use quadratic_rust_shared::quadratic_api::get_file_perms;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -202,19 +202,18 @@ pub(crate) async fn handle_message(
             // todo: this will also need to get the unpending transactions to catch the client up
 
             // get transactions from the transaction queue
-            let transactions: Vec<Transaction> = state
+            let transactions: Vec<TransactionServer> = state
                 .transaction_queue
                 .lock()
                 .await
                 .get_pending_min_sequence_num(file_id, min_sequence_num)?
                 .iter()
-                .map(|t| t.to_owned().into())
+                .map(|t| t.to_owned())
                 .collect::<Vec<_>>();
 
             let response = MessageResponse::Transactions {
                 transactions: serde_json::to_string(&transactions)?,
             };
-
             Ok(Some(response))
         }
 

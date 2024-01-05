@@ -63,7 +63,7 @@ export class Multiplayer {
     if (force || !this.jwt) {
       await this.getJwt();
 
-      console.log("jwt", this.jwt);
+      console.log('jwt', this.jwt);
 
       if (this.jwt) {
         document.cookie = `jwt=${this.jwt}; path=/;`;

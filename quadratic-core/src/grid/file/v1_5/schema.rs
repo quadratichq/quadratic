@@ -136,17 +136,17 @@ pub type RenderSize = v1_4::RenderSize;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Column {
-    pub values: HashMap<i64, CellValue>,
-    pub align: HashMap<i64, ColumnRepeat<CellAlign>>,
-    pub wrap: HashMap<i64, ColumnRepeat<CellWrap>>,
-    pub numeric_format: HashMap<i64, ColumnRepeat<NumericFormat>>,
-    pub numeric_decimals: HashMap<i64, ColumnRepeat<i16>>,
-    pub numeric_commas: HashMap<i64, ColumnRepeat<bool>>,
-    pub bold: HashMap<i64, ColumnRepeat<bool>>,
-    pub italic: HashMap<i64, ColumnRepeat<bool>>,
-    pub text_color: HashMap<i64, ColumnRepeat<String>>,
-    pub fill_color: HashMap<i64, ColumnRepeat<String>>,
-    pub render_size: HashMap<i64, ColumnRepeat<RenderSize>>,
+    pub values: HashMap<String, CellValue>,
+    pub align: HashMap<String, ColumnRepeat<CellAlign>>,
+    pub wrap: HashMap<String, ColumnRepeat<CellWrap>>,
+    pub numeric_format: HashMap<String, ColumnRepeat<NumericFormat>>,
+    pub numeric_decimals: HashMap<String, ColumnRepeat<i16>>,
+    pub numeric_commas: HashMap<String, ColumnRepeat<bool>>,
+    pub bold: HashMap<String, ColumnRepeat<bool>>,
+    pub italic: HashMap<String, ColumnRepeat<bool>>,
+    pub text_color: HashMap<String, ColumnRepeat<String>>,
+    pub fill_color: HashMap<String, ColumnRepeat<String>>,
+    pub render_size: HashMap<String, ColumnRepeat<RenderSize>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

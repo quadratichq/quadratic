@@ -63,7 +63,6 @@ pub fn import(file_contents: &str) -> Result<Grid> {
 pub fn export(grid: &mut Grid) -> Result<String> {
     let converted = current::export(grid)?;
     let serialized = serde_json::to_string(&converted).map_err(|e| anyhow!(e))?;
-
     Ok(serialized)
 }
 
@@ -205,5 +204,21 @@ mod tests {
     fn process_a_v1_4_airports_distance_file() {
         let mut imported = import(V1_4_AIRPORTS_DISTANCE_FILE).unwrap();
         let _exported = export(&mut imported).unwrap();
+    }
+
+    const V1_5_FILE: &str =
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
+
+    #[test]
+    fn imports_and_exports_a_current_grid() {
+        let mut imported = import(V1_5_FILE).unwrap();
+        let exported = export(&mut imported).unwrap();
+        assert_eq!(V1_5_FILE, exported);
+    }
+
+    #[test]
+    fn imports_and_exports_v1_4_default() {
+        let mut imported = import(V1_4_FILE).unwrap();
+        export(&mut imported).unwrap();
     }
 }

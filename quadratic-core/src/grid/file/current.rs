@@ -21,11 +21,12 @@ use super::CURRENT_VERSION;
 
 fn set_column_format_align(
     column_data: &mut ColumnData<SameValue<CellAlign>>,
-    column: &HashMap<i64, current::ColumnRepeat<current::CellAlign>>,
+    column: &HashMap<String, current::ColumnRepeat<current::CellAlign>>,
 ) {
     for (y, format) in column.iter() {
         // there's probably a better way to do this...
-        for y in *y..(*y + format.len as i64) {
+        let y = (*y).parse::<i64>().unwrap();
+        for y in y..(y + format.len as i64) {
             column_data.set(
                 y,
                 Some(match format.value {
@@ -40,11 +41,12 @@ fn set_column_format_align(
 
 fn set_column_format_wrap(
     column_data: &mut ColumnData<SameValue<CellWrap>>,
-    column: &HashMap<i64, current::ColumnRepeat<current::CellWrap>>,
+    column: &HashMap<String, current::ColumnRepeat<current::CellWrap>>,
 ) {
     for (y, format) in column.iter() {
         // there's probably a better way to do this...
-        for y in *y..(*y + format.len as i64) {
+        let y = (*y).parse::<i64>().unwrap();
+        for y in y..(y + format.len as i64) {
             column_data.set(
                 y,
                 Some(match format.value {
@@ -59,11 +61,12 @@ fn set_column_format_wrap(
 
 fn set_column_format_numeric_format(
     column_data: &mut ColumnData<SameValue<NumericFormat>>,
-    column: &HashMap<i64, current::ColumnRepeat<current::NumericFormat>>,
+    column: &HashMap<String, current::ColumnRepeat<current::NumericFormat>>,
 ) {
     for (y, format) in column.iter() {
         // there's probably a better way to do this...
-        for y in *y..(*y + format.len as i64) {
+        let y = (*y).parse::<i64>().unwrap();
+        for y in y..(y + format.len as i64) {
             column_data.set(
                 y,
                 Some(NumericFormat {
@@ -82,11 +85,12 @@ fn set_column_format_numeric_format(
 
 fn set_column_format_i16(
     column_data: &mut ColumnData<SameValue<i16>>,
-    column: &HashMap<i64, current::ColumnRepeat<i16>>,
+    column: &HashMap<String, current::ColumnRepeat<i16>>,
 ) {
     for (y, format) in column.iter() {
         // there's probably a better way to do this...
-        for y in *y..(*y + format.len as i64) {
+        let y = (*y).parse::<i64>().unwrap();
+        for y in y..(y + format.len as i64) {
             column_data.set(y, Some(format.value));
         }
     }
@@ -94,11 +98,12 @@ fn set_column_format_i16(
 
 fn set_column_format_string(
     column_data: &mut ColumnData<SameValue<String>>,
-    column: &HashMap<i64, current::ColumnRepeat<String>>,
+    column: &HashMap<String, current::ColumnRepeat<String>>,
 ) {
     for (y, format) in column.iter() {
         // there's probably a better way to do this...
-        for y in *y..(*y + format.len as i64) {
+        let y = (*y).parse::<i64>().unwrap();
+        for y in y..(y + format.len as i64) {
             column_data.set(y, Some(format.value.clone()));
         }
     }
@@ -106,11 +111,12 @@ fn set_column_format_string(
 
 fn set_column_format_bool(
     column_data: &mut ColumnData<SameValue<bool>>,
-    column: &HashMap<i64, current::ColumnRepeat<bool>>,
+    column: &HashMap<String, current::ColumnRepeat<bool>>,
 ) {
     for (y, format) in column.iter() {
         // there's probably a better way to do this...
-        for y in *y..(*y + format.len as i64) {
+        let y = (*y).parse::<i64>().unwrap();
+        for y in y..(y + format.len as i64) {
             column_data.set(y, Some(format.value));
         }
     }
@@ -118,11 +124,12 @@ fn set_column_format_bool(
 
 fn set_column_format_render_size(
     column_data: &mut ColumnData<SameValue<RenderSize>>,
-    column: &HashMap<i64, current::ColumnRepeat<current::RenderSize>>,
+    column: &HashMap<String, current::ColumnRepeat<current::RenderSize>>,
 ) {
     for (y, format) in column.iter() {
         // there's probably a better way to do this...
-        for y in *y..(*y + format.len as i64) {
+        let y = (*y).parse::<i64>().unwrap();
+        for y in y..(y + format.len as i64) {
             column_data.set(
                 y,
                 Some(RenderSize {
@@ -176,7 +183,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
                         CellValue::Error(Box::new((*error).clone().into()))
                     }
                 };
-                col.values.set(*y, Some(cell_value));
+                col.values.set(y.parse::<i64>().unwrap(), Some(cell_value));
             }
 
             Ok((*x, col))
@@ -202,12 +209,8 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
                         line: CellBorderLine::from_str(&border.line)
                             .unwrap_or(CellBorderLine::Line1),
                     };
-
-                    // todo: this should save as an i64, not string
-                    let rect = Rect::single_pos(Pos {
-                        x: x.parse::<i64>().unwrap(),
-                        y: *y,
-                    });
+                    let x = x.parse::<i64>().unwrap();
+                    let rect = Rect::single_pos(Pos { x, y: *y });
                     let borders =
                         generate_borders(sheet, &rect, vec![border_selection], Some(style));
 
@@ -307,12 +310,12 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
 
 fn export_column_data_bool(
     column_data: &ColumnData<SameValue<bool>>,
-) -> HashMap<i64, current::ColumnRepeat<bool>> {
+) -> HashMap<String, current::ColumnRepeat<bool>> {
     column_data
         .blocks()
         .map(|block| {
             (
-                block.y,
+                block.y.to_string(),
                 current::ColumnRepeat {
                     value: block.content.value,
                     len: block.len() as u32,
@@ -324,12 +327,12 @@ fn export_column_data_bool(
 
 fn export_column_data_string(
     column_data: &ColumnData<SameValue<String>>,
-) -> HashMap<i64, current::ColumnRepeat<String>> {
+) -> HashMap<String, current::ColumnRepeat<String>> {
     column_data
         .blocks()
         .map(|block| {
             (
-                block.y,
+                block.y.to_string(),
                 current::ColumnRepeat {
                     value: block.content.value.clone(),
                     len: block.len() as u32,
@@ -341,12 +344,12 @@ fn export_column_data_string(
 
 fn export_column_data_i16(
     column_data: &ColumnData<SameValue<i16>>,
-) -> HashMap<i64, current::ColumnRepeat<i16>> {
+) -> HashMap<String, current::ColumnRepeat<i16>> {
     column_data
         .blocks()
         .map(|block| {
             (
-                block.y,
+                block.y.to_string(),
                 current::ColumnRepeat {
                     value: block.content.value,
                     len: block.len() as u32,
@@ -358,12 +361,12 @@ fn export_column_data_i16(
 
 fn export_column_data_numeric_format(
     column_data: &ColumnData<SameValue<NumericFormat>>,
-) -> HashMap<i64, current::ColumnRepeat<current::NumericFormat>> {
+) -> HashMap<String, current::ColumnRepeat<current::NumericFormat>> {
     column_data
         .blocks()
         .map(|block| {
             (
-                block.y,
+                block.y.to_string(),
                 current::ColumnRepeat {
                     value: current::NumericFormat {
                         kind: match block.content.value.kind {
@@ -385,12 +388,12 @@ fn export_column_data_numeric_format(
 
 fn export_column_data_render_size(
     column_data: &ColumnData<SameValue<RenderSize>>,
-) -> HashMap<i64, current::ColumnRepeat<current::RenderSize>> {
+) -> HashMap<String, current::ColumnRepeat<current::RenderSize>> {
     column_data
         .blocks()
         .map(|block| {
             (
-                block.y,
+                block.y.to_string(),
                 current::ColumnRepeat {
                     value: current::RenderSize {
                         w: block.content.value.w.clone(),
@@ -405,12 +408,12 @@ fn export_column_data_render_size(
 
 fn export_column_data_align(
     column_data: &ColumnData<SameValue<CellAlign>>,
-) -> HashMap<i64, current::ColumnRepeat<current::CellAlign>> {
+) -> HashMap<String, current::ColumnRepeat<current::CellAlign>> {
     column_data
         .blocks()
         .map(|block| {
             (
-                block.y,
+                block.y.to_string(),
                 current::ColumnRepeat {
                     value: match block.content.value {
                         CellAlign::Left => current::CellAlign::Left,
@@ -426,12 +429,12 @@ fn export_column_data_align(
 
 fn export_column_data_wrap(
     column_data: &ColumnData<SameValue<CellWrap>>,
-) -> HashMap<i64, current::ColumnRepeat<current::CellWrap>> {
+) -> HashMap<String, current::ColumnRepeat<current::CellWrap>> {
     column_data
         .blocks()
         .map(|block| {
             (
-                block.y,
+                block.y.to_string(),
                 current::ColumnRepeat {
                     value: match block.content.value {
                         CellWrap::Wrap => current::CellWrap::Wrap,
@@ -468,7 +471,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                         .values()
                         .map(|(y, value)| {
                             (
-                                y,
+                                y.to_string(),
                                 match value {
                                     CellValue::Text(text) => {
                                         current::CellValue::Text(text.to_owned())
@@ -521,7 +524,6 @@ fn export_borders_builder(sheet: &Sheet) -> current::Borders {
         .iter()
         .map(|(x, border)| {
             (
-                // todo: this should be i64
                 x.to_string(),
                 border
                     .values()
@@ -620,20 +622,4 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
             })
             .collect(),
     })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    const V1_5_FILE: &str =
-        include_str!("../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
-
-    #[test]
-    fn imports_and_exports_a_current_grid() {
-        let file = serde_json::from_str::<current::GridSchema>(V1_5_FILE).unwrap();
-        let mut imported = import(file).unwrap();
-        let _exported = export(&mut imported).unwrap();
-        // println!("{:?}", exported);
-    }
 }
