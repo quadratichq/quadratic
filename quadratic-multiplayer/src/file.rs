@@ -135,10 +135,12 @@ pub(crate) async fn process_queue_for_room(
         .iter()
         .map(|transaction| transaction.sequence_num)
         .collect::<Vec<u64>>();
+
     let first_sequence_num = sequence_numbers
         .first()
         .cloned()
         .ok_or_else(|| MpError::FileService("No transactions to process".into()))?;
+
     let checkpoint_sequence_num = (first_sequence_num - 1).max(0);
 
     // combine all operations into a single vec
@@ -165,11 +167,18 @@ pub(crate) async fn process_queue_for_room(
     )
     .await?;
 
-    // // remove transactions from the queue
-    // // TODO(ddimaria): this assumes the queue was locked the whole time, confirm this is true
-    // transaction_queue
-    //     .complete_transactions(*file_id, sequence_numbers)
-    //     .await?;
+    let keys = sequence_numbers
+        .iter()
+        .map(|s| s.to_string())
+        .collect::<Vec<_>>();
+    let keys = keys.iter().map(AsRef::as_ref).collect::<Vec<_>>();
+
+    // remove transactions from the queue
+    transaction_queue
+        .pubsub
+        .connection
+        .ack(channel, GROUP_NAME, keys)
+        .await?;
 
     // update the checkpoint in quadratic-api
     let key = &key(*file_id, last_sequence_num);
