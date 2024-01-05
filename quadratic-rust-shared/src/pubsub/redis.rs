@@ -66,22 +66,34 @@ impl super::PubSub for RedisConnection {
     }
 
     /// Publish a message to a channel.
-    async fn publish(&mut self, channel: &str, message: &str) -> Result<()> {
-        self.multiplex.publish(channel, message).await?;
+    async fn publish(&mut self, channel: &str, _key: &str, value: &str) -> Result<()> {
+        self.multiplex.publish(channel, value).await?;
         Ok(())
     }
 
-    /// Get the next message from the pubsub server.
-    async fn poll<T>(&mut self) -> impl Stream {
-        self.pubsub.on_message()
+    /// Acknowledge that a message was processed
+    async fn ack(&mut self, _channel: &str, _keys: Vec<&str>) -> Result<()> {
+        Ok(())
     }
+
+    async fn messages(
+        &mut self,
+        channel: &str,
+        max_messages: usize,
+    ) -> Result<Vec<(String, String)>> {
+        Ok(vec![])
+    }
+
+    // /// Get the next message from the pubsub server.
+    // async fn poll<T>(&mut self) -> impl Stream {
+    //     self.pubsub.on_message()
+    // }
 }
 
 #[cfg(test)]
 pub mod tests {
     use std::vec;
 
-    use redis::Msg;
     use uuid::Uuid;
 
     use crate::pubsub::PubSub;
@@ -127,7 +139,7 @@ pub mod tests {
         let mut connection = RedisConnection::new(config).await.unwrap();
 
         for message in messages.iter() {
-            connection.publish(&channel, message).await.unwrap();
+            connection.publish(&channel, "", message).await.unwrap();
         }
 
         let received = handle.await.unwrap();

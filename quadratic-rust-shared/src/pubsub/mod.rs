@@ -1,13 +1,16 @@
 pub mod redis;
+pub mod redis_streams;
 
 use futures_util::Stream;
 
 use crate::error::Result;
 use crate::pubsub::redis::RedisConfig;
+use crate::pubsub::redis_streams::RedisStreamsConfig;
 
 #[derive(Debug, Clone)]
 pub enum Config {
     Redis(RedisConfig),
+    RedisStreams(RedisStreamsConfig),
 }
 
 pub trait PubSub {
@@ -16,6 +19,12 @@ pub trait PubSub {
     async fn new(config: Config) -> Result<Self::Connection>;
     async fn connect(config: Config) -> Result<Self::Connection>;
     async fn subscribe(&mut self, channel: &str) -> Result<()>;
-    async fn publish(&mut self, channel: &str, message: &str) -> Result<()>;
-    async fn poll<T>(&mut self) -> impl Stream;
+    async fn publish(&mut self, channel: &str, key: &str, value: &str) -> Result<()>;
+    async fn ack(&mut self, channel: &str, keys: Vec<&str>) -> Result<()>;
+    async fn messages(
+        &mut self,
+        channel: &str,
+        max_messages: usize,
+    ) -> Result<Vec<(String, String)>>;
+    // async fn poll<T>(&mut self) -> impl Stream;
 }
