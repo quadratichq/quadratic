@@ -96,30 +96,27 @@ pub(crate) async fn process_queue_for_room(
     base_url: &str,
     jwt: &str,
 ) -> Result<Option<u64>> {
-    // this is an expensive lock since we're waiting for the file to write to S3 before unlocking
-    let mut transaction_queue = transaction_queue.lock().await;
-    // let transactions = transaction_queue
-    //     .get_pending(*file_id)
-    //     .unwrap_or_else(|_| vec![]);
-
     let channel = &file_id.to_string();
 
+    // this is an expensive lock since we're waiting for the file to write to S3 before unlocking
+    let mut transaction_queue = transaction_queue.lock().await;
+
+    // subscribe to the channel
     transaction_queue
         .pubsub
         .connection
         .subscribe(channel, GROUP_NAME)
         .await?;
 
+    // get all transactions for the room in the queue
     let transactions = transaction_queue
         .pubsub
         .connection
         .messages(channel, GROUP_NAME, None, MAX_MESSAGES)
         .await?
         .iter()
-        .map(|(_, message)| {
-            let transaction = serde_json::from_str::<TransactionServer>(&message).unwrap();
-            transaction
-        })
+        .map(|(_, message)| serde_json::from_str::<TransactionServer>(&message))
+        .flatten()
         .collect::<Vec<TransactionServer>>();
 
     if transactions.is_empty() {
@@ -167,13 +164,14 @@ pub(crate) async fn process_queue_for_room(
     )
     .await?;
 
+    // convert keys to &str requires 2 iterations
     let keys = sequence_numbers
         .iter()
         .map(|s| s.to_string())
         .collect::<Vec<_>>();
     let keys = keys.iter().map(AsRef::as_ref).collect::<Vec<_>>();
 
-    // remove transactions from the queue
+    // confirm that transactions have been processed
     transaction_queue
         .pubsub
         .connection

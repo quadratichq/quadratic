@@ -17,7 +17,7 @@ use crate::state::{user::User, State};
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use quadratic_core::controller::operations::operation::Operation;
-use quadratic_core::controller::transaction::Transaction;
+use quadratic_core::controller::transaction::{Transaction, TransactionServer};
 use quadratic_rust_shared::pubsub::PubSub;
 use quadratic_rust_shared::quadratic_api::get_file_perms;
 use std::sync::Arc;
@@ -214,19 +214,24 @@ pub(crate) async fn handle_message(
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
-            // todo: this will also need to get the unpending transactions to catch the client up
-
-            // // get transactions from the transaction queue
-            // let transactions: Vec<Transaction> = state
-            //     .transaction_queue
-            //     .lock()
-            //     .await
-            //     .get_pending_min_sequence_num(file_id, min_sequence_num)?
-            //     .iter()
-            //     .map(|t| t.to_owned().into())
-            //     .collect::<Vec<_>>();
-
-            let transactions: Vec<Transaction> = vec![];
+            let transactions = state
+                .transaction_queue
+                .lock()
+                .await
+                .pubsub
+                .connection
+                .messages(
+                    &file_id.to_string(),
+                    GROUP_NAME,
+                    Some(vec![&format!("{min_sequence_num}-0")]),
+                    100,
+                )
+                .await?
+                .iter()
+                .map(|(_, message)| serde_json::from_str::<TransactionServer>(&message))
+                .flatten()
+                .map(|transaction| transaction.into())
+                .collect::<Vec<Transaction>>();
 
             let response = MessageResponse::Transactions {
                 transactions: serde_json::to_string(&transactions)?,
