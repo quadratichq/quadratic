@@ -1,8 +1,6 @@
 pub mod redis;
 pub mod redis_streams;
 
-use futures_util::Stream;
-
 use crate::error::Result;
 use crate::pubsub::redis::RedisConfig;
 use crate::pubsub::redis_streams::RedisStreamsConfig;

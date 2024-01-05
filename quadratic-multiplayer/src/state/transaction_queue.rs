@@ -1,9 +1,25 @@
 use quadratic_core::controller::operations::operation::Operation;
+use quadratic_rust_shared::pubsub::{
+    redis_streams::RedisConnection, Config as PubSubConfig, PubSub as PubSubTrait,
+};
 use serde::Serialize;
 use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::error::{MpError, Result};
+
+#[derive(Debug, Clone)]
+pub(crate) struct PubSub {
+    pub(crate) config: PubSubConfig,
+    pub(crate) connection: RedisConnection,
+}
+
+impl PubSub {
+    pub(crate) async fn new(config: PubSubConfig) -> Result<Self> {
+        let connection = RedisConnection::new(config.to_owned()).await?;
+        Ok(PubSub { config, connection })
+    }
+}
 
 #[derive(Serialize, Debug, PartialEq, Clone)]
 pub(crate) struct Transaction {
@@ -31,15 +47,20 @@ impl Transaction {
 
 pub(crate) type Queue = HashMap<Uuid, (u64, Vec<Transaction>)>;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(crate) struct TransactionQueue {
     pending: Queue,
     processed: Queue,
+    pubsub: PubSub,
 }
 
 impl TransactionQueue {
-    pub(crate) fn new() -> Self {
-        Default::default()
+    pub(crate) async fn new(pubsub_config: PubSubConfig) -> Self {
+        TransactionQueue {
+            pending: HashMap::new(),
+            processed: HashMap::new(),
+            pubsub: PubSub::new(pubsub_config).await.unwrap(),
+        }
     }
 
     fn push(

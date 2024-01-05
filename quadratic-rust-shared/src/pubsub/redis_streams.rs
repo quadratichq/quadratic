@@ -11,13 +11,14 @@ use crate::{error::Result, SharedError};
 
 #[derive(Debug, Clone)]
 pub struct RedisStreamsConfig {
-    host: String,
-    port: String,
-    password: String,
+    pub host: String,
+    pub port: String,
+    pub password: String,
 }
 
 pub type PubSubConnection = PubSub<Pin<Box<dyn AsyncStream + Send + Sync>>>;
 
+#[derive(Debug, Clone)]
 pub struct RedisConnection {
     pub multiplex: MultiplexedConnection,
 }

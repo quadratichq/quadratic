@@ -34,6 +34,9 @@ pub(crate) enum MpError {
     #[error("Internal server error: {0}")]
     InternalServer(String),
 
+    #[error("PubSub error: {0}")]
+    PubSub(String),
+
     #[error("Error requesting data: {0}")]
     Request(String),
 
@@ -69,6 +72,8 @@ impl From<SharedError> for MpError {
                 Aws::S3(error) => MpError::S3(error),
             },
             _ => MpError::Unknown("Unknown Quadratic API error".into()),
+
+            SharedError::PubSub(error) => MpError::PubSub(error),
         }
     }
 }
