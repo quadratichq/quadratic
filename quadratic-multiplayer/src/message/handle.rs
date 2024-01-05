@@ -100,7 +100,7 @@ pub(crate) async fn handle_message(
             };
 
             // subscribe to the file's pubsub channel
-            state
+            if let Err(error) = state
                 .transaction_queue
                 .lock()
                 .await
@@ -108,7 +108,9 @@ pub(crate) async fn handle_message(
                 .connection
                 .subscribe(&file_id.to_string(), GROUP_NAME)
                 .await
-                .unwrap();
+            {
+                tracing::info!("Error subscribing to pubsub channel: {}", error);
+            };
 
             let is_new = state
                 .enter_room(file_id, &user, connection.id, sequence_num)
@@ -214,15 +216,17 @@ pub(crate) async fn handle_message(
 
             // todo: this will also need to get the unpending transactions to catch the client up
 
-            // get transactions from the transaction queue
-            let transactions: Vec<Transaction> = state
-                .transaction_queue
-                .lock()
-                .await
-                .get_pending_min_sequence_num(file_id, min_sequence_num)?
-                .iter()
-                .map(|t| t.to_owned().into())
-                .collect::<Vec<_>>();
+            // // get transactions from the transaction queue
+            // let transactions: Vec<Transaction> = state
+            //     .transaction_queue
+            //     .lock()
+            //     .await
+            //     .get_pending_min_sequence_num(file_id, min_sequence_num)?
+            //     .iter()
+            //     .map(|t| t.to_owned().into())
+            //     .collect::<Vec<_>>();
+
+            let transactions: Vec<Transaction> = vec![];
 
             let response = MessageResponse::Transactions {
                 transactions: serde_json::to_string(&transactions)?,

@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::error::{MpError, Result};
 
-pub static GROUP_NAME: &str = "quadratic-mp-1";
+pub static GROUP_NAME: &str = "quadratic-multiplayer-1";
 
 #[derive(Debug)]
 pub(crate) struct PubSub {
@@ -19,6 +19,7 @@ pub(crate) struct PubSub {
 }
 
 impl PubSub {
+    /// Create a new connection to the PubSub server
     pub(crate) async fn new(config: PubSubConfig) -> Result<Self> {
         let connection = RedisConnection::new(config.to_owned()).await?;
         Ok(PubSub { config, connection })
@@ -98,8 +99,6 @@ impl TransactionQueue {
             .await
             .unwrap();
 
-        // transactions.push(transaction);
-
         sequence_num
     }
 
@@ -123,54 +122,55 @@ impl TransactionQueue {
         self.push(id, file_id, operations, room_sequence_num).await
     }
 
-    pub(crate) fn get_pending(&mut self, file_id: Uuid) -> Result<Vec<TransactionServer>> {
-        let transactions = self
-            .pending
-            .get(&file_id)
-            .ok_or_else(|| {
-                MpError::TransactionQueue(format!(
-                    "file_id {file_id} not found in transaction queue"
-                ))
-            })?
-            .1
-            .to_owned();
+    // pub(crate) fn get_pending(&mut self, file_id: Uuid) -> Result<Vec<TransactionServer>> {
+    //     let transactions = self
+    //         .pending
+    //         .get(&file_id)
+    //         .ok_or_else(|| {
+    //             MpError::TransactionQueue(format!(
+    //                 "file_id {file_id} not found in transaction queue"
+    //             ))
+    //         })?
+    //         .1
+    //         .to_owned();
 
-        Ok(transactions)
-    }
+    //     Ok(transactions)
+    // }
 
-    pub(crate) async fn complete_transactions(
-        &mut self,
-        file_id: Uuid,
-    ) -> Result<(u64, Vec<TransactionServer>)> {
-        // first, add transactions to the processed queue
-        self.shovel_pending(file_id).await?;
+    // pub(crate) async fn complete_transactions(
+    //     &mut self,
+    //     file_id: Uuid,
+    //     sequence_numbers: Vec<u64>,
+    // ) -> Result<(u64, Vec<TransactionServer>)> {
+    //     // first, add transactions to the processed queue
+    //     self.shovel_pending(file_id).await?;
 
-        // next, remove transactions from the pending queue
-        self.drain_pending(file_id)
-    }
+    //     // next, remove transactions from the pending queue
+    //     self.drain_pending(file_id)
+    // }
 
-    /// Move transactions from the pending queue to the processed queue for a given file
-    pub(crate) async fn shovel_pending(&mut self, file_id: Uuid) -> Result<Vec<TransactionServer>> {
-        let transactions = self
-            .get_pending(file_id)?
-            .into_iter()
-            .map(|transaction| {
-                async {
-                    self.push_processed(
-                        transaction.id,
-                        transaction.file_id,
-                        transaction.operations.to_owned(),
-                        transaction.sequence_num,
-                    )
-                    .await;
-                };
+    // /// Move transactions from the pending queue to the processed queue for a given file
+    // pub(crate) async fn shovel_pending(&mut self, file_id: Uuid) -> Result<Vec<TransactionServer>> {
+    //     let transactions = self
+    //         .get_pending(file_id)?
+    //         .into_iter()
+    //         .map(|transaction| {
+    //             async {
+    //                 self.push_processed(
+    //                     transaction.id,
+    //                     transaction.file_id,
+    //                     transaction.operations.to_owned(),
+    //                     transaction.sequence_num,
+    //                 )
+    //                 .await;
+    //             };
 
-                transaction
-            })
-            .collect::<Vec<TransactionServer>>();
+    //             transaction
+    //         })
+    //         .collect::<Vec<TransactionServer>>();
 
-        Ok(transactions)
-    }
+    //     Ok(transactions)
+    // }
 
     /// Drain the pending queue
     ///
@@ -185,19 +185,19 @@ impl TransactionQueue {
         })
     }
 
-    pub(crate) fn get_pending_min_sequence_num(
-        &mut self,
-        file_id: Uuid,
-        min_sequence_num: u64,
-    ) -> Result<Vec<TransactionServer>> {
-        let transactions = self
-            .get_pending(file_id)?
-            .into_iter()
-            .filter(|transaction| transaction.sequence_num >= min_sequence_num)
-            .collect();
+    // pub(crate) fn get_pending_min_sequence_num(
+    //     &mut self,
+    //     file_id: Uuid,
+    //     min_sequence_num: u64,
+    // ) -> Result<Vec<TransactionServer>> {
+    //     let transactions = self
+    //         .get_pending(file_id)?
+    //         .into_iter()
+    //         .filter(|transaction| transaction.sequence_num >= min_sequence_num)
+    //         .collect();
 
-        Ok(transactions)
-    }
+    //     Ok(transactions)
+    // }
 
     /// Returns latest sequence number for a given file (if any are in the transaction_queue)
     pub(crate) fn get_sequence_num(&mut self, file_id: Uuid) -> Option<u64> {

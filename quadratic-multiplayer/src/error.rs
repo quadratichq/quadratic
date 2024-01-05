@@ -77,9 +77,8 @@ impl From<SharedError> for MpError {
             SharedError::Aws(aws) => match aws {
                 Aws::S3(error) => MpError::S3(error),
             },
-            _ => MpError::Unknown("Unknown Quadratic API error".into()),
-
             SharedError::PubSub(error) => MpError::PubSub(error),
+            _ => MpError::Unknown(format!("Unknown Quadratic API error: {error}")),
         }
     }
 }
