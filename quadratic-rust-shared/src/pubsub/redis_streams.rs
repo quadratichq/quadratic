@@ -1,9 +1,10 @@
 use futures_util::stream::{Stream, StreamExt};
 use redis::{
-    aio::{AsyncStream, ConnectionLike, MultiplexedConnection, PubSub},
+    aio::{AsyncStream, ConnectionLike, Monitor, MultiplexedConnection, PubSub},
     streams::{StreamId, StreamKey, StreamReadOptions, StreamReadReply},
     AsyncCommands, Client, RedisResult, Value,
 };
+use std::fmt::{self, Debug, Display};
 use std::pin::Pin;
 
 use crate::pubsub::Config;
@@ -18,14 +19,18 @@ pub struct RedisStreamsConfig {
 
 pub type PubSubConnection = PubSub<Pin<Box<dyn AsyncStream + Send + Sync>>>;
 
-#[derive(Debug, Clone)]
 pub struct RedisConnection {
     pub multiplex: MultiplexedConnection,
+    pub monitor: Monitor,
+}
+
+impl Debug for RedisConnection {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self.multiplex)
+    }
 }
 
 fn client(config: Config) -> Result<Client> {
-    // TODO(ddimaria): remove once we have more than one pubsub implementation
-    #[allow(irrefutable_let_patterns)]
     if let Config::RedisStreams(RedisStreamsConfig {
         host,
         port,
@@ -71,6 +76,7 @@ impl super::PubSub for RedisConnection {
         let client = client(config)?;
         let connection = RedisConnection {
             multiplex: client.get_multiplexed_async_connection().await?,
+            monitor: client.get_async_connection().await?.into_monitor(),
         };
         Ok(connection)
     }

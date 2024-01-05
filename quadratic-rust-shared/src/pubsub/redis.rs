@@ -23,8 +23,6 @@ pub struct RedisConnection {
 }
 
 fn client(config: Config) -> Result<Client> {
-    // TODO(ddimaria): remove once we have more than one pubsub implementation
-    #[allow(irrefutable_let_patterns)]
     if let Config::Redis(RedisConfig {
         host,
         port,

@@ -17,6 +17,7 @@ use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use quadratic_core::controller::operations::operation::Operation;
 use quadratic_core::controller::transaction::Transaction;
+use quadratic_rust_shared::pubsub::PubSub;
 use quadratic_rust_shared::quadratic_api::get_file_perms;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -96,6 +97,17 @@ pub(crate) async fn handle_message(
                 socket: Some(Arc::clone(&sender)),
                 last_heartbeat: chrono::Utc::now(),
             };
+
+            // subscribe to the file's pubsub channel
+            state
+                .transaction_queue
+                .lock()
+                .await
+                .pubsub
+                .connection
+                .subscribe(&file_id.to_string())
+                .await
+                .unwrap();
 
             let is_new = state
                 .enter_room(file_id, &user, connection.id, sequence_num)

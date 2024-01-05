@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::error::{MpError, Result};
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) struct PubSub {
     pub(crate) config: PubSubConfig,
     pub(crate) connection: RedisConnection,
@@ -53,7 +53,7 @@ pub(crate) type Queue = HashMap<Uuid, (u64, Vec<TransactionServer>)>;
 pub(crate) struct TransactionQueue {
     pending: Queue,
     processed: Queue,
-    pubsub: PubSub,
+    pub(crate) pubsub: PubSub,
 }
 
 impl TransactionQueue {
@@ -218,7 +218,7 @@ mod tests {
 
     use super::*;
     #[tokio::test]
-    async fn test_transaction_queue() {
+    async fn add_operations_to_the_transaction_queue() {
         let (state, file_id) = setup().await;
         let mut grid = grid_setup();
         let transaction_id_1 = Uuid::new_v4();
