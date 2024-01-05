@@ -48,7 +48,7 @@ impl<'ctx> Ctx<'ctx> {
 
         self.cells_accessed.insert(ref_pos_with_sheet.into());
 
-        let value = sheet.get_cell_value(ref_pos).unwrap_or(CellValue::Blank);
+        let value = sheet.display_value(ref_pos).unwrap_or(CellValue::Blank);
         Ok(Spanned { inner: value, span })
     }
 

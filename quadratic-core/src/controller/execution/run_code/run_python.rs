@@ -105,7 +105,7 @@ mod tests {
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         let pos = sheet_pos.into();
-        let code_cell = sheet.get_cell_value_only(pos).unwrap();
+        let code_cell = sheet.cell_value(pos).unwrap();
         match code_cell {
             CellValue::Code(code_cell) => {
                 assert_eq!(code_cell.language, CodeCellLanguage::Python);
@@ -146,7 +146,7 @@ mod tests {
         let cells = sheet.get_render_cells(crate::Rect::single_pos(Pos { x: 0, y: 0 }));
         let cell = cells.get(0);
         assert_eq!(cell.unwrap().value, " ERROR".to_string());
-        let cell_value = sheet.get_cell_value(Pos { x: 0, y: 0 });
+        let cell_value = sheet.display_value(Pos { x: 0, y: 0 });
         assert_eq!(cell_value, None);
     }
 
@@ -250,7 +250,7 @@ mod tests {
         // check that the value at (0, 1) contains the expected output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 1 }),
+            sheet.display_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(10)))
         );
     }
@@ -347,7 +347,7 @@ mod tests {
         // check that the value at (0, 1) contains the expected output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 1 }),
+            sheet.display_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(11)))
         );
     }
@@ -434,7 +434,7 @@ mod tests {
         assert!(gc.async_transactions().is_empty());
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert!(sheet
-            .get_cell_value(Pos { x: 0, y: 0 })
+            .display_value(Pos { x: 0, y: 0 })
             .unwrap()
             .is_blank_or_empty_string());
     }
@@ -477,7 +477,7 @@ mod tests {
         // check that the value at (0, 0) contains the expected output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("original output".into()))
         );
         gc.set_code_cell(
@@ -494,7 +494,7 @@ mod tests {
         // check that the value at (0, 0) contains the original output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("original output".into()))
         );
 
@@ -518,7 +518,7 @@ mod tests {
         // repeat the same action to find a bug that occurs on second change
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("new output".into()))
         );
         gc.set_code_cell(
@@ -535,7 +535,7 @@ mod tests {
         // check that the value at (0, 0) contains the original output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("new output".into()))
         );
 
@@ -559,7 +559,7 @@ mod tests {
         // check that the value at (0, 0) contains the original output
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("new output second time".into()))
         );
     }

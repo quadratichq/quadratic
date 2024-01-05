@@ -96,7 +96,7 @@ mod tests {
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(0)))
         );
 
@@ -112,7 +112,7 @@ mod tests {
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 0 }),
+            sheet.display_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(1)))
         );
     }
@@ -132,7 +132,7 @@ mod tests {
         );
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("test".to_string()))
         );
         assert_eq!(summary.cell_sheets_modified.len(), 1);
@@ -173,12 +173,12 @@ mod test {
             None,
         );
         assert_eq!(
-            gc.sheet(sheet_id).get_cell_value(sheet_pos.into()),
+            gc.sheet(sheet_id).display_value(sheet_pos.into()),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         gc.set_cell_value(sheet_pos, "".to_string(), None);
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.get_cell_value(sheet_pos.into()), None);
+        assert_eq!(sheet.display_value(sheet_pos.into()), None);
     }
 
     #[test]
@@ -192,12 +192,12 @@ mod test {
         };
         let summary = gc.set_cell_value(sheet_pos, "1".to_string(), None);
         assert_eq!(
-            gc.sheet(sheet_id).get_cell_value(sheet_pos.into()),
+            gc.sheet(sheet_id).display_value(sheet_pos.into()),
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(summary.cell_sheets_modified.len(), 1);
         let summary = gc.undo(None);
         assert_eq!(summary.cell_sheets_modified.len(), 1);
-        assert_eq!(gc.sheet(sheet_id).get_cell_value(sheet_pos.into()), None);
+        assert_eq!(gc.sheet(sheet_id).display_value(sheet_pos.into()), None);
     }
 }

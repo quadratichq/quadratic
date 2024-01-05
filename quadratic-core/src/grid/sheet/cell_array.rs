@@ -12,7 +12,7 @@ impl Sheet {
         let mut array = vec![];
         for y in rect.y_range() {
             for x in rect.x_range() {
-                if let Some(cell) = self.get_cell_value(Pos { x, y }) {
+                if let Some(cell) = self.display_value(Pos { x, y }) {
                     array.push(CellForArray::new(x, y, Some(cell.to_edit())));
                 } else {
                     array.push(CellForArray::new(x, y, None));
@@ -34,7 +34,7 @@ impl Sheet {
                 selection
                     .x_range()
                     .map(|x| {
-                        self.get_cell_value(Pos { x, y })
+                        self.display_value(Pos { x, y })
                             .unwrap_or_else(|| CellValue::Blank)
                     })
                     .collect::<Vec<CellValue>>()

@@ -144,9 +144,9 @@ impl Sheet {
         borders::get_rect_borders(self, &rect)
     }
 
-    /// Returns the value of a cell (i.e., what would be returned if code asked
+    /// Returns the cell_value at a Pos using both column.values and code_runs (i.e., what would be returned if code asked
     /// for it).
-    pub fn get_cell_value(&self, pos: Pos) -> Option<CellValue> {
+    pub fn display_value(&self, pos: Pos) -> Option<CellValue> {
         let cell_value = self
             .get_column(pos.x)
             .and_then(|column| column.values.get(pos.y));
@@ -166,8 +166,8 @@ impl Sheet {
         }
     }
 
-    /// Returns only the cell_value at the Pos. This does not check code_runs.
-    pub fn get_cell_value_only(&self, pos: Pos) -> Option<CellValue> {
+    /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
+    pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
         column.values.get(pos.y)
     }
@@ -324,7 +324,7 @@ impl Sheet {
         }
 
         // otherwise check value to see if it has a decimal and use that length
-        if let Some(value) = self.get_cell_value(pos) {
+        if let Some(value) = self.display_value(pos) {
             match value {
                 CellValue::Number(n) => {
                     let (_, exponent) = n.as_bigint_and_exponent();
@@ -585,7 +585,7 @@ mod test {
     fn test_get_cell_value() {
         let (grid, sheet_id, _) = test_setup_basic();
         let sheet = grid.sheet(sheet_id);
-        let value = sheet.get_cell_value((2, 1).into());
+        let value = sheet.display_value((2, 1).into());
 
         assert_eq!(value, Some(CellValue::Number(BigDecimal::from(1))));
     }

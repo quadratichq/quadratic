@@ -144,7 +144,7 @@ impl GridController {
         };
 
         // ensure the code_cell still exists
-        let Some(code_cell) = sheet.get_cell_value(pos) else {
+        let Some(code_cell) = sheet.cell_value(pos) else {
             // cell may have been deleted before the async operation completed
             return Ok(());
         };
@@ -161,42 +161,31 @@ impl GridController {
         let error = RunError { span, msg };
         let result = CodeRunResult::Err(error);
 
-        let (old_code_run, new_code_run) = match sheet.code_run(pos) {
+        let new_code_run = match sheet.code_run(pos) {
             Some(old_code_run) => {
-                (
-                    Some(old_code_run.clone()),
-                    CodeRun {
-                        formatted_code_string: old_code_run.formatted_code_string.clone(),
-                        result,
-                        std_out: None,
-                        std_err: Some(error_msg),
-                        spill_error: false,
-                        last_modified: Utc::now(),
-
-                        // keep the old cells_accessed to better rerun after an error
-                        cells_accessed: old_code_run.cells_accessed.clone(),
-                    },
-                )
-            }
-            None => (
-                None,
                 CodeRun {
-                    formatted_code_string: None,
+                    formatted_code_string: old_code_run.formatted_code_string.clone(),
                     result,
                     std_out: None,
                     std_err: Some(error_msg),
                     spill_error: false,
                     last_modified: Utc::now(),
-                    cells_accessed: transaction.cells_accessed.clone(),
-                },
-            ),
+
+                    // keep the old cells_accessed to better rerun after an error
+                    cells_accessed: old_code_run.cells_accessed.clone(),
+                }
+            }
+            None => CodeRun {
+                formatted_code_string: None,
+                result,
+                std_out: None,
+                std_err: Some(error_msg),
+                spill_error: false,
+                last_modified: Utc::now(),
+                cells_accessed: transaction.cells_accessed.clone(),
+            },
         };
-        let Some(sheet) = self.try_sheet_mut(sheet_id) else {
-            // sheet may have been deleted before the async operation completed
-            return Ok(());
-        };
-        sheet.set_code_run(pos, Some(new_code_run));
-        self.finalize_code_run(transaction, sheet_pos, old_code_run);
+        self.finalize_code_run(transaction, sheet_pos, Some(new_code_run));
         transaction
             .summary
             .code_cells_modified

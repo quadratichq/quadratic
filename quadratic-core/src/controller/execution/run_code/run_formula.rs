@@ -15,6 +15,7 @@ impl GridController {
         code: String,
     ) {
         let mut ctx = Ctx::new(self.grid(), sheet_pos);
+        transaction.current_sheet_pos = Some(sheet_pos);
         match parse_formula(&code, sheet_pos.into()) {
             Ok(parsed) => {
                 match parsed.eval(&mut ctx) {
@@ -100,13 +101,10 @@ mod test {
 
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 0 }),
+            sheet.display_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(11.into()))
         );
-        assert_eq!(
-            sheet.get_cell_value_only(Pos { x: 1, y: 0 }),
-            Some(code_cell)
-        );
+        assert_eq!(sheet.cell_value(Pos { x: 1, y: 0 }), Some(code_cell));
     }
 
     #[test]
@@ -130,7 +128,7 @@ mod test {
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 0 }),
+            sheet.display_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(11.into()))
         );
 
@@ -147,11 +145,11 @@ mod test {
 
         let sheet = gc.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 0 }),
+            sheet.display_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(11.into()))
         );
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 2, y: 0 }),
+            sheet.display_value(Pos { x: 2, y: 0 }),
             Some(CellValue::Number(12.into()))
         );
 
@@ -167,11 +165,11 @@ mod test {
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 0 }),
+            sheet.display_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(2.into()))
         );
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 2, y: 0 }),
+            sheet.display_value(Pos { x: 2, y: 0 }),
             Some(CellValue::Number(3.into()))
         );
     }
@@ -203,7 +201,7 @@ mod test {
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 1 }),
+            sheet.display_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Number(11.into()))
         );
 
@@ -217,9 +215,9 @@ mod test {
             None,
         );
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert_eq!(sheet.get_cell_value(Pos { x: 0, y: 0 }), None);
+        assert_eq!(sheet.display_value(Pos { x: 0, y: 0 }), None);
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 1 }),
+            sheet.display_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Number(1.into()))
         );
     }
@@ -343,7 +341,7 @@ mod test {
             None,
         );
         assert_eq!(
-            gc.sheet(sheet_id).get_cell_value(Pos { x: 1, y: 0 }),
+            gc.sheet(sheet_id).display_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(1.into()))
         );
 
@@ -365,14 +363,14 @@ mod test {
         );
         assert!(gc
             .sheet(sheet_id)
-            .get_cell_value(Pos { x: 1, y: 0 })
+            .display_value(Pos { x: 1, y: 0 })
             .unwrap()
             .is_blank_or_empty_string());
 
         // undo the spill error
         gc.undo(None);
         assert_eq!(
-            gc.sheet(sheet_id).get_cell_value(Pos { x: 1, y: 0 }),
+            gc.sheet(sheet_id).display_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(1.into()))
         );
 
@@ -388,8 +386,37 @@ mod test {
         // undo the spill error
         gc.undo(None);
         assert_eq!(
-            gc.sheet(sheet_id).get_cell_value(Pos { x: 1, y: 0 }),
+            gc.sheet(sheet_id).display_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(1.into()))
         );
+    }
+
+    #[test]
+    fn test_formula_error() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Formula,
+            "this shouldn't work".into(),
+            None,
+        );
+
+        let pos: Pos = sheet_pos.into();
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.cell_value(pos),
+            Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "this shouldn't work".into(),
+            }))
+        );
+        let result = sheet.code_run(pos).unwrap();
+        assert!(!result.spill_error);
     }
 }

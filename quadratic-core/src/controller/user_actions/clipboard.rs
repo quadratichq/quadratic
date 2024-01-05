@@ -31,10 +31,10 @@ impl GridController {
                 let pos = Pos { x, y };
 
                 // the CellValue at the cell that would be displayed in the cell (ie, including code_runs)
-                let simple_value = sheet.get_cell_value(pos);
+                let simple_value = sheet.display_value(pos);
 
                 // the CellValue at the cell (ignoring code_runs)
-                let real_value = sheet.get_cell_value_only(pos);
+                let real_value = sheet.cell_value(pos);
 
                 // create quadratic clipboard values
                 cells.push(real_value.clone());
@@ -221,11 +221,11 @@ mod test {
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 1 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text(String::from("1, 1")))
         );
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 3, y: 2 }),
+            sheet.display_value(Pos { x: 3, y: 2 }),
             Some(CellValue::Number(BigDecimal::from(12)))
         );
 
@@ -244,7 +244,7 @@ mod test {
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 1 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text(String::from("1, 1")))
         );
         assert_eq!(
@@ -257,7 +257,7 @@ mod test {
             }
         );
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 3, y: 2 }),
+            sheet.display_value(Pos { x: 3, y: 2 }),
             Some(CellValue::Number(BigDecimal::from(12)))
         );
         assert_eq!(
@@ -293,7 +293,7 @@ mod test {
         assert_eq!(gc.undo_stack.len(), 1);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 1 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
 
@@ -323,7 +323,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(4)))
         );
 
@@ -339,7 +339,7 @@ mod test {
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
 
@@ -350,7 +350,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(4)))
         );
 
@@ -359,7 +359,7 @@ mod test {
         // empty code cell
         gc.undo(None);
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.get_cell_value(Pos { x: 0, y: 0 }), None);
+        assert_eq!(sheet.display_value(Pos { x: 0, y: 0 }), None);
 
         assert_eq!(gc.undo_stack.len(), 0);
     }
@@ -517,9 +517,9 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let cell11 = sheet.get_cell_value(Pos { x: 2, y: 3 });
+        let cell11 = sheet.display_value(Pos { x: 2, y: 3 });
         assert_eq!(cell11.unwrap(), CellValue::Text(String::from("1, 1")));
-        let cell21 = sheet.get_cell_value(Pos { x: 4, y: 4 });
+        let cell21 = sheet.display_value(Pos { x: 4, y: 4 });
         assert_eq!(cell21.unwrap(), CellValue::Number(BigDecimal::from(12)));
     }
 }

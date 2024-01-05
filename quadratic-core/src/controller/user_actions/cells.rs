@@ -119,7 +119,7 @@ mod test {
         };
         let get_cell = |g: &GridController| {
             g.sheet(sheet_id)
-                .get_cell_value(sheet_pos.into())
+                .display_value(sheet_pos.into())
                 .unwrap_or_default()
         };
         let mut cell_sheets_modified = HashSet::new();
@@ -189,7 +189,7 @@ mod test {
         };
         let get_cell_value = |g: &GridController| {
             g.sheet(sheet_id)
-                .get_cell_value(sheet_pos.into())
+                .display_value(sheet_pos.into())
                 .unwrap_or_default()
         };
         let get_cell_numeric_format = |g: &GridController| {

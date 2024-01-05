@@ -21,7 +21,7 @@ pub fn assert_cell_value(
 ) {
     let sheet = grid_controller.sheet(sheet_id);
     let cell_value = sheet
-        .get_cell_value(Pos { x, y })
+        .display_value(Pos { x, y })
         .unwrap_or(CellValue::Blank);
     let expected = if value.is_empty() {
         CellValue::Blank
@@ -171,7 +171,7 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
 
             vals.push(
                 sheet
-                    .get_cell_value(pos)
+                    .display_value(pos)
                     .unwrap_or(CellValue::Blank)
                     .to_string(),
             );

@@ -176,7 +176,7 @@ mod tests {
         );
         let sheet = client.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 2 }),
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("hello".to_string()))
         );
 
@@ -187,7 +187,7 @@ mod tests {
         );
         let sheet = server.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 2 }),
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("hello".to_string()))
         );
     }

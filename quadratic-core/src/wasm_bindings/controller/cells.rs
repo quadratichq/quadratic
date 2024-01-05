@@ -113,7 +113,7 @@ impl GridController {
         let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
             return String::from("");
         };
-        if let Some(value) = sheet.get_cell_value_only(pos) {
+        if let Some(value) = sheet.cell_value(pos) {
             value.to_edit()
         } else {
             String::from("")
@@ -144,7 +144,7 @@ impl GridController {
         let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
             return None;
         };
-        let code_cell = sheet.get_cell_value_only(*pos)?;
+        let code_cell = sheet.cell_value(*pos)?;
         match code_cell {
             CellValue::Code(code_cell) => {
                 if let Some(code_run) = sheet.code_run(*pos) {

@@ -57,7 +57,7 @@ impl GridController {
                 // only delete code runs that are within the sheet_rect
                 if rect.contains(*pos) {
                     // only delete when there's not another code cell in the same position (this maintains the original output until a run completes)
-                    if let Some(value) = sheet.get_cell_value_only(*pos) {
+                    if let Some(value) = sheet.cell_value(*pos) {
                         if matches!(value, CellValue::Code(_)) {
                             None
                         } else {
@@ -107,7 +107,7 @@ impl GridController {
             let pos: Pos = sheet_pos.into();
 
             // We need to get the corresponding CellValue::Code, which should always exist.
-            let (language, code) = match sheet.get_cell_value_only(pos) {
+            let (language, code) = match sheet.cell_value(pos) {
                 Some(code_cell) => match code_cell {
                     CellValue::Code(value) => (value.language, value.code),
                     _ => unreachable!("Expected CellValue::Code in execute_set_code_cell"),
@@ -158,20 +158,20 @@ mod tests {
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("one".into()))
         );
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 1 }),
+            sheet.display_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Text("two".into()))
         );
-        assert_eq!(sheet.get_cell_value(Pos { x: 0, y: 2 }), None);
+        assert_eq!(sheet.display_value(Pos { x: 0, y: 2 }), None);
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 0 }),
+            sheet.display_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Text("one".into()))
         );
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 1 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("two".into()))
         );
 
@@ -187,12 +187,12 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 1 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("cause spill".into()))
         );
 
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 0 }),
+            sheet.display_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Blank)
         );
 

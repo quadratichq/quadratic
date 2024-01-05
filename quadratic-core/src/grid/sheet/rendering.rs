@@ -219,7 +219,7 @@ impl Sheet {
         self.iter_code_output_in_rect(rect)
             .for_each(|(code_rect, code_run)| {
                 // sanity check that there is a CellValue::Code for this CodeRun
-                if let Some(code) = self.get_cell_value_only(Pos {
+                if let Some(code) = self.cell_value(Pos {
                     x: code_rect.min.x,
                     y: code_rect.min.y,
                 }) {
@@ -292,7 +292,7 @@ impl Sheet {
         self.code_runs
             .iter()
             .filter_map(|(pos, run)| {
-                if let Some(code) = self.get_cell_value_only(*pos) {
+                if let Some(code) = self.cell_value(*pos) {
                     match &code {
                         CellValue::Code(code) => {
                             let (state, w, h) = if run.spill_error {

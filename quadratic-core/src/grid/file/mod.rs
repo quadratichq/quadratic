@@ -127,9 +127,7 @@ mod tests {
             .code_runs
             .get(&Pos { x: 0, y: 2 })
             .is_some());
-        let cell_value = imported.sheets[0]
-            .get_cell_value_only(Pos { x: 0, y: 2 })
-            .unwrap();
+        let cell_value = imported.sheets[0].cell_value(Pos { x: 0, y: 2 }).unwrap();
 
         match cell_value {
             crate::grid::CellValue::Code(formula) => {

@@ -277,7 +277,7 @@ mod tests {
         );
         let sheet = gc1.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World".to_string()))
         );
 
@@ -290,7 +290,7 @@ mod tests {
 
         let sheet = gc1.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World".to_string()))
         );
         assert_eq!(gc1.transactions.unsaved_transactions.len(), 0);
@@ -300,7 +300,7 @@ mod tests {
         gc2.received_transaction(transaction_id, 1, operations);
         let sheet = gc2.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World".to_string()))
         );
     }
@@ -320,7 +320,7 @@ mod tests {
         );
         let sheet = gc1.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World from 1".to_string()))
         );
 
@@ -338,7 +338,7 @@ mod tests {
         );
         let sheet = gc2.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World from 2".to_string()))
         );
 
@@ -350,7 +350,7 @@ mod tests {
         gc1.received_transaction(transaction_id, 1, operations);
         let sheet = gc1.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World from 1".to_string()))
         );
     }
@@ -370,7 +370,7 @@ mod tests {
         );
         let sheet = client.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World".to_string()))
         );
         let operations: Vec<Operation> =
@@ -381,7 +381,7 @@ mod tests {
         server.server_apply_transaction(operations);
         let sheet = server.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World".to_string()))
         );
     }
@@ -430,7 +430,7 @@ mod tests {
             client
                 .try_sheet(sheet_id)
                 .unwrap()
-                .get_cell_value(Pos { x: 0, y: 0 }),
+                .display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Client unsaved value".to_string()))
         );
     }
@@ -473,7 +473,7 @@ mod tests {
             client
                 .try_sheet(sheet_id)
                 .unwrap()
-                .get_cell_value(Pos { x: 1, y: 1 }),
+                .display_value(Pos { x: 1, y: 1 }),
             None
         );
         assert_eq!(client.transactions.out_of_order_transactions.len(), 1);
@@ -484,14 +484,14 @@ mod tests {
             client
                 .try_sheet(sheet_id)
                 .unwrap()
-                .get_cell_value(Pos { x: 1, y: 1 }),
+                .display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("This is sequence_num = 1".to_string()))
         );
         assert_eq!(
             client
                 .try_sheet(sheet_id)
                 .unwrap()
-                .get_cell_value(Pos { x: 2, y: 2 }),
+                .display_value(Pos { x: 2, y: 2 }),
             Some(CellValue::Text("This is sequence_num = 2".to_string()))
         );
         assert_eq!(client.transactions.out_of_order_transactions.len(), 0);
@@ -544,7 +544,7 @@ mod tests {
             client
                 .try_sheet(sheet_id)
                 .unwrap()
-                .get_cell_value(Pos { x: 0, y: 0 }),
+                .display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Client unsaved value".to_string()))
         );
         assert_eq!(client.transactions.out_of_order_transactions.len(), 1);
@@ -556,7 +556,7 @@ mod tests {
             client
                 .try_sheet(sheet_id)
                 .unwrap()
-                .get_cell_value(Pos { x: 0, y: 0 }),
+                .display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Client unsaved value".to_string()))
         );
         assert_eq!(client.transactions.out_of_order_transactions.len(), 0);
@@ -572,7 +572,7 @@ mod tests {
             client
                 .try_sheet(sheet_id)
                 .unwrap()
-                .get_cell_value(Pos { x: 0, y: 0 }),
+                .display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Client unsaved value".to_string()))
         );
 
@@ -582,7 +582,7 @@ mod tests {
             client
                 .try_sheet(sheet_id)
                 .unwrap()
-                .get_cell_value(Pos { x: 0, y: 0 }),
+                .display_value(Pos { x: 0, y: 0 }),
             None
         );
     }
@@ -644,14 +644,14 @@ mod tests {
             client
                 .try_sheet(sheet_id)
                 .unwrap()
-                .get_cell_value(Pos { x: 0, y: 0 }),
+                .display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("This is sequence_num = 1".to_string()))
         );
         assert_eq!(
             client
                 .try_sheet(sheet_id)
                 .unwrap()
-                .get_cell_value(Pos { x: 1, y: 1 }),
+                .display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("This is sequence_num = 2".to_string()))
         );
     }
@@ -690,7 +690,7 @@ mod tests {
         let code_cell = client
             .try_sheet(sheet_id)
             .unwrap()
-            .get_cell_value_only(Pos { x: 1, y: 1 });
+            .cell_value(Pos { x: 1, y: 1 });
         assert!(matches!(code_cell, Some(CellValue::Code(_))));
 
         let transaction_id = client.async_transactions()[0].id;
@@ -709,7 +709,7 @@ mod tests {
             client
                 .try_sheet(sheet_id)
                 .unwrap()
-                .get_cell_value(Pos { x: 0, y: 0 }),
+                .display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("From other".to_string()))
         );
 
@@ -717,7 +717,7 @@ mod tests {
         let code_cell = client
             .try_sheet(sheet_id)
             .unwrap()
-            .get_cell_value_only(Pos { x: 1, y: 1 });
+            .cell_value(Pos { x: 1, y: 1 });
         assert!(matches!(code_cell, Some(CellValue::Code(_))));
 
         // mock the python calculation returning the result
@@ -738,7 +738,7 @@ mod tests {
             client
                 .try_sheet(sheet_id)
                 .unwrap()
-                .get_cell_value(Pos { x: 1, y: 1 }),
+                .display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("async output".to_string()))
         );
     }
@@ -780,7 +780,7 @@ mod tests {
         let code_cell = client
             .try_sheet(sheet_id)
             .unwrap()
-            .get_cell_value_only(Pos { x: 0, y: 0 });
+            .cell_value(Pos { x: 0, y: 0 });
         assert_eq!(
             code_cell,
             Some(CellValue::Code(CodeCellValue {
@@ -806,7 +806,7 @@ mod tests {
             client
                 .try_sheet(sheet_id)
                 .unwrap()
-                .get_cell_value(Pos { x: 0, y: 0 }),
+                .display_value(Pos { x: 0, y: 0 }),
             None
         );
 
@@ -814,7 +814,7 @@ mod tests {
         let code_cell = client
             .try_sheet(sheet_id)
             .unwrap()
-            .get_cell_value_only(Pos { x: 0, y: 0 });
+            .cell_value(Pos { x: 0, y: 0 });
         assert!(matches!(code_cell, Some(CellValue::Code(_))));
 
         // mock the python calculation returning the result
@@ -835,7 +835,7 @@ mod tests {
             client
                 .try_sheet(sheet_id)
                 .unwrap()
-                .get_cell_value(Pos { x: 0, y: 0 }),
+                .display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("async output".to_string()))
         );
     }

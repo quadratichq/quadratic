@@ -160,7 +160,7 @@ impl Sheet {
                     column_start.max(rect.min.x)
                 };
                 while x >= rect.min.x && x <= rect.max.x {
-                    let has_content = self.get_cell_value(Pos { x, y: row });
+                    let has_content = self.display_value(Pos { x, y: row });
                     if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
                         if with_content {
                             return x;
@@ -200,7 +200,7 @@ impl Sheet {
                     row_start.max(rect.min.y)
                 };
                 while y >= rect.min.y && y <= rect.max.y {
-                    let has_content = self.get_cell_value(Pos { x: column, y });
+                    let has_content = self.display_value(Pos { x: column, y });
                     if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
                         if with_content {
                             return y;
@@ -452,7 +452,7 @@ mod test {
         };
 
         for (pos, expected) in hashmap_of_truth {
-            let actual = sheet.get_cell_value(pos);
+            let actual = sheet.display_value(pos);
             if expected.is_blank() {
                 assert_eq!(None, actual);
             } else {

@@ -36,7 +36,7 @@ impl GridController {
         let mut sum = BigDecimal::zero();
         for x in rect.x_range() {
             for y in rect.y_range() {
-                if let Some(cell) = sheet.get_cell_value(Pos { x, y }) {
+                if let Some(cell) = sheet.display_value(Pos { x, y }) {
                     // if value is not an error or blank, count it
                     match cell {
                         CellValue::Blank => continue,
