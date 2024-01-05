@@ -11,6 +11,7 @@ use crate::message::{
     broadcast, request::MessageRequest, response::MessageResponse, send_user_message,
 };
 use crate::state::connection::Connection;
+use crate::state::transaction_queue::GROUP_NAME;
 use crate::state::user::UserState;
 use crate::state::{user::User, State};
 use axum::extract::ws::{Message, WebSocket};
@@ -105,7 +106,7 @@ pub(crate) async fn handle_message(
                 .await
                 .pubsub
                 .connection
-                .subscribe(&file_id.to_string())
+                .subscribe(&file_id.to_string(), GROUP_NAME)
                 .await
                 .unwrap();
 

@@ -2,13 +2,14 @@ version: "3.8"
 
 services:
   redis:
-    image: redis:latest
+    image: redis/redis-stack:latest
     restart: always
     ports:
       - "6379:6379"
+      - "8001:8001"
     volumes:
       - ./docker/redis/dаta:/root/redis
-    command: redis-server --loglevel debug
+    # command: redis-server --loglevel debug
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: "5s"

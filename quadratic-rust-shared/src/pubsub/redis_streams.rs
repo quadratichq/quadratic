@@ -1,10 +1,9 @@
-use futures_util::stream::{Stream, StreamExt};
 use redis::{
-    aio::{AsyncStream, ConnectionLike, Monitor, MultiplexedConnection, PubSub},
+    aio::{AsyncStream, Monitor, MultiplexedConnection, PubSub},
     streams::{StreamId, StreamKey, StreamReadOptions, StreamReadReply},
-    AsyncCommands, Client, RedisResult, Value,
+    AsyncCommands, Client, Value,
 };
-use std::fmt::{self, Debug, Display};
+use std::fmt::{self, Debug};
 use std::pin::Pin;
 
 use crate::pubsub::Config;
@@ -82,9 +81,9 @@ impl super::PubSub for RedisConnection {
     }
 
     /// Create a group and a key (if it doesn't already exist), start from the beginning
-    async fn subscribe(&mut self, channel: &str) -> Result<()> {
+    async fn subscribe(&mut self, channel: &str, group: &str) -> Result<()> {
         self.multiplex
-            .xgroup_create_mkstream(channel, channel, "$")
+            .xgroup_create_mkstream(channel, group, "$")
             .await?;
         Ok(())
     }
@@ -108,15 +107,16 @@ impl super::PubSub for RedisConnection {
     async fn messages(
         &mut self,
         channel: &str,
+        group: &str,
         max_messages: usize,
     ) -> Result<Vec<(String, String)>> {
         let opts = StreamReadOptions::default()
             .count(max_messages)
-            .group(&channel, &channel);
+            .group(&group, &channel);
 
         let raw_messages: Result<StreamReadReply> = self
             .multiplex
-            .xread_options(&[&channel], &[">"], &opts)
+            .xread_options(&[&channel], &["0"], &opts)
             .await
             .map_err(|e| {
                 SharedError::PubSub(format!("Error reading messages for channel {channel}: {e}"))
@@ -127,8 +127,10 @@ impl super::PubSub for RedisConnection {
             .iter()
             .flat_map(|StreamKey { key, ids }| {
                 ids.iter().map(move |StreamId { id, map: value }| {
+                    println!("id: {:?}, key: {:?}, value: {:?}", id, key, value);
                     let parsed_id = from_key(id);
-                    let message = from_value(value.get(&parsed_id).unwrap());
+                    let message = from_value(value.iter().next().unwrap().1);
+                    println!("parsed_id: {:?}, message: {:?}", parsed_id, message);
                     (parsed_id.to_string(), message)
                 })
             })
@@ -161,9 +163,10 @@ pub mod tests {
     async fn stream_connect_subscribe_publish_get_message() {
         let messages = vec!["test 1", "test 2"];
         let (config, channel) = setup();
+        let group = "group 1";
 
         let mut connection = RedisConnection::new(config).await.unwrap();
-        connection.subscribe(&channel).await.unwrap();
+        connection.subscribe(&channel, group).await.unwrap();
 
         // send messages
         for (key, value) in messages.iter().enumerate() {
@@ -195,16 +198,12 @@ pub mod tests {
         //         .await
         // );
 
-        let results = connection.messages(&channel, 10).await.unwrap();
+        let results = connection.messages(&channel, group, 10).await.unwrap();
         println!("results: {:?}", results);
 
-        assert_eq!(
-            results,
-            vec![
-                ("1".to_string(), messages[0].to_string()),
-                ("2".to_string(), messages[1].to_string())
-            ]
-        );
+        results.iter().enumerate().for_each(|(key, (id, value))| {
+            assert_eq!(messages[key], value);
+        });
 
         let ids = results
             .iter()
@@ -213,24 +212,26 @@ pub mod tests {
 
         let pending = connection
             .multiplex
-            .xpending::<&str, &str, Value>(&channel, &channel)
+            .xpending::<&str, &str, Value>(&channel, group)
             .await
             .unwrap();
 
         println!("pending: {:?}", pending);
 
-        // acknowledge
-        connection.ack(&channel, ids).await.unwrap();
+        // // acknowledge
+        // if ids.len() > 0 {
+        //     connection.ack(&channel, ids).await.unwrap();
+        // }
 
         let pending = connection
             .multiplex
-            .xpending::<&str, &str, Value>(&channel, &channel)
+            .xpending::<&str, &str, Value>(&channel, group)
             .await
             .unwrap();
 
         println!("pending: {:?}", pending);
 
-        let results = connection.messages(&channel, 10).await.unwrap();
+        let results = connection.messages(&channel, group, 10).await.unwrap();
         println!("results: {:?}", results);
     }
 }

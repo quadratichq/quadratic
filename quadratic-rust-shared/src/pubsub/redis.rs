@@ -58,7 +58,7 @@ impl super::PubSub for RedisConnection {
     }
 
     /// Subscribe to a channel.
-    async fn subscribe(&mut self, channel: &str) -> Result<()> {
+    async fn subscribe(&mut self, channel: &str, _group: &str) -> Result<()> {
         self.pubsub.subscribe(channel).await?;
         Ok(())
     }
@@ -77,6 +77,7 @@ impl super::PubSub for RedisConnection {
     async fn messages(
         &mut self,
         channel: &str,
+        group: &str,
         max_messages: usize,
     ) -> Result<Vec<(String, String)>> {
         Ok(vec![])
@@ -118,7 +119,7 @@ pub mod tests {
         let channel_clone = channel.clone();
         let handle = tokio::spawn(async move {
             let mut connection = RedisConnection::new(config_clone).await.unwrap();
-            connection.subscribe(&channel_clone).await.unwrap();
+            connection.subscribe(&channel_clone, "").await.unwrap();
             let mut received = vec![];
 
             while let Some(message) = connection.pubsub.on_message().next().await {
