@@ -10,8 +10,10 @@ impl GridController {
         sheet_id: String,
         region: &Rect,
     ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let output: FormattingSummary = self.sheet(sheet_id).get_formatting_summary(*region);
+        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
+            return Result::Err("Sheet not found".into());
+        };
+        let output: FormattingSummary = sheet.get_formatting_summary(*region);
         Ok(serde_wasm_bindgen::to_value(&output)?)
     }
 
@@ -19,8 +21,10 @@ impl GridController {
     /// [`CellFormatSummary`].
     #[wasm_bindgen(js_name = "getCellFormatSummary")]
     pub fn js_cell_format_summary(&self, sheet_id: String, pos: &Pos) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let output: CellFormatSummary = self.sheet(sheet_id).get_cell_format_summary(*pos);
+        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
+            return Result::Err("Sheet not found".into());
+        };
+        let output: CellFormatSummary = sheet.get_cell_format_summary(*pos);
         Ok(serde_wasm_bindgen::to_value(&output)?)
     }
 
@@ -35,7 +39,9 @@ impl GridController {
         align: JsValue,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
+            return Result::Err("Invalid sheet id".into());
+        };
         let value: Option<CellAlign> = serde_wasm_bindgen::from_value(align).unwrap();
         Ok(serde_wasm_bindgen::to_value(&self.set_cell_align(
             rect.to_sheet_rect(sheet_id),

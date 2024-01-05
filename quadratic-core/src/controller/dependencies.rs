@@ -44,9 +44,8 @@ mod test {
     #[test]
     fn test_graph() {
         let mut gc = GridController::new();
-        let cdc = gc.grid_mut();
-        let sheet_id = cdc.sheet_ids()[0];
-        let sheet = cdc.sheet_mut_from_id(sheet_id);
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
         let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
         let _ = sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
         let mut cells_accessed = HashSet::new();

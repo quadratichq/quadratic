@@ -275,7 +275,7 @@ mod tests {
             "Hello World".to_string(),
             None,
         );
-        let sheet = gc1.grid().try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc1.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World".to_string()))
@@ -288,7 +288,7 @@ mod tests {
         // received our own transaction back
         gc1.received_transaction(transaction_id, 1, operations.clone());
 
-        let sheet = gc1.grid().try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc1.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World".to_string()))
@@ -298,7 +298,7 @@ mod tests {
         let mut gc2 = GridController::new();
         gc2.grid_mut().sheets_mut()[0].id = sheet_id;
         gc2.received_transaction(transaction_id, 1, operations);
-        let sheet = gc2.grid().try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc2.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World".to_string()))
@@ -318,7 +318,7 @@ mod tests {
             "Hello World from 1".to_string(),
             None,
         );
-        let sheet = gc1.grid().try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc1.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World from 1".to_string()))
@@ -336,7 +336,7 @@ mod tests {
             "Hello World from 2".to_string(),
             None,
         );
-        let sheet = gc2.grid().try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc2.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World from 2".to_string()))
@@ -348,7 +348,7 @@ mod tests {
         // gc1 should apply gc2's cell value to 0,0 before its unsaved transaction
         // and then reapply its unsaved transaction, overwriting 0,0
         gc1.received_transaction(transaction_id, 1, operations);
-        let sheet = gc1.grid.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc1.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World from 1".to_string()))
@@ -368,7 +368,7 @@ mod tests {
             "Hello World".to_string(),
             None,
         );
-        let sheet = client.grid().try_sheet_from_id(sheet_id).unwrap();
+        let sheet = client.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World".to_string()))
@@ -379,7 +379,7 @@ mod tests {
         let mut server = GridController::new();
         server.grid.try_sheet_mut(server.sheet_ids()[0]).unwrap().id = sheet_id;
         server.server_apply_transaction(operations);
-        let sheet = server.grid.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = server.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("Hello World".to_string()))

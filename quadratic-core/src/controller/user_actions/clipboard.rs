@@ -9,7 +9,11 @@ impl GridController {
         let mut cells = vec![];
         let mut plain_text = String::new();
         let mut html = String::from("<tbody>");
-        let sheet = &mut self.grid().sheet_from_id(sheet_rect.sheet_id);
+
+        // todo: handle this better
+        let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) else {
+            return (String::new(), String::new());
+        };
 
         for y in sheet_rect.y_range() {
             if y != sheet_rect.min.y {
@@ -287,7 +291,7 @@ mod test {
         );
 
         assert_eq!(gc.undo_stack.len(), 1);
-        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(2)))
@@ -368,7 +372,7 @@ mod test {
     fn test_copy_borders_to_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+        let sheet = gc.sheet_mut(sheet_id);
 
         set_borders(sheet);
 
@@ -405,7 +409,7 @@ mod test {
     fn test_copy_borders_inside() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+        let sheet = gc.sheet_mut(sheet_id);
 
         let selection = vec![BorderSelection::Outer];
         let style = BorderStyle {

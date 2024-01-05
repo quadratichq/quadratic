@@ -1,8 +1,7 @@
 use crate::util::round;
 use crate::Pos;
-use crate::{grid::SheetId, wasm_bindings::GridController, CellValue, Rect};
+use crate::{wasm_bindings::GridController, CellValue, Rect};
 use bigdecimal::{BigDecimal, ToPrimitive, Zero};
-use std::str::FromStr;
 use wasm_bindgen::prelude::wasm_bindgen;
 
 const MAX_SUMMARIZE_SELECTION_SIZE: u32 = 50000;
@@ -28,8 +27,9 @@ impl GridController {
             return None;
         }
 
-        let sheet_id = SheetId::from_str(&sheet_id).expect("bad sheet ID");
-        let sheet = self.grid().sheet_from_id(sheet_id);
+        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
+            return None;
+        };
 
         // sum and count
         let mut count = 0;

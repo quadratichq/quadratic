@@ -174,7 +174,7 @@ mod tests {
             "hello".to_string(),
             None,
         );
-        let sheet = client.grid().try_sheet_from_id(sheet_id).unwrap();
+        let sheet = client.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("hello".to_string()))
@@ -185,7 +185,7 @@ mod tests {
             &mut server,
             serde_json::from_str(&summary.operations.unwrap()).unwrap(),
         );
-        let sheet = server.grid().try_sheet_from_id(sheet_id).unwrap();
+        let sheet = server.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("hello".to_string()))

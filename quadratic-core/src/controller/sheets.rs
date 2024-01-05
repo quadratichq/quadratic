@@ -8,7 +8,7 @@ impl GridController {
     }
 
     pub fn try_sheet(&self, sheet_id: SheetId) -> Option<&Sheet> {
-        self.grid.try_sheet_from_id(sheet_id)
+        self.grid.try_sheet(sheet_id)
     }
 
     pub fn try_sheet_mut(&mut self, sheet_id: SheetId) -> Option<&mut Sheet> {
@@ -21,6 +21,14 @@ impl GridController {
 
     pub fn try_sheet_mut_from_name(&mut self, name: String) -> Option<&mut Sheet> {
         self.grid.try_sheet_mut_from_name(name)
+    }
+
+    pub fn try_sheet_from_string_id(&self, id: String) -> Option<&Sheet> {
+        self.grid.try_sheet_from_string_id(id)
+    }
+
+    pub fn try_sheet_mut_from_string_id(&mut self, id: String) -> Option<&mut Sheet> {
+        self.grid.try_sheet_mut_from_string_id(id)
     }
 
     #[cfg(test)]

@@ -336,10 +336,10 @@ fn test_sheet_references() {
     let name2 = "My Other Sheet".to_string();
     g.sheets_mut()[1].name = name2.clone();
 
-    let _ = g.sheet_mut_from_id(id1).set_cell_value(pos![A1], 42);
-    let _ = g.sheet_mut_from_id(id1).set_cell_value(pos![A3], 6);
-    let _ = g.sheet_mut_from_id(id2).set_cell_value(pos![A3], 7);
-    let _ = g.sheet_mut_from_id(id2).set_cell_value(pos![A4], 70);
+    let _ = g.try_sheet_mut(id1).unwrap().set_cell_value(pos![A1], 42);
+    let _ = g.try_sheet_mut(id1).unwrap().set_cell_value(pos![A3], 6);
+    let _ = g.try_sheet_mut(id2).unwrap().set_cell_value(pos![A3], 7);
+    let _ = g.try_sheet_mut(id2).unwrap().set_cell_value(pos![A4], 70);
 
     let pos1 = Pos::ORIGIN.to_sheet_pos(id1);
     let pos2 = Pos::ORIGIN.to_sheet_pos(id2);

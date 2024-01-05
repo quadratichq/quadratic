@@ -33,9 +33,12 @@ impl<'ctx> Ctx<'ctx> {
         let sheet = match &ref_pos.sheet {
             Some(sheet_name) => self
                 .grid
-                .sheet_from_name(sheet_name.clone())
+                .try_sheet_from_name(sheet_name.clone())
                 .ok_or(RunErrorMsg::BadCellReference.with_span(span))?,
-            None => self.grid.sheet_from_id(self.sheet_pos.sheet_id),
+            None => self
+                .grid
+                .try_sheet(self.sheet_pos.sheet_id)
+                .ok_or(RunErrorMsg::BadCellReference.with_span(span))?,
         };
         let ref_pos = ref_pos.resolve_from(self.sheet_pos.into());
         let ref_pos_with_sheet = ref_pos.to_sheet_pos(sheet.id);

@@ -110,8 +110,9 @@ impl GridController {
     /// returns a string
     #[wasm_bindgen(js_name = "getEditCell")]
     pub fn js_get_cell_edit(&self, sheet_id: String, pos: Pos) -> String {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let sheet = self.grid().sheet_from_id(sheet_id);
+        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
+            return String::from("");
+        };
         if let Some(value) = sheet.get_cell_value_only(pos) {
             value.to_edit()
         } else {
@@ -140,7 +141,9 @@ impl GridController {
     /// * CodeCell.evaluation_result is a stringified version of the output (used for AI models)
     #[wasm_bindgen(js_name = "getCodeCell")]
     pub fn js_get_code_string(&self, sheet_id: String, pos: &Pos) -> Option<CodeCell> {
-        let sheet = self.grid().sheet_from_string(sheet_id);
+        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
+            return None;
+        };
         let code_cell = sheet.get_cell_value(*pos)?;
         match code_cell {
             CellValue::Code(code_cell) => {

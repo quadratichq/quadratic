@@ -94,7 +94,7 @@ mod tests {
         let summary = gc.commit_single_resize(sheet_id, Some(column), None, new_size, None);
         let column_width = gc
             .grid
-            .try_sheet_from_id(sheet_id)
+            .try_sheet(sheet_id)
             .unwrap()
             .offsets
             .column_width(column as i64);
@@ -115,7 +115,7 @@ mod tests {
         let summary = gc.commit_single_resize(sheet_id, None, Some(row), new_size, None);
         let row_height = gc
             .grid
-            .try_sheet_from_id(sheet_id)
+            .try_sheet(sheet_id)
             .unwrap()
             .offsets
             .row_height(row as i64);

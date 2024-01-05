@@ -1,7 +1,8 @@
 use criterion::{criterion_group, criterion_main, Bencher, Criterion};
 use quadratic_core::controller::GridController;
 use quadratic_core::grid::Grid;
-use quadratic_core::{Pos, Rect, SheetPos, SheetRect};
+use quadratic_core::{CellValue, Pos, Rect, SheetPos, SheetRect};
+use rand::Rng;
 use std::time::Duration;
 
 criterion_group!(benches, criterion_benchmark);
@@ -40,7 +41,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     benchmark_grids(c, &inputs, "recalculate_bounds", |b, grid| {
         let mut grid = grid.clone();
-        b.iter(|| grid.sheets_mut()[0].recalculate_bounds());
+        b.iter(|| grid.first_sheet_mut().recalculate_bounds());
     });
 
     benchmark_grids(c, &inputs, "copy_paste_10_x_10", |b, grid| {
@@ -195,7 +196,13 @@ fn criterion_benchmark(c: &mut Criterion) {
             max: Pos { x: 10, y: 10 },
         };
         // add some data
-        gc.populate_with_random_floats(sheet_id, &small_selection);
+        let sheet = gc.try_sheet_mut(sheet_id).unwrap();
+        let mut rng = rand::thread_rng();
+        for y in 0..10 {
+            for x in 0..10 {
+                sheet.set_cell_value(Pos { x, y }, CellValue::Number(rng.gen::<u32>().into()));
+            }
+        }
 
         let expand_to = Rect {
             min: Pos { x: 0, y: 0 },

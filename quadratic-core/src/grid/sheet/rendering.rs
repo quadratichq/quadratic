@@ -358,7 +358,7 @@ mod tests {
     fn test_has_render_cells() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+        let sheet = gc.sheet_mut(sheet_id);
 
         let rect = Rect {
             min: Pos { x: 0, y: 0 },
@@ -404,7 +404,7 @@ mod tests {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
 
-        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+        let sheet = gc.sheet_mut(sheet_id);
         let _ = sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
         let _ = sheet.set_formatting_value::<Bold>(Pos { x: 1, y: 2 }, Some(true));
         let _ =

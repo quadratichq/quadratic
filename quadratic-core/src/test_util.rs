@@ -11,6 +11,7 @@ use tabled::{
 };
 
 /// Run an assertion that a cell value is equal to the given value
+#[cfg(test)]
 pub fn assert_cell_value(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -18,7 +19,7 @@ pub fn assert_cell_value(
     y: i64,
     value: &str,
 ) {
-    let sheet = grid_controller.grid().sheet_from_id(sheet_id);
+    let sheet = grid_controller.sheet(sheet_id);
     let cell_value = sheet
         .get_cell_value(Pos { x, y })
         .unwrap_or(CellValue::Blank);
@@ -36,6 +37,7 @@ pub fn assert_cell_value(
 }
 
 /// Run an assertion that cell values in a given row are equal to the given value
+#[cfg(test)]
 pub fn assert_cell_value_row(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -53,6 +55,7 @@ pub fn assert_cell_value_row(
     }
 }
 
+#[cfg(test)]
 pub fn assert_cell_format_bold_row(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -72,6 +75,7 @@ pub fn assert_cell_format_bold_row(
     }
 }
 
+#[cfg(test)]
 pub fn assert_cell_format_bold(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -79,7 +83,7 @@ pub fn assert_cell_format_bold(
     y: i64,
     expect_bold: bool,
 ) {
-    let sheet = grid_controller.grid().sheet_from_id(sheet_id);
+    let sheet = grid_controller.sheet(sheet_id);
     let has_bold = sheet.get_formatting_value::<Bold>(Pos { x, y }).is_some();
     assert!(
         has_bold == expect_bold,
@@ -92,6 +96,7 @@ pub fn assert_cell_format_bold(
 }
 
 // TODO(ddimaria): refactor all format assertions into a generic function
+#[cfg(test)]
 pub fn assert_cell_format_cell_fill_color_row(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -111,6 +116,7 @@ pub fn assert_cell_format_cell_fill_color_row(
     }
 }
 
+#[cfg(test)]
 pub fn assert_cell_format_fill_color(
     grid_controller: &GridController,
     sheet_id: SheetId,
@@ -118,7 +124,7 @@ pub fn assert_cell_format_fill_color(
     y: i64,
     expect_fill_color: &str,
 ) {
-    let sheet = grid_controller.grid().sheet_from_id(sheet_id);
+    let sheet = grid_controller.sheet(sheet_id);
     let fill_color = sheet.get_formatting_value::<FillColor>(Pos { x, y });
     assert!(
         fill_color == Some(expect_fill_color.to_string()),
@@ -132,7 +138,10 @@ pub fn assert_cell_format_fill_color(
 
 /// Util to print a simple grid to assist in TDD
 pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: Rect) {
-    let sheet = grid_controller.grid().sheet_from_id(sheet_id);
+    let Some(sheet) = grid_controller.try_sheet(sheet_id) else {
+        println!("Sheet not found");
+        return;
+    };
     let mut vals = vec![];
     let mut builder = Builder::default();
     let columns = (range.x_range())

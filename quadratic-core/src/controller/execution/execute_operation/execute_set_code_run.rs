@@ -75,7 +75,7 @@ impl GridController {
         sheet_rect: &SheetRect,
     ) {
         let sheet_id = sheet_rect.sheet_id;
-        let Some(sheet) = self.grid.try_sheet_from_id(sheet_id) else {
+        let Some(sheet) = self.grid.try_sheet(sheet_id) else {
             // sheet may have been deleted
             return;
         };

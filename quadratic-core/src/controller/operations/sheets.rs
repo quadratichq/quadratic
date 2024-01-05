@@ -40,24 +40,24 @@ impl GridController {
         vec![Operation::DeleteSheet { sheet_id }]
     }
 
+    // todo: make sure this is fully tested
     pub fn move_sheet_operations(
         &mut self,
         sheet_id: SheetId,
         to_before: Option<SheetId>,
     ) -> Vec<Operation> {
-        // treat to_before as None if to_before's sheet no longer exists
-        let sheet_no_longer_exists = !self.grid.sheet_has_id(to_before);
-        let order = match (to_before, sheet_no_longer_exists) {
-            (None, true) => {
-                let last_order = self.grid.sheets().last().map(|last| last.order.clone());
-                key_between(&last_order, &None).unwrap()
-            }
-            (Some(to_before), false) => {
-                let after_sheet = self.grid.sheet_from_id(to_before);
-                let before = self.grid.previous_sheet_order(after_sheet.id);
-                key_between(&before, &Some(after_sheet.order.clone())).unwrap()
-            }
-            _ => unreachable!("to_before should be None or Some"),
+        let to_before = if let Some(sheet_id) = to_before {
+            self.grid.try_sheet(sheet_id)
+        } else {
+            None
+        };
+
+        let order = if let Some(to_before) = to_before {
+            let before = self.grid.previous_sheet_order(to_before.id);
+            key_between(&before, &Some(to_before.order.clone())).unwrap()
+        } else {
+            let last_order = self.grid.sheets().last().map(|last| last.order.clone());
+            key_between(&last_order, &None).unwrap()
         };
 
         vec![Operation::ReorderSheet {
@@ -67,8 +67,11 @@ impl GridController {
     }
 
     pub fn duplicate_sheet_operations(&mut self, sheet_id: SheetId) -> Vec<Operation> {
-        let source = self.grid.sheet_from_id(sheet_id);
-        let mut new_sheet = self.sheet(sheet_id).clone();
+        let Some(source) = self.try_sheet(sheet_id) else {
+            // sheet no longer exists
+            return vec![];
+        };
+        let mut new_sheet = source.clone();
         new_sheet.id = SheetId::new();
         new_sheet.name = format!("{} Copy", new_sheet.name);
         let right = self.grid.next_sheet(sheet_id);

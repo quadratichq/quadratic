@@ -98,7 +98,7 @@ mod test {
             None,
         );
 
-        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+        let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(
             sheet.get_cell_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(11.into()))
@@ -145,7 +145,7 @@ mod test {
             None,
         );
 
-        let sheet = gc.grid().try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(11.into()))

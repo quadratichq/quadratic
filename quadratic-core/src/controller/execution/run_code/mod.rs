@@ -207,7 +207,24 @@ impl GridController {
         js_code_result: JsCodeResult,
         start: SheetPos,
     ) -> CodeRun {
-        let sheet = self.grid_mut().sheet_mut_from_id(start.sheet_id);
+        let Some(sheet) = self.try_sheet_mut(start.sheet_id) else {
+            // todo: this is probably not the best place to handle this
+            // sheet may have been deleted before the async operation completed
+            return CodeRun {
+                formatted_code_string: None,
+                result: CodeRunResult::Err(RunError {
+                    span: None,
+                    msg: RunErrorMsg::PythonError(
+                        "Sheet was deleted before the async operation completed".into(),
+                    ),
+                }),
+                std_out: None,
+                std_err: None,
+                spill_error: false,
+                last_modified: Utc::now(),
+                cells_accessed: transaction.cells_accessed.clone(),
+            };
+        };
         let result = if js_code_result.success() {
             let result = if let Some(array_output) = js_code_result.array_output() {
                 let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);

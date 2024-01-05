@@ -34,15 +34,16 @@ impl GridController {
                 )),
             });
             // only change decimal places if decimals have not been set
-            let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
-            if sheet
-                .get_formatting_value::<NumericDecimals>(sheet_pos.into())
-                .is_none()
-            {
-                ops.push(Operation::SetCellFormats {
-                    sheet_rect,
-                    attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
-                });
+            if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
+                if sheet
+                    .get_formatting_value::<NumericDecimals>(sheet_pos.into())
+                    .is_none()
+                {
+                    ops.push(Operation::SetCellFormats {
+                        sheet_rect,
+                        attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
+                    });
+                }
             }
             CellValue::Number(number)
         } else if let Ok(bd) = BigDecimal::from_str(value) {

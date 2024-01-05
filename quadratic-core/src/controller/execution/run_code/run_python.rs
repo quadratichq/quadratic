@@ -101,7 +101,7 @@ mod tests {
         ))
         .ok();
 
-        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         let pos = sheet_pos.into();
         let code_cell = sheet.get_cell_value(pos).unwrap();
         match code_cell {
@@ -140,7 +140,7 @@ mod tests {
             .unwrap();
         gc.python_not_loaded(&mut transaction, sheet_pos);
 
-        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         let cells = sheet.get_render_cells(crate::Rect::single_pos(Pos { x: 0, y: 0 }));
         let cell = cells.get(0);
         assert_eq!(cell.unwrap().value, " ERROR".to_string());

@@ -93,7 +93,7 @@ mod tests {
             None,
         );
 
-        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(0)))
@@ -109,7 +109,7 @@ mod tests {
             None,
         );
 
-        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(1)))
@@ -129,7 +129,7 @@ mod tests {
             "test".to_string(),
             None,
         );
-        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_cell_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("test".to_string()))

@@ -25,7 +25,7 @@ impl GridController {
 
         // if sheet_name is None, use the sheet_id from the pos
         let sheet = if let Some(sheet_name) = get_cells.sheet_name() {
-            if let Some(sheet) = self.try_sheet_from_name(sheet_name) {
+            if let Some(sheet) = self.try_sheet_from_name(sheet_name.clone()) {
                 sheet
             } else {
                 // unable to find sheet by name, generate error

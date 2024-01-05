@@ -166,12 +166,12 @@ mod tests {
         }
         .into();
 
-        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert!(!sheet.code_runs[0].spill_error);
 
         gc.check_spills(&mut transaction, &sheet_rect);
 
-        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert!(sheet.code_runs[0].spill_error);
     }
 
@@ -200,12 +200,12 @@ mod tests {
         // manually set a cell value and see if spill is changed
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(3.into()));
 
-        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert!(!sheet.code_runs[0].spill_error);
 
         gc.check_all_spills(&mut transaction, sheet_id, 0);
 
-        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert!(sheet.code_runs[0].spill_error);
     }
 }
