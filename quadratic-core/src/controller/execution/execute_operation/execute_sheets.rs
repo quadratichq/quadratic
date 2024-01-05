@@ -89,8 +89,8 @@ impl GridController {
                 // sheet may have been deleted
                 return;
             };
-            sheet.order = order.clone();
             let original_order = sheet.order.clone();
+            sheet.order = order.clone();
             self.grid.move_sheet(target, order.clone());
             transaction.summary.sheet_list_modified = true;
 
@@ -229,17 +229,26 @@ mod tests {
     fn test_sheet_reorder() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
+
+        // Sheet 1, Sheet 2
         gc.add_sheet(None);
         assert_eq!(gc.grid.sheets().len(), 2);
         let sheet_id2 = gc.sheet_ids()[1];
+        assert_eq!(gc.grid.sheets()[0].id, sheet_id);
+        assert_eq!(gc.grid.sheets()[1].id, sheet_id2);
+
+        // Sheet 2, Sheet 1
         let summary = gc.move_sheet(sheet_id, None, None);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id2);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id);
         assert!(summary.save);
         assert!(summary.sheet_list_modified);
+
+        // Sheet 1, Sheet 2
         gc.undo(None);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id2);
+
         assert!(summary.save);
         assert!(summary.sheet_list_modified);
         let summary = gc.move_sheet(sheet_id2, Some(sheet_id), None);

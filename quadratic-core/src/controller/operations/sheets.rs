@@ -40,7 +40,6 @@ impl GridController {
         vec![Operation::DeleteSheet { sheet_id }]
     }
 
-    // todo: make sure this is fully tested
     pub fn move_sheet_operations(
         &mut self,
         sheet_id: SheetId,
@@ -79,5 +78,56 @@ impl GridController {
         new_sheet.order = key_between(&Some(source.order.clone()), &right_order).unwrap();
 
         vec![Operation::AddSheet { sheet: new_sheet }]
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_move_sheet_operation() {
+        let mut gc = GridController::new();
+        gc.add_sheet(None);
+        gc.add_sheet(None);
+
+        // 1, 2, 3
+        let sheet_ids = gc.sheet_ids();
+
+        let ops = gc.move_sheet_operations(sheet_ids[0], Some(sheet_ids[1]));
+        assert_eq!(ops.len(), 1);
+        if let Operation::ReorderSheet { target, order } = &ops[0] {
+            assert_eq!(target, &sheet_ids[0]);
+            let key = key_between(
+                &Some(gc.sheet_index(0).order.clone()),
+                &Some(gc.sheet_index(1).order.clone()),
+            )
+            .unwrap();
+            assert_eq!(order, &key);
+        } else {
+            panic!("wrong operation type");
+        }
+
+        // 2, 1, 3
+        let ops = gc.move_sheet_operations(sheet_ids[2], Some(sheet_ids[0]));
+        assert_eq!(ops.len(), 1);
+        if let Operation::ReorderSheet { target, order } = &ops[0] {
+            assert_eq!(target, &sheet_ids[2]);
+            let key = key_between(&None, &Some(gc.sheet_index(0).order.clone())).unwrap();
+            assert_eq!(order, &key);
+        } else {
+            panic!("wrong operation type");
+        }
+
+        // 1, 3, 2
+        let ops = gc.move_sheet_operations(sheet_ids[1], None);
+        assert_eq!(ops.len(), 1);
+        if let Operation::ReorderSheet { target, order } = &ops[0] {
+            assert_eq!(target, &sheet_ids[1]);
+            let key = key_between(&Some(gc.sheet_index(2).order.clone()), &None).unwrap();
+            assert_eq!(order, &key);
+        } else {
+            panic!("wrong operation type");
+        }
     }
 }

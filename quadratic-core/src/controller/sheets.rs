@@ -37,6 +37,11 @@ impl GridController {
     }
 
     #[cfg(test)]
+    pub fn sheet_index(&self, index: usize) -> &Sheet {
+        &self.grid.sheets()[index]
+    }
+
+    #[cfg(test)]
     pub fn sheet_mut(&mut self, sheet_id: SheetId) -> &mut Sheet {
         self.try_sheet_mut(sheet_id).unwrap()
     }
