@@ -12,9 +12,10 @@ fn convert_column_values(
     from.into_iter()
         .map(|(k, v)| {
             let value = match &v.content.values[0] {
-                v1_4::ColumnValue { type_field, value } => match type_field.as_str() {
-                    "Text" => v1_5::CellValue::Text(value.clone()),
-                    "Number" => v1_5::CellValue::Number(value.clone()),
+                v1_4::ColumnValue { type_field, value } => match type_field.to_lowercase().as_str()
+                {
+                    "text" => v1_5::CellValue::Text(value.clone()),
+                    "number" => v1_5::CellValue::Number(value.clone()),
                     _ => panic!("Unknown type_field: {}", type_field),
                 },
             };
@@ -302,14 +303,13 @@ fn upgrade_borders(sheet: &v1_4::Sheet) -> v1_5::Borders {
 }
 
 fn upgrade_sheet(sheet: &v1_4::Sheet) -> v1_5::Sheet {
-    let columns = upgrade_columns(sheet);
     v1_5::Sheet {
         id: v1_5::Id::from(sheet.id.id.clone()),
         name: sheet.name.clone(),
         color: sheet.color.clone(),
         order: sheet.order.clone(),
         offsets: sheet.offsets.clone(),
-        columns,
+        columns: upgrade_columns(sheet),
         borders: upgrade_borders(sheet),
         code_runs: upgrade_code_runs(sheet),
     }

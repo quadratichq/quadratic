@@ -150,8 +150,8 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
             set_column_format_string(&mut col.fill_color, &column.fill_color);
             set_column_format_render_size(&mut col.render_size, &column.render_size);
 
-            for (_, value) in column.values.iter() {
-                match value {
+            for (y, value) in column.values.iter() {
+                let cell_value = match value {
                     current::CellValue::Blank => CellValue::Blank,
                     current::CellValue::Text(text) => CellValue::Text(text.to_owned()),
                     current::CellValue::Number(number) => {
@@ -176,6 +176,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
                         CellValue::Error(Box::new((*error).clone().into()))
                     }
                 };
+                col.values.set(*y, Some(cell_value));
             }
 
             Ok((*x, col))

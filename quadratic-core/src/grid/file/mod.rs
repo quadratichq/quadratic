@@ -88,7 +88,7 @@ mod tests {
         include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_python.grid");
     const V1_3_TEXT_ONLY_CODE_CELL_FILE: &str =
         include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_python_text_only.grid");
-    const V1_3_SINGLE_FORMULS_CODE_CELL_FILE: &str =
+    const V1_3_SINGLE_FORMULAS_CODE_CELL_FILE: &str =
         include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_single_formula.grid");
     const V1_3_NPM_DOWNLOADS_FILE: &str =
         include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_fill_color.grid");
@@ -123,13 +123,13 @@ mod tests {
 
     #[test]
     fn process_a_v1_3_single_formula_file() {
-        let mut imported = import(V1_3_SINGLE_FORMULS_CODE_CELL_FILE).unwrap();
+        let mut imported = import(V1_3_SINGLE_FORMULAS_CODE_CELL_FILE).unwrap();
         assert!(imported.sheets[0]
             .code_runs
             .get(&Pos { x: 0, y: 2 })
             .is_some());
         let cell_value = imported.sheets[0]
-            .get_cell_value(Pos { x: 0, y: 2 })
+            .get_cell_value_only(Pos { x: 0, y: 2 })
             .unwrap();
 
         match cell_value {
