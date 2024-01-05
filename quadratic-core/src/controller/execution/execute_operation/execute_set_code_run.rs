@@ -87,13 +87,14 @@ impl GridController {
                 // only delete code runs that are within the sheet_rect
                 if rect.contains(*pos) {
                     // only delete when there's not another code cell in the same position (this maintains the original output until a run completes)
-                    if sheet
-                        .get_cell_value_only(*pos)
-                        .is_some_and(|cell_value| !matches!(cell_value, CellValue::Code(_)))
-                    {
-                        Some(pos.clone())
+                    if let Some(value) = sheet.get_cell_value_only(*pos) {
+                        if matches!(value, CellValue::Code(_)) {
+                            None
+                        } else {
+                            Some(pos.clone())
+                        }
                     } else {
-                        None
+                        Some(pos.clone())
                     }
                 } else {
                     None
