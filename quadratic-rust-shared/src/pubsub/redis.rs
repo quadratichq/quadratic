@@ -70,7 +70,7 @@ impl super::PubSub for RedisConnection {
     }
 
     /// Acknowledge that a message was processed
-    async fn ack(&mut self, _channel: &str, _keys: Vec<&str>) -> Result<()> {
+    async fn ack(&mut self, _channel: &str, _group: &str, _keys: Vec<&str>) -> Result<()> {
         Ok(())
     }
 

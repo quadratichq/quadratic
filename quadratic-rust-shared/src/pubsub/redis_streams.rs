@@ -99,7 +99,13 @@ impl super::PubSub for RedisConnection {
     }
 
     /// Acknowledge that a message was processed
-    async fn ack(&mut self, channel: &str, keys: Vec<&str>) -> Result<()> {
+    async fn ack(&mut self, channel: &str, group: &str, keys: Vec<&str>) -> Result<()> {
+        if keys.len() == 0 {
+            return Err(SharedError::PubSub(
+                "Error acking messages for channel {channel}: keys must be greater than 0".into(),
+            ));
+        }
+
         let ids = to_keys(keys);
 
         self.multiplex
@@ -108,6 +114,13 @@ impl super::PubSub for RedisConnection {
         Ok(())
     }
 
+    /// Get messages from a channel.  Specify the keys to get messages for,
+    /// or None to get all new messages.
+    ///
+    /// After receiving messages, they enter a pending queue in Redis.
+    ///
+    /// Once messages are processed, they must be acknowledged with `ack` to
+    /// remove them from the pending queue.
     async fn messages(
         &mut self,
         channel: &str,
@@ -233,9 +246,7 @@ pub mod tests {
         println!("pending: {:?}", pending);
 
         // acknowledge
-        if ids.len() > 0 {
-            connection.ack(&channel, ids.clone()).await.unwrap();
-        }
+        connection.ack(&channel, group, ids.clone()).await.unwrap();
 
         let pending = connection
             .multiplex
