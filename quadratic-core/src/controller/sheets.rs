@@ -90,8 +90,8 @@ mod test {
         let sheet_id_2 = gc.sheet_ids()[1];
         gc.try_sheet_mut(sheet_id_2).unwrap().name = "Sheet 2 modified".to_string();
 
-        let sheet_id = SheetId::new();
-        assert_eq!(gc.try_sheet_mut(sheet_id), None);
+        let new_sheet_id = SheetId::new();
+        assert_eq!(gc.try_sheet_mut(new_sheet_id), None);
 
         assert_eq!(gc.sheet(sheet_id).name, "Sheet 1 modified");
         assert_eq!(gc.sheet(sheet_id_2).name, "Sheet 2 modified");
@@ -117,16 +117,18 @@ mod test {
     #[test]
     fn test_try_sheet_mut_from_name() {
         let mut gc = super::GridController::new();
+        gc.add_sheet(None);
+
         gc.try_sheet_mut_from_name("Sheet 1".to_string())
             .unwrap()
             .name = "Sheet 1 modified".to_string();
 
-        gc.add_sheet(None);
         gc.try_sheet_mut_from_name("Sheet 2".to_string())
             .unwrap()
             .name = "Sheet 2 modified".to_string();
 
-        assert_eq!(gc.sheet(SheetId::new()).name, "Sheet 1 modified");
-        assert_eq!(gc.sheet(SheetId::new()).name, "Sheet 2 modified");
+        let sheet_ids = gc.sheet_ids();
+        assert_eq!(gc.sheet(sheet_ids[0]).name, "Sheet 1 modified");
+        assert_eq!(gc.sheet(sheet_ids[1]).name, "Sheet 2 modified");
     }
 }

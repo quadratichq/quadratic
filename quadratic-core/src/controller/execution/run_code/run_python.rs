@@ -146,7 +146,7 @@ mod tests {
         let cell = cells.get(0);
         assert_eq!(cell.unwrap().value, " ERROR".to_string());
         let cell_value = sheet.get_cell_value(Pos { x: 0, y: 0 });
-        assert_eq!(cell_value, Some(CellValue::Blank));
+        assert_eq!(cell_value, None);
     }
 
     #[test]

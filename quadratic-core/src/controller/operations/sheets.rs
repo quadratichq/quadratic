@@ -4,6 +4,7 @@ use lexicon_fractional_index::key_between;
 use crate::{
     controller::GridController,
     grid::{Sheet, SheetId},
+    util,
 };
 
 use super::operation::Operation;
@@ -21,16 +22,19 @@ impl GridController {
         vec![Operation::SetSheetColor { sheet_id, color }]
     }
 
-    pub fn add_sheet_operations(&mut self) -> Vec<Operation> {
+    fn get_next_sheet_name(&self) -> String {
         let sheet_names = &self
             .grid
             .sheets()
             .iter()
             .map(|s| s.name.as_str())
             .collect_vec();
+        util::unused_name("Sheet", sheet_names)
+    }
 
+    pub fn add_sheet_operations(&mut self) -> Vec<Operation> {
         let id = SheetId::new();
-        let name = crate::util::unused_name("Sheet", sheet_names);
+        let name = self.get_next_sheet_name();
         let order = self.grid.end_order();
         let sheet = Sheet::new(id, name, order);
         vec![Operation::AddSheet { sheet }]
@@ -129,5 +133,15 @@ mod test {
         } else {
             panic!("wrong operation type");
         }
+    }
+
+    #[test]
+    fn test_get_sheet_next_name() {
+        let mut gc = GridController::new();
+        assert_eq!(gc.get_next_sheet_name(), "Sheet 2");
+        gc.add_sheet(None);
+        assert_eq!(gc.get_next_sheet_name(), "Sheet 3");
+        gc.sheet_mut(gc.sheet_ids()[1]).name = "Sheet 2 modified".to_string();
+        assert_eq!(gc.get_next_sheet_name(), "Sheet 2");
     }
 }
