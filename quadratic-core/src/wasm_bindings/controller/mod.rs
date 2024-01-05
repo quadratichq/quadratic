@@ -142,10 +142,8 @@ impl GridController {
         &mut self,
         transactions: String,
     ) -> Result<JsValue, JsValue> {
-        dbgjs!("1");
         let transactions: Vec<TransactionServer> = serde_json::from_str(&transactions)
             .expect("Invalid transactions received in receiveMultiplayerTransactions");
-        dbgjs!("2");
         Ok(serde_wasm_bindgen::to_value(
             &self.received_transactions(&transactions[..]),
         )?)

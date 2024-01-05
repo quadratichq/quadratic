@@ -58,17 +58,16 @@ impl GridController {
                                 values: old_values,
                             },
                         );
-
-                        // prepare summary
-                        transaction
-                            .sheets_with_dirty_bounds
-                            .insert(sheet_rect.sheet_id);
-                        transaction.summary.generate_thumbnail |=
-                            self.thumbnail_dirty_sheet_rect(&sheet_rect);
-                        transaction
-                            .summary
-                            .add_cell_sheets_modified_rect(&sheet_rect);
                     }
+                    // prepare summary
+                    transaction
+                        .sheets_with_dirty_bounds
+                        .insert(sheet_rect.sheet_id);
+                    transaction.summary.generate_thumbnail |=
+                        self.thumbnail_dirty_sheet_rect(&sheet_rect);
+                    transaction
+                        .summary
+                        .add_cell_sheets_modified_rect(&sheet_rect);
                 }
             }
         }
@@ -180,5 +179,25 @@ mod test {
         gc.set_cell_value(sheet_pos, "".to_string(), None);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.get_cell_value(sheet_pos.into()), None);
+    }
+
+    #[test]
+    fn test_set_cell_values_undo() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+        let summary = gc.set_cell_value(sheet_pos, "1".to_string(), None);
+        assert_eq!(
+            gc.sheet(sheet_id).get_cell_value(sheet_pos.into()),
+            Some(CellValue::Number(BigDecimal::from(1)))
+        );
+        assert_eq!(summary.cell_sheets_modified.len(), 1);
+        let summary = gc.undo(None);
+        assert_eq!(summary.cell_sheets_modified.len(), 1);
+        assert_eq!(gc.sheet(sheet_id).get_cell_value(sheet_pos.into()), None);
     }
 }
