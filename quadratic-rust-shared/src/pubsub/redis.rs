@@ -76,9 +76,10 @@ impl super::PubSub for RedisConnection {
 
     async fn messages(
         &mut self,
-        channel: &str,
-        group: &str,
-        max_messages: usize,
+        _channel: &str,
+        _group: &str,
+        _keys: Option<Vec<&str>>,
+        _max_messages: usize,
     ) -> Result<Vec<(String, String)>> {
         Ok(vec![])
     }

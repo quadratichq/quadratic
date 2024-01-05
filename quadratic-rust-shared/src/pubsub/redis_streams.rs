@@ -50,6 +50,10 @@ fn to_key(key: &str) -> String {
     format!("{key}-0")
 }
 
+fn to_keys(keys: Vec<&str>) -> Vec<String> {
+    keys.iter().map(|key| to_key(key)).collect::<Vec<_>>()
+}
+
 fn from_key(key: &str) -> String {
     key.split_once("-").unwrap().0.to_string()
 }
@@ -96,7 +100,7 @@ impl super::PubSub for RedisConnection {
 
     /// Acknowledge that a message was processed
     async fn ack(&mut self, channel: &str, keys: Vec<&str>) -> Result<()> {
-        let ids = keys.iter().map(|key| to_key(key)).collect::<Vec<_>>();
+        let ids = to_keys(keys);
 
         self.multiplex
             .xack::<&str, &str, String, u128>(channel, channel, &ids)
@@ -108,15 +112,22 @@ impl super::PubSub for RedisConnection {
         &mut self,
         channel: &str,
         group: &str,
+        keys: Option<Vec<&str>>,
         max_messages: usize,
     ) -> Result<Vec<(String, String)>> {
+        // convert keys to ids, default to all new messages (">") if None
+        let ids = keys.map_or_else(|| vec![">".to_string()], |keys| to_keys(keys));
+
+        // redis requires the number of keys to match the number of ids
+        let keys = vec![channel; ids.len()];
+
         let opts = StreamReadOptions::default()
             .count(max_messages)
             .group(&group, &channel);
 
         let raw_messages: Result<StreamReadReply> = self
             .multiplex
-            .xread_options(&[&channel], &["0"], &opts)
+            .xread_options(&keys, &ids, &opts)
             .await
             .map_err(|e| {
                 SharedError::PubSub(format!("Error reading messages for channel {channel}: {e}"))
@@ -198,7 +209,10 @@ pub mod tests {
         //         .await
         // );
 
-        let results = connection.messages(&channel, group, 10).await.unwrap();
+        let results = connection
+            .messages(&channel, group, None, 10)
+            .await
+            .unwrap();
         println!("results: {:?}", results);
 
         results.iter().enumerate().for_each(|(key, (id, value))| {
@@ -218,10 +232,10 @@ pub mod tests {
 
         println!("pending: {:?}", pending);
 
-        // // acknowledge
-        // if ids.len() > 0 {
-        //     connection.ack(&channel, ids).await.unwrap();
-        // }
+        // acknowledge
+        if ids.len() > 0 {
+            connection.ack(&channel, ids.clone()).await.unwrap();
+        }
 
         let pending = connection
             .multiplex
@@ -231,7 +245,13 @@ pub mod tests {
 
         println!("pending: {:?}", pending);
 
-        let results = connection.messages(&channel, group, 10).await.unwrap();
-        println!("results: {:?}", results);
+        if ids.len() > 0 {
+            let results = connection
+                .messages(&channel, group, Some(ids), 10)
+                .await
+                .unwrap();
+
+            println!("results: {:?}", results);
+        }
     }
 }

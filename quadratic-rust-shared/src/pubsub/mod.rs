@@ -23,6 +23,7 @@ pub trait PubSub {
         &mut self,
         channel: &str,
         group: &str,
+        keys: Option<Vec<&str>>,
         max_messages: usize,
     ) -> Result<Vec<(String, String)>>;
     // async fn poll<T>(&mut self) -> impl Stream;
