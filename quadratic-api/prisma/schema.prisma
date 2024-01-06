@@ -113,16 +113,15 @@ model TeamInvite {
 }
 
 enum FileRole {
-    // TODO: OWNER isn't really used ATM on here because it's defined on the File itself
-    OWNER
+    // There is only ever 1 owner per file which is stored on the file itself
     EDITOR
     VIEWER
 }
 
 model UserFileRole {
     id          Int      @id @default(autoincrement())
-    userId      Int
-    fileId      Int
+    userId      Int      @map("user_id")
+    fileId      Int      @map("file_id")
     user        User     @relation(fields: [userId], references: [id])
     file        File     @relation(fields: [fileId], references: [id])
     role        FileRole

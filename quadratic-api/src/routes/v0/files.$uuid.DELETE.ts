@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { ApiTypes, PermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import { ApiTypes, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/fileMiddleware';
@@ -7,7 +7,7 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
-const { FILE_DELETE } = PermissionSchema.enum;
+const { FILE_DELETE } = FilePermissionSchema.enum;
 
 export default [
   validateRequestSchema(
@@ -28,11 +28,11 @@ async function handler(req: RequestWithUser, res: Response) {
     user: { id: userId },
   } = req;
   const {
-    user: { permissions },
+    userMakingRequest: { filePermissions },
   } = await getFile({ uuid, userId });
 
   // Can they delete?
-  if (!permissions.includes(FILE_DELETE)) {
+  if (!filePermissions.includes(FILE_DELETE)) {
     return res.status(403).json({ error: { message: 'Permission denied' } });
   }
 

@@ -134,7 +134,8 @@ export const Component = () => {
   const loaderData = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
   const {
     team,
-    user: { permissions },
+    users,
+    userMakingRequest: { teamPermissions },
   } = loaderData;
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const fetcher = useFetcher();
@@ -182,10 +183,10 @@ export const Component = () => {
                   />
                 </label>
               </DropdownMenuItem>
-              {permissions.includes('TEAM_BILLING_EDIT') && (
+              {teamPermissions.includes('TEAM_BILLING_EDIT') && (
                 <DropdownMenuItem onClick={() => {}}>Edit billing</DropdownMenuItem>
               )}
-              {permissions.includes('TEAM_DELETE') && [
+              {teamPermissions.includes('TEAM_DELETE') && [
                 <DropdownMenuSeparator key={1} />,
                 <DropdownMenuItem
                   key={2}
@@ -207,7 +208,7 @@ export const Component = () => {
                 setShareSearchParamValue('');
               }}
             >
-              <PersonIcon className={`mr-1`} /> {team.users.length}
+              <PersonIcon className={`mr-1`} /> {users.length}
             </Button>
             <Button variant="outline">Import file</Button>
             <Button>Create file</Button>

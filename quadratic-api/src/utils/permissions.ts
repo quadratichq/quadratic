@@ -1,27 +1,29 @@
 import {
-  Permission,
-  PermissionSchema,
+  FilePermission,
+  FilePermissionSchema,
   PublicLinkAccess,
-  UserRoleFile,
-  UserRoleFileSchema,
-  UserRoleTeam,
-  UserRoleTeamSchema,
+  TeamPermission,
+  TeamPermissionSchema,
+  UserFileRole,
+  UserFileRoleSchema,
+  UserTeamRole,
+  UserTeamRoleSchema,
 } from 'quadratic-shared/typesAndSchemas';
-const { TEAM_EDIT, TEAM_DELETE, TEAM_BILLING_EDIT, TEAM_VIEW, FILE_VIEW, FILE_EDIT, FILE_DELETE } =
-  PermissionSchema.enum;
+const { TEAM_EDIT, TEAM_DELETE, TEAM_BILLING_EDIT, TEAM_VIEW } = TeamPermissionSchema.enum;
+const { FILE_VIEW, FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
 
 /**
  * Derive a user’s permissions for a team (and its contents) based on their role.
  */
-export const getTeamPermissions = (role: UserRoleTeam) => {
-  const { OWNER, EDITOR, VIEWER } = UserRoleFileSchema.enum;
+export const getTeamPermissions = (role: UserTeamRole): TeamPermission[] => {
+  const { OWNER, EDITOR, VIEWER } = UserTeamRoleSchema.enum;
   switch (role) {
     case OWNER:
-      return [TEAM_EDIT, TEAM_VIEW, TEAM_DELETE, TEAM_BILLING_EDIT, FILE_VIEW, FILE_EDIT, FILE_DELETE];
+      return [TEAM_EDIT, TEAM_VIEW, TEAM_DELETE, TEAM_BILLING_EDIT];
     case EDITOR:
-      return [TEAM_EDIT, TEAM_VIEW, FILE_VIEW, FILE_EDIT, FILE_DELETE];
+      return [TEAM_EDIT, TEAM_VIEW];
     case VIEWER:
-      return [TEAM_VIEW, FILE_VIEW];
+      return [TEAM_VIEW];
     default:
       console.error('Invalid role. This could should never be reached.');
       return [];
@@ -35,37 +37,42 @@ export const getTeamPermissions = (role: UserRoleTeam) => {
  * The idea is you can get access from different places. Highest assigned access wins.
  */
 export const getFilePermissions = ({
-  roleFile,
-  roleTeam,
+  fileRole,
+  teamRole,
   publicLinkAccess,
+  isFileOwner,
 }: {
-  roleFile?: UserRoleFile;
-  roleTeam?: UserRoleTeam;
+  fileRole?: UserFileRole;
+  teamRole?: UserTeamRole;
   publicLinkAccess: PublicLinkAccess;
+  isFileOwner: boolean;
 }) => {
-  const permissions = new Set<Permission>();
+  const permissions = new Set<FilePermission>();
 
-  // Assign access based on public link access
+  // Based on whether you are the owner of the file (and it's not in a team)
+  if (isFileOwner) {
+    permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE);
+  }
+
+  // Based on public link access
   if (publicLinkAccess === 'EDIT') {
     permissions.add(FILE_EDIT).add(FILE_VIEW);
   } else if (publicLinkAccess === 'READONLY') {
     permissions.add(FILE_VIEW);
   }
 
-  // Assign access based on user's explicitly-assigned role in the file's team (if applicable)
-  if (roleTeam) {
-    if (roleTeam === UserRoleTeamSchema.enum.OWNER || roleTeam === UserRoleTeamSchema.enum.EDITOR) {
+  // Based on user's explicitly-assigned role in the file's team (if applicable)
+  if (teamRole) {
+    if (teamRole === UserTeamRoleSchema.enum.OWNER || teamRole === UserTeamRoleSchema.enum.EDITOR) {
       permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE);
-    } else {
+    } else if (teamRole === UserTeamRoleSchema.enum.VIEWER) {
       permissions.add(FILE_VIEW);
     }
   }
 
-  // Assign access based on user's explicitly-assigned role on the file (if applicable)
-  if (roleFile) {
-    if (roleFile === UserRoleFileSchema.enum.OWNER) {
-      permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE);
-    } else if (roleFile === UserRoleFileSchema.enum.EDITOR) {
+  // Based on user's explicitly-assigned role in the file (if applicable)
+  if (fileRole) {
+    if (fileRole === UserFileRoleSchema.enum.EDITOR) {
       permissions.add(FILE_EDIT).add(FILE_VIEW);
     } else {
       permissions.add(FILE_VIEW);
@@ -79,8 +86,8 @@ export const getFilePermissions = ({
 };
 
 export const firstRoleIsHigherThanSecond = (
-  firstRole: UserRoleTeam | UserRoleFile | undefined,
-  secondRole: UserRoleTeam | UserRoleFile | undefined
+  firstRole: UserTeamRole | UserFileRole | undefined,
+  secondRole: UserTeamRole | UserFileRole | undefined
 ) => {
   switch (secondRole) {
     case 'OWNER':

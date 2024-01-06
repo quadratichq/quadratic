@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { ApiTypes, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/fileMiddleware';
@@ -7,6 +7,7 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
+const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export default [
   validateRequestSchema(
@@ -28,10 +29,10 @@ async function handler(req: Request, res: Response) {
     user: { id: userId },
   } = req as RequestWithUser;
   const inviteToDelete = Number(inviteId);
-  const { user: userMakingRequest } = await getFile({ uuid, userId });
+  const { userMakingRequest } = await getFile({ uuid, userId });
 
   // User making the request can edit
-  if (!userMakingRequest.permissions.includes('FILE_EDIT')) {
+  if (!userMakingRequest.filePermissions.includes(FILE_EDIT)) {
     return res.status(403).json({
       error: { message: 'You do not have permission to delete this invite.' },
     });

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ApiSchemas, ApiTypes, UserRoleFileSchema } from 'quadratic-shared/typesAndSchemas';
+import { ApiSchemas, ApiTypes, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/fileMiddleware';
@@ -8,7 +8,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
 import { firstRoleIsHigherThanSecond } from '../../utils/permissions';
-const { OWNER } = UserRoleFileSchema.enum;
+const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export default [
   validateRequestSchema(
@@ -33,32 +33,23 @@ async function handler(req: Request, res: Response) {
   const { role: newRole } = req.body as ApiTypes['/v0/files/:uuid/users/:userId.PATCH.request'];
   const {
     file: { id: fileId },
-    user: fileUser,
+    userMakingRequest,
   } = await getFile({ uuid, userId: userMakingChangeId });
   const userBeingChangedId = Number(userId);
 
   // User is trying to update their own role
   if (userBeingChangedId === userMakingChangeId) {
-    const currentRole = fileUser.role;
+    const currentRole = userMakingRequest.fileRole;
 
     // To the same role
     if (newRole === currentRole) {
       return res.status(200).json({ role: newRole });
     }
 
+    // TODO: is this still necessary?
     // Upgrading role
-    if (newRole === OWNER) {
-      return res.status(403).json({ error: { message: 'Cannot upgrade to owner of the file' } });
-    }
     if (firstRoleIsHigherThanSecond(newRole, currentRole)) {
       return res.status(403).json({ error: { message: 'Cannot upgrade to a role higher than your own' } });
-    }
-
-    // Downgrading role
-    if (currentRole === OWNER) {
-      return res.status(403).json({
-        error: { message: 'User cannot downgrade themselves as an owner.' },
-      });
     }
 
     // Make the change!
@@ -81,13 +72,10 @@ async function handler(req: Request, res: Response) {
 
   // First, can they do this?
 
-  if (!fileUser.permissions.includes('FILE_EDIT')) {
+  if (!userMakingRequest.filePermissions.includes(FILE_EDIT)) {
     return res.status(403).json({
       error: { message: 'You do not have permission to edit others' },
     });
-  }
-  if (newRole === OWNER) {
-    return res.status(403).json({ error: { message: "You cannot change another user's role to owner" } });
   }
 
   // Lookup the user that's being changed and their current role
@@ -103,20 +91,10 @@ async function handler(req: Request, res: Response) {
     return res.status(404).json({ error: { message: `The user you’re trying to change could not found.` } });
   }
   const userBeingChangedRole = userBeingChanged.role;
-  const userMakingChangeRole = fileUser.role;
 
   // Changing to the same role?
   if (newRole === userBeingChangedRole) {
     return res.status(200).json({ role: newRole });
-  }
-
-  // Upgrading to a role higher than their own? Not so fast!
-  if (firstRoleIsHigherThanSecond(userBeingChangedRole, userMakingChangeRole)) {
-    return res.status(403).json({
-      error: {
-        message: 'You cannot upgrade another user’s role to one higher than your own',
-      },
-    });
   }
 
   // Downgrading is ok!

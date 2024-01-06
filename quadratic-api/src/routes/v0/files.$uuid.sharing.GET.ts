@@ -26,7 +26,7 @@ async function handler(req: Request, res: Response) {
     params: { uuid },
   } = req as RequestWithUser;
 
-  const { file, user } = await getFile({ uuid, userId });
+  const { file, userMakingRequest } = await getFile({ uuid, userId });
   const { publicLinkAccess } = file;
 
   // TOOD: who can view the email addresses of other users?
@@ -37,14 +37,17 @@ async function handler(req: Request, res: Response) {
 
   const data: ApiTypes['/v0/files/:uuid/sharing.GET.response'] = {
     file: {
-      users: [],
-      invites: [],
       publicLinkAccess,
     },
-    user: {
+    users: [],
+    invites: [],
+    userMakingRequest: {
+      // If they're on this route, there's always a user
       id: userId,
-      permissions: user.permissions,
-      role: user.role,
+      filePermissions: userMakingRequest.filePermissions,
+      // TODO: conditionally add
+      fileRole: userMakingRequest.fileRole,
+      teamRole: userMakingRequest.teamRole,
     },
     // team: {},
   };

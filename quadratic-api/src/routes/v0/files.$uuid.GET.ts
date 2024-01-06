@@ -8,7 +8,6 @@ import { userOptionalMiddleware } from '../../middleware/user';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithOptionalUser } from '../../types/Request';
-import { getFilePermissions } from '../../utils/permissions';
 
 export default [
   validateRequestSchema(
@@ -26,11 +25,10 @@ export default [
 async function handler(req: RequestWithOptionalUser, res: Response) {
   const {
     file: { id, thumbnail, uuid, name, createdDate, updatedDate, publicLinkAccess },
-    user,
+    userMakingRequest,
   } = await getFile({ uuid: req.params.uuid, userId: req.user?.id });
 
   const thumbnailSignedUrl = thumbnail ? await generatePresignedUrl(thumbnail) : null;
-  const permissions = getFilePermissions({ roleFile: 'OWNER', roleTeam: 'OWNER', publicLinkAccess });
 
   // Get the most recent checkpoint for the file
   const checkpoint = await dbClient.fileCheckpoint.findFirst({
@@ -58,11 +56,7 @@ async function handler(req: RequestWithOptionalUser, res: Response) {
       lastCheckpointDataUrl,
       thumbnail: thumbnailSignedUrl,
     },
-    user: {
-      id: user?.id,
-      permissions,
-      role: user?.role,
-    },
+    userMakingRequest,
   };
   return res.status(200).json(data);
 }

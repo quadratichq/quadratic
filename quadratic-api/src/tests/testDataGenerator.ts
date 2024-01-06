@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { UserRoleTeam } from 'quadratic-shared/typesAndSchemas';
+import { UserTeamRole } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../dbClient';
 
 export async function createTeam({
@@ -12,7 +12,7 @@ export async function createTeam({
     picture?: string | null;
     createdDate?: Date;
   };
-  userRoles: UserRoleTeam[];
+  userRoles: UserTeamRole[];
 }) {
   const team = await dbClient.team.create({
     data: {

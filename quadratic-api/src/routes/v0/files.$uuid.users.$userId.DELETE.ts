@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ApiTypes, PermissionSchema, UserRoleFileSchema } from 'quadratic-shared/typesAndSchemas';
+import { ApiTypes, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/fileMiddleware';
@@ -7,8 +7,7 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
-const { FILE_EDIT } = PermissionSchema.enum;
-const { OWNER, EDITOR } = UserRoleFileSchema.enum;
+const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export default [
   validateRequestSchema(
@@ -33,13 +32,13 @@ async function handler(req: Request, res: Response) {
   const userToDeleteId = Number(userIdString);
   const {
     file: { id: fileId },
-    user: userMakingRequest,
+    userMakingRequest,
   } = await getFile({ uuid: req.params.uuid, userId: userMakingRequestId });
 
   // User deleting themselves?
   if (userMakingRequestId === userToDeleteId) {
     // Can't delete yourself as the owner
-    if (userMakingRequest.role === 'OWNER') {
+    if (userMakingRequest.isFileOwner) {
       return res.status(403).json({
         error: { message: 'You cannot delete yourself as the file owner.' },
       });
@@ -61,7 +60,7 @@ async function handler(req: Request, res: Response) {
   // From here on, it's a user trying to delete another user.
 
   // Do they have permission to edit?
-  if (!userMakingRequest.permissions.includes(FILE_EDIT)) {
+  if (!userMakingRequest.filePermissions.includes(FILE_EDIT)) {
     return res.status(403).json({
       error: { message: 'User does not have permission to edit this team' },
     });
@@ -80,15 +79,6 @@ async function handler(req: Request, res: Response) {
   // Ensure they exist
   if (!userToDelete) {
     return res.status(404).json({ error: { message: 'User not found' } });
-  }
-
-  // And make sure they have a role equal to or lower than the deleter
-  if (userMakingRequest.role === EDITOR && userToDelete.role === OWNER) {
-    return res.status(403).json({
-      error: {
-        message: 'User does not have the ability to delete an owner',
-      },
-    });
   }
 
   // Ok, now we're good to delete the user

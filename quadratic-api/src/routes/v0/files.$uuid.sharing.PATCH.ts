@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
+import { ApiSchemas, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/fileMiddleware';
@@ -8,6 +8,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export default [
   validateRequestSchema(
@@ -30,11 +31,11 @@ async function handler(req: Request, res: Response) {
     params: { uuid },
   } = req as RequestWithUser;
   const {
-    user: { permissions },
+    userMakingRequest: { filePermissions },
   } = await getFile({ uuid, userId });
 
   // Make sure they can edit the file sharing permissions
-  if (!permissions.includes('FILE_EDIT')) {
+  if (!filePermissions.includes(FILE_EDIT)) {
     throw new ApiError(403, 'Permission denied');
   }
 

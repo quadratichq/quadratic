@@ -1,4 +1,4 @@
-import { PermissionSchema, Permissions } from 'quadratic-shared/typesAndSchemas';
+import { FilePermission, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { NavigateFunction, SubmitFunction } from 'react-router-dom';
 import { SetterOrUpdater } from 'recoil';
 import { apiClient } from './api/apiClient';
@@ -10,11 +10,11 @@ import { CreateActionRequest } from './dashboard/FilesCreateRoute';
 import { grid } from './grid/controller/Grid';
 import { downloadFile, downloadQuadraticFile } from './helpers/downloadFileInBrowser';
 import { FileContextType } from './ui/components/FileProvider';
-const { FILE_EDIT, FILE_DELETE } = PermissionSchema.enum;
+const { FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
 
 export type GenericAction = {
   label: string;
-  isAvailable?: (permissions: Permissions, isAuthenticated?: boolean) => boolean;
+  isAvailable?: (permissions: FilePermission[], isAuthenticated?: boolean) => boolean;
   run?: (args: any) => void;
 
   // Future shortcuts
@@ -49,8 +49,8 @@ export type GenericAction = {
 
 // TODO: create generic hasPermission(permission, permissionToCheck) function
 
-export const hasPerissionToEditFile = (permissions: Permissions) => permissions.includes(FILE_EDIT);
-const isLoggedIn = (permissions: Permissions, isAuthenticated: boolean) => isAuthenticated;
+export const hasPerissionToEditFile = (permissions: FilePermission[]) => permissions.includes(FILE_EDIT);
+const isLoggedIn = (permissions: FilePermission[], isAuthenticated: boolean) => isAuthenticated;
 
 export const createNewFileAction = {
   label: 'New',
@@ -89,7 +89,7 @@ export const downloadFileAction = {
 
 export const deleteFile = {
   label: 'Delete',
-  isAvailable: (permissions: Permissions) => permissions.includes(FILE_DELETE),
+  isAvailable: (permissions: FilePermission[]) => permissions.includes(FILE_DELETE),
   // TODO enhancement: handle this async operation in the UI similar to /files/create
   async run({ uuid, addGlobalSnackbar }: { uuid: string; addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'] }) {
     if (window.confirm('Please confirm you want to delete this file.')) {

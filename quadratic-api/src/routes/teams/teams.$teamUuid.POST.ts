@@ -48,7 +48,7 @@ router.post(
       data: body,
     });
 
-    const data: ApiTypes['/v0/teams/:uuid.POST.response'] = { uuid, name: newTeam.name };
+    const data: ApiTypes['/v0/teams/:uuid.POST.response'] = { name: newTeam.name };
     if (newTeam.picture) data.picture = newTeam.picture;
     return res.status(200).json(data);
   }

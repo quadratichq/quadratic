@@ -90,17 +90,16 @@ router.get(
         uuid: team.uuid,
         name: team.name,
         ...(team.picture ? { picture: team.picture } : {}),
-        // TODO we could put this in /sharing and just return the userCount
-        users,
-        invites: dbInvites.map(({ email, role, id }) => ({ email, role, id })),
-
-        // files: [],
       },
-      user: {
+      userMakingRequest: {
         id: userId,
-        role: teamUser.role,
-        permissions: teamUser.permissions,
+        teamRole: teamUser.role,
+        teamPermissions: teamUser.permissions,
       },
+      // TODO we could put this in /sharing and just return the userCount
+      users,
+      invites: dbInvites.map(({ email, role, id }) => ({ email, role, id })),
+      // files: [],
     };
 
     return res.status(200).json(response);

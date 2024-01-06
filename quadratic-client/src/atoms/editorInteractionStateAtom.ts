@@ -1,6 +1,6 @@
 import { Coordinate } from '@/gridGL/types/size';
 import { CellType } from '@/schemas';
-import { Permissions } from 'quadratic-shared/typesAndSchemas';
+import { FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { atom } from 'recoil';
 
 export interface EditorInteractionState {
@@ -10,7 +10,7 @@ export interface EditorInteractionState {
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
   showShareFileMenu: boolean;
-  permissions: Permissions;
+  permissions: FilePermission[];
   uuid: string;
   selectedCell: Coordinate;
   selectedCellSheet: string;

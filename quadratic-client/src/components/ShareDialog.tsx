@@ -20,12 +20,12 @@ import { Avatar } from '@mui/material';
 import { CaretDownIcon, EnvelopeClosedIcon, GlobeIcon, LockClosedIcon } from '@radix-ui/react-icons';
 import {
   ApiTypes,
-  Permissions,
   PublicLinkAccess,
-  UserRoleFile,
-  UserRoleFileSchema,
-  UserRoleTeam,
-  UserRoleTeamSchema,
+  TeamPermission,
+  UserFileRole,
+  UserFileRoleSchema,
+  UserTeamRole,
+  UserTeamRoleSchema,
   emailSchema,
 } from 'quadratic-shared/typesAndSchemas';
 import React, { Children, FormEvent, useEffect, useRef, useState } from 'react';
@@ -33,7 +33,7 @@ import { useFetcher, useFetchers, useParams, useSubmit } from 'react-router-dom'
 import { AvatarWithLetters } from './AvatarWithLetters';
 import { Type } from './Type';
 
-function getRoleLabel(role: UserRoleTeam | UserRoleFile | 'DELETE') {
+function getRoleLabel(role: UserTeamRole | UserFileRole | 'DELETE') {
   // prettier-ignore
   return (
     role === 'OWNER' ? 'Owner' :
@@ -65,8 +65,10 @@ export function ShareTeamDialog({
   onClose: () => void;
 }) {
   const {
-    user: loggedInUser,
-    team: { users, invites, name, uuid },
+    userMakingRequest,
+    users,
+    invites,
+    team: { name, uuid },
   } = data;
   const action = `/teams/${uuid}`;
   const numberOfOwners = users.filter((user) => user.role === 'OWNER').length;
@@ -74,9 +76,9 @@ export function ShareTeamDialog({
   // Sort the users how we want
   const sortedUsers = users.toSorted((a, b) => {
     // Move the logged in user to the front
-    if (a.id === loggedInUser.id && b.id !== loggedInUser.id) return -1;
+    if (a.id === userMakingRequest.id && b.id !== userMakingRequest.id) return -1;
     // Keep the logged in user at the front
-    if (a.id !== loggedInUser.id && b.id === loggedInUser.id) return 1;
+    if (a.id !== userMakingRequest.id && b.id === userMakingRequest.id) return 1;
     // Leave the order as is for others
     return 0;
   });
@@ -106,12 +108,12 @@ export function ShareTeamDialog({
 
   return (
     <ShareDialog title={`Share ${name}`} description="Invite people to collaborate in this team" onClose={onClose}>
-      {loggedInUser.permissions.includes('TEAM_EDIT') && (
+      {userMakingRequest.teamPermissions.includes('TEAM_EDIT') && (
         <InviteForm
           action={action}
           intent="create-team-invite"
           disallowedEmails={exisitingTeamEmails}
-          roles={[UserRoleTeamSchema.enum.EDITOR, UserRoleTeamSchema.enum.VIEWER]}
+          roles={[UserTeamRoleSchema.enum.EDITOR, UserTeamRoleSchema.enum.VIEWER]}
         />
       )}
 
@@ -120,13 +122,13 @@ export function ShareTeamDialog({
         const canDelete = isLoggedInUser
           ? canDeleteLoggedInUserInTeam({ role: user.role, numberOfOwners })
           : canDeleteUserInTeam({
-              permissions: loggedInUser.permissions,
-              loggedInUserRole: loggedInUser.role,
+              permissions: userMakingRequest.teamPermissions,
+              loggedInUserRole: userMakingRequest.teamRole,
               userRole: user.role,
             });
         const roles = isLoggedInUser
           ? getAvailableRolesForLoggedInUserInTeam({ role: user.role, numberOfOwners })
-          : getAvailableRolesForUserInTeam({ loggedInUserRole: loggedInUser.role, userRole: user.role });
+          : getAvailableRolesForUserInTeam({ loggedInUserRole: userMakingRequest.teamRole, userRole: user.role });
         return (
           <ManageUser
             key={user.id}
@@ -139,10 +141,10 @@ export function ShareTeamDialog({
         );
       })}
       {invites.map((invite) => (
-        <ManageInvite key={invite.id} invite={invite} loggedInUser={loggedInUser} />
+        <ManageInvite key={invite.id} invite={invite} loggedInUser={userMakingRequest} />
       ))}
       {pendingInvites.map((invite, i) => (
-        <ManageInvite key={i} invite={invite} loggedInUser={loggedInUser} disabled={true} />
+        <ManageInvite key={i} invite={invite} loggedInUser={userMakingRequest} disabled={true} />
       ))}
     </ShareDialog>
   );
@@ -159,7 +161,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
         // @ts-expect-error
         intent=""
         disallowedEmails={[]}
-        roles={[UserRoleFileSchema.enum.EDITOR, UserRoleFileSchema.enum.VIEWER]}
+        roles={[UserFileRoleSchema.enum.EDITOR, UserFileRoleSchema.enum.VIEWER]}
       />
       <PublicLink uuid={uuid} publicLinkAccess={publicLinkAccess} />
     </>
@@ -220,7 +222,7 @@ export function InviteForm({
   disallowedEmails: string[];
   intent: TeamAction['request.create-team-invite']['intent'];
   action: string;
-  roles: (UserRoleTeam | UserRoleFile)[];
+  roles: (UserTeamRole | UserFileRole)[];
 }) {
   const [error, setError] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -328,8 +330,8 @@ function ManageUser({
   action: string;
   canDelete: boolean;
   isLoggedInUser: boolean;
-  user: ApiTypes['/v0/teams/:uuid.GET.response']['team']['users'][0];
-  roles: (UserRoleTeam | UserRoleFile)[];
+  user: ApiTypes['/v0/teams/:uuid.GET.response']['users'][0];
+  roles: (UserTeamRole | UserFileRole)[];
 }) {
   const fetcher = useFetcher();
 
@@ -432,7 +434,8 @@ function ManageInvite({
   loggedInUser,
   disabled,
 }: {
-  invite: ApiTypes['/v0/teams/:uuid.GET.response']['team']['invites'][0];
+  invite: ApiTypes['/v0/teams/:uuid.GET.response']['invites'][0];
+  // @ts-expect-error TODO: fix
   loggedInUser: ApiTypes['/v0/teams/:uuid.GET.response']['user'];
   disabled?: boolean;
 }) {
@@ -591,7 +594,7 @@ function ListItem({ children }: { children: React.ReactNode }) {
 }
 
 // TODO: write tests for these
-function canDeleteLoggedInUserInTeam({ role, numberOfOwners }: { role: UserRoleTeam; numberOfOwners: number }) {
+function canDeleteLoggedInUserInTeam({ role, numberOfOwners }: { role: UserTeamRole; numberOfOwners: number }) {
   if (role === 'OWNER') {
     if (numberOfOwners < 2) {
       return false;
@@ -605,12 +608,12 @@ function canDeleteUserInTeam({
   loggedInUserRole,
   userRole,
 }: {
-  permissions: Permissions;
-  loggedInUserRole: UserRoleTeam;
-  userRole: UserRoleTeam;
+  permissions: TeamPermission[];
+  loggedInUserRole: UserTeamRole;
+  userRole: UserTeamRole;
 }) {
   // TODO: can a user who is an editor remove a member who has a higher role than themselves?
-  const { OWNER, EDITOR } = UserRoleTeamSchema.enum;
+  const { OWNER, EDITOR } = UserTeamRoleSchema.enum;
   if (permissions.includes('TEAM_EDIT')) {
     if (loggedInUserRole === EDITOR && userRole === OWNER) {
       return false;
@@ -625,10 +628,10 @@ function getAvailableRolesForLoggedInUserInTeam({
   role,
   numberOfOwners,
 }: {
-  role: UserRoleTeam;
+  role: UserTeamRole;
   numberOfOwners: number;
 }) {
-  const { OWNER, EDITOR, VIEWER } = UserRoleTeamSchema.enum;
+  const { OWNER, EDITOR, VIEWER } = UserTeamRoleSchema.enum;
 
   if (role === OWNER) {
     if (numberOfOwners > 1) {
@@ -649,10 +652,10 @@ function getAvailableRolesForUserInTeam({
   loggedInUserRole,
   userRole,
 }: {
-  loggedInUserRole: UserRoleTeam;
-  userRole: UserRoleTeam;
+  loggedInUserRole: UserTeamRole;
+  userRole: UserTeamRole;
 }) {
-  const { OWNER, EDITOR, VIEWER } = UserRoleTeamSchema.enum;
+  const { OWNER, EDITOR, VIEWER } = UserTeamRoleSchema.enum;
 
   if (loggedInUserRole === OWNER) {
     return [OWNER, EDITOR, VIEWER];

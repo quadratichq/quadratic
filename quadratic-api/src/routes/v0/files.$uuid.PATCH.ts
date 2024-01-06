@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { ApiSchemas, ApiTypes, PermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import { ApiSchemas, ApiTypes, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/fileMiddleware';
@@ -7,7 +7,7 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
-const { FILE_EDIT } = PermissionSchema.enum;
+const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export default [
   validateRequestSchema(
@@ -30,10 +30,10 @@ async function handler(req: RequestWithUser, res: Response) {
     user: { id: userId },
   } = req;
 
-  const { user } = await getFile({ uuid: req.params.uuid, userId });
+  const { userMakingRequest } = await getFile({ uuid: req.params.uuid, userId });
 
   // Can they edit this file?
-  if (!user.permissions.includes(FILE_EDIT)) {
+  if (!userMakingRequest.filePermissions.includes(FILE_EDIT)) {
     return res.status(403).json({ error: { message: 'Permission denied' } });
   }
 

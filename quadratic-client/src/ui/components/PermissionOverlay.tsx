@@ -1,6 +1,6 @@
 import { useRootRouteLoaderData } from '@/router';
 import { Alert, Button, Paper, Stack, useTheme } from '@mui/material';
-import { PermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import React, { useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { Link, useSubmit } from 'react-router-dom';
@@ -9,7 +9,7 @@ import { duplicateFileAction } from '../../actions';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { ROUTES } from '../../constants/routes';
 import { useFileContext } from './FileProvider';
-const { FILE_EDIT } = PermissionSchema.enum;
+const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export function PermissionOverlay() {
   const [isOpen, setIsOpen] = useState<boolean>(true);

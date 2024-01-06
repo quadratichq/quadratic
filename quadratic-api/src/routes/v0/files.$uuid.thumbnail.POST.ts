@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import multer, { StorageEngine } from 'multer';
 import multerS3 from 'multer-s3';
-import { ApiTypes, PermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import { ApiTypes, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import { s3Client } from '../../aws/s3';
 import dbClient from '../../dbClient';
@@ -10,7 +10,7 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithFile, RequestWithUser } from '../../types/Request';
-const { FILE_EDIT } = PermissionSchema.enum;
+const { FILE_EDIT } = FilePermissionSchema.enum;
 
 const uploadThumbnailToS3: multer.Multer = multer({
   storage: multerS3({
@@ -32,10 +32,10 @@ async function handler(req: RequestWithUser & RequestWithFile, res: Response) {
     user: { id: userId },
   } = req;
   const {
-    user: { permissions },
+    userMakingRequest: { filePermissions },
   } = await getFile({ uuid, userId });
 
-  if (!permissions.includes(FILE_EDIT)) {
+  if (!filePermissions.includes(FILE_EDIT)) {
     return res.status(403).json({ error: { message: 'Permission denied' } });
   }
 

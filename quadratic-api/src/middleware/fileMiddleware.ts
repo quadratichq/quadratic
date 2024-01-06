@@ -1,5 +1,4 @@
 import { NextFunction, Response } from 'express';
-import { UserRoleFileSchema } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../dbClient';
 import { Request } from '../types/Request';
 import { ApiError } from '../utils/ApiError';
@@ -67,27 +66,20 @@ export const getFile = async ({ uuid, userId }: { uuid: string; userId?: number 
     throw new ApiError(400, 'File has been deleted');
   }
 
-  let roleTeam = undefined;
-  if (file.team && file.team.UserTeamRole[0]) {
-    roleTeam = file.team.UserTeamRole[0].role;
-  }
-
-  let roleFile = undefined;
-  if (file.ownerUserId === userId) {
-    roleFile = UserRoleFileSchema.enum.OWNER;
-  } else if (file.UserFileRole[0]) {
-    roleFile = file.UserFileRole[0].role;
-  }
-
-  const permissions = getFilePermissions({
-    roleFile,
-    roleTeam,
+  const isFileOwner = !file.teamId && file.ownerUserId === userId;
+  const teamRole = file.team && file.team.UserTeamRole[0] ? file.team.UserTeamRole[0].role : undefined;
+  const fileRole = file.UserFileRole[0] ? file.UserFileRole[0].role : undefined;
+  const filePermissions = getFilePermissions({
+    fileRole,
+    teamRole,
     publicLinkAccess: file.publicLinkAccess,
+    isFileOwner,
   });
 
-  if (!permissions.includes('FILE_VIEW')) {
+  if (!filePermissions.includes('FILE_VIEW')) {
     throw new ApiError(403, 'Permission denied');
   }
 
-  return { file, user: { permissions, role: roleFile, id: userId } };
+  // TODO: clean up naming, probably use fileRole, teamRole, permissionFile, permissionTeam
+  return { file, userMakingRequest: { filePermissions, fileRole, teamRole, id: userId, isFileOwner } };
 };
