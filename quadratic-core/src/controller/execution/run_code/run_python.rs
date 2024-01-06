@@ -67,14 +67,16 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use bigdecimal::BigDecimal;
-
     use super::*;
     use crate::{
-        controller::transaction_types::{CellForArray, JsCodeResult, JsComputeGetCells},
+        controller::{
+            execution::run_code::get_cells::{GetCellResponse, GetCellsResponse},
+            transaction_types::{JsCodeResult, JsComputeGetCells},
+        },
         grid::js_types::JsRenderCell,
         ArraySize, CellValue, Pos, Rect,
     };
+    use bigdecimal::BigDecimal;
 
     #[test]
     fn test_run_python() {
@@ -228,8 +230,14 @@ mod tests {
         ));
         assert!(cells.is_ok());
         assert_eq!(
-            cells.unwrap().get_cells(),
-            &vec![CellForArray::new(0, 0, Some("9".to_string()))]
+            cells,
+            Ok(GetCellsResponse {
+                response: vec![GetCellResponse {
+                    x: 0,
+                    y: 0,
+                    value: "9".into()
+                }]
+            })
         );
 
         // mock the python calculation returning the result
@@ -327,8 +335,14 @@ mod tests {
             None,
         ));
         assert_eq!(
-            cells.unwrap().get_cells(),
-            &vec![CellForArray::new(0, 0, Some("10".to_string()))]
+            cells,
+            Ok(GetCellsResponse {
+                response: vec![GetCellResponse {
+                    x: 0,
+                    y: 0,
+                    value: "10".into()
+                }]
+            })
         );
         assert!(gc
             .calculation_complete(JsCodeResult::new_from_rust(

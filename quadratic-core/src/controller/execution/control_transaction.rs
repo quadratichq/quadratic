@@ -19,9 +19,6 @@ impl GridController {
         loop {
             if transaction.operations.is_empty() {
                 transaction.complete = true;
-                if transaction.has_async {
-                    self.finalize_transaction(transaction);
-                }
                 break;
             }
 
@@ -40,34 +37,40 @@ impl GridController {
     }
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
-    pub(super) fn finalize_transaction(&mut self, transaction: &mut PendingTransaction) {
+    pub(super) fn finalize_transaction(
+        &mut self,
+        transaction: &mut PendingTransaction,
+    ) -> TransactionSummary {
         self.recalculate_sheet_bounds(transaction);
-        match transaction.transaction_type {
-            TransactionType::User => {
-                let undo = transaction.to_undo_transaction();
-                self.undo_stack.push(undo.clone());
-                self.redo_stack.clear();
-                self.transactions
-                    .unsaved_transactions
-                    .push((transaction.to_forward_transaction(), undo));
+        if transaction.complete {
+            match transaction.transaction_type {
+                TransactionType::User => {
+                    let undo = transaction.to_undo_transaction();
+                    self.undo_stack.push(undo.clone());
+                    self.redo_stack.clear();
+                    self.transactions
+                        .unsaved_transactions
+                        .push((transaction.to_forward_transaction(), undo));
+                }
+                TransactionType::Undo => {
+                    let undo = transaction.to_undo_transaction();
+                    self.redo_stack.push(undo.clone());
+                    self.transactions
+                        .unsaved_transactions
+                        .push((transaction.to_forward_transaction(), undo));
+                }
+                TransactionType::Redo => {
+                    let undo = transaction.to_undo_transaction();
+                    self.undo_stack.push(undo.clone());
+                    self.transactions
+                        .unsaved_transactions
+                        .push((transaction.to_forward_transaction(), undo));
+                }
+                TransactionType::Multiplayer => (),
+                TransactionType::Unset => panic!("Expected a transaction type"),
             }
-            TransactionType::Undo => {
-                let undo = transaction.to_undo_transaction();
-                self.redo_stack.push(undo.clone());
-                self.transactions
-                    .unsaved_transactions
-                    .push((transaction.to_forward_transaction(), undo));
-            }
-            TransactionType::Redo => {
-                let undo = transaction.to_undo_transaction();
-                self.undo_stack.push(undo.clone());
-                self.transactions
-                    .unsaved_transactions
-                    .push((transaction.to_forward_transaction(), undo));
-            }
-            TransactionType::Multiplayer => (),
-            TransactionType::Unset => panic!("Expected a transaction type"),
         }
+        transaction.prepare_summary(transaction.complete)
     }
 
     pub fn start_user_transaction(
@@ -82,13 +85,7 @@ impl GridController {
             ..Default::default()
         };
         self.start_transaction(&mut transaction);
-
-        if transaction.complete {
-            self.finalize_transaction(&mut transaction);
-            transaction.prepare_summary(true)
-        } else {
-            transaction.prepare_summary(false)
-        }
+        self.finalize_transaction(&mut transaction)
     }
 
     pub fn start_undo_transaction(
@@ -100,20 +97,15 @@ impl GridController {
         let mut pending = transaction.to_pending_transaction(transaction_type, cursor);
         pending.id = Uuid::new_v4();
         self.start_transaction(&mut pending);
-        self.finalize_transaction(&mut pending);
-        pending.prepare_summary(true)
+        self.finalize_transaction(&mut pending)
     }
 
     /// Externally called when an async calculation completes
     pub fn calculation_complete(&mut self, result: JsCodeResult) -> Result<TransactionSummary> {
-        dbgjs!("1");
         let transaction_id = Uuid::parse_str(&result.transaction_id())?;
-        dbgjs!("2");
 
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
 
-        // we can remove the last forward_operation since it's the original SetCodeCell operation (used for rolling back while pending)
-        transaction.forward_operations.pop();
         if result.cancel_compute.unwrap_or(false) {
             self.handle_transactions(&mut transaction);
         }

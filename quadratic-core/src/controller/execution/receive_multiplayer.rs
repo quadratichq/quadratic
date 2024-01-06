@@ -29,8 +29,7 @@ impl GridController {
             ..Default::default()
         };
         self.client_apply_transaction(&mut transaction, sequence_num);
-        self.finalize_transaction(&mut transaction);
-        transaction.prepare_summary(false)
+        self.finalize_transaction(&mut transaction)
     }
 
     /// Rolls back unsaved transactions to apply earlier transactions received from the server.
@@ -246,8 +245,7 @@ impl GridController {
                 .extend(transaction.sheets_with_dirty_bounds);
         });
         self.reapply_unsaved_transactions(&mut results);
-        self.finalize_transaction(&mut results);
-        Ok(results.prepare_summary(false))
+        Ok(self.finalize_transaction(&mut results))
     }
 }
 

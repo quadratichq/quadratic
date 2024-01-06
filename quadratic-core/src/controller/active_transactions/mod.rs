@@ -73,4 +73,10 @@ impl ActiveTransactions {
     pub fn async_transactions(&self) -> &[PendingTransaction] {
         &self.async_transactions
     }
+
+    /// Returns the async_transactions for testing purposes
+    #[cfg(test)]
+    pub fn async_transactions_mut(&mut self) -> &mut Vec<PendingTransaction> {
+        &mut self.async_transactions
+    }
 }

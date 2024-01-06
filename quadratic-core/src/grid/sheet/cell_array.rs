@@ -1,25 +1,33 @@
 use anyhow::{anyhow, Result};
 
 use crate::{
-    controller::transaction_types::{CellForArray, CellsForArray},
+    controller::execution::run_code::get_cells::{GetCellResponse, GetCellsResponse},
     Array, CellValue, Pos, Rect,
 };
 
 use super::Sheet;
 
 impl Sheet {
-    pub fn cell_array(&self, rect: Rect) -> CellsForArray {
-        let mut array = vec![];
+    pub fn get_cells_response(&self, rect: Rect) -> GetCellsResponse {
+        let mut response = vec![];
         for y in rect.y_range() {
             for x in rect.x_range() {
                 if let Some(cell) = self.display_value(Pos { x, y }) {
-                    array.push(CellForArray::new(x, y, Some(cell.to_edit())));
+                    response.push(GetCellResponse {
+                        x,
+                        y,
+                        value: cell.to_edit(),
+                    });
                 } else {
-                    array.push(CellForArray::new(x, y, None));
+                    response.push(GetCellResponse {
+                        x,
+                        y,
+                        value: "".into(),
+                    });
                 }
             }
         }
-        CellsForArray::new(array, false)
+        GetCellsResponse { response }
     }
 
     /// In a given rect, collect all cell values into an array.
@@ -70,6 +78,7 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::{grid::Sheet, CellValue, Pos, Rect};
 
     #[test]
@@ -80,5 +89,42 @@ mod tests {
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
         assert!(sheet.has_cell_value_in_rect(&rect, None));
         assert!(!sheet.has_cell_value_in_rect(&rect, Some(Pos { x: 0, y: 0 })));
+    }
+
+    #[test]
+    fn test_get_cells_response() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
+        sheet.set_cell_value(Pos { x: 1, y: 0 }, CellValue::Number(2.into()));
+        sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(3.into()));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(4.into()));
+        let response = sheet.get_cells_response(Rect::from_numbers(0, 0, 2, 2));
+        assert_eq!(
+            response,
+            GetCellsResponse {
+                response: vec![
+                    GetCellResponse {
+                        x: 0,
+                        y: 0,
+                        value: "1".into(),
+                    },
+                    GetCellResponse {
+                        x: 1,
+                        y: 0,
+                        value: "2".into(),
+                    },
+                    GetCellResponse {
+                        x: 0,
+                        y: 1,
+                        value: "3".into(),
+                    },
+                    GetCellResponse {
+                        x: 1,
+                        y: 1,
+                        value: "4".into(),
+                    },
+                ],
+            }
+        );
     }
 }

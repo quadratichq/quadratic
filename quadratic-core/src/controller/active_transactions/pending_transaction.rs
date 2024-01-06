@@ -108,11 +108,13 @@ impl PendingTransaction {
     /// returns the TransactionSummary
     pub fn prepare_summary(&mut self, complete: bool) -> TransactionSummary {
         if complete {
-            self.summary.transaction_id = Some(self.id.to_string());
-            self.summary.operations = Some(
-                serde_json::to_string(&self.forward_operations)
-                    .expect("Failed to serialize forward operations"),
-            );
+            if self.is_user() || self.is_undo_redo() {
+                self.summary.transaction_id = Some(self.id.to_string());
+                self.summary.operations = Some(
+                    serde_json::to_string(&self.forward_operations)
+                        .expect("Failed to serialize forward operations"),
+                );
+            }
         }
         let mut summary = self.summary.clone();
         summary.save = complete;
@@ -124,7 +126,7 @@ impl PendingTransaction {
         matches!(self.transaction_type, TransactionType::User)
     }
 
-    pub fn is_undo(&self) -> bool {
+    pub fn is_undo_redo(&self) -> bool {
         matches!(self.transaction_type, TransactionType::Undo)
             || matches!(self.transaction_type, TransactionType::Redo)
     }

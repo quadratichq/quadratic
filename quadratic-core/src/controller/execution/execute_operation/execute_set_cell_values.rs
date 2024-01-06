@@ -35,7 +35,7 @@ impl GridController {
                         .map(|old_value| old_value.unwrap_or(CellValue::Blank))
                         .collect();
 
-                    if transaction.is_user() || transaction.is_undo() {
+                    if transaction.is_user() || transaction.is_undo_redo() {
                         transaction
                             .forward_operations
                             .push(Operation::SetCellValues { sheet_rect, values });
