@@ -122,6 +122,7 @@ export const CodeEditor = () => {
       } else {
         setEditorInteractionState((oldState) => ({
           ...oldState,
+          editorEscapePressed: false,
           showCodeEditor: false,
         }));
         pixiApp.highlightedCells.clear();
@@ -195,6 +196,9 @@ export const CodeEditor = () => {
 
   const afterDialog = () => {
     setShowSaveChangesAlert(false);
+    if (editorInteractionState.editorEscapePressed) {
+      closeEditor(true);
+    }
     const waitingForEditorClose = editorInteractionState.waitingForEditorClose;
     if (waitingForEditorClose) {
       setEditorInteractionState((oldState) => ({

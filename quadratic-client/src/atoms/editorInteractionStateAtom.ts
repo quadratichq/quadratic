@@ -14,6 +14,7 @@ export interface EditorInteractionState {
   selectedCell: Coordinate;
   selectedCellSheet: string;
   mode: CellType;
+  editorEscapePressed?: boolean;
   waitingForEditorClose?: {
     selectedCell: Coordinate;
     selectedCellSheet: string;
