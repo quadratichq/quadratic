@@ -125,21 +125,24 @@ export function keyboardCell(options: {
         setEditorInteractionState({
           ...editorInteractionState,
           showCellTypeMenu: false,
-          showCodeEditor: true,
-          selectedCell: { x: x, y: y },
-          selectedCellSheet: sheets.sheet.id,
-          mode,
+          waitingForEditorClose: {
+            selectedCell: { x: x, y: y },
+            selectedCellSheet: sheets.sheet.id,
+            mode,
+            showCellTypeMenu: false,
+          },
         });
       }
     } else {
       // Open cell type menu, close editor.
       setEditorInteractionState({
         ...editorInteractionState,
-        showCellTypeMenu: true,
-        showCodeEditor: false,
-        selectedCell: { x: x, y: y },
-        selectedCellSheet: sheets.sheet.id,
-        mode: 'PYTHON',
+        waitingForEditorClose: {
+          showCellTypeMenu: true,
+          selectedCell: { x: x, y: y },
+          selectedCellSheet: sheets.sheet.id,
+          mode: 'PYTHON',
+        },
       });
     }
     event.preventDefault();

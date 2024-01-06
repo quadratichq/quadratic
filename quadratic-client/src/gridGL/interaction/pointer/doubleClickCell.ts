@@ -23,6 +23,7 @@ export function doubleClickCell(options: {
           selectedCell: { x: column, y: row },
           selectedCellSheet: sheets.sheet.id,
           mode,
+          showCellTypeMenu: !mode,
         },
       });
     } else {

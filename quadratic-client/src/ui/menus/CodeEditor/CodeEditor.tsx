@@ -63,6 +63,8 @@ export const CodeEditor = () => {
             selectedCell: waitingForEditorClose.selectedCell,
             selectedCellSheet: waitingForEditorClose.selectedCellSheet,
             mode: waitingForEditorClose.mode,
+            showCodeEditor: true,
+            showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
             waitingForEditorClose: undefined,
           }));
         }
@@ -200,6 +202,8 @@ export const CodeEditor = () => {
         selectedCell: waitingForEditorClose.selectedCell,
         selectedCellSheet: waitingForEditorClose.selectedCellSheet,
         mode: waitingForEditorClose.mode,
+        showCodeEditor: !waitingForEditorClose.showCellTypeMenu,
+        showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
         waitingForEditorClose: undefined,
       }));
     } else {
