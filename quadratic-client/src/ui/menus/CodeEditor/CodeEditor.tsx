@@ -20,6 +20,7 @@ export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
   const { pythonState } = useRecoilValue(pythonStateAtom);
+
   // update code cell
   const [codeString, setCodeString] = useState('');
   const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
@@ -95,7 +96,7 @@ export const CodeEditor = () => {
 
   const closeEditor = useCallback(
     (skipSaveCheck: boolean) => {
-      if (!skipSaveCheck && editorContent !== codeString) {
+      if (!skipSaveCheck && unsaved) {
         setShowSaveChangesAlert(true);
       } else {
         setEditorInteractionState((oldState) => ({
@@ -106,7 +107,7 @@ export const CodeEditor = () => {
         focusGrid();
       }
     },
-    [codeString, editorContent, setEditorInteractionState]
+    [setEditorInteractionState, unsaved]
   );
 
   const saveAndRunCell = async () => {
