@@ -15,14 +15,28 @@ export function doubleClickCell(options: {
 
   if (!settings.setEditorInteractionState) return;
   if (mode) {
-    settings.setEditorInteractionState({
-      ...settings.editorInteractionState,
-      showCellTypeMenu: false,
-      showCodeEditor: true,
-      selectedCell: { x: column, y: row },
-      selectedCellSheet: sheets.sheet.id,
-      mode,
-    });
+    if (settings.editorInteractionState.showCodeEditor) {
+      settings.setEditorInteractionState({
+        ...settings.editorInteractionState,
+        showCellTypeMenu: false,
+        waitingForEditorClose: {
+          selectedCell: { x: column, y: row },
+          selectedCellSheet: sheets.sheet.id,
+          mode,
+        },
+      });
+    } else {
+      console.log('hi');
+      settings.setEditorInteractionState({
+        ...settings.editorInteractionState,
+        showCellTypeMenu: false,
+        showCodeEditor: true,
+        selectedCell: { x: column, y: row },
+        selectedCellSheet: sheets.sheet.id,
+        mode,
+        waitingForEditorClose: undefined,
+      });
+    }
   } else if (hasPermission) {
     settings.changeInput(true, cell);
   }

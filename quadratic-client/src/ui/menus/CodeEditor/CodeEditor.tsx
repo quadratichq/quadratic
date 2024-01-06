@@ -51,6 +51,25 @@ export const CodeEditor = () => {
     return editorContent !== codeString;
   }, [codeString, editorContent]);
 
+  useEffect(() => {
+    if (editorInteractionState.waitingForEditorClose) {
+      if (unsaved) {
+        setShowSaveChangesAlert(true);
+      } else {
+        const waitingForEditorClose = editorInteractionState.waitingForEditorClose;
+        if (waitingForEditorClose) {
+          setEditorInteractionState((oldState) => ({
+            ...oldState,
+            selectedCell: waitingForEditorClose.selectedCell,
+            selectedCellSheet: waitingForEditorClose.selectedCellSheet,
+            mode: waitingForEditorClose.mode,
+            waitingForEditorClose: undefined,
+          }));
+        }
+      }
+    }
+  }, [editorInteractionState.waitingForEditorClose, setEditorInteractionState, unsaved]);
+
   const updateCodeCell = useCallback(
     (updateEditorContent: boolean) => {
       const codeCell = grid.getCodeCell(
@@ -172,6 +191,22 @@ export const CodeEditor = () => {
     }
   };
 
+  const afterDialog = () => {
+    setShowSaveChangesAlert(false);
+    const waitingForEditorClose = editorInteractionState.waitingForEditorClose;
+    if (waitingForEditorClose) {
+      setEditorInteractionState((oldState) => ({
+        ...oldState,
+        selectedCell: waitingForEditorClose.selectedCell,
+        selectedCellSheet: waitingForEditorClose.selectedCellSheet,
+        mode: waitingForEditorClose.mode,
+        waitingForEditorClose: undefined,
+      }));
+    } else {
+      closeEditor(true);
+    }
+  };
+
   if (!showCodeEditor) {
     return null;
   }
@@ -200,10 +235,10 @@ export const CodeEditor = () => {
           }}
           onSave={() => {
             saveAndRunCell();
-            closeEditor(true);
+            afterDialog();
           }}
           onDiscard={() => {
-            closeEditor(true);
+            afterDialog();
           }}
         />
       )}
