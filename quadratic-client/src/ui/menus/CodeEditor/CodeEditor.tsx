@@ -51,11 +51,16 @@ export const CodeEditor = () => {
     return editorContent !== codeString;
   }, [codeString, editorContent]);
 
+  // handle someone trying to open a different code editor
   useEffect(() => {
     if (editorInteractionState.waitingForEditorClose) {
+      // if unsaved then show save dialog and wait for that to complete
       if (unsaved) {
         setShowSaveChangesAlert(true);
-      } else {
+      }
+
+      // otherwise either open the new editor or show the cell type menu (if type is not selected)
+      else {
         const waitingForEditorClose = editorInteractionState.waitingForEditorClose;
         if (waitingForEditorClose) {
           setEditorInteractionState((oldState) => ({
@@ -63,7 +68,7 @@ export const CodeEditor = () => {
             selectedCell: waitingForEditorClose.selectedCell,
             selectedCellSheet: waitingForEditorClose.selectedCellSheet,
             mode: waitingForEditorClose.mode,
-            showCodeEditor: true,
+            showCodeEditor: !waitingForEditorClose.showCellTypeMenu,
             showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
             waitingForEditorClose: undefined,
           }));
@@ -110,6 +115,13 @@ export const CodeEditor = () => {
   useEffect(() => {
     updateCodeCell(true);
   }, [updateCodeCell]);
+
+  // handle when escape is pressed when escape does not have focus
+  useEffect(() => {
+    if (editorInteractionState.editorEscapePressed) {
+      setShowSaveChangesAlert(true);
+    }
+  }, [editorInteractionState.editorEscapePressed]);
 
   useEffect(() => {
     mixpanel.track('[CodeEditor].opened', { type: editorMode });

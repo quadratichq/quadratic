@@ -18,6 +18,7 @@ export function doubleClickCell(options: {
     if (settings.editorInteractionState.showCodeEditor) {
       settings.setEditorInteractionState({
         ...settings.editorInteractionState,
+        editorEscapePressed: false,
         showCellTypeMenu: false,
         waitingForEditorClose: {
           selectedCell: { x: column, y: row },
@@ -27,7 +28,6 @@ export function doubleClickCell(options: {
         },
       });
     } else {
-      console.log('hi');
       settings.setEditorInteractionState({
         ...settings.editorInteractionState,
         showCellTypeMenu: false,
@@ -35,6 +35,7 @@ export function doubleClickCell(options: {
         selectedCell: { x: column, y: row },
         selectedCellSheet: sheets.sheet.id,
         mode,
+        editorEscapePressed: false,
         waitingForEditorClose: undefined,
       });
     }

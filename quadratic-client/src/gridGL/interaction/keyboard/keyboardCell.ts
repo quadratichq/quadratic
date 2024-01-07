@@ -121,17 +121,28 @@ export function keyboardCell(options: {
         const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;
         if (!mode) throw new Error(`Unhandled cell.language ${cell.language} in keyboardCell`);
 
-        // Open code editor, or move change editor if already open.
-        setEditorInteractionState({
-          ...editorInteractionState,
-          showCellTypeMenu: false,
-          waitingForEditorClose: {
+        if (editorInteractionState.showCodeEditor) {
+          // Open code editor, or move change editor if already open.
+          setEditorInteractionState({
+            ...editorInteractionState,
+            showCellTypeMenu: false,
+            waitingForEditorClose: {
+              selectedCell: { x: x, y: y },
+              selectedCellSheet: sheets.sheet.id,
+              mode,
+              showCellTypeMenu: false,
+            },
+          });
+        } else {
+          setEditorInteractionState({
+            ...editorInteractionState,
+            showCellTypeMenu: false,
             selectedCell: { x: x, y: y },
             selectedCellSheet: sheets.sheet.id,
             mode,
-            showCellTypeMenu: false,
-          },
-        });
+            showCodeEditor: true,
+          });
+        }
       }
     } else if (editorInteractionState.showCodeEditor) {
       // code editor is already open, so check it for save before closing
