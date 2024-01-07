@@ -49,6 +49,7 @@ fn main() {
         Pos,
         Rect,
         Span,
+        SheetPos,
     );
 
     if create_dir_all("../quadratic-client/src/quadratic-core").is_ok() {

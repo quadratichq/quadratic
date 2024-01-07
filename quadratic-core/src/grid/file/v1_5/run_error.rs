@@ -76,7 +76,6 @@ pub enum RunErrorMsg {
     IndexOutOfBounds,
     NoMatch,
     InvalidArgument,
-    PythonNotLoaded,
 }
 
 // todo: There's probably a better way to do the From/Into between the types.
@@ -170,7 +169,6 @@ impl RunError {
                 crate::RunErrorMsg::IndexOutOfBounds => RunErrorMsg::IndexOutOfBounds,
                 crate::RunErrorMsg::NoMatch => RunErrorMsg::NoMatch,
                 crate::RunErrorMsg::InvalidArgument => RunErrorMsg::InvalidArgument,
-                crate::RunErrorMsg::PythonNotLoaded => RunErrorMsg::PythonNotLoaded,
             },
         }
     }
@@ -268,7 +266,6 @@ impl From<RunError> for crate::RunError {
                 RunErrorMsg::IndexOutOfBounds => crate::RunErrorMsg::IndexOutOfBounds,
                 RunErrorMsg::NoMatch => crate::RunErrorMsg::NoMatch,
                 RunErrorMsg::InvalidArgument => crate::RunErrorMsg::InvalidArgument,
-                RunErrorMsg::PythonNotLoaded => crate::RunErrorMsg::PythonNotLoaded,
             },
         }
     }

@@ -1,3 +1,4 @@
+import { SheetPos } from '@/gridGL/types/size';
 import mixpanel from 'mixpanel-browser';
 import { grid, pointsToRect } from '../../grid/controller/Grid';
 import { JsCodeResult } from '../../quadratic-core/quadratic_core';
@@ -17,7 +18,8 @@ const stringOrNumber = (input: string | number | undefined): string => {
 
 interface PythonCode {
   transactionId: string;
-  python: string;
+  sheetPos: SheetPos;
+  code: string;
 }
 
 class PythonWebWorker {
@@ -115,8 +117,12 @@ class PythonWebWorker {
     };
   }
 
-  start(transactionId: string, python: string) {
-    this.executionStack.push({ transactionId, python });
+  getRunningCells(sheetId: string): SheetPos[] {
+    return this.executionStack.filter((cell) => cell.sheetPos.sheetId === sheetId).map((cell) => cell.sheetPos);
+  }
+
+  runPython(transactionId: string, x: number, y: number, sheetId: string, code: string) {
+    this.executionStack.push({ transactionId, sheetPos: { x, y, sheetId }, code });
     this.next(false);
   }
 
@@ -124,7 +130,10 @@ class PythonWebWorker {
     if (complete) {
       this.running = false;
     }
-    if (!this.worker || !this.loaded || this.running) return;
+    if (!this.worker || !this.loaded || this.running) {
+      window.dispatchEvent(new CustomEvent('python-change'));
+      return;
+    }
     if (this.executionStack.length) {
       const first = this.executionStack[0];
       if (first) {
@@ -132,11 +141,12 @@ class PythonWebWorker {
           this.running = true;
           window.dispatchEvent(new CustomEvent('python-computation-started'));
         }
-        this.worker.postMessage({ type: 'execute', python: first.python });
+        this.worker.postMessage({ type: 'execute', python: first.code });
       }
     } else if (complete) {
       window.dispatchEvent(new CustomEvent('python-computation-finished'));
     }
+    window.dispatchEvent(new CustomEvent('python-change'));
   }
 
   stop() {
@@ -183,11 +193,11 @@ export const pythonWebWorker = new PythonWebWorker();
 
 declare global {
   interface Window {
-    startPython: any;
+    runPython: any;
     getCellsPython: any;
   }
 }
 
 // need to bind to window because rustWorker.ts cannot include any TS imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
-window.startPython = pythonWebWorker.start.bind(pythonWebWorker);
+window.runPython = pythonWebWorker.runPython.bind(pythonWebWorker);
 window.getCellsPython = pythonWebWorker.getCells.bind(pythonWebWorker);

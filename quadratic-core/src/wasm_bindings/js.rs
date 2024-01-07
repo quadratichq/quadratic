@@ -16,7 +16,13 @@ extern "C" {
 
 #[wasm_bindgen(module = "/../quadratic-client/src/web-workers/rustWorker.ts")]
 extern "C" {
-    pub fn runPython(transactionId: String, code_string: String) -> JsValue;
+    pub fn runPython(
+        transactionId: String,
+        x: i32,
+        y: i32,
+        sheet_id: String,
+        code: String,
+    ) -> JsValue;
 }
 
 #[wasm_bindgen(module = "/../quadratic-client/src/web-workers/rustWorker.ts")]

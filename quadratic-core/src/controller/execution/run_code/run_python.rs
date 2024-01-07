@@ -1,46 +1,10 @@
-use std::collections::HashSet;
-
-use chrono::Utc;
-use wasm_bindgen::JsValue;
-
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
-    grid::{CodeCellLanguage, CodeRun, CodeRunResult},
-    RunError, RunErrorMsg, SheetPos,
+    grid::CodeCellLanguage,
+    SheetPos,
 };
 
 impl GridController {
-    fn python_not_loaded(&mut self, transaction: &mut PendingTransaction, sheet_pos: SheetPos) {
-        let error = RunError {
-            span: None,
-            msg: RunErrorMsg::PythonNotLoaded,
-        };
-        let Some(sheet) = self.grid.try_sheet_mut(sheet_pos.sheet_id) else {
-            // sheet may have been deleted
-            return;
-        };
-        // keep old formatted code_cell and cells_accessed when creating not loaded error
-        let (formatted_code_string, cells_accessed) =
-            if let Some(old_code_run) = sheet.code_run(sheet_pos.into()).as_ref() {
-                (
-                    old_code_run.formatted_code_string.clone(),
-                    old_code_run.cells_accessed.clone(),
-                )
-            } else {
-                (None, HashSet::new())
-            };
-        let new_code_run = CodeRun {
-            std_out: None,
-            std_err: Some(RunErrorMsg::PythonNotLoaded.to_string()),
-            spill_error: false,
-            result: CodeRunResult::Err(error),
-            formatted_code_string,
-            cells_accessed,
-            last_modified: Utc::now(),
-        };
-        self.finalize_code_run(transaction, sheet_pos, Some(new_code_run));
-    }
-
     pub(crate) fn run_python(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -48,13 +12,13 @@ impl GridController {
         code: String,
     ) -> bool {
         if !cfg!(test) {
-            let result = crate::wasm_bindings::js::runPython(transaction.id.to_string(), code);
-
-            // run python will return false if python is not loaded (this can be generalized if we need to return a different error)
-            if result == JsValue::FALSE {
-                self.python_not_loaded(transaction, sheet_pos);
-                return false;
-            }
+            crate::wasm_bindings::js::runPython(
+                transaction.id.to_string(),
+                sheet_pos.x as i32,
+                sheet_pos.y as i32,
+                sheet_pos.sheet_id.to_string(),
+                code,
+            );
         }
         // stop the computation cycle until async returns
         transaction.summary.transaction_id = Some(transaction.id.to_string());
@@ -122,34 +86,6 @@ mod tests {
             Some(CellValue::Text("test".to_string()))
         );
         assert!(!code_run.spill_error);
-    }
-
-    #[test]
-    fn test_run_python_not_loaded() {
-        let mut gc = GridController::new();
-        let sheet_id = gc.sheet_ids()[0];
-
-        let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
-            sheet_id,
-        };
-        let code = "print(1)".to_string();
-        gc.set_code_cell(sheet_pos, CodeCellLanguage::Python, code.clone(), None);
-        let transaction_id = gc.async_transactions()[0].id;
-        let mut transaction = gc
-            .transactions
-            .remove_awaiting_async(transaction_id)
-            .ok()
-            .unwrap();
-        gc.python_not_loaded(&mut transaction, sheet_pos);
-
-        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
-        let cells = sheet.get_render_cells(crate::Rect::single_pos(Pos { x: 0, y: 0 }));
-        let cell = cells.first();
-        assert_eq!(cell.unwrap().value, " ERROR".to_string());
-        let cell_value = sheet.display_value(Pos { x: 0, y: 0 });
-        assert_eq!(cell_value, None);
     }
 
     #[test]
