@@ -240,6 +240,10 @@ export const CodeEditor = () => {
         <SaveChangesAlert
           onCancel={() => {
             setShowSaveChangesAlert(!showSaveChangesAlert);
+            setEditorInteractionState((old) => ({
+              ...old,
+              waitingForEditorClose: undefined,
+            }));
           }}
           onSave={() => {
             saveAndRunCell();

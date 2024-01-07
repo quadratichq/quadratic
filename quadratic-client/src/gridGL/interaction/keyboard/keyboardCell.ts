@@ -121,7 +121,7 @@ export function keyboardCell(options: {
         const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;
         if (!mode) throw new Error(`Unhandled cell.language ${cell.language} in keyboardCell`);
 
-        // Open code editor, or move code editor if already open.
+        // Open code editor, or move change editor if already open.
         setEditorInteractionState({
           ...editorInteractionState,
           showCellTypeMenu: false,
@@ -133,8 +133,8 @@ export function keyboardCell(options: {
           },
         });
       }
-    } else {
-      // Open cell type menu, close editor.
+    } else if (editorInteractionState.showCodeEditor) {
+      // code editor is already open, so check it for save before closing
       setEditorInteractionState({
         ...editorInteractionState,
         waitingForEditorClose: {
@@ -143,6 +143,14 @@ export function keyboardCell(options: {
           selectedCellSheet: sheets.sheet.id,
           mode: 'PYTHON',
         },
+      });
+    } else {
+      // just open the code editor selection menu
+      setEditorInteractionState({
+        ...editorInteractionState,
+        showCellTypeMenu: true,
+        selectedCell: { x: x, y: y },
+        selectedCellSheet: sheets.sheet.id,
       });
     }
     event.preventDefault();
