@@ -709,7 +709,6 @@ export class Grid {
       sheetName,
       lineNumber === undefined ? undefined : BigInt(lineNumber)
     );
-    debugger;
     const result = this.gridController.calculationGetCells(getCells);
     if (result.Err) {
       this.transactionResponse(result.Err);

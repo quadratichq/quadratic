@@ -87,8 +87,6 @@ opt-level = "s"
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ['-Os', '-g']  # TODO: -g seems to fix the name mangling problem
 
-
-
 [package.metadata.wasm-pack.profile.dev]
 wasm-opt = false
 
