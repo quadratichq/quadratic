@@ -247,7 +247,13 @@ export class Grid {
   }
 
   // returns whether the transaction completed
-  setCodeCellValue(options: { sheetId: string; x: number; y: number; language: CodeCellLanguage; codeString: string }) {
+  setCodeCellValue(options: {
+    sheetId: string;
+    x: number;
+    y: number;
+    language: CodeCellLanguage;
+    codeString: string;
+  }): boolean {
     const summary = this.gridController.setCellCode(
       options.sheetId,
       new Pos(options.x, options.y),
@@ -256,6 +262,7 @@ export class Grid {
       sheets.getCursorPosition()
     );
     this.transactionResponse(summary);
+    return summary.complete;
   }
 
   deleteCellValues(sheetId: string, rectangle: Rectangle) {

@@ -64,6 +64,9 @@ impl ActiveTransactions {
     pub fn add_async_transaction(&mut self, pending: &PendingTransaction) {
         let forward = pending.to_forward_transaction();
         let undo = pending.to_undo_transaction();
+
+        // Unsaved_operations hold async operations that are not complete. In that case, we need to replace the
+        // unsaved operation with the new version.
         match self
             .unsaved_transactions
             .iter_mut()
