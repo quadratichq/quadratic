@@ -116,13 +116,6 @@ export const CodeEditor = () => {
     updateCodeCell(true);
   }, [updateCodeCell]);
 
-  // handle when escape is pressed when escape does not have focus
-  useEffect(() => {
-    if (editorInteractionState.editorEscapePressed) {
-      setShowSaveChangesAlert(true);
-    }
-  }, [editorInteractionState.editorEscapePressed]);
-
   useEffect(() => {
     mixpanel.track('[CodeEditor].opened', { type: editorMode });
   }, [editorMode]);
@@ -143,6 +136,17 @@ export const CodeEditor = () => {
     },
     [setEditorInteractionState, unsaved]
   );
+
+  // handle when escape is pressed when escape does not have focus
+  useEffect(() => {
+    if (editorInteractionState.editorEscapePressed) {
+      if (unsaved) {
+        setShowSaveChangesAlert(true);
+      } else {
+        closeEditor(true);
+      }
+    }
+  }, [closeEditor, editorInteractionState.editorEscapePressed, unsaved]);
 
   const saveAndRunCell = async () => {
     if (pythonState !== 'idle') return;
