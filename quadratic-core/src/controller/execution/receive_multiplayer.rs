@@ -260,10 +260,14 @@ impl GridController {
 mod tests {
     use super::*;
     use crate::{
-        controller::{transaction_types::JsCodeResult, GridController},
+        controller::{
+            transaction_types::{JsCodeResult, JsComputeGetCells},
+            GridController,
+        },
         grid::CodeCellLanguage,
-        CellValue, CodeCellValue, Pos, SheetPos,
+        CellValue, CodeCellValue, Pos, Rect, SheetPos,
     };
+    use bigdecimal::BigDecimal;
     use std::str::FromStr;
     use uuid::Uuid;
 
@@ -842,6 +846,187 @@ mod tests {
                 .unwrap()
                 .display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("async output".to_string()))
+        );
+    }
+
+    // used for the following tests to create multiplayer transactions
+    // extension of test_python_multiple_calculations in run_python.rs
+    // Tests in column 0, and y: 0 = "1", y: 1 = "c(0,0) + 1", y: 2 = "c(0, 1) + 1"
+
+    // creates 0,0 = "1"
+    fn create_multiple_calculations_0(gc: &mut GridController) -> (String, String) {
+        let sheet_id = gc.sheet_ids()[0];
+        let summary = gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            "1".to_string(),
+            None,
+        );
+        (summary.transaction_id.unwrap(), summary.operations.unwrap())
+    }
+
+    // creates 0,1 = "c(0,0) + 1"
+    fn create_multiple_calculations_1(gc: &mut GridController) -> (String, String) {
+        let sheet_id = gc.sheet_ids()[0];
+        let summary = gc.set_code_cell(
+            SheetPos {
+                x: 0,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Python,
+            "c(0, 0) + 1".into(),
+            None,
+        );
+        let _ = gc
+            .calculation_get_cells(JsComputeGetCells::new(
+                summary.transaction_id.clone().unwrap(),
+                Rect::from_numbers(0, 0, 1, 1),
+                None,
+                None,
+            ))
+            .ok()
+            .unwrap();
+
+        let result = gc.calculation_complete(JsCodeResult::new_from_rust(
+            summary.transaction_id.unwrap(),
+            true,
+            None,
+            None,
+            None,
+            Some("2".to_string()),
+            None,
+            None,
+            None,
+        ));
+        let summary = result.ok().unwrap();
+        (summary.transaction_id.unwrap(), summary.operations.unwrap())
+    }
+
+    // creates 0,2 = "c(0,1) + 1"
+    fn create_multiple_calculations_2(gc: &mut GridController) -> (String, String) {
+        let sheet_id = gc.sheet_ids()[0];
+        let summary = gc.set_code_cell(
+            SheetPos {
+                x: 0,
+                y: 2,
+                sheet_id,
+            },
+            CodeCellLanguage::Python,
+            "c(0, 1) + 1".into(),
+            None,
+        );
+        let transaction_id = summary.transaction_id.clone().unwrap();
+        let _ = gc
+            .calculation_get_cells(JsComputeGetCells::new(
+                transaction_id.clone(),
+                Rect::from_numbers(0, 1, 1, 1),
+                None,
+                None,
+            ))
+            .ok()
+            .unwrap();
+
+        let result = gc.calculation_complete(JsCodeResult::new_from_rust(
+            transaction_id,
+            true,
+            None,
+            None,
+            None,
+            Some("3".to_string()),
+            None,
+            None,
+            None,
+        ));
+        let summary = result.ok().unwrap();
+        (summary.transaction_id.unwrap(), summary.operations.unwrap())
+    }
+
+    #[test]
+    fn test_python_multiple_calculations_receive_back_afterwards() {
+        let mut gc = GridController::new();
+        let (transaction_id_0, operations_0) = create_multiple_calculations_0(&mut gc);
+        assert_eq!(gc.active_transactions().unsaved_transactions.len(), 1);
+        let (transaction_id_1, operations_1) = create_multiple_calculations_1(&mut gc);
+        assert_eq!(gc.active_transactions().unsaved_transactions.len(), 2);
+        let (transaction_id_2, operations_2) = create_multiple_calculations_2(&mut gc);
+        assert_eq!(gc.active_transactions().unsaved_transactions.len(), 3);
+        assert_eq!(gc.active_transactions().async_transactions.len(), 0);
+
+        // receive back the transactions in order
+        gc.received_transaction(
+            Uuid::from_str(&transaction_id_0).unwrap(),
+            1,
+            serde_json::from_str(&operations_0).unwrap(),
+        );
+        assert_eq!(gc.active_transactions().unsaved_transactions.len(), 2);
+
+        gc.received_transaction(
+            Uuid::from_str(&transaction_id_1).unwrap(),
+            2,
+            serde_json::from_str(&operations_1).unwrap(),
+        );
+        assert_eq!(gc.active_transactions().unsaved_transactions.len(), 1);
+
+        gc.received_transaction(
+            Uuid::from_str(&transaction_id_2).unwrap(),
+            3,
+            serde_json::from_str(&operations_2).unwrap(),
+        );
+        assert_eq!(gc.active_transactions().unsaved_transactions.len(), 0);
+
+        let sheet = gc.grid.first_sheet();
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(1)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 1 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 2 }),
+            Some(CellValue::Number(BigDecimal::from(3)))
+        );
+    }
+
+    #[test]
+    fn test_python_multiple_calculations_receive_back_between() {
+        let mut gc = GridController::new();
+        let (transaction_id_0, operations_0) = create_multiple_calculations_0(&mut gc);
+        gc.received_transaction(
+            Uuid::from_str(&transaction_id_0).unwrap(),
+            1,
+            serde_json::from_str(&operations_0).unwrap(),
+        );
+        let (transaction_id_1, operations_1) = create_multiple_calculations_1(&mut gc);
+        gc.received_transaction(
+            Uuid::from_str(&transaction_id_1).unwrap(),
+            2,
+            serde_json::from_str(&operations_1).unwrap(),
+        );
+        let (transaction_id_2, operations_2) = create_multiple_calculations_2(&mut gc);
+        gc.received_transaction(
+            Uuid::from_str(&transaction_id_2).unwrap(),
+            3,
+            serde_json::from_str(&operations_2).unwrap(),
+        );
+
+        let sheet = gc.grid.first_sheet();
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(1)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 1 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 2 }),
+            Some(CellValue::Number(BigDecimal::from(3)))
         );
     }
 }

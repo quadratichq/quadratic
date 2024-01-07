@@ -55,9 +55,6 @@ pub struct TransactionSummary {
     // should the grid trigger a save
     pub save: bool,
 
-    // let TS know that the grid is already busy
-    pub transaction_busy: bool,
-
     // should the grid generate a thumbnail
     pub generate_thumbnail: bool,
 
@@ -91,7 +88,6 @@ impl TransactionSummary {
         self.cell_sheets_modified.clear();
         self.offsets_modified.clear();
         self.cursor = None;
-        self.transaction_busy = false;
         self.generate_thumbnail = false;
         self.save = false;
         if !keep_forward_transaction {

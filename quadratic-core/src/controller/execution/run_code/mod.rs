@@ -117,7 +117,7 @@ impl GridController {
             },
         }
         // continue the compute loop after a successful async call
-        self.handle_transactions(transaction);
+        self.start_transaction(transaction);
         Ok(())
     }
 

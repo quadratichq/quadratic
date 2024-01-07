@@ -62,11 +62,11 @@ impl GridController {
                 };
                 match self.code_cell_sheet_error(&mut transaction, msg, get_cells.line_number()) {
                     Ok(_) => {
-                        self.handle_transactions(&mut transaction);
+                        self.start_transaction(&mut transaction);
                         return Err(self.finalize_transaction(&mut transaction));
                     }
                     Err(err) => {
-                        self.handle_transactions(&mut transaction);
+                        self.start_transaction(&mut transaction);
                         let mut summary = self.finalize_transaction(&mut transaction);
                         summary.error = Some(err);
                         return Err(summary);
@@ -76,7 +76,7 @@ impl GridController {
         } else if let Some(sheet) = self.try_sheet(current_sheet) {
             sheet
         } else {
-            self.handle_transactions(&mut transaction);
+            self.start_transaction(&mut transaction);
             return Err(self.finalize_transaction(&mut transaction));
         };
 
@@ -97,11 +97,11 @@ impl GridController {
             };
             match self.code_cell_sheet_error(&mut transaction, msg, get_cells.line_number()) {
                 Ok(_) => {
-                    self.handle_transactions(&mut transaction);
+                    self.start_transaction(&mut transaction);
                     return Err(self.finalize_transaction(&mut transaction));
                 }
                 Err(err) => {
-                    self.handle_transactions(&mut transaction);
+                    self.start_transaction(&mut transaction);
                     let mut summary = self.finalize_transaction(&mut transaction);
                     summary.error = Some(err);
                     return Err(summary);

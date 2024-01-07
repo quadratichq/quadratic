@@ -580,6 +580,7 @@ mod tests {
 
     #[test]
     fn test_python_multiple_calculations() {
+        // Tests in column 0, and y: 0 = "1", y: 1 = "c(0,0) + 1", y: 2 = "c(0, 1) + 1"
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
@@ -603,7 +604,7 @@ mod tests {
         );
         let result = gc
             .calculation_get_cells(JsComputeGetCells::new(
-                summary.transaction_id.unwrap(),
+                summary.transaction_id.clone().unwrap(),
                 Rect::from_numbers(0, 0, 1, 1),
                 None,
                 None,
@@ -618,6 +619,77 @@ mod tests {
                 y: 0,
                 value: "1".into()
             }
+        );
+        let result = gc.calculation_complete(JsCodeResult::new_from_rust(
+            summary.transaction_id.unwrap(),
+            true,
+            None,
+            None,
+            None,
+            Some("2".to_string()),
+            None,
+            None,
+            None,
+        ));
+        assert!(result.is_ok());
+        assert_eq!(result.clone().ok().unwrap().cell_sheets_modified.len(), 1);
+        assert!(result.ok().unwrap().generate_thumbnail);
+
+        let summary = gc.set_code_cell(
+            SheetPos {
+                x: 0,
+                y: 2,
+                sheet_id,
+            },
+            CodeCellLanguage::Python,
+            "c(0, 1) + 1".into(),
+            None,
+        );
+        let result = gc
+            .calculation_get_cells(JsComputeGetCells::new(
+                summary.transaction_id.clone().unwrap(),
+                Rect::from_numbers(0, 1, 1, 1),
+                None,
+                None,
+            ))
+            .ok()
+            .unwrap();
+        assert_eq!(result.response.len(), 1);
+        assert_eq!(
+            result.response[0],
+            GetCellResponse {
+                x: 0,
+                y: 1,
+                value: "2".into()
+            }
+        );
+        let result = gc.calculation_complete(JsCodeResult::new_from_rust(
+            summary.transaction_id.unwrap(),
+            true,
+            None,
+            None,
+            None,
+            Some("3".to_string()),
+            None,
+            None,
+            None,
+        ));
+        assert!(result.is_ok());
+        assert_eq!(result.clone().ok().unwrap().cell_sheets_modified.len(), 1);
+        assert!(result.ok().unwrap().generate_thumbnail);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(1)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 1 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 2 }),
+            Some(CellValue::Number(BigDecimal::from(3)))
         );
     }
 }

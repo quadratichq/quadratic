@@ -120,10 +120,6 @@ export class Grid {
       pixiApp.cellsSheets.updateBorders(summary.border_sheets_modified);
     }
 
-    if (summary.transaction_busy) {
-      window.dispatchEvent(new CustomEvent('transaction-busy'));
-    }
-
     if (summary.generate_thumbnail) {
       this.thumbnailDirty = true;
     }
@@ -251,13 +247,7 @@ export class Grid {
   }
 
   // returns whether the transaction completed
-  setCodeCellValue(options: {
-    sheetId: string;
-    x: number;
-    y: number;
-    language: CodeCellLanguage;
-    codeString: string;
-  }): boolean {
+  setCodeCellValue(options: { sheetId: string; x: number; y: number; language: CodeCellLanguage; codeString: string }) {
     const summary = this.gridController.setCellCode(
       options.sheetId,
       new Pos(options.x, options.y),
@@ -266,7 +256,6 @@ export class Grid {
       sheets.getCursorPosition()
     );
     this.transactionResponse(summary);
-    return !summary.transaction_busy;
   }
 
   deleteCellValues(sheetId: string, rectangle: Rectangle) {

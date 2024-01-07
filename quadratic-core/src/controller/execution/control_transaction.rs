@@ -15,7 +15,7 @@ use crate::{
 
 impl GridController {
     // loop compute cycle until complete or an async call is made
-    pub(super) fn handle_transactions(&mut self, transaction: &mut PendingTransaction) {
+    pub(super) fn start_transaction(&mut self, transaction: &mut PendingTransaction) {
         loop {
             if transaction.operations.is_empty() {
                 transaction.complete = true;
@@ -29,11 +29,6 @@ impl GridController {
                 break;
             }
         }
-    }
-
-    /// Creates and runs a new Transaction
-    pub(super) fn start_transaction(&mut self, transaction: &mut PendingTransaction) {
-        self.handle_transactions(transaction);
     }
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
@@ -107,7 +102,7 @@ impl GridController {
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
 
         if result.cancel_compute.unwrap_or(false) {
-            self.handle_transactions(&mut transaction);
+            self.start_transaction(&mut transaction);
         }
 
         self.after_calculation_async(&mut transaction, result)?;
