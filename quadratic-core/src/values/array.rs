@@ -96,11 +96,7 @@ impl From<Vec<Vec<&str>>> for Array {
         let h = v.len();
         Array {
             size: ArraySize::new(w as u32, h as u32).unwrap(),
-            values: v
-                .iter()
-                .flatten()
-                .map(|s| CellValue::from(s.as_ref()))
-                .collect(),
+            values: v.iter().flatten().map(|s| (*s).into()).collect(),
         }
     }
 }
@@ -213,7 +209,7 @@ impl Array {
     /// if this is not a 1x1 array.
     pub fn cell_value(&self) -> Option<&CellValue> {
         if self.values.len() == 1 {
-            self.values.get(0)
+            self.values.first()
         } else {
             None
         }

@@ -10,7 +10,8 @@ use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, CoreError>;
 
-#[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum CoreError {
     #[error("Error serializing or deserialize: {0}")]
     Serialization(String),

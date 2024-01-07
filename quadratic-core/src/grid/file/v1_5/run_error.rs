@@ -97,24 +97,23 @@ impl RunError {
 
                 // Compile errors
                 crate::RunErrorMsg::Unterminated(str) => RunErrorMsg::Unterminated(str),
-                crate::RunErrorMsg::Expected { expected, got } => RunErrorMsg::Expected {
-                    expected: expected.into(),
-                    got: got.map(|got| got.into()),
-                },
+                crate::RunErrorMsg::Expected { expected, got } => {
+                    RunErrorMsg::Expected { expected, got }
+                }
                 crate::RunErrorMsg::Unexpected(str) => RunErrorMsg::Unexpected(str),
                 crate::RunErrorMsg::TooManyArguments {
                     func_name,
                     max_arg_count,
                 } => RunErrorMsg::TooManyArguments {
-                    func_name: func_name.into(),
+                    func_name,
                     max_arg_count,
                 },
                 crate::RunErrorMsg::MissingRequiredArgument {
                     func_name,
                     arg_name,
                 } => RunErrorMsg::MissingRequiredArgument {
-                    func_name: func_name.into(),
-                    arg_name: arg_name.into(),
+                    func_name,
+                    arg_name,
                 },
                 crate::RunErrorMsg::BadFunctionName => RunErrorMsg::BadFunctionName,
                 crate::RunErrorMsg::BadCellReference => RunErrorMsg::BadCellReference,
@@ -142,8 +141,8 @@ impl RunError {
                         crate::Axis::X => Axis::X,
                         crate::Axis::Y => Axis::Y,
                     },
-                    expected: expected as u32,
-                    got: got as u32,
+                    expected,
+                    got,
                 },
                 crate::RunErrorMsg::ArrayAxisMismatch {
                     axis,
@@ -154,8 +153,8 @@ impl RunError {
                         crate::Axis::X => Axis::X,
                         crate::Axis::Y => Axis::Y,
                     },
-                    expected: expected as u32,
-                    got: got as u32,
+                    expected,
+                    got,
                 },
                 crate::RunErrorMsg::EmptyArray => RunErrorMsg::EmptyArray,
                 crate::RunErrorMsg::NonRectangularArray => RunErrorMsg::NonRectangularArray,
@@ -193,24 +192,23 @@ impl From<RunError> for crate::RunError {
 
                 // Compile errors
                 RunErrorMsg::Unterminated(str) => crate::RunErrorMsg::Unterminated(str),
-                RunErrorMsg::Expected { expected, got } => crate::RunErrorMsg::Expected {
-                    expected: expected.into(),
-                    got: got.map(|got| got.into()),
-                },
+                RunErrorMsg::Expected { expected, got } => {
+                    crate::RunErrorMsg::Expected { expected, got }
+                }
                 RunErrorMsg::Unexpected(str) => crate::RunErrorMsg::Unexpected(str),
                 RunErrorMsg::TooManyArguments {
                     func_name,
                     max_arg_count,
                 } => crate::RunErrorMsg::TooManyArguments {
-                    func_name: func_name.into(),
+                    func_name,
                     max_arg_count,
                 },
                 RunErrorMsg::MissingRequiredArgument {
                     func_name,
                     arg_name,
                 } => crate::RunErrorMsg::MissingRequiredArgument {
-                    func_name: func_name.into(),
-                    arg_name: arg_name.into(),
+                    func_name,
+                    arg_name,
                 },
                 RunErrorMsg::BadFunctionName => crate::RunErrorMsg::BadFunctionName,
                 RunErrorMsg::BadCellReference => crate::RunErrorMsg::BadCellReference,

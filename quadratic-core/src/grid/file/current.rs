@@ -162,7 +162,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
                     current::CellValue::Blank => CellValue::Blank,
                     current::CellValue::Text(text) => CellValue::Text(text.to_owned()),
                     current::CellValue::Number(number) => {
-                        CellValue::Number(BigDecimal::from_str(&number)?)
+                        CellValue::Number(BigDecimal::from_str(number)?)
                     }
                     current::CellValue::Html(html) => CellValue::Html(html.to_owned()),
                     current::CellValue::Code(code_cell) => CellValue::Code(CodeCellValue {
@@ -174,10 +174,10 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
                     }),
                     current::CellValue::Logical(logical) => CellValue::Logical(*logical),
                     current::CellValue::Instant(instant) => {
-                        CellValue::Instant(serde_json::from_str(&instant)?)
+                        CellValue::Instant(serde_json::from_str(instant)?)
                     }
                     current::CellValue::Duration(duration) => {
-                        CellValue::Duration(serde_json::from_str(&duration)?)
+                        CellValue::Duration(serde_json::from_str(duration)?)
                     }
                     current::CellValue::Error(error) => {
                         CellValue::Error(Box::new((*error).clone().into()))
@@ -245,7 +245,7 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<IndexMap<Pos, Code
         let result = match &code_run.result {
             current::CodeRunResult::Ok(output) => CodeRunResult::Ok(match output {
                 current::OutputValue::Single(current::OutputValueValue { type_field, value }) => {
-                    Value::Single(import_code_cell_output(&type_field, &value))
+                    Value::Single(import_code_cell_output(type_field, value))
                 }
                 current::OutputValue::Array(current::OutputArray { size, values }) => {
                     Value::Array(crate::Array::from(
@@ -503,7 +503,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                                         current::CellValue::Duration(duration.to_string())
                                     }
                                     CellValue::Error(error) => current::CellValue::Error(
-                                        current::RunError::from_grid_run_error(&*error),
+                                        current::RunError::from_grid_run_error(&error),
                                     ),
                                     CellValue::Blank => current::CellValue::Blank,
                                 },
@@ -605,7 +605,7 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                             current::Pos::from(*pos),
                             current::CodeRun {
                                 formatted_code_string: code_run.formatted_code_string.clone(),
-                                last_modified: Some(code_run.last_modified.clone()),
+                                last_modified: Some(code_run.last_modified),
                                 std_out: code_run.std_out.clone(),
                                 std_err: code_run.std_err.clone(),
                                 spill_error: code_run.spill_error,

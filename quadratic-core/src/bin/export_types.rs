@@ -3,7 +3,7 @@ use std::fs::create_dir_all;
 use quadratic_core::{
     controller::transaction_summary::{CellSheetsModified, TransactionSummary},
     grid::js_types::JsHtmlOutput,
-    *,
+    Rect, *,
 };
 use ts_rs::TS;
 
@@ -40,11 +40,8 @@ fn main() {
         grid::js_types::FormattingSummary,
         grid::js_types::CellFormatSummary,
         grid::js_types::JsClipboard,
-        // values
         ArraySize,
         Axis,
-        // Array,
-        // Value,
         Instant,
         Duration,
         RunError,

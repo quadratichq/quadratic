@@ -171,7 +171,7 @@ impl SheetBuilder {
                                     }
 
                                     for dy in 0..values.len() {
-                                        for dx in 0..values.get(0)?.len() {
+                                        for dx in 0..values.first()?.len() {
                                             let x = cell.x + dx as i64;
                                             let y = cell.y + dy as i64;
                                             let column = self.column(x);
@@ -184,7 +184,7 @@ impl SheetBuilder {
                                     }
                                     v1_4::OutputValue::Array(v1_4::OutputArray {
                                         size: v1_4::OutputSize {
-                                            w: values.get(0)?.len() as i64,
+                                            w: values.first()?.len() as i64,
                                             h: values.len() as i64,
                                         },
                                         values: values

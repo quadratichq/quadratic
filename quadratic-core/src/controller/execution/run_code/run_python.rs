@@ -67,14 +67,16 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use bigdecimal::BigDecimal;
-
     use super::*;
     use crate::{
-        controller::transaction_types::{CellForArray, JsCodeResult, JsComputeGetCells},
+        controller::{
+            execution::run_code::get_cells::{GetCellResponse, GetCellsResponse},
+            transaction_types::{JsCodeResult, JsComputeGetCells},
+        },
         grid::js_types::JsRenderCell,
         ArraySize, CellValue, Pos, Rect,
     };
+    use bigdecimal::BigDecimal;
 
     #[test]
     fn test_run_python() {
@@ -89,7 +91,7 @@ mod tests {
         let code = "print(1)".to_string();
         gc.set_code_cell(sheet_pos, CodeCellLanguage::Python, code.clone(), None);
 
-        let transaction = gc.async_transactions().get(0).unwrap();
+        let transaction = gc.async_transactions().first().unwrap();
         gc.calculation_complete(JsCodeResult::new(
             transaction.id.to_string(),
             true,
@@ -144,7 +146,7 @@ mod tests {
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         let cells = sheet.get_render_cells(crate::Rect::single_pos(Pos { x: 0, y: 0 }));
-        let cell = cells.get(0);
+        let cell = cells.first();
         assert_eq!(cell.unwrap().value, " ERROR".to_string());
         let cell_value = sheet.display_value(Pos { x: 0, y: 0 });
         assert_eq!(cell_value, None);
@@ -228,8 +230,14 @@ mod tests {
         ));
         assert!(cells.is_ok());
         assert_eq!(
-            cells.unwrap().get_cells(),
-            &vec![CellForArray::new(0, 0, Some("9".to_string()))]
+            cells,
+            Ok(GetCellsResponse {
+                response: vec![GetCellResponse {
+                    x: 0,
+                    y: 0,
+                    value: "9".into()
+                }]
+            })
         );
 
         // mock the python calculation returning the result
@@ -327,8 +335,14 @@ mod tests {
             None,
         ));
         assert_eq!(
-            cells.unwrap().get_cells(),
-            &vec![CellForArray::new(0, 0, Some("10".to_string()))]
+            cells,
+            Ok(GetCellsResponse {
+                response: vec![GetCellResponse {
+                    x: 0,
+                    y: 0,
+                    value: "10".into()
+                }]
+            })
         );
         assert!(gc
             .calculation_complete(JsCodeResult::new_from_rust(

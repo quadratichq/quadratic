@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{grid::SheetId, SheetPos, SheetRect};
+use crate::{error_core::CoreError, grid::SheetId, SheetPos, SheetRect};
 
 // keep this in sync with CellsTypes.ts
 pub const CELL_SHEET_WIDTH: u32 = 20;
@@ -70,12 +70,15 @@ pub struct TransactionSummary {
 
     // indicates the client should request transactions from the server starting from this sequence_num
     pub request_transactions: Option<u64>,
+
+    // pass error to client for TS handling
+    pub error: Option<CoreError>,
 }
 
 impl TransactionSummary {
-    pub fn new(transaction_busy: bool) -> Self {
+    pub fn error(error: CoreError) -> Self {
         TransactionSummary {
-            transaction_busy,
+            error: Some(error),
             ..Default::default()
         }
     }

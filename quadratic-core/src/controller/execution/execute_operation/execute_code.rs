@@ -61,10 +61,10 @@ impl GridController {
                         if matches!(value, CellValue::Code(_)) {
                             None
                         } else {
-                            Some(pos.clone())
+                            Some(*pos)
                         }
                     } else {
-                        Some(pos.clone())
+                        Some(*pos)
                     }
                 } else {
                     None
@@ -106,13 +106,12 @@ impl GridController {
             };
             let pos: Pos = sheet_pos.into();
 
-            // We need to get the corresponding CellValue::Code, which should always exist.
+            // We need to get the corresponding CellValue::Code
             let (language, code) = match sheet.cell_value(pos) {
-                Some(code_cell) => match code_cell {
-                    CellValue::Code(value) => (value.language, value.code),
-                    _ => unreachable!("Expected CellValue::Code in execute_set_code_cell"),
-                },
-                None => unreachable!("Expected CellValue::Code in execute_set_code_cell"),
+                Some(CellValue::Code(value)) => (value.language, value.code),
+
+                // handles the case where the ComputeCode operation is running on a non-code cell (maybe changed b/c of a MP operation?)
+                _ => return,
             };
 
             match language {

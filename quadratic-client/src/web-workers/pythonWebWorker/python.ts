@@ -71,6 +71,7 @@ class PythonWebWorker {
         // triggers any CodeEditor updates (if necessary)
         window.dispatchEvent(new CustomEvent('python-computation-finished'));
       } else if (event.type === 'get-cells') {
+        console.log('get-cells');
         if (!this.transactionId) throw new Error('Expected transactionId to be defined in get-cells');
         const range = event.range;
         if (!range) {

@@ -29,8 +29,7 @@ impl GridController {
             ..Default::default()
         };
         self.client_apply_transaction(&mut transaction, sequence_num);
-        self.finalize_transaction(&mut transaction);
-        transaction.prepare_summary(false)
+        self.finalize_transaction(&mut transaction)
     }
 
     /// Rolls back unsaved transactions to apply earlier transactions received from the server.
@@ -46,7 +45,7 @@ impl GridController {
             .flat_map(|(_, undo)| undo.operations.clone())
             .collect::<VecDeque<_>>();
         let mut rollback = PendingTransaction {
-            transaction_type: TransactionType::User,
+            transaction_type: TransactionType::Multiplayer,
             operations,
             ..Default::default()
         };
@@ -73,7 +72,10 @@ impl GridController {
             .flat_map(|(forward, _)| forward.operations.clone())
             .collect::<Vec<_>>();
         let mut reapply = PendingTransaction {
-            transaction_type: TransactionType::User,
+            // Note: setting this to multiplayer makes it so the calculations are not rerun when reapplied.
+            // This seems the right approach, otherwise we may end up with long running calculations
+            // having to be sent to the server multiple times when multiple users are making changes.
+            transaction_type: TransactionType::Multiplayer,
             operations: operations.into(),
             ..Default::default()
         };
@@ -246,8 +248,7 @@ impl GridController {
                 .extend(transaction.sheets_with_dirty_bounds);
         });
         self.reapply_unsaved_transactions(&mut results);
-        self.finalize_transaction(&mut results);
-        Ok(results.prepare_summary(false))
+        Ok(self.finalize_transaction(&mut results))
     }
 }
 
