@@ -94,7 +94,7 @@ export const deleteFile = {
   async run({ uuid, addGlobalSnackbar }: { uuid: string; addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'] }) {
     if (window.confirm('Please confirm you want to delete this file.')) {
       try {
-        await apiClient.deleteFile(uuid);
+        await apiClient.files.delete(uuid);
         window.location.href = ROUTES.FILES;
       } catch (e) {
         addGlobalSnackbar('Failed to delete file. Try again.', { severity: 'error' });

@@ -35,7 +35,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'delete') {
     try {
-      await apiClient.deleteFile(uuid);
+      await apiClient.files.delete(uuid);
       return { ok: true };
     } catch (error) {
       return { ok: false };

@@ -107,6 +107,10 @@ export const apiClient = {
         ApiSchemas['/v0/files.POST.response']
       );
     },
+    async delete(uuid: string) {
+      mixpanel.track('[Files].deleteFile', { id: uuid });
+      return fetchFromApi(`/v0/files/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/files/:uuid.DELETE.response']);
+    },
     async download(uuid: string) {
       mixpanel.track('[Files].downloadFile', { id: uuid });
       const { file } = await this.get(uuid);
@@ -169,11 +173,6 @@ export const apiClient = {
         );
       },
     },
-  },
-
-  async deleteFile(uuid: string) {
-    mixpanel.track('[Files].deleteFile', { id: uuid });
-    return fetchFromApi(`/v0/files/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/files/:uuid.DELETE.response']);
   },
 
   async postFeedback(body: ApiTypes['/v0/feedback.POST.request']) {
