@@ -9,15 +9,13 @@ use chrono::DateTime;
 fn convert_column_values(
     from: &HashMap<String, v1_4::ColumnValues>,
 ) -> HashMap<String, v1_5::CellValue> {
-    from.into_iter()
+    from.iter()
         .map(|(k, v)| {
-            let value = match &v.content.values[0] {
-                v1_4::ColumnValue { type_field, value } => match type_field.to_lowercase().as_str()
-                {
-                    "text" => v1_5::CellValue::Text(value.clone()),
-                    "number" => v1_5::CellValue::Number(value.clone()),
-                    _ => panic!("Unknown type_field: {}", type_field),
-                },
+            let v1_4::ColumnValue { type_field, value } = &v.content.values[0];
+            let value = match type_field.to_lowercase().as_str() {
+                "text" => v1_5::CellValue::Text(value.clone()),
+                "number" => v1_5::CellValue::Number(value.clone()),
+                _ => panic!("Unknown type_field: {}", type_field),
             };
             (k.clone(), value)
         })
@@ -267,7 +265,7 @@ fn upgrade_code_runs(sheet: &v1_4::Sheet) -> Vec<(v1_5::Pos, v1_5::CodeRun)> {
                 };
 
                 (
-                    cell_ref_to_pos(sheet, &cell_ref),
+                    cell_ref_to_pos(sheet, cell_ref),
                     v1_5::CodeRun {
                         formatted_code_string: code_cell_value.formatted_code_string.clone(),
                         last_modified: Some(

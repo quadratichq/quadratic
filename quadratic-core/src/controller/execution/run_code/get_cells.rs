@@ -25,6 +25,7 @@ pub struct GetCellsResponse {
 
 impl GridController {
     /// This is used to get cells during a  async calculation.
+    #[allow(clippy::result_large_err)]
     pub fn calculation_get_cells(
         &mut self,
         get_cells: JsComputeGetCells,
@@ -73,13 +74,11 @@ impl GridController {
                     }
                 }
             }
+        } else if let Some(sheet) = self.try_sheet(current_sheet) {
+            sheet
         } else {
-            if let Some(sheet) = self.try_sheet(current_sheet) {
-                sheet
-            } else {
-                self.handle_transactions(&mut transaction);
-                return Err(self.finalize_transaction(&mut transaction));
-            }
+            self.handle_transactions(&mut transaction);
+            return Err(self.finalize_transaction(&mut transaction));
         };
 
         let transaction_type = transaction.transaction_type.clone();

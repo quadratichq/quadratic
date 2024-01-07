@@ -91,7 +91,7 @@ mod tests {
         let code = "print(1)".to_string();
         gc.set_code_cell(sheet_pos, CodeCellLanguage::Python, code.clone(), None);
 
-        let transaction = gc.async_transactions().get(0).unwrap();
+        let transaction = gc.async_transactions().first().unwrap();
         gc.calculation_complete(JsCodeResult::new(
             transaction.id.to_string(),
             true,
@@ -146,7 +146,7 @@ mod tests {
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         let cells = sheet.get_render_cells(crate::Rect::single_pos(Pos { x: 0, y: 0 }));
-        let cell = cells.get(0);
+        let cell = cells.first();
         assert_eq!(cell.unwrap().value, " ERROR".to_string());
         let cell_value = sheet.display_value(Pos { x: 0, y: 0 });
         assert_eq!(cell_value, None);

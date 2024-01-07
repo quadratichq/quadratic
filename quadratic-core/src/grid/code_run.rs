@@ -27,7 +27,7 @@ impl CodeRun {
     /// A spill or error returns CellValue::Blank. Note: this assumes a CellValue::Code exists at the location.
     pub fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
         if self.spill_error {
-            return Some(CellValue::Blank);
+            Some(CellValue::Blank)
         } else {
             match &self.result {
                 CodeRunResult::Ok(value) => match value {

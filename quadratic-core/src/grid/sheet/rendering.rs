@@ -223,7 +223,7 @@ impl Sheet {
                     x: code_rect.min.x,
                     y: code_rect.min.y,
                 }) {
-                    render_cells.extend(self.get_code_cells(&code, code_run, &rect, &code_rect))
+                    render_cells.extend(self.get_code_cells(&code, code_run, &rect, &code_rect));
                 }
             });
         render_cells

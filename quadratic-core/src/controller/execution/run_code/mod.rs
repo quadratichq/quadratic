@@ -310,8 +310,8 @@ mod test {
         assert_eq!(sheet.code_run(sheet_pos.into()), Some(&new_code_run));
         let summary = transaction.prepare_summary(true);
         assert_eq!(summary.code_cells_modified.len(), 1);
-        assert_eq!(summary.code_cells_modified.contains(&sheet_id), true);
-        assert_eq!(summary.generate_thumbnail, true);
+        assert!(summary.code_cells_modified.contains(&sheet_id));
+        assert!(summary.generate_thumbnail);
         assert_eq!(summary.cell_sheets_modified.len(), 1);
         assert!(summary
             .cell_sheets_modified
@@ -339,8 +339,8 @@ mod test {
         assert_eq!(sheet.code_run(sheet_pos.into()), Some(&new_code_run));
         let summary = transaction.prepare_summary(true);
         assert_eq!(summary.code_cells_modified.len(), 1);
-        assert_eq!(summary.code_cells_modified.contains(&sheet_id), true);
-        assert_eq!(summary.generate_thumbnail, true);
+        assert!(summary.code_cells_modified.contains(&sheet_id));
+        assert!(summary.generate_thumbnail);
         assert_eq!(summary.cell_sheets_modified.len(), 1);
         assert!(summary
             .cell_sheets_modified
@@ -356,8 +356,8 @@ mod test {
         assert_eq!(sheet.code_run(sheet_pos.into()), None);
         let summary = transaction.prepare_summary(true);
         assert_eq!(summary.code_cells_modified.len(), 1);
-        assert_eq!(summary.code_cells_modified.contains(&sheet_id), true);
-        assert_eq!(summary.generate_thumbnail, true);
+        assert!(summary.code_cells_modified.contains(&sheet_id));
+        assert!(summary.generate_thumbnail);
         assert_eq!(summary.cell_sheets_modified.len(), 1);
         assert!(summary
             .cell_sheets_modified
