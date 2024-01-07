@@ -44,7 +44,6 @@ impl GridController {
         let (current_sheet, pos) = if let Some(current_sheet_pos) = transaction.current_sheet_pos {
             (current_sheet_pos.sheet_id, current_sheet_pos.into())
         } else {
-            self.transactions.add_async_transaction(&transaction);
             return Err(TransactionSummary::error(CoreError::TransactionNotFound(
                 "Transaction's position not found".to_string(),
             )));

@@ -29,48 +29,75 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                 .lock()
                 .await
                 .par_iter()
-                .map(|room| room.key().to_owned())
+                .map(|room| (room.file_id.to_owned(), room.checkpoint_sequence_num))
                 .collect::<Vec<_>>();
 
             // parallelize the work for each room
-            rooms.into_par_iter().for_each(|file_id| {
-                let state = Arc::clone(&state);
+            rooms
+                .into_par_iter()
+                .for_each(|(file_id, checkpoint_sequence_num)| {
+                    let state = Arc::clone(&state);
 
-                tokio::spawn(async move {
-                    tracing::trace!("Processing room {}", file_id);
-                    // process transaction queue for the room
+                    tokio::spawn(async move {
+                        tracing::trace!("Processing room {}", file_id);
+                        // process transaction queue for the room
 
-                    let processed =
-                        process_transaction_queue_for_room(Arc::clone(&state), &file_id).await;
+                        let processed = process_transaction_queue_for_room(
+                            Arc::clone(&state),
+                            &file_id,
+                            checkpoint_sequence_num,
+                        )
+                        .await;
 
-                    if let Err(error) = processed {
-                        tracing::warn!("Error processing queue for room {file_id}: {:?}", error);
-                    };
+                        match processed {
+                            Err(error) => {
+                                tracing::warn!(
+                                    "Error processing queue for room {file_id}: {:?}",
+                                    error
+                                )
+                            }
+                            Ok(Some(sequence_num)) => {
+                                if state
+                                    .set_checkpoint_sequence_num(&file_id, sequence_num)
+                                    .await
+                                    .is_err()
+                                {
+                                    tracing::warn!(
+                                        "Error setting checkpoint sequence number for room {}",
+                                        file_id
+                                    );
+                                }
+                            }
+                            Ok(None) => {
+                                tracing::trace!("No transactions to process for room {}", file_id)
+                            }
+                        };
 
-                    // broadcast sequence number to all users in the room
-                    let broadcasted = broadcast_sequence_num(Arc::clone(&state), &file_id).await;
+                        // broadcast sequence number to all users in the room
+                        let broadcasted =
+                            broadcast_sequence_num(Arc::clone(&state), &file_id).await;
 
-                    if let Err(error) = broadcasted {
-                        tracing::warn!("Error broadcasting sequence number: {:?}", error);
-                    }
+                        if let Err(error) = broadcasted {
+                            tracing::warn!("Error broadcasting sequence number: {:?}", error);
+                        }
 
-                    // remove stale users in the room
-                    let removed = remove_stale_users_in_room(
-                        Arc::clone(&state),
-                        &file_id,
-                        heartbeat_timeout_s,
-                    )
-                    .await;
+                        // remove stale users in the room
+                        let removed = remove_stale_users_in_room(
+                            Arc::clone(&state),
+                            &file_id,
+                            heartbeat_timeout_s,
+                        )
+                        .await;
 
-                    if let Err(error) = removed {
-                        tracing::warn!(
-                            "Error removing stale users from room {}: {:?}",
-                            file_id,
-                            error
-                        );
-                    }
+                        if let Err(error) = removed {
+                            tracing::warn!(
+                                "Error removing stale users from room {}: {:?}",
+                                file_id,
+                                error
+                            );
+                        }
+                    });
                 });
-            });
 
             interval.tick().await;
         }
@@ -81,12 +108,14 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
 async fn process_transaction_queue_for_room(
     state: Arc<State>,
     file_id: &Uuid,
+    checkpoint_sequence_num: u64,
 ) -> Result<Option<u64>> {
     process_queue_for_room(
         &state.settings.aws_client,
         &state.settings.aws_s3_bucket_name,
         &state.transaction_queue,
         file_id,
+        checkpoint_sequence_num,
         &state.settings.quadratic_api_uri,
         &state.settings.quadratic_api_jwt,
     )

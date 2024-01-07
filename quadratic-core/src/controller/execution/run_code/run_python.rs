@@ -577,4 +577,47 @@ mod tests {
             Some(CellValue::Text("new output second time".into()))
         );
     }
+
+    #[test]
+    fn test_python_multiple_calculations() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            "1".to_string(),
+            None,
+        );
+        let summary = gc.set_code_cell(
+            SheetPos {
+                x: 0,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Python,
+            "c(0, 0) + 1".into(),
+            None,
+        );
+        let result = gc
+            .calculation_get_cells(JsComputeGetCells::new(
+                summary.transaction_id.unwrap(),
+                Rect::from_numbers(0, 0, 1, 1),
+                None,
+                None,
+            ))
+            .ok()
+            .unwrap();
+        assert_eq!(result.response.len(), 1);
+        assert_eq!(
+            result.response[0],
+            GetCellResponse {
+                x: 0,
+                y: 0,
+                value: "1".into()
+            }
+        );
+    }
 }
