@@ -7,6 +7,8 @@ import { User } from '@auth0/auth0-spa-js';
 import { v4 as uuid } from 'uuid';
 
 import { authClient } from '@/auth';
+import { SheetPos } from '@/gridGL/types/size';
+import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
 import { MULTIPLAYER_COLORS } from './multiplayerCursor/multiplayerColors';
 import {
   Heartbeat,
@@ -148,6 +150,7 @@ export class Multiplayer {
       y: 0,
       visible: false,
       viewport: pixiApp.saveMultiplayerViewport(),
+      code_running: JSON.stringify(pythonWebWorker.getCodeRunning()),
     };
     this.websocket!.send(JSON.stringify(enterRoom));
     if (debugShowMultiplayer) console.log(`[Multiplayer] Joined room ${file_id}.`);
@@ -257,6 +260,11 @@ export class Multiplayer {
     userUpdate.viewport = viewport;
   }
 
+  sendCodeRunning(sheetPos: SheetPos[]) {
+    const userUpdate = this.getUserUpdate().update;
+    userUpdate.code_running = JSON.stringify(sheetPos);
+  }
+
   async sendTransaction(id: string, operations: string) {
     await this.init();
     const message: SendTransaction = {
@@ -319,6 +327,8 @@ export class Multiplayer {
             visible: false,
             index: this.users.size,
             viewport: user.viewport,
+            code_running: user.code_running,
+            parsedCodeRunning: user.code_running ? JSON.parse(user.code_running) : [],
           };
           this.users.set(user.session_id, player);
           this.nextColor = (this.nextColor + 1) % MULTIPLAYER_COLORS.length;
@@ -406,6 +416,14 @@ export class Multiplayer {
       if (pixiAppSettings.editorInteractionState.follow === player.session_id) {
         pixiApp.loadMultiplayerViewport(JSON.parse(player.viewport));
       }
+    }
+
+    if (update.code_running) {
+      player.code_running = update.code_running;
+      player.parsedCodeRunning = JSON.parse(update.code_running);
+
+      // trigger changes in CodeRunning.tsx
+      dispatchEvent(new CustomEvent('python-change'));
     }
   }
 

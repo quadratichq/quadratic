@@ -81,6 +81,7 @@ pub(crate) async fn handle_message(
                 x: 0.0,
                 y: 0.0,
                 visible: false,
+                code_running: "".to_string(),
                 viewport,
             };
 
@@ -286,6 +287,7 @@ pub(crate) mod tests {
                 visible: Some(true),
                 cell_edit: None,
                 viewport: None,
+                code_running: None,
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -309,6 +311,7 @@ pub(crate) mod tests {
                 visible: None,
                 cell_edit: None,
                 viewport: None,
+                code_running: None,
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -332,6 +335,7 @@ pub(crate) mod tests {
                 visible: Some(false),
                 cell_edit: None,
                 viewport: None,
+                code_running: None,
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -355,6 +359,7 @@ pub(crate) mod tests {
                 visible: None,
                 cell_edit: None,
                 viewport: None,
+                code_running: None,
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -385,6 +390,7 @@ pub(crate) mod tests {
                     italic: None,
                 }),
                 viewport: None,
+                code_running: None,
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -408,6 +414,31 @@ pub(crate) mod tests {
                 visible: None,
                 cell_edit: None,
                 viewport: Some("viewport".to_string()),
+                code_running: None,
+            },
+        };
+        broadcast(vec![user_1.session_id], file_id, state, message)
+            .await
+            .unwrap();
+
+        // TODO(ddimaria): mock the splitsink sender to test the actual sending
+    }
+
+    #[tokio::test]
+    async fn test_change_code_running() {
+        let (state, file_id, user_1) = setup().await;
+        let message = MessageResponse::UserUpdate {
+            session_id: user_1.session_id,
+            file_id,
+            update: UserStateUpdate {
+                selection: None,
+                sheet_id: None,
+                x: None,
+                y: None,
+                visible: None,
+                cell_edit: None,
+                viewport: None,
+                code_running: Some("code running".to_string()),
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)

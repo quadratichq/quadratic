@@ -422,6 +422,7 @@ pub(crate) mod tests {
             x: Some(1.0),
             y: Some(2.0),
             selection: None,
+            code_running: None,
             sheet_id: None,
             visible: None,
             cell_edit: None,
@@ -440,6 +441,7 @@ pub(crate) mod tests {
             y: None,
             visible: None,
             cell_edit: None,
+            code_running: None,
             viewport: None,
         };
 
@@ -455,7 +457,24 @@ pub(crate) mod tests {
             y: None,
             visible: None,
             cell_edit: None,
+            code_running: None,
             viewport: Some("new_viewport".to_string()),
+        };
+
+        assert_user_changes_state(update).await;
+    }
+
+    #[tokio::test]
+    async fn user_changes_running() {
+        let update = UserStateUpdate {
+            selection: None,
+            sheet_id: None,
+            x: None,
+            y: None,
+            visible: None,
+            cell_edit: None,
+            code_running: Some("new_running".to_string()),
+            viewport: None,
         };
 
         assert_user_changes_state(update).await;

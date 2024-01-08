@@ -1,4 +1,5 @@
 import { SheetPos } from '@/gridGL/types/size';
+import { multiplayer } from '@/multiplayer/multiplayer';
 import mixpanel from 'mixpanel-browser';
 import { grid, pointsToRect } from '../../grid/controller/Grid';
 import { JsCodeResult } from '../../quadratic-core/quadratic_core';
@@ -126,12 +127,21 @@ class PythonWebWorker {
     this.next(false);
   }
 
+  getCodeRunning(): SheetPos[] {
+    return this.executionStack.map((cell) => cell.sheetPos);
+  }
+
+  private showChange() {
+    window.dispatchEvent(new CustomEvent('python-change'));
+    multiplayer.sendCodeRunning(this.getCodeRunning());
+  }
+
   next(complete: boolean) {
     if (complete) {
       this.running = false;
     }
     if (!this.worker || !this.loaded || this.running) {
-      window.dispatchEvent(new CustomEvent('python-change'));
+      this.showChange();
       return;
     }
     if (this.executionStack.length) {
@@ -146,7 +156,7 @@ class PythonWebWorker {
     } else if (complete) {
       window.dispatchEvent(new CustomEvent('python-computation-finished'));
     }
-    window.dispatchEvent(new CustomEvent('python-change'));
+    this.showChange();
   }
 
   stop() {
