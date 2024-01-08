@@ -26,6 +26,8 @@ jobs:
       working-directory: infra
       run: |
         npm ci
+
+        pulumi org set-default quadratic
         
         STACK_NAME="preview-pr-${{ env.PR_ID }}"
         if ! pulumi stack ls | grep -q "^$STACK_NAME"; then
@@ -36,11 +38,13 @@ jobs:
           pulumi stack select $STACK_NAME
         fi
 
-        pulumi config set aws:region us-west-2
-        pulumi config set domain quadratic-preview.com
+        # Create a file pointing at the correct Pulumi ESC Environment
+        cat <<EOF | tee Pulumi.$STACK_NAME.yaml
+        environment:
+          - aws-infra-development
+        EOF
+
         pulumi config set subdomain multiplayer-pr-${{ env.PR_ID }}
-        pulumi config set data-dog-env preview
-        pulumi config set data-dog-api-key ${{ env.DD_API_KEY }} --secret
         pulumi config set quadratic-api-uri https://quadratic-api-dev-pr-${{ env.PR_ID }}.herokuapp.com
         pulumi config set multiplayer-aws-s3-access-key-id ${{ secrets.MULTIPLAYER_AWS_S3_ACCESS_KEY_ID }} --secret
         pulumi config set multiplayer-aws-s3-secret-access-key ${{ secrets.MULTIPLAYER_AWS_S3_SECRET_ACCESS_KEY }} --secret
@@ -48,8 +52,8 @@ jobs:
         pulumi up -y
         echo "MULTIPLAYER_INSTANCE_DNS=$(pulumi stack output multiplayerInstanceDns)" >> "$GITHUB_OUTPUT"
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
         PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
         PR_ID: ${{ github.event.pull_request.number }}
         DD_API_KEY: ${{ secrets.DD_API_KEY }}
@@ -88,7 +92,7 @@ jobs:
     - name: Deploy Multiplayer to EC2
       run: ./infra/multiplayer/deploy-multiplayer-service.sh
       env:
-        EC2_KEY_PEM: ${{ secrets.EC2_KEY_PEM }}
+        EC2_KEY_PEM: ${{ secrets.EC2_KEY_PEM_DEVELOPMENT }}
         EC2_INSTANCE_DNS: ${{needs.infra.outputs.MULTIPLAYER_INSTANCE_DNS}}
 
   # client_preview:
