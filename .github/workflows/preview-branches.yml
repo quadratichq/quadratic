@@ -26,6 +26,8 @@ jobs:
       working-directory: infra
       run: |
         npm ci
+
+        pulumi org set-default quadratic
         
         STACK_NAME="preview-pr-${{ env.PR_ID }}"
         if ! pulumi stack ls | grep -q "^$STACK_NAME"; then
@@ -41,8 +43,6 @@ jobs:
         environment:
           - aws-infra-development
         EOF
-
-        pulumi org set-default quadratic
 
         pulumi config set subdomain multiplayer-pr-${{ env.PR_ID }}
         pulumi config set quadratic-api-uri https://quadratic-api-dev-pr-${{ env.PR_ID }}.herokuapp.com
