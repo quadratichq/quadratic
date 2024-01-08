@@ -43,7 +43,7 @@ impl GridController {
                         if transaction.is_user() {
                             self.check_deleted_code_runs(transaction, &sheet_rect);
                             self.add_compute_operations(transaction, &sheet_rect, None);
-                            self.check_all_spills(transaction, sheet_rect.sheet_id, 0);
+                            self.check_all_spills(transaction, sheet_rect.sheet_id);
                         }
 
                         // create reverse_operation

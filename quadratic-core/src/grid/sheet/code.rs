@@ -54,24 +54,19 @@ impl Sheet {
         column.render_size.get(pos.y)
     }
 
-    /// Returns whether a rect has a code_cell anchor (ie, the cell with the code) of any code_cell within it.
-    /// This needs to be checked regardless of ordering.
-    pub fn has_code_cell_anchor_in_rect(&self, rect: &Rect, skip: Pos) -> bool {
-        self.code_runs
-            .iter()
-            .any(|(pos, _)| *pos != skip && rect.contains(*pos))
-    }
-
     /// Returns whether a rect overlaps the output of a code cell.
-    /// It will only check code_cells until it finds the code_cell_search since later code_cells don't cause spills in earlier ones.
-    pub fn has_code_cell_in_rect(&self, rect: &Rect, skip: Pos) -> bool {
-        self.code_runs.iter().any(|(pos, code_cell)| {
-            if skip == *pos {
-                false
-            } else {
-                code_cell.output_rect(*pos).intersects(*rect)
+    /// It will only check code_cells until it finds the code_run at code_pos (since later code_runs do not cause spills in earlier ones)
+    pub fn has_code_cell_in_rect(&self, rect: &Rect, code_pos: Pos) -> bool {
+        for (pos, code_run) in &self.code_runs {
+            if pos == &code_pos {
+                // once we reach the code_cell, we can stop checking
+                return false;
             }
-        })
+            if code_run.output_rect(code_pos).intersects(*rect) {
+                return true;
+            }
+        }
+        false
     }
 }
 

@@ -69,7 +69,7 @@ impl GridController {
 
         if transaction.is_user() {
             self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
-            self.check_spills(transaction, &sheet_pos.into());
+            self.check_all_spills(transaction, sheet_pos.sheet_id);
         }
 
         transaction.sheets_with_dirty_bounds.insert(sheet_id);
