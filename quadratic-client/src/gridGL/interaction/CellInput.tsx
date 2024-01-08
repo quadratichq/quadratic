@@ -259,12 +259,15 @@ export const CellInput = (props: CellInputProps) => {
           // Open cell type menu, close editor.
           setEditorInteractionState({
             ...editorInteractionState,
-            showCellTypeMenu: true,
-            showCodeEditor: false,
-            selectedCell: { x: cellLocation.x, y: cellLocation.y },
-            selectedCellSheet: sheets.sheet.id,
-            mode: 'PYTHON',
+            showCodeEditor: true,
+            waitingForEditorClose: {
+              selectedCell: { x: cellLocation.x, y: cellLocation.y },
+              selectedCellSheet: sheets.sheet.id,
+              mode: 'PYTHON',
+              showCellTypeMenu: true,
+            },
           });
+          pixiAppSettings.changeInput(false);
           event.stopPropagation();
         } else if (event.key === 'Tab') {
           if (event.shiftKey) closeInput({ x: -1, y: 0 });

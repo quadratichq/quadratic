@@ -20,6 +20,7 @@ export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
   const { pythonState } = useRecoilValue(pythonStateAtom);
+
   // update code cell
   const [codeString, setCodeString] = useState('');
   const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
@@ -49,6 +50,32 @@ export const CodeEditor = () => {
   const unsaved = useMemo(() => {
     return editorContent !== codeString;
   }, [codeString, editorContent]);
+
+  // handle someone trying to open a different code editor
+  useEffect(() => {
+    if (editorInteractionState.waitingForEditorClose) {
+      // if unsaved then show save dialog and wait for that to complete
+      if (unsaved) {
+        setShowSaveChangesAlert(true);
+      }
+
+      // otherwise either open the new editor or show the cell type menu (if type is not selected)
+      else {
+        const waitingForEditorClose = editorInteractionState.waitingForEditorClose;
+        if (waitingForEditorClose) {
+          setEditorInteractionState((oldState) => ({
+            ...oldState,
+            selectedCell: waitingForEditorClose.selectedCell,
+            selectedCellSheet: waitingForEditorClose.selectedCellSheet,
+            mode: waitingForEditorClose.mode,
+            showCodeEditor: !waitingForEditorClose.showCellTypeMenu,
+            showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
+            waitingForEditorClose: undefined,
+          }));
+        }
+      }
+    }
+  }, [editorInteractionState.waitingForEditorClose, setEditorInteractionState, unsaved]);
 
   const updateCodeCell = useCallback(
     (updateEditorContent: boolean) => {
@@ -95,19 +122,31 @@ export const CodeEditor = () => {
 
   const closeEditor = useCallback(
     (skipSaveCheck: boolean) => {
-      if (!skipSaveCheck && editorContent !== codeString) {
+      if (!skipSaveCheck && unsaved) {
         setShowSaveChangesAlert(true);
       } else {
         setEditorInteractionState((oldState) => ({
           ...oldState,
+          editorEscapePressed: false,
           showCodeEditor: false,
         }));
         pixiApp.highlightedCells.clear();
         focusGrid();
       }
     },
-    [codeString, editorContent, setEditorInteractionState]
+    [setEditorInteractionState, unsaved]
   );
+
+  // handle when escape is pressed when escape does not have focus
+  useEffect(() => {
+    if (editorInteractionState.editorEscapePressed) {
+      if (unsaved) {
+        setShowSaveChangesAlert(true);
+      } else {
+        closeEditor(true);
+      }
+    }
+  }, [closeEditor, editorInteractionState.editorEscapePressed, unsaved]);
 
   const saveAndRunCell = async () => {
     if (pythonState !== 'idle') return;
@@ -171,6 +210,27 @@ export const CodeEditor = () => {
     }
   };
 
+  const afterDialog = () => {
+    setShowSaveChangesAlert(false);
+    if (editorInteractionState.editorEscapePressed) {
+      closeEditor(true);
+    }
+    const waitingForEditorClose = editorInteractionState.waitingForEditorClose;
+    if (waitingForEditorClose) {
+      setEditorInteractionState((oldState) => ({
+        ...oldState,
+        selectedCell: waitingForEditorClose.selectedCell,
+        selectedCellSheet: waitingForEditorClose.selectedCellSheet,
+        mode: waitingForEditorClose.mode,
+        showCodeEditor: !waitingForEditorClose.showCellTypeMenu,
+        showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
+        waitingForEditorClose: undefined,
+      }));
+    } else {
+      closeEditor(true);
+    }
+  };
+
   if (!showCodeEditor) {
     return null;
   }
@@ -196,13 +256,18 @@ export const CodeEditor = () => {
         <SaveChangesAlert
           onCancel={() => {
             setShowSaveChangesAlert(!showSaveChangesAlert);
+            setEditorInteractionState((old) => ({
+              ...old,
+              editorEscapePressed: false,
+              waitingForEditorClose: undefined,
+            }));
           }}
           onSave={() => {
             saveAndRunCell();
-            closeEditor(true);
+            afterDialog();
           }}
           onDiscard={() => {
-            closeEditor(true);
+            afterDialog();
           }}
         />
       )}
