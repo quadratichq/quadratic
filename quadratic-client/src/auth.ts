@@ -20,7 +20,6 @@ if (!(AUTH0_DOMAIN && AUTH0_CLIENT_ID && AUTH0_AUDIENCE && AUTH0_ISSUER)) {
 // Create the client as a module-scoped promise so all loaders will wait
 // for this one single instance of client to resolve
 let auth0ClientPromise: Promise<Auth0Client>;
-
 async function getClient() {
   if (!auth0ClientPromise) {
     auth0ClientPromise = createAuth0Client({
@@ -33,7 +32,7 @@ async function getClient() {
       cacheLocation: 'localstorage',
       useRefreshTokens: true,
       // remove the subdomain from the cookie domain so that the ws server can access it
-      // cookieDomain: '.' + window.location.host.match(/^(?:.*?\.)?([a-zA-Z0-9\-_]{3,}\.(?:\w{2,8}|\w{2,4}\.\w{2,4}))$/)![1],
+      cookieDomain: parseDomain(window.location.host),
     });
   }
   const auth0Client = await auth0ClientPromise;
@@ -118,4 +117,19 @@ export function protectedRouteLoaderWrapper(loaderFn: LoaderFunction): LoaderFun
     }
     return loaderFn(loaderFnArgs);
   };
+}
+
+/**
+ * Utility function parse the domain from a url
+ */
+export function parseDomain(url: string): string {
+  // check for classic URLs
+  let matches = url.match(/([^.]*\.[^.]{2,3}(?:\.[^.]{2,3})?$)/);
+
+  if (matches) {
+    return '.' + matches[0];
+  } else {
+    // check for IP addresses or localhost (ignore ports) or just return the url
+    return url.match(/(?:(?!:).)*/)![0] ?? url;
+  }
 }

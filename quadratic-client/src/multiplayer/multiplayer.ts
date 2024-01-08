@@ -1,14 +1,13 @@
+import { authClient, parseDomain } from '@/auth';
 import { debugShowMultiplayer } from '@/debugFlags';
 import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
-import { User } from '@auth0/auth0-spa-js';
-import { v4 as uuid } from 'uuid';
-
-import { authClient } from '@/auth';
 import { SheetPos } from '@/gridGL/types/size';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
+import { User } from '@auth0/auth0-spa-js';
+import { v4 as uuid } from 'uuid';
 import { MULTIPLAYER_COLORS } from './multiplayerCursor/multiplayerColors';
 import {
   Heartbeat,
@@ -66,7 +65,8 @@ export class Multiplayer {
       await this.getJwt();
 
       if (this.jwt) {
-        document.cookie = `jwt=${this.jwt}; path=/;`;
+        let domain = parseDomain(window.location.host);
+        document.cookie = `jwt=${this.jwt}; path=/; domain=${domain};`;
       }
     }
   }
