@@ -371,6 +371,7 @@ export class Multiplayer {
     if (update.sheet_id) {
       if (player.sheet_id !== update.sheet_id) {
         player.sheet_id = update.sheet_id;
+        window.dispatchEvent(new CustomEvent('multiplayer-change-sheet'));
         if (player.sheet_id === sheets.sheet.id) {
           pixiApp.multiplayerCursor.dirty = true;
           window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
