@@ -62,7 +62,7 @@ impl Sheet {
                 // once we reach the code_cell, we can stop checking
                 return false;
             }
-            if code_run.output_rect(code_pos).intersects(*rect) {
+            if code_run.output_rect(*pos).intersects(*rect) {
                 return true;
             }
         }

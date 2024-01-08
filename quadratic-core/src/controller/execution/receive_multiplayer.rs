@@ -998,12 +998,14 @@ mod tests {
             1,
             serde_json::from_str(&operations_0).unwrap(),
         );
+
         let (transaction_id_1, operations_1) = create_multiple_calculations_1(&mut gc);
         gc.received_transaction(
             Uuid::from_str(&transaction_id_1).unwrap(),
             2,
             serde_json::from_str(&operations_1).unwrap(),
         );
+
         let (transaction_id_2, operations_2) = create_multiple_calculations_2(&mut gc);
         gc.received_transaction(
             Uuid::from_str(&transaction_id_2).unwrap(),
