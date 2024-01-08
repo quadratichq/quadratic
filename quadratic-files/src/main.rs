@@ -1,7 +1,7 @@
-//! Quadratic Multiplayer
+//! Quadratic File Service
 //!
-//! A multiplayer server for Quadratic.  Supports user presence and mouse
-//! tracking for a shared file.
+//! A file servic for that consumes transactions from a queue, applies them to
+//! a grid and writes them to S3.
 
 mod config;
 mod error;

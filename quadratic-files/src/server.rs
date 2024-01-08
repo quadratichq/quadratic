@@ -1,6 +1,6 @@
-//! Websocket Server
+//! HTTP Server
 //!
-//! Handle bootstrapping and starting the websocket server.  Adds global state
+//! Handle bootstrapping and starting the HTTP server.  Adds global state
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
 use axum::{http::StatusCode, response::IntoResponse, routing::get, Extension, Router};
