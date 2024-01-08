@@ -258,6 +258,7 @@ export const CodeEditor = () => {
             setShowSaveChangesAlert(!showSaveChangesAlert);
             setEditorInteractionState((old) => ({
               ...old,
+              editorEscapePressed: false,
               waitingForEditorClose: undefined,
             }));
           }}
