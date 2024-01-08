@@ -42,6 +42,8 @@ jobs:
           - aws-infra-development
         EOF
 
+        pulumi org set-default quadratic
+
         pulumi config set subdomain multiplayer-pr-${{ env.PR_ID }}
         pulumi config set quadratic-api-uri https://quadratic-api-dev-pr-${{ env.PR_ID }}.herokuapp.com
         pulumi config set multiplayer-aws-s3-access-key-id ${{ secrets.MULTIPLAYER_AWS_S3_ACCESS_KEY_ID }} --secret
