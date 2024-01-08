@@ -286,10 +286,11 @@ export class PixiApp {
       x: viewport.center.x,
       y: viewport.center.y,
       bounds: viewport.getVisibleBounds(),
+      sheetId: sheets.sheet.id,
     });
   }
 
-  loadMultiplayerViewport(options: { x: number; y: number; bounds: Rectangle }): void {
+  loadMultiplayerViewport(options: { x: number; y: number; bounds: Rectangle; sheetId: string }): void {
     const { x, y, bounds } = options;
     let width: number | undefined;
     let height: number | undefined;
@@ -300,13 +301,18 @@ export class PixiApp {
     } else {
       width = bounds.width;
     }
-    this.viewport.animate({
-      position: new Point(x, y),
-      width,
-      height,
-      removeOnInterrupt: true,
-      time: MULTIPLAYER_VIEWPORT_EASE_TIME,
-    });
+    if (sheets.current !== options.sheetId) {
+      sheets.current = options.sheetId;
+      this.viewport.moveCenter(new Point(x, y));
+    } else {
+      this.viewport.animate({
+        position: new Point(x, y),
+        width,
+        height,
+        removeOnInterrupt: true,
+        time: MULTIPLAYER_VIEWPORT_EASE_TIME,
+      });
+    }
     this.viewport.dirty = true;
   }
 

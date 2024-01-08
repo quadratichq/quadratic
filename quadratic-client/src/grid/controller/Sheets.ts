@@ -6,6 +6,8 @@ import { grid } from './Grid';
 
 class Sheets {
   sheets: Sheet[];
+
+  // current sheet id
   private _current: string;
 
   // set up sheet information
