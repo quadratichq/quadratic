@@ -5,7 +5,6 @@ use uuid::Uuid;
 
 use crate::{
     error::Result,
-    file::process_queue_for_room,
     get_room,
     message::{broadcast, response::MessageResponse},
     state::State,
@@ -38,14 +37,6 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
 
                 tokio::spawn(async move {
                     tracing::trace!("Processing room {}", file_id);
-                    // process transaction queue for the room
-
-                    let processed =
-                        process_transaction_queue_for_room(Arc::clone(&state), &file_id).await;
-
-                    if let Err(error) = processed {
-                        tracing::warn!("Error processing queue for room {file_id}: {:?}", error);
-                    };
 
                     // broadcast sequence number to all users in the room
                     let broadcasted = broadcast_sequence_num(Arc::clone(&state), &file_id).await;
@@ -75,22 +66,6 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
             interval.tick().await;
         }
     });
-}
-
-// Process the transaction queue for a room
-async fn process_transaction_queue_for_room(
-    state: Arc<State>,
-    file_id: &Uuid,
-) -> Result<Option<u64>> {
-    process_queue_for_room(
-        &state.settings.aws_client,
-        &state.settings.aws_s3_bucket_name,
-        &state.transaction_queue,
-        file_id,
-        &state.settings.quadratic_api_uri,
-        &state.settings.quadratic_api_jwt,
-    )
-    .await
 }
 
 // broadcast sequence number to all users in the room

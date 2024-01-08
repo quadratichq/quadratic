@@ -1,3 +1,4 @@
+use futures_util::StreamExt;
 use redis::{
     aio::{AsyncStream, Monitor, MultiplexedConnection, PubSub},
     streams::{StreamId, StreamKey, StreamRangeReply, StreamReadOptions, StreamReadReply},
@@ -97,6 +98,18 @@ impl super::PubSub for RedisConnection {
         Ok(connection)
     }
 
+    /// Get a list of channels
+    async fn channels(&mut self) -> Result<Vec<String>> {
+        let channels = self
+            .multiplex
+            .scan::<String>()
+            .await?
+            .collect::<Vec<String>>()
+            .await;
+
+        Ok(channels)
+    }
+
     /// Create a group and a key (if it doesn't already exist), start from the beginning
     async fn subscribe(&mut self, channel: &str, group: &str) -> Result<()> {
         let result = self
@@ -141,7 +154,7 @@ impl super::PubSub for RedisConnection {
         Ok(())
     }
 
-    /// Get messages from a channel.  Specify the keys to get messages for,
+    /// Get unread messages from a channel.  Specify the keys to get messages for,
     /// or None to get all new messages.
     ///
     /// After receiving messages, they enter a pending queue in Redis.
@@ -182,8 +195,8 @@ impl super::PubSub for RedisConnection {
         Ok(messages)
     }
 
-    /// Get the last message in a channel
-    async fn get_message_from(&mut self, channel: &str, id: &str) -> Result<Vec<Message>> {
+    /// Get messages from a channel starting from a specific id
+    async fn get_messages_from(&mut self, channel: &str, id: &str) -> Result<Vec<Message>> {
         let messages: StreamRangeReply = self.multiplex.xrange(channel, id, "+").await?;
 
         Ok(stream_ids_to_messages(messages.ids))
@@ -323,5 +336,28 @@ pub mod tests {
         let results = connection.last_message(&channel).await.unwrap();
 
         assert_eq!(results, ("2".into(), messages[1].into()));
+    }
+
+    #[tokio::test]
+    async fn stream_get_all_channels() {
+        let (config, channel) = setup();
+        let messages = vec!["test 1", "test 2"];
+        let group = "group 1";
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+        connection.subscribe(&channel, group).await.unwrap();
+
+        // send messages
+        for (key, value) in messages.iter().enumerate() {
+            connection
+                .publish(&channel, &(key + 1).to_string(), value)
+                .await
+                .unwrap();
+        }
+
+        // get all channels
+        let results = connection.channels().await.unwrap();
+
+        assert!(results.contains(&channel));
     }
 }

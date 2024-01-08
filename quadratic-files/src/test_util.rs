@@ -1,21 +1,11 @@
-use fake::faker::filesystem::en::FilePath;
-use fake::faker::internet::en::FreeEmail;
-use fake::faker::name::en::{FirstName, LastName};
-use fake::Fake;
-use futures::stream::StreamExt;
-use futures_util::SinkExt;
+// use fake::faker::filesystem::en::FilePath;
+// use fake::faker::internet::en::FreeEmail;
+// use fake::faker::name::en::{FirstName, LastName};
+// use fake::Fake;
 use quadratic_core::controller::operations::operation::Operation;
 use quadratic_core::controller::GridController;
 use quadratic_core::{Array, CellValue, SheetRect};
-use quadratic_rust_shared::quadratic_api::FilePermRole;
 use std::sync::Arc;
-use std::{
-    future::IntoFuture,
-    net::{Ipv4Addr, SocketAddr},
-};
-use tokio::net::TcpStream;
-use tokio::sync::Mutex;
-use uuid::Uuid;
 
 use crate::config::config;
 use crate::state::State;
@@ -24,7 +14,7 @@ pub(crate) const TOKEN: &str = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjFa
 
 pub(crate) async fn new_state() -> State {
     let config = config().unwrap();
-    State::new(&config).await
+    State::new(&config).await.unwrap()
 }
 
 pub(crate) async fn new_arc_state() -> Arc<State> {

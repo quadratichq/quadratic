@@ -89,6 +89,8 @@ impl TransactionQueue {
 
         let transaction = serde_json::to_string(&transaction).unwrap();
 
+        println!("push(): {:?} {:?}", file_id, sequence_num);
+
         self.pubsub
             .connection
             .publish(

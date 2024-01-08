@@ -3,29 +3,17 @@
 //! Handle bootstrapping and starting the websocket server.  Adds global state
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
-use axum::{
-    extract::{
-        connect_info::ConnectInfo,
-        ws::{Message, WebSocket, WebSocketUpgrade},
-    },
-    http::StatusCode,
-    response::IntoResponse,
-    routing::get,
-    Extension, Router,
-};
-use axum_extra::TypedHeader;
-use futures::stream::StreamExt;
-use futures_util::stream::SplitSink;
-use futures_util::SinkExt;
-use std::ops::ControlFlow;
+use axum::{http::StatusCode, response::IntoResponse, routing::get, Extension, Router};
+use std::time::Duration;
 use std::{net::SocketAddr, sync::Arc};
-use tokio::sync::Mutex;
+use tokio::time;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{
     config::config,
     error::{FilesError, Result},
+    file::process,
     state::State,
 };
 
@@ -33,8 +21,8 @@ use crate::{
 /// integration tested.
 pub(crate) fn app(state: Arc<State>) -> Router {
     Router::new()
-        // handle websockets
-        // .route("/health", get(healthcheck))
+        // routes
+        .route("/health", get(healthcheck))
         // .route("/stats", get(stats))
         // state
         .layer(Extension(state))
@@ -45,19 +33,23 @@ pub(crate) fn app(state: Arc<State>) -> Router {
         )
 }
 
+async fn healthcheck() -> impl IntoResponse {
+    StatusCode::OK
+}
+
 /// Start the websocket server.  This is the entrypoint for the application.
 #[tracing::instrument(level = "trace")]
 pub(crate) async fn serve() -> Result<()> {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "quadratic_multiplayer=debug,tower_http=debug".into()),
+                .unwrap_or_else(|_| "quadratic_files=debug,tower_http=debug".into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
 
     let config = config()?;
-    let state = Arc::new(State::new(&config).await);
+    let state = Arc::new(State::new(&config).await?);
     let app = app(Arc::clone(&state));
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", config.host, config.port))
@@ -69,6 +61,30 @@ pub(crate) async fn serve() -> Result<()> {
         .map_err(|e| FilesError::InternalServer(e.to_string()))?;
 
     tracing::info!("listening on {local_addr}");
+
+    // in a separate thread, process all files in the queue
+    let state = Arc::clone(&state);
+    tokio::spawn({
+        async move {
+            let mut interval = time::interval(Duration::from_secs(config.file_check_s as u64));
+
+            loop {
+                interval.tick().await;
+
+                if let Err(error) = process(
+                    &state.settings.aws_client,
+                    &state.settings.aws_s3_bucket_name,
+                    &state.pubsub,
+                    &state.settings.quadratic_api_uri,
+                    &state.settings.quadratic_api_jwt,
+                )
+                .await
+                {
+                    tracing::error!("Error processing files: {error}");
+                }
+            }
+        }
+    });
 
     axum::serve(
         listener,
@@ -84,19 +100,4 @@ pub(crate) async fn serve() -> Result<()> {
 }
 
 #[cfg(test)]
-pub(crate) mod tests {
-
-    use super::*;
-    use crate::test_util::new_arc_state;
-    use quadratic_core::controller::operations::operation::Operation;
-    use quadratic_core::grid::SheetId;
-    use tokio::net::TcpStream;
-    use uuid::Uuid;
-
-    async fn setup() -> (Arc<State>, Uuid, Uuid) {
-        let state = new_arc_state().await;
-        let connection_id = Uuid::new_v4();
-        let file_id = Uuid::new_v4();
-        (state, connection_id, file_id)
-    }
-}
+pub(crate) mod tests {}

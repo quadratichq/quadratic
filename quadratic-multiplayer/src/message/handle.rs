@@ -72,7 +72,9 @@ pub(crate) async fn handle_message(
                     .await
                 {
                     // ignore parsing errors for now
-                    sequence_num = pubsub_sequence_num.0.parse::<u64>().unwrap_or(sequence_num);
+                    let pubsub_sequence_num =
+                        pubsub_sequence_num.0.parse::<u64>().unwrap_or(sequence_num);
+                    sequence_num = sequence_num.max(pubsub_sequence_num);
                 }
 
                 (permission, sequence_num)
@@ -187,6 +189,10 @@ pub(crate) async fn handle_message(
 
             // get the room's sequence_num
             let room_sequence_num = get_mut_room!(state, file_id)?.increment_sequence_num();
+            println!(
+                "handle::Transaction: room_sequence_num: {:?}",
+                room_sequence_num
+            );
 
             // add the transaction to the transaction queue
             let sequence_num = state
@@ -224,12 +230,7 @@ pub(crate) async fn handle_message(
                 .await
                 .pubsub
                 .connection
-                .messages(
-                    &file_id.to_string(),
-                    GROUP_NAME,
-                    Some(vec![&format!("{min_sequence_num}-0")]),
-                    100,
-                )
+                .get_messages_from(&file_id.to_string(), &min_sequence_num.to_string())
                 .await?
                 .iter()
                 .map(|(_, message)| serde_json::from_str::<TransactionServer>(&message))

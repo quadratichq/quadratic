@@ -3,7 +3,7 @@ use redis::{
     aio::{AsyncStream, MultiplexedConnection, PubSub},
     AsyncCommands, Client,
 };
-use std::pin::Pin;
+use std::{pin::Pin, vec};
 
 use crate::pubsub::Config;
 use crate::{error::Result, SharedError};
@@ -57,6 +57,11 @@ impl super::PubSub for RedisConnection {
         Ok(connection)
     }
 
+    /// Get a list of channels
+    async fn channels(&mut self) -> Result<Vec<String>> {
+        Ok(vec![])
+    }
+
     /// Subscribe to a channel.
     async fn subscribe(&mut self, channel: &str, _group: &str) -> Result<()> {
         self.pubsub.subscribe(channel).await?;
@@ -84,7 +89,7 @@ impl super::PubSub for RedisConnection {
         unimplemented!()
     }
 
-    async fn get_message_from(
+    async fn get_messages_from(
         &mut self,
         _channel: &str,
         _id: &str,

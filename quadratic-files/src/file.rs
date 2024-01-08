@@ -1,4 +1,4 @@
-use tokio::sync::Mutex;
+use tokio::{sync::Mutex, time::Instant};
 use uuid::Uuid;
 
 use quadratic_core::{
@@ -16,16 +16,15 @@ use quadratic_rust_shared::{
         Client,
     },
     pubsub::PubSub as PubSubTrait,
-    quadratic_api::set_file_checkpoint,
+    quadratic_api::{get_file_checkpoint, set_file_checkpoint},
 };
 
 use crate::{
     error::{FilesError, Result},
-    state::transaction_queue::TransactionQueue,
+    state::pubsub::PubSub,
 };
 
 pub static GROUP_NAME: &str = "quadratic-file-service-1";
-pub static MAX_MESSAGES: usize = 10;
 
 /// Load a .grid file
 pub(crate) fn load_file(key: &str, file: &str) -> Result<Grid> {
@@ -92,28 +91,29 @@ pub(crate) async fn process_transactions(
 pub(crate) async fn process_queue_for_room(
     client: &Client,
     bucket: &str,
-    transaction_queue: &Mutex<TransactionQueue>,
+    pubsub: &Mutex<PubSub>,
     file_id: &Uuid,
     base_url: &str,
     jwt: &str,
 ) -> Result<Option<u64>> {
+    let start = Instant::now();
     let channel = &file_id.to_string();
 
+    let sequence_number = match get_file_checkpoint(base_url, jwt, file_id).await {
+        Ok(last_checkpoint) => last_checkpoint.sequence_number + 1,
+        Err(_) => 1,
+    };
+
     // this is an expensive lock since we're waiting for the file to write to S3 before unlocking
-    let mut transaction_queue = transaction_queue.lock().await;
+    let mut pubsub = pubsub.lock().await;
 
     // subscribe to the channel
-    transaction_queue
-        .pubsub
-        .connection
-        .subscribe(channel, GROUP_NAME)
-        .await?;
+    pubsub.connection.subscribe(channel, GROUP_NAME).await?;
 
     // get all transactions for the room in the queue
-    let transactions = transaction_queue
-        .pubsub
+    let transactions = pubsub
         .connection
-        .messages(channel, GROUP_NAME, None, MAX_MESSAGES)
+        .get_messages_from(channel, &sequence_number.to_string())
         .await?
         .iter()
         .map(|(_, message)| serde_json::from_str::<TransactionServer>(&message))
@@ -125,7 +125,7 @@ pub(crate) async fn process_queue_for_room(
     }
 
     tracing::info!(
-        "Found {} transactions for room {file_id}",
+        "Found {} transaction(s) for room {file_id}",
         transactions.len()
     );
 
@@ -173,11 +173,7 @@ pub(crate) async fn process_queue_for_room(
     let keys = keys.iter().map(AsRef::as_ref).collect::<Vec<_>>();
 
     // confirm that transactions have been processed
-    transaction_queue
-        .pubsub
-        .connection
-        .ack(channel, GROUP_NAME, keys)
-        .await?;
+    pubsub.connection.ack(channel, GROUP_NAME, keys).await?;
 
     // update the checkpoint in quadratic-api
     let key = &key(*file_id, last_sequence_num);
@@ -193,10 +189,36 @@ pub(crate) async fn process_queue_for_room(
     .await?;
 
     tracing::info!(
-        "Processed sequence numbers {first_sequence_num} - {last_sequence_num} for room {file_id}"
+        "Processed sequence numbers {first_sequence_num} - {last_sequence_num} for room {file_id} in {:?}", start.elapsed()
     );
 
     Ok(Some(last_sequence_num))
+}
+
+/// Process outstanding transactions in the queue
+pub(crate) async fn process(
+    client: &Client,
+    bucket: &str,
+    pubsub: &Mutex<PubSub>,
+    base_url: &str,
+    jwt: &str,
+) -> Result<()> {
+    let files = pubsub
+        .lock()
+        .await
+        .connection
+        .channels()
+        .await?
+        .into_iter()
+        .map(|file_id| Uuid::parse_str(&file_id))
+        .flatten()
+        .collect::<Vec<_>>();
+
+    for file_id in files.iter() {
+        process_queue_for_room(client, bucket, pubsub, file_id, base_url, jwt).await?;
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]

@@ -16,6 +16,7 @@ pub trait PubSub {
 
     async fn new(config: Config) -> Result<Self::Connection>;
     async fn connect(config: Config) -> Result<Self::Connection>;
+    async fn channels(&mut self) -> Result<Vec<String>>;
     async fn subscribe(&mut self, channel: &str, group: &str) -> Result<()>;
     async fn publish(&mut self, channel: &str, key: &str, value: &str) -> Result<()>;
     async fn ack(&mut self, channel: &str, group: &str, keys: Vec<&str>) -> Result<()>;
@@ -26,6 +27,7 @@ pub trait PubSub {
         keys: Option<Vec<&str>>,
         max_messages: usize,
     ) -> Result<Vec<(String, String)>>;
-    async fn get_message_from(&mut self, channel: &str, id: &str) -> Result<Vec<(String, String)>>;
+    async fn get_messages_from(&mut self, channel: &str, id: &str)
+        -> Result<Vec<(String, String)>>;
     async fn last_message(&mut self, channel: &str) -> Result<(String, String)>;
 }
