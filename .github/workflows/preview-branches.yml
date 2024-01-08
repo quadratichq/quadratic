@@ -92,7 +92,7 @@ jobs:
     - name: Deploy Multiplayer to EC2
       run: ./infra/multiplayer/deploy-multiplayer-service.sh
       env:
-        EC2_KEY_PEM: ${{ secrets.EC2_KEY_PEM }}
+        EC2_KEY_PEM: ${{ secrets.EC2_KEY_PEM_DEVELOPMENT }}
         EC2_INSTANCE_DNS: ${{needs.infra.outputs.MULTIPLAYER_INSTANCE_DNS}}
 
   # client_preview:
