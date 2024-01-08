@@ -21,8 +21,10 @@ export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
   const { pythonState } = useRecoilValue(pythonStateAtom);
+
   // update code cell
   const [codeString, setCodeString] = useState('');
+
   const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
   const [evaluationResult, setEvaluationResult] = useState<any>(undefined);
   const [editorWidth, setEditorWidth] = useState<number>(
@@ -31,8 +33,6 @@ export const CodeEditor = () => {
   const [consoleHeight, setConsoleHeight] = useState<number>(200);
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
   const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
-
-  const isRunningComputation = pythonState === 'running';
 
   const cellLocation = useMemo(() => {
     return {
@@ -79,12 +79,12 @@ export const CodeEditor = () => {
     ]
   );
 
-  // update code cell after computation
-  useEffect(() => {
-    if (!isRunningComputation) {
-      updateCodeCell(false);
-    }
-  }, [updateCodeCell, isRunningComputation]);
+  // // update code cell after computation
+  // useEffect(() => {
+  //   if (!isRunningComputation) {
+  //     updateCodeCell(false);
+  //   }
+  // }, [updateCodeCell, isRunningComputation]);
 
   useEffect(() => {
     updateCodeCell(true);
@@ -113,7 +113,6 @@ export const CodeEditor = () => {
   );
 
   const saveAndRunCell = async () => {
-    if (pythonState !== 'idle') return;
     const language =
       editorInteractionState.mode === 'PYTHON'
         ? CodeCellLanguage.Python
@@ -221,7 +220,6 @@ export const CodeEditor = () => {
       <CodeEditorHeader
         cellLocation={cellLocation}
         unsaved={unsaved}
-        isRunningComputation={isRunningComputation}
         saveAndRunCell={saveAndRunCell}
         cancelPython={cancelPython}
         closeEditor={() => closeEditor(false)}
