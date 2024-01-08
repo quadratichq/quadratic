@@ -61,17 +61,17 @@ const redisSecurityGroup = new aws.ec2.SecurityGroup("redis-sg", {
 });
 
 // Create a Redis ElastiCache cluster
-const redisCluster = new aws.elasticache.Cluster("multiplayer-redis-cluster", {
-  engine: "redis",
-  engineVersion: "7.1",
-  nodeType: "cache.t4g.micro",
-  numCacheNodes: 1,
-  securityGroupIds: [redisSecurityGroup.id],
-});
+// const redisCluster = new aws.elasticache.Cluster("multiplayer-redis-cluster", {
+//   engine: "redis",
+//   engineVersion: "7.1",
+//   nodeType: "cache.t4g.micro",
+//   numCacheNodes: 1,
+//   securityGroupIds: [redisSecurityGroup.id],
+// });
 
-const redisConnectionString = `${redisCluster.cacheNodes.apply(
-  (nodes) => nodes[0].address
-)}:${redisCluster.port}`;
+// const redisConnectionString = `${redisCluster.cacheNodes.apply(
+//   (nodes) => nodes[0].address
+// )}:${redisCluster.port}`;
 
 // Read the content of the Bash script
 let setupMultiplayerService = fs.readFileSync(
@@ -99,10 +99,10 @@ setupMultiplayerService = setupMultiplayerService.replace(
   "{{MULTIPLAYER_AWS_S3_SECRET_ACCESS_KEY}}",
   awsS3Secret
 );
-setupMultiplayerService = setupMultiplayerService.replace(
-  "{{AWS_REDIS_CONNECTION_STRING}}",
-  redisConnectionString
-);
+// setupMultiplayerService = setupMultiplayerService.replace(
+//   "{{AWS_REDIS_CONNECTION_STRING}}",
+//   redisConnectionString
+// );
 const instance = new aws.ec2.Instance("multiplayer-instance", {
   tags: {
     Name: `multiplayer-instance-${multiplayerSubdomain}`,
