@@ -34,6 +34,7 @@ export class Multiplayer {
   private sessionId;
   private room?: string;
   private user?: User;
+  private anonymous?: boolean;
   private jwt?: string | void;
 
   // messages pending a reconnect
@@ -74,7 +75,9 @@ export class Multiplayer {
   private async init() {
     if (this.state === 'connected') return;
 
-    await this.addJwtCookie();
+    if (!this.anonymous) {
+      await this.addJwtCookie();
+    }
 
     return new Promise((resolve) => {
       if (this.state === 'connecting' || this.state === 'waiting to reconnect') {
@@ -118,10 +121,8 @@ export class Multiplayer {
   };
 
   // multiplayer for a file
-  async enterFileRoom(file_id: string, user?: User) {
-    // hack for same file different server
-    // file_id = 'dde9887b-303c-491f-8863-0bfd047cce76';
-
+  async enterFileRoom(file_id: string, user?: User, anonymous?: boolean) {
+    this.anonymous = anonymous;
     if (!user?.sub) throw new Error('User must be defined to enter a multiplayer room.');
     this.userUpdate.file_id = file_id;
     await this.init();
@@ -471,7 +472,7 @@ export class Multiplayer {
     } else if (type === 'CurrentTransaction') {
       this.receiveCurrentTransaction(data);
     } else if (type === 'Error') {
-      console.warn(`[Multiplayer] Error: ${data.error}`);
+      console.warn(`[Multiplayer] Error`, data.error);
     } else if (type !== 'Empty') {
       console.warn(`Unknown message type: ${type}`);
     }

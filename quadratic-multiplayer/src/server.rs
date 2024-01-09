@@ -125,23 +125,25 @@ async fn ws_handler(
     if state.settings.authenticate_jwt {
         let auth_error = |error: &str| MpError::Authentication(error.to_string());
 
-        // validate the JWT
+        // validate the JWT or ignore for anonymous users if it doesn't exist
         let result = async {
             let cookie = cookie.ok_or_else(|| auth_error("No cookie found"))?;
-            let token = cookie
-                .get("jwt")
-                .ok_or_else(|| auth_error("No JWT found"))?;
-            let jwks: jsonwebtoken::jwk::JwkSet = state
-                .settings
-                .jwks
-                .clone()
-                .ok_or_else(|| auth_error("No JWKS found"))?;
+            if let Some(token) = cookie.get("jwt") {
+                let jwks: jsonwebtoken::jwk::JwkSet = state
+                    .settings
+                    .jwks
+                    .clone()
+                    .ok_or_else(|| auth_error("No JWKS found"))?;
 
-            authorize(&jwks, token, false, true)?;
+                authorize(&jwks, token, false, true)?;
 
-            jwt = Some(token.to_owned());
+                jwt = Some(token.to_owned());
 
-            Ok::<_, MpError>(())
+                Ok::<_, MpError>(())
+            } else {
+                // this is for anonymous users
+                Ok::<_, MpError>(())
+            }
         }
         .await;
 

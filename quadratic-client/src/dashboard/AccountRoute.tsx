@@ -7,7 +7,7 @@ import { DashboardHeader } from './components/DashboardHeader';
 // import { useColorMode } from 'shared/root/Theme';
 
 export const Component = () => {
-  const { user } = useRootRouteLoaderData();
+  const { loggedInUser: user } = useRootRouteLoaderData();
   const theme = useTheme();
   // const { colorModePreference, toggleColorMode } = useColorMode();
 

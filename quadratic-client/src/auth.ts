@@ -60,6 +60,7 @@ export const authClient: AuthClient = {
     return user;
   },
   async login(redirectTo: string, isSignupFlow: boolean = false) {
+    debugger;
     const client = await getClient();
     await client.loginWithRedirect({
       authorizationParams: {

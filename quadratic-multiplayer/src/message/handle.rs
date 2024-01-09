@@ -48,9 +48,9 @@ pub(crate) async fn handle_message(
         } => {
             // validate that the user has permission to access the file
             let base_url = &state.settings.quadratic_api_uri;
-            let jwt = connection.jwt.to_owned().ok_or_else(|| {
-                MpError::Authentication("A JWT is required to validate file permissions".into())
-            })?;
+
+            // anonymous users can log in without a jwt
+            let jwt = connection.jwt.to_owned().unwrap_or_default();
 
             // default to owner for tests
             let (permission, sequence_num) = if cfg!(test) {

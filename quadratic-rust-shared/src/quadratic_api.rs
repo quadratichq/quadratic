@@ -26,7 +26,7 @@ pub enum FilePermRole {
     Owner,
     Editor,
     Viewer,
-    Annonymous,
+    Anonymous,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -51,18 +51,23 @@ pub async fn get_file_perms(
     file_id: Uuid,
 ) -> Result<(FilePermRole, u64)> {
     let url = format!("{base_url}/v0/files/{file_id}");
-    let response = reqwest::Client::new()
-        .get(url)
-        .header("Authorization", format!("Bearer {}", jwt))
-        .send()
-        .await?;
+    let response = if jwt.is_empty() {
+        reqwest::Client::new().get(url).send()
+    } else {
+        reqwest::Client::new()
+            .get(url)
+            .header("Authorization", format!("Bearer {}", jwt))
+            .send()
+    }
+    .await?;
 
     handle_response(&response)?;
 
-    let deserailized = response.json::<FilePerms>().await?;
+    let deserialized = response.json::<FilePerms>().await?;
+
     Ok((
-        deserailized.permission,
-        deserailized.file.last_checkpoint_sequence_number,
+        deserialized.permission,
+        deserialized.file.last_checkpoint_sequence_number,
     ))
 }
 
@@ -73,16 +78,18 @@ pub async fn get_file_checkpoint(
     file_id: &Uuid,
 ) -> Result<LastCheckpoint> {
     let url = format!("{base_url}/v0/internal/file/{file_id}/checkpoint");
-    let response = reqwest::Client::new()
-        .get(url)
-        .header("Authorization", format!("Bearer {}", jwt))
-        .send()
-        .await?;
-
+    let response = if jwt.is_empty() {
+        reqwest::Client::new().get(url).send()
+    } else {
+        reqwest::Client::new()
+            .get(url)
+            .header("Authorization", format!("Bearer {}", jwt))
+            .send()
+    }
+    .await?;
     handle_response(&response)?;
 
-    let deserailized = response.json::<Checkpoint>().await?.last_checkpoint;
-    Ok(deserailized)
+    Ok(response.json::<Checkpoint>().await?.last_checkpoint)
 }
 
 /// Set the file's checkpoint with the quadratic API server.
@@ -112,8 +119,8 @@ pub async fn set_file_checkpoint(
 
     handle_response(&response)?;
 
-    let deserailized = response.json::<Checkpoint>().await?.last_checkpoint;
-    Ok(deserailized)
+    let deserialized = response.json::<Checkpoint>().await?.last_checkpoint;
+    Ok(deserialized)
 }
 
 fn handle_response(response: &Response) -> Result<()> {
@@ -140,7 +147,7 @@ pub(crate) fn _validate_role(role: FilePermRole, required_role: FilePermRole) ->
                 || role == FilePermRole::Editor
                 || role == FilePermRole::Owner
         }
-        FilePermRole::Annonymous => role == FilePermRole::Annonymous,
+        FilePermRole::Anonymous => role == FilePermRole::Anonymous,
     };
 
     if !authorized {

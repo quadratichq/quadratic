@@ -1,8 +1,10 @@
 import { multiplayer } from '@/multiplayer/multiplayer';
 import { useRootRouteLoaderData } from '@/router';
+import { User } from '@auth0/auth0-spa-js';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { v4 } from 'uuid';
 import { isEditorOrAbove } from '../actions';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { pythonStateAtom } from '../atoms/pythonStateAtom';
@@ -12,8 +14,7 @@ import QuadraticUIContext from './QuadraticUIContext';
 import { QuadraticLoading } from './loading/QuadraticLoading';
 
 export default function QuadraticApp() {
-  const { user } = useRootRouteLoaderData();
-
+  const { loggedInUser } = useRootRouteLoaderData();
 
   const [loading, setLoading] = useState(true);
   const { permission, uuid } = useRecoilValue(editorInteractionStateAtom);
@@ -75,13 +76,19 @@ export default function QuadraticApp() {
   }, [permission, setLoadedState]);
 
   useEffect(() => {
-    if (uuid && user && !pixiApp.initialized) {
+    if (uuid && !pixiApp.initialized) {
+      let anonymous = false;
+      let user: User | undefined = loggedInUser;
+      if (!user) {
+        user = { sub: v4(), first_name: 'Anonymous', last_name: 'User' };
+        anonymous = true;
+      }
       pixiApp.init().then(() => {
-        multiplayer.enterFileRoom(uuid, user);
-        setLoading(false)
+        multiplayer.enterFileRoom(uuid, user, anonymous);
+        setLoading(false);
       });
     }
-  }, [uuid, user]);
+  }, [uuid, loggedInUser]);
 
   if (loading) {
     return <QuadraticLoading />;

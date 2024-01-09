@@ -55,7 +55,7 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
   const [loading, setLoading] = useState<boolean>(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const controller = useRef<AbortController>();
-  const { user } = useRootRouteLoaderData();
+  const { loggedInUser: user } = useRootRouteLoaderData();
   const inputRef = useRef<HTMLInputElement | undefined>(undefined);
 
   // Focus the input when the tab comes into focus

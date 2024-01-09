@@ -81,7 +81,7 @@ export const Component = () => {
 
 function Navbar() {
   const { teams, hasError } = useLoaderData() as LoaderData;
-  const { user } = useRootRouteLoaderData();
+  const { loggedInUser: user } = useRootRouteLoaderData();
   const fetchers = useFetchers();
   const classNameIcons = `h-5 w-5 mx-0.5`;
 
