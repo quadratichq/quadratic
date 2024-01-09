@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use tokio::{sync::Mutex, time::Instant};
 use uuid::Uuid;
 
@@ -21,7 +22,7 @@ use quadratic_rust_shared::{
 
 use crate::{
     error::{FilesError, Result},
-    state::pubsub::PubSub,
+    state::{pubsub::PubSub, settings::Settings, State},
 };
 
 pub static GROUP_NAME: &str = "quadratic-file-service-1";
@@ -89,23 +90,28 @@ pub(crate) async fn process_transactions(
 
 /// Process outstanding transactions in the queue
 pub(crate) async fn process_queue_for_room(
-    client: &Client,
-    bucket: &str,
-    pubsub: &Mutex<PubSub>,
+    state: &Arc<State>,
     file_id: &Uuid,
-    base_url: &str,
-    jwt: &str,
 ) -> Result<Option<u64>> {
     let start = Instant::now();
     let channel = &file_id.to_string();
 
-    let sequence_number = match get_file_checkpoint(base_url, jwt, file_id).await {
-        Ok(last_checkpoint) => last_checkpoint.sequence_number + 1,
-        Err(_) => 1,
-    };
+    let Settings {
+        aws_client,
+        aws_s3_bucket_name,
+        quadratic_api_uri,
+        quadratic_api_jwt,
+        ..
+    } = &state.settings;
+
+    let sequence_number =
+        match get_file_checkpoint(&quadratic_api_uri, &quadratic_api_jwt, file_id).await {
+            Ok(last_checkpoint) => last_checkpoint.sequence_number + 1,
+            Err(_) => 1,
+        };
 
     // this is an expensive lock since we're waiting for the file to write to S3 before unlocking
-    let mut pubsub = pubsub.lock().await;
+    let mut pubsub = state.pubsub.lock().await;
 
     // subscribe to the channel
     pubsub.connection.subscribe(channel, GROUP_NAME).await?;
@@ -157,8 +163,8 @@ pub(crate) async fn process_queue_for_room(
 
     // process the transactions and save the file to S3
     let last_sequence_num = process_transactions(
-        client,
-        bucket,
+        aws_client,
+        aws_s3_bucket_name,
         *file_id,
         checkpoint_sequence_num,
         operations,
@@ -178,13 +184,13 @@ pub(crate) async fn process_queue_for_room(
     // update the checkpoint in quadratic-api
     let key = &key(*file_id, last_sequence_num);
     set_file_checkpoint(
-        base_url,
-        jwt,
+        &quadratic_api_uri,
+        &quadratic_api_jwt,
         file_id,
         last_sequence_num,
         CURRENT_VERSION.into(),
         key.to_owned(),
-        bucket.to_owned(),
+        aws_s3_bucket_name.to_owned(),
     )
     .await?;
 
@@ -196,14 +202,9 @@ pub(crate) async fn process_queue_for_room(
 }
 
 /// Process outstanding transactions in the queue
-pub(crate) async fn process(
-    client: &Client,
-    bucket: &str,
-    pubsub: &Mutex<PubSub>,
-    base_url: &str,
-    jwt: &str,
-) -> Result<()> {
-    let files = pubsub
+pub(crate) async fn process(state: &Arc<State>) -> Result<()> {
+    let files = state
+        .pubsub
         .lock()
         .await
         .connection
@@ -215,7 +216,7 @@ pub(crate) async fn process(
         .collect::<Vec<_>>();
 
     for file_id in files.iter() {
-        process_queue_for_room(client, bucket, pubsub, file_id, base_url, jwt).await?;
+        process_queue_for_room(&state, file_id).await?;
     }
 
     Ok(())

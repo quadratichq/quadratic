@@ -5,6 +5,7 @@
 
 pub mod pubsub;
 pub mod settings;
+pub mod stats;
 
 use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
 use quadratic_rust_shared::pubsub::Config as PubSubConfig;
@@ -15,11 +16,13 @@ use crate::error::Result;
 use crate::state::settings::Settings;
 
 use self::pubsub::PubSub;
+use self::stats::Stats;
 
 #[derive(Debug)]
 pub(crate) struct State {
     pub(crate) pubsub: Mutex<PubSub>,
     pub(crate) settings: Settings,
+    pub(crate) stats: Stats,
 }
 
 impl State {
@@ -33,6 +36,7 @@ impl State {
         Ok(State {
             pubsub: Mutex::new(PubSub::new(pubsub_config).await?),
             settings: Settings::new(config).await,
+            stats: Stats::new().await,
         })
     }
 }

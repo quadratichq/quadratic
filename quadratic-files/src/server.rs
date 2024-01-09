@@ -3,13 +3,14 @@
 //! Handle bootstrapping and starting the HTTP server.  Adds global state
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
-use axum::{http::StatusCode, response::IntoResponse, routing::get, Extension, Router};
+use axum::{routing::get, Extension, Router};
 use std::time::Duration;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::time;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+use crate::health::{healthcheck, stats};
 use crate::{
     config::config,
     error::{FilesError, Result},
@@ -31,10 +32,6 @@ pub(crate) fn app(state: Arc<State>) -> Router {
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::default().include_headers(true)),
         )
-}
-
-async fn healthcheck() -> impl IntoResponse {
-    StatusCode::OK
 }
 
 /// Start the websocket server.  This is the entrypoint for the application.
@@ -63,25 +60,32 @@ pub(crate) async fn serve() -> Result<()> {
     tracing::info!("listening on {local_addr}");
 
     // in a separate thread, process all files in the queue
-    let state = Arc::clone(&state);
     tokio::spawn({
+        let state = Arc::clone(&state);
+
         async move {
             let mut interval = time::interval(Duration::from_secs(config.file_check_s as u64));
 
             loop {
                 interval.tick().await;
 
-                if let Err(error) = process(
-                    &state.settings.aws_client,
-                    &state.settings.aws_s3_bucket_name,
-                    &state.pubsub,
-                    &state.settings.quadratic_api_uri,
-                    &state.settings.quadratic_api_jwt,
-                )
-                .await
-                {
+                if let Err(error) = process(&state).await {
                     tracing::error!("Error processing files: {error}");
                 }
+            }
+        }
+    });
+
+    // in a separate thread, log stats
+    tokio::spawn({
+        let state = Arc::clone(&state);
+
+        async move {
+            let mut interval = time::interval(Duration::from_secs(1));
+
+            loop {
+                interval.tick().await;
+                stats(&state).await;
             }
         }
     });

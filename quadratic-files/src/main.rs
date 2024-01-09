@@ -6,6 +6,7 @@
 mod config;
 mod error;
 mod file;
+mod health;
 mod server;
 mod state;
 #[cfg(test)]

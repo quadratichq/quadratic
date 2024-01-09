@@ -2,6 +2,8 @@
 
 An Axum HTTP Server for processing the file queue.
 
+The queue is a RedisStream, where each file is a stream/key.
+
 ## Running
 
 First, copy over the environment variables (customize if applicable):
@@ -18,7 +20,6 @@ RUST_LOG=info cargo run
 // npm alternative
 npm start
 ```
-
 
 ## Development
 
@@ -60,3 +61,19 @@ npm run lint
 ```
 
 ## API
+
+### Health Checks
+
+#### Request
+
+```shell
+curl http://127.0.0.1:3002/health -i
+```
+
+#### Response
+
+```shell
+HTTP/1.1 200 OK
+content-length: 0
+date: Mon, 08 Jan 2024 22:56:23 GMT
+```
