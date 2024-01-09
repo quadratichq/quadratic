@@ -352,8 +352,8 @@ function TabMultiplayer({ sheetId }: { sheetId: string }) {
 
   return (
     <div style={{ position: 'absolute', display: 'flex', width: '100%', top: 0, gap: '1px' }}>
-      {users.map((color) => (
-        <div style={{ width: '5px', height: '5px', backgroundColor: color }} />
+      {users.map((color, index) => (
+        <div key={index} style={{ width: '5px', height: '5px', backgroundColor: color }} />
       ))}
     </div>
   );

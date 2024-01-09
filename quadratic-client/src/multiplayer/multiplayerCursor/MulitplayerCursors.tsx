@@ -40,7 +40,7 @@ export const MultiplayerCursors = () => {
         } else if (email) {
           name = email;
         } else {
-          name = `User ${index}`;
+          name = `User ${index + 1}`;
         }
 
         if (visible && x !== undefined && y !== undefined && sheet_id === sheets.sheet.id) {
