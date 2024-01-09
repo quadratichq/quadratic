@@ -89,7 +89,7 @@ impl GridController {
         transaction_type: TransactionType,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let mut pending = transaction.to_pending_transaction(transaction_type, cursor);
+        let mut pending = transaction.to_undo_transaction(transaction_type, cursor);
         pending.id = Uuid::new_v4();
         self.start_transaction(&mut pending);
         self.finalize_transaction(&mut pending)

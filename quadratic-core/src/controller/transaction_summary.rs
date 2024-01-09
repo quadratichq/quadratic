@@ -80,6 +80,13 @@ impl TransactionSummary {
         }
     }
 
+    pub fn cursor(cursor: Option<String>) -> Self {
+        TransactionSummary {
+            cursor,
+            ..Default::default()
+        }
+    }
+
     pub fn clear(&mut self, keep_forward_transaction: bool) {
         self.fill_sheets_modified.clear();
         self.border_sheets_modified.clear();

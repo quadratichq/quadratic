@@ -77,6 +77,7 @@ export const CodeRunning = () => {
       <div className="code-running" style={{ transform }}>
         {code.map((code, index) => (
           <CircularProgress
+            color={code.color === 'black' ? 'primary' : undefined}
             size={`${CIRCULAR_PROGRESS_SIZE}px`}
             key={index}
             sx={{ position: 'absolute', left: code.left, top: code, color: code.color }}
