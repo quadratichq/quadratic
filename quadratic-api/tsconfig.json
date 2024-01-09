@@ -10,5 +10,5 @@
     "sourceMap": true,
     "outDir": "dist"
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.test.ts"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.test.ts", "scripts/**/*.ts"],
 }
