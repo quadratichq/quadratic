@@ -349,9 +349,10 @@ export class Multiplayer {
     // this eventually will not be necessarily
     if (data.session_id === this.sessionId) return;
     const player = this.users.get(data.session_id);
-    if (!player) {
-      throw new Error("Expected Player to be defined before receiving a message of type 'MouseMove'");
-    }
+
+    // it's possible we get the UserUpdate before the EnterRoom response. No big deal if we do.
+    if (!player) return;
+
     if (data.file_id !== this.room) {
       throw new Error("Expected file_id to match room before receiving a message of type 'MouseMove'");
     }
