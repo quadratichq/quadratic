@@ -9,12 +9,72 @@ services:
       - "8001:8001"
     volumes:
       - ./docker/redis/dаta:/data
-    # command: redis-server --loglevel debug
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: "5s"
     networks:
       - quadratic
+
+  postgres:
+    image: postgres:15
+    restart: always
+    container_name: postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: prisma
+      POSTGRES_PASSWORD: prisma
+      POSTGRES_DB: quadratic-api
+    networks:
+      - quadratic
+
+  quadratic-api:
+    build:
+      context: .
+      dockerfile: quadratic-api/Dockerfile
+    env_file:
+      - quadratic-api/.env.docker
+    restart: "always"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    networks:
+      - quadratic
+
+  # quadratic-multiplayer:
+  #   build:
+  #     context: .
+  #     dockerfile: quadratic-multiplayer/Dockerfile
+  #     args:
+  #       - binary=quadratic-multiplayer
+  #   env_file:
+  #     - quadratic-multiplayer/.env.docker
+  #   restart: "always"
+  #   ports:
+  #     - "3001:3001"
+  #   depends_on:
+  #     - redis
+  #     - quadratic-api
+  #   networks:
+  #     - quadratic
+
+  # quadratic-files:
+  #   build:
+  #     context: .
+  #     dockerfile: quadratic-files/Dockerfile
+  #     args:
+  #       - binary=quadratic-files
+  #   env_file:
+  #     - quadratic-files/.env.docker
+  #   restart: "always"
+  #   ports:
+  #     - "3002:3002"
+  #   depends_on:
+  #     - redis
+  #     - quadratic-api
+  #   networks:
+  #     - quadratic
 
 volumes:
   docker:
