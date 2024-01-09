@@ -128,6 +128,10 @@ impl PendingTransaction {
         matches!(self.transaction_type, TransactionType::Undo)
             || matches!(self.transaction_type, TransactionType::Redo)
     }
+
+    pub fn is_user_undo_redo(&self) -> bool {
+        self.is_user() || self.is_undo_redo()
+    }
 }
 
 #[cfg(test)]

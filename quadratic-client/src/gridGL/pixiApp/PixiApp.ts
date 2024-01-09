@@ -18,6 +18,7 @@ import { UIMultiPlayerCursor } from '../UI/UIMultiplayerCursor';
 import { BoxCells } from '../UI/boxCells';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { CellsSheets } from '../cells/CellsSheets';
+import { htmlCellsHandler } from '../htmlCells/htmlCellsHandler';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { ensureVisible } from '../interaction/viewportHelper';
 import { loadAssets } from '../loadAssets';
@@ -333,6 +334,7 @@ export class PixiApp {
   adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
     this.cellsSheets.adjustHeadings(options);
     this.cellsSheets.updateBordersString([options.sheetId]);
+    htmlCellsHandler.updateOffsets([sheets.sheet.id]);
     this.headings.dirty = true;
     this.gridLines.dirty = true;
     this.cursor.dirty = true;

@@ -18,13 +18,6 @@ impl GridController {
                 // sheet may have been deleted
                 return;
             };
-            transaction.summary.offsets_modified.insert(sheet.id);
-            let old_size = sheet.offsets.set_column_width(column, new_size);
-            transaction.summary.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
-                x: column,
-                y: 0,
-                sheet_id,
-            });
             transaction
                 .forward_operations
                 .push(Operation::ResizeColumn {
@@ -32,6 +25,17 @@ impl GridController {
                     column,
                     new_size,
                 });
+            transaction.summary.offsets_modified.insert(sheet.id);
+            let old_size = sheet.offsets.set_column_width(column, new_size);
+
+            if transaction.is_user() {
+                transaction.summary.generate_thumbnail |=
+                    self.thumbnail_dirty_sheet_pos(SheetPos {
+                        x: column,
+                        y: 0,
+                        sheet_id,
+                    });
+            }
             transaction.reverse_operations.insert(
                 0,
                 Operation::ResizeColumn {
@@ -54,18 +58,21 @@ impl GridController {
                 // sheet may have been deleted
                 return;
             };
-            let old_size = sheet.offsets.set_row_height(row, new_size);
-            transaction.summary.offsets_modified.insert(sheet.id);
-            transaction.summary.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
-                x: 0,
-                y: row,
-                sheet_id,
-            });
             transaction.forward_operations.push(Operation::ResizeRow {
                 sheet_id,
                 row,
                 new_size,
             });
+            let old_size = sheet.offsets.set_row_height(row, new_size);
+            transaction.summary.offsets_modified.insert(sheet.id);
+            if transaction.is_user_undo_redo() {
+                transaction.summary.generate_thumbnail |=
+                    self.thumbnail_dirty_sheet_pos(SheetPos {
+                        x: 0,
+                        y: row,
+                        sheet_id,
+                    });
+            }
             transaction.reverse_operations.insert(
                 0,
                 Operation::ResizeRow {
