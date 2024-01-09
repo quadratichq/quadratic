@@ -4,6 +4,8 @@ import { uploadStringAsFileS3 } from '../src/aws/s3';
 const prisma = new PrismaClient();
 
 async function migrateFiles() {
+  console.log('Migrating files started.');
+
   const files_to_migrate = await prisma.file.findMany({
     where: {
       contents: {
@@ -56,4 +58,6 @@ migrateFiles()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    console.log('Disconnected from database.');
+    console.log('Finished migrating files.');
   });
