@@ -10,7 +10,8 @@ datasource db {
 model User {
     id           Int            @id @default(autoincrement())
     auth0Id      String         @unique @map("auth0_id")
-    files        File[]
+    ownedFiles   File[]         @relation(name: "OwnerRelation")
+    createdFiles File[]         @relation(name: "CreatorRelation")
     QFeedback    QFeedback[]
     UserTeamRole UserTeamRole[]
     UserFileRole UserFileRole[]
@@ -26,24 +27,34 @@ enum LinkPermission {
 
 // TODO Properly configure camelCase <-> snake_case
 model File {
-    id               Int              @id @default(autoincrement())
-    uuid             String           @unique @default(uuid())
-    name             String
-    thumbnail        String? // S3FileKey
-    createdDate      DateTime         @default(now()) @map("created_date")
-    updatedDate      DateTime         @default(now()) @map("updated_date")
-    deleted          Boolean          @default(false)
-    deletedDate      DateTime?        @map("deleted_date")
+    id          Int       @id @default(autoincrement())
+    uuid        String    @unique @default(uuid())
+    name        String
+    thumbnail   String? // S3FileKey
+    createdDate DateTime  @default(now()) @map("created_date")
+    updatedDate DateTime  @default(now()) @map("updated_date")
+    deleted     Boolean   @default(false)
+    deletedDate DateTime? @map("deleted_date")
     // Binary file contents
-    contents         Bytes? // unused to delete
-    // Role
-    owner            User             @relation(fields: [ownerUserId], references: [id]) // TODO: rename to `creator`
-    ownerUserId      Int
+    contents    Bytes? // unused to delete
+
+    // This is recorded when the file is created and never changes after that
+    // TODO: write a script that copies `owner` to `creator` in the db migration
+    creator       User @relation(name: "CreatorRelation", fields: [creatorUserId], references: [id])
+    creatorUserId Int  @map("creator_user_id")
+
+    // This is where we differentiate between who owns a file: an individual
+    // user or a team. These two are mutually exclusive, i.e. you should only
+    // ever have an `owner` or `team` but never both.
+    //
+    // This allows files to be "moved" between individual users, from a team to
+    // a user, or a user to a team.
+    ownerUser   User? @relation(name: "OwnerRelation", fields: [ownerUserId], references: [id])
+    ownerUserId Int?
+    ownerTeam   Team? @relation(fields: [ownerTeamId], references: [id])
+    ownerTeamId Int?  @map("owner_team_id")
+
     publicLinkAccess LinkPermission   @default(NOT_SHARED) @map("public_link_access")
-    // Team
-    team             Team?            @relation(fields: [teamId], references: [id])
-    teamId           Int?             @map("team_id")
-    // analytics fields
     times_updated    Int              @default(1) // unused to delete
     version          String? // unused to delete
     FileCheckpoint   FileCheckpoint[]
