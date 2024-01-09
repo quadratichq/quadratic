@@ -10,6 +10,8 @@ use super::transaction::Transaction;
 use crate::error_core::{CoreError, Result};
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
+
+mod offline;
 pub mod pending_transaction;
 
 #[derive(Debug, Default, Clone, PartialEq)]

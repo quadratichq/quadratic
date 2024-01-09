@@ -24,6 +24,9 @@ pub enum CoreError {
 
     #[error("Unhandled language: {0}")]
     UnhandledLanguage(String),
+
+    #[error("IndexedDb error: {0}")]
+    IndexedDbError(String),
 }
 
 impl From<serde_json::Error> for CoreError {
@@ -35,5 +38,11 @@ impl From<serde_json::Error> for CoreError {
 impl From<uuid::Error> for CoreError {
     fn from(error: uuid::Error) -> Self {
         CoreError::Unknown(error.to_string())
+    }
+}
+
+impl From<idb::Error> for CoreError {
+    fn from(error: idb::Error) -> Self {
+        CoreError::IndexedDbError(error.to_string())
     }
 }

@@ -21,10 +21,11 @@ name = "export_types"
 path = "src/bin/export_types.rs"
 
 [features]
-default = ["console_error_panic_hook", "js"]
+default = ["console_error_panic_hook", "js", "file-io"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
 js = ["js-sys", "serde-wasm-bindgen", "ts-rs", "wasm-bindgen", "wasm-bindgen-futures"]
 show-operations = []
+file-io = []
 
 [dependencies]
 anyhow = "1.0"
@@ -67,6 +68,7 @@ bigdecimal = { version = "0.4.1", features = ["serde"] }
 csv = "1.2.2"
 indexmap = { version = "2.0.2", features = ["serde"] }
 thiserror = "1.0.52"
+localforage-stdweb = "0.2.1"
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }

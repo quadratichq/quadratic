@@ -20,6 +20,7 @@ pub mod user_actions;
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct GridController {
+    file_id: Uuid,
     grid: Grid,
     undo_stack: Vec<Transaction>,
     redo_stack: Vec<Transaction>,
@@ -29,11 +30,7 @@ pub struct GridController {
 }
 
 impl GridController {
-    pub fn new() -> Self {
-        Self::from_grid(Grid::new(), 0)
-    }
-
-    pub fn from_grid(grid: Grid, last_sequence_num: u64) -> Self {
+    pub fn from_grid(grid: Grid, file_id: Uuid, last_sequence_num: u64) -> Self {
         GridController {
             grid,
             transactions: ActiveTransactions::new(last_sequence_num),
@@ -47,5 +44,13 @@ impl GridController {
 
     pub fn grid_mut(&mut self) -> &mut Grid {
         &mut self.grid
+    }
+}
+
+#[cfg(test)]
+impl GridController {
+use uuid::Uuid;
+    pub fn new() -> Self {
+        Self::from_grid(Grid::new(), Uuid::new_v4(), 0)
     }
 }
