@@ -9,13 +9,13 @@ datasource db {
 
 model User {
     id           Int            @id @default(autoincrement())
-    auth0_id     String         @unique
+    auth0Id      String         @unique @map("auth0_id")
     files        File[]
     QFeedback    QFeedback[]
     UserTeamRole UserTeamRole[]
     UserFileRole UserFileRole[]
 
-    @@index([auth0_id])
+    @@index([auth0Id])
 }
 
 enum LinkPermission {

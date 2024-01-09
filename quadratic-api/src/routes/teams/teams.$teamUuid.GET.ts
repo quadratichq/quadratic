@@ -59,7 +59,7 @@ router.get(
     const dbUsers = dbTeam?.UserTeamRole ? dbTeam.UserTeamRole : [];
     const dbInvites = dbTeam?.TeamInvite ? dbTeam.TeamInvite : [];
 
-    const auth0UserIds = dbUsers.map(({ user: { auth0_id } }) => auth0_id);
+    const auth0UserIds = dbUsers.map(({ user: { auth0Id } }) => auth0Id);
 
     // Get auth0 users
     const auth0Users = await getAuth0Users(auth0UserIds);
@@ -72,8 +72,8 @@ router.get(
 
     // TODO: sort users by createdDate in the team
     // TODO: invited users, also can we guarantee ordering here?
-    const users = dbUsers.map(({ userId: id, role, user: { auth0_id } }) => {
-      const { email, name, picture } = auth0UsersByAuth0Id[auth0_id];
+    const users = dbUsers.map(({ userId: id, role, user: { auth0Id } }) => {
+      const { email, name, picture } = auth0UsersByAuth0Id[auth0Id];
       return {
         id,
         // Casting this to a string because (presumably) auth0 should

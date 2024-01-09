@@ -29,19 +29,17 @@ export type TeamPermission = z.infer<typeof TeamPermissionSchema>;
 
 export const emailSchema = z.string().email();
 
-const user = {
+const BaseUserSchema = z.object({
   id: z.number(),
   email: emailSchema,
   name: z.string().optional(),
   picture: z.string().url().optional(),
-};
-const TeamUserSchema = z.object({
-  ...user,
+});
+const TeamUserSchema = BaseUserSchema.extend({
   role: UserTeamRoleSchema,
 });
 export type TeamUser = z.infer<typeof TeamUserSchema>;
-const FileUserSchema = z.object({
-  ...user,
+const FileUserSchema = BaseUserSchema.extend({
   role: UserFileRoleSchema,
 });
 export type FileUser = z.infer<typeof FileUserSchema>;
@@ -136,13 +134,14 @@ export const ApiSchemas = {
       fileRole: UserFileRoleSchema.optional(),
       teamRole: UserTeamRoleSchema.optional(),
     }),
-    // TODO: are we trying to be too smart here?
-    // owner: z.object({
-    //   type: z.enum(['user', 'team']),
-    //   name: z.string(),
-    //   // If it's a user, you get their avatar (if there is one). If it's a team, you won't get it
-    //   picture: z.string().url().optional(),
-    // }),
+    owner: z.discriminatedUnion('type', [
+      BaseUserSchema.extend({
+        type: z.literal('user'),
+      }),
+      TeamSchema.pick({ name: true, picture: true }).extend({
+        type: z.literal('team'),
+      }),
+    ]),
     // TODO: how, if at all, do we want to handle email visibility in the UI?
     // e.g. should this not return emails if you're not logged in?
     users: z.array(FileUserSchema),

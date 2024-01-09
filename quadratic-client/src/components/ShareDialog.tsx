@@ -1,4 +1,5 @@
 import { ROUTES } from '@/constants/routes';
+import { CONTACT_URL } from '@/constants/urls';
 import { Action as FileShareAction } from '@/routes/files.$uuid.sharing';
 import { TeamAction } from '@/routes/teams.$teamUuid';
 import { Button } from '@/shadcn/ui/button';
@@ -13,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shadcn/ui/dropdown-menu';
 import { Input } from '@/shadcn/ui/input';
-import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/shadcn/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shadcn/ui/select';
 import { Skeleton } from '@/shadcn/ui/skeleton';
 import { isJsonObject } from '@/utils/isJsonObject';
 import { Avatar } from '@mui/material';
@@ -28,18 +29,18 @@ import {
   UserTeamRoleSchema,
   emailSchema,
 } from 'quadratic-shared/typesAndSchemas';
-import React, { Children, FormEvent, useEffect, useRef, useState } from 'react';
-import { useFetcher, useFetchers, useParams, useSubmit } from 'react-router-dom';
+import React, { Children, FormEvent, ReactNode, useEffect, useRef, useState } from 'react';
+import { FetcherSubmitFunction, useFetcher, useFetchers, useSubmit } from 'react-router-dom';
 import { AvatarWithLetters } from './AvatarWithLetters';
 import { Type } from './Type';
 
-function getRoleLabel(role: UserTeamRole | UserFileRole | 'DELETE') {
+function getRoleLabel(role: UserTeamRole | UserFileRole) {
   // prettier-ignore
   return (
     role === 'OWNER' ? 'Owner' :
     role === 'EDITOR' ? 'Can edit' :
     role === 'VIEWER' ? 'Can view' :
-    'Remove'
+    ''
   );
 }
 
@@ -132,19 +133,60 @@ export function ShareTeamDialog({
         return (
           <ManageUser
             key={user.id}
-            action={action}
             isLoggedInUser={isLoggedInUser}
             user={user}
-            canDelete={canDelete}
+            onUpdate={(submit, userId, role) => {
+              const data: TeamAction['request.update-team-user'] = {
+                intent: 'update-team-user',
+                userId,
+                role,
+              };
+              submit(data, {
+                method: 'POST',
+                action,
+                encType: 'application/json',
+              });
+            }}
+            onDelete={
+              canDelete
+                ? (submit, userId) => {
+                    const data: TeamAction['request.delete-team-user'] = {
+                      intent: 'delete-team-user',
+                      userId,
+                    };
+
+                    submit(data, {
+                      method: 'POST',
+                      action,
+                      encType: 'application/json',
+                    });
+                  }
+                : undefined
+            }
             roles={roles}
           />
         );
       })}
       {invites.map((invite) => (
-        <ManageInvite key={invite.id} invite={invite} loggedInUser={userMakingRequest} />
+        <ManageInvite
+          key={invite.id}
+          invite={invite}
+          onDelete={
+            userMakingRequest.teamPermissions.includes('TEAM_EDIT')
+              ? (submit, inviteId) => {
+                  const data: TeamAction['request.delete-team-invite'] = { intent: 'delete-team-invite', inviteId };
+                  submit(data, {
+                    method: 'POST',
+                    action,
+                    encType: 'application/json',
+                  });
+                }
+              : undefined
+          }
+        />
       ))}
       {pendingInvites.map((invite, i) => (
-        <ManageInvite key={i} invite={invite} loggedInUser={userMakingRequest} disabled={true} />
+        <ManageInvite key={i} invite={invite} />
       ))}
     </ShareDialog>
   );
@@ -153,25 +195,123 @@ export function ShareTeamDialog({
 function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0/files/:uuid/sharing.GET.response'] }) {
   const {
     file: { publicLinkAccess },
+    users,
+    invites,
+    userMakingRequest: { filePermissions, id: loggedInUserId },
+    owner,
   } = data;
+  const action = `/files/${uuid}/sharing`;
+  const canEditFile = filePermissions.includes('FILE_EDIT');
+
+  const pendingInvites = useFetchers()
+    .filter(
+      (fetcher) =>
+        isJsonObject(fetcher.json) && fetcher.json.intent === 'create-file-invite' && fetcher.state !== 'idle'
+    )
+    .map((fetcher, i) => {
+      const { email, role } = fetcher.json as FileShareAction['request.create-file-invite'];
+      return {
+        id: i,
+        email,
+        role,
+      };
+    });
+
+  const disallowedEmails: string[] = [
+    ...users.map((user) => user.email),
+    ...invites.map((invite) => invite.email),
+    ...pendingInvites.map((invite) => invite.email),
+  ];
+
   return (
     <>
       <InviteForm
-        action={`/files/${uuid}/sharing`}
-        // @ts-expect-error
-        intent=""
-        disallowedEmails={[]}
+        action={action}
+        intent="create-file-invite"
+        disallowedEmails={disallowedEmails}
         roles={[UserFileRoleSchema.enum.EDITOR, UserFileRoleSchema.enum.VIEWER]}
       />
-      <PublicLink uuid={uuid} publicLinkAccess={publicLinkAccess} />
+
+      {/* TODO: (teams) If it's part of a team, that goes here. Otherwise, you show the user owner */}
+
+      <ListItemPublicLink uuid={uuid} publicLinkAccess={publicLinkAccess} disabled={!canEditFile} />
+
+      {owner.type === 'user' && (
+        <ListItemUser
+          isYou={owner.id === data.userMakingRequest.id}
+          email={owner.email}
+          name={owner.name}
+          picture={owner.picture}
+          action={<Type className="pr-4">Owner</Type>}
+        />
+      )}
+
+      {users.map((user) => {
+        const isLoggedInUser = user.id === loggedInUserId;
+        const canDelete = isLoggedInUser ? true : canEditFile;
+
+        return (
+          <ManageUser
+            key={user.id}
+            isLoggedInUser={isLoggedInUser}
+            user={user}
+            roles={canEditFile ? ['EDITOR', 'VIEWER'] : ['VIEWER']}
+            onDelete={
+              canDelete
+                ? (submit, userId) => {
+                    const data: FileShareAction['request.delete-file-user'] = { intent: 'delete-file-user', userId };
+                    submit(data, { method: 'POST', action, encType: 'application/json' });
+                  }
+                : undefined
+            }
+            onUpdate={
+              canEditFile
+                ? (submit, userId, role) => {
+                    const data: FileShareAction['request.update-file-user'] = {
+                      intent: 'update-file-user',
+                      userId,
+                      // @ts-expect-error fix type here because role
+                      role,
+                    };
+                    submit(data, { method: 'POST', action, encType: 'application/json' });
+                  }
+                : undefined
+            }
+          />
+        );
+      })}
+      {invites.map((invite) => (
+        <ManageInvite
+          key={invite.id}
+          invite={invite}
+          onDelete={
+            filePermissions.includes('FILE_EDIT')
+              ? (submit, inviteId) => {
+                  const data: FileShareAction['request.delete-file-invite'] = {
+                    intent: 'delete-file-invite',
+                    inviteId,
+                  };
+                  submit(data, {
+                    method: 'POST',
+                    action,
+                    encType: 'application/json',
+                  });
+                }
+              : undefined
+          }
+        />
+      ))}
+      {pendingInvites.map((invite, i) => (
+        <ManageInvite key={i} invite={invite} />
+      ))}
     </>
   );
 }
 
 export function ShareFileDialog({ uuid, name, onClose, fetcherUrl }: any) {
   const fetcher = useFetcher();
-  const isLoading = !fetcher.data;
-  const failedToLoad = fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok;
+
+  let loadState = !fetcher.data ? 'LOADING' : !fetcher.data.ok ? 'FAILED' : 'LOADED';
 
   // On the initial mount, load the data (if it's not there already)
   useEffect(() => {
@@ -182,17 +322,34 @@ export function ShareFileDialog({ uuid, name, onClose, fetcherUrl }: any) {
 
   return (
     <ShareDialog title={`Share ${name}`} description="Invite people to collaborate on this file" onClose={onClose}>
-      {failedToLoad ? (
-        <div>TODO: Failed to load</div>
-      ) : isLoading ? (
+      {loadState === 'LOADING' && (
         <ListItem>
           <Skeleton className={`h-6 w-6 rounded-full`} />
           <Skeleton className={`h-4 w-40 rounded-sm`} />
           <Skeleton className={`rounded- h-4 w-28 rounded-sm`} />
         </ListItem>
-      ) : (
-        <ShareFileDialogBody uuid={uuid} data={fetcher.data.data} />
       )}
+      {loadState === 'FAILED' && (
+        <div>
+          <Type className="text-destructive">
+            Failed to load,{' '}
+            <button
+              className="underline"
+              onClick={() => {
+                fetcher.load(ROUTES.FILES_SHARE(uuid));
+              }}
+            >
+              try again
+            </button>
+            . If the problem continues,{' '}
+            <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline">
+              contact us
+            </a>
+            .
+          </Type>
+        </div>
+      )}
+      {loadState === 'LOADED' && <ShareFileDialogBody uuid={uuid} data={fetcher.data.data} />}
     </ShareDialog>
   );
 }
@@ -220,7 +377,7 @@ export function InviteForm({
   roles,
 }: {
   disallowedEmails: string[];
-  intent: TeamAction['request.create-team-invite']['intent'];
+  intent: TeamAction['request.create-team-invite']['intent'] | FileShareAction['request.create-file-invite']['intent'];
   action: string;
   roles: (UserTeamRole | UserFileRole)[];
 }) {
@@ -246,7 +403,7 @@ export function InviteForm({
 
     // Get the data from the form
     const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData) as TeamAction['request.create-team-invite']; // TODO: other type for files
+    const data = Object.fromEntries(formData);
 
     // Validate email
     try {
@@ -257,6 +414,7 @@ export function InviteForm({
     }
 
     // Submit the data
+    // @ts-expect-error fix types
     submit(data, { method: 'POST', action, encType: 'application/json', navigate: false });
 
     // Reset the email input & focus it
@@ -286,7 +444,7 @@ export function InviteForm({
           onChange={(e) => {
             const email = e.target.value;
             if (disallowedEmails.includes(email)) {
-              setError('Email exists in team');
+              setError('This email has already been invited.');
             } else {
               setError('');
             }
@@ -321,106 +479,90 @@ export function InviteForm({
 }
 
 function ManageUser({
-  action,
   isLoggedInUser,
   user,
   roles,
-  canDelete,
+  onDelete,
+  onUpdate,
 }: {
-  action: string;
-  canDelete: boolean;
+  onDelete?: (submit: FetcherSubmitFunction, userId: string) => void;
+  onUpdate?: (submit: FetcherSubmitFunction, userId: string, role: UserTeamRole | UserFileRole) => void;
   isLoggedInUser: boolean;
-  user: ApiTypes['/v0/teams/:uuid.GET.response']['users'][0];
+  user: {
+    id: number;
+    role: UserTeamRole | UserFileRole;
+    email: string;
+    name?: string;
+    picture?: string;
+  };
   roles: (UserTeamRole | UserFileRole)[];
 }) {
-  const fetcher = useFetcher();
+  const fetcherDelete = useFetcher();
+  const fetcherUpdate = useFetcher();
 
-  const disabled = roles.length === 1 && !canDelete;
+  const disabled = !((roles.length > 2 && Boolean(onUpdate)) || Boolean(onDelete));
   const userId = String(user.id);
-  const primary = (user.name ? user.name : user.email) + (isLoggedInUser ? ' (You)' : '');
-  let secondary = user.name ? user.email : '';
   let value = user.role;
-  let hasError = false;
+  let error = undefined;
 
   // If user is being deleted, hide them
-  if (fetcher.state !== 'idle' && isJsonObject(fetcher.json) && fetcher.json.intent === 'delete-team-user') {
+  if (fetcherDelete.state !== 'idle') {
     return null;
+    // If there was a failure to delete, show an error
+  } else if (fetcherDelete.data && !fetcherDelete.data.ok) {
+    error = 'Failed to delete. Try again.';
   }
 
   // If the user's role is being updated, show the optimistic value
-  if (fetcher.state !== 'idle' && isJsonObject(fetcher.json) && fetcher.json.intent === 'update-team-user') {
-    // @ts-expect-error TODO: fix type here
-    value = fetcher.json.role;
+  if (fetcherUpdate.state !== 'idle' && isJsonObject(fetcherUpdate.json)) {
+    value = fetcherUpdate.json.role as (typeof roles)[0];
+  } else if (fetcherUpdate.data && !fetcherUpdate.data.ok) {
+    error = 'Failed to update. Try again.';
   }
 
-  // If there was an error, show it
-  if (fetcher.state !== 'submitting' && fetcher.data && !fetcher.data.ok) {
-    hasError = true;
-    secondary = 'Failed to update. Try again.';
-  }
+  const label = getRoleLabel(value);
 
   return (
-    <UserBase
-      avatar={
-        <AvatarWithLetters src={user.picture} size="small">
-          {user.name ? user.name : user.email}
-        </AvatarWithLetters>
-      }
-      primary={primary}
-      secondary={secondary}
-      hasError={hasError}
+    <ListItemUser
+      isYou={isLoggedInUser}
+      email={user.email}
+      name={user.name}
+      picture={user.picture}
+      error={error}
       action={
         <DropdownMenu>
           <DropdownMenuTrigger asChild disabled={false || disabled}>
             <Button variant="outline" className="px-3 font-normal hover:bg-inherit">
-              {getRoleLabel(value)} <CaretDownIcon className="ml-0 text-muted-foreground" />
+              {label} <CaretDownIcon className="ml-0 text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuRadioGroup
-              value={value}
-              onValueChange={(newValue: string) => {
-                const data: TeamAction['request.update-team-user'] = {
-                  intent: 'update-team-user',
-                  userId,
-                  // @ts-expect-error
-                  role: newValue,
-                };
+            {onUpdate && (
+              <DropdownMenuRadioGroup
+                value={value}
+                onValueChange={(newValue: string) => {
+                  const role = newValue as (typeof roles)[0];
+                  onUpdate(fetcherUpdate.submit, userId, role);
+                }}
+              >
+                {roles.map((role, i) => (
+                  <DropdownMenuRadioItem key={i} value={role}>
+                    {getRoleLabel(role)}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            )}
 
-                fetcher.submit(data, {
-                  method: 'POST',
-                  action,
-                  encType: 'application/json',
-                });
-              }}
-            >
-              {roles.map((role, i) => (
-                <DropdownMenuRadioItem key={i} value={role}>
-                  {getRoleLabel(role)}
-                </DropdownMenuRadioItem>
-              ))}
-            </DropdownMenuRadioGroup>
+            {onUpdate && onDelete && <DropdownMenuSeparator />}
 
-            {canDelete && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => {
-                    const data: TeamAction['request.delete-team-user'] = {
-                      intent: 'delete-team-user',
-                      userId,
-                    };
-
-                    fetcher.submit(data, {
-                      method: 'POST',
-                      action,
-                      encType: 'application/json',
-                    });
-                  }}
-                >
-                  {isLoggedInUser ? 'Leave' : 'Remove'}
-                </DropdownMenuItem>
-              </>
+            {onDelete && (
+              <DropdownMenuItem
+                onClick={() => {
+                  onDelete(fetcherDelete.submit, userId);
+                }}
+              >
+                {isLoggedInUser ? 'Leave' : 'Remove'}
+              </DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -429,97 +571,137 @@ function ManageUser({
   );
 }
 
+/**
+ * Displaying an invite in the UI. If the invite can be deleted, pass a function
+ * to handle the delete.
+ */
 function ManageInvite({
   invite,
-  loggedInUser,
-  disabled,
+  onDelete,
 }: {
-  invite: ApiTypes['/v0/teams/:uuid.GET.response']['invites'][0];
-  // @ts-expect-error TODO: fix
-  loggedInUser: ApiTypes['/v0/teams/:uuid.GET.response']['user'];
-  disabled?: boolean;
+  onDelete?: (submit: FetcherSubmitFunction, inviteId: string) => void;
+  invite: {
+    role: UserTeamRole | UserFileRole;
+    id: number;
+    email: string;
+  };
 }) {
-  const fetcher = useFetcher();
-  const { teamUuid } = useParams() as { teamUuid: string };
+  const deleteFetcher = useFetcher();
 
   const { email, role, id } = invite;
   const inviteId = String(id);
-  let hasError = false;
+  const disabled = !Boolean(onDelete);
 
   // If we're not idle, we're deleting
-  if (fetcher.state !== 'idle') {
+  if (deleteFetcher.state !== 'idle') {
     return null;
   }
 
   // If it failed, trigger an error
-  if (fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok) {
-    hasError = true;
-  }
+  const hasError = deleteFetcher.state === 'idle' && deleteFetcher.data && !deleteFetcher.data.ok;
+
+  const label = getRoleLabel(role);
 
   // TODO: resend email functionality
 
   return (
-    <UserBase
-      avatar={
-        <Avatar sx={{ width: '24px', height: '24px' }}>
-          <EnvelopeClosedIcon />
-        </Avatar>
-      }
-      primary={email}
-      secondary={hasError ? 'Failed to delete, try again' : 'Invite sent'}
-      hasError={hasError}
+    <ListItemInvite
+      email={email}
+      error={hasError ? 'Failed to delete, try again' : undefined}
       action={
-        <Select
-          value={role}
-          onValueChange={(newValue: string) => {
-            const data: TeamAction['request.delete-team-invite'] = { intent: 'delete-team-invite', inviteId };
-            fetcher.submit(data, {
-              method: 'POST',
-              // TODO: consider removing these as it's implied by the current location
-              action: `/teams/${teamUuid}`,
-              encType: 'application/json',
-            });
-          }}
-        >
-          <SelectTrigger disabled={disabled || !loggedInUser.permissions.includes('TEAM_EDIT')}>
-            {getRoleLabel(role)}
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={role}>{getRoleLabel(role)}</SelectItem>
-            {loggedInUser.permissions.includes('TEAM_EDIT') && (
-              <>
-                <SelectSeparator key="divider" />
-                <SelectItem value="DELETE">Remove</SelectItem>
-              </>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild disabled={disabled}>
+            <Button variant="outline" className="px-3 font-normal hover:bg-inherit">
+              {label} <CaretDownIcon className="ml-0 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            {onDelete && (
+              <DropdownMenuItem
+                onClick={() => {
+                  onDelete(deleteFetcher.submit, inviteId);
+                }}
+              >
+                Remove
+              </DropdownMenuItem>
             )}
-          </SelectContent>
-        </Select>
+          </DropdownMenuContent>
+        </DropdownMenu>
       }
     />
   );
 }
 
-function UserBase({ avatar, primary, secondary, action, hasError, isLoggedInUser }: any) {
+function ListItemInvite({ email, action, error }: { email: string; action: ReactNode; error?: string }) {
   return (
     <ListItem>
-      <div>{avatar}</div>
+      <div>
+        <Avatar sx={{ width: '24px', height: '24px' }}>
+          <EnvelopeClosedIcon />
+        </Avatar>
+      </div>
+      <div className={`flex flex-col`}>
+        <Type variant="body2">{email}</Type>
+        {error && (
+          <Type variant="caption" className={'text-destructive'}>
+            {error}
+          </Type>
+        )}
+      </div>
+      <div>{action}</div>
+    </ListItem>
+  );
+}
+
+function ListItemUser({
+  name,
+  email,
+  picture,
+  action,
+  error,
+  isYou,
+}: {
+  name?: string;
+  email: string;
+  picture?: string;
+  action: ReactNode;
+  error?: string;
+  isYou: boolean;
+}) {
+  let label = name ? name : email;
+  const secondary = error ? error : name ? email : '';
+  return (
+    <ListItem>
+      <div>
+        <AvatarWithLetters src={picture} size="small">
+          {label}
+        </AvatarWithLetters>
+      </div>
       <div className={`flex flex-col`}>
         <Type variant="body2">
-          {primary} {isLoggedInUser && ' (You)'}
+          {label} {isYou && ' (You)'}
         </Type>
         {secondary && (
-          <Type variant="caption" className={hasError ? 'text-destructive' : 'text-muted-foreground'}>
+          <Type variant="caption" className={error ? 'text-destructive' : 'text-muted-foreground'}>
             {secondary}
           </Type>
         )}
       </div>
 
-      {action && <div>{action}</div>}
+      <div>{action}</div>
     </ListItem>
   );
 }
 
-function PublicLink({ uuid, publicLinkAccess }: { uuid: string; publicLinkAccess: PublicLinkAccess }) {
+function ListItemPublicLink({
+  uuid,
+  publicLinkAccess,
+  disabled,
+}: {
+  uuid: string;
+  publicLinkAccess: PublicLinkAccess;
+  disabled: boolean;
+}) {
   const fetcher = useFetcher();
   const fetcherUrl = ROUTES.FILES_SHARE(uuid);
 
@@ -565,6 +747,7 @@ function PublicLink({ uuid, publicLinkAccess }: { uuid: string; publicLinkAccess
       </div>
 
       <Select
+        disabled={disabled}
         value={publicLinkAccess}
         onValueChange={(value: PublicLinkAccess) => {
           setPublicLinkAccess(value);

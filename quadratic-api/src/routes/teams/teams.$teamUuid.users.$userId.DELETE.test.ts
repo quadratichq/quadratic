@@ -6,7 +6,7 @@ beforeEach(async () => {
   // Create some users
   const user_1 = await dbClient.user.upsert({
     create: {
-      auth0_id: 'test_user_1',
+      auth0Id: 'test_user_1',
       id: 1,
     },
     update: {},
@@ -16,7 +16,7 @@ beforeEach(async () => {
   });
   const user_2 = await dbClient.user.upsert({
     create: {
-      auth0_id: 'test_user_2',
+      auth0Id: 'test_user_2',
       id: 2,
     },
     update: {},
@@ -26,7 +26,7 @@ beforeEach(async () => {
   });
   const user_3 = await dbClient.user.upsert({
     create: {
-      auth0_id: 'test_user_3',
+      auth0Id: 'test_user_3',
       id: 3,
     },
     update: {},
@@ -36,7 +36,7 @@ beforeEach(async () => {
   });
   const user_4 = await dbClient.user.upsert({
     create: {
-      auth0_id: 'test_user_4',
+      auth0Id: 'test_user_4',
       id: 4,
     },
     update: {},
@@ -46,7 +46,7 @@ beforeEach(async () => {
   });
   const user_5 = await dbClient.user.upsert({
     create: {
-      auth0_id: 'test_user_5',
+      auth0Id: 'test_user_5',
       id: 5,
     },
     update: {},
@@ -56,7 +56,7 @@ beforeEach(async () => {
   });
   const user_6 = await dbClient.user.upsert({
     create: {
-      auth0_id: 'test_user_6',
+      auth0Id: 'test_user_6',
       id: 6,
     },
     update: {},

@@ -69,6 +69,7 @@ export const getFile = async ({ uuid, userId }: { uuid: string; userId?: number 
   const isFileOwner = !file.teamId && file.ownerUserId === userId;
   const teamRole = file.team && file.team.UserTeamRole[0] ? file.team.UserTeamRole[0].role : undefined;
   const fileRole = file.UserFileRole[0] ? file.UserFileRole[0].role : undefined;
+
   const filePermissions = getFilePermissions({
     fileRole,
     teamRole,
@@ -81,5 +82,8 @@ export const getFile = async ({ uuid, userId }: { uuid: string; userId?: number 
   }
 
   // TODO: clean up naming, probably use fileRole, teamRole, permissionFile, permissionTeam
-  return { file, userMakingRequest: { filePermissions, fileRole, teamRole, id: userId, isFileOwner } };
+  return {
+    file,
+    userMakingRequest: { filePermissions, fileRole, teamRole, id: userId, isFileOwner },
+  };
 };

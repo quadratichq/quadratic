@@ -2,15 +2,15 @@ import { NextFunction, Request, Response } from 'express';
 import dbClient from '../dbClient';
 import { RequestWithAuth, RequestWithOptionalAuth, RequestWithUser } from '../types/Request';
 
-const getOrCreateUser = async (auth0_id: string) => {
+const getOrCreateUser = async (auth0Id: string) => {
   // get user from db
   const user = await dbClient.user.upsert({
     where: {
-      auth0_id,
+      auth0Id,
     },
     update: {},
     create: {
-      auth0_id,
+      auth0Id,
     },
   });
 

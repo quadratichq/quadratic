@@ -27,7 +27,7 @@ export async function createTeam({
     userRoles.map(async (role) => {
       return dbClient.user.create({
         data: {
-          auth0_id: randomUUID(),
+          auth0Id: randomUUID(),
           UserTeamRole: {
             create: [
               {

@@ -6,7 +6,7 @@ beforeAll(async () => {
   // Create a test user
   const user_1 = await dbClient.user.upsert({
     create: {
-      auth0_id: 'test_user_1',
+      auth0Id: 'test_user_1',
       id: 1,
     },
     update: {},
@@ -16,7 +16,7 @@ beforeAll(async () => {
   });
   const team_user = await dbClient.user.upsert({
     create: {
-      auth0_id: 'test_user_2',
+      auth0Id: 'test_user_2',
       id: 2,
     },
     update: {},
@@ -26,7 +26,7 @@ beforeAll(async () => {
   });
   const user_added_to_file = await dbClient.user.upsert({
     create: {
-      auth0_id: 'test_user_added_to_file',
+      auth0Id: 'test_user_added_to_file',
       id: 3,
     },
     update: {},

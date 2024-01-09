@@ -123,10 +123,10 @@ router.post(
       // Lookup the user in our database (create if they don't exist)
       const dbUser = await dbClient.user.upsert({
         where: {
-          auth0_id: auth0User.user_id,
+          auth0Id: auth0User.user_id,
         },
         create: {
-          auth0_id: auth0User.user_id,
+          auth0Id: auth0User.user_id,
         },
         update: {},
       });

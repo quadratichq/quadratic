@@ -164,12 +164,40 @@ export const apiClient = {
         );
       },
     },
+    invites: {
+      async create(uuid: string, body: ApiTypes['/v0/files/:uuid/invites.POST.request']) {
+        return fetchFromApi(
+          `/v0/files/${uuid}/invites`,
+          {
+            method: 'POST',
+            body: JSON.stringify(body),
+          },
+          ApiSchemas['/v0/files/:uuid/invites.POST.response']
+        );
+      },
+      async delete(uuid: string, inviteId: string) {
+        return fetchFromApi(
+          `/v0/files/${uuid}/invites/${inviteId}`,
+          {
+            method: 'DELETE',
+          },
+          ApiSchemas['/v0/files/:uuid/invites/:inviteId.DELETE.response']
+        );
+      },
+    },
     users: {
       async update(uuid: string, userId: string, body: ApiTypes['/v0/files/:uuid/users/:userId.PATCH.request']) {
         return fetchFromApi(
           `/v0/files/${uuid}/users/${userId}`,
           { method: 'PATCH', body: JSON.stringify(body) },
           ApiSchemas['/v0/files/:uuid/users/:userId.PATCH.response']
+        );
+      },
+      async delete(uuid: string, userId: string) {
+        return fetchFromApi(
+          `/v0/files/${uuid}/users/${userId}`,
+          { method: 'DELETE' },
+          ApiSchemas['/v0/files/:uuid/users/:userId.DELETE.response']
         );
       },
     },

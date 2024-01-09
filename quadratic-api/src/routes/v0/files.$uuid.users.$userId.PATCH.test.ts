@@ -9,22 +9,22 @@ beforeEach(async () => {
   // Create some users
   const userWithFileRoleOfOwner = await dbClient.user.create({
     data: {
-      auth0_id: 'userWithFileRoleOfOwner',
+      auth0Id: 'userWithFileRoleOfOwner',
     },
   });
   const userWithFileRoleOfEditor = await dbClient.user.create({
     data: {
-      auth0_id: 'userWithFileRoleOfEditor',
+      auth0Id: 'userWithFileRoleOfEditor',
     },
   });
   const userWithFileRoleOfViewer = await dbClient.user.create({
     data: {
-      auth0_id: 'userWithFileRoleOfViewer',
+      auth0Id: 'userWithFileRoleOfViewer',
     },
   });
   await dbClient.user.create({
     data: {
-      auth0_id: 'userWithoutFileRole',
+      auth0Id: 'userWithoutFileRole',
     },
   });
 

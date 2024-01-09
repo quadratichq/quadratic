@@ -5,7 +5,7 @@ import dbClient from '../../dbClient';
 async function getUserByAuth0Id(id: string) {
   const user = await dbClient.user.findFirst({
     where: {
-      auth0_id: id,
+      auth0Id: id,
     },
   });
   if (!user) throw new Error('User not found');
@@ -16,17 +16,17 @@ beforeEach(async () => {
   // Create some users
   const user_1 = await dbClient.user.create({
     data: {
-      auth0_id: 'test_user_1',
+      auth0Id: 'test_user_1',
     },
   });
   const user_2 = await dbClient.user.create({
     data: {
-      auth0_id: 'test_user_2',
+      auth0Id: 'test_user_2',
     },
   });
   const user_3 = await dbClient.user.create({
     data: {
-      auth0_id: 'test_user_3',
+      auth0Id: 'test_user_3',
     },
   });
 

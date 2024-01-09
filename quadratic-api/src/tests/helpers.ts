@@ -3,7 +3,7 @@ import dbClient from '../dbClient';
 export async function getUserIdByAuth0Id(id: string) {
   const user = await dbClient.user.findFirst({
     where: {
-      auth0_id: id,
+      auth0Id: id,
     },
   });
   if (!user) throw new Error('[Testing] User not found');

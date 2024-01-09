@@ -6,12 +6,12 @@ beforeEach(async () => {
   // Create some users & team
   const user_1 = await dbClient.user.create({
     data: {
-      auth0_id: 'team_1_owner',
+      auth0Id: 'team_1_owner',
     },
   });
   await dbClient.user.create({
     data: {
-      auth0_id: 'user_without_team',
+      auth0Id: 'user_without_team',
     },
   });
   await dbClient.team.create({
