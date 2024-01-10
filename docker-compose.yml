@@ -8,7 +8,7 @@ services:
       - "6379:6379"
       - "8001:8001"
     volumes:
-      - ./docker/redis/dаta:/data
+      - ./docker/redis/data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: "5s"
@@ -31,7 +31,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - ./docker/postgres/dаta:/var/lib/postgresql/data
+      - ./docker/postgres/data:/var/lib/postgresql/data
     networks:
       - quadratic
 
