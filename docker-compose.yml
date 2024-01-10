@@ -13,43 +13,43 @@ services:
       test: ["CMD", "redis-cli", "ping"]
       interval: "5s"
     networks:
-      - quadratic
+      - host
 
   postgres:
     image: postgres:15
     restart: always
     container_name: postgres
     ports:
-      - "5433:5432"
+      - "5432:5432"
     environment:
       POSTGRES_USER: prisma
       POSTGRES_PASSWORD: prisma
       POSTGRES_DB: quadratic-api
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U prisma"]
+      test: ["CMD-SHELL", "pg_isready -U prisma -d quadratic-api"]
       interval: 10s
       timeout: 5s
       retries: 5
     volumes:
       - ./docker/postgres/data:/var/lib/postgresql/data
     networks:
-      - quadratic
+      - host
 
-  quadratic-api:
-    build:
-      context: .
-      dockerfile: quadratic-api/Dockerfile
-    env_file:
-      - quadratic-api/.env.docker
-    restart: "always"
-    ports:
-      - "3000:3000"
-    # command: ["npx", "prisma", "migrate", "dev"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - quadratic
+  # quadratic-api:
+  #   build:
+  #     context: .
+  #     dockerfile: quadratic-api/Dockerfile
+  #   env_file:
+  #     - quadratic-api/.env.docker
+  #   # restart: "always"
+  #   ports:
+  #     - "3000:3000"
+  #   command: "node dist/server.js"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   networks:
+  #     - quadratic
 
   quadratic-multiplayer:
     build:
@@ -59,14 +59,21 @@ services:
         - binary=quadratic-multiplayer
     env_file:
       - quadratic-multiplayer/.env.docker
+    # override env vars here
+    environment:
+      QUADRATIC_API_URI: http://host.docker.internal:8000
     restart: "always"
     ports:
       - "3001:3001"
     depends_on:
-      - redis
-      - quadratic-api
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      # quadratic-api:
+      #   condition: service_healthy
     networks:
-      - quadratic
+      - host
 
   quadratic-files:
     build:
@@ -76,17 +83,24 @@ services:
         - binary=quadratic-files
     env_file:
       - quadratic-files/.env.docker
+    # override env vars here
+    environment:
+      QUADRATIC_API_URI: http://host.docker.internal:8000
     restart: "always"
     ports:
       - "3002:3002"
     depends_on:
-      - redis
-      - quadratic-api
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      # quadratic-api:
+      #   condition: service_healthy
     networks:
-      - quadratic
+      - host
 
 volumes:
   docker:
 
 networks:
-  quadratic:
+  host:
