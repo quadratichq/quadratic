@@ -32,7 +32,7 @@ export async function getTeam({ uuid, userId }: { uuid: string; userId: number }
     throw new ApiError(404, 'Team not found');
   }
 
-  // TODO: if the team is deleted
+  // TODO: (teams) if the team is deleted
 
   // Create info about the user making the request
   const user = { id: userId, permissions: getTeamPermissions(userMakingRequest.role), role: userMakingRequest.role };

@@ -146,7 +146,8 @@ async function registerRoutes() {
     }
   }
 
-  if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
-    console.log(`Dynamically registered routes: ${registeredRoutes.map((route) => `\n  ${route}`).join('')}`);
-  }
+  // Keep around for debugging
+  // if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
+  //   console.log(`Dynamically registered routes: ${registeredRoutes.map((route) => `\n  ${route}`).join('')}`);
+  // }
 }

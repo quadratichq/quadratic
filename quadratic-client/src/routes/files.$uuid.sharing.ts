@@ -44,7 +44,9 @@ export type Action = {
   request:
     | Action['request.update-public-link-access']
     | Action['request.create-file-invite']
-    | Action['request.delete-file-invite'];
+    | Action['request.delete-file-invite']
+    | Action['request.update-file-user']
+    | Action['request.delete-file-user'];
   response: { ok: boolean };
 };
 
@@ -54,8 +56,8 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
   const { intent } = json;
 
   if (intent === 'update-public-link-access') {
-    const { publicLinkAccess } = json as Action['request.update-public-link-access'];
     try {
+      const { publicLinkAccess } = json as Action['request.update-public-link-access'];
       await apiClient.files.sharing.update(uuid, { publicLinkAccess });
       return { ok: true };
     } catch (e) {
@@ -64,8 +66,8 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
   }
 
   if (intent === 'create-file-invite') {
-    const { email, role } = json as Action['request.create-file-invite'];
     try {
+      const { email, role } = json as Action['request.create-file-invite'];
       await apiClient.files.invites.create(uuid, { email, role });
       return { ok: true };
     } catch (e) {
@@ -74,8 +76,8 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
   }
 
   if (intent === 'delete-file-invite') {
-    const { inviteId } = json as Action['request.delete-file-invite'];
     try {
+      const { inviteId } = json as Action['request.delete-file-invite'];
       await apiClient.files.invites.delete(uuid, inviteId);
       return { ok: true };
     } catch (e) {
@@ -84,8 +86,8 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
   }
 
   if (intent === 'update-file-user') {
-    const { role, userId } = json as Action['request.update-file-user'];
     try {
+      const { role, userId } = json as Action['request.update-file-user'];
       await apiClient.files.users.update(uuid, userId, { role });
       return { ok: true };
     } catch (e) {
@@ -94,8 +96,8 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
   }
 
   if (intent === 'delete-file-user') {
-    const { userId } = json as Action['request.delete-file-user'];
     try {
+      const { userId } = json as Action['request.delete-file-user'];
       const { redirect } = await apiClient.files.users.delete(uuid, userId);
       if (redirect) {
         return redirectDocument(ROUTES.FILES);

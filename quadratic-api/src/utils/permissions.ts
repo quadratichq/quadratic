@@ -49,7 +49,7 @@ export const getFilePermissions = ({
 }) => {
   const permissions = new Set<FilePermission>();
 
-  // Based on whether you are the owner of the file (and it's not in a team)
+  // Based on whether you are the individual owner of the file
   if (isFileOwner) {
     permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE);
   }

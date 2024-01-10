@@ -39,7 +39,6 @@ model File {
     contents    Bytes? // unused to delete
 
     // This is recorded when the file is created and never changes after that
-    // TODO: write a script that copies `owner` to `creator` in the db migration
     creator       User @relation(name: "CreatorRelation", fields: [creatorUserId], references: [id])
     creatorUserId Int  @map("creator_user_id")
 
