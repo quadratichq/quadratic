@@ -225,12 +225,14 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
 
   return (
     <>
-      <InviteForm
-        action={action}
-        intent="create-file-invite"
-        disallowedEmails={disallowedEmails}
-        roles={[UserFileRoleSchema.enum.EDITOR, UserFileRoleSchema.enum.VIEWER]}
-      />
+      {filePermissions.includes('FILE_EDIT') && (
+        <InviteForm
+          action={action}
+          intent="create-file-invite"
+          disallowedEmails={disallowedEmails}
+          roles={[UserFileRoleSchema.enum.EDITOR, UserFileRoleSchema.enum.VIEWER]}
+        />
+      )}
 
       {/* TODO: (teams) If it's part of a team, that goes here. Otherwise, you show the user owner */}
 
