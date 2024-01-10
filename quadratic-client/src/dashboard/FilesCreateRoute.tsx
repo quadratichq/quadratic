@@ -71,7 +71,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
 
       // Create a new file from that example file
-      const { uuid } = await apiClient.createFile({ name, contents: file.contents, version: file.version });
+      const { uuid } = await apiClient.files.create({ name, contents: file.contents, version: file.version });
 
       // Navigate to it
       return navigate(uuid);
@@ -90,7 +90,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // If there's no query params for the kind of file to create, just create a blank new one
   mixpanel.track('[Files].newFile');
   try {
-    const { uuid } = await apiClient.createFile();
+    const { uuid } = await apiClient.files.create();
     return navigate(uuid);
   } catch (error) {
     return redirect(getFailUrl());
@@ -108,7 +108,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
   mixpanel.track('[Files].loadFileFromDisk', { fileName: name });
   try {
-    const { uuid } = await apiClient.createFile({ name, contents, version });
+    const { uuid } = await apiClient.files.create({ name, contents, version });
     return navigate(uuid);
   } catch (error) {
     return redirect(getFailUrl());

@@ -5,13 +5,13 @@ import dbClient from '../dbClient';
 beforeAll(async () => {
   const user_1 = await dbClient.user.create({
     data: {
-      auth0_id: 'test_user_1',
+      auth0Id: 'test_user_1',
       id: 1,
     },
   });
   await dbClient.user.create({
     data: {
-      auth0_id: 'test_user_2',
+      auth0Id: 'test_user_2',
       id: 2,
     },
   });

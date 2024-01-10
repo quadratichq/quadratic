@@ -1,3 +1,4 @@
+import { useRootRouteLoaderData } from '@/router';
 import { ChatBubbleOutline, Commit } from '@mui/icons-material';
 import { Stack, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
@@ -16,8 +17,8 @@ import SyncState from './SyncState';
 export const BottomBar = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const theme = useTheme();
-  const { permission } = editorInteractionState;
-
+  const { permissions } = editorInteractionState;
+  const { isAuthenticated } = useRootRouteLoaderData();
   const [cursorPositionString, setCursorPositionString] = useState('');
   const [multiCursorPositionString, setMultiCursorPositionString] = useState('');
   const cursor = sheets.sheet.cursor;
@@ -110,7 +111,7 @@ export const BottomBar = () => {
         <SyncState />
 
         {showOnDesktop && <PythonStateItem />}
-        {provideFeedbackAction.isAvailable(permission) && (
+        {provideFeedbackAction.isAvailable(permissions, isAuthenticated) && (
           <BottomBarItem
             icon={<ChatBubbleOutline fontSize="inherit" />}
             onClick={() => {

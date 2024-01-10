@@ -2,10 +2,11 @@ import express, { Request, Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
-import { teamMiddleware } from '../../middleware/team';
+import { getTeam } from '../../middleware/getTeam';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { RequestWithTeam } from '../../types/Request';
-import { ResponseError } from '../../types/Response';
+import { RequestWithUser } from '../../types/Request';
 
 const router = express.Router();
 
@@ -21,20 +22,20 @@ const requestValidationMiddleware = validateRequestSchema(
 router.delete(
   '/:uuid/invites/:inviteId',
   requestValidationMiddleware,
-  teamMiddleware,
-  async (
-    req: Request,
-    res: Response<ApiTypes['/v0/teams/:uuid/invites/:inviteId.DELETE.response'] | ResponseError>
-  ) => {
-    const inviteToDelete = Number(req.params.inviteId);
+  validateAccessToken,
+  userMiddleware,
+  async (req: Request, res: Response) => {
     const {
-      team: { user: userMakingRequest },
-    } = req as RequestWithTeam;
+      params: { uuid, inviteId },
+      user: { id: userId },
+    } = req as RequestWithUser;
+    const inviteToDelete = Number(inviteId);
+    const { user: userMakingRequest } = await getTeam({ uuid, userId });
 
     // TODO: write tests for this endpoint
 
     // User making the request can edit the team
-    if (!userMakingRequest.access.includes('TEAM_EDIT')) {
+    if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
       return res.status(403).json({
         error: { message: 'User does not have access to edit this team' },
       });
@@ -46,7 +47,8 @@ router.delete(
         id: inviteToDelete,
       },
     });
-    return res.status(200).json({ message: 'Invite deleted' });
+    const data: ApiTypes['/v0/teams/:uuid/invites/:inviteId.DELETE.response'] = { message: 'Invite deleted' };
+    return res.status(200).json(data);
   }
 );
 

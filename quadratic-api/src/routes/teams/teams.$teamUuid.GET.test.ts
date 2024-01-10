@@ -7,33 +7,28 @@ beforeEach(async () => {
   // Create some users & team
   const user_1 = await dbClient.user.create({
     data: {
-      auth0_id: 'team_1_owner',
-      id: 1,
+      auth0Id: 'team_1_owner',
     },
   });
   const user_2 = await dbClient.user.create({
     data: {
-      auth0_id: 'team_1_editor',
-      id: 2,
+      auth0Id: 'team_1_editor',
     },
   });
   const user_3 = await dbClient.user.create({
     data: {
-      auth0_id: 'team_1_viewer',
-      id: 3,
+      auth0Id: 'team_1_viewer',
     },
   });
   await dbClient.user.create({
     data: {
-      auth0_id: 'user_without_team',
-      id: 4,
+      auth0Id: 'user_without_team',
     },
   });
   await dbClient.team.create({
     data: {
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000001',
-      id: 1,
       UserTeamRole: {
         create: [
           {
@@ -56,12 +51,6 @@ afterEach(async () => {
 
   await dbClient.$transaction([deleteTeamInvites, deleteTeamUsers, deleteUsers, deleteTeams]);
 });
-
-// const expectErrorMsg = (req: any) => {
-//   expect(req).toHaveProperty('body');
-//   expect(req.body).toHaveProperty('error');
-//   expect(req.body.error).toHaveProperty('message');
-// };
 
 jest.mock('auth0', () => {
   return {
@@ -111,7 +100,7 @@ jest.mock('auth0', () => {
   };
 });
 
-describe('POST /v0/teams/:uuid/sharing', () => {
+describe('GET /v0/teams/:uuid', () => {
   // TODO the auth/team middleware should handle all this...?
   describe('sending a bad request', () => {
     it.todo('responds with a 401 without authentication');
@@ -133,39 +122,25 @@ describe('POST /v0/teams/:uuid/sharing', () => {
           expect(res.body).toHaveProperty('team');
           expect(res.body.team.uuid).toBe('00000000-0000-4000-8000-000000000001');
           expect(res.body.team.name).toBe('Test Team 1');
-          expect(res.body.team).toHaveProperty('created_date');
-          expect(res.body.team.users).toEqual([
-            {
-              id: 1,
-              email: 'team_1_owner@example.com',
-              role: 'OWNER',
-              hasAccount: true,
-              name: 'Test User 1',
-              // picture: null,
-            },
-            {
-              id: 2,
-              email: 'team_1_editor@example.com',
-              role: 'EDITOR',
-              hasAccount: true,
-              name: 'Test User 2',
-              // picture: null,
-            },
-            {
-              id: 3,
-              email: 'team_1_viewer@example.com',
-              role: 'VIEWER',
-              hasAccount: true,
-              name: 'Test User 3',
-              // picture: null,
-            },
-          ]);
+
+          expect(res.body.team.users[0].email).toBe('team_1_owner@example.com');
+          expect(res.body.team.users[0].role).toBe('OWNER');
+          expect(res.body.team.users[0].name).toBe('Test User 1');
+
+          expect(res.body.team.users[1].email).toBe('team_1_editor@example.com');
+          expect(res.body.team.users[1].role).toBe('EDITOR');
+          expect(res.body.team.users[1].name).toBe('Test User 2');
+
+          expect(res.body.team.users[2].email).toBe('team_1_viewer@example.com');
+          expect(res.body.team.users[2].role).toBe('VIEWER');
+          expect(res.body.team.users[2].name).toBe('Test User 3');
+
           // TODO files
           // expect(res.body.team).toHaveProperty('files');
           expect(res.body).toHaveProperty('user');
-          expect(res.body.user.id).toBe(1);
+          expect(res.body.user).toHaveProperty('id');
           expect(res.body.user.role).toBe('OWNER');
-          expect(res.body.user.access).toEqual(
+          expect(res.body.user.permissions).toEqual(
             expect.arrayContaining(['TEAM_EDIT', 'TEAM_VIEW', 'TEAM_DELETE', 'TEAM_BILLING_EDIT'])
           );
         });

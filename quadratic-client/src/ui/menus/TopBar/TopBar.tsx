@@ -1,6 +1,6 @@
 import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { useRecoilValue } from 'recoil';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPerissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
 import { isElectron } from '../../../utils/isElectron';
@@ -18,7 +18,7 @@ export const TopBar = () => {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const { permission } = editorInteractionState;
+  const { permissions } = editorInteractionState;
 
   return (
     <Box
@@ -61,7 +61,7 @@ export const TopBar = () => {
         }}
       >
         <QuadraticMenu />
-        {isEditorOrAbove(permission) && isDesktop && (
+        {hasPerissionToEditFile(permissions) && isDesktop && (
           <>
             <DataMenu />
             <FormatMenu />

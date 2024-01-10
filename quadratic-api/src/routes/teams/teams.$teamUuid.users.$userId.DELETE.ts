@@ -2,10 +2,11 @@ import express, { Request, Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
-import { teamMiddleware } from '../../middleware/team';
+import { getTeam } from '../../middleware/getTeam';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { RequestWithTeam } from '../../types/Request';
-import { ResponseError } from '../../types/Response';
+import { RequestWithUser } from '../../types/Request';
 
 const router = express.Router();
 
@@ -21,17 +22,19 @@ const requestValidationMiddleware = validateRequestSchema(
 router.delete(
   '/:uuid/users/:userId',
   requestValidationMiddleware,
-  teamMiddleware,
-  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid/users/:userId.DELETE.response'] | ResponseError>) => {
-    const resSuccess = { message: 'User deleted' };
-    const userToDeleteId = Number(req.params.userId);
+  validateAccessToken,
+  userMiddleware,
+  async (req: Request, res: Response) => {
+    const resSuccess: ApiTypes['/v0/teams/:uuid/users/:userId.DELETE.response'] = { message: 'User deleted' };
     const {
       user: { id: userMakingRequestId },
-      team: {
-        data: { id: teamId },
-        user: userMakingRequest,
-      },
-    } = req as RequestWithTeam;
+      params: { userId: userIdString },
+    } = req as RequestWithUser;
+    const userToDeleteId = Number(userIdString);
+    const {
+      team: { id: teamId },
+      user: userMakingRequest,
+    } = await getTeam({ uuid: req.params.uuid, userId: userMakingRequestId });
 
     // Allow the user to delete themselves from a team
     if (userMakingRequestId === userToDeleteId) {
@@ -66,9 +69,9 @@ router.delete(
     // From here on, it's a user trying to delete another user
 
     // User making the request can edit the team
-    if (!userMakingRequest.access.includes('TEAM_EDIT')) {
+    if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
       return res.status(403).json({
-        error: { message: 'User does not have access to edit this team' },
+        error: { message: 'User does not have permission to edit this team' },
       });
     }
 
@@ -103,6 +106,7 @@ router.delete(
         },
       },
     });
+
     return res.status(200).json(resSuccess);
   }
 );

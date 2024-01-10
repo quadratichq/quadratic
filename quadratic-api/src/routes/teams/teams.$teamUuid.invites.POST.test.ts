@@ -2,38 +2,34 @@ import { User } from 'auth0';
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
+import { expectError } from '../../tests/helpers';
 
 beforeEach(async () => {
   // Create some users & team
   const user_1 = await dbClient.user.create({
     data: {
-      auth0_id: 'team_1_owner',
-      id: 1,
+      auth0Id: 'team_1_owner',
     },
   });
   const user_2 = await dbClient.user.create({
     data: {
-      auth0_id: 'team_1_editor',
-      id: 2,
+      auth0Id: 'team_1_editor',
     },
   });
   const user_3 = await dbClient.user.create({
     data: {
-      auth0_id: 'team_1_viewer',
-      id: 3,
+      auth0Id: 'team_1_viewer',
     },
   });
   await dbClient.user.create({
     data: {
-      auth0_id: 'user_without_team',
-      id: 4,
+      auth0Id: 'user_without_team',
     },
   });
   await dbClient.team.create({
     data: {
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000001',
-      id: 1,
       UserTeamRole: {
         create: [
           {
@@ -56,12 +52,6 @@ afterEach(async () => {
 
   await dbClient.$transaction([deleteTeamInvites, deleteTeamUsers, deleteUsers, deleteTeams]);
 });
-
-const expectErrorMsg = (req: any) => {
-  expect(req).toHaveProperty('body');
-  expect(req.body).toHaveProperty('error');
-  expect(req.body.error).toHaveProperty('message');
-};
 
 // Mock Auth0 getUsersByEmail
 jest.mock('auth0', () => {
@@ -123,7 +113,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .set('Accept', 'application/json')
         .expect('Content-Type', /json/)
         .expect(401)
-        .expect(expectErrorMsg);
+        .expect(expectError);
     });
     it('responds with a 404 for requesting a team that doesn’t exist', async () => {
       await request(app)
@@ -133,7 +123,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect('Content-Type', /json/)
         .expect(404)
-        .expect(expectErrorMsg);
+        .expect(expectError);
     });
     it('responds with a 400 for failing schema validation on the team UUID', async () => {
       await request(app)
@@ -143,7 +133,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect('Content-Type', /json/)
         .expect(400)
-        .expect(expectErrorMsg);
+        .expect(expectError);
     });
     it('responds with a 400 for failing schema validation on the payload', async () => {
       await request(app)
@@ -153,7 +143,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect('Content-Type', /json/)
         .expect(400)
-        .expect(expectErrorMsg);
+        .expect(expectError);
     });
   });
 
@@ -166,7 +156,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect('Content-Type', /json/)
         .expect(400)
-        .expect(expectErrorMsg);
+        .expect(expectError);
     });
     it('responds with 400 for editors', async () => {
       await request(app)
@@ -176,7 +166,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .set('Authorization', `Bearer ValidToken team_1_editor`)
         .expect('Content-Type', /json/)
         .expect(400)
-        .expect(expectErrorMsg);
+        .expect(expectError);
     });
   });
 
@@ -189,7 +179,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .set('Authorization', `Bearer ValidToken team_1_owner`)
         .expect('Content-Type', /json/)
         .expect(400)
-        .expect(expectErrorMsg);
+        .expect(expectError);
     });
   });
 
@@ -209,7 +199,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .expect(({ body: { email, role, id } }) => {
           expect(email).toBe('user_without_team@example.com');
           expect(role).toBe('OWNER');
-          expect(id).toBe(4);
+          expect(typeof id).toBe('number');
         });
     });
     it('adds EDITOR invited by OWNER', async () => {
@@ -223,7 +213,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .expect(({ body: { email, role, id } }) => {
           expect(email).toBe('user_without_team@example.com');
           expect(role).toBe('EDITOR');
-          expect(id).toBe(4);
+          expect(typeof id).toBe('number');
         });
     });
     it('adds VIEWER invited by OWNER', async () => {
@@ -237,7 +227,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .expect(({ body: { email, role, id } }) => {
           expect(email).toBe('user_without_team@example.com');
           expect(role).toBe('VIEWER');
-          expect(id).toBe(4);
+          expect(typeof id).toBe('number');
         });
     });
 
@@ -249,7 +239,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .set('Authorization', `Bearer ValidToken team_1_editor`)
         .expect('Content-Type', /json/)
         .expect(403)
-        .expect(expectErrorMsg);
+        .expect(expectError);
     });
     it('adds EDITOR invited by EDITOR', async () => {
       await request(app)
@@ -262,7 +252,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .expect(({ body: { email, role, id } }) => {
           expect(email).toBe('user_without_team@example.com');
           expect(role).toBe('EDITOR');
-          expect(id).toBe(4);
+          expect(typeof id).toBe('number');
         });
     });
     it('adds VIEWER invited by EDITOR', async () => {
@@ -276,7 +266,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .expect(({ body: { email, role, id } }) => {
           expect(email).toBe('user_without_team@example.com');
           expect(role).toBe('VIEWER');
-          expect(id).toBe(4);
+          expect(typeof id).toBe('number');
         });
     });
 
@@ -288,7 +278,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .set('Authorization', `Bearer ValidToken team_1_viewer`)
         .expect('Content-Type', /json/)
         .expect(403)
-        .expect(expectErrorMsg);
+        .expect(expectError);
     });
     it('rejects EDITOR invited by VIEWER', async () => {
       await request(app)
@@ -298,7 +288,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .set('Authorization', `Bearer ValidToken team_1_viewer`)
         .expect('Content-Type', /json/)
         .expect(403)
-        .expect(expectErrorMsg);
+        .expect(expectError);
     });
     it('rejects VIEWER invited by VIEWER', async () => {
       await request(app)
@@ -308,7 +298,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .set('Authorization', `Bearer ValidToken team_1_viewer`)
         .expect('Content-Type', /json/)
         .expect(403)
-        .expect(expectErrorMsg);
+        .expect(expectError);
     });
   });
 
@@ -350,7 +340,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .set('Authorization', `Bearer ValidToken team_1_editor`)
         .expect('Content-Type', /json/)
         .expect(403)
-        .expect(expectErrorMsg);
+        .expect(expectError);
     });
     it('adds EDITOR invited by EDITOR', async () => {
       await request(app)
@@ -379,7 +369,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .set('Authorization', `Bearer ValidToken team_1_viewer`)
         .expect('Content-Type', /json/)
         .expect(403)
-        .expect(expectErrorMsg);
+        .expect(expectError);
     });
     it('rejects EDITOR invited by VIEWER', async () => {
       await request(app)
@@ -389,7 +379,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .set('Authorization', `Bearer ValidToken team_1_viewer`)
         .expect('Content-Type', /json/)
         .expect(403)
-        .expect(expectErrorMsg);
+        .expect(expectError);
     });
     it('rejects VIEWER invited by VIEWER', async () => {
       await request(app)
@@ -399,7 +389,7 @@ describe('POST /v0/teams/:uuid/invites', () => {
         .set('Authorization', `Bearer ValidToken team_1_viewer`)
         .expect('Content-Type', /json/)
         .expect(403)
-        .expect(expectErrorMsg);
+        .expect(expectError);
     });
   });
 

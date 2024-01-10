@@ -2,7 +2,7 @@ import { Box, InputBase, Stack, Typography, useMediaQuery, useTheme } from '@mui
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPerissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { ROUTES } from '../../../constants/routes';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -15,7 +15,11 @@ export const TopBarFileMenu = () => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const theme = useTheme();
   const isNarrowScreen = useMediaQuery(theme.breakpoints.down('md'));
-  const { permission } = editorInteractionState;
+  const { permissions } = editorInteractionState;
+
+  // TODO: this needs to be reworked to show file context, e.g.
+  // is it in a team? is it in the user's personal folder?
+  console.log(permissions);
 
   return (
     <Box
@@ -30,7 +34,7 @@ export const TopBarFileMenu = () => {
         <FileNameInput setIsRenaming={setIsRenaming} />
       ) : (
         <Stack direction="row" gap={theme.spacing()} alignItems="center">
-          {permission === 'OWNER' && (
+          {true && (
             <>
               <Typography
                 variant="body2"
@@ -65,7 +69,7 @@ export const TopBarFileMenu = () => {
           <Stack direction="row" gap={theme.spacing(1)} alignItems="center">
             <Typography
               onClick={() => {
-                if (isNarrowScreen || !isEditorOrAbove(permission)) {
+                if (isNarrowScreen || !hasPerissionToEditFile(permissions)) {
                   return;
                 }
                 setIsRenaming(true);

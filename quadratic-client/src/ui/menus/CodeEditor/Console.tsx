@@ -1,9 +1,8 @@
 import { Box, Tab, Tabs, useTheme } from '@mui/material';
 import { useState } from 'react';
-import { useRecoilValue } from 'recoil';
-import { isViewerOrAbove } from '../../../actions';
-import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 // import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
+import { useRootRouteLoaderData } from '@/router';
 import { Circle } from '@mui/icons-material';
 import { colors } from '../../../theme/colors';
 import { AITab } from './AITab';
@@ -19,9 +18,9 @@ interface ConsoleProps {
 }
 
 export function Console({ consoleOutput, editorMode, editorContent, evaluationResult }: ConsoleProps) {
-  const { permission } = useRecoilValue(editorInteractionStateAtom);
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const theme = useTheme();
+  const { isAuthenticated } = useRootRouteLoaderData();
   let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length);
 
   // Whenever we change to a different cell, reset the active tab to the 1st
@@ -52,7 +51,7 @@ export function Console({ consoleOutput, editorMode, editorContent, evaluationRe
             }
             iconPosition="end"
           ></Tab>
-          {editorMode === 'PYTHON' && isViewerOrAbove(permission) && (
+          {editorMode === 'PYTHON' && isAuthenticated && (
             <Tab
               style={{ minHeight: '32px' }}
               label="AI Assistant"

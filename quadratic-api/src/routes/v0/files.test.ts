@@ -6,37 +6,80 @@ beforeAll(async () => {
   // Create a test user
   const user_1 = await dbClient.user.create({
     data: {
-      auth0_id: 'test_user_1',
+      auth0Id: 'test_user_1',
     },
   });
 
   // Create a test files
-  await dbClient.file.create({
-    data: {
+  await dbClient.file.upsert({
+    create: {
       ownerUserId: user_1.id,
       name: 'test_file_2',
       contents: Buffer.from('contents_1'),
       uuid: '00000000-0000-4000-8000-000000000001',
-      public_link_access: 'READONLY',
+      publicLinkAccess: 'READONLY',
+    },
+    update: {},
+    where: {
+      uuid: '00000000-0000-4000-8000-000000000001',
     },
   });
-
-  await dbClient.file.create({
-    data: {
+  await dbClient.file.upsert({
+    create: {
       ownerUserId: user_1.id,
       name: 'test_file_1',
       contents: Buffer.from('contents_0'),
       uuid: '00000000-0000-4000-8000-000000000000',
-      public_link_access: 'NOT_SHARED',
+      publicLinkAccess: 'NOT_SHARED',
+    },
+    update: {},
+    where: {
+      uuid: '00000000-0000-4000-8000-000000000000',
     },
   });
+
+  // Create a team
+  // const user_2 = await dbClient.user.create({
+  //   data: { auth0_id: 'test_user_2' },
+  // });
+  // await dbClient.team.create({
+  //   data: {
+  //     name: 'Test Team 1',
+  //     uuid: '00000000-0000-4000-8000-000000000001',
+  //     // id: 1,
+  //     UserTeamRole: {
+  //       create: [
+  //         {
+  //           userId: user_2.id,
+  //           role: 'OWNER',
+  //         },
+  //       ],
+  //     },
+  //   },
+  // });
+
+  // // Team file
+  // await dbClient.file.create({
+  //   data: {
+  //     teamId: 1,
+  //     ownerUserId: user_2.id,
+  //     name: 'test_file_team',
+  //     contents: Buffer.from('contents_0'),
+  //     uuid: '00000000-0000-4000-8000-000000000002',
+  //     publicLinkAccess: 'NOT_SHARED',
+  //   },
+  // });
+  // File with individual user invites
 });
 
 afterAll(async () => {
-  const deleteUsers = dbClient.user.deleteMany();
+  const deleteFileInvites = dbClient.fileInvite.deleteMany();
+  const deleteFileUsers = dbClient.userFileRole.deleteMany();
+  const deleteTeams = dbClient.team.deleteMany();
   const deleteFiles = dbClient.file.deleteMany();
+  const deleteUsers = dbClient.user.deleteMany();
 
-  await dbClient.$transaction([deleteFiles, deleteUsers]);
+  await dbClient.$transaction([deleteFileInvites, deleteFileUsers, deleteTeams, deleteFiles, deleteUsers]);
 });
 
 describe('READ - GET /v0/files/ no auth', () => {
@@ -64,7 +107,7 @@ describe('READ - GET /v0/files/ with auth and files', () => {
     expect(res.body[0]).toMatchObject({
       uuid: '00000000-0000-4000-8000-000000000000',
       name: 'test_file_1',
-      public_link_access: 'NOT_SHARED',
+      publicLinkAccess: 'NOT_SHARED',
       thumbnail: null,
     });
     expect(res.body[0]).toHaveProperty('created_date');
@@ -72,7 +115,7 @@ describe('READ - GET /v0/files/ with auth and files', () => {
     expect(res.body[1]).toMatchObject({
       uuid: '00000000-0000-4000-8000-000000000001',
       name: 'test_file_2',
-      public_link_access: 'READONLY',
+      publicLinkAccess: 'READONLY',
       thumbnail: null,
     });
   });

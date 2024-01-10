@@ -2,10 +2,11 @@ import express, { Request, Response } from 'express';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from '../../dbClient';
-import { teamMiddleware } from '../../middleware/team';
+import { getTeam } from '../../middleware/getTeam';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { RequestWithTeam } from '../../types/Request';
-import { ResponseError } from '../../types/Response';
+import { RequestWithUser } from '../../types/Request';
 const router = express.Router();
 
 const requestValidationMiddleware = validateRequestSchema(
@@ -20,17 +21,20 @@ const requestValidationMiddleware = validateRequestSchema(
 router.post(
   '/:uuid',
   requestValidationMiddleware,
-  teamMiddleware,
-  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid.POST.response'] | ResponseError>) => {
+  validateAccessToken,
+  userMiddleware,
+  async (req: Request, res: Response) => {
     const {
       params: { uuid },
-      team: { user },
-    } = req as RequestWithTeam;
+      user: { id: userId },
+    } = req as RequestWithUser;
+    const { user } = await getTeam({ uuid, userId });
+
     // TODO: improve this more generically when validating?
     const body = req.body as ApiTypes['/v0/teams/:uuid.POST.request'];
 
     // Can the user even edit this team?
-    if (!user.access.includes('TEAM_EDIT')) {
+    if (!user.permissions.includes('TEAM_EDIT')) {
       return res.status(403).json({ error: { message: 'User does not have permission to edit this team.' } });
     }
 
@@ -44,7 +48,7 @@ router.post(
       data: body,
     });
 
-    const data: ApiTypes['/v0/teams/:uuid.POST.response'] = { uuid, name: newTeam.name };
+    const data: ApiTypes['/v0/teams/:uuid.POST.response'] = { name: newTeam.name };
     if (newTeam.picture) data.picture = newTeam.picture;
     return res.status(200).json(data);
   }

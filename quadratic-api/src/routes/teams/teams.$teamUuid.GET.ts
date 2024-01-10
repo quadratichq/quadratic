@@ -3,9 +3,11 @@ import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { getAuth0Users } from '../../auth0/profile';
 import dbClient from '../../dbClient';
-import { teamMiddleware } from '../../middleware/team';
+import { getTeam } from '../../middleware/getTeam';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { RequestWithTeam } from '../../types/Request';
+import { RequestWithUser } from '../../types/Request';
 const router = express.Router();
 
 const requestValidationMiddleware = validateRequestSchema(
@@ -19,16 +21,18 @@ const requestValidationMiddleware = validateRequestSchema(
 router.get(
   '/:uuid',
   requestValidationMiddleware,
-  teamMiddleware,
-  async (req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET.response']>) => {
+  validateAccessToken,
+  userMiddleware,
+  async (req: Request, res: Response) => {
     const {
+      params: { uuid },
       user: { id: userId },
-      team: {
-        data: team,
-        data: { id: teamId },
-        user: teamUser,
-      },
-    } = req as RequestWithTeam;
+    } = req as RequestWithUser;
+    const {
+      team,
+      team: { id: teamId },
+      user: teamUser,
+    } = await getTeam({ uuid, userId });
 
     // Get users in the team
     const dbTeam = await dbClient.team.findUnique({
@@ -55,7 +59,7 @@ router.get(
     const dbUsers = dbTeam?.UserTeamRole ? dbTeam.UserTeamRole : [];
     const dbInvites = dbTeam?.TeamInvite ? dbTeam.TeamInvite : [];
 
-    const auth0UserIds = dbUsers.map(({ user: { auth0_id } }) => auth0_id);
+    const auth0UserIds = dbUsers.map(({ user: { auth0Id } }) => auth0Id);
 
     // Get auth0 users
     const auth0Users = await getAuth0Users(auth0UserIds);
@@ -66,40 +70,38 @@ router.get(
       {}
     );
 
-    // TODO: sort users by created_date in the team
+    // TODO: sort users by createdDate in the team
     // TODO: invited users, also can we guarantee ordering here?
-    const users = dbUsers.map(({ userId: id, role, user: { auth0_id } }) => {
-      const { email, name, picture } = auth0UsersByAuth0Id[auth0_id];
+    const users = dbUsers.map(({ userId: id, role, user: { auth0Id } }) => {
+      const { email, name, picture } = auth0UsersByAuth0Id[auth0Id];
       return {
         id,
-        email,
+        // Casting this to a string because (presumably) auth0 should
+        // always return an email for a user
+        email: email as string,
         role,
-        hasAccount: true,
         name,
         picture,
       };
     });
 
-    const response = {
+    const response: ApiTypes['/v0/teams/:uuid.GET.response'] = {
       team: {
         uuid: team.uuid,
         name: team.name,
-        created_date: team.createdDate,
         ...(team.picture ? { picture: team.picture } : {}),
-        // TODO we could put this in /sharing and just return the userCount
-        users,
-        invites: dbInvites.map(({ email, role, id }) => ({ email, role, id })),
-
-        files: [],
       },
-      user: {
+      userMakingRequest: {
         id: userId,
-        role: teamUser.role,
-        access: teamUser.access,
+        teamRole: teamUser.role,
+        teamPermissions: teamUser.permissions,
       },
+      // TODO we could put this in /sharing and just return the userCount
+      users,
+      invites: dbInvites.map(({ email, role, id }) => ({ email, role, id })),
+      // files: [],
     };
 
-    // @ts-expect-error TODO: fix types
     return res.status(200).json(response);
   }
 );
