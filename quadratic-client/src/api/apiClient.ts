@@ -48,9 +48,9 @@ export const apiClient = {
       );
     },
     invites: {
-      async create(teamUuid: string, body: ApiTypes['/v0/teams/:uuid/invites.POST.request']) {
+      async create(uuid: string, body: ApiTypes['/v0/teams/:uuid/invites.POST.request']) {
         return fetchFromApi(
-          `/v0/teams/${teamUuid}/invites`,
+          `/v0/teams/${uuid}/invites`,
           {
             method: 'POST',
             body: JSON.stringify(body),
@@ -58,10 +58,10 @@ export const apiClient = {
           ApiSchemas['/v0/teams/:uuid/invites.POST.response']
         );
       },
-      async delete(teamUuid: string, inviteId: string) {
-        console.log(`DELETE to /v0/teams/${teamUuid}/invites/${inviteId}`);
+      async delete(uuid: string, inviteId: string) {
+        console.log(`DELETE to /v0/teams/${uuid}/invites/${inviteId}`);
         return fetchFromApi(
-          `/v0/teams/${teamUuid}/invites/${inviteId}`,
+          `/v0/teams/${uuid}/invites/${inviteId}`,
           {
             method: 'DELETE',
           },
@@ -70,16 +70,16 @@ export const apiClient = {
       },
     },
     users: {
-      async update(teamUuid: string, userId: string, body: ApiTypes['/v0/teams/:uuid/users/:userId.POST.request']) {
+      async update(uuid: string, userId: string, body: ApiTypes['/v0/teams/:uuid/users/:userId.POST.request']) {
         return fetchFromApi(
-          `/v0/teams/${teamUuid}/users/${userId}`,
+          `/v0/teams/${uuid}/users/${userId}`,
           { method: 'POST', body: JSON.stringify(body) },
           ApiSchemas['/v0/teams/:uuid/users/:userId.POST.response']
         );
       },
-      async delete(teamUuid: string, userId: string) {
+      async delete(uuid: string, userId: string) {
         return fetchFromApi(
-          `/v0/teams/${teamUuid}/users/${userId}`,
+          `/v0/teams/${uuid}/users/${userId}`,
           { method: 'DELETE' },
           ApiSchemas['/v0/teams/:uuid/users/:userId.DELETE.response']
         );

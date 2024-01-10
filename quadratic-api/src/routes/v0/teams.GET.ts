@@ -1,12 +1,13 @@
-import express, { Request, Response } from 'express';
+import { Request, Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { RequestWithUser } from '../../types/Request';
-const router = express.Router();
 
-router.get('/', validateAccessToken, userMiddleware, async (req: Request, res: Response) => {
+export default [validateAccessToken, userMiddleware, handler];
+
+async function handler(req: Request, res: Response) {
   const { user } = req as RequestWithUser;
 
   // Fetch teams the user is a part of
@@ -41,6 +42,4 @@ router.get('/', validateAccessToken, userMiddleware, async (req: Request, res: R
 
   const data: ApiTypes['/v0/teams.GET.response'] = clientTeams;
   return res.status(200).json(data);
-});
-
-export default router;
+}

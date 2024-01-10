@@ -1,7 +1,7 @@
 import { ROUTES } from '@/constants/routes';
 import { CONTACT_URL } from '@/constants/urls';
 import { Action as FileShareAction } from '@/routes/files.$uuid.sharing';
-import { TeamAction } from '@/routes/teams.$teamUuid';
+import { TeamAction } from '@/routes/teams.$uuid';
 import { Button } from '@/shadcn/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
 import { Input } from '@/shadcn/ui/input';

@@ -31,8 +31,8 @@ import { TeamLogoInput } from '../dashboard/components/TeamLogo';
 import { useUpdateQueryStringValueWithoutNavigation } from '../hooks/useUpdateQueryStringValueWithoutNavigation';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  const { teamUuid } = params as { teamUuid: string };
-  return await apiClient.teams.get(teamUuid);
+  const { uuid } = params as { uuid: string };
+  return await apiClient.teams.get(uuid);
 };
 
 export type TeamAction = {
@@ -67,7 +67,7 @@ export type TeamAction = {
 
 export const action = async ({ request, params }: ActionFunctionArgs): Promise<TeamAction['response']> => {
   const data = (await request.json()) as TeamAction['request'];
-  const { teamUuid } = params as { teamUuid: string };
+  const { uuid } = params as { uuid: string };
   const { intent } = data;
 
   await new Promise((resolve, reject) => setTimeout(resolve, 1000));
@@ -76,7 +76,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
     try {
       // TODO: uploading picture vs. name
       const { name, picture } = data;
-      await apiClient.teams.update(teamUuid, { name, picture });
+      await apiClient.teams.update(uuid, { name, picture });
       return { ok: true };
     } catch (e) {
       return { ok: false };
@@ -86,7 +86,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   if (intent === 'create-team-invite') {
     try {
       const { email, role } = data;
-      await apiClient.teams.invites.create(teamUuid, { email, role });
+      await apiClient.teams.invites.create(uuid, { email, role });
       return { ok: true };
     } catch (e) {
       return { ok: false };
@@ -96,7 +96,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   if (intent === 'delete-team-invite') {
     try {
       const { inviteId } = data;
-      await apiClient.teams.invites.delete(teamUuid, inviteId);
+      await apiClient.teams.invites.delete(uuid, inviteId);
       return { ok: true };
     } catch (e) {
       return { ok: false };
@@ -106,7 +106,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   if (intent === 'update-team-user') {
     try {
       const { userId, role } = data;
-      await apiClient.teams.users.update(teamUuid, userId, { role });
+      await apiClient.teams.users.update(uuid, userId, { role });
       return { ok: true };
     } catch (e) {
       return { ok: false };
@@ -116,7 +116,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   if (intent === 'delete-team-user') {
     try {
       const { userId } = data;
-      await apiClient.teams.users.delete(teamUuid, userId);
+      await apiClient.teams.users.delete(uuid, userId);
       return { ok: true };
     } catch (e) {
       return { ok: false };
