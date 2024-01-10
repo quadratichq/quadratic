@@ -62,6 +62,7 @@ services:
     # override env vars here
     environment:
       QUADRATIC_API_URI: http://host.docker.internal:8000
+      RUST_LOG: info
     restart: "always"
     ports:
       - "3001:3001"
@@ -86,6 +87,7 @@ services:
     # override env vars here
     environment:
       QUADRATIC_API_URI: http://host.docker.internal:8000
+      RUST_LOG: info
     restart: "always"
     ports:
       - "3002:3002"
