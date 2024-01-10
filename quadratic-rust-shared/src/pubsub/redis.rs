@@ -1,18 +1,18 @@
-use futures_util::stream::{Stream, StreamExt};
 use redis::{
     aio::{AsyncStream, MultiplexedConnection, PubSub},
     AsyncCommands, Client,
 };
-use std::{pin::Pin, vec};
+use std::pin::Pin;
 
 use crate::pubsub::Config;
 use crate::{error::Result, SharedError};
 
 #[derive(Debug, Clone)]
 pub struct RedisConfig {
-    host: String,
-    port: String,
-    password: String,
+    pub host: String,
+    pub port: String,
+    pub password: String,
+    pub active_channels: String,
 }
 
 pub type PubSubConnection = PubSub<Pin<Box<dyn AsyncStream + Send + Sync>>>;
@@ -27,6 +27,7 @@ fn client(config: Config) -> Result<Client> {
         host,
         port,
         password,
+        ..
     }) = config
     {
         let params = format!("redis://:{password}@{host}:{port}");
@@ -94,7 +95,13 @@ impl super::PubSub for RedisConnection {
     }
 
     /// Acknowledge that a message was processed
-    async fn ack(&mut self, _channel: &str, _group: &str, _keys: Vec<&str>) -> Result<()> {
+    async fn ack(
+        &mut self,
+        _channel: &str,
+        _group: &str,
+        _keys: Vec<&str>,
+        active_channel: Option<&str>,
+    ) -> Result<()> {
         unimplemented!()
     }
 
@@ -130,9 +137,9 @@ impl super::PubSub for RedisConnection {
 pub mod tests {
     use std::vec;
 
-    use uuid::Uuid;
-
     use crate::pubsub::PubSub;
+    use futures_util::stream::StreamExt;
+    use uuid::Uuid;
 
     use super::*;
 
@@ -142,6 +149,7 @@ pub mod tests {
             host: "0.0.0.0".into(),
             port: "6379".into(),
             password: "".into(),
+            active_channels: Uuid::new_v4().to_string(),
         });
 
         (config, channel)

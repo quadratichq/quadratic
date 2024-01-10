@@ -69,7 +69,7 @@ pub(crate) async fn serve() -> Result<()> {
             loop {
                 interval.tick().await;
 
-                if let Err(error) = process(&state).await {
+                if let Err(error) = process(&state, &config.pubsub_active_channels).await {
                     tracing::error!("Error processing files: {error}");
                 }
             }

@@ -39,6 +39,7 @@ fn client(config: Config) -> Result<Client> {
         host,
         port,
         password,
+        ..
     }) = config
     {
         let params = format!("redis://:{password}@{host}:{port}");
@@ -178,7 +179,13 @@ impl super::PubSub for RedisConnection {
     }
 
     /// Acknowledge that a message was processed
-    async fn ack(&mut self, channel: &str, group: &str, keys: Vec<&str>) -> Result<()> {
+    async fn ack(
+        &mut self,
+        channel: &str,
+        group: &str,
+        keys: Vec<&str>,
+        active_channel: Option<&str>,
+    ) -> Result<()> {
         if keys.len() == 0 {
             return Err(SharedError::PubSub(
                 "Error acking messages for channel {channel}: no keys provided".into(),
@@ -190,6 +197,12 @@ impl super::PubSub for RedisConnection {
         self.multiplex
             .xack::<&str, &str, String, u128>(channel, group, &ids)
             .await?;
+
+        // remove the channel from the active channels set
+        if let Some(active_channel) = active_channel {
+            self.remove_active_channel(active_channel, channel).await?
+        }
+
         Ok(())
     }
 
@@ -268,6 +281,7 @@ pub mod tests {
             host: "0.0.0.0".into(),
             port: "6379".into(),
             password: "".into(),
+            active_channels: Uuid::new_v4().to_string(),
         });
 
         (config, channel)
@@ -336,7 +350,10 @@ pub mod tests {
         // println!("pending: {:?}", pending);
 
         // acknowledge all messages
-        connection.ack(&channel, group, ids.clone()).await.unwrap();
+        connection
+            .ack(&channel, group, ids.clone(), None)
+            .await
+            .unwrap();
 
         // let pending = connection
         //     .multiplex

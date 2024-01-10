@@ -189,10 +189,6 @@ pub(crate) async fn handle_message(
 
             // get the room's sequence_num
             let room_sequence_num = get_mut_room!(state, file_id)?.increment_sequence_num();
-            println!(
-                "handle::Transaction: room_sequence_num: {:?}",
-                room_sequence_num
-            );
 
             // add the transaction to the transaction queue
             let sequence_num = state

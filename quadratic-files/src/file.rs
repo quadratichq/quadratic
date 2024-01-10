@@ -202,13 +202,13 @@ pub(crate) async fn process_queue_for_room(
 }
 
 /// Process outstanding transactions in the queue
-pub(crate) async fn process(state: &Arc<State>) -> Result<()> {
+pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result<()> {
     let files = state
         .pubsub
         .lock()
         .await
         .connection
-        .channels()
+        .active_channels(&active_channels)
         .await?
         .into_iter()
         .map(|file_id| Uuid::parse_str(&file_id))

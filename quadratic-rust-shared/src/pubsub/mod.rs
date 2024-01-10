@@ -28,7 +28,13 @@ pub trait PubSub {
         value: &str,
         active_channel: Option<&str>,
     ) -> Result<()>;
-    async fn ack(&mut self, channel: &str, group: &str, keys: Vec<&str>) -> Result<()>;
+    async fn ack(
+        &mut self,
+        channel: &str,
+        group: &str,
+        keys: Vec<&str>,
+        active_channel: Option<&str>,
+    ) -> Result<()>;
     async fn messages(
         &mut self,
         channel: &str,

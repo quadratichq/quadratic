@@ -20,6 +20,7 @@ pub(crate) struct Config {
     pub(crate) pubsub_host: String,
     pub(crate) pubsub_port: String,
     pub(crate) pubsub_password: String,
+    pub(crate) pubsub_active_channels: String,
 
     pub(crate) quadratic_api_uri: String,
     pub(crate) quadratic_api_jwt: String,
