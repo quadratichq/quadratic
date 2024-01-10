@@ -78,7 +78,13 @@ impl super::PubSub for RedisConnection {
     }
 
     /// Publish a message to a channel.
-    async fn publish(&mut self, channel: &str, _key: &str, value: &str) -> Result<()> {
+    async fn publish(
+        &mut self,
+        channel: &str,
+        _key: &str,
+        value: &str,
+        _active_channel: Option<&str>,
+    ) -> Result<()> {
         self.multiplex.publish(channel, value).await?;
         Ok(())
     }
@@ -165,7 +171,10 @@ pub mod tests {
         let mut connection = RedisConnection::new(config).await.unwrap();
 
         for message in messages.iter() {
-            connection.publish(&channel, "", message).await.unwrap();
+            connection
+                .publish(&channel, "", message, None)
+                .await
+                .unwrap();
         }
 
         let received = handle.await.unwrap();

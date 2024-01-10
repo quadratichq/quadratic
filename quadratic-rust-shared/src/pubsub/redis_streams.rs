@@ -113,7 +113,10 @@ impl super::PubSub for RedisConnection {
 
     /// Get a list of active channels
     async fn active_channels(&mut self, set_key: &str) -> Result<Vec<String>> {
-        let channels = self.multiplex.zrangebyscore(set_key, "-", "+").await?;
+        let channels = self
+            .multiplex
+            .zrangebyscore(set_key, "-inf", "+inf")
+            .await?;
 
         Ok(channels)
     }
@@ -149,13 +152,20 @@ impl super::PubSub for RedisConnection {
     }
 
     /// Publish a message to a channel.
-    async fn publish(&mut self, channel: &str, key: &str, value: &str) -> Result<()> {
+    async fn publish(
+        &mut self,
+        channel: &str,
+        key: &str,
+        value: &str,
+        active_channel: Option<&str>,
+    ) -> Result<()> {
         // add the message to the stream
         self.multiplex.xadd(channel, key, &[(key, value)]).await?;
 
         // add the channel to the active channels set
-        self.upsert_active_channel("active_channels", channel)
-            .await?;
+        if let Some(active_channel) = active_channel {
+            self.upsert_active_channel(active_channel, channel).await?
+        }
 
         Ok(())
     }
@@ -268,7 +278,7 @@ pub mod tests {
         // send messages
         for (key, value) in messages.iter().enumerate() {
             connection
-                .publish(&channel, &(key + 1).to_string(), value)
+                .publish(&channel, &(key + 1).to_string(), value, None)
                 .await
                 .unwrap();
         }
@@ -349,7 +359,7 @@ pub mod tests {
         // send messages
         for (key, value) in messages.iter().enumerate() {
             connection
-                .publish(&channel, &(key + 1).to_string(), value)
+                .publish(&channel, &(key + 1).to_string(), value, None)
                 .await
                 .unwrap();
         }
@@ -372,7 +382,7 @@ pub mod tests {
         // send messages
         for (key, value) in messages.iter().enumerate() {
             connection
-                .publish(&channel, &(key + 1).to_string(), value)
+                .publish(&channel, &(key + 1).to_string(), value, None)
                 .await
                 .unwrap();
         }
@@ -381,5 +391,45 @@ pub mod tests {
         let results = connection.channels().await.unwrap();
 
         assert!(results.contains(&channel));
+    }
+
+    #[tokio::test]
+    async fn stream_active_channels() {
+        let (config, channel) = setup();
+        let messages = vec!["test 1", "test 2"];
+        let group = "group 1";
+        let channels = [Uuid::new_v4().to_string(), Uuid::new_v4().to_string()];
+        let active_channels = Uuid::new_v4().to_string();
+
+        let mut connection = RedisConnection::new(config).await.unwrap();
+        connection.subscribe(&channel, group).await.unwrap();
+
+        // send messages
+        for (key, value) in messages.iter().enumerate() {
+            connection
+                .publish(
+                    &channels[key],
+                    &(key + 1).to_string(),
+                    value,
+                    Some(&active_channels),
+                )
+                .await
+                .unwrap();
+        }
+
+        // get all channels
+        let results = connection.active_channels(&active_channels).await.unwrap();
+
+        // active channels should exist and contain the channels in order
+        assert_eq!(results, channels);
+
+        // now update the first channel
+        connection
+            .upsert_active_channel(&active_channels, &channels[0])
+            .await
+            .unwrap();
+
+        let results = connection.active_channels(&active_channels).await.unwrap();
+        assert_eq!(results, vec![channels[1].clone(), channels[0].clone()]);
     }
 }
