@@ -45,21 +45,21 @@ impl GridController {
                     self.redo_stack.clear();
                     self.transactions
                         .unsaved_transactions
-                        .push((transaction.to_forward_transaction(), undo));
+                        .insert_or_replace(transaction);
                 }
                 TransactionType::Undo => {
                     let undo = transaction.to_undo_transaction();
                     self.redo_stack.push(undo.clone());
                     self.transactions
                         .unsaved_transactions
-                        .push((transaction.to_forward_transaction(), undo));
+                        .insert_or_replace(transaction);
                 }
                 TransactionType::Redo => {
                     let undo = transaction.to_undo_transaction();
                     self.undo_stack.push(undo.clone());
                     self.transactions
                         .unsaved_transactions
-                        .push((transaction.to_forward_transaction(), undo));
+                        .insert_or_replace(transaction);
                 }
                 TransactionType::Multiplayer => (),
                 TransactionType::Unset => panic!("Expected a transaction type"),

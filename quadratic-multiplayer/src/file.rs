@@ -49,7 +49,7 @@ pub(crate) async fn get_and_load_object(
     let body = std::str::from_utf8(&body).map_err(|e| MpError::FileService(e.to_string()))?;
     let grid = load_file(body)?;
 
-    Ok(GridController::from_grid(grid, sequence_num))
+    Ok(GridController::from_grid(grid, sequence_num, None))
 }
 
 pub(crate) fn key(file_id: Uuid, sequence: u64) -> String {
@@ -170,7 +170,7 @@ mod tests {
         ))
         .unwrap();
 
-        let mut client = GridController::from_grid(file.clone(), 0);
+        let mut client = GridController::from_grid(file.clone(), 0, None);
         let sheet_id = client.sheet_ids().first().unwrap().to_owned();
         let summary = client.set_cell_value(
             SheetPos {
@@ -187,7 +187,7 @@ mod tests {
             Some(CellValue::Text("hello".to_string()))
         );
 
-        let mut server = GridController::from_grid(file, 0);
+        let mut server = GridController::from_grid(file, 0, None);
         apply_transaction(
             &mut server,
             serde_json::from_str(&summary.operations.unwrap()).unwrap(),

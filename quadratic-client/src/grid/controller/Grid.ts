@@ -148,15 +148,10 @@ export class Grid {
     pixiApp.setViewportDirty();
   }
 
-  // this cannot be called in the constructor as Rust is not yet loaded
-  init() {
-    this.gridController = new GridController();
-  }
-
   // import/export
-  openFromContents(contents: string, lastSequenceNum: number): boolean {
+  openFromContents(contents: string, lastSequenceNum: number, unsavedTransactions?: string): boolean {
     try {
-      this.gridController = GridController.newFromFile(contents, lastSequenceNum);
+      this.gridController = GridController.newFromFile(contents, lastSequenceNum, unsavedTransactions);
       return true;
     } catch (e) {
       console.warn(e);
@@ -756,18 +751,13 @@ export class Grid {
     }
   }
 
+  markTransactionSent(transactionId: string) {
+    this.gridController.markTransactionSent(transactionId);
+  }
+
   //#endregion
 }
 
 //#end
 
 export const grid = GridPerformanceProxy(new Grid());
-
-// workaround so Rust can import TS functions
-declare global {
-  interface Window {
-    transactionSummary: any;
-  }
-}
-
-window.transactionSummary = grid.transactionResponse.bind(grid);

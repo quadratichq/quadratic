@@ -1,6 +1,7 @@
 import { ApiError } from '@/api/fetchFromApi';
 import { CONTACT_URL } from '@/constants/urls';
 import { debugShowMultiplayer } from '@/debugFlags';
+import { offline } from '@/grid/controller/offline';
 import { Button } from '@/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
@@ -55,11 +56,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     throw new Response('File validation failed.');
   }
 
+  const unsavedTransactions = await offline.load();
+
   // load WASM
   await init();
   hello();
-  grid.init();
-  grid.openFromContents(file.contents, data.file.lastCheckpointSequenceNumber);
+  grid.openFromContents(file.contents, data.file.lastCheckpointSequenceNumber, unsavedTransactions);
   grid.thumbnailDirty = !data.file.thumbnail;
 
   // If the file is newer than the app, do a (hard) reload.

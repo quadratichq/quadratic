@@ -42,7 +42,7 @@ impl GridController {
             .unsaved_transactions
             .iter()
             .rev()
-            .flat_map(|(_, undo)| undo.operations.clone())
+            .flat_map(|unsaved_transaction| unsaved_transaction.reverse.operations.clone())
             .collect::<VecDeque<_>>();
         let mut rollback = PendingTransaction {
             transaction_type: TransactionType::Multiplayer,
@@ -69,7 +69,7 @@ impl GridController {
             .unsaved_transactions
             .iter()
             .rev()
-            .flat_map(|(forward, _)| forward.operations.clone())
+            .flat_map(|unsaved_transaction| unsaved_transaction.forward.operations.clone())
             .collect::<Vec<_>>();
         let mut reapply = PendingTransaction {
             // Note: setting this to multiplayer makes it so the calculations are not rerun when reapplied.
@@ -183,7 +183,11 @@ impl GridController {
         // this is the normal case where we receive the next transaction in sequence
         if sequence_num == self.transactions.last_sequence_num + 1 {
             // first check if the received transaction is one of ours
-            if let Some((index, _)) = self.transactions.find_unsaved_transaction(transaction.id) {
+            if let Some(index) = self
+                .transactions
+                .unsaved_transactions
+                .find_index(transaction.id)
+            {
                 self.rollback_unsaved_transactions(transaction);
                 self.transactions.unsaved_transactions.remove(index);
                 self.start_transaction(transaction);

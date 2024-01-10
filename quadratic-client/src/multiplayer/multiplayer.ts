@@ -2,6 +2,7 @@ import { authClient, parseDomain } from '@/auth';
 import { debugShowMultiplayer } from '@/debugFlags';
 import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
+import { offline } from '@/grid/controller/offline';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
 import { SheetPos } from '@/gridGL/types/size';
@@ -275,7 +276,12 @@ export class Multiplayer {
       file_id: this.room!,
       operations,
     };
-    this.websocket!.send(JSON.stringify(message));
+    try {
+      this.websocket!.send(JSON.stringify(message));
+      grid.markTransactionSent(id);
+      offline.markTransactionSent(id);
+      if (debugShowMultiplayer) console.log(`[Multiplayer] Sent transaction ${id}.`);
+    } catch (_) {}
   }
 
   sendGetTransactions(min_sequence_num: bigint) {
@@ -481,3 +487,5 @@ export class Multiplayer {
 }
 
 export const multiplayer = new Multiplayer();
+
+window.sendTransaction = multiplayer.sendTransaction.bind(multiplayer);
