@@ -169,7 +169,9 @@ async fn remove_stale_users_in_room(
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::{add_new_user_to_room, grid_setup, new_arc_state, operation};
+    use quadratic_core::controller::GridController;
+
+    use crate::test_util::{add_new_user_to_room, new_arc_state, operation};
 
     use super::*;
 
@@ -177,7 +179,7 @@ mod tests {
     async fn test_broadcast_sequence_num() {
         let state = new_arc_state().await;
         let file_id = Uuid::new_v4();
-        let mut grid = grid_setup();
+        let mut grid = GridController::test();
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
 

@@ -110,7 +110,7 @@ mod test {
 
     #[test]
     fn test_set_cell_value_undo_redo() {
-        let mut g = GridController::new();
+        let mut g = GridController::test();
         let sheet_id = g.grid.sheets()[0].id;
         let sheet_pos = SheetPos {
             x: 3,
@@ -180,7 +180,7 @@ mod test {
 
     #[test]
     fn test_set_cell_value() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet_pos = SheetPos {
             x: 0,

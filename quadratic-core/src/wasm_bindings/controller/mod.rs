@@ -41,12 +41,6 @@ impl GridController {
         file::CURRENT_VERSION.into()
     }
 
-    /// Constructs a new empty grid.
-    #[wasm_bindgen(constructor)]
-    pub fn js_new() -> Self {
-        Self::new()
-    }
-
     /// Returns whether there is a transaction to undo.
     #[wasm_bindgen(js_name = "hasUndo")]
     pub fn js_has_undo(&self) -> bool {

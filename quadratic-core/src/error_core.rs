@@ -40,9 +40,3 @@ impl From<uuid::Error> for CoreError {
         CoreError::Unknown(error.to_string())
     }
 }
-
-impl From<idb::Error> for CoreError {
-    fn from(error: idb::Error) -> Self {
-        CoreError::IndexedDbError(error.to_string())
-    }
-}

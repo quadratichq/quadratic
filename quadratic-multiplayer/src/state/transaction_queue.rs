@@ -155,9 +155,11 @@ impl TransactionQueue {
 }
 #[cfg(test)]
 mod tests {
+    use quadratic_core::controller::GridController;
+
     use crate::{
         state::State,
-        test_util::{grid_setup, new_state, operation},
+        test_util::{new_state, operation},
     };
 
     async fn setup() -> (State, Uuid) {
@@ -171,7 +173,7 @@ mod tests {
     #[tokio::test]
     async fn test_transaction_queue() {
         let (state, file_id) = setup().await;
-        let mut grid = grid_setup();
+        let mut grid = GridController::test();
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
         let transaction_id_2 = Uuid::new_v4();

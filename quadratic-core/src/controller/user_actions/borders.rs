@@ -23,7 +23,7 @@ mod tests {
 
     #[test]
     fn test_set_borders() {
-        let mut grid_controller = GridController::new();
+        let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let sheet_rect = SheetRect::single_pos(Pos { x: 0, y: 0 }, sheet_id);
         let selections = vec![BorderSelection::Top, BorderSelection::Left];

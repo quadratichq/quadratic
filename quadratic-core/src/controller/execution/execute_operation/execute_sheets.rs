@@ -169,7 +169,7 @@ mod tests {
 
     #[test]
     fn test_add_sheet() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let summary = gc.add_sheet(None);
         assert_eq!(gc.grid.sheets().len(), 2);
         assert!(summary.save);
@@ -182,7 +182,7 @@ mod tests {
 
     #[test]
     fn test_delete_sheet() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let summary = gc.delete_sheet(sheet_id, None);
         assert_eq!(gc.grid.sheets().len(), 1);
@@ -197,7 +197,7 @@ mod tests {
 
     #[test]
     fn test_execute_operation_set_sheet_name() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let name = "new name".to_string();
         let summary = gc.set_sheet_name(sheet_id, name.clone(), None);
@@ -212,7 +212,7 @@ mod tests {
 
     #[test]
     fn test_set_sheet_color() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let color = Some("red".to_string());
         let summary = gc.set_sheet_color(sheet_id, color.clone(), None);
@@ -227,7 +227,7 @@ mod tests {
 
     #[test]
     fn test_sheet_reorder() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
         // Sheet 1, Sheet 2

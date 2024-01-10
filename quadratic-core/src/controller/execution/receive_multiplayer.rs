@@ -269,7 +269,7 @@ mod tests {
 
     #[test]
     fn test_multiplayer_hello_world() {
-        let mut gc1 = GridController::new();
+        let mut gc1 = GridController::test();
         let sheet_id = gc1.sheet_ids()[0];
         let summary = gc1.set_cell_value(
             SheetPos {
@@ -300,7 +300,7 @@ mod tests {
         );
         assert_eq!(gc1.transactions.unsaved_transactions.len(), 0);
 
-        let mut gc2 = GridController::new();
+        let mut gc2 = GridController::test();
         gc2.grid_mut().sheets_mut()[0].id = sheet_id;
         gc2.received_transaction(transaction_id, 1, operations);
         let sheet = gc2.grid().try_sheet(sheet_id).unwrap();
@@ -312,7 +312,7 @@ mod tests {
 
     #[test]
     fn test_apply_multiplayer_before_unsaved_transaction() {
-        let mut gc1 = GridController::new();
+        let mut gc1 = GridController::test();
         let sheet_id = gc1.sheet_ids()[0];
         gc1.set_cell_value(
             SheetPos {
@@ -329,7 +329,7 @@ mod tests {
             Some(CellValue::Text("Hello World from 1".to_string()))
         );
 
-        let mut gc2 = GridController::new();
+        let mut gc2 = GridController::test();
         // set gc2's sheet 1's id to gc1 sheet 1's id
         gc2.grid.try_sheet_mut(gc2.sheet_ids()[0]).unwrap().id = sheet_id;
         let summary = gc2.set_cell_value(
@@ -362,7 +362,7 @@ mod tests {
 
     #[test]
     fn test_server_apply_transaction() {
-        let mut client = GridController::new();
+        let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
         let summary = client.set_cell_value(
             SheetPos {
@@ -381,7 +381,7 @@ mod tests {
         let operations: Vec<Operation> =
             serde_json::from_str(&summary.operations.unwrap()).unwrap();
 
-        let mut server = GridController::new();
+        let mut server = GridController::test();
         server.grid.try_sheet_mut(server.sheet_ids()[0]).unwrap().id = sheet_id;
         server.server_apply_transaction(operations);
         let sheet = server.grid.try_sheet(sheet_id).unwrap();
@@ -394,7 +394,7 @@ mod tests {
     #[test]
     fn test_handle_receipt_of_earlier_transactions() {
         // client is where the multiplayer transactions are applied from other
-        let mut client = GridController::new();
+        let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
         let summary = client.set_cell_value(
             SheetPos {
@@ -408,7 +408,7 @@ mod tests {
         assert!(summary.generate_thumbnail);
 
         // other is where the transaction are created
-        let mut other = GridController::new();
+        let mut other = GridController::test();
         other.grid_mut().sheets_mut()[0].id = sheet_id;
         let other_summary = other.set_cell_value(
             SheetPos {
@@ -443,11 +443,11 @@ mod tests {
     #[test]
     fn test_handle_receipt_of_out_of_order_transactions() {
         // client is where the multiplayer transactions are applied from other
-        let mut client = GridController::new();
+        let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
 
         // other is where the transaction are created
-        let mut other = GridController::new();
+        let mut other = GridController::test();
         other.grid_mut().sheets_mut()[0].id = sheet_id;
         let out_of_order_1_summary = other.set_cell_value(
             SheetPos {
@@ -504,7 +504,7 @@ mod tests {
 
     #[test]
     fn test_handle_receipt_of_earlier_transactions_and_out_of_order_transactions() {
-        let mut client = GridController::new();
+        let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
         let client_summary = client.set_cell_value(
             SheetPos {
@@ -517,7 +517,7 @@ mod tests {
         );
 
         // other is where the transaction are created
-        let mut other = GridController::new();
+        let mut other = GridController::test();
         other.grid_mut().sheets_mut()[0].id = sheet_id;
         let out_of_order_1_summary = other.set_cell_value(
             SheetPos {
@@ -594,11 +594,11 @@ mod tests {
 
     #[test]
     fn test_send_request_transactions() {
-        let mut client = GridController::new();
+        let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
 
         // other is where the transaction are created
-        let mut other = GridController::new();
+        let mut other = GridController::test();
         other.grid_mut().sheets_mut()[0].id = sheet_id;
         let other_1 = other.set_cell_value(
             SheetPos {
@@ -663,11 +663,11 @@ mod tests {
 
     #[test]
     fn test_receive_multiplayer_while_waiting_for_async() {
-        let mut client = GridController::new();
+        let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
 
         // other is where the transaction are created
-        let mut other = GridController::new();
+        let mut other = GridController::test();
         other.grid_mut().sheets_mut()[0].id = sheet_id;
         let other = other.set_cell_value(
             SheetPos {
@@ -753,11 +753,11 @@ mod tests {
         // Unlike previous test, we receive a multiplayer transaction that will be underneath the async code_cell.
         // We expect the async code_cell to overwrite it when it completes.
 
-        let mut client = GridController::new();
+        let mut client = GridController::test();
         let sheet_id = client.sheet_ids()[0];
 
         // other is where the transactions are created
-        let mut other = GridController::new();
+        let mut other = GridController::test();
         other.grid_mut().sheets_mut()[0].id = sheet_id;
         let other = other.set_cell_value(
             SheetPos {
@@ -943,7 +943,7 @@ mod tests {
 
     #[test]
     fn test_python_multiple_calculations_receive_back_afterwards() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let (transaction_id_0, operations_0) = create_multiple_calculations_0(&mut gc);
         assert_eq!(gc.active_transactions().unsaved_transactions.len(), 1);
         let (transaction_id_1, operations_1) = create_multiple_calculations_1(&mut gc);
@@ -991,7 +991,7 @@ mod tests {
 
     #[test]
     fn test_python_multiple_calculations_receive_back_between() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let (transaction_id_0, operations_0) = create_multiple_calculations_0(&mut gc);
         gc.received_transaction(
             Uuid::from_str(&transaction_id_0).unwrap(),

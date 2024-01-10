@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn test_transactions_finalize_transaction() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let (operation, operation_undo) = get_operations(&mut gc);
 
         // TransactionType::User
@@ -204,7 +204,7 @@ mod tests {
 
     #[test]
     fn test_transactions_undo_redo() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let (operation, operation_undo) = get_operations(&mut gc);
 
         assert!(!gc.has_undo());
@@ -237,7 +237,7 @@ mod tests {
 
     #[test]
     fn test_transactions_updated_bounds_in_transaction() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let (operation, _) = get_operations(&mut gc);
         assert_eq!(gc.grid().sheets()[0].bounds(true), GridBounds::Empty);
 
@@ -266,7 +266,7 @@ mod tests {
 
     #[test]
     fn test_js_calculation_complete() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let summary = gc.set_code_cell(
             SheetPos {

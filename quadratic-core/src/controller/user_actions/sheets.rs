@@ -61,7 +61,7 @@ mod test {
 
     #[test]
     fn test_add_delete_reorder_sheets() {
-        let mut g = GridController::new();
+        let mut g = GridController::test();
         g.add_sheet(None);
         g.add_sheet(None);
         let old_sheet_ids = g.sheet_ids();
@@ -111,7 +111,7 @@ mod test {
 
     #[test]
     fn test_duplicate_sheet() {
-        let mut g = GridController::new();
+        let mut g = GridController::test();
         let old_sheet_ids = g.sheet_ids();
         let s1 = old_sheet_ids[0];
 
@@ -128,7 +128,7 @@ mod test {
 
     #[test]
     fn test_delete_last_sheet() {
-        let mut g = GridController::new();
+        let mut g = GridController::test();
         let sheet_ids = g.sheet_ids();
         let first_sheet_id = sheet_ids[0];
 

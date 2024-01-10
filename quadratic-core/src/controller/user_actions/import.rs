@@ -44,7 +44,7 @@ Concord,NH,United States,42605
 
     #[test]
     fn imports_a_simple_csv() {
-        let mut grid_controller = GridController::new();
+        let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
@@ -78,7 +78,7 @@ Concord,NH,United States,42605
 
     #[test]
     fn errors_on_an_empty_csv() {
-        let mut grid_controller = GridController::new();
+        let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 

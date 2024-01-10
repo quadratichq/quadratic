@@ -160,7 +160,7 @@ mod test {
 
     #[test]
     fn test_set_cell_text_color_undo_redo() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
         let pos1 = Pos { x: 3, y: 6 };
         let pos2 = Pos { x: 5, y: 8 };
@@ -232,7 +232,7 @@ mod test {
 
     #[test]
     fn test_render_fill() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_fill_color(
             SheetRect {
@@ -271,7 +271,7 @@ mod test {
     #[test]
     fn test_change_decimal_places() {
         // setup
-        let mut gc: GridController = GridController::new();
+        let mut gc: GridController = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
             SheetPos {
@@ -349,7 +349,7 @@ mod test {
 
     #[test]
     fn test_set_currency() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
             SheetPos {
@@ -374,7 +374,7 @@ mod test {
 
     #[test]
     fn test_set_output_size() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_render_size(
             SheetRect::single_pos(Pos { x: 0, y: 0 }, sheet_id),
@@ -388,7 +388,7 @@ mod test {
 
     #[test]
     fn test_remove_formatting() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
             SheetPos {
@@ -414,7 +414,7 @@ mod test {
 
     #[test]
     fn test_set_cell_render_size() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_render_size(
             SheetRect::single_pos(Pos { x: 0, y: 0 }, sheet_id),

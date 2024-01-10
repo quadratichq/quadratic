@@ -79,10 +79,6 @@ pub(crate) async fn add_new_user_to_room(
     add_user_to_room(file_id, new_user(), state, connection_id).await
 }
 
-pub(crate) fn grid_setup() -> GridController {
-    GridController::new()
-}
-
 pub(crate) fn operation(grid: &mut GridController, x: i64, y: i64, value: &str) -> Operation {
     let sheet_id = grid.sheet_ids().first().unwrap().to_owned();
     let sheet_rect = SheetRect::single_pos((x, y).into(), sheet_id);
