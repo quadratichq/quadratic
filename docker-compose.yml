@@ -25,6 +25,13 @@ services:
       POSTGRES_USER: prisma
       POSTGRES_PASSWORD: prisma
       POSTGRES_DB: quadratic-api
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prisma"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./docker/postgres/dаta:/var/lib/postgresql/data
     networks:
       - quadratic
 
@@ -37,44 +44,46 @@ services:
     restart: "always"
     ports:
       - "3000:3000"
+    # command: ["npx", "prisma", "migrate", "dev"]
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - quadratic
 
-  # quadratic-multiplayer:
-  #   build:
-  #     context: .
-  #     dockerfile: quadratic-multiplayer/Dockerfile
-  #     args:
-  #       - binary=quadratic-multiplayer
-  #   env_file:
-  #     - quadratic-multiplayer/.env.docker
-  #   restart: "always"
-  #   ports:
-  #     - "3001:3001"
-  #   depends_on:
-  #     - redis
-  #     - quadratic-api
-  #   networks:
-  #     - quadratic
+  quadratic-multiplayer:
+    build:
+      context: .
+      dockerfile: quadratic-multiplayer/Dockerfile
+      args:
+        - binary=quadratic-multiplayer
+    env_file:
+      - quadratic-multiplayer/.env.docker
+    restart: "always"
+    ports:
+      - "3001:3001"
+    depends_on:
+      - redis
+      - quadratic-api
+    networks:
+      - quadratic
 
-  # quadratic-files:
-  #   build:
-  #     context: .
-  #     dockerfile: quadratic-files/Dockerfile
-  #     args:
-  #       - binary=quadratic-files
-  #   env_file:
-  #     - quadratic-files/.env.docker
-  #   restart: "always"
-  #   ports:
-  #     - "3002:3002"
-  #   depends_on:
-  #     - redis
-  #     - quadratic-api
-  #   networks:
-  #     - quadratic
+  quadratic-files:
+    build:
+      context: .
+      dockerfile: quadratic-files/Dockerfile
+      args:
+        - binary=quadratic-files
+    env_file:
+      - quadratic-files/.env.docker
+    restart: "always"
+    ports:
+      - "3002:3002"
+    depends_on:
+      - redis
+      - quadratic-api
+    networks:
+      - quadratic
 
 volumes:
   docker:

@@ -52,3 +52,7 @@ quadratic-api/dist
 quadratic-core/coverage
 quadratic-files/coverage
 quadratic-multiplayer/coverage
+
+# Docker Data
+docker/redis/data
+docker/postgres/data

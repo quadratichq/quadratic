@@ -1,8 +1,11 @@
-FROM node:latest
-RUN mkdir -p /opt/app
-WORKDIR /opt/app
-COPY package.json package.json
-COPY package-lock.json package-lock.json
+FROM node:18
+RUN mkdir -p /quadratic
+WORKDIR /quadratic
+COPY package*.json .
+COPY quadratic-api ./quadratic-api
+COPY quadratic-shared ./quadratic-shared
+WORKDIR /quadratic/quadratic-shared
 RUN npm install
-COPY src/ .
-CMD [ "npm", "start"]
+WORKDIR /quadratic/quadratic-api
+RUN npm install
+CMD ["npm", "start"]
