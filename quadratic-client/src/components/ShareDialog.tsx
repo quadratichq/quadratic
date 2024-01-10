@@ -4,21 +4,12 @@ import { Action as FileShareAction } from '@/routes/files.$uuid.sharing';
 import { TeamAction } from '@/routes/teams.$teamUuid';
 import { Button } from '@/shadcn/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shadcn/ui/dropdown-menu';
 import { Input } from '@/shadcn/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shadcn/ui/select';
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/shadcn/ui/select';
 import { Skeleton } from '@/shadcn/ui/skeleton';
 import { isJsonObject } from '@/utils/isJsonObject';
 import { Avatar } from '@mui/material';
-import { CaretDownIcon, EnvelopeClosedIcon, GlobeIcon, LockClosedIcon } from '@radix-ui/react-icons';
+import { EnvelopeClosedIcon, GlobeIcon, LockClosedIcon } from '@radix-ui/react-icons';
 import {
   ApiTypes,
   PublicLinkAccess,
@@ -502,7 +493,7 @@ function ManageUser({
   const fetcherDelete = useFetcher();
   const fetcherUpdate = useFetcher();
 
-  const disabled = !((roles.length > 2 && Boolean(onUpdate)) || Boolean(onDelete));
+  const isReadOnly = !((roles.length > 2 && Boolean(onUpdate)) || Boolean(onDelete));
   const userId = String(user.id);
   let value = user.role;
   let error = undefined;
@@ -532,45 +523,34 @@ function ManageUser({
       picture={user.picture}
       error={error}
       action={
-        onUpdate || onDelete ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild disabled={false || disabled}>
-              <Button variant="outline" className="px-3 font-normal hover:bg-inherit">
-                {label} <CaretDownIcon className="ml-0 text-muted-foreground" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              {onUpdate && (
-                <DropdownMenuRadioGroup
-                  value={value}
-                  onValueChange={(newValue: string) => {
-                    const role = newValue as (typeof roles)[0];
-                    onUpdate(fetcherUpdate.submit, userId, role);
-                  }}
-                >
-                  {roles.map((role, i) => (
-                    <DropdownMenuRadioItem key={i} value={role}>
-                      {getRoleLabel(role)}
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              )}
-
-              {onUpdate && onDelete && <DropdownMenuSeparator />}
-
-              {onDelete && (
-                <DropdownMenuItem
-                  onClick={() => {
-                    onDelete(fetcherDelete.submit, userId);
-                  }}
-                >
-                  {isLoggedInUser ? 'Leave' : 'Remove'}
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
+        isReadOnly ? (
           <Type className="pr-4">{label}</Type>
+        ) : (
+          <Select
+            value={value}
+            onValueChange={(value: 'DELETE' | (typeof roles)[0]) => {
+              if (value === 'DELETE' && onDelete) {
+                onDelete(fetcherDelete.submit, userId);
+              } else if (onUpdate) {
+                const role = value as (typeof roles)[0];
+                onUpdate(fetcherUpdate.submit, userId, role);
+              }
+            }}
+          >
+            <SelectTrigger className={`w-auto`}>
+              <SelectValue>{label}</SelectValue>
+            </SelectTrigger>
+
+            <SelectContent>
+              {roles.map((role, i) => (
+                <SelectItem key={i} value={role}>
+                  {getRoleLabel(role)}
+                </SelectItem>
+              ))}
+              <SelectSeparator />
+              <SelectItem value="DELETE">{isLoggedInUser ? 'Leave' : 'Remove'}</SelectItem>
+            </SelectContent>
+          </Select>
         )
       }
     />
@@ -615,28 +595,52 @@ function ManageInvite({
       email={email}
       error={hasError ? 'Failed to delete, try again' : undefined}
       action={
-        onDelete ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild disabled={disabled}>
-              <Button variant="outline" className="px-3 font-normal hover:bg-inherit">
-                {label} <CaretDownIcon className="ml-0 text-muted-foreground" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              {onDelete && (
-                <DropdownMenuItem
-                  onClick={() => {
-                    onDelete(deleteFetcher.submit, inviteId);
-                  }}
-                >
-                  Remove
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
+        disabled ? (
           <Type className="pr-4">{label}</Type>
+        ) : (
+          <Select
+            disabled={disabled}
+            value={role}
+            onValueChange={(value: string) => {
+              if (value === 'DELETE' && onDelete) {
+                onDelete(deleteFetcher.submit, inviteId);
+              }
+            }}
+          >
+            <SelectTrigger className={`w-auto`}>
+              <SelectValue>{label}</SelectValue>
+            </SelectTrigger>
+
+            <SelectContent>
+              <SelectItem value={role}>{label}</SelectItem>
+
+              {onDelete && (
+                <>
+                  <SelectSeparator />
+                  <SelectItem value={'DELETE'}>Remove</SelectItem>
+                </>
+              )}
+            </SelectContent>
+          </Select>
         )
+        // <DropdownMenu>
+        //   <DropdownMenuTrigger asChild disabled={disabled}>
+        //     <Button variant={onDelete ? 'outline' : 'ghost'} className="px-3 font-normal hover:bg-inherit">
+        //       {label} <CaretDownIcon className="ml-0 text-muted-foreground" />
+        //     </Button>
+        //   </DropdownMenuTrigger>
+        //   <DropdownMenuContent>
+        //     {onDelete && (
+        //       <DropdownMenuItem
+        //         onClick={() => {
+        //           onDelete(deleteFetcher.submit, inviteId);
+        //         }}
+        //       >
+        //         Remove
+        //       </DropdownMenuItem>
+        //     )}
+        //   </DropdownMenuContent>
+        // </DropdownMenu>
       }
     />
   );
@@ -755,24 +759,28 @@ function ListItemPublicLink({
         )}
       </div>
 
-      <Select
-        disabled={disabled}
-        value={publicLinkAccess}
-        onValueChange={(value: PublicLinkAccess) => {
-          setPublicLinkAccess(value);
-        }}
-      >
-        <SelectTrigger className={`w-auto`}>
-          <SelectValue>{activeOptionLabel}</SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {Object.entries(optionsByValue).map(([value, label]) => (
-            <SelectItem value={value} key={value}>
-              {label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {disabled ? (
+        <Type className="pr-4">{activeOptionLabel}</Type>
+      ) : (
+        <Select
+          disabled={disabled}
+          value={publicLinkAccess}
+          onValueChange={(value: PublicLinkAccess) => {
+            setPublicLinkAccess(value);
+          }}
+        >
+          <SelectTrigger className={`w-auto`}>
+            <SelectValue>{activeOptionLabel}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(optionsByValue).map(([value, label]) => (
+              <SelectItem value={value} key={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
     </ListItem>
   );
 }

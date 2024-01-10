@@ -2,7 +2,12 @@ import dbClient from '../dbClient';
 import { ApiError } from '../utils/ApiError';
 import { getFilePermissions } from '../utils/permissions';
 
-export const getFile = async ({ uuid, userId }: { uuid: string; userId?: number }) => {
+/**
+ * Most of the time, `userId` will be defined because the user will be logged in.
+ * However, in the case of a publicly-shared file, anonymous users can request
+ * a file and we don't know who they are.
+ */
+export async function getFile<T extends number | undefined>({ uuid, userId }: { uuid: string; userId: T }) {
   const file = await dbClient.file.findUnique({
     where: {
       uuid,
@@ -48,9 +53,14 @@ export const getFile = async ({ uuid, userId }: { uuid: string; userId?: number 
     throw new ApiError(403, 'Permission denied');
   }
 
-  // TODO: clean up naming, probably use fileRole, teamRole, permissionFile, permissionTeam
   return {
     file,
-    userMakingRequest: { filePermissions, fileRole, teamRole, id: userId, isFileOwner },
+    userMakingRequest: {
+      filePermissions,
+      fileRole,
+      teamRole,
+      id: userId,
+      isFileOwner,
+    },
   };
-};
+}
