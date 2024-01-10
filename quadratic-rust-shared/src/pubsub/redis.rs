@@ -71,6 +71,10 @@ impl super::PubSub for RedisConnection {
         unimplemented!()
     }
 
+    async fn remove_active_channel(&mut self, set_key: &str, channel: &str) -> Result<()> {
+        unimplemented!()
+    }
+
     /// Subscribe to a channel.
     async fn subscribe(&mut self, channel: &str, _group: &str) -> Result<()> {
         self.pubsub.subscribe(channel).await?;

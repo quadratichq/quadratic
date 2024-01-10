@@ -19,6 +19,7 @@ pub trait PubSub {
     async fn channels(&mut self) -> Result<Vec<String>>;
     async fn active_channels(&mut self, channel: &str) -> Result<Vec<String>>;
     async fn upsert_active_channel(&mut self, set_key: &str, channel: &str) -> Result<()>;
+    async fn remove_active_channel(&mut self, set_key: &str, channel: &str) -> Result<()>;
     async fn subscribe(&mut self, channel: &str, group: &str) -> Result<()>;
     async fn publish(
         &mut self,

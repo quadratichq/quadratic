@@ -121,11 +121,17 @@ impl super::PubSub for RedisConnection {
         Ok(channels)
     }
 
-    /// Insert or update an active channel
+    /// Insert or update a key within an active channel
     async fn upsert_active_channel(&mut self, set_key: &str, channel: &str) -> Result<()> {
         let score = Utc::now().timestamp_millis();
         self.multiplex.zadd(set_key, channel, score).await?;
 
+        Ok(())
+    }
+
+    /// Remove an a key within an active channel
+    async fn remove_active_channel(&mut self, set_key: &str, channel: &str) -> Result<()> {
+        self.multiplex.zrem(set_key, channel).await?;
         Ok(())
     }
 
@@ -431,5 +437,14 @@ pub mod tests {
 
         let results = connection.active_channels(&active_channels).await.unwrap();
         assert_eq!(results, vec![channels[1].clone(), channels[0].clone()]);
+
+        // remove the first channel
+        connection
+            .remove_active_channel(&active_channels, &channels[0])
+            .await
+            .unwrap();
+
+        let results = connection.active_channels(&active_channels).await.unwrap();
+        assert_eq!(results, vec![channels[1].clone()]);
     }
 }
