@@ -1,14 +1,8 @@
 import { ShareFileDialog } from '@/components/ShareDialog';
-import { TYPE } from '@/constants/appConstants';
-import { ROUTES } from '@/constants/routes';
-import { DOCUMENTATION_URL } from '@/constants/urls';
-import { Button } from '@/shadcn/ui/button';
-import { cn } from '@/shadcn/utils';
-import { ExternalLinkIcon, FileIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
-import { useState } from 'react';
+import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
+import { ReactNode, useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { Link, useFetchers, useLocation } from 'react-router-dom';
+import { useFetchers, useLocation } from 'react-router-dom';
 import { Empty } from '../../components/Empty';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import { Loader as FilesLoader } from '../../routes/files';
@@ -17,7 +11,15 @@ import { FileListItem, FilesListItems } from './FilesListItem';
 import { FilesListViewControls } from './FilesListViewControls';
 import { Layout, Order, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
 
-export function FilesList({ files }: { files: FilesLoader }) {
+export function FilesList({
+  isEditable,
+  files,
+  emptyState,
+}: {
+  isEditable?: boolean;
+  files: FilesLoader;
+  emptyState: ReactNode;
+}) {
   const { pathname } = useLocation();
   const [filterValue, setFilterValue] = useState<string>('');
   const fetchers = useFetchers();
@@ -83,6 +85,7 @@ export function FilesList({ files }: { files: FilesLoader }) {
             key={file.uuid}
             file={file}
             filterValue={filterValue}
+            isEditable={isEditable}
             activeShareMenuFileId={activeShareMenuFileId}
             setActiveShareMenuFileId={setActiveShareMenuFileId}
             viewPreferences={viewPreferences}
@@ -98,97 +101,7 @@ export function FilesList({ files }: { files: FilesLoader }) {
         />
       )}
 
-      {!filterValue && filesBeingDeleted.length === files.length && filesBeingDuplicated.length === 0 && (
-        <Empty
-          className="max-w-xl"
-          title="No files"
-          description={<>You don’t have any files, but you can create one below.</>}
-          Icon={FileIcon}
-          actions={
-            <div>
-              {[
-                {
-                  title: 'Learn the basics',
-                  description: 'With an instructional walk-through',
-                  link: (
-                    <Link
-                      to={ROUTES.CREATE_EXAMPLE_FILE('default.grid')}
-                      reloadDocument
-                      onClick={() => {
-                        mixpanel.track('[FilesEmptyState].clickOpenStarterFile');
-                      }}
-                    >
-                      Open starter file
-                    </Link>
-                  ),
-                  className: 'border border-primary bg-yellow-5000',
-                },
-                {
-                  title: 'Get started',
-                  description: 'With a fresh new file',
-                  link: (
-                    <Link
-                      to={ROUTES.CREATE_FILE}
-                      reloadDocument
-                      onClick={() => {
-                        mixpanel.track('[FilesEmptyState].clickCreateBlankFile');
-                      }}
-                    >
-                      Create blank file
-                    </Link>
-                  ),
-                  className: 'border-b border-border',
-                },
-                {
-                  title: 'See what’s possible',
-                  description: 'Like filtering and fetching data',
-                  link: (
-                    <Link
-                      to={ROUTES.EXAMPLES}
-                      onClick={() => {
-                        mixpanel.track('[FilesEmptyState].clickExploreExamples');
-                      }}
-                    >
-                      Explore examples
-                    </Link>
-                  ),
-                  className: 'border-b border-border',
-                },
-                {
-                  title: 'Deep dive',
-                  description: 'All the details of using the app',
-                  link: (
-                    <Link
-                      to={DOCUMENTATION_URL}
-                      target="_blank"
-                      onClick={() => {
-                        mixpanel.track('[FilesEmptyState].clickReadDocs');
-                      }}
-                    >
-                      Read the docs
-                      <ExternalLinkIcon className="ml-2" />
-                    </Link>
-                  ),
-                },
-              ].map(({ title, description, link, className }, i) => (
-                <div
-                  key={i}
-                  className={cn(`p-3 text-center sm:flex sm:items-center sm:justify-between sm:text-left`, className)}
-                >
-                  <div className="mb-2 flex flex-col sm:mb-0">
-                    <h2 className={`${TYPE.body2} font-semibold`}>{title}</h2>
-                    <p className={`${TYPE.body2} text-muted-foreground`}>{description}</p>
-                  </div>
-
-                  <Button asChild variant="secondary">
-                    {link}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          }
-        />
-      )}
+      {!filterValue && filesBeingDeleted.length === files.length && filesBeingDuplicated.length === 0 && emptyState}
 
       {activeShareMenuFileId && (
         <ShareFileDialog

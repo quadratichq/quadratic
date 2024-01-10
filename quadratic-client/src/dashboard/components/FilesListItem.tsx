@@ -36,6 +36,7 @@ export function FilesListItems({ children, viewPreferences }: any) {
 export function FileListItem({
   file,
   filterValue,
+  isEditable,
   activeShareMenuFileId,
   setActiveShareMenuFileId,
   lazyLoad,
@@ -43,6 +44,7 @@ export function FileListItem({
 }: {
   file: FilesLoader[0];
   filterValue: string;
+  isEditable?: boolean;
   activeShareMenuFileId: string;
   setActiveShareMenuFileId: Function;
   lazyLoad: boolean;
@@ -135,7 +137,7 @@ export function FileListItem({
     hasNetworkError: Boolean(failedToDelete || failedToRename),
     isShared: publicLinkAccess !== 'NOT_SHARED',
     viewPreferences,
-    actions: (
+    actions: isEditable ? (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Btn variant="ghost" size="icon" className="flex-shrink-0 hover:bg-background">
@@ -151,7 +153,7 @@ export function FileListItem({
           <DropdownMenuItem onClick={handleDelete}>{deleteFile.label}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    ),
+    ) : undefined,
   };
 
   return (

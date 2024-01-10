@@ -88,8 +88,9 @@ export const apiClient = {
   },
 
   files: {
-    async list() {
-      return fetchFromApi(`/v0/files`, { method: 'GET' }, ApiSchemas['/v0/files.GET.response']);
+    async list({ shared }: { shared?: 'with-me' } = {}) {
+      const url = `/v0/files${shared ? `?shared=${shared}` : ''}`;
+      return fetchFromApi(url, { method: 'GET' }, ApiSchemas['/v0/files.GET.response']);
     },
     async get(uuid: string) {
       return fetchFromApi(`/v0/files/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/files/:uuid.GET.response']);

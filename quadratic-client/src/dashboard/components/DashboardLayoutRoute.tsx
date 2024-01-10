@@ -98,7 +98,11 @@ function Navbar() {
           </SidebarNavLink>
         </div>
 
-        <Type as="h3" className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}>
+        <Type
+          as="h3"
+          variant="overline"
+          className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}
+        >
           Files
         </Type>
 
@@ -107,7 +111,7 @@ function Navbar() {
             <FileIcon className={classNameIcons} />
             Mine
           </SidebarNavLink>
-          <SidebarNavLink to={ROUTES.SHARED_WITH_ME}>
+          <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
             <PersonIcon className={classNameIcons} />
             Shared with me
           </SidebarNavLink>
