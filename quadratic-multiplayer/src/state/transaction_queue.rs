@@ -75,11 +75,6 @@ impl TransactionQueue {
         operations: Vec<Operation>,
         sequence_num: u64,
     ) -> u64 {
-        // // The `room_sequence_num - 1` is necessary because the room_sequence_num is already incremented when received here.
-        // let (sequence_num, transactions) = queue
-        //     .entry(file_id)
-        //     .or_insert_with(|| (room_sequence_num - 1, vec![]));
-
         let transaction = TransactionServer {
             id,
             file_id,
@@ -89,14 +84,13 @@ impl TransactionQueue {
 
         let transaction = serde_json::to_string(&transaction).unwrap();
 
-        println!("push(): {:?} {:?}", file_id, sequence_num);
-
         self.pubsub
             .connection
             .publish(
                 &file_id.to_string(),
                 &sequence_num.to_string(),
                 &transaction,
+                self.config.active_channels,
             )
             .await
             .unwrap();

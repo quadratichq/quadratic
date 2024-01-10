@@ -16,6 +16,7 @@ pub struct RedisStreamsConfig {
     pub host: String,
     pub port: String,
     pub password: String,
+    pub active_channels: String,
 }
 
 pub type PubSubConnection = PubSub<Pin<Box<dyn AsyncStream + Send + Sync>>>;
