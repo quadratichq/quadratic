@@ -56,16 +56,4 @@ impl GridController {
             &self.received_transactions(&transactions[..]),
         )?)
     }
-
-    /// Marks an unsaved transaction as sent to the server.
-    #[wasm_bindgen(js_name = "markTransactionSent")]
-    pub fn js_mark_transaction_sent(&mut self, transaction_id: String) -> Result<JsValue, JsValue> {
-        let transaction_id = match Uuid::parse_str(&transaction_id) {
-            Ok(transaction_id) => transaction_id,
-            Err(e) => return Err(JsValue::from_str(&format!("Invalid transaction id: {}", e))),
-        };
-        Ok(serde_wasm_bindgen::to_value(
-            &self.mark_transaction_sent(transaction_id),
-        )?)
-    }
 }

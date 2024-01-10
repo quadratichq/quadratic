@@ -751,10 +751,6 @@ export class Grid {
     }
   }
 
-  markTransactionSent(transactionId: string) {
-    this.gridController.markTransactionSent(transactionId);
-  }
-
   //#endregion
 }
 

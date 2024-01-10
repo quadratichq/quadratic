@@ -27,10 +27,10 @@ extern "C" {
 
 #[wasm_bindgen(module = "/../quadratic-client/src/grid/controller/rustCallbacks.ts")]
 extern "C" {
-    pub async fn saveUnsavedTransactions(unsaved_transactions: String);
+    pub fn addUnsentTransaction(transaction_id: String, transaction: String);
 }
 
 #[wasm_bindgen(module = "/../quadratic-client/src/grid/controller/rustCallbacks.ts")]
 extern "C" {
-    pub fn addTransaction(transaction_id: String, transaction: String);
+    pub fn sendTransaction(transaction_id: String, transaction: String);
 }

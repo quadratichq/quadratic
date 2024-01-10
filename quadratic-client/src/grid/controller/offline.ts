@@ -1,12 +1,13 @@
 import { debugShowFileIO } from '@/debugFlags';
 import localforage from 'localforage';
 
-const DB_NAME = 'quadratic-offline';
+const DB_NAME = 'Quadratic-Offline';
 const DB_VERSION = 1;
+const DB_STORE = 'transactions';
 
 class Offline {
   private db: IDBDatabase | undefined;
-
+  private index = 0;
   constructor() {
     const request = window.indexedDB.open(DB_NAME, DB_VERSION);
     request.onerror = (event) => {
@@ -20,11 +21,11 @@ class Offline {
     request.onupgradeneeded = () => {
       const db = request.result;
       // creates an Object store that holds operations for a given key
-      const objectStore = db.createObjectStore('transactions', {
-        keyPath: ['fileId', 'transactionId'],
-        autoIncrement: true,
+      const objectStore = db.createObjectStore(DB_STORE, {
+        keyPath: ['fileId', 'transactionId', 'index'],
       });
       objectStore.createIndex('fileId', 'fileId', { unique: true });
+      this.db = db;
     };
   }
 
@@ -34,19 +35,28 @@ class Offline {
 
   async load(): Promise<string | undefined> {
     const unsavedTransactions = (await localforage.getItem(this.fileId)) as string;
-    if (debugShowFileIO && unsavedTransactions) {
-      console.log(`[Offline] Loaded unsaved transactions (${Math.round(unsavedTransactions.length / 1000)}kb).`);
+    if (debugShowFileIO) {
+      if (unsavedTransactions) {
+        console.log(`[Offline] Loaded unsaved transactions (${Math.round(unsavedTransactions.length / 1000)}kb).`);
+      } else {
+        console.log('[Offline] No unsaved transactions found.');
+      }
     }
     return unsavedTransactions;
   }
 
+  private getObjectStore(readOnly: boolean): IDBObjectStore {
+    if (!this.db) throw new Error('Expected db to be initialized in addTransaction');
+
+    const tx = this.db.transaction(DB_STORE, readOnly ? 'readonly' : 'readwrite');
+    return tx.objectStore(DB_STORE);
+  }
+
   // Adds the transaction to the unsent transactions list.
   // This is called by Rust when a user transaction is created.
-  addTransaction(transactionId: string, data: string) {
-    if (!this.db) throw new Error('Expected db to be initialized in addTransaction');
-    const transaction = this.db.transaction(['transactions'], 'readwrite');
-    const objectStore = transaction.objectStore('transactions');
-    objectStore.add({ fileId: this.fileId, transactionId, operations: data });
+  addTransaction(transactionId: string, transaction: string) {
+    const store = this.getObjectStore(false);
+    store.add({ fileId: this.fileId, transactionId, transaction, index: this.index++ });
     if (debugShowFileIO) {
       console.log(`[Offline] Added transaction ${transactionId} to indexedDB.`);
     }
@@ -56,8 +66,8 @@ class Offline {
   // This is called by TS when a transaction is successfully sent to the socket server.
   markTransactionSent(transactionId: string) {
     if (!this.db) throw new Error('Expected db to be initialized in markComplete');
-    const transaction = this.db.transaction(['transactions'], 'readwrite');
-    const objectStore = transaction.objectStore('transactions');
+    const transaction = this.db.transaction([DB_STORE], 'readwrite');
+    const objectStore = transaction.objectStore(DB_STORE);
     objectStore.delete([this.fileId, transactionId]);
     if (debugShowFileIO) {
       console.log(`[Offline] Removed transaction ${transactionId} from indexedDB.`);

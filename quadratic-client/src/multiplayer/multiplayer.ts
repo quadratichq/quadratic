@@ -276,12 +276,10 @@ export class Multiplayer {
       file_id: this.room!,
       operations,
     };
-    try {
+    if (this.websocket?.OPEN) {
       this.websocket!.send(JSON.stringify(message));
-      grid.markTransactionSent(id);
-      offline.markTransactionSent(id);
       if (debugShowMultiplayer) console.log(`[Multiplayer] Sent transaction ${id}.`);
-    } catch (_) {}
+    }
   }
 
   sendGetTransactions(min_sequence_num: bigint) {
@@ -442,6 +440,7 @@ export class Multiplayer {
       throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
     }
     grid.multiplayerTransaction(data.id, data.sequence_num, data.operations);
+    offline.markTransactionSent(data.id);
   }
 
   // Receives a collection of transactions to catch us up based on our sequenceNum

@@ -12,7 +12,7 @@ export const runPython = (transactionId: string, x: number, y: number, sheetId: 
   return window.runPython(transactionId, x, y, sheetId, code);
 };
 
-export const addUnsavedTransaction = (transactionId: string, operations: string) => {
+export const addUnsentTransaction = (transactionId: string, operations: string) => {
   return window.addTransaction(transactionId, operations);
 };
 

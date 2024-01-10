@@ -190,6 +190,7 @@ impl GridController {
             {
                 self.rollback_unsaved_transactions(transaction);
                 self.transactions.unsaved_transactions.remove(index);
+                self.mark_transaction_sent(transaction.id);
                 self.start_transaction(transaction);
                 self.apply_out_of_order_transactions(transaction, sequence_num);
                 self.reapply_unsaved_transactions(transaction);

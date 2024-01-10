@@ -41,7 +41,7 @@ impl UnsavedTransactions {
     }
 
     /// Inserts or replaces a `PendingTransaction``.
-    pub fn insert_or_replace(&mut self, pending: &PendingTransaction) {
+    pub fn insert_or_replace(&mut self, pending: &PendingTransaction, send: bool) {
         let forward = pending.to_forward_transaction();
         let reverse = pending.to_undo_transaction();
 
@@ -51,21 +51,39 @@ impl UnsavedTransactions {
             .find(|(_, unsaved_transaction)| unsaved_transaction.id() == forward.id)
             .map(|(index, unsaved_transaction)| (index, unsaved_transaction))
         {
-            None => self.transactions.push(UnsavedTransaction {
-                forward,
-                reverse,
-                sent_to_server: false,
-            }),
+            None => {
+                let transaction = UnsavedTransaction {
+                    forward,
+                    reverse,
+                    sent_to_server: false,
+                };
+                if send {
+                    if let Ok(stringified) = serde_json::to_string(&transaction) {
+                        crate::wasm_bindings::js::addUnsentTransaction(
+                            transaction.forward.id.to_string(),
+                            stringified,
+                        );
+                    }
+                }
+                self.transactions.push(transaction)
+            }
             Some((_, unsaved_transaction)) => {
                 unsaved_transaction.forward = forward;
                 unsaved_transaction.reverse = reverse;
+                if send {
+                    if let Ok(stringified) = serde_json::to_string(&unsaved_transaction) {
+                        crate::wasm_bindings::js::addUnsentTransaction(
+                            unsaved_transaction.forward.id.to_string(),
+                            stringified,
+                        );
+                    }
+                }
             }
-        }
+        };
     }
 
     /// Marks a transaction as sent to the server (called by TS after multiplayer.ts successfully sends the transaction)
     pub fn mark_transaction_sent(&mut self, transaction_id: &Uuid) {
-        dbgjs!(transaction_id);
         if let Some((index, _)) = self
             .iter()
             .enumerate()
@@ -103,7 +121,7 @@ mod test {
         let mut pending = PendingTransaction::default();
         pending.id = transaction.id;
         let id = transaction.id;
-        unsaved_transactions.insert_or_replace(&pending);
+        unsaved_transactions.insert_or_replace(&pending, false);
         assert_eq!(
             unsaved_transactions.find_forward(id),
             Some((0, &transaction))
@@ -118,7 +136,7 @@ mod test {
             row: 0,
             new_size: 0.0,
         });
-        unsaved_transactions.insert_or_replace(&pending_2);
+        unsaved_transactions.insert_or_replace(&pending_2, false);
         assert_eq!(unsaved_transactions.len(), 1);
         assert_eq!(
             unsaved_transactions.find_forward(id),

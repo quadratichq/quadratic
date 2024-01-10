@@ -49,7 +49,7 @@ impl ActiveTransactions {
             {
                 unsaved_transactions.iter().for_each(|t| {
                     if let Ok(operations) = serde_json::to_string(&t) {
-                        crate::wasm_bindings::js::addTransaction(
+                        crate::wasm_bindings::js::sendTransaction(
                             t.forward.id.to_string(),
                             operations,
                         );
@@ -80,7 +80,7 @@ impl ActiveTransactions {
     pub fn add_async_transaction(&mut self, pending: &PendingTransaction) {
         // Unsaved_operations hold async operations that are not complete. In that case, we need to replace the
         // unsaved operation with the new version.
-        self.unsaved_transactions.insert_or_replace(pending);
+        self.unsaved_transactions.insert_or_replace(pending, false);
         self.async_transactions.push(pending.clone());
     }
 
