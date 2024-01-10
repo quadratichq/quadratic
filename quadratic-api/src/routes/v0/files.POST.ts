@@ -23,14 +23,15 @@ export default [
 async function handler(req: RequestWithUser, res: Response) {
   const {
     params: { uuid },
-    user: { id: ownerUserId },
+    user: { id: userId },
     body: { name, contents, version },
   } = req;
 
   // Create file in db
   const dbFile = await dbClient.file.create({
     data: {
-      ownerUserId,
+      creatorUserId: userId,
+      ownerUserId: userId,
       name,
     },
     select: {

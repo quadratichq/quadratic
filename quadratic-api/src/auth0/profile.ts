@@ -17,127 +17,81 @@ const auth0 = new ManagementClient({
   scope: 'read:users',
 });
 
-export const getUserByAuth0Id = async (auth0Id: string) => {
-  const user = await auth0.getUser({ id: auth0Id });
-  if (!user.email) {
-    throw new Error(`User info is incomplete`);
-    Sentry.captureException({
-      message: 'User is missing email in Auth0',
-      level: 'error',
-      extra: {
-        auth0Id,
-      },
-    });
-  }
-
-  return {
-    email: user.email,
-    name: user.name,
-    picture: user.picture,
-  };
-};
-
 export const getAuth0Users = async (auth0Ids: string[]) => {
-  try {
-    const auth0Users = await auth0.getUsers({
-      q: `user_id:(${auth0Ids.join(' OR ')})`,
-    });
-    return auth0Users;
-  } catch (e) {
-    // TODO log to sentry?
-    console.error(e);
-    return [];
-  }
-};
-
-export const getUsersByEmail = async (email: string) => {
-  const auth0Users = await auth0.getUsersByEmail(email);
+  const auth0Users = await auth0.getUsers({
+    q: `user_id:(${auth0Ids.join(' OR ')})`,
+  });
   return auth0Users;
 };
 
 /**
- * Given a list of users from in system, we lookup their info in Auth0 and
- * augment it with the auth0 data.
- *
- * If some data is missing from the auth0 query that we expect in our system,
- * that user just gets left out of the result and we log it to Sentry.
+ * Given a list of users from our system, we lookup their info in Auth0.
  *
  * Example in:
  *   [
  *     { id: 10, auth0Id: 'google-oauth2|112233', ... }
  *   ]
  * Example out:
- *   [
- *     {
+ *   {
+ *     'google-oauth2|112233': {
  *       id: 10,
  *       auth0Id: 'google-oauth2|112233',
  *       email: 'john_doe@example.com',
  *       name: 'John Doe',
  *       picture: 'https://example.com/picture.jpg'
- *       ...
  *     }
- *   ]
+ *   }
  */
-export async function augmentUsersWithAuth0Info<
-  T extends {
-    // Base user info
-    id: number;
-    auth0Id: string;
-  }
->(
-  users: T[]
-): Promise<
-  (T & {
-    // Augmented user info
-    email: string;
-    name?: string;
-    picture?: string;
-  })[]
-> {
-  type UsersByAuth0Id = Record<string, T>;
-  const usersByAuth0Id = users.reduce(
-    (acc: UsersByAuth0Id, user) => ({ ...acc, [user.auth0Id]: user }),
-    {} as UsersByAuth0Id
-  );
-
+export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]) => {
   // Search for users on Auth0
   const auth0Ids = users.map(({ auth0Id }) => auth0Id);
   const auth0Users = await auth0.getUsers({
     q: `user_id:(${auth0Ids.join(' OR ')})`,
   });
 
-  // If the number of users we tried to lookup doesn't match our results,
-  // something is wrong and we better log it to Sentry
-  if (auth0Users.length !== users.length) {
-    Sentry.captureEvent({
-      message: 'Number of users returned from Auth0 does not match number of users sent to Auth0',
-      level: 'error',
-      extra: {
-        userIdsRequested: auth0Ids,
-        auth0UserIdsReturned: auth0Users.map(({ user_id }) => user_id),
-      },
-    });
-  }
-
-  // Augment the users with the data we got back from Auth0
-  const out = [];
-  for (const auth0User of auth0Users) {
-    const { email, name, picture, user_id: auth0Id } = auth0User;
+  // Map users by their Quadratic ID. If we didn't find a user, throw.
+  type UsersById = Record<
+    number,
+    {
+      id: number;
+      auth0Id: string;
+      email: string;
+      name?: string;
+      picture?: string;
+    }
+  >;
+  const usersById: UsersById = users.reduce((acc: UsersById, { id, auth0Id }) => {
+    const auth0User = auth0Users.find(({ user_id }) => user_id === auth0Id);
 
     // If we're missing data we expect, log it to Sentry and skip this user
-    if (!(auth0Id && email)) {
+    if (!auth0User || auth0User.email === undefined) {
       Sentry.captureException({
-        message: 'Auth0 user returned without `auth0Id` or `email`',
+        message: 'Auth0 user returned without `user_id` or `email`',
         level: 'error',
         extra: {
-          auth0UserReturned: auth0User,
+          auth0User,
         },
       });
-      continue;
+      throw new Error('Failed to retrieve all user info from Auth0');
     }
 
-    out.push({ ...usersByAuth0Id[auth0Id], email, name, picture });
-  }
+    const { email, name, picture } = auth0User;
+    return {
+      ...acc,
+      [id]: {
+        id,
+        auth0Id,
+        email,
+        name,
+        picture,
+      },
+    };
+  }, {});
 
-  return out;
-}
+  return usersById;
+};
+
+export const getUsersByEmail = async (email: string) => {
+  const auth0Users = await auth0.getUsersByEmail(email);
+  return auth0Users;
+};

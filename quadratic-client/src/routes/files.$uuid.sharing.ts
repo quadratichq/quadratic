@@ -1,5 +1,6 @@
+import { ROUTES } from '@/constants/routes';
 import { ApiTypes, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
-import { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router-dom';
+import { ActionFunctionArgs, LoaderFunctionArgs, redirectDocument } from 'react-router-dom';
 import { apiClient } from '../api/apiClient';
 
 type Loader = {
@@ -95,7 +96,10 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
   if (intent === 'delete-file-user') {
     const { userId } = json as Action['request.delete-file-user'];
     try {
-      await apiClient.files.users.delete(uuid, userId);
+      const { redirect } = await apiClient.files.users.delete(uuid, userId);
+      if (redirect) {
+        return redirectDocument(ROUTES.FILES);
+      }
       return { ok: true };
     } catch (e) {
       return { ok: false };

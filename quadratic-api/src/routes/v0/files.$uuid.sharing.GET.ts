@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import { augmentUsersWithAuth0Info, getUserByAuth0Id } from '../../auth0/profile';
+import { getUsersFromAuth0 } from '../../auth0/profile';
 import dbClient from '../../dbClient';
-import { getFile } from '../../middleware/fileMiddleware';
+import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
@@ -42,13 +42,20 @@ async function handler(req: Request, res: Response) {
       id: file.id,
     },
     include: {
-      owner: true,
+      ownerUser: true,
       UserFileRole: {
         include: {
           user: true,
         },
+        orderBy: {
+          createdDate: 'asc',
+        },
       },
-      FileInvite: true,
+      FileInvite: {
+        orderBy: {
+          createdDate: 'asc',
+        },
+      },
     },
   });
   if (!dbFile) {
@@ -61,24 +68,26 @@ async function handler(req: Request, res: Response) {
   const dbInvites = dbFile.FileInvite;
   const dbUsers = dbFile.UserFileRole;
 
-  // TODO: optimize call to auth0 where we only call them once for all users and the owner
-
-  let users: ApiTypes['/v0/files/:uuid/sharing.GET.response']['users'] = [];
-  if (dbUsers.length > 0) {
-    const usersWithAuth0Info = await augmentUsersWithAuth0Info(
-      dbUsers.map(({ user: { id, auth0Id }, role, createdDate }) => ({ id, auth0Id, role, createdDate }))
-    );
-    users = usersWithAuth0Info
-      .sort((a, b) => b.createdDate.getTime() - a.createdDate.getTime())
-      .map(({ id, email, name, picture, role }) => ({ id, email, name, picture, role }));
-    console.log(dbUsers);
+  // Lookup extra user info in Auth0
+  const usersToSearchFor = dbUsers.map(({ user }) => user);
+  if (dbFile.ownerUser) {
+    usersToSearchFor.push({ id: dbFile.ownerUser.id, auth0Id: dbFile.ownerUser.auth0Id });
   }
+  const usersById = await getUsersFromAuth0(usersToSearchFor);
+
+  // TODO: (teams) this will be conditional on whether the "owner" is a team or a user
+  // @ts-expect-error Before we launch teams, the owner will always be a user
+  const ownerId = dbFile.ownerUser.id as number;
+  const ownerUser = usersById[ownerId];
 
   const data: ApiTypes['/v0/files/:uuid/sharing.GET.response'] = {
     file: {
       publicLinkAccess,
     },
-    users,
+    users: dbUsers.map(({ user: { id }, role }) => {
+      const { email, name, picture } = usersById[id];
+      return { id, email, name, picture, role };
+    }),
     invites: dbInvites.map(({ id, email, role }) => ({ id, email, role })),
     userMakingRequest: {
       // If they're on this route, there's always a user
@@ -87,11 +96,13 @@ async function handler(req: Request, res: Response) {
       fileRole: userMakingRequest.fileRole,
       teamRole: userMakingRequest.teamRole,
     },
-    // TODO: (teams) this will be conditional on whether the "owner" is a team or a user
     owner: {
       type: 'user',
+      // @ts-expect-error TODO: fix types coming from `getFile()`
       id: file.ownerUserId,
-      ...(await getUserByAuth0Id(dbFile.owner.auth0Id)),
+      email: ownerUser.email,
+      name: ownerUser.name,
+      picture: ownerUser.picture,
     },
     // team: {},
   };

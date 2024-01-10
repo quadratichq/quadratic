@@ -157,7 +157,7 @@ export const ApiSchemas = {
    */
   '/v0/files/:uuid/users/:userId.PATCH.request': FileUserSchema.pick({ role: true }),
   '/v0/files/:uuid/users/:userId.PATCH.response': FileUserSchema.pick({ role: true }),
-  '/v0/files/:uuid/users/:userId.DELETE.response': z.object({ message: z.string() }),
+  '/v0/files/:uuid/users/:userId.DELETE.response': z.object({ message: z.string(), redirect: z.boolean().optional() }),
 
   /**
    * File invites
@@ -229,6 +229,7 @@ export const ApiSchemas = {
   // Delete a user from a team
   '/v0/teams/:uuid/users/:userId.DELETE.response': z.object({
     message: z.string(),
+    redirect: z.boolean().optional(),
   }),
 };
 

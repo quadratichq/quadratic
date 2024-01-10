@@ -3,7 +3,7 @@ import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import { generatePresignedUrl } from '../../aws/s3';
 import dbClient from '../../dbClient';
-import { getFile } from '../../middleware/fileMiddleware';
+import { getFile } from '../../middleware/getFile';
 import { userOptionalMiddleware } from '../../middleware/user';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';

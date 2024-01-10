@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { ApiTypes, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
-import { getFile } from '../../middleware/fileMiddleware';
+import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
@@ -53,7 +53,7 @@ async function handler(req: Request, res: Response) {
         },
       },
     });
-    return res.status(200).json(resSuccess);
+    return res.status(200).json({ ...resSuccess, redirect: true });
   }
 
   // Ok, now we've handled if the user tries to remove themselves.

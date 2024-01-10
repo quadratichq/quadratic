@@ -530,42 +530,46 @@ function ManageUser({
       picture={user.picture}
       error={error}
       action={
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild disabled={false || disabled}>
-            <Button variant="outline" className="px-3 font-normal hover:bg-inherit">
-              {label} <CaretDownIcon className="ml-0 text-muted-foreground" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            {onUpdate && (
-              <DropdownMenuRadioGroup
-                value={value}
-                onValueChange={(newValue: string) => {
-                  const role = newValue as (typeof roles)[0];
-                  onUpdate(fetcherUpdate.submit, userId, role);
-                }}
-              >
-                {roles.map((role, i) => (
-                  <DropdownMenuRadioItem key={i} value={role}>
-                    {getRoleLabel(role)}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            )}
+        onUpdate || onDelete ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild disabled={false || disabled}>
+              <Button variant="outline" className="px-3 font-normal hover:bg-inherit">
+                {label} <CaretDownIcon className="ml-0 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {onUpdate && (
+                <DropdownMenuRadioGroup
+                  value={value}
+                  onValueChange={(newValue: string) => {
+                    const role = newValue as (typeof roles)[0];
+                    onUpdate(fetcherUpdate.submit, userId, role);
+                  }}
+                >
+                  {roles.map((role, i) => (
+                    <DropdownMenuRadioItem key={i} value={role}>
+                      {getRoleLabel(role)}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              )}
 
-            {onUpdate && onDelete && <DropdownMenuSeparator />}
+              {onUpdate && onDelete && <DropdownMenuSeparator />}
 
-            {onDelete && (
-              <DropdownMenuItem
-                onClick={() => {
-                  onDelete(fetcherDelete.submit, userId);
-                }}
-              >
-                {isLoggedInUser ? 'Leave' : 'Remove'}
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              {onDelete && (
+                <DropdownMenuItem
+                  onClick={() => {
+                    onDelete(fetcherDelete.submit, userId);
+                  }}
+                >
+                  {isLoggedInUser ? 'Leave' : 'Remove'}
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Type className="pr-4">{label}</Type>
+        )
       }
     />
   );
@@ -609,24 +613,28 @@ function ManageInvite({
       email={email}
       error={hasError ? 'Failed to delete, try again' : undefined}
       action={
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild disabled={disabled}>
-            <Button variant="outline" className="px-3 font-normal hover:bg-inherit">
-              {label} <CaretDownIcon className="ml-0 text-muted-foreground" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            {onDelete && (
-              <DropdownMenuItem
-                onClick={() => {
-                  onDelete(deleteFetcher.submit, inviteId);
-                }}
-              >
-                Remove
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        onDelete ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild disabled={disabled}>
+              <Button variant="outline" className="px-3 font-normal hover:bg-inherit">
+                {label} <CaretDownIcon className="ml-0 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {onDelete && (
+                <DropdownMenuItem
+                  onClick={() => {
+                    onDelete(deleteFetcher.submit, inviteId);
+                  }}
+                >
+                  Remove
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <Type className="pr-4">{label}</Type>
+        )
       }
     />
   );
@@ -642,11 +650,10 @@ function ListItemInvite({ email, action, error }: { email: string; action: React
       </div>
       <div className={`flex flex-col`}>
         <Type variant="body2">{email}</Type>
-        {error && (
-          <Type variant="caption" className={'text-destructive'}>
-            {error}
-          </Type>
-        )}
+
+        <Type variant="caption" className={error ? 'text-destructive' : 'text-muted-foreground'}>
+          {error ? error : 'Invited'}
+        </Type>
       </div>
       <div>{action}</div>
     </ListItem>

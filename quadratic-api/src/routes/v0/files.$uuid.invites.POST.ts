@@ -3,7 +3,7 @@ import { ApiSchemas, ApiTypes, FilePermissionSchema } from 'quadratic-shared/typ
 import { z } from 'zod';
 import { getUsersByEmail } from '../../auth0/profile';
 import dbClient from '../../dbClient';
-import { getFile } from '../../middleware/fileMiddleware';
+import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
