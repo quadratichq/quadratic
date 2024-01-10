@@ -1,3 +1,4 @@
+use chrono::prelude::*;
 use futures_util::StreamExt;
 use redis::{
     aio::{AsyncStream, Monitor, MultiplexedConnection, PubSub},
@@ -110,6 +111,21 @@ impl super::PubSub for RedisConnection {
         Ok(channels)
     }
 
+    /// Get a list of active channels
+    async fn active_channels(&mut self, set_key: &str) -> Result<Vec<String>> {
+        let channels = self.multiplex.zrangebyscore(set_key, "-", "+").await?;
+
+        Ok(channels)
+    }
+
+    /// Insert or update an active channel
+    async fn upsert_active_channel(&mut self, set_key: &str, channel: &str) -> Result<()> {
+        let score = Utc::now().timestamp_millis();
+        self.multiplex.zadd(set_key, channel, score).await?;
+
+        Ok(())
+    }
+
     /// Create a group and a key (if it doesn't already exist), start from the beginning
     async fn subscribe(&mut self, channel: &str, group: &str) -> Result<()> {
         let result = self
@@ -134,7 +150,13 @@ impl super::PubSub for RedisConnection {
 
     /// Publish a message to a channel.
     async fn publish(&mut self, channel: &str, key: &str, value: &str) -> Result<()> {
+        // add the message to the stream
         self.multiplex.xadd(channel, key, &[(key, value)]).await?;
+
+        // add the channel to the active channels set
+        self.upsert_active_channel("active_channels", channel)
+            .await?;
+
         Ok(())
     }
 

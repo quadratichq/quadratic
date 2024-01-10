@@ -59,7 +59,16 @@ impl super::PubSub for RedisConnection {
 
     /// Get a list of channels
     async fn channels(&mut self) -> Result<Vec<String>> {
-        Ok(vec![])
+        unimplemented!()
+    }
+
+    /// Get a list of active channels
+    async fn active_channels(&mut self, _channel: &str) -> Result<Vec<String>> {
+        unimplemented!()
+    }
+
+    async fn upsert_active_channel(&mut self, _set_key: &str, _channel: &str) -> Result<()> {
+        unimplemented!()
     }
 
     /// Subscribe to a channel.
