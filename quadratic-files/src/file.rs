@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{borrow::Borrow, sync::Arc};
 use tokio::{sync::Mutex, time::Instant};
 use uuid::Uuid;
 
@@ -92,6 +92,7 @@ pub(crate) async fn process_transactions(
 pub(crate) async fn process_queue_for_room(
     state: &Arc<State>,
     file_id: &Uuid,
+    active_channels: &str,
 ) -> Result<Option<u64>> {
     let start = Instant::now();
     let channel = &file_id.to_string();
@@ -179,7 +180,10 @@ pub(crate) async fn process_queue_for_room(
     let keys = keys.iter().map(AsRef::as_ref).collect::<Vec<_>>();
 
     // confirm that transactions have been processed
-    pubsub.connection.ack(channel, GROUP_NAME, keys).await?;
+    pubsub
+        .connection
+        .ack(channel, GROUP_NAME, keys, Some(active_channels))
+        .await?;
 
     // update the checkpoint in quadratic-api
     let key = &key(*file_id, last_sequence_num);
@@ -216,7 +220,7 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
         .collect::<Vec<_>>();
 
     for file_id in files.iter() {
-        process_queue_for_room(&state, file_id).await?;
+        process_queue_for_room(&state, file_id, active_channels).await?;
     }
 
     Ok(())
