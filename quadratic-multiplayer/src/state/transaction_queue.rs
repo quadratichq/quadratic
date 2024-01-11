@@ -43,6 +43,7 @@ impl PubSub {
             match Self::connect(&self.config).await {
                 Ok(connection) => {
                     self.connection = connection;
+                    tracing::info!("PubSub connection is now healthy");
                 }
                 Err(error) => {
                     tracing::error!("Error reconnecting to PubSub {error}");
