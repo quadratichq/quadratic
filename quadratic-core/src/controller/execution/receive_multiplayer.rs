@@ -3,9 +3,13 @@ use std::collections::VecDeque;
 use super::TransactionType;
 use crate::{
     controller::{
-        active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation, transaction::TransactionServer,
-        transaction_summary::TransactionSummary, GridController,
+        active_transactions::{
+            pending_transaction::PendingTransaction, unsaved_transactions::UnsavedTransaction,
+        },
+        operations::operation::Operation,
+        transaction::TransactionServer,
+        transaction_summary::TransactionSummary,
+        GridController,
     },
     error_core::Result,
 };
@@ -254,6 +258,59 @@ impl GridController {
         });
         self.reapply_unsaved_transactions(&mut results);
         Ok(self.finalize_transaction(&mut results))
+    }
+
+    /// Called by TS for each offline transaction it has in its offline queue.
+    ///
+    /// Returns a [`TransactionSummary`] that will be rendered by the client.
+    pub fn apply_offline_unsaved_transaction(
+        &mut self,
+        transaction_id: Uuid,
+        unsaved_transaction: UnsavedTransaction,
+    ) -> TransactionSummary {
+        // first check if we've already applied this transaction
+        if let Some(transaction) = self.transactions.unsaved_transactions.find(transaction_id) {
+            // send it to the server if we've not successfully sent it to the server
+            if !transaction.sent_to_server {
+                if let Ok(operations) =
+                    serde_json::to_string(&unsaved_transaction.forward.operations)
+                {
+                    if !cfg!(test) {
+                        crate::wasm_bindings::js::sendTransaction(
+                            transaction_id.to_string(),
+                            operations,
+                        );
+                    }
+                }
+            }
+            Default::default()
+        } else {
+            let transaction = &mut PendingTransaction {
+                transaction_type: TransactionType::Multiplayer,
+                ..Default::default()
+            };
+            transaction
+                .operations
+                .extend(unsaved_transaction.forward.operations.clone());
+
+            // apply unsaved transaction
+            self.rollback_unsaved_transactions(transaction);
+            self.start_transaction(transaction);
+            self.reapply_unsaved_transactions(transaction);
+
+            self.transactions
+                .unsaved_transactions
+                .push(unsaved_transaction.clone());
+            if let Ok(operations) = serde_json::to_string(&unsaved_transaction.forward.operations) {
+                if !cfg!(test) {
+                    crate::wasm_bindings::js::sendTransaction(
+                        transaction_id.to_string(),
+                        operations,
+                    );
+                }
+            }
+            transaction.prepare_summary(true)
+        }
     }
 }
 
@@ -1030,6 +1087,38 @@ mod tests {
         assert_eq!(
             sheet.display_value(Pos { x: 0, y: 2 }),
             Some(CellValue::Number(BigDecimal::from(3)))
+        );
+    }
+
+    #[test]
+    fn test_receive_offline_unsaved_transaction() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 1,
+                sheet_id,
+            },
+            "test".to_string(),
+            None,
+        );
+        assert_eq!(
+            gc.sheet(sheet_id).cell_value(Pos { x: 0, y: 1 }),
+            Some(CellValue::Text("test".to_string()))
+        );
+
+        let unsaved_transaction = gc.active_transactions().unsaved_transactions[0].clone();
+
+        let mut receive = GridController::test();
+        receive.sheet_mut(receive.sheet_ids()[0]).id = sheet_id;
+        let summary = receive
+            .apply_offline_unsaved_transaction(unsaved_transaction.forward.id, unsaved_transaction);
+        assert_eq!(summary.generate_thumbnail, true);
+        assert_eq!(summary.cell_sheets_modified.len(), 1);
+        assert_eq!(
+            receive.sheet(sheet_id).cell_value(Pos { x: 0, y: 1 }),
+            Some(CellValue::Text("test".to_string()))
         );
     }
 }

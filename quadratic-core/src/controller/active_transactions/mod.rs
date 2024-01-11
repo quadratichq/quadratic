@@ -5,10 +5,7 @@
 //! * tracking the state of pending async transactions
 //! * tracking the state of pending multiplayer transactions (both sent and received)
 
-use self::{
-    pending_transaction::PendingTransaction,
-    unsaved_transactions::{UnsavedTransaction, UnsavedTransactions},
-};
+use self::{pending_transaction::PendingTransaction, unsaved_transactions::UnsavedTransactions};
 use super::transaction::Transaction;
 use crate::error_core::{CoreError, Result};
 use chrono::{DateTime, Utc};
@@ -36,31 +33,11 @@ pub struct ActiveTransactions {
 }
 
 impl ActiveTransactions {
-    pub fn new(last_sequence_num: u64, unsent_transactions: Option<String>) -> Self {
-        let mut transactions = ActiveTransactions {
+    pub fn new(last_sequence_num: u64) -> Self {
+        ActiveTransactions {
             last_sequence_num,
             ..Default::default()
-        };
-
-        // resend any unsent transactions from the offline indexedDb queue
-        if let Some(unsaved_transactions) = unsent_transactions {
-            if let Ok(unsaved_transactions) =
-                serde_json::from_str::<Vec<UnsavedTransaction>>(&unsaved_transactions)
-            {
-                unsaved_transactions.iter().for_each(|t| {
-                    if let Ok(operations) = serde_json::to_string(&t) {
-                        crate::wasm_bindings::js::sendTransaction(
-                            t.forward.id.to_string(),
-                            operations,
-                        );
-                    }
-                });
-                transactions
-                    .unsaved_transactions
-                    .extend(unsaved_transactions);
-            }
         }
-        transactions
     }
 
     /// Removes and returns the mutable awaiting_async transaction based on its transaction_id

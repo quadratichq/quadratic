@@ -1,8 +1,8 @@
-use uuid::Uuid;
-
-use crate::controller::transaction::TransactionServer;
-
 use super::*;
+use crate::controller::{
+    active_transactions::unsaved_transactions::UnsavedTransaction, transaction::TransactionServer,
+};
+use uuid::Uuid;
 
 #[wasm_bindgen]
 impl GridController {
@@ -54,6 +54,24 @@ impl GridController {
             .expect("Invalid transactions received in receiveMultiplayerTransactions");
         Ok(serde_wasm_bindgen::to_value(
             &self.received_transactions(&transactions[..]),
+        )?)
+    }
+
+    #[wasm_bindgen(js_name = "applyOfflineUnsavedTransaction")]
+    pub fn js_apply_offline_unsaved_transaction(
+        &mut self,
+        transaction_id: String,
+        unsaved_transaction: String,
+    ) -> Result<JsValue, JsValue> {
+        let transaction_id = match Uuid::parse_str(&transaction_id) {
+            Ok(transaction_id) => transaction_id,
+            Err(e) => return Err(JsValue::from_str(&format!("Invalid transaction id: {}", e))),
+        };
+        let unsaved_transaction: UnsavedTransaction = serde_json::from_str(&unsaved_transaction)
+            .expect("Invalid transactions received in receiveOfflineUnsavedTransaction");
+
+        Ok(serde_wasm_bindgen::to_value(
+            &self.apply_offline_unsaved_transaction(transaction_id, unsaved_transaction),
         )?)
     }
 }

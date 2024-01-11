@@ -1,3 +1,4 @@
+import { offline } from '@/grid/controller/offline';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import { Viewport } from 'pixi-viewport';
 import { Container, Graphics, Point, Rectangle, Renderer } from 'pixi.js';
@@ -64,6 +65,7 @@ export class PixiApp {
     await loadAssets();
     this.initCanvas();
     await this.rebuild();
+    offline.loadTransactions();
 
     // keep a reference of app on window, used for Playwright tests
     //@ts-expect-error

@@ -2,7 +2,7 @@ import { htmlCellsHandler } from '@/gridGL/htmlCells/htmlCellsHandler';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import * as Sentry from '@sentry/react';
 import { Point, Rectangle } from 'pixi.js';
-import { debugShowMultiplayer } from '../../debugFlags';
+import { debugDisableProxy, debugShowMultiplayer } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
@@ -137,6 +137,7 @@ export class Grid {
       window.dispatchEvent(new CustomEvent('transaction-complete'));
     }
 
+    // multiplayer transactions
     if (summary.operations) {
       multiplayer.sendTransaction(summary.transaction_id!, summary.operations);
     }
@@ -148,10 +149,14 @@ export class Grid {
     pixiApp.setViewportDirty();
   }
 
+  test() {
+    this.gridController = GridController.test();
+  }
+
   // import/export
-  openFromContents(contents: string, lastSequenceNum: number, unsavedTransactions?: string): boolean {
+  openFromContents(contents: string, lastSequenceNum: number): boolean {
     try {
-      this.gridController = GridController.newFromFile(contents, lastSequenceNum, unsavedTransactions);
+      this.gridController = GridController.newFromFile(contents, lastSequenceNum);
       return true;
     } catch (e) {
       console.warn(e);
@@ -747,8 +752,15 @@ export class Grid {
     if (summaryResponse.Ok) {
       this.transactionResponse(summaryResponse.Ok);
     } else {
+      console.error(summaryResponse.Err);
       throw new Error(summaryResponse.Err);
     }
+  }
+
+  applyOfflineUnsavedTransaction(transactionId: string, transaction: string) {
+    if (debugShowMultiplayer) console.log('[Multiplayer] Applying an offline unsaved transaction.');
+    const summaryResponse = this.gridController.applyOfflineUnsavedTransaction(transactionId, transaction);
+    this.transactionResponse(summaryResponse);
   }
 
   //#endregion
@@ -756,4 +768,12 @@ export class Grid {
 
 //#end
 
-export const grid = GridPerformanceProxy(new Grid());
+let gridCreate: Grid;
+
+if (debugDisableProxy) {
+  gridCreate = new Grid();
+} else {
+  gridCreate = GridPerformanceProxy(new Grid());
+}
+
+export const grid = gridCreate;

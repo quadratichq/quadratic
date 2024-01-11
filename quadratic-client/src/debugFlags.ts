@@ -61,6 +61,8 @@ export const debugGridSettings = debug && false;
 
 export const debugShowMultiplayer = debug && true;
 
+export const debugDisableProxy = debug && true;
+
 // --------
 // UI
 // --------

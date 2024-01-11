@@ -127,6 +127,7 @@ export class Multiplayer {
     if (!user?.sub) throw new Error('User must be defined to enter a multiplayer room.');
     this.userUpdate.file_id = file_id;
     await this.init();
+    if (!this.websocket) throw new Error('Expected websocket to be defined in enterFileRoom');
     this.user = user;
     // ensure the user doesn't join a room twice
     if (this.room === file_id) return;
@@ -154,7 +155,8 @@ export class Multiplayer {
       viewport: pixiApp.saveMultiplayerViewport(),
       code_running: JSON.stringify(pythonWebWorker.getCodeRunning()),
     };
-    this.websocket!.send(JSON.stringify(enterRoom));
+    this.websocket.send(JSON.stringify(enterRoom));
+    offline.loadTransactions();
     if (debugShowMultiplayer) console.log(`[Multiplayer] Joined room ${file_id}.`);
   }
 
@@ -269,15 +271,19 @@ export class Multiplayer {
 
   async sendTransaction(id: string, operations: string) {
     await this.init();
+
+    // it's possible that we try to send a transaction before we've entered a room (eg, unsent_transactions)
+    if (!this.room) return;
     const message: SendTransaction = {
       type: 'Transaction',
       id,
       session_id: this.sessionId,
-      file_id: this.room!,
+      file_id: this.room,
       operations,
     };
+
     if (this.websocket?.OPEN) {
-      this.websocket!.send(JSON.stringify(message));
+      this.websocket.send(JSON.stringify(message));
       if (debugShowMultiplayer) console.log(`[Multiplayer] Sent transaction ${id}.`);
     }
   }

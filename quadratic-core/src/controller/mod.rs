@@ -29,14 +29,10 @@ pub struct GridController {
 }
 
 impl GridController {
-    pub fn from_grid(
-        grid: Grid,
-        last_sequence_num: u64,
-        unsaved_transactions: Option<String>,
-    ) -> Self {
+    pub fn from_grid(grid: Grid, last_sequence_num: u64) -> Self {
         GridController {
             grid,
-            transactions: ActiveTransactions::new(last_sequence_num, unsaved_transactions),
+            transactions: ActiveTransactions::new(last_sequence_num),
             ..Default::default()
         }
     }
@@ -50,6 +46,6 @@ impl GridController {
     }
 
     pub fn test() -> Self {
-        Self::from_grid(Grid::new(), 0, None)
+        Self::from_grid(Grid::new(), 0)
     }
 }

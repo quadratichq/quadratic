@@ -1,4 +1,5 @@
 import { debugShowFileIO } from '@/debugFlags';
+import { grid } from './Grid';
 
 const DB_NAME = 'Quadratic-Offline';
 const DB_VERSION = 1;
@@ -7,6 +8,8 @@ const DB_STORE = 'transactions';
 class Offline {
   private db: IDBDatabase | undefined;
   private index = 0;
+
+  // Creates a connection to the indexedDb database
   constructor() {
     const request = window.indexedDB.open(DB_NAME, DB_VERSION);
     request.onerror = (event) => {
@@ -23,49 +26,49 @@ class Offline {
       const objectStore = db.createObjectStore(DB_STORE, {
         keyPath: ['fileId', 'transactionId', 'index'],
       });
-      objectStore.createIndex('fileId', 'fileId', { unique: true });
+      objectStore.createIndex('fileId', 'fileId');
+      objectStore.createIndex('transactionId', 'transactionId');
       this.db = db;
     };
   }
 
+  // gets the fileId to store the proper record
   get fileId(): string {
     return window.location.pathname.split('/')[2];
   }
 
-  async load(): Promise<string | undefined> {
-    return new Promise((resolve, reject) => {
-      const store = this.getFileIndex(true);
-      const keyRange = IDBKeyRange.only(this.fileId);
-      store.getAll().onsuccess = (event) => {};
-      if (debugShowFileIO) {
-        if (unsavedTransactions) {
-          console.log(`[Offline] Loaded unsaved transactions (${Math.round(unsavedTransactions.length / 1000)}kb).`);
-        } else {
-          console.log('[Offline] No unsaved transactions found.');
-        }
-      }
-      return unsavedTransactions;
-    });
-  }
-
+  // gets a file index from the indexedDb
   private getFileIndex(readOnly: boolean, index: string): IDBIndex {
     if (!this.db) throw new Error('Expected db to be initialized in addTransaction');
-
     const tx = this.db.transaction(DB_STORE, readOnly ? 'readonly' : 'readwrite');
     return tx.objectStore(DB_STORE).index(index);
   }
 
-  private getObjectStore(): IDBObjectStore {
+  // gets an object store from the indexedDb
+  private getObjectStore(readOnly: boolean): IDBObjectStore {
     if (!this.db) throw new Error('Expected db to be initialized in addTransaction');
-
     const tx = this.db.transaction(DB_STORE, readOnly ? 'readonly' : 'readwrite');
     return tx.objectStore(DB_STORE);
   }
 
+  // Loads the unsent transactions for this file from indexedDb
+  async load(): Promise<{ transactionId: string; operations: string }[] | undefined> {
+    return new Promise((resolve, reject) => {
+      const store = this.getFileIndex(true, 'fileId');
+      const keyRange = IDBKeyRange.only(this.fileId);
+      const getAll = store.getAll(keyRange);
+      getAll.onsuccess = () => {
+        const results = getAll.result
+          .sort((a, b) => a.index - b.index)
+          .map((r) => ({ transactionId: r.transactionId, operations: r.transaction }));
+        resolve(results);
+      };
+    });
+  }
+
   // Adds the transaction to the unsent transactions list.
-  // This is called by Rust when a user transaction is created.
-  addTransaction(transactionId: string, transaction: string) {
-    const store = this.getObjectStore();
+  addUnsentTransaction(transactionId: string, transaction: string) {
+    const store = this.getObjectStore(false);
     store.add({ fileId: this.fileId, transactionId, transaction, index: this.index++ });
     if (debugShowFileIO) {
       console.log(`[Offline] Added transaction ${transactionId} to indexedDB.`);
@@ -73,17 +76,47 @@ class Offline {
   }
 
   // Removes the transaction from the unsent transactions list.
-  // This is called by TS when a transaction is successfully sent to the socket server.
   markTransactionSent(transactionId: string) {
-    const store = this.getObjectStore();
-    store.delete([this.fileId, transactionId]);
+    const index = this.getFileIndex(false, 'transactionId');
+    index.openCursor(IDBKeyRange.only(transactionId)).onsuccess = (event) => {
+      const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+      if (cursor) {
+        cursor.delete();
+        if (debugShowFileIO) {
+          console.log(`[Offline] Removed transaction ${transactionId} from indexedDB.`);
+        }
+      } else {
+        if (debugShowFileIO) {
+          console.log(`[Offline] Failed to remove transaction ${transactionId} from indexedDB (might not exist).`);
+        }
+      }
+    };
+  }
+
+  // Loads unsent transactions and applies them to the grid.
+  async loadTransactions() {
+    const unsentTransactions = await this.load();
     if (debugShowFileIO) {
-      console.log(`[Offline] Removed transaction ${transactionId} from indexedDB.`);
+      if (unsentTransactions?.length) {
+        console.log('[Offline] Loading unsent transactions from indexedDB.');
+      } else {
+        console.log('[Offline] No unsent transactions in indexedDB.');
+      }
     }
+
+    unsentTransactions?.forEach((tx) => {
+      grid.applyOfflineUnsavedTransaction(tx.transactionId, tx.operations);
+    });
+  }
+
+  // Used by tests to clear all entries from the indexedDb for this fileId
+  testClear() {
+    const store = this.getObjectStore(false);
+    store.clear();
   }
 }
 
 export const offline = new Offline();
 
 // need to bind to window because rustCallbacks.ts cannot include any TS imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
-window.addTransaction = offline.addTransaction.bind(offline);
+window.addTransaction = offline.addUnsentTransaction.bind(offline);

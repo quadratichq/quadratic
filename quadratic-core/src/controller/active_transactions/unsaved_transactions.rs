@@ -34,6 +34,12 @@ impl UnsavedTransactions {
             .map(|(index, unsaved_transaction)| (index, &unsaved_transaction.forward))
     }
 
+    pub fn find(&self, transaction_id: Uuid) -> Option<&UnsavedTransaction> {
+        self.transactions
+            .iter()
+            .find(|unsaved_transaction| unsaved_transaction.id() == transaction_id)
+    }
+
     /// Finds the index of the UnsavedTransaction by its transaction_id.
     pub fn find_index(&self, transaction_id: Uuid) -> Option<usize> {
         self.iter()
@@ -59,10 +65,12 @@ impl UnsavedTransactions {
                 };
                 if send {
                     if let Ok(stringified) = serde_json::to_string(&transaction) {
-                        crate::wasm_bindings::js::addUnsentTransaction(
-                            transaction.forward.id.to_string(),
-                            stringified,
-                        );
+                        if !cfg!(test) {
+                            crate::wasm_bindings::js::addUnsentTransaction(
+                                transaction.forward.id.to_string(),
+                                stringified,
+                            );
+                        }
                     }
                 }
                 self.transactions.push(transaction)
@@ -72,10 +80,12 @@ impl UnsavedTransactions {
                 unsaved_transaction.reverse = reverse;
                 if send {
                     if let Ok(stringified) = serde_json::to_string(&unsaved_transaction) {
-                        crate::wasm_bindings::js::addUnsentTransaction(
-                            unsaved_transaction.forward.id.to_string(),
-                            stringified,
-                        );
+                        if !cfg!(test) {
+                            crate::wasm_bindings::js::addUnsentTransaction(
+                                unsaved_transaction.forward.id.to_string(),
+                                stringified,
+                            );
+                        }
                     }
                 }
             }
