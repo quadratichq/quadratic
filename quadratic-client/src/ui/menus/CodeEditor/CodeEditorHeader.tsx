@@ -5,11 +5,12 @@ import { Close, FiberManualRecord, HelpOutline, PlayArrow, Stop, Subject } from 
 import { CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { isEditorOrAbove } from '../../../actions';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL, DOCUMENTATION_URL } from '../../../constants/urls';
 import { Coordinate } from '../../../gridGL/types/size';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
+// import { CodeCellValue } from '../../../quadratic-core/types';
+import { hasPerissionToEditFile } from '../../../actions';
+import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL, DOCUMENTATION_URL } from '../../../constants/urls';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
 import { Formula, Python } from '../../icons';
@@ -28,7 +29,8 @@ interface Props {
 export const CodeEditorHeader = (props: Props) => {
   const { cellLocation, unsaved, saveAndRunCell, cancelPython, closeEditor } = props;
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const hasPermission = isEditorOrAbove(editorInteractionState.permission);
+  const hasPermission = hasPerissionToEditFile(editorInteractionState.permissions);
+
   const language = editorInteractionState.mode;
 
   const [isRunningComputation, setIsRunningComputation] = useState(false);

@@ -48,9 +48,9 @@ export const apiClient = {
       );
     },
     invites: {
-      async create(teamUuid: string, body: ApiTypes['/v0/teams/:uuid/invites.POST.request']) {
+      async create(uuid: string, body: ApiTypes['/v0/teams/:uuid/invites.POST.request']) {
         return fetchFromApi(
-          `/v0/teams/${teamUuid}/invites`,
+          `/v0/teams/${uuid}/invites`,
           {
             method: 'POST',
             body: JSON.stringify(body),
@@ -58,10 +58,10 @@ export const apiClient = {
           ApiSchemas['/v0/teams/:uuid/invites.POST.response']
         );
       },
-      async delete(teamUuid: string, inviteId: string) {
-        console.log(`DELETE to /v0/teams/${teamUuid}/invites/${inviteId}`);
+      async delete(uuid: string, inviteId: string) {
+        console.log(`DELETE to /v0/teams/${uuid}/invites/${inviteId}`);
         return fetchFromApi(
-          `/v0/teams/${teamUuid}/invites/${inviteId}`,
+          `/v0/teams/${uuid}/invites/${inviteId}`,
           {
             method: 'DELETE',
           },
@@ -70,16 +70,16 @@ export const apiClient = {
       },
     },
     users: {
-      async update(teamUuid: string, userId: string, body: ApiTypes['/v0/teams/:uuid/users/:userId.POST.request']) {
+      async update(uuid: string, userId: string, body: ApiTypes['/v0/teams/:uuid/users/:userId.POST.request']) {
         return fetchFromApi(
-          `/v0/teams/${teamUuid}/users/${userId}`,
+          `/v0/teams/${uuid}/users/${userId}`,
           { method: 'POST', body: JSON.stringify(body) },
           ApiSchemas['/v0/teams/:uuid/users/:userId.POST.response']
         );
       },
-      async delete(teamUuid: string, userId: string) {
+      async delete(uuid: string, userId: string) {
         return fetchFromApi(
-          `/v0/teams/${teamUuid}/users/${userId}`,
+          `/v0/teams/${uuid}/users/${userId}`,
           { method: 'DELETE' },
           ApiSchemas['/v0/teams/:uuid/users/:userId.DELETE.response']
         );
@@ -87,84 +87,121 @@ export const apiClient = {
     },
   },
 
-  async getFiles() {
-    return fetchFromApi(`/v0/files`, { method: 'GET' }, ApiSchemas['/v0/files.GET.response']);
-  },
+  files: {
+    async list({ shared }: { shared?: 'with-me' } = {}) {
+      const url = `/v0/files${shared ? `?shared=${shared}` : ''}`;
+      return fetchFromApi(url, { method: 'GET' }, ApiSchemas['/v0/files.GET.response']);
+    },
+    async get(uuid: string) {
+      return fetchFromApi(`/v0/files/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/files/:uuid.GET.response']);
+    },
+    async create(
+      body: ApiTypes['/v0/files.POST.request'] = {
+        name: 'Untitled',
+        contents: JSON.stringify(DEFAULT_FILE),
+        version: DEFAULT_FILE.version,
+      }
+    ) {
+      return fetchFromApi(
+        `/v0/files/`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/files.POST.response']
+      );
+    },
+    async delete(uuid: string) {
+      mixpanel.track('[Files].deleteFile', { id: uuid });
+      return fetchFromApi(`/v0/files/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/files/:uuid.DELETE.response']);
+    },
+    async download(uuid: string) {
+      mixpanel.track('[Files].downloadFile', { id: uuid });
+      const { file } = await this.get(uuid);
+      const checkpointUrl = file.lastCheckpointDataUrl;
+      const checkpointData = await fetch(checkpointUrl).then((res) => res.text());
+      downloadQuadraticFile(file.name, checkpointData);
+    },
+    async update(uuid: string, body: ApiTypes['/v0/files/:uuid.PATCH.request']) {
+      return fetchFromApi(
+        `/v0/files/${uuid}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        },
+        ApiSchemas['/v0/files/:uuid.PATCH.response']
+      );
+    },
+    thumbnail: {
+      async update(uuid: string, thumbnail: Blob) {
+        const formData = new FormData();
+        formData.append('thumbnail', thumbnail, 'thumbnail.png');
 
-  async getFile(uuid: string) {
-    return fetchFromApi(`/v0/files/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/files/:uuid.GET.response']);
-  },
-
-  async createFile(
-    body: ApiTypes['/v0/files.POST.request'] = {
-      name: 'Untitled',
-      contents: JSON.stringify(DEFAULT_FILE),
-      version: DEFAULT_FILE.version,
-    }
-  ) {
-    return fetchFromApi(
-      `/v0/files/`,
-      { method: 'POST', body: JSON.stringify(body) },
-      ApiSchemas['/v0/files.POST.response']
-    );
-  },
-
-  async downloadFile(uuid: string) {
-    mixpanel.track('[Files].downloadFile', { id: uuid });
-    const { file } = await this.getFile(uuid);
-    const checkpointUrl = file.lastCheckpointDataUrl;
-    const checkpointData = await fetch(checkpointUrl).then((res) => res.text());
-    return downloadQuadraticFile(file.name, checkpointData);
-  },
-
-  async deleteFile(uuid: string) {
-    mixpanel.track('[Files].deleteFile', { id: uuid });
-    return fetchFromApi(`/v0/files/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/files/:uuid.DELETE.response']);
-  },
-
-  async updateFile(uuid: string, body: ApiTypes['/v0/files/:uuid.POST.request']) {
-    return fetchFromApi(
-      `/v0/files/${uuid}`,
-      {
-        method: 'POST',
-        body: JSON.stringify(body),
+        return fetchFromApi(
+          `/v0/files/${uuid}/thumbnail`,
+          {
+            method: 'POST',
+            body: formData,
+          },
+          ApiSchemas['/v0/files/:uuid/thumbnail.POST.response']
+        );
       },
-      ApiSchemas['/v0/files/:uuid.POST.response']
-    );
-  },
-
-  async updateFileThumbnail(uuid: string, thumbnail: Blob) {
-    const formData = new FormData();
-    formData.append('thumbnail', thumbnail, 'thumbnail.png');
-
-    return fetchFromApi<ApiTypes['/v0/files/:uuid/thumbnail.POST.response']>(
-      `/v0/files/${uuid}/thumbnail`,
-      {
-        method: 'POST',
-        body: formData,
+    },
+    sharing: {
+      async get(uuid: string) {
+        return fetchFromApi(
+          `/v0/files/${uuid}/sharing`,
+          {
+            method: 'GET',
+          },
+          ApiSchemas['/v0/files/:uuid/sharing.GET.response']
+        );
       },
-      ApiSchemas['/v0/files/:uuid/thumbnail.POST.response']
-    );
-  },
-
-  async getFileSharing(uuid: string) {
-    return fetchFromApi(
-      `/v0/files/${uuid}/sharing`,
-      {
-        method: 'GET',
+      async update(uuid: string, body: ApiTypes['/v0/files/:uuid/sharing.PATCH.request']) {
+        return fetchFromApi(
+          `/v0/files/${uuid}/sharing`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify(body),
+          },
+          ApiSchemas['/v0/files/:uuid/sharing.PATCH.response']
+        );
       },
-      ApiSchemas['/v0/files/:uuid/sharing.GET.response']
-    );
-  },
-  async updateFileSharing(uuid: string, body: ApiTypes['/v0/files/:uuid/sharing.POST.request']) {
-    return fetchFromApi(
-      `/v0/files/${uuid}/sharing`,
-      {
-        method: 'POST',
-        body: JSON.stringify(body),
+    },
+    invites: {
+      async create(uuid: string, body: ApiTypes['/v0/files/:uuid/invites.POST.request']) {
+        return fetchFromApi(
+          `/v0/files/${uuid}/invites`,
+          {
+            method: 'POST',
+            body: JSON.stringify(body),
+          },
+          ApiSchemas['/v0/files/:uuid/invites.POST.response']
+        );
       },
-      ApiSchemas['/v0/files/:uuid/sharing.POST.response']
-    );
+      async delete(uuid: string, inviteId: string) {
+        return fetchFromApi(
+          `/v0/files/${uuid}/invites/${inviteId}`,
+          {
+            method: 'DELETE',
+          },
+          ApiSchemas['/v0/files/:uuid/invites/:inviteId.DELETE.response']
+        );
+      },
+    },
+    users: {
+      async update(uuid: string, userId: string, body: ApiTypes['/v0/files/:uuid/users/:userId.PATCH.request']) {
+        return fetchFromApi(
+          `/v0/files/${uuid}/users/${userId}`,
+          { method: 'PATCH', body: JSON.stringify(body) },
+          ApiSchemas['/v0/files/:uuid/users/:userId.PATCH.response']
+        );
+      },
+      async delete(uuid: string, userId: string) {
+        return fetchFromApi(
+          `/v0/files/${uuid}/users/${userId}`,
+          { method: 'DELETE' },
+          ApiSchemas['/v0/files/:uuid/users/:userId.DELETE.response']
+        );
+      },
+    },
   },
 
   async postFeedback(body: ApiTypes['/v0/feedback.POST.request']) {

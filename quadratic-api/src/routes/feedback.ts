@@ -36,7 +36,7 @@ files_router.post('/', validateAccessToken, userMiddleware, async (req: Request,
     const payload = {
       text: [
         `📣 ${process.env.NODE_ENV === 'production' ? '' : '[STAGING]'} New product feedback`,
-        `*From:* ${userEmail ? userEmail : `[no email]`} (${req.user.auth0_id})`,
+        `*From:* ${userEmail ? userEmail : `[no email]`} (${req.user.auth0Id})`,
         '*Message*:',
         feedback,
       ].join('\n\n'),
