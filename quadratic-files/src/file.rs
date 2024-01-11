@@ -221,7 +221,7 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
         .flatten()
         .collect::<Vec<_>>();
 
-    tracing::info!("Found {} file(s) to process", files.len());
+    state.stats.lock().await.num_files_in_active_channel = files.len() as u64;
 
     for file_id in files.iter() {
         process_queue_for_room(&state, file_id, active_channels).await?;

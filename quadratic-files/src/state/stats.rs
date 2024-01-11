@@ -5,11 +5,13 @@ use tokio::time::Instant;
 #[derive(Debug, Default)]
 pub(crate) struct Stats {
     pub(crate) last_processed_file_time: Option<Instant>,
+    pub(crate) num_files_in_active_channel: u64,
 }
 
 #[derive(Debug, Default, Serialize)]
 pub(crate) struct StatsResponse {
     pub(crate) last_processed_file: String,
+    pub(crate) num_files_in_active_channel: u64,
 }
 
 impl Display for Stats {
@@ -21,6 +23,7 @@ impl Display for Stats {
 
         let stats = StatsResponse {
             last_processed_file,
+            num_files_in_active_channel: self.num_files_in_active_channel,
         };
 
         write!(f, "{}", serde_json::to_string(&stats).unwrap())

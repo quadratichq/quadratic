@@ -78,8 +78,7 @@ services:
       #   condition: service_healthy
     profiles:
       - backend
-      - multiplayer
-      - files-dev
+      - quadratic-files-dev
     networks:
       - host
 
@@ -107,7 +106,7 @@ services:
       #   condition: service_healthy
     profiles:
       - backend
-      - multiplayer
+      - quadratic-multiplayer-dev
     networks:
       - host
 
