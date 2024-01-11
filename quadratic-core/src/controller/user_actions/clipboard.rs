@@ -10,7 +10,7 @@ impl GridController {
         let mut plain_text = String::new();
         let mut html = String::from("<tbody>");
 
-        // todo: handle this better
+        // todo: have function return an Option<(String, String)> and replace below with a question mark operator
         let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) else {
             return (String::new(), String::new());
         };

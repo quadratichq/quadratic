@@ -26,37 +26,6 @@ mod test {
     use super::*;
     use crate::{Pos, SheetRect};
 
-    // todo: move this
-    // #[test]
-    // fn test_delete_code_cell_operations() {
-    //     let mut gc = GridController::default();
-    //     let sheet_id = gc.sheet_ids()[0];
-    //     let sheet = gc.grid_mut().try_sheet_mut_from_id(sheet_id).unwrap();
-    //     let pos = Pos { x: 0, y: 0 };
-    //     sheet.set_code_run(
-    //         pos,
-    //         Some(CodeRun {
-    //             formatted_code_string: None,
-    //             std_err: None,
-    //             std_out: None,
-    //             result: CodeRunResult::Ok(Value::Single(CellValue::Text("delete me".to_string()))),
-    //             last_modified: Utc::now(),
-    //             cells_accessed: HashSet::new(),
-    //             spill_error: false,
-    //         }),
-    //     );
-
-    //     let operations = gc.delete_code_run_operations(&SheetRect::single_pos(pos, sheet_id));
-    //     assert_eq!(operations.len(), 1);
-    //     assert_eq!(
-    //         operations[0],
-    //         Operation::SetCodeRun {
-    //             sheet_pos: pos.to_sheet_pos(sheet_id),
-    //             code_run: None,
-    //         }
-    //     );
-    // }
-
     #[test]
     fn test_set_code_cell_operations() {
         let mut gc = GridController::default();

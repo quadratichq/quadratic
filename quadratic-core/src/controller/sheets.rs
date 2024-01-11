@@ -49,7 +49,7 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use crate::grid::SheetId;
+    use crate::{controller::GridController, grid::SheetId};
 
     #[test]
     fn test_sheet_ids() {
@@ -130,5 +130,18 @@ mod test {
         let sheet_ids = gc.sheet_ids();
         assert_eq!(gc.sheet(sheet_ids[0]).name, "Sheet 1 modified");
         assert_eq!(gc.sheet(sheet_ids[1]).name, "Sheet 2 modified");
+    }
+
+    #[test]
+    fn test_try_sheet_from_string_id() {
+        let gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        assert_eq!(
+            gc.try_sheet_from_string_id(sheet_id.to_string())
+                .unwrap()
+                .name,
+            "Sheet 1"
+        );
+        assert_eq!(gc.try_sheet_from_string_id("not found".to_string()), None);
     }
 }

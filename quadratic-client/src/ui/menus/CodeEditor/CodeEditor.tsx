@@ -79,13 +79,6 @@ export const CodeEditor = () => {
     ]
   );
 
-  // // update code cell after computation
-  // useEffect(() => {
-  //   if (!isRunningComputation) {
-  //     updateCodeCell(false);
-  //   }
-  // }, [updateCodeCell, isRunningComputation]);
-
   useEffect(() => {
     updateCodeCell(true);
   }, [updateCodeCell]);

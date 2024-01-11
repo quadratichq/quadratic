@@ -83,7 +83,7 @@ impl CodeRun {
     pub fn get_error(&self) -> Option<RunError> {
         match &self.result {
             CodeRunResult::Ok { .. } => None,
-            CodeRunResult::Err(error) => Some(error.clone()),
+            CodeRunResult::Err(error) => Some(error.to_owned()),
         }
     }
 }
