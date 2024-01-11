@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, Sele
 import { Skeleton } from '@/shadcn/ui/skeleton';
 import { isJsonObject } from '@/utils/isJsonObject';
 import { Avatar } from '@mui/material';
-import { EnvelopeClosedIcon, GlobeIcon, LockClosedIcon } from '@radix-ui/react-icons';
+import { EnvelopeClosedIcon, Link1Icon, LinkBreak1Icon } from '@radix-ui/react-icons';
 import {
   ApiTypes,
   PublicLinkAccess,
@@ -23,6 +23,7 @@ import {
 import React, { Children, FormEvent, ReactNode, useEffect, useRef, useState } from 'react';
 import { FetcherSubmitFunction, useFetcher, useFetchers, useSubmit } from 'react-router-dom';
 import { AvatarWithLetters } from './AvatarWithLetters';
+import { useGlobalSnackbar } from './GlobalSnackbarProvider';
 import { Type } from './Type';
 
 function getRoleLabel(role: UserTeamRole | UserFileRole) {
@@ -66,17 +67,9 @@ export function ShareTeamDialog({
   const numberOfOwners = users.filter((user) => user.role === 'OWNER').length;
 
   // Sort the users how we want
-  const sortedUsers = users.toSorted((a, b) => {
-    // Move the logged in user to the front
-    if (a.id === userMakingRequest.id && b.id !== userMakingRequest.id) return -1;
-    // Keep the logged in user at the front
-    if (a.id !== userMakingRequest.id && b.id === userMakingRequest.id) return 1;
-    // Leave the order as is for others
-    return 0;
-  });
+  sortLoggedInUserFirst(users, userMakingRequest.id);
 
   // TODO:(enhancement) error state when these fail
-
   const pendingInvites = useFetchers()
     .filter(
       (fetcher) =>
@@ -109,7 +102,7 @@ export function ShareTeamDialog({
         />
       )}
 
-      {sortedUsers.map((user, i) => {
+      {users.map((user, i) => {
         const isLoggedInUser = i === 0;
         const canDelete = isLoggedInUser
           ? canDeleteLoggedInUserInTeam({ role: user.role, numberOfOwners })
@@ -193,6 +186,8 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
   } = data;
   const action = `/files/${uuid}/sharing`;
   const canEditFile = filePermissions.includes('FILE_EDIT');
+
+  sortLoggedInUserFirst(users, loggedInUserId);
 
   const pendingInvites = useFetchers()
     .filter(
@@ -623,24 +618,6 @@ function ManageInvite({
             </SelectContent>
           </Select>
         )
-        // <DropdownMenu>
-        //   <DropdownMenuTrigger asChild disabled={disabled}>
-        //     <Button variant={onDelete ? 'outline' : 'ghost'} className="px-3 font-normal hover:bg-inherit">
-        //       {label} <CaretDownIcon className="ml-0 text-muted-foreground" />
-        //     </Button>
-        //   </DropdownMenuTrigger>
-        //   <DropdownMenuContent>
-        //     {onDelete && (
-        //       <DropdownMenuItem
-        //         onClick={() => {
-        //           onDelete(deleteFetcher.submit, inviteId);
-        //         }}
-        //       >
-        //         Remove
-        //       </DropdownMenuItem>
-        //     )}
-        //   </DropdownMenuContent>
-        // </DropdownMenu>
       }
     />
   );
@@ -717,6 +694,7 @@ function ListItemPublicLink({
 }) {
   const fetcher = useFetcher();
   const fetcherUrl = ROUTES.FILES_SHARE(uuid);
+  const { addGlobalSnackbar } = useGlobalSnackbar();
 
   // If we're updating, optimistically show the next value
   if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
@@ -747,7 +725,7 @@ function ListItemPublicLink({
   return (
     <ListItem>
       <div className="flex h-6 w-6 items-center justify-center">
-        {publicLinkAccess === 'NOT_SHARED' ? <LockClosedIcon /> : <GlobeIcon />}
+        {publicLinkAccess === 'NOT_SHARED' ? <LinkBreak1Icon /> : <Link1Icon />}
       </div>
 
       <div className={`flex flex-col`}>
@@ -759,28 +737,49 @@ function ListItemPublicLink({
         )}
       </div>
 
-      {disabled ? (
-        <Type className="pr-4">{activeOptionLabel}</Type>
-      ) : (
-        <Select
-          disabled={disabled}
-          value={publicLinkAccess}
-          onValueChange={(value: PublicLinkAccess) => {
-            setPublicLinkAccess(value);
-          }}
-        >
-          <SelectTrigger className={`w-auto`}>
-            <SelectValue>{activeOptionLabel}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(optionsByValue).map(([value, label]) => (
-              <SelectItem value={value} key={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
+      <div className="flex items-center gap-1">
+        {publicLinkAccess !== 'NOT_SHARED' && (
+          <Button
+            variant="link"
+            onClick={() => {
+              const url = `${window.location.origin}/files/${uuid}`;
+              navigator.clipboard
+                .writeText(url)
+                .then(() => {
+                  addGlobalSnackbar('Copied link to clipboard.');
+                })
+                .catch(() => {
+                  addGlobalSnackbar('Failed to copy link to clipboard.', { severity: 'error' });
+                });
+            }}
+          >
+            Copy link
+          </Button>
+        )}
+
+        {disabled ? (
+          <Type className="pr-4">{activeOptionLabel}</Type>
+        ) : (
+          <Select
+            disabled={disabled}
+            value={publicLinkAccess}
+            onValueChange={(value: PublicLinkAccess) => {
+              setPublicLinkAccess(value);
+            }}
+          >
+            <SelectTrigger className={`w-auto`}>
+              <SelectValue>{activeOptionLabel}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(optionsByValue).map(([value, label]) => (
+                <SelectItem value={value} key={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
     </ListItem>
   );
 }
@@ -881,4 +880,15 @@ function getAvailableRolesForUserInTeam({
 
   console.error('Unexpected code path reached');
   return [VIEWER];
+}
+
+function sortLoggedInUserFirst(collection: { id: number }[], loggedInUserId: number) {
+  collection.sort((a, b) => {
+    // Move the logged in user to the front
+    if (a.id === loggedInUserId && b.id !== loggedInUserId) return -1;
+    // Keep the logged in user at the front
+    if (a.id !== loggedInUserId && b.id === loggedInUserId) return 1;
+    // Leave the order as is for others
+    return 0;
+  });
 }
