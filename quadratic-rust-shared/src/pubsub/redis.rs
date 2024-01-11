@@ -1,6 +1,6 @@
 use redis::{
     aio::{AsyncStream, MultiplexedConnection, PubSub},
-    AsyncCommands, Client,
+    cmd, AsyncCommands, Client,
 };
 use std::pin::Pin;
 
@@ -56,6 +56,13 @@ impl super::PubSub for RedisConnection {
             multiplex: client.get_multiplexed_async_connection().await?,
         };
         Ok(connection)
+    }
+
+    /// Determine if the service is healthy
+    async fn is_healthy(&mut self) -> bool {
+        let ping = self.multiplex.send_packed_command(&cmd("PING")).await;
+
+        ping.is_ok()
     }
 
     /// Get a list of channels

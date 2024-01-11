@@ -2,6 +2,7 @@ use chrono::prelude::*;
 use futures_util::StreamExt;
 use redis::{
     aio::{AsyncStream, Monitor, MultiplexedConnection, PubSub},
+    cmd,
     streams::{StreamId, StreamKey, StreamRangeReply, StreamReadOptions, StreamReadReply},
     AsyncCommands, Client, Value,
 };
@@ -99,6 +100,13 @@ impl super::PubSub for RedisConnection {
             monitor: client.get_async_connection().await?.into_monitor(),
         };
         Ok(connection)
+    }
+
+    /// Determine if the service is healthy
+    async fn is_healthy(&mut self) -> bool {
+        let ping = self.multiplex.send_packed_command(&cmd("PING")).await;
+
+        ping.is_ok()
     }
 
     /// Get a list of channels

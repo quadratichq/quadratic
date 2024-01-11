@@ -4,6 +4,7 @@
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
 use axum::{routing::get, Extension, Router};
+use quadratic_rust_shared::pubsub::PubSub;
 use std::time::Duration;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::time;
@@ -85,6 +86,9 @@ pub(crate) async fn serve() -> Result<()> {
 
             loop {
                 interval.tick().await;
+
+                state.pubsub.lock().await.reconnect_if_unhealthy().await;
+
                 tracing::info!("Stats: {}", state.stats.lock().await);
             }
         }

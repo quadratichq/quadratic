@@ -8,7 +8,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 use uuid::Uuid;
 
-use crate::error::{MpError, Result};
+use crate::error::Result;
 
 pub static GROUP_NAME: &str = "quadratic-multiplayer-1";
 
@@ -21,8 +21,34 @@ pub(crate) struct PubSub {
 impl PubSub {
     /// Create a new connection to the PubSub server
     pub(crate) async fn new(config: PubSubConfig) -> Result<Self> {
-        let connection = RedisConnection::new(config.to_owned()).await?;
+        let connection = Self::connect(&config).await?;
+
         Ok(PubSub { config, connection })
+    }
+
+    /// Connect to the PubSub server
+    pub(crate) async fn connect(config: &PubSubConfig) -> Result<RedisConnection> {
+        let connection = RedisConnection::new(config.to_owned()).await?;
+
+        Ok(connection)
+    }
+
+    /// Check if the connection is healthy and attempt to reconnect if not
+    pub(crate) async fn reconnect_if_unhealthy(&mut self) {
+        let is_healthy = self.connection.is_healthy().await;
+
+        if !is_healthy {
+            tracing::error!("PubSub connection is unhealthy");
+
+            match Self::connect(&self.config).await {
+                Ok(connection) => {
+                    self.connection = connection;
+                }
+                Err(error) => {
+                    tracing::error!("Error reconnecting to PubSub {error}");
+                }
+            }
+        }
     }
 }
 
@@ -34,28 +60,11 @@ pub(crate) struct Transaction {
     pub(crate) sequence_num: u64,
 }
 
-impl Transaction {
-    pub(crate) fn new(
-        id: Uuid,
-        file_id: Uuid,
-        operations: Vec<Operation>,
-        sequence_num: u64,
-    ) -> Self {
-        Transaction {
-            id,
-            file_id,
-            operations,
-            sequence_num,
-        }
-    }
-}
-
 pub(crate) type Queue = HashMap<Uuid, (u64, Vec<TransactionServer>)>;
 
 #[derive(Debug)]
 pub(crate) struct TransactionQueue {
     pending: Queue,
-    processed: Queue,
     pub(crate) pubsub: PubSub,
 }
 
@@ -63,7 +72,6 @@ impl TransactionQueue {
     pub(crate) async fn new(pubsub_config: PubSubConfig) -> Self {
         TransactionQueue {
             pending: HashMap::new(),
-            processed: HashMap::new(),
             pubsub: PubSub::new(pubsub_config).await.unwrap(),
         }
     }
@@ -103,16 +111,6 @@ impl TransactionQueue {
     }
 
     pub(crate) async fn push_pending(
-        &mut self,
-        id: Uuid,
-        file_id: Uuid,
-        operations: Vec<Operation>,
-        room_sequence_num: u64,
-    ) -> u64 {
-        self.push(id, file_id, operations, room_sequence_num).await
-    }
-
-    pub(crate) async fn push_processed(
         &mut self,
         id: Uuid,
         file_id: Uuid,

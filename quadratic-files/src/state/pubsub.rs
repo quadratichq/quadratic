@@ -13,8 +13,34 @@ pub(crate) struct PubSub {
 impl PubSub {
     /// Create a new connection to the PubSub server
     pub(crate) async fn new(config: PubSubConfig) -> Result<Self> {
-        let connection = RedisConnection::new(config.to_owned()).await?;
+        let connection = Self::connect(&config).await?;
+
         Ok(PubSub { config, connection })
+    }
+
+    /// Connect to the PubSub server
+    pub(crate) async fn connect(config: &PubSubConfig) -> Result<RedisConnection> {
+        let connection = RedisConnection::new(config.to_owned()).await?;
+
+        Ok(connection)
+    }
+
+    /// Check if the connection is healthy and attempt to reconnect if not
+    pub(crate) async fn reconnect_if_unhealthy(&mut self) {
+        let is_healthy = self.connection.is_healthy().await;
+
+        if !is_healthy {
+            tracing::error!("PubSub connection is unhealthy");
+
+            match Self::connect(&self.config).await {
+                Ok(connection) => {
+                    self.connection = connection;
+                }
+                Err(error) => {
+                    tracing::error!("Error reconnecting to PubSub {error}");
+                }
+            }
+        }
     }
 }
 

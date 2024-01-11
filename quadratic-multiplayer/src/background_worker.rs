@@ -22,6 +22,15 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
         let mut interval = time::interval(Duration::from_millis(heartbeat_check_s as u64 * 1000));
 
         loop {
+            // reconnect if pubsub connection is unhealthy
+            state
+                .transaction_queue
+                .lock()
+                .await
+                .pubsub
+                .reconnect_if_unhealthy()
+                .await;
+
             // get all room ids
             let rooms = state
                 .rooms
@@ -127,12 +136,12 @@ mod tests {
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
 
-        state.transaction_queue.lock().await.push_pending(
-            transaction_id_1,
-            file_id,
-            vec![operations_1.clone()],
-            1,
-        );
+        state
+            .transaction_queue
+            .lock()
+            .await
+            .push_pending(transaction_id_1, file_id, vec![operations_1.clone()], 1)
+            .await;
 
         super::broadcast_sequence_num(state, &file_id)
             .await
