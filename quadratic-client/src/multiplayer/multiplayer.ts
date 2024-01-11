@@ -96,8 +96,8 @@ export class Multiplayer {
       this.websocket.addEventListener('open', () => {
         console.log('[Multiplayer] websocket connected.');
         this.state = 'connected';
-        this.waitingForConnection.forEach((resolve) => resolve(0));
         resolve(0);
+        this.waitingForConnection.forEach((resolve) => resolve(0));
         this.waitingForConnection = [];
         this.lastHeartbeat = Date.now();
         window.addEventListener('change-sheet', this.sendChangeSheet);

@@ -93,7 +93,8 @@ class Offline {
     };
   }
 
-  // Loads unsent transactions and applies them to the grid.
+  // Loads unsent transactions and applies them to the grid. This is called twice: once after the grid and pixi loads;
+  // and a second time when the socket server connects.
   async loadTransactions() {
     const unsentTransactions = await this.load();
     if (debugShowFileIO) {
