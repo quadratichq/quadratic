@@ -28,6 +28,7 @@ import QuadraticApp from '../ui/QuadraticApp';
 export type FileData = {
   name: string;
   uuid: string;
+  owner: ApiTypes['/v0/files/:uuid.GET.response']['owner'];
   permissions: ApiTypes['/v0/files/:uuid.GET.response']['userMakingRequest']['filePermissions'];
 };
 
@@ -76,6 +77,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   return {
     name: data.file.name,
     uuid: data.file.uuid,
+    owner: data.owner,
     permissions: data.userMakingRequest.filePermissions,
   };
 };
