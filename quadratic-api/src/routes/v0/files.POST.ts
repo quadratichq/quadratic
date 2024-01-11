@@ -11,7 +11,6 @@ import { RequestWithUser } from '../../types/Request';
 export default [
   validateRequestSchema(
     z.object({
-      params: z.object({ uuid: z.string().uuid() }),
       body: ApiSchemas['/v0/files.POST.request'],
     })
   ),
@@ -22,7 +21,6 @@ export default [
 
 async function handler(req: RequestWithUser, res: Response) {
   const {
-    params: { uuid },
     user: { id: userId },
     body: { name, contents, version },
   } = req;
@@ -44,6 +42,7 @@ async function handler(req: RequestWithUser, res: Response) {
   });
 
   // Upload file contents to S3 and create a checkpoint
+  const { uuid } = dbFile;
   const response = await uploadStringAsFileS3(`${uuid}-0.grid`, contents);
   await dbClient.fileCheckpoint.create({
     data: {
