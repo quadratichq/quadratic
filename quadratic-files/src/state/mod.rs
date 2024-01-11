@@ -22,7 +22,7 @@ use self::stats::Stats;
 pub(crate) struct State {
     pub(crate) pubsub: Mutex<PubSub>,
     pub(crate) settings: Settings,
-    pub(crate) stats: Stats,
+    pub(crate) stats: Mutex<Stats>,
 }
 
 impl State {
@@ -37,7 +37,7 @@ impl State {
         Ok(State {
             pubsub: Mutex::new(PubSub::new(pubsub_config).await?),
             settings: Settings::new(config).await,
-            stats: Stats::new().await,
+            stats: Mutex::new(Stats::new()),
         })
     }
 }

@@ -127,14 +127,14 @@ pub(crate) async fn process_queue_for_room(
         .flatten()
         .collect::<Vec<TransactionServer>>();
 
-    if transactions.is_empty() {
-        return Ok(None);
-    }
-
     tracing::info!(
         "Found {} transaction(s) for room {file_id}",
         transactions.len()
     );
+
+    if transactions.is_empty() {
+        return Ok(None);
+    }
 
     let sequence_numbers = transactions
         .iter()
@@ -198,6 +198,8 @@ pub(crate) async fn process_queue_for_room(
     )
     .await?;
 
+    state.stats.lock().await.last_processed_file_time = Some(Instant::now());
+
     tracing::info!(
         "Processed sequence numbers {first_sequence_num} - {last_sequence_num} for room {file_id} in {:?}", start.elapsed()
     );
@@ -218,6 +220,8 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
         .map(|file_id| Uuid::parse_str(&file_id))
         .flatten()
         .collect::<Vec<_>>();
+
+    tracing::info!("Found {} file(s) to process", files.len());
 
     for file_id in files.iter() {
         process_queue_for_room(&state, file_id, active_channels).await?;

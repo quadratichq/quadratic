@@ -10,7 +10,7 @@ use tokio::time;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::health::{healthcheck, stats};
+use crate::health::healthcheck;
 use crate::{
     config::config,
     error::{FilesError, Result},
@@ -85,7 +85,7 @@ pub(crate) async fn serve() -> Result<()> {
 
             loop {
                 interval.tick().await;
-                stats(&state).await;
+                tracing::info!("Stats: {}", state.stats.lock().await);
             }
         }
     });

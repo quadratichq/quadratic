@@ -48,6 +48,9 @@ services:
   #   depends_on:
   #     postgres:
   #       condition: service_healthy
+  #   profiles:
+  #     - backend
+  #     - api
   #   networks:
   #     - quadratic
 
@@ -73,6 +76,10 @@ services:
         condition: service_healthy
       # quadratic-api:
       #   condition: service_healthy
+    profiles:
+      - backend
+      - multiplayer
+      - files-dev
     networks:
       - host
 
@@ -98,6 +105,9 @@ services:
         condition: service_healthy
       # quadratic-api:
       #   condition: service_healthy
+    profiles:
+      - backend
+      - multiplayer
     networks:
       - host
 

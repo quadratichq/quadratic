@@ -83,6 +83,10 @@ impl TransactionQueue {
         };
 
         let transaction = serde_json::to_string(&transaction).unwrap();
+        let active_channels = match self.pubsub.config {
+            PubSubConfig::RedisStreams(ref config) => config.active_channels.as_str(),
+            _ => "active_channels",
+        };
 
         self.pubsub
             .connection
@@ -90,7 +94,7 @@ impl TransactionQueue {
                 &file_id.to_string(),
                 &sequence_num.to_string(),
                 &transaction,
-                self.config.active_channels,
+                Some(active_channels),
             )
             .await
             .unwrap();
