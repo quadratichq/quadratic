@@ -34,7 +34,10 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::DeleteSheet { sheet_id } = op {
-            let deleted_sheet = self.grid.remove_sheet(sheet_id);
+            let Some(deleted_sheet) = self.grid.remove_sheet(sheet_id) else {
+                // sheet was already deleted
+                return;
+            };
 
             // create a sheet if we deleted the last one (only for user actions)
             if transaction.is_user() && self.sheet_ids().is_empty() {

@@ -116,13 +116,11 @@ impl Grid {
         Ok(id)
     }
 
-    pub fn remove_sheet(&mut self, sheet_id: SheetId) -> Sheet {
+    pub fn remove_sheet(&mut self, sheet_id: SheetId) -> Option<Sheet> {
         let i = self.sheet_id_to_index(sheet_id);
         match i {
-            Some(i) => self.sheets.remove(i),
-            None => unreachable!(
-                "remove_sheet should never be called with a sheet_id that doesn't exist"
-            ),
+            Some(i) => Some(self.sheets.remove(i)),
+            None => None,
         }
     }
 

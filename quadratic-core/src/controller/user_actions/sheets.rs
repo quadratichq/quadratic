@@ -60,6 +60,93 @@ mod test {
     use crate::{controller::GridController, grid::SheetId};
 
     #[test]
+    fn test_set_sheet_name() {
+        let mut g = GridController::test();
+        let old_sheet_ids = g.sheet_ids();
+        let s1 = old_sheet_ids[0];
+
+        g.set_sheet_name(s1, String::from("Nice Name"), None);
+        let sheet = g.sheet(s1);
+        assert_eq!(sheet.name, "Nice Name");
+
+        g.undo(None);
+        let sheet = g.sheet(s1);
+        assert_eq!(sheet.name, "Sheet 1");
+
+        g.redo(None);
+        let sheet = g.sheet(s1);
+        assert_eq!(sheet.name, "Nice Name");
+
+        g.set_sheet_name(SheetId::new(), String::from("Should not do anything"), None);
+        let sheet = g.sheet(s1);
+        assert_eq!(sheet.name, "Nice Name");
+    }
+
+    #[test]
+    fn test_set_sheet_color() {
+        let mut g = GridController::test();
+        let old_sheet_ids = g.sheet_ids();
+        let s1 = old_sheet_ids[0];
+
+        g.set_sheet_color(s1, Some(String::from("red")), None);
+        let sheet = g.sheet(s1);
+        assert_eq!(sheet.color, Some(String::from("red")));
+
+        g.undo(None);
+        let sheet = g.sheet(s1);
+        assert_eq!(sheet.color, None);
+
+        g.redo(None);
+        let sheet = g.sheet(s1);
+        assert_eq!(sheet.color, Some(String::from("red")));
+
+        g.set_sheet_color(
+            SheetId::new(),
+            Some(String::from("Should not do anything")),
+            None,
+        );
+        let sheet = g.sheet(s1);
+        assert_eq!(sheet.color, Some(String::from("red")));
+
+        g.set_sheet_color(
+            SheetId::new(),
+            Some(String::from("Should not do anything")),
+            None,
+        );
+        let sheet = g.sheet(s1);
+        assert_eq!(sheet.color, Some(String::from("red")));
+    }
+
+    #[test]
+    fn test_delete_sheet() {
+        let mut g = GridController::test();
+        let old_sheet_ids = g.sheet_ids();
+        let s1 = old_sheet_ids[0];
+
+        g.delete_sheet(s1, None);
+        assert_eq!(g.sheet_ids().len(), 1);
+        assert_ne!(g.sheet_ids()[0], s1);
+
+        g.undo(None);
+        assert_eq!(g.sheet_ids(), old_sheet_ids);
+
+        g.redo(None);
+        assert_eq!(g.sheet_ids().len(), 1);
+        assert_ne!(g.sheet_ids()[0], s1);
+
+        g.delete_sheet(SheetId::new(), None);
+        assert_eq!(g.sheet_ids().len(), 1);
+        assert_ne!(g.sheet_ids()[0], s1);
+    }
+
+    #[test]
+    fn test_move_sheet_sheet_does_not_exist() {
+        let mut g = GridController::test();
+        g.add_sheet(None);
+        g.move_sheet(SheetId::new(), None, None);
+    }
+
+    #[test]
     fn test_add_delete_reorder_sheets() {
         let mut g = GridController::test();
         g.add_sheet(None);
@@ -124,6 +211,8 @@ mod test {
         let sheet2 = g.sheet(s2);
 
         assert_eq!(sheet2.name, format!("{} Copy", sheet1.name));
+
+        g.duplicate_sheet(SheetId::new(), None);
     }
 
     #[test]
