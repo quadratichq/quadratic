@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
 
 import { useRootRouteLoaderData } from '@/router';
+import mixpanel from 'mixpanel-browser';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { ROUTES } from '../../../constants/routes';
 
@@ -17,6 +18,7 @@ export const TopBarShareButton = () => {
           size="sm"
           onClick={() => {
             setEditorInteractionState((prev) => ({ ...prev, showShareFileMenu: !prev.showShareFileMenu }));
+            mixpanel.track('[FileSharing].menu.open', { context: '/file/:uuid' });
           }}
           className="self-center"
         >
