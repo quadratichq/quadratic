@@ -76,10 +76,15 @@ pub(crate) async fn process_transactions(
     final_sequence_num: u64,
     operations: Vec<Operation>,
 ) -> Result<u64> {
-    let num_operations = operations.len();
-    let mut grid = get_and_load_object(client, bucket, &key(file_id, sequence), sequence).await?;
-    let next_sequence_num = sequence + num_operations as u64;
-    let key = key(file_id, next_sequence_num);
+    let mut grid = get_and_load_object(
+        client,
+        bucket,
+        &key(file_id, checkpoint_sequence_num),
+        checkpoint_sequence_num,
+    )
+    .await?;
+
+    let key = key(file_id, final_sequence_num);
 
     apply_transaction(&mut grid, operations);
     let body = export_file(&key, grid.grid_mut())?;
@@ -106,7 +111,7 @@ pub(crate) async fn process_queue_for_room(
         ..
     } = &state.settings;
 
-    let sequence_number =
+    let checkpoint_sequence_num =
         match get_file_checkpoint(&quadratic_api_uri, &quadratic_api_jwt, file_id).await {
             Ok(last_checkpoint) => last_checkpoint.sequence_number + 1,
             Err(_) => 1,
@@ -121,7 +126,7 @@ pub(crate) async fn process_queue_for_room(
     // get all transactions for the room in the queue
     let transactions = pubsub
         .connection
-        .get_messages_from(channel, &sequence_number.to_string())
+        .get_messages_from(channel, &checkpoint_sequence_num.to_string())
         .await?
         .iter()
         .map(|(_, message)| serde_json::from_str::<TransactionServer>(&message))
@@ -147,7 +152,10 @@ pub(crate) async fn process_queue_for_room(
         .cloned()
         .ok_or_else(|| FilesError::Unknown("No transactions to process".into()))?;
 
-    let checkpoint_sequence_num = (first_sequence_num - 1).max(0);
+    let last_sequence_num = sequence_numbers
+        .last()
+        .cloned()
+        .ok_or_else(|| FilesError::Unknown("No transactions to process".into()))?;
 
     // combine all operations into a single vec
     let operations = transactions
@@ -223,6 +231,7 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
         .flatten()
         .collect::<Vec<_>>();
 
+    // collect info for stats
     state.stats.lock().await.files_to_process_in_pubsub = files.len() as u64;
 
     for file_id in files.iter() {
