@@ -19,7 +19,7 @@ use futures_util::stream::SplitSink;
 use quadratic_core::controller::operations::operation::Operation;
 use quadratic_core::controller::transaction::{Transaction, TransactionServer};
 use quadratic_rust_shared::pubsub::PubSub;
-use quadratic_rust_shared::quadratic_api::get_file_perms;
+use quadratic_rust_shared::quadratic_api::{get_file_perms, FilePermRole};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 

@@ -136,6 +136,8 @@ mod tests {
         let state = new_arc_state().await;
         let file_id = Uuid::new_v4();
         let mut grid = grid_setup();
+        let connection_id = Uuid::new_v4();
+        let _user = add_new_user_to_room(file_id, state.clone(), connection_id).await;
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
 
