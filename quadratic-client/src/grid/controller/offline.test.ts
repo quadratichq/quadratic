@@ -49,6 +49,16 @@ describe('offline', () => {
     ]);
   });
 
+  it('checks whether there are any unsent transactions in db', async () => {
+    expect(await offline.unsentTransactionsCount()).toBe(0);
+    offline.addUnsentTransaction('1', 'a');
+    offline.addUnsentTransaction('2', 'b');
+    offline.addUnsentTransaction('3', 'c');
+    expect(await offline.unsentTransactionsCount()).toBe(3);
+    offline.markTransactionSent('2');
+    expect(await offline.unsentTransactionsCount()).toBe(2);
+  });
+
   // it('loads all transactions on initialization', async () => {
   //   console.log('here...');
   //   hello();

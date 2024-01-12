@@ -10,10 +10,7 @@ export default function SyncState() {
   const [syncState, setSyncState] = useState<MultiplayerState>('not connected');
 
   useEffect(() => {
-    const updateState = (e: any) => {
-      console.log('*', e.detail);
-      setSyncState(e.detail);
-    };
+    const updateState = (e: any) => setSyncState(e.detail);
     window.addEventListener('multiplayer-state', updateState);
     return () => window.removeEventListener('multiplayer-state', updateState);
   }, []);
@@ -23,11 +20,11 @@ export default function SyncState() {
   }
 
   if (syncState === 'syncing') {
-    return <BottomBarItem icon={<CircularProgress size="0.5rem" />}>Syncing…</BottomBarItem>;
+    return <BottomBarItem icon={<CircularProgress size="0.5rem" />}>Connected to Server</BottomBarItem>;
   }
 
   if (syncState === 'connected') {
-    return <BottomBarItem icon={<Check fontSize="inherit" />}>Synced</BottomBarItem>;
+    return <BottomBarItem icon={<Check fontSize="inherit" />}>Connected to Server</BottomBarItem>;
   }
 
   // else error

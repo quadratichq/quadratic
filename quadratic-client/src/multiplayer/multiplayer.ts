@@ -70,7 +70,6 @@ export class Multiplayer {
   }
   private set state(state: MultiplayerState) {
     this._state = state;
-    console.log('*', state);
     window.dispatchEvent(new CustomEvent('multiplayer-state', { detail: state }));
   }
 
@@ -297,7 +296,7 @@ export class Multiplayer {
       file_id: this.room,
       operations,
     };
-
+    this.state = 'syncing';
     if (this.websocket?.OPEN) {
       this.websocket.send(JSON.stringify(message));
       if (debugShowMultiplayer) console.log(`[Multiplayer] Sent transaction ${id}.`);
@@ -464,7 +463,7 @@ export class Multiplayer {
     }
     grid.multiplayerTransaction(data.id, data.sequence_num, data.operations);
     offline.markTransactionSent(data.id);
-    if (await offline.hasUnsentTransactions()) {
+    if (await offline.unsentTransactionsCount()) {
       this.state = 'syncing';
     } else {
       this.state = 'connected';
@@ -474,7 +473,7 @@ export class Multiplayer {
   // Receives a collection of transactions to catch us up based on our sequenceNum
   private async receiveTransactions(data: ReceiveTransactions) {
     grid.receiveMultiplayerTransactions(data.transactions);
-    if (await offline.hasUnsentTransactions()) {
+    if (await offline.unsentTransactionsCount()) {
       this.state = 'syncing';
     } else {
       this.state = 'connected';
