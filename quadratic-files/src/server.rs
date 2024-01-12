@@ -19,13 +19,14 @@ use crate::{
     state::State,
 };
 
+const HEALTHCHECK_INTERVAL_S: u64 = 5;
+
 /// Construct the application router.  This is separated out so that it can be
 /// integration tested.
 pub(crate) fn app(state: Arc<State>) -> Router {
     Router::new()
         // routes
         .route("/health", get(healthcheck))
-        // .route("/stats", get(stats))
         // state
         .layer(Extension(state))
         // logger
@@ -79,16 +80,16 @@ pub(crate) async fn serve() -> Result<()> {
 
     // in a separate thread, log stats
     tokio::spawn({
-        let state = Arc::clone(&state);
-
         async move {
-            let mut interval = time::interval(Duration::from_secs(1));
+            let mut interval = time::interval(Duration::from_secs(HEALTHCHECK_INTERVAL_S));
 
             loop {
                 interval.tick().await;
 
+                // reconnect to pubsub if the connection becomes unhealthy
                 state.pubsub.lock().await.reconnect_if_unhealthy().await;
 
+                // push stats to the logs
                 tracing::info!("Stats: {}", state.stats.lock().await);
             }
         }

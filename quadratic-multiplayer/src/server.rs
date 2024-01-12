@@ -40,6 +40,8 @@ pub(crate) fn app(state: Arc<State>) -> Router {
     Router::new()
         // handle websockets
         .route("/ws", get(ws_handler))
+        // healthchecks
+        .route("/health", get(healthcheck))
         // state
         .layer(Extension(state))
         // logger
@@ -268,6 +270,10 @@ async fn process_message(
     }
 
     Ok(ControlFlow::Continue(()))
+}
+
+pub(crate) async fn healthcheck() -> impl IntoResponse {
+    StatusCode::OK
 }
 
 #[cfg(test)]
