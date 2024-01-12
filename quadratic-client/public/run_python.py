@@ -234,7 +234,7 @@ class _FigureHolder:
         return self._result_set_from_line
 
 async def _intercept_plotly_html(code) -> _FigureHolder | None:
-    if "plotly" not in code:
+    if "plotly" not in pyodide.code.find_imports(code):
         return None
 
     await micropip.install("plotly")
