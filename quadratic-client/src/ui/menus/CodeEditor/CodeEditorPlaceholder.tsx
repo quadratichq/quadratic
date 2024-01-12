@@ -48,6 +48,11 @@ df = px.data.gapminder().query("country=='Canada'")
 # create your chart type, for more chart types: https://plotly.com/python/
 fig = px.line(df, x="year", y="lifeExp", title='Life expectancy in Canada')
 
+# make chart prettier
+fig.update_layout(
+    plot_bgcolor="White",
+)
+
 # display chart 
 fig.show()
 `,
