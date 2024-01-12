@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { ApiSchemas, ApiTypes, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import { getUsersByEmail } from '../../auth0/profile';
+import { lookupUsersFromAuth0ByEmail } from '../../auth0/profile';
 import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
@@ -45,7 +45,7 @@ async function handler(req: Request, res: Response) {
   }
 
   // Look up the invited user by email in Auth0 and then 1 of 3 things will happen:
-  const auth0Users = await getUsersByEmail(email);
+  const auth0Users = await lookupUsersFromAuth0ByEmail(email);
 
   // 1. Nobody with an account by that email, invite them!
   if (auth0Users.length === 0) {

@@ -26,6 +26,7 @@ export const getAuth0Users = async (auth0Ids: string[]) => {
 
 /**
  * Given a list of users from our system, we lookup their info in Auth0.
+ * If we don't find a user, we throw.
  *
  * Example in:
  *   [
@@ -33,7 +34,7 @@ export const getAuth0Users = async (auth0Ids: string[]) => {
  *   ]
  * Example out:
  *   {
- *     'google-oauth2|112233': {
+ *     10: {
  *       id: 10,
  *       auth0Id: 'google-oauth2|112233',
  *       email: 'john_doe@example.com',
@@ -66,7 +67,7 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
     // If we're missing data we expect, log it to Sentry and skip this user
     if (!auth0User || auth0User.email === undefined) {
       Sentry.captureException({
-        message: 'Auth0 user returned without `user_id` or `email`',
+        message: 'Auth0 user returned without `email`',
         level: 'error',
         extra: {
           auth0User,
@@ -91,7 +92,7 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
   return usersById;
 };
 
-export const getUsersByEmail = async (email: string) => {
+export const lookupUsersFromAuth0ByEmail = async (email: string) => {
   const auth0Users = await auth0.getUsersByEmail(email);
   return auth0Users;
 };
