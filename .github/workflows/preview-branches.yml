@@ -96,6 +96,7 @@ jobs:
         EC2_INSTANCE_DNS: ${{needs.infra.outputs.MULTIPLAYER_INSTANCE_DNS}}
 
   files_preview:
+    needs: infra
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
