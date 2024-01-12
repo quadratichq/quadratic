@@ -154,7 +154,7 @@ mod tests {
         assert_eq!("0", eval_to_string(&g, "AVERAGE(,)"));
 
         // Test with no arguments
-        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(&g, "AVERAGE()").msg,);
+        assert_eq!(RunErrorMsg::DivideByZero, eval_to_err(&g, "AVERAGE()").msg,);
     }
 
     #[test]
@@ -182,7 +182,7 @@ mod tests {
 
         // Error on range size mismatch.
         assert_eq!(
-            ErrorMsg::ExactArraySizeMismatch {
+            RunErrorMsg::ExactArraySizeMismatch {
                 expected: ArraySize::new(1, 11).unwrap(),
                 got: ArraySize::new(2, 1).unwrap(),
             },
@@ -190,14 +190,14 @@ mod tests {
         );
         // ... even if one of the arguments is just a single value.
         assert_eq!(
-            ErrorMsg::ExactArraySizeMismatch {
+            RunErrorMsg::ExactArraySizeMismatch {
                 expected: ArraySize::new(1, 11).unwrap(),
                 got: ArraySize::new(1, 1).unwrap(),
             },
             eval_to_err(&g, "AVERAGEIF(0..10, \"<=5\", 3)").msg,
         );
         assert_eq!(
-            ErrorMsg::ExactArraySizeMismatch {
+            RunErrorMsg::ExactArraySizeMismatch {
                 expected: ArraySize::new(1, 1).unwrap(),
                 got: ArraySize::new(1, 11).unwrap(),
             },

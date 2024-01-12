@@ -1,12 +1,13 @@
+import { authClient, parseDomain } from '@/auth';
 import { debugShowMultiplayer } from '@/debugFlags';
 import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
+import { SheetPos } from '@/gridGL/types/size';
+import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
 import { User } from '@auth0/auth0-spa-js';
 import { v4 as uuid } from 'uuid';
-
-import { authClient, parseDomain } from '@/auth';
 import { MULTIPLAYER_COLORS } from './multiplayerCursor/multiplayerColors';
 import {
   Heartbeat,
@@ -33,6 +34,7 @@ export class Multiplayer {
   private sessionId;
   private room?: string;
   private user?: User;
+  private anonymous?: boolean;
   private jwt?: string | void;
 
   // messages pending a reconnect
@@ -73,7 +75,9 @@ export class Multiplayer {
   private async init() {
     if (this.state === 'connected') return;
 
-    await this.addJwtCookie();
+    if (!this.anonymous) {
+      await this.addJwtCookie();
+    }
 
     return new Promise((resolve) => {
       if (this.state === 'connecting' || this.state === 'waiting to reconnect') {
@@ -117,10 +121,8 @@ export class Multiplayer {
   };
 
   // multiplayer for a file
-  async enterFileRoom(file_id: string, user?: User) {
-    // hack for same file different server
-    // file_id = 'dde9887b-303c-491f-8863-0bfd047cce76';
-
+  async enterFileRoom(file_id: string, user?: User, anonymous?: boolean) {
+    this.anonymous = anonymous;
     if (!user?.sub) throw new Error('User must be defined to enter a multiplayer room.');
     this.userUpdate.file_id = file_id;
     await this.init();
@@ -149,6 +151,7 @@ export class Multiplayer {
       y: 0,
       visible: false,
       viewport: pixiApp.saveMultiplayerViewport(),
+      code_running: JSON.stringify(pythonWebWorker.getCodeRunning()),
     };
     this.websocket!.send(JSON.stringify(enterRoom));
     if (debugShowMultiplayer) console.log(`[Multiplayer] Joined room ${file_id}.`);
@@ -258,6 +261,11 @@ export class Multiplayer {
     userUpdate.viewport = viewport;
   }
 
+  sendCodeRunning(sheetPos: SheetPos[]) {
+    const userUpdate = this.getUserUpdate().update;
+    userUpdate.code_running = JSON.stringify(sheetPos);
+  }
+
   async sendTransaction(id: string, operations: string) {
     await this.init();
     const message: SendTransaction = {
@@ -320,6 +328,8 @@ export class Multiplayer {
             visible: false,
             index: this.users.size,
             viewport: user.viewport,
+            code_running: user.code_running,
+            parsedCodeRunning: user.code_running ? JSON.parse(user.code_running) : [],
           };
           this.users.set(user.session_id, player);
           this.nextColor = (this.nextColor + 1) % MULTIPLAYER_COLORS.length;
@@ -339,9 +349,10 @@ export class Multiplayer {
     // this eventually will not be necessarily
     if (data.session_id === this.sessionId) return;
     const player = this.users.get(data.session_id);
-    if (!player) {
-      throw new Error("Expected Player to be defined before receiving a message of type 'MouseMove'");
-    }
+
+    // it's possible we get the UserUpdate before the EnterRoom response. No big deal if we do.
+    if (!player) return;
+
     if (data.file_id !== this.room) {
       throw new Error("Expected file_id to match room before receiving a message of type 'MouseMove'");
     }
@@ -362,6 +373,7 @@ export class Multiplayer {
     if (update.sheet_id) {
       if (player.sheet_id !== update.sheet_id) {
         player.sheet_id = update.sheet_id;
+        window.dispatchEvent(new CustomEvent('multiplayer-change-sheet'));
         if (player.sheet_id === sheets.sheet.id) {
           pixiApp.multiplayerCursor.dirty = true;
           window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
@@ -408,6 +420,14 @@ export class Multiplayer {
         pixiApp.loadMultiplayerViewport(JSON.parse(player.viewport));
       }
     }
+
+    if (update.code_running) {
+      player.code_running = update.code_running;
+      player.parsedCodeRunning = JSON.parse(update.code_running);
+
+      // trigger changes in CodeRunning.tsx
+      dispatchEvent(new CustomEvent('python-change'));
+    }
   }
 
   // Receives a new transaction from the server
@@ -453,7 +473,7 @@ export class Multiplayer {
     } else if (type === 'CurrentTransaction') {
       this.receiveCurrentTransaction(data);
     } else if (type === 'Error') {
-      console.warn(`[Multiplayer] Error: ${data.error}`);
+      console.warn(`[Multiplayer] Error`, data.error);
     } else if (type !== 'Empty') {
       console.warn(`Unknown message type: ${type}`);
     }

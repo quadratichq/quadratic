@@ -1,25 +1,25 @@
-//! Error reporting functionality for compilation and runtime.
+//! RunError reporting functionality for code cell errors.
+//!
+//! Use CoreError for runtime errors outside of code (eg, Python, Formulas).
 
+use crate::{ArraySize, Axis, Span, Spanned, Value};
+use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::fmt;
 
-use serde::{Deserialize, Serialize};
-
-use crate::{ArraySize, Axis, Span, Spanned, Value};
-
-/// Result of a [`crate::Error`].
-pub type CodeResult<T = Spanned<Value>> = Result<T, Error>;
+/// Result of a [`crate::RunError`].
+pub type CodeResult<T = Spanned<Value>> = Result<T, RunError>;
 
 /// Error message and accompanying span.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct Error {
+pub struct RunError {
     /// Location of the source code where the error occurred (if any).
     pub span: Option<Span>,
     /// Type of error.
-    pub msg: ErrorMsg,
+    pub msg: RunErrorMsg,
 }
-impl fmt::Display for Error {
+impl fmt::Display for RunError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.span {
             Some(span) => write!(f, "column {} to {}: {}", span.start, span.end, self.msg),
@@ -27,8 +27,8 @@ impl fmt::Display for Error {
         }
     }
 }
-impl std::error::Error for Error {}
-impl Error {
+impl std::error::Error for RunError {}
+impl RunError {
     /// Attaches a span to this Error, if it does not already have one.
     pub fn with_span(mut self, span: impl Into<Span>) -> Self {
         if self.span.is_none() {
@@ -41,7 +41,7 @@ impl Error {
 /// Information about the type of error that occurred.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub enum ErrorMsg {
+pub enum RunErrorMsg {
     PythonError(Cow<'static, str>),
 
     Spill,
@@ -100,9 +100,9 @@ pub enum ErrorMsg {
     IndexOutOfBounds,
     NoMatch,
     InvalidArgument,
-    PythonNotLoaded,
 }
-impl fmt::Display for ErrorMsg {
+
+impl fmt::Display for RunErrorMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::PythonError(s) => {
@@ -237,30 +237,27 @@ impl fmt::Display for ErrorMsg {
             Self::InvalidArgument => {
                 write!(f, "Invalid argument")
             }
-            Self::PythonNotLoaded => {
-                write!(f, "Python interpreter not yet loaded (please run again)")
-            }
         }
     }
 }
-impl ErrorMsg {
+impl RunErrorMsg {
     /// Attaches a span to this error message, returning a Error.
-    pub fn with_span(self, span: impl Into<Span>) -> Error {
-        Error {
+    pub fn with_span(self, span: impl Into<Span>) -> RunError {
+        RunError {
             span: Some(span.into()),
             msg: self,
         }
     }
     /// Returns a Error from this error message, without a span.
-    pub const fn without_span(self) -> Error {
-        Error {
+    pub const fn without_span(self) -> RunError {
+        RunError {
             span: None,
             msg: self,
         }
     }
 }
 
-impl<T: Into<ErrorMsg>> From<T> for Error {
+impl<T: Into<RunErrorMsg>> From<T> for RunError {
     fn from(msg: T) -> Self {
         msg.into().without_span()
     }
@@ -279,11 +276,11 @@ macro_rules! internal_error_value {
         // Panic in a debug build (for stack trace).
         #[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
         #[allow(unused)]
-        let ret: $crate::Error = panic!("{}", $msg);
+        let ret: $crate::RunError = panic!("{}", $msg);
         // Give nice error message for user in release build.
         #[cfg(not(all(debug_assertions, not(target_arch = "wasm32"))))]
         #[allow(unused)]
-        let ret: $crate::Error = $crate::ErrorMsg::InternalError(
+        let ret: $crate::RunError = $crate::RunErrorMsg::InternalError(
             std::borrow::Cow::Borrowed($msg),
         )
         .without_span();
@@ -295,12 +292,12 @@ macro_rules! internal_error_value {
         // Panic in a debug build (for stack trace).
         #[cfg(all(debug_assertions, not(target_arch = "wasm32")))]
         #[allow(unused)]
-        let ret: $crate::Error = panic!($( $args ),+);
+        let ret: $crate::RunError = panic!($( $args ),+);
         // Give nice error message for user in release build.
         #[cfg(not(all(debug_assertions, not(target_arch = "wasm32"))))]
         #[allow(unused)]
-        let ret: $crate::Error =
-            $crate::ErrorMsg::InternalError(format!($( $args ),+).into()).without_span();
+        let ret: $crate::RunError =
+            $crate::RunErrorMsg::InternalError(format!($( $args ),+).into()).without_span();
         #[allow(unreachable_code)]
         ret
     }};

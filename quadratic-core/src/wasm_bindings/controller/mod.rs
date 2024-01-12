@@ -1,10 +1,9 @@
-use uuid::Uuid;
-
 use super::*;
 use crate::controller::transaction::TransactionServer;
-use crate::controller::transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells};
-use crate::{controller::transaction_summary::TransactionSummary, grid::js_types::*};
+use crate::controller::transaction_types::{JsCodeResult, JsComputeGetCells};
+use crate::grid::js_types::*;
 use std::str::FromStr;
+use uuid::Uuid;
 
 pub mod auto_complete;
 pub mod borders;
@@ -80,22 +79,15 @@ impl GridController {
         )?)
     }
 
-    // TODO: this will not work with PendingTransaction
-    #[wasm_bindgen(js_name = "getCalculationTransactionSummary")]
-    pub fn js_calculation_transaction_summary(&mut self) -> Result<JsValue, JsValue> {
-        // self.transaction_updated_bounds();
-        // let summary = self.prepare_transaction_summary();
-        let summary = TransactionSummary::default();
-        Ok(serde_wasm_bindgen::to_value(&summary)?)
-    }
-
-    // todo: this should be reworked with ts-rs. also need better error return error to TS
     #[wasm_bindgen(js_name = "calculationGetCells")]
     pub fn js_calculation_get_cells(
         &mut self,
         get_cells: JsComputeGetCells,
-    ) -> Option<CellsForArray> {
-        self.calculation_get_cells(get_cells).ok()
+    ) -> Result<JsValue, JsValue> {
+        match self.calculation_get_cells(get_cells) {
+            Ok(get_cells) => Ok(serde_wasm_bindgen::to_value(&get_cells)?),
+            Err(e) => Err(serde_wasm_bindgen::to_value(&e)?),
+        }
     }
 
     #[wasm_bindgen(js_name = "multiplayerTransaction")]

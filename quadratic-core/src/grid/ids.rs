@@ -11,7 +11,7 @@ use uuid::Uuid;
 use wasm_bindgen::prelude::*;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), wasm_bindgen)]
 pub struct SheetId {
     id: Uuid,
 }

@@ -1,4 +1,3 @@
-import { htmlCellsHandler } from '@/gridGL/htmlCells/htmlCellsHandler';
 import { InteractivePointerEvent, Point } from 'pixi.js';
 import { hasPerissionToEditFile } from '../../../actions';
 import { CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '../../../constants/gridConstants';
@@ -182,7 +181,6 @@ export class PointerHeading {
             column: this.resizing.column,
             delta: size - this.resizing.lastSize,
           });
-          htmlCellsHandler.updateOffsets([sheets.sheet.id]);
           this.resizing.lastSize = size;
         }
       } else if (this.resizing.row !== undefined) {

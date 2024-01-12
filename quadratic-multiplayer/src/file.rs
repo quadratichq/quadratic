@@ -61,20 +61,25 @@ pub(crate) async fn process_transactions(
     client: &Client,
     bucket: &str,
     file_id: Uuid,
-    sequence: u64,
+    checkpoint_sequence_num: u64,
+    final_sequence_num: u64,
     operations: Vec<Operation>,
 ) -> Result<u64> {
-    let num_operations = operations.len();
-    let mut grid = get_and_load_object(client, bucket, &key(file_id, sequence), sequence).await?;
+    let mut grid = get_and_load_object(
+        client,
+        bucket,
+        &key(file_id, checkpoint_sequence_num),
+        checkpoint_sequence_num,
+    )
+    .await?;
 
     apply_transaction(&mut grid, operations);
     let body = export_file(grid.grid_mut())?;
 
-    let next_sequence_num = sequence + num_operations as u64;
-    let key = key(file_id, next_sequence_num);
+    let key = key(file_id, final_sequence_num);
     upload_object(client, bucket, &key, &body).await?;
 
-    Ok(next_sequence_num)
+    Ok(final_sequence_num)
 }
 
 /// Process outstanding transactions in the queue
@@ -83,6 +88,7 @@ pub(crate) async fn process_queue_for_room(
     bucket: &str,
     transaction_queue: &Mutex<TransactionQueue>,
     file_id: &Uuid,
+    checkpoint_sequence_num: u64,
     base_url: &str,
     jwt: &str,
 ) -> Result<Option<u64>> {
@@ -101,7 +107,7 @@ pub(crate) async fn process_queue_for_room(
     );
 
     let first_sequence_num = transactions.first().unwrap().sequence_num;
-    let checkpoint_sequence_num = (first_sequence_num - 1).max(0);
+    let last_sequence_num = transactions.last().unwrap().sequence_num;
 
     // combine all operations into a single vec
     let operations = transactions
@@ -118,11 +124,12 @@ pub(crate) async fn process_queue_for_room(
         .collect::<Vec<Operation>>();
 
     // process the transactions and save the file to S3
-    let last_sequence_num = process_transactions(
+    process_transactions(
         client,
         bucket,
         *file_id,
         checkpoint_sequence_num,
+        last_sequence_num,
         operations,
     )
     .await?;
@@ -174,9 +181,9 @@ mod tests {
             "hello".to_string(),
             None,
         );
-        let sheet = client.grid().try_sheet_from_id(sheet_id).unwrap();
+        let sheet = client.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 2 }),
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("hello".to_string()))
         );
 
@@ -185,9 +192,9 @@ mod tests {
             &mut server,
             serde_json::from_str(&summary.operations.unwrap()).unwrap(),
         );
-        let sheet = server.grid().try_sheet_from_id(sheet_id).unwrap();
+        let sheet = server.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 2 }),
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("hello".to_string()))
         );
     }

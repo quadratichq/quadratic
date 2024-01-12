@@ -9,7 +9,10 @@ impl GridController {
     ///
     /// Returns a [`String`].
     pub fn export_csv_selection(&self, sheet_id: SheetId, selection: &Rect) -> Result<String> {
-        let sheet = self.sheet(sheet_id);
+        // todo: handle this better
+        let Some(sheet) = self.try_sheet(sheet_id) else {
+            return Ok("".to_string());
+        };
         let values = sheet
             .cell_values_in_rect(selection)?
             .into_cell_values_vec()
@@ -57,7 +60,7 @@ mod tests {
             "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16",
         ];
         let (grid_controller, sheet_id) = test_setup(&selected, &vals);
-        let sheet = grid_controller.grid().sheet_from_id(sheet_id);
+        let sheet = grid_controller.sheet(sheet_id);
         let result = grid_controller
             .export_csv_selection(sheet.id, &selected)
             .unwrap();

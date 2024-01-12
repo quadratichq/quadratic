@@ -13,7 +13,9 @@ impl GridController {
         if sheet_rect.sheet_id != self.grid().first_sheet_id() {
             return false;
         }
-        let sheet = self.sheet(sheet_rect.sheet_id);
+        let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) else {
+            return false;
+        };
         sheet_rect.intersects(sheet.offsets.thumbnail().to_sheet_rect(sheet_rect.sheet_id))
     }
 }

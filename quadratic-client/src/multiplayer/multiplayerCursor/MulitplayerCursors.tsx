@@ -14,11 +14,13 @@ export const MultiplayerCursors = () => {
   const [_, setPlayersTrigger] = useState(0);
   useEffect(() => {
     const updatePlayersTrigger = () => setPlayersTrigger((x) => x + 1);
+    window.addEventListener('multiplayer-change-sheet', updatePlayersTrigger);
     window.addEventListener('multiplayer-cursor', updatePlayersTrigger);
     window.addEventListener('change-sheet', updatePlayersTrigger);
     pixiApp.viewport.on('moved', updatePlayersTrigger);
     pixiApp.viewport.on('zoomed', updatePlayersTrigger);
     return () => {
+      window.removeEventListener('multiplayer-change-sheet', updatePlayersTrigger);
       window.removeEventListener('multiplayer-cursor', updatePlayersTrigger);
       window.removeEventListener('change-sheet', updatePlayersTrigger);
       pixiApp.viewport.off('moved', updatePlayersTrigger);
@@ -40,7 +42,7 @@ export const MultiplayerCursors = () => {
         } else if (email) {
           name = email;
         } else {
-          name = `User ${index}`;
+          name = `User ${index + 1}`;
         }
 
         if (visible && x !== undefined && y !== undefined && sheet_id === sheets.sheet.id) {

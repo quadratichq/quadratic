@@ -1,63 +1,27 @@
-use wasm_bindgen::JsValue;
-
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
-    grid::{CodeCellLanguage, CodeCellRunOutput, CodeCellRunResult, CodeCellValue},
-    Error, ErrorMsg, SheetPos,
+    grid::CodeCellLanguage,
+    SheetPos,
 };
 
 impl GridController {
-    fn python_not_loaded(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        sheet_pos: SheetPos,
-        code_cell: &CodeCellValue,
-    ) {
-        let error = Error {
-            span: None,
-            msg: ErrorMsg::PythonNotLoaded,
-        };
-        let result = CodeCellRunResult::Err { error };
-        let spill = false;
-        let new_code_cell = CodeCellValue {
-            output: Some(CodeCellRunOutput {
-                std_out: None,
-                std_err: Some(ErrorMsg::PythonNotLoaded.to_string()),
-                result,
-                spill,
-            }),
-            ..code_cell.clone()
-        };
-        if let Some(sheet) = self.grid.try_sheet_mut_from_id(sheet_pos.sheet_id) {
-            sheet.set_code_cell(sheet_pos.into(), Some(new_code_cell.clone()));
-        }
-        self.add_code_cell_operations(
-            transaction,
-            sheet_pos,
-            Some(code_cell),
-            Some(&new_code_cell),
-        );
-    }
-
     pub(crate) fn run_python(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
-        code_cell: &CodeCellValue,
+        code: String,
     ) -> bool {
         if !cfg!(test) {
-            let result = crate::wasm_bindings::js::runPython(
+            crate::wasm_bindings::js::runPython(
                 transaction.id.to_string(),
-                code_cell.code_string.clone(),
+                sheet_pos.x as i32,
+                sheet_pos.y as i32,
+                sheet_pos.sheet_id.to_string(),
+                code,
             );
-
-            // run python will return false if python is not loaded (this can be generalized if we need to return a different error)
-            if result == JsValue::FALSE {
-                self.python_not_loaded(transaction, sheet_pos, code_cell);
-                return false;
-            }
         }
         // stop the computation cycle until async returns
+        transaction.summary.transaction_id = Some(transaction.id.to_string());
         transaction.current_sheet_pos = Some(sheet_pos);
         transaction.waiting_for_async = Some(CodeCellLanguage::Python);
         transaction.has_async = true;
@@ -67,14 +31,16 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use bigdecimal::BigDecimal;
-
     use super::*;
     use crate::{
-        controller::transaction_types::{CellForArray, JsCodeResult, JsComputeGetCells},
+        controller::{
+            execution::run_code::get_cells::{GetCellResponse, GetCellsResponse},
+            transaction_types::{JsCodeResult, JsComputeGetCells},
+        },
         grid::js_types::JsRenderCell,
         ArraySize, CellValue, Pos, Rect,
     };
+    use bigdecimal::BigDecimal;
 
     #[test]
     fn test_run_python() {
@@ -86,14 +52,10 @@ mod tests {
             y: 0,
             sheet_id,
         };
-        let code_string = "print(1)".to_string();
-        gc.set_code_cell(
-            sheet_pos,
-            CodeCellLanguage::Python,
-            code_string.clone(),
-            None,
-        );
-        let transaction = gc.async_transactions().get(0).unwrap();
+        let code = "print(1)".to_string();
+        gc.set_code_cell(sheet_pos, CodeCellLanguage::Python, code.clone(), None);
+
+        let transaction = gc.async_transactions().first().unwrap();
         gc.calculation_complete(JsCodeResult::new(
             transaction.id.to_string(),
             true,
@@ -107,55 +69,23 @@ mod tests {
         ))
         .ok();
 
-        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
-        let code_cell = sheet.get_code_cell(sheet_pos.into()).unwrap();
-        assert_eq!(code_cell.language, CodeCellLanguage::Python);
-        assert_eq!(code_cell.code_string, code_string);
-        assert_eq!(code_cell.output_size(), ArraySize::_1X1);
+        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
+        let pos = sheet_pos.into();
+        let code_cell = sheet.cell_value(pos).unwrap();
+        match code_cell {
+            CellValue::Code(code_cell) => {
+                assert_eq!(code_cell.language, CodeCellLanguage::Python);
+                assert_eq!(code_cell.code, code);
+            }
+            _ => panic!("expected code cell"),
+        }
+        let code_run = sheet.code_runs.get(&pos).unwrap();
+        assert_eq!(code_run.output_size(), ArraySize::_1X1);
         assert_eq!(
-            code_cell.get_output_value(0, 0),
+            code_run.cell_value_at(0, 0),
             Some(CellValue::Text("test".to_string()))
         );
-        assert!(!code_cell.has_spill_error());
-    }
-
-    #[test]
-    fn test_run_python_not_loaded() {
-        let mut gc = GridController::new();
-        let sheet_id = gc.sheet_ids()[0];
-
-        let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
-            sheet_id,
-        };
-        let code_cell = CodeCellValue {
-            language: CodeCellLanguage::Python,
-            code_string: "print(1)".to_string(),
-            formatted_code_string: None,
-            output: None,
-            last_modified: "".to_string(),
-        };
-        gc.set_code_cell(
-            sheet_pos,
-            code_cell.language,
-            code_cell.code_string.clone(),
-            None,
-        );
-        let transaction_id = gc.async_transactions()[0].id;
-        let mut transaction = gc
-            .transactions
-            .remove_awaiting_async(transaction_id)
-            .ok()
-            .unwrap();
-        gc.python_not_loaded(&mut transaction, sheet_pos, &code_cell);
-
-        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
-        let cells = sheet.get_render_cells(crate::Rect::single_pos(Pos { x: 0, y: 0 }));
-        let cell = cells.get(0);
-        assert_eq!(cell.unwrap().value, " ERROR".to_string());
-        let cell_value = sheet.get_cell_value(Pos { x: 0, y: 0 });
-        assert_eq!(cell_value, Some(CellValue::Blank));
+        assert!(!code_run.spill_error);
     }
 
     #[test]
@@ -188,7 +118,7 @@ mod tests {
             None,
         ));
         assert!(summary.is_ok());
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.get_code_cell_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Text("hello world".into()))
@@ -236,8 +166,14 @@ mod tests {
         ));
         assert!(cells.is_ok());
         assert_eq!(
-            cells.unwrap().get_cells(),
-            &vec![CellForArray::new(0, 0, Some("9".to_string()))]
+            cells,
+            Ok(GetCellsResponse {
+                response: vec![GetCellResponse {
+                    x: 0,
+                    y: 0,
+                    value: "9".into()
+                }]
+            })
         );
 
         // mock the python calculation returning the result
@@ -256,9 +192,9 @@ mod tests {
             .is_ok());
 
         // check that the value at (0, 1) contains the expected output
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 1 }),
+            sheet.display_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(10)))
         );
     }
@@ -335,8 +271,14 @@ mod tests {
             None,
         ));
         assert_eq!(
-            cells.unwrap().get_cells(),
-            &vec![CellForArray::new(0, 0, Some("10".to_string()))]
+            cells,
+            Ok(GetCellsResponse {
+                response: vec![GetCellResponse {
+                    x: 0,
+                    y: 0,
+                    value: "10".into()
+                }]
+            })
         );
         assert!(gc
             .calculation_complete(JsCodeResult::new_from_rust(
@@ -353,9 +295,9 @@ mod tests {
             .is_ok());
 
         // check that the value at (0, 1) contains the expected output
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 1 }),
+            sheet.display_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(11)))
         );
     }
@@ -399,7 +341,7 @@ mod tests {
             ))
             .is_ok());
 
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         let cells = sheet.get_render_cells(Rect::from_numbers(0, 0, 1, 3));
         assert_eq!(cells.len(), 3);
         assert_eq!(
@@ -440,9 +382,9 @@ mod tests {
         );
         gc.calculation_complete(result).unwrap();
         assert!(gc.async_transactions().is_empty());
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert!(sheet
-            .get_cell_value(Pos { x: 0, y: 0 })
+            .display_value(Pos { x: 0, y: 0 })
             .unwrap()
             .is_blank_or_empty_string());
     }
@@ -483,9 +425,9 @@ mod tests {
             .is_ok());
 
         // check that the value at (0, 0) contains the expected output
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("original output".into()))
         );
         gc.set_code_cell(
@@ -500,9 +442,9 @@ mod tests {
         );
 
         // check that the value at (0, 0) contains the original output
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("original output".into()))
         );
 
@@ -524,9 +466,9 @@ mod tests {
             .is_ok());
 
         // repeat the same action to find a bug that occurs on second change
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("new output".into()))
         );
         gc.set_code_cell(
@@ -541,9 +483,9 @@ mod tests {
         );
 
         // check that the value at (0, 0) contains the original output
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("new output".into()))
         );
 
@@ -565,10 +507,125 @@ mod tests {
             .is_ok());
 
         // check that the value at (0, 0) contains the original output
-        let sheet = gc.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("new output second time".into()))
+        );
+    }
+
+    #[test]
+    fn test_python_multiple_calculations() {
+        // Tests in column 0, and y: 0 = "1", y: 1 = "c(0,0) + 1", y: 2 = "c(0, 1) + 1"
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            "1".to_string(),
+            None,
+        );
+        let summary = gc.set_code_cell(
+            SheetPos {
+                x: 0,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Python,
+            "c(0, 0) + 1".into(),
+            None,
+        );
+        let result = gc
+            .calculation_get_cells(JsComputeGetCells::new(
+                summary.transaction_id.clone().unwrap(),
+                Rect::from_numbers(0, 0, 1, 1),
+                None,
+                None,
+            ))
+            .ok()
+            .unwrap();
+        assert_eq!(result.response.len(), 1);
+        assert_eq!(
+            result.response[0],
+            GetCellResponse {
+                x: 0,
+                y: 0,
+                value: "1".into()
+            }
+        );
+        let result = gc.calculation_complete(JsCodeResult::new_from_rust(
+            summary.transaction_id.unwrap(),
+            true,
+            None,
+            None,
+            None,
+            Some("2".to_string()),
+            None,
+            None,
+            None,
+        ));
+        assert!(result.is_ok());
+        assert_eq!(result.clone().ok().unwrap().cell_sheets_modified.len(), 1);
+        assert!(result.ok().unwrap().generate_thumbnail);
+
+        let summary = gc.set_code_cell(
+            SheetPos {
+                x: 0,
+                y: 2,
+                sheet_id,
+            },
+            CodeCellLanguage::Python,
+            "c(0, 1) + 1".into(),
+            None,
+        );
+        let result = gc
+            .calculation_get_cells(JsComputeGetCells::new(
+                summary.transaction_id.clone().unwrap(),
+                Rect::from_numbers(0, 1, 1, 1),
+                None,
+                None,
+            ))
+            .ok()
+            .unwrap();
+        assert_eq!(result.response.len(), 1);
+        assert_eq!(
+            result.response[0],
+            GetCellResponse {
+                x: 0,
+                y: 1,
+                value: "2".into()
+            }
+        );
+        let result = gc.calculation_complete(JsCodeResult::new_from_rust(
+            summary.transaction_id.unwrap(),
+            true,
+            None,
+            None,
+            None,
+            Some("3".to_string()),
+            None,
+            None,
+            None,
+        ));
+        assert!(result.is_ok());
+        assert_eq!(result.clone().ok().unwrap().cell_sheets_modified.len(), 1);
+        assert!(result.ok().unwrap().generate_thumbnail);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(1)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 1 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 2 }),
+            Some(CellValue::Number(BigDecimal::from(3)))
         );
     }
 }

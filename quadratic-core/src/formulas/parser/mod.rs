@@ -10,7 +10,7 @@ use lexer::Token;
 use rules::SyntaxRule;
 
 use super::*;
-use crate::{CodeResult, Error, ErrorMsg, Pos, Span, Spanned};
+use crate::{CodeResult, Pos, RunError, RunErrorMsg, Span, Spanned};
 
 pub fn parse_formula(source: &str, pos: Pos) -> CodeResult<ast::Formula> {
     Ok(Formula {
@@ -197,15 +197,15 @@ impl<'a> Parser<'a> {
     /// Returns an error describing that EOF was expected.
     pub fn ok_if_not_eof<T>(mut self, or_else: T) -> CodeResult<T> {
         if let Some(tok) = self.next() {
-            Err(ErrorMsg::Unexpected(tok.to_string().into()).with_span(self.span()))
+            Err(RunErrorMsg::Unexpected(tok.to_string().into()).with_span(self.span()))
         } else {
             Ok(or_else)
         }
     }
     /// Returns an error describing that `expected` was expected.
-    pub fn expected_err(mut self, expected: impl ToString) -> Error {
+    pub fn expected_err(mut self, expected: impl ToString) -> RunError {
         self.next();
-        ErrorMsg::Expected {
+        RunErrorMsg::Expected {
             expected: expected.to_string().into(),
             got: None,
         }

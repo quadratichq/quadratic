@@ -23,6 +23,7 @@ Environment="AWS_S3_BUCKET_NAME=quadratic-api-development"
 Environment="AWS_S3_REGION=us-west-2"
 Environment="AWS_S3_ACCESS_KEY_ID={{MULTIPLAYER_AWS_S3_ACCESS_KEY_ID}}"
 Environment="AWS_S3_SECRET_ACCESS_KEY={{MULTIPLAYER_AWS_S3_SECRET_ACCESS_KEY}}"
+Environment="AWS_REDIS_CONNECTION_STRING={{AWS_REDIS_CONNECTION_STRING}}"
 
 [Install]
 WantedBy=multi-user.target

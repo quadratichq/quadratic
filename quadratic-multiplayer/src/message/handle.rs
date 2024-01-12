@@ -16,8 +16,8 @@ use crate::state::{user::User, State};
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use quadratic_core::controller::operations::operation::Operation;
-use quadratic_core::controller::transaction::Transaction;
-use quadratic_rust_shared::quadratic_api::get_file_perms;
+use quadratic_core::controller::transaction::TransactionServer;
+use quadratic_rust_shared::quadratic_api::{get_file_perms, FilePermRole};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -48,16 +48,26 @@ pub(crate) async fn handle_message(
         } => {
             // validate that the user has permission to access the file
             let base_url = &state.settings.quadratic_api_uri;
-            let jwt = connection.jwt.to_owned().ok_or_else(|| {
-                MpError::Authentication("A JWT is required to validate file permissions".into())
-            })?;
+
+            // anonymous users can log in without a jwt
+            let jwt = connection.jwt.to_owned().unwrap_or_default();
 
             // default to owner for tests
-            let (permission, sequence_num) = if cfg!(test) {
-                (quadratic_rust_shared::quadratic_api::FilePermRole::Owner, 0)
+            let (permissions, sequence_num) = if cfg!(test) {
+                (
+                    vec![
+                        FilePermRole::FileEdit,
+                        FilePermRole::FileView,
+                        FilePermRole::FileDelete,
+                    ],
+                    0,
+                )
             } else {
                 // get permission and sequence_num from the quadratic api
-                let (permission, mut sequence_num) = get_file_perms(base_url, jwt, file_id).await?;
+                let (permissions, mut sequence_num) =
+                    get_file_perms(base_url, jwt, file_id).await?;
+
+                tracing::info!("permissions: {:?}", permissions);
 
                 // check for updated sequence num from the transaction queue
                 // todo: this will need to be reworked to check the transaction data store
@@ -71,7 +81,7 @@ pub(crate) async fn handle_message(
                     sequence_num = transaction_sequence_num;
                 }
 
-                (permission, sequence_num)
+                (permissions, sequence_num)
             };
 
             let user_state = UserState {
@@ -81,6 +91,7 @@ pub(crate) async fn handle_message(
                 x: 0.0,
                 y: 0.0,
                 visible: false,
+                code_running: "".to_string(),
                 viewport,
             };
 
@@ -91,11 +102,13 @@ pub(crate) async fn handle_message(
                 last_name,
                 email,
                 image,
-                permission,
+                permissions,
                 state: user_state,
                 socket: Some(Arc::clone(&sender)),
                 last_heartbeat: chrono::Utc::now(),
             };
+
+            println!("user: {:?}", user);
 
             let is_new = state
                 .enter_room(file_id, &user, connection.id, sequence_num)
@@ -202,19 +215,18 @@ pub(crate) async fn handle_message(
             // todo: this will also need to get the unpending transactions to catch the client up
 
             // get transactions from the transaction queue
-            let transactions: Vec<Transaction> = state
+            let transactions: Vec<TransactionServer> = state
                 .transaction_queue
                 .lock()
                 .await
                 .get_pending_min_sequence_num(file_id, min_sequence_num)?
                 .iter()
-                .map(|t| t.to_owned().into())
+                .map(|t| t.to_owned())
                 .collect::<Vec<_>>();
 
             let response = MessageResponse::Transactions {
                 transactions: serde_json::to_string(&transactions)?,
             };
-
             Ok(Some(response))
         }
 
@@ -287,6 +299,7 @@ pub(crate) mod tests {
                 visible: Some(true),
                 cell_edit: None,
                 viewport: None,
+                code_running: None,
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -310,6 +323,7 @@ pub(crate) mod tests {
                 visible: None,
                 cell_edit: None,
                 viewport: None,
+                code_running: None,
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -333,6 +347,7 @@ pub(crate) mod tests {
                 visible: Some(false),
                 cell_edit: None,
                 viewport: None,
+                code_running: None,
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -356,6 +371,7 @@ pub(crate) mod tests {
                 visible: None,
                 cell_edit: None,
                 viewport: None,
+                code_running: None,
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -386,6 +402,7 @@ pub(crate) mod tests {
                     italic: None,
                 }),
                 viewport: None,
+                code_running: None,
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -409,6 +426,31 @@ pub(crate) mod tests {
                 visible: None,
                 cell_edit: None,
                 viewport: Some("viewport".to_string()),
+                code_running: None,
+            },
+        };
+        broadcast(vec![user_1.session_id], file_id, state, message)
+            .await
+            .unwrap();
+
+        // TODO(ddimaria): mock the splitsink sender to test the actual sending
+    }
+
+    #[tokio::test]
+    async fn test_change_code_running() {
+        let (state, file_id, user_1) = setup().await;
+        let message = MessageResponse::UserUpdate {
+            session_id: user_1.session_id,
+            file_id,
+            update: UserStateUpdate {
+                selection: None,
+                sheet_id: None,
+                x: None,
+                y: None,
+                visible: None,
+                cell_edit: None,
+                viewport: None,
+                code_running: Some("code running".to_string()),
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)

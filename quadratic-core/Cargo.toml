@@ -65,7 +65,7 @@ lexicon_fractional_index = "0.0.3"
 htmlescape = "0.3.1"
 bigdecimal = { version = "0.4.1", features = ["serde"] }
 csv = "1.2.2"
-indexmap = "2.0.2"
+indexmap = { version = "2.0.2", features = ["serde"] }
 thiserror = "1.0.52"
 
 [dev-dependencies]
@@ -86,8 +86,6 @@ opt-level = "s"
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ['-Os', '-g']  # TODO: -g seems to fix the name mangling problem
-
-
 
 [package.metadata.wasm-pack.profile.dev]
 wasm-opt = false

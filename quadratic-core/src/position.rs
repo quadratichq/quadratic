@@ -78,7 +78,7 @@ impl fmt::Display for Pos {
 #[derive(
     Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd,
 )]
-#[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), wasm_bindgen)]
 pub struct Rect {
     /// Upper-left corner.
     pub min: Pos,
@@ -235,6 +235,7 @@ pub struct ScreenRect {
 
 /// Used for referencing a pos during computation.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct SheetPos {
     pub x: i64,
     pub y: i64,

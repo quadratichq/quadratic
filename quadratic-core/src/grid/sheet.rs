@@ -2,17 +2,17 @@ use std::collections::{btree_map, BTreeMap};
 use std::str::FromStr;
 
 use bigdecimal::BigDecimal;
+use indexmap::IndexMap;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use self::sheet_offsets::SheetOffsets;
 use super::bounds::GridBounds;
-use super::code::CodeCellValue;
 use super::column::Column;
 use super::formatting::{BoolSummary, CellFmtAttr};
 use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, FormattingSummary};
-use super::{NumericFormat, NumericFormatKind};
+use super::{CodeRun, NumericFormat, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
 use crate::{Array, ArraySize, CellValue, IsBlank, Pos, Rect};
 
@@ -35,7 +35,7 @@ pub struct Sheet {
     #[serde(with = "crate::util::btreemap_serde")]
     pub(super) columns: BTreeMap<i64, Column>,
     pub(super) borders: SheetBorders,
-    pub code_cells: Vec<(Pos, CodeCellValue)>,
+    pub code_runs: IndexMap<Pos, CodeRun>,
 
     pub(super) data_bounds: GridBounds,
     pub(super) format_bounds: GridBounds,
@@ -51,7 +51,7 @@ impl Sheet {
 
             columns: BTreeMap::new(),
             borders: SheetBorders::new(),
-            code_cells: vec![],
+            code_runs: IndexMap::new(),
 
             data_bounds: GridBounds::Empty,
             format_bounds: GridBounds::Empty,
@@ -67,13 +67,13 @@ impl Sheet {
     }
 
     /// Populates the current sheet with random values
-    /// todo: this does not work with multiplayer... need to fix (or delete)
-    pub fn with_random_floats(&mut self, region: &Rect) {
+    /// Should only be used for testing (as it will not propagate in multiplayer)
+    pub fn random_numbers(&mut self, rect: &Rect) {
         self.columns.clear();
         let mut rng = rand::thread_rng();
-        for x in region.x_range() {
-            let column = self.get_or_create_column(x);
-            for y in region.y_range() {
+        for x in rect.x_range() {
+            for y in rect.y_range() {
+                let column = self.get_or_create_column(x);
                 let value = rng.gen_range(-10000..=10000).to_string();
                 column.values.set(
                     y,
@@ -125,7 +125,7 @@ impl Sheet {
         }
 
         // remove code_cells where the rect overlaps the anchor cell
-        self.code_cells.retain(|(pos, _)| !rect.contains(*pos));
+        self.code_runs.retain(|pos, _| !rect.contains(*pos));
 
         old_cell_values_array
     }
@@ -144,18 +144,30 @@ impl Sheet {
         borders::get_rect_borders(self, &rect)
     }
 
-    /// Returns the value of a cell (i.e., what would be returned if code asked
+    /// Returns the cell_value at a Pos using both column.values and code_runs (i.e., what would be returned if code asked
     /// for it).
-    pub fn get_cell_value(&self, pos: Pos) -> Option<CellValue> {
-        if let Some(column) = self.get_column(pos.x) {
-            if let Some(value) = column.values.get(pos.y) {
-                return Some(value.clone());
+    pub fn display_value(&self, pos: Pos) -> Option<CellValue> {
+        let cell_value = self
+            .get_column(pos.x)
+            .and_then(|column| column.values.get(pos.y));
+
+        // if CellValue::Code, then we need to get the value from code_runs
+        if let Some(cell_value) = cell_value {
+            match cell_value {
+                CellValue::Code(_) => self
+                    .code_runs
+                    .get(&pos)
+                    .and_then(|run| run.cell_value_at(0, 0)),
+                _ => Some(cell_value),
             }
+        } else {
+            // if there is no CellValue at Pos, then we still need to check code_runs
+            self.get_code_cell_value(pos)
         }
-        self.get_code_cell_value(pos)
     }
 
-    pub fn get_cell_value_only(&self, pos: Pos) -> Option<CellValue> {
+    /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
+    pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
         column.values.get(pos.y)
     }
@@ -296,7 +308,7 @@ impl Sheet {
     /// Deletes all data and formatting in the sheet, effectively recreating it.
     pub fn clear(&mut self) {
         self.columns.clear();
-        self.code_cells.clear();
+        self.code_runs.clear();
         self.recalculate_bounds();
     }
 
@@ -312,7 +324,7 @@ impl Sheet {
         }
 
         // otherwise check value to see if it has a decimal and use that length
-        if let Some(value) = self.get_cell_value(pos) {
+        if let Some(value) = self.display_value(pos) {
             match value {
                 CellValue::Number(n) => {
                     let (_, exponent) = n.as_bigint_and_exponent();
@@ -368,14 +380,15 @@ impl Sheet {
 #[cfg(test)]
 mod test {
     use bigdecimal::BigDecimal;
-    use std::str::FromStr;
+    use chrono::Utc;
+    use std::{collections::HashSet, str::FromStr};
 
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{Bold, Italic, NumericFormat},
+        grid::{Bold, CodeRunResult, Italic, NumericFormat},
         test_util::print_table,
-        SheetPos,
+        SheetPos, Value,
     };
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
@@ -488,7 +501,7 @@ mod test {
 
         print_table(&grid, sheet_id, selected);
 
-        let sheet = grid.grid().sheet_from_id(sheet_id);
+        let sheet = grid.sheet(sheet_id);
         let values = sheet.cell_values_in_rect(&selected).unwrap();
         values
             .into_cell_values_vec()
@@ -502,7 +515,7 @@ mod test {
         let (mut grid, sheet_id, selected) = test_setup_basic();
 
         grid.delete_cells_rect(selected.to_sheet_rect(sheet_id), None);
-        let sheet = grid.grid().sheet_from_id(sheet_id);
+        let sheet = grid.sheet(sheet_id);
 
         print_table(&grid, sheet_id, selected);
 
@@ -520,19 +533,21 @@ mod test {
         let (mut grid, sheet_id, selected) = test_setup_basic();
 
         let view_rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 4 });
-        let _code_cell = crate::grid::CodeCellValue {
-            language: crate::grid::CodeCellLanguage::Formula,
-            code_string: "=SUM(A1:B2)".into(),
+        let _ = CodeRun {
+            std_err: None,
+            std_out: None,
+            spill_error: false,
             formatted_code_string: None,
-            last_modified: "".into(),
-            output: None,
+            cells_accessed: HashSet::new(),
+            last_modified: Utc::now(),
+            result: CodeRunResult::Ok(Value::Single(CellValue::Number(BigDecimal::from(1)))),
         };
 
         // grid.set_code_cell_value((5, 2).into(), Some(code_cell));
         print_table(&grid, sheet_id, view_rect);
 
         grid.delete_cells_rect(selected.to_sheet_rect(sheet_id), None);
-        let sheet = grid.grid().sheet_from_id(sheet_id);
+        let sheet = grid.sheet(sheet_id);
 
         print_table(&grid, sheet_id, view_rect);
 
@@ -569,8 +584,8 @@ mod test {
     #[test]
     fn test_get_cell_value() {
         let (grid, sheet_id, _) = test_setup_basic();
-        let sheet = grid.grid().sheet_from_id(sheet_id);
-        let value = sheet.get_cell_value((2, 1).into());
+        let sheet = grid.sheet(sheet_id);
+        let value = sheet.display_value((2, 1).into());
 
         assert_eq!(value, Some(CellValue::Number(BigDecimal::from(1))));
     }
@@ -578,27 +593,11 @@ mod test {
     #[test]
     fn test_get_set_formatting_value() {
         let (grid, sheet_id, _) = test_setup_basic();
-        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+        let mut sheet = grid.sheet(sheet_id).clone();
         let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
         let value = sheet.get_formatting_value::<Bold>((2, 1).into());
 
         assert_eq!(value, Some(true));
-    }
-
-    #[test]
-    fn test_get_set_code_cell_value() {
-        let (grid, sheet_id, _) = test_setup_basic();
-        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
-        let code_cell = crate::grid::CodeCellValue {
-            language: crate::grid::CodeCellLanguage::Formula,
-            code_string: "=SUM(A1:B2)".into(),
-            formatted_code_string: None,
-            last_modified: "".into(),
-            output: None,
-        };
-        sheet.set_code_cell((2, 1).into(), Some(code_cell.clone()));
-        let value = sheet.get_code_cell((2, 1).into());
-        assert_eq!(value, Some(&code_cell));
     }
 
     // TODO(ddimaria): use the code below numeric format kinds are in place
@@ -606,7 +605,7 @@ mod test {
     #[test]
     fn test_cell_numeric_format_kinds() {
         let (grid, sheet_id, _) = test_setup_basic();
-        let sheet = grid.grid().sheet_from_id(sheet_id).clone();
+        let sheet = grid.sheet(sheet_id).clone();
 
         let format_kind = sheet.cell_numeric_format_kind((2, 1).into());
         assert_eq!(format_kind, Some(NumericFormatKind::Currency));
@@ -624,7 +623,7 @@ mod test {
     #[test]
     fn test_formatting_summary() {
         let (grid, sheet_id, selected) = test_setup_basic();
-        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+        let mut sheet = grid.sheet(sheet_id).clone();
         let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
 
         // just set a single bold value
@@ -651,7 +650,7 @@ mod test {
     #[test]
     fn test_cell_format_summary() {
         let (grid, sheet_id, _) = test_setup_basic();
-        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+        let mut sheet = grid.sheet(sheet_id).clone();
 
         let existing_cell_format_summary = sheet.get_existing_cell_format_summary((2, 1).into());
         assert_eq!(None, existing_cell_format_summary);
@@ -689,7 +688,7 @@ mod test {
     #[test]
     fn test_columns() {
         let (grid, sheet_id, _) = test_setup_basic();
-        let mut sheet = grid.grid().sheet_from_id(sheet_id).clone();
+        let mut sheet = grid.sheet(sheet_id).clone();
 
         let column = sheet.get_column(2);
         assert_eq!(None, column.unwrap().bold.get(1));

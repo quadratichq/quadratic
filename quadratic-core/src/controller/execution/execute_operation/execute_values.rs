@@ -13,7 +13,7 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::SetCellValues { sheet_rect, values } = op {
-            match self.grid.try_sheet_mut_from_id(sheet_rect.sheet_id) {
+            match self.grid.try_sheet_mut(sheet_rect.sheet_id) {
                 None => (), // sheet may have been deleted
                 Some(sheet) => {
                     // update individual cell values and collect old_values
@@ -35,57 +35,30 @@ impl GridController {
                         .map(|old_value| old_value.unwrap_or(CellValue::Blank))
                         .collect();
 
-                    if transaction.is_user() || transaction.is_undo() {
+                    if transaction.is_user() || transaction.is_undo_redo() {
                         transaction
                             .forward_operations
                             .push(Operation::SetCellValues { sheet_rect, values });
 
                         if transaction.is_user() {
-                            // remove any code_cells that are now covered by the new values
-                            let mut code_cell_removed = false;
-                            sheet.code_cells.retain(|(pos, code_cell)| {
-                                if sheet_rect.contains(pos.to_sheet_pos(sheet.id)) {
-                                    transaction.reverse_operations.insert(
-                                        0,
-                                        Operation::SetCodeCell {
-                                            sheet_pos: pos.to_sheet_pos(sheet.id),
-                                            code_cell_value: Some(code_cell.clone()),
-                                        },
-                                    );
-                                    transaction.forward_operations.push(Operation::SetCodeCell {
-                                        sheet_pos: pos.to_sheet_pos(sheet.id),
-                                        code_cell_value: None,
-                                    });
-                                    code_cell_removed = true;
-                                    false
-                                } else {
-                                    true
-                                }
-                            });
-
+                            self.check_deleted_code_runs(transaction, &sheet_rect);
                             self.add_compute_operations(transaction, &sheet_rect, None);
-
-                            // if a code_cell was removed, then we need to check all spills.
-                            // Otherwise we only need to check spills for the sheet_rect.
-                            if code_cell_removed {
-                                self.check_all_spills(transaction, sheet_rect.sheet_id, 0);
-                            } else {
-                                self.check_spills(transaction, &sheet_rect);
-                            }
+                            self.check_all_spills(transaction, sheet_rect.sheet_id);
                         }
+
+                        // create reverse_operation
+                        let old_values = Array::new_row_major(sheet_rect.size(), old_values)
+                            .expect(
+                                "error constructing array of old values for SetCells operation",
+                            );
+                        transaction.reverse_operations.insert(
+                            0,
+                            Operation::SetCellValues {
+                                sheet_rect,
+                                values: old_values,
+                            },
+                        );
                     }
-
-                    // create reverse_operation
-                    let old_values = Array::new_row_major(sheet_rect.size(), old_values)
-                        .expect("error constructing array of old values for SetCells operation");
-                    transaction.reverse_operations.insert(
-                        0,
-                        Operation::SetCellValues {
-                            sheet_rect,
-                            values: old_values,
-                        },
-                    );
-
                     // prepare summary
                     transaction
                         .sheets_with_dirty_bounds
@@ -121,9 +94,9 @@ mod tests {
             None,
         );
 
-        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(0)))
         );
 
@@ -137,9 +110,9 @@ mod tests {
             None,
         );
 
-        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 0 }),
+            sheet.display_value(Pos { x: 1, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(1)))
         );
     }
@@ -157,9 +130,9 @@ mod tests {
             "test".to_string(),
             None,
         );
-        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("test".to_string()))
         );
         assert_eq!(summary.cell_sheets_modified.len(), 1);
@@ -180,11 +153,10 @@ mod tests {
 
 #[cfg(test)]
 mod test {
+    use super::*;
+    use crate::{grid::CodeCellLanguage, SheetPos};
     use bigdecimal::BigDecimal;
 
-    use crate::{grid::CodeCellLanguage, SheetPos};
-
-    use super::*;
     #[test]
     fn test_set_cell_values_code_cell_remove() {
         let mut gc = GridController::new();
@@ -201,10 +173,31 @@ mod test {
             None,
         );
         assert_eq!(
-            gc.sheet(sheet_id).get_cell_value(sheet_pos.into()),
+            gc.sheet(sheet_id).display_value(sheet_pos.into()),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         gc.set_cell_value(sheet_pos, "".to_string(), None);
-        assert_eq!(gc.sheet(sheet_id).get_cell_value(sheet_pos.into()), None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.display_value(sheet_pos.into()), None);
+    }
+
+    #[test]
+    fn test_set_cell_values_undo() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+        let summary = gc.set_cell_value(sheet_pos, "1".to_string(), None);
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(sheet_pos.into()),
+            Some(CellValue::Number(BigDecimal::from(1)))
+        );
+        assert_eq!(summary.cell_sheets_modified.len(), 1);
+        let summary = gc.undo(None);
+        assert_eq!(summary.cell_sheets_modified.len(), 1);
+        assert_eq!(gc.sheet(sheet_id).display_value(sheet_pos.into()), None);
     }
 }

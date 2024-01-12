@@ -49,9 +49,10 @@ pub(crate) fn new_user() -> User {
             y: 0.0,
             visible: false,
             viewport: "initial viewport".to_string(),
+            code_running: "".to_string(),
         },
         image: FilePath().fake(),
-        permission: FilePermRole::Owner,
+        permissions: vec![FilePermRole::FileEdit],
         socket: None,
         last_heartbeat: chrono::Utc::now(),
     }

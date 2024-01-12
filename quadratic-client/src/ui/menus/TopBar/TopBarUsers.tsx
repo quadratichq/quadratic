@@ -55,7 +55,7 @@ export const TopBarUsers = () => {
   const follow = editorInteractionState.follow;
 
   const theme = useTheme();
-  const { user } = useRootRouteLoaderData();
+  const { loggedInUser: user } = useRootRouteLoaderData();
   const displayName = convertName(user?.given_name, user?.family_name, user?.email, true);
   const initial = convertInitial(user?.given_name, user?.family_name);
   // const device = getDeviceName();

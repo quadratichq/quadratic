@@ -7,7 +7,7 @@
 
 use self::pending_transaction::PendingTransaction;
 use super::transaction::Transaction;
-use crate::core_error::{CoreError, Result};
+use crate::error_core::{CoreError, Result};
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 pub mod pending_transaction;
@@ -15,7 +15,7 @@ pub mod pending_transaction;
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct ActiveTransactions {
     // async user transactions that are awaiting a response.
-    async_transactions: Vec<PendingTransaction>,
+    pub async_transactions: Vec<PendingTransaction>,
 
     // Completed and async user Transactions that do not yet have a sequence number from the server.
     // Vec<(forward_transaction, reverse_transaction)>
@@ -64,7 +64,17 @@ impl ActiveTransactions {
     pub fn add_async_transaction(&mut self, pending: &PendingTransaction) {
         let forward = pending.to_forward_transaction();
         let undo = pending.to_undo_transaction();
-        self.unsaved_transactions.push((forward, undo));
+
+        // Unsaved_operations hold async operations that are not complete. In that case, we need to replace the
+        // unsaved operation with the new version.
+        match self
+            .unsaved_transactions
+            .iter_mut()
+            .find(|(forward, _)| forward.id == pending.id)
+        {
+            Some(old) => *old = (forward, undo),
+            None => self.unsaved_transactions.push((forward, undo)),
+        };
         self.async_transactions.push(pending.clone());
     }
 
@@ -72,5 +82,11 @@ impl ActiveTransactions {
     #[cfg(test)]
     pub fn async_transactions(&self) -> &[PendingTransaction] {
         &self.async_transactions
+    }
+
+    /// Returns the async_transactions for testing purposes
+    #[cfg(test)]
+    pub fn async_transactions_mut(&mut self) -> &mut Vec<PendingTransaction> {
+        &mut self.async_transactions
     }
 }

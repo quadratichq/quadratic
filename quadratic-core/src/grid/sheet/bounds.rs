@@ -27,7 +27,7 @@ impl Sheet {
                 self.format_bounds.add(Pos { x, y });
             }
         }
-        self.code_cells.iter().for_each(|(pos, code_cell_value)| {
+        self.code_runs.iter().for_each(|(pos, code_cell_value)| {
             let output_rect = code_cell_value.output_rect(*pos);
             self.data_bounds.add(output_rect.min);
             self.data_bounds.add(output_rect.max);
@@ -160,7 +160,7 @@ impl Sheet {
                     column_start.max(rect.min.x)
                 };
                 while x >= rect.min.x && x <= rect.max.x {
-                    let has_content = self.get_cell_value(Pos { x, y: row });
+                    let has_content = self.display_value(Pos { x, y: row });
                     if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
                         if with_content {
                             return x;
@@ -200,7 +200,7 @@ impl Sheet {
                     row_start.max(rect.min.y)
                 };
                 while y >= rect.min.y && y <= rect.max.y {
-                    let has_content = self.get_cell_value(Pos { x: column, y });
+                    let has_content = self.display_value(Pos { x: column, y });
                     if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
                         if with_content {
                             return y;
@@ -220,8 +220,10 @@ impl Sheet {
 mod test {
     use crate::{
         grid::{CellAlign, GridBounds, Sheet},
-        CellValue, Pos, Rect,
+        CellValue, IsBlank, Pos, Rect,
     };
+    use proptest::proptest;
+    use std::collections::HashMap;
 
     #[test]
     fn test_is_empty() {
@@ -401,5 +403,65 @@ mod test {
         assert_eq!(sheet.find_next_row(0, 2, true, true), 0);
         assert_eq!(sheet.find_next_row(1, 2, false, false), 2);
         assert_eq!(sheet.find_next_row(1, 2, true, false), 0);
+    }
+
+    #[test]
+    fn test_read_write() {
+        let rect = Rect {
+            min: Pos::ORIGIN,
+            max: Pos { x: 49, y: 49 },
+        };
+        let mut sheet = Sheet::test();
+        sheet.random_numbers(&rect);
+        assert_eq!(GridBounds::NonEmpty(rect), sheet.bounds(true));
+        assert_eq!(GridBounds::NonEmpty(rect), sheet.bounds(false));
+    }
+
+    proptest! {
+        #[test]
+        fn proptest_sheet_writes(writes: Vec<(Pos, CellValue)>) {
+            proptest_sheet_writes_internal(writes);
+        }
+    }
+
+    fn proptest_sheet_writes_internal(writes: Vec<(Pos, CellValue)>) {
+        let mut sheet = Sheet::test();
+
+        // We'll be testing against the  ~ HASHMAP OF TRUTH ~
+        let mut hashmap_of_truth = HashMap::new();
+
+        for (pos, cell_value) in &writes {
+            let _ = sheet.set_cell_value(*pos, cell_value.clone());
+            hashmap_of_truth.insert(*pos, cell_value);
+        }
+
+        let nonempty_positions = hashmap_of_truth
+            .iter()
+            .filter(|(_, value)| !value.is_blank())
+            .map(|(pos, _)| pos);
+        let min_x = nonempty_positions.clone().map(|pos| pos.x).min();
+        let min_y = nonempty_positions.clone().map(|pos| pos.y).min();
+        let max_x = nonempty_positions.clone().map(|pos| pos.x).max();
+        let max_y = nonempty_positions.clone().map(|pos| pos.y).max();
+        let expected_bounds = match (min_x, min_y, max_x, max_y) {
+            (Some(min_x), Some(min_y), Some(max_x), Some(max_y)) => GridBounds::NonEmpty(Rect {
+                min: Pos { x: min_x, y: min_y },
+                max: Pos { x: max_x, y: max_y },
+            }),
+            _ => GridBounds::Empty,
+        };
+
+        for (pos, expected) in hashmap_of_truth {
+            let actual = sheet.display_value(pos);
+            if expected.is_blank() {
+                assert_eq!(None, actual);
+            } else {
+                assert_eq!(Some(expected.clone()), actual);
+            }
+        }
+
+        sheet.recalculate_bounds();
+        assert_eq!(expected_bounds, sheet.bounds(false));
+        assert_eq!(expected_bounds, sheet.bounds(true));
     }
 }

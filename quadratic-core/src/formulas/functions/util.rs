@@ -5,7 +5,7 @@ pub fn checked_div(span: impl Into<Span>, dividend: f64, divisor: f64) -> CodeRe
     let result = dividend / divisor;
     match result.is_finite() {
         true => Ok(result),
-        false => Err(ErrorMsg::DivideByZero.with_span(span)),
+        false => Err(RunErrorMsg::DivideByZero.with_span(span)),
     }
 }
 
