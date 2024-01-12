@@ -2,6 +2,21 @@ import { randomUUID } from 'crypto';
 import { UserTeamRole } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../dbClient';
 
+export async function createFile({ data }: { data: Parameters<typeof dbClient.file.create>[0]['data'] }) {
+  const dbFile = await dbClient.file.create({ data });
+  await dbClient.fileCheckpoint.create({
+    data: {
+      fileId: dbFile.id,
+      sequenceNumber: 0,
+      s3Bucket: 'string',
+      s3Key: 'string',
+      version: '1.4',
+    },
+  });
+
+  return dbFile;
+}
+
 export async function createTeam({
   teamArgs,
   userRoles,

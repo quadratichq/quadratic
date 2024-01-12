@@ -17,13 +17,6 @@ const auth0 = new ManagementClient({
   scope: 'read:users',
 });
 
-export const getAuth0Users = async (auth0Ids: string[]) => {
-  const auth0Users = await auth0.getUsers({
-    q: `user_id:(${auth0Ids.join(' OR ')})`,
-  });
-  return auth0Users;
-};
-
 /**
  * Given a list of users from our system, we lookup their info in Auth0.
  * If we don't find a user, we throw.

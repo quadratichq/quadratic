@@ -3,6 +3,58 @@ import { getUsersFromAuth0 } from '../auth0/profile';
 import dbClient from '../dbClient';
 import { RequestWithAuth, RequestWithOptionalAuth, RequestWithUser } from '../types/Request';
 
+const runFirstTimeUserLogic = async (user: Awaited<ReturnType<typeof dbClient.user.create>>) => {
+  const { id, auth0Id } = user;
+
+  // Lookup their email in auth0
+  const usersById = await getUsersFromAuth0([{ id, auth0Id }]);
+  const { email } = usersById[id];
+
+  // See if they've been invited to any teams and make them team members
+  const teamInvites = await dbClient.teamInvite.findMany({
+    where: {
+      email,
+    },
+  });
+  if (teamInvites.length) {
+    await dbClient.userTeamRole.createMany({
+      data: teamInvites.map(({ teamId, role }) => ({
+        teamId,
+        userId: id,
+        role,
+      })),
+    });
+    await dbClient.teamInvite.deleteMany({
+      where: {
+        email,
+      },
+    });
+  }
+
+  // Do the same as teams, but with files
+  const fileInvites = await dbClient.fileInvite.findMany({
+    where: {
+      email,
+    },
+  });
+  if (fileInvites.length) {
+    await dbClient.userFileRole.createMany({
+      data: fileInvites.map(({ fileId, role }) => ({
+        fileId,
+        userId: id,
+        role,
+      })),
+    });
+    await dbClient.fileInvite.deleteMany({
+      where: {
+        email,
+      },
+    });
+  }
+
+  // Done.
+};
+
 const getOrCreateUser = async (auth0Id: string) => {
   // First try to get the user
   const user = await dbClient.user.findUnique({
@@ -20,54 +72,8 @@ const getOrCreateUser = async (auth0Id: string) => {
       auth0Id,
     },
   });
-
-  // And now we have some extra work to do if it's their first time logging in
-
-  // Lookup their email in auth0
-  const usersById = await getUsersFromAuth0([{ id: newUser.id, auth0Id: auth0Id }]);
-  const { email } = usersById[newUser.id];
-
-  // See if they've been invited to any teams and make them team members
-  const teamInvites = await dbClient.teamInvite.findMany({
-    where: {
-      email,
-    },
-  });
-  if (teamInvites.length) {
-    await dbClient.teamInvite.deleteMany({
-      where: {
-        email,
-      },
-    });
-    await dbClient.userTeamRole.createMany({
-      data: teamInvites.map(({ teamId, role }) => ({
-        teamId,
-        userId: newUser.id,
-        role,
-      })),
-    });
-  }
-
-  // Do the same as teams, but with files
-  const fileInvites = await dbClient.fileInvite.findMany({
-    where: {
-      email,
-    },
-  });
-  if (fileInvites.length) {
-    await dbClient.fileInvite.deleteMany({
-      where: {
-        email,
-      },
-    });
-    await dbClient.userFileRole.createMany({
-      data: fileInvites.map(({ fileId, role }) => ({
-        fileId,
-        userId: newUser.id,
-        role,
-      })),
-    });
-  }
+  // Do extra work since it's their first time logging in
+  await runFirstTimeUserLogic(newUser);
 
   // Return the user
   return newUser;
