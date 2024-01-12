@@ -29,17 +29,17 @@ export default defineConfig(() => {
     test: {
       // globals: true,
       environment: 'happy-dom',
-      plugins: [
-        // tsconfigPaths(),
-        // wasm(),
-        // topLevelAwait(),
-        // checker({
-        //   typescript: true,
-        //   eslint: {
-        //     lintCommand: 'eslint --ext .ts,.tsx src',
-        //   },
-        // }),
-      ],
+      // plugins: [
+      // tsconfigPaths(),
+      // wasm(),
+      // topLevelAwait(),
+      // checker({
+      //   typescript: true,
+      //   eslint: {
+      //     lintCommand: 'eslint --ext .ts,.tsx src',
+      //   },
+      // }),
+      // ],
       exclude: ['tests-e2e'],
     },
     worker: {

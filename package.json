@@ -41,7 +41,7 @@
     "lint:clippy": "cd quadratic-core && cargo clippy --all-targets --all-features -- -D warnings",
     "heroku-postbuild": "npm run build --workspace=quadratic-api",
     "kill": "killport 3000 && killport 3001 && killport 8001 && killport 8000",
-    "test:ts": "cd quadratic-client && npm run test:vite"
+    "test:ts": "cd quadratic-client && vitest"
   },
   "dependencies": {
     "zod": "^3.22.4"
