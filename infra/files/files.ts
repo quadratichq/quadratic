@@ -9,7 +9,6 @@ const filesSubdomain = config.require("files-subdomain");
 const domain = config.require("domain");
 const instanceSize = config.require("files-instance-size");
 const instanceAmi = config.require("files-instance-ami"); // TODO: move to Docker latest?
-const awsRegion = config.require("aws:region");
 const ecrRegistryUrl = config.require("ecr-registry-url");
 
 // Create an IAM Role for EC2
@@ -74,7 +73,7 @@ const instance = new aws.ec2.Instance("files-instance", {
   yum install -y docker
   service docker start
   amazon-linux-extras install -y awscli
-  $(aws ecr get-login --region ${awsRegion} --no-include-email)
+  $(aws ecr get-login --region us-west-2 --no-include-email)
   docker pull ${ecrRegistryUrl}/quadratic-files-development/imagename:tag
   docker run -d -p 80:80 ${ecrRegistryUrl}/quadratic-files-development/imagename:tag`,
   //   TODO: Replace with commit sha
