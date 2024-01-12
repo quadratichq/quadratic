@@ -4,7 +4,7 @@ import * as fs from "fs";
 const config = new pulumi.Config();
 
 // Configuration from command line
-const multiplayerSubdomain = config.get("subdomain") || "wss";
+const multiplayerSubdomain = config.require("multiplayer-subdomain");
 const quadraticApiUri =
   config.get("quadratic-api-uri") || "https://api.quadratichq.com";
 
