@@ -29,10 +29,19 @@ impl GridController {
         };
         let pos: Pos = sheet_pos.into();
         let old_code_run = if let Some(new_code_run) = &new_code_run {
+            if new_code_run.is_html() {
+                transaction.summary.html.insert(sheet_id);
+            }
             sheet.code_runs.insert(pos, new_code_run.clone())
         } else {
             sheet.code_runs.remove(&pos)
         };
+
+        if let Some(old_code_run) = &old_code_run {
+            if old_code_run.is_html() {
+                transaction.summary.html.insert(sheet_id);
+            }
+        }
 
         let sheet_rect = match (&old_code_run, &new_code_run) {
             (None, None) => sheet_pos.into(),
