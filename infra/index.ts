@@ -6,5 +6,9 @@ import {
   multiplayerPublicDns,
 } from "./multiplayer/multiplayer";
 
+import { filesPublicDns } from "./files/files";
+
+// import * as shared from "./shared";
+
 // Global exports
-export { multiplayerInstanceDns, multiplayerPublicDns };
+export { filesPublicDns, multiplayerInstanceDns, multiplayerPublicDns };
