@@ -114,7 +114,7 @@ pub(crate) async fn healthcheck() -> impl IntoResponse {
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use crate::state;
+    use crate::test_util::new_arc_state;
     use axum::{
         body::Body,
         http::{self, Request},
@@ -124,8 +124,8 @@ pub(crate) mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn responds_with_a_200_OK_for_a_healthcheck() {
-        let state = Arc::new(state::State::new(&config().unwrap()).await.unwrap());
+    async fn responds_with_a_200_ok_for_a_healthcheck() {
+        let state = new_arc_state().await;
         let app = app(state);
 
         let response = app
