@@ -63,14 +63,12 @@ impl UnsavedTransactions {
                     reverse,
                     sent_to_server: false,
                 };
-                if send {
+                if !cfg!(test) && send {
                     if let Ok(stringified) = serde_json::to_string(&transaction) {
-                        if !cfg!(test) {
-                            crate::wasm_bindings::js::addUnsentTransaction(
-                                transaction.forward.id.to_string(),
-                                stringified,
-                            );
-                        }
+                        crate::wasm_bindings::js::addUnsentTransaction(
+                            transaction.forward.id.to_string(),
+                            stringified,
+                        );
                     }
                 }
                 self.transactions.push(transaction)
@@ -78,14 +76,12 @@ impl UnsavedTransactions {
             Some((_, unsaved_transaction)) => {
                 unsaved_transaction.forward = forward;
                 unsaved_transaction.reverse = reverse;
-                if send {
+                if !cfg!(test) && send {
                     if let Ok(stringified) = serde_json::to_string(&unsaved_transaction) {
-                        if !cfg!(test) {
-                            crate::wasm_bindings::js::addUnsentTransaction(
-                                unsaved_transaction.forward.id.to_string(),
-                                stringified,
-                            );
-                        }
+                        crate::wasm_bindings::js::addUnsentTransaction(
+                            unsaved_transaction.forward.id.to_string(),
+                            stringified,
+                        );
                     }
                 }
             }

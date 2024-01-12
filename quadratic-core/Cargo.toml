@@ -26,6 +26,7 @@ default = ["console_error_panic_hook", "js", "file-io"]
 js = ["js-sys", "serde-wasm-bindgen", "ts-rs", "wasm-bindgen", "wasm-bindgen-futures"]
 show-operations = []
 file-io = []
+multiplayer = []
 
 [dependencies]
 anyhow = "1.0"

@@ -160,8 +160,10 @@ pub(crate) async fn process_queue_for_room(
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
-    use quadratic_core::{CellValue, Pos, SheetPos};
+    use quadratic_core::{grid::SheetId, CellValue, Pos};
 
     #[test]
     fn loads_a_file() {
@@ -170,28 +172,30 @@ mod tests {
         ))
         .unwrap();
 
-        let mut client = GridController::from_grid(file.clone(), 0);
-        let sheet_id = client.sheet_ids().first().unwrap().to_owned();
-        let summary = client.set_cell_value(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
-            "hello".to_string(),
-            None,
-        );
-        let sheet = client.grid().try_sheet(sheet_id).unwrap();
-        assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 2 }),
-            Some(CellValue::Text("hello".to_string()))
-        );
+        // Note: this won't run because cfg(test) is not passed to quadratic-core during tests. The string is generated from the commented out code.
+        let sheet_id = SheetId::from_str("d9ea85d6-19e7-48e5-8380-282c1bd5a421").unwrap();
+        let operations = "[{\"SetCellValues\":{\"sheet_rect\":{\"min\":{\"x\":1,\"y\":2},\"max\":{\"x\":1,\"y\":2},\"sheet_id\":{\"id\":\"d9ea85d6-19e7-48e5-8380-282c1bd5a421\"}},\"values\":{\"size\":{\"w\":1,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"hello\"}]}}}]".to_string();
+
+        // let mut client = GridController::from_grid(file.clone(), 0);
+        // let sheet_id = client.sheet_ids().first().unwrap().to_owned();
+        // let summary = client.set_cell_value(
+        //     SheetPos {
+        //         x: 1,
+        //         y: 2,
+        //         sheet_id,
+        //     },
+        //     "hello".to_string(),
+        //     None,
+        // );
+        // let sheet = client.grid().try_sheet(sheet_id).unwrap();
+        // assert_eq!(
+        //     sheet.display_value(Pos { x: 1, y: 2 }),
+        //     Some(CellValue::Text("hello".to_string()))
+        // );
 
         let mut server = GridController::from_grid(file, 0);
-        apply_transaction(
-            &mut server,
-            serde_json::from_str(&summary.operations.unwrap()).unwrap(),
-        );
+        server.try_sheet_mut(server.sheet_ids()[0]).unwrap().id = sheet_id;
+        apply_transaction(&mut server, serde_json::from_str(&operations).unwrap());
         let sheet = server.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),

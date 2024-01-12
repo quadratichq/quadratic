@@ -116,7 +116,7 @@ mod test {
 
     #[test]
     fn test_try_sheet_mut_from_name() {
-        let mut gc = super::GridController::test();
+        let mut gc = GridController::test();
         gc.add_sheet(None);
 
         gc.try_sheet_mut_from_name("Sheet 1".to_string())
@@ -134,7 +134,7 @@ mod test {
 
     #[test]
     fn test_try_sheet_from_string_id() {
-        let gc = GridController::new();
+        let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         assert_eq!(
             gc.try_sheet_from_string_id(sheet_id.to_string())
