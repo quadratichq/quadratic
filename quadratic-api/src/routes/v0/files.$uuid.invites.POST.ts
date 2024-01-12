@@ -8,6 +8,7 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
+import { ResponseError } from '../../types/Response';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export default [
@@ -24,7 +25,7 @@ export default [
   handler,
 ];
 
-async function handler(req: Request, res: Response) {
+async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/invites.POST.response'] | ResponseError>) {
   const {
     body: { email, role },
     params: { uuid },
@@ -114,7 +115,7 @@ async function handler(req: Request, res: Response) {
     }
 
     // If not, add them!
-    await dbClient.userFileRole.create({
+    const userFileRole = await dbClient.userFileRole.create({
       data: {
         userId: dbUser.id,
         fileId,
@@ -124,8 +125,7 @@ async function handler(req: Request, res: Response) {
 
     // TODO: send them an email
 
-    const data: ApiTypes['/v0/files/:uuid/invites.POST.response'] = { email, role, id: dbUser.id };
-    return res.status(201).json(data);
+    return res.status(201).json({ id: userFileRole.id, role: userFileRole.role, userId: userFileRole.userId });
   }
 
   // 3. Duplicate email
