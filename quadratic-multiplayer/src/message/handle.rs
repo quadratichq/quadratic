@@ -17,7 +17,7 @@ use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use quadratic_core::controller::operations::operation::Operation;
 use quadratic_core::controller::transaction::TransactionServer;
-use quadratic_rust_shared::quadratic_api::get_file_perms;
+use quadratic_rust_shared::quadratic_api::{get_file_perms, FilePermRole};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -53,11 +53,21 @@ pub(crate) async fn handle_message(
             let jwt = connection.jwt.to_owned().unwrap_or_default();
 
             // default to owner for tests
-            let (permission, sequence_num) = if cfg!(test) {
-                (quadratic_rust_shared::quadratic_api::FilePermRole::Owner, 0)
+            let (permissions, sequence_num) = if cfg!(test) {
+                (
+                    vec![
+                        FilePermRole::FileEdit,
+                        FilePermRole::FileView,
+                        FilePermRole::FileDelete,
+                    ],
+                    0,
+                )
             } else {
                 // get permission and sequence_num from the quadratic api
-                let (permission, mut sequence_num) = get_file_perms(base_url, jwt, file_id).await?;
+                let (permissions, mut sequence_num) =
+                    get_file_perms(base_url, jwt, file_id).await?;
+
+                tracing::info!("permissions: {:?}", permissions);
 
                 // check for updated sequence num from the transaction queue
                 // todo: this will need to be reworked to check the transaction data store
@@ -71,7 +81,7 @@ pub(crate) async fn handle_message(
                     sequence_num = transaction_sequence_num;
                 }
 
-                (permission, sequence_num)
+                (permissions, sequence_num)
             };
 
             let user_state = UserState {
@@ -92,11 +102,13 @@ pub(crate) async fn handle_message(
                 last_name,
                 email,
                 image,
-                permission,
+                permissions,
                 state: user_state,
                 socket: Some(Arc::clone(&sender)),
                 last_heartbeat: chrono::Utc::now(),
             };
+
+            println!("user: {:?}", user);
 
             let is_new = state
                 .enter_room(file_id, &user, connection.id, sequence_num)
