@@ -93,6 +93,19 @@ class Offline {
     };
   }
 
+  // Checks whether there are any unsent transactions in the indexedDb (ie, whether we have transactions sent to the server but not received back).
+  async hasUnsentTransactions(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      try {
+        const store = this.getFileIndex(true, 'fileId');
+        const keyRange = IDBKeyRange.only(this.fileId);
+        return resolve(!!store.getKey(keyRange));
+      } catch (e) {
+        reject(false);
+      }
+    });
+  }
+
   // Loads unsent transactions and applies them to the grid. This is called twice: once after the grid and pixi loads;
   // and a second time when the socket server connects.
   async loadTransactions() {

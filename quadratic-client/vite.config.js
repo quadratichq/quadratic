@@ -1,5 +1,6 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import checker from 'vite-plugin-checker';
 import topLevelAwait from 'vite-plugin-top-level-await';
 import wasm from 'vite-plugin-wasm';
 import tsconfigPaths from 'vite-tsconfig-paths';
@@ -18,16 +19,28 @@ export default defineConfig(() => {
       react(),
       wasm(),
       topLevelAwait(),
-      // checker({
-      //   typescript: true,
-      //   eslint: {
-      //     lintCommand: 'eslint --ext .ts,.tsx src',
-      //   },
-      // }),
+      checker({
+        typescript: true,
+        eslint: {
+          lintCommand: 'eslint --ext .ts,.tsx src',
+        },
+      }),
     ],
     test: {
-      globals: true,
+      // globals: true,
       environment: 'happy-dom',
+      plugins: [
+        // tsconfigPaths(),
+        // wasm(),
+        // topLevelAwait(),
+        // checker({
+        //   typescript: true,
+        //   eslint: {
+        //     lintCommand: 'eslint --ext .ts,.tsx src',
+        //   },
+        // }),
+      ],
+      exclude: ['tests-e2e'],
     },
     worker: {
       format: 'iife',
@@ -35,12 +48,12 @@ export default defineConfig(() => {
         tsconfigPaths(),
         wasm(),
         topLevelAwait(),
-        // checker({
-        //   typescript: true,
-        //   eslint: {
-        //     lintCommand: 'eslint --ext .ts src',
-        //   },
-        // }),
+        checker({
+          typescript: true,
+          eslint: {
+            lintCommand: 'eslint --ext .ts src',
+          },
+        }),
       ],
     },
   };

@@ -29,9 +29,17 @@ const UPDATE_TIME = 1000 / 30;
 const HEARTBEAT_TIME = 1000 * 15;
 const RECONNECT_AFTER_ERROR_TIMEOUT = 1000 * 5;
 
+export type MultiplayerState =
+  | 'startup'
+  | 'not connected'
+  | 'connecting'
+  | 'connected'
+  | 'waiting to reconnect'
+  | 'syncing';
+
 export class Multiplayer {
   private websocket?: WebSocket;
-  private state: 'not connected' | 'connecting' | 'connected' | 'waiting to reconnect';
+  private _state: MultiplayerState = 'startup';
   private sessionId;
   private room?: string;
   private user?: User;
@@ -53,9 +61,17 @@ export class Multiplayer {
   users: Map<string, MultiplayerUser> = new Map();
 
   constructor() {
-    this.state = 'not connected';
     this.sessionId = uuid();
     this.userUpdate = { type: 'UserUpdate', session_id: this.sessionId, file_id: '', update: {} };
+  }
+
+  private get state() {
+    return this._state;
+  }
+  private set state(state: MultiplayerState) {
+    this._state = state;
+    console.log('*', state);
+    window.dispatchEvent(new CustomEvent('multiplayer-state', { detail: state }));
   }
 
   private async getJwt() {
@@ -297,6 +313,7 @@ export class Multiplayer {
     };
     if (debugShowMultiplayer) console.log(`[Multiplayer] Requesting transactions starting from ${min_sequence_num}.`);
     this.websocket!.send(JSON.stringify(message));
+    this.state = 'syncing';
   }
 
   //#endregion
@@ -441,17 +458,27 @@ export class Multiplayer {
   }
 
   // Receives a new transaction from the server
-  private receiveTransaction(data: ReceiveTransaction) {
+  private async receiveTransaction(data: ReceiveTransaction) {
     if (data.file_id !== this.room) {
       throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
     }
     grid.multiplayerTransaction(data.id, data.sequence_num, data.operations);
     offline.markTransactionSent(data.id);
+    if (await offline.hasUnsentTransactions()) {
+      this.state = 'syncing';
+    } else {
+      this.state = 'connected';
+    }
   }
 
   // Receives a collection of transactions to catch us up based on our sequenceNum
-  private receiveTransactions(data: ReceiveTransactions) {
+  private async receiveTransactions(data: ReceiveTransactions) {
     grid.receiveMultiplayerTransactions(data.transactions);
+    if (await offline.hasUnsentTransactions()) {
+      this.state = 'syncing';
+    } else {
+      this.state = 'connected';
+    }
   }
 
   // Receives the current transaction number from the server when entering a room.

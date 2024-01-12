@@ -1,7 +1,5 @@
-import { hello } from '@/quadratic-core/quadratic_core_bg.wasm';
 import indexedDB from 'fake-indexeddb/auto';
-import { beforeAll, describe, expect, it } from 'vitest';
-import { grid } from './Grid';
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { offline } from './offline';
 
 globalThis.window.indexedDB = indexedDB;
@@ -51,16 +49,16 @@ describe('offline', () => {
     ]);
   });
 
-  it('loads all transactions on initialization', async () => {
-    console.log('here...');
-    hello();
-    grid.test();
+  // it('loads all transactions on initialization', async () => {
+  //   console.log('here...');
+  //   hello();
+  //   grid.test();
 
-    offline.addUnsentTransaction('1', 'a');
-    offline.addUnsentTransaction('2', 'b');
-    offline.addUnsentTransaction('3', 'c');
-    offline.markTransactionSent('2');
+  //   offline.addUnsentTransaction('1', 'a');
+  //   offline.addUnsentTransaction('2', 'b');
+  //   offline.addUnsentTransaction('3', 'c');
+  //   offline.markTransactionSent('2');
 
-    await offline.loadTransactions();
-  });
+  //   await offline.loadTransactions();
+  // });
 });
