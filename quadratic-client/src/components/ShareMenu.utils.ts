@@ -1,11 +1,11 @@
-import { UserRoleTeam, UserRoleTeamSchema } from 'quadratic-shared/typesAndSchemas';
+import { UserTeamRole, UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
 import { RoleSchema, hasAccess } from '../permissions';
 
 const DELETE = 'DELETE';
 
 type Label = 'Owner' | 'Can edit' | 'Can view' | 'Leave' | 'Remove';
 
-type TeamUserOption = UserRoleTeam | typeof DELETE;
+type TeamUserOption = UserTeamRole | typeof DELETE;
 
 // function canDeleteInviteInTeam({ }) {
 
@@ -22,7 +22,7 @@ type TeamUserOption = UserRoleTeam | typeof DELETE;
 // }
 
 export function getAvailableRolesForLoggedInUserInTeam({ role, numberOfOwners }: any) {
-  const { OWNER, EDITOR, VIEWER } = UserRoleTeamSchema.enum;
+  const { OWNER, EDITOR, VIEWER } = UserTeamRoleSchema.enum;
 
   if (role === OWNER) {
     if (numberOfOwners > 1) {
@@ -37,7 +37,7 @@ export function getAvailableRolesForLoggedInUserInTeam({ role, numberOfOwners }:
   return [VIEWER];
 }
 export function getAvailableRolesForUserInTeam({ loggedInUserRole, userRole }: any) {
-  const { OWNER, EDITOR, VIEWER } = UserRoleTeamSchema.enum;
+  const { OWNER, EDITOR, VIEWER } = UserTeamRoleSchema.enum;
 
   if (loggedInUserRole === OWNER) {
     return [OWNER, EDITOR, VIEWER];
@@ -67,7 +67,7 @@ export function getAvailableRolesForUserInTeam({ loggedInUserRole, userRole }: a
 
 export function getTeamUserOption({ numberOfOwners, user, loggedInUser }: any) {
   let options: TeamUserOption[] = [];
-  const { OWNER, EDITOR, VIEWER } = UserRoleTeamSchema.enum;
+  const { OWNER, EDITOR, VIEWER } = UserTeamRoleSchema.enum;
 
   const userIsOwner = user.role === OWNER;
   const userIsEditor = user.role === EDITOR;

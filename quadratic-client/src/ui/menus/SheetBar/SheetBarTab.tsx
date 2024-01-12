@@ -3,7 +3,7 @@ import { Box, Fade, IconButton, Paper, Popper, Stack, Typography, useTheme } fro
 import { MouseEvent, PointerEvent, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPerissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -28,8 +28,8 @@ export const SheetBarTab = (props: Props): JSX.Element => {
   const [isRenaming, setIsRenaming] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
-  const { permission } = useRecoilValue(editorInteractionStateAtom);
-  const hasPermission = isEditorOrAbove(permission) && !isMobile;
+  const { permissions } = useRecoilValue(editorInteractionStateAtom);
+  const hasPermission = hasPerissionToEditFile(permissions) && !isMobile;
 
   useEffect(() => {
     if (forceRename) {

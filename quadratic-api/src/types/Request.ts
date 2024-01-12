@@ -1,6 +1,5 @@
-import { File, Team, User } from '@prisma/client';
+import { File, User } from '@prisma/client';
 import { Request as JWTRequest } from 'express-jwt';
-import { Access, UserRoleTeam } from 'quadratic-shared/typesAndSchemas';
 
 export interface UploadFile extends Express.Multer.File {
   key?: string; // Available using `S3`.
@@ -21,6 +20,10 @@ export interface Request extends JWTRequest {
   file?: UploadFile;
 }
 
+export type RequestWithFile = Request & {
+  file: UploadFile;
+};
+
 export type RequestWithOptionalAuth = JWTRequest & {
   auth?: { sub: string };
 };
@@ -33,16 +36,10 @@ export type RequestWithUser = RequestWithAuth & {
   user: User;
 };
 
-export type RequestWithQuadraticFile = RequestWithUser & {
-  quadraticFile: File;
+export type RequestWithOptionalUser = RequestWithOptionalAuth & {
+  user?: User;
 };
 
-export type RequestWithTeam = RequestWithUser & {
-  team: {
-    data: Team;
-    user: {
-      role: UserRoleTeam;
-      access: Access[];
-    };
-  };
+export type RequestWithQuadraticFile = RequestWithOptionalUser & {
+  quadraticFile: File;
 };
