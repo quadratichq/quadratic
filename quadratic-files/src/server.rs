@@ -113,4 +113,32 @@ pub(crate) async fn healthcheck() -> impl IntoResponse {
 }
 
 #[cfg(test)]
-pub(crate) mod tests {}
+pub(crate) mod tests {
+    use crate::state;
+    use axum::{
+        body::Body,
+        http::{self, Request},
+    };
+    use tower::ServiceExt;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn responds_with_a_200_OK_for_a_healthcheck() {
+        let state = Arc::new(state::State::new(&config().unwrap()).await.unwrap());
+        let app = app(state);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::GET)
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+}
