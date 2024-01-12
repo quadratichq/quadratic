@@ -63,7 +63,7 @@ impl UnsavedTransactions {
                     reverse,
                     sent_to_server: false,
                 };
-                if !cfg!(test) && send {
+                if !cfg!(test) && !cfg!(multiplayer) && send {
                     if let Ok(stringified) = serde_json::to_string(&transaction) {
                         crate::wasm_bindings::js::addUnsentTransaction(
                             transaction.forward.id.to_string(),
@@ -76,7 +76,7 @@ impl UnsavedTransactions {
             Some((_, unsaved_transaction)) => {
                 unsaved_transaction.forward = forward;
                 unsaved_transaction.reverse = reverse;
-                if !cfg!(test) && send {
+                if !cfg!(test) && !cfg!(multiplayer) && send {
                     if let Ok(stringified) = serde_json::to_string(&unsaved_transaction) {
                         crate::wasm_bindings::js::addUnsentTransaction(
                             unsaved_transaction.forward.id.to_string(),
