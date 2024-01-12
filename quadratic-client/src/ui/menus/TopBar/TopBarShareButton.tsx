@@ -18,7 +18,7 @@ export const TopBarShareButton = () => {
           size="sm"
           onClick={() => {
             setEditorInteractionState((prev) => ({ ...prev, showShareFileMenu: !prev.showShareFileMenu }));
-            mixpanel.track('[FileSharing].menu.open', { context: '/file/:uuid' });
+            mixpanel.track('[FileSharing].menu.open', { context: 'app' });
           }}
           className="self-center"
         >

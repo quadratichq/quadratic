@@ -10,6 +10,7 @@ import { Skeleton } from '@/shadcn/ui/skeleton';
 import { isJsonObject } from '@/utils/isJsonObject';
 import { Avatar } from '@mui/material';
 import { EnvelopeClosedIcon, Link1Icon, LinkBreak1Icon } from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
 import {
   ApiTypes,
   PublicLinkAccess,
@@ -572,16 +573,13 @@ function ManageInvite({
   const { email, role, id } = invite;
   const inviteId = String(id);
   const disabled = !Boolean(onDelete);
+  const hasError = deleteFetcher.state === 'idle' && deleteFetcher.data && !deleteFetcher.data.ok;
+  const label = getRoleLabel(role);
 
   // If we're not idle, we're deleting
   if (deleteFetcher.state !== 'idle') {
     return null;
   }
-
-  // If it failed, trigger an error
-  const hasError = deleteFetcher.state === 'idle' && deleteFetcher.data && !deleteFetcher.data.ok;
-
-  const label = getRoleLabel(role);
 
   // TODO: resend email functionality
 
@@ -742,6 +740,7 @@ function ListItemPublicLink({
           <Button
             variant="link"
             onClick={() => {
+              mixpanel.track('[FileSharing].publicLinkAccess.clickCopyLink');
               const url = `${window.location.origin}/files/${uuid}`;
               navigator.clipboard
                 .writeText(url)

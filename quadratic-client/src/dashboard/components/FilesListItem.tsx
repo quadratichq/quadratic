@@ -124,7 +124,7 @@ export function FileListItem({
 
   const handleShare = () => {
     setActiveShareMenuFileId(uuid);
-    mixpanel.track('[FileSharing].menu.open', { context: window.location.pathname });
+    mixpanel.track('[FileSharing].menu.open', { context: 'dashboard', pathname: window.location.pathname });
   };
 
   const displayName = fetcherRename.json ? (fetcherRename.json as FileAction['request.rename']).name : name;
