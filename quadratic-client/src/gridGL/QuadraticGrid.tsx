@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
+import { HTMLGridContainer } from './HTMLGrid/HTMLGridContainer';
 import { CodeRunning } from './codeRunning/CodeRunning';
 import { HtmlCells } from './htmlCells/HtmlCells';
 import { CellInput } from './interaction/CellInput';
@@ -120,12 +121,14 @@ export default function QuadraticGrid() {
       }}
       onKeyUp={onKeyUp}
     >
-      {showInput && <CellInput container={container} />}
-      <MultiplayerCellEdits container={container} />
-      <HtmlCells />
-      <CodeRunning />
+      <HTMLGridContainer parent={container}>
+        {showInput && <CellInput />}
+        <MultiplayerCellEdits />
+        <HtmlCells />
+        <CodeRunning />
+        <MultiplayerCursors />
+      </HTMLGridContainer>
       <FloatingContextMenu container={container} showContextMenu={showContextMenu} />
-      <MultiplayerCursors />
     </div>
   );
 }

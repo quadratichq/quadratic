@@ -1,7 +1,6 @@
 import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
 import { JsHtmlOutput } from '@/quadratic-core/types';
-import { pixiApp } from '../pixiApp/PixiApp';
 import { HtmlCell } from './HtmlCell';
 
 class HTMLCellsHandler {
@@ -9,17 +8,6 @@ class HTMLCellsHandler {
 
   // used to attach the html-cells to react
   private div?: HTMLDivElement;
-
-  private handleViewport = () => {
-    const parent = this.getParent();
-    if (!parent) {
-      throw new Error('Expected to find .html-cells in htmlCells.ts');
-    }
-    const viewport = pixiApp.viewport;
-    viewport.updateTransform();
-    const worldTransform = viewport.worldTransform;
-    parent.style.transform = `matrix(${worldTransform.a},${worldTransform.b},${worldTransform.c},${worldTransform.d},${worldTransform.tx},${worldTransform.ty})`;
-  };
 
   attach(parent: HTMLDivElement) {
     if (this.div) {
@@ -31,10 +19,6 @@ class HTMLCellsHandler {
     this.div = this.div ?? document.createElement('div');
     this.div.className = 'html-cells';
     this.updateHtmlCells();
-    this.handleViewport();
-    pixiApp.viewport.on('moved', this.handleViewport);
-    pixiApp.viewport.on('moved-end', this.handleViewport);
-    pixiApp.viewport.on('zoomed', this.handleViewport);
     window.addEventListener('change-sheet', this.changeSheet);
     window.addEventListener('html-update', this.updateHtmlCellsBySheetId);
     if (parent) {
@@ -43,9 +27,6 @@ class HTMLCellsHandler {
   }
 
   destroy() {
-    pixiApp.viewport.off('moved', this.handleViewport);
-    pixiApp.viewport.off('moved-end', this.handleViewport);
-    pixiApp.viewport.on('zoomed', this.handleViewport);
     window.removeEventListener('change-sheet', this.changeSheet);
     window.removeEventListener('html-update', this.updateHtmlCellsBySheetId);
   }

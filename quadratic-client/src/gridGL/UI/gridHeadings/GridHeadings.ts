@@ -374,6 +374,7 @@ export class GridHeadings extends Container {
     this.drawCorner();
 
     this.headingSize = { width: this.rowWidth * pixiApp.viewport.scale.x, height: CELL_HEIGHT };
+    window.dispatchEvent(new CustomEvent('heading-size', { detail: this.headingSize }));
   }
 
   // whether the point is in the heading
