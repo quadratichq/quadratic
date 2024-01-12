@@ -1,5 +1,5 @@
+import * as Sentry from '@sentry/node';
 import { ManagementClient } from 'auth0';
-import dbClient from '../dbClient';
 
 // Guide to Setting up on Auth0
 // 1. Create an Auth0 Machine to Machine Application
@@ -18,31 +18,77 @@ const auth0 = new ManagementClient({
 });
 
 export const getAuth0Users = async (auth0Ids: string[]) => {
-  try {
-    const auth0Users = await auth0.getUsers({
-      q: `user_id:(${auth0Ids.join(' OR ')})`,
-    });
-    return auth0Users;
-  } catch (e) {
-    // TODO log to sentry?
-    console.error(e);
-    return [];
-  }
+  const auth0Users = await auth0.getUsers({
+    q: `user_id:(${auth0Ids.join(' OR ')})`,
+  });
+  return auth0Users;
 };
 
-export const getUserProfile = async (userId: number) => {
-  const user = await dbClient.user.findUnique({
-    where: { id: userId },
+/**
+ * Given a list of users from our system, we lookup their info in Auth0.
+ *
+ * Example in:
+ *   [
+ *     { id: 10, auth0Id: 'google-oauth2|112233', ... }
+ *   ]
+ * Example out:
+ *   {
+ *     'google-oauth2|112233': {
+ *       id: 10,
+ *       auth0Id: 'google-oauth2|112233',
+ *       email: 'john_doe@example.com',
+ *       name: 'John Doe',
+ *       picture: 'https://example.com/picture.jpg'
+ *     }
+ *   }
+ */
+export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]) => {
+  // Search for users on Auth0
+  const auth0Ids = users.map(({ auth0Id }) => auth0Id);
+  const auth0Users = await auth0.getUsers({
+    q: `user_id:(${auth0Ids.join(' OR ')})`,
   });
 
-  // @ts-expect-error TODO: fix this by handling the case where user is null
-  const { name, picture, email } = await auth0.getUser({ id: user.auth0_id });
+  // Map users by their Quadratic ID. If we didn't find a user, throw.
+  type UsersById = Record<
+    number,
+    {
+      id: number;
+      auth0Id: string;
+      email: string;
+      name?: string;
+      picture?: string;
+    }
+  >;
+  const usersById: UsersById = users.reduce((acc: UsersById, { id, auth0Id }) => {
+    const auth0User = auth0Users.find(({ user_id }) => user_id === auth0Id);
 
-  return {
-    name,
-    picture,
-    email,
-  };
+    // If we're missing data we expect, log it to Sentry and skip this user
+    if (!auth0User || auth0User.email === undefined) {
+      Sentry.captureException({
+        message: 'Auth0 user returned without `user_id` or `email`',
+        level: 'error',
+        extra: {
+          auth0User,
+        },
+      });
+      throw new Error('Failed to retrieve all user info from Auth0');
+    }
+
+    const { email, name, picture } = auth0User;
+    return {
+      ...acc,
+      [id]: {
+        id,
+        auth0Id,
+        email,
+        name,
+        picture,
+      },
+    };
+  }, {});
+
+  return usersById;
 };
 
 export const getUsersByEmail = async (email: string) => {

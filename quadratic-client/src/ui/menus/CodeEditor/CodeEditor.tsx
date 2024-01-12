@@ -4,7 +4,7 @@ import { multiplayer } from '@/multiplayer/multiplayer';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPerissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
@@ -79,13 +79,6 @@ export const CodeEditor = () => {
     ]
   );
 
-  // // update code cell after computation
-  // useEffect(() => {
-  //   if (!isRunningComputation) {
-  //     updateCodeCell(false);
-  //   }
-  // }, [updateCodeCell, isRunningComputation]);
-
   useEffect(() => {
     updateCodeCell(true);
   }, [updateCodeCell]);
@@ -148,7 +141,7 @@ export const CodeEditor = () => {
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // Don't allow the shortcuts below for certain users
-    if (!isEditorOrAbove(editorInteractionState.permission)) {
+    if (!hasPerissionToEditFile(editorInteractionState.permissions)) {
       return;
     }
 

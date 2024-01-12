@@ -35,7 +35,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'delete') {
     try {
-      await apiClient.deleteFile(uuid);
+      await apiClient.files.delete(uuid);
       return { ok: true };
     } catch (error) {
       return { ok: false };
@@ -44,7 +44,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'download') {
     try {
-      await apiClient.downloadFile(uuid);
+      await apiClient.files.download(uuid);
       return { ok: true };
     } catch (error) {
       return { ok: false };
@@ -61,13 +61,13 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
       const {
         file: { thumbnail },
         file,
-      } = await apiClient.getFile(uuid);
+      } = await apiClient.files.get(uuid);
 
       // Get the most recent checkpoint for the file
       const lastCheckpointContents = await fetch(file.lastCheckpointDataUrl).then((res) => res.text());
 
       // Create it on the server
-      const newFile = await apiClient.createFile({
+      const newFile = await apiClient.files.create({
         name,
         version: file.lastCheckpointVersion,
         contents: lastCheckpointContents,
@@ -79,7 +79,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
         try {
           const res = await fetch(thumbnail);
           const blob = await res.blob();
-          await apiClient.updateFileThumbnail(newFile.uuid, blob);
+          await apiClient.files.thumbnail.update(newFile.uuid, blob);
         } catch (err) {
           // Not a huge deal if it failed, just tell Sentry and move on
           Sentry.captureEvent({
@@ -97,7 +97,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
   if (action === 'rename') {
     try {
       const { name } = json as Action['request.rename'];
-      await apiClient.updateFile(uuid, { name });
+      await apiClient.files.update(uuid, { name });
       return { ok: true };
     } catch (error) {
       return { ok: false };

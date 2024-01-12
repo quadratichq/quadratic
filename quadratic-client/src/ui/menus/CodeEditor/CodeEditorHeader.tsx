@@ -1,14 +1,14 @@
+import { sheets } from '@/grid/controller/Sheets';
+import { multiplayer } from '@/multiplayer/multiplayer';
+import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
 import { Close, FiberManualRecord, HelpOutline, PlayArrow, Stop, Subject } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
+import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { Coordinate } from '../../../gridGL/types/size';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 // import { CodeCellValue } from '../../../quadratic-core/types';
-import { sheets } from '@/grid/controller/Sheets';
-import { multiplayer } from '@/multiplayer/multiplayer';
-import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
-import { useEffect, useState } from 'react';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPerissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL, DOCUMENTATION_URL } from '../../../constants/urls';
 import { colors } from '../../../theme/colors';
@@ -29,7 +29,8 @@ interface Props {
 export const CodeEditorHeader = (props: Props) => {
   const { cellLocation, unsaved, saveAndRunCell, cancelPython, closeEditor } = props;
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const hasPermission = isEditorOrAbove(editorInteractionState.permission);
+  const hasPermission = hasPerissionToEditFile(editorInteractionState.permissions);
+
   const language = editorInteractionState.mode;
 
   const [isRunningComputation, setIsRunningComputation] = useState(false);

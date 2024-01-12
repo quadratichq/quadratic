@@ -1,6 +1,6 @@
 import { SheetCursor } from '@/grid/sheet/SheetCursor';
 import { Rectangle } from 'pixi.js';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPerissionToEditFile } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
@@ -42,7 +42,7 @@ export function keyboardCell(options: {
   const cursor = sheet.cursor;
   const cursorPosition = cursor.cursorPosition;
 
-  const hasPermission = isEditorOrAbove(editorInteractionState.permission);
+  const hasPermission = hasPerissionToEditFile(editorInteractionState.permissions);
 
   if (event.key === 'Tab') {
     // move single cursor one right

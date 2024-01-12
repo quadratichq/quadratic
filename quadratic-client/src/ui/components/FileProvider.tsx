@@ -2,7 +2,7 @@ import mixpanel from 'mixpanel-browser';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import { useSetRecoilState } from 'recoil';
-import { isOwner as isOwnerTest } from '../../actions';
+import { hasPerissionToEditFile } from '../../actions';
 import { apiClient } from '../../api/apiClient';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { useFileRouteLoaderData } from '../../dashboard/FileRoute';
@@ -36,7 +36,7 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
 
   const syncState = latestSync.state;
-  const isOwner = isOwnerTest(initialFileData.permission);
+  const canEdit = hasPerissionToEditFile(initialFileData.permissions);
 
   const renameFile: FileContextType['renameFile'] = useCallback(
     (newName) => {
@@ -52,7 +52,7 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
     async (apiClientFn: Function) => {
       // User shouldn't have the ability to change anything, but we'll double
       // make sure the file can't be modified on the server if it's not the owner
-      if (!isOwner) return;
+      if (!canEdit) return;
 
       // Don't sync anything if we're on the first update
       if (isFirstUpdate.current) return;
@@ -66,21 +66,21 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
           setLatestSync((prev) => (prev.id === id ? { id, state: ok ? 'idle' : 'error' } : prev));
         });
     },
-    [setLatestSync, isOwner]
+    [setLatestSync, canEdit]
   );
 
   // When the file name changes, update document title and sync to server
   useEffect(() => {
     document.title = `${name} - Quadratic`;
-    syncChanges(() => apiClient.updateFile(uuid, { name }));
+    syncChanges(() => apiClient.files.update(uuid, { name }));
   }, [name, syncChanges, uuid]);
 
   // Set the permission in recoil based on the initial state
   // TODO figure out a way to set this in RecoilRoot (if possible)
   //      or let it flow if we go with react-router's loaders for this
   useEffect(() => {
-    setEditorInteractionState((prev) => ({ ...prev, permission: initialFileData.permission }));
-  }, [initialFileData.permission, setEditorInteractionState]);
+    setEditorInteractionState((prev) => ({ ...prev, permission: initialFileData.permissions }));
+  }, [initialFileData.permissions, setEditorInteractionState]);
 
   // Keep track of lifecycle so we can run things at a specific time
   useEffect(() => {
