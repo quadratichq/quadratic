@@ -154,7 +154,7 @@ impl_set_cell_fmt_method!(set_cell_render_size<RenderSize>(CellFmtArray::RenderS
 mod test {
     use crate::{
         controller::GridController,
-        grid::{RenderSize, TextColor},
+        grid::{RenderSize, SheetId, TextColor},
         Pos, Rect, SheetPos, SheetRect,
     };
 
@@ -228,6 +228,17 @@ mod test {
         assert_eq!(get(&gc, pos1), "");
         assert_eq!(get(&gc, pos2), "");
         assert_eq!(get(&gc, pos3), "red");
+
+        // ensure not found sheet_id fails silently
+        gc.set_cell_text_color(
+            SheetRect {
+                min: Pos { x: 0, y: 0 },
+                max: Pos { x: 0, y: 0 },
+                sheet_id: SheetId::new(),
+            },
+            Some("red".to_string()),
+            None,
+        );
     }
 
     #[test]
@@ -266,6 +277,17 @@ mod test {
             max: crate::Pos { x: 100, y: 100 },
         });
         assert_eq!(10, render_fills.len());
+
+        // ensure not found sheet_id fails silently
+        gc.set_cell_fill_color(
+            SheetRect {
+                min: Pos { x: 0, y: 0 },
+                max: Pos { x: 0, y: 0 },
+                sheet_id: SheetId::new(),
+            },
+            Some("red".to_string()),
+            None,
+        );
     }
 
     #[test]
@@ -345,6 +367,19 @@ mod test {
         assert_eq!(cells[0].value, "1.12345678");
         assert_eq!(cells[1].value, "abcd");
         assert_eq!(cells[2].value, "0.12345678");
+
+        // ensure not found sheet_id fails silently
+        let sheet_id = SheetId::new();
+        gc.change_decimal_places(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            SheetRect::single_pos(Pos { x: 0, y: 0 }, sheet_id),
+            2,
+            None,
+        );
     }
 
     #[test]
@@ -370,6 +405,17 @@ mod test {
             .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }));
         assert_eq!(cells.len(), 1);
         assert_eq!(cells[0].value, "$1.12");
+
+        // ensure not found sheet_id fails silently
+        gc.set_currency(
+            &SheetRect {
+                min: Pos { x: 0, y: 0 },
+                max: Pos { x: 0, y: 0 },
+                sheet_id: SheetId::new(),
+            },
+            Some("$".to_string()),
+            None,
+        );
     }
 
     #[test]
@@ -410,6 +456,16 @@ mod test {
             .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }));
         assert_eq!(cells.len(), 1);
         assert_eq!(cells[0].value, "1.12345678");
+
+        // ensure not found sheet_id fails silently
+        gc.clear_formatting(
+            SheetRect {
+                min: Pos { x: 0, y: 0 },
+                max: Pos { x: 0, y: 0 },
+                sheet_id: SheetId::new(),
+            },
+            None,
+        );
     }
 
     #[test]
@@ -432,6 +488,20 @@ mod test {
                 w: "1".to_string(),
                 h: "2".to_string()
             })
+        );
+
+        // ensure not found sheet_id fails silently
+        gc.set_cell_render_size(
+            SheetRect {
+                min: Pos { x: 0, y: 0 },
+                max: Pos { x: 0, y: 0 },
+                sheet_id: SheetId::new(),
+            },
+            Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            }),
+            None,
         );
     }
 }

@@ -402,8 +402,8 @@ export class Grid {
     this.transactionResponse(summary);
   }
 
-  async setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
-    const summary = await this.gridController.setRegionBorders(
+  setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
+    const summary = this.gridController.setRegionBorders(
       sheetId,
       rectangleToRect(rectangle),
       selection,

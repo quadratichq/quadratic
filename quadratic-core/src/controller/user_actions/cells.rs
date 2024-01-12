@@ -101,7 +101,7 @@ impl GridController {
 mod test {
     use crate::{
         controller::{transaction_summary::CellSheetsModified, GridController},
-        grid::{NumericDecimals, NumericFormat},
+        grid::{NumericDecimals, NumericFormat, SheetId},
         CellValue, SheetPos,
     };
     use std::{collections::HashSet, str::FromStr};
@@ -158,6 +158,17 @@ mod test {
 
         assert_eq!(g.redo(None).cell_sheets_modified, HashSet::default());
         assert_eq!(get_cell(&g), CellValue::Text(String::from("b")));
+
+        // ensure that not found SheetId fails silently
+        g.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id: SheetId::new(),
+            },
+            String::from("c"),
+            None,
+        );
     }
 
     #[test]
