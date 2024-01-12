@@ -1,5 +1,3 @@
-import { CELL_HEIGHT } from '@/constants/gridConstants';
-import { useGridSettings } from '@/ui/menus/TopBar/SubMenus/useGridSettings';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { pixiApp } from '../pixiApp/PixiApp';
 
@@ -9,9 +7,6 @@ interface Props {
 }
 
 export const HTMLGridContainer = (props: Props): ReactNode | null => {
-  const { showHeadings } = useGridSettings();
-
-  // If we don't have a viewport, we can't continue.
   const { parent, children } = props;
 
   const [container, setContainer] = useState<HTMLDivElement>();
@@ -52,8 +47,6 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
 
   if (!parent) return null;
 
-  const adjustHeading = showHeadings ? CELL_HEIGHT : 0;
-
   return (
     <div
       style={{
@@ -61,8 +54,8 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
         left: `${leftHeading}px`,
         top: `${topHeading}px`,
         overflow: 'hidden',
-        width: '100%',
-        height: `calc(100% - ${adjustHeading}px)`,
+        width: `calc(100% - ${leftHeading}px)`,
+        height: `calc(100% - ${topHeading}px)`,
         pointerEvents: 'none',
       }}
     >
