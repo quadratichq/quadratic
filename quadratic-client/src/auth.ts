@@ -60,6 +60,7 @@ export const authClient: AuthClient = {
     return user;
   },
   async login(redirectTo: string, isSignupFlow: boolean = false) {
+    debugger;
     const client = await getClient();
     await client.loginWithRedirect({
       authorizationParams: {
@@ -125,7 +126,7 @@ export function protectedRouteLoaderWrapper(loaderFn: LoaderFunction): LoaderFun
 export function parseDomain(url: string): string {
   // check for classic URLs
   let matches = url.match(/([^.]*\.[^.]{2,3}(?:\.[^.]{2,3})?$)/);
-  
+
   if (matches) {
     return '.' + matches[0];
   } else {

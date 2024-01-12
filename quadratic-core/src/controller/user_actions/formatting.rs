@@ -15,8 +15,12 @@ impl GridController {
         sheet_rect: &SheetRect,
         values: RunLengthEncoding<Option<A::Value>>,
     ) -> RunLengthEncoding<Option<A::Value>> {
-        let sheet = self.grid.sheet_mut_from_id(sheet_rect.sheet_id);
-        sheet.set_cell_formats_for_type::<A>(sheet_rect, values)
+        // todo: add better error handling for sheet removal
+        if let Some(sheet) = self.try_sheet_mut(sheet_rect.sheet_id) {
+            sheet.set_cell_formats_for_type::<A>(sheet_rect, values)
+        } else {
+            RunLengthEncoding::new()
+        }
     }
 
     /// set currency type for a region
@@ -63,7 +67,9 @@ impl GridController {
     }
 
     pub fn get_all_cell_formats(&self, sheet_rect: SheetRect) -> Vec<CellFmtArray> {
-        let sheet = self.sheet(sheet_rect.sheet_id);
+        let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) else {
+            return vec![];
+        };
         let mut cell_formats = vec![
             CellFmtArray::Align(RunLengthEncoding::new()),
             CellFmtArray::Wrap(RunLengthEncoding::new()),

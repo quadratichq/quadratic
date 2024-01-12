@@ -7,7 +7,9 @@ use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
 use super::{ArraySize, Axis, CellValue, Spanned, Value};
-use crate::{controller::operations::operation::Operation, grid::Sheet, CodeResult, ErrorMsg, Pos};
+use crate::{
+    controller::operations::operation::Operation, grid::Sheet, CodeResult, Pos, RunErrorMsg,
+};
 
 #[macro_export]
 macro_rules! array {
@@ -84,6 +86,17 @@ impl From<Vec<Vec<String>>> for Array {
                 .flatten()
                 .map(|s| CellValue::from(s.as_ref()))
                 .collect(),
+        }
+    }
+}
+
+impl From<Vec<Vec<&str>>> for Array {
+    fn from(v: Vec<Vec<&str>>) -> Self {
+        let w = v[0].len();
+        let h = v.len();
+        Array {
+            size: ArraySize::new(w as u32, h as u32).unwrap(),
+            values: v.iter().flatten().map(|s| (*s).into()).collect(),
         }
     }
 }
@@ -196,7 +209,7 @@ impl Array {
     /// if this is not a 1x1 array.
     pub fn cell_value(&self) -> Option<&CellValue> {
         if self.values.len() == 1 {
-            self.values.get(0)
+            self.values.first()
         } else {
             None
         }
@@ -204,13 +217,13 @@ impl Array {
     /// Returns the value at a given position in an array. If the width is 1,
     /// then `x` is ignored. If the height is 1, then `y` is ignored. Otherwise,
     /// returns an error if a coordinate is out of bounds.
-    pub fn get(&self, x: u32, y: u32) -> Result<&CellValue, ErrorMsg> {
+    pub fn get(&self, x: u32, y: u32) -> Result<&CellValue, RunErrorMsg> {
         let i = self.size().flatten_index(x, y)?;
         Ok(&self.values[i])
     }
     /// Sets the value at a given position in an array. Returns an error if `x`
     /// or `y` is out of range.
-    pub fn set(&mut self, x: u32, y: u32, value: CellValue) -> Result<(), ErrorMsg> {
+    pub fn set(&mut self, x: u32, y: u32, value: CellValue) -> Result<(), RunErrorMsg> {
         let i = self.size().flatten_index(x, y)?;
         self.values[i] = value;
         Ok(())
@@ -246,7 +259,7 @@ impl Array {
                 (_, 1) => continue,
                 (1, l) => common_len = l,
                 _ => {
-                    return Err(ErrorMsg::ArrayAxisMismatch {
+                    return Err(RunErrorMsg::ArrayAxisMismatch {
                         axis,
                         expected: common_len,
                         got: new_array_len,
@@ -294,7 +307,7 @@ impl Spanned<Array> {
             (1, 1) => Ok(None),
             (_, 1) => Ok(Some(Axis::X)), // height = 1
             (1, _) => Ok(Some(Axis::Y)), // width = 1
-            _ => Err(ErrorMsg::NonLinearArray.with_span(self.span)),
+            _ => Err(RunErrorMsg::NonLinearArray.with_span(self.span)),
         }
     }
     /// Checks that an array is linear along a particular axis, then returns the
@@ -312,7 +325,7 @@ impl Spanned<Array> {
         if expected == got {
             Ok(())
         } else {
-            Err(ErrorMsg::ExactArrayAxisMismatch {
+            Err(RunErrorMsg::ExactArrayAxisMismatch {
                 axis,
                 expected,
                 got,
@@ -329,7 +342,7 @@ impl Spanned<Array> {
         if expected == got {
             Ok(())
         } else {
-            Err(ErrorMsg::ExactArraySizeMismatch { expected, got }.with_span(self.span))
+            Err(RunErrorMsg::ExactArraySizeMismatch { expected, got }.with_span(self.span))
         }
     }
 }

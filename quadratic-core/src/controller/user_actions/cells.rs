@@ -1,16 +1,8 @@
 use crate::controller::{transaction_summary::TransactionSummary, GridController};
 
-use crate::{
-    grid::{CodeCellLanguage, SheetId},
-    Rect, SheetPos, SheetRect,
-};
+use crate::{grid::CodeCellLanguage, SheetPos, SheetRect};
 
 impl GridController {
-    pub fn populate_with_random_floats(&mut self, sheet_id: SheetId, region: &Rect) {
-        let sheet = self.grid.sheet_mut_from_id(sheet_id);
-        sheet.with_random_floats(region);
-    }
-
     /// Starts a transaction to set the value of a cell by converting a user's String input
     ///
     /// Returns a [`TransactionSummary`].
@@ -127,7 +119,7 @@ mod test {
         };
         let get_cell = |g: &GridController| {
             g.sheet(sheet_id)
-                .get_cell_value(sheet_pos.into())
+                .display_value(sheet_pos.into())
                 .unwrap_or_default()
         };
         let mut cell_sheets_modified = HashSet::new();
@@ -197,7 +189,7 @@ mod test {
         };
         let get_cell_value = |g: &GridController| {
             g.sheet(sheet_id)
-                .get_cell_value(sheet_pos.into())
+                .display_value(sheet_pos.into())
                 .unwrap_or_default()
         };
         let get_cell_numeric_format = |g: &GridController| {

@@ -7,28 +7,25 @@ use crate::{SheetPos, SheetRect};
 use super::GridController;
 
 impl GridController {
+    /// Searches all code_runs in all sheets for cells that are dependent on the given sheet_rect.
     pub fn get_dependent_code_cells(&self, sheet_rect: &SheetRect) -> Option<HashSet<SheetPos>> {
         let mut dependent_cells = HashSet::new();
 
         self.grid.sheets().iter().for_each(|sheet| {
-            sheet.code_cells.iter().for_each(|(pos, code_cell)| {
-                if let Some(output) = code_cell.output.as_ref() {
-                    if let Some(cells_accessed) = output.cells_accessed() {
-                        cells_accessed.iter().for_each(|cell_accessed| {
-                            if sheet_rect.intersects(*cell_accessed) {
-                                dependent_cells.insert(pos.to_sheet_pos(sheet.id));
-                            }
-                        });
+            sheet.code_runs.iter().for_each(|(pos, code_run)| {
+                code_run.cells_accessed.iter().for_each(|cell_accessed| {
+                    if sheet_rect.intersects(*cell_accessed) {
+                        dependent_cells.insert(pos.to_sheet_pos(sheet.id));
                     }
-                }
+                });
             });
         });
 
         if dependent_cells.is_empty() {
-            return None;
+            None
+        } else {
+            Some(dependent_cells)
         }
-
-        Some(dependent_cells)
     }
 }
 
@@ -36,18 +33,19 @@ impl GridController {
 mod test {
     use std::collections::HashSet;
 
+    use chrono::Utc;
+
     use crate::{
         controller::GridController,
-        grid::{CodeCellRunOutput, CodeCellValue},
+        grid::{CodeRun, CodeRunResult},
         CellValue, Pos, SheetPos, SheetRect, Value,
     };
 
     #[test]
     fn test_graph() {
         let mut gc = GridController::new();
-        let cdc = gc.grid_mut();
-        let sheet_id = cdc.sheet_ids()[0];
-        let sheet = cdc.sheet_mut_from_id(sheet_id);
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
         let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
         let _ = sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
         let mut cells_accessed = HashSet::new();
@@ -67,22 +65,16 @@ mod test {
             sheet_id,
         };
         cells_accessed.insert(sheet_rect);
-        sheet.set_code_cell(
+        sheet.set_code_run(
             Pos { x: 0, y: 2 },
-            Some(CodeCellValue {
-                code_string: "1".to_string(),
-                language: crate::grid::CodeCellLanguage::Python,
+            Some(CodeRun {
                 formatted_code_string: None,
-                last_modified: String::default(),
-                output: Some(CodeCellRunOutput {
-                    std_err: None,
-                    std_out: None,
-                    result: crate::grid::CodeCellRunResult::Ok {
-                        output_value: Value::Single(CellValue::Text("test".to_string())),
-                        cells_accessed: cells_accessed.clone(),
-                    },
-                    spill: false,
-                }),
+                last_modified: Utc::now(),
+                std_err: None,
+                std_out: None,
+                spill_error: false,
+                result: CodeRunResult::Ok(Value::Single(CellValue::Text("test".to_string()))),
+                cells_accessed: cells_accessed.clone(),
             }),
         );
         let sheet_pos_02 = SheetPos {

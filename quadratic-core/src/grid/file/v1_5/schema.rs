@@ -1,8 +1,11 @@
+use crate::grid::{file::v1_4::schema as v1_4, SheetId};
+use chrono::{serde::ts_seconds_option, DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use crate::grid::{file::v1_4::schema as v1_4, SheetId};
-use serde::{Deserialize, Serialize};
+pub use super::run_error::RunError;
+pub use super::run_error::RunErrorMsg;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -92,7 +95,6 @@ pub type Offsets = v1_4::Offsets;
 pub type Borders = HashMap<String, Vec<(i64, Vec<Option<CellBorder>>)>>;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Sheet {
     pub id: Id,
     pub name: String,
@@ -101,77 +103,111 @@ pub struct Sheet {
     pub offsets: Offsets,
     pub columns: Vec<(i64, Column)>,
     pub borders: Borders,
-    #[serde(rename = "code_cells")]
-    pub code_cells: Vec<(Pos, CodeCellValue)>,
+    pub code_runs: Vec<(Pos, CodeRun)>,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub struct CodeCellValue {
-    pub language: String,
-    pub code_string: String,
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CodeRun {
     pub formatted_code_string: Option<String>,
-    pub last_modified: String,
-    pub output: Option<CodeCellRunOutput>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CodeCellRunOutput {
     pub std_out: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub std_err: Option<String>,
-    pub result: CodeCellRunResult,
-    pub spill: bool,
+    pub cells_accessed: Vec<SheetRect>,
+    pub result: CodeRunResult,
+    pub spill_error: bool,
+
+    // the Option is necessary to use serde
+    #[serde(with = "ts_seconds_option")]
+    pub last_modified: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 #[serde(untagged)]
-pub enum CodeCellRunResult {
-    Ok {
-        output_value: OutputValue,
-        cells_accessed: Vec<SheetRect>,
-    },
-    Err {
-        error: Error,
-    },
+pub enum CodeRunResult {
+    Ok(OutputValue),
+    Err(RunError),
 }
 
 pub type OutputValue = v1_4::OutputValue;
 pub type OutputArray = v1_4::OutputArray;
 pub type OutputSize = v1_4::OutputSize;
 pub type OutputValueValue = v1_4::OutputValueValue;
-pub type Error = v1_4::Error;
 pub type Span = v1_4::Span;
 pub type RenderSize = v1_4::RenderSize;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Column {
-    pub x: i64,
-    pub values: HashMap<String, ColumnValues>,
-    pub align: HashMap<String, ColumnFormatType<String>>,
-    pub wrap: HashMap<String, ColumnFormatType<String>>,
-    #[serde(rename = "numeric_format")]
-    pub numeric_format: HashMap<String, ColumnFormatType<NumericFormat>>,
-    #[serde(rename = "numeric_decimals")]
-    pub numeric_decimals: HashMap<String, ColumnFormatType<i16>>,
-    #[serde(rename = "numeric_commas")]
-    pub numeric_commas: HashMap<String, ColumnFormatType<bool>>,
-    pub bold: HashMap<String, ColumnFormatType<bool>>,
-    pub italic: HashMap<String, ColumnFormatType<bool>>,
-    #[serde(rename = "text_color")]
-    pub text_color: HashMap<String, ColumnFormatType<String>>,
-    #[serde(rename = "fill_color")]
-    pub fill_color: HashMap<String, ColumnFormatType<String>>,
-    #[serde(rename = "render_size")]
-    pub render_size: HashMap<String, ColumnFormatType<RenderSize>>,
+    pub values: HashMap<String, CellValue>,
+    pub align: HashMap<String, ColumnRepeat<CellAlign>>,
+    pub wrap: HashMap<String, ColumnRepeat<CellWrap>>,
+    pub numeric_format: HashMap<String, ColumnRepeat<NumericFormat>>,
+    pub numeric_decimals: HashMap<String, ColumnRepeat<i16>>,
+    pub numeric_commas: HashMap<String, ColumnRepeat<bool>>,
+    pub bold: HashMap<String, ColumnRepeat<bool>>,
+    pub italic: HashMap<String, ColumnRepeat<bool>>,
+    pub text_color: HashMap<String, ColumnRepeat<String>>,
+    pub fill_color: HashMap<String, ColumnRepeat<String>>,
+    pub render_size: HashMap<String, ColumnRepeat<RenderSize>>,
 }
 
-pub type ColumnValues = v1_4::ColumnValues;
-pub type ColumnValue = v1_4::ColumnValue;
-pub type ColumnFormatType<T> = v1_4::ColumnFormatType<T>;
-pub type ColumnFormatContent<T> = v1_4::ColumnFormatContent<T>;
-pub type NumericFormat = v1_4::NumericFormat;
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum CellValue {
+    Blank,
+    Text(String),
+    Number(String),
+    Html(String),
+    Code(CodeCell),
+    Logical(bool),
+    Instant(String),
+    Duration(String),
+    Error(RunError),
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ColumnRepeat<T> {
+    pub value: T,
+    pub len: u32,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum NumericFormatKind {
+    #[default]
+    Number,
+    Currency,
+    Percentage,
+    Exponential,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct NumericFormat {
+    #[serde(rename = "type")]
+    pub kind: NumericFormatKind,
+    pub symbol: Option<String>,
+}
+
 pub type CellBorder = v1_4::CellBorder;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum CodeCellLanguage {
+    Python,
+    Formula,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CodeCell {
+    pub language: CodeCellLanguage,
+    pub code: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum CellAlign {
+    Left,
+    Center,
+    Right,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum CellWrap {
+    Overflow,
+    Wrap,
+    Clip,
+}

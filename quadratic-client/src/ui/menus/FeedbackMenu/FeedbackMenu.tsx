@@ -18,7 +18,7 @@ export const FeedbackMenu = () => {
   const [loadState, setLoadState] = useState<'INITIAL' | 'LOADING' | 'LOAD_ERROR'>('INITIAL');
   const theme = useTheme();
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const { user } = useRootRouteLoaderData();
+  const { loggedInUser: user } = useRootRouteLoaderData();
 
   const closeMenu = () => {
     setEditorInteractionState((state) => ({

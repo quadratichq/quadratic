@@ -11,6 +11,7 @@ pub(crate) struct Room {
     pub(crate) file_id: Uuid,
     pub(crate) users: DashMap<Uuid, User>,
     pub(crate) sequence_num: u64,
+    pub(crate) checkpoint_sequence_num: u64,
 }
 
 impl PartialEq for Room {
@@ -27,12 +28,17 @@ impl Room {
             file_id,
             users: DashMap::new(),
             sequence_num,
+            checkpoint_sequence_num: sequence_num,
         }
     }
 
     pub fn increment_sequence_num(&mut self) -> u64 {
         self.sequence_num += 1;
         self.sequence_num
+    }
+
+    pub fn set_checkpoint_sequence_num(&mut self, sequence_num: u64) {
+        self.checkpoint_sequence_num = sequence_num;
     }
 }
 
@@ -42,6 +48,15 @@ impl State {
         let room = get_room!(self, file_id)?.to_owned();
 
         Ok(room)
+    }
+
+    pub(crate) async fn set_checkpoint_sequence_num(
+        &self,
+        file_id: &Uuid,
+        sequence_num: u64,
+    ) -> Result<()> {
+        get_mut_room!(self, file_id)?.set_checkpoint_sequence_num(sequence_num);
+        Ok(())
     }
 
     /// Add a user to a room.  If the room doesn't exist, it is created.  Users

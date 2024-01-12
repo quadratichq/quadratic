@@ -25,8 +25,9 @@ impl GridController {
             .sheets_with_dirty_bounds
             .drain()
             .for_each(|sheet_id| {
-                let sheet = self.grid_mut().sheet_mut_from_id(sheet_id);
-                sheet.recalculate_bounds();
+                if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+                    sheet.recalculate_bounds();
+                }
             });
     }
 
@@ -34,9 +35,19 @@ impl GridController {
     pub fn set_last_sequence_num(&mut self, last_sequence_num: u64) {
         self.transactions.last_sequence_num = last_sequence_num;
     }
+}
+
+#[cfg(test)]
+use super::active_transactions::ActiveTransactions;
+
+#[cfg(test)]
+impl GridController {
+    /// Gets ActiveTransaction for test purposes
+    pub fn active_transactions(&self) -> &ActiveTransactions {
+        &self.transactions
+    }
 
     /// Gets the pending transactions for test purposes
-    #[cfg(test)]
     pub fn async_transactions(&self) -> &[PendingTransaction] {
         self.transactions.async_transactions()
     }

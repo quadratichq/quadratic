@@ -1,3 +1,5 @@
+import { SheetPos } from '@/gridGL/types/size';
+import { multiplayer } from '@/multiplayer/multiplayer';
 import mixpanel from 'mixpanel-browser';
 import { grid, pointsToRect } from '../../grid/controller/Grid';
 import { JsCodeResult } from '../../quadratic-core/quadratic_core';
@@ -15,21 +17,34 @@ const stringOrNumber = (input: string | number | undefined): string => {
   return input.toString();
 };
 
+interface PythonCode {
+  transactionId: string;
+  sheetPos: SheetPos;
+  code: string;
+}
+
 class PythonWebWorker {
   private worker?: Worker;
   private loaded = false;
+  private running = false;
+  private executionStack: PythonCode[] = [];
 
-  // todo: we could support multiple python executions by changing the way this works....
-  private transactionId?: string;
+  private calculationComplete() {
+    this.running = false;
+    this.executionStack.shift();
+    this.next(true);
+  }
 
   init() {
     this.worker = new Worker(new URL('./python.worker.ts', import.meta.url));
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
-
       if (event.type === 'results') {
-        if (!this.transactionId) throw new Error('Expected transactionId to be defined in get-cells');
+        if (this.executionStack.length === 0) {
+          throw new Error('Expected executionStack to have at least one element in python.ts');
+        }
+        const transactionId = this.executionStack[0].transactionId;
         const pythonResult = event.results;
         if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
 
@@ -56,7 +71,7 @@ class PythonWebWorker {
           pythonResult.error_msg = pythonResult.input_python_stack_trace;
         }
         const result = new JsCodeResult(
-          this.transactionId,
+          transactionId,
           pythonResult.success,
           pythonResult.formatted_code,
           pythonResult.error_msg,
@@ -67,31 +82,32 @@ class PythonWebWorker {
           pythonResult.cancel_compute
         );
         grid.calculationComplete(result);
-
-        // triggers any CodeEditor updates (if necessary)
-        window.dispatchEvent(new CustomEvent('python-computation-finished'));
+        this.calculationComplete();
       } else if (event.type === 'get-cells') {
-        if (!this.transactionId) throw new Error('Expected transactionId to be defined in get-cells');
+        if (this.executionStack.length === 0) {
+          throw new Error('Expected executionStack to have at least one element in python.ts');
+        }
+        const transactionId = this.executionStack[0].transactionId;
         const range = event.range;
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');
         }
         const cells = grid.calculationGetCells(
-          this.transactionId,
+          transactionId,
           pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
           range.sheet !== undefined ? range.sheet.toString() : undefined,
           event.range?.lineNumber
         );
-        // cells will be undefined if the sheet_id (currently name) is invalid
-        if (cells && this.worker) {
-          this.worker.postMessage({ type: 'get-cells', cells });
+        // cells will be undefined if there was a problem getting the cells. In this case, the python execution is done.
+        if (cells) {
+          this.worker!.postMessage({ type: 'get-cells', cells });
         } else {
-          // triggers any CodeEditor updates (if necessary)
-          window.dispatchEvent(new CustomEvent('python-computation-finished'));
+          this.calculationComplete();
         }
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
         this.loaded = true;
+        this.next(false);
       } else if (event.type === 'python-error') {
         window.dispatchEvent(new CustomEvent('python-error'));
       } else if (event.type === 'not-loaded') {
@@ -102,15 +118,45 @@ class PythonWebWorker {
     };
   }
 
-  start(transactionId: string, python: string): boolean {
-    if (!this.loaded || !this.worker) {
-      return false;
-    }
-    this.transactionId = transactionId;
-    window.dispatchEvent(new CustomEvent('python-computation-started'));
+  getRunningCells(sheetId: string): SheetPos[] {
+    return this.executionStack.filter((cell) => cell.sheetPos.sheetId === sheetId).map((cell) => cell.sheetPos);
+  }
 
-    this.worker.postMessage({ type: 'execute', python });
-    return true;
+  runPython(transactionId: string, x: number, y: number, sheetId: string, code: string) {
+    this.executionStack.push({ transactionId, sheetPos: { x, y, sheetId }, code });
+    this.next(false);
+  }
+
+  getCodeRunning(): SheetPos[] {
+    return this.executionStack.map((cell) => cell.sheetPos);
+  }
+
+  private showChange() {
+    window.dispatchEvent(new CustomEvent('python-change'));
+    multiplayer.sendCodeRunning(this.getCodeRunning());
+  }
+
+  next(complete: boolean) {
+    if (complete) {
+      this.running = false;
+    }
+    if (!this.worker || !this.loaded || this.running) {
+      this.showChange();
+      return;
+    }
+    if (this.executionStack.length) {
+      const first = this.executionStack[0];
+      if (first) {
+        if (!this.running) {
+          this.running = true;
+          window.dispatchEvent(new CustomEvent('python-computation-started'));
+        }
+        this.worker.postMessage({ type: 'execute', python: first.code });
+      }
+    } else if (complete) {
+      window.dispatchEvent(new CustomEvent('python-computation-finished'));
+    }
+    this.showChange();
   }
 
   stop() {
@@ -126,10 +172,13 @@ class PythonWebWorker {
 
   restartFromUser() {
     mixpanel.track('[PythonWebWorker].restartFromUser');
-    if (!this.transactionId) throw new Error('Expected transactionId to be defined in restartFromUser');
+    if (this.executionStack.length === 0) {
+      throw new Error('Expected executionStack to have at least one element in restartFromUser');
+    }
+    const transactionId = this.executionStack[0].transactionId;
     this.restart();
     const result = new JsCodeResult(
-      this.transactionId,
+      transactionId,
       false,
       undefined,
       'Python execution cancelled by user',
@@ -154,11 +203,11 @@ export const pythonWebWorker = new PythonWebWorker();
 
 declare global {
   interface Window {
-    startPython: any;
+    runPython: any;
     getCellsPython: any;
   }
 }
 
 // need to bind to window because rustWorker.ts cannot include any TS imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
-window.startPython = pythonWebWorker.start.bind(pythonWebWorker);
+window.runPython = pythonWebWorker.runPython.bind(pythonWebWorker);
 window.getCellsPython = pythonWebWorker.getCells.bind(pythonWebWorker);

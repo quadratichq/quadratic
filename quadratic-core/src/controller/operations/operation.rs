@@ -2,7 +2,7 @@ use core::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    grid::{formatting::CellFmtArray, CodeCellValue, Sheet, SheetBorders, SheetId},
+    grid::{formatting::CellFmtArray, CodeRun, Sheet, SheetBorders, SheetId},
     Array, SheetPos, SheetRect,
 };
 
@@ -12,9 +12,12 @@ pub enum Operation {
         sheet_rect: SheetRect,
         values: Array,
     },
-    SetCodeCell {
+    SetCodeRun {
         sheet_pos: SheetPos,
-        code_cell_value: Option<CodeCellValue>,
+        code_run: Option<CodeRun>,
+    },
+    ComputeCode {
+        sheet_pos: SheetPos,
     },
     SetCellFormats {
         sheet_rect: SheetRect,
@@ -64,12 +67,16 @@ impl fmt::Display for Operation {
             Operation::SetCellValues { values, .. } => {
                 write!(fmt, "SetCellValues {{ value count: {} }}", values.size())
             }
-            Operation::SetCodeCell {
-                code_cell_value, ..
+            Operation::ComputeCode { sheet_pos } => {
+                write!(fmt, "ComputeCode {{ sheet_pos: {} }}", sheet_pos)
+            }
+            Operation::SetCodeRun {
+                sheet_pos,
+                code_run: run,
             } => write!(
                 fmt,
-                "SetCellCode {{ code_cell_value: {:?} }}",
-                code_cell_value
+                "SetCellRun {{ sheet_pos: {} code_cell_value: {:?} }}",
+                sheet_pos, run
             ),
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),
             Operation::AddSheet { sheet } => write!(fmt, "AddSheet {{ sheet: {} }}", sheet.name),

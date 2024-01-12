@@ -120,10 +120,6 @@ export class Grid {
       pixiApp.cellsSheets.updateBorders(summary.border_sheets_modified);
     }
 
-    if (summary.transaction_busy) {
-      window.dispatchEvent(new CustomEvent('transaction-busy'));
-    }
-
     if (summary.generate_thumbnail) {
       this.thumbnailDirty = true;
     }
@@ -266,7 +262,7 @@ export class Grid {
       sheets.getCursorPosition()
     );
     this.transactionResponse(summary);
-    return !summary.transaction_busy;
+    return summary.complete;
   }
 
   deleteCellValues(sheetId: string, rectangle: Rectangle) {
@@ -696,10 +692,6 @@ export class Grid {
     }
   }
 
-  getTransactionResponse(): TransactionSummary | undefined {
-    return this.gridController.getCalculationTransactionSummary();
-  }
-
   // returns undefined if there was an error fetching cells (eg, invalid sheet name)
   calculationGetCells(
     transactionId: string,
@@ -713,27 +705,11 @@ export class Grid {
       sheetName,
       lineNumber === undefined ? undefined : BigInt(lineNumber)
     );
-    const array = this.gridController.calculationGetCells(getCells);
-    if (array) {
-      // indication that getCells resulted in an error
-      // we get the transactionResponse via a rust call b/c of the way types are converted :(
-      if (array.transaction_response) {
-        const transactionSummary = this.getTransactionResponse();
-        if (transactionSummary) {
-          this.transactionResponse(transactionSummary);
-        }
-        return;
-      }
-      let cell = array.next();
-      const results: { x: number; y: number; value: string }[] = [];
-      while (cell) {
-        const pos = cell.getPos();
-        const value = cell.getValue();
-        results.push({ x: Number(pos.x), y: Number(pos.y), value: value });
-        cell = array.next();
-      }
-      array.free();
-      return results;
+    const result = this.gridController.calculationGetCells(getCells);
+    if (result.Err) {
+      this.transactionResponse(result.Err);
+    } else if (result.response) {
+      return result.response;
     }
   }
 

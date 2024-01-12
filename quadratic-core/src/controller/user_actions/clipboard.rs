@@ -1,12 +1,7 @@
 use crate::controller::{
-    operations::clipboard::{Clipboard, ClipboardCell},
-    transaction_summary::TransactionSummary,
-    GridController,
+    operations::clipboard::Clipboard, transaction_summary::TransactionSummary, GridController,
 };
-use crate::{
-    grid::{get_cell_borders_in_rect, CodeCellValue},
-    Pos, SheetPos, SheetRect,
-};
+use crate::{grid::get_cell_borders_in_rect, Pos, SheetPos, SheetRect};
 use htmlescape;
 
 impl GridController {
@@ -14,8 +9,11 @@ impl GridController {
         let mut cells = vec![];
         let mut plain_text = String::new();
         let mut html = String::from("<tbody>");
-        let mut code = vec![];
-        let sheet = &mut self.grid().sheet_from_id(sheet_rect.sheet_id);
+
+        // todo: have function return an Option<(String, String)> and replace below with a question mark operator
+        let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) else {
+            return (String::new(), String::new());
+        };
 
         for y in sheet_rect.y_range() {
             if y != sheet_rect.min.y {
@@ -31,37 +29,15 @@ impl GridController {
                 }
                 html.push_str("<td>");
                 let pos = Pos { x, y };
-                let value = sheet.get_cell_value_only(pos);
 
-                // spill_value is only needed if there is no cell_value
-                let spill_value = if value.is_none() {
-                    sheet.get_code_cell_value(pos)
-                } else {
-                    None
-                };
+                // the CellValue at the cell that would be displayed in the cell (ie, including code_runs)
+                let simple_value = sheet.display_value(pos);
 
-                // store code_cells w/o output (which will be rerun on paste)
-                if let Some(code_cell_value) = sheet.get_code_cell(pos) {
-                    code.push((
-                        Pos {
-                            x: x - sheet_rect.min.x,
-                            y: y - sheet_rect.min.y,
-                        },
-                        CodeCellValue {
-                            language: code_cell_value.language,
-                            code_string: code_cell_value.code_string.clone(),
-                            formatted_code_string: None,
-                            last_modified: code_cell_value.last_modified.clone(),
-                            output: None,
-                        },
-                    ));
-                }
+                // the CellValue at the cell (ignoring code_runs)
+                let real_value = sheet.cell_value(pos);
 
                 // create quadratic clipboard values
-                cells.push(ClipboardCell {
-                    value: value.clone(),
-                    spill: spill_value.clone(),
-                });
+                cells.push(real_value.clone());
 
                 // add styling for html (only used for pasting to other spreadsheets)
                 // todo: add text color, fill, etc.
@@ -84,13 +60,10 @@ impl GridController {
                     }
                     html.push_str("}>");
                 }
-                if let Some(value) = value.as_ref() {
+                if let Some(value) = &simple_value {
                     plain_text.push_str(&value.to_string());
                     html.push_str(&value.to_string());
-                } else if let Some(spill_value) = spill_value.as_ref() {
-                    plain_text.push_str(&spill_value.to_string());
-                    html.push_str(&spill_value.to_string());
-                };
+                }
                 if bold || italic {
                     html.push_str("</span>");
                 }
@@ -103,7 +76,6 @@ impl GridController {
             cells,
             formats,
             borders,
-            code,
             w: sheet_rect.width() as u32,
             h: sheet_rect.height() as u32,
         };
@@ -249,11 +221,11 @@ mod test {
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 1 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text(String::from("1, 1")))
         );
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 3, y: 2 }),
+            sheet.display_value(Pos { x: 3, y: 2 }),
             Some(CellValue::Number(BigDecimal::from(12)))
         );
 
@@ -272,7 +244,7 @@ mod test {
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 1 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text(String::from("1, 1")))
         );
         assert_eq!(
@@ -285,7 +257,7 @@ mod test {
             }
         );
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 3, y: 2 }),
+            sheet.display_value(Pos { x: 3, y: 2 }),
             Some(CellValue::Number(BigDecimal::from(12)))
         );
         assert_eq!(
@@ -319,9 +291,9 @@ mod test {
         );
 
         assert_eq!(gc.undo_stack.len(), 1);
-        let sheet = gc.grid.try_sheet_from_id(sheet_id).unwrap();
+        let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 1 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
 
@@ -351,11 +323,9 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(4)))
         );
-
-        // todo: the reverse ops for clipboard have SetCodeCell before SetCellValues, which is what's causing the test to fail
 
         gc.paste_from_clipboard(
             SheetPos {
@@ -369,20 +339,18 @@ mod test {
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
 
         assert_eq!(gc.undo_stack.len(), 2);
-
-        dbg!(&gc.undo_stack);
 
         // undo to original code cell value
         gc.undo(None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(4)))
         );
 
@@ -391,7 +359,7 @@ mod test {
         // empty code cell
         gc.undo(None);
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.get_cell_value(Pos { x: 0, y: 0 }), None);
+        assert_eq!(sheet.display_value(Pos { x: 0, y: 0 }), None);
 
         assert_eq!(gc.undo_stack.len(), 0);
     }
@@ -400,7 +368,7 @@ mod test {
     fn test_copy_borders_to_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+        let sheet = gc.sheet_mut(sheet_id);
 
         set_borders(sheet);
 
@@ -437,7 +405,7 @@ mod test {
     fn test_copy_borders_inside() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.grid_mut().sheet_mut_from_id(sheet_id);
+        let sheet = gc.sheet_mut(sheet_id);
 
         let selection = vec![BorderSelection::Outer];
         let style = BorderStyle {
@@ -532,9 +500,9 @@ mod test {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
-        // see line 489 for the output
+        // see line 274 for the output (`print!("{}", clipboard.1);`)
         let pasted_output = String::from(
-            r#"<table data-quadratic="&#x7B;&quot;w&quot;&#x3A;4&#x2C;&quot;h&quot;&#x3A;4&#x2C;&quot;cells&quot;&#x3A;&#x5B;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;text&quot;&#x2C;&quot;value&quot;&#x3A;&quot;1&#x2C;&#x20;1&quot;&#x7D;&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;number&quot;&#x2C;&quot;value&quot;&#x3A;&quot;12&quot;&#x7D;&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x2C;&#x7B;&quot;value&quot;&#x3A;null&#x2C;&quot;spill&quot;&#x3A;null&#x7D;&#x5D;&#x2C;&quot;formats&quot;&#x3A;&#x5B;&#x7B;&quot;Align&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Wrap&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericFormat&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericDecimals&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Bold&quot;&#x3A;&#x5B;&#x5B;null&#x2C;5&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;10&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Italic&quot;&#x3A;&#x5B;&#x5B;null&#x2C;11&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;4&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;TextColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;FillColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x5D;&#x2C;&quot;borders&quot;&#x3A;&#x5B;&#x5B;1&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;3&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;3&#x2C;null&#x5D;&#x5D;&#x2C;&quot;code&quot;&#x3A;&#x5B;&#x5D;&#x7D;"><tbody><tr><td></td><td></td><td></td><td></tr><tr><td></td><td><span style={font-weight:bold;}>1, 1</span></td><td></td><td></tr><tr><td></td><td></td><td></td><td><span style={font-style:italic;}>12</span></tr><tr><td></td><td></td><td></td><td></tr></tbody></table>"#,
+            r#"<table data-quadratic="&#x7B;&quot;w&quot;&#x3A;4&#x2C;&quot;h&quot;&#x3A;4&#x2C;&quot;cells&quot;&#x3A;&#x5B;null&#x2C;null&#x2C;null&#x2C;null&#x2C;null&#x2C;&#x7B;&quot;type&quot;&#x3A;&quot;text&quot;&#x2C;&quot;value&quot;&#x3A;&quot;1&#x2C;&#x20;1&quot;&#x7D;&#x2C;null&#x2C;null&#x2C;null&#x2C;null&#x2C;null&#x2C;&#x7B;&quot;type&quot;&#x3A;&quot;number&quot;&#x2C;&quot;value&quot;&#x3A;&quot;12&quot;&#x7D;&#x2C;null&#x2C;null&#x2C;null&#x2C;null&#x5D;&#x2C;&quot;formats&quot;&#x3A;&#x5B;&#x7B;&quot;Align&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Wrap&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericFormat&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericDecimals&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericCommas&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Bold&quot;&#x3A;&#x5B;&#x5B;null&#x2C;5&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;10&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Italic&quot;&#x3A;&#x5B;&#x5B;null&#x2C;11&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;4&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;TextColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;FillColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x5D;&#x2C;&quot;borders&quot;&#x3A;&#x5B;&#x5B;0&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;0&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;0&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;0&#x2C;3&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;3&#x2C;null&#x5D;&#x2C;&#x5B;2&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;2&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;2&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;2&#x2C;3&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;3&#x2C;null&#x5D;&#x5D;&#x7D;"><tbody><tr><td></td><td></td><td></td><td></tr><tr><td></td><td><span style={font-weight:bold;}>1, 1</span></td><td></td><td></tr><tr><td></td><td></td><td></td><td><span style={font-style:italic;}>12</span></tr><tr><td></td><td></td><td></td><td></tr></tbody></table>"#,
         );
 
         gc.paste_from_clipboard(
@@ -549,9 +517,9 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let cell11 = sheet.get_cell_value(Pos { x: 2, y: 3 });
+        let cell11 = sheet.display_value(Pos { x: 2, y: 3 });
         assert_eq!(cell11.unwrap(), CellValue::Text(String::from("1, 1")));
-        let cell21 = sheet.get_cell_value(Pos { x: 4, y: 4 });
+        let cell21 = sheet.display_value(Pos { x: 4, y: 4 });
         assert_eq!(cell21.unwrap(), CellValue::Number(BigDecimal::from(12)));
     }
 }

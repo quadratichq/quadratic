@@ -72,7 +72,8 @@ pub(crate) async fn process_transactions(
     client: &Client,
     bucket: &str,
     file_id: Uuid,
-    sequence: u64,
+    checkpoint_sequence_num: u64,
+    final_sequence_num: u64,
     operations: Vec<Operation>,
 ) -> Result<u64> {
     let num_operations = operations.len();
@@ -85,7 +86,7 @@ pub(crate) async fn process_transactions(
 
     upload_object(client, bucket, &key, &body).await?;
 
-    Ok(next_sequence_num)
+    Ok(final_sequence_num)
 }
 
 /// Process outstanding transactions in the queue
@@ -168,6 +169,7 @@ pub(crate) async fn process_queue_for_room(
         aws_s3_bucket_name,
         *file_id,
         checkpoint_sequence_num,
+        last_sequence_num,
         operations,
     )
     .await?;
@@ -254,9 +256,9 @@ mod tests {
             "hello".to_string(),
             None,
         );
-        let sheet = client.grid().try_sheet_from_id(sheet_id).unwrap();
+        let sheet = client.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 2 }),
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("hello".to_string()))
         );
 
@@ -265,9 +267,9 @@ mod tests {
             &mut server,
             serde_json::from_str(&summary.operations.unwrap()).unwrap(),
         );
-        let sheet = server.grid().try_sheet_from_id(sheet_id).unwrap();
+        let sheet = server.grid().try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.get_cell_value(Pos { x: 1, y: 2 }),
+            sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("hello".to_string()))
         );
     }

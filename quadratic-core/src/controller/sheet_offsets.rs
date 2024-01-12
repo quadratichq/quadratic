@@ -43,19 +43,22 @@ impl GridController {
         size: f64,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let sheet = self.grid.sheet_from_id(sheet_id);
-        let transient_resize = match (column, row) {
-            (Some(column), None) => {
-                let old_size = sheet.offsets.column_width(column as i64);
-                Some(TransientResize::column(column as i64, old_size, size))
-            }
-            (None, Some(row)) => {
-                let old_size = sheet.offsets.row_height(row as i64);
-                Some(TransientResize::row(row as i64, old_size, size))
-            }
-            _ => None,
-        };
-        self.commit_offsets_resize(sheet_id, transient_resize, cursor)
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            let transient_resize = match (column, row) {
+                (Some(column), None) => {
+                    let old_size = sheet.offsets.column_width(column as i64);
+                    Some(TransientResize::column(column as i64, old_size, size))
+                }
+                (None, Some(row)) => {
+                    let old_size = sheet.offsets.row_height(row as i64);
+                    Some(TransientResize::row(row as i64, old_size, size))
+                }
+                _ => None,
+            };
+            self.commit_offsets_resize(sheet_id, transient_resize, cursor)
+        } else {
+            TransactionSummary::default()
+        }
     }
 }
 

@@ -1,3 +1,5 @@
+import { multiplayer } from '@/multiplayer/multiplayer';
+import { MULTIPLAYER_COLORS } from '@/multiplayer/multiplayerCursor/multiplayerColors';
 import { ArrowDropDown } from '@mui/icons-material';
 import { Box, Fade, IconButton, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
 import { MouseEvent, PointerEvent, useEffect, useRef, useState } from 'react';
@@ -82,8 +84,8 @@ export const SheetBarTab = (props: Props): JSX.Element => {
           setIsRenaming={setIsRenaming}
           sheet={sheet}
         />
+        {sheet.id !== sheets.sheet.id && <TabMultiplayer sheetId={sheet.id} />}
         <TabButton active={active} hasPermission={hasPermission} onContextMenu={onContextMenu} sheet={sheet} />
-
         <Popper open={nameExists} anchorEl={containerRef.current} transition>
           {({ TransitionProps }) => (
             <Fade {...TransitionProps} timeout={350}>
@@ -322,4 +324,37 @@ function selectElementContents(el: HTMLDivElement | null) {
   var sel = window.getSelection();
   sel?.removeAllRanges();
   sel?.addRange(range);
+}
+
+function TabMultiplayer({ sheetId }: { sheetId: string }) {
+  const [users, setUsers] = useState<string[]>([]);
+
+  useEffect(() => {
+    const updateUsers = () => {
+      setUsers(
+        multiplayer.getUsers().flatMap((user) => {
+          if (user.sheet_id === sheetId) {
+            return [MULTIPLAYER_COLORS[user.color % MULTIPLAYER_COLORS.length]];
+          }
+          return [];
+        })
+      );
+    };
+    updateUsers();
+
+    window.addEventListener('multiplayer-change-sheet', updateUsers);
+    window.addEventListener('multiplayer-update', updateUsers);
+    return () => {
+      window.removeEventListener('multiplayer-change-sheet', updateUsers);
+      window.removeEventListener('multiplayer-update', updateUsers);
+    };
+  }, [sheetId]);
+
+  return (
+    <div style={{ position: 'absolute', display: 'flex', width: '100%', top: 0, gap: '1px' }}>
+      {users.map((color, index) => (
+        <div key={index} style={{ width: '5px', height: '5px', backgroundColor: color }} />
+      ))}
+    </div>
+  );
 }

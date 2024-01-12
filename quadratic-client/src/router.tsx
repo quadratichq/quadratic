@@ -29,8 +29,7 @@ window.lf = localforage;
 
 export type RootLoaderData = {
   isAuthenticated: boolean;
-  // TODO consider renaming to `loggedInUser` for clarity's sake
-  user?: User;
+  loggedInUser?: User;
 };
 
 export const useRootRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.ROOT) as RootLoaderData;
@@ -57,7 +56,7 @@ export const router = createBrowserRouter(
 
           initializeAnalytics({ isAuthenticated, user });
 
-          return { isAuthenticated, user };
+          return { isAuthenticated, loggedInUser: user };
         }}
         element={<Root />}
         errorElement={<RootError />}

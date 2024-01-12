@@ -34,15 +34,16 @@ impl GridController {
                 )),
             });
             // only change decimal places if decimals have not been set
-            let sheet = self.grid.sheet_from_id(sheet_pos.sheet_id);
-            if sheet
-                .get_formatting_value::<NumericDecimals>(sheet_pos.into())
-                .is_none()
-            {
-                ops.push(Operation::SetCellFormats {
-                    sheet_rect,
-                    attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
-                });
+            if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
+                if sheet
+                    .get_formatting_value::<NumericDecimals>(sheet_pos.into())
+                    .is_none()
+                {
+                    ops.push(Operation::SetCellFormats {
+                        sheet_rect,
+                        attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
+                    });
+                }
             }
             CellValue::Number(number)
         } else if let Ok(bd) = BigDecimal::from_str(value) {
@@ -86,17 +87,14 @@ impl GridController {
             sheet_rect,
             values: Array::from(cell_value),
         });
-        ops.extend(self.delete_code_cell_operations(&sheet_rect));
         ops
     }
 
-    /// Generates and returns the set of operations to deleted the values and code in a sheet_rect
+    /// Generates and returns the set of operations to delete the values and code in a sheet_rect
     /// Does not commit the operations or create a transaction.
     pub fn delete_cells_rect_operations(&mut self, sheet_rect: SheetRect) -> Vec<Operation> {
         let values = Array::new_empty(sheet_rect.size());
-        let mut ops = vec![Operation::SetCellValues { sheet_rect, values }];
-        ops.extend(self.delete_code_cell_operations(&sheet_rect));
-        ops
+        vec![Operation::SetCellValues { sheet_rect, values }]
     }
 
     /// Generates and returns the set of operations to clear the formatting in a sheet_rect

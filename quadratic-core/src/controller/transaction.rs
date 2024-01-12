@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use super::{
     active_transactions::pending_transaction::PendingTransaction, execution::TransactionType,
-    operations::operation::Operation,
+    operations::operation::Operation, transaction_summary::TransactionSummary,
 };
 
 // Transaction created by client
@@ -16,7 +16,7 @@ pub struct Transaction {
 }
 
 impl Transaction {
-    pub fn to_pending_transaction(
+    pub fn to_undo_transaction(
         &self,
         transaction_type: TransactionType,
         cursor: Option<String>,
@@ -26,6 +26,7 @@ impl Transaction {
             cursor,
             transaction_type,
             operations: self.operations.clone().into(),
+            summary: TransactionSummary::cursor(self.cursor.clone()),
             ..Default::default()
         }
     }

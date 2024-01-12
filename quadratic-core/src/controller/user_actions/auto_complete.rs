@@ -98,7 +98,7 @@ mod tests {
     fn test_cell_values_in_rect() {
         let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
         let (grid_controller, sheet_id) = test_setup_rect(&selected);
-        let sheet = grid_controller.grid().sheet_from_id(sheet_id);
+        let sheet = grid_controller.sheet(sheet_id);
         let result = sheet.cell_values_in_rect(&selected).unwrap();
         let expected = array![
             "a", "h", "x", "g";

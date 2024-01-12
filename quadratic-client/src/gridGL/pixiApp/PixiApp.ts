@@ -18,6 +18,7 @@ import { UIMultiPlayerCursor } from '../UI/UIMultiplayerCursor';
 import { BoxCells } from '../UI/boxCells';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { CellsSheets } from '../cells/CellsSheets';
+import { htmlCellsHandler } from '../htmlCells/htmlCellsHandler';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { ensureVisible } from '../interaction/viewportHelper';
 import { loadAssets } from '../loadAssets';
@@ -286,10 +287,11 @@ export class PixiApp {
       x: viewport.center.x,
       y: viewport.center.y,
       bounds: viewport.getVisibleBounds(),
+      sheetId: sheets.sheet.id,
     });
   }
 
-  loadMultiplayerViewport(options: { x: number; y: number; bounds: Rectangle }): void {
+  loadMultiplayerViewport(options: { x: number; y: number; bounds: Rectangle; sheetId: string }): void {
     const { x, y, bounds } = options;
     let width: number | undefined;
     let height: number | undefined;
@@ -300,13 +302,18 @@ export class PixiApp {
     } else {
       width = bounds.width;
     }
-    this.viewport.animate({
-      position: new Point(x, y),
-      width,
-      height,
-      removeOnInterrupt: true,
-      time: MULTIPLAYER_VIEWPORT_EASE_TIME,
-    });
+    if (sheets.current !== options.sheetId) {
+      sheets.current = options.sheetId;
+      this.viewport.moveCenter(new Point(x, y));
+    } else {
+      this.viewport.animate({
+        position: new Point(x, y),
+        width,
+        height,
+        removeOnInterrupt: true,
+        time: MULTIPLAYER_VIEWPORT_EASE_TIME,
+      });
+    }
     this.viewport.dirty = true;
   }
 
@@ -327,6 +334,7 @@ export class PixiApp {
   adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
     this.cellsSheets.adjustHeadings(options);
     this.cellsSheets.updateBordersString([options.sheetId]);
+    htmlCellsHandler.updateOffsets([sheets.sheet.id]);
     this.headings.dirty = true;
     this.gridLines.dirty = true;
     this.cursor.dirty = true;

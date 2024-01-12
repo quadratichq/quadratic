@@ -15,18 +15,23 @@ pub struct File {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct FilePerms {
+pub struct FilePermsPayload {
     file: File,
-    permission: FilePermRole,
+    user_making_request: FilePerms,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FilePerms {
+    file_permissions: Vec<FilePermRole>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Display)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum FilePermRole {
-    Owner,
-    Editor,
-    Viewer,
-    Annonymous,
+    FileView,
+    FileEdit,
+    FileDelete,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -49,20 +54,25 @@ pub async fn get_file_perms(
     base_url: &str,
     jwt: String,
     file_id: Uuid,
-) -> Result<(FilePermRole, u64)> {
+) -> Result<(Vec<FilePermRole>, u64)> {
     let url = format!("{base_url}/v0/files/{file_id}");
-    let response = reqwest::Client::new()
-        .get(url)
-        .header("Authorization", format!("Bearer {}", jwt))
-        .send()
-        .await?;
+    let response = if jwt.is_empty() {
+        reqwest::Client::new().get(url).send()
+    } else {
+        reqwest::Client::new()
+            .get(url)
+            .header("Authorization", format!("Bearer {}", jwt))
+            .send()
+    }
+    .await?;
 
     handle_response(&response)?;
 
-    let deserailized = response.json::<FilePerms>().await?;
+    let deserialized = response.json::<FilePermsPayload>().await?;
+
     Ok((
-        deserailized.permission,
-        deserailized.file.last_checkpoint_sequence_number,
+        deserialized.user_making_request.file_permissions,
+        deserialized.file.last_checkpoint_sequence_number,
     ))
 }
 
@@ -73,16 +83,18 @@ pub async fn get_file_checkpoint(
     file_id: &Uuid,
 ) -> Result<LastCheckpoint> {
     let url = format!("{base_url}/v0/internal/file/{file_id}/checkpoint");
-    let response = reqwest::Client::new()
-        .get(url)
-        .header("Authorization", format!("Bearer {}", jwt))
-        .send()
-        .await?;
-
+    let response = if jwt.is_empty() {
+        reqwest::Client::new().get(url).send()
+    } else {
+        reqwest::Client::new()
+            .get(url)
+            .header("Authorization", format!("Bearer {}", jwt))
+            .send()
+    }
+    .await?;
     handle_response(&response)?;
 
-    let deserailized = response.json::<Checkpoint>().await?.last_checkpoint;
-    Ok(deserailized)
+    Ok(response.json::<Checkpoint>().await?.last_checkpoint)
 }
 
 /// Set the file's checkpoint with the quadratic API server.
@@ -112,8 +124,8 @@ pub async fn set_file_checkpoint(
 
     handle_response(&response)?;
 
-    let deserailized = response.json::<Checkpoint>().await?.last_checkpoint;
-    Ok(deserailized)
+    let deserialized = response.json::<Checkpoint>().await?.last_checkpoint;
+    Ok(deserialized)
 }
 
 fn handle_response(response: &Response) -> Result<()> {
@@ -129,29 +141,29 @@ fn handle_response(response: &Response) -> Result<()> {
     }
 }
 
-/// Validate the role of a user against the required role.
-/// TODO(ddimaria): implement this once the new file permissions exist on the api server
-pub(crate) fn _validate_role(role: FilePermRole, required_role: FilePermRole) -> Result<()> {
-    let authorized = match required_role {
-        FilePermRole::Owner => role == FilePermRole::Owner,
-        FilePermRole::Editor => role == FilePermRole::Editor || role == FilePermRole::Owner,
-        FilePermRole::Viewer => {
-            role == FilePermRole::Viewer
-                || role == FilePermRole::Editor
-                || role == FilePermRole::Owner
-        }
-        FilePermRole::Annonymous => role == FilePermRole::Annonymous,
-    };
+// /// Validate the role of a user against the required role.
+// /// TODO(ddimaria): implement this once the new file permissions exist on the api server
+// pub(crate) fn _validate_role(role: FilePermRole, required_role: FilePermRole) -> Result<()> {
+//     let authorized = match required_role {
+//         FilePermRole::Owner => role == FilePermRole::Owner,
+//         FilePermRole::Editor => role == FilePermRole::Editor || role == FilePermRole::Owner,
+//         FilePermRole::Viewer => {
+//             role == FilePermRole::Viewer
+//                 || role == FilePermRole::Editor
+//                 || role == FilePermRole::Owner
+//         }
+//         FilePermRole::Anonymous => role == FilePermRole::Anonymous,
+//     };
 
-    if !authorized {
-        SharedError::QuadraticApi(
-            true,
-            format!("Invalid role: user has {role} but needs to be {required_role}"),
-        );
-    }
+//     if !authorized {
+//         SharedError::QuadraticApi(
+//             true,
+//             format!("Invalid role: user has {role} but needs to be {required_role}"),
+//         );
+//     }
 
-    Ok(())
-}
+//     Ok(())
+// }
 
 #[cfg(test)]
 pub mod tests {
@@ -159,20 +171,28 @@ pub mod tests {
     const PERMS: &str = r#"
 {
     "file": {
-      "uuid": "f0b89d21-c208-4cad-89ff-bccc21ef087a",
-      "name": "Untitled",
-      "created_date": "2023-12-11T21:32:55.505Z",
-      "updated_date": "2023-12-14T20:57:03.755Z",
-      "version": "1.4",
-      "lastCheckpointSequenceNumber": 0,
-      "thumbnail": "https://quadratic-api-development.s3.us-west-2.amazonaws.com/f0b89d21-c208-4cad-89ff-bccc21ef087a-thumbnail.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA5BUBGQ3MVA3QLOPB%2F20231214%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20231214T233804Z&X-Amz-Expires=604800&X-Amz-Signature=66722966f17648c1e843a3b9d97326909a4b41c204f76d992510efb5aecfb1df&X-Amz-SignedHeaders=host&x-id=GetObject"
+        "uuid": "0e53acb6-3045-4def-8611-bdf35493a425",
+        "name": "Untitled",
+        "createdDate": "2024-01-11T22:41:41.556Z",
+        "updatedDate": "2024-01-11T22:41:41.556Z",
+        "publicLinkAccess": "NOT_SHARED",
+        "lastCheckpointSequenceNumber": 0,
+        "lastCheckpointVersion": "1.4",
+        "lastCheckpointDataUrl": "https://quadratic-api-development.s3.us-west-2.amazonaws.com/0e53acb6-3045-4def-8611-bdf35493a425-0.grid?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA5BUBGQ3MVA3QLOPB%2F20240111%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20240111T225400Z&X-Amz-Expires=120&X-Amz-Signature=7940db9ee303bd81faf7ca468219075822bbd66b669ad150a69be943841af105&X-Amz-SignedHeaders=host&x-id=GetObject",
+        "thumbnail": "https://quadratic-api-development.s3.us-west-2.amazonaws.com/0e53acb6-3045-4def-8611-bdf35493a425-thumbnail.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIA5BUBGQ3MVA3QLOPB%2F20240111%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20240111T225400Z&X-Amz-Expires=120&X-Amz-Signature=42545f5fef210677be1aa8e51ef127f6d5a82804dc792c345bae15df9a60951b&X-Amz-SignedHeaders=host&x-id=GetObject"
     },
-    "permission": "OWNER"
-  }"#;
+    "owner": { "type": "self" },
+    "userMakingRequest": {
+        "filePermissions": ["FILE_VIEW", "FILE_EDIT", "FILE_DELETE"]
+    }
+}"#;
 
     #[tokio::test]
-    async fn file_perms_returns_owner() {
-        let perms = serde_json::from_str::<FilePerms>(PERMS).unwrap();
-        assert_eq!(perms.permission, FilePermRole::Owner);
+    async fn test_file_perms_parse() {
+        let perms = serde_json::from_str::<FilePermsPayload>(PERMS).unwrap();
+        assert!(perms
+            .user_making_request
+            .file_permissions
+            .contains(&FilePermRole::FileView));
     }
 }

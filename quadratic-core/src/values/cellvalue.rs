@@ -6,13 +6,22 @@ use serde::{Deserialize, Serialize};
 use super::{Duration, Instant, IsBlank};
 use crate::{
     controller::operations::operation::Operation,
-    grid::{formatting::CellFmtArray, NumericDecimals, NumericFormat, NumericFormatKind, Sheet},
-    CodeResult, Error, Pos, RunLengthEncoding, SheetRect,
+    grid::{
+        formatting::CellFmtArray, CodeCellLanguage, NumericDecimals, NumericFormat,
+        NumericFormatKind, Sheet,
+    },
+    CodeResult, Pos, RunError, RunLengthEncoding, SheetRect,
 };
 
 // todo: fill this out
 const CURRENCY_SYMBOLS: &str = "$€£¥";
 const PERCENTAGE_SYMBOL: char = '%';
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct CodeCellValue {
+    pub language: CodeCellLanguage,
+    pub code: String,
+}
 
 /// Non-array value in the formula language.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -37,8 +46,10 @@ pub enum CellValue {
     Duration(Duration),
     /// Error value.
     #[cfg_attr(test, proptest(skip))]
-    Error(Box<Error>),
+    Error(Box<RunError>),
     Html(String),
+    #[cfg_attr(test, proptest(skip))]
+    Code(CodeCellValue),
 }
 impl fmt::Display for CellValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -52,6 +63,7 @@ impl fmt::Display for CellValue {
             CellValue::Duration(d) => write!(f, "{d}"),
             CellValue::Error(e) => write!(f, "{}", e.msg),
             CellValue::Html(s) => write!(f, "{}", s),
+            CellValue::Code(code) => write!(f, "{:?}", code),
         }
     }
 }
@@ -75,6 +87,7 @@ impl CellValue {
             CellValue::Duration(_) => "time duration",
             CellValue::Error(_) => "error",
             CellValue::Html(_) => "html",
+            CellValue::Code(_) => "python",
         }
     }
     /// Returns a formula-source-code representation of the value.
@@ -89,6 +102,7 @@ impl CellValue {
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::Html(s) => s.clone(),
+            CellValue::Code(_) => todo!("repr of python"),
         }
     }
 
@@ -196,6 +210,9 @@ impl CellValue {
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
+
+            // this should not render
+            CellValue::Code(_) => String::new(),
         }
     }
 
@@ -210,6 +227,9 @@ impl CellValue {
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
+
+            // this should not be editable
+            CellValue::Code(_) => String::new(),
         }
     }
 
@@ -254,7 +274,7 @@ impl CellValue {
         self.is_blank() || *self == CellValue::Text(String::new())
     }
     /// Returns the contained error, if this is an error value.
-    pub fn error(&self) -> Option<&Error> {
+    pub fn error(&self) -> Option<&RunError> {
         match self {
             CellValue::Error(e) => Some(e),
             _ => None,
@@ -273,7 +293,7 @@ impl CellValue {
         }
     }
 
-    /// Compares two values but propogates errors and returns `None` in the case
+    /// Compares two values but propagates errors and returns `None` in the case
     /// of disparate types.
     pub fn partial_cmp(&self, other: &Self) -> CodeResult<Option<std::cmp::Ordering>> {
         Ok(Some(match (self, other) {
@@ -296,11 +316,12 @@ impl CellValue {
             | (CellValue::Instant(_), _)
             | (CellValue::Duration(_), _)
             | (CellValue::Html(_), _)
+            | (CellValue::Code(_), _)
             | (CellValue::Blank, _) => return Ok(None),
         }))
     }
 
-    /// Compares two values using a total ordering that propogates errors and
+    /// Compares two values using a total ordering that propagates errors and
     /// converts blanks to zeros.
     #[allow(clippy::should_implement_trait)]
     pub fn cmp(&self, other: &Self) -> CodeResult<std::cmp::Ordering> {
@@ -317,6 +338,7 @@ impl CellValue {
                 CellValue::Duration(_) => 5,
                 CellValue::Blank => 6,
                 CellValue::Html(_) => 7,
+                CellValue::Code(_) => 8,
             }
         }
 

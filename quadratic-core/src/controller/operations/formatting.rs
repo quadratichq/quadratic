@@ -74,7 +74,9 @@ impl GridController {
         sheet_rect: SheetRect,
         delta: isize,
     ) -> Vec<Operation> {
-        let sheet = self.sheet(source.sheet_id);
+        let Some(sheet) = self.try_sheet(source.sheet_id) else {
+            return vec![];
+        };
         let is_percentage =
             sheet.cell_numeric_format_kind(source.into()) == Some(NumericFormatKind::Percentage);
         let decimals = sheet
@@ -98,7 +100,9 @@ impl GridController {
         source: SheetPos,
         sheet_rect: SheetRect,
     ) -> Vec<Operation> {
-        let sheet = self.sheet(source.sheet_id);
+        let Some(sheet) = self.try_sheet(source.sheet_id) else {
+            return vec![];
+        };
         let commas =
             if let Some(commas) = sheet.get_formatting_value::<NumericCommas>(source.into()) {
                 !commas
@@ -152,17 +156,18 @@ impl GridController {
         ];
 
         // clear borders
-        let sheet = self.grid.sheet_from_id(sheet_rect.sheet_id);
-        let borders = generate_borders(
-            sheet,
-            &sheet_rect.into(),
-            vec![BorderSelection::Clear],
-            None,
-        );
-        ops.push(Operation::SetBorders {
-            sheet_rect,
-            borders,
-        });
+        if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+            let borders = generate_borders(
+                sheet,
+                &sheet_rect.into(),
+                vec![BorderSelection::Clear],
+                None,
+            );
+            ops.push(Operation::SetBorders {
+                sheet_rect,
+                borders,
+            });
+        }
         ops
     }
 }

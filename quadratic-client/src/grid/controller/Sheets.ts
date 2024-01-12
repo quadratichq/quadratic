@@ -6,6 +6,8 @@ import { grid } from './Grid';
 
 class Sheets {
   sheets: Sheet[];
+
+  // current sheet id
   private _current: string;
 
   // set up sheet information
@@ -85,6 +87,7 @@ class Sheets {
       pixiApp.axesLines.dirty = true;
       pixiApp.headings.dirty = true;
       pixiApp.cursor.dirty = true;
+      pixiApp.multiplayerCursor.dirty = true;
       pixiApp.boxCells.reset();
       pixiAppSettings.changeInput(false);
       pixiApp.cellsSheets.show(sheets.sheet.id);
@@ -261,6 +264,7 @@ class Sheets {
     pixiApp.headings.dirty = true;
     pixiApp.gridLines.dirty = true;
     pixiApp.cursor.dirty = true;
+    pixiApp.multiplayerCursor.dirty = true;
   }
 
   getMultiplayerSelection(): string {

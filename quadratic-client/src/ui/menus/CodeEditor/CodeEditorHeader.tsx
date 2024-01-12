@@ -1,7 +1,10 @@
+import { sheets } from '@/grid/controller/Sheets';
+import { multiplayer } from '@/multiplayer/multiplayer';
+import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
 import { Close, FiberManualRecord, HelpOutline, PlayArrow, Stop, Subject } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
+import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { pythonStateAtom } from '../../../atoms/pythonStateAtom';
 import { Coordinate } from '../../../gridGL/types/size';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 // import { CodeCellValue } from '../../../quadratic-core/types';
@@ -17,7 +20,6 @@ import { Formula, Python } from '../../icons';
 interface Props {
   cellLocation: Coordinate | undefined;
   unsaved: boolean;
-  isRunningComputation: boolean;
 
   saveAndRunCell: () => void;
   cancelPython: () => void;
@@ -25,15 +27,39 @@ interface Props {
 }
 
 export const CodeEditorHeader = (props: Props) => {
-  const { cellLocation, unsaved, isRunningComputation, saveAndRunCell, cancelPython, closeEditor } = props;
-  const { pythonState } = useRecoilValue(pythonStateAtom);
+  const { cellLocation, unsaved, saveAndRunCell, cancelPython, closeEditor } = props;
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const hasPermission = hasPerissionToEditFile(editorInteractionState.permissions);
 
   const language = editorInteractionState.mode;
 
+  const [isRunningComputation, setIsRunningComputation] = useState(false);
+
+  useEffect(() => {
+    const updateRunning = () => {
+      if (!cellLocation) return;
+      const cells = [
+        ...pythonWebWorker.getCodeRunning(),
+        ...multiplayer.getUsers().flatMap((user) => user.parsedCodeRunning),
+      ];
+      if (
+        cells.find((cell) => cell.x === cellLocation.x && cell.y === cellLocation.y && cell.sheetId === sheets.sheet.id)
+      ) {
+        setIsRunningComputation(true);
+      } else {
+        setIsRunningComputation(false);
+      }
+    };
+    updateRunning();
+    window.addEventListener('python-change', updateRunning);
+    window.addEventListener('multiplayer-update', updateRunning);
+    return () => {
+      window.removeEventListener('python-change', updateRunning);
+      window.removeEventListener('multiplayer-update', updateRunning);
+    };
+  }, [cellLocation]);
+
   if (!cellLocation) return null;
-  const isLoadingPython = pythonState === 'loading' && language === 'PYTHON';
 
   return (
     <div
@@ -81,9 +107,9 @@ export const CodeEditorHeader = (props: Props) => {
         </span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-        {(isRunningComputation || isLoadingPython) && (
-          <TooltipHint title={`Python ${isLoadingPython ? 'loading' : 'executing'}…`} placement="bottom">
-            <CircularProgress size="1rem" color={isLoadingPython ? 'warning' : 'primary'} className={`mr-2`} />
+        {isRunningComputation && (
+          <TooltipHint title={'Python executing…'} placement="bottom">
+            <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
           </TooltipHint>
         )}
         <TooltipHint title="Read the docs" placement="bottom">
@@ -116,7 +142,7 @@ export const CodeEditorHeader = (props: Props) => {
                 size="small"
                 color="primary"
                 onClick={saveAndRunCell}
-                disabled={isRunningComputation || isLoadingPython}
+                disabled={isRunningComputation}
               >
                 <PlayArrow />
               </IconButton>

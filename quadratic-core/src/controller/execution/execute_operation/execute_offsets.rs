@@ -14,14 +14,10 @@ impl GridController {
             new_size,
         } = op
         {
-            let sheet = self.grid.sheet_mut_from_id(sheet_id);
-            transaction.summary.offsets_modified.insert(sheet.id);
-            let old_size = sheet.offsets.set_column_width(column, new_size);
-            transaction.summary.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
-                x: column,
-                y: 0,
-                sheet_id,
-            });
+            let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+                // sheet may have been deleted
+                return;
+            };
             transaction
                 .forward_operations
                 .push(Operation::ResizeColumn {
@@ -29,6 +25,17 @@ impl GridController {
                     column,
                     new_size,
                 });
+            transaction.summary.offsets_modified.insert(sheet.id);
+            let old_size = sheet.offsets.set_column_width(column, new_size);
+
+            if transaction.is_user() {
+                transaction.summary.generate_thumbnail |=
+                    self.thumbnail_dirty_sheet_pos(SheetPos {
+                        x: column,
+                        y: 0,
+                        sheet_id,
+                    });
+            }
             transaction.reverse_operations.insert(
                 0,
                 Operation::ResizeColumn {
@@ -47,19 +54,25 @@ impl GridController {
             new_size,
         } = op
         {
-            let sheet = self.grid.sheet_mut_from_id(sheet_id);
-            let old_size = sheet.offsets.set_row_height(row, new_size);
-            transaction.summary.offsets_modified.insert(sheet.id);
-            transaction.summary.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
-                x: 0,
-                y: row,
-                sheet_id,
-            });
+            let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+                // sheet may have been deleted
+                return;
+            };
             transaction.forward_operations.push(Operation::ResizeRow {
                 sheet_id,
                 row,
                 new_size,
             });
+            let old_size = sheet.offsets.set_row_height(row, new_size);
+            transaction.summary.offsets_modified.insert(sheet.id);
+            if transaction.is_user_undo_redo() {
+                transaction.summary.generate_thumbnail |=
+                    self.thumbnail_dirty_sheet_pos(SheetPos {
+                        x: 0,
+                        y: row,
+                        sheet_id,
+                    });
+            }
             transaction.reverse_operations.insert(
                 0,
                 Operation::ResizeRow {
@@ -88,7 +101,7 @@ mod tests {
         let summary = gc.commit_single_resize(sheet_id, Some(column), None, new_size, None);
         let column_width = gc
             .grid
-            .try_sheet_from_id(sheet_id)
+            .try_sheet(sheet_id)
             .unwrap()
             .offsets
             .column_width(column as i64);
@@ -109,7 +122,7 @@ mod tests {
         let summary = gc.commit_single_resize(sheet_id, None, Some(row), new_size, None);
         let row_height = gc
             .grid
-            .try_sheet_from_id(sheet_id)
+            .try_sheet(sheet_id)
             .unwrap()
             .offsets
             .row_height(row as i64);

@@ -82,21 +82,29 @@ impl SheetOffsets {
 
     /// Sets the width of a column and returns the old width.
     pub fn set_column_width(&mut self, x: i64, width: f64) -> f64 {
-        self.column_widths.set_size(x, width)
+        let old = self.column_widths.set_size(x, width);
+        self.calculate_thumbnail();
+        old
     }
     /// Sets the height of a row and returns the old height.
     pub fn set_row_height(&mut self, y: i64, height: f64) -> f64 {
-        self.row_heights.set_size(y, height)
+        let old = self.row_heights.set_size(y, height);
+        self.calculate_thumbnail();
+        old
     }
 
     /// Resets the width of a column and returns the old width.
     pub fn reset_column_width(&mut self, x: i64) -> f64 {
-        self.column_widths.reset(x)
+        let old = self.column_widths.reset(x);
+        self.calculate_thumbnail();
+        old
     }
 
     /// Resets the height of a row and returns the old height.
     pub fn reset_row_height(&mut self, y: i64) -> f64 {
-        self.row_heights.reset(y)
+        let old = self.row_heights.reset(y);
+        self.calculate_thumbnail();
+        old
     }
 
     pub fn column_width(&self, x: i64) -> f64 {

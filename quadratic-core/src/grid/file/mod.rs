@@ -63,7 +63,6 @@ pub fn import(file_contents: &str) -> Result<Grid> {
 pub fn export(grid: &mut Grid) -> Result<String> {
     let converted = current::export(grid)?;
     let serialized = serde_json::to_string(&converted).map_err(|e| anyhow!(e))?;
-
     Ok(serialized)
 }
 
@@ -88,7 +87,7 @@ mod tests {
         include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_python.grid");
     const V1_3_TEXT_ONLY_CODE_CELL_FILE: &str =
         include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_python_text_only.grid");
-    const V1_3_SINGLE_FORMULS_CODE_CELL_FILE: &str =
+    const V1_3_SINGLE_FORMULAS_CODE_CELL_FILE: &str =
         include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_single_formula.grid");
     const V1_3_NPM_DOWNLOADS_FILE: &str =
         include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_fill_color.grid");
@@ -123,9 +122,19 @@ mod tests {
 
     #[test]
     fn process_a_v1_3_single_formula_file() {
-        let mut imported = import(V1_3_SINGLE_FORMULS_CODE_CELL_FILE).unwrap();
-        assert_eq!(imported.sheets[0].code_cells[0].0, Pos { x: 0, y: 2 });
-        assert_eq!(imported.sheets[0].code_cells[0].1.code_string, "SUM(A0:A1)");
+        let mut imported = import(V1_3_SINGLE_FORMULAS_CODE_CELL_FILE).unwrap();
+        assert!(imported.sheets[0]
+            .code_runs
+            .get(&Pos { x: 0, y: 2 })
+            .is_some());
+        let cell_value = imported.sheets[0].cell_value(Pos { x: 0, y: 2 }).unwrap();
+
+        match cell_value {
+            crate::grid::CellValue::Code(formula) => {
+                assert_eq!(formula.code, "SUM(A0:A1)");
+            }
+            _ => panic!("Expected a formula"),
+        };
         let _exported = export(&mut imported).unwrap();
     }
 
@@ -193,5 +202,21 @@ mod tests {
     fn process_a_v1_4_airports_distance_file() {
         let mut imported = import(V1_4_AIRPORTS_DISTANCE_FILE).unwrap();
         let _exported = export(&mut imported).unwrap();
+    }
+
+    const V1_5_FILE: &str =
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
+
+    #[test]
+    fn imports_and_exports_a_current_grid() {
+        let mut imported = import(V1_5_FILE).unwrap();
+        let exported = export(&mut imported).unwrap();
+        assert_eq!(V1_5_FILE, exported);
+    }
+
+    #[test]
+    fn imports_and_exports_v1_4_default() {
+        let mut imported = import(V1_4_FILE).unwrap();
+        export(&mut imported).unwrap();
     }
 }

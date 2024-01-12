@@ -85,8 +85,12 @@ impl GridController {
     ) {
         if let Operation::ReorderSheet { target, order } = op {
             let old_first = self.grid.first_sheet_id();
-            let sheet = self.grid.sheet_from_id(target);
+            let Some(sheet) = self.try_sheet_mut(target) else {
+                // sheet may have been deleted
+                return;
+            };
             let original_order = sheet.order.clone();
+            sheet.order = order.clone();
             self.grid.move_sheet(target, order.clone());
             transaction.summary.sheet_list_modified = true;
 
@@ -112,7 +116,10 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::SetSheetName { sheet_id, name } = op {
-            let sheet = self.grid.sheet_mut_from_id(sheet_id);
+            let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+                // sheet may have been deleted
+                return;
+            };
             let old_name = sheet.name.clone();
             sheet.name = name.clone();
             transaction.summary.sheet_list_modified = true;
@@ -135,7 +142,10 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::SetSheetColor { sheet_id, color } = op {
-            let sheet = self.grid.sheet_mut_from_id(sheet_id);
+            let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+                // sheet may have been deleted
+                return;
+            };
             let old_color = sheet.color.clone();
             sheet.color = color.clone();
             transaction.summary.sheet_list_modified = true;
@@ -219,17 +229,26 @@ mod tests {
     fn test_sheet_reorder() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
+
+        // Sheet 1, Sheet 2
         gc.add_sheet(None);
         assert_eq!(gc.grid.sheets().len(), 2);
         let sheet_id2 = gc.sheet_ids()[1];
+        assert_eq!(gc.grid.sheets()[0].id, sheet_id);
+        assert_eq!(gc.grid.sheets()[1].id, sheet_id2);
+
+        // Sheet 2, Sheet 1
         let summary = gc.move_sheet(sheet_id, None, None);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id2);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id);
         assert!(summary.save);
         assert!(summary.sheet_list_modified);
+
+        // Sheet 1, Sheet 2
         gc.undo(None);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id2);
+
         assert!(summary.save);
         assert!(summary.sheet_list_modified);
         let summary = gc.move_sheet(sheet_id2, Some(sheet_id), None);

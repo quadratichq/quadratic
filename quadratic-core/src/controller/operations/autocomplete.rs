@@ -1,6 +1,3 @@
-use anyhow::{anyhow, Result};
-use itertools::Itertools;
-
 use crate::{
     controller::GridController,
     grid::{
@@ -11,6 +8,8 @@ use crate::{
     util::maybe_reverse_range,
     Array, CellValue, Pos, Rect, SheetRect,
 };
+use anyhow::{anyhow, Error, Result};
+use itertools::Itertools;
 
 use super::operation::Operation;
 
@@ -588,7 +587,7 @@ impl GridController {
         Ok(ops)
     }
 
-    /// Gven an array of values, determine if a series exists and if so, apply it.
+    /// Given an array of values, determine if a series exists and if so, apply it.
     fn apply_auto_complete(
         &mut self,
         sheet_id: SheetId,
@@ -597,7 +596,9 @@ impl GridController {
         range: &Rect,
         cell_values: Option<Vec<CellValue>>,
     ) -> Result<(Vec<Operation>, Vec<CellValue>)> {
-        let sheet = self.sheet(sheet_id);
+        let Some(sheet) = self.try_sheet(sheet_id) else {
+            return Err(Error::msg("Sheet not found"));
+        };
         let values = if let Some(cell_values) = cell_values {
             cell_values
         } else {
@@ -635,7 +636,7 @@ impl GridController {
 
 /// Apply formats to a given region.
 ///
-/// TODO(ddimaria): this funcion is sufficiently generic that it could be moved
+/// TODO(ddimaria): this function is sufficiently generic that it could be moved
 /// TODO(ddimaria): we could remove the clones below by modifying the Operation
 /// calls to accept references since they don't mutate the region.
 pub fn apply_formats(sheet_rect: SheetRect, formats: &[CellFmtArray]) -> Vec<Operation> {

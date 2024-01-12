@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 602a03631ece26f2a5451aead38b168db9c72d34db92bba989c922212e0b1670 # shrinks to writes = [(Pos { x: 0, y: 0 }, Text(""))]
+cc bfe8adc58decc2b014d580fc9ebbd9fad309393b9153c929748d466e70c54a98 # shrinks to writes = [(Pos { x: 0, y: 0 }, Text(""))]

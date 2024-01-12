@@ -1,0 +1,16 @@
+.code-running-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+.code-running {
+  position: relative;
+  left: 0;
+  pointer-events: none;
+}
+
+.code-running-indicator {
+  position: absolute;
+}

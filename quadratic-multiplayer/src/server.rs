@@ -127,23 +127,25 @@ async fn ws_handler(
     if state.settings.authenticate_jwt {
         let auth_error = |error: &str| MpError::Authentication(error.to_string());
 
-        // validate the JWT
+        // validate the JWT or ignore for anonymous users if it doesn't exist
         let result = async {
             let cookie = cookie.ok_or_else(|| auth_error("No cookie found"))?;
-            let token = cookie
-                .get("jwt")
-                .ok_or_else(|| auth_error("No JWT found"))?;
-            let jwks: jsonwebtoken::jwk::JwkSet = state
-                .settings
-                .jwks
-                .clone()
-                .ok_or_else(|| auth_error("No JWKS found"))?;
+            if let Some(token) = cookie.get("jwt") {
+                let jwks: jsonwebtoken::jwk::JwkSet = state
+                    .settings
+                    .jwks
+                    .clone()
+                    .ok_or_else(|| auth_error("No JWKS found"))?;
 
-            authorize(&jwks, token, false, true)?;
+                authorize(&jwks, token, false, true)?;
 
-            jwt = Some(token.to_owned());
+                jwt = Some(token.to_owned());
 
-            Ok::<_, MpError>(())
+                Ok::<_, MpError>(())
+            } else {
+                // this is for anonymous users
+                Ok::<_, MpError>(())
+            }
         }
         .await;
 
@@ -428,6 +430,7 @@ pub(crate) mod tests {
             x: Some(1.0),
             y: Some(2.0),
             selection: None,
+            code_running: None,
             sheet_id: None,
             visible: None,
             cell_edit: None,
@@ -446,6 +449,7 @@ pub(crate) mod tests {
             y: None,
             visible: None,
             cell_edit: None,
+            code_running: None,
             viewport: None,
         };
 
@@ -461,7 +465,24 @@ pub(crate) mod tests {
             y: None,
             visible: None,
             cell_edit: None,
+            code_running: None,
             viewport: Some("new_viewport".to_string()),
+        };
+
+        assert_user_changes_state(update).await;
+    }
+
+    #[tokio::test]
+    async fn user_changes_running() {
+        let update = UserStateUpdate {
+            selection: None,
+            sheet_id: None,
+            x: None,
+            y: None,
+            visible: None,
+            cell_edit: None,
+            code_running: Some("new_running".to_string()),
+            viewport: None,
         };
 
         assert_user_changes_state(update).await;

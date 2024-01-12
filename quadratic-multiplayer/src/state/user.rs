@@ -19,7 +19,7 @@ pub(crate) struct User {
     pub last_name: String,
     pub email: String,
     pub image: String,
-    pub permission: FilePermRole,
+    pub permissions: Vec<FilePermRole>,
     #[serde(flatten)]
     pub state: UserState,
     #[serde(skip_serializing)]
@@ -52,6 +52,7 @@ pub(crate) struct CellEdit {
 pub(crate) struct UserState {
     pub sheet_id: Uuid,
     pub selection: String,
+    pub code_running: String,
     pub cell_edit: CellEdit,
     pub x: f64,
     pub y: f64,
@@ -64,6 +65,7 @@ pub(crate) struct UserStateUpdate {
     pub sheet_id: Option<Uuid>,
     pub selection: Option<String>,
     pub cell_edit: Option<CellEdit>,
+    pub code_running: Option<String>,
     pub x: Option<f64>,
     pub y: Option<f64>,
     pub visible: Option<bool>,
