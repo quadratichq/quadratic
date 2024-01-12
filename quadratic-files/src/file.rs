@@ -1,5 +1,5 @@
-use std::{borrow::Borrow, sync::Arc};
-use tokio::{sync::Mutex, time::Instant};
+use std::sync::Arc;
+use tokio::time::Instant;
 use uuid::Uuid;
 
 use quadratic_core::{
@@ -22,7 +22,7 @@ use quadratic_rust_shared::{
 
 use crate::{
     error::{FilesError, Result},
-    state::{pubsub::PubSub, settings::Settings, State},
+    state::{settings::Settings, State},
 };
 
 pub static GROUP_NAME: &str = "quadratic-file-service-1";

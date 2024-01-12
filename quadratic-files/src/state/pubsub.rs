@@ -14,14 +14,12 @@ impl PubSub {
     /// Create a new connection to the PubSub server
     pub(crate) async fn new(config: PubSubConfig) -> Result<Self> {
         let connection = Self::connect(&config).await?;
-
         Ok(PubSub { config, connection })
     }
 
     /// Connect to the PubSub server
     pub(crate) async fn connect(config: &PubSubConfig) -> Result<RedisConnection> {
         let connection = RedisConnection::new(config.to_owned()).await?;
-
         Ok(connection)
     }
 

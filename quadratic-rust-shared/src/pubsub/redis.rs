@@ -79,7 +79,7 @@ impl super::PubSub for RedisConnection {
         unimplemented!()
     }
 
-    async fn remove_active_channel(&mut self, set_key: &str, channel: &str) -> Result<()> {
+    async fn remove_active_channel(&mut self, _set_key: &str, _channel: &str) -> Result<()> {
         unimplemented!()
     }
 
@@ -107,7 +107,7 @@ impl super::PubSub for RedisConnection {
         _channel: &str,
         _group: &str,
         _keys: Vec<&str>,
-        active_channel: Option<&str>,
+        _active_channel: Option<&str>,
     ) -> Result<()> {
         unimplemented!()
     }

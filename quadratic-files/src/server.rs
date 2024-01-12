@@ -3,15 +3,15 @@
 //! Handle bootstrapping and starting the HTTP server.  Adds global state
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
 use axum::{routing::get, Extension, Router};
-use quadratic_rust_shared::pubsub::PubSub;
 use std::time::Duration;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::time;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::health::healthcheck;
 use crate::{
     config::config,
     error::{FilesError, Result},
@@ -105,6 +105,10 @@ pub(crate) async fn serve() -> Result<()> {
     })?;
 
     Ok(())
+}
+
+pub(crate) async fn healthcheck() -> impl IntoResponse {
+    StatusCode::OK
 }
 
 #[cfg(test)]

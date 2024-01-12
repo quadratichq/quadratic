@@ -340,7 +340,7 @@ pub mod tests {
             .await
             .unwrap();
 
-        results.iter().enumerate().for_each(|(key, (id, value))| {
+        results.iter().enumerate().for_each(|(key, (_id, value))| {
             assert_eq!(messages[key], value);
         });
 
