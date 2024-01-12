@@ -287,10 +287,15 @@ pub(crate) mod tests {
         integration_test_receive, integration_test_send_and_receive, integration_test_setup,
         new_arc_state, new_user,
     };
+    use axum::{
+        body::Body,
+        http::{self, Request},
+    };
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::grid::SheetId;
     use tokio::net::TcpStream;
     use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
+    use tower::ServiceExt;
     use uuid::Uuid;
 
     async fn add_user_via_ws(
@@ -355,6 +360,25 @@ pub(crate) mod tests {
         let response = integration_test_send_and_receive(&socket, request, true).await;
 
         assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
+    }
+
+    #[tokio::test]
+    async fn responds_with_a_200_OK_for_a_healthcheck() {
+        let state = new_arc_state().await;
+        let app = app(state);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::GET)
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
     }
 
     #[tokio::test]
