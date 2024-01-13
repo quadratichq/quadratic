@@ -91,7 +91,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
             <MultiplayerCellEdits />
             <HtmlCells />
             <CodeRunning />
-            <MultiplayerCursors />
+            <MultiplayerCursors topHeading={topHeading} leftHeading={leftHeading} />
           </div>
         </div>
       </div>
