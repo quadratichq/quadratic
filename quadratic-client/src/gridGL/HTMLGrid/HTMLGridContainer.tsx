@@ -36,7 +36,6 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
     const updateTransform = () => {
       viewport.updateTransform();
       let worldTransform = viewport.worldTransform;
-      // const scale = viewport.scale.x;
       container.style.transform = `matrix(${worldTransform.a}, ${worldTransform.b}, ${worldTransform.c}, ${
         worldTransform.d
       }, ${worldTransform.tx + parent.offsetLeft}, ${worldTransform.ty + parent.offsetTop})`;
