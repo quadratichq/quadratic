@@ -48,8 +48,11 @@ export default function QuadraticUI() {
       {!presentationMode && <TopBar />}
       {editorInteractionState.showCommandPalette && <CommandPalette confirmSheetDelete={() => 0} />}
       {editorInteractionState.showGoToMenu && <GoTo />}
-      // todo: border for multiplayer goes here...
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+
+      <div
+        className="TODO: multiplayer indicator goes here"
+        style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}
+      >
         <div
           style={{
             width: '100%',
