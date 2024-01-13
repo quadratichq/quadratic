@@ -66,7 +66,13 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   // load WASM
   await init();
   hello();
-  grid.openFromContents(checkpointContents, data.file.lastCheckpointSequenceNumber);
+  if (!grid.openFromContents(checkpointContents, data.file.lastCheckpointSequenceNumber)) {
+    Sentry.captureEvent({
+      message: `Failed to open a user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
+      level: 'error',
+    });
+    throw new Response('File validation failed.');
+  }
   grid.thumbnailDirty = !data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT');
 
   // If the file is newer than the app, do a (hard) reload.
