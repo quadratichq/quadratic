@@ -123,7 +123,7 @@ mod tests {
 
     #[test]
     fn test_check_spills() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
 
         let sheet_id = gc.sheet_ids()[0];
@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn test_check_all_spills() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let mut transaction = PendingTransaction::default();
 
         let sheet_id = gc.sheet_ids()[0];

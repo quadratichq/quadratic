@@ -2,7 +2,7 @@ import { htmlCellsHandler } from '@/gridGL/htmlCells/htmlCellsHandler';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import * as Sentry from '@sentry/react';
 import { Point, Rectangle } from 'pixi.js';
-import { debugShowMultiplayer } from '../../debugFlags';
+import { debugDisableProxy, debugShowMultiplayer } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
@@ -137,6 +137,7 @@ export class Grid {
       window.dispatchEvent(new CustomEvent('transaction-complete'));
     }
 
+    // multiplayer transactions
     if (summary.operations) {
       multiplayer.sendTransaction(summary.transaction_id!, summary.operations);
     }
@@ -148,9 +149,8 @@ export class Grid {
     pixiApp.setViewportDirty();
   }
 
-  // this cannot be called in the constructor as Rust is not yet loaded
-  init() {
-    this.gridController = new GridController();
+  test() {
+    this.gridController = GridController.test();
   }
 
   // import/export
@@ -402,8 +402,8 @@ export class Grid {
     this.transactionResponse(summary);
   }
 
-  async setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
-    const summary = await this.gridController.setRegionBorders(
+  setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
+    const summary = this.gridController.setRegionBorders(
       sheetId,
       rectangleToRect(rectangle),
       selection,
@@ -752,8 +752,15 @@ export class Grid {
     if (summaryResponse.Ok) {
       this.transactionResponse(summaryResponse.Ok);
     } else {
+      console.error(summaryResponse.Err);
       throw new Error(summaryResponse.Err);
     }
+  }
+
+  applyOfflineUnsavedTransaction(transactionId: string, transaction: string) {
+    if (debugShowMultiplayer) console.log('[Multiplayer] Applying an offline unsaved transaction.');
+    const summaryResponse = this.gridController.applyOfflineUnsavedTransaction(transactionId, transaction);
+    this.transactionResponse(summaryResponse);
   }
 
   //#endregion
@@ -761,13 +768,12 @@ export class Grid {
 
 //#end
 
-export const grid = GridPerformanceProxy(new Grid());
+let gridCreate: Grid;
 
-// workaround so Rust can import TS functions
-declare global {
-  interface Window {
-    transactionSummary: any;
-  }
+if (debugDisableProxy) {
+  gridCreate = new Grid();
+} else {
+  gridCreate = GridPerformanceProxy(new Grid());
 }
 
-window.transactionSummary = grid.transactionResponse.bind(grid);
+export const grid = gridCreate;

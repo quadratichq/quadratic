@@ -2,6 +2,7 @@ import { authClient, parseDomain } from '@/auth';
 import { debugShowMultiplayer } from '@/debugFlags';
 import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
+import { offline } from '@/grid/controller/offline';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
 import { SheetPos } from '@/gridGL/types/size';
@@ -28,9 +29,17 @@ const UPDATE_TIME = 1000 / 30;
 const HEARTBEAT_TIME = 1000 * 15;
 const RECONNECT_AFTER_ERROR_TIMEOUT = 1000 * 5;
 
+export type MultiplayerState =
+  | 'startup'
+  | 'not connected'
+  | 'connecting'
+  | 'connected'
+  | 'waiting to reconnect'
+  | 'syncing';
+
 export class Multiplayer {
   private websocket?: WebSocket;
-  private state: 'not connected' | 'connecting' | 'connected' | 'waiting to reconnect';
+  private _state: MultiplayerState = 'startup';
   private sessionId;
   private room?: string;
   private user?: User;
@@ -52,9 +61,16 @@ export class Multiplayer {
   users: Map<string, MultiplayerUser> = new Map();
 
   constructor() {
-    this.state = 'not connected';
     this.sessionId = uuid();
     this.userUpdate = { type: 'UserUpdate', session_id: this.sessionId, file_id: '', update: {} };
+  }
+
+  private get state() {
+    return this._state;
+  }
+  private set state(state: MultiplayerState) {
+    this._state = state;
+    window.dispatchEvent(new CustomEvent('multiplayer-state', { detail: state }));
   }
 
   private async getJwt() {
@@ -95,8 +111,8 @@ export class Multiplayer {
       this.websocket.addEventListener('open', () => {
         console.log('[Multiplayer] websocket connected.');
         this.state = 'connected';
-        this.waitingForConnection.forEach((resolve) => resolve(0));
         resolve(0);
+        this.waitingForConnection.forEach((resolve) => resolve(0));
         this.waitingForConnection = [];
         this.lastHeartbeat = Date.now();
         window.addEventListener('change-sheet', this.sendChangeSheet);
@@ -126,6 +142,7 @@ export class Multiplayer {
     if (!user?.sub) throw new Error('User must be defined to enter a multiplayer room.');
     this.userUpdate.file_id = file_id;
     await this.init();
+    if (!this.websocket) throw new Error('Expected websocket to be defined in enterFileRoom');
     this.user = user;
     // ensure the user doesn't join a room twice
     if (this.room === file_id) return;
@@ -153,7 +170,8 @@ export class Multiplayer {
       viewport: pixiApp.saveMultiplayerViewport(),
       code_running: JSON.stringify(pythonWebWorker.getCodeRunning()),
     };
-    this.websocket!.send(JSON.stringify(enterRoom));
+    this.websocket.send(JSON.stringify(enterRoom));
+    offline.loadTransactions();
     if (debugShowMultiplayer) console.log(`[Multiplayer] Joined room ${file_id}.`);
   }
 
@@ -268,14 +286,21 @@ export class Multiplayer {
 
   async sendTransaction(id: string, operations: string) {
     await this.init();
+
+    // it's possible that we try to send a transaction before we've entered a room (eg, unsent_transactions)
+    if (!this.room) return;
     const message: SendTransaction = {
       type: 'Transaction',
       id,
       session_id: this.sessionId,
-      file_id: this.room!,
+      file_id: this.room,
       operations,
     };
-    this.websocket!.send(JSON.stringify(message));
+    this.state = 'syncing';
+    if (this.websocket?.OPEN) {
+      this.websocket.send(JSON.stringify(message));
+      if (debugShowMultiplayer) console.log(`[Multiplayer] Sent transaction ${id}.`);
+    }
   }
 
   sendGetTransactions(min_sequence_num: bigint) {
@@ -287,6 +312,7 @@ export class Multiplayer {
     };
     if (debugShowMultiplayer) console.log(`[Multiplayer] Requesting transactions starting from ${min_sequence_num}.`);
     this.websocket!.send(JSON.stringify(message));
+    this.state = 'syncing';
   }
 
   //#endregion
@@ -431,16 +457,27 @@ export class Multiplayer {
   }
 
   // Receives a new transaction from the server
-  private receiveTransaction(data: ReceiveTransaction) {
+  private async receiveTransaction(data: ReceiveTransaction) {
     if (data.file_id !== this.room) {
       throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
     }
     grid.multiplayerTransaction(data.id, data.sequence_num, data.operations);
+    offline.markTransactionSent(data.id);
+    if (await offline.unsentTransactionsCount()) {
+      this.state = 'syncing';
+    } else {
+      this.state = 'connected';
+    }
   }
 
   // Receives a collection of transactions to catch us up based on our sequenceNum
-  private receiveTransactions(data: ReceiveTransactions) {
+  private async receiveTransactions(data: ReceiveTransactions) {
     grid.receiveMultiplayerTransactions(data.transactions);
+    if (await offline.unsentTransactionsCount()) {
+      this.state = 'syncing';
+    } else {
+      this.state = 'connected';
+    }
   }
 
   // Receives the current transaction number from the server when entering a room.
@@ -481,3 +518,5 @@ export class Multiplayer {
 }
 
 export const multiplayer = new Multiplayer();
+
+window.sendTransaction = multiplayer.sendTransaction.bind(multiplayer);

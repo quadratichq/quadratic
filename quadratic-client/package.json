@@ -78,6 +78,7 @@
     "test:e2e:debug": "playwright test --debug",
     "test:python": "python3 ../tests-python/test.py",
     "test:wasm": "cd .. && cd quadratic-core && cargo test --workspace",
+    "test:vite": "vitest",
     "dev": "concurrently \"BROWSER=none npm start\" \"electron .\"",
     "electron": "electron .",
     "lint:ts": "tsc --noemit",
@@ -113,10 +114,13 @@
     "electron": "^23.0.0",
     "electron-is-dev": "^2.0.0",
     "eslint-config-react-app": "^7.0.1",
+    "fake-indexeddb": "^5.0.2",
     "fontkit": "^2.0.2",
     "fs-extra": "^11.1.0",
+    "happy-dom": "^13.0.0",
     "jest-environment-jsdom": "^29.7.0",
     "msdf-bmfont-xml": "^2.7.0",
+    "node-fetch": "^3.3.2",
     "postcss": "^8.4.31",
     "prettier-plugin-tailwindcss": "^0.4.1",
     "pyodide": "^0.24.1",
@@ -125,6 +129,9 @@
     "tailwindcss": "^3.3.5",
     "vite": "^5.0.0",
     "vite-plugin-checker": "^0.6.2",
-    "vite-tsconfig-paths": "^4.2.1"
+    "vite-plugin-top-level-await": "^1.4.1",
+    "vite-plugin-wasm": "^3.3.0",
+    "vite-tsconfig-paths": "^4.2.1",
+    "vitest": "^1.1.3"
   }
 }

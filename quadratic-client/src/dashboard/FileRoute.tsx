@@ -58,7 +58,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   // load WASM
   await init();
   hello();
-  grid.init();
   grid.openFromContents(file.contents, data.file.lastCheckpointSequenceNumber);
   grid.thumbnailDirty = !data.file.thumbnail;
 

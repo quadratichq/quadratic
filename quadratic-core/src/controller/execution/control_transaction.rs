@@ -45,21 +45,21 @@ impl GridController {
                     self.redo_stack.clear();
                     self.transactions
                         .unsaved_transactions
-                        .push((transaction.to_forward_transaction(), undo));
+                        .insert_or_replace(transaction, true);
                 }
                 TransactionType::Undo => {
                     let undo = transaction.to_undo_transaction();
                     self.redo_stack.push(undo.clone());
                     self.transactions
                         .unsaved_transactions
-                        .push((transaction.to_forward_transaction(), undo));
+                        .insert_or_replace(transaction, true);
                 }
                 TransactionType::Redo => {
                     let undo = transaction.to_undo_transaction();
                     self.undo_stack.push(undo.clone());
                     self.transactions
                         .unsaved_transactions
-                        .push((transaction.to_forward_transaction(), undo));
+                        .insert_or_replace(transaction, true);
                 }
                 TransactionType::Multiplayer => (),
                 TransactionType::Unset => panic!("Expected a transaction type"),
@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn test_transactions_finalize_transaction() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let (operation, operation_undo) = get_operations(&mut gc);
 
         // TransactionType::User
@@ -204,7 +204,7 @@ mod tests {
 
     #[test]
     fn test_transactions_undo_redo() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let (operation, operation_undo) = get_operations(&mut gc);
 
         assert!(!gc.has_undo());
@@ -237,7 +237,7 @@ mod tests {
 
     #[test]
     fn test_transactions_updated_bounds_in_transaction() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let (operation, _) = get_operations(&mut gc);
         assert_eq!(gc.grid().sheets()[0].bounds(true), GridBounds::Empty);
 
@@ -266,7 +266,7 @@ mod tests {
 
     #[test]
     fn test_js_calculation_complete() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let summary = gc.set_code_cell(
             SheetPos {
