@@ -59,7 +59,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   await init();
   hello();
   grid.openFromContents(file.contents, data.file.lastCheckpointSequenceNumber);
-  grid.thumbnailDirty = !data.file.thumbnail;
+  grid.thumbnailDirty = !data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT');
 
   // If the file is newer than the app, do a (hard) reload.
   const fileVersion = file.version;
