@@ -1,6 +1,8 @@
 import { ApiError } from '@/api/fetchFromApi';
 import { CONTACT_URL } from '@/constants/urls';
 import { debugShowMultiplayer } from '@/debugFlags';
+import { firstRustFileVersion } from '@/schemas/validateAndUpgradeLegacyGridFile';
+import { versionGTE } from '@/schemas/versioning';
 import { Button } from '@/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
@@ -43,30 +45,35 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   // Get file contents from S3
   const res = await fetch(data.file.lastCheckpointDataUrl);
 
-  const checkpointContents = await res.text();
+  let checkpointContents = await res.text();
+  let version = data.file.lastCheckpointVersion;
 
-  // Validate and upgrade file to the latest version in TS (up to 1.4)
-  const file = await validateAndUpgradeGridFile(checkpointContents);
-  if (!file) {
-    Sentry.captureEvent({
-      message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
-      level: 'error',
-    });
-    throw new Response('File validation failed.');
+  // only need to upgrade the file if file version is < 1.4
+  if (!versionGTE(data.file.lastCheckpointVersion, firstRustFileVersion)) {
+    // Validate and upgrade file to the latest version in TS (up to 1.4)
+    const file = await validateAndUpgradeGridFile(checkpointContents);
+    if (!file) {
+      Sentry.captureEvent({
+        message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
+        level: 'error',
+      });
+      throw new Response('File validation failed.');
+    }
+    checkpointContents = file.contents;
+    version = file.version;
   }
 
   // load WASM
   await init();
   hello();
-  grid.openFromContents(file.contents, data.file.lastCheckpointSequenceNumber);
+  grid.openFromContents(checkpointContents, data.file.lastCheckpointSequenceNumber);
   grid.thumbnailDirty = !data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT');
 
   // If the file is newer than the app, do a (hard) reload.
-  const fileVersion = file.version;
   const gridVersion = grid.getVersion();
-  if (compareVersions(fileVersion, gridVersion) === VersionComparisonResult.GreaterThan) {
+  if (compareVersions(version, gridVersion) === VersionComparisonResult.GreaterThan) {
     Sentry.captureEvent({
-      message: `User opened a file at version ${fileVersion} but the app is at version ${gridVersion}. The app will automatically reload.`,
+      message: `User opened a file at version ${version} but the app is at version ${gridVersion}. The app will automatically reload.`,
       level: 'log',
     });
     // @ts-expect-error hard reload via `true` only works in some browsers

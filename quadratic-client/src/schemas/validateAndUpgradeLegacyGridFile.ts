@@ -14,7 +14,7 @@ const FILES = [
 ];
 
 // first file version that used Rust to validate
-const firstRustFileVersion = '1.4';
+export const firstRustFileVersion = '1.4';
 
 /**
  * Given arbitrary JSON, validate whether it's a valid file format and return
