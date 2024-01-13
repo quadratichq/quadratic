@@ -48,23 +48,25 @@ export default function QuadraticUI() {
       {!presentationMode && <TopBar />}
       {editorInteractionState.showCommandPalette && <CommandPalette confirmSheetDelete={() => 0} />}
       {editorInteractionState.showGoToMenu && <GoTo />}
+      // todo: border for multiplayer goes here...
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            overflow: 'hidden',
+            position: 'relative',
+          }}
+        >
+          <FileUploadWrapper>
+            <QuadraticGrid />
+          </FileUploadWrapper>
+          {editorInteractionState.showCodeEditor && <CodeEditor />}
+        </div>
 
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          overflow: 'hidden',
-          position: 'relative',
-        }}
-      >
-        <FileUploadWrapper>
-          <QuadraticGrid />
-        </FileUploadWrapper>
-        {editorInteractionState.showCodeEditor && <CodeEditor />}
+        {!presentationMode && <SheetBar />}
       </div>
-
-      {!presentationMode && <SheetBar />}
       {!presentationMode && <BottomBar />}
       {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
       {editorInteractionState.showShareFileMenu && (
