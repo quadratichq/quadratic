@@ -1,12 +1,13 @@
+import { multiplayer } from '@/multiplayer/multiplayer';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
-import { grid } from '../../../../grid/controller/Grid';
-import { sheets } from '../../../../grid/controller/Sheets';
-import { Bounds } from '../../../../grid/sheet/Bounds';
-import { intersects } from '../../../helpers/intersects';
-import { pixiApp } from '../../../pixiApp/PixiApp';
-import { PanMode, pixiAppSettings } from '../../../pixiApp/PixiAppSettings';
-import { Coordinate } from '../../../types/size';
+import { grid } from '../../../grid/controller/Grid';
+import { sheets } from '../../../grid/controller/Sheets';
+import { Bounds } from '../../../grid/sheet/Bounds';
+import { intersects } from '../../helpers/intersects';
+import { pixiApp } from '../../pixiApp/PixiApp';
+import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
+import { Coordinate } from '../../types/size';
 
 export type StateVertical = 'expandDown' | 'expandUp' | 'shrink' | undefined;
 export type StateHorizontal = 'expandRight' | 'expandLeft' | 'shrink' | undefined;
@@ -152,6 +153,7 @@ export class PointerAutoComplete {
           verticalDelete: this.stateVertical === 'shrink',
           deleteRectangles,
         });
+        multiplayer.sendMouseMove(world.x, world.y);
         return true;
       }
       return false;

@@ -2,7 +2,7 @@ import { multiplayer } from '@/multiplayer/multiplayer';
 import { Viewport } from 'pixi-viewport';
 import { InteractionEvent } from 'pixi.js';
 import { pixiApp } from '../../pixiApp/PixiApp';
-import { PointerAutoComplete } from './PointerAutoComplete/PointerAutoComplete';
+import { PointerAutoComplete } from './PointerAutoComplete';
 import { PointerDown } from './PointerDown';
 import { PointerHeading } from './PointerHeading';
 import { PointerHtmlCells } from './PointerHtmlCells';
