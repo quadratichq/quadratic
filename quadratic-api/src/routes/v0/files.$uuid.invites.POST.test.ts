@@ -141,31 +141,40 @@ describe('POST /v0/files/:uuid/invites', () => {
   // TODO: tests for inviting to files public/private or in a team, etc.
   // review all the tests below
 
-  describe('inviting yourself to a file when you’ve already been invited', () => {
-    // it('responds with 400 for owners', async () => {
-    //   await request(app)
-    //     .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
-    //     .send({ email: 'userOwner@example.com', role: 'EDITOR' })
-    //     .set('Accept', 'application/json')
-    //     .set('Authorization', `Bearer ValidToken userOwner`)
-    //     .expect('Content-Type', /json/)
-    //     .expect(400)
-    //     .expect(expectErrorMsg);
-    // });
-    it('responds with 400 for editors', async () => {
-      await request(app)
-        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'userEditor@example.com', role: 'EDITOR' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userEditor`)
-        .expect('Content-Type', /json/)
-        .expect(400)
-        .expect(expectError);
+  describe('inviting people who are already associated with the file', () => {
+    describe('as the file owner', () => {
+      it.todo('responds with a 400 when inviting yourself as owner');
+      it.todo('responds with a 400 when inviting an exisiting EDITOR');
+      it.todo('responds with a 400 when inviting an exisiting VIEWER');
+      it.todo('responds with a 400 when inviting an exisiting invite');
     });
-  });
+    describe('as an EDITOR', () => {
+      it.todo('responds with a 400 when inviting the owner');
+      it.todo('responds with a 400 when inviting yourself as EDITOR');
+      it.todo('responds with a 400 when inviting an exisiting EDITOR');
+      it.todo('responds with a 400 when inviting an exisiting invite');
+    });
+    describe('as a VIEWER', () => {
+      it.todo('responds with a 403 when inviting the owner');
+      it.todo('responds with a 403 when inviting yourself as EDITOR');
+      it.todo('responds with a 403 when inviting an exisiting EDITOR');
+      it.todo('responds with a 403 when inviting an exisiting invite');
+    });
+    describe('as a user with no role and the public link is NOT_SHARED', () => {
+      it.todo('responds with a 403');
+    });
+    describe('as a user with no role and the public link is VIEWER', () => {
+      it.todo('responds with a 403');
+    });
+    describe('as a user with no role and the public link is EDITOR', () => {
+      it.todo('responds with a 400 when inviting the owner');
+      it.todo('responds with a 201 when inviting yourself as EDITOR');
+      it.todo('responds with a 201 when inviting yourself as VIEWER');
+      it.todo('responds with a 403 when inviting an exisiting EDITOR');
+      it.todo('responds with a 403 when inviting an exisiting VIEWER');
+      it.todo('responds with a 403 when inviting an exisiting invite');
+    });
 
-  describe('inviting someone already associated with a file', () => {
-    it.todo('responds with a 400 for inviting the file owner');
     it('responds with 400 for inviting someone who is already a a user', async () => {
       await request(app)
         .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
@@ -176,7 +185,6 @@ describe('POST /v0/files/:uuid/invites', () => {
         .expect(400)
         .expect(expectError);
     });
-    it.todo('responds with a 200 for inviting someone who already has an invite');
   });
 
   describe('adding users who already have a Quadratic account but aren’t yet in the database', () => {
