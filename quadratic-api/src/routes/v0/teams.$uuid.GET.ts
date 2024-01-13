@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import { getAuth0Users } from '../../auth0/profile';
+import { getUsersFromAuth0 } from '../../auth0/profile';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
@@ -58,26 +58,16 @@ async function handler(req: Request, res: Response) {
   const dbUsers = dbTeam?.UserTeamRole ? dbTeam.UserTeamRole : [];
   const dbInvites = dbTeam?.TeamInvite ? dbTeam.TeamInvite : [];
 
-  const auth0UserIds = dbUsers.map(({ user: { auth0Id } }) => auth0Id);
-
   // Get auth0 users
-  const auth0Users = await getAuth0Users(auth0UserIds);
-  // @ts-expect-error fix types
-  const auth0UsersByAuth0Id: Record<string, (typeof auth0Users)[0]> = auth0Users.reduce(
-    // @ts-expect-error fix types
-    (acc, auth0User) => ({ ...acc, [auth0User.user_id]: auth0User }),
-    {}
-  );
+  const auth0UsersById = await getUsersFromAuth0(dbUsers.map(({ user }) => user));
 
   // TODO: sort users by createdDate in the team
   // TODO: invited users, also can we guarantee ordering here?
-  const users = dbUsers.map(({ userId: id, role, user: { auth0Id } }) => {
-    const { email, name, picture } = auth0UsersByAuth0Id[auth0Id];
+  const users = dbUsers.map(({ userId: id, role }) => {
+    const { email, name, picture } = auth0UsersById[id];
     return {
       id,
-      // Casting this to a string because (presumably) auth0 should
-      // always return an email for a user
-      email: email as string,
+      email,
       role,
       name,
       picture,

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import { getUsersByEmail } from '../../auth0/profile';
+import { lookupUsersFromAuth0ByEmail } from '../../auth0/profile';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
@@ -56,7 +56,7 @@ async function handler(req: Request, res: Response) {
   }
 
   // Look up the invited user by email in Auth0
-  const auth0Users = await getUsersByEmail(email);
+  const auth0Users = await lookupUsersFromAuth0ByEmail(email);
 
   // Nobody with an account by that email
   if (auth0Users.length === 0) {
