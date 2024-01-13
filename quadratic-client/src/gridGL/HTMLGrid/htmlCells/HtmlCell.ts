@@ -4,7 +4,7 @@ import { Sheet } from '@/grid/sheet/Sheet';
 import { JsHtmlOutput } from '@/quadratic-core/types';
 import { colors } from '@/theme/colors';
 import { InteractionEvent } from 'pixi.js';
-import { pixiApp } from '../pixiApp/PixiApp';
+import { pixiApp } from '../../pixiApp/PixiApp';
 import { HtmlCellResizing } from './HtmlCellResizing';
 
 // number of screen pixels to trigger the resize cursor

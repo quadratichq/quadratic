@@ -1,6 +1,6 @@
 import { sheets } from '@/grid/controller/Sheets';
+import { MULTIPLAYER_COLORS } from '@/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { multiplayer } from '@/multiplayer/multiplayer';
-import { MULTIPLAYER_COLORS } from '@/multiplayer/multiplayerCursor/multiplayerColors';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
 import { CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';

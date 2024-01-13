@@ -11,6 +11,7 @@ import {
   pasteFromClipboardEvent,
 } from '../../grid/actions/clipboard/clipboard';
 import { sheets } from '../../grid/controller/Sheets';
+import { htmlCellsHandler } from '../HTMLGrid/htmlCells/htmlCellsHandler';
 import { AxesLines } from '../UI/AxesLines';
 import { Cursor } from '../UI/Cursor';
 import { GridLines } from '../UI/GridLines';
@@ -19,7 +20,6 @@ import { UIMultiPlayerCursor } from '../UI/UIMultiplayerCursor';
 import { BoxCells } from '../UI/boxCells';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { CellsSheets } from '../cells/CellsSheets';
-import { htmlCellsHandler } from '../htmlCells/htmlCellsHandler';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { ensureVisible } from '../interaction/viewportHelper';
 import { loadAssets } from '../loadAssets';

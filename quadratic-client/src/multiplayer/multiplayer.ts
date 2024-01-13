@@ -9,7 +9,7 @@ import { SheetPos } from '@/gridGL/types/size';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
 import { User } from '@auth0/auth0-spa-js';
 import { v4 as uuid } from 'uuid';
-import { MULTIPLAYER_COLORS } from './multiplayerCursor/multiplayerColors';
+import { MULTIPLAYER_COLORS } from '../gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import {
   Heartbeat,
   MessageUserUpdate,

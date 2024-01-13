@@ -1,6 +1,6 @@
 import { useRef } from 'react';
-import { sheets } from '../../grid/controller/Sheets';
-import { CURSOR_THICKNESS } from '../UI/Cursor';
+import { sheets } from '../../../grid/controller/Sheets';
+import { CURSOR_THICKNESS } from '../../UI/Cursor';
 import { MultiplayerCell } from './useMultiplayerCellEdit';
 
 interface Props {

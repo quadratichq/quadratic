@@ -67,7 +67,7 @@ pub(crate) async fn handle_message(
                 let (permissions, mut sequence_num) =
                     get_file_perms(base_url, jwt, file_id).await?;
 
-                tracing::info!("permissions: {:?}", permissions);
+                tracing::trace!("permissions: {:?}", permissions);
 
                 // check for updated sequence num from the transaction queue
                 // todo: this will need to be reworked to check the transaction data store

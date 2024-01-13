@@ -1,5 +1,5 @@
+import { MULTIPLAYER_COLORS_TINT } from '@/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { multiplayer } from '@/multiplayer/multiplayer';
-import { MULTIPLAYER_COLORS_TINT } from '@/multiplayer/multiplayerCursor/multiplayerColors';
 import { Graphics, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../pixiApp/PixiApp';

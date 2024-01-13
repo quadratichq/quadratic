@@ -1,7 +1,7 @@
 import { sheets } from '@/grid/controller/Sheets';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { useEffect, useState } from 'react';
-import { multiplayer } from '../multiplayer';
+import { multiplayer } from '../../../multiplayer/multiplayer';
 import { MultiplayerCursor } from './MultiplayerCursor';
 import './MultiplayerCursors.css';
 import { MULTIPLAYER_COLORS } from './multiplayerColors';
@@ -45,6 +45,7 @@ export const MultiplayerCursors = () => {
           name = `User ${index + 1}`;
         }
 
+        // todo: fix this since we changed what coordinates we're using to display
         if (visible && x !== undefined && y !== undefined && sheet_id === sheets.sheet.id) {
           const translated = pixiApp.viewport.toScreen(x, y);
           let offscreen = false;
@@ -62,16 +63,7 @@ export const MultiplayerCursors = () => {
             offscreen = true;
             translated.y = rect.top - offsetTop;
           }
-          return [
-            <MultiplayerCursor
-              key={id}
-              x={translated.x}
-              y={translated.y}
-              name={name}
-              color={color}
-              offscreen={offscreen}
-            />,
-          ];
+          return [<MultiplayerCursor key={id} x={x} y={y} name={name} color={color} offscreen={offscreen} />];
         }
         return [];
       })}

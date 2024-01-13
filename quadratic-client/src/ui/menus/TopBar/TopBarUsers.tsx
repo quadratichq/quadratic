@@ -1,6 +1,6 @@
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
+import { MULTIPLAYER_COLORS } from '@/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
-import { MULTIPLAYER_COLORS } from '@/multiplayer/multiplayerCursor/multiplayerColors';
 import { TooltipHint } from '@/ui/components/TooltipHint';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Avatar, AvatarGroup, IconButton, useTheme } from '@mui/material';

@@ -1,24 +1,42 @@
+import { MultiplayerCursors } from '@/gridGL/HTMLGrid/multiplayerCursor/MulitplayerCursors';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
+import { CellInput } from '../interaction/CellInput';
 import { pixiApp } from '../pixiApp/PixiApp';
+import { CodeRunning } from './codeRunning/CodeRunning';
+import { HtmlCells } from './htmlCells/HtmlCells';
+import { MultiplayerCellEdits } from './multiplayerInput/MultiplayerCellEdits';
 
 interface Props {
   parent?: HTMLDivElement;
-  children?: ReactNode[] | ReactNode;
+}
+
+export interface HtmlGridContainerProps {
+  leftHeading: number;
+  topHeading: number;
 }
 
 export const HTMLGridContainer = (props: Props): ReactNode | null => {
-  const { parent, children } = props;
+  const { parent } = props;
 
   const [container, setContainer] = useState<HTMLDivElement>();
   const containerRef = useCallback((node: HTMLDivElement) => {
     if (node) setContainer(node);
   }, []);
 
+  const [showInput, setShowInput] = useState(false);
+  useEffect(() => {
+    const changeInput = (e: any) => setShowInput(e.detail.showInput);
+    window.addEventListener('change-input', changeInput);
+    return () => window.removeEventListener('change-input', changeInput);
+  }, []);
+
   useEffect(() => {
     if (!container || !parent) return;
     const viewport = pixiApp.viewport;
     const updateTransform = () => {
+      viewport.updateTransform();
       let worldTransform = viewport.worldTransform;
+      // const scale = viewport.scale.x;
       container.style.transform = `matrix(${worldTransform.a}, ${worldTransform.b}, ${worldTransform.c}, ${
         worldTransform.d
       }, ${worldTransform.tx + parent.offsetLeft}, ${worldTransform.ty + parent.offsetTop})`;
@@ -69,7 +87,13 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
             pointerEvents: 'none',
           }}
         >
-          <div style={{ position: 'relative' }}>{children}</div>
+          <div style={{ position: 'relative' }}>
+            {showInput && <CellInput />}
+            <MultiplayerCellEdits />
+            <HtmlCells />
+            <CodeRunning />
+            <MultiplayerCursors />
+          </div>
         </div>
       </div>
     </div>

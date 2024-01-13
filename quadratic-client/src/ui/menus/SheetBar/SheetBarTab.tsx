@@ -1,5 +1,5 @@
+import { MULTIPLAYER_COLORS } from '@/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { multiplayer } from '@/multiplayer/multiplayer';
-import { MULTIPLAYER_COLORS } from '@/multiplayer/multiplayerCursor/multiplayerColors';
 import { ArrowDropDown } from '@mui/icons-material';
 import { Box, Fade, IconButton, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
 import { MouseEvent, PointerEvent, useEffect, useRef, useState } from 'react';

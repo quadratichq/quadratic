@@ -1,7 +1,7 @@
 import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
 import { InteractionEvent } from 'pixi.js';
-import { pixiApp } from '../pixiApp/PixiApp';
+import { pixiApp } from '../../pixiApp/PixiApp';
 import { HtmlCell } from './HtmlCell';
 
 // tolerance of snapping to the grid

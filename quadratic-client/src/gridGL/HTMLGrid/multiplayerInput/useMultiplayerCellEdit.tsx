@@ -2,7 +2,7 @@
 
 import { sheets } from '@/grid/controller/Sheets';
 import { useEffect, useState } from 'react';
-import { Coordinate } from '../types/size';
+import { Coordinate } from '../../types/size';
 
 export interface MultiplayerCell {
   sessionId: string;

@@ -1,14 +1,9 @@
-import { MultiplayerCursors } from '@/multiplayer/multiplayerCursor/MulitplayerCursors';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
 import { HTMLGridContainer } from './HTMLGrid/HTMLGridContainer';
-import { CodeRunning } from './codeRunning/CodeRunning';
-import { HtmlCells } from './htmlCells/HtmlCells';
-import { CellInput } from './interaction/CellInput';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
-import { MultiplayerCellEdits } from './multiplayerInput/MultiplayerCellEdits';
 import { pixiApp } from './pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from './pixiApp/PixiAppSettings';
 
@@ -39,13 +34,6 @@ export default function QuadraticGrid() {
   useEffect(() => {
     pixiAppSettings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
   }, [editorInteractionState, setEditorInteractionState]);
-
-  const [showInput, setShowInput] = useState(false);
-  useEffect(() => {
-    const changeInput = (e: any) => setShowInput(e.detail.showInput);
-    window.addEventListener('change-input', changeInput);
-    return () => window.removeEventListener('change-input', changeInput);
-  }, []);
 
   // Right click menu
   const [showContextMenu, setShowContextMenu] = useState(false);
@@ -121,13 +109,7 @@ export default function QuadraticGrid() {
       }}
       onKeyUp={onKeyUp}
     >
-      <HTMLGridContainer parent={container}>
-        {showInput && <CellInput />}
-        <MultiplayerCellEdits />
-        <HtmlCells />
-        <CodeRunning />
-        <MultiplayerCursors />
-      </HTMLGridContainer>
+      <HTMLGridContainer parent={container} />
       <FloatingContextMenu container={container} showContextMenu={showContextMenu} />
     </div>
   );

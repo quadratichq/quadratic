@@ -1,5 +1,5 @@
-import { HtmlCell } from '@/gridGL/htmlCells/HtmlCell';
-import { htmlCellsHandler } from '@/gridGL/htmlCells/htmlCellsHandler';
+import { HtmlCell } from '@/gridGL/HTMLGrid/htmlCells/HtmlCell';
+import { htmlCellsHandler } from '@/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { InteractionEvent } from 'pixi.js';
 
