@@ -1,7 +1,7 @@
 import { MultiplayerCursors } from '@/gridGL/HTMLGrid/multiplayerCursor/MulitplayerCursors';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
-import { CellInput } from '../interaction/CellInput';
 import { pixiApp } from '../pixiApp/PixiApp';
+import { CellInput } from './CellInput';
 import { CodeRunning } from './codeRunning/CodeRunning';
 import { HtmlCells } from './htmlCells/HtmlCells';
 import { MultiplayerCellEdits } from './multiplayerInput/MultiplayerCellEdits';

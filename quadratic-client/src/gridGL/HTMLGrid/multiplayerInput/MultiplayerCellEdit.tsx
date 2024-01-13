@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { sheets } from '../../../grid/controller/Sheets';
 import { CURSOR_THICKNESS } from '../../UI/Cursor';
-import { MultiplayerCell } from './useMultiplayerCellEdit';
+import { MultiplayerCell } from './MultiplayerCellEdits';
 
 interface Props {
   multiplayerCellInput: MultiplayerCell;
@@ -52,7 +52,7 @@ export const MultiplayerCellEdit = (props: Props) => {
           lineHeight: `${cellOffsets.height - CURSOR_THICKNESS * 2}px`,
           verticalAlign: 'text-top',
           transformOrigin: '0 0',
-          transform: `translate(${cellOffsets.x}px, ${cellOffsets.y}px)`,
+          transform: `translate(${cellOffsets.x + CURSOR_THICKNESS}px, ${cellOffsets.y + CURSOR_THICKNESS}px)`,
           fontFamily,
           fontSize: '14px',
           backgroundColor: formatting.fillColor ?? 'white',
