@@ -1,18 +1,18 @@
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { MultiplayerUser } from '@/multiplayer/multiplayerTypes';
-import { convertName } from '@/utils/userUtil';
+import { displayName } from '@/utils/userUtil';
 import { StopCircleOutlined } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import { useSetRecoilState } from 'recoil';
 
 interface Props {
   follow?: MultiplayerUser;
-  color?: string;
 }
 
 export const Following = (props: Props) => {
+  const { follow } = props;
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-  if (!props.follow) return null;
+  if (!follow) return null;
 
   const stopFollowing = () => {
     setEditorInteractionState((editorInteractionStateAtom) => {
@@ -27,7 +27,7 @@ export const Following = (props: Props) => {
         top: 0,
         left: '50%',
         padding: 'calc(0.3rem - 3px) 1rem 0.3rem',
-        background: props.color,
+        background: follow.colorString,
         color: 'white',
         fontSize: '0.85rem',
         width: 'fit-content',
@@ -38,7 +38,7 @@ export const Following = (props: Props) => {
         transform: 'translateX(-50%)',
       }}
     >
-      <div>Following {convertName(props.follow, false)}</div>
+      <div>Following {displayName(follow, false)}</div>
       <IconButton aria-label="stop" onClick={stopFollowing} sx={{ padding: 0 }}>
         <StopCircleOutlined sx={{ color: 'white' }} />
       </IconButton>

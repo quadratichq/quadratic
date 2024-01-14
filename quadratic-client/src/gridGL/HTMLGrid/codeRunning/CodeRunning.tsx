@@ -1,5 +1,4 @@
 import { sheets } from '@/grid/controller/Sheets';
-import { MULTIPLAYER_COLORS } from '@/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
 import { CircularProgress } from '@mui/material';
@@ -36,7 +35,7 @@ export const CodeRunning = () => {
             code.push({
               left: `${rectangle.x + rectangle.width / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
               top: `${rectangle.y + rectangle.height / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
-              color: MULTIPLAYER_COLORS[user.color % MULTIPLAYER_COLORS.length],
+              color: user.colorString,
             });
           }
         });

@@ -1,5 +1,4 @@
 import { ShareFileDialog } from '@/components/ShareDialog';
-import { MULTIPLAYER_COLORS } from '@/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { useEffect } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState } from 'recoil';
@@ -30,7 +29,6 @@ export default function QuadraticUI() {
   const { uuid } = useParams() as { uuid: string };
   const { name } = useFileContext();
   const { follow } = useMultiplayerUsers();
-  const followColor = follow ? MULTIPLAYER_COLORS[follow.index % MULTIPLAYER_COLORS.length] : undefined;
 
   // Resize the canvas when user goes in/out of presentation mode
   useEffect(() => {
@@ -61,7 +59,7 @@ export default function QuadraticUI() {
           display: 'flex',
           overflow: 'hidden',
           position: 'relative',
-          border: followColor ? `3px solid ${followColor}` : '',
+          border: follow ? `3px solid ${follow.colorString}` : '',
         }}
       >
         <FileUploadWrapper>
@@ -69,7 +67,7 @@ export default function QuadraticUI() {
           {!presentationMode && <SheetBar />}
         </FileUploadWrapper>
         {editorInteractionState.showCodeEditor && <CodeEditor />}
-        <Following follow={follow} color={followColor} />
+        <Following follow={follow} />
       </div>
 
       {!presentationMode && <BottomBar />}

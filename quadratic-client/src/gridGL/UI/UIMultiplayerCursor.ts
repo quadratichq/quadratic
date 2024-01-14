@@ -1,4 +1,3 @@
-import { MULTIPLAYER_COLORS_TINT } from '@/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import { Graphics, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
@@ -86,7 +85,7 @@ export class UIMultiPlayerCursor extends Graphics {
       this.clear();
       const sheetId = sheets.sheet.id;
       multiplayer.users.forEach((player) => {
-        const color = MULTIPLAYER_COLORS_TINT[player.color];
+        const color = player.color;
         if (player.parsedSelection && player.sheet_id === sheetId) {
           this.drawCursor({
             color,

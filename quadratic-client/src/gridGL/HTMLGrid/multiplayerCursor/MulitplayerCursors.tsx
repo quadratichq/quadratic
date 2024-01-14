@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { multiplayer } from '../../../multiplayer/multiplayer';
 import { MultiplayerCursor } from './MultiplayerCursor';
 import './MultiplayerCursors.css';
-import { MULTIPLAYER_COLORS } from './multiplayerColors';
 
 const OFFSCREEN_SIZE = 10;
 
@@ -47,7 +46,7 @@ export const MultiplayerCursors = (props: Props) => {
           name = `User ${index + 1}`;
         }
 
-        const color = MULTIPLAYER_COLORS[player.color];
+        const color = player.colorString;
         const bounds = pixiApp.viewport.getVisibleBounds();
         if (visible && x !== undefined && y !== undefined && sheet_id === sheets.sheet.id) {
           let offscreen = false;

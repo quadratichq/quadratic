@@ -9,7 +9,7 @@ import { SheetPos } from '@/gridGL/types/size';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
 import { User } from '@auth0/auth0-spa-js';
 import { v4 as uuid } from 'uuid';
-import { MULTIPLAYER_COLORS } from '../gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
+import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '../gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import {
   Heartbeat,
   MessageUserUpdate,
@@ -350,7 +350,8 @@ export class Multiplayer {
             cell_edit: user.cell_edit,
             x: 0,
             y: 0,
-            color: this.nextColor,
+            color: MULTIPLAYER_COLORS_TINT[this.nextColor],
+            colorString: MULTIPLAYER_COLORS[this.nextColor],
             visible: false,
             index: this.users.size,
             viewport: user.viewport,
@@ -430,7 +431,7 @@ export class Multiplayer {
         new CustomEvent('multiplayer-cell-edit', {
           detail: {
             ...update.cell_edit,
-            playerColor: MULTIPLAYER_COLORS[player.color],
+            playerColor: player.color,
             sessionId: data.session_id,
             sheetId: player.sheet_id,
             cell: player.parsedSelection?.cursor,

@@ -1,8 +1,7 @@
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
-import { MULTIPLAYER_COLORS } from '@/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { TooltipHint } from '@/ui/components/TooltipHint';
-import { convertInitial, convertName } from '@/utils/userUtil';
+import { displayInitials, displayName } from '@/utils/userUtil';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Avatar, AvatarGroup, IconButton, useTheme } from '@mui/material';
 import { Menu, MenuItem } from '@szhsin/react-menu';
@@ -24,13 +23,14 @@ export const TopBarUsers = () => {
           return (
             <UserAvatar
               key={user.session_id}
-              displayName={convertName(user, false)}
-              initial={convertInitial(user)}
+              displayName={displayName(user, false)}
+              initial={displayInitials(user)}
               picture={user.image}
-              border={MULTIPLAYER_COLORS[user.color]}
+              border={user.colorString}
               sessionId={user.session_id}
               follow={false}
               viewport={user.viewport}
+              bgColor={user.colorString}
             />
           );
         })}
@@ -38,19 +38,20 @@ export const TopBarUsers = () => {
       <AvatarGroup sx={{ mr: theme.spacing(1), ml: theme.spacing(-0.5), alignSelf: 'center' }}>
         {follow && (
           <UserAvatar
-            displayName={convertName(follow, false)}
-            initial={convertInitial(follow)}
+            displayName={displayName(follow, false)}
+            initial={displayInitials(follow)}
             picture={follow.image || ''}
-            border={MULTIPLAYER_COLORS[follow.color]}
+            border={follow.colorString}
             sessionId={follow.session_id}
             follow={true}
             viewport={follow.viewport}
+            bgColor={follow.colorString}
           />
         )}
         {user && (
           <You
-            displayName={convertName(user, true)}
-            initial={convertInitial(user)}
+            displayName={displayName(user, true)}
+            initial={displayInitials(user)}
             picture={user.picture || ''}
             border={'black'}
           />
@@ -104,6 +105,7 @@ function UserAvatar({
   sessionId,
   follow,
   viewport,
+  bgColor,
 }: {
   displayName: string;
   initial: string;
@@ -112,6 +114,7 @@ function UserAvatar({
   sessionId: string;
   follow: boolean;
   viewport: string;
+  bgColor?: string;
 }) {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const handleFollow = () => {
@@ -131,7 +134,7 @@ function UserAvatar({
         <div style={{ position: 'relative' }}>
           <Avatar
             sx={{
-              bgcolor: colors.quadraticSecondary,
+              bgcolor: bgColor ?? colors.quadraticSecondary,
               width: 24,
               height: 24,
               fontSize: '0.8rem',

@@ -1,4 +1,3 @@
-import { MULTIPLAYER_COLORS } from '@/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import { ArrowDropDown } from '@mui/icons-material';
 import { Box, Fade, IconButton, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
@@ -334,7 +333,7 @@ function TabMultiplayer({ sheetId }: { sheetId: string }) {
       setUsers(
         multiplayer.getUsers().flatMap((user) => {
           if (user.sheet_id === sheetId) {
-            return [MULTIPLAYER_COLORS[user.color % MULTIPLAYER_COLORS.length]];
+            return [user.colorString];
           }
           return [];
         })
