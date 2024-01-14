@@ -8,7 +8,7 @@ import micropip
 import pandas as pd
 import pyodide
 
-from quadratic_py import code_trace, plotly_patch
+from quadratic_py import code_trace, figure_holder, matplotlib_patch, plotly_patch
 
 
 cells_accessed = []
@@ -63,7 +63,9 @@ async def run_python(code: str):
     output_value = None
 
     try:
-        plotly_html = await plotly_patch.intercept_plotly_html(code)
+        figure_result = figure_holder.FigureHolder()
+        await plotly_patch.intercept_plotly_html(code, figure_result)
+        await matplotlib_patch.intercept_matplotlib_show(code, figure_result)
 
         # Capture STDOut to sout
         with redirect_stdout(sout):
@@ -76,7 +78,7 @@ async def run_python(code: str):
                     quiet_trailing_semicolon=False,
                 )
 
-    except plotly_patch.FigureDisplayError as err:
+    except figure_holder.FigureDisplayError as err:
         return error_result(err, code, cells_accessed, sout, err.source_line)
     except SyntaxError as err:
         return error_result(err, code, cells_accessed, sout, err.lineno)
@@ -151,21 +153,21 @@ async def run_python(code: str):
             bytes_output = output_value
             output_value = ''
 
-        if plotly_html is not None and plotly_html.result is not None:
+        if figure_result is not None and figure_result.result is not None:
             if output_value is not None or array_output is not None:
                 err = RuntimeError(
                     "Cannot return result from cell that has displayed a figure "
-                    f"(displayed on line {plotly_html.result_set_from_line})"
+                    f"(displayed on line {figure_result.result_set_from_line})"
                 )
 
                 return error_result(
                     err, code, cells_accessed, sout, code_trace.get_return_line(code)
                 )
             else:
-                if isinstance(plotly_html.result, BytesIO):
-                    bytes_output = plotly_html.result.getvalue()
+                if isinstance(figure_result.result, BytesIO):
+                    bytes_output = figure_result.result.getvalue()
                 else:
-                    output_value = plotly_html.result
+                    output_value = figure_result.result
 
                 output_type = "Chart"
 
