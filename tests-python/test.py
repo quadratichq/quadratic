@@ -1,24 +1,26 @@
 import inspect
 import sys
 import unittest
-from pprint import pprint
 from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import Mock, patch
 
 
 #  Mock definitions
+
 def mock_GetCellsDB():
     return []
-
 
 class mock_pyodide:
     async def eval_code_async(code, globals):
         return exec(code, globals=globals)
 
-
 class mock_micropip:
     def install(name):
         return None
+
+async def mock_fetch_module(source: str):
+    return __import__(source)
+
 
 # mock modules needed to import run_python
 sys.modules["getCellsDB"] = mock_GetCellsDB
@@ -26,11 +28,11 @@ sys.modules["pyodide"] = mock_pyodide
 sys.modules["micropip"] = mock_micropip
 
 # add path to import run_python
-sys.path.insert(1, "public")
+sys.path.insert(1, "public/quadratic_py")
 
-from run_python import (Cell, attempt_fix_await, ensure_not_cell, not_cell,
-                        run_python, _get_user_frames, _error_result, _get_return_line)
+import run_python, code_trace
 
+run_python.fetch_module = mock_fetch_module
 
 class value_object:
     def __init__(self, x, y, value):
@@ -41,54 +43,54 @@ class value_object:
 class TestTesting(IsolatedAsyncioTestCase):
     async def test_run_python(self):
 
-        result = await run_python("1 + 1")
+        result = await run_python.run_python("1 + 1")
 
         # NOTE: this approach bypasses the entire env of Pyodide.
         # We should make the run_python e2e tests run via playwright
         self.assertEqual(result.get("success"), False)
 
     def test_attempt_fix_await(self):
-        self.assertEqual(attempt_fix_await("1 + 1"), "1 + 1")
+        self.assertEqual(run_python.attempt_fix_await("1 + 1"), "1 + 1")
 
         # simple adding await
-        self.assertEqual(attempt_fix_await("a = cells(0, 0)"), "a = await cells(0, 0)")
-        self.assertEqual(attempt_fix_await("a = cell(0, 0)"), "a = await cell(0, 0)")
-        self.assertEqual(attempt_fix_await("a = c(0, 0)"), "a = await c(0, 0)")
+        self.assertEqual(run_python.attempt_fix_await("a = cells(0, 0)"), "a = await cells(0, 0)")
+        self.assertEqual(run_python.attempt_fix_await("a = cell(0, 0)"), "a = await cell(0, 0)")
+        self.assertEqual(run_python.attempt_fix_await("a = c(0, 0)"), "a = await c(0, 0)")
         self.assertEqual(
-            attempt_fix_await("a = getCells(0, 0)"), "a = await getCells(0, 0)"
+            run_python.attempt_fix_await("a = getCells(0, 0)"), "a = await getCells(0, 0)"
         )
 
         # simple already has await
         self.assertEqual(
-            attempt_fix_await("a = await cells(0, 0)"), "a = await cells(0, 0)"
+            run_python.attempt_fix_await("a = await cells(0, 0)"), "a = await cells(0, 0)"
         )
         self.assertEqual(
-            attempt_fix_await("a = await cell(0, 0)"), "a = await cell(0, 0)"
+            run_python.attempt_fix_await("a = await cell(0, 0)"), "a = await cell(0, 0)"
         )
-        self.assertEqual(attempt_fix_await("a = await c(0, 0)"), "a = await c(0, 0)")
+        self.assertEqual(run_python.attempt_fix_await("a = await c(0, 0)"), "a = await c(0, 0)")
         self.assertEqual(
-            attempt_fix_await("a = await getCells(0, 0)"), "a = await getCells(0, 0)"
+            run_python.attempt_fix_await("a = await getCells(0, 0)"), "a = await getCells(0, 0)"
         )
 
         # other
-        self.assertEqual(attempt_fix_await("a = cac(0, 0)"), "a = cac(0, 0)")
-        self.assertEqual(attempt_fix_await("c(0, 0)"), "await c(0, 0)")
-        self.assertEqual(attempt_fix_await("int(c(0,0))"), "int(await c(0,0))")
+        self.assertEqual(run_python.attempt_fix_await("a = cac(0, 0)"), "a = cac(0, 0)")
+        self.assertEqual(run_python.attempt_fix_await("c(0, 0)"), "await c(0, 0)")
+        self.assertEqual(run_python.attempt_fix_await("int(c(0,0))"), "int(await c(0,0))")
         self.assertEqual(
-            attempt_fix_await("float((await c(2, -4)).value)"),
+            run_python.attempt_fix_await("float((await c(2, -4)).value)"),
             "float((await c(2, -4)).value)",
         )
         self.assertEqual(
-            attempt_fix_await("c(0, 0)\nc(0, 0)"), "await c(0, 0)\nawait c(0, 0)"
+            run_python.attempt_fix_await("c(0, 0)\nc(0, 0)"), "await c(0, 0)\nawait c(0, 0)"
         )
 
     def test_not_cell(self):
         o = value_object(0, 0, "test")
-        c = Cell(o)
-        self.assertEqual(not_cell(c), "test")
+        c = run_python.Cell(o)
+        self.assertEqual(run_python.not_cell(c), "test")
 
-        l = [Cell(o), Cell(o), Cell(o)]
-        self.assertEqual(ensure_not_cell(l), ["test", "test", "test"])
+        l = [run_python.Cell(o), run_python.Cell(o), run_python.Cell(o)]
+        self.assertEqual(run_python.ensure_not_cell(l), ["test", "test", "test"])
 
 
 class TestErrorMessaging(TestCase):
@@ -114,7 +116,7 @@ class TestErrorMessaging(TestCase):
         expected_user_frames = [user_frame_2, user_frame_1]
 
         with patch.object(inspect, "stack", return_value=frames):
-            actual_user_frames = _get_user_frames()
+            actual_user_frames = code_trace.get_user_frames()
             assert actual_user_frames == expected_user_frames
 
     def test_get_return_line(self):
@@ -126,7 +128,7 @@ class TestErrorMessaging(TestCase):
         
         """
 
-        assert _get_return_line(example_code) == 4
+        assert code_trace.get_return_line(example_code) == 4
 
     def test_error_result(self):
         err = RuntimeError("Test message")
@@ -135,7 +137,7 @@ class TestErrorMessaging(TestCase):
         sout = Mock(getvalue=Mock())
         line_number = 42
 
-        assert _error_result(err, code, cells_accessed, sout, line_number) == {
+        assert run_python.error_result(err, code, cells_accessed, sout, line_number) == {
             "output_value": None,
             "array_output": None,
             "cells_accessed": cells_accessed,

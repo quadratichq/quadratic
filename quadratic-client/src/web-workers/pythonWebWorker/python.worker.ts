@@ -28,14 +28,24 @@ async function pythonWebWorker() {
   try {
     self.postMessage({ type: 'not-loaded' } as PythonMessage);
     pyodide = await (self as any).loadPyodide();
+
     await pyodide.registerJsModule('getCellsDB', getCellsDB);
     await pyodide.loadPackage('micropip');
+
     let micropip = await pyodide.pyimport('micropip');
     await micropip.install(['numpy', 'pandas', 'pyodide-http', 'requests']);
     // patch requests https://github.com/koenvo/pyodide-http
     await pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');
-    const python_code = await (await fetch('/run_python.py')).text();
-    await pyodide.runPython(python_code);
+
+    // load and write fetch module so it can be imported by others
+    const fetch_module = await (await fetch("/quadratic_py/fetch.py")).text();
+    pyodide.FS.writeFile("fetch.py", fetch_module, { encoding: "utf8" });
+    await pyodide.runPython(fetch_module)
+    await pyodide.globals.get('prefetch_modules')()
+
+    // load main run_python script
+    const run_python_module = await (await fetch('/quadratic_py/run_python.py')).text();
+    await pyodide.runPython(run_python_module);
   } catch (e) {
     self.postMessage({ type: 'python-error' } as PythonMessage);
     console.warn(`[Python WebWorker] failed to load`, e);
