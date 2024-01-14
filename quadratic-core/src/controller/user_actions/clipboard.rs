@@ -1,6 +1,7 @@
 use crate::controller::{
     operations::clipboard::Clipboard, transaction_summary::TransactionSummary, GridController,
 };
+use crate::Rect;
 use crate::{grid::get_cell_borders_in_rect, Pos, SheetPos, SheetRect};
 use htmlescape;
 
@@ -69,6 +70,55 @@ impl GridController {
                 }
             }
         }
+
+        let clipboard_rect: Rect = sheet_rect.into();
+
+        // allow copying of code_run values (unless CellValue::Code is also in the clipboard)
+        sheet
+            .iter_code_output_in_rect(clipboard_rect)
+            .for_each(|(output_rect, code_cell)| {
+                // only change the cells if the CellValue::Code is not in the selection box
+                let code_pos = Pos {
+                    x: output_rect.min.x,
+                    y: output_rect.min.y,
+                };
+                if !clipboard_rect.contains(code_pos) {
+                    let x_start = if output_rect.min.x > clipboard_rect.min.x {
+                        output_rect.min.x
+                    } else {
+                        clipboard_rect.min.x
+                    };
+                    let y_start = if output_rect.min.y > clipboard_rect.min.y {
+                        output_rect.min.y
+                    } else {
+                        clipboard_rect.min.y
+                    };
+                    let x_end = if output_rect.max.x < clipboard_rect.max.x {
+                        output_rect.max.x
+                    } else {
+                        clipboard_rect.max.x
+                    };
+                    let y_end = if output_rect.max.y < clipboard_rect.max.y {
+                        output_rect.max.y
+                    } else {
+                        clipboard_rect.max.y
+                    };
+
+                    // add the code_run output to clipboard.cells
+                    for y in y_start..=y_end {
+                        for x in x_start..=x_end {
+                            if let Some(value) = code_cell
+                                .cell_value_at((x - code_pos.x) as u32, (y - code_pos.y) as u32)
+                            {
+                                let index = (y - sheet_rect.min.y) as usize
+                                    * sheet_rect.width() as usize
+                                    + (x - sheet_rect.min.x) as usize;
+                                cells[index] = Some(value.clone());
+                            }
+                        }
+                    }
+                }
+            });
 
         let formats = self.get_all_cell_formats(sheet_rect);
         let borders = get_cell_borders_in_rect(sheet, sheet_rect.into());

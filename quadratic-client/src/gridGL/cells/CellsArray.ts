@@ -24,7 +24,6 @@ export class CellsArray extends ParticleContainer {
     this.removeChildren();
     this.lines = [];
     const codeCells = this.cellsSheet.sheet.getRenderCodeCells();
-    console.log(codeCells);
     this.cellsSheet.cellsMarkers.clear();
     codeCells?.forEach((codeCell) => {
       this.draw(codeCell);
