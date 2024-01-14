@@ -28,7 +28,14 @@ export class Pointer {
     viewport.on('pointerupoutside', this.pointerUp);
     pixiApp.canvas.addEventListener('pointerleave', this.pointerLeave);
     window.addEventListener('blur', this.pointerLeave);
+    window.addEventListener('visibilitychange', this.visibilityChange);
   }
+
+  private visibilityChange = () => {
+    if (document.visibilityState === 'hidden') {
+      multiplayer.sendMouseMove();
+    }
+  };
 
   private pointerLeave = () => {
     multiplayer.sendMouseMove();
