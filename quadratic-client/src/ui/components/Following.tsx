@@ -7,6 +7,7 @@ import { useSetRecoilState } from 'recoil';
 
 interface Props {
   follow?: MultiplayerUser;
+  color?: string;
 }
 
 export const Following = (props: Props) => {
@@ -25,20 +26,21 @@ export const Following = (props: Props) => {
         position: 'absolute',
         top: 0,
         left: '50%',
-        padding: '0 0.25rem 0 1rem',
-        background: 'red',
+        padding: 'calc(0.3rem - 3px) 1rem 0.3rem',
+        background: props.color,
         color: 'white',
         fontSize: '0.85rem',
         width: 'fit-content',
         height: 'fit-content',
         display: 'flex',
         alignItems: 'center',
+        gap: '0.3rem',
         transform: 'translateX(-50%)',
       }}
     >
       <div>Following {convertName(props.follow, false)}</div>
-      <IconButton aria-label="stop" onClick={stopFollowing}>
-        <StopCircleOutlined style={{ color: 'white' }} />
+      <IconButton aria-label="stop" onClick={stopFollowing} sx={{ padding: 0 }}>
+        <StopCircleOutlined sx={{ color: 'white' }} />
       </IconButton>
     </div>
   );

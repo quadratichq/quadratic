@@ -69,7 +69,7 @@ export default function QuadraticUI() {
           {!presentationMode && <SheetBar />}
         </FileUploadWrapper>
         {editorInteractionState.showCodeEditor && <CodeEditor />}
-        <Following follow={follow} />
+        <Following follow={follow} color={followColor} />
       </div>
 
       {!presentationMode && <BottomBar />}
