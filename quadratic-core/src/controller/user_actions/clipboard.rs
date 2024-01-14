@@ -76,6 +76,7 @@ impl GridController {
         // allow copying of code_run values (unless CellValue::Code is also in the clipboard)
         sheet
             .iter_code_output_in_rect(clipboard_rect)
+            .filter(|(_, code_cell)| !code_cell.spill_error)
             .for_each(|(output_rect, code_cell)| {
                 // only change the cells if the CellValue::Code is not in the selection box
                 let code_pos = Pos {

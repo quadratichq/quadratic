@@ -4,6 +4,7 @@ use crate::controller::GridController;
 
 pub mod execute_borders;
 pub mod execute_code;
+pub mod execute_cursor;
 pub mod execute_formats;
 pub mod execute_offsets;
 pub mod execute_sheets;
@@ -32,6 +33,8 @@ impl GridController {
 
                 Operation::ResizeColumn { .. } => self.execute_resize_column(transaction, op),
                 Operation::ResizeRow { .. } => self.execute_resize_row(transaction, op),
+
+                Operation::SetCursor { .. } => self.execute_set_cursor(transaction, op),
             }
         }
     }

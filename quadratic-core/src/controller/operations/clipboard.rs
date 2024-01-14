@@ -137,6 +137,7 @@ impl GridController {
                 }
             });
         }
+        ops.push(Operation::SetCursor { sheet_rect });
         ops
     }
 
@@ -185,7 +186,6 @@ impl GridController {
             sheet_rect,
             values: array,
         });
-
         ops
     }
 
