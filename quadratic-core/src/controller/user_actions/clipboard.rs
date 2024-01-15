@@ -358,6 +358,25 @@ mod test {
         // ensure the grid controller is empty
         assert_eq!(gc.undo_stack.len(), 0);
 
+        gc.paste_from_clipboard(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            None,
+            Some(clipboard.1.clone()),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        gc.undo(None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.display_value(Pos { x: 0, y: 0 }), None);
+
         // prepare a cell to be overwritten
         gc.set_code_cell(
             SheetPos {
@@ -413,6 +432,77 @@ mod test {
         assert_eq!(sheet.display_value(Pos { x: 0, y: 0 }), None);
 
         assert_eq!(gc.undo_stack.len(), 0);
+    }
+
+    #[test]
+    fn test_copy_code_to_clipboard_with_array_output() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            String::from("{1, 2, 3}"),
+            None,
+        );
+
+        assert_eq!(gc.undo_stack.len(), 1);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Number(BigDecimal::from(1)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 2, y: 1 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 3, y: 1 }),
+            Some(CellValue::Number(BigDecimal::from(3)))
+        );
+        let sheet_rect = SheetRect::new_pos_span(Pos { x: 1, y: 1 }, Pos { x: 3, y: 1 }, sheet_id);
+        let clipboard = gc.copy_to_clipboard(sheet_rect);
+
+        // paste using html on a new grid controller
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // ensure the grid controller is empty
+        assert_eq!(gc.undo_stack.len(), 0);
+
+        gc.paste_from_clipboard(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            None,
+            Some(clipboard.1.clone()),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(1)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 2, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(3)))
+        );
+
+        gc.undo(None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.display_value(Pos { x: 0, y: 0 }), None);
+        assert_eq!(sheet.display_value(Pos { x: 1, y: 0 }), None);
+        assert_eq!(sheet.display_value(Pos { x: 2, y: 0 }), None);
     }
 
     #[test]
