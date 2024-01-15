@@ -59,13 +59,14 @@ export class CellsArray extends Container {
 
     let end = this.sheet.getCellOffsets(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
 
+    const overlapTest = new Rectangle(Number(codeCell.x), Number(codeCell.y), codeCell.w, codeCell.h);
+    if (codeCell.spill_error) {
+      overlapTest.width = 1;
+      overlapTest.height = 1;
+    }
+
     // only show the entire array if the cursor overlaps any part of the output
-    if (
-      !intersects.rectangleRectangle(
-        cursorRectangle,
-        new Rectangle(Number(codeCell.x), Number(codeCell.y), codeCell.w, codeCell.h)
-      )
-    ) {
+    if (!intersects.rectangleRectangle(cursorRectangle, overlapTest)) {
       return;
     }
 
