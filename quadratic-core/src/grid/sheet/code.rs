@@ -26,7 +26,7 @@ impl Sheet {
     /// Note: spill error will return a CellValue::Blank to ensure calculations can continue.
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
         self.code_runs.iter().find_map(|(code_cell_pos, code_run)| {
-            if code_run.output_rect(*code_cell_pos).contains(pos) {
+            if code_run.output_rect(*code_cell_pos, false).contains(pos) {
                 code_run.cell_value_at(
                     (pos.x - code_cell_pos.x) as u32,
                     (pos.y - code_cell_pos.y) as u32,
@@ -41,7 +41,7 @@ impl Sheet {
         self.code_runs
             .iter()
             .filter_map(move |(pos, code_cell_value)| {
-                let output_rect = code_cell_value.output_rect(*pos);
+                let output_rect = code_cell_value.output_rect(*pos, false);
                 output_rect
                     .intersects(rect)
                     .then_some((output_rect, code_cell_value))
@@ -62,7 +62,7 @@ impl Sheet {
                 // once we reach the code_cell, we can stop checking
                 return false;
             }
-            if code_run.output_rect(*pos).intersects(*rect) {
+            if code_run.output_rect(*pos, false).intersects(*rect) {
                 return true;
             }
         }

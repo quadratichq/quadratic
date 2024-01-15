@@ -2,7 +2,7 @@ use std::fs::create_dir_all;
 
 use quadratic_core::{
     controller::transaction_summary::{CellSheetsModified, TransactionSummary},
-    grid::js_types::JsHtmlOutput,
+    grid::js_types::{JsHtmlOutput, JsRenderCodeCell, JsRenderCodeCellState},
     Rect, *,
 };
 use ts_rs::TS;
@@ -25,6 +25,8 @@ fn main() {
         TransactionSummary,
         CellSheetsModified,
         JsHtmlOutput,
+        JsRenderCodeCell,
+        JsRenderCodeCellState,
         formulas::RangeRef,
         formulas::CellRef,
         formulas::CellRefCoord,

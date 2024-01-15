@@ -32,6 +32,8 @@ pub struct JsRenderCell {
     pub italic: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text_color: Option<String>,
+
+    pub spill_error: bool,
 }
 
 #[cfg(test)]
@@ -47,6 +49,7 @@ impl JsRenderCell {
             bold: None,
             italic: None,
             text_color: None,
+            spill_error: false,
         }
     }
 }
@@ -63,6 +66,7 @@ impl From<Pos> for JsRenderCell {
             bold: None,
             italic: None,
             text_color: None,
+            spill_error: false,
         }
     }
 }
@@ -175,7 +179,7 @@ impl BitOrAssign for FormattingSummary {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[wasm_bindgen]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsRenderCodeCell {
     pub x: i64,
     pub y: i64,
@@ -183,6 +187,7 @@ pub struct JsRenderCodeCell {
     pub h: u32,
     pub language: CodeCellLanguage,
     pub state: JsRenderCodeCellState,
+    pub spill_error: Option<Vec<Pos>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -197,7 +202,7 @@ pub struct JsHtmlOutput {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[wasm_bindgen]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum JsRenderCodeCellState {
     NotYetRun,
     RunError,

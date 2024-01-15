@@ -136,6 +136,11 @@ export class CellsSheets extends Container<CellsSheet> {
     });
   }
 
+  updateCellsArray(): void {
+    if (!this.current) throw new Error('Expected current to be defined in CellsSheets.updateCellsArray');
+    this.current.updateCellsArray();
+  }
+
   updateBorders(borderSheets: SheetId[]): void {
     this.children.forEach((cellsSheet) => {
       if (borderSheets.find((id) => id.id === cellsSheet.sheet.id)) {

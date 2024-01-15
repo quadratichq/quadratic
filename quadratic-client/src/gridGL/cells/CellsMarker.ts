@@ -1,10 +1,14 @@
+import { JsRenderCodeCellState } from '@/quadratic-core/types';
 import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
-import { CodeCellLanguage, JsRenderCodeCellState } from '../../quadratic-core/quadratic_core';
+import { CodeCellLanguage } from '../../quadratic-core/quadratic_core';
 import { colors } from '../../theme/colors';
 import { intersects } from '../helpers/intersects';
 
-const triangleSize = 100;
-const triangleColor = 'red';
+const TRIANGLE_SIZE = 100;
+const TRIANGLE_COLOR = 'red';
+const INDICATOR_SIZE_ERROR = 4;
+
+const INDICATOR_SIZE = 8;
 
 export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'AIIcon' | 'ErrorIcon';
 
@@ -24,13 +28,13 @@ export class CellsMarkers extends Container {
 
   private createTriangle(): Texture {
     const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = triangleSize;
+    canvas.width = canvas.height = TRIANGLE_SIZE;
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Expected context to be defined in createTriangle');
-    context.fillStyle = triangleColor;
+    context.fillStyle = TRIANGLE_COLOR;
     context.moveTo(0, 0);
-    context.lineTo(triangleSize, 0);
-    context.lineTo(0, triangleSize);
+    context.lineTo(TRIANGLE_SIZE, 0);
+    context.lineTo(0, TRIANGLE_SIZE);
     context.closePath();
     context.fill();
     return Texture.from(canvas);
@@ -47,12 +51,7 @@ export class CellsMarkers extends Container {
 
   add(x: number, y: number, type: CodeCellLanguage | string, state?: JsRenderCodeCellState | string): void {
     let error: Sprite | undefined;
-    if (
-      state === JsRenderCodeCellState.RunError ||
-      state === 'RunError' ||
-      state === JsRenderCodeCellState.SpillError ||
-      state === 'SpillError'
-    ) {
+    if (state === 'RunError' || state === 'SpillError') {
       error = this.addChild(new Sprite(this.triangle));
       error.alpha = 0.5;
       error.scale.set(0.1);
@@ -60,8 +59,8 @@ export class CellsMarkers extends Container {
     }
 
     const child = this.addChild(new Sprite());
-    child.height = 4;
-    child.width = 4;
+    child.height = error ? INDICATOR_SIZE_ERROR : INDICATOR_SIZE;
+    child.width = error ? INDICATOR_SIZE_ERROR : INDICATOR_SIZE;
     child.position.set(x + 1.25, y + 1.25);
     if (type === CodeCellLanguage.Python || type === 'Python') {
       child.texture = Texture.from('/images/python-icon.png');

@@ -45,10 +45,15 @@ impl Sheet {
                 italic: Some(true),
                 // from colors.ts: colors.languagePython
                 text_color: Some(String::from("#3776ab")),
+                spill_error: false,
             };
         } else if let CellValue::Error(error) = value {
+            let mut spill_error = false;
             let value = match error.msg {
-                RunErrorMsg::Spill => " SPILL",
+                RunErrorMsg::Spill => {
+                    spill_error = true;
+                    " SPILL"
+                }
                 _ => " ERROR",
             };
             return JsRenderCell {
@@ -61,6 +66,7 @@ impl Sheet {
                 bold: None,
                 italic: Some(true),
                 text_color: Some(String::from("red")),
+                spill_error,
             };
         }
 
@@ -81,6 +87,7 @@ impl Sheet {
                     bold: None,
                     italic: None,
                     text_color: None,
+                    spill_error: false,
                 }
             }
             Some(column) => {
@@ -115,6 +122,7 @@ impl Sheet {
                     bold,
                     italic,
                     text_color,
+                    spill_error: false,
                 }
             }
         }
@@ -295,18 +303,26 @@ impl Sheet {
                 if let Some(code) = self.cell_value(*pos) {
                     match &code {
                         CellValue::Code(code) => {
-                            let (state, w, h) = if run.spill_error {
-                                (JsRenderCodeCellState::SpillError, 1, 1)
+                            let output_size = run.output_size();
+                            let (state, w, h, spill_error) = if run.spill_error {
+                                let reasons = self
+                                    .find_spill_error_reasons(&run.output_rect(*pos, true), *pos);
+                                (
+                                    JsRenderCodeCellState::SpillError,
+                                    output_size.w.get(),
+                                    output_size.h.get(),
+                                    Some(reasons),
+                                )
                             } else {
-                                let output_size = run.output_size();
                                 match run.result {
                                     CodeRunResult::Ok(_) => (
                                         JsRenderCodeCellState::Success,
                                         output_size.w.get(),
                                         output_size.h.get(),
+                                        None,
                                     ),
                                     CodeRunResult::Err(_) => {
-                                        (JsRenderCodeCellState::RunError, 1, 1)
+                                        (JsRenderCodeCellState::RunError, 1, 1, None)
                                     }
                                 }
                             };
@@ -317,6 +333,7 @@ impl Sheet {
                                 h,
                                 language: code.language,
                                 state,
+                                spill_error,
                             })
                         }
                         _ => None, // this should not happen. A CodeRun should always have a CellValue::Code.
@@ -452,6 +469,7 @@ mod tests {
                 bold: Some(true),
                 italic: None,
                 text_color: None,
+                spill_error: false,
             },
         );
         assert_eq!(
@@ -466,6 +484,7 @@ mod tests {
                 bold: None,
                 italic: Some(true),
                 text_color: None,
+                spill_error: false,
             },
         );
         assert_eq!(
@@ -480,6 +499,7 @@ mod tests {
                 bold: None,
                 italic: Some(true),
                 text_color: Some("#3776ab".to_string()),
+                spill_error: false,
             },
         );
         assert_eq!(
@@ -494,6 +514,7 @@ mod tests {
                 bold: None,
                 italic: None,
                 text_color: None,
+                spill_error: false,
             },
         );
         assert_eq!(
@@ -508,6 +529,7 @@ mod tests {
                 bold: None,
                 italic: Some(true),
                 text_color: Some("red".to_string()),
+                spill_error: true,
             },
         );
         assert_eq!(
@@ -522,6 +544,7 @@ mod tests {
                 bold: None,
                 italic: Some(true),
                 text_color: Some("red".to_string()),
+                spill_error: false,
             },
         );
     }
@@ -681,6 +704,7 @@ mod tests {
                 bold: None,
                 italic: None,
                 text_color: None,
+                spill_error: false,
             }]
         );
     }

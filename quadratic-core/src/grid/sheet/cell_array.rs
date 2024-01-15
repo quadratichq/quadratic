@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use anyhow::{anyhow, Result};
 
 use crate::{
@@ -29,6 +31,8 @@ impl Sheet {
         }
         GetCellsResponse { response }
     }
+
+    // todo: the following two functions are probably in the wrong place
 
     /// In a given rect, collect all cell values into an array.
     ///
@@ -74,12 +78,45 @@ impl Sheet {
         }
         false
     }
+
+    /// Returns all positions that caused a spill error in the rect.
+    /// Note this assumes there is a spill error with the output = spill_rect, and position in code_pos
+    pub fn find_spill_error_reasons(&self, spill_rect: &Rect, code_pos: Pos) -> Vec<Pos> {
+        let mut results = HashSet::new();
+
+        // first check cell values
+        for x in spill_rect.x_range() {
+            if let Some(column) = self.get_column(x) {
+                for y in spill_rect.y_range() {
+                    let cell_pos = Pos { x, y };
+                    if column.values.get(y).is_some_and(|cell| {
+                        cell_pos != code_pos && !cell.is_blank_or_empty_string()
+                    }) {
+                        results.insert(cell_pos);
+                    }
+                }
+            }
+        }
+
+        // then check code cells
+        for (pos, code_run) in &self.code_runs {
+            if pos != &code_pos && code_run.output_rect(*pos, true).intersects(*spill_rect) {
+                results.insert(pos.clone());
+            }
+        }
+
+        results.into_iter().collect()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{grid::Sheet, CellValue, Pos, Rect};
+    use crate::{
+        controller::GridController,
+        grid::{CodeCellLanguage, Sheet},
+        CellValue, Pos, Rect, SheetPos,
+    };
 
     #[test]
     fn test_has_cell_values_in_rect() {
@@ -125,6 +162,51 @@ mod tests {
                     },
                 ],
             }
+        );
+    }
+
+    #[test]
+    fn test_find_spill_error_reasons() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 0,
+                sheet_id,
+            },
+            "causes spill error".into(),
+            None,
+        );
+        gc.set_code_cell(
+            SheetPos {
+                x: 2,
+                y: 0,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "1 + 1".into(),
+            None,
+        );
+        gc.set_code_cell(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "{1, 2, 3}".into(),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        let run = sheet.code_run(Pos { x: 0, y: 0 }).unwrap();
+        assert!(run.spill_error);
+        assert_eq!(
+            sheet.find_spill_error_reasons(
+                &run.output_rect(Pos { x: 0, y: 0 }, true),
+                Pos { x: 0, y: 0 }
+            ),
+            vec![Pos { x: 1, y: 0 }, Pos { x: 2, y: 0 },]
         );
     }
 }

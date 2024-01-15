@@ -93,12 +93,13 @@ mod tests {
             x,
             y,
             language: Some(CodeCellLanguage::Formula),
-            value: " SPILL".into(),
+            value: "".into(),
             align: None,
             wrap: None,
             bold: None,
             italic: Some(true),
             text_color: Some("red".into()),
+            spill_error: true,
         }]
     }
 
@@ -118,6 +119,7 @@ mod tests {
             bold: None,
             italic: None,
             text_color: None,
+            spill_error: false,
         }]
     }
 

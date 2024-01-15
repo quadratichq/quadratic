@@ -71,8 +71,8 @@ impl CodeRun {
 
     /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
     /// Note: this returns a 1x1 if there is a spill_error.
-    pub fn output_rect(&self, pos: Pos) -> Rect {
-        if self.spill_error {
+    pub fn output_rect(&self, pos: Pos, ignore_spill: bool) -> Rect {
+        if !ignore_spill && self.spill_error {
             Rect::from_pos_and_size(pos, ArraySize::_1X1)
         } else {
             Rect::from_pos_and_size(pos, self.output_size())
