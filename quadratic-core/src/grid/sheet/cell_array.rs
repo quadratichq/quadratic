@@ -201,12 +201,12 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let run = sheet.code_run(Pos { x: 0, y: 0 }).unwrap();
         assert!(run.spill_error);
-        assert_eq!(
-            sheet.find_spill_error_reasons(
-                &run.output_rect(Pos { x: 0, y: 0 }, true),
-                Pos { x: 0, y: 0 }
-            ),
-            vec![Pos { x: 1, y: 0 }, Pos { x: 2, y: 0 },]
+        let reasons = sheet.find_spill_error_reasons(
+            &run.output_rect(Pos { x: 0, y: 0 }, true),
+            Pos { x: 0, y: 0 },
         );
+        assert_eq!(reasons.len(), 2);
+        assert!(reasons.iter().any(|p| *p == Pos { x: 1, y: 0 }));
+        assert!(reasons.iter().any(|p| *p == Pos { x: 2, y: 0 }));
     }
 }
