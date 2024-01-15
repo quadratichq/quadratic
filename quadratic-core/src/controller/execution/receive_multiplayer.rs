@@ -1114,7 +1114,7 @@ mod tests {
         receive.sheet_mut(receive.sheet_ids()[0]).id = sheet_id;
         let summary = receive
             .apply_offline_unsaved_transaction(unsaved_transaction.forward.id, unsaved_transaction);
-        assert_eq!(summary.generate_thumbnail, true);
+        assert!(summary.generate_thumbnail);
         assert_eq!(summary.cell_sheets_modified.len(), 1);
         assert_eq!(
             receive.sheet(sheet_id).cell_value(Pos { x: 0, y: 1 }),

@@ -111,8 +111,7 @@ impl GridController {
                             if let Some(value) = code_cell
                                 .cell_value_at((x - code_pos.x) as u32, (y - code_pos.y) as u32)
                             {
-                                let index = (y - sheet_rect.min.y) as usize
-                                    * sheet_rect.width() as usize
+                                let index = (y - sheet_rect.min.y) as usize * sheet_rect.width()
                                     + (x - sheet_rect.min.x) as usize;
                                 cells[index] = Some(value.clone());
                             }
