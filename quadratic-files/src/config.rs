@@ -5,24 +5,24 @@
 //! sub-repo.  If ANY of the environment variables are missing, the program will
 //! panic at startup.
 
-use crate::error::{MpError, Result};
+use crate::error::{FilesError, Result};
 use dotenv::dotenv;
 use serde::Deserialize;
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 pub(crate) struct Config {
     pub(crate) host: String,
     pub(crate) port: String,
-    pub(crate) heartbeat_check_s: i64,
-    pub(crate) authenticate_jwt: bool,
-    pub(crate) heartbeat_timeout_s: i64,
+    pub(crate) password: String,
+    pub(crate) file_check_s: i64,
+    pub(crate) files_per_check: i64,
 
     pub(crate) pubsub_host: String,
     pub(crate) pubsub_port: String,
     pub(crate) pubsub_password: String,
     pub(crate) pubsub_active_channels: String,
 
-    pub(crate) auth0_jwks_uri: String,
     pub(crate) quadratic_api_uri: String,
     pub(crate) quadratic_api_jwt: String,
 
@@ -40,7 +40,7 @@ pub(crate) fn config() -> Result<Config> {
     dotenv::from_filename(filename).ok();
     dotenv().ok();
 
-    let config = envy::from_env::<Config>().map_err(|e| MpError::Config(e.to_string()))?;
+    let config = envy::from_env::<Config>().map_err(|e| FilesError::Config(e.to_string()))?;
     Ok(config)
 }
 

@@ -9,10 +9,10 @@ use quadratic_rust_shared::{Aws, SharedError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-pub(crate) type Result<T> = std::result::Result<T, MpError>;
+pub(crate) type Result<T> = std::result::Result<T, FilesError>;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub(crate) enum MpError {
+pub(crate) enum FilesError {
     #[error("Authentication error: {0}")]
     Authentication(String),
 
@@ -25,14 +25,17 @@ pub(crate) enum MpError {
     #[error("Connection error: {0}")]
     Connection(String),
 
-    #[error("File permissions error: {0}")]
-    FilePermissions(bool, String),
+    #[error("Unable to export file {0}: {1}")]
+    ExportFile(String, String),
 
-    #[error("File service error: {0}")]
-    FileService(String),
+    #[error("Unable to import file {0}: {1}")]
+    ImportFile(String, String),
 
     #[error("Internal server error: {0}")]
     InternalServer(String),
+
+    #[error("Unable to load file {0} from bucket {1}: {2}")]
+    LoadFile(String, String, String),
 
     #[error("PubSub error: {0}")]
     PubSub(String),
@@ -40,17 +43,8 @@ pub(crate) enum MpError {
     #[error("Error requesting data: {0}")]
     Request(String),
 
-    #[error("Room error: {0}")]
-    Room(String),
-
     #[error("Error in S3: {0}")]
     S3(String),
-
-    #[error("Error sending message: {0}")]
-    SendingMessage(String),
-
-    #[error("Sequence number mismatch")]
-    SequenceNumberMismatch,
 
     #[error("Error serializing or deserializing: {0}")]
     Serialization(String),
@@ -60,49 +54,40 @@ pub(crate) enum MpError {
 
     #[error("unknown error: {0}")]
     Unknown(String),
-
-    #[error("User error: {0}")]
-    User(String),
-
-    #[error("User does not exist: {0}")]
-    UserDoesNotExist(String),
 }
 
-impl From<SharedError> for MpError {
+impl From<SharedError> for FilesError {
     fn from(error: SharedError) -> Self {
         match error {
-            SharedError::QuadraticApi(is_critical, error) => {
-                MpError::FilePermissions(is_critical, error)
-            }
             SharedError::Aws(aws) => match aws {
-                Aws::S3(error) => MpError::S3(error),
+                Aws::S3(error) => FilesError::S3(error),
             },
-            SharedError::PubSub(error) => MpError::PubSub(error),
-            _ => MpError::Unknown(format!("Unknown Quadratic API error: {error}")),
+            SharedError::PubSub(error) => FilesError::PubSub(error),
+            _ => FilesError::Unknown(format!("Unknown Quadratic API error: {error}")),
         }
     }
 }
 
-impl From<serde_json::Error> for MpError {
+impl From<serde_json::Error> for FilesError {
     fn from(error: serde_json::Error) -> Self {
-        MpError::Serialization(error.to_string())
+        FilesError::Serialization(error.to_string())
     }
 }
 
-impl From<uuid::Error> for MpError {
+impl From<uuid::Error> for FilesError {
     fn from(error: uuid::Error) -> Self {
-        MpError::Unknown(error.to_string())
+        FilesError::Unknown(error.to_string())
     }
 }
 
-impl From<reqwest::Error> for MpError {
+impl From<reqwest::Error> for FilesError {
     fn from(error: reqwest::Error) -> Self {
-        MpError::Request(error.to_string())
+        FilesError::Request(error.to_string())
     }
 }
 
-impl From<jsonwebtoken::errors::Error> for MpError {
+impl From<jsonwebtoken::errors::Error> for FilesError {
     fn from(error: jsonwebtoken::errors::Error) -> Self {
-        MpError::Authentication(error.to_string())
+        FilesError::Authentication(error.to_string())
     }
 }
