@@ -20,7 +20,7 @@ export interface EditorInteractionState {
   waitingForEditorClose?: {
     selectedCell: Coordinate;
     selectedCellSheet: string;
-    mode: CellType;
+    mode?: CodeCellLanguage;
     showCellTypeMenu: boolean;
   };
 }
