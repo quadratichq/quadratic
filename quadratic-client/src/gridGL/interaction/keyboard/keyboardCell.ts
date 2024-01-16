@@ -115,21 +115,44 @@ export function keyboardCell(options: {
     const y = cursorPosition.y;
     const cell = sheet.getRenderCell(x, y);
     if (cell?.language) {
-      // Open code editor, or move code editor if already open.
+      if (editorInteractionState.showCodeEditor) {
+        // Open code editor, or move change editor if already open.
+        setEditorInteractionState({
+          ...editorInteractionState,
+          showCellTypeMenu: false,
+          waitingForEditorClose: {
+            selectedCell: { x: x, y: y },
+            selectedCellSheet: sheets.sheet.id,
+            mode: cell.language,
+            showCellTypeMenu: false,
+          },
+        });
+      } else {
+        setEditorInteractionState({
+          ...editorInteractionState,
+          showCellTypeMenu: false,
+          selectedCell: { x: x, y: y },
+          selectedCellSheet: sheets.sheet.id,
+          mode: cell.language,
+          showCodeEditor: true,
+        });
+      }
+    } else if (editorInteractionState.showCodeEditor) {
+      // code editor is already open, so check it for save before closing
       setEditorInteractionState({
         ...editorInteractionState,
-        showCellTypeMenu: false,
-        showCodeEditor: true,
-        selectedCell: { x: x, y: y },
-        selectedCellSheet: sheets.sheet.id,
-        mode: cell.language,
+        waitingForEditorClose: {
+          showCellTypeMenu: true,
+          selectedCell: { x: x, y: y },
+          selectedCellSheet: sheets.sheet.id,
+          mode: 'Python',
+        },
       });
     } else {
-      // Open cell type menu, close editor.
+      // just open the code editor selection menu
       setEditorInteractionState({
         ...editorInteractionState,
         showCellTypeMenu: true,
-        showCodeEditor: false,
         selectedCell: { x: x, y: y },
         selectedCellSheet: sheets.sheet.id,
         mode: undefined,

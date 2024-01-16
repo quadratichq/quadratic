@@ -5,6 +5,7 @@ import { JsHtmlOutput } from '@/quadratic-core/types';
 import { colors } from '@/theme/colors';
 import { InteractionEvent } from 'pixi.js';
 import { pixiApp } from '../../pixiApp/PixiApp';
+import { Wheel } from '../../pixiOverride/Wheel';
 import { HtmlCellResizing } from './HtmlCellResizing';
 
 // number of screen pixels to trigger the resize cursor
@@ -12,6 +13,8 @@ const tolerance = 5;
 
 const DEFAULT_HTML_WIDTH = '600';
 const DEFAULT_HTML_HEIGHT = '460';
+
+const ALLOW_CHART_INTERACTIVITY = import.meta.env.VITE_ALLOW_CHART_INTERACTIVITY === '1';
 
 export class HtmlCell {
   private right: HTMLDivElement;
@@ -48,11 +51,14 @@ export class HtmlCell {
     this.bottom.className = 'html-resize-control-bottom';
 
     this.iframe = document.createElement('iframe');
+    this.iframe.className = 'html-cell-iframe';
+    this.iframe.style.pointerEvents = ALLOW_CHART_INTERACTIVITY ? 'auto' : 'none';
     this.iframe.srcdoc = htmlCell.html;
     this.iframe.title = `HTML from ${htmlCell.x}, ${htmlCell.y}}`;
     this.iframe.width = this.width;
     this.iframe.height = this.height;
-    this.iframe.scrolling = 'no';
+    this.iframe.setAttribute('border', '0');
+    this.iframe.setAttribute('scrolling', 'no');
     this.iframe.style.minWidth = `${CELL_WIDTH}px`;
     this.iframe.style.minHeight = `${CELL_HEIGHT}px`;
 
@@ -95,10 +101,20 @@ export class HtmlCell {
     if (this.iframe.contentWindow) {
       // turn off zooming within the iframe
 
-      // don't handle the wheel event
+      // forward the wheel event to the pixi viewport and adjust its position
       this.iframe.contentWindow.document.body.addEventListener(
         'wheel',
         (event) => {
+          const viewport = pixiApp.viewport;
+          const wheel = viewport.plugins.get('wheel') as Wheel | null;
+          if (!wheel) {
+            throw new Error('Expected wheel plugin to be defined on viewport');
+          }
+          const bounding = this.div.getBoundingClientRect();
+          wheel.wheel(event, {
+            x: bounding.left + event.clientX * viewport.scale.x - event.clientX,
+            y: bounding.top + event.clientY * viewport.scale.y - event.clientY,
+          });
           event.stopPropagation();
           event.preventDefault();
         },
@@ -106,23 +122,21 @@ export class HtmlCell {
       );
 
       // move margin to the div holding the iframe to avoid pinch-to-zoom issues at the iframe margins
-      const style = window.getComputedStyle(this.iframe.contentWindow.document.body);
-      if (style.marginLeft) {
-        this.div.style.paddingLeft = style.marginLeft;
-        this.iframe.contentWindow.document.body.style.marginLeft = '0';
-      }
-      if (style.marginTop) {
-        this.div.style.paddingTop = style.marginTop;
-        this.iframe.contentWindow.document.body.style.marginTop = '0';
-      }
-      if (style.marginRight) {
-        this.div.style.paddingRight = style.marginRight;
-        this.iframe.contentWindow.document.body.style.marginRight = '0';
-      }
-      if (style.marginBottom) {
-        this.div.style.paddingBottom = style.marginBottom;
-        this.iframe.contentWindow.document.body.style.marginBottom = '0';
-      }
+      // const style = window.getComputedStyle(this.iframe.contentWindow.document.body);
+      // if (style.marginLeft) {
+      //   this.div.style.paddingLeft = style.marginLeft;
+      // }
+      // if (style.marginTop) {
+      //   this.div.style.paddingTop = style.marginTop;
+      // }
+      // if (style.marginRight) {
+      //   this.div.style.paddingRight = style.marginRight;
+      // }
+      // if (style.marginBottom) {
+      //   this.div.style.paddingBottom = style.marginBottom;
+      // }
+
+      this.iframe.contentWindow.document.body.style.margin = '';
 
       // this is the automatic size calculation -- replaced for *now* with default width/height
       // if (!this.htmlCell.w) {

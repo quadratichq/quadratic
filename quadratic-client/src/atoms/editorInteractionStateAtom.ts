@@ -16,6 +16,13 @@ export interface EditorInteractionState {
   selectedCellSheet: string;
   mode?: CodeCellLanguage;
   follow?: string;
+  editorEscapePressed?: boolean;
+  waitingForEditorClose?: {
+    selectedCell: Coordinate;
+    selectedCellSheet: string;
+    mode: CellType;
+    showCellTypeMenu: boolean;
+  };
 }
 
 export const editorInteractionStateDefault: EditorInteractionState = {

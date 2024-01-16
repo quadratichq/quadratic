@@ -1,40 +1,23 @@
 import { sheets } from '@/grid/controller/Sheets';
-import { JsHtmlOutput } from '@/quadratic-core/types';
 import { colors } from '@/theme/colors';
 import { Graphics } from 'pixi.js';
+import { HtmlCell } from '../HTMLGrid/htmlCells/HtmlCell';
+import { htmlCellsHandler } from '../HTMLGrid/htmlCells/htmlCellsHandler';
 
 const BORDER_WIDTH = 1;
 
 // Draws the html placeholder for thumbnails
 export class HtmlPlaceholders extends Graphics {
-  // tracks the same data as HtmlCells (duplicated to more easily get it out of react)
-  private htmlOutput: JsHtmlOutput[] = [];
-
   constructor() {
     super();
     this.visible = false;
   }
 
-  private drawPlaceholder(htmlCell: JsHtmlOutput) {
-    let w = Number(htmlCell.w);
-    let h = Number(htmlCell.h);
+  private drawPlaceholder(htmlCell: HtmlCell) {
+    let w = htmlCell.div.offsetWidth;
+    let h = htmlCell.div.offsetHeight;
 
-    // if width and height = 0 (ie, not user set), then use the size of the HTML element
-    if (!w || !h) {
-      const element = document.querySelector(
-        `[data-sheet="${htmlCell.sheet_id}"][data-pos="${htmlCell.x},${htmlCell.y}"]`
-      );
-      if (!element) return;
-      if (element.tagName === 'iframe') {
-        const iframe = element as HTMLIFrameElement;
-        w = parseFloat(iframe.width);
-        h = parseFloat(iframe.height);
-      } else {
-        w = element.clientWidth;
-        h = element.clientHeight;
-      }
-    }
-    const sheet = sheets.getById(htmlCell.sheet_id);
+    const sheet = sheets.getById(htmlCell.sheet.id);
     if (!sheet) {
       throw new Error('Expected sheet to be defined in HtmlPlaceholders.drawPlaceholder');
     }
@@ -48,8 +31,8 @@ export class HtmlPlaceholders extends Graphics {
   prepare() {
     this.clear();
     const firstId = sheets.getFirst().id;
-    this.htmlOutput.forEach((cell) => {
-      if (cell.sheet_id === firstId) {
+    htmlCellsHandler.getCells().forEach((cell) => {
+      if (cell.sheet.id === firstId) {
         this.drawPlaceholder(cell);
       }
     });
@@ -58,9 +41,5 @@ export class HtmlPlaceholders extends Graphics {
 
   hide() {
     this.visible = false;
-  }
-
-  setHtmlCells(htmlOutput: JsHtmlOutput[]) {
-    this.htmlOutput = htmlOutput;
   }
 }

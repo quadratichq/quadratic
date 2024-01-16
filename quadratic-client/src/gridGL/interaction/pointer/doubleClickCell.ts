@@ -16,14 +16,30 @@ export function doubleClickCell(options: {
 
   if (!settings.setEditorInteractionState) return;
   if (mode) {
-    settings.setEditorInteractionState({
-      ...settings.editorInteractionState,
-      showCellTypeMenu: false,
-      showCodeEditor: true,
-      selectedCell: { x: column, y: row },
-      selectedCellSheet: sheets.sheet.id,
-      mode,
-    });
+    if (settings.editorInteractionState.showCodeEditor) {
+      settings.setEditorInteractionState({
+        ...settings.editorInteractionState,
+        editorEscapePressed: false,
+        showCellTypeMenu: false,
+        waitingForEditorClose: {
+          selectedCell: { x: column, y: row },
+          selectedCellSheet: sheets.sheet.id,
+          mode,
+          showCellTypeMenu: !mode,
+        },
+      });
+    } else {
+      settings.setEditorInteractionState({
+        ...settings.editorInteractionState,
+        showCellTypeMenu: false,
+        showCodeEditor: true,
+        selectedCell: { x: column, y: row },
+        selectedCellSheet: sheets.sheet.id,
+        mode,
+        editorEscapePressed: false,
+        waitingForEditorClose: undefined,
+      });
+    }
   } else if (hasPermission) {
     settings.changeInput(true, cell);
   }

@@ -1,6 +1,7 @@
 import { offline } from '@/grid/controller/offline';
+import { isEmbed } from '@/helpers/isEmbed';
 import { multiplayer } from '@/multiplayer/multiplayer';
-import { Viewport } from 'pixi-viewport';
+import { Drag, Viewport } from 'pixi-viewport';
 import { Container, Graphics, Point, Rectangle, Renderer } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
@@ -111,6 +112,18 @@ export class PixiApp {
         keyToPress: [...ZOOM_KEY, ...HORIZONTAL_SCROLL_KEY],
       })
     );
+    if (!isMobile) {
+      this.viewport.plugins.add(
+        'drag-middle-mouse',
+        new Drag(this.viewport, {
+          pressToDrag: true,
+          mouseButtons: 'middle',
+          wheel: 'false',
+        })
+      );
+    }
+
+    this.viewport.on('moved', () => {});
 
     // hack to ensure pointermove works outside of canvas
     this.viewport.off('pointerout');
@@ -172,7 +185,9 @@ export class PixiApp {
     parent.appendChild(this.canvas);
     this.resize();
     this.update.start();
-    this.canvas.focus();
+    if (!isEmbed) {
+      this.canvas.focus();
+    }
     this.setViewportDirty();
   }
 

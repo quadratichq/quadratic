@@ -21,7 +21,7 @@ export class PointerDown {
   private afterShowInput?: boolean;
 
   pointerDown(world: Point, event: PointerEvent): void {
-    if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled) return;
+    if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return;
     const sheet = sheets.sheet;
     const offsets = sheet.offsets;
     const cursor = sheet.cursor;
