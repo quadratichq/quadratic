@@ -71,7 +71,7 @@
     "watch:javascript": "export VITE_VERSION=$(git rev-parse HEAD) && export NODE_OPTIONS=--max-old-space-size=8192 && vite dev",
     "start:production": "npm run build && serve build",
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\"",
-    "test:unit": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js",
+    "test:unit": "vitest",
     "test:unit:dev": "npm run build:wasm:nodejs && npm run test:unit -- --watchAll",
     "test:unit:ci": "npm run test:unit -- --ci --runInBand",
     "test:e2e": "playwright test --workers=1",
