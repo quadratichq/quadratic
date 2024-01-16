@@ -4,6 +4,7 @@ const config = new pulumi.Config();
 
 // Configuration from command line
 const filesSubdomain = config.require("files-subdomain");
+const dockerImageName = config.require("docker-image-name");
 
 // Configuration from Pulumi ESC
 const domain = config.require("domain");
@@ -74,9 +75,8 @@ const instance = new aws.ec2.Instance("files-instance", {
   service docker start
   amazon-linux-extras install -y awscli
   $(aws ecr get-login --region us-west-2 --no-include-email)
-  docker pull ${ecrRegistryUrl}/quadratic-files-development/imagename:tag
-  docker run -d -p 80:80 ${ecrRegistryUrl}/quadratic-files-development/imagename:tag`,
-  //   TODO: Replace with commit sha
+  docker pull ${ecrRegistryUrl}/quadratic-files-development/${dockerImageName}:latest
+  docker run -d -p 80:80 ${ecrRegistryUrl}/quadratic-files-development/${dockerImageName}:latest`,
 });
 
 // Get the hosted zone ID for domain
