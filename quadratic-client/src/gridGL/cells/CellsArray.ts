@@ -63,11 +63,6 @@ export class CellsArray extends Container {
       overlapTest.height = 1;
     }
 
-    // only show the entire array if the cursor overlaps any part of the output
-    if (!intersects.rectangleRectangle(cursorRectangle, overlapTest)) {
-      return;
-    }
-
     let tint = colors.independence;
     if (codeCell.language === 'Python') {
       tint = colors.cellColorUserPython;
@@ -75,9 +70,21 @@ export class CellsArray extends Container {
       tint = colors.cellColorUserFormula;
     }
 
+    // only show the entire array if the cursor overlaps any part of the output
+    if (codeCell.spill_error) {
+      // spill error is a special case where we only test the origin of the cursor (instead of the entire box)
+      const cursorPosition = sheets.sheet.cursor.cursorPosition;
+      if (cursorPosition.x !== Number(codeCell.x) || cursorPosition.y !== Number(codeCell.y)) {
+        this.cellsSheet.cellsMarkers.addTriangle(start.x, start.y, codeCell.language, codeCell.state);
+        return;
+      }
+    } else if (!intersects.rectangleRectangle(cursorRectangle, overlapTest)) {
+      this.cellsSheet.cellsMarkers.addTriangle(start.x, start.y, codeCell.language, codeCell.state);
+      return;
+    }
+
     if (codeCell.spill_error) {
       this.drawDashedRectangle(new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y), tint);
-
       codeCell.spill_error?.forEach((error) => {
         const rectangle = this.sheet.getCellOffsets(Number(error.x), Number(error.y));
         this.drawDashedRectangle(rectangle, SPILL_HIGHLIGHT_COLOR);

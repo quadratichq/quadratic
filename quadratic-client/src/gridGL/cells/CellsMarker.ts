@@ -46,14 +46,18 @@ export class CellsMarkers extends Container {
     this.markers.forEach((marker) => (marker.sprite.visible = intersects.rectangleRectangle(bounds, marker.rectangle)));
   }
 
-  add(x: number, y: number, type: CodeCellLanguage | string, state?: JsRenderCodeCellState | string): void {
-    let error: Sprite | undefined;
+  addTriangle(x: number, y: number, type: CodeCellLanguage, state?: JsRenderCodeCellState): Sprite | undefined {
     if (state === 'RunError' || state === 'SpillError') {
-      error = this.addChild(new Sprite(this.triangle));
+      const error = this.addChild(new Sprite(this.triangle));
       error.alpha = 0.5;
       error.scale.set(0.1);
       error.position.set(x, y);
+      return error;
     }
+  }
+
+  add(x: number, y: number, type: CodeCellLanguage, state?: JsRenderCodeCellState) {
+    const error = this.addTriangle(x, y, type, state);
 
     const child = this.addChild(new Sprite());
     child.height = INDICATOR_SIZE;
