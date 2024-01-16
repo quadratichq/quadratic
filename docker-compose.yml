@@ -48,24 +48,24 @@ services:
   #     - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
   #     - "/var/run/docker.sock:/var/run/docker.sock"
 
-  quadratic-api:
-    build:
-      context: .
-      dockerfile: quadratic-api/Dockerfile
-    env_file:
-      - quadratic-api/.env.docker
-    # restart: "always"
-    ports:
-      - "3000:3000"
-    command: "node dist/server.js"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    profiles:
-      - backend
-      - api
-    networks:
-      - quadratic
+  # quadratic-api:
+  #   build:
+  #     context: .
+  #     dockerfile: quadratic-api/Dockerfile
+  #   env_file:
+  #     - quadratic-api/.env.docker
+  #   # restart: "always"
+  #   ports:
+  #     - "3000:3000"
+  #   command: "node dist/server.js"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   profiles:
+  #     - backend
+  #     - api
+  #   networks:
+  #     - host
 
   quadratic-multiplayer:
     build:
