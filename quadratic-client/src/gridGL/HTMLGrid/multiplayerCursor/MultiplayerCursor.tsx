@@ -1,3 +1,5 @@
+import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
+
 interface Props {
   x: number;
   y: number;
@@ -25,7 +27,7 @@ export const MultiplayerCursor = (props: Props) => {
     <div
       className="multiplayer-cursor"
       style={{
-        transform: `translateX(${x}px) translateY(${y}px)`,
+        transform: `translateX(${x}px) translateY(${y}px) scale(${1 / pixiApp.viewport.scale.x})`,
       }}
     >
       <svg width="24" height="36" viewBox="0 0 24 36" fill="none" stroke="white" xmlns="http://www.w3.org/2000/svg">
