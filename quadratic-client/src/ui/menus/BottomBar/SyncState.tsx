@@ -1,34 +1,38 @@
-import { ErrorOutline } from '@mui/icons-material';
+import { MultiplayerState } from '@/multiplayer/multiplayer';
+import { Check, ErrorOutline } from '@mui/icons-material';
 import { CircularProgress, Tooltip, useTheme } from '@mui/material';
-import { ShowAfter } from '../../../components/ShowAfter';
-import { useFileContext } from '../../components/FileProvider';
+import { useEffect, useState } from 'react';
 import BottomBarItem from './BottomBarItem';
 
 export default function SyncState() {
   const theme = useTheme();
-  const { syncState } = useFileContext();
 
-  if (syncState === 'idle') {
-    return null;
+  const [syncState, setSyncState] = useState<MultiplayerState>('not connected');
+
+  useEffect(() => {
+    const updateState = (e: any) => setSyncState(e.detail);
+    window.addEventListener('multiplayer-state', updateState);
+    return () => window.removeEventListener('multiplayer-state', updateState);
+  }, []);
+
+  if (['connecting', 'startup'].includes(syncState)) {
+    return <BottomBarItem icon={<CircularProgress size="0.5rem" />}>Connecting…</BottomBarItem>;
   }
 
+  if (syncState === 'syncing') {
+    return <BottomBarItem icon={<CircularProgress size="0.5rem" />}>Connected to Server</BottomBarItem>;
+  }
+
+  if (syncState === 'connected') {
+    return <BottomBarItem icon={<Check fontSize="inherit" />}>Connected to Server</BottomBarItem>;
+  }
+
+  // else error
   return (
-    <>
-      <ShowAfter delay={300}>
-        <>
-          {syncState === 'error' && (
-            <Tooltip title="Your recent changes haven’t been saved. Make sure you’re connected to the internet.">
-              <BottomBarItem
-                icon={<ErrorOutline color="inherit" fontSize="inherit" />}
-                style={{ color: theme.palette.error.main }}
-              >
-                Syncing error
-              </BottomBarItem>
-            </Tooltip>
-          )}
-          {syncState === 'syncing' && <BottomBarItem icon={<CircularProgress size="0.5rem" />}>Syncing…</BottomBarItem>}
-        </>
-      </ShowAfter>
-    </>
+    <BottomBarItem icon={<ErrorOutline fontSize="inherit" style={{ color: theme.palette.error.main }} />}>
+      <Tooltip title="Connection to the Quadratic server was lost. Your changes are only saving locally.">
+        <span style={{ color: theme.palette.error.main }}>Offline mode</span>
+      </Tooltip>
+    </BottomBarItem>
   );
 }

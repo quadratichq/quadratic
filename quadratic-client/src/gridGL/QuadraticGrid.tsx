@@ -1,5 +1,5 @@
 import { MultiplayerCursors } from '@/multiplayer/multiplayerCursor/MulitplayerCursors';
-import { useCallback, useEffect, useState } from 'react';
+import { MouseEvent, useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
@@ -54,12 +54,16 @@ export default function QuadraticGrid() {
     mouseIsDown = false;
     if (panMode !== PanMode.Disabled) {
       pixiAppSettings.changePanMode(spaceIsDown ? PanMode.Enabled : PanMode.Disabled);
+    } else {
+      pixiAppSettings.changePanMode(PanMode.Disabled);
     }
     window.removeEventListener('mouseup', onMouseUp);
   };
-  const onMouseDown = () => {
+  const onMouseDown = (e: MouseEvent<HTMLDivElement>) => {
     mouseIsDown = true;
     if (panMode === PanMode.Enabled) {
+      pixiAppSettings.changePanMode(PanMode.Dragging);
+    } else if (e.button === 1) {
       pixiAppSettings.changePanMode(PanMode.Dragging);
     }
     window.addEventListener('mouseup', onMouseUp);
@@ -104,9 +108,7 @@ export default function QuadraticGrid() {
           setShowContextMenu(true);
         }
       }}
-      onMouseDown={() => {
-        onMouseDown();
-      }}
+      onMouseDown={onMouseDown}
       onClick={() => {
         // <FloatingContextMenu> prevents events from bubbling up to here, so
         // we always hide the context menu if it's open

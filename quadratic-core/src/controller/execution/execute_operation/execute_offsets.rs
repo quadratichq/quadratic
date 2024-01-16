@@ -94,7 +94,7 @@ mod tests {
 
     #[test]
     fn test_execute_operation_resize_column() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let column = 0;
         let new_size = 100.0;
@@ -115,7 +115,7 @@ mod tests {
 
     #[test]
     fn test_execute_operation_resize_row() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let row = 0;
         let new_size = 100.0;

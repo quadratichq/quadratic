@@ -12,6 +12,7 @@ import {
 import { Separator } from '@/shadcn/ui/separator';
 import { cn } from '@/shadcn/utils';
 import { DotsVerticalIcon } from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
 import { useEffect, useState } from 'react';
 import { Link, SubmitOptions, useFetcher } from 'react-router-dom';
 import { deleteFile, downloadFileAction, duplicateFileAction, renameFileAction } from '../../actions';
@@ -123,6 +124,7 @@ export function FileListItem({
 
   const handleShare = () => {
     setActiveShareMenuFileId(uuid);
+    mixpanel.track('[FileSharing].menu.open', { context: 'dashboard', pathname: window.location.pathname });
   };
 
   const displayName = fetcherRename.json ? (fetcherRename.json as FileAction['request.rename']).name : name;

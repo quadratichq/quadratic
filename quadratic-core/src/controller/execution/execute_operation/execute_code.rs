@@ -132,7 +132,7 @@ mod tests {
 
     #[test]
     fn test_spilled_output_over_normal_cell() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
         sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text("one".into()));

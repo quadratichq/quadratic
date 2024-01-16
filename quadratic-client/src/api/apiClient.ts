@@ -155,6 +155,7 @@ export const apiClient = {
         );
       },
       async update(uuid: string, body: ApiTypes['/v0/files/:uuid/sharing.PATCH.request']) {
+        mixpanel.track('[FileSharing].publicLinkAccess.update', { value: body.publicLinkAccess });
         return fetchFromApi(
           `/v0/files/${uuid}/sharing`,
           {
@@ -167,6 +168,7 @@ export const apiClient = {
     },
     invites: {
       async create(uuid: string, body: ApiTypes['/v0/files/:uuid/invites.POST.request']) {
+        mixpanel.track('[FileSharing].invite.create');
         return fetchFromApi(
           `/v0/files/${uuid}/invites`,
           {
@@ -177,6 +179,7 @@ export const apiClient = {
         );
       },
       async delete(uuid: string, inviteId: string) {
+        mixpanel.track('[FileSharing].invite.delete');
         return fetchFromApi(
           `/v0/files/${uuid}/invites/${inviteId}`,
           {
@@ -188,6 +191,7 @@ export const apiClient = {
     },
     users: {
       async update(uuid: string, userId: string, body: ApiTypes['/v0/files/:uuid/users/:userId.PATCH.request']) {
+        mixpanel.track('[FileSharing].users.updateRole');
         return fetchFromApi(
           `/v0/files/${uuid}/users/${userId}`,
           { method: 'PATCH', body: JSON.stringify(body) },
@@ -195,6 +199,7 @@ export const apiClient = {
         );
       },
       async delete(uuid: string, userId: string) {
+        mixpanel.track('[FileSharing].users.remove');
         return fetchFromApi(
           `/v0/files/${uuid}/users/${userId}`,
           { method: 'DELETE' },

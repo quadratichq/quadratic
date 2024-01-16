@@ -356,7 +356,7 @@ mod tests {
 
     #[test]
     fn test_has_render_cells() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
 
@@ -401,7 +401,7 @@ mod tests {
 
     #[test]
     fn test_get_render_cells() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -528,7 +528,7 @@ mod tests {
 
     #[test]
     fn test_get_html_output() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
             SheetPos {
@@ -655,7 +655,7 @@ mod tests {
 
     #[test]
     fn test_get_render_cells_code() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(

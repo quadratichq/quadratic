@@ -29,10 +29,6 @@ pub struct GridController {
 }
 
 impl GridController {
-    pub fn new() -> Self {
-        Self::from_grid(Grid::new(), 0)
-    }
-
     pub fn from_grid(grid: Grid, last_sequence_num: u64) -> Self {
         GridController {
             grid,
@@ -47,5 +43,9 @@ impl GridController {
 
     pub fn grid_mut(&mut self) -> &mut Grid {
         &mut self.grid
+    }
+
+    pub fn test() -> Self {
+        Self::from_grid(Grid::new(), 0)
     }
 }
