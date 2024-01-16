@@ -1,6 +1,7 @@
 import { ApiError } from '@/api/fetchFromApi';
 import { CONTACT_URL } from '@/constants/urls';
 import { debugShowMultiplayer } from '@/debugFlags';
+import { isEmbed } from '@/helpers/isEmbed';
 import { firstRustFileVersion } from '@/schemas/validateAndUpgradeLegacyGridFile';
 import { versionGTE } from '@/schemas/versioning';
 import { Button } from '@/shadcn/ui/button';
@@ -103,6 +104,12 @@ export const Component = () => {
       permissions,
     }));
   };
+
+  // If this is an embed, ensure that wheel events do not scroll the page
+  // otherwise we get weird double-scrolling on the iframe embed
+  if (isEmbed) {
+    document.querySelector('#root')?.addEventListener('wheel', (e) => e.preventDefault());
+  }
 
   return (
     <RecoilRoot initializeState={initializeState}>

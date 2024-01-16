@@ -8,6 +8,11 @@
   background: white;
   position: absolute;
   box-sizing: border-box;
+  pointer-events: none;
+}
+
+.html-cell-iframe {
+  margin: 0;
 }
 
 .html-resize-control-right,
@@ -15,6 +20,7 @@
   z-index: 200;
   transition: 0.2s ease background-color 0ms;
   background-color: transparent;
+  pointer-events: none;
 }
 
 .html-resize-control-right {
