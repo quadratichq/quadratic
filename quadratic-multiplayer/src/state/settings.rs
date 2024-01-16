@@ -15,6 +15,7 @@ pub(crate) struct Settings {
 
 impl Settings {
     pub(crate) async fn new(config: &Config, jwks: Option<JwkSet>) -> Self {
+        let is_local = config.environment == "docker";
         Settings {
             jwks,
             authenticate_jwt: config.authenticate_jwt,
@@ -25,6 +26,7 @@ impl Settings {
                 &config.aws_s3_secret_access_key,
                 &config.aws_s3_region,
                 "Quadratic File Service",
+                is_local,
             )
             .await,
             aws_s3_bucket_name: config.aws_s3_bucket_name.to_owned(),

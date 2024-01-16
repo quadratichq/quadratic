@@ -12,6 +12,7 @@ pub(crate) struct Settings {
 
 impl Settings {
     pub(crate) async fn new(config: &Config) -> Self {
+        let is_local = config.environment == "docker";
         Settings {
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
             quadratic_api_jwt: config.quadratic_api_jwt.to_owned(),
@@ -20,6 +21,7 @@ impl Settings {
                 &config.aws_s3_secret_access_key,
                 &config.aws_s3_region,
                 "Quadratic File Service",
+                is_local,
             )
             .await,
             aws_s3_bucket_name: config.aws_s3_bucket_name.to_owned(),

@@ -16,6 +16,7 @@ pub(crate) struct Config {
     pub(crate) heartbeat_check_s: i64,
     pub(crate) authenticate_jwt: bool,
     pub(crate) heartbeat_timeout_s: i64,
+    pub(crate) environment: String,
 
     pub(crate) pubsub_host: String,
     pub(crate) pubsub_port: String,

@@ -5,6 +5,7 @@ const region = process.env.AWS_S3_REGION as string;
 const accessKeyId = process.env.AWS_S3_ACCESS_KEY_ID as string;
 const secretAccessKey = process.env.AWS_S3_SECRET_ACCESS_KEY as string;
 const bucketName = process.env.AWS_S3_BUCKET_NAME as string;
+const isLocal = (process.env.ENVIRONMENT as string) === 'docker';
 
 // Initialize S3 client
 export const s3Client = new S3Client({
@@ -13,6 +14,8 @@ export const s3Client = new S3Client({
     accessKeyId,
     secretAccessKey,
   },
+  endpoint: isLocal ? 'http://localhost:4566' : undefined,
+  forcePathStyle: true,
 });
 
 export const uploadStringAsFileS3 = async (fileKey: string, contents: string) => {

@@ -17,6 +17,7 @@ pub(crate) struct Config {
     pub(crate) password: String,
     pub(crate) file_check_s: i64,
     pub(crate) files_per_check: i64,
+    pub(crate) environment: String,
 
     pub(crate) pubsub_host: String,
     pub(crate) pubsub_port: String,

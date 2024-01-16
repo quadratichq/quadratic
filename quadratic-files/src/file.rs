@@ -113,8 +113,8 @@ pub(crate) async fn process_queue_for_room(
 
     let checkpoint_sequence_num =
         match get_file_checkpoint(quadratic_api_uri, quadratic_api_jwt, file_id).await {
-            Ok(last_checkpoint) => last_checkpoint.sequence_number + 1,
-            Err(_) => 1,
+            Ok(last_checkpoint) => last_checkpoint.sequence_number,
+            Err(_) => 0,
         };
 
     // this is an expensive lock since we're waiting for the file to write to S3 before unlocking

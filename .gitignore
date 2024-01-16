@@ -54,5 +54,6 @@ quadratic-files/coverage
 quadratic-multiplayer/coverage
 
 # Docker Data
+docker/localstack/data
 docker/redis/data
 docker/postgres/data
