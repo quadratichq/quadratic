@@ -5,7 +5,7 @@ export const latestAmazonLinuxAmi = aws.ec2.getAmiOutput({
   filters: [
     {
       name: "name",
-      values: ["al2023-ami-*-x86_64"],
+      values: ["al2023-ami-default-*-x86_64"],
     },
   ],
   owners: ["amazon"], // This is the AWS account ID for Amazon
