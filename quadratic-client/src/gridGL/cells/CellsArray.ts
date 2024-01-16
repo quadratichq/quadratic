@@ -71,70 +71,86 @@ export class CellsArray extends Container {
     }
 
     // only show the entire array if the cursor overlaps any part of the output
-    if (codeCell.spill_error) {
-      // spill error is a special case where we only test the origin of the cursor (instead of the entire box)
-      const cursorPosition = sheets.sheet.cursor.cursorPosition;
-      if (cursorPosition.x !== Number(codeCell.x) || cursorPosition.y !== Number(codeCell.y)) {
-        this.cellsSheet.cellsMarkers.addTriangle(start.x, start.y, codeCell.language, codeCell.state);
-        return;
-      }
-    } else if (!intersects.rectangleRectangle(cursorRectangle, overlapTest)) {
+    if (!intersects.rectangleRectangle(cursorRectangle, overlapTest)) {
       this.cellsSheet.cellsMarkers.addTriangle(start.x, start.y, codeCell.language, codeCell.state);
       return;
     }
 
     if (codeCell.spill_error) {
-      this.drawDashedRectangle(new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y), tint);
-      codeCell.spill_error?.forEach((error) => {
-        const rectangle = this.sheet.getCellOffsets(Number(error.x), Number(error.y));
-        this.drawDashedRectangle(rectangle, SPILL_HIGHLIGHT_COLOR);
-      });
-    } else {
-      this.lines.push(
-        ...drawBorder({
-          alpha: 0.5,
-          tint,
-          x: start.x,
-          y: start.y,
-          width: end.x - start.x,
-          height: end.y - start.y,
-          getSprite: this.getSprite,
-          top: true,
-          left: true,
-          bottom: true,
-          right: true,
-        })
-      );
-      const right = end.x !== start.x + start.width;
-      if (right) {
+      const cursorPosition = sheets.sheet.cursor.cursorPosition;
+      if (cursorPosition.x !== Number(codeCell.x) || cursorPosition.y !== Number(codeCell.y)) {
         this.lines.push(
-          drawLine({
-            x: start.x + start.width - borderLineWidth / 2,
-            y: start.y + borderLineWidth / 2,
-            width: borderLineWidth,
+          ...drawBorder({
+            alpha: 0.5,
+            tint,
+            x: start.x,
+            y: start.y,
+            width: start.width,
             height: start.height,
-            alpha: 0.5,
-            tint,
             getSprite: this.getSprite,
+            top: true,
+            left: true,
+            bottom: true,
+            right: true,
           })
         );
+      } else {
+        this.drawDashedRectangle(new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y), tint);
+        codeCell.spill_error?.forEach((error) => {
+          const rectangle = this.sheet.getCellOffsets(Number(error.x), Number(error.y));
+          this.drawDashedRectangle(rectangle, SPILL_HIGHLIGHT_COLOR);
+        });
       }
-      const bottom = end.y !== start.y + start.height;
-      if (bottom) {
-        this.lines.push(
-          drawLine({
-            x: start.x + borderLineWidth / 2,
-            y: start.y + start.height - borderLineWidth / 2,
-            width: start.width - borderLineWidth,
-            height: borderLineWidth,
-            alpha: 0.5,
-            tint,
-            getSprite: this.getSprite,
-          })
-        );
-      }
+    } else {
+      this.drawBox(start, end, tint);
     }
     this.cellsSheet.cellsMarkers.add(start.x, start.y, codeCell.language, codeCell.state);
+  }
+
+  private drawBox(start: Rectangle, end: Rectangle, tint: number) {
+    this.lines.push(
+      ...drawBorder({
+        alpha: 0.5,
+        tint,
+        x: start.x,
+        y: start.y,
+        width: end.x - start.x,
+        height: end.y - start.y,
+        getSprite: this.getSprite,
+        top: true,
+        left: true,
+        bottom: true,
+        right: true,
+      })
+    );
+    const right = end.x !== start.x + start.width;
+    if (right) {
+      this.lines.push(
+        drawLine({
+          x: start.x + start.width - borderLineWidth / 2,
+          y: start.y + borderLineWidth / 2,
+          width: borderLineWidth,
+          height: start.height,
+          alpha: 0.5,
+          tint,
+          getSprite: this.getSprite,
+        })
+      );
+    }
+    const bottom = end.y !== start.y + start.height;
+    if (bottom) {
+      this.lines.push(
+        drawLine({
+          x: start.x + borderLineWidth / 2,
+          y: start.y + start.height - borderLineWidth / 2,
+          width: start.width - borderLineWidth,
+          height: borderLineWidth,
+          alpha: 0.5,
+          tint,
+          getSprite: this.getSprite,
+        })
+      );
+    }
   }
 
   private drawDashedRectangle(rectangle: Rectangle, color: number) {
