@@ -1,7 +1,8 @@
-import { CodeCellLanguage, JsRenderCodeCellState } from '@/quadratic-core/types';
-import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
+import { JsRenderCodeCell } from '@/quadratic-core/types';
+import { Container, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../theme/colors';
 import { intersects } from '../helpers/intersects';
+import { Coordinate } from '../types/size';
 
 const TRIANGLE_SIZE = 100;
 const TRIANGLE_COLOR = 'red';
@@ -46,8 +47,8 @@ export class CellsMarkers extends Container {
     this.markers.forEach((marker) => (marker.sprite.visible = intersects.rectangleRectangle(bounds, marker.rectangle)));
   }
 
-  addTriangle(x: number, y: number, type: CodeCellLanguage, state?: JsRenderCodeCellState): Sprite | undefined {
-    if (state === 'RunError' || state === 'SpillError') {
+  addTriangle(x: number, y: number, codeCell: JsRenderCodeCell): Sprite | undefined {
+    if (codeCell.state === 'RunError' || codeCell.state === 'SpillError') {
       const error = this.addChild(new Sprite(this.triangle));
       error.alpha = 0.5;
       error.scale.set(0.1);
@@ -56,17 +57,17 @@ export class CellsMarkers extends Container {
     }
   }
 
-  add(x: number, y: number, type: CodeCellLanguage, state?: JsRenderCodeCellState) {
-    const error = this.addTriangle(x, y, type, state);
+  add(x: number, y: number, codeCell: JsRenderCodeCell) {
+    const error = this.addTriangle(x, y, codeCell);
 
     const child = this.addChild(new Sprite());
     child.height = INDICATOR_SIZE;
     child.width = INDICATOR_SIZE;
     child.position.set(x + 1.25, y + 1.25);
-    if (type === 'Python') {
+    if (codeCell.language === 'Python') {
       child.texture = Texture.from('/images/python-icon.png');
       child.tint = error ? 0xffffff : colors.cellColorUserPython;
-    } else if (type === 'Formula') {
+    } else if (codeCell.language === 'Formula') {
       child.texture = Texture.from('/images/formula-fx-icon.png');
       child.tint = error ? 0xffffff : colors.cellColorUserFormula;
     }
@@ -75,6 +76,13 @@ export class CellsMarkers extends Container {
       sprite: child,
       rectangle: new Rectangle(child.x, child.y, 4, 4),
     });
+  }
+
+  intersectsMarker(point: Point): Coordinate | undefined {
+    const marker = this.markers.find((marker) => marker.rectangle.contains(point.x, point.y));
+    if (marker) {
+      return { x: marker.rectangle.x, y: marker.rectangle.y };
+    }
   }
 
   debugShowCachedCounts(): void {
