@@ -1,6 +1,7 @@
 import { ApiError } from '@/api/fetchFromApi';
 import { CONTACT_URL } from '@/constants/urls';
 import { debugShowMultiplayer } from '@/debugFlags';
+import { isEmbed } from '@/helpers/isEmbed';
 import { Button } from '@/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
@@ -28,15 +29,15 @@ import QuadraticApp from '../ui/QuadraticApp';
 export type FileData = {
   name: string;
   uuid: string;
-  sharing: ApiTypes['/v0/files/:uuid/sharing.GET.response'];
-  permission: ApiTypes['/v0/files/:uuid.GET.response']['permission'];
+  owner: ApiTypes['/v0/files/:uuid.GET.response']['owner'];
+  permissions: ApiTypes['/v0/files/:uuid.GET.response']['userMakingRequest']['filePermissions'];
 };
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData> => {
   const { uuid } = params as { uuid: string };
 
-  // Fetch the file & its sharing data
-  const [data, sharing] = await Promise.all([apiClient.getFile(uuid), apiClient.getFileSharing(uuid)]);
+  // Fetch the file
+  const data = await apiClient.files.get(uuid);
   if (debugShowMultiplayer)
     console.log(`[File API] Received file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`);
 
@@ -58,7 +59,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   // load WASM
   await init();
   hello();
-  grid.init();
   grid.openFromContents(file.contents, data.file.lastCheckpointSequenceNumber);
   grid.thumbnailDirty = !data.file.thumbnail;
 
@@ -76,21 +76,27 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   return {
     name: data.file.name,
     uuid: data.file.uuid,
-    permission: data.permission,
-    sharing,
+    owner: data.owner,
+    permissions: data.userMakingRequest.filePermissions,
   };
 };
 
 export const Component = () => {
   // Initialize recoil with the file's permission we get from the server
-  const { permission, uuid } = useLoaderData() as FileData;
+  const { permissions, uuid } = useLoaderData() as FileData;
   const initializeState = ({ set }: MutableSnapshot) => {
     set(editorInteractionStateAtom, (prevState) => ({
       ...prevState,
       uuid,
-      permission,
+      permissions,
     }));
   };
+
+  // If this is an embed, ensure that wheel events do not scroll the page
+  // otherwise we get weird double-scrolling on the iframe embed
+  if (isEmbed) {
+    document.querySelector('#root')?.addEventListener('wheel', (e) => e.preventDefault());
+  }
 
   return (
     <RecoilRoot initializeState={initializeState}>

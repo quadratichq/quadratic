@@ -11,6 +11,8 @@ pub mod user;
 
 use dashmap::DashMap;
 use jsonwebtoken::jwk::JwkSet;
+use quadratic_rust_shared::pubsub::redis_streams::RedisStreamsConfig;
+use quadratic_rust_shared::pubsub::Config as PubSubConfig;
 use std::collections::HashMap;
 use tokio::sync::Mutex;
 use uuid::Uuid;
@@ -32,10 +34,17 @@ pub(crate) struct State {
 
 impl State {
     pub(crate) async fn new(config: &Config, jwks: Option<JwkSet>) -> Self {
+        let pubsub_config = PubSubConfig::RedisStreams(RedisStreamsConfig {
+            host: config.pubsub_host.to_owned(),
+            port: config.pubsub_port.to_owned(),
+            password: config.pubsub_password.to_owned(),
+            active_channels: config.pubsub_active_channels.to_owned(),
+        });
+
         State {
             rooms: Mutex::new(DashMap::new()),
             connections: Mutex::new(HashMap::new()),
-            transaction_queue: Mutex::new(TransactionQueue::new()),
+            transaction_queue: Mutex::new(TransactionQueue::new(pubsub_config).await),
             settings: Settings::new(config, jwks).await,
         }
     }

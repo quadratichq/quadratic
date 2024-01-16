@@ -86,7 +86,7 @@ mod test {
     fn test_render_size() {
         use crate::Pos;
 
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_render_size(
             SheetPos {
@@ -115,7 +115,7 @@ mod test {
 
     #[test]
     fn test_set_code_run() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
         let code_run = CodeRun {
@@ -136,7 +136,7 @@ mod test {
 
     #[test]
     fn test_get_code_run() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
         let code_run = CodeRun {

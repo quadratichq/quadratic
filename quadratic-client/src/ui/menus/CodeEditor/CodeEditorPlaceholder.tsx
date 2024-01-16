@@ -8,31 +8,18 @@ export const snippets = [
     label: 'fetch data',
     // prettier-ignore
     code:
-`import json
-from pyodide.http import pyfetch
+`import requests 
+import pandas as pd 
 
 # Fetch data
-res = await pyfetch(
-  'https://jsonplaceholder.typicode.com/users',
-  method = 'GET',
-  headers = {
-    'Content-Type': 'application/json'
-  }
-)
-users = json.loads(await res.string())
+response = requests.get('https://jsonplaceholder.typicode.com/users')
 
-# Table
-out = []
+# Place data into DataFrame
+df = pd.DataFrame(response.json())
 
-# Headers
-out.append(['Username',  'Email', 'Website'])
-
-# Rows (from json)
-for user in users:
-    out.append([user['username'], user['email'], user['website']])
- 
-# Last line returns to sheet
-out`,
+# Display DataFrame to sheet 
+df
+`,
   },
   {
     label: 'reference cells',

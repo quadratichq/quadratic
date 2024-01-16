@@ -107,7 +107,7 @@ impl PendingTransaction {
 
     /// returns the TransactionSummary
     pub fn prepare_summary(&mut self, complete: bool) -> TransactionSummary {
-        if complete && (self.is_user() || self.is_undo_redo()) {
+        if complete && self.is_user_undo_redo() {
             self.summary.transaction_id = Some(self.id.to_string());
             self.summary.operations = Some(
                 serde_json::to_string(&self.forward_operations)

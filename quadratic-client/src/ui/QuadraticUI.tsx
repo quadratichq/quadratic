@@ -6,6 +6,7 @@ import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom'
 import QuadraticGrid from '../gridGL/QuadraticGrid';
 import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../helpers/focusGrid';
+import { isEmbed } from '../helpers/isEmbed';
 import CodeEditor from '../ui/menus/CodeEditor';
 import TopBar from '../ui/menus/TopBar';
 import { useFileContext } from './components/FileProvider';
@@ -65,7 +66,7 @@ export default function QuadraticUI() {
       </div>
 
       {!presentationMode && <SheetBar />}
-      {!presentationMode && <BottomBar />}
+      {!presentationMode && !isEmbed && <BottomBar />}
       {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
       {editorInteractionState.showShareFileMenu && (
         <ShareFileDialog
@@ -83,7 +84,7 @@ export default function QuadraticUI() {
         />
       )}
       {presentationMode && <PresentationModeHint />}
-      <PermissionOverlay />
+      {!isEmbed && <PermissionOverlay />}
     </div>
   );
 }

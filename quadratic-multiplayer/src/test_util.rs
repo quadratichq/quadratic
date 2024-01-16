@@ -52,7 +52,11 @@ pub(crate) fn new_user() -> User {
             code_running: "".to_string(),
         },
         image: FilePath().fake(),
-        permission: FilePermRole::Owner,
+        permissions: vec![
+            FilePermRole::FileEdit,
+            FilePermRole::FileView,
+            FilePermRole::FileDelete,
+        ],
         socket: None,
         last_heartbeat: chrono::Utc::now(),
     }
@@ -77,10 +81,6 @@ pub(crate) async fn add_new_user_to_room(
     connection_id: Uuid,
 ) -> User {
     add_user_to_room(file_id, new_user(), state, connection_id).await
-}
-
-pub(crate) fn grid_setup() -> GridController {
-    GridController::new()
 }
 
 pub(crate) fn operation(grid: &mut GridController, x: i64, y: i64, value: &str) -> Operation {

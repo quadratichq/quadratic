@@ -12,17 +12,24 @@
     "quadratic-api",
     "quadratic-shared",
     "quadratic-client",
+    "quadratic-files",
     "quadratic-multiplayer"
   ],
   "scripts": {
     "start": "npm run watch:front-end",
     "api:start": "npm start --workspace=quadratic-api",
+    "dev:multiplayer": "npm run build:wasm:types && concurrently -n=react,core,api,multiplayer,docker \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:api:start\" \"npm:watch:multiplayer\" \"docker compose --profile quadratic-multiplayer-dev up\"",
+    "dev:files": "npm run build:wasm:types && concurrently -n=react,core,api,files,docker \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:api:start\" \"npm:watch:files\" \"docker compose --profile quadratic-files-dev up\"",
+    "dev:multiplayer-files": "npm run build:wasm:types && concurrently -n=react,core,api,docker \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:api:start\" \"docker compose up\"",
+    "clean": "npm exec --workspaces -- npx rimraf node_modules && npx rimraf node_modules",
     "perf": "npm run watch:perf:front-end",
     "watch:javascript": "cd quadratic-client && npm run watch:javascript",
     "watch:front-end": "npm run build:wasm:types && concurrently -n=react,core,api,multiplayer \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:api:start\" \"npm:watch:multiplayer\"",
+    "watch:front-end-no-multiplayer": "npm run build:wasm:types && concurrently -n=react,core,api,multiplayer \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:api:start\"",
     "watch:perf:front-end": "npm run build:wasm:types && concurrently -n=react,rust,api,multiplayer \"npm:watch:javascript\" \"npm:watch:wasm:perf:javascript\" \"npm run api:start\" \"npm:watch:multiplayer\"",
     "watch:front-end-back-end": "npm run build:wasm:types && concurrently -n=react,core,api,multiplayer \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:start:api\" \"npm:watch:multiplayer\"",
-    "watch:app": "npm run build:wasm:types && concurrently -n=react,api 'npm:watch:javascript' 'npm run start:api'",
+    "watch:app": "npm run build:wasm:types && concurrently -n=react,api 'npm:watch:javascript' 'npm run api:start'",
+    "watch:files": "npm run dev --workspace=quadratic-files",
     "watch:multiplayer": "npm run dev --workspace=quadratic-multiplayer",
     "lint:client": "cd quadratic-client && npm run lint:ts && npm run lint:eslint && lint:prettier && lint:clippy",
     "build:wasm:types": "cd quadratic-core && cargo run --bin export_types",
@@ -38,8 +45,8 @@
     "benchmark:rust": "cd quadratic-core && cargo bench",
     "lint:clippy": "cd quadratic-core && cargo clippy --all-targets --all-features -- -D warnings",
     "heroku-postbuild": "npm run build --workspace=quadratic-api",
-    "kill": "killport 3000 && killport 3001 && killport 8001 && killport 8000"
-
+    "kill": "killport 3000 && killport 3001 && killport 8001 && killport 8000",
+    "test:ts": "cd quadratic-client && vitest"
   },
   "dependencies": {
     "zod": "^3.22.4"

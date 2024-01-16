@@ -1,4 +1,4 @@
-import { isEditorOrAbove } from '../../../actions';
+import { hasPerissionToEditFile } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
 import { clearFormattingAndBorders, setBold, setItalic } from '../../../ui/menus/TopBar/SubMenus/formatCells';
@@ -38,6 +38,12 @@ export function keyboardViewport(options: {
   if (!(event.metaKey || event.ctrlKey) && event.key === 'Escape') {
     if (presentationMode) {
       setPresentationMode(false);
+      return true;
+    } else if (editorInteractionState.showCodeEditor) {
+      setEditorInteractionState({
+        ...editorInteractionState,
+        editorEscapePressed: true,
+      });
       return true;
     }
     return pointer.handleEscape();
@@ -85,7 +91,7 @@ export function keyboardViewport(options: {
   }
 
   // All formatting options past here are only available for people with rights
-  if (!isEditorOrAbove(editorInteractionState.permission)) {
+  if (!hasPerissionToEditFile(editorInteractionState.permissions)) {
     return false;
   }
 

@@ -5,7 +5,6 @@ use uuid::Uuid;
 
 use crate::{
     error::Result,
-    file::process_queue_for_room,
     get_room,
     message::{broadcast, response::MessageResponse},
     state::State,
@@ -23,6 +22,15 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
         let mut interval = time::interval(Duration::from_millis(heartbeat_check_s as u64 * 1000));
 
         loop {
+            // reconnect if pubsub connection is unhealthy
+            state
+                .transaction_queue
+                .lock()
+                .await
+                .pubsub
+                .reconnect_if_unhealthy()
+                .await;
+
             // get all room ids
             let rooms = state
                 .rooms
@@ -40,38 +48,6 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
 
                     tokio::spawn(async move {
                         tracing::trace!("Processing room {}", file_id);
-                        // process transaction queue for the room
-
-                        let processed = process_transaction_queue_for_room(
-                            Arc::clone(&state),
-                            &file_id,
-                            checkpoint_sequence_num,
-                        )
-                        .await;
-
-                        match processed {
-                            Err(error) => {
-                                tracing::warn!(
-                                    "Error processing queue for room {file_id}: {:?}",
-                                    error
-                                )
-                            }
-                            Ok(Some(sequence_num)) => {
-                                if state
-                                    .set_checkpoint_sequence_num(&file_id, sequence_num)
-                                    .await
-                                    .is_err()
-                                {
-                                    tracing::warn!(
-                                        "Error setting checkpoint sequence number for room {}",
-                                        file_id
-                                    );
-                                }
-                            }
-                            Ok(None) => {
-                                tracing::trace!("No transactions to process for room {}", file_id)
-                            }
-                        };
 
                         // broadcast sequence number to all users in the room
                         let broadcasted =
@@ -102,24 +78,6 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
             interval.tick().await;
         }
     });
-}
-
-// Process the transaction queue for a room
-async fn process_transaction_queue_for_room(
-    state: Arc<State>,
-    file_id: &Uuid,
-    checkpoint_sequence_num: u64,
-) -> Result<Option<u64>> {
-    process_queue_for_room(
-        &state.settings.aws_client,
-        &state.settings.aws_s3_bucket_name,
-        &state.transaction_queue,
-        file_id,
-        checkpoint_sequence_num,
-        &state.settings.quadratic_api_uri,
-        &state.settings.quadratic_api_jwt,
-    )
-    .await
 }
 
 // broadcast sequence number to all users in the room
@@ -169,7 +127,9 @@ async fn remove_stale_users_in_room(
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::{add_new_user_to_room, grid_setup, new_arc_state, operation};
+    use quadratic_core::controller::GridController;
+
+    use crate::test_util::{add_new_user_to_room, new_arc_state, operation};
 
     use super::*;
 
@@ -177,16 +137,18 @@ mod tests {
     async fn test_broadcast_sequence_num() {
         let state = new_arc_state().await;
         let file_id = Uuid::new_v4();
-        let mut grid = grid_setup();
+        let connection_id = Uuid::new_v4();
+        let _user = add_new_user_to_room(file_id, state.clone(), connection_id).await;
+        let mut grid = GridController::test();
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
 
-        state.transaction_queue.lock().await.push_pending(
-            transaction_id_1,
-            file_id,
-            vec![operations_1.clone()],
-            1,
-        );
+        state
+            .transaction_queue
+            .lock()
+            .await
+            .push_pending(transaction_id_1, file_id, vec![operations_1.clone()], 1)
+            .await;
 
         super::broadcast_sequence_num(state, &file_id)
             .await

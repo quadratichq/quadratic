@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { v4 } from 'uuid';
-import { isEditorOrAbove } from '../actions';
+import { hasPerissionToEditFile } from '../actions';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { pythonStateAtom } from '../atoms/pythonStateAtom';
 import { pixiApp } from '../gridGL/pixiApp/PixiApp';
@@ -17,7 +17,7 @@ export default function QuadraticApp() {
   const { loggedInUser } = useRootRouteLoaderData();
 
   const [loading, setLoading] = useState(true);
-  const { permission, uuid } = useRecoilValue(editorInteractionStateAtom);
+  const { permissions, uuid } = useRecoilValue(editorInteractionStateAtom);
   const setLoadedState = useSetRecoilState(pythonStateAtom);
   const didMount = useRef<boolean>(false);
 
@@ -69,22 +69,22 @@ export default function QuadraticApp() {
     didMount.current = true;
 
     // Load python and populate web workers (if supported)
-    if (!isMobile && isEditorOrAbove(permission)) {
+    if (!isMobile && hasPerissionToEditFile(permissions)) {
       setLoadedState((prevState) => ({ ...prevState, pythonState: 'loading' }));
       initializeWebWorkers();
     }
-  }, [permission, setLoadedState]);
+  }, [permissions, setLoadedState]);
 
   useEffect(() => {
     if (uuid && !pixiApp.initialized) {
       let anonymous = false;
-      let user: User | undefined = loggedInUser;
-      if (!user) {
-        user = { sub: v4(), first_name: 'Anonymous', last_name: 'User' };
+      let multiplayerUser: User | undefined = loggedInUser;
+      if (!multiplayerUser) {
+        multiplayerUser = { sub: v4(), first_name: 'Anonymous', last_name: 'User' };
         anonymous = true;
       }
       pixiApp.init().then(() => {
-        multiplayer.enterFileRoom(uuid, user, anonymous);
+        multiplayer.enterFileRoom(uuid, multiplayerUser, anonymous);
         setLoading(false);
       });
     }

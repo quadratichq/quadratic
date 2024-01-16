@@ -97,7 +97,7 @@ export const Component = () => {
           }
 
           // Create a new file in the DB
-          await apiClient.createFile({
+          await apiClient.files.create({
             name: localFile.filename,
             contents: newFile.contents,
             version: newFile.version,

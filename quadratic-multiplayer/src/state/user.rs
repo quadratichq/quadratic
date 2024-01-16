@@ -19,7 +19,7 @@ pub(crate) struct User {
     pub last_name: String,
     pub email: String,
     pub image: String,
-    pub permission: FilePermRole,
+    pub permissions: Vec<FilePermRole>,
     #[serde(flatten)]
     pub state: UserState,
     #[serde(skip_serializing)]

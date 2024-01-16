@@ -4,7 +4,7 @@ import { multiplayer } from '@/multiplayer/multiplayer';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPerissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
@@ -51,6 +51,32 @@ export const CodeEditor = () => {
     return editorContent !== codeString;
   }, [codeString, editorContent]);
 
+  // handle someone trying to open a different code editor
+  useEffect(() => {
+    if (editorInteractionState.waitingForEditorClose) {
+      // if unsaved then show save dialog and wait for that to complete
+      if (unsaved) {
+        setShowSaveChangesAlert(true);
+      }
+
+      // otherwise either open the new editor or show the cell type menu (if type is not selected)
+      else {
+        const waitingForEditorClose = editorInteractionState.waitingForEditorClose;
+        if (waitingForEditorClose) {
+          setEditorInteractionState((oldState) => ({
+            ...oldState,
+            selectedCell: waitingForEditorClose.selectedCell,
+            selectedCellSheet: waitingForEditorClose.selectedCellSheet,
+            mode: waitingForEditorClose.mode,
+            showCodeEditor: !waitingForEditorClose.showCellTypeMenu,
+            showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
+            waitingForEditorClose: undefined,
+          }));
+        }
+      }
+    }
+  }, [editorInteractionState.waitingForEditorClose, setEditorInteractionState, unsaved]);
+
   const updateCodeCell = useCallback(
     (updateEditorContent: boolean) => {
       const codeCell = grid.getCodeCell(
@@ -79,13 +105,6 @@ export const CodeEditor = () => {
     ]
   );
 
-  // // update code cell after computation
-  // useEffect(() => {
-  //   if (!isRunningComputation) {
-  //     updateCodeCell(false);
-  //   }
-  // }, [updateCodeCell, isRunningComputation]);
-
   useEffect(() => {
     updateCodeCell(true);
   }, [updateCodeCell]);
@@ -97,11 +116,12 @@ export const CodeEditor = () => {
 
   const closeEditor = useCallback(
     (skipSaveCheck: boolean) => {
-      if (!skipSaveCheck && editorContent !== codeString) {
+      if (!skipSaveCheck && unsaved) {
         setShowSaveChangesAlert(true);
       } else {
         setEditorInteractionState((oldState) => ({
           ...oldState,
+          editorEscapePressed: false,
           showCodeEditor: false,
         }));
         pixiApp.highlightedCells.clear();
@@ -109,8 +129,19 @@ export const CodeEditor = () => {
         multiplayer.sendEndCellEdit();
       }
     },
-    [codeString, editorContent, setEditorInteractionState]
+    [setEditorInteractionState, unsaved]
   );
+
+  // handle when escape is pressed when escape does not have focus
+  useEffect(() => {
+    if (editorInteractionState.editorEscapePressed) {
+      if (unsaved) {
+        setShowSaveChangesAlert(true);
+      } else {
+        closeEditor(true);
+      }
+    }
+  }, [closeEditor, editorInteractionState.editorEscapePressed, unsaved]);
 
   const saveAndRunCell = async () => {
     const language =
@@ -148,7 +179,7 @@ export const CodeEditor = () => {
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // Don't allow the shortcuts below for certain users
-    if (!isEditorOrAbove(editorInteractionState.permission)) {
+    if (!hasPerissionToEditFile(editorInteractionState.permissions)) {
       return;
     }
 
@@ -170,6 +201,27 @@ export const CodeEditor = () => {
       event.preventDefault();
       event.stopPropagation();
       cancelPython();
+    }
+  };
+
+  const afterDialog = () => {
+    setShowSaveChangesAlert(false);
+    if (editorInteractionState.editorEscapePressed) {
+      closeEditor(true);
+    }
+    const waitingForEditorClose = editorInteractionState.waitingForEditorClose;
+    if (waitingForEditorClose) {
+      setEditorInteractionState((oldState) => ({
+        ...oldState,
+        selectedCell: waitingForEditorClose.selectedCell,
+        selectedCellSheet: waitingForEditorClose.selectedCellSheet,
+        mode: waitingForEditorClose.mode,
+        showCodeEditor: !waitingForEditorClose.showCellTypeMenu,
+        showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
+        waitingForEditorClose: undefined,
+      }));
+    } else {
+      closeEditor(true);
     }
   };
 
@@ -205,13 +257,18 @@ export const CodeEditor = () => {
         <SaveChangesAlert
           onCancel={() => {
             setShowSaveChangesAlert(!showSaveChangesAlert);
+            setEditorInteractionState((old) => ({
+              ...old,
+              editorEscapePressed: false,
+              waitingForEditorClose: undefined,
+            }));
           }}
           onSave={() => {
             saveAndRunCell();
-            closeEditor(true);
+            afterDialog();
           }}
           onDiscard={() => {
-            closeEditor(true);
+            afterDialog();
           }}
         />
       )}

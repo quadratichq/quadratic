@@ -1,14 +1,15 @@
 import { apiClient } from '@/api/apiClient';
 import { AvatarWithLetters } from '@/components/AvatarWithLetters';
+import { Type } from '@/components/Type';
 import { TYPE } from '@/constants/appConstants';
 import { DOCUMENTATION_URL } from '@/constants/urls';
-import { TeamAction } from '@/routes/teams.$teamUuid';
+import { TeamAction } from '@/routes/teams.$uuid';
 import { Button } from '@/shadcn/ui/button';
 import { Separator } from '@/shadcn/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
 import { cn } from '@/shadcn/utils';
 import { Avatar, CircularProgress } from '@mui/material';
-import { ExternalLinkIcon, FileIcon, MixIcon, PlusIcon } from '@radix-ui/react-icons';
+import { ExternalLinkIcon, FileIcon, MixIcon, PersonIcon, PlusIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ReactNode, useEffect, useState } from 'react';
@@ -97,10 +98,22 @@ function Navbar() {
           </SidebarNavLink>
         </div>
 
-        <div className="mt-4 grid gap-1">
+        <Type
+          as="h3"
+          variant="overline"
+          className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}
+        >
+          Files
+        </Type>
+
+        <div className="grid gap-1">
           <SidebarNavLink to={ROUTES.FILES}>
             <FileIcon className={classNameIcons} />
-            My files
+            Mine
+          </SidebarNavLink>
+          <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
+            <PersonIcon className={classNameIcons} />
+            Shared with me
           </SidebarNavLink>
           <SidebarNavLink to={ROUTES.EXAMPLES}>
             <MixIcon className={classNameIcons} />
@@ -108,50 +121,54 @@ function Navbar() {
           </SidebarNavLink>
         </div>
 
-        <p className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}>
-          <span className={`${TYPE.overline}`}>Teams</span>{' '}
-          {hasError && (
-            <span className="text-xs text-destructive">
-              Failed to load,{' '}
-              <a href="." className="underline">
-                refresh
-              </a>
-            </span>
-          )}
-        </p>
-        <div className="grid gap-1">
-          {teams.map(({ uuid, name, picture }) => {
-            // TODO: can we refine this?
-            // See if this team has an inflight fetcher that's updating team info
-            const inFlightFetcher = fetchers.find(
-              (fetcher) =>
-                fetcher.state !== 'idle' &&
-                fetcher.formAction?.includes(uuid) &&
-                fetcher.json &&
-                typeof fetcher.json === 'object' &&
-                (fetcher.json as TeamAction['request.update-team']).intent === 'update-team'
-            );
-            // If it does, use its data
-            if (inFlightFetcher) {
-              const data = inFlightFetcher.json as TeamAction['request.update-team'];
-              if (data.name) name = data.name;
-              if (data.picture) picture = data.picture;
-            }
+        {window.location.hostname !== 'app.quadratichq.com' && (
+          <>
+            <Type as="h3" className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}>
+              <span className={`${TYPE.overline}`}>Teams</span>{' '}
+              {hasError && (
+                <span className="text-xs text-destructive">
+                  Failed to load,{' '}
+                  <a href="." className="underline">
+                    refresh
+                  </a>
+                </span>
+              )}
+            </Type>
+            <div className="grid gap-1">
+              {teams.map(({ uuid, name, picture }) => {
+                // TODO: can we refine this?
+                // See if this team has an inflight fetcher that's updating team info
+                const inFlightFetcher = fetchers.find(
+                  (fetcher) =>
+                    fetcher.state !== 'idle' &&
+                    fetcher.formAction?.includes(uuid) &&
+                    fetcher.json &&
+                    typeof fetcher.json === 'object' &&
+                    (fetcher.json as TeamAction['request.update-team']).intent === 'update-team'
+                );
+                // If it does, use its data
+                if (inFlightFetcher) {
+                  const data = inFlightFetcher.json as TeamAction['request.update-team'];
+                  if (data.name) name = data.name;
+                  if (data.picture) picture = data.picture;
+                }
 
-            return (
-              <SidebarNavLink key={uuid} to={ROUTES.TEAM(uuid)}>
-                <AvatarWithLetters size="small" src={picture}>
-                  {name}
-                </AvatarWithLetters>
-                {name}
+                return (
+                  <SidebarNavLink key={uuid} to={ROUTES.TEAM(uuid)}>
+                    <AvatarWithLetters size="small" src={picture}>
+                      {name}
+                    </AvatarWithLetters>
+                    {name}
+                  </SidebarNavLink>
+                );
+              })}
+              <SidebarNavLink to={ROUTES.CREATE_TEAM}>
+                <PlusIcon className={classNameIcons} />
+                Create
               </SidebarNavLink>
-            );
-          })}
-          <SidebarNavLink to={ROUTES.CREATE_TEAM}>
-            <PlusIcon className={classNameIcons} />
-            Create
-          </SidebarNavLink>
-        </div>
+            </div>
+          </>
+        )}
       </div>
       <div>
         <SidebarNavLink to={DOCUMENTATION_URL} target="_blank" className={`text-muted-foreground`}>

@@ -1,6 +1,6 @@
 import { SheetCursor } from '@/grid/sheet/SheetCursor';
 import { Rectangle } from 'pixi.js';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPerissionToEditFile } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
@@ -42,7 +42,7 @@ export function keyboardCell(options: {
   const cursor = sheet.cursor;
   const cursorPosition = cursor.cursorPosition;
 
-  const hasPermission = isEditorOrAbove(editorInteractionState.permission);
+  const hasPermission = hasPerissionToEditFile(editorInteractionState.permissions);
 
   if (event.key === 'Tab') {
     // move single cursor one right
@@ -121,25 +121,47 @@ export function keyboardCell(options: {
         const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;
         if (!mode) throw new Error(`Unhandled cell.language ${cell.language} in keyboardCell`);
 
-        // Open code editor, or move code editor if already open.
-        setEditorInteractionState({
-          ...editorInteractionState,
-          showCellTypeMenu: false,
-          showCodeEditor: true,
+        if (editorInteractionState.showCodeEditor) {
+          // Open code editor, or move change editor if already open.
+          setEditorInteractionState({
+            ...editorInteractionState,
+            showCellTypeMenu: false,
+            waitingForEditorClose: {
+              selectedCell: { x: x, y: y },
+              selectedCellSheet: sheets.sheet.id,
+              mode,
+              showCellTypeMenu: false,
+            },
+          });
+        } else {
+          setEditorInteractionState({
+            ...editorInteractionState,
+            showCellTypeMenu: false,
+            selectedCell: { x: x, y: y },
+            selectedCellSheet: sheets.sheet.id,
+            mode,
+            showCodeEditor: true,
+          });
+        }
+      }
+    } else if (editorInteractionState.showCodeEditor) {
+      // code editor is already open, so check it for save before closing
+      setEditorInteractionState({
+        ...editorInteractionState,
+        waitingForEditorClose: {
+          showCellTypeMenu: true,
           selectedCell: { x: x, y: y },
           selectedCellSheet: sheets.sheet.id,
-          mode,
-        });
-      }
+          mode: 'PYTHON',
+        },
+      });
     } else {
-      // Open cell type menu, close editor.
+      // just open the code editor selection menu
       setEditorInteractionState({
         ...editorInteractionState,
         showCellTypeMenu: true,
-        showCodeEditor: false,
         selectedCell: { x: x, y: y },
         selectedCellSheet: sheets.sheet.id,
-        mode: 'PYTHON',
       });
     }
     event.preventDefault();

@@ -12,6 +12,7 @@ import {
 import { Separator } from '@/shadcn/ui/separator';
 import { cn } from '@/shadcn/utils';
 import { DotsVerticalIcon } from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
 import { useEffect, useState } from 'react';
 import { Link, SubmitOptions, useFetcher } from 'react-router-dom';
 import { deleteFile, downloadFileAction, duplicateFileAction, renameFileAction } from '../../actions';
@@ -36,6 +37,7 @@ export function FilesListItems({ children, viewPreferences }: any) {
 export function FileListItem({
   file,
   filterValue,
+  isEditable,
   activeShareMenuFileId,
   setActiveShareMenuFileId,
   lazyLoad,
@@ -43,6 +45,7 @@ export function FileListItem({
 }: {
   file: FilesLoader[0];
   filterValue: string;
+  isEditable?: boolean;
   activeShareMenuFileId: string;
   setActiveShareMenuFileId: Function;
   lazyLoad: boolean;
@@ -55,7 +58,7 @@ export function FileListItem({
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
 
-  const { uuid, name, created_date, updated_date, public_link_access, thumbnail } = file;
+  const { uuid, name, createdDate, updatedDate, publicLinkAccess, thumbnail } = file;
 
   const fetcherSubmitOpts: SubmitOptions = {
     method: 'POST',
@@ -109,11 +112,11 @@ export function FileListItem({
       // These are the values that will optimistically render in the UI
       file: {
         uuid: 'duplicate-' + date,
-        public_link_access: 'NOT_SHARED',
+        publicLinkAccess: 'NOT_SHARED',
         name: name + ' (Copy)',
         thumbnail: null,
-        updated_date: date,
-        created_date: date,
+        updatedDate: date,
+        createdDate: date,
       },
     };
     fetcherDuplicate.submit(data, fetcherSubmitOpts);
@@ -121,6 +124,7 @@ export function FileListItem({
 
   const handleShare = () => {
     setActiveShareMenuFileId(uuid);
+    mixpanel.track('[FileSharing].menu.open', { context: 'dashboard', pathname: window.location.pathname });
   };
 
   const displayName = fetcherRename.json ? (fetcherRename.json as FileAction['request.rename']).name : name;
@@ -131,11 +135,11 @@ export function FileListItem({
     filterValue,
     name: displayName,
     description:
-      viewPreferences.sort === Sort.Created ? `Created ${timeAgo(created_date)}` : `Modified ${timeAgo(updated_date)}`,
+      viewPreferences.sort === Sort.Created ? `Created ${timeAgo(createdDate)}` : `Modified ${timeAgo(updatedDate)}`,
     hasNetworkError: Boolean(failedToDelete || failedToRename),
-    isShared: public_link_access !== 'NOT_SHARED',
+    isShared: publicLinkAccess !== 'NOT_SHARED',
     viewPreferences,
-    actions: (
+    actions: isEditable ? (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Btn variant="ghost" size="icon" className="flex-shrink-0 hover:bg-background">
@@ -151,7 +155,7 @@ export function FileListItem({
           <DropdownMenuItem onClick={handleDelete}>{deleteFile.label}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    ),
+    ) : undefined,
   };
 
   return (

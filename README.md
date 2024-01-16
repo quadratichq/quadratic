@@ -50,7 +50,7 @@ _Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
 - [x] Cell Formatting (issue [#44](https://github.com/quadratichq/quadratic/issues/44))
 - [x] Undo / Redo (issue [#42](https://github.com/quadratichq/quadratic/issues/42))
 - [ ] Multiplayer Support
-- [ ] Charts and Graphs
+- [x] Charts and Graphs
 - [ ] SQL Database Support
 - [ ] AI Auto Complete
 

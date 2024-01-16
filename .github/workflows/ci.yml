@@ -109,11 +109,11 @@ jobs:
         with:
           node-version: 18
 
-      - name: Run npm test:ci in quadratic-client
+      - name: Run npm test:unit:ci in quadratic-client
         run: |
           cd quadratic-client
           npm install
-          npm run test:unit
+          npm run test:unit:ci
 
   test_python:
     runs-on: ubuntu-latest-8-cores
@@ -141,7 +141,7 @@ jobs:
         with:
           node-version: 18
 
-      - name: Run npm test:ci in quadratic-client
+      - name: Run npm test:ci in quadratic-api
         run: |
           cd quadratic-api
           npm install

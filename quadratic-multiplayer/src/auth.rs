@@ -8,7 +8,6 @@ use crate::error::{MpError, Result};
 /// Get the JWK set from a given URL.
 pub(crate) async fn get_jwks(url: &str) -> Result<jwk::JwkSet> {
     let jwks = reqwest::get(url).await?.json::<jwk::JwkSet>().await?;
-
     Ok(jwks)
 }
 

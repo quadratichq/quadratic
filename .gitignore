@@ -33,11 +33,13 @@ venv/*
 
 .env
 .env.local
+.env.docker
 
 # Generated Rust files
 /target
 quadratic-core/target/
 quadratic-core/tmp.txt
+quadratic-files/target/
 quadratic-multiplayer/target/
 
 # Generated JS files
@@ -48,4 +50,9 @@ quadratic-api/dist
 
 # Code Coverage
 quadratic-core/coverage
+quadratic-files/coverage
 quadratic-multiplayer/coverage
+
+# Docker Data
+docker/redis/data
+docker/postgres/data

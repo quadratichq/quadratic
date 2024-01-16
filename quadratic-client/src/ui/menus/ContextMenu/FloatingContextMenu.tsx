@@ -19,7 +19,7 @@ import { ControlledMenu, Menu, MenuInstance, MenuItem, useMenuState } from '@szh
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
-import { downloadSelectionAsCsvAction, isEditorOrAbove } from '../../../actions';
+import { downloadSelectionAsCsvAction, hasPerissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { copySelectionToPNG, fullClipboardSupport } from '../../../grid/actions/clipboard/clipboard';
@@ -118,7 +118,7 @@ export const FloatingContextMenu = (props: Props) => {
     if (pixiAppSettings.presentationMode) visibility = 'hidden';
 
     // Hide if you don't have edit access
-    if (!isEditorOrAbove(editorInteractionState.permission)) visibility = 'hidden';
+    if (!hasPerissionToEditFile(editorInteractionState.permissions)) visibility = 'hidden';
 
     // Hide FloatingFormatMenu if multi cursor is off screen
     const terminal_pos = sheet.getCellOffsets(
@@ -162,7 +162,7 @@ export const FloatingContextMenu = (props: Props) => {
       setTimeout(updateContextMenuCSSTransform, 100);
     } else menuDiv.current.style.pointerEvents = 'auto';
     return transform;
-  }, [container, showContextMenu, editorInteractionState.permission, moreMenuToggle]);
+  }, [container, showContextMenu, editorInteractionState.permissions, moreMenuToggle]);
 
   useEffect(() => {
     const { viewport } = pixiApp;

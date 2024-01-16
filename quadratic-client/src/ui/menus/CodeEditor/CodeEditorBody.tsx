@@ -2,7 +2,7 @@ import Editor, { Monaco } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPerissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { provideCompletionItems, provideHover } from '../../../quadratic-core/quadratic_core';
 // import { CodeCellValue } from '../../../quadratic-core/types';
@@ -24,7 +24,7 @@ export const CodeEditorBody = (props: Props) => {
   const { editorContent, setEditorContent, closeEditor } = props;
 
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const readOnly = !isEditorOrAbove(editorInteractionState.permission);
+  const readOnly = !hasPerissionToEditFile(editorInteractionState.permissions);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
 
@@ -64,16 +64,20 @@ export const CodeEditorBody = (props: Props) => {
       monaco.languages.registerCompletionItemProvider('formula', { provideCompletionItems });
       monaco.languages.registerHoverProvider('formula', { provideHover });
 
-      editor.addCommand(
-        monaco.KeyCode.Escape,
+      setDidMount(true);
+    },
+    [didMount]
+  );
+
+  useEffect(() => {
+    if (editorRef.current && monacoRef.current && didMount) {
+      editorRef.current.addCommand(
+        monacoRef.current.KeyCode.Escape,
         () => closeEditor(false),
         '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
       );
-
-      setDidMount(true);
-    },
-    [didMount, closeEditor]
-  );
+    }
+  }, [closeEditor, didMount]);
 
   useEffect(() => {
     return () => editorRef.current?.dispose();

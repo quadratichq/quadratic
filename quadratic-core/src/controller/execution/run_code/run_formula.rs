@@ -73,7 +73,7 @@ mod test {
 
     #[test]
     fn test_execute_operation_set_cell_values_formula() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet = gc.try_sheet_mut(sheet_id).unwrap();
@@ -109,7 +109,7 @@ mod test {
 
     #[test]
     fn test_multiple_formula() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
 
@@ -176,7 +176,7 @@ mod test {
 
     #[test]
     fn test_deleting_to_trigger_compute() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_value(
@@ -224,7 +224,7 @@ mod test {
 
     #[test]
     fn test_js_code_result_to_code_cell_value_single() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let result = JsCodeResult::new_from_rust(
             Uuid::new_v4().into(),
@@ -262,7 +262,7 @@ mod test {
 
     #[test]
     fn test_js_code_result_to_code_cell_value_array() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let array_output: Vec<Vec<String>> = vec![
             vec!["$1.1".into(), "20%".into()],
@@ -317,7 +317,7 @@ mod test {
 
     #[test]
     fn test_undo_redo_spill_change() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_values(
             SheetPos {
@@ -393,7 +393,7 @@ mod test {
 
     #[test]
     fn test_formula_error() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos {
             x: 0,
