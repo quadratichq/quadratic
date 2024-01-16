@@ -1,6 +1,5 @@
-import { JsRenderCodeCellState } from '@/quadratic-core/types';
+import { CodeCellLanguage, JsRenderCodeCellState } from '@/quadratic-core/types';
 import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
-import { CodeCellLanguage } from '../../quadratic-core/quadratic_core';
 import { colors } from '../../theme/colors';
 import { intersects } from '../helpers/intersects';
 
@@ -60,10 +59,10 @@ export class CellsMarkers extends Container {
     child.height = INDICATOR_SIZE;
     child.width = INDICATOR_SIZE;
     child.position.set(x + 1.25, y + 1.25);
-    if (type === CodeCellLanguage.Python || type === 'Python') {
+    if (type === 'Python') {
       child.texture = Texture.from('/images/python-icon.png');
       child.tint = error ? 0xffffff : colors.cellColorUserPython;
-    } else if (type === CodeCellLanguage.Formula || type === 'Formula') {
+    } else if (type === 'Formula') {
       child.texture = Texture.from('/images/formula-fx-icon.png');
       child.tint = error ? 0xffffff : colors.cellColorUserFormula;
     }

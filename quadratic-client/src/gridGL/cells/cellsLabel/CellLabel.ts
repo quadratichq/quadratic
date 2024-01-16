@@ -1,3 +1,4 @@
+import { colors } from '@/theme/colors';
 import { removeItems } from '@pixi/utils';
 import { BitmapFont, Container, Point, Rectangle, Texture } from 'pixi.js';
 import { Bounds } from '../../../grid/sheet/Bounds';
@@ -19,7 +20,8 @@ interface CharRenderData {
 
 // magic numbers to make the WebGL rendering of OpenSans look similar to the HTML version
 const OPEN_SANS_FIX = { x: 1.8, y: -1 };
-const SPILL_ERROR = ' #SPILL!';
+const SPILL_ERROR_TEXT = ' #SPILL!';
+const RUN_ERROR_TEXT = ' #ERROR!';
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
@@ -60,22 +62,33 @@ export class CellLabel extends Container {
 
   dirty = true;
 
+  private getText(cell: JsRenderCell) {
+    switch (cell?.special) {
+      case 'SpillError':
+        return SPILL_ERROR_TEXT;
+      case 'RunError':
+        return RUN_ERROR_TEXT;
+      default:
+        return cell?.value;
+    }
+  }
+
   constructor(cell: JsRenderCell, screenRectangle: Rectangle) {
     super();
-    const cellText = cell.spillError ? SPILL_ERROR : cell.value ? cell.value.replace(/\n/g, '') : '';
-    this.text = cellText;
+    this.text = this.getText(cell);
     this.fontSize = fontSize;
     this.roundPixels = true;
     this.maxWidth = 0;
     this.letterSpacing = 0;
-    this.tint = cell?.textColor ? convertColorStringToTint(cell.textColor) : 0;
+    const isError = cell?.special === 'SpillError' || cell?.special === 'RunError';
+    this.tint = isError ? colors.cellColorError : cell?.textColor ? convertColorStringToTint(cell.textColor) : 0;
 
     this.location = { x: Number(cell.x), y: Number(cell.y) };
     this.AABB = screenRectangle;
     this.position.set(screenRectangle.x, screenRectangle.y);
 
     this.bold = !!cell?.bold;
-    this.italic = !!cell?.italic;
+    this.italic = !!cell?.italic || isError;
     this.updateFontName();
     this.alignment = cell.align;
   }

@@ -147,9 +147,9 @@ export class Cursor extends Graphics {
         editor_selected_cell.y === cell.y
       )
         color =
-          editorInteractionState.mode === 'PYTHON'
+          editorInteractionState.mode === 'Python'
             ? colors.cellColorUserPython
-            : editorInteractionState.mode === 'FORMULA'
+            : editorInteractionState.mode === 'Formula'
             ? colors.cellColorUserFormula
             : colors.cursorCell;
       this.beginFill(color).drawShape(this.indicator).endFill();
@@ -162,9 +162,9 @@ export class Cursor extends Graphics {
     const cell = editorInteractionState.selectedCell;
     const { x, y, width, height } = sheets.sheet.getCellOffsets(cell.x, cell.y);
     const color =
-      editorInteractionState.mode === 'PYTHON'
+      editorInteractionState.mode === 'Python'
         ? colors.cellColorUserPython
-        : editorInteractionState.mode === 'FORMULA'
+        : editorInteractionState.mode === 'Formula'
         ? colors.cellColorUserFormula
         : colors.independence;
     this.lineStyle({

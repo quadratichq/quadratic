@@ -5,8 +5,8 @@ use crate::{
         borders::{get_render_horizontal_borders, get_render_vertical_borders},
         code_run,
         js_types::{
-            JsHtmlOutput, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState,
-            JsRenderFill,
+            JsHtmlOutput, JsRenderBorder, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+            JsRenderCodeCellState, JsRenderFill,
         },
         CellAlign, CodeCellLanguage, CodeRun, Column, NumericFormatKind,
     },
@@ -45,7 +45,7 @@ impl Sheet {
                 italic: Some(true),
                 // from colors.ts: colors.languagePython
                 text_color: Some(String::from("#3776ab")),
-                spill_error: false,
+                special: None,
             };
         } else if let CellValue::Error(error) = value {
             let spill_error = matches!(error.msg, RunErrorMsg::Spill);
@@ -57,9 +57,13 @@ impl Sheet {
                 align: None,
                 wrap: None,
                 bold: None,
-                italic: Some(true),
-                text_color: Some(String::from("red")),
-                spill_error,
+                italic: None,
+                text_color: None,
+                special: Some(if spill_error {
+                    JsRenderCellSpecial::SpillError
+                } else {
+                    JsRenderCellSpecial::RunError
+                }),
             };
         }
 
@@ -80,7 +84,7 @@ impl Sheet {
                     bold: None,
                     italic: None,
                     text_color: None,
-                    spill_error: false,
+                    special: None,
                 }
             }
             Some(column) => {
@@ -115,7 +119,7 @@ impl Sheet {
                     bold,
                     italic,
                     text_color,
-                    spill_error: false,
+                    special: None,
                 }
             }
         }
@@ -358,7 +362,7 @@ mod tests {
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
-            js_types::{JsHtmlOutput, JsRenderCell},
+            js_types::{JsHtmlOutput, JsRenderCell, JsRenderCellSpecial},
             Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize, Sheet,
         },
         CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
@@ -462,7 +466,7 @@ mod tests {
                 bold: Some(true),
                 italic: None,
                 text_color: None,
-                spill_error: false,
+                special: None,
             },
         );
         assert_eq!(
@@ -477,7 +481,7 @@ mod tests {
                 bold: None,
                 italic: Some(true),
                 text_color: None,
-                spill_error: false,
+                special: None,
             },
         );
         assert_eq!(
@@ -492,7 +496,7 @@ mod tests {
                 bold: None,
                 italic: Some(true),
                 text_color: Some("#3776ab".to_string()),
-                spill_error: false,
+                special: None,
             },
         );
         assert_eq!(
@@ -507,7 +511,7 @@ mod tests {
                 bold: None,
                 italic: None,
                 text_color: None,
-                spill_error: false,
+                special: None,
             },
         );
         assert_eq!(
@@ -520,9 +524,9 @@ mod tests {
                 align: None,
                 wrap: None,
                 bold: None,
-                italic: Some(true),
-                text_color: Some("red".to_string()),
-                spill_error: true,
+                italic: None,
+                text_color: None,
+                special: Some(JsRenderCellSpecial::SpillError),
             },
         );
         assert_eq!(
@@ -530,14 +534,14 @@ mod tests {
             JsRenderCell {
                 x: 3,
                 y: 3,
-                value: " ERROR".to_string(),
+                value: "".to_string(),
                 language: None,
                 align: None,
                 wrap: None,
                 bold: None,
-                italic: Some(true),
-                text_color: Some("red".to_string()),
-                spill_error: false,
+                italic: None,
+                text_color: None,
+                special: Some(JsRenderCellSpecial::RunError),
             },
         );
     }
@@ -697,7 +701,7 @@ mod tests {
                 bold: None,
                 italic: None,
                 text_color: None,
-                spill_error: false,
+                special: None,
             }]
         );
     }

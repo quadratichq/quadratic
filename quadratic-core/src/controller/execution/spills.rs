@@ -84,7 +84,10 @@ mod tests {
         controller::{
             active_transactions::pending_transaction::PendingTransaction, GridController,
         },
-        grid::{js_types::JsRenderCell, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult},
+        grid::{
+            js_types::{JsRenderCell, JsRenderCellSpecial},
+            CellAlign, CodeCellLanguage, CodeRun, CodeRunResult,
+        },
         Array, CellValue, Pos, Rect, SheetPos, Value,
     };
 
@@ -97,9 +100,9 @@ mod tests {
             align: None,
             wrap: None,
             bold: None,
-            italic: Some(true),
-            text_color: Some("red".into()),
-            spill_error: true,
+            italic: None,
+            text_color: None,
+            special: Some(JsRenderCellSpecial::SpillError),
         }]
     }
 
@@ -119,7 +122,7 @@ mod tests {
             bold: None,
             italic: None,
             text_color: None,
-            spill_error: false,
+            special: None,
         }]
     }
 

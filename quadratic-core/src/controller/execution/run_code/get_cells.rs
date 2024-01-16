@@ -122,7 +122,10 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{grid::CodeCellLanguage, Pos, Rect, SheetPos};
+    use crate::{
+        grid::{js_types::JsRenderCellSpecial, CodeCellLanguage},
+        Pos, Rect, SheetPos,
+    };
 
     #[test]
     fn test_calculation_get_cells_bad_transaction_id() {
@@ -249,7 +252,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         let code = sheet.get_render_cells(Rect::from_numbers(0, 1, 1, 1));
         assert_eq!(code.len(), 1);
-        assert_eq!(code[0].value, " ERROR");
+        assert_eq!(code[0].special, Some(JsRenderCellSpecial::RunError));
         let sheet = gc.sheet(sheet_id);
         let error = sheet
             .code_run(Pos { x: 0, y: 1 })

@@ -2,7 +2,6 @@ import { sheets } from '@/grid/controller/Sheets';
 import { JsRenderCodeCell } from '@/quadratic-core/types';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { CodeCellLanguage } from '../../quadratic-core/quadratic_core';
 import { colors } from '../../theme/colors';
 import { dashedTextures } from '../dashedTextures';
 import { intersects } from '../helpers/intersects';
@@ -69,11 +68,10 @@ export class CellsArray extends Container {
       return;
     }
 
-    const type = codeCell.language as CodeCellLanguage | string;
     let tint = colors.independence;
-    if (type === CodeCellLanguage.Python || type === 'Python') {
+    if (codeCell.language === 'Python') {
       tint = colors.cellColorUserPython;
-    } else if (type === CodeCellLanguage.Formula || type === 'Formula') {
+    } else if (codeCell.language === 'Formula') {
       tint = colors.cellColorUserFormula;
     }
 

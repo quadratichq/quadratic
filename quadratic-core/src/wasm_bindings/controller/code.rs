@@ -1,56 +1,5 @@
 use super::*;
 
-#[derive(PartialEq, Debug)]
-#[wasm_bindgen]
-pub struct CodeCell {
-    code_string: String,
-    language: CodeCellLanguage,
-    std_out: Option<String>,
-    std_err: Option<String>,
-    evaluation_result: Option<String>,
-}
-
-#[cfg(test)]
-impl CodeCell {
-    pub fn new(
-        code_string: String,
-        language: CodeCellLanguage,
-        evaluation_result: Option<String>,
-    ) -> Self {
-        Self {
-            code_string,
-            language,
-            evaluation_result,
-            std_out: None,
-            std_err: None,
-        }
-    }
-}
-
-#[wasm_bindgen]
-impl CodeCell {
-    #[wasm_bindgen(js_name = "getCodeString")]
-    pub fn code_string(&self) -> String {
-        self.code_string.clone()
-    }
-    #[wasm_bindgen(js_name = "getLanguage")]
-    pub fn language(&self) -> CodeCellLanguage {
-        self.language
-    }
-    #[wasm_bindgen(js_name = "getStdOut")]
-    pub fn std_out(&self) -> Option<String> {
-        self.std_out.clone()
-    }
-    #[wasm_bindgen(js_name = "getStdErr")]
-    pub fn std_err(&self) -> Option<String> {
-        self.std_err.clone()
-    }
-    #[wasm_bindgen(js_name = "getEvaluationResult")]
-    pub fn evaluation_result(&self) -> Option<String> {
-        self.evaluation_result.clone()
-    }
-}
-
 #[wasm_bindgen]
 impl GridController {
     #[wasm_bindgen(js_name = "calculationComplete")]
@@ -71,36 +20,42 @@ impl GridController {
         }
     }
 
-    /// Returns the CodeCell for a code (which is a combination of CellValue::Code and CodeRun).
+    /// Returns the code cell(which is a combination of CellValue::Code and CodeRun).
+    /// If the cell is part of a code run, it returns the code run that caused the output.
     ///
     /// * CodeCell.evaluation_result is a stringified version of the output (used for AI models)
     #[wasm_bindgen(js_name = "getCodeCell")]
-    pub fn js_get_code_string(&self, sheet_id: String, pos: &Pos) -> Option<CodeCell> {
+    pub fn js_get_code_string(&self, sheet_id: String, pos: &Pos) -> Result<JsValue, JsValue> {
         let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
-            return None;
+            return Ok(JsValue::null());
         };
-        let code_cell = sheet.cell_value(*pos)?;
+        let Some(code_cell) = sheet.cell_value(*pos) else {
+            return Ok(JsValue::null());
+        };
         match code_cell {
             CellValue::Code(code_cell) => {
-                if let Some(code_run) = sheet.code_run(*pos) {
-                    Some(CodeCell {
+                let code_cell = if let Some(code_run) = sheet.code_run(*pos) {
+                    let evaluation_result =
+                        serde_json::to_string(&code_run.result).unwrap_or("".to_string());
+                    JsCodeCell {
                         code_string: code_cell.code,
                         language: code_cell.language,
                         std_err: code_run.std_err.clone(),
                         std_out: code_run.std_out.clone(),
-                        evaluation_result: serde_json::to_string(&code_run.result).ok(),
-                    })
+                        evaluation_result: Some(evaluation_result),
+                    }
                 } else {
-                    Some(CodeCell {
+                    JsCodeCell {
                         code_string: code_cell.code,
                         language: code_cell.language,
                         std_err: None,
                         std_out: None,
                         evaluation_result: None,
-                    })
-                }
+                    }
+                };
+                Ok(serde_wasm_bindgen::to_value(&code_cell)?)
             }
-            _ => None,
+            _ => Ok(JsValue::null()),
         }
     }
 
@@ -112,11 +67,12 @@ impl GridController {
         &mut self,
         sheet_id: String,
         pos: Pos,
-        language: CodeCellLanguage,
+        language: JsValue,
         code_string: String,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        let language = serde_wasm_bindgen::from_value(language)?;
         Ok(serde_wasm_bindgen::to_value(&self.set_code_cell(
             pos.to_sheet_pos(sheet_id),
             language,

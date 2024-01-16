@@ -81,9 +81,9 @@ export const CodeEditorHeader = (props: Props) => {
           padding: '0 .5rem',
         }}
       >
-        {language === 'PYTHON' ? (
+        {language === 'Python' ? (
           <Python sx={{ color: colors.languagePython }} fontSize="small" />
-        ) : language === 'FORMULA' ? (
+        ) : language === 'Formula' ? (
           <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
         ) : (
           <Subject />
@@ -93,8 +93,7 @@ export const CodeEditorHeader = (props: Props) => {
             color: 'black',
           }}
         >
-          Cell ({cellLocation.x}, {cellLocation.y}) -{' '}
-          {language === 'PYTHON' ? 'Python' : language === 'FORMULA' ? 'Formula' : 'Unknown'}
+          Cell ({cellLocation.x}, {cellLocation.y}) - {language}
           {unsaved && (
             <TooltipHint title="Your changes haven’t been saved or run" placement="bottom">
               <FiberManualRecord
@@ -117,8 +116,8 @@ export const CodeEditorHeader = (props: Props) => {
             aria-label="docs"
             size="small"
             onClick={() => {
-              if (language === 'FORMULA') window.open(DOCUMENTATION_FORMULAS_URL, '_blank');
-              else if (language === 'PYTHON') window.open(DOCUMENTATION_PYTHON_URL, '_blank');
+              if (language === 'Formula') window.open(DOCUMENTATION_FORMULAS_URL, '_blank');
+              else if (language === 'Python') window.open(DOCUMENTATION_PYTHON_URL, '_blank');
               else window.open(DOCUMENTATION_URL, '_blank');
             }}
           >

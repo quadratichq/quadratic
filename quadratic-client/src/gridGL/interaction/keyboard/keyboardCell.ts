@@ -66,8 +66,6 @@ export function keyboardCell(options: {
     const cell = sheet.getRenderCell(x, y);
     if (cell) {
       if (cell.language) {
-        const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;
-        if (!mode) throw new Error(`Unhandled cell.language ${cell.language} in keyboardCell`);
         // Open code editor, or move code editor if already open.
         setEditorInteractionState({
           ...editorInteractionState,
@@ -75,7 +73,7 @@ export function keyboardCell(options: {
           showCodeEditor: true,
           selectedCell: { x: x, y: y },
           selectedCellSheet: sheets.sheet.id,
-          mode,
+          mode: cell.language,
         });
       } else {
         if (hasPermission) {
@@ -117,20 +115,15 @@ export function keyboardCell(options: {
     const y = cursorPosition.y;
     const cell = sheet.getRenderCell(x, y);
     if (cell?.language) {
-      if (cell.language) {
-        const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;
-        if (!mode) throw new Error(`Unhandled cell.language ${cell.language} in keyboardCell`);
-
-        // Open code editor, or move code editor if already open.
-        setEditorInteractionState({
-          ...editorInteractionState,
-          showCellTypeMenu: false,
-          showCodeEditor: true,
-          selectedCell: { x: x, y: y },
-          selectedCellSheet: sheets.sheet.id,
-          mode,
-        });
-      }
+      // Open code editor, or move code editor if already open.
+      setEditorInteractionState({
+        ...editorInteractionState,
+        showCellTypeMenu: false,
+        showCodeEditor: true,
+        selectedCell: { x: x, y: y },
+        selectedCellSheet: sheets.sheet.id,
+        mode: cell.language,
+      });
     } else {
       // Open cell type menu, close editor.
       setEditorInteractionState({
@@ -139,7 +132,7 @@ export function keyboardCell(options: {
         showCodeEditor: false,
         selectedCell: { x: x, y: y },
         selectedCellSheet: sheets.sheet.id,
-        mode: 'PYTHON',
+        mode: undefined,
       });
     }
     event.preventDefault();

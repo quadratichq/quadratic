@@ -229,7 +229,7 @@ export const CellInput = () => {
             showCodeEditor: false,
             selectedCell: { x: cellLocation.x, y: cellLocation.y },
             selectedCellSheet: sheets.sheet.id,
-            mode: 'PYTHON',
+            mode: 'Python',
           });
           event.stopPropagation();
         } else if (event.key === 'Tab') {
