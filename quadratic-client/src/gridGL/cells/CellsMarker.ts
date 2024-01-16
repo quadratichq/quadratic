@@ -57,25 +57,27 @@ export class CellsMarkers extends Container {
     }
   }
 
-  add(x: number, y: number, codeCell: JsRenderCodeCell) {
+  add(x: number, y: number, codeCell: JsRenderCodeCell, selected: boolean) {
     const error = this.addTriangle(x, y, codeCell);
 
-    const child = this.addChild(new Sprite());
-    child.height = INDICATOR_SIZE;
-    child.width = INDICATOR_SIZE;
-    child.position.set(x + 1.25, y + 1.25);
-    if (codeCell.language === 'Python') {
-      child.texture = Texture.from('/images/python-icon.png');
-      child.tint = error ? 0xffffff : colors.cellColorUserPython;
-    } else if (codeCell.language === 'Formula') {
-      child.texture = Texture.from('/images/formula-fx-icon.png');
-      child.tint = error ? 0xffffff : colors.cellColorUserFormula;
-    }
+    if (error || selected) {
+      const child = this.addChild(new Sprite());
+      child.height = INDICATOR_SIZE;
+      child.width = INDICATOR_SIZE;
+      child.position.set(x + 1.25, y + 1.25);
+      if (codeCell.language === 'Python') {
+        child.texture = Texture.from('/images/python-icon.png');
+        child.tint = error ? 0xffffff : colors.cellColorUserPython;
+      } else if (codeCell.language === 'Formula') {
+        child.texture = Texture.from('/images/formula-fx-icon.png');
+        child.tint = error ? 0xffffff : colors.cellColorUserFormula;
+      }
 
-    this.markers.push({
-      sprite: child,
-      rectangle: new Rectangle(child.x, child.y, 4, 4),
-    });
+      this.markers.push({
+        sprite: child,
+        rectangle: new Rectangle(child.x, child.y, 4, 4),
+      });
+    }
   }
 
   intersectsMarker(point: Point): Coordinate | undefined {

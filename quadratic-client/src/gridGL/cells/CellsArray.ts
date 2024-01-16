@@ -72,10 +72,11 @@ export class CellsArray extends Container {
 
     // only show the entire array if the cursor overlaps any part of the output
     if (!intersects.rectangleRectangle(cursorRectangle, overlapTest)) {
-      this.cellsSheet.cellsMarkers.addTriangle(start.x, start.y, codeCell);
+      this.cellsSheet.cellsMarkers.add(start.x, start.y, codeCell, false);
       return;
     }
 
+    this.cellsSheet.cellsMarkers.add(start.x, start.y, codeCell, true);
     if (codeCell.spill_error) {
       const cursorPosition = sheets.sheet.cursor.cursorPosition;
       if (cursorPosition.x !== Number(codeCell.x) || cursorPosition.y !== Number(codeCell.y)) {
@@ -104,7 +105,6 @@ export class CellsArray extends Container {
     } else {
       this.drawBox(start, end, tint);
     }
-    this.cellsSheet.cellsMarkers.add(start.x, start.y, codeCell);
   }
 
   private drawBox(start: Rectangle, end: Rectangle, tint: number) {
