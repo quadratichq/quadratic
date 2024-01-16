@@ -363,7 +363,7 @@ pub(crate) mod tests {
     }
 
     #[tokio::test]
-    async fn responds_with_a_200_OK_for_a_healthcheck() {
+    async fn responds_with_a_200_ok_for_a_healthcheck() {
         let state = new_arc_state().await;
         let app = app(state);
 
