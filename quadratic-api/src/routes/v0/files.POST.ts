@@ -45,19 +45,15 @@ async function handler(req: RequestWithUser, res: Response) {
   const { uuid } = dbFile;
   const response = await uploadStringAsFileS3(`${uuid}-0.grid`, contents);
 
-  try {
-    await dbClient.fileCheckpoint.create({
-      data: {
-        fileId: dbFile.id,
-        sequenceNumber: 0,
-        s3Bucket: response.bucket,
-        s3Key: response.key,
-        version: version,
-      },
-    });
-  } catch (e) {
-    console.error(e);
-  }
+  await dbClient.fileCheckpoint.create({
+    data: {
+      fileId: dbFile.id,
+      sequenceNumber: 0,
+      s3Bucket: response.bucket,
+      s3Key: response.key,
+      version: version,
+    },
+  });
 
   const data: ApiTypes['/v0/files.POST.response'] = {
     ...dbFile,
