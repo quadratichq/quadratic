@@ -57,8 +57,13 @@ export class PointerDown {
           return;
         }
         const code = sheet.getCodeCell(column, row);
-        const cell = sheet.getEditCell(column, row);
-        doubleClickCell({ column, row, mode: code?.language, cell });
+        if (code) {
+          doubleClickCell({ column: Number(code.x), row: Number(code.y), mode: code.language, cell: '' });
+        } else {
+          const cell = sheet.getEditCell(column, row);
+          doubleClickCell({ column, row, cell });
+        }
+
         this.active = false;
         event.preventDefault();
         return;

@@ -29,33 +29,10 @@ impl GridController {
         let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
             return Ok(JsValue::null());
         };
-        let Some(code_cell) = sheet.cell_value(*pos) else {
-            return Ok(JsValue::null());
-        };
-        match code_cell {
-            CellValue::Code(code_cell) => {
-                let code_cell = if let Some(code_run) = sheet.code_run(*pos) {
-                    let evaluation_result =
-                        serde_json::to_string(&code_run.result).unwrap_or("".to_string());
-                    JsCodeCell {
-                        code_string: code_cell.code,
-                        language: code_cell.language,
-                        std_err: code_run.std_err.clone(),
-                        std_out: code_run.std_out.clone(),
-                        evaluation_result: Some(evaluation_result),
-                    }
-                } else {
-                    JsCodeCell {
-                        code_string: code_cell.code,
-                        language: code_cell.language,
-                        std_err: None,
-                        std_out: None,
-                        evaluation_result: None,
-                    }
-                };
-                Ok(serde_wasm_bindgen::to_value(&code_cell)?)
-            }
-            _ => Ok(JsValue::null()),
+        if let Some(edit_code) = sheet.edit_code_value(*pos) {
+            Ok(serde_wasm_bindgen::to_value(&edit_code)?)
+        } else {
+            Ok(JsValue::null())
         }
     }
 

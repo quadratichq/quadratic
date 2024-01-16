@@ -189,6 +189,8 @@ impl BitOrAssign for FormattingSummary {
 #[derive(Serialize, PartialEq, Debug)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCodeCell {
+    pub x: i64,
+    pub y: i64,
     pub code_string: String,
     pub language: CodeCellLanguage,
     pub std_out: Option<String>,

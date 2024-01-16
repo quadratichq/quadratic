@@ -1,6 +1,6 @@
 use super::Sheet;
 use crate::{
-    grid::{CodeRun, RenderSize},
+    grid::{js_types::JsCodeCell, CodeRun, RenderSize},
     CellValue, Pos, Rect,
 };
 
@@ -68,6 +68,61 @@ impl Sheet {
         }
         false
     }
+
+    /// Returns the code cell at a Pos; also returns the code cell if the Pos is part of a code run.
+    /// Used for double clicking a cell on the grid.
+    pub fn edit_code_value(&self, pos: Pos) -> Option<JsCodeCell> {
+        let mut code_pos = pos;
+        let code_cell = if let Some(cell_value) = self.cell_value(pos) {
+            Some(cell_value)
+        } else {
+            self.code_runs.iter().find_map(|(code_cell_pos, code_run)| {
+                if code_run.output_rect(*code_cell_pos, false).contains(pos) {
+                    if let Some(code_value) = self.cell_value(*code_cell_pos) {
+                        code_pos = *code_cell_pos;
+                        Some(code_value)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+        };
+
+        let Some(code_cell) = code_cell else {
+            return None;
+        };
+
+        match code_cell {
+            CellValue::Code(code_cell) => {
+                if let Some(code_run) = self.code_run(code_pos) {
+                    let evaluation_result =
+                        serde_json::to_string(&code_run.result).unwrap_or("".to_string());
+                    Some(JsCodeCell {
+                        x: code_pos.x,
+                        y: code_pos.y,
+                        code_string: code_cell.code,
+                        language: code_cell.language,
+                        std_err: code_run.std_err.clone(),
+                        std_out: code_run.std_out.clone(),
+                        evaluation_result: Some(evaluation_result),
+                    })
+                } else {
+                    Some(JsCodeCell {
+                        x: code_pos.x,
+                        y: code_pos.y,
+                        code_string: code_cell.code,
+                        language: code_cell.language,
+                        std_err: None,
+                        std_out: None,
+                        evaluation_result: None,
+                    })
+                }
+            }
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -75,8 +130,8 @@ mod test {
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{CodeRunResult, RenderSize},
-        SheetPos, Value,
+        grid::{CodeCellLanguage, CodeRunResult, RenderSize},
+        Array, CodeCellValue, SheetPos, Value,
     };
     use bigdecimal::BigDecimal;
     use chrono::Utc;
@@ -155,5 +210,54 @@ mod test {
         );
         assert_eq!(sheet.code_run(Pos { x: 0, y: 0 }), Some(&code_run));
         assert_eq!(sheet.code_run(Pos { x: 1, y: 1 }), None);
+    }
+
+    #[test]
+    fn test_edit_code_value() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.set_cell_value(
+            Pos { x: 0, y: 0 },
+            CellValue::Code(CodeCellValue {
+                code: "=".to_string(),
+                language: CodeCellLanguage::Formula,
+            }),
+        );
+        let code_run = CodeRun {
+            std_err: None,
+            std_out: None,
+            formatted_code_string: None,
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["1", "2", "3"]]))),
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
+        sheet.set_code_run(Pos { x: 0, y: 0 }, Some(code_run.clone()));
+        assert_eq!(
+            sheet.edit_code_value(Pos { x: 0, y: 0 }),
+            Some(JsCodeCell {
+                x: 0,
+                y: 0,
+                code_string: "=".to_string(),
+                language: CodeCellLanguage::Formula,
+                std_err: None,
+                std_out: None,
+                evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
+            })
+        );
+        assert_eq!(
+            sheet.edit_code_value(Pos { x: 1, y: 0 }),
+            Some(JsCodeCell {
+                x: 0,
+                y: 0,
+                code_string: "=".to_string(),
+                language: CodeCellLanguage::Formula,
+                std_err: None,
+                std_out: None,
+                evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
+            })
+        );
+        assert_eq!(sheet.edit_code_value(Pos { x: 2, y: 2 }), None);
     }
 }
