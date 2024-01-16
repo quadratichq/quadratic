@@ -12,6 +12,8 @@ on:
 jobs:
 
   infra:
+    needs:
+     - files_preview
     name: Create or Update Infrastructure with Pulumi
     runs-on: ubuntu-latest-8-cores 
     steps:
@@ -98,7 +100,6 @@ jobs:
         EC2_INSTANCE_DNS: ${{needs.infra.outputs.MULTIPLAYER_INSTANCE_DNS}}
 
   files_preview:
-    needs: infra
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
