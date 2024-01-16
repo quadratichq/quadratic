@@ -55,7 +55,6 @@ impl UnsavedTransactions {
             .iter_mut()
             .enumerate()
             .find(|(_, unsaved_transaction)| unsaved_transaction.id() == forward.id)
-            .map(|(index, unsaved_transaction)| (index, unsaved_transaction))
         {
             None => {
                 let transaction = UnsavedTransaction {
@@ -71,7 +70,7 @@ impl UnsavedTransactions {
                         );
                     }
                 }
-                self.transactions.push(transaction)
+                self.transactions.push(transaction);
             }
             Some((_, unsaved_transaction)) => {
                 unsaved_transaction.forward = forward;

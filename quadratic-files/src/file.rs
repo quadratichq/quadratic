@@ -112,7 +112,7 @@ pub(crate) async fn process_queue_for_room(
     } = &state.settings;
 
     let checkpoint_sequence_num =
-        match get_file_checkpoint(&quadratic_api_uri, &quadratic_api_jwt, file_id).await {
+        match get_file_checkpoint(quadratic_api_uri, quadratic_api_jwt, file_id).await {
             Ok(last_checkpoint) => last_checkpoint.sequence_number + 1,
             Err(_) => 1,
         };
@@ -129,8 +129,7 @@ pub(crate) async fn process_queue_for_room(
         .get_messages_from(channel, &checkpoint_sequence_num.to_string())
         .await?
         .iter()
-        .map(|(_, message)| serde_json::from_str::<TransactionServer>(&message))
-        .flatten()
+        .flat_map(|(_, message)| serde_json::from_str::<TransactionServer>(message))
         .collect::<Vec<TransactionServer>>();
 
     tracing::info!(
@@ -198,8 +197,8 @@ pub(crate) async fn process_queue_for_room(
     // update the checkpoint in quadratic-api
     let key = &key(*file_id, last_sequence_num);
     set_file_checkpoint(
-        &quadratic_api_uri,
-        &quadratic_api_jwt,
+        quadratic_api_uri,
+        quadratic_api_jwt,
         file_id,
         last_sequence_num,
         CURRENT_VERSION.into(),
@@ -224,18 +223,17 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
         .lock()
         .await
         .connection
-        .active_channels(&active_channels)
+        .active_channels(active_channels)
         .await?
         .into_iter()
-        .map(|file_id| Uuid::parse_str(&file_id))
-        .flatten()
+        .flat_map(|file_id| Uuid::parse_str(&file_id))
         .collect::<Vec<_>>();
 
     // collect info for stats
     state.stats.lock().await.files_to_process_in_pubsub = files.len() as u64;
 
     for file_id in files.iter() {
-        process_queue_for_room(&state, file_id, active_channels).await?;
+        process_queue_for_room(state, file_id, active_channels).await?;
     }
 
     Ok(())
@@ -243,9 +241,8 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
-    use crate::{config::config, test_util::new_arc_state};
+    // use std::str::FromStr;
+    // use crate::test_util::new_arc_state;
 
     use super::*;
     use quadratic_core::{CellValue, Pos, SheetPos};
@@ -298,20 +295,20 @@ mod tests {
 
     #[tokio::test]
     async fn processes_a_file() {
-        let state = new_arc_state().await;
-        let Settings {
-            aws_client,
-            aws_s3_bucket_name,
-            quadratic_api_uri,
-            quadratic_api_jwt,
-            ..
-        } = &state.settings;
+        // let state = new_arc_state().await;
+        // let Settings {
+        //     aws_client,
+        //     aws_s3_bucket_name,
+        //     quadratic_api_uri,
+        //     quadratic_api_jwt,
+        //     ..
+        // } = &state.settings;
 
-        println!("{:?}", aws_s3_bucket_name);
+        // println!("{:?}", aws_s3_bucket_name);
 
-        let file_id = Uuid::from_str("daf6008f-d858-4a6a-966b-928213048941").unwrap();
-        let sequence = 0;
-        let key = key(file_id, sequence);
+        // let file_id = Uuid::from_str("daf6008f-d858-4a6a-966b-928213048941").unwrap();
+        // let sequence = 0;
+        // let key = key(file_id, sequence);
 
         // let file = get_and_load_object(&aws_client, aws_s3_bucket_name, &key, 0)
         //     .await

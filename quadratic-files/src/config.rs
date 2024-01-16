@@ -9,6 +9,7 @@ use crate::error::{FilesError, Result};
 use dotenv::dotenv;
 use serde::Deserialize;
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 pub(crate) struct Config {
     pub(crate) host: String,
