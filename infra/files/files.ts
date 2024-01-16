@@ -1,5 +1,6 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
+import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 const config = new pulumi.Config();
 
 // Configuration from command line
@@ -9,7 +10,6 @@ const dockerImageTag = config.require("docker-image-tag");
 // Configuration from Pulumi ESC
 const domain = config.require("domain");
 const instanceSize = config.require("files-instance-size");
-const instanceAmi = config.require("files-instance-ami"); // TODO: move to Docker latest?
 const ecrRegistryUrl = config.require("ecr-registry-url");
 
 // Create an IAM Role for EC2
@@ -54,6 +54,12 @@ const ec2SecurityGroup = new aws.ec2.SecurityGroup("files-sg", {
       toPort: 80,
       cidrBlocks: ["0.0.0.0/0"],
     },
+    {
+      protocol: "tcp",
+      fromPort: 22,
+      toPort: 22,
+      cidrBlocks: ["0.0.0.0/0"],
+    },
   ],
   egress: [
     { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
@@ -67,16 +73,23 @@ const instance = new aws.ec2.Instance("files-instance", {
   instanceType: instanceSize,
   iamInstanceProfile: instanceProfile.name,
   vpcSecurityGroupIds: [ec2SecurityGroup.id],
-  ami: instanceAmi,
+  ami: latestAmazonLinuxAmi.id,
   // Run Setup script on instance boot to create multiplayer systemd service
   userData: `#!/bin/bash
-  yum update -y
-  yum install -y docker
-  service docker start
-  amazon-linux-extras install -y awscli
-  $(aws ecr get-login --region us-west-2 --no-include-email)
-  docker pull ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}
-  docker run -d -p 80:80 ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}`,
+sudo yum update -y
+sudo amazon-linux-extras install docker -y
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Ensure the AWS CLI is installed
+sudo yum install aws-cli -y
+
+# Log in to ECR
+$(aws ecr get-login --region us-west-2 --no-include-email)
+
+# Pull and run the Docker image from ECR
+docker pull ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}
+docker run -d -p 80:80 ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}`,
 });
 
 // // Get the hosted zone ID for domain
