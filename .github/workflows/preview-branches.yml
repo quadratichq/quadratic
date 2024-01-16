@@ -46,7 +46,7 @@ jobs:
 
         pulumi config set multiplayer-subdomain multiplayer-pr-${{ env.PR_ID }}
         pulumi config set files-subdomain files-pr-${{ env.PR_ID }}
-        pulumi config set docker-image-name files-pr-${{ env.PR_ID }}
+        pulumi config set docker-image-tag ${{ github.ref_name }}
         pulumi config set quadratic-api-uri https://quadratic-api-dev-pr-${{ env.PR_ID }}.herokuapp.com
         pulumi config set multiplayer-aws-s3-access-key-id ${{ secrets.MULTIPLAYER_AWS_S3_ACCESS_KEY_ID }} --secret
         pulumi config set multiplayer-aws-s3-secret-access-key ${{ secrets.MULTIPLAYER_AWS_S3_SECRET_ACCESS_KEY }} --secret
@@ -121,7 +121,7 @@ jobs:
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: quadratic-files-development
-        IMAGE_TAG: ${{ github.sha }}
+        IMAGE_TAG: ${{ github.ref_name }}
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f quadratic-files/Dockerfile .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
