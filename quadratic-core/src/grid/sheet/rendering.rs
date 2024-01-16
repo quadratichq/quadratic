@@ -37,15 +37,14 @@ impl Sheet {
             return JsRenderCell {
                 x,
                 y,
-                value: " CHART".to_string(),
+                value: "".to_string(),
                 language,
                 align: None,
                 wrap: None,
                 bold: None,
-                italic: Some(true),
-                // from colors.ts: colors.languagePython
-                text_color: Some(String::from("#3776ab")),
-                special: None,
+                italic: None,
+                text_color: None,
+                special: Some(JsRenderCellSpecial::Chart),
             };
         } else if let CellValue::Error(error) = value {
             let spill_error = matches!(error.msg, RunErrorMsg::Spill);
@@ -489,14 +488,14 @@ mod tests {
             JsRenderCell {
                 x: 2,
                 y: 4,
-                value: " CHART".to_string(),
+                value: "".to_string(),
                 language: None,
                 align: None,
                 wrap: None,
                 bold: None,
-                italic: Some(true),
-                text_color: Some("#3776ab".to_string()),
-                special: None,
+                italic: None,
+                text_color: None,
+                special: Some(JsRenderCellSpecial::Chart),
             },
         );
         assert_eq!(

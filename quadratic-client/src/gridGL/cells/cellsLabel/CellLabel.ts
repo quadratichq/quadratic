@@ -22,6 +22,7 @@ interface CharRenderData {
 const OPEN_SANS_FIX = { x: 1.8, y: -1 };
 const SPILL_ERROR_TEXT = ' #SPILL!';
 const RUN_ERROR_TEXT = ' #ERROR!';
+const CHART_TEXT = ' CHART';
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
@@ -68,6 +69,8 @@ export class CellLabel extends Container {
         return SPILL_ERROR_TEXT;
       case 'RunError':
         return RUN_ERROR_TEXT;
+      case 'Chart':
+        return CHART_TEXT;
       default:
         return cell?.value;
     }
@@ -81,14 +84,23 @@ export class CellLabel extends Container {
     this.maxWidth = 0;
     this.letterSpacing = 0;
     const isError = cell?.special === 'SpillError' || cell?.special === 'RunError';
-    this.tint = isError ? colors.cellColorError : cell?.textColor ? convertColorStringToTint(cell.textColor) : 0;
+    const isChart = cell?.special === 'Chart';
+    if (isError) {
+      this.tint = colors.cellColorError;
+    } else if (isChart) {
+      this.tint = convertColorStringToTint(colors.languagePython);
+    } else if (cell?.textColor) {
+      this.tint = convertColorStringToTint(cell.textColor);
+    } else {
+      this.tint = 0;
+    }
 
     this.location = { x: Number(cell.x), y: Number(cell.y) };
     this.AABB = screenRectangle;
     this.position.set(screenRectangle.x, screenRectangle.y);
 
     this.bold = !!cell?.bold;
-    this.italic = !!cell?.italic || isError;
+    this.italic = !!cell?.italic || isError || isChart;
     this.updateFontName();
     this.alignment = cell.align;
   }
