@@ -8,7 +8,6 @@ import { DataMenu } from './SubMenus/DataMenu';
 import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
 import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
-import { TopBarCodeOutlinesSwitch } from './TopBarCodeOutlinesSwitch';
 import { TopBarFileMenu } from './TopBarFileMenu';
 import { TopBarShareButton } from './TopBarShareButton';
 import { TopBarUsers } from './TopBarUsers';
@@ -86,7 +85,6 @@ export const TopBar = () => {
       >
         {isDesktop && (
           <>
-            <TopBarCodeOutlinesSwitch />
             <TopBarUsers />
             <TopBarShareButton />
           </>
