@@ -84,10 +84,10 @@ export const TopBar = () => {
           ...(isDesktop ? { flexBasis: '30%' } : {}),
         }}
       >
-        {isDesktop && (
+        {isDesktop && !isEmbed && (
           <>
-            {!isEmbed && <TopBarUsers />}
-            {!isEmbed && <TopBarShareButton />}
+            {<TopBarUsers />}
+            {<TopBarShareButton />}
           </>
         )}
         <TopBarZoomMenu />
