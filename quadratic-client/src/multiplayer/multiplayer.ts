@@ -65,7 +65,7 @@ export class Multiplayer {
     this.userUpdate = { type: 'UserUpdate', session_id: this.sessionId, file_id: '', update: {} };
   }
 
-  private get state() {
+  get state() {
     return this._state;
   }
   private set state(state: MultiplayerState) {
