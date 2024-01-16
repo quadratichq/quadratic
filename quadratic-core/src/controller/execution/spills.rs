@@ -93,7 +93,7 @@ mod tests {
             x,
             y,
             language: Some(CodeCellLanguage::Formula),
-            value: " SPILL".into(),
+            value: "".into(),
             align: None,
             wrap: None,
             bold: None,

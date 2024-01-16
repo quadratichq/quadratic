@@ -1,5 +1,5 @@
 import { sheets } from '@/grid/controller/Sheets';
-import { JsRenderCodeCell, Pos } from '@/quadratic-core/types';
+import { JsRenderCodeCell } from '@/quadratic-core/types';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { CodeCellLanguage } from '../../quadratic-core/quadratic_core';
@@ -11,6 +11,7 @@ import { BorderCull, borderLineWidth, drawBorder, drawLine } from './drawBorders
 
 const SPILL_HIGHLIGHT_THICKNESS = 1;
 const SPILL_HIGHLIGHT_COLOR = colors.cellColorError;
+const SPILL_FILL_ALPHA = 0.025;
 
 export class CellsArray extends Container {
   private cellsSheet: CellsSheet;
@@ -55,8 +56,6 @@ export class CellsArray extends Container {
 
   private draw(codeCell: JsRenderCodeCell, cursorRectangle: Rectangle): void {
     const start = this.sheet.getCellOffsets(Number(codeCell.x), Number(codeCell.y));
-    this.cellsSheet.cellsMarkers.add(start.x, start.y, codeCell.language, codeCell.state);
-
     let end = this.sheet.getCellOffsets(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
 
     const overlapTest = new Rectangle(Number(codeCell.x), Number(codeCell.y), codeCell.w, codeCell.h);
@@ -78,62 +77,71 @@ export class CellsArray extends Container {
       tint = colors.cellColorUserFormula;
     }
 
-    this.lines.push(
-      ...drawBorder({
-        alpha: 0.5,
-        tint,
-        x: start.x,
-        y: start.y,
-        width: end.x - start.x,
-        height: end.y - start.y,
-        getSprite: this.getSprite,
-        top: true,
-        left: true,
-        bottom: true,
-        right: true,
-      })
-    );
-    const right = end.x !== start.x + start.width;
-    if (right) {
-      this.lines.push(
-        drawLine({
-          x: start.x + start.width - borderLineWidth / 2,
-          y: start.y + borderLineWidth / 2,
-          width: borderLineWidth,
-          height: start.height,
-          alpha: 0.5,
-          tint,
-          getSprite: this.getSprite,
-        })
-      );
-    }
-    const bottom = end.y !== start.y + start.height;
-    if (bottom) {
-      this.lines.push(
-        drawLine({
-          x: start.x + borderLineWidth / 2,
-          y: start.y + start.height - borderLineWidth / 2,
-          width: start.width - borderLineWidth,
-          height: borderLineWidth,
-          alpha: 0.5,
-          tint,
-          getSprite: this.getSprite,
-        })
-      );
-    }
+    if (codeCell.spill_error) {
+      this.drawDashedRectangle(new Rectangle(start.x, start.y, end.x - start.x, end.y - start.y), tint);
 
-    codeCell.spill_error?.forEach((error) => {
-      this.drawDashedRectangle(error);
-    });
+      codeCell.spill_error?.forEach((error) => {
+        const rectangle = this.sheet.getCellOffsets(Number(error.x), Number(error.y));
+        this.drawDashedRectangle(rectangle, SPILL_HIGHLIGHT_COLOR);
+      });
+    } else {
+      this.lines.push(
+        ...drawBorder({
+          alpha: 0.5,
+          tint,
+          x: start.x,
+          y: start.y,
+          width: end.x - start.x,
+          height: end.y - start.y,
+          getSprite: this.getSprite,
+          top: true,
+          left: true,
+          bottom: true,
+          right: true,
+        })
+      );
+      const right = end.x !== start.x + start.width;
+      if (right) {
+        this.lines.push(
+          drawLine({
+            x: start.x + start.width - borderLineWidth / 2,
+            y: start.y + borderLineWidth / 2,
+            width: borderLineWidth,
+            height: start.height,
+            alpha: 0.5,
+            tint,
+            getSprite: this.getSprite,
+          })
+        );
+      }
+      const bottom = end.y !== start.y + start.height;
+      if (bottom) {
+        this.lines.push(
+          drawLine({
+            x: start.x + borderLineWidth / 2,
+            y: start.y + start.height - borderLineWidth / 2,
+            width: start.width - borderLineWidth,
+            height: borderLineWidth,
+            alpha: 0.5,
+            tint,
+            getSprite: this.getSprite,
+          })
+        );
+      }
+    }
+    this.cellsSheet.cellsMarkers.add(start.x, start.y, codeCell.language, codeCell.state);
   }
 
-  private drawDashedRectangle(pos: Pos) {
-    const position = this.sheet.getCellOffsets(Number(pos.x), Number(pos.y));
+  private drawDashedRectangle(rectangle: Rectangle, color: number) {
+    this.graphics.lineStyle();
+    this.graphics.beginFill(color, SPILL_FILL_ALPHA);
+    this.graphics.drawRect(rectangle.left, rectangle.top, rectangle.width, rectangle.height);
+    this.graphics.endFill();
 
-    const minX = position.left;
-    const minY = position.top;
-    const maxX = position.right;
-    const maxY = position.bottom;
+    const minX = rectangle.left;
+    const minY = rectangle.top;
+    const maxX = rectangle.right;
+    const maxY = rectangle.bottom;
 
     const path = [
       [maxX, minY],
@@ -146,8 +154,7 @@ export class CellsArray extends Container {
     for (let i = 0; i < path.length; i++) {
       this.graphics.lineStyle({
         width: SPILL_HIGHLIGHT_THICKNESS,
-        color: SPILL_HIGHLIGHT_COLOR,
-        alignment: 0,
+        color,
         texture: i % 2 === 0 ? dashedTextures.dashedHorizontal : dashedTextures.dashedVertical,
       });
       this.graphics.lineTo(path[i][0], path[i][1]);

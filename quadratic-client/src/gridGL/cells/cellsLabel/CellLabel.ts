@@ -17,7 +17,9 @@ interface CharRenderData {
   prevSpaces: number;
 }
 
-const openSansFix = { x: 1.8, y: -1 };
+// magic numbers to make the WebGL rendering of OpenSans look similar to the HTML version
+const OPEN_SANS_FIX = { x: 1.8, y: -1 };
+const SPILL_ERROR = ' #SPILL!';
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
@@ -60,7 +62,7 @@ export class CellLabel extends Container {
 
   constructor(cell: JsRenderCell, screenRectangle: Rectangle) {
     super();
-    const cellText = cell.value ? cell.value.replace(/\n/g, '') : '';
+    const cellText = cell.spillError ? SPILL_ERROR : cell.value ? cell.value.replace(/\n/g, '') : '';
     this.text = cellText;
     this.fontSize = fontSize;
     this.roundPixels = true;
@@ -131,7 +133,7 @@ export class CellLabel extends Container {
     this.overflowRight = 0;
     let alignment = this.alignment ?? 'left';
     if (alignment === 'right') {
-      const actualLeft = this.AABB.x + this.cellWidth - this.textWidth - openSansFix.x * 2;
+      const actualLeft = this.AABB.x + this.cellWidth - this.textWidth - OPEN_SANS_FIX.x * 2;
       if (actualLeft < this.AABB.x) {
         this.overflowLeft = this.AABB.x - actualLeft;
       }
@@ -283,8 +285,8 @@ export class CellLabel extends Container {
       if (this.roundPixels) {
         offset = Math.round(offset);
       }
-      const xPos = this.position.x + offset * scale + openSansFix.x;
-      const yPos = this.position.y + char.position.y * scale + openSansFix.y;
+      const xPos = this.position.x + offset * scale + OPEN_SANS_FIX.x;
+      const yPos = this.position.y + char.position.y * scale + OPEN_SANS_FIX.y;
       const labelMesh = labelMeshes.get(char.labelMeshId);
       const texture = char.texture;
       const textureFrame = texture.frame;

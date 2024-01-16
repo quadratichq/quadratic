@@ -48,18 +48,11 @@ impl Sheet {
                 spill_error: false,
             };
         } else if let CellValue::Error(error) = value {
-            let mut spill_error = false;
-            let value = match error.msg {
-                RunErrorMsg::Spill => {
-                    spill_error = true;
-                    " SPILL"
-                }
-                _ => " ERROR",
-            };
+            let spill_error = matches!(error.msg, RunErrorMsg::Spill);
             return JsRenderCell {
                 x,
                 y,
-                value: value.into(),
+                value: "".into(),
                 language,
                 align: None,
                 wrap: None,
@@ -522,7 +515,7 @@ mod tests {
             JsRenderCell {
                 x: 2,
                 y: 6,
-                value: " SPILL".to_string(),
+                value: "".to_string(),
                 language: None,
                 align: None,
                 wrap: None,

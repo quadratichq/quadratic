@@ -6,9 +6,7 @@ import { intersects } from '../helpers/intersects';
 
 const TRIANGLE_SIZE = 100;
 const TRIANGLE_COLOR = 'red';
-const INDICATOR_SIZE_ERROR = 4;
-
-const INDICATOR_SIZE = 8;
+const INDICATOR_SIZE = 4;
 
 export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'AIIcon' | 'ErrorIcon';
 
@@ -59,8 +57,8 @@ export class CellsMarkers extends Container {
     }
 
     const child = this.addChild(new Sprite());
-    child.height = error ? INDICATOR_SIZE_ERROR : INDICATOR_SIZE;
-    child.width = error ? INDICATOR_SIZE_ERROR : INDICATOR_SIZE;
+    child.height = INDICATOR_SIZE;
+    child.width = INDICATOR_SIZE;
     child.position.set(x + 1.25, y + 1.25);
     if (type === CodeCellLanguage.Python || type === 'Python') {
       child.texture = Texture.from('/images/python-icon.png');
