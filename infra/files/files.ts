@@ -41,7 +41,7 @@ const policyAttachment = new aws.iam.RolePolicyAttachment(
 const instanceProfile = new aws.iam.InstanceProfile(
   "files-ec2-instance-profile",
   {
-    role: role.name,
+    role: role,
   }
 );
 
@@ -71,13 +71,13 @@ const instance = new aws.ec2.Instance("files-instance", {
     Name: `files-instance-${filesSubdomain}`,
   },
   instanceType: instanceSize,
-  iamInstanceProfile: instanceProfile.name,
+  iamInstanceProfile: instanceProfile,
   vpcSecurityGroupIds: [ec2SecurityGroup.id],
   ami: latestAmazonLinuxAmi.id,
   // Run Setup script on instance boot to create multiplayer systemd service
   userData: `#!/bin/bash
 sudo yum update -y
-sudo amazon-linux-extras install docker -y
+sudo yum install -y docker
 sudo systemctl start docker
 sudo systemctl enable docker
 
@@ -85,7 +85,7 @@ sudo systemctl enable docker
 sudo yum install aws-cli -y
 
 # Log in to ECR
-$(aws ecr get-login --region us-west-2 --no-include-email)
+aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin ${ecrRegistryUrl}
 
 # Pull and run the Docker image from ECR
 docker pull ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}
