@@ -5,8 +5,7 @@ const config = new pulumi.Config();
 
 // Configuration from command line
 const multiplayerSubdomain = config.require("multiplayer-subdomain");
-const quadraticApiUri =
-  config.get("quadratic-api-uri") || "https://api.quadratichq.com";
+const quadraticApiUri = config.require("quadratic-api-uri");
 
 // Configuration from Pulumi ESC
 const domain = config.require("domain");
