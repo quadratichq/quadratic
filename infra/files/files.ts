@@ -72,7 +72,7 @@ const instance = new aws.ec2.Instance("files-instance", {
   },
   instanceType: instanceSize,
   iamInstanceProfile: instanceProfile,
-  vpcSecurityGroupIds: [ec2SecurityGroup.id],
+  vpcSecurityGroupIds: [filesEc2SecurityGroup.id],
   ami: latestAmazonLinuxAmi.id,
   // Run Setup script on instance boot to create multiplayer systemd service
   userData: `#!/bin/bash
