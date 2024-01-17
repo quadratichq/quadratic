@@ -46,7 +46,7 @@ const instanceProfile = new aws.iam.InstanceProfile(
 );
 
 // Create a Security Group for the EC2 instance
-const ec2SecurityGroup = new aws.ec2.SecurityGroup("files-sg", {
+export const filesEc2SecurityGroup = new aws.ec2.SecurityGroup("files-sg", {
   ingress: [
     {
       protocol: "tcp",

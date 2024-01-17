@@ -8,7 +8,12 @@ import {
 
 import { filesPublicDns } from "./files/files";
 
-// import * as shared from "./shared";
+import { redisConnectionString } from "./shared/redis";
 
 // Global exports
-export { filesPublicDns, multiplayerInstanceDns, multiplayerPublicDns };
+export {
+  filesPublicDns,
+  multiplayerInstanceDns,
+  multiplayerPublicDns,
+  redisConnectionString,
+};
