@@ -50,15 +50,17 @@ const instanceProfile = new aws.iam.InstanceProfile(
   }
 );
 
-//
+// Configuration from other files
+const host = redisHost.apply((host) => host);
+const port = redisPort.apply((p) => p);
 let deployFilesService = fs
   .readFileSync("files/deploy-files-service.sh", "utf-8")
   .replace("${pulumiAccessToken}", pulumiAccessToken)
   .replace("${ecrRegistryUrl}", ecrRegistryUrl)
   .replace("${dockerImageTag}", dockerImageTag)
   .replace("${quadraticApiUri}", quadraticApiUri)
-  .replace("${redisHost}", redisHost.get())
-  .replace("${redisPort}", redisPort.get().toString());
+  .replace("${redisHost}", host.get())
+  .replace("${redisPort}", port.get().toString());
 
 const instance = new aws.ec2.Instance("files-instance", {
   tags: {

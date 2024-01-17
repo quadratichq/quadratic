@@ -26,4 +26,4 @@ aws ecr get-login-password --region us-west-2 | sudo docker login --username AWS
 
 echo 'Pulling and running Docker image from ECR'
 sudo docker pull ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}
-sudo docker run -d -p 80:80 --env-file .env ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}
+sudo docker run -d -p 80:80 --env-file .env --restart-always ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}
