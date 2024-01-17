@@ -7,7 +7,7 @@ sudo systemctl enable docker
 
 echo 'Installing Pulumi ESC CLI'
 curl -fsSL https://get.pulumi.com/esc/install.sh | sh
-export PATH=$PATH:/home/ec2-user/.pulumi/bin
+export PATH=$PATH:/.pulumi/bin
 export PULUMI_ACCESS_TOKEN=${pulumiAccessToken}
 esc login
 
