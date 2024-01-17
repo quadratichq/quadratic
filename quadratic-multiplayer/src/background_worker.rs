@@ -41,39 +41,36 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                 .collect::<Vec<_>>();
 
             // parallelize the work for each room
-            rooms
-                .into_par_iter()
-                .for_each(|(file_id, checkpoint_sequence_num)| {
-                    let state = Arc::clone(&state);
+            rooms.into_par_iter().for_each(|(file_id, _)| {
+                let state = Arc::clone(&state);
 
-                    tokio::spawn(async move {
-                        tracing::trace!("Processing room {}", file_id);
+                tokio::spawn(async move {
+                    tracing::trace!("Processing room {}", file_id);
 
-                        // broadcast sequence number to all users in the room
-                        let broadcasted =
-                            broadcast_sequence_num(Arc::clone(&state), &file_id).await;
+                    // broadcast sequence number to all users in the room
+                    let broadcasted = broadcast_sequence_num(Arc::clone(&state), &file_id).await;
 
-                        if let Err(error) = broadcasted {
-                            tracing::warn!("Error broadcasting sequence number: {:?}", error);
-                        }
+                    if let Err(error) = broadcasted {
+                        tracing::warn!("Error broadcasting sequence number: {:?}", error);
+                    }
 
-                        // remove stale users in the room
-                        let removed = remove_stale_users_in_room(
-                            Arc::clone(&state),
-                            &file_id,
-                            heartbeat_timeout_s,
-                        )
-                        .await;
+                    // remove stale users in the room
+                    let removed = remove_stale_users_in_room(
+                        Arc::clone(&state),
+                        &file_id,
+                        heartbeat_timeout_s,
+                    )
+                    .await;
 
-                        if let Err(error) = removed {
-                            tracing::warn!(
-                                "Error removing stale users from room {}: {:?}",
-                                file_id,
-                                error
-                            );
-                        }
-                    });
+                    if let Err(error) = removed {
+                        tracing::warn!(
+                            "Error removing stale users from room {}: {:?}",
+                            file_id,
+                            error
+                        );
+                    }
                 });
+            });
 
             interval.tick().await;
         }

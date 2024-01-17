@@ -9,7 +9,7 @@ use crate::{
 };
 
 pub(crate) fn validate_can_edit_or_view_file(roles: &Vec<FilePermRole>) -> Result<()> {
-    if can_view(&roles) || can_edit(&roles) {
+    if !can_view(&roles) || !can_edit(&roles) {
         return Err(MpError::FilePermissions(
             "You do not have permission to access this file".to_string(),
         ));
@@ -19,7 +19,7 @@ pub(crate) fn validate_can_edit_or_view_file(roles: &Vec<FilePermRole>) -> Resul
 }
 
 pub(crate) fn validate_can_edit_file(roles: &Vec<FilePermRole>) -> Result<()> {
-    if can_edit(&roles) {
+    if !can_edit(&roles) {
         return Err(MpError::FilePermissions(
             "You do not have permission to edit this file".to_string(),
         ));
@@ -33,8 +33,7 @@ pub(crate) async fn validate_user_can_edit_or_view_file(
     file_id: Uuid,
     session_id: Uuid,
 ) -> Result<()> {
-    let room = state.get_room(&file_id).await?;
-    let user = room.get_user(&session_id)?;
+    let user = state.get_room(&file_id).await?.get_user(&session_id)?;
 
     validate_can_edit_or_view_file(&user.permissions)
 }
@@ -44,8 +43,7 @@ pub(crate) async fn validate_user_can_edit_file(
     file_id: Uuid,
     session_id: Uuid,
 ) -> Result<()> {
-    let room = state.get_room(&file_id).await?;
-    let user = room.get_user(&session_id)?;
+    let user = state.get_room(&file_id).await?.get_user(&session_id)?;
 
     validate_can_edit_file(&user.permissions)
 }

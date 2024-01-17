@@ -1,4 +1,5 @@
 use quadratic_rust_shared::aws::{client, Client};
+use quadratic_rust_shared::environment::Environment;
 
 use crate::config::Config;
 
@@ -12,7 +13,7 @@ pub(crate) struct Settings {
 
 impl Settings {
     pub(crate) async fn new(config: &Config) -> Self {
-        let is_local = config.environment == "docker";
+        let is_local = config.environment == Environment::Docker;
         Settings {
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
             quadratic_api_jwt: config.quadratic_api_jwt.to_owned(),
