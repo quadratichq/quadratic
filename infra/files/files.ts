@@ -85,11 +85,11 @@ sudo systemctl enable docker
 sudo yum install aws-cli -y
 
 # Log in to ECR
-aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin ${ecrRegistryUrl}
+aws ecr get-login-password --region us-west-2 | sudo docker login --username AWS --password-stdin ${ecrRegistryUrl}
 
 # Pull and run the Docker image from ECR
-docker pull ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}
-docker run -d -p 80:80 ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}`,
+sudo docker pull ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}
+sudo docker run -d -p 80:80 ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}`,
 });
 
 // // Get the hosted zone ID for domain
