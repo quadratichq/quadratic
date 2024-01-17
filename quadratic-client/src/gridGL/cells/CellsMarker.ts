@@ -1,4 +1,4 @@
-import { JsRenderCodeCell } from '@/quadratic-core/types';
+import { JsRenderCodeCell, JsRenderCodeCellState } from '@/quadratic-core/types';
 import { Container, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../theme/colors';
 import { intersects } from '../helpers/intersects';
@@ -7,12 +7,16 @@ import { Coordinate } from '../types/size';
 const TRIANGLE_SIZE = 100;
 const TRIANGLE_COLOR = 'red';
 const INDICATOR_SIZE = 4;
+const TRIGGER_WIDTH = 20;
 
 export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'AIIcon' | 'ErrorIcon';
 
 interface Marker {
   sprite: Sprite;
+  bounds: Rectangle;
   rectangle: Rectangle;
+  codeCell: Coordinate;
+  type: JsRenderCodeCellState;
 }
 
 export class CellsMarkers extends Container {
@@ -47,24 +51,24 @@ export class CellsMarkers extends Container {
     this.markers.forEach((marker) => (marker.sprite.visible = intersects.rectangleRectangle(bounds, marker.rectangle)));
   }
 
-  addTriangle(x: number, y: number, codeCell: JsRenderCodeCell): Sprite | undefined {
+  addTriangle(box: Rectangle, codeCell: JsRenderCodeCell): Sprite | undefined {
     if (codeCell.state === 'RunError' || codeCell.state === 'SpillError') {
       const error = this.addChild(new Sprite(this.triangle));
       error.alpha = 0.5;
       error.scale.set(0.1);
-      error.position.set(x, y);
+      error.position.set(box.x, box.y);
       return error;
     }
   }
 
-  add(x: number, y: number, codeCell: JsRenderCodeCell, selected: boolean) {
-    const error = this.addTriangle(x, y, codeCell);
+  add(box: Rectangle, codeCell: JsRenderCodeCell, selected: boolean) {
+    const error = this.addTriangle(box, codeCell);
 
     if (error || selected) {
       const child = this.addChild(new Sprite());
       child.height = INDICATOR_SIZE;
       child.width = INDICATOR_SIZE;
-      child.position.set(x + 1.25, y + 1.25);
+      child.position.set(box.x + 1.25, box.y + 1.25);
       if (codeCell.language === 'Python') {
         child.texture = Texture.from('/images/python-icon.png');
         child.tint = error ? 0xffffff : colors.cellColorUserPython;
@@ -75,15 +79,18 @@ export class CellsMarkers extends Container {
 
       this.markers.push({
         sprite: child,
+        bounds: new Rectangle(box.x, box.y, TRIGGER_WIDTH, box.height),
         rectangle: new Rectangle(child.x, child.y, 4, 4),
+        codeCell: { x: Number(codeCell.x), y: Number(codeCell.y) },
+        type: codeCell.state,
       });
     }
   }
 
-  intersectsMarker(point: Point): Coordinate | undefined {
-    const marker = this.markers.find((marker) => marker.rectangle.contains(point.x, point.y));
-    if (marker) {
-      return { x: marker.rectangle.x, y: marker.rectangle.y };
+  intersectsCodeError(point: Point): { x: number; y: number; type: JsRenderCodeCellState } | undefined {
+    const marker = this.markers.find((marker) => marker.bounds.contains(point.x, point.y));
+    if (marker?.codeCell) {
+      return { x: marker.codeCell.x, y: marker.codeCell.y, type: marker.type };
     }
   }
 

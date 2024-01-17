@@ -5,7 +5,7 @@ import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
 
 export class CellsSheets extends Container<CellsSheet> {
-  private current?: CellsSheet;
+  current?: CellsSheet;
 
   async create(): Promise<void> {
     this.removeChildren();

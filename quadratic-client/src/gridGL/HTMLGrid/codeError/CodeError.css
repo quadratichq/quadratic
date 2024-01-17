@@ -1,0 +1,35 @@
+.code-error-container {
+  opacity: 0;
+  transition: opacity 500ms linear 1s;
+}
+
+.code-error {
+  width: 10rem;
+  position: absolute;
+  right: 0.5rem;
+  background: white;
+  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.25);
+  padding: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.code-error-header {
+  margin-bottom: 0.5rem;
+}
+
+.code-error-body {
+  font-size: 0.75rem;
+}
+
+.code-error-body > div:first-child {
+  margin-bottom: 0.5rem;
+}
+
+.code-error-fade-in {
+  opacity: 1;
+}
+
+.code-error-fade-out {
+  opacity: 0;
+  transition: opacity 500ms linear;
+}
