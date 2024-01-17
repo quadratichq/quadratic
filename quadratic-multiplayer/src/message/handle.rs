@@ -10,6 +10,10 @@ use crate::get_mut_room;
 use crate::message::{
     broadcast, request::MessageRequest, response::MessageResponse, send_user_message,
 };
+use crate::permissions::{
+    validate_can_edit_or_view_file, validate_user_can_edit_file,
+    validate_user_can_edit_or_view_file,
+};
 use crate::state::connection::Connection;
 use crate::state::transaction_queue::GROUP_NAME;
 use crate::state::user::UserState;
@@ -54,16 +58,9 @@ pub(crate) async fn handle_message(
             // anonymous users can log in without a jwt
             let jwt = connection.jwt.to_owned().unwrap_or_default();
 
-            // default to owner for tests
+            // default to all roles for tests
             let (permissions, sequence_num) = if cfg!(test) {
-                (
-                    vec![
-                        FilePermRole::FileEdit,
-                        FilePermRole::FileView,
-                        FilePermRole::FileDelete,
-                    ],
-                    0,
-                )
+                (vec![FilePermRole::FileEdit, FilePermRole::FileView], 0)
             } else {
                 // get permission and sequence_num from the quadratic api
                 let (permissions, mut sequence_num) =
@@ -89,6 +86,8 @@ pub(crate) async fn handle_message(
 
                 (permissions, sequence_num)
             };
+
+            validate_can_edit_or_view_file(&permissions)?;
 
             let user_state = UserState {
                 sheet_id,
@@ -168,6 +167,8 @@ pub(crate) async fn handle_message(
             session_id,
             file_id,
         } => {
+            validate_user_can_edit_or_view_file(Arc::clone(&state), file_id, session_id).await?;
+
             let is_not_empty = state.leave_room(file_id, &session_id).await?;
             let room = state.get_room(&file_id).await?;
 
@@ -186,6 +187,8 @@ pub(crate) async fn handle_message(
             file_id,
             operations,
         } => {
+            validate_user_can_edit_file(Arc::clone(&state), file_id, session_id).await?;
+
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
@@ -227,6 +230,8 @@ pub(crate) async fn handle_message(
             session_id,
             min_sequence_num,
         } => {
+            validate_user_can_edit_or_view_file(Arc::clone(&state), file_id, session_id).await?;
+
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
@@ -256,6 +261,8 @@ pub(crate) async fn handle_message(
             file_id,
             update,
         } => {
+            validate_user_can_edit_or_view_file(Arc::clone(&state), file_id, session_id).await?;
+
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
@@ -279,6 +286,8 @@ pub(crate) async fn handle_message(
             session_id,
             file_id,
         } => {
+            validate_user_can_edit_or_view_file(Arc::clone(&state), file_id, session_id).await?;
+
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
             Ok(None)

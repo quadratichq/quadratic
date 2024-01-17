@@ -198,8 +198,9 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, conne
                     // kill the ws connection for auth errors
                     MpError::Authentication(_) => {
                         break;
-                    } // kill the ws connection for critical file permission errors
-                    MpError::FilePermissions(is_critical, _) if is_critical => {
+                    }
+                    // kill the ws connection for file permission errors
+                    MpError::FilePermissions(_) => {
                         break;
                     }
                     // noop

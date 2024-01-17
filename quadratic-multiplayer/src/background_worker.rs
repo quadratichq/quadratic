@@ -165,7 +165,7 @@ mod tests {
         let user = add_new_user_to_room(file_id, state.clone(), connection_id).await;
 
         let room = state.get_room(&file_id).await.unwrap();
-        assert_eq!(room.users.get(&user.session_id).unwrap().value(), &user);
+        assert_eq!(room.get_user(&user.session_id).unwrap(), user);
 
         let result = super::remove_stale_users_in_room(state.clone(), &file_id, -1).await;
         assert!(result.is_ok_and(|v| v.is_none()));

@@ -60,7 +60,7 @@ pub(crate) fn send_user_message(
 ) -> JoinHandle<()> {
     tokio::spawn(async move {
         let result = async {
-            if let Some(user) = state.get_room(&file_id).await?.users.get(&session_id) {
+            if let Ok(user) = state.get_room(&file_id).await?.get_user(&session_id) {
                 if let Some(sender) = &user.socket {
                     sender
                         .lock()
@@ -71,7 +71,7 @@ pub(crate) fn send_user_message(
                 }
                 Ok::<_, MpError>(())
             } else {
-                Err(MpError::UserDoesNotExist(session_id.to_string()))
+                Err(MpError::UserNotFound(session_id, file_id))
             }
         };
 

@@ -2,7 +2,7 @@ use dashmap::DashMap;
 use serde::Serialize;
 use uuid::Uuid;
 
-use crate::error::Result;
+use crate::error::{MpError, Result};
 use crate::state::{user::User, State};
 use crate::{get_mut_room, get_or_create_room, get_room};
 
@@ -37,8 +37,13 @@ impl Room {
         self.sequence_num
     }
 
-    pub fn set_checkpoint_sequence_num(&mut self, sequence_num: u64) {
-        self.checkpoint_sequence_num = sequence_num;
+    pub fn get_user(&self, session_id: &Uuid) -> Result<User> {
+        let user = self
+            .users
+            .get(&session_id)
+            .ok_or(MpError::UserNotFound(*session_id, self.file_id))?;
+
+        Ok(user.to_owned())
     }
 }
 
@@ -48,15 +53,6 @@ impl State {
         let room = get_room!(self, file_id)?.to_owned();
 
         Ok(room)
-    }
-
-    pub(crate) async fn set_checkpoint_sequence_num(
-        &self,
-        file_id: &Uuid,
-        sequence_num: u64,
-    ) -> Result<()> {
-        get_mut_room!(self, file_id)?.set_checkpoint_sequence_num(sequence_num);
-        Ok(())
     }
 
     /// Add a user to a room.  If the room doesn't exist, it is created.  Users
@@ -194,15 +190,11 @@ mod tests {
             .await
             .unwrap();
         let room = state.get_room(&file_id).await.unwrap();
-        let user = room.users.get(&user.session_id).unwrap();
+        let user = room.get_user(&user.session_id).unwrap();
 
         assert!(is_new);
         assert_eq!(state.rooms.lock().await.len(), 1);
         assert_eq!(room.users.len(), 1);
-        assert_eq!(
-            room.users.get(&user.session_id).unwrap().value(),
-            user.value()
-        );
 
         // leave the room of 2 users
         state

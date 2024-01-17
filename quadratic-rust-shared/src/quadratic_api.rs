@@ -131,39 +131,22 @@ pub async fn set_file_checkpoint(
 fn handle_response(response: &Response) -> Result<()> {
     match response.status() {
         StatusCode::OK => Ok(()),
-        StatusCode::FORBIDDEN => Err(SharedError::QuadraticApi(true, "Forbidden".into())),
-        StatusCode::UNAUTHORIZED => Err(SharedError::QuadraticApi(true, "Unauthorized".into())),
-        StatusCode::NOT_FOUND => Err(SharedError::QuadraticApi(true, "File not found".into())),
-        _ => Err(SharedError::QuadraticApi(
-            true,
-            "Unexpected response".into(),
-        )),
+        StatusCode::FORBIDDEN => Err(SharedError::QuadraticApi("Forbidden".into())),
+        StatusCode::UNAUTHORIZED => Err(SharedError::QuadraticApi("Unauthorized".into())),
+        StatusCode::NOT_FOUND => Err(SharedError::QuadraticApi("File not found".into())),
+        _ => Err(SharedError::QuadraticApi("Unexpected response".into())),
     }
 }
 
-// /// Validate the role of a user against the required role.
-// /// TODO(ddimaria): implement this once the new file permissions exist on the api server
-// pub(crate) fn _validate_role(role: FilePermRole, required_role: FilePermRole) -> Result<()> {
-//     let authorized = match required_role {
-//         FilePermRole::Owner => role == FilePermRole::Owner,
-//         FilePermRole::Editor => role == FilePermRole::Editor || role == FilePermRole::Owner,
-//         FilePermRole::Viewer => {
-//             role == FilePermRole::Viewer
-//                 || role == FilePermRole::Editor
-//                 || role == FilePermRole::Owner
-//         }
-//         FilePermRole::Anonymous => role == FilePermRole::Anonymous,
-//     };
+/// Validate that role allows viewing a file
+pub fn can_view(role: &Vec<FilePermRole>) -> bool {
+    role.contains(&FilePermRole::FileView)
+}
 
-//     if !authorized {
-//         SharedError::QuadraticApi(
-//             true,
-//             format!("Invalid role: user has {role} but needs to be {required_role}"),
-//         );
-//     }
-
-//     Ok(())
-// }
+/// Validate that role allows editing a file
+pub fn can_edit(role: &Vec<FilePermRole>) -> bool {
+    role.contains(&FilePermRole::FileEdit)
+}
 
 #[cfg(test)]
 pub mod tests {
