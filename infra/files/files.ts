@@ -2,6 +2,7 @@ import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { redisHost, redisPort } from "../shared/redis";
+import { filesEc2SecurityGroup } from "../shared/securityGroups";
 const config = new pulumi.Config();
 
 // Configuration from command line
@@ -47,27 +48,6 @@ const instanceProfile = new aws.iam.InstanceProfile(
     role: role,
   }
 );
-
-// Create a Security Group for the EC2 instance
-export const filesEc2SecurityGroup = new aws.ec2.SecurityGroup("files-sg", {
-  ingress: [
-    {
-      protocol: "tcp",
-      fromPort: 80,
-      toPort: 80,
-      cidrBlocks: ["0.0.0.0/0"],
-    },
-    {
-      protocol: "tcp",
-      fromPort: 22,
-      toPort: 22,
-      cidrBlocks: ["0.0.0.0/0"],
-    },
-  ],
-  egress: [
-    { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
-  ],
-});
 
 const instance = new aws.ec2.Instance("files-instance", {
   tags: {

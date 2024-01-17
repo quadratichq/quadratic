@@ -1,17 +1,5 @@
 import * as aws from "@pulumi/aws";
-import { filesEc2SecurityGroup } from "../files/files";
-
-// Redis Security Group
-const redisSecurityGroup = new aws.ec2.SecurityGroup("redis-sg", {
-  ingress: [
-    {
-      protocol: "tcp",
-      fromPort: 6379,
-      toPort: 6379,
-      securityGroups: [filesEc2SecurityGroup.id],
-    },
-  ],
-});
+import { redisSecurityGroup } from "./securityGroups";
 
 // Create a Redis ElastiCache cluster
 const redisCluster = new aws.elasticache.Cluster("multiplayer-redis-cluster", {
