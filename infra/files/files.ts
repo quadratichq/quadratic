@@ -1,16 +1,19 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
+import { redisHost, redisPort } from "../shared/redis";
 const config = new pulumi.Config();
 
 // Configuration from command line
 const filesSubdomain = config.require("files-subdomain");
 const dockerImageTag = config.require("docker-image-tag");
+const quadraticApiUri = config.require("quadratic-api-uri");
 
 // Configuration from Pulumi ESC
 const domain = config.require("domain");
 const instanceSize = config.require("files-instance-size");
 const ecrRegistryUrl = config.require("ecr-registry-url");
+const pulumiAccessToken = config.requireSecret("pulumi-access-token");
 
 // Create an IAM Role for EC2
 const role = new aws.iam.Role("files-ec2-role", {
@@ -81,6 +84,21 @@ sudo yum install -y docker
 sudo systemctl start docker
 sudo systemctl enable docker
 
+# Install the Pulumi ESC CLI
+curl -fsSL https://get.pulumi.com/esc/install.sh | sh
+export PATH=$PATH:/home/ec2-user/.pulumi/bin
+export PULUMI_ACCESS_TOKEN=${pulumiAccessToken}
+esc login
+
+# Project ENV Vars
+esc env open quadratic/quadratic-files-development --format dotenv > .env
+
+# Strip quotes from .env file
+sed -i 's/"//g' .env
+echo PUBSUB_HOST=${redisHost} >> .env
+echo PUBSUB_PORT=${redisPort} >> .env
+echo QUADRATIC_API_URI=${quadraticApiUri} >> .env
+
 # Ensure the AWS CLI is installed
 sudo yum install aws-cli -y
 
@@ -89,7 +107,7 @@ aws ecr get-login-password --region us-west-2 | sudo docker login --username AWS
 
 # Pull and run the Docker image from ECR
 sudo docker pull ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}
-sudo docker run -d -p 80:80 ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}`,
+sudo docker run -d -p 80:80 --env-file .env ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}`,
 });
 
 // // Get the hosted zone ID for domain
