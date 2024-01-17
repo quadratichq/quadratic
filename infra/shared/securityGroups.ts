@@ -9,6 +9,7 @@ export const filesEc2SecurityGroup = new aws.ec2.SecurityGroup("files-sg", {
       toPort: 80,
       cidrBlocks: ["0.0.0.0/0"],
     },
+    // TODO: remove SSH Access
     {
       protocol: "tcp",
       fromPort: 22,
