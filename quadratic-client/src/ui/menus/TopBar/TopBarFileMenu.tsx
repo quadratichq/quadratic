@@ -4,7 +4,7 @@ import { useRootRouteLoaderData } from '@/router';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { hasPerissionToEditFile } from '../../../actions';
+import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { ROUTES } from '../../../constants/routes';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -26,7 +26,7 @@ export const TopBarFileMenu = () => {
           <FileLocation />
           <div className={`flex flex-row items-center gap-2`}>
             <Type variant="body2">
-              {hasPerissionToEditFile(permissions) ? (
+              {hasPermissionToEditFile(permissions) ? (
                 <>
                   <button
                     className={`hidden max-w-[25vw] truncate md:block`}

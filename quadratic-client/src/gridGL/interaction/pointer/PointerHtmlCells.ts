@@ -1,4 +1,4 @@
-import { isEditorOrAbove } from '@/actions';
+import { hasPermissionToEditFile } from '@/actions';
 import { HtmlCell } from '@/gridGL/htmlCells/HtmlCell';
 import { htmlCellsHandler } from '@/gridGL/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
@@ -12,7 +12,7 @@ export class PointerHtmlCells {
   cursor: string | undefined;
 
   pointerMove(e: InteractionEvent): boolean {
-    if (!isEditorOrAbove(pixiAppSettings.editorInteractionState.permission)) return false;
+    if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
 
     if (this.resizing) {
       this.resizing.pointerMove(e);
@@ -41,7 +41,7 @@ export class PointerHtmlCells {
   }
 
   pointerDown(e: InteractionEvent): boolean {
-    if (!isEditorOrAbove(pixiAppSettings.editorInteractionState.permission)) return false;
+    if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
     const canvas = pixiApp.canvas.getBoundingClientRect();
     const cells = htmlCellsHandler.getCells();
     for (const cell of cells) {

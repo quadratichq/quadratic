@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { v4 } from 'uuid';
-import { hasPerissionToEditFile } from '../actions';
+import { hasPermissionToEditFile } from '../actions';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { pythonStateAtom } from '../atoms/pythonStateAtom';
 import { pixiApp } from '../gridGL/pixiApp/PixiApp';
@@ -69,7 +69,7 @@ export default function QuadraticApp() {
     didMount.current = true;
 
     // Load python and populate web workers (if supported)
-    if (!isMobile && hasPerissionToEditFile(permissions)) {
+    if (!isMobile && hasPermissionToEditFile(permissions)) {
       setLoadedState((prevState) => ({ ...prevState, pythonState: 'loading' }));
       initializeWebWorkers();
     }
