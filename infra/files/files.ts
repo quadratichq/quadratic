@@ -57,8 +57,8 @@ let deployFilesService = fs
   .replace("${ecrRegistryUrl}", ecrRegistryUrl)
   .replace("${dockerImageTag}", dockerImageTag)
   .replace("${quadraticApiUri}", quadraticApiUri)
-  .replace("${redisHost}", `${redisHost}`)
-  .replace("${redisPort}", `${redisPort}`);
+  .replace("${redisHost}", `${redisHost.apply((v) => `${v}`)}`)
+  .replace("${redisPort}", `${redisPort.apply((v) => `${v}`)}`);
 
 const instance = new aws.ec2.Instance("files-instance", {
   tags: {
