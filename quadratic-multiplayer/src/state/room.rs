@@ -145,7 +145,7 @@ macro_rules! get_mut_room {
 macro_rules! get_or_create_room {
     ( $self:ident, $file_id:ident, $sequence_num:ident ) => {{
         let sequence_num = match get_room!($self, $file_id) {
-            Ok(room) => room.sequence_num,
+            Ok(room) => room.sequence_num.max($sequence_num),
             Err(_) => {
                 if cfg!(test) {
                     0
@@ -155,6 +155,7 @@ macro_rules! get_or_create_room {
                     quadratic_rust_shared::quadratic_api::get_file_checkpoint(url, jwt, &$file_id)
                         .await?
                         .sequence_number
+                        .max($sequence_num)
                 }
             }
         };
