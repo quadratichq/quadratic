@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
+import { createFile } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
   // Create a test user
@@ -9,32 +10,31 @@ beforeAll(async () => {
       auth0Id: 'test_user_1',
     },
   });
+  await dbClient.user.create({
+    data: {
+      auth0Id: 'test_user_2',
+    },
+  });
 
   // Create a test files
-  await dbClient.file.upsert({
-    create: {
+  await createFile({
+    data: {
+      creatorUserId: user_1.id,
       ownerUserId: user_1.id,
       name: 'test_file_2',
       contents: Buffer.from('contents_1'),
       uuid: '00000000-0000-4000-8000-000000000001',
       publicLinkAccess: 'READONLY',
     },
-    update: {},
-    where: {
-      uuid: '00000000-0000-4000-8000-000000000001',
-    },
   });
-  await dbClient.file.upsert({
-    create: {
+  await createFile({
+    data: {
+      creatorUserId: user_1.id,
       ownerUserId: user_1.id,
       name: 'test_file_1',
       contents: Buffer.from('contents_0'),
       uuid: '00000000-0000-4000-8000-000000000000',
       publicLinkAccess: 'NOT_SHARED',
-    },
-    update: {},
-    where: {
-      uuid: '00000000-0000-4000-8000-000000000000',
     },
   });
 
@@ -73,13 +73,14 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  const deleteFileInvites = dbClient.fileInvite.deleteMany();
-  const deleteFileUsers = dbClient.userFileRole.deleteMany();
-  const deleteTeams = dbClient.team.deleteMany();
-  const deleteFiles = dbClient.file.deleteMany();
-  const deleteUsers = dbClient.user.deleteMany();
-
-  await dbClient.$transaction([deleteFileInvites, deleteFileUsers, deleteTeams, deleteFiles, deleteUsers]);
+  await dbClient.$transaction([
+    dbClient.fileInvite.deleteMany(),
+    dbClient.userFileRole.deleteMany(),
+    dbClient.team.deleteMany(),
+    dbClient.fileCheckpoint.deleteMany(),
+    dbClient.file.deleteMany(),
+    dbClient.user.deleteMany(),
+  ]);
 });
 
 describe('READ - GET /v0/files/ no auth', () => {
@@ -110,8 +111,8 @@ describe('READ - GET /v0/files/ with auth and files', () => {
       publicLinkAccess: 'NOT_SHARED',
       thumbnail: null,
     });
-    expect(res.body[0]).toHaveProperty('created_date');
-    expect(res.body[0]).toHaveProperty('updated_date');
+    expect(res.body[0]).toHaveProperty('createdDate');
+    expect(res.body[0]).toHaveProperty('updatedDate');
     expect(res.body[1]).toMatchObject({
       uuid: '00000000-0000-4000-8000-000000000001',
       name: 'test_file_2',
@@ -160,21 +161,18 @@ describe('READ - GET /v0/files/:uuid file not shared, no auth', () => {
 
 describe('READ - GET /v0/files/:uuid file shared, no auth', () => {
   it('responds with json', async () => {
-    const res = await request(app)
+    await request(app)
       .get('/v0/files/00000000-0000-4000-8000-000000000001')
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
-      .expect(200);
-
-    expect(res.body).toMatchObject({
-      file: {
-        contents: 'contents_1',
-        name: 'test_file_2',
-        uuid: '00000000-0000-4000-8000-000000000001',
-        version: null,
-      },
-      permission: 'ANONYMOUS',
-    });
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.file.uuid).toBe('00000000-0000-4000-8000-000000000001');
+        expect(res.body.file.name).toBe('test_file_2');
+        expect(res.body).toHaveProperty('owner');
+        expect(res.body).toHaveProperty('userMakingRequest');
+        expect(res.body.userMakingRequest).toHaveProperty('filePermissions');
+      });
   });
 });
 
@@ -193,34 +191,35 @@ describe('READ - GET /v0/files/:uuid file not found', () => {
 
 describe('READ - GET /v0/files/:uuid with auth and owned file', () => {
   it('responds with json', async () => {
-    const res = await request(app)
+    await request(app)
       .get('/v0/files/00000000-0000-4000-8000-000000000000')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
-      .expect(200); // OK
-
-    expect(res.body).toHaveProperty('file');
-    expect(res.body).toHaveProperty('permission');
-    expect(res.body.permission).toEqual('OWNER');
-    expect(res.body.file.contents).toEqual('contents_0');
-    expect(res.body.file.thumbnail).toBeNull();
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toHaveProperty('file');
+        expect(res.body).toHaveProperty('userMakingRequest');
+        expect(res.body.userMakingRequest.filePermissions).toEqual(['FILE_VIEW', 'FILE_EDIT', 'FILE_DELETE']);
+        expect(res.body.owner.type).toBe('self');
+      }); // OK
   });
 });
 
 describe('READ - GET /v0/files/:uuid with auth and another users file shared readonly', () => {
   it('responds with json', async () => {
-    const res = await request(app)
+    await request(app)
       .get('/v0/files/00000000-0000-4000-8000-000000000001')
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_2`)
       .expect('Content-Type', /json/)
-      .expect(200); // OK
-
-    expect(res.body).toHaveProperty('file');
-    expect(res.body).toHaveProperty('permission');
-    expect(res.body.permission).toEqual('VIEWER');
-    expect(res.body.file.contents).toEqual('contents_1');
+      .expect(200) // OK
+      .expect((res) => {
+        expect(res.body).toHaveProperty('file');
+        expect(res.body).toHaveProperty('userMakingRequest');
+        expect(res.body.userMakingRequest.filePermissions).toEqual(['FILE_VIEW']);
+        expect(res.body.owner.type).toBe('user');
+      });
   });
 });
 
@@ -237,10 +236,21 @@ describe('READ - GET /v0/files/:uuid with auth and another users file not shared
   });
 });
 
-describe('UPDATE - POST /v0/files/:uuid no auth', () => {
+describe('UPDATE - PATCH /v0/files/:uuid bad request', () => {
+  it('responds with json', async () => {
+    await request(app)
+      .patch('/v0/files/00000000-0000-0000-0000-000000000000')
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(400);
+  });
+});
+
+describe('UPDATE - PATCH /v0/files/:uuid no auth', () => {
   it('responds with json', async () => {
     const res = await request(app)
-      .post('/v0/files/00000000-0000-0000-0000-000000000000')
+      .patch('/v0/files/00000000-0000-0000-0000-000000000000')
+      .send({ name: 'new_name' })
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
       .expect(401); // Unauthorized
@@ -249,10 +259,11 @@ describe('UPDATE - POST /v0/files/:uuid no auth', () => {
   });
 });
 
-describe('UPDATE - POST /v0/files/:uuid file not found', () => {
+describe('UPDATE - PATCH /v0/files/:uuid file not found', () => {
   it('responds with json', async () => {
     const res = await request(app)
-      .post('/v0/files/00000000-0000-4000-8000-000000000009')
+      .patch('/v0/files/00000000-0000-4000-8000-000000000009')
+      .send({ name: 'new_name' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
@@ -262,18 +273,18 @@ describe('UPDATE - POST /v0/files/:uuid file not found', () => {
   });
 });
 
-describe('UPDATE - POST /v0/files/:uuid with auth and owned file rename file', () => {
+describe('UPDATE - PATCH /v0/files/:uuid with auth and owned file rename file', () => {
   it('responds with json', async () => {
     // change file name
     const res = await request(app)
-      .post('/v0/files/00000000-0000-4000-8000-000000000000')
+      .patch('/v0/files/00000000-0000-4000-8000-000000000000')
       .send({ name: 'test_file_1_new_name' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
       .expect(200); // OK
 
-    expect(res.body).toMatchObject({ message: 'File updated.' });
+    expect(res.body.name).toBe('test_file_1_new_name');
 
     // check file name changed
     const res2 = await request(app)
@@ -284,45 +295,16 @@ describe('UPDATE - POST /v0/files/:uuid with auth and owned file rename file', (
       .expect(200); // OK
 
     expect(res2.body).toHaveProperty('file');
-    expect(res2.body).toHaveProperty('permission');
-    expect(res2.body.permission).toEqual('OWNER');
+    expect(res2.body.userMakingRequest.filePermissions).toEqual(['FILE_VIEW', 'FILE_EDIT', 'FILE_DELETE']);
     expect(res2.body.file.name).toEqual('test_file_1_new_name');
-    expect(Buffer.from(res2.body.file.contents).toString()).toEqual('contents_0');
   });
 });
 
-describe('UPDATE - POST /v0/files/:uuid with auth and owned file update file contents w version', () => {
+describe('UPDATE - PATCH /v0/files/:uuid with auth and another users file shared readonly', () => {
   it('responds with json', async () => {
     const res = await request(app)
-      .post('/v0/files/00000000-0000-4000-8000-000000000000')
-      .send({ contents: 'contents_0_updated', version: '1.0.0' })
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_1`)
-      .expect('Content-Type', /json/)
-      .expect(200); // OK
-
-    expect(res.body).toMatchObject({ message: 'File updated.' });
-
-    // check file name changed
-    const res2 = await request(app)
-      .get('/v0/files/00000000-0000-4000-8000-000000000000')
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_1`)
-      .expect('Content-Type', /json/)
-      .expect(200); // OK
-
-    expect(res2.body).toHaveProperty('file');
-    expect(res2.body).toHaveProperty('permission');
-    expect(res2.body.permission).toEqual('OWNER');
-    expect(res2.body.file.name).toEqual('test_file_1_new_name');
-    expect(res2.body.file.contents).toEqual('contents_0_updated');
-  });
-});
-
-describe('UPDATE - POST /v0/files/:uuid with auth and another users file shared readonly', () => {
-  it('responds with json', async () => {
-    const res = await request(app)
-      .post('/v0/files/00000000-0000-4000-8000-000000000001')
+      .patch('/v0/files/00000000-0000-4000-8000-000000000001')
+      .send({ name: 'new_name' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_2`)
       .expect('Content-Type', /json/)
@@ -332,10 +314,11 @@ describe('UPDATE - POST /v0/files/:uuid with auth and another users file shared 
   });
 });
 
-describe('UPDATE - POST /v0/files/:uuid with auth and another users file not shared', () => {
+describe('UPDATE - PATCH /v0/files/:uuid with auth and another users file not shared', () => {
   it('responds with json', async () => {
     const res = await request(app)
-      .post('/v0/files/00000000-0000-4000-8000-000000000000')
+      .patch('/v0/files/00000000-0000-4000-8000-000000000000')
+      .send({ name: 'new_name' })
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_2`)
       .expect('Content-Type', /json/)
@@ -346,9 +329,19 @@ describe('UPDATE - POST /v0/files/:uuid with auth and another users file not sha
 });
 
 describe('CREATE - POST /v0/files/ with no auth', () => {
+  it('responds with json for a bad request', async () => {
+    const res = await request(app)
+      .post('/v0/files/')
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(400);
+
+    expect(res.body).toHaveProperty('error');
+  });
   it('responds with json', async () => {
     const res = await request(app)
       .post('/v0/files/')
+      .send({ name: 'new_file_with_name', contents: 'new_file_contents', version: '1.0.0' })
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
       .expect(401);
@@ -359,103 +352,60 @@ describe('CREATE - POST /v0/files/ with no auth', () => {
 
 describe('CREATE - POST /v0/files/ with auth (no file name, no contents, no version)', () => {
   it('responds with json', async () => {
-    const res = await request(app)
+    await request(app)
       .post('/v0/files/')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
       .expect(400);
-
-    expect(res.body.errors).toEqual([
-      { type: 'field', msg: 'Invalid value', path: 'contents', location: 'body' },
-      { type: 'field', msg: 'Invalid value', path: 'contents', location: 'body' },
-      { type: 'field', msg: 'Invalid value', path: 'version', location: 'body' },
-      { type: 'field', msg: 'Invalid value', path: 'version', location: 'body' },
-      { type: 'field', msg: 'Invalid value', path: 'name', location: 'body' },
-      { type: 'field', msg: 'Invalid value', path: 'name', location: 'body' },
-    ]);
   });
 });
 
 describe('CREATE - POST /v0/files/ with auth (file name, no contents, no version)', () => {
   it('responds with json', async () => {
-    const res = await request(app)
+    await request(app)
       .post('/v0/files/')
       .send({ name: 'new_file_with_name' })
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
       .expect(400);
-
-    expect(res.body.errors).toEqual([
-      { location: 'body', msg: 'Invalid value', path: 'contents', type: 'field' },
-      { location: 'body', msg: 'Invalid value', path: 'contents', type: 'field' },
-      { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
-      { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
-    ]);
   });
 });
 
 describe('CREATE - POST /v0/files/ with auth (no file name, contents, no version)', () => {
   it('responds with json', async () => {
-    const res = await request(app)
+    await request(app)
       .post('/v0/files/')
       .send({ contents: 'new_file_contents' })
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
       .expect(400);
-
-    expect(res.body.errors).toEqual([
-      { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
-      { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
-      { type: 'field', msg: 'Invalid value', path: 'name', location: 'body' },
-      { type: 'field', msg: 'Invalid value', path: 'name', location: 'body' },
-    ]);
   });
 });
 
 describe('CREATE - POST /v0/files/ with auth (no file name, contents, with version)', () => {
   it('responds with json', async () => {
-    const res = await request(app)
+    await request(app)
       .post('/v0/files/')
       .send({ contents: 'new_file_contents', version: '1.0.0' })
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
       .expect(400);
-
-    expect(res.body.errors).toMatchObject([
-      {
-        type: 'field',
-        msg: 'Invalid value',
-        path: 'name',
-        location: 'body',
-      },
-      {
-        type: 'field',
-        msg: 'Invalid value',
-        path: 'name',
-        location: 'body',
-      },
-    ]);
   });
 });
 
 describe('CREATE - POST /v0/files/ with auth (file name, contents, no version)', () => {
   it('responds with json', async () => {
-    const res = await request(app)
+    await request(app)
       .post('/v0/files/')
       .send({ name: 'new_file_with_name', contents: 'new_file_contents' })
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
       .expect(400);
-
-    expect(res.body.errors).toEqual([
-      { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
-      { location: 'body', msg: 'Invalid value', path: 'version', type: 'field' },
-    ]);
   });
 });
 
@@ -471,8 +421,8 @@ describe('CREATE - POST /v0/files/ with auth (file name, contents, version)', ()
 
     expect(res.body).toMatchObject({ name: 'new_file_with_name' });
     expect(res.body).toHaveProperty('uuid');
-    expect(res.body).toHaveProperty('created_date');
-    expect(res.body).toHaveProperty('updated_date');
+    expect(res.body).toHaveProperty('createdDate');
+    expect(res.body).toHaveProperty('updatedDate');
 
     // check file name changed
     const res2 = await request(app)
@@ -483,11 +433,10 @@ describe('CREATE - POST /v0/files/ with auth (file name, contents, version)', ()
       .expect(200); // OK
 
     expect(res2.body).toHaveProperty('file');
-    expect(res2.body).toHaveProperty('permission');
-    expect(res2.body.permission).toEqual('OWNER');
+    expect(res2.body).toHaveProperty('userMakingRequest');
+    expect(res2.body.userMakingRequest).toHaveProperty('filePermissions');
     expect(res2.body.file.name).toEqual('new_file_with_name');
-    expect(res2.body.file.contents).toEqual('new_file_contents');
-    expect(res2.body.file.version).toEqual('1.0.0');
+    expect(res2.body.file.lastCheckpointVersion).toEqual('1.0.0');
   });
 });
 
