@@ -13,7 +13,6 @@ const dockerImageTag = config.require("docker-image-tag");
 const quadraticApiUri = config.require("quadratic-api-uri");
 
 // Configuration from Pulumi ESC
-const domain = config.require("domain");
 const instanceSize = config.require("files-instance-size");
 
 const instance = new aws.ec2.Instance("files-instance", {
@@ -24,7 +23,7 @@ const instance = new aws.ec2.Instance("files-instance", {
   iamInstanceProfile: instanceProfileIAMContainerRegistry,
   vpcSecurityGroupIds: [filesEc2SecurityGroup.id],
   ami: latestAmazonLinuxAmi.id,
-  userDataReplaceOnChange: true, // TODO: remove this
+  userDataReplaceOnChange: true,
   userData: pulumi.all([redisHost, redisPort]).apply(([host, port]) =>
     runDockerImageBashScript(
       "quadratic-files-development",
@@ -34,11 +33,13 @@ const instance = new aws.ec2.Instance("files-instance", {
         PUBSUB_HOST: host,
         PUBSUB_PORT: port.toString(),
         QUADRATIC_API_URI: quadraticApiUri,
-      }
+      },
+      true
     )
   ),
 });
 
+// const domain = config.require("domain");
 // // Get the hosted zone ID for domain
 // const hostedZone = pulumi.output(
 //   aws.route53.getZone(

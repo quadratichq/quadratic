@@ -33,16 +33,24 @@ const createBashCommandForEnv = (envVariables: EnvVariables) => {
  * @param imageTag The tag of the Docker image to run.
  * @param pulumiEscEnvironmentName The Pulumi environment name to pull ENV Variables.
  * @param extraEnvVars An object containing additional environment variables.
+ * @param rebuildOnEveryPulumiRun If true, a random nonce will be added to the Docker image tag to force a rebuild on every run. userDataReplaceOnChange: true must be set on the EC2 instance.
  */
 export const runDockerImageBashScript = (
   imageRepositoryName: string,
   imageTag: string,
   pulumiEscEnvironmentName: string,
-  extraEnvVars: EnvVariables
+  extraEnvVars: EnvVariables,
+  rebuildOnEveryPulumiRun: boolean = false
 ) => {
   const extraEnvVarsBashCommand = createBashCommandForEnv(extraEnvVars);
 
+  let rebuildNonce = 0;
+  if (rebuildOnEveryPulumiRun) {
+    rebuildNonce = Math.floor(Math.random() * 1000000000000);
+  }
+
   return `#!/bin/bash
+echo 'rebuildNonce: ${rebuildNonce}'
 echo 'Installing Docker'
 sudo yum update -y
 sudo yum install -y docker

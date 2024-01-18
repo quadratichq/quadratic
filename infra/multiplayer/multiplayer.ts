@@ -22,8 +22,6 @@ const subNet1 = config.require("subnet1");
 const subNet2 = config.require("subnet2");
 const vpcId = config.require("vpc-id");
 const instanceSize = config.require("multiplayer-instance-size");
-const pulumiAccessToken = config.require("pulumi-access-token");
-const ecrRegistryUrl = config.require("ecr-registry-url");
 
 const instance = new aws.ec2.Instance("multiplayer-instance", {
   tags: {
@@ -34,7 +32,7 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
   vpcSecurityGroupIds: [multiplayerEc2SecurityGroup.id],
   ami: latestAmazonLinuxAmi.id,
   // Run Setup script on instance boot to create multiplayer systemd service
-  userDataReplaceOnChange: true, // TODO: remove this
+  userDataReplaceOnChange: true,
   userData: pulumi.all([redisHost, redisPort]).apply(([host, port]) =>
     runDockerImageBashScript(
       "quadratic-multiplayer-development",
@@ -44,7 +42,8 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
         PUBSUB_HOST: host,
         PUBSUB_PORT: port.toString(),
         QUADRATIC_API_URI: quadraticApiUri,
-      }
+      },
+      true
     )
   ),
 });
