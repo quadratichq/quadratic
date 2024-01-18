@@ -17,6 +17,9 @@ source "$HOME/.cargo/env"
 echo 'Installing wasm-pack...'
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
+echo 'npm ci...'
+npm ci
+
 cd quadratic-core
 
 echo 'Building wasm...'
@@ -26,5 +29,4 @@ echo 'Exporting TS/Rust types...'
 cargo run --bin export_types
 
 echo 'Building front-end...'
-npm ci
 npm run build --workspace=quadratic-client
